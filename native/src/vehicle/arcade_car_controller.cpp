@@ -1,4 +1,5 @@
 #include "formula90s/vehicle/arcade_car_controller.hpp"
+#include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/core/math.hpp>
 #include "formula90s/vehicle/physics_math.hpp"
@@ -13,6 +14,8 @@ void ArcadeCarController::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_gear_label"), &ArcadeCarController::get_gear_label);
     ClassDB::bind_method(D_METHOD("get_steering_input"), &ArcadeCarController::get_steering_input);
     ClassDB::bind_method(D_METHOD("get_world_acceleration"), &ArcadeCarController::get_world_acceleration);
+    ClassDB::bind_method(D_METHOD("get_visual_transform"), &ArcadeCarController::get_visual_transform);
+    ClassDB::bind_method(D_METHOD("get_presentation_epoch"), &ArcadeCarController::get_presentation_epoch);
     ClassDB::bind_method(D_METHOD("is_automatic_transmission"), &ArcadeCarController::is_automatic_transmission);
     ClassDB::bind_method(D_METHOD("clear_motion"), &ArcadeCarController::clear_motion);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "config", PROPERTY_HINT_RESOURCE_TYPE, "CarPhysicsConfig"), "set_config", "get_config");
@@ -20,13 +23,27 @@ void ArcadeCarController::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_vehicle_definition"),&ArcadeCarController::get_vehicle_definition);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT,"vehicle_definition",PROPERTY_HINT_RESOURCE_TYPE,"VehicleDefinition"),"set_vehicle_definition","get_vehicle_definition");
 }
+void ArcadeCarController::_ready() { reset_presentation_pose(); }
+void ArcadeCarController::reset_presentation_pose() {
+    const Transform3D pose=get_global_transform();
+    previous_physics_transform=pose;current_physics_transform=pose;presentation_initialized=true;++presentation_epoch;
+}
+Transform3D ArcadeCarController::get_visual_transform() const {
+    if(!presentation_initialized)return get_global_transform();
+    Engine *engine=Engine::get_singleton();
+    const double fraction=engine?Math::clamp(engine->get_physics_interpolation_fraction(),0.0,1.0):1.0;
+    return previous_physics_transform.interpolate_with(current_physics_transform,fraction);
+}
 double ArcadeCarController::get_speed_kph() const { return get_velocity().length() * 3.6; }
 double ArcadeCarController::get_rpm() const { return transmission->get_rpm(); }
 int ArcadeCarController::get_gear() const { return transmission->get_gear(); }
 String ArcadeCarController::get_gear_label() const { return transmission->get_gear_label(); }
-void ArcadeCarController::clear_motion() { set_velocity(Vector3()); transmission->reset(); steering_input=0; world_acceleration=Vector3(); previous_world_velocity=Vector3(); acceleration_initialized=false; direction_stop_timer=0; }
+void ArcadeCarController::clear_motion() { set_velocity(Vector3()); transmission->reset(); steering_input=0; world_acceleration=Vector3(); previous_world_velocity=Vector3(); acceleration_initialized=false; direction_stop_timer=0; reset_presentation_pose(); }
 void ArcadeCarController::_physics_process(double delta) {
     if (config.is_null() || !config->is_valid()) { state = "INVALID CONFIG"; return; }
+    const Transform3D physics_start=get_global_transform();
+    if(!presentation_initialized||(physics_start.origin-current_physics_transform.origin).length_squared()>9.0)reset_presentation_pose();
+    previous_physics_transform=current_physics_transform;
     Input *input = Input::get_singleton();
     throttle = input->get_action_strength("accelerate"); brake = input->get_action_strength("brake");
     if(input->is_action_just_pressed("toggle_automatic")) transmission->set_automatic_enabled(!transmission->is_automatic_enabled());
@@ -71,6 +88,7 @@ void ArcadeCarController::_physics_process(double delta) {
     basis = get_global_basis(); forward = -basis.get_column(2); right = basis.get_column(0);
     velocity = forward * longitudinal + right * lateral_speed; if (!is_on_floor()) velocity.y -= 24.0 * delta; else velocity.y = -0.5;
     set_velocity(velocity); move_and_slide();
+    current_physics_transform=get_global_transform();
     const Vector3 current_world_velocity=get_velocity();
     if(acceleration_initialized&&delta>0.000001)world_acceleration=(current_world_velocity-previous_world_velocity)/delta;else world_acceleration=Vector3();
     previous_world_velocity=current_world_velocity;acceleration_initialized=true;

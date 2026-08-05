@@ -27,7 +27,7 @@ metadata_path = "res://assets/sprites/vehicles/v10/v10_sheet.json"
 first_frame_angular_offset = 0.0
 angular_hysteresis = 3.0
 minimum_visual_speed = 0.5
-velocity_direction_influence = 0.1
+velocity_direction_influence = 0.0
 
 [node name="CameraRig" type="ArcadeChaseCamera" parent="."]
 position = Vector3(0, 4.5, 9)
@@ -42,6 +42,8 @@ velocity_anticipation = 0.025
 inertia_strength = 0.018
 maximum_camera_offset = 0.55
 offset_smoothing = 3.2
+heading_smoothing = 5.0
+maximum_follow_lag = 1.5
 speed_fov_gain = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
