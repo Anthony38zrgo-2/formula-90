@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[node name="DebugHud" type="DebugHudController"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Panel" type="ColorRect" parent="."]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 180.0
+offset_bottom = 112.0
+color = Color(0.02, 0.03, 0.05, 0.78)
+
+[node name="Readout" type="Label" parent="Panel"]
+offset_left = 10.0
+offset_top = 8.0
+offset_right = 160.0
+offset_bottom = 94.0
+theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "VELOCIDAD 0 km/h\nMARCHA 1\nRPM 1100\nREADY"
+

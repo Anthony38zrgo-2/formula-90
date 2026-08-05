@@ -1,0 +1,2 @@
+env.Append(CPPDEFINES=["FORMULA90S_PHASE_ONE"])
+

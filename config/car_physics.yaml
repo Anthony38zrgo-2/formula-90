@@ -1,0 +1,9 @@
+mass: 850.0
+engine_force: 34.0
+brake_force: 48.0
+strong_brake_force: 70.0
+max_speed_kph: 285.0
+reverse_max_speed_kph: 35.0
+lateral_grip: 7.5
+drift_factor: 0.82
+

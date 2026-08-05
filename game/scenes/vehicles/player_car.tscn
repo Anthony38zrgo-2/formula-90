@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="CarPhysicsConfig" path="res://resources/vehicles/default_car_physics.tres" id="1_cfg"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="2_car"]
+
+[sub_resource type="BoxShape3D" id="CarShape"]
+size = Vector3(1.7, 0.8, 3.8)
+
+[node name="PlayerCar" type="ArcadeCarController"]
+config = ExtResource("1_cfg")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.55, 0)
+shape = SubResource("CarShape")
+
+[node name="DirectionalVehicleSprite" type="DirectionalVehicleSprite" parent="."]
+position = Vector3(0, 1.05, 0)
+texture = ExtResource("2_car")
+pixel_size = 0.009
+orientation_count = 8
+allow_mirroring = false
+
+[node name="CameraRig" type="ArcadeChaseCamera" parent="."]
+position = Vector3(0, 4.5, 9)
+top_level = true
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+current = true
+fov = 62.0
+
+[node name="ResetMarker" type="Marker3D" parent="."]
+
+[node name="EngineAudioController" type="EngineAudioController" parent="."]
+

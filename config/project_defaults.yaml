@@ -1,0 +1,5 @@
+godot: 4.7.1-stable
+viewport: [640, 360]
+renderer: gl_compatibility
+texture_filter: nearest
+

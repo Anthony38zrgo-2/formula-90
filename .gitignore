@@ -1,0 +1,21 @@
+.godot/
+.tools/
+build/
+bin/
+game/addons/formula90s/bin/*
+!game/addons/formula90s/bin/.gitkeep
+compile_commands.json
+.sconsign.dblite
+*.obj
+*.o
+*.dll
+*.so
+*.pdb
+*.log
+__pycache__/
+.venv/
+.vscode/
+.idea/
+tmp/
+# Pre-existing local reference; provenance/licence not established, intentionally excluded.
+car1_sprite_sheet.png
