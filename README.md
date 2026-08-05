@@ -1,6 +1,8 @@
 # formula-90s
 
-Prototipo de carreras arcade con circuito 3D y vehículos Sprite3D, inspirado en la claridad y respuesta de recreativas de los 90 sin reutilizar sus recursos. La Fase 1 implementa menú, campo de pruebas, coche arcade, transmisión automática de seis marchas, cámara, HUD y reset íntegramente en C++20 mediante GDExtension.
+La Fase 2 incorpora el primer V10 jugable: nueve vistas reales procesadas por herramientas C++, un banco de audio original generado offline y mezcla/DSP en C++ durante el juego.
+
+Prototipo de carreras arcade con circuito 3D y vehículos Sprite3D, inspirado en la claridad y respuesta de recreativas de los 90 sin reutilizar sus recursos. La Fase 1 implementa menú, campo de pruebas, coche arcade, transmisión automática de seis marchas, cámara, HUD con minimapa estático y reset íntegramente en C++20 mediante GDExtension.
 
 ## Estado
 
@@ -54,9 +56,12 @@ Resolución de Godot, en orden: argumento explícito, `GODOT_BIN`, binario local
 
 | Acción | Teclado | Mando |
 |---|---|---|
-| Acelerar | W / ↑ | gatillo derecho |
-| Frenar / reversa | S / ↓ | gatillo izquierdo |
-| Dirección | A/D / ←/→ | stick izquierdo |
+| Acelerar | ↑ | gatillo derecho |
+| Frenar / reversa | ↓ | gatillo izquierdo |
+| Dirección | ←/→ | stick izquierdo |
+| Subir marcha | A | — |
+| Bajar marcha | Z | — |
+| Activar/desactivar cambio automático | 1 | — |
 | Freno fuerte | Espacio | A |
 | Reiniciar | R | Y |
 | Volver al menú | Escape | Back |
@@ -104,4 +109,3 @@ Física plana y deliberadamente arcade; no hay suspensión, neumáticos avanzado
 ## Siguiente fase
 
 Diseñar herramientas Python aisladas para sprites direccionales y preparación de audio: staging, validación de licencias, pivotes, escalas, transparencia y metadatos antes de promover assets al juego.
-

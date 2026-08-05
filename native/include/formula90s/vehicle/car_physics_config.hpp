@@ -10,6 +10,7 @@ class CarPhysicsConfig : public Resource {
     double drift_factor = 0.82, stability_recovery = 3.0;
     double idle_rpm = 1100.0, max_rpm = 9000.0, upshift_rpm = 8200.0, downshift_rpm = 4300.0;
     double minimum_shift_time = 0.32, reverse_ratio = 3.2, final_drive = 3.7;
+    double stopped_speed_threshold = 0.02, direction_change_delay = 0.18;
     PackedFloat32Array gear_ratios;
 protected: static void _bind_methods();
 public:
@@ -22,10 +23,10 @@ public:
     F90_PROP(double, stability_recovery) F90_PROP(double, idle_rpm) F90_PROP(double, max_rpm)
     F90_PROP(double, upshift_rpm) F90_PROP(double, downshift_rpm) F90_PROP(double, minimum_shift_time)
     F90_PROP(double, reverse_ratio) F90_PROP(double, final_drive)
+    F90_PROP(double, stopped_speed_threshold) F90_PROP(double, direction_change_delay)
 #undef F90_PROP
     void set_gear_ratios(const PackedFloat32Array &v) { gear_ratios = v; }
     PackedFloat32Array get_gear_ratios() const { return gear_ratios; }
     bool is_valid() const;
 };
 }
-

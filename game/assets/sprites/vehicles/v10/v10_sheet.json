@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "vehicle_id": "v10",
+  "direction_count": 16,
+  "allow_horizontal_mirror": false,
+  "missing_frame_policy": "error",
+  "frame_width": 256, "frame_height": 128,
+  "sheet_width": 4096, "sheet_height": 128,
+  "frames": [
+    {"name": "rear", "index": 0, "angle_degrees": 0, "region": {"x": 0, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "rear_right_1", "index": 1, "angle_degrees": 22.5, "region": {"x": 256, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "rear_right_2", "index": 2, "angle_degrees": 45, "region": {"x": 512, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "rear_right_3", "index": 3, "angle_degrees": 67.5, "region": {"x": 768, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "right", "index": 4, "angle_degrees": 90, "region": {"x": 1024, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front_right_3", "index": 5, "angle_degrees": 112.5, "region": {"x": 1280, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front_right_2", "index": 6, "angle_degrees": 135, "region": {"x": 1536, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front_right_1", "index": 7, "angle_degrees": 157.5, "region": {"x": 1792, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front", "index": 8, "angle_degrees": 180, "region": {"x": 2048, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front_left_1", "index": 9, "angle_degrees": 202.5, "region": {"x": 2304, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front_left_2", "index": 10, "angle_degrees": 225, "region": {"x": 2560, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "front_left_3", "index": 11, "angle_degrees": 247.5, "region": {"x": 2816, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "left", "index": 12, "angle_degrees": 270, "region": {"x": 3072, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "rear_left_3", "index": 13, "angle_degrees": 292.5, "region": {"x": 3328, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "rear_left_2", "index": 14, "angle_degrees": 315, "region": {"x": 3584, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}},
+    {"name": "rear_left_1", "index": 15, "angle_degrees": 337.5, "region": {"x": 3840, "y": 0, "width": 256, "height": 128}, "anchor": {"x": 0.5, "y": 1.0}}
+  ]
+}

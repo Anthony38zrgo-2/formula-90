@@ -16,19 +16,19 @@ window/stretch/mode="canvas_items"
 
 accelerate={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":87), Object(InputEventKey,"physical_keycode":4194320), Object(InputEventJoypadMotion,"axis":5,"axis_value":1.0)]
+"events": [Object(InputEventKey,"physical_keycode":4194320), Object(InputEventJoypadMotion,"axis":5,"axis_value":1.0)]
 }
 brake={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":83), Object(InputEventKey,"physical_keycode":4194322), Object(InputEventJoypadMotion,"axis":4,"axis_value":1.0)]
+"events": [Object(InputEventKey,"physical_keycode":4194322), Object(InputEventJoypadMotion,"axis":4,"axis_value":1.0)]
 }
 steer_left={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":65), Object(InputEventKey,"physical_keycode":4194319), Object(InputEventJoypadMotion,"axis":0,"axis_value":-1.0)]
+"events": [Object(InputEventKey,"physical_keycode":4194319), Object(InputEventJoypadMotion,"axis":0,"axis_value":-1.0)]
 }
 steer_right={
 "deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":68), Object(InputEventKey,"physical_keycode":4194321), Object(InputEventJoypadMotion,"axis":0,"axis_value":1.0)]
+"events": [Object(InputEventKey,"physical_keycode":4194321), Object(InputEventJoypadMotion,"axis":0,"axis_value":1.0)]
 }
 strong_brake={
 "deadzone": 0.2,
@@ -42,10 +42,21 @@ ui_back_to_menu={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"physical_keycode":4194305), Object(InputEventJoypadButton,"button_index":6)]
 }
+shift_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":65)]
+}
+shift_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":90)]
+}
+toggle_automatic={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"physical_keycode":49)]
+}
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
 textures/canvas_textures/default_texture_filter=0
-

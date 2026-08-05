@@ -1,0 +1,13 @@
+[project]
+name = "formula90s-audio-tools"
+version = "0.2.0"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6,<7"]
+
+[tool.pytest.ini_options]
+testpaths = ["tools/audio/tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+

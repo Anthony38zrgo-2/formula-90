@@ -1,0 +1,41 @@
+{
+  "bank_name": "v10_prototype",
+  "channels": 1,
+  "files": {
+    "engine_high.wav": {
+      "loop": true,
+      "sha256": "910a3e021b2b5433f8b1c871b4cd739824a3dcb84a4b1f419f8f4229dd822bba"
+    },
+    "engine_idle.wav": {
+      "loop": true,
+      "sha256": "dd736356e11c3dbc1916c3ef0b1b74a06b4f66fde3e7f1f265d84e989a47e477"
+    },
+    "engine_low.wav": {
+      "loop": true,
+      "sha256": "c0a92ee5672ba1f2ec0786104848cfcd9e76f46d8efdaf2fe1bf4a7d287ae1ae"
+    },
+    "engine_mid.wav": {
+      "loop": true,
+      "sha256": "82d76fddb0e329c53697b82ae9361b439314c2a2dc21ea994f449aeb9342f6fb"
+    },
+    "engine_redline.wav": {
+      "loop": true,
+      "sha256": "66911210e2f145033aa919af960f834a7bca5c59334f5a5cd46a495850a16ccb"
+    },
+    "gear_down.wav": {
+      "loop": false,
+      "sha256": "6ef645ab8069ba13817ffdeba78a340383dbd23b40dee60ce090d5f6d56814fc"
+    },
+    "gear_up.wav": {
+      "loop": false,
+      "sha256": "ae1863a9ac8e1cd3ff3283b4e617fd0563b3d50d1e179647655a1d951c65eb68"
+    }
+  },
+  "generator": "formula90s offline synthesizer 1.0",
+  "loop_end_seconds": 1.8,
+  "loop_start_seconds": 0.2,
+  "pcm_bits": 16,
+  "sample_rate": 44100,
+  "schema_version": 1,
+  "seed": 9010
+}

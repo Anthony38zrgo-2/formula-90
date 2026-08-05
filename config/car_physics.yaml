@@ -4,6 +4,10 @@ brake_force: 48.0
 strong_brake_force: 70.0
 max_speed_kph: 285.0
 reverse_max_speed_kph: 35.0
-lateral_grip: 7.5
-drift_factor: 0.82
-
+low_speed_steering: 1.65
+high_speed_steering: 0.85
+lateral_grip: 9.0
+drift_factor: 0.65
+stability_recovery: 4.5
+stopped_speed_threshold: 0.02
+direction_change_delay: 0.18

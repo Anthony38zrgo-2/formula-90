@@ -2,11 +2,12 @@
   "enabled_classes": [
     "Node", "Node3D", "CharacterBody3D", "Resource", "RefCounted",
     "Camera3D", "Sprite3D", "Control", "Label", "Button", "ColorRect",
-    "SceneTree", "Input", "InputEvent", "InputEventKey", "InputEventJoypadButton",
+    "SceneTree", "Viewport", "JSON", "Input", "InputEvent", "InputEventKey", "InputEventJoypadButton",
     "InputEventJoypadMotion", "PackedScene", "ResourceLoader", "Engine", "OS",
     "CollisionShape3D", "BoxShape3D", "StaticBody3D", "MeshInstance3D",
     "BoxMesh", "PlaneMesh", "StandardMaterial3D", "DirectionalLight3D",
     "WorldEnvironment", "Environment", "Texture2D", "ImageTexture", "Image",
-    "CanvasLayer", "VBoxContainer", "CenterContainer", "MarginContainer"
+    "CanvasLayer", "VBoxContainer", "CenterContainer", "MarginContainer",
+    "AudioServer", "AudioStream", "AudioStreamWAV", "AudioStreamGenerator", "AudioStreamGeneratorPlayback", "AudioStreamPlayer3D"
   ]
 }

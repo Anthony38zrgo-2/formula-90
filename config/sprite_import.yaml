@@ -1,0 +1,11 @@
+vehicle_id: v10
+background_mode: corners
+tolerance: 24
+edge_softness: 2
+palette_mode: full
+canvas_width: 256
+canvas_height: 128
+padding: 6
+anchor_x: 0.5
+anchor_y: 1.0
+

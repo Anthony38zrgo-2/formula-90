@@ -1,28 +1,48 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="CarPhysicsConfig" path="res://resources/vehicles/default_car_physics.tres" id="1_cfg"]
-[ext_resource type="Texture2D" path="res://icon.svg" id="2_car"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vehicles/v10/v10_sheet.png" id="2_car"]
+[ext_resource type="VehicleDefinition" path="res://resources/vehicles/v10_vehicle.tres" id="3_v10"]
+[ext_resource type="EngineAudioConfig" path="res://resources/vehicles/v10_engine_audio.tres" id="4_audio"]
 
 [sub_resource type="BoxShape3D" id="CarShape"]
 size = Vector3(1.7, 0.8, 3.8)
 
 [node name="PlayerCar" type="ArcadeCarController"]
 config = ExtResource("1_cfg")
+vehicle_definition = ExtResource("3_v10")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.55, 0)
 shape = SubResource("CarShape")
 
 [node name="DirectionalVehicleSprite" type="DirectionalVehicleSprite" parent="."]
-position = Vector3(0, 1.05, 0)
+position = Vector3(0, 1.04, 0)
 texture = ExtResource("2_car")
-pixel_size = 0.009
-orientation_count = 8
+pixel_size = 0.015
+orientation_count = 16
 allow_mirroring = false
+ground_offset = 0.08
+metadata_path = "res://assets/sprites/vehicles/v10/v10_sheet.json"
+first_frame_angular_offset = 0.0
+angular_hysteresis = 3.0
+minimum_visual_speed = 0.5
+velocity_direction_influence = 0.1
 
 [node name="CameraRig" type="ArcadeChaseCamera" parent="."]
 position = Vector3(0, 4.5, 9)
 top_level = true
+lateral_swing = 0.55
+turn_look_offset = 0.35
+horizontal_smoothing = 5.0
+vertical_smoothing = 7.5
+horizontal_dead_zone = 0.12
+vertical_dead_zone = 0.08
+velocity_anticipation = 0.025
+inertia_strength = 0.018
+maximum_camera_offset = 0.55
+offset_smoothing = 3.2
+speed_fov_gain = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 current = true
@@ -31,4 +51,4 @@ fov = 62.0
 [node name="ResetMarker" type="Marker3D" parent="."]
 
 [node name="EngineAudioController" type="EngineAudioController" parent="."]
-
+config = ExtResource("4_audio")

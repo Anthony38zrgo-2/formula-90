@@ -1,0 +1,15 @@
+[gd_resource type="EngineAudioConfig" format=3]
+
+[resource]
+bank_path = "res://assets/audio/engines/v10_prototype"
+idle_rpm = 1100.0
+maximum_rpm = 9000.0
+pitch_minimum = 0.72
+pitch_maximum = 1.42
+throttle_gain = 0.45
+coast_gain = 0.22
+saturation = 0.12
+limiter_threshold = 0.92
+shift_gain = 0.45
+attack_seconds = 0.035
+release_seconds = 0.12

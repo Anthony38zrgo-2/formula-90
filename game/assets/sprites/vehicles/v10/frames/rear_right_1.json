@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tool_version": "prepare_sprite 1.0",
+  "vehicle_id": "v10",
+  "vehicle_name": "V10",
+  "source": {"path": "references/vehicles/v10/generated/v10_gpt_atlas_rgba.png", "sha256": "7607fc1c5be1a63acb0d6345dd499001ae8294f9adce68f6ed7f2359b245cec1"},
+  "original_size": {"width": 1254, "height": 1254},
+  "source_crop": {"x": 313, "y": 0, "width": 314, "height": 313},
+  "content_bounds": {"x": 23, "y": 102, "width": 283, "height": 155},
+  "output_size": {"width": 256, "height": 128},
+  "anchor": {"x": 0.5, "y": 1.0},
+  "offset": {"x": 0, "y": 0},
+  "orientation": "rear_right_1",
+  "scale": 0.018,
+  "background_removal": {"mode": "preserve", "tolerance": 24, "removed_ratio": 0},
+  "palette_mode": "full",
+  "output_path": "game/assets/sprites/vehicles/v10/frames/rear_right_1.png"
+}

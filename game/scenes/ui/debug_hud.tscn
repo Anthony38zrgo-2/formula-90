@@ -11,15 +11,55 @@ mouse_filter = 2
 offset_left = 12.0
 offset_top = 12.0
 offset_right = 180.0
-offset_bottom = 112.0
+offset_bottom = 134.0
 color = Color(0.02, 0.03, 0.05, 0.78)
 
 [node name="Readout" type="Label" parent="Panel"]
 offset_left = 10.0
 offset_top = 8.0
 offset_right = 160.0
-offset_bottom = 94.0
+offset_bottom = 120.0
 theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 16
-text = "VELOCIDAD 0 km/h\nMARCHA 1\nRPM 1100\nREADY"
+text = "VELOCIDAD 0 km/h\nMARCHA 1\nCAMBIO AUTO ACTIVADO\nRPM 1100\nREADY"
 
+[node name="Minimap" type="StaticMinimapController" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -172.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 232.0
+grow_horizontal = 0
+mouse_filter = 2
+clip_contents = true
+
+[node name="Title" type="Label" parent="Minimap"]
+offset_left = 8.0
+offset_top = 2.0
+offset_right = 104.0
+offset_bottom = 22.0
+theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "MAPA"
+
+[node name="North" type="Label" parent="Minimap"]
+offset_left = 137.0
+offset_top = 18.0
+offset_right = 154.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(1, 0.82, 0.12, 1)
+theme_override_font_sizes/font_size = 12
+text = "N"
+
+[node name="Legend" type="Label" parent="Minimap"]
+offset_left = 5.0
+offset_top = 202.0
+offset_right = 158.0
+offset_bottom = 219.0
+theme_override_colors/font_color = Color(0.8, 0.84, 0.9, 1)
+theme_override_font_sizes/font_size = 9
+text = "ROJO: POSTES   VERDE: SALIDA"
+horizontal_alignment = 1

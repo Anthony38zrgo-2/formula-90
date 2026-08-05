@@ -1,0 +1,17 @@
+[gd_resource type="VehicleDefinition" load_steps=4 format=3]
+
+[ext_resource type="CarPhysicsConfig" path="res://resources/vehicles/default_car_physics.tres" id="1_physics"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vehicles/v10/v10_sheet.png" id="2_sheet"]
+
+[resource]
+vehicle_id = "v10"
+display_name = "V10"
+physics = ExtResource("1_physics")
+sprite_sheet = ExtResource("2_sheet")
+sprite_metadata_path = "res://assets/sprites/vehicles/v10/v10_sheet.json"
+visual_scale = 0.015
+visual_offset_y = 0.05
+audio_bank_path = "res://assets/audio/engines/v10_prototype"
+audio_config_path = "res://resources/vehicles/v10_engine_audio.tres"
+maximum_speed_kph = 285.0
+maximum_rpm = 9000.0

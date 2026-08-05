@@ -1,4 +1,5 @@
-# Assets
+# Assets de juego
 
-Arte arcade original de apariencia 24 bits: siluetas claras, transparencia limpia, nearest-neighbor, sin mipmaps borrosos, escala consistente y pivote visual en la base. Archivos en snake_case descriptivo. Prohibido material protegido, ROMs o recursos sin licencia demostrable. Preparar sprites direccionales para 8/12/16 vistas; el espejado siempre debe ser explícito.
+`v10` es el primer vehículo y `v10_prototype` su banco original de audio. Las referencias originales permanecen bajo `references/`; aquí solo viven resultados procesados y sus metadatos. No editar manualmente archivos generados.
 
+Importar sprites con alpha, nearest-neighbor, sin mipmaps ni compresión destructiva. Las capas continuas de motor se reproducen en loop por el mezclador C++; los cambios son one-shots. Todo asset debe tener metadatos, origen verificable y pasar `validate_assets`.

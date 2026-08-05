@@ -8,7 +8,7 @@ env["CXXFLAGS"] = [flag for flag in env["CXXFLAGS"] if not str(flag).startswith(
 env.Append(CXXFLAGS=["/std:c++20"] if env["platform"] == "windows" else ["-std=c++20"])
 
 sources = Glob("native/src/*.cpp")
-for folder in ["core", "vehicle", "camera", "presentation", "ui"]:
+for folder in ["core", "vehicle", "camera", "presentation", "ui", "audio"]:
     sources += Glob("native/src/%s/*.cpp" % folder)
 
 suffix = env["suffix"]

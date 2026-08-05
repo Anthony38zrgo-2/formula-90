@@ -1,0 +1,16 @@
+bank_name: v10_prototype
+sample_rate: 44100
+duration_seconds: 2.0
+gear_duration_seconds: 0.35
+seed: 9010
+conceptual_base_frequency: 65.0
+pulse_density: 10
+harmonics: 1.0,0.55,0.32,0.18,0.10
+noise_gain: 0.035
+saturation: 1.35
+lowpass_hz: 7200
+normalization_peak: 0.72
+fade_seconds: 0.025
+loop_start_seconds: 0.20
+loop_end_seconds: 1.80
+

@@ -7,6 +7,10 @@ if(-not(Test-Path $vsdev)){throw 'Visual Studio 2022 C++ toolchain no encontrado
 $unit=Join-Path $root 'build\tests'; New-Item -ItemType Directory -Force $unit | Out-Null
 $command='"'+$vsdev+'" -arch=x64 -host_arch=x64 >nul && cl /nologo /std:c++20 /EHsc /I"'+(Join-Path $root 'native\include')+'" "'+(Join-Path $root 'native\tests\unit_tests.cpp')+'" /Fo:"'+(Join-Path $unit 'unit_tests.obj')+'" /Fe:"'+(Join-Path $unit 'unit_tests.exe')+'" && "'+(Join-Path $unit 'unit_tests.exe')+'"'
 cmd.exe /d /s /c $command; if($LASTEXITCODE -ne 0){throw 'Unit tests fallaron.'}
+& "$PSScriptRoot\build_asset_tools_windows.ps1"
+& "$root\build\tools\sprite_tools_tests.exe"; if($LASTEXITCODE -ne 0){throw 'Pruebas de sprites fallaron.'}
+& "$root\build\tools\wav_analyzer_tests.exe"; if($LASTEXITCODE -ne 0){throw 'Pruebas WAV fallaron.'}
+& "$root\build\tools\validate_assets.exe" $root; if($LASTEXITCODE -ne 0){throw 'Validación de assets falló.'}
 $godot=if($GodotPath){$GodotPath}elseif($env:GODOT_BIN){$env:GODOT_BIN}else{Join-Path $root '.tools\godot\Godot_v4.7.1-stable_win64_console.exe'}
 if(-not(Test-Path $godot)){throw 'Godot console no encontrado para smoke tests.'}
 $env:APPDATA=Join-Path $root '.tools\appdata'; $env:LOCALAPPDATA=Join-Path $root '.tools\localappdata'; New-Item -ItemType Directory -Force $env:APPDATA,$env:LOCALAPPDATA|Out-Null
