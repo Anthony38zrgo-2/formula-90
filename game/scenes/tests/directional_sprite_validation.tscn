@@ -1,0 +1,64 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="CarPhysicsConfig" path="res://resources/vehicles/default_car_physics.tres" id="1_cfg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vehicles/v10/v10_sheet.png" id="2_sheet"]
+
+[sub_resource type="BoxShape3D" id="CarShape"]
+size = Vector3(1.7, 0.8, 3.8)
+
+[sub_resource type="BoxShape3D" id="GroundShape"]
+size = Vector3(30, 1, 30)
+
+[sub_resource type="BoxMesh" id="GroundMesh"]
+size = Vector3(30, 1, 30)
+
+[sub_resource type="StandardMaterial3D" id="GroundMaterial"]
+albedo_color = Color(0.12, 0.14, 0.18, 1)
+
+[node name="DirectionalSpriteValidation" type="DirectionalSpriteValidationController"]
+
+[node name="Ground" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("GroundShape")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = SubResource("GroundMesh")
+material_override = SubResource("GroundMaterial")
+
+[node name="Vehicle" type="ArcadeCarController" parent="."]
+config = ExtResource("1_cfg")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Vehicle"]
+position = Vector3(0, 0.55, 0)
+shape = SubResource("CarShape")
+
+[node name="DirectionalVehicleSprite" type="DirectionalVehicleSprite" parent="Vehicle"]
+position = Vector3(0, 1.04, 0)
+texture = ExtResource("2_sheet")
+pixel_size = 0.015
+orientation_count = 16
+allow_mirroring = false
+ground_offset = 0.08
+metadata_path = "res://assets/sprites/vehicles/v10/v10_sheet.json"
+angular_hysteresis = 3.0
+minimum_visual_speed = 0.5
+velocity_direction_influence = 0.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(0, 4, 8)
+rotation_degrees = Vector3(-20, 0, 0)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-50, -25, 0)
+
+[node name="Readout" type="Label" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 330.0
+offset_bottom = 150.0
+text = "VALIDACION SPRITE 360"
+theme_override_colors/font_color = Color(0.25, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 18

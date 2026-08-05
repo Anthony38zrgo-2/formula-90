@@ -25,6 +25,9 @@ int main(){
  check(std::abs(formula90s::presentation::clockwise_view_angle(0.0,1.0,0.0,1.0)-0.0)<.01,"sprite_rear_angle");
  check(std::abs(formula90s::presentation::clockwise_view_angle(-0.382683,0.923880,0.0,1.0)-337.5)<.01,"sprite_right_turn_uses_clockwise_frame");
  check(std::abs(formula90s::presentation::clockwise_view_angle(0.382683,0.923880,0.0,1.0)-22.5)<.01,"sprite_left_turn_uses_counterpart_frame");
+ check(std::abs(formula90s::presentation::circular_angle_distance(359.0,0.0)-1.0)<.01,"sprite_wraparound_359_to_zero");
+ check(!formula90s::presentation::should_switch_direction(12.0,10.0,3.0),"sprite_hysteresis_holds_boundary");
+ check(formula90s::presentation::should_switch_direction(14.0,10.0,3.0),"sprite_hysteresis_releases_after_margin");
  using namespace formula90s::audio;
  const auto idle_weights=EngineLayerMixer::weights(0.0), mid_weights=EngineLayerMixer::weights(0.5), blend_weights=EngineLayerMixer::weights(0.625);
  check(idle_weights[0]==1.0F&&mid_weights[2]==1.0F&&blend_weights[2]>0&&blend_weights[3]>0,"dsp_layer_crossfade");
