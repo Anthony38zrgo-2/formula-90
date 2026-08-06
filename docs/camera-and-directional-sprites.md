@@ -6,7 +6,7 @@
 
 `ArcadeChaseCamera` se actualiza en `_process` con prioridad `-10`. La altura mundial Y y el pitch se bloquean al inicializarse, por lo que no existe diving. `look_height` selecciona el punto vertical fijo de enfoque y permite adaptar el encuadre al modelo sin variar el pitch durante la carrera.
 
-Z recibe únicamente un impulso longitudinal breve y limitado; X depende del lado e intensidad del giro. La aceleración lateral o vertical no desplaza la cámara. En reversa se corrige el signo de giro según la dirección real de viaje. Resets y teletransportes reinician los acumuladores.
+Z recibe únicamente un impulso longitudinal breve y limitado; X depende del lado e intensidad del giro. El punto de mirada hereda primero el mismo offset X de la cámara y añade después una anticipación pequeña hacia el interior de la curva. Esto garantiza que el eje óptico apunte hacia el giro sin acumular el coche fuera del encuadre. La aceleración lateral o vertical no desplaza la cámara. En reversa se corrige el signo de giro según la dirección real de viaje. Resets y teletransportes reinician los acumuladores.
 
 Valores del V10 3D en `player_car.tscn`:
 
@@ -14,8 +14,9 @@ Valores del V10 3D en `player_car.tscn`:
 - `look_ahead = 2.8` y `look_height = 0.65`.
 - `horizontal_dead_zone = 0.12`.
 - `inertia_strength = 0.003` y `maximum_camera_offset = 0.05`.
-- `lateral_swing = 1.8` y `turn_look_offset = 1.2`.
-- `maximum_follow_lag = 1.0`.
+- `lateral_swing = 0.65` y `turn_look_offset = 0.35`.
+- `horizontal_smoothing = 7`, `heading_smoothing = 8` y `turn_offset_smoothing = 6`.
+- `maximum_follow_lag = 0.55`.
 - `base_fov = 60` y `speed_fov_gain = 3`.
 
 ## Visual 3D del jugador

@@ -33,6 +33,9 @@ int main(){
  check(formula90s::camera::travel_corrected_turn(0.75,10.0,0.75)==0.75,"camera_turn_follows_forward_steering");
  check(formula90s::camera::travel_corrected_turn(0.75,-10.0,0.75)==-0.75,"camera_turn_reverses_with_travel_direction");
  check(formula90s::camera::travel_corrected_turn(1.0,0.5,0.75)==0.0,"camera_turn_stays_centered_when_stopped");
+ check(formula90s::camera::lateral_look_offset(1.0,.65,.35)>formula90s::camera::lateral_camera_offset(1.0,.65),"camera_looks_into_right_turn");
+ check(formula90s::camera::lateral_look_offset(-1.0,.65,.35)<formula90s::camera::lateral_camera_offset(-1.0,.65),"camera_looks_into_left_turn");
+ check(std::abs(formula90s::camera::framed_car_angle(1.0,.65,.35,7.2,2.8))<.2,"camera_keeps_car_contained_at_full_turn");
  check(std::abs(formula90s::presentation::clamped_visual_response(100.0,.04,2.5)-2.5)<.001,"visual_roll_response_is_clamped");
  check(std::abs(formula90s::presentation::wheel_rotation_delta(10.0,.5,.1)-2.0)<.001,"visual_wheel_spin_uses_linear_speed");
  check(formula90s::presentation::wheel_rotation_delta(10.0,0.0,.1)==0.0,"visual_wheel_spin_handles_missing_radius");

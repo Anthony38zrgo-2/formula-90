@@ -10,6 +10,7 @@
 - Ajustada la cámara arcade al volumen del modelo manteniendo altura y pitch bloqueados.
 - Conservados sprites direccionales y herramientas para decoración, placeholder y validación.
 - Corregidos el frente `+Z` del GLB mediante rotación visual Y de 180° y la separación entre el plano visible del asfalto y su colisión.
+- Corregido el encuadre X de cámara: el objetivo hereda el desplazamiento lateral y mira sutilmente hacia el giro sin expulsar el coche de pantalla.
 
 ## Fase 2 - 2026-08-05
 
