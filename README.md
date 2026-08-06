@@ -72,7 +72,7 @@ GODOT_BIN=/ruta/godot ./scripts/run_linux.sh
 - Asset importado: `game/assets/models/vehicles/v10/v10.glb`.
 - SHA-256: `4cb73cdc216224cd869d8e43e74450cd54ee1d64bfc06f42d7da720673de1a72`.
 - Escala visual: `4.0`, aproximadamente `1.77 × 1.05 × 3.99 m`.
-- Convención: `+Y` arriba, `-Z` frente, `+X` derecha.
+- Convención del GLB: `+Y` arriba, `+Z` frente, `+X` derecha; `VehicleVisualRoot` corrige 180° en Y para obtener `-Z` al frente en runtime.
 
 El archivo contiene una sola malla y no separa las ruedas; por tanto, la animación individual de ruedas queda desactivada de forma segura hasta recibir un GLB con nodos y pivotes independientes.
 

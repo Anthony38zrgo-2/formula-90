@@ -31,6 +31,7 @@ mesh = SubResource("GroundMesh")
 material_override = SubResource("GroundMaterial")
 
 [node name="V10Model" parent="." instance=ExtResource("1_visual")]
+rotation_degrees = Vector3(0, 180, 0)
 scale = Vector3(4, 4, 4)
 
 [node name="Camera3D" type="Camera3D" parent="."]

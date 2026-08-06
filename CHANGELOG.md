@@ -9,6 +9,7 @@
 - Añadidos roll, pitch, vibración de superficie y animación opcional de ruedas con fallback seguro.
 - Ajustada la cámara arcade al volumen del modelo manteniendo altura y pitch bloqueados.
 - Conservados sprites direccionales y herramientas para decoración, placeholder y validación.
+- Corregidos el frente `+Z` del GLB mediante rotación visual Y de 180° y la separación entre el plano visible del asfalto y su colisión.
 
 ## Fase 2 - 2026-08-05
 

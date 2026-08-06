@@ -23,7 +23,7 @@ PlayerCar (ArcadeCarController)
 └─ ResetMarker
 ```
 
-La colisión continúa siendo un `BoxShape3D` simple de `1.7 × 0.8 × 3.8 m`. La malla importada nunca participa en la colisión dinámica. `VehicleVisualRoot` se vuelve top-level durante el runtime y sigue la pose interpolada; escala y movimientos secundarios se aplican solo a la presentación.
+La colisión continúa siendo un `BoxShape3D` simple de `1.7 × 0.8 × 3.8 m`. La malla importada nunca participa en la colisión dinámica. `VehicleVisualRoot` se vuelve top-level durante el runtime y sigue la pose interpolada; escala, corrección Y de 180°, offset de contacto y movimientos secundarios se aplican solo a la presentación.
 
 `VehicleVisual3DConfig` declara escala, rotación, offset, rutas opcionales de ruedas, radio, dirección visual, límites de roll/pitch, suavizado y vibración. `VehicleVisual3DController` tolera modelo, ruedas o sondas opcionales ausentes y registra el resultado al iniciar.
 

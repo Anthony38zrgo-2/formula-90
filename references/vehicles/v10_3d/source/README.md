@@ -15,7 +15,7 @@ La copia bajo `game/assets/models/vehicles/v10/v10.glb` conserva exactamente el 
 
 - Límites locales: `(-0.221680, 0, -0.499023)` a `(0.221680, 0.263672, 0.499023)`.
 - Dimensiones de origen: `0.443359 × 0.263672 × 0.998047` unidades.
-- Orientación: `+Y` arriba, `-Z` frente, `+X` derecha.
+- Orientación de fuente: `+Y` arriba, `+Z` frente, `+X` derecha.
 - Origen: centrado en X/Z y apoyado en Y=0.
 - Jerarquía: una escena, un nodo y una malla.
 - Geometría: 970 vértices y 1.806 triángulos.
@@ -26,4 +26,4 @@ La copia bajo `game/assets/models/vehicles/v10/v10.glb` conserva exactamente el 
 - Animaciones, skins y transparencias: ninguna.
 - Extensiones declaradas: `KHR_materials_volume` y `FB_ngon_encoding`; ninguna es obligatoria.
 
-No modificar este archivo. Los ajustes de escala u orientación se realizan mediante `VehicleVisualRoot`.
+No modificar este archivo. `VehicleVisualRoot` aplica escala `4.0`, rotación Y `180°` y offset Y `0.08 m` para respetar la convención runtime y el margen de contacto físico.

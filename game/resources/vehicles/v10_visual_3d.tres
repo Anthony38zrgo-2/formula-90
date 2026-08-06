@@ -2,8 +2,8 @@
 
 [resource]
 model_scale = Vector3(4, 4, 4)
-model_rotation_degrees = Vector3(0, 0, 0)
-model_offset = Vector3(0, 0, 0)
+model_rotation_degrees = Vector3(0, 180, 0)
+model_offset = Vector3(0, 0.08, 0)
 model_path = NodePath("V10Model")
 front_left_wheel_path = NodePath("")
 front_right_wheel_path = NodePath("")

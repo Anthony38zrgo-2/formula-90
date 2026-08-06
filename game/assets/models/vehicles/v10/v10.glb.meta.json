@@ -7,7 +7,7 @@
   "license_status": "distribution rights not assessed",
   "generator": "Tripo",
   "units": "source dimensions normalized; runtime visual scale is 4.0",
-  "orientation": "+Y up, -Z forward, +X right",
+  "orientation": "+Y up, +Z source forward, +X right; runtime uses 180 degree Y correction",
   "wheel_nodes": false,
   "uv": false,
   "textures": false

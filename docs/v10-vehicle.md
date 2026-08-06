@@ -15,7 +15,7 @@ Auditoría detectada:
 - 970 vértices y 1.806 triángulos;
 - límites `(-0.221680, 0, -0.499023)` a `(0.221680, 0.263672, 0.499023)`;
 - dimensiones `0.443359 × 0.263672 × 0.998047` unidades;
-- `+Y` arriba, `-Z` frente y `+X` derecha;
+- `+Y` arriba, `+Z` frente de la fuente y `+X` derecha;
 - origen centrado en X/Z, con la base en Y=0;
 - posiciones y normales presentes;
 - sin UV, texturas, imágenes, skins, animaciones ni transparencias;
@@ -24,7 +24,7 @@ Auditoría detectada:
 
 ## Integración
 
-Godot importa el GLB sin editarlo. `v10_visual.tscn` actúa como contenedor y `v10_visual_3d.tres` aplica escala uniforme `4.0`, sin rotación ni offset. El resultado mide aproximadamente `1.77 × 1.05 × 3.99 m`.
+Godot importa el GLB sin editarlo. `v10_visual.tscn` actúa como contenedor y `v10_visual_3d.tres` aplica escala uniforme `4.0`, rotación Y `180°` para convertir `+Z` de fuente en `-Z` runtime y offset Y `0.08 m` para compensar el margen de contacto del cuerpo físico. El resultado mide aproximadamente `1.77 × 1.05 × 3.99 m`.
 
 `VehicleVisual3DController` sigue la pose interpolada del `ArcadeCarController`, gira ruedas opcionales según velocidad longitudinal, dirige las delanteras mediante el input real, limita roll/pitch derivados de aceleración y añade vibración cuando las sondas detectan pianos o grava. Todas esas operaciones son visuales.
 

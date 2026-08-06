@@ -13,6 +13,8 @@ El jugador instancia el GLB mediante una escena contenedora bajo `VehicleVisualR
 
 La escena importada no se edita. La fuente intacta y su hash se conservan en `references`; la copia importable vive en `game/assets`. Los sprites direccionales permanecen disponibles para decoración, placeholder y validación.
 
+El GLB usa `+Z` como frente. La configuración visual aplica una rotación Y de 180° para la convención runtime `-Z`; el offset vertical compensa únicamente el margen físico de contacto. El plano visible del circuito debe coincidir con la cara superior de su colisión.
+
 ## Consecuencias
 
 - El coche recibe iluminación y proyecta sombras reales.
