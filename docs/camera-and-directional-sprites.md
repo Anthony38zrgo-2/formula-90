@@ -4,21 +4,25 @@
 
 ## Cámara
 
-La posición base utiliza un heading suavizado independiente del framerate. El seguimiento y el impulso de inercia tienen límites separados: el primero permite amortiguación real sin perder al coche y el segundo conserva un efecto inicial breve. La anticipación por velocidad solo modifica el punto de mirada.
+La posición base utiliza un heading suavizado independiente del framerate. Sus offsets se calculan en los ejes locales del coche: Y permanece bloqueado, Z recibe solamente un impulso longitudinal muy sutil y X depende del lado e intensidad del giro. El seguimiento de la posición mundial continúa para no abandonar al vehículo.
 
-La aceleración se convierte en un impulso de corta duración: se aplica el cambio inicial de fuerza y luego decae incluso si el acelerador continúa presionado. Los resets y teletransportes reinician los acumuladores para evitar interpolar desde una pose antigua.
+La aceleración longitudinal se convierte en un impulso de corta duración sobre Z: se aplica el cambio inicial y luego decae aunque el acelerador continúe presionado. La aceleración lateral y vertical no desplaza la cámara. El input de dirección mueve cámara y punto de mirada hacia el interior del giro, dejando el coche hacia el borde opuesto. En reversa se corrige el signo según la dirección real de viaje. Los resets y teletransportes reinician los acumuladores.
 
 Parámetros iniciales:
 
 - `horizontal_smoothing = 5.0`: seguimiento horizontal. Bajar a 4 aumenta peso; subir a 6 lo hace más firme.
-- `vertical_smoothing = 7.5`: respuesta vertical, normalmente más firme que la horizontal.
-- `horizontal_dead_zone = 0.12` y `vertical_dead_zone = 0.08`: filtran movimientos pequeños.
-- `velocity_anticipation = 0.025`: adelanto limitado del punto de mirada.
-- `inertia_strength = 0.018`: intensidad del impulso inicial; rango recomendado 0.01–0.025.
-- `maximum_camera_offset = 0.55`: limita exclusivamente el efecto dinámico de inercia.
-- `maximum_follow_lag = 1.5`: limita por separado cuánto puede retrasarse la posición base.
+- `height = 4.5`: fija la altura mundial inicial; Y no vuelve a interpolarse durante la carrera.
+- `horizontal_dead_zone = 0.12`: filtra movimientos pequeños en el plano XZ.
+- `velocity_anticipation = 0`: no hay adelanto adicional por velocidad.
+- `inertia_strength = 0.008`: intensidad conservadora del impulso longitudinal.
+- `maximum_camera_offset = 0.18`: recorrido máximo de la inercia sobre Z.
+- `lateral_swing = 2.1`: recorrido máximo horizontal X provocado por el giro.
+- `turn_look_offset = 1.5`: cuánto apunta el objetivo hacia el lado del giro.
+- `turn_offset_smoothing = 4.5`: entrada y retorno progresivos del desplazamiento lateral.
+- `turn_activation_speed = 0.75 m/s`: evita mover la cámara al girar el volante estando detenido.
+- `maximum_follow_lag = 1.25`: límite de retraso del seguimiento base; evita perder el coche.
 - `heading_smoothing = 5.0`: evita que la posición trasera salte en giros y trompos.
-- `offset_smoothing = 3.2`: decaimiento del impulso; un valor mayor lo hace más corto.
+- `offset_smoothing = 4.5`: decaimiento rápido del impulso longitudinal.
 - `speed_fov_gain = 4.0`: variación reducida de FOV para conservar tamaño y nitidez.
 - `distance`, `height` y `look_ahead`: encuadre base; ajustar al final.
 

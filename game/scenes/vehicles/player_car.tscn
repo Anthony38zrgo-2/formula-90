@@ -32,18 +32,20 @@ velocity_direction_influence = 0.0
 [node name="CameraRig" type="ArcadeChaseCamera" parent="."]
 position = Vector3(0, 4.5, 9)
 top_level = true
-lateral_swing = 0.55
-turn_look_offset = 0.35
+lateral_swing = 2.1
+turn_look_offset = 1.5
 horizontal_smoothing = 5.0
 vertical_smoothing = 7.5
 horizontal_dead_zone = 0.12
 vertical_dead_zone = 0.08
-velocity_anticipation = 0.025
-inertia_strength = 0.018
-maximum_camera_offset = 0.55
-offset_smoothing = 3.2
+velocity_anticipation = 0.0
+inertia_strength = 0.008
+maximum_camera_offset = 0.18
+offset_smoothing = 4.5
 heading_smoothing = 5.0
-maximum_follow_lag = 1.5
+maximum_follow_lag = 1.25
+turn_offset_smoothing = 4.5
+turn_activation_speed = 0.75
 speed_fov_gain = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
