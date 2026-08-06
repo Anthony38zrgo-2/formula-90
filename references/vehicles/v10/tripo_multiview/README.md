@@ -9,6 +9,8 @@ Conjunto generado para el flujo **Smart Mesh > Multi-view** de Tripo.
 3. `v10_tripo_right.png` — Right.
 4. `v10_tripo_rear.png` — Back.
 
+Vista complementaria: `v10_tripo_isometric_front_left.png` — isométrica frontal izquierda elevada para aclarar superficies superiores, cockpit, sidepods y relación entre ambos alerones. Úsala como referencia adicional cuando la interfaz permita más imágenes o para evaluar el modelo generado; las cuatro vistas cardinales siguen siendo el conjunto principal.
+
 ## Especificación
 
 - PNG RGB de 24 bits.
