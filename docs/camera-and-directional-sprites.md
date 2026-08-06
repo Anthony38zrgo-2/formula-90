@@ -1,46 +1,35 @@
-# Cámara y sprites direccionales
+# Cámara y presentación de vehículos
 
-`ArcadeCarController` mantiene la simulación en `_physics_process` y conserva los transforms físicos anterior y actual. Cámara y sprite consumen `get_visual_transform()`, interpolado con la fracción de física de Godot, sin alterar la simulación. `ArcadeChaseCamera` se actualiza en `_process` con prioridad `-10`; `DirectionalVehicleSprite` actualiza después con prioridad `10` y usa la posición de cámara del mismo frame.
+`ArcadeCarController` mantiene la simulación en `_physics_process` y conserva los transforms físicos anterior y actual. Cámara y presentación consumen `get_visual_transform()`, interpolado con la fracción física de Godot, sin alterar la simulación.
 
 ## Cámara
 
-La posición base utiliza un heading suavizado independiente del framerate. Sus offsets se calculan en los ejes locales del coche: la altura Y y el pitch quedan bloqueados al inicializarse, Z recibe solamente un impulso longitudinal muy sutil y X depende del lado e intensidad del giro. El seguimiento de la posición mundial continúa para no abandonar al vehículo.
+`ArcadeChaseCamera` se actualiza en `_process` con prioridad `-10`. La altura mundial Y y el pitch se bloquean al inicializarse, por lo que no existe diving. `look_height` selecciona el punto vertical fijo de enfoque y permite adaptar el encuadre al modelo sin variar el pitch durante la carrera.
 
-La aceleración longitudinal se convierte en un impulso de corta duración sobre Z: se aplica el cambio inicial y luego decae aunque el acelerador continúe presionado. La aceleración lateral y vertical no desplaza la cámara. El input de dirección mueve cámara y punto de mirada hacia el interior del giro, dejando el coche hacia el borde opuesto. En reversa se corrige el signo según la dirección real de viaje. Los resets y teletransportes reinician los acumuladores.
+Z recibe únicamente un impulso longitudinal breve y limitado; X depende del lado e intensidad del giro. La aceleración lateral o vertical no desplaza la cámara. En reversa se corrige el signo de giro según la dirección real de viaje. Resets y teletransportes reinician los acumuladores.
 
-Parámetros iniciales:
+Valores del V10 3D en `player_car.tscn`:
 
-- `horizontal_smoothing = 5.0`: seguimiento horizontal. Bajar a 4 aumenta peso; subir a 6 lo hace más firme.
-- `height = 4.5`: fija la altura mundial inicial; Y no vuelve a interpolarse durante la carrera. El pitch inicial también se conserva, evitando diving.
-- `horizontal_dead_zone = 0.12`: filtra movimientos pequeños en el plano XZ.
-- `velocity_anticipation = 0`: no hay adelanto adicional por velocidad.
-- `inertia_strength = 0.003`: intensidad casi imperceptible del impulso longitudinal.
-- `maximum_camera_offset = 0.05`: recorrido máximo de 5 cm para la inercia sobre Z.
-- `lateral_swing = 2.1`: recorrido máximo horizontal X provocado por el giro.
-- `turn_look_offset = 1.5`: cuánto apunta el objetivo hacia el lado del giro.
-- `turn_offset_smoothing = 4.5`: entrada y retorno progresivos del desplazamiento lateral.
-- `turn_activation_speed = 0.75 m/s`: evita mover la cámara al girar el volante estando detenido.
-- `maximum_follow_lag = 1.25`: límite de retraso del seguimiento base; evita perder el coche.
-- `heading_smoothing = 5.0`: evita que la posición trasera salte en giros y trompos.
-- `offset_smoothing = 4.5`: decaimiento rápido del impulso longitudinal.
-- `speed_fov_gain = 4.0`: variación reducida de FOV para conservar tamaño y nitidez.
-- `distance`, `height` y `look_ahead`: encuadre base; ajustar al final.
+- `distance = 7.2` y `height = 3.4`.
+- `look_ahead = 2.8` y `look_height = 0.65`.
+- `horizontal_dead_zone = 0.12`.
+- `inertia_strength = 0.003` y `maximum_camera_offset = 0.05`.
+- `lateral_swing = 1.8` y `turn_look_offset = 1.2`.
+- `maximum_follow_lag = 1.0`.
+- `base_fov = 60` y `speed_fov_gain = 3`.
+
+## Visual 3D del jugador
+
+`VehicleVisual3DController` se actualiza en `_process` con prioridad `5`, después de que la física haya producido su estado. Se vuelve top-level y aplica explícitamente la pose interpolada para evitar copiar saltos del tick físico.
+
+El roll usa aceleración lateral local y el pitch aceleración longitudinal local. Ambos tienen ganancia, límite angular y suavizado independiente del framerate. La vibración solo aparece cuando `SurfaceProbes` detecta nodos en grupos `kerb`/`piano`/`gravel` o metadata `surface_type`.
+
+Cuando existen nodos de rueda configurados, las delanteras reciben dirección visual suavizada y las cuatro acumulan giro según velocidad longitudinal y radio. Rutas vacías o nodos ausentes no impiden mostrar el modelo. El GLB actual tiene una sola malla y resuelve cero ruedas opcionales.
 
 ## Sprite direccional
 
-El ángulo parte exclusivamente del eje trasero de la pose interpolada del chasis respecto de la cámara. El vector de velocidad no modifica la orientación; por ello carrocería y trayectoria pueden divergir durante un derrape. El Sprite3D se vuelve `top_level` y recibe la posición interpolada explícitamente para no heredar los saltos del tick físico.
+`DirectionalVehicleSprite` ya no representa al jugador. Permanece para el placeholder estático, escenas de validación y futura decoración 2.5D.
 
-Los ángulos vienen del JSON del atlas y el número efectivo de direcciones es el número real de regiones cargadas.
+El selector usa la orientación real del nodo respecto de la cámara, ángulos declarados por JSON, histéresis angular y filtro nearest. No usa la velocidad para orientar el sprite y no espeja el atlas V10 de 16 vistas. Cambios de cámara, reset o teletransporte reinician la histéresis.
 
-- `orientation_count`: fallback cuando no hay JSON; admite 1, 8, 12 o 16.
-- `first_frame_angular_offset = 0`: corrige la orientación base sin reordenar el atlas.
-- `angular_hysteresis = 3°`: evita alternancia en fronteras; probar entre 2° y 5°.
-- `minimum_visual_speed = 0.5 m/s`: aumenta la histéresis un 50 % a baja velocidad, pero permite actualizar la vista si la cámara se mueve.
-- `velocity_direction_influence = 0`: propiedad conservada por compatibilidad; ya no interviene en la selección.
-- `allow_mirroring = false`: el atlas V10 contiene ambos lados.
-
-Al cambiar la cámara activa, reiniciar o teletransportar el coche, el selector adopta inmediatamente el sector correcto y reinicia la histéresis. Se exponen `get_current_relative_angle()`, `get_selected_frame()` e `is_hysteresis_held()` para telemetría sin imprimir cada frame.
-
-El Sprite3D fuerza `TEXTURE_FILTER_NEAREST`; los PNG no usan mipmaps ni compresión con pérdida. Esto evita filtrado lineal perceptible durante desplazamientos subpíxel.
-
-`DirectionalVehicleSprite` acepta como dueño tanto `ArcadeCarController` como cualquier `Node3D`. En un coche estático usa directamente el transform fijo del padre, pero continúa seleccionando las 16 caras respecto de la cámara activa. `static_directional_car.tscn` reutiliza esta misma clase, atlas y metadata sin incorporar física de movimiento.
+`static_directional_car.tscn` reutiliza la clase, atlas y metadata sin física de movimiento. Las herramientas y pruebas del pipeline se conservan.

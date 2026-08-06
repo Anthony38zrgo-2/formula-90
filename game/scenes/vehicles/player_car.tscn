@@ -1,9 +1,10 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="CarPhysicsConfig" path="res://resources/vehicles/default_car_physics.tres" id="1_cfg"]
-[ext_resource type="Texture2D" path="res://assets/sprites/vehicles/v10/v10_sheet.png" id="2_car"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/v10/v10_visual.tscn" id="2_visual"]
 [ext_resource type="VehicleDefinition" path="res://resources/vehicles/v10_vehicle.tres" id="3_v10"]
 [ext_resource type="EngineAudioConfig" path="res://resources/vehicles/v10_engine_audio.tres" id="4_audio"]
+[ext_resource type="VehicleVisual3DConfig" path="res://resources/vehicles/v10_visual_3d.tres" id="5_visual_cfg"]
 
 [sub_resource type="BoxShape3D" id="CarShape"]
 size = Vector3(1.7, 0.8, 3.8)
@@ -16,24 +17,34 @@ vehicle_definition = ExtResource("3_v10")
 position = Vector3(0, 0.55, 0)
 shape = SubResource("CarShape")
 
-[node name="DirectionalVehicleSprite" type="DirectionalVehicleSprite" parent="."]
-position = Vector3(0, 1.04, 0)
-texture = ExtResource("2_car")
-pixel_size = 0.015
-orientation_count = 16
-allow_mirroring = false
-ground_offset = 0.08
-metadata_path = "res://assets/sprites/vehicles/v10/v10_sheet.json"
-first_frame_angular_offset = 0.0
-angular_hysteresis = 3.0
-minimum_visual_speed = 0.5
-velocity_direction_influence = 0.0
+[node name="VehicleVisualRoot" type="VehicleVisual3DController" parent="."]
+config = ExtResource("5_visual_cfg")
+
+[node name="V10Model" parent="VehicleVisualRoot" instance=ExtResource("2_visual")]
+
+[node name="SurfaceProbes" type="Node3D" parent="."]
+
+[node name="FrontProbe" type="RayCast3D" parent="SurfaceProbes"]
+position = Vector3(0, 0.45, -1.25)
+target_position = Vector3(0, -0.8, 0)
+collision_mask = 1
+exclude_parent = true
+
+[node name="RearProbe" type="RayCast3D" parent="SurfaceProbes"]
+position = Vector3(0, 0.45, 1.25)
+target_position = Vector3(0, -0.8, 0)
+collision_mask = 1
+exclude_parent = true
 
 [node name="CameraRig" type="ArcadeChaseCamera" parent="."]
-position = Vector3(0, 4.5, 9)
+position = Vector3(0, 3.4, 7.2)
 top_level = true
-lateral_swing = 2.1
-turn_look_offset = 1.5
+distance = 7.2
+height = 3.4
+look_ahead = 2.8
+look_height = 0.65
+lateral_swing = 1.8
+turn_look_offset = 1.2
 horizontal_smoothing = 5.0
 vertical_smoothing = 7.5
 horizontal_dead_zone = 0.12
@@ -43,16 +54,17 @@ inertia_strength = 0.003
 maximum_camera_offset = 0.05
 offset_smoothing = 4.5
 heading_smoothing = 5.0
-maximum_follow_lag = 1.25
+maximum_follow_lag = 1.0
 turn_offset_smoothing = 4.5
 turn_activation_speed = 0.75
-speed_fov_gain = 4.0
+base_fov = 60.0
+speed_fov_gain = 3.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 current = true
-fov = 62.0
+fov = 60.0
+
+[node name="AudioRoot" type="EngineAudioController" parent="."]
+config = ExtResource("4_audio")
 
 [node name="ResetMarker" type="Marker3D" parent="."]
-
-[node name="EngineAudioController" type="EngineAudioController" parent="."]
-config = ExtResource("4_audio")

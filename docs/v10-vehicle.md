@@ -1,9 +1,37 @@
 # Vehículo V10
 
-V10 es el primer coche definitivo de `formula-90s`. Su referencia intacta está en `references/vehicles/v10/source/v10_reference.png`: PNG de 1000×5720, SHA-256 `ae99f37de9decbc71001cbd8b8e35c321c4b034c564c9d273c6f8d7cc17e79b1`.
+V10 es el primer coche jugable de `formula-90s`. Su física y transmisión no cambiaron durante la migración visual 3D.
 
-La referencia original se usó para generar, con autorización del usuario, un atlas GPT de 16 vistas en estética arcade de 24 bits. Tras retirar el croma, `prepare_sprite` recortó individualmente cada celda, escaló con nearest-neighbor y alineó el contenido en canvas 256×128. La hoja final mide 4096×128 y contiene ambos lados, por lo que el runtime ya no necesita espejado.
+## Fuente 3D
 
-`v10_vehicle.tres` enlaza físicas, hoja, metadatos, escala 0.015, offset de suelo 0.08, límite provisional de 285 km/h, 9000 RPM y el banco `v10_prototype`. El runtime calcula el centro vertical desde la altura real del frame para respetar el anchor `(0.5, 1.0)` y evitar que el plano corte el coche.
+- Fuente intacta: `references/vehicles/v10_3d/source/formula-v10.glb`.
+- Copia importada: `game/assets/models/vehicles/v10/v10.glb`.
+- SHA-256 de ambas copias: `4cb73cdc216224cd869d8e43e74450cd54ee1d64bfc06f42d7da720673de1a72`.
+- Formato: glTF Binary 2.0, generador declarado Tripo.
 
-Para reemplazar la referencia, conserve el nuevo original en `references`, registre dimensiones/hash, ajuste los `crop-rect`, ejecute `prepare_sprite` para cada vista, reconstruya la hoja y termine con `validate_assets`.
+Auditoría detectada:
+
+- una escena, un nodo, una malla y una primitiva;
+- 970 vértices y 1.806 triángulos;
+- límites `(-0.221680, 0, -0.499023)` a `(0.221680, 0.263672, 0.499023)`;
+- dimensiones `0.443359 × 0.263672 × 0.998047` unidades;
+- `+Y` arriba, `-Z` frente y `+X` derecha;
+- origen centrado en X/Z, con la base en Y=0;
+- posiciones y normales presentes;
+- sin UV, texturas, imágenes, skins, animaciones ni transparencias;
+- un material opaco blanco, metallic 0 y roughness 0.5;
+- ruedas, suspensión y carrocería integradas en la misma malla, sin pivotes independientes.
+
+## Integración
+
+Godot importa el GLB sin editarlo. `v10_visual.tscn` actúa como contenedor y `v10_visual_3d.tres` aplica escala uniforme `4.0`, sin rotación ni offset. El resultado mide aproximadamente `1.77 × 1.05 × 3.99 m`.
+
+`VehicleVisual3DController` sigue la pose interpolada del `ArcadeCarController`, gira ruedas opcionales según velocidad longitudinal, dirige las delanteras mediante el input real, limita roll/pitch derivados de aceleración y añade vibración cuando las sondas detectan pianos o grava. Todas esas operaciones son visuales.
+
+El GLB actual produce `0` nodos de rueda resueltos; esta es una limitación verificada, no un error. Para habilitar giro y rotación se necesita otro GLB con cuatro nodos de rueda, pivotes centrados y rutas configuradas en `v10_visual_3d.tres`.
+
+## Compatibilidad
+
+El `BoxShape3D`, `CarPhysicsConfig`, `VehicleDefinition`, transmisión, HUD, audio, minimapa y reset se mantienen. El `DirectionalVehicleSprite` del jugador fue eliminado después de validar el GLB con iluminación y sombra; su clase, atlas, placeholder estático y pruebas continúan en el proyecto.
+
+La referencia y pipeline históricos de sprites permanecen bajo `references/vehicles/v10/` y `game/assets/sprites/vehicles/v10/` para decoración y validación, no para renderizar el jugador.

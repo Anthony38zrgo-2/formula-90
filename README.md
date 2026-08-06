@@ -1,26 +1,22 @@
 # formula-90s
 
-La Fase 2 incorpora el primer V10 jugable: nueve vistas reales procesadas por herramientas C++, un banco de audio original generado offline y mezcla/DSP en C++ durante el juego.
+Prototipo de carreras arcade inspirado en la claridad y respuesta de recreativas de los 90. El circuito y el V10 jugable son 3D; la simulación, transmisión, cámara, HUD, audio y reset viven íntegramente en C++20 mediante GDExtension. No hay runtime Python ni GDScript.
 
-Prototipo de carreras arcade con circuito 3D y vehículos Sprite3D, inspirado en la claridad y respuesta de recreativas de los 90 sin reutilizar sus recursos. La Fase 1 implementa menú, campo de pruebas, coche arcade, transmisión automática de seis marchas, cámara, HUD con minimapa estático y reset íntegramente en C++20 mediante GDExtension.
+La presentación del jugador usa un GLB real importado mediante una escena contenedora. Los sprites direccionales continúan disponibles para árboles, marshals, público, decoración, pruebas y el placeholder estático del circuito.
 
 ## Estado
 
-Fase 1, versión `0.1.0`. Godot fijado en **4.7.1-stable** (`a13da4feb`). `godot-cpp` v10 fijado al commit **`7e18e40d7591429f915035a7de7cf79457d555cc`**, construido con `api_version=4.7` y un perfil de clases reproducible. No se recompila el motor.
+Fase 2. Godot fijado en **4.7.1-stable** (`a13da4feb`). `godot-cpp` v10 está fijado al commit **`7e18e40d7591429f915035a7de7cf79457d555cc`**, construido con `api_version=4.7` y `build_profile.json`.
 
 ## Requisitos
 
 - Git.
-- Python 3.8+ y SCons 4.10.0 (el bootstrap instala SCons localmente).
-- Godot 4.7.1 estable, edición estándar.
-- Windows x86_64: Visual Studio 2022 con Desktop development with C++.
-- Linux x86_64: GCC o Clang, Python venv y herramientas de desarrollo.
-
-No se requiere CMake. No hay runtime Python ni GDScript.
+- Python 3.8+ y SCons 4.10.0.
+- Godot 4.7.1 estable x86_64.
+- Windows: Visual Studio 2022 con Desktop development with C++.
+- Linux: GCC o Clang y herramientas de desarrollo.
 
 ## Preparación y compilación
-
-PowerShell:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -28,57 +24,57 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\build_windows.ps1 -Configuration debug
 ```
 
-El bootstrap descarga Godot oficial a `.tools/godot` si no se proporciona `-GodotPath`; inicializa el submódulo y fija SCons. Para release use `-Configuration release`. `-CompileCommands` solicita `compile_commands.json` cuando la toolchain lo admite.
-
-Linux:
-
 ```bash
 ./scripts/bootstrap_linux.sh
 ./scripts/build_linux.sh debug
 ```
 
-Instale Godot 4.7.1 estable con el gestor de su distribución o defina `GODOT_BIN=/ruta/a/godot`.
+No se requiere CMake ni recompilar Godot.
 
 ## Ejecución
 
 ```powershell
 .\scripts\run_windows.ps1
-# o: .\scripts\run_windows.ps1 -GodotPath C:\ruta\Godot_v4.7.1-stable_win64.exe
 ```
 
 ```bash
 GODOT_BIN=/ruta/godot ./scripts/run_linux.sh
 ```
 
-Resolución de Godot, en orden: argumento explícito, `GODOT_BIN`, binario local del bootstrap y rutas comunes limitadas. Los scripts fallan claramente si falta la biblioteca o la arquitectura no es x86_64.
-
 ## Controles
 
 | Acción | Teclado | Mando |
 |---|---|---|
 | Acelerar | ↑ | gatillo derecho |
-| Frenar / reversa | ↓ | gatillo izquierdo |
+| Frenar / solicitar reversa | ↓ | gatillo izquierdo |
 | Dirección | ←/→ | stick izquierdo |
 | Subir marcha | A | — |
 | Bajar marcha | Z | — |
-| Activar/desactivar cambio automático | 1 | — |
+| Cambio automático | 1 | — |
 | Freno fuerte | Espacio | A |
 | Reiniciar | R | Y |
 | Volver al menú | Escape | Back |
 
-El menú toma foco inicial en `Comenzar` y usa navegación UI estándar de teclado/mando.
-
 ## Arquitectura
 
 - `native/`: runtime C++20 y pruebas deterministas.
-- `game/`: proyecto Godot, escenas, recursos y assets originales.
-- `config/`: valores de referencia legibles fuera de Godot.
-- `docs/`: diseño, modelo físico, ADR y roadmap.
-- `scripts/`: bootstrap, build, ejecución y pruebas repetibles.
-- `tools/`: placeholders de pipelines de Fase 2; nunca runtime.
-- `third_party/godot-cpp`: submódulo fijado.
+- `game/`: proyecto Godot, escenas, recursos y assets procesados.
+- `references/`: fuentes intactas y auditorías de procedencia.
+- `docs/`: arquitectura, dirección de arte y decisiones.
+- `scripts/`: bootstrap, build, ejecución y pruebas.
+- `tools/`: pipelines offline; nunca runtime.
 
-`GameBootstrap` mantiene el flujo. Las escenas describen composición; `ArcadeCarController`, `AutomaticTransmission`, `ArcadeChaseCamera`, `DirectionalVehicleSprite`, `DebugHudController` y `ResetManager` ejecutan el juego. El recurso `default_car_physics.tres` centraliza el ajuste.
+`ArcadeCarController` conserva la física existente. `VehicleVisual3DController` consume su pose interpolada y aplica únicamente escala, offset, giro de ruedas opcionales, roll, pitch y vibración visual. El GLB se escala bajo `VehicleVisualRoot`; la raíz física y su `BoxShape3D` no se escalan ni se sustituyen por la malla.
+
+## V10 3D
+
+- Fuente intacta: `references/vehicles/v10_3d/source/formula-v10.glb`.
+- Asset importado: `game/assets/models/vehicles/v10/v10.glb`.
+- SHA-256: `4cb73cdc216224cd869d8e43e74450cd54ee1d64bfc06f42d7da720673de1a72`.
+- Escala visual: `4.0`, aproximadamente `1.77 × 1.05 × 3.99 m`.
+- Convención: `+Y` arriba, `-Z` frente, `+X` derecha.
+
+El archivo contiene una sola malla y no separa las ruedas; por tanto, la animación individual de ruedas queda desactivada de forma segura hasta recibir un GLB con nodos y pivotes independientes.
 
 ## Pruebas
 
@@ -90,22 +86,16 @@ El menú toma foco inicial en `Comenzar` y usa navegación UI estándar de tecla
 GODOT_BIN=/ruta/godot ./scripts/test_linux.sh
 ```
 
-Se compilan tests C++ de marcha, RPM, histéresis, tiempo entre cambios, reversa/límites, dirección y drag. Los smoke tests cargan la extensión, abren el proyecto e instancian menú, campo, coche y HUD en headless. La interacción completa se verifica con `tests/smoke/manual_checklist.md`.
+La suite compila el runtime, ejecuta pruebas C++ deterministas, valida assets y carga en headless menú, campo, coche, HUD, visual 3D y escenas direccionales. La interacción completa se revisa con `tests/smoke/manual_checklist.md`.
 
 ## Solución de problemas
 
-- `godot-cpp ausente`: ejecute el bootstrap o `git submodule update --init --recursive`.
-- `No module named SCons`: ejecute bootstrap; no instale globalmente por obligación.
-- `cl/g++/clang++ no encontrado`: instale la carga C++ de VS 2022 o `build-essential`/Clang.
-- `Godot no encontrado`: pase ruta explícita o defina `GODOT_BIN`.
-- `GDExtension no compilada`: ejecute el build de la misma plataforma/configuración/arquitectura.
-- Error de arquitectura: use Godot x86_64 y `arch=x86_64`.
-- Después de cambiar `build_profile.json`, reconstruya; SCons regenerará bindings recortados.
+- Si falta `godot-cpp`, ejecute el bootstrap o `git submodule update --init --recursive`.
+- Si falta SCons, ejecute el bootstrap; no es obligatorio instalarlo globalmente.
+- Si la GDExtension no carga, construya la misma plataforma/configuración/arquitectura que Godot.
+- Después de cambiar `build_profile.json`, reconstruya para regenerar los bindings.
+- No edite la escena importada del GLB; ajuste `v10_visual_3d.tres` o la escena contenedora.
 
-## Limitaciones de Fase 1
+## Limitaciones actuales
 
-Física plana y deliberadamente arcade; no hay suspensión, neumáticos avanzados, IA, vueltas ni contenido de carrera. El coche usa una silueta SVG original provisional de una sola vista. `EngineAudioController` funciona sin samples. `car1_sprite_sheet.png`, preexistente, no se usa ni versiona porque su licencia/procedencia no está establecida.
-
-## Siguiente fase
-
-Diseñar herramientas Python aisladas para sprites direccionales y preparación de audio: staging, validación de licencias, pivotes, escalas, transparencia y metadatos antes de promover assets al juego.
+La física es deliberadamente arcade y no simula neumáticos ni suspensión avanzada. El GLB actual no incluye UV, texturas, animaciones ni ruedas separadas. No hay IA, vueltas ni contenido completo de carrera.

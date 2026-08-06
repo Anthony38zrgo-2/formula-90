@@ -1,0 +1,14 @@
+{
+  "asset_id": "v10_3d",
+  "source": "references/vehicles/v10_3d/source/formula-v10.glb",
+  "source_sha256": "4cb73cdc216224cd869d8e43e74450cd54ee1d64bfc06f42d7da720673de1a72",
+  "import_sha256": "4cb73cdc216224cd869d8e43e74450cd54ee1d64bfc06f42d7da720673de1a72",
+  "provenance": "provided directly by the project user",
+  "license_status": "distribution rights not assessed",
+  "generator": "Tripo",
+  "units": "source dimensions normalized; runtime visual scale is 4.0",
+  "orientation": "+Y up, -Z forward, +X right",
+  "wheel_nodes": false,
+  "uv": false,
+  "textures": false
+}

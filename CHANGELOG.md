@@ -1,5 +1,15 @@
 # Changelog
 
+## V10 3D - 2026-08-05
+
+- Reemplazado el `DirectionalVehicleSprite` del jugador por un GLB 3D real sin modificar handling ni transmisión.
+- Añadidos `VehicleVisual3DController` y `VehicleVisual3DConfig` en C++20.
+- Separados modelo visual, colisión, sondas de superficie, cámara, audio y reset en `player_car.tscn`.
+- Registrados origen, SHA-256, jerarquía, dimensiones, orientación y limitaciones del GLB.
+- Añadidos roll, pitch, vibración de superficie y animación opcional de ruedas con fallback seguro.
+- Ajustada la cámara arcade al volumen del modelo manteniendo altura y pitch bloqueados.
+- Conservados sprites direccionales y herramientas para decoración, placeholder y validación.
+
 ## Fase 2 - 2026-08-05
 
 - Integrado V10 con nueve vistas reales, hoja direccional y metadatos verificables.

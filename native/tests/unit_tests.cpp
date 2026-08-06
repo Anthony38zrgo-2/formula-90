@@ -2,6 +2,7 @@
 #include "formula90s/audio/engine_dsp.hpp"
 #include "formula90s/presentation/directional_sprite_math.hpp"
 #include "formula90s/camera/camera_math.hpp"
+#include "formula90s/presentation/vehicle_visual_3d_math.hpp"
 #include <cmath>
 #include <iostream>
 using namespace formula90s::physics;
@@ -32,6 +33,9 @@ int main(){
  check(formula90s::camera::travel_corrected_turn(0.75,10.0,0.75)==0.75,"camera_turn_follows_forward_steering");
  check(formula90s::camera::travel_corrected_turn(0.75,-10.0,0.75)==-0.75,"camera_turn_reverses_with_travel_direction");
  check(formula90s::camera::travel_corrected_turn(1.0,0.5,0.75)==0.0,"camera_turn_stays_centered_when_stopped");
+ check(std::abs(formula90s::presentation::clamped_visual_response(100.0,.04,2.5)-2.5)<.001,"visual_roll_response_is_clamped");
+ check(std::abs(formula90s::presentation::wheel_rotation_delta(10.0,.5,.1)-2.0)<.001,"visual_wheel_spin_uses_linear_speed");
+ check(formula90s::presentation::wheel_rotation_delta(10.0,0.0,.1)==0.0,"visual_wheel_spin_handles_missing_radius");
  using namespace formula90s::audio;
  const auto idle_weights=EngineLayerMixer::weights(0.0), mid_weights=EngineLayerMixer::weights(0.5), blend_weights=EngineLayerMixer::weights(0.625);
  check(idle_weights[0]==1.0F&&mid_weights[2]==1.0F&&blend_weights[2]>0&&blend_weights[3]>0,"dsp_layer_crossfade");

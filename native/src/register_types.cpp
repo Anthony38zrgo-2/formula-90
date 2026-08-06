@@ -8,6 +8,8 @@
 #include "formula90s/camera/arcade_chase_camera.hpp"
 #include "formula90s/presentation/directional_vehicle_sprite.hpp"
 #include "formula90s/presentation/directional_sprite_validation_controller.hpp"
+#include "formula90s/presentation/vehicle_visual_3d_config.hpp"
+#include "formula90s/presentation/vehicle_visual_3d_controller.hpp"
 #include "formula90s/presentation/engine_audio_controller.hpp"
 #include "formula90s/audio/engine_audio_config.hpp"
 #include "formula90s/ui/main_menu_controller.hpp"
@@ -22,6 +24,7 @@ void initialize_formula90s_module(ModuleInitializationLevel level) {
     GDREGISTER_CLASS(ResetManager); GDREGISTER_CLASS(CarPhysicsConfig); GDREGISTER_CLASS(VehicleDefinition); GDREGISTER_CLASS(AutomaticTransmission);
     GDREGISTER_CLASS(ArcadeCarController); GDREGISTER_CLASS(ArcadeChaseCamera); GDREGISTER_CLASS(DirectionalVehicleSprite);
     GDREGISTER_CLASS(DirectionalSpriteValidationController);
+    GDREGISTER_CLASS(VehicleVisual3DConfig); GDREGISTER_CLASS(VehicleVisual3DController);
     GDREGISTER_CLASS(EngineAudioConfig); GDREGISTER_CLASS(EngineAudioController); GDREGISTER_CLASS(MainMenuController); GDREGISTER_CLASS(DebugHudController);
     GDREGISTER_CLASS(StaticMinimapController);
 }
