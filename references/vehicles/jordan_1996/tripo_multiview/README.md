@@ -22,6 +22,10 @@ superficies superiores, el cockpit, los pontones y la relación entre alerones.
 - Iluminación difusa, sin escenario ni sombras proyectadas.
 - Ruedas rectas y coche completo dentro del encuadre.
 - Carrocería champán/dorada, acentos rojos y componentes mecánicos negros.
+- Geometría simplificada con superficies continuas y pocos cortes de carrocería.
+- Suspensión reducida a dos wishbones por rueda: uno superior y uno inferior,
+  sin pushrods, tirantes duplicados ni barras decorativas adicionales.
+- Render suave y antialiasado, sin pixelación ni facetas poligonales visibles.
 - Acabado 3D prerenderizado high-color inspirado en juegos de finales de los 90.
 
 No recortar ni reescalar las vistas de forma independiente antes de subirlas.
