@@ -4,9 +4,9 @@ namespace godot { class Camera3D; class ArcadeCarController;
 class ArcadeChaseCamera : public Node3D { GDCLASS(ArcadeChaseCamera, Node3D)
     double distance=9.0, height=4.5, follow_damping=6.0, horizontal_smoothing=5.0, vertical_smoothing=7.5;
     double look_ahead=4.0, horizontal_dead_zone=0.12, vertical_dead_zone=0.08;
-    double velocity_anticipation=0.0, inertia_strength=0.008, maximum_camera_offset=0.18, offset_smoothing=4.5;
+    double velocity_anticipation=0.0, inertia_strength=0.003, maximum_camera_offset=0.05, offset_smoothing=4.5;
     double lateral_swing=2.1, turn_look_offset=1.5, base_fov=62.0, speed_fov_gain=4.0, heading_smoothing=5.0, maximum_follow_lag=1.25;
-    double turn_offset_smoothing=4.5, turn_activation_speed=0.75, locked_world_y=0.0, locked_look_y=0.0, smoothed_turn_amount=0.0;
+    double turn_offset_smoothing=4.5, turn_activation_speed=0.75, locked_world_y=0.0, locked_look_y=0.0, locked_pitch=0.0, smoothed_turn_amount=0.0;
     double smoothed_longitudinal_inertia=0.0, previous_longitudinal_source=0.0;
     Vector3 smoothed_velocity_lead, smoothed_look_target, filtered_acceleration, smoothed_forward; bool initialized=false, inertia_initialized=false;
     uint64_t presentation_epoch=0;
