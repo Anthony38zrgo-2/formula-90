@@ -1,8 +1,9 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/vehicles/player_car.tscn" id="1_car"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="2_hud"]
 [ext_resource type="Material" path="res://resources/materials/asphalt.tres" id="3_asphalt"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/static_directional_car.tscn" id="4_static_car"]
 
 [sub_resource type="PlaneMesh" id="GroundMesh"]
 size = Vector2(180, 360)
@@ -48,6 +49,9 @@ position = Vector3(0, 0.1, 30)
 [node name="PlayerCar" parent="." instance=ExtResource("1_car")]
 position = Vector3(0, 0.1, 30)
 
+[node name="StaticDirectionalCar" parent="." instance=ExtResource("4_static_car")]
+position = Vector3(0, 0, -100)
+
 [node name="SpeedMarkers" type="Node3D" parent="."]
 
 [node name="Left01" type="MeshInstance3D" parent="SpeedMarkers"]
@@ -73,4 +77,3 @@ material_override = SubResource("MarkerMaterial")
 [node name="ResetManager" type="ResetManager" parent="."]
 
 [node name="DebugHud" parent="." instance=ExtResource("2_hud")]
-

@@ -4,18 +4,18 @@
 
 ## Cámara
 
-La posición base utiliza un heading suavizado independiente del framerate. Sus offsets se calculan en los ejes locales del coche: Y permanece bloqueado, Z recibe solamente un impulso longitudinal muy sutil y X depende del lado e intensidad del giro. El seguimiento de la posición mundial continúa para no abandonar al vehículo.
+La posición base utiliza un heading suavizado independiente del framerate. Sus offsets se calculan en los ejes locales del coche: la altura Y y el pitch quedan bloqueados al inicializarse, Z recibe solamente un impulso longitudinal muy sutil y X depende del lado e intensidad del giro. El seguimiento de la posición mundial continúa para no abandonar al vehículo.
 
 La aceleración longitudinal se convierte en un impulso de corta duración sobre Z: se aplica el cambio inicial y luego decae aunque el acelerador continúe presionado. La aceleración lateral y vertical no desplaza la cámara. El input de dirección mueve cámara y punto de mirada hacia el interior del giro, dejando el coche hacia el borde opuesto. En reversa se corrige el signo según la dirección real de viaje. Los resets y teletransportes reinician los acumuladores.
 
 Parámetros iniciales:
 
 - `horizontal_smoothing = 5.0`: seguimiento horizontal. Bajar a 4 aumenta peso; subir a 6 lo hace más firme.
-- `height = 4.5`: fija la altura mundial inicial; Y no vuelve a interpolarse durante la carrera.
+- `height = 4.5`: fija la altura mundial inicial; Y no vuelve a interpolarse durante la carrera. El pitch inicial también se conserva, evitando diving.
 - `horizontal_dead_zone = 0.12`: filtra movimientos pequeños en el plano XZ.
 - `velocity_anticipation = 0`: no hay adelanto adicional por velocidad.
-- `inertia_strength = 0.008`: intensidad conservadora del impulso longitudinal.
-- `maximum_camera_offset = 0.18`: recorrido máximo de la inercia sobre Z.
+- `inertia_strength = 0.003`: intensidad casi imperceptible del impulso longitudinal.
+- `maximum_camera_offset = 0.05`: recorrido máximo de 5 cm para la inercia sobre Z.
 - `lateral_swing = 2.1`: recorrido máximo horizontal X provocado por el giro.
 - `turn_look_offset = 1.5`: cuánto apunta el objetivo hacia el lado del giro.
 - `turn_offset_smoothing = 4.5`: entrada y retorno progresivos del desplazamiento lateral.
@@ -42,3 +42,5 @@ Los ángulos vienen del JSON del atlas y el número efectivo de direcciones es e
 Al cambiar la cámara activa, reiniciar o teletransportar el coche, el selector adopta inmediatamente el sector correcto y reinicia la histéresis. Se exponen `get_current_relative_angle()`, `get_selected_frame()` e `is_hysteresis_held()` para telemetría sin imprimir cada frame.
 
 El Sprite3D fuerza `TEXTURE_FILTER_NEAREST`; los PNG no usan mipmaps ni compresión con pérdida. Esto evita filtrado lineal perceptible durante desplazamientos subpíxel.
+
+`DirectionalVehicleSprite` acepta como dueño tanto `ArcadeCarController` como cualquier `Node3D`. En un coche estático usa directamente el transform fijo del padre, pero continúa seleccionando las 16 caras respecto de la cámara activa. `static_directional_car.tscn` reutiliza esta misma clase, atlas y metadata sin incorporar física de movimiento.

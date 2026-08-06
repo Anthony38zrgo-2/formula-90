@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -30,9 +31,9 @@ bool DirectionalVehicleSprite::load_metadata(){
 }
 int DirectionalVehicleSprite::find_nearest_frame(double angle)const{double best=1e9;int result=0;for(int i=0;i<frame_angles.size();++i){const double distance=circular_distance(angle,frame_angles[i]);if(distance<best){best=distance;result=i;}}return result;}
 void DirectionalVehicleSprite::_process(double){
- if(!metadata_loaded||!is_inside_tree())return;Camera3D*camera=get_viewport()->get_camera_3d();ArcadeCarController*car=Object::cast_to<ArcadeCarController>(get_parent());if(!camera||!car)return;
- const Transform3D visual_pose=car->get_visual_transform();set_global_position(visual_pose.xform(visual_local_offset));Vector3 velocity=car->get_velocity();velocity.y=0;const double speed=velocity.length();
+ if(!metadata_loaded||!is_inside_tree())return;Camera3D*camera=get_viewport()->get_camera_3d();Node3D*visual_owner=Object::cast_to<Node3D>(get_parent());ArcadeCarController*car=Object::cast_to<ArcadeCarController>(visual_owner);if(!camera||!visual_owner)return;
+ const Transform3D visual_pose=car?car->get_visual_transform():visual_owner->get_global_transform();set_global_position(visual_pose.xform(visual_local_offset));Vector3 velocity=car?car->get_velocity():Vector3();velocity.y=0;const double speed=velocity.length();
  Vector3 forward=-visual_pose.basis.get_column(2);forward.y=0;forward.normalize();const Vector3 rear=-forward;
  Vector3 to_camera=camera->get_global_position()-visual_pose.origin;to_camera.y=0;if(to_camera.length_squared()<0.0001)return;to_camera.normalize();double angle=formula90s::presentation::clockwise_view_angle(rear.x,rear.z,to_camera.x,to_camera.z)+angular_offset;angle=Math::fmod(angle+360.0,360.0);current_relative_angle=angle;
- if(allow_mirroring&&angle>180.0){angle=360.0-angle;set_flip_h(true);}else set_flip_h(false);candidate_frame=find_nearest_frame(angle);const uint64_t epoch=car->get_presentation_epoch(),active_camera_id=camera->get_instance_id();const bool discontinuity=epoch!=presentation_epoch||active_camera_id!=camera_instance_id||selected_frame<0||selected_frame>=frame_angles.size();presentation_epoch=epoch;camera_instance_id=active_camera_id;hysteresis_held=false;if(discontinuity)selected_frame=candidate_frame;else if(candidate_frame!=selected_frame){const double current_distance=circular_distance(angle,frame_angles[selected_frame]);const double candidate_distance=circular_distance(angle,frame_angles[candidate_frame]);const double low_speed_multiplier=speed<minimum_visual_speed?1.5:1.0;if(formula90s::presentation::should_switch_direction(current_distance,candidate_distance,angular_hysteresis*low_speed_multiplier))selected_frame=candidate_frame;else hysteresis_held=true;}set_frame(selected_frame);
+ if(allow_mirroring&&angle>180.0){angle=360.0-angle;set_flip_h(true);}else set_flip_h(false);candidate_frame=find_nearest_frame(angle);const uint64_t epoch=car?car->get_presentation_epoch():1,active_camera_id=camera->get_instance_id();const bool discontinuity=epoch!=presentation_epoch||active_camera_id!=camera_instance_id||selected_frame<0||selected_frame>=frame_angles.size();presentation_epoch=epoch;camera_instance_id=active_camera_id;hysteresis_held=false;if(discontinuity)selected_frame=candidate_frame;else if(candidate_frame!=selected_frame){const double current_distance=circular_distance(angle,frame_angles[selected_frame]);const double candidate_distance=circular_distance(angle,frame_angles[candidate_frame]);const double low_speed_multiplier=speed<minimum_visual_speed?1.5:1.0;if(formula90s::presentation::should_switch_direction(current_distance,candidate_distance,angular_hysteresis*low_speed_multiplier))selected_frame=candidate_frame;else hysteresis_held=true;}set_frame(selected_frame);
 }
