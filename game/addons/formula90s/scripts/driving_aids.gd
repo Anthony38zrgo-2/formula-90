@@ -71,7 +71,7 @@ func _apply_aid(index: int):
 func _restore(index: int):
 	match index:
 		0:
-			vehicle_node.set("automatic_transmission", _baseline["automatic_transmission"])
+			vehicle_node.set("automatic_transmission", false)
 		1:
 			vehicle_node.set("enable_stability", _baseline["enable_stability"])
 			vehicle_node.set("stability_yaw_strength", _baseline["stability_yaw_strength"])

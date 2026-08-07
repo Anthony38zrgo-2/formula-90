@@ -58,7 +58,7 @@ func _physics_process(_delta):
 		vehicle_node.steering_input = Input.get_action_strength(string_steer_left) - Input.get_action_strength(string_steer_right)
 
 	if string_throttle_input != "":
-		vehicle_node.throttle_input = pow(Input.get_action_strength(string_throttle_input), 2.0)
+		vehicle_node.throttle_input = Input.get_action_strength(string_throttle_input)
 
 	if string_handbrake_input != "":
 		vehicle_node.handbrake_input = Input.get_action_strength(string_handbrake_input)

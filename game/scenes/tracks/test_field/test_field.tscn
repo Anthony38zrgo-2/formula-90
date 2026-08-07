@@ -1,9 +1,8 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" uid="uid://c3ixqkc6k13yi" path="res://addons/gevp/scenes/vehicle_controller.tscn" id="1_ctrl"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/f1_1996_car.tscn" id="2_car"]
 [ext_resource type="PackedScene" uid="uid://b2hlchrj4h2b7" path="res://addons/gevp/scenes/engine_sound.tscn" id="3_sound"]
-[ext_resource type="Script" path="res://addons/gevp/scripts/gui.gd" id="4_gui"]
 [ext_resource type="PackedScene" uid="uid://dxnvsoi1pvfeu" path="res://addons/gevp/scenes/track.tscn" id="5_track"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/camera.gd" id="6_cam"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/debug.gd" id="7_debug"]
@@ -83,33 +82,6 @@ angular_damp_mode = 1
 [node name="EngineSound" parent="VehicleController/VehicleRigidBody" node_paths=PackedStringArray("vehicle") instance=ExtResource("3_sound")]
 max_db = -24.0
 vehicle = NodePath("..")
-
-[node name="GUI" type="Control" parent="." node_paths=PackedStringArray("vehicle")]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("4_gui")
-vehicle = NodePath("../VehicleController/VehicleRigidBody")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="GUI"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Speed" type="Label" parent="GUI/VBoxContainer"]
-layout_mode = 2
-
-[node name="RPM" type="Label" parent="GUI/VBoxContainer"]
-layout_mode = 2
-
-[node name="Gear" type="Label" parent="GUI/VBoxContainer"]
-layout_mode = 2
 
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("follow_this")]
 transform = Transform3D(1, 0, 0, 0, 0.989776, 0.142629, 0, -0.142629, 0.989776, 4.05282, 1.58316, 5.80061)

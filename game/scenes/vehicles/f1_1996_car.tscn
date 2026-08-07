@@ -27,7 +27,7 @@ front_right_wheel = NodePath("WheelFrontRight")
 rear_left_wheel = NodePath("WheelRearLeft")
 rear_right_wheel = NodePath("WheelRearRight")
 
-steering_speed = 12.0
+steering_speed = 60.0
 countersteer_speed = 15.0
 steering_speed_decay = 0.05
 steering_slip_assist = 999.0
@@ -37,9 +37,9 @@ max_steering_angle = 0.52359877
 front_steering_ratio = 1.0
 rear_steering_ratio = 0.0
 
-throttle_speed = 9.0
+throttle_speed = 60.0
 throttle_steering_adjust = 0.15
-braking_speed = 12.0
+braking_speed = 60.0
 brake_force_multiplier = 1.6
 front_brake_bias = 0.60
 traction_control_max_slip = -1.0
