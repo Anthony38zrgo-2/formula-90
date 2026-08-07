@@ -6,17 +6,37 @@ game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 compile_commands.json
 .sconsign.dblite
+
+# C++ Build & Binary Artifacts
 *.obj
 *.o
 *.dll
 *.so
+*.dylib
 *.pdb
 *.log
+*.exe
+
+# 3D Raw Source Files & Archives (3D models are committed as GLB in assets/)
+*.blend
+*.blend1
+*.fbx
+*.mtl
+*.zip
+blender/models/
+blender/backup/
+blender/current/
+
+# Python & Tool Cache
 __pycache__/
+*.pyc
 .pytest_cache/
+.ruff_cache/
 .venv/
+
+# Environment & IDE
 .vscode/
 .idea/
 tmp/
-# Pre-existing local reference; provenance/licence not established, intentionally excluded.
+scratch/
 car1_sprite_sheet.png

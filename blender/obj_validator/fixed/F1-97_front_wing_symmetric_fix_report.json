@@ -1,0 +1,170 @@
+{
+  "source": "D:\\Formula90s\\blender\\F1-97_front_wing_symmetric.obj",
+  "timestamp": "2026-08-07T02:11:22.352694",
+  "objects": [
+    "aleron_trasero",
+    "neumatico_delantero_derecho",
+    "neumatico_trasero_derecho",
+    "chasis",
+    "neumatico_trasero_izquierdo",
+    "aleron_delantero",
+    "neumatico_izquierdo"
+  ],
+  "fixes": {
+    "names": {
+      "object_renames": {},
+      "material_renames": {},
+      "total_renamed": 0
+    },
+    "scale": {
+      "factor_applied": 5.001085235496102,
+      "bbox_before": {
+        "min": [
+          -0.263216,
+          0.006988,
+          -0.5
+        ],
+        "max": [
+          0.26306,
+          0.26966,
+          0.499783
+        ],
+        "size": [
+          0.526276,
+          0.262672,
+          0.999783
+        ]
+      },
+      "bbox_after": {
+        "min": [
+          -1.3163656513463422,
+          0.03494758362564677,
+          -2.500542617748051
+        ],
+        "max": [
+          1.3155854820496047,
+          1.348592644603879,
+          2.4994573822519484
+        ],
+        "size": [
+          2.6319511333959467,
+          1.3136450609782322,
+          5.0
+        ]
+      },
+      "mode": "auto"
+    },
+    "geometry": {
+      "degenerate": {
+        "total_degenerate_removed": 0,
+        "per_object": {
+          "aleron_trasero": 0,
+          "neumatico_delantero_derecho": 0,
+          "neumatico_trasero_derecho": 0,
+          "chasis": 0,
+          "neumatico_trasero_izquierdo": 0,
+          "aleron_delantero": 0,
+          "neumatico_izquierdo": 0
+        }
+      },
+      "merge": {
+        "merged": 0,
+        "original": 1925,
+        "final": 1925
+      },
+      "normals": {
+        "faces_updated": 3560,
+        "new_normal_count": 2031
+      }
+    },
+    "wheels": {
+      "wheels_processed": 4,
+      "details": [
+        {
+          "original_name": "neumatico_delantero_derecho",
+          "slot": "fl",
+          "centroid_before": [
+            -1.0904,
+            0.4296,
+            1.2245
+          ],
+          "pivot_centered": true,
+          "delta_applied": [
+            1.0904,
+            -0.4296,
+            -1.2245
+          ],
+          "centroid_after": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "renamed_to": "wheel_fl"
+        },
+        {
+          "original_name": "neumatico_trasero_derecho",
+          "slot": "rr",
+          "centroid_before": [
+            1.2249,
+            0.5096,
+            -1.9526
+          ],
+          "pivot_centered": true,
+          "delta_applied": [
+            -1.2249,
+            -0.5096,
+            1.9526
+          ],
+          "centroid_after": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "renamed_to": "wheel_rr"
+        },
+        {
+          "original_name": "neumatico_trasero_izquierdo",
+          "slot": "rl",
+          "centroid_before": [
+            -1.0905,
+            0.5053,
+            -1.9571
+          ],
+          "pivot_centered": true,
+          "delta_applied": [
+            1.0905,
+            -0.5053,
+            1.9571
+          ],
+          "centroid_after": [
+            0.0,
+            -0.0,
+            0.0
+          ],
+          "renamed_to": "wheel_rl"
+        },
+        {
+          "original_name": "neumatico_izquierdo",
+          "slot": "fr",
+          "centroid_before": [
+            1.0904,
+            0.4296,
+            1.2245
+          ],
+          "pivot_centered": true,
+          "delta_applied": [
+            -1.0904,
+            -0.4296,
+            -1.2245
+          ],
+          "centroid_after": [
+            -0.0,
+            -0.0,
+            0.0
+          ],
+          "renamed_to": "wheel_fr"
+        }
+      ]
+    }
+  }
+}
