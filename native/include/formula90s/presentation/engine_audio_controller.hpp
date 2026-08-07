@@ -27,10 +27,14 @@ class EngineAudioController : public Node {
     int active_shift = 0;
     std::size_t shift_cursor = 0;
     float smoothed_gain = 0.0F;
+    float sample_rate = 44100.0F;
+    NodePath car_path = "..";
     bool load_sample(const String &path, SampleLayer &target);
     float read_looped(SampleLayer &layer, double ratio);
     float read_shift();
     void fill_audio_buffer();
+    bool load_all_samples();
+    void create_audio_nodes();
 protected:
     static void _bind_methods();
 public:
@@ -41,5 +45,6 @@ public:
     void notify_gear_shift(int gear);
     void set_config(const Ref<EngineAudioConfig> &value) { config = value; }
     Ref<EngineAudioConfig> get_config() const { return config; }
+    void set_car_path(const NodePath &p) { car_path = p; } NodePath get_car_path() const { return car_path; }
 };
 }

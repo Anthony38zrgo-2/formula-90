@@ -8,7 +8,8 @@ void CarPhysicsConfig::_bind_methods() {
     BIND_PROP(low_speed_steering); BIND_PROP(high_speed_steering); BIND_PROP(lateral_grip); BIND_PROP(drift_factor);
     BIND_PROP(stability_recovery); BIND_PROP(idle_rpm); BIND_PROP(max_rpm); BIND_PROP(upshift_rpm);
     BIND_PROP(downshift_rpm); BIND_PROP(minimum_shift_time); BIND_PROP(reverse_ratio); BIND_PROP(final_drive);
-    BIND_PROP(stopped_speed_threshold); BIND_PROP(direction_change_delay);
+    BIND_PROP(stopped_speed_threshold); BIND_PROP(direction_change_delay); BIND_PROP(gravity);
+    BIND_PROP(torque_a); BIND_PROP(torque_b); BIND_PROP(torque_c);
 #undef BIND_PROP
     ClassDB::bind_method(D_METHOD("set_gear_ratios", "value"), &CarPhysicsConfig::set_gear_ratios);
     ClassDB::bind_method(D_METHOD("get_gear_ratios"), &CarPhysicsConfig::get_gear_ratios);
@@ -18,6 +19,6 @@ void CarPhysicsConfig::_bind_methods() {
 bool CarPhysicsConfig::is_valid() const {
     return mass > 0 && engine_force > 0 && max_speed_kph > 0 && idle_rpm > 0 && max_rpm > idle_rpm &&
         downshift_rpm < upshift_rpm && upshift_rpm <= max_rpm && minimum_shift_time >= 0 &&
-        gear_ratios.size() == 6 && reverse_ratio > 0 && final_drive > 0 && stopped_speed_threshold >= 0 &&
+        gear_ratios.size() > 0 && reverse_ratio > 0 && final_drive > 0 && stopped_speed_threshold >= 0 &&
         stopped_speed_threshold <= 0.1 && direction_change_delay >= 0;
 }

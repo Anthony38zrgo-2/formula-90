@@ -4,8 +4,8 @@
 #include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/core/math.hpp>
 using namespace godot;
+using formula90s::camera::smoothing_alpha;
 namespace {
-double smoothing_alpha(double rate,double delta){return 1.0-Math::exp(-Math::max(rate,0.01)*delta);}
 double outside_dead_zone(double value,double zone){const double magnitude=Math::abs(value);return magnitude<=zone?0.0:Math::sign(value)*(magnitude-zone);}
 Vector3 clamp_length(const Vector3&value,double maximum){const double length=value.length();return length>maximum&&length>0.000001?value*(maximum/length):value;}
 }
@@ -14,10 +14,35 @@ void ArcadeChaseCamera::_bind_methods(){
 #define CAMERA_PROP(name) ClassDB::bind_method(D_METHOD("set_" #name,"value"),&ArcadeChaseCamera::set_##name);ClassDB::bind_method(D_METHOD("get_" #name),&ArcadeChaseCamera::get_##name);ADD_PROPERTY(PropertyInfo(Variant::FLOAT,#name),"set_" #name,"get_" #name)
  CAMERA_PROP(distance);CAMERA_PROP(height);CAMERA_PROP(follow_damping);CAMERA_PROP(horizontal_smoothing);CAMERA_PROP(vertical_smoothing);CAMERA_PROP(look_ahead);CAMERA_PROP(look_height);CAMERA_PROP(horizontal_dead_zone);CAMERA_PROP(vertical_dead_zone);CAMERA_PROP(velocity_anticipation);CAMERA_PROP(inertia_strength);CAMERA_PROP(maximum_camera_offset);CAMERA_PROP(offset_smoothing);CAMERA_PROP(lateral_swing);CAMERA_PROP(turn_look_offset);CAMERA_PROP(base_fov);CAMERA_PROP(speed_fov_gain);CAMERA_PROP(heading_smoothing);CAMERA_PROP(maximum_follow_lag);CAMERA_PROP(turn_offset_smoothing);CAMERA_PROP(turn_activation_speed);
 #undef CAMERA_PROP
+    ClassDB::bind_method(D_METHOD("set_car_path","path"),&ArcadeChaseCamera::set_car_path);
+    ClassDB::bind_method(D_METHOD("get_car_path"),&ArcadeChaseCamera::get_car_path);
+    ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH,"car_path"),"set_car_path","get_car_path");
 }
-void ArcadeChaseCamera::_ready(){ArcadeCarController*car=Object::cast_to<ArcadeCarController>(get_parent());if(car){const Transform3D pose=car->get_visual_transform();Vector3 forward=-pose.basis.get_column(2);forward.y=0;forward.normalize();smoothed_forward=forward;locked_world_y=pose.origin.y+height;locked_look_y=pose.origin.y+look_height;Vector3 initial_position=pose.origin-forward*distance;initial_position.y=locked_world_y;set_global_position(initial_position);smoothed_look_target=pose.origin+forward*look_ahead;smoothed_look_target.y=locked_look_y;look_at(smoothed_look_target,Vector3(0,1,0));locked_pitch=get_global_rotation().x;Vector3 rotation=get_global_rotation();rotation.z=0.0;set_global_rotation(rotation);presentation_epoch=car->get_presentation_epoch();initialized=true;}}
+void ArcadeChaseCamera::_ready() {
+    ArcadeCarController *car = Object::cast_to<ArcadeCarController>(get_node_or_null(car_path));
+    if (!car) return;
+    const Transform3D pose = car->get_visual_transform();
+    Vector3 forward = -pose.basis.get_column(2);
+    forward.y = 0;
+    forward.normalize();
+    smoothed_forward = forward;
+    locked_world_y = pose.origin.y + height;
+    locked_look_y = pose.origin.y + look_height;
+    Vector3 initial_position = pose.origin - forward * distance;
+    initial_position.y = locked_world_y;
+    set_global_position(initial_position);
+    smoothed_look_target = pose.origin + forward * look_ahead;
+    smoothed_look_target.y = locked_look_y;
+    look_at(smoothed_look_target, Vector3(0, 1, 0));
+    locked_pitch = get_global_rotation().x;
+    Vector3 rotation = get_global_rotation();
+    rotation.z = 0.0;
+    set_global_rotation(rotation);
+    presentation_epoch = car->get_presentation_epoch();
+    initialized = true;
+}
 void ArcadeChaseCamera::_process(double delta){
- ArcadeCarController*car=Object::cast_to<ArcadeCarController>(get_parent());Camera3D*camera=Object::cast_to<Camera3D>(get_node_or_null("Camera3D"));if(!car||!camera||delta<=0.0)return;
+ ArcadeCarController*car=Object::cast_to<ArcadeCarController>(get_node_or_null(car_path));Camera3D*camera=Object::cast_to<Camera3D>(get_node_or_null("Camera3D"));if(!car||!camera||delta<=0.0)return;
  const Transform3D visual_pose=car->get_visual_transform();Vector3 physical_forward=-visual_pose.basis.get_column(2);physical_forward.y=0;physical_forward.normalize();
  const bool discontinuity=presentation_epoch!=car->get_presentation_epoch();if(discontinuity||!initialized){presentation_epoch=car->get_presentation_epoch();smoothed_forward=physical_forward;smoothed_velocity_lead=Vector3();smoothed_longitudinal_inertia=0.0;previous_longitudinal_source=0.0;smoothed_turn_amount=0.0;filtered_acceleration=Vector3();inertia_initialized=false;initialized=true;}
  Vector3 heading_blend=smoothed_forward.lerp(physical_forward,smoothing_alpha(heading_smoothing,delta));smoothed_forward=heading_blend.length_squared()>0.000001?heading_blend.normalized():physical_forward;Vector3 right(-smoothed_forward.z,0,smoothed_forward.x);

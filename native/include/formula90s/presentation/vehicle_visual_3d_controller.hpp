@@ -26,6 +26,7 @@ class VehicleVisual3DController : public Node3D {
     uint64_t presentation_epoch = 0;
     bool initialized = false;
     bool model_ready = false;
+    NodePath car_path = "..";
 
     Node3D *resolve_optional_node(const NodePath &path) const;
     void resolve_nodes();
@@ -42,6 +43,7 @@ public:
     void _process(double delta) override;
     void set_config(const Ref<VehicleVisual3DConfig> &value);
     Ref<VehicleVisual3DConfig> get_config() const { return config; }
+    void set_car_path(const NodePath &p) { car_path = p; } NodePath get_car_path() const { return car_path; }
     bool has_model() const { return model_ready; }
     int get_resolved_wheel_count() const;
     double get_visual_roll_degrees() const { return smoothed_roll; }

@@ -11,6 +11,6 @@ public:
     void reset(); void set_reverse(bool enabled); int get_gear() const { return gear; }
     void shift_up(); void shift_down(); void set_automatic_enabled(bool enabled); bool is_automatic_enabled() const { return automatic_enabled; }
     double get_rpm() const { return rpm; } String get_gear_label() const;
-    double torque_factor() const;
+    double torque_factor(const Ref<CarPhysicsConfig> &c) const;
 };
 }

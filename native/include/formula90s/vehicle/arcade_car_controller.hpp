@@ -5,11 +5,28 @@
 namespace godot {
 class ArcadeCarController : public CharacterBody3D {
     GDCLASS(ArcadeCarController, CharacterBody3D)
-    Ref<CarPhysicsConfig> config; Ref<VehicleDefinition> vehicle_definition; Ref<AutomaticTransmission> transmission;
-    double throttle = 0, brake = 0, steering_input = 0, lateral_speed = 0, direction_stop_timer = 0; String state = "READY";
-    Vector3 world_acceleration; Vector3 previous_world_velocity; bool acceleration_initialized = false;
-    Transform3D previous_physics_transform, current_physics_transform; bool presentation_initialized = false; uint64_t presentation_epoch = 0;
-    void reset_presentation_pose();
+    Ref<CarPhysicsConfig> config;
+    Ref<VehicleDefinition> vehicle_definition;
+    Ref<AutomaticTransmission> transmission;
+    double throttle = 0;
+    double brake = 0;
+    double steering_input = 0;
+    double lateral_speed = 0;
+    double direction_stop_timer = 0;
+    String state = "READY";
+    Vector3 world_acceleration;
+    Vector3 previous_world_velocity;
+    bool acceleration_initialized = false;
+    Transform3D previous_physics_transform;
+    Transform3D current_physics_transform;
+    bool presentation_initialized = false;
+    uint64_t presentation_epoch = 0;
+    bool input_ok = false;
+    void reset_presentation_pose(); void cache_input_actions();
+    void poll_input(); bool handle_direction_change(double delta);
+    void apply_longitudinal_forces(double delta);
+    void apply_lateral_forces(double delta);
+    void finalize_physics(double delta);
 protected: static void _bind_methods();
 public:
     ArcadeCarController(); void _ready() override; void _physics_process(double delta) override;

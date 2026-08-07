@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 
 namespace formula90s::presentation {
+constexpr double PI = std::numbers::pi_v<double>;
 inline double clockwise_view_angle(double rear_x, double rear_z, double camera_x, double camera_z) {
     const double cross_y = camera_z * rear_x - camera_x * rear_z;
     const double dot = rear_x * camera_x + rear_z * camera_z;
-    double degrees = std::atan2(cross_y, dot) * 180.0 / 3.14159265358979323846;
+    double degrees = std::atan2(cross_y, dot) * 180.0 / PI;
     degrees = std::fmod(degrees + 360.0, 360.0);
     return degrees;
 }

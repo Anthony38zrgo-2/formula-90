@@ -4,8 +4,16 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <numbers>
 
 namespace formula90s::audio {
+
+constexpr float FILTER_CUTOFF_BASE = 900.0F;
+constexpr float FILTER_CUTOFF_RANGE = 9500.0F;
+constexpr float TWO_PI_F = 2.0F * std::numbers::pi_v<float>;
+constexpr float SATURATION_GAIN_FACTOR = 3.0F;
+constexpr float LIMITER_MIN = 0.1F;
+constexpr float LIMITER_MAX = 0.999F;
 
 struct EngineDspState {
     double rpm = 1100.0;
@@ -50,8 +58,8 @@ public:
     void set_sample_rate(float sample_rate) { sample_rate_ = std::max(sample_rate, 8000.0F); }
     void reset() { state_ = 0.0F; }
     float process(float input, float load) {
-        const float cutoff = 900.0F + std::clamp(load, 0.0F, 1.0F) * 9500.0F;
-        const float alpha = 1.0F - std::exp(-6.28318530718F * cutoff / sample_rate_);
+        const float cutoff = FILTER_CUTOFF_BASE + std::clamp(load, 0.0F, 1.0F) * FILTER_CUTOFF_RANGE;
+        const float alpha = 1.0F - std::exp(-TWO_PI_F * cutoff / sample_rate_);
         state_ += alpha * (input - state_);
         return state_;
     }
@@ -61,7 +69,7 @@ public:
 class EngineSaturator {
 public:
     static float process(float input, float drive) {
-        const float gain = 1.0F + std::max(drive, 0.0F) * 3.0F;
+        const float gain = 1.0F + std::max(drive, 0.0F) * SATURATION_GAIN_FACTOR;
         return std::tanh(input * gain);
     }
 };
@@ -70,7 +78,7 @@ class EngineLimiter {
 public:
     static float process(float input, float threshold) {
         if (!std::isfinite(input)) return 0.0F;
-        const float limit = std::clamp(threshold, 0.1F, 0.999F);
+        const float limit = std::clamp(threshold, LIMITER_MIN, LIMITER_MAX);
         return std::clamp(input, -limit, limit);
     }
 };

@@ -19,15 +19,24 @@ void EngineAudioController::_bind_methods() {
     ClassDB::bind_method(D_METHOD("set_config", "config"), &EngineAudioController::set_config);
     ClassDB::bind_method(D_METHOD("get_config"), &EngineAudioController::get_config);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "config", PROPERTY_HINT_RESOURCE_TYPE, "EngineAudioConfig"), "set_config", "get_config");
+    ClassDB::bind_method(D_METHOD("set_car_path","path"),&EngineAudioController::set_car_path);
+    ClassDB::bind_method(D_METHOD("get_car_path"),&EngineAudioController::get_car_path);
+    ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH,"car_path"),"set_car_path","get_car_path");
     ADD_SIGNAL(MethodInfo("gear_shift", PropertyInfo(Variant::INT, "gear")));
 }
 
 bool EngineAudioController::load_sample(const String &path, SampleLayer &target) {
     Ref<AudioStreamWAV> wav = ResourceLoader::get_singleton()->load(path);
-    if (wav.is_null() || wav->get_format() != AudioStreamWAV::FORMAT_16_BITS || wav->is_stereo() || wav->get_mix_rate() != 44100) {
-        UtilityFunctions::push_error("V10 audio must be mono 44.1 kHz PCM16: ", path);
+    if (wav.is_null() || wav->get_format() != AudioStreamWAV::FORMAT_16_BITS || wav->is_stereo()) {
+        UtilityFunctions::push_error("V10 audio must be mono PCM16: ", path);
         return false;
     }
+    const float rate = static_cast<float>(wav->get_mix_rate());
+    if (rate != 44100.0F && rate != 48000.0F) {
+        UtilityFunctions::push_error("V10 audio must be 44.1 or 48 kHz: ", path);
+        return false;
+    }
+    sample_rate = rate;
     const PackedByteArray data = wav->get_data();
     target.samples.resize(static_cast<std::size_t>(data.size() / 2));
     for (int64_t i = 0; i + 1 < data.size(); i += 2) {
@@ -37,24 +46,25 @@ bool EngineAudioController::load_sample(const String &path, SampleLayer &target)
     return !target.samples.empty();
 }
 
-void EngineAudioController::_ready() {
-    set_process(true);
-    car = Object::cast_to<ArcadeCarController>(get_parent());
+bool EngineAudioController::load_all_samples() {
     if (config.is_null()) {
         UtilityFunctions::push_error("EngineAudioController requires EngineAudioConfig");
-        return;
+        return false;
     }
     const String root = config->get_bank_path().trim_suffix("/") + "/";
     constexpr std::array<const char *, 5> names{"engine_idle.wav", "engine_low.wav", "engine_mid.wav", "engine_high.wav", "engine_redline.wav"};
     bool valid = true;
-    for (std::size_t i = 0; i < names.size(); ++i) valid = load_sample(root + String(names[i]), engine_layers[i]) && valid;
+    for (std::size_t i = 0; i < engine_layers.size(); ++i) valid = load_sample(root + String(names[i]), engine_layers[i]) && valid;
     valid = load_sample(root + String("gear_up.wav"), gear_up) && valid;
     valid = load_sample(root + String("gear_down.wav"), gear_down) && valid;
-    if (!valid || !car) return;
+    return valid;
+}
+
+void EngineAudioController::create_audio_nodes() {
     if (OS::get_singleton()->has_feature("headless") || AudioServer::get_singleton()->get_driver_name() == "Dummy") return;
     generator.instantiate();
     generator->set_mix_rate_mode(AudioStreamGenerator::MIX_RATE_CUSTOM);
-    generator->set_mix_rate(44100.0F);
+    generator->set_mix_rate(sample_rate);
     generator->set_buffer_length(0.12F);
     player = memnew(AudioStreamPlayer3D);
     add_child(player);
@@ -62,9 +72,20 @@ void EngineAudioController::_ready() {
     player->set_unit_size(8.0F);
     player->play();
     playback = player->get_stream_playback();
-    dsp.set_sample_rate(44100.0F);
-    previous_gear = car->get_gear();
+    dsp.set_sample_rate(sample_rate);
     fill_audio_buffer();
+}
+
+void EngineAudioController::_ready() {
+    set_process(true);
+    car = Object::cast_to<ArcadeCarController>(get_node_or_null(car_path));
+    if (!car) {
+        UtilityFunctions::push_error("EngineAudioController: car not found at ", car_path);
+        return;
+    }
+    if (!load_all_samples()) return;
+    create_audio_nodes();
+    previous_gear = car->get_gear();
 }
 
 float EngineAudioController::read_looped(SampleLayer &layer, double ratio) {
@@ -74,7 +95,8 @@ float EngineAudioController::read_looped(SampleLayer &layer, double ratio) {
     const float fraction = static_cast<float>(layer.cursor - std::floor(layer.cursor));
     const float sample = layer.samples[a] + (layer.samples[b] - layer.samples[a]) * fraction;
     layer.cursor += ratio;
-    while (layer.cursor >= static_cast<double>(layer.samples.size())) layer.cursor -= static_cast<double>(layer.samples.size());
+    if (layer.cursor >= static_cast<double>(layer.samples.size()))
+        layer.cursor = std::fmod(layer.cursor, static_cast<double>(layer.samples.size()));
     return sample;
 }
 
@@ -98,7 +120,7 @@ void EngineAudioController::fill_audio_buffer() {
     const float ratio = EnginePitchProcessor::ratio(state, static_cast<float>(config->get_pitch_minimum()), static_cast<float>(config->get_pitch_maximum()));
     const float target_gain = static_cast<float>(config->get_coast_gain() + state.throttle * config->get_throttle_gain());
     const double smoothing_seconds = target_gain > smoothed_gain ? config->get_attack_seconds() : config->get_release_seconds();
-    const float smoothing = static_cast<float>(1.0 - std::exp(-1.0 / (44100.0 * std::max(smoothing_seconds, 0.001))));
+    const float smoothing = static_cast<float>(1.0 - std::exp(-1.0 / (static_cast<double>(sample_rate) * std::max(smoothing_seconds, 0.001))));
     int frames = playback->get_frames_available();
     for (int i = 0; i < frames; ++i) {
         smoothed_gain += (target_gain - smoothed_gain) * smoothing;

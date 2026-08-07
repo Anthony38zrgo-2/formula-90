@@ -1,13 +1,12 @@
 #pragma once
 
+#include "formula90s/camera/camera_math.hpp"
 #include <algorithm>
 #include <cmath>
 
 namespace formula90s::presentation {
 
-inline double smoothing_alpha(double rate, double delta) {
-    return 1.0 - std::exp(-std::max(rate, 0.01) * std::max(delta, 0.0));
-}
+using formula90s::camera::smoothing_alpha;
 
 inline double clamped_visual_response(double source, double gain, double maximum) {
     const double limit = std::max(maximum, 0.0);

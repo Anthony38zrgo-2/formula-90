@@ -6,9 +6,9 @@
 
 ## Arquitectura obligatoria
 
-- Toda la lógica de runtime (flujo, coche, transmisión, cámara, HUD y reset) vive en C++20 mediante GDExtension.
-- `native/` contiene runtime; `game/` escenas y recursos declarativos; `tools/` será Python auxiliar en Fase 2.
-- No sustituir errores C++ con GDScript. No añadir assets sin licencia o extraídos de juegos.
+- La física del vehículo usa GEVP (GDScript) como motor de simulación. HUD, cámara, bootstrap, reset y presentación visual viven en C++20 mediante GDExtension. Las ayudas a la conducción pueden implementarse en GDScript.
+- `native/` contiene runtime C++; `game/` escenas, recursos y scripts GDScript; `tools/` será Python auxiliar en Fase 2.
+- No añadir assets sin licencia o extraídos de juegos.
 - La malla visual del coche nunca sustituye la colisión simple ni escala la raíz física. Los GLB importados se envuelven en escenas contenedoras.
 - Alcance: este archivo rige todo; los `AGENTS.md` anidados concretan normas locales.
 

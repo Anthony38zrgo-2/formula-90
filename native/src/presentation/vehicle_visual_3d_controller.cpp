@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/ray_cast3d.hpp>
 #include <godot_cpp/core/math.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <numbers>
 
 using namespace godot;
 
@@ -13,7 +14,9 @@ constexpr int FRONT_LEFT = 0;
 constexpr int FRONT_RIGHT = 1;
 constexpr int REAR_LEFT = 2;
 constexpr int REAR_RIGHT = 3;
-constexpr double TWO_PI = 6.28318530717958647692;
+constexpr double TWO_PI = 2.0 * std::numbers::pi_v<double>;
+constexpr double VIBRATION_PHASE_MULT = 0.73;
+constexpr double VIBRATION_AMPLITUDE_FACTOR = 0.35;
 
 bool surface_matches(Object *collider, const String &group, const String &surface_name) {
     Node *node = Object::cast_to<Node>(collider);
@@ -37,6 +40,9 @@ void VehicleVisual3DController::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_visual_roll_degrees"), &VehicleVisual3DController::get_visual_roll_degrees);
     ClassDB::bind_method(D_METHOD("get_visual_pitch_degrees"), &VehicleVisual3DController::get_visual_pitch_degrees);
     ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "config", PROPERTY_HINT_RESOURCE_TYPE, "VehicleVisual3DConfig"), "set_config", "get_config");
+    ClassDB::bind_method(D_METHOD("set_car_path","path"),&VehicleVisual3DController::set_car_path);
+    ClassDB::bind_method(D_METHOD("get_car_path"),&VehicleVisual3DController::get_car_path);
+    ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH,"car_path"),"set_car_path","get_car_path");
 }
 
 void VehicleVisual3DController::set_config(const Ref<VehicleVisual3DConfig> &value) {
@@ -133,9 +139,9 @@ void VehicleVisual3DController::apply_wheel_animation(double signed_speed, doubl
 }
 
 void VehicleVisual3DController::_ready() {
-    car = Object::cast_to<ArcadeCarController>(get_parent());
+    car = Object::cast_to<ArcadeCarController>(get_node_or_null(car_path));
     if (car == nullptr) {
-        UtilityFunctions::push_error("[formula90s] VehicleVisual3DController must be a direct child of ArcadeCarController");
+        UtilityFunctions::push_error("[formula90s] VehicleVisual3DController: car not found at ", car_path);
         return;
     }
     set_as_top_level(true);
@@ -181,7 +187,7 @@ void VehicleVisual3DController::_process(double delta) {
     const double vibration_amplitude = detect_surface_vibration();
     vibration_phase += delta * config->get_vibration_frequency() * TWO_PI;
     const Vector3 vibration_local(
-        Math::sin(vibration_phase * 0.73) * vibration_amplitude * 0.35,
+        Math::sin(vibration_phase * VIBRATION_PHASE_MULT) * vibration_amplitude * VIBRATION_AMPLITUDE_FACTOR,
         Math::sin(vibration_phase) * vibration_amplitude,
         0.0);
     Transform3D presentation = visual_pose;

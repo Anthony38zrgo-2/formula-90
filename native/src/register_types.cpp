@@ -21,11 +21,20 @@ using namespace godot;
 void initialize_formula90s_module(ModuleInitializationLevel level) {
     if (level != MODULE_INITIALIZATION_LEVEL_SCENE) return;
     GDREGISTER_CLASS(GameBootstrap);
-    GDREGISTER_CLASS(ResetManager); GDREGISTER_CLASS(CarPhysicsConfig); GDREGISTER_CLASS(VehicleDefinition); GDREGISTER_CLASS(AutomaticTransmission);
-    GDREGISTER_CLASS(ArcadeCarController); GDREGISTER_CLASS(ArcadeChaseCamera); GDREGISTER_CLASS(DirectionalVehicleSprite);
+    GDREGISTER_CLASS(ResetManager);
+    GDREGISTER_CLASS(CarPhysicsConfig);
+    GDREGISTER_CLASS(VehicleDefinition);
+    GDREGISTER_CLASS(AutomaticTransmission);
+    GDREGISTER_CLASS(ArcadeCarController);
+    GDREGISTER_CLASS(ArcadeChaseCamera);
+    GDREGISTER_CLASS(DirectionalVehicleSprite);
     GDREGISTER_CLASS(DirectionalSpriteValidationController);
-    GDREGISTER_CLASS(VehicleVisual3DConfig); GDREGISTER_CLASS(VehicleVisual3DController);
-    GDREGISTER_CLASS(EngineAudioConfig); GDREGISTER_CLASS(EngineAudioController); GDREGISTER_CLASS(MainMenuController); GDREGISTER_CLASS(DebugHudController);
+    GDREGISTER_CLASS(VehicleVisual3DConfig);
+    GDREGISTER_CLASS(VehicleVisual3DController);
+    GDREGISTER_CLASS(EngineAudioConfig);
+    GDREGISTER_CLASS(EngineAudioController);
+    GDREGISTER_CLASS(MainMenuController);
+    GDREGISTER_CLASS(DebugHudController);
     GDREGISTER_CLASS(StaticMinimapController);
 }
 void uninitialize_formula90s_module(ModuleInitializationLevel level) {}

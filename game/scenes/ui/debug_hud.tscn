@@ -6,22 +6,24 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+vehicle_path = NodePath("../VehicleController/VehicleRigidBody")
+aids_path = NodePath("../DrivingAids")
 
 [node name="Panel" type="ColorRect" parent="."]
 offset_left = 12.0
 offset_top = 12.0
-offset_right = 180.0
-offset_bottom = 134.0
+offset_right = 200.0
+offset_bottom = 272.0
 color = Color(0.02, 0.03, 0.05, 0.78)
 
 [node name="Readout" type="Label" parent="Panel"]
 offset_left = 10.0
-offset_top = 8.0
-offset_right = 160.0
-offset_bottom = 120.0
+offset_top = 6.0
+offset_right = 190.0
+offset_bottom = 260.0
 theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "VELOCIDAD 0 km/h\nMARCHA 1\nCAMBIO AUTO ACTIVADO\nRPM 1100\nREADY"
+theme_override_font_sizes/font_size = 15
+text = "VEHICULO NO DETECTADO"
 
 [node name="Minimap" type="StaticMinimapController" parent="."]
 layout_mode = 1
@@ -35,6 +37,7 @@ offset_bottom = 232.0
 grow_horizontal = 0
 mouse_filter = 2
 clip_contents = true
+target_path = NodePath("../../../VehicleController/VehicleRigidBody")
 
 [node name="Title" type="Label" parent="Minimap"]
 offset_left = 8.0
