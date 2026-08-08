@@ -8,9 +8,35 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
 $scene = 'res://scenes/tracks/test_field/jordan_handling_test.tscn'
+
+# Create diagnostics BEFORE any extraction, validation or Godot startup.
+# This guarantees that a PowerShell-side failure still leaves evidence.
 $logDir = Join-Path $game 'logs'
-$importLog = Join-Path $logDir 'jordan_import.log'
-$runLog = Join-Path $logDir 'jordan_handling.log'
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+
+$launcherLog = Join-Path $logDir 'jordan_launcher.log'
+$importGodotLog = Join-Path $logDir 'jordan_import_godot.log'
+$importStdout = Join-Path $logDir 'jordan_import_stdout.log'
+$importStderr = Join-Path $logDir 'jordan_import_stderr.log'
+$runGodotLog = Join-Path $logDir 'jordan_handling_godot.log'
+$runStdout = Join-Path $logDir 'jordan_handling_stdout.log'
+$runStderr = Join-Path $logDir 'jordan_handling_stderr.log'
+
+foreach ($oldLog in @(
+    $launcherLog,
+    $importGodotLog,
+    $importStdout,
+    $importStderr,
+    $runGodotLog,
+    $runStdout,
+    $runStderr
+)) {
+    if (Test-Path $oldLog) {
+        Remove-Item $oldLog -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Start-Transcript -Path $launcherLog -Force | Out-Null
 
 function Resolve-Godot([string]$explicit) {
     if ($explicit) {
@@ -39,110 +65,141 @@ function Resolve-Godot([string]$explicit) {
     throw 'Godot 4.7.1 no encontrado.'
 }
 
-$bundle = Join-Path $game 'assets\bundles\jordan_1995_runtime.zip'
-$assetDir = Join-Path $game 'assets\generated\jordan_1995'
-$expected = @(
-    'jordan_191_1995_chassis.glb',
-    'jordan_191_1995_wheel_fl.glb',
-    'jordan_191_1995_wheel_fr.glb',
-    'jordan_191_1995_wheel_rl.glb',
-    'jordan_191_1995_wheel_rr.glb'
-)
-
-if (-not (Test-Path $bundle)) {
-    throw "Bundle Jordan no encontrado: $bundle"
-}
-
-$needsExtract = $ForceExtract
-foreach ($name in $expected) {
-    if (-not (Test-Path (Join-Path $assetDir $name))) {
-        $needsExtract = $true
-        break
+function Show-LogTail([string]$path, [int]$lines = 80) {
+    if (Test-Path $path) {
+        Write-Host "--- $path ---" -ForegroundColor DarkGray
+        Get-Content $path -Tail $lines -ErrorAction SilentlyContinue
     }
 }
 
-if ($needsExtract) {
-    Write-Host 'Materializando assets runtime del Jordan 1995...' -ForegroundColor Cyan
-    if (Test-Path $assetDir) {
-        Remove-Item $assetDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Path $assetDir -Force | Out-Null
-    Expand-Archive -Path $bundle -DestinationPath $assetDir -Force
-}
+try {
+    Write-Host ''
+    Write-Host 'Formula-90 / Jordan 1995 diagnostics' -ForegroundColor Cyan
+    Write-Host "Launcher log: $launcherLog"
 
-foreach ($name in $expected) {
-    $path = Join-Path $assetDir $name
-    if (-not (Test-Path $path)) {
-        throw "Asset Jordan faltante despues de extraer: $path"
-    }
-}
-
-$godot = Resolve-Godot $GodotPath
-$dll = Join-Path $game 'addons\formula90s\bin\libformula90s.windows.template_debug.x86_64.dll'
-if (-not (Test-Path $dll)) {
-    throw 'GDExtension no compilada. Ejecute .\scripts\build_windows.ps1 -Configuration debug.'
-}
-
-if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-}
-
-# Prefer the console executable when available so importer/runtime errors
-# are visible in the current PowerShell window.
-$consoleGodot = $godot
-if ($godot -notmatch '_console\.exe$') {
-    $candidateConsole = [System.IO.Path]::Combine(
-        [System.IO.Path]::GetDirectoryName($godot),
-        ([System.IO.Path]::GetFileNameWithoutExtension($godot) + '_console.exe')
+    $bundle = Join-Path $game 'assets\bundles\jordan_1995_runtime.zip'
+    $assetDir = Join-Path $game 'assets\generated\jordan_1995'
+    $expected = @(
+        'jordan_191_1995_chassis.glb',
+        'jordan_191_1995_wheel_fl.glb',
+        'jordan_191_1995_wheel_fr.glb',
+        'jordan_191_1995_wheel_rl.glb',
+        'jordan_191_1995_wheel_rr.glb'
     )
-    if (Test-Path $candidateConsole) {
-        $consoleGodot = $candidateConsole
+
+    Write-Host "Bundle:   $bundle"
+    Write-Host "Assets:   $assetDir"
+
+    if (-not (Test-Path $bundle)) {
+        throw "Bundle Jordan no encontrado: $bundle"
+    }
+
+    $needsExtract = $ForceExtract
+    foreach ($name in $expected) {
+        if (-not (Test-Path (Join-Path $assetDir $name))) {
+            $needsExtract = $true
+            break
+        }
+    }
+
+    if ($needsExtract) {
+        Write-Host 'Materializando assets runtime del Jordan 1995...' -ForegroundColor Cyan
+        if (Test-Path $assetDir) {
+            Remove-Item $assetDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $assetDir -Force | Out-Null
+        Expand-Archive -Path $bundle -DestinationPath $assetDir -Force
+    }
+
+    foreach ($name in $expected) {
+        $path = Join-Path $assetDir $name
+        if (-not (Test-Path $path)) {
+            throw "Asset Jordan faltante despues de extraer: $path"
+        }
+        Write-Host "OK asset: $name"
+    }
+
+    $godot = Resolve-Godot $GodotPath
+    $dll = Join-Path $game 'addons\formula90s\bin\libformula90s.windows.template_debug.x86_64.dll'
+    if (-not (Test-Path $dll)) {
+        throw 'GDExtension no compilada. Ejecute .\scripts\build_windows.ps1 -Configuration debug.'
+    }
+
+    # Prefer console build so native crash/error output can be redirected by PowerShell.
+    $consoleGodot = $godot
+    if ($godot -notmatch '_console\.exe$') {
+        $candidateConsole = [System.IO.Path]::Combine(
+            [System.IO.Path]::GetDirectoryName($godot),
+            ([System.IO.Path]::GetFileNameWithoutExtension($godot) + '_console.exe')
+        )
+        if (Test-Path $candidateConsole) {
+            $consoleGodot = $candidateConsole
+        }
+    }
+
+    Write-Host "Godot:    $godot"
+    Write-Host "Console:  $consoleGodot"
+    Write-Host "Proyecto: $game"
+    Write-Host "Escena:   $scene"
+    Write-Host ''
+    Write-Host '1/2 Importando recursos Jordan...' -ForegroundColor Cyan
+
+    # PowerShell creates stdout/stderr files itself, so they survive even if
+    # Godot crashes before its own --log-file system becomes available.
+    & $consoleGodot `
+        --headless `
+        --path $game `
+        --import `
+        --log-file $importGodotLog `
+        1> $importStdout `
+        2> $importStderr
+
+    $importExit = $LASTEXITCODE
+    Write-Host "Import exit code: $importExit"
+
+    if ($importExit -ne 0) {
+        Write-Host 'La importacion de Godot fallo.' -ForegroundColor Red
+        Show-LogTail $importStderr
+        Show-LogTail $importStdout
+        Show-LogTail $importGodotLog
+        exit $importExit
+    }
+
+    Write-Host 'Importacion completada.' -ForegroundColor Green
+    Write-Host '2/2 Ejecutando Jordan handling test...' -ForegroundColor Cyan
+
+    & $consoleGodot `
+        --path $game `
+        --log-file $runGodotLog `
+        $scene `
+        1> $runStdout `
+        2> $runStderr
+
+    $runExit = $LASTEXITCODE
+    Write-Host "Run exit code: $runExit"
+
+    if ($runExit -ne 0) {
+        Write-Host 'Jordan test termino con error/crash.' -ForegroundColor Red
+        Show-LogTail $runStderr
+        Show-LogTail $runStdout
+        Show-LogTail $runGodotLog
+        exit $runExit
+    }
+
+    Write-Host 'Jordan test termino normalmente.' -ForegroundColor Green
+}
+catch {
+    Write-Host ''
+    Write-Host 'FALLO DEL LAUNCHER ANTES O DURANTE GODOT:' -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
+    throw
+}
+finally {
+    try {
+        Stop-Transcript | Out-Null
+    }
+    catch {
+        # Never mask the original failure because transcript shutdown failed.
     }
 }
-
-Write-Host "Godot:    $godot"
-Write-Host "Proyecto: $game"
-Write-Host "Escena:   $scene"
-Write-Host 'Perfil:   Jordan Phase A / GEVP clean baseline'
-Write-Host ''
-Write-Host '1/2 Importando recursos Jordan en Godot...' -ForegroundColor Cyan
-
-# Godot documents --import as: start editor, wait for resources to import, then quit.
-# This prevents launching the Jordan scene while freshly extracted GLBs are still unimported.
-& $consoleGodot `
-    --headless `
-    --path $game `
-    --import `
-    --log-file $importLog
-
-$importExit = $LASTEXITCODE
-if ($importExit -ne 0) {
-    Write-Host "La importacion de Godot fallo con codigo $importExit." -ForegroundColor Red
-    if (Test-Path $importLog) {
-        Write-Host 'Ultimas lineas del log de importacion:' -ForegroundColor Yellow
-        Get-Content $importLog -Tail 100
-    }
-    exit $importExit
-}
-
-Write-Host 'Importacion completada.' -ForegroundColor Green
-Write-Host '2/2 Ejecutando Jordan handling test...' -ForegroundColor Cyan
-
-# Pass the scene as the positional scene argument. This is the documented
-# command-line form for running a specific scene.
-& $consoleGodot `
-    --path $game `
-    --log-file $runLog `
-    $scene
-
-$runExit = $LASTEXITCODE
-if ($runExit -ne 0) {
-    Write-Host "Jordan test termino con codigo $runExit." -ForegroundColor Red
-    if (Test-Path $runLog) {
-        Write-Host 'Ultimas lineas del log de ejecucion:' -ForegroundColor Yellow
-        Get-Content $runLog -Tail 100
-    }
-    exit $runExit
-}
-
-exit 0
