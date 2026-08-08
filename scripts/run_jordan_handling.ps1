@@ -73,6 +73,29 @@ function Show-LogTail([string]$path, [int]$lines = 80) {
     }
 }
 
+function Invoke-GodotNative {
+    param(
+        [Parameter(Mandatory = $true)] [string]$Executable,
+        [Parameter(Mandatory = $true)] [string[]]$Arguments,
+        [Parameter(Mandatory = $true)] [string]$StdoutPath,
+        [Parameter(Mandatory = $true)] [string]$StderrPath
+    )
+
+    # Windows PowerShell 5.1 can promote native stderr output to a terminating
+    # NativeCommandError when ErrorActionPreference is Stop. Godot writes
+    # warnings to stderr, so temporarily relax only the native invocation and
+    # trust the process exit code instead.
+    $previousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $Executable @Arguments 1> $StdoutPath 2> $StderrPath
+        return $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousPreference
+    }
+}
+
 try {
     Write-Host ''
     Write-Host 'Formula-90 / Jordan 1995 diagnostics' -ForegroundColor Cyan
@@ -167,15 +190,18 @@ Use un bundle valido con:
     Write-Host ''
     Write-Host '1/2 Importando recursos Jordan...' -ForegroundColor Cyan
 
-    & $consoleGodot `
-        --headless `
-        --path $game `
-        --import `
-        --log-file $importGodotLog `
-        1> $importStdout `
-        2> $importStderr
+    $importArgs = @(
+        '--headless',
+        '--path', $game,
+        '--import',
+        '--log-file', $importGodotLog
+    )
+    $importExit = Invoke-GodotNative `
+        -Executable $consoleGodot `
+        -Arguments $importArgs `
+        -StdoutPath $importStdout `
+        -StderrPath $importStderr
 
-    $importExit = $LASTEXITCODE
     Write-Host "Import exit code: $importExit"
 
     if ($importExit -ne 0) {
@@ -186,17 +212,24 @@ Use un bundle valido con:
         exit $importExit
     }
 
+    if ((Test-Path $importStderr) -and ((Get-Item $importStderr).Length -gt 0)) {
+        Write-Host 'Godot emitio warnings durante la importacion; se conservaron en jordan_import_stderr.log.' -ForegroundColor Yellow
+    }
+
     Write-Host 'Importacion completada.' -ForegroundColor Green
     Write-Host '2/2 Ejecutando Jordan handling test...' -ForegroundColor Cyan
 
-    & $consoleGodot `
-        --path $game `
-        --log-file $runGodotLog `
-        $scene `
-        1> $runStdout `
-        2> $runStderr
+    $runArgs = @(
+        '--path', $game,
+        '--log-file', $runGodotLog,
+        $scene
+    )
+    $runExit = Invoke-GodotNative `
+        -Executable $consoleGodot `
+        -Arguments $runArgs `
+        -StdoutPath $runStdout `
+        -StderrPath $runStderr
 
-    $runExit = $LASTEXITCODE
     Write-Host "Run exit code: $runExit"
 
     if ($runExit -ne 0) {
