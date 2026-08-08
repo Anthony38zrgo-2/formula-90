@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/gevp/scenes/vehicle_controller.tscn" id="1_ctrl"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn" id="2_car"]
 [ext_resource type="PackedScene" path="res://addons/gevp/scenes/track.tscn" id="3_track"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/driving_aids.gd" id="4_aids"]
+[ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="5_hud"]
 
 [node name="JordanHandlingTest" type="Node3D"]
 
@@ -10,6 +12,7 @@
 
 [node name="VehicleController" parent="." node_paths=PackedStringArray("vehicle_node") instance=ExtResource("1_ctrl")]
 vehicle_node = NodePath("VehicleRigidBody")
+string_toggle_transmission = "Toggle Transmission"
 
 [node name="VehicleRigidBody" parent="VehicleController" instance=ExtResource("2_car")]
 position = Vector3(0, 0.45, 0)
@@ -19,3 +22,9 @@ position = Vector3(0, 2.8, 6.5)
 rotation_degrees = Vector3(-15, 0, 0)
 current = true
 fov = 60.0
+
+[node name="DrivingAids" type="Node" parent="." node_paths=PackedStringArray("vehicle_node")]
+script = ExtResource("4_aids")
+vehicle_node = NodePath("../VehicleController/VehicleRigidBody")
+
+[node name="DebugHud" parent="." instance=ExtResource("5_hud")]
