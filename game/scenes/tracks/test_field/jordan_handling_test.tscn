@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://addons/formula90s/scenes/formula_vehicle_controller.tscn" id="1_ctrl"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn" id="2_car"]
 [ext_resource type="PackedScene" path="res://addons/gevp/scenes/track.tscn" id="3_track"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/driving_aids.gd" id="4_aids"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="5_hud"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/wheel_diagnostics_overlay.gd" id="6_wheel_debug"]
 
 [node name="JordanHandlingTest" type="Node3D"]
 
@@ -29,3 +30,17 @@ script = ExtResource("4_aids")
 vehicle_node = NodePath("../VehicleController/VehicleRigidBody")
 
 [node name="DebugHud" parent="." instance=ExtResource("5_hud")]
+
+[node name="WheelDiagnostics" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 282.0
+offset_right = 628.0
+offset_bottom = 356.0
+theme_override_colors/font_color = Color(0.78, 0.9, 1, 0.95)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 11
+mouse_filter = 2
+script = ExtResource("6_wheel_debug")
+vehicle_path = NodePath("../VehicleController/VehicleRigidBody")
