@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
+    [string]$BundlePath,
     [switch]$ForceExtract
 )
 
@@ -8,9 +9,9 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
 $scene = 'res://scenes/tracks/test_field/jordan_handling_test.tscn'
+$expectedBundleSha256 = '4F9602254FDF3B06CB1B06116258F4C3AFD7035A121A4C156EB2C25DB99A4AA4'
 
 # Create diagnostics BEFORE any extraction, validation or Godot startup.
-# This guarantees that a PowerShell-side failure still leaves evidence.
 $logDir = Join-Path $game 'logs'
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 
@@ -77,7 +78,16 @@ try {
     Write-Host 'Formula-90 / Jordan 1995 diagnostics' -ForegroundColor Cyan
     Write-Host "Launcher log: $launcherLog"
 
-    $bundle = Join-Path $game 'assets\bundles\jordan_1995_runtime.zip'
+    if ($BundlePath) {
+        if (-not (Test-Path $BundlePath -PathType Leaf)) {
+            throw "BundlePath no existe: $BundlePath"
+        }
+        $bundle = (Resolve-Path $BundlePath).Path
+    }
+    else {
+        $bundle = Join-Path $game 'assets\bundles\jordan_1995_runtime.zip'
+    }
+
     $assetDir = Join-Path $game 'assets\generated\jordan_1995'
     $expected = @(
         'jordan_191_1995_chassis.glb',
@@ -90,8 +100,22 @@ try {
     Write-Host "Bundle:   $bundle"
     Write-Host "Assets:   $assetDir"
 
-    if (-not (Test-Path $bundle)) {
+    if (-not (Test-Path $bundle -PathType Leaf)) {
         throw "Bundle Jordan no encontrado: $bundle"
+    }
+
+    $bundleHash = (Get-FileHash -Path $bundle -Algorithm SHA256).Hash.ToUpperInvariant()
+    Write-Host "SHA256:   $bundleHash"
+
+    if ($bundleHash -ne $expectedBundleSha256) {
+        throw @"
+Bundle Jordan invalido o corrupto.
+Esperado: $expectedBundleSha256
+Actual:   $bundleHash
+
+Use un bundle valido con:
+  .\scripts\run_jordan_handling.ps1 -BundlePath "C:\ruta\jordan_1995_assets_small.zip" -ForceExtract
+"@
     }
 
     $needsExtract = $ForceExtract
@@ -125,7 +149,6 @@ try {
         throw 'GDExtension no compilada. Ejecute .\scripts\build_windows.ps1 -Configuration debug.'
     }
 
-    # Prefer console build so native crash/error output can be redirected by PowerShell.
     $consoleGodot = $godot
     if ($godot -notmatch '_console\.exe$') {
         $candidateConsole = [System.IO.Path]::Combine(
@@ -144,8 +167,6 @@ try {
     Write-Host ''
     Write-Host '1/2 Importando recursos Jordan...' -ForegroundColor Cyan
 
-    # PowerShell creates stdout/stderr files itself, so they survive even if
-    # Godot crashes before its own --log-file system becomes available.
     & $consoleGodot `
         --headless `
         --path $game `
