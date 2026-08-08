@@ -8,6 +8,9 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
 $scene = 'res://scenes/tracks/test_field/jordan_handling_test.tscn'
+$logDir = Join-Path $game 'logs'
+$importLog = Join-Path $logDir 'jordan_import.log'
+$runLog = Join-Path $logDir 'jordan_handling.log'
 
 function Resolve-Godot([string]$explicit) {
     if ($explicit) {
@@ -80,15 +83,66 @@ if (-not (Test-Path $dll)) {
     throw 'GDExtension no compilada. Ejecute .\scripts\build_windows.ps1 -Configuration debug.'
 }
 
+if (-not (Test-Path $logDir)) {
+    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+}
+
+# Prefer the console executable when available so importer/runtime errors
+# are visible in the current PowerShell window.
+$consoleGodot = $godot
+if ($godot -notmatch '_console\.exe$') {
+    $candidateConsole = [System.IO.Path]::Combine(
+        [System.IO.Path]::GetDirectoryName($godot),
+        ([System.IO.Path]::GetFileNameWithoutExtension($godot) + '_console.exe')
+    )
+    if (Test-Path $candidateConsole) {
+        $consoleGodot = $candidateConsole
+    }
+}
+
 Write-Host "Godot:    $godot"
 Write-Host "Proyecto: $game"
 Write-Host "Escena:   $scene"
 Write-Host 'Perfil:   Jordan Phase A / GEVP clean baseline'
+Write-Host ''
+Write-Host '1/2 Importando recursos Jordan en Godot...' -ForegroundColor Cyan
 
-& $godot `
+# Godot documents --import as: start editor, wait for resources to import, then quit.
+# This prevents launching the Jordan scene while freshly extracted GLBs are still unimported.
+& $consoleGodot `
+    --headless `
     --path $game `
-    --scene $scene
+    --import `
+    --log-file $importLog
 
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
+$importExit = $LASTEXITCODE
+if ($importExit -ne 0) {
+    Write-Host "La importacion de Godot fallo con codigo $importExit." -ForegroundColor Red
+    if (Test-Path $importLog) {
+        Write-Host 'Ultimas lineas del log de importacion:' -ForegroundColor Yellow
+        Get-Content $importLog -Tail 100
+    }
+    exit $importExit
 }
+
+Write-Host 'Importacion completada.' -ForegroundColor Green
+Write-Host '2/2 Ejecutando Jordan handling test...' -ForegroundColor Cyan
+
+# Pass the scene as the positional scene argument. This is the documented
+# command-line form for running a specific scene.
+& $consoleGodot `
+    --path $game `
+    --log-file $runLog `
+    $scene
+
+$runExit = $LASTEXITCODE
+if ($runExit -ne 0) {
+    Write-Host "Jordan test termino con codigo $runExit." -ForegroundColor Red
+    if (Test-Path $runLog) {
+        Write-Host 'Ultimas lineas del log de ejecucion:' -ForegroundColor Yellow
+        Get-Content $runLog -Tail 100
+    }
+    exit $runExit
+}
+
+exit 0
