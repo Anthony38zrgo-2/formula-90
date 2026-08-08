@@ -31,7 +31,7 @@ func _process(_delta: float) -> void:
 	text = "\n".join(lines)
 
 func _append_wheel(lines: Array[String], vehicle: Node, short_name: String, node_name: String) -> void:
-	var wheel := vehicle.get_node_or_null(node_name)
+	var wheel := vehicle.get_node_or_null(NodePath(node_name))
 	if not wheel:
 		lines.append("%s missing" % short_name)
 		return
@@ -46,7 +46,7 @@ func _append_wheel(lines: Array[String], vehicle: Node, short_name: String, node
 	var slip: Vector2 = wheel.get("slip_vector")
 	var contact := "C" if wheel.is_colliding() else "-"
 	lines.append(
-		"%s %s  %6.1fmm  %+6.2f  %+6.3f  %+6.3f" % [
+		"%s %s  %.1fmm  d%.2f  x%.3f  y%.3f" % [
 			short_name,
 			contact,
 			compression_mm,
