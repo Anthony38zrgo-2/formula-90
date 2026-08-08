@@ -1,0 +1,5 @@
+# requirements.txt — F1 2030 Physics Diagnostics Tools
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+pandas>=2.0     # optional — for telemetry CSV analysis

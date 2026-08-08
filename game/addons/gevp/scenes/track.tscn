@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://dxnvsoi1pvfeu"]
+[gd_scene load_steps=20 format=3 uid="uid://dxnvsoi1pvfeu"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_62kxx"]
 size = Vector3(15, 1, 10)
@@ -60,6 +60,24 @@ sky = SubResource("Sky_fr4m5")
 tonemap_mode = 2
 glow_enabled = true
 
+[sub_resource type="Gradient" id="Gradient_curb"]
+colors = PackedColorArray(1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+offsets = PackedFloat32Array(0, 0.2, 0.2, 0.4, 0.4, 0.6, 0.6, 0.8, 0.8, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_curb"]
+gradient = SubResource("Gradient_curb")
+width = 256
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_curb"]
+albedo_texture = SubResource("GradientTexture1D_curb")
+uv1_scale = Vector3(2, 1, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_guardrail"]
+albedo_color = Color(0.55, 0.55, 0.58, 1)
+metallic = 0.85
+roughness = 0.35
+
 [node name="Demo" type="Node3D"]
 
 [node name="StaticBody3D2" type="StaticBody3D" parent="." groups=["Road"]]
@@ -89,6 +107,66 @@ path_continuous_u = true
 path_u_distance = 3.0
 path_joined = false
 material = SubResource("StandardMaterial3D_c4708")
+
+[node name="LeftCurb" type="CSGPolygon3D" parent="Path3D" groups=["Road", "Curb"]]
+use_collision = true
+polygon = PackedVector2Array(-4.5, 0.1, -4.4, 0.15, -4.0, 0.15, -4.0, 0.1)
+mode = 2
+path_node = NodePath("..")
+path_interval_type = 0
+path_interval = 1.0
+path_simplify_angle = 1.0
+path_rotation = 2
+path_local = false
+path_continuous_u = true
+path_u_distance = 0.5
+path_joined = false
+material = SubResource("StandardMaterial3D_curb")
+
+[node name="RightCurb" type="CSGPolygon3D" parent="Path3D" groups=["Road", "Curb"]]
+use_collision = true
+polygon = PackedVector2Array(4.0, 0.1, 4.1, 0.15, 4.5, 0.15, 4.5, 0.1)
+mode = 2
+path_node = NodePath("..")
+path_interval_type = 0
+path_interval = 1.0
+path_simplify_angle = 1.0
+path_rotation = 2
+path_local = false
+path_continuous_u = true
+path_u_distance = 0.5
+path_joined = false
+material = SubResource("StandardMaterial3D_curb")
+
+[node name="LeftGuardrail" type="CSGPolygon3D" parent="Path3D" groups=["Wall"]]
+use_collision = true
+polygon = PackedVector2Array(-8.3, -0.1, -8.3, 0.9, -8.0, 0.9, -8.0, -0.1)
+mode = 2
+path_node = NodePath("..")
+path_interval_type = 0
+path_interval = 1.0
+path_simplify_angle = 1.0
+path_rotation = 2
+path_local = false
+path_continuous_u = true
+path_u_distance = 3.0
+path_joined = false
+material = SubResource("StandardMaterial3D_guardrail")
+
+[node name="RightGuardrail" type="CSGPolygon3D" parent="Path3D" groups=["Wall"]]
+use_collision = true
+polygon = PackedVector2Array(8.0, -0.1, 8.0, 0.9, 8.3, 0.9, 8.3, -0.1)
+mode = 2
+path_node = NodePath("..")
+path_interval_type = 0
+path_interval = 1.0
+path_simplify_angle = 1.0
+path_rotation = 2
+path_local = false
+path_continuous_u = true
+path_u_distance = 3.0
+path_joined = false
+material = SubResource("StandardMaterial3D_guardrail")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="." groups=["Grass"]]
 

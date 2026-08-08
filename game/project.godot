@@ -19,11 +19,11 @@ Brakes={
 "events": [Object(InputEventKey,"physical_keycode":4194322), Object(InputEventJoypadMotion,"axis":4,"axis_value":1.0)]
 }
 "Steer Left"={
-"deadzone": 0.5,
+"deadzone": 0.12,
 "events": [Object(InputEventKey,"physical_keycode":4194319), Object(InputEventJoypadMotion,"axis":0,"axis_value":-1.0)]
 }
 "Steer Right"={
-"deadzone": 0.5,
+"deadzone": 0.12,
 "events": [Object(InputEventKey,"physical_keycode":4194321), Object(InputEventJoypadMotion,"axis":0,"axis_value":1.0)]
 }
 Throttle={
@@ -72,7 +72,7 @@ ui_back_to_menu={
 }
 ShowDebug={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":4194312), Object(InputEventJoypadButton,"button_index":11)]
+"events": [Object(InputEventKey,"physical_keycode":4194323), Object(InputEventJoypadButton,"button_index":11)]
 }
 DebugNext={
 "deadzone": 0.5,
@@ -82,6 +82,18 @@ DebugPrevious={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"physical_keycode":44), Object(InputEventJoypadButton,"button_index":13)]
 }
+"Toggle Transmission"={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":4194312), Object(InputEventJoypadButton,"button_index":1)]
+}
+"Reset Vehicle"={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":82)]
+}
+
+[autoload]
+
+TelemetryManager="*res://addons/formula90s/scripts/telemetry_manager.gd"
 
 [physics]
 common/physics_ticks_per_second=120

@@ -1,0 +1,199 @@
+{
+  "source": "8b849c79-6634-40df-9bc1-a581172d0e6b.glb",
+  "convention": {
+    "up": "+Y",
+    "forward": "-Z",
+    "right": "+X",
+    "units": "meters"
+  },
+  "scale_applied": 30.0,
+  "chassis_origin": "midpoint_between_front_and_rear_axle_centers",
+  "wheel_local_origin": "center_of_rotation",
+  "wheel_positions_m_relative_to_chassis": {
+    "fl": [
+      -0.739479,
+      0.0075,
+      -1.4394
+    ],
+    "fr": [
+      0.739257,
+      0.0075,
+      -1.4394
+    ],
+    "rl": [
+      -0.718479,
+      -0.0075,
+      1.4394
+    ],
+    "rr": [
+      0.718479,
+      -0.0075,
+      1.4394
+    ]
+  },
+  "nominal_front_axle_center_m": [
+    0.0,
+    0.0075,
+    -1.4394
+  ],
+  "nominal_rear_axle_center_m": [
+    0.0,
+    -0.0075,
+    1.4394
+  ],
+  "measured_wheelbase_m": 2.8788,
+  "classification_stats": {
+    "chassis": {
+      "components": 24443,
+      "faces": 652164,
+      "verts": 482894
+    },
+    "fl": {
+      "components": 653,
+      "faces": 41165,
+      "verts": 27571
+    },
+    "fr": {
+      "components": 96,
+      "faces": 40984,
+      "verts": 25977
+    },
+    "rl": {
+      "components": 80,
+      "faces": 45583,
+      "verts": 28583
+    },
+    "rr": {
+      "components": 88,
+      "faces": 45257,
+      "verts": 28282
+    }
+  },
+  "validation": {
+    "chassis": {
+      "file": "jordan_191_chassis.glb",
+      "bytes": 13667136,
+      "geometry_count": 70,
+      "bounds_m": [
+        [
+          -0.718479,
+          -0.287126,
+          -2.345505
+        ],
+        [
+          0.718479,
+          0.710797,
+          2.193835
+        ]
+      ],
+      "extents_m": [
+        1.436958,
+        0.997923,
+        4.53934
+      ],
+      "vertices": 482894,
+      "faces": 652164
+    },
+    "fl": {
+      "file": "jordan_191_wheel_fl.glb",
+      "bytes": 835812,
+      "geometry_count": 16,
+      "bounds_m": [
+        [
+          -0.165,
+          -0.347212,
+          -0.354341
+        ],
+        [
+          0.165,
+          0.347351,
+          0.340222
+        ]
+      ],
+      "extents_m": [
+        0.33,
+        0.694564,
+        0.694563
+      ],
+      "vertices": 27571,
+      "faces": 41165
+    },
+    "fr": {
+      "file": "jordan_191_wheel_fr.glb",
+      "bytes": 814504,
+      "geometry_count": 16,
+      "bounds_m": [
+        [
+          -0.177804,
+          -0.347289,
+          -0.352268
+        ],
+        [
+          0.177804,
+          0.347343,
+          0.354496
+        ]
+      ],
+      "extents_m": [
+        0.355608,
+        0.694633,
+        0.706763
+      ],
+      "vertices": 25977,
+      "faces": 40984
+    },
+    "rl": {
+      "file": "jordan_191_wheel_rl.glb",
+      "bytes": 902816,
+      "geometry_count": 19,
+      "bounds_m": [
+        [
+          -0.21,
+          -0.347245,
+          -0.34718
+        ],
+        [
+          0.21,
+          0.347319,
+          0.347383
+        ]
+      ],
+      "extents_m": [
+        0.42,
+        0.694564,
+        0.694563
+      ],
+      "vertices": 28583,
+      "faces": 45583
+    },
+    "rr": {
+      "file": "jordan_191_wheel_rr.glb",
+      "bytes": 894652,
+      "geometry_count": 18,
+      "bounds_m": [
+        [
+          -0.21,
+          -0.347245,
+          -0.34718
+        ],
+        [
+          0.21,
+          0.347319,
+          0.347383
+        ]
+      ],
+      "extents_m": [
+        0.42,
+        0.694564,
+        0.694563
+      ],
+      "vertices": 28282,
+      "faces": 45257
+    }
+  },
+  "notes": [
+    "Wheel split is automatic from connected geometry and spatial wheel envelopes.",
+    "Wishbones and long suspension components are intentionally kept with chassis.",
+    "Inspect front steering visually in Godot before final production use."
+  ]
+}

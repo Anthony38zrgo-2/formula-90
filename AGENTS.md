@@ -1,25 +1,29 @@
-# Guía para agentes
+# Master Guide for AI Agents — Root Project (`formula-90s` / F1 2030)
 
-## Visión y alcance
+This document **exclusively** governs the global operational workflows within the repository.
+Detailed explanations belong in their respective `docs/` or `.agents/skills/` folders. Do NOT create local `AGENTS.md` files.
 
-`formula-90s` es un juego de carreras arcade inspirado conceptualmente en recreativas de los 90. El circuito y el vehículo jugable son 3D; `Sprite3D` se conserva para decoración y validación direccional. Fase 1 prioriza siempre un proyecto compilable. Godot fijado: **4.7.1-stable**. `godot-cpp`: commit **7e18e40d7591429f915035a7de7cf79457d555cc** (línea v10, API 4.7).
+---
 
-## Arquitectura obligatoria
+## 1. Core Principles
+1. **Behavior First:** Physics must follow a behavior-first workflow. Read `docs/game-design/vehicle-behavior/`.
+2. **Never Guess:** Never guess physics from semantic variable names. Read `docs/game-design/ai_physics_manual.md`.
+3. **Attempt Budget:** Respect the Attempt Budget. Same failure twice means STOP and diagnose.
+4. **Configuration Authority:** Validate actual runtime configuration using `tools/physics_diagnostics/`.
+5. **Evidence:** Do not claim success without verifiable evidence (telemetry, test results).
+6. **Handoff:** Use repository-relative paths in handoffs. 
 
-- La física del vehículo usa GEVP (GDScript) como motor de simulación. HUD, cámara, bootstrap, reset y presentación visual viven en C++20 mediante GDExtension. Las ayudas a la conducción pueden implementarse en GDScript.
-- `native/` contiene runtime C++; `game/` escenas, recursos y scripts GDScript; `tools/` será Python auxiliar en Fase 2.
-- No añadir assets sin licencia o extraídos de juegos.
-- La malla visual del coche nunca sustituye la colisión simple ni escala la raíz física. Los GLB importados se envuelven en escenas contenedoras.
-- Alcance: este archivo rige todo; los `AGENTS.md` anidados concretan normas locales.
+## 2. Skill Routing (Lazy Loading)
+Do not load every manual for every task. Use these routing rules:
+- **Vehicle handling problem** → load `physics-diagnostics` & `problem-solving-guardrails`
+- **.tscn modification** → load `scene-safety` (Godot 4 traps)
+- **Repeated failure** → load `problem-solving-guardrails`
+- **Planner → Executor transition** → load `context-handoff` & `context-garbage-collection`
+- **Physics tuning accepted** → load `regression-validation`
 
-## Comandos
+## 3. Context Garbage Collection
+Run Context Garbage Collection (see `context-garbage-collection/SKILL.md`) before major agent handoffs, diagnostic escalation, or after repeated failed attempts.
+Do not propagate raw historical context when a task-specific Context Bundle can represent the relevant information.
 
-- Windows: `scripts/bootstrap_windows.ps1`, `scripts/build_windows.ps1`, `scripts/run_windows.ps1`, `scripts/test_windows.ps1`.
-- Linux: equivalentes `.sh`.
-- SCons directo: `python -m SCons platform=windows target=template_debug arch=x86_64`.
-
-## Convenciones y terminado
-
-- Tipos C++ en PascalCase; métodos/archivos snake_case; nodos con nombres estables PascalCase.
-- Commits pequeños en imperativo; nunca inventar identidad ni publicar. No versionar binarios.
-- Terminado significa: build y pruebas ejecutados, extensión cargada, documentación sincronizada y resultados reales informados. Nunca afirmar una ejecución no realizada.
+## 4. Scene Safety (`.tscn` Files)
+Godot 4 scenes require structural validation. Modifying `.tscn` text directly can delete `node_paths`, silently corrupting references. See `docs/engineering/godot_traps.md` and `scene-safety/SKILL.md`.

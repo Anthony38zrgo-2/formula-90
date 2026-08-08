@@ -1,0 +1,121 @@
+{
+  "body_prefix": "f1_2026_b",
+  "out_dir": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b",
+  "body_objects": [
+    "carbon",
+    "cockpit",
+    "Livery"
+  ],
+  "body_total_polygons": 136355,
+  "body_bbox": {
+    "width": 1.8524,
+    "height": 1.0242,
+    "length": 5.0117,
+    "center_x": 0.0,
+    "center_y": -0.5002,
+    "center_z": -0.2918
+  },
+  "wheels": {
+    "FL": {
+      "object": "FL_Wheel",
+      "world_position": [
+        0.792355,
+        -0.305072,
+        -1.624385
+      ],
+      "polygons": 103273,
+      "bounding_box": [
+        0.3935557007789612,
+        0.7386645078659058,
+        0.7294141054153442
+      ]
+    },
+    "FR": {
+      "object": "FR_Wheel",
+      "world_position": [
+        -0.795678,
+        -0.305072,
+        -1.624385
+      ],
+      "polygons": 103273,
+      "bounding_box": [
+        0.39355555176734924,
+        0.7386645078659058,
+        0.7294140458106995
+      ]
+    },
+    "RL": {
+      "object": "RL_Wheel",
+      "world_position": [
+        0.748702,
+        -0.305072,
+        1.61481
+      ],
+      "polygons": 103273,
+      "bounding_box": [
+        0.4405398368835449,
+        0.7288019061088562,
+        0.7294141054153442
+      ]
+    },
+    "RR": {
+      "object": "RR_Wheel",
+      "world_position": [
+        -0.742326,
+        -0.305072,
+        1.61481
+      ],
+      "polygons": 103273,
+      "bounding_box": [
+        0.44053974747657776,
+        0.7288019061088562,
+        0.7294140458106995
+      ]
+    }
+  },
+  "exported_files": {
+    "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b\\wheel_positions.json": {
+      "type": "positions"
+    },
+    "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b\\f1_2026_b_body.glb": {
+      "type": "body",
+      "size": 12491248,
+      "polygons": 136355
+    },
+    "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b\\wheel_fl.glb": {
+      "type": "wheel_fl",
+      "size": 26050296,
+      "polygons": 103273
+    },
+    "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b\\wheel_fr.glb": {
+      "type": "wheel_fr",
+      "size": 26050296,
+      "polygons": 103273
+    },
+    "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b\\wheel_rl.glb": {
+      "type": "wheel_rl",
+      "size": 26050296,
+      "polygons": 103273
+    },
+    "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_2026_b\\wheel_rr.glb": {
+      "type": "wheel_rr",
+      "size": 26050296,
+      "polygons": 103273
+    }
+  },
+  "errors": [],
+  "warnings": [
+    "Wheel 'FL_Wheel': name suggests 'FL' but position suggests 'RR'. Using name-based classification.",
+    "Wheel 'FR_Wheel': name suggests 'FR' but position suggests 'RL'. Using name-based classification.",
+    "Wheel 'RL_Wheel': name suggests 'RL' but position suggests 'FR'. Using name-based classification.",
+    "Wheel 'RR_Wheel': name suggests 'RR' but position suggests 'FL'. Using name-based classification.",
+    "Front axle X asymmetry: |L|=0.7924 vs |R|=0.7957 (diff=3.3mm, tolerance=2.0mm)",
+    "Rear axle X asymmetry: |L|=0.7487 vs |R|=0.7423 (diff=6.4mm, tolerance=2.0mm)"
+  ],
+  "info": [
+    "Fixed 9 texture path(s)",
+    "Body meshes: ['carbon', 'cockpit', 'Livery']",
+    "Wheels: ['FL_Wheel', 'FR_Wheel', 'RL_Wheel', 'RR_Wheel']",
+    "Applied scale to 2 object(s)"
+  ]
+}

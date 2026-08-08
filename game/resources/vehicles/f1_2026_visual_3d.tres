@@ -1,0 +1,26 @@
+[gd_resource type="VehicleVisual3DConfig" format=3]
+
+[resource]
+model_scale = Vector3(1, 1, 1)
+model_rotation_degrees = Vector3(0, 0, 0)
+model_offset = Vector3(0, 0, 0)
+model_path = NodePath("F1_2026Model")
+front_left_wheel_path = NodePath("F1_2026Model/WheelFL")
+front_right_wheel_path = NodePath("F1_2026Model/WheelFR")
+rear_left_wheel_path = NodePath("F1_2026Model/WheelRL")
+rear_right_wheel_path = NodePath("F1_2026Model/WheelRR")
+surface_probes_path = NodePath("../SurfaceProbes")
+wheel_radius = 0.370
+wheel_spin_multiplier = 1.0
+maximum_steering_degrees = 20.0
+steering_smoothing = 14.0
+maximum_roll_degrees = 2.0
+roll_acceleration_gain = 0.035
+maximum_pitch_degrees = 1.2
+pitch_acceleration_gain = 0.02
+pose_smoothing = 9.0
+kerb_vibration_amplitude = 0.010
+gravel_vibration_amplitude = 0.018
+vibration_frequency = 26.0
+kerb_group = "kerb"
+gravel_group = "gravel"

@@ -236,6 +236,12 @@ func process_suspension(opposite_compression : float, delta : float) -> float:
 		bottom_out_force = (((mass_over_wheel * clampf(spring_speed_mm_per_seconds * 0.001, 0.0, 5.0)) / delta) + (mass_over_wheel * vehicle.current_gravity.length() * gravity_on_spring)) * bump_stop_multiplier
 		bottom_out_damping = -slow_bump
 		bottom_out_damping_fast = -fast_bump
+		if name.to_lower().begins_with("wheelrear"):
+			print("[REAR BOTTOM-OUT] ", name, " comp=", compression, "mm speed=", spring_speed_mm_per_seconds, "mm/s spring_force=", spring_force, " bottom_out_force=", bottom_out_force, " mass=", mass_over_wheel, " bump_mult=", bump_stop_multiplier)
+	else:
+		var max_comp = spring_length * 1000.0
+		if compression > max_comp * 0.7 and name.to_lower().begins_with("wheelrear"):
+			print("[REAR HIGH-COMP] ", name, " comp=", compression, "mm/", max_comp, "mm spring_force=", spring_force)
 	
 	if spring_speed_mm_per_seconds >= 0:
 		if spring_speed_mm_per_seconds > fast_damp_threshold:

@@ -1,0 +1,33 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_2026/f1_2026_body.glb" id="1_body"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_2026/wheel_fl.glb" id="2_wheel_fl"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_2026/wheel_fr.glb" id="3_wheel_fr"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_2026/wheel_rl.glb" id="4_wheel_rl"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_2026/wheel_rr.glb" id="5_wheel_rr"]
+
+[node name="F1_2026_Visual" type="Node3D"]
+
+[node name="BodyRoot" type="Node3D" parent="."]
+
+[node name="F1_2026_Body" parent="BodyRoot" instance=ExtResource("1_body")]
+
+[node name="WheelFL" type="Node3D" parent="."]
+position = Vector3(-0.784, 0.001, -1.620)
+
+[node name="WheelMesh" parent="WheelFL" instance=ExtResource("2_wheel_fl")]
+
+[node name="WheelFR" type="Node3D" parent="."]
+position = Vector3(0.789, 0.001, -1.620)
+
+[node name="WheelMesh" parent="WheelFR" instance=ExtResource("3_wheel_fr")]
+
+[node name="WheelRL" type="Node3D" parent="."]
+position = Vector3(-0.739, 0.001, 1.620)
+
+[node name="WheelMesh" parent="WheelRL" instance=ExtResource("4_wheel_rl")]
+
+[node name="WheelRR" type="Node3D" parent="."]
+position = Vector3(0.734, 0.001, 1.620)
+
+[node name="WheelMesh" parent="WheelRR" instance=ExtResource("5_wheel_rr")]

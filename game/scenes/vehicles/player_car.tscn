@@ -1,42 +1,31 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="CarPhysicsConfig" path="res://resources/vehicles/default_car_physics.tres" id="1_cfg"]
-[ext_resource type="PackedScene" path="res://scenes/vehicles/v10/v10_visual.tscn" id="2_visual"]
-[ext_resource type="VehicleDefinition" path="res://resources/vehicles/v10_vehicle.tres" id="3_v10"]
-[ext_resource type="EngineAudioConfig" path="res://resources/vehicles/v10_engine_audio.tres" id="4_audio"]
-[ext_resource type="VehicleVisual3DConfig" path="res://resources/vehicles/v10_visual_3d.tres" id="5_visual_cfg"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191.tscn" id="1_car"]
+[ext_resource type="EngineAudioConfig" path="res://resources/vehicles/v10_engine_audio.tres" id="3_audio"]
 
 [sub_resource type="BoxShape3D" id="CarShape"]
-size = Vector3(1.7, 0.8, 3.8)
+size = Vector3(1.9, 0.45, 3.8)
 
-[node name="PlayerCar" type="ArcadeCarController"]
-config = ExtResource("1_cfg")
-vehicle_definition = ExtResource("3_v10")
+[sub_resource type="BoxShape3D" id="CarShape2"]
+size = Vector3(1.9, 0.45, 3.8)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.55, 0)
-shape = SubResource("CarShape")
+[node name="PlayerCar" instance=ExtResource("1_car")]
 
-[node name="VehicleVisualRoot" type="VehicleVisual3DController" parent="."]
-config = ExtResource("5_visual_cfg")
-
-[node name="V10Model" parent="VehicleVisualRoot" instance=ExtResource("2_visual")]
-
-[node name="SurfaceProbes" type="Node3D" parent="."]
+[node name="SurfaceProbes" type="Node3D" parent="VehicleRigidBody"]
 
 [node name="FrontProbe" type="RayCast3D" parent="SurfaceProbes"]
-position = Vector3(0, 0.45, -1.25)
-target_position = Vector3(0, -0.8, 0)
+position = Vector3(0, 0.45, -1.62)
+target_position = Vector3(0, -0.85, 0)
 collision_mask = 1
 exclude_parent = true
 
 [node name="RearProbe" type="RayCast3D" parent="SurfaceProbes"]
-position = Vector3(0, 0.45, 1.25)
-target_position = Vector3(0, -0.8, 0)
+position = Vector3(0, 0.45, 1.62)
+target_position = Vector3(0, -0.85, 0)
 collision_mask = 1
 exclude_parent = true
 
-[node name="CameraRig" type="ArcadeChaseCamera" parent="."]
+[node name="CameraRig" type="ArcadeChaseCamera" parent="VehicleRigidBody"]
 position = Vector3(0, 3.4, 7.2)
 top_level = true
 distance = 7.2
@@ -64,7 +53,7 @@ speed_fov_gain = 3.0
 current = true
 fov = 60.0
 
-[node name="AudioRoot" type="EngineAudioController" parent="."]
-config = ExtResource("4_audio")
+[node name="AudioRoot" type="EngineAudioController" parent="VehicleRigidBody"]
+config = ExtResource("3_audio")
 
-[node name="ResetMarker" type="Marker3D" parent="."]
+[node name="ResetMarker" type="Marker3D" parent="VehicleRigidBody"]

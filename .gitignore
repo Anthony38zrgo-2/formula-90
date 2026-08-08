@@ -4,6 +4,7 @@ build/
 bin/
 game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
+game/telemetry/
 compile_commands.json
 .sconsign.dblite
 
@@ -40,3 +41,8 @@ __pycache__/
 tmp/
 scratch/
 car1_sprite_sheet.png
+build_log.txt
+suspension_report.png
+instrucciones.txt
+context.md
+

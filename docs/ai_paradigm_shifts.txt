@@ -1,0 +1,37 @@
+# Investigaciones y Cambios de Paradigma en Agentes IA (Proyecto F1 2030)
+
+Este documento recopila los hallazgos empíricos y los "cambios de paradigma" (Paradigm Shifts) descubiertos durante la integración de Inteligencia Artificial (Antigravity/DeepSeek) en el desarrollo de mecánicas físicas complejas (Godot 4 / GEVP).
+
+La premisa principal descubierta es: **"No se puede solucionar un problema complejo iterando código a ciegas; primero se debe construir la base (Guardrails, Contexto y Herramientas), y el problema se solucionará casi por inercia."**
+
+---
+
+## 1. El Paradigma de la Alucinación Semántica vs Física Matemática
+- **El Problema Inicial:** La IA (DeepSeek) intentó arreglar un comportamiento de rebote en los bordillos disminuyendo el `bump_stop_multiplier` e incrementando masivamente el `damping_ratio` a 5.0. 
+- **El Descubrimiento:** Los LLMs sufren de sesgos lingüísticos. Asocian palabras como "Multiplier" o "Stop" con violencia, llevándolos a bajar valores que mecánicamente deberían subir. Además, confunden ratios adimensionales ($\zeta$) con fuerzas absolutas ($c$), asumiendo erróneamente que una mayor masa requiere multiplicar el ratio.
+- **La Solución (La Base):** En lugar de corregir a la IA en cada prompt, se creó el documento `docs/game-design/ai_physics_manual.md`. Esto actúa como "In-Context Learning", obligando a la IA a sobrescribir sus pesos neuronales con reglas matemáticas estrictas antes de proponer cambios en la suspensión.
+
+## 2. El Paradigma del Presupuesto de Intentos (Attempt Budget)
+- **El Problema Inicial:** Cuando un agente falla al resolver un bug, tiende a entrar en un bucle infinito de prueba y error (Guess -> Modify -> Fail), desperdiciando tokens y corrompiendo la arquitectura.
+- **El Descubrimiento:** Las fallas repetidas no se solucionan intentando más fuerte, sino cambiando el enfoque. 
+- **La Solución (La Base):** Se implementó el `problem-solving-guardrails/SKILL.md`. Establece una ley dura: Flash tiene derecho a 2 intentos. Si falla, tiene **prohibido** seguir programando. Debe detenerse, recopilar telemetría y transferir el contexto al agente Pro para entrar en un modo estricto de diagnóstico matemático offline.
+
+## 3. El Paradigma de la Auto-Validación y Parseo Dinámico
+- **El Problema Inicial:** Los scripts de Python (diagnóstico de físicas) tenían los valores del coche hardcodeados. Si la IA corrompía la escena `.tscn` (ej. poniendo un damping de 5.0), el script de Python seguía diciendo que todo estaba bien porque no leía los cambios reales.
+- **El Descubrimiento:** La IA necesita un "compilador" o "linter" que valide la física antes de que el usuario tenga que abrir el juego para probarlo.
+- **La Solución (La Base):** Se programó `tscn_parser.py` para inyectarlo en las herramientas de diagnóstico. Ahora, la IA puede (y debe) ejecutar la validación sobre el código que acaba de modificar, creando un **bucle de auto-corrección autónomo**.
+
+## 4. El Paradigma de la Inyección de Contexto (Context-Bundle)
+- **El Problema Inicial:** El agente planificador dejaba instrucciones vagas ("Actualiza la física del coche"), forzando al agente ejecutor a "adivinar" rutas y nombres de nodos.
+- **El Descubrimiento:** La falta de conocimiento del agente no es estupidez, es falta de contexto explícito.
+- **La Solución (La Base):** Se actualizó el Handoff Protocol. El agente Pro está ahora obligado a empaquetar un "Context-Bundle" en el archivo `instrucciones.txt` (rutas absolutas, firmas de funciones literales y dependencias).
+
+## 5. El Paradigma de la Evolución de Godot (Anti-Traps)
+- **El Problema Inicial:** Las IAs destruían los archivos `.tscn` borrando el array `node_paths` o inyectaban código obsoleto de Godot 3 (ej. `export(NodePath)` o `connect("pressed")`).
+- **El Descubrimiento:** El mayor volumen de datos de entrenamiento de un LLM pertenece a versiones antiguas del motor.
+- **La Solución (La Base):** Creación del manifiesto `ai_coding_standards.md` y su lectura obligatoria. Esto actúa como un escudo que previene corrupciones de escena irreparables.
+
+---
+
+### Conclusión Filosófica del Proyecto
+En la programación asistida por agentes, el verdadero trabajo del ingeniero (o del agente Arquitecto) no es escribir la solución al bug, sino **diseñar el laberinto perfecto** para que el agente ejecutor camine inevitablemente hacia la solución correcta sin posibilidad de perderse. Todo `SKILL.md` o regla en `AGENTS.md` ha sido un muro estratégico construido en ese laberinto.

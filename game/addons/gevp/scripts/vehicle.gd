@@ -120,6 +120,8 @@ extends RigidBody3D
 @export var clutch_out_rpm := 3000.0
 ## Max clutch torque as a ratio of max motor torque.
 @export var max_clutch_torque_ratio := 1.6
+## Engine configuration resource for data-driven motor setup.
+@export var engine_config : Resource
 
 
 @export_group("Gearbox")
@@ -457,6 +459,9 @@ func initialize():
 	center_of_gravity.y += center_of_gravity_height_offset
 	center_of_mass = center_of_gravity
 	max_clutch_torque = max_torque * max_clutch_torque_ratio
+	if engine_config and engine_config.has_method("apply_to"):
+		engine_config.apply_to(self)
+		max_clutch_torque = max_torque * max_clutch_torque_ratio
 	
 	front_axle = Axle.new()
 	front_axle.wheels.append(front_left_wheel)
