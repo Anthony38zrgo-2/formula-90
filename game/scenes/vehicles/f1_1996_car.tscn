@@ -18,7 +18,6 @@ size = Vector3(1.6, 0.4, 4.8)
 [node name="F1_1996_Vehicle" type="RigidBody3D" node_paths=PackedStringArray("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")]
 mass = 595.0
 center_of_mass_mode = 1
-center_of_mass = Vector3(0, -0.45, 0)
 linear_damp_mode = 1
 angular_damp_mode = 1
 script = ExtResource("1_vehicle")
@@ -27,33 +26,34 @@ front_right_wheel = NodePath("WheelFrontRight")
 rear_left_wheel = NodePath("WheelRearLeft")
 rear_right_wheel = NodePath("WheelRearRight")
 
-steering_speed = 60.0
-countersteer_speed = 15.0
-steering_speed_decay = 0.05
-steering_slip_assist = 999.0
-countersteer_assist = 0.0
-steering_exponent = 1.0
-max_steering_angle = 0.52359877
+; Clean GEVP baseline: keep geometry/powertrain identity, use sane addon-scale handling values.
+steering_speed = 4.25
+countersteer_speed = 11.0
+steering_speed_decay = 0.20
+steering_slip_assist = 0.15
+countersteer_assist = 0.9
+steering_exponent = 1.5
+max_steering_angle = 0.4363323
 front_steering_ratio = 1.0
 rear_steering_ratio = 0.0
 
-throttle_speed = 60.0
-throttle_steering_adjust = 0.15
-braking_speed = 60.0
-brake_force_multiplier = 1.6
+throttle_speed = 20.0
+throttle_steering_adjust = 0.1
+braking_speed = 10.0
+brake_force_multiplier = 1.0
 front_brake_bias = 0.60
-traction_control_max_slip = -1.0
-front_abs_pulse_time = 999.0
-front_abs_spin_difference_threshold = 999.0
-rear_abs_pulse_time = 999.0
-rear_abs_spin_difference_threshold = 999.0
+traction_control_max_slip = 8.0
+front_abs_pulse_time = 0.03
+front_abs_spin_difference_threshold = 12.0
+rear_abs_pulse_time = 0.03
+rear_abs_spin_difference_threshold = 12.0
 
-enable_stability = false
+enable_stability = true
 stability_yaw_engage_angle = 0.0
-stability_yaw_strength = 0.0
-stability_yaw_ground_multiplier = 0.0
-stability_upright_spring = 0.0
-stability_upright_damping = 0.0
+stability_yaw_strength = 6.0
+stability_yaw_ground_multiplier = 2.0
+stability_upright_spring = 1.0
+stability_upright_damping = 1000.0
 
 max_torque = 280.0
 max_rpm = 17000.0
@@ -68,73 +68,84 @@ max_clutch_torque_ratio = 1.4
 gear_ratios = [2.85, 2.29, 1.89, 1.60, 1.38, 1.20]
 final_drive = 3.60
 reverse_ratio = 3.00
-shift_time = 0.04
+shift_time = 0.12
 automatic_transmission = true
-automatic_time_between_shifts = 0.0
+automatic_time_between_shifts = 700.0
 gear_inertia = 0.03
 
 front_torque_split = 0.0
 variable_torque_split = false
 front_variable_split = 0.0
-variable_split_speed = 0.0
-front_locking_differential_engage_torque = 0.0
+variable_split_speed = 1.0
+front_locking_differential_engage_torque = -1.0
 rear_locking_differential_engage_torque = 120.0
 front_torque_vectoring = 0.0
 rear_torque_vectoring = 0.0
 
 vehicle_mass = 595.0
 front_weight_distribution = 0.46
-center_of_gravity_height_offset = -0.45
-inertia_multiplier = 0.9
+center_of_gravity_height_offset = -0.20
+inertia_multiplier = 1.1
 
 front_spring_length = 0.15
 front_resting_ratio = 0.50
 front_damping_ratio = 0.75
 front_bump_damp_multiplier = 1.3
 front_rebound_damp_multiplier = 1.1
-front_arb_ratio = 0.65
+front_arb_ratio = 0.45
 front_camber = -0.0174533
 front_toe = 0.0017453
-front_bump_stop_multiplier = 3.0
+front_bump_stop_multiplier = 1.0
 front_beam_axle = false
 
-rear_spring_length = 0.11
-rear_resting_ratio = 0.45
-rear_damping_ratio = 0.78
+rear_spring_length = 0.15
+rear_resting_ratio = 0.50
+rear_damping_ratio = 0.75
 rear_bump_damp_multiplier = 1.3
-rear_rebound_damp_multiplier = 1.15
-rear_arb_ratio = 0.55
-rear_camber = -0.0349066
-rear_toe = 0.0034906
-rear_bump_stop_multiplier = 3.0
+rear_rebound_damp_multiplier = 1.1
+rear_arb_ratio = 0.40
+rear_camber = -0.0174533
+rear_toe = 0.0017453
+rear_bump_stop_multiplier = 1.0
 rear_beam_axle = false
 
 contact_patch = 0.22
 braking_grip_multiplier = 1.15
 wheel_to_body_torque_multiplier = 1.0
 tire_stiffnesses = {
-"Curb": 90000.0,
-"Road": 220000.0
+"Curb": 8.0,
+"Gravel": 0.5,
+"Grass": 0.5,
+"Road": 10.0
 }
 coefficient_of_friction = {
-"Curb": 1.2,
-"Gravel": 0.6,
-"Grass": 0.5,
-"Road": 2.4
+"Curb": 2.6,
+"Gravel": 1.2,
+"Grass": 1.0,
+"Road": 3.0
 }
 rolling_resistance = {
-"Road": 45.0
+"Curb": 1.5,
+"Gravel": 2.0,
+"Grass": 4.0,
+"Road": 1.0
 }
 lateral_grip_assist = {
-"Road": 0.0
+"Curb": 0.0,
+"Gravel": 0.0,
+"Grass": 0.0,
+"Road": 0.05
 }
 longitudinal_grip_ratio = {
-"Road": 1.0
+"Curb": 0.5,
+"Gravel": 0.5,
+"Grass": 0.5,
+"Road": 0.5
 }
 front_tire_radius = 0.370
 front_tire_width = 245.0
 front_wheel_mass = 6.0
-rear_tire_radius = 0.3700
+rear_tire_radius = 0.370
 rear_tire_width = 365.0
 rear_wheel_mass = 7.5
 
