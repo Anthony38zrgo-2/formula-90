@@ -13,3 +13,9 @@ vehicle_node = NodePath("VehicleRigidBody")
 
 [node name="VehicleRigidBody" parent="VehicleController" instance=ExtResource("2_car")]
 position = Vector3(0, 0.93, 0)
+
+[node name="BaselineCamera" type="Camera3D" parent="VehicleController/VehicleRigidBody"]
+position = Vector3(0, 2.8, 6.5)
+rotation_degrees = Vector3(-15, 0, 0)
+current = true
+fov = 60.0
