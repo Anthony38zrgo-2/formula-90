@@ -5,6 +5,7 @@ bin/
 game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 game/telemetry/
+game/assets/generated/jordan_1995/
 compile_commands.json
 .sconsign.dblite
 
@@ -24,6 +25,7 @@ compile_commands.json
 *.fbx
 *.mtl
 *.zip
+!game/assets/bundles/jordan_1995_runtime.zip
 blender/models/
 blender/backup/
 blender/current/
