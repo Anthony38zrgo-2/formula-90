@@ -2,85 +2,107 @@
 
 Purpose: use a real Peruvian circuit shape as the Formula90s handling-development reference before Phase C steering/countersteer work.
 
-## Active scene
+## Active Jordan scene
 
 `res://scenes/tracks/test_field/jordan_handling_test.tscn`
 
-Track:
+The Jordan scene now loads the **Blender-generated base racetrack**, not the earlier Godot CSG prototype.
 
-`res://scenes/tracks/test_field/la_chutana_track.tscn`
+Godot wrapper:
 
-Builder:
+`res://scenes/tracks/test_field/la_chutana_generated.tscn`
 
-`res://scenes/tracks/test_field/la_chutana_track.gd`
+Generated runtime asset consumed by that wrapper:
+
+`res://assets/generated/tracks/la_chutana/la_chutana_base.glb`
+
+The GLB is intentionally ignored by Git and must exist locally. Generate it with:
+
+```powershell
+.\scripts\run_track_pipeline.ps1 -Mode Base -Track la_chutana
+```
+
+The historical `la_chutana_track.tscn/.gd` prototype remains only as a development reference and is no longer the active Jordan track.
+
+## Blender authority
+
+Track geometry is authored by the deterministic pipeline under:
+
+`blender/track_pipeline/`
+
+The active Blender builder is:
+
+`blender/track_pipeline/build_track_blender.py`
+
+Source measurements/configuration remain under:
+
+- `blender/track_pipeline/data/la_chutana_reference.json`
+- `blender/track_pipeline/configs/la_chutana.json`
+
+## Runtime collision/surface contract
+
+The Blender export uses Godot import naming for generated collision meshes:
+
+- `RoadCollision-colonly`
+- `CurbCollision_<segment>-colonly`
+- `GrassCollision-colonly`
+
+`la_chutana_generated.tscn` attaches `generated_track_surface_groups.gd`, which recursively restores the Formula90s surface groups expected by GEVP:
+
+- `Road`
+- `Curb`
+- `Grass`
+- `Wall` for later guardrails
+
+Visual meshes are not used as the source of detailed collision when a dedicated collision proxy exists.
 
 ## Reference data
 
-The current reconstruction uses the user-provided top-down layout as the geometric reference and public circuit data as scale anchors.
-
-Targets used:
+Targets used by the deterministic reconstruction:
 
 - lap length: approximately **2.420 km**;
 - main straight: approximately **800 m**;
 - reference turn count: **7**;
 - current direction: **clockwise**.
 
-Some public databases disagree on secondary measurements, so this scene should be treated as a gameplay/physics reconstruction rather than survey-grade CAD.
-
-Published elevation information is deliberately not reproduced yet. The current objective is to validate the car without artificial ramps; only subtle local banking remains.
-
-## Layout reconstruction
-
-The supplied top-down image was manually traced into a centerline.
-
-The trace is calibrated independently along its two image axes so that:
-
-- the full control polyline is approximately 2.420 km;
-- the long top straight is approximately 800 m;
-- the proportions of the supplied layout remain close to the reference image.
-
-The runtime prints the baked spline length and estimated main-straight length so later refinements can be measured instead of guessed.
+The scene is a gameplay/physics reconstruction rather than survey-grade CAD.
 
 ## Surface
 
 - 12 m development-track width.
 - White edge lines define asphalt limits.
-- Grass/run-off begins immediately outside the circuit where no curb exists.
-- No guardrails are generated in this first La Chutana iteration. This is intentional so Road -> Grass -> Road behavior can be tested safely.
+- Grass/run-off begins outside the track/curb surface.
+- Guardrails are added only by the procedural/infrastructure stage where configured.
 
 The 12 m width is a Formula90s development choice, not a claim about La Chutana's surveyed width.
 
 ## Curbs
 
-The old generic test curbs were too abrupt for a low Formula chassis.
-
-La Chutana uses a new low crowned curb profile:
+The Blender pipeline uses a low crowned profile rather than rectangular blocks:
 
 - width: ~0.58 m;
-- maximum positive rise: ~22 mm;
-- road-side approach: +5 mm;
-- shallow crown: +22 mm;
-- outer approach returns to ~+2 mm before grass;
-- no rectangular 50+ mm wall at either drivable edge.
+- road-side transition: ~+5 mm;
+- maximum crown: ~+22 mm;
+- outer transition: ~+12 mm then ~+2 mm;
+- local apex/exit placement only.
 
-This is intentionally conservative. It is inspired by conventional positive racing-curb geometry but is **not** claimed to reproduce a specific FIA-homologated curb drawing.
+This profile is intentionally conservative for a low Formula chassis and is not claimed to reproduce a specific homologated FIA curb drawing.
 
-Curbs exist only at selected apex and exit zones; they do not run around the whole lap.
+## Start / finish and spawn
 
-## Start / finish
+The generated GLB contains the procedural black-and-white start/finish surface and a `PlayerSpawn` marker.
 
-A procedural black-and-white checker texture marks start/finish.
-
-The Jordan spawns roughly 18 m before the line on the main straight with default vehicle orientation, so forward motion crosses the line and continues toward Turn 1.
+For immediate Phase B testing, `jordan_handling_test.tscn` keeps the Jordan at the equivalent deterministic position roughly 18 m before meta. Future regenerated base tracks now author `PlayerSpawn` using the same Godot-XZ-to-Blender coordinate conversion as the centerline, avoiding axis-sign drift.
 
 ## Validation before Phase C
 
-1. Start approximately 18 m before meta and cross it naturally with forward throttle.
-2. Complete a full lap without hidden ramps or seams.
-3. Compare the visual shape against the supplied La Chutana top view.
-4. Touch each curb with two wheels at low, medium and higher speed.
-5. A normal curb touch may unsettle the car, but must not catapult it.
-6. Run two wheels onto grass and return to asphalt.
-7. Run fully onto grass and recover.
-8. Confirm Road/Curb/Grass surface groups continue producing distinct GEVP behavior.
-9. Check the console-reported baked lap and straight lengths before making further geometry changes.
+1. Run the Base pipeline and confirm `la_chutana_base.glb` exists.
+2. Start `jordan_handling_test.tscn` through `run_jordan_handling.ps1`.
+3. Confirm the scene is rendering the Blender-generated track, not the old CSG prototype.
+4. Start roughly 18 m before meta and cross it naturally with forward throttle.
+5. Complete a full lap without hidden ramps, gaps or collision seams.
+6. Touch each curb with two wheels at low, medium and higher speed; normal contact must not catapult the car.
+7. Run two wheels onto grass and return to asphalt.
+8. Run fully onto grass and recover.
+9. Confirm Road/Curb/Grass still produce distinct GEVP behavior.
+10. Only after the base racetrack is human-approved may the procedural vegetation/guardrail stage run.
