@@ -184,7 +184,10 @@ def build_start_finish(config):
 def build_spawn_marker(config):
     spawn=float(config["start_finish"]["spawn_before_m"])
     marker=bpy.data.objects.new("PlayerSpawn",None)
-    marker.location=(0.0,spawn,0.0)
+    # Keep the spawn marker in the same coordinate contract used by all track
+    # points. Positive Godot Z is before start/finish because the car drives
+    # toward -Z on the main straight.
+    marker.location=godot_xz_to_blender(0.0,spawn,0.0)
     bpy.context.scene.collection.objects.link(marker)
 
 
