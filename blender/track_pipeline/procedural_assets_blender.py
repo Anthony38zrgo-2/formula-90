@@ -5,267 +5,68 @@ import math
 import bpy
 from mathutils import Vector
 
-from procedural_catalog import get_region_profile
+from procedural_catalog import biome_from_config, specs_for_biome
+from terrain_grid import bank_degrees_at_fraction, effective_far_ground_z
 
 
-def godot_xz_to_blender(x: float, z: float, height: float = 0.0) -> Vector:
-    return Vector((float(x), -float(z), float(height)))
+def godot_xz_to_blender(x: float,z: float,height: float=0.0)->Vector:
+    return Vector((float(x),-float(z),float(height)))
 
+def sample_centerline(points,fraction):
+    n=len(points); f=(fraction%1.0)*n; i=int(math.floor(f))%n; t=f-math.floor(f); ax,az=points[i]; bx,bz=points[(i+1)%n]; x=ax+(bx-ax)*t; z=az+(bz-az)*t; tx=bx-ax; tz=bz-az; L=max(math.hypot(tx,tz),1e-9); tx/=L; tz/=L; return (x,z),(tx,tz),(tz,-tx)
 
-def bank_degrees_at_fraction(config: dict, fraction: float) -> float:
-    result = 0.0
-    f = fraction % 1.0
-    for zone in config.get("banking", []):
-        center = float(zone["center_fraction"]) % 1.0
-        half = max(float(zone["half_width_fraction"]), 1e-6)
-        d = abs((f - center + 0.5) % 1.0 - 0.5)
-        if d <= half:
-            weight = 0.5 * (1.0 + math.cos(math.pi * d / half))
-            result += float(zone["degrees"]) * weight
-    return result
+def terrain_height(config,fraction,side,distance_from_center_m):
+    road_half=float(config["road"]["width_m"])*.5; surface=float(config["road"].get("surface_elevation_m",.025)); falloff=max(float(config.get("terrain",{}).get("shoulder_falloff_m",18)),.1); far=effective_far_ground_z(config); bank=math.radians(bank_degrees_at_fraction(config,fraction)); edge=surface+math.tan(bank)*road_half*side; t=min(1,max(0,(float(distance_from_center_m)-road_half)/falloff)); t=t*t*(3-2*t); return edge*(1-t)+far*t
 
-
-def sample_centerline(points, fraction):
-    n = len(points)
-    f = (fraction % 1.0) * n
-    i = int(math.floor(f)) % n
-    t = f - math.floor(f)
-    ax, az = points[i]
-    bx, bz = points[(i + 1) % n]
-    x = ax + (bx - ax) * t
-    z = az + (bz - az) * t
-    tx = bx - ax
-    tz = bz - az
-    length = max(math.hypot(tx, tz), 1e-9)
-    tx /= length
-    tz /= length
-    nx = tz
-    nz = -tx
-    return (x, z), (tx, tz), (nx, nz)
-
-
-def effective_far_ground_z(config: dict) -> float:
-    road_half = float(config["road"]["width_m"]) * 0.5
-    surface_z = float(config["road"].get("surface_elevation_m", 0.025))
-    clearance = float(config.get("terrain", {}).get("road_clearance_m", 0.012))
-    requested = float(config.get("terrain", {}).get("far_ground_z_m", -0.05))
-    max_bank = max((abs(float(zone.get("degrees", 0.0))) for zone in config.get("banking", [])), default=0.0)
-    lowest_banked_edge = surface_z - math.tan(math.radians(max_bank)) * road_half
-    return min(requested, lowest_banked_edge - clearance - 0.02)
-
-
-def terrain_height(config: dict, fraction: float, side: float, distance_from_center_m: float) -> float:
-    road_half = float(config["road"]["width_m"]) * 0.5
-    surface_z = float(config["road"].get("surface_elevation_m", 0.025))
-    terrain = config.get("terrain", {})
-    clearance = float(terrain.get("road_clearance_m", 0.012))
-    shoulder_width = max(float(terrain.get("shoulder_width_m", 26.0)), 0.1)
-    far_z = effective_far_ground_z(config)
-    bank = math.radians(bank_degrees_at_fraction(config, fraction))
-    road_edge_height = surface_z + math.tan(bank) * road_half * side
-    inner_ground = road_edge_height - clearance
-    outside = max(0.0, float(distance_from_center_m) - road_half)
-    t = min(1.0, outside / shoulder_width)
-    return inner_ground * (1.0 - t) + far_z * t
-
-
-def _mesh_object(name: str, verts, faces, material=None, uvs=None):
-    mesh = bpy.data.meshes.new(name + "Mesh")
-    mesh.from_pydata(verts, [], faces)
-    mesh.update()
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    if material:
-        obj.data.materials.append(material)
-    if uvs is not None:
-        uv_layer = mesh.uv_layers.new(name="UVMap")
-        for polygon in mesh.polygons:
-            for loop_index in polygon.loop_indices:
-                vertex_index = mesh.loops[loop_index].vertex_index
-                uv_layer.data[loop_index].uv = uvs[vertex_index]
+def _mesh_object(name,verts,faces,materials=None,face_materials=None,uv_by_face=None):
+    mesh=bpy.data.meshes.new(name+"Mesh"); mesh.from_pydata(verts,[],faces); mesh.update(); obj=bpy.data.objects.new(name,mesh); bpy.context.scene.collection.objects.link(obj)
+    for mat in materials or []: obj.data.materials.append(mat)
+    if face_materials:
+        for i,m in enumerate(face_materials):
+            if i<len(mesh.polygons): mesh.polygons[i].material_index=int(m)
+    if uv_by_face:
+        uv=mesh.uv_layers.new(name="UVMap")
+        for pi,poly in enumerate(mesh.polygons):
+            for li,loop in enumerate(poly.loop_indices): uv.data[loop].uv=uv_by_face[pi][li]
     return obj
 
+def _card(name,width,height,material,angle_rad=0.0):
+    h=width*.5; ca=math.cos(angle_rad); sa=math.sin(angle_rad); p=lambda x,z:(x*ca,x*sa,z); verts=[p(-h,0),p(h,0),p(h,height),p(-h,height)]; return _mesh_object(name,verts,[(0,1,2,3)],[material],uv_by_face=[[(0,0),(1,0),(1,1),(0,1)]])
+def _hide(objs):
+    for o in objs: o.hide_render=True; o.hide_viewport=True; o.hide_set(True)
+    return objs
+def _crossed(prefix,width,height,material,planes): return _hide([_card(f"{prefix}_P{i+1}",width,height,material,math.pi*i/max(1,planes)) for i in range(max(1,planes))])
+def _building(prefix,width,height,depth,facade,roof):
+    w=width*.5; d=depth*.5; verts=[(-w,-d,0),(w,-d,0),(w,d,0),(-w,d,0),(-w,-d,height),(w,-d,height),(w,d,height),(-w,d,height)]; faces=[(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7),(4,5,6,7)]; uv=[[(0,0),(1,0),(1,1),(0,1)]]*5; return _hide([_mesh_object(prefix,verts,faces,[facade,roof],[0,0,0,0,1],uv)])
+def create_prototypes(materials,config):
+    biome=biome_from_config(config); out={}
+    for category in ("trees","bushes","grass","fake_buildings"):
+        for spec in specs_for_biome(biome,category):
+            mat=materials[f"asset:{spec.id}"]
+            if category=="trees": out[spec.id]=_crossed(f"Proto_{spec.id}",spec.width_m,spec.height_m,mat,3)
+            elif category=="bushes": out[spec.id]=_crossed(f"Proto_{spec.id}",spec.width_m,spec.height_m,mat,2)
+            elif category=="grass": out[spec.id]=_crossed(f"Proto_{spec.id}",spec.width_m,spec.height_m,mat,1)
+            else: out[spec.id]=_building(f"Proto_{spec.id}",spec.width_m,spec.height_m,spec.depth_m,mat,materials["roof"])
+    return out
 
-def _card(name: str, width: float, height: float, material, axis: str = "X"):
-    if axis == "X":
-        verts = [(-width/2, 0, 0), (width/2, 0, 0), (width/2, 0, height), (-width/2, 0, height)]
-    else:
-        verts = [(0, -width/2, 0), (0, width/2, 0), (0, width/2, height), (0, -width/2, height)]
-    faces = [(0, 1, 2, 3)]
-    uvs = [(0, 0), (1, 0), (1, 1), (0, 1)]
-    return _mesh_object(name, verts, faces, material, uvs)
-
-
-def _cube(name: str, size_xyz, location, material=None):
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=location)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = tuple(float(v) for v in size_xyz)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if material:
-        obj.data.materials.append(material)
-    return obj
-
-
-def _cone(name: str, radius1: float, radius2: float, depth: float, z: float, material):
-    bpy.ops.mesh.primitive_cone_add(vertices=6, radius1=radius1, radius2=radius2, depth=depth, location=(0, 0, z))
-    obj = bpy.context.object
-    obj.name = name
-    obj.data.materials.append(material)
-    return obj
-
-
-def _ico(name: str, radius: float, location, scale, material):
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=radius, location=location)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    obj.data.materials.append(material)
-    return obj
-
-
-def _hide_prototype(objects):
-    for obj in objects:
-        obj.hide_render = True
-        obj.hide_viewport = True
-        obj.hide_set(True)
-    return objects
-
-
-def _tree_broadleaf(materials):
-    trunk = _cone("Proto_SA_Broadleaf_Trunk", 0.34, 0.24, 3.8, 1.9, materials["trunk"])
-    crown = _ico("Proto_SA_Broadleaf_Crown", 2.15, (0, 0, 4.4), (1.0, 0.92, 0.78), materials["foliage_green"])
-    crown2 = _ico("Proto_SA_Broadleaf_Crown2", 1.45, (0.85, -0.25, 4.0), (1.0, 0.85, 0.72), materials["foliage_green"])
-    return _hide_prototype([trunk, crown, crown2])
-
-
-def _tree_dry(materials):
-    trunk = _cone("Proto_SA_Dry_Trunk", 0.30, 0.20, 3.1, 1.55, materials["trunk"])
-    crown = _ico("Proto_SA_Dry_Crown", 1.85, (0, 0, 3.7), (1.18, 0.95, 0.58), materials["foliage_dry"])
-    crown2 = _ico("Proto_SA_Dry_Crown2", 1.25, (-1.0, 0.25, 3.45), (1.0, 0.85, 0.52), materials["foliage_dry"])
-    return _hide_prototype([trunk, crown, crown2])
-
-
-def _palm_fronds(material):
-    verts = [(0, 0, 0.0)]
-    faces = []
-    uv = [(0.5, 0.0)]
-    count = 8
-    for i in range(count):
-        a = math.tau * i / count
-        length = 2.2 + 0.25 * (i % 2)
-        width = 0.36
-        center = Vector((math.cos(a) * length * 0.56, math.sin(a) * length * 0.56, 0.02 - 0.12 * (i % 3)))
-        side = Vector((-math.sin(a), math.cos(a), 0.0)) * width
-        tip = Vector((math.cos(a) * length, math.sin(a) * length, -0.24))
-        verts.extend([tuple(center - side), tuple(center + side), tuple(tip)])
-        base = 1 + i * 3
-        faces.append((0, base, base + 2, base + 1))
-        uv.extend([(0.0, 0.35), (1.0, 0.35), (0.5, 1.0)])
-    return _mesh_object("Proto_SA_Palm_Fronds", verts, faces, material, uv)
-
-
-def _tree_palm(materials):
-    trunk = _cone("Proto_SA_Palm_Trunk", 0.28, 0.18, 5.8, 2.9, materials["trunk"])
-    fronds = _palm_fronds(materials["foliage_green"])
-    fronds.location.z = 5.7
-    return _hide_prototype([trunk, fronds])
-
-
-def _cross_cards(prefix: str, width: float, height: float, material):
-    a = _card(prefix + "_A", width, height, material, "X")
-    b = _card(prefix + "_B", width, height, material, "Y")
-    return _hide_prototype([a, b])
-
-
-def _building(prefix: str, width: float, height: float, material):
-    card = _card(prefix, width, height, material, "X")
-    return _hide_prototype([card])
-
-
-def create_prototypes(materials: dict, region: str) -> dict[str, list[bpy.types.Object]]:
-    get_region_profile(region)
-    return {
-        "sa_broadleaf": _tree_broadleaf(materials),
-        "sa_dry_canopy": _tree_dry(materials),
-        "sa_palm": _tree_palm(materials),
-        "sa_bush_round": _cross_cards("Proto_SA_BushRound", 2.2, 1.65, materials["bush_green"]),
-        "sa_bush_dry": _cross_cards("Proto_SA_BushDry", 1.9, 1.35, materials["bush_dry"]),
-        "sa_grass_clump": _cross_cards("Proto_SA_Grass", 0.75, 0.75, materials["grass_green"]),
-        "sa_grass_dry": _cross_cards("Proto_SA_GrassDry", 0.68, 0.68, materials["grass_dry"]),
-        "sa_building_low": _building("Proto_SA_BuildingLow", 11.0, 6.5, materials["building_low"]),
-        "sa_building_warehouse": _building("Proto_SA_Warehouse", 17.0, 7.5, materials["building_warehouse"]),
-    }
-
-
-def instantiate_prototype(source_objects, name: str, x: float, z: float, height: float, yaw: float, scale: float):
-    root = bpy.data.objects.new(name, None)
-    bpy.context.scene.collection.objects.link(root)
-    root.location = godot_xz_to_blender(x, z, height)
-    root.rotation_euler[2] = -float(yaw)
-    root.scale = (scale, scale, scale)
+def instantiate_prototype(source_objects,name,x,z,height,yaw,scale,tint_rgb=None):
+    root=bpy.data.objects.new(name,None); bpy.context.scene.collection.objects.link(root); root.location=godot_xz_to_blender(x,z,height); root.rotation_euler[2]=-float(yaw); root.scale=(scale,scale,scale)
+    if tint_rgb is not None: root["formula90s_tint_rgb"]=list(tint_rgb)
     for src in source_objects:
-        copy = src.copy()
-        if src.data is not None:
-            copy.data = src.data
-        copy.hide_render = False
-        copy.hide_viewport = False
-        copy.hide_set(False)
-        bpy.context.scene.collection.objects.link(copy)
-        copy.parent = root
+        copy=src.copy(); copy.data=src.data if src.data is not None else None; copy.hide_render=False; copy.hide_viewport=False; copy.hide_set(False); bpy.context.scene.collection.objects.link(copy); copy.parent=root
     return root
 
-
-def create_guardrail_prototype(config: dict, materials: dict):
-    settings = config["guardrails"]
-    length = float(settings.get("module_length_m", 4.0))
-    rail_depth = float(settings.get("visual_depth_m", 0.11))
-    rail_height = float(settings.get("beam_height_m", 0.34))
-    center_z = float(settings.get("beam_center_height_m", 0.58))
-    post_height = float(settings.get("post_height_m", 0.82))
-    post_width = float(settings.get("post_width_m", 0.10))
-    post_depth = float(settings.get("post_depth_m", 0.12))
-    mat = materials["guardrail"]
-
-    objects = []
-    strip_h = rail_height / 3.0
-    for i, offset in enumerate((-0.07, 0.0, 0.07)):
-        strip = _cube(
-            f"Proto_Guardrail_Beam_{i}",
-            (length, rail_depth, strip_h),
-            (0.0, offset, center_z + (i - 1) * strip_h * 0.82),
-            mat,
-        )
-        objects.append(strip)
-
-    post_spacing = max(1.0, float(settings.get("post_spacing_m", 2.0)))
-    count = max(2, int(math.floor(length / post_spacing)) + 1)
-    for i in range(count):
-        x = -length * 0.5 + i * (length / max(1, count - 1))
-        post = _cube(
-            f"Proto_Guardrail_Post_{i}",
-            (post_width, post_depth, post_height),
-            (x, 0.0, post_height * 0.5),
-            mat,
-        )
-        objects.append(post)
-
-    return _hide_prototype(objects), length
-
-
-def create_guardrail_collision(name: str, pos, tangent, length: float, ground_z: float, config: dict):
-    settings = config["guardrails"]
-    height = float(settings["collision_height_m"])
-    thickness = float(settings["collision_thickness_m"])
-    x, z = pos
-    bpy.ops.mesh.primitive_cube_add(location=godot_xz_to_blender(x, z, ground_z + height * 0.5))
-    obj = bpy.context.object
-    obj.name = name + "-colonly"
-    tx, tz = tangent
-    obj.rotation_euler[2] = math.atan2(-tz, tx)
-    obj.scale = (length * 0.5, thickness * 0.5, height * 0.5)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    obj.hide_render = True
-    obj.display_type = "WIRE"
+def _cube(name,size_xyz,location,material=None):
+    bpy.ops.mesh.primitive_cube_add(size=1,location=location); obj=bpy.context.object; obj.name=name; obj.scale=tuple(float(v) for v in size_xyz); bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
+    if material: obj.data.materials.append(material)
     return obj
+
+def create_guardrail_prototype(config,materials):
+    s=config["guardrails"]; length=float(s.get("module_length_m",4)); depth=float(s.get("visual_depth_m",.11)); height=float(s.get("beam_height_m",.34)); center=float(s.get("beam_center_height_m",.58)); ph=float(s.get("post_height_m",.82)); pw=float(s.get("post_width_m",.10)); pd=float(s.get("post_depth_m",.12)); mat=materials["guardrail"]; objs=[]; strip=height/3
+    for i,offset in enumerate((-.07,0,.07)): objs.append(_cube(f"Proto_Guardrail_Beam_{i}",(length,depth,strip),(0,offset,center+(i-1)*strip*.82),mat))
+    spacing=max(1,float(s.get("post_spacing_m",2))); count=max(2,int(math.floor(length/spacing))+1)
+    for i in range(count): objs.append(_cube(f"Proto_Guardrail_Post_{i}",(pw,pd,ph),(-length*.5+i*(length/max(1,count-1)),0,ph*.5),mat))
+    return _hide(objs),length
+
+def create_guardrail_collision(name,pos,tangent,length,ground_z,config):
+    s=config["guardrails"]; h=float(s["collision_height_m"]); t=float(s["collision_thickness_m"]); x,z=pos; bpy.ops.mesh.primitive_cube_add(location=godot_xz_to_blender(x,z,ground_z+h*.5)); obj=bpy.context.object; obj.name=name+"-colonly"; tx,tz=tangent; obj.rotation_euler[2]=math.atan2(-tz,tx); obj.scale=(length*.5,t*.5,h*.5); bpy.ops.object.transform_apply(location=False,rotation=False,scale=True); obj.hide_render=True; obj.display_type="WIRE"; return obj
