@@ -1,43 +1,66 @@
 ---
 name: track-reconstruction
-description: Deterministic real-circuit reconstruction and procedural Blender racetrack/environment generation.
+description: Deterministic real-circuit reconstruction, collision-safe Blender generation, Texture Forge and procedural environment generation.
 ---
 
-# Skill: Track Reconstruction
+# Track reconstruction
 
-Use for real circuit geometry, Blender racetracks, curbs, terrain, guardrails, procedural materials/vegetation, or "ejecuta el renderizado procedural".
+Use this skill for real circuit geometry, Blender racetracks, curbs, terrain, guardrails, procedural vegetation or Texture Forge work.
 
-## Gate
+## Stage gate
 
-Base:
+Run Base first and stop for human testing:
+
 ```powershell
 .\scripts\run_track_pipeline.ps1 -Mode Base -Track <track> -Seed <seed>
 ```
-Human-test Base before Procedural.
 
-Procedural:
-```powershell
-.\scripts\run_track_pipeline.ps1 -Mode Procedural -Track <track> `
-  -TreesDensity <density> -BushesDensity <density> `
-  -GrassDensity <density> -BuildingsDensity <density> -Seed <seed>
+Only after explicit human acceptance may Procedural run.
+
+## Collision hard rules
+
+- Never reintroduce wide centerline-offset Grass collision ribbons.
+- Terrain collision must be a continuous grid/heightfield with no deleted road cells.
+- Terrain faces must point Blender +Z after coordinate conversion.
+- The road edge must have an exact narrow Grass collision bridge.
+- `GrassSafetyFloor-colonly` must remain a last-resort failsafe below the playable terrain.
+- Grass/bush/tree visual cards do not receive gameplay collision.
+- Guardrails use simplified collision proxies, never detailed visual geometry.
+- Do not change Jordan/GEVP physics to hide a track collision bug.
+
+## Texture Forge hard rules
+
+Final procedural textures are compiled deterministically by Python.
+
+Inputs are:
+
+```text
+source recipe + biome + seed + forge preset
 ```
 
-## Hard rules
+Current preset: `ps1_rally_clean`.
 
-- Same config + seed must reproduce centerline, texture bank and placement.
-- Never decorate `track_base.blend` in place; reopen it for every procedural run.
-- Back up previous `.blend` outputs and atomically replace runtime GLBs.
-- Terrain collision must be a single-valued heightfield/grid or another topology proven not to self-intersect. Do not use wide normal-offset shoulder ribbons on tight curves.
-- Collision terrain must meet the road edge continuously; visual-only sink may be millimetric.
-- Smooth low curbs only; never rectangular launch ramps.
-- Guardrail visual mesh never acts as vehicle collision; use simple `-colonly` proxies.
-- Procedural biome is `continent + longitude band + altitude band`.
-- South America must expose four variants for vegetation/structure categories in every west/center/east × low/medium/high combination.
-- Trees use 3 crossed planes, bushes 2, grass 1. Do not replace them with full 3D crowns unless explicitly requested.
-- Buildings may be simple 3D shells with a basic top and no underside.
-- Keep base texture count small; reuse deterministic textures instead of per-instance files.
-- Validate overlaps and track clearances before Blender export.
+The generator must preserve provenance hashes. Do not hand-edit generated PNG files and commit the result as authority.
 
-## Failure
+Art direction:
 
-If track/terrain validation fails, do not run Blender. If environment validation fails, do not publish the decorated GLB. Preserve the last known-good canonical GLB on export failure.
+- late-90s PS1 rally/racing readability;
+- strong silhouettes;
+- subtle fake prerendered lighting/shadows;
+- low effective color count;
+- subtle ordered dithering;
+- terrain uses large asymmetric green/dry/soil zones rather than uniform noise.
+
+## Vegetation contract
+
+- trees: 3 crossed planes;
+- bushes: 2 crossed planes;
+- grass: 1 plane;
+- buildings: simple 3D with basic roof/top;
+- four base variants per category per South America longitude/altitude combination;
+- placement must account for bounding radius when enforcing road-edge clearance;
+- clustered placement is preferred over uniform scatter.
+
+## Failure protocol
+
+If track, terrain, Texture Forge or environment validation fails, STOP before Blender export. Never claim success because Blender merely opened or exported.
