@@ -4,55 +4,95 @@
   "generated_dir": "blender/generated/la_chutana",
   "runtime_dir": "game/assets/generated/tracks/la_chutana",
   "sample_spacing_m": 2.0,
-  "road": {"width_m": 12.0, "thickness_m": 0.16, "edge_line_width_m": 0.12, "surface_elevation_m": 0.025},
-  "terrain": {"grid_cell_m": 8.0, "texture_world_size_m": 96.0, "shoulder_falloff_m": 18.0, "collision_seam_overlap_m": 0.15, "visual_sink_m": 0.003, "far_ground_z_m": -0.10, "far_ground_safety_m": 0.05, "far_ground_margin_m": 220.0},
+  "road": {
+    "width_m": 12.0,
+    "thickness_m": 0.16,
+    "edge_line_width_m": 0.12,
+    "surface_elevation_m": 0.025
+  },
+  "terrain": {
+    "grid_cell_m": 6.0,
+    "texture_world_size_m": 96.0,
+    "shoulder_falloff_m": 18.0,
+    "collision_underlay_drop_m": 0.12,
+    "collision_underlay_blend_m": 1.0,
+    "visual_under_road_drop_m": 0.22,
+    "visual_under_road_blend_m": 1.4,
+    "visual_edge_blend_m": 1.25,
+    "visual_sink_m": 0.003,
+    "roadside_visual_width_m": 1.4,
+    "far_ground_z_m": -0.1,
+    "far_ground_safety_m": 0.05,
+    "far_ground_margin_m": 220.0,
+    "safety_floor_z_m": -6.0,
+    "safety_floor_thickness_m": 0.6,
+    "safety_floor_margin_m": 80.0,
+    "roadside_collision_width_m": 2.0
+  },
   "curb": {
-    "width_m": 0.58, "base_depth_m": 0.045, "stripe_length_m": 2.0,
-    "profile": [[0.0,0.0],[0.12,0.005],[0.29,0.022],[0.46,0.012],[0.58,0.002]],
+    "width_m": 0.58,
+    "base_depth_m": 0.045,
+    "stripe_length_m": 2.0,
+    "profile": [[0.0, 0.0], [0.12, 0.005], [0.29, 0.022], [0.46, 0.012], [0.58, 0.002]],
     "segments": [
-      {"name":"T1Inside","side":"right","start_fraction":0.06,"end_fraction":0.145},
-      {"name":"T1Exit","side":"left","start_fraction":0.115,"end_fraction":0.175},
-      {"name":"T2Inside","side":"left","start_fraction":0.18,"end_fraction":0.255},
-      {"name":"T3Inside","side":"right","start_fraction":0.255,"end_fraction":0.335},
-      {"name":"T4Inside","side":"right","start_fraction":0.355,"end_fraction":0.455},
-      {"name":"T4Exit","side":"left","start_fraction":0.435,"end_fraction":0.515},
-      {"name":"T5Inside","side":"right","start_fraction":0.575,"end_fraction":0.655},
-      {"name":"T6Inside","side":"left","start_fraction":0.735,"end_fraction":0.865},
-      {"name":"T6Exit","side":"right","start_fraction":0.825,"end_fraction":0.915}
+      {"name": "T1Inside", "side": "right", "start_fraction": 0.06, "end_fraction": 0.145},
+      {"name": "T1Exit", "side": "left", "start_fraction": 0.115, "end_fraction": 0.175},
+      {"name": "T2Inside", "side": "left", "start_fraction": 0.18, "end_fraction": 0.255},
+      {"name": "T3Inside", "side": "right", "start_fraction": 0.255, "end_fraction": 0.335},
+      {"name": "T4Inside", "side": "right", "start_fraction": 0.355, "end_fraction": 0.455},
+      {"name": "T4Exit", "side": "left", "start_fraction": 0.435, "end_fraction": 0.515},
+      {"name": "T5Inside", "side": "right", "start_fraction": 0.575, "end_fraction": 0.655},
+      {"name": "T6Inside", "side": "left", "start_fraction": 0.735, "end_fraction": 0.865},
+      {"name": "T6Exit", "side": "right", "start_fraction": 0.825, "end_fraction": 0.915}
     ]
   },
   "banking": [
-    {"center_fraction":0.105,"half_width_fraction":0.03,"degrees":3.0},
-    {"center_fraction":0.385,"half_width_fraction":0.03,"degrees":-2.5},
-    {"center_fraction":0.815,"half_width_fraction":0.03,"degrees":2.5}
+    {"center_fraction": 0.105, "half_width_fraction": 0.03, "degrees": 3.0},
+    {"center_fraction": 0.385, "half_width_fraction": 0.03, "degrees": -2.5},
+    {"center_fraction": 0.815, "half_width_fraction": 0.03, "degrees": 2.5}
   ],
   "guardrails": {
-    "procedural": true, "module_length_m": 4.0, "visual_depth_m": 0.11, "beam_height_m": 0.34, "beam_center_height_m": 0.58,
-    "post_spacing_m": 2.0, "post_height_m": 0.82, "post_width_m": 0.10, "post_depth_m": 0.12, "collision_height_m": 0.75, "collision_thickness_m": 0.18,
+    "procedural": true,
+    "module_length_m": 4.0,
+    "visual_depth_m": 0.11,
+    "beam_height_m": 0.34,
+    "beam_center_height_m": 0.58,
+    "post_spacing_m": 2.0,
+    "post_height_m": 0.82,
+    "post_width_m": 0.1,
+    "post_depth_m": 0.12,
+    "collision_height_m": 0.75,
+    "collision_thickness_m": 0.18,
     "segments": [
-      {"name":"T1Outer","side":"left","start_fraction":0.055,"end_fraction":0.155,"offset_from_edge_m":4.0},
-      {"name":"BackOuter","side":"right","start_fraction":0.69,"end_fraction":0.805,"offset_from_edge_m":5.0}
+      {"name": "T1Outer", "side": "left", "start_fraction": 0.055, "end_fraction": 0.155, "offset_from_edge_m": 4.0},
+      {"name": "BackOuter", "side": "right", "start_fraction": 0.69, "end_fraction": 0.805, "offset_from_edge_m": 5.0}
     ]
   },
   "procedural_environment": {
     "region": "south_america",
-    "biome": {"continent":"south_america","longitude":"west","altitude":"low"},
+    "biome": {"continent": "south_america", "longitude": "west", "altitude": "low"},
     "terrain_palette": "balanced",
     "structure_mix": "mixed",
     "zones": {
-      "grass":{"min_track_distance_m":6.7,"max_track_distance_m":13.0},
-      "bushes":{"min_track_distance_m":9.0,"max_track_distance_m":28.0},
-      "trees":{"min_track_distance_m":20.0,"max_track_distance_m":78.0},
-      "fake_buildings":{"min_track_distance_m":90.0,"max_track_distance_m":185.0}
+      "grass": {"min_edge_clearance_m": 1.4, "max_track_distance_m": 30.0},
+      "bushes": {"min_edge_clearance_m": 3.0, "max_track_distance_m": 44.0},
+      "trees": {"min_edge_clearance_m": 8.0, "max_track_distance_m": 100.0},
+      "fake_buildings": {"min_edge_clearance_m": 65.0, "max_track_distance_m": 240.0}
     },
     "density_profiles": {
-      "none":{"grass_per_km":0,"bushes_per_km":0,"trees_per_km":0,"fake_buildings_per_km":0},
-      "very_low":{"grass_per_km":65,"bushes_per_km":10,"trees_per_km":7,"fake_buildings_per_km":1},
-      "low":{"grass_per_km":130,"bushes_per_km":22,"trees_per_km":15,"fake_buildings_per_km":2},
-      "medium":{"grass_per_km":250,"bushes_per_km":42,"trees_per_km":30,"fake_buildings_per_km":4},
-      "high":{"grass_per_km":420,"bushes_per_km":70,"trees_per_km":48,"fake_buildings_per_km":6}
+      "none": {"grass_per_km": 0, "bushes_per_km": 0, "trees_per_km": 0, "fake_buildings_per_km": 0},
+      "very_low": {"grass_per_km": 220, "bushes_per_km": 28, "trees_per_km": 18, "fake_buildings_per_km": 3},
+      "low": {"grass_per_km": 420, "bushes_per_km": 60, "trees_per_km": 36, "fake_buildings_per_km": 5},
+      "medium": {"grass_per_km": 750, "bushes_per_km": 110, "trees_per_km": 60, "fake_buildings_per_km": 8},
+      "high": {"grass_per_km": 1200, "bushes_per_km": 180, "trees_per_km": 95, "fake_buildings_per_km": 12}
     }
   },
-  "materials": {"texture_size":256,"card_texture_size":128,"seed":1995},
-  "start_finish":{"line_width_m":2.2,"spawn_before_m":18.0}
+  "materials": {
+    "texture_size": 256,
+    "terrain_texture_size": 512,
+    "card_texture_size": 128,
+    "seed": 1995,
+    "texture_forge_style": "ps1_rally_clean"
+  },
+  "start_finish": {"line_width_m": 2.2, "spawn_before_m": 18.0}
 }
