@@ -1,26 +1,16 @@
-# Formula90s procedural vegetation
+# Formula90s vegetation
 
-External vegetation assets are optional overrides; the default track pipeline generates its own retro vegetation.
+The default racetrack pipeline no longer requires external vegetation assets.
 
-Biome selection is deterministic:
+Vegetation is generated from the deterministic biome + Texture Forge system under `blender/track_pipeline/`.
 
-```text
-continent + longitude (west/center/east) + altitude (low/medium/high)
-```
+Current visual contract:
 
-For every South America combination the generated texture bank contains at least:
+- tree = 3 crossed textured planes;
+- bush = 2 crossed textured planes;
+- grass = 1 textured plane;
+- no gameplay collision on vegetation cards;
+- silhouettes and fake prerendered shading are carried primarily by the texture;
+- four variants are generated per vegetation category for every supported South America biome combination.
 
-- 4 tree cards;
-- 4 bush cards;
-- 4 grass cards;
-- 4 facade textures used by distant/medium structures.
-
-Geometry contract:
-
-- trees: 3 crossed double-sided planes (6 directional faces), deliberately taller than the first prototype generation;
-- bushes: 2 crossed planes, low and relatively wide;
-- grass: one double-sided card, intended for high instance counts.
-
-Textures use strong-clean PS1 styling with hard silhouettes and fake/pre-rendered self-shadow facets. Tree and bush palettes are intentionally offset so they do not collapse into one identical green mass.
-
-`blender/vegetation/` remains available for future hand-authored overrides, but an empty folder must never break the default pipeline.
+Optional hand-authored source assets may be added later, but they must still pass through the same deterministic style/validation contract before becoming runtime authority.
