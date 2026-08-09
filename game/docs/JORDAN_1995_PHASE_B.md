@@ -1,6 +1,6 @@
 # Jordan 1995 — Phase B mechanical grip and wheel stability
 
-Purpose: stabilize the Jordan mechanical baseline before steering, powertrain or aero work. Phase B covers mechanical grip, brake balance, rear differential behavior and visual wheel-axis correctness while preserving the validated GEVP vendor physics architecture.
+Purpose: stabilize the Jordan mechanical baseline before steering, powertrain or aero work. Phase B covers mechanical grip, brake balance, rear differential behavior and wheel stability while preserving the validated GEVP vendor physics architecture.
 
 ## Active scene
 
@@ -14,7 +14,7 @@ The test scene instantiates:
 
 `res://scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn`
 
-Phase A remains preserved at:
+Phase A remains the geometry/reference parent at:
 
 `res://scenes/vehicles/jordan_1995/jordan_1995.tscn`
 
@@ -32,19 +32,21 @@ The GEVP baseline vehicle remains separate and must not be tuned from Jordan obs
 - Road longitudinal grip ratio: 0.50 -> 0.48.
 - Curb grip is reduced proportionally so curbs do not behave like asphalt.
 
-## Phase B wheel-axis correction
+## Wheel stability architecture
 
-The imported wheel GLBs are not equally centered around their local rotation axes. The front-left visual is displaced by roughly 7 mm in the radial plane, and the front-right visual also has a radial-size asymmetry. Rotating those meshes around local X can therefore look like a bent axle or unstable suspension even when the RayCast3D physics are stable.
+Wheel visual asymmetry is no longer repaired at runtime. The Jordan follows the project-wide canonical vehicle visual contract:
 
-`jordan_wheel_visual_calibrator.gd` now performs a visual-only correction at runtime:
+- one chassis geometry;
+- one canonical front-wheel geometry reused by FL and FR;
+- one canonical rear-wheel geometry reused by RL and RR.
 
-1. Calculates the combined imported mesh bounds for each wheel.
-2. Centers the mesh geometry on the GEVP wheel rotation axis.
-3. Normalizes X to the physical tire width configured on the vehicle.
-4. Normalizes Y/Z to the physical tire diameter configured on the vehicle.
-5. Leaves RayCast3D position, suspension force, tire force and wheel spin physics untouched.
+The four GEVP `RayCast3D` wheels remain independent physics objects. Their visuals are shared `PackedScene` instances, and the right-side orientation lives below the GEVP-controlled `Pivot`.
 
-This is intentionally kept outside `addons/gevp/`.
+This guarantees that the two wheels of an axle cannot diverge because of independently-authored GLB geometry. The old `jordan_wheel_visual_calibrator.gd` workaround is intentionally removed.
+
+The front RayCast positions are exact mirrors in X and share identical Y/Z values. Rear RayCast positions follow the same invariant.
+
+See `VEHICLE_VISUAL_ASSET_CONTRACT.md` for the project-wide rule.
 
 ## Wheel diagnostics
 
@@ -58,7 +60,7 @@ It reports for FL / FR / RL / RR:
 - lateral slip,
 - longitudinal slip.
 
-Use it only to determine whether a remaining oscillation is physical after visual normalization. Do not tune springs or damping merely to hide a visual wobble.
+With visual geometry now shared per axle, any repeatable left/right difference in those values is much stronger evidence of a physical RayCast/suspension/chassis issue rather than an imported-wheel modeling defect.
 
 ## Controls available during Phase B
 
@@ -79,7 +81,7 @@ Manual reverse is gated by the Formula90s controller: Neutral -> Reverse is allo
 ## Deliberately unchanged
 
 - Chassis geometry and collision shapes.
-- Wheelbase and physical track widths.
+- Wheelbase and physical track dimensions other than exact L/R centering of the front axle.
 - Physical tire radius and configured axle tire widths.
 - Mass and weight distribution.
 - Suspension spring/damping/ARB values.
@@ -89,11 +91,11 @@ Manual reverse is gated by the Formula90s controller: Neutral -> Reverse is allo
 - Aero/downforce layers.
 - GEVP vendor controller and wheel implementation.
 
-The suspension is deliberately not retuned in response to the observed front-wheel wobble because the imported visual geometry provides a concrete visual cause. Mechanical suspension changes require evidence from the wheel diagnostics.
+Suspension is deliberately not retuned merely because a visual wheel problem was previously observed. Mechanical suspension changes require evidence from the wheel diagnostics.
 
 ## Validation sequence
 
-1. Stationary inspection: front wheels should no longer look eccentric while rotating slowly.
+1. Stationary/slow-spin inspection: FL and FR must present the same geometry and apparent radius; RL and RR likewise.
 2. Straight acceleration: FL and FR should show similar contact/compression behavior.
 3. Straight-line braking from medium speed: rear must remain stable without excessive front-lock tendency.
 4. Low-speed corner entry: car should accept rotation without instant snap oversteer.
@@ -107,7 +109,7 @@ The suspension is deliberately not retuned in response to the observed front-whe
 
 Phase B is ready to close when:
 
-- no visible eccentric wheel rotation remains,
+- no side-specific visual wheel geometry anomaly remains,
 - left/right wheel contact is stable on flat road,
 - braking is predictable,
 - low/medium-speed grip loss is progressive,
