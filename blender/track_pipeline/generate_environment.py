@@ -3,72 +3,92 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import math
+
 import numpy as np
 
-from pipeline_common import read_json, write_json, closed_polyline_length, interpolate_at_fraction, min_distance_to_closed_polyline, SpatialHash, Occupant, stable_rng
+from pipeline_common import (
+    read_json,
+    write_json,
+    closed_polyline_length,
+    interpolate_at_fraction,
+    min_distance_to_closed_polyline,
+    SpatialHash,
+    Occupant,
+    stable_rng,
+)
+from procedural_catalog import specs_for, weighted_choice
 
 
-def weighted_asset(rng, assets):
-    total = sum(max(0.0,float(a.get("weight",1.0))) for a in assets)
-    if total <= 0:
-        return assets[0]
-    pick = rng.random()*total
-    running = 0.0
-    for a in assets:
-        running += max(0.0,float(a.get("weight",1.0)))
-        if pick <= running:
-            return a
-    return assets[-1]
+DENSITIES = ("none", "very_low", "low", "medium", "high")
 
 
-def place_category(category, density, config, points, assets, occupancy, seed):
-    veg = config["vegetation"]
-    profile = veg["density_profiles"][density]
+def place_category(category, density, config, points, occupancy, seed):
+    env = config["procedural_environment"]
+    profile = env["density_profiles"][density]
     count_key = f"{category}_per_km"
-    target = int(round(profile[count_key] * closed_polyline_length(points) / 1000.0))
-    zone = veg["zones"][category]
-    min_d, max_d = float(zone["min_track_distance_m"]), float(zone["max_track_distance_m"])
-    category_assets = [a for a in assets if a["category"] == category and a.get("valid",False)]
-    if target > 0 and not category_assets:
-        raise RuntimeError(f"Density {density} requests {category}, but no valid {category} assets were cataloged.")
+    target = int(round(float(profile[count_key]) * closed_polyline_length(points) / 1000.0))
+    zone = env["zones"][category]
+    min_d = float(zone["min_track_distance_m"])
+    max_d = float(zone["max_track_distance_m"])
+    region = env["region"]
+    specs = specs_for(region, category)
 
     rng = stable_rng(seed, category)
     output = []
     attempts = 0
-    max_attempts = max(500, target*60)
+    max_attempts = max(500, target * 80)
 
     while len(output) < target and attempts < max_attempts:
         attempts += 1
-        asset = weighted_asset(rng, category_assets)
+        spec = weighted_choice(rng, specs)
         fraction = rng.random()
-        pos, _, normal = interpolate_at_fraction(points, fraction)
+        pos, tangent, normal = interpolate_at_fraction(points, fraction)
         side = -1.0 if rng.random() < 0.5 else 1.0
-        distance = rng.uniform(min_d,max_d)
-        candidate = pos + normal * (side*distance)
+        distance = rng.uniform(min_d, max_d)
+        candidate = pos + normal * (side * distance)
+
         global_distance = min_distance_to_closed_polyline(candidate, points)
-        if global_distance < min_d - 0.05 or global_distance > max_d + 0.50:
+        if global_distance < min_d - 0.05 or global_distance > max_d + 0.75:
             continue
 
-        scale = rng.uniform(float(asset["scale_min"]), float(asset["scale_max"]))
-        radius = max(0.05, float(asset["radius_m"])*scale)
-        category_padding = {"grass":0.10,"bushes":0.40,"trees":1.25}[category]
-        if not occupancy.can_place(float(candidate[0]),float(candidate[1]),radius,category_padding):
+        scale = rng.uniform(spec.scale_min, spec.scale_max)
+        radius = max(0.05, spec.radius_m * scale)
+        category_padding = {
+            "grass": 0.10,
+            "bushes": 0.40,
+            "trees": 1.25,
+            "fake_buildings": 3.0,
+        }[category]
+        if not occupancy.can_place(float(candidate[0]), float(candidate[1]), radius, category_padding):
             continue
 
-        yaw = rng.uniform(0.0, math.tau)
-        tint_strength = {"grass":0.05,"bushes":0.06,"trees":0.07}[category]
-        tint = [round(1.0 + rng.uniform(-tint_strength,tint_strength),4) for _ in range(3)]
+        if category == "fake_buildings":
+            yaw = math.atan2(float(tangent[1]), float(tangent[0]))
+        else:
+            yaw = rng.uniform(0.0, math.tau)
+
+        tint_strength = {
+            "grass": 0.045,
+            "bushes": 0.05,
+            "trees": 0.055,
+            "fake_buildings": 0.025,
+        }[category]
+        tint = [round(1.0 + rng.uniform(-tint_strength, tint_strength), 4) for _ in range(3)]
+
         record = {
-            "category":category,
-            "asset_id":asset["id"],
-            "position_xz":[round(float(candidate[0]),4),round(float(candidate[1]),4)],
-            "yaw_rad":round(yaw,6),
-            "scale":round(scale,5),
-            "radius_m":round(radius,4),
-            "tint_rgb":tint,
+            "category": category,
+            "variant_id": spec.id,
+            "position_xz": [round(float(candidate[0]), 4), round(float(candidate[1]), 4)],
+            "track_fraction": round(float(fraction), 7),
+            "side": int(side),
+            "distance_from_center_m": round(float(distance), 4),
+            "yaw_rad": round(float(yaw), 6),
+            "scale": round(float(scale), 5),
+            "radius_m": round(float(radius), 4),
+            "tint_rgb": tint,
         }
         output.append(record)
-        occupancy.add(Occupant(float(candidate[0]),float(candidate[1]),radius,category,asset["id"]))
+        occupancy.add(Occupant(float(candidate[0]), float(candidate[1]), radius, category, spec.id))
 
     if len(output) < target:
         raise RuntimeError(f"Could only place {len(output)}/{target} {category} after {attempts} attempts.")
@@ -76,34 +96,48 @@ def place_category(category, density, config, points, assets, occupancy, seed):
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="Generate reproducible non-overlapping vegetation placement.")
-    p.add_argument("--config", required=True)
-    p.add_argument("--catalog", required=True)
-    p.add_argument("--trees-density", choices=["none","very_low","low","medium","high"], default="low")
-    p.add_argument("--bushes-density", choices=["none","very_low","low","medium","high"], default="low")
-    p.add_argument("--grass-density", choices=["none","very_low","low","medium","high"], default="medium")
-    p.add_argument("--seed", type=int, default=1995)
-    ns = p.parse_args()
+    parser = argparse.ArgumentParser(description="Generate reproducible procedural environment placement.")
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--trees-density", choices=DENSITIES, default="low")
+    parser.add_argument("--bushes-density", choices=DENSITIES, default="low")
+    parser.add_argument("--grass-density", choices=DENSITIES, default="medium")
+    parser.add_argument("--buildings-density", choices=DENSITIES, default="very_low")
+    parser.add_argument("--seed", type=int, default=1995)
+    ns = parser.parse_args()
 
     config_path = Path(ns.config).resolve()
     repo = config_path.parents[3]
     config = read_json(config_path)
     center = read_json(repo / config["generated_dir"] / "centerline.json")
     points = np.asarray(center["points_xz"], dtype=float)
-    assets = read_json(repo / ns.catalog)["assets"]
 
-    occupancy = SpatialHash(cell_size=8.0)
+    occupancy = SpatialHash(cell_size=10.0)
     placements = []
     stats = {}
-    for category, density in (("trees",ns.trees_density),("bushes",ns.bushes_density),("grass",ns.grass_density)):
-        placed, attempts = place_category(category,density,config,points,assets,occupancy,ns.seed)
+    requested = (
+        ("fake_buildings", ns.buildings_density),
+        ("trees", ns.trees_density),
+        ("bushes", ns.bushes_density),
+        ("grass", ns.grass_density),
+    )
+    for category, density in requested:
+        placed, attempts = place_category(category, density, config, points, occupancy, ns.seed)
         placements.extend(placed)
-        stats[category] = {"density":density,"placed":len(placed),"attempts":attempts}
+        stats[category] = {"density": density, "placed": len(placed), "attempts": attempts}
 
     output = repo / config["generated_dir"] / "placements.json"
-    write_json(output, {"track_id":config["track_id"],"seed":ns.seed,"stats":stats,"placements":placements})
+    write_json(
+        output,
+        {
+            "track_id": config["track_id"],
+            "region": config["procedural_environment"]["region"],
+            "seed": ns.seed,
+            "stats": stats,
+            "placements": placements,
+        },
+    )
     print(f"[environment] wrote {output}")
-    for category,stat in stats.items():
+    for category, stat in stats.items():
         print(f"[environment] {category}: {stat['placed']} ({stat['density']}) attempts={stat['attempts']}")
     return 0
 
