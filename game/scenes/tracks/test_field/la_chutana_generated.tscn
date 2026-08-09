@@ -1,0 +1,34 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana_base.glb" id="1_track"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/generated_track_surface_groups.gd" id="2_groups"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_generated"]
+sky_top_color = Color(0.341176, 0.505882, 0.745098, 1)
+sky_horizon_color = Color(0.737255, 0.792157, 0.858824, 1)
+ground_bottom_color = Color(0.321569, 0.298039, 0.27451, 1)
+ground_horizon_color = Color(0.643137, 0.627451, 0.580392, 1)
+
+[sub_resource type="Sky" id="Sky_generated"]
+sky_material = SubResource("ProceduralSkyMaterial_generated")
+
+[sub_resource type="Environment" id="Environment_generated"]
+background_mode = 2
+sky = SubResource("Sky_generated")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="LaChutanaGenerated" type="Node3D"]
+
+[node name="GeneratedTrack" parent="." instance=ExtResource("1_track")]
+
+[node name="SurfaceGroups" type="Node" parent="."]
+script = ExtResource("2_groups")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_generated")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.642788, -0.422618, 0.638968, 0, 0.834848, 0.550482, -0.766044, -0.353553, 0.5373, 0, 2, 0)
+light_energy = 1.2
+shadow_enabled = true
