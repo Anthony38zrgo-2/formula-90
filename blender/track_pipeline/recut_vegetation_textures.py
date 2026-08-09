@@ -11,7 +11,6 @@ from PIL import Image
 
 from pipeline_common import read_json
 from vegetation_texture_common import (
-    DEFAULT_BACKGROUND_RGB,
     LEGACY_MAGENTA_RGB,
     align_bottom,
     key_background_rgba,
@@ -47,13 +46,6 @@ def recut_image(path: Path, pass_index: int) -> dict:
         max_component_px=24,
         max_bbox_span=8,
     )
-    rgba, cyan_speckle_metrics = remove_isolated_key_speckles_rgba(
-        rgba,
-        key_rgb=DEFAULT_BACKGROUND_RGB,
-        tolerance=170.0,
-        max_component_px=24,
-        max_bbox_span=8,
-    )
     rgba, shift_down = align_bottom(rgba)
     rgba = pad_transparent_rgb(rgba, radius=4)
 
@@ -72,10 +64,7 @@ def recut_image(path: Path, pass_index: int) -> dict:
         "bottom_gap_px": height - bbox[3],
         "shift_down_px": int(shift_down),
         "key": key_metrics,
-        "legacy_speckle_cleanup": {
-            "legacy_magenta": speckle_metrics,
-            "electric_cyan_edge": cyan_speckle_metrics,
-        },
+        "legacy_speckle_cleanup": speckle_metrics,
         "sha256": digest,
     }
 
@@ -105,11 +94,12 @@ def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int, skip
         "version": POSTPROCESS_VERSION,
         "pass": pass_index,
         "scope": "legacy_128px_non_source_backed_only",
+        "key_name": "legacy_magenta",
         "key_rgb": LEGACY_MAGENTA_RGB.tolist(),
         "key_hex": "#FF00FF",
         "transparent_rgb": "foreground_edge_padding_4px",
         "bottom_anchor": "last_visible_alpha_row",
-        "cleanup": "isolated_visible_legacy_magenta_and_cyan_speckles_removed",
+        "cleanup": "isolated_visible_legacy_magenta_speckles_removed",
         "skipped_source_backed": int(skipped_source_backed),
     }
     manifest["vegetation_legacy_recut"] = recipe
