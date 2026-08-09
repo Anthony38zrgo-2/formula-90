@@ -1,0 +1,29 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/tracks/test_field/la_chutana_track.gd" id="1_script"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_la_chutana"]
+sky_top_color = Color(0.341176, 0.505882, 0.745098, 1)
+sky_horizon_color = Color(0.737255, 0.792157, 0.858824, 1)
+ground_bottom_color = Color(0.321569, 0.298039, 0.27451, 1)
+ground_horizon_color = Color(0.643137, 0.627451, 0.580392, 1)
+
+[sub_resource type="Sky" id="Sky_la_chutana"]
+sky_material = SubResource("ProceduralSkyMaterial_la_chutana")
+
+[sub_resource type="Environment" id="Environment_la_chutana"]
+background_mode = 2
+sky = SubResource("Sky_la_chutana")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="LaChutanaTrack" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_la_chutana")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.642788, -0.422618, 0.638968, 0, 0.834848, 0.550482, -0.766044, -0.353553, 0.5373, 0, 2, 0)
+light_energy = 1.2
+shadow_enabled = true
