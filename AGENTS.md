@@ -20,6 +20,7 @@ Do not load every manual for every task. Use these routing rules:
 - **Repeated failure** → load `problem-solving-guardrails`
 - **Planner → Executor transition** → load `context-handoff` & `context-garbage-collection`
 - **Physics tuning accepted** → load `regression-validation`
+- **Real circuit / Blender track / curbs / guardrails / vegetation** → load `track-reconstruction`
 
 ## 3. Context Garbage Collection
 Run Context Garbage Collection (see `context-garbage-collection/SKILL.md`) before major agent handoffs, diagnostic escalation, or after repeated failed attempts.

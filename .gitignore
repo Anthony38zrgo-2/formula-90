@@ -6,6 +6,8 @@ game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 game/telemetry/
 game/assets/generated/jordan_1995/
+game/assets/generated/tracks/
+blender/generated/
 compile_commands.json
 .sconsign.dblite
 
@@ -47,4 +49,3 @@ build_log.txt
 suspension_report.png
 instrucciones.txt
 context.md
-

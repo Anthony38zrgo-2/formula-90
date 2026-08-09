@@ -1,0 +1,65 @@
+{
+  "track_id": "la_chutana",
+  "reference_file": "blender/track_pipeline/data/la_chutana_reference.json",
+  "generated_dir": "blender/generated/la_chutana",
+  "runtime_dir": "game/assets/generated/tracks/la_chutana",
+  "sample_spacing_m": 2.0,
+  "road": {
+    "width_m": 12.0,
+    "thickness_m": 0.16,
+    "edge_line_width_m": 0.12
+  },
+  "curb": {
+    "width_m": 0.58,
+    "base_depth_m": 0.045,
+    "profile": [[0.0,0.0],[0.12,0.005],[0.29,0.022],[0.46,0.012],[0.58,0.002]],
+    "segments": [
+      {"name":"T1Inside","side":"right","start_fraction":0.06,"end_fraction":0.145},
+      {"name":"T1Exit","side":"left","start_fraction":0.115,"end_fraction":0.175},
+      {"name":"T2Inside","side":"left","start_fraction":0.18,"end_fraction":0.255},
+      {"name":"T3Inside","side":"right","start_fraction":0.255,"end_fraction":0.335},
+      {"name":"T4Inside","side":"right","start_fraction":0.355,"end_fraction":0.455},
+      {"name":"T4Exit","side":"left","start_fraction":0.435,"end_fraction":0.515},
+      {"name":"T5Inside","side":"right","start_fraction":0.575,"end_fraction":0.655},
+      {"name":"T6Inside","side":"left","start_fraction":0.735,"end_fraction":0.865},
+      {"name":"T6Exit","side":"right","start_fraction":0.825,"end_fraction":0.915}
+    ]
+  },
+  "banking": [
+    {"center_fraction":0.105,"half_width_fraction":0.03,"degrees":3.0},
+    {"center_fraction":0.385,"half_width_fraction":0.03,"degrees":-2.5},
+    {"center_fraction":0.815,"half_width_fraction":0.03,"degrees":2.5}
+  ],
+  "guardrails": {
+    "asset_root":"blender/infrastructure/guardrails",
+    "collision_height_m":0.75,
+    "collision_thickness_m":0.18,
+    "segments":[
+      {"name":"T1Outer","side":"left","start_fraction":0.055,"end_fraction":0.155,"offset_from_edge_m":4.0},
+      {"name":"BackOuter","side":"right","start_fraction":0.69,"end_fraction":0.805,"offset_from_edge_m":5.0}
+    ]
+  },
+  "vegetation": {
+    "asset_root":"blender/vegetation",
+    "zones": {
+      "grass":{"min_track_distance_m":6.4,"max_track_distance_m":12.0},
+      "bushes":{"min_track_distance_m":8.0,"max_track_distance_m":24.0},
+      "trees":{"min_track_distance_m":18.0,"max_track_distance_m":70.0}
+    },
+    "density_profiles": {
+      "none":{"grass_per_km":0,"bushes_per_km":0,"trees_per_km":0},
+      "very_low":{"grass_per_km":35,"bushes_per_km":15,"trees_per_km":10},
+      "low":{"grass_per_km":75,"bushes_per_km":30,"trees_per_km":22},
+      "medium":{"grass_per_km":150,"bushes_per_km":55,"trees_per_km":42},
+      "high":{"grass_per_km":260,"bushes_per_km":90,"trees_per_km":70}
+    },
+    "default_scale_ranges":{"grass":[0.8,1.15],"bushes":[0.85,1.2],"trees":[0.85,1.25]},
+    "plausibility": {
+      "grass":{"height_m":[0.03,1.2],"radius_m":[0.02,1.2]},
+      "bushes":{"height_m":[0.2,4.0],"radius_m":[0.15,3.0]},
+      "trees":{"height_m":[2.0,20.0],"radius_m":[0.4,7.0]},
+      "guardrails":{"height_m":[0.35,1.5],"length_m":[1.0,12.0]}
+    }
+  },
+  "start_finish":{"line_width_m":2.2,"spawn_before_m":18.0}
+}
