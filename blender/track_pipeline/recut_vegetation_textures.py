@@ -14,7 +14,7 @@ from vegetation_texture_common import MAGENTA_RGB, align_bottom, key_background_
 
 
 POSTPROCESS_ID = "vegetation_legacy_card_recut"
-POSTPROCESS_VERSION = 2
+POSTPROCESS_VERSION = 3
 VEGETATION_CATEGORIES = {"trees", "bushes", "grass"}
 ASSET_RE = re.compile(r"_(tree|bush|grass)_\d+\.png$")
 
@@ -32,6 +32,8 @@ def recut_image(path: Path, pass_index: int) -> dict:
     height, width = rgba.shape[:2]
     rgba[..., 3][rgba[..., 3] < 2] = 0
 
+    # This is intentionally a fallback for already-downscaled curated cards.
+    # Source-backed cards are rebuilt before resize and should be excluded by the caller.
     rgba, key_metrics = key_background_rgba(rgba, MAGENTA_RGB, pass_index)
     rgba, shift_down = align_bottom(rgba)
     rgba = pad_transparent_rgb(rgba, radius=4)
@@ -55,21 +57,36 @@ def recut_image(path: Path, pass_index: int) -> dict:
     }
 
 
-def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int) -> None:
+def source_backed_paths(root: Path) -> set[str]:
+    """Read the outputs rebuilt from original sources in the immediately preceding stage."""
+    manifest_path = root / "texture_forge_manifest.json"
+    if not manifest_path.exists():
+        return set()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assets = manifest.get("curated_vegetation_rebuild", {}).get("assets", [])
+    return {str(Path(item)).replace("\\", "/") for item in assets if isinstance(item, str)}
+
+
+def relative_texture_path(path: Path, root: Path) -> str:
+    return path.resolve().relative_to(root.resolve()).as_posix()
+
+
+def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int, skipped_source_backed: int) -> None:
     manifest_path = root / "texture_forge_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     by_rel = {
-        str(Path(item["path"]).resolve().relative_to(root.resolve())).replace("\\", "/"): item
+        relative_texture_path(Path(item["path"]), root): item
         for item in metrics
     }
     recipe = {
         "id": POSTPROCESS_ID,
         "version": POSTPROCESS_VERSION,
         "pass": pass_index,
-        "scope": "legacy_128px_fallback_only",
+        "scope": "legacy_128px_non_source_backed_only",
         "key_rgb": MAGENTA_RGB.tolist(),
         "transparent_rgb": "foreground_edge_padding_4px",
         "bottom_anchor": "last_visible_alpha_row",
+        "skipped_source_backed": int(skipped_source_backed),
     }
     manifest["vegetation_legacy_recut"] = recipe
     for rel, item in by_rel.items():
@@ -82,10 +99,15 @@ def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int) -> N
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Legacy fallback: recut existing 128px vegetation cards. Prefer source rebuild.")
+    parser = argparse.ArgumentParser(description="Fallback cleanup for curated 128px vegetation without original sources.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--pass-index", type=int, choices=(1, 2), default=1)
     parser.add_argument("--report", default="")
+    parser.add_argument(
+        "--skip-source-backed",
+        action="store_true",
+        help="Do not touch cards rebuilt from source manifests in the preceding source-resolution stage.",
+    )
     ns = parser.parse_args()
 
     config_path = Path(ns.config).resolve()
@@ -96,17 +118,29 @@ def main() -> int:
     if not paths:
         raise RuntimeError(f"No vegetation cards found under {root}")
 
-    metrics = [recut_image(path, ns.pass_index) for path in paths]
-    update_forge_manifest(root, metrics, ns.pass_index)
+    protected = source_backed_paths(root) if ns.skip_source_backed else set()
+    recut_paths = [p for p in paths if relative_texture_path(p, root) not in protected]
+    metrics = [recut_image(path, ns.pass_index) for path in recut_paths]
+    update_forge_manifest(root, metrics, ns.pass_index, len(paths) - len(recut_paths))
+
     report_path = Path(ns.report) if ns.report else root / "vegetation_recut_report.json"
     if not report_path.is_absolute():
         report_path = repo / report_path
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps({
-        "postprocess": {"id": POSTPROCESS_ID, "version": POSTPROCESS_VERSION, "pass": ns.pass_index, "scope": "legacy_128px_fallback_only"},
+        "postprocess": {
+            "id": POSTPROCESS_ID,
+            "version": POSTPROCESS_VERSION,
+            "pass": ns.pass_index,
+            "scope": "legacy_128px_non_source_backed_only",
+        },
+        "source_backed_skipped": sorted(protected),
         "assets": metrics,
     }, indent=2) + "\n", encoding="utf-8")
-    print(f"[vegetation] legacy_recut={len(metrics)} pass={ns.pass_index} root={root}")
+    print(
+        f"[vegetation] legacy_recut={len(metrics)} "
+        f"source_backed_skipped={len(paths) - len(recut_paths)} pass={ns.pass_index} root={root}"
+    )
     print(f"[vegetation] report={report_path}")
     return 0
 
