@@ -8,6 +8,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from vegetation_texture_common import MAGENTA_RGB, postprocess_recipe, prepare_vegetation_card_rgba
+
 
 EXPECTED_SIZE = (128, 128)
 TREE_NAMES = {
@@ -37,17 +39,36 @@ def parse_mapping(values: list[str]) -> dict[str, Path]:
     return out
 
 
-def prepare_card(source: Path, destination: Path) -> dict:
+def parse_rgb(value: str) -> np.ndarray:
+    parts = [int(part.strip()) for part in value.split(",")]
+    if len(parts) != 3 or any(part < 0 or part > 255 for part in parts):
+        raise ValueError(f"Expected R,G,B in 0..255, got: {value}")
+    return np.asarray(parts, dtype=np.uint8)
+
+
+def _center_crop_square(image: Image.Image) -> Image.Image:
+    width, height = image.size
+    if width == height:
+        return image
+    side = min(width, height)
+    left = (width - side) // 2
+    top = (height - side) // 2
+    return image.crop((left, top, left + side, top + side))
+
+
+def prepare_card(source: Path, destination: Path, background_rgb, pass_index: int) -> dict:
     image = Image.open(source).convert("RGBA")
     width, height = image.size
-    if width != height:
-        side = min(width, height)
-        left = (width - side) // 2
-        top = (height - side) // 2
-        image = image.crop((left, top, left + side, top + side))
-    image = image.resize(EXPECTED_SIZE, Image.Resampling.LANCZOS)
-    rgba = np.asarray(image, dtype=np.uint8).copy()
-    Image.fromarray(rgba).save(destination)
+    image = _center_crop_square(image)
+    rgba = np.asarray(image, dtype=np.uint8)
+    output, metrics = prepare_vegetation_card_rgba(
+        rgba,
+        output_size=EXPECTED_SIZE,
+        background_rgb=background_rgb,
+        pass_index=pass_index,
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(output, "RGBA").save(destination)
     return {
         "source": str(source),
         "source_sha256": sha256(source),
@@ -55,28 +76,31 @@ def prepare_card(source: Path, destination: Path) -> dict:
         "destination": str(destination),
         "destination_size": list(EXPECTED_SIZE),
         "destination_sha256": sha256(destination),
+        "postprocess": postprocess_recipe(pass_index, background_rgb),
+        "metrics": metrics,
     }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Import four generated tree sources into the active 128x128 card bank.")
+    parser = argparse.ArgumentParser(description="Import four generated tree sources using source-resolution chroma keying.")
     parser.add_argument("--root", required=True, help="Generated La Chutana textures root")
     parser.add_argument("--report", default="", help="Optional provenance report path")
     parser.add_argument("--map", dest="mappings", action="append", required=True)
+    parser.add_argument("--background-rgb", default="255,0,255")
+    parser.add_argument("--pass-index", type=int, choices=(1, 2), default=1)
     ns = parser.parse_args()
 
     root = Path(ns.root).resolve()
     active = root / "biomes" / "south_america" / "west" / "low"
     sources = parse_mapping(ns.mappings)
+    background_rgb = parse_rgb(ns.background_rgb)
     assets = []
     for key, filename in TREE_NAMES.items():
         source = sources[key]
         destination = active / filename
         if not source.exists():
             raise FileNotFoundError(source)
-        if not destination.exists():
-            raise FileNotFoundError(destination)
-        assets.append(prepare_card(source, destination))
+        assets.append(prepare_card(source, destination, background_rgb, ns.pass_index))
 
     report_path = Path(ns.report) if ns.report else root / "tree_regeneration_import_report.json"
     if not report_path.is_absolute():
@@ -86,6 +110,7 @@ def main() -> int:
         "operation": "reference_tree_regeneration_import",
         "active_biome": "south_america/west/low",
         "expected_size": list(EXPECTED_SIZE),
+        "postprocess": postprocess_recipe(ns.pass_index, background_rgb),
         "assets": assets,
     }, indent=2) + "\n", encoding="utf-8")
     print(f"[tree-import] imported={len(assets)} size={EXPECTED_SIZE[0]}x{EXPECTED_SIZE[1]}")
