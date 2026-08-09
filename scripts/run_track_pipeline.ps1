@@ -11,6 +11,10 @@ param(
     [ValidateSet("none","very_low","low","medium","high")]
     [string]$BuildingsDensity = "very_low",
     [int]$Seed = 1995,
+    [ValidateSet("Curated","Procedural")]
+    [string]$TextureSource = "Curated",
+    [ValidateSet(1,2)]
+    [int]$VegetationPass = 1,
     [string]$BlenderExe = ""
 )
 
@@ -42,8 +46,34 @@ if ([string]::IsNullOrWhiteSpace($BlenderExe)) { throw "Blender executable not f
 if ($LASTEXITCODE -ne 0) { throw "prepare_track.py failed" }
 & $python (Join-Path $pipeline "validate_track.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "validate_track.py failed" }
-& $python (Join-Path $pipeline "generate_procedural_textures.py") --config $config --seed $Seed
-if ($LASTEXITCODE -ne 0) { throw "Procedural texture generation failed" }
+
+$textureRoot = Join-Path $repo (Join-Path $trackConfig.generated_dir "textures")
+$activeManifestPath = Join-Path $textureRoot "active_manifest.json"
+if ($TextureSource -eq "Procedural") {
+    & $python (Join-Path $pipeline "generate_procedural_textures.py") --config $config --seed $Seed
+    if ($LASTEXITCODE -ne 0) { throw "Procedural texture generation failed" }
+    Write-Host "Texture source: freshly generated procedural bank" -ForegroundColor DarkGray
+} else {
+    if (-not (Test-Path $activeManifestPath)) {
+        throw "Curated texture bank manifest missing: $activeManifestPath"
+    }
+    $activeManifest = Get-Content -Path $activeManifestPath -Raw | ConvertFrom-Json
+    $activeSeed = [int]$activeManifest.forge.seed
+    if ($activeSeed -ne $Seed) {
+        throw "Curated texture bank seed=$activeSeed does not match requested seed=$Seed. Pass -TextureSource Procedural or use the matching seed."
+    }
+    Write-Host "Texture source: existing curated bank ($textureRoot)" -ForegroundColor DarkGray
+    & $python (Join-Path $pipeline "recut_vegetation_textures.py") `
+        --config $config `
+        --pass-index $VegetationPass
+    if ($LASTEXITCODE -ne 0) { throw "Vegetation recut failed" }
+    & $python (Join-Path $pipeline "analyze_vegetation_textures.py") `
+        --config $config `
+        --pass-index $VegetationPass `
+        --strict
+    if ($LASTEXITCODE -ne 0) { throw "Vegetation analysis failed" }
+    Write-Host "Vegetation gate: deterministic recut/analyze pass $VegetationPass" -ForegroundColor DarkGray
+}
 & $python (Join-Path $pipeline "validate_texture_forge.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Texture Forge validation failed" }
 
@@ -53,6 +83,7 @@ if ($Mode -eq "Base") {
     Write-Host ""
     Write-Host "Base track generated and published to the canonical runtime GLB." -ForegroundColor Green
     Write-Host "Texture Forge: $($trackConfig.materials.texture_forge_style), seed=$Seed" -ForegroundColor DarkGray
+    Write-Host "Texture source: $TextureSource" -ForegroundColor DarkGray
     Write-Host "The previous track_base.blend was backed up when present." -ForegroundColor DarkGray
     Write-Host "HUMAN VALIDATION REQUIRED before Procedural mode." -ForegroundColor Yellow
     exit 0
@@ -78,5 +109,6 @@ Write-Host ""
 Write-Host "Procedural racetrack generated and published with seed $Seed." -ForegroundColor Green
 Write-Host "Biome: $($trackConfig.procedural_environment.biome.continent)/$($trackConfig.procedural_environment.biome.longitude)/$($trackConfig.procedural_environment.biome.altitude)" -ForegroundColor DarkGray
 Write-Host "Texture Forge: $($trackConfig.materials.texture_forge_style)" -ForegroundColor DarkGray
+Write-Host "Texture source: $TextureSource" -ForegroundColor DarkGray
 Write-Host "Trees=$TreesDensity Bushes=$BushesDensity Grass=$GrassDensity Buildings=$BuildingsDensity" -ForegroundColor DarkGray
 Write-Host "The previous track_environment.blend was backed up when present." -ForegroundColor DarkGray

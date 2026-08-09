@@ -79,7 +79,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "75e15e31db20f2fd889d6750e370e6a11fb0a432147689eadc63c922a58c7303"
+      "sha256": "4d0643aebbb3642d84da06e0ac7bebe9d346e8b2e4b765bf740b2406dfdff18f",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_tree_02.png": {
       "category": "trees",
@@ -87,7 +103,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "394e96dbc938f267185fb2e157395ac57d6f01f9fc1ff2cd6bda9aac947fcfde"
+      "sha256": "3cd3d93cd11b241092dfbbc99e572f5898d9f2697f8ceb815e4896b70ba5da56",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_tree_03.png": {
       "category": "trees",
@@ -95,7 +127,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "7d58ae82c58db2a30f132294ee423108a263a3d3d693dbc6951260ce70edad0d"
+      "sha256": "f0f40978e2d32521be024b441af0acb895079f022053125bfa09e9ffc6c4c35f",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_tree_04.png": {
       "category": "trees",
@@ -103,7 +151,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6dc3eff3a5c6e5ed4df4a2d4396621477ab02085911889c37411c49d62bd3fba"
+      "sha256": "495efeb3b00e47bb49bd7bd3425c275672be1ce3c5aba5a27a37c1e6f1db2248",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_bush_01.png": {
       "category": "bushes",
@@ -111,7 +175,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e94d59e909acbde039f39f4f165b6af43776ad3ca09073e03f118e5a9f6d3b2"
+      "sha256": "8813a7fffa20857ad9c7055544a09d298b898186c2c92d3822643b522681e5fe",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_bush_02.png": {
       "category": "bushes",
@@ -119,7 +199,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "98bdb46eeb0f0aaa41b34f72e3efbf0f8ebc5668b408d453dc1a91499041c9b0"
+      "sha256": "da0f7df1714e3d3fa23e49b6a47dabe35862370d9c0a92dcbd1edd55e3cb607e",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_bush_03.png": {
       "category": "bushes",
@@ -127,7 +223,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4a9e9c75bf8f28df462dd74e76158279c8276c9a6c4fe730b53ba46dc6e29511"
+      "sha256": "edcf2690089c29ebedeae069af075f5f57d61356068a2479f865488dac9ca627",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_bush_04.png": {
       "category": "bushes",
@@ -135,7 +247,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "09cd9bba1b896ff1dc32c1e138eeed651a40a370bcf05b025799a4f5f1f760ab"
+      "sha256": "3d190153f1b347174794f6a7006b8b671867ead9194eb7cfa4b7f5aee1fe3a0e",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_grass_01.png": {
       "category": "grass",
@@ -143,7 +271,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "13ff2bef7431706d1307505e9e7e0f49bdebcb25e097a0046ed5fa6fb77eaa8a"
+      "sha256": "f01edac9bcda16a7649b4c1b3e1a8331f4e91c5f2d27910de4ef1639d55d9690",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_grass_02.png": {
       "category": "grass",
@@ -151,7 +295,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "531cfee296949eb2950ebde809cb41775f98652c32620b3dd27d6be5ce1cc2f5"
+      "sha256": "2d4b034e6dae7a9233e48fd7e456f26c076bbd247a14d7d5770bb54d54c30397",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_grass_03.png": {
       "category": "grass",
@@ -159,7 +319,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "603adb3e5a5704c16f5a4f6b8d77c69e59ab8e52969712d311eecd99f2603ae5"
+      "sha256": "cb8d9ed0ce3fb38d0936bf0996d9ab063d1277bd48d516fc8e880716075ce11f",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_grass_04.png": {
       "category": "grass",
@@ -167,7 +343,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "46b16c13e15f9e6ff081672b2c186e63a05ea43a51fd5dbe2ab5baee555fc9b4"
+      "sha256": "4008a759f41656a76265a15d5be0cd00deedcdb630f135676d86d8b62775b14d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/low/south_america_west_low_building_01.png": {
       "category": "fake_buildings",
@@ -231,7 +423,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "9b16ebccfb9cc53b5483e38e2cc963731ba4d9c85e06b0aad6b9fe544ef3d826"
+      "sha256": "af981ff7a108cfde8e07397894a80bcf897542b8d3dfd52d9e93ae4f25d96bae",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_02.png": {
       "category": "trees",
@@ -239,7 +447,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e962555ed0046746cd5d0d0efd3d65fcf2d9244f8661541deaac072c308235fd"
+      "sha256": "50d5748bd48612a19aa6e6f75a992c0f60a19e0f573e79fe44d6cb9b04bbaecf",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_03.png": {
       "category": "trees",
@@ -247,7 +471,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "c4ff8f3b2493979a62efe10b786599e4f375f443b99a885f67359b8f5b0a75b8"
+      "sha256": "14f4c8ad40ea7b724a7dc9c9da9c5555212e5f883fd6defb84809a3fcf4058f6",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_04.png": {
       "category": "trees",
@@ -255,7 +495,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "72827663ae4261a2fd11f14822e3c807ae4533f52ba3ff6a52747586a9336a50"
+      "sha256": "a3e3ef08713d40a5122ab275603e3022dc96f592b2baf0ab2e0ac8af5829b238",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_01.png": {
       "category": "bushes",
@@ -263,7 +519,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "0cccce7d5dc3a1ac0fa3ecbb227c1ebc251242ebcb011758cdff75b5ef035292"
+      "sha256": "ab5cd4b9ccdce2b0e9e97507a836b804cbb4ae3f01224585920ebcdbfc3b129b",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_02.png": {
       "category": "bushes",
@@ -271,7 +543,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "d2100f43d64c39fdc774798f75cefc56504f3eeb131975c4cbc9690c6f9998be"
+      "sha256": "c6afc6fd5a97e63f8164477d2a8b3f10bd41cf3fac2c944d545d2ff00ffd9de3",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_03.png": {
       "category": "bushes",
@@ -279,7 +567,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b361cac3784f896ec55a50cebd2af645f2a6cb375b0a0923c69b1c254d094aba"
+      "sha256": "f310a22bbdad27acb40a2c851e0bb7c7e09b6f5bb2aeb3c0986be6af6e5ddf4c",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_04.png": {
       "category": "bushes",
@@ -287,7 +591,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5ba34c85d53bb085309812cb2a6519f53e702215d98da87959d4cc3d5e9f154f"
+      "sha256": "e1e10be1dea0b3d030dce9454e07005da6a97894b4f5a298b11b805f666c87d1",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_01.png": {
       "category": "grass",
@@ -295,7 +615,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5709f7510797bebaa95b098a2f1c08349a13a44c0a5f348e4c968a982867565e"
+      "sha256": "7dc0180d060db547ea591c64b367f9a097a4f0455102fd2e7fa81cb9ee46f93b",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_02.png": {
       "category": "grass",
@@ -303,7 +639,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "02fe211840699a7b54fac6490baeb28abbb10577e75bf726464bc5bf7948316a"
+      "sha256": "0a1403888836ba322538d3a2a42454c613e5bd7efc4abc035bc0464f7f446197",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_03.png": {
       "category": "grass",
@@ -311,7 +663,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "395628ade7e59c3d76d61e393b3125a545fab06f14d766fbe79dc226d6275c91"
+      "sha256": "92e0ba49cc27dee2c358a7c697a6ddd18156bb8aca1a6a12727a9cf556496f81",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_04.png": {
       "category": "grass",
@@ -319,7 +687,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "cd02496ce179ef2b1487b0379e6a98fe88b5b054e25605f2d5183a26123bf6b1"
+      "sha256": "eafe3c8aa9b1320bfb14d4cd2111f23a97b8d2f383acd58927e92d2b9f2c9702",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/medium/south_america_west_medium_building_01.png": {
       "category": "fake_buildings",
@@ -383,7 +767,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "fd187cfcec1e7061bb1103dc3a59c7c85ee958a966b01564ee6fc4a38b084eb8"
+      "sha256": "517d17d0507ff2162cd512c3ce813caf936083a8f519f66a1171874dd0d6bd27",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_tree_02.png": {
       "category": "trees",
@@ -391,7 +791,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e69f15fdb2d6531a2208fa6b94b04b9a0e9705ed33b5c975b85384f32685e20"
+      "sha256": "ba6541b62cbb460fd18cddd854c87e6e7bfe9a68baa947fc52aa32b9ae753cc2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_tree_03.png": {
       "category": "trees",
@@ -399,7 +815,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "71d3bc31ea080832797d11614e5e9d55ae5f48aae893e86b09cfbca754438d7c"
+      "sha256": "0f07d85be3de13f88c0c3ba42345471eec80e3c27395e7e6091c9a189aaa595d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_tree_04.png": {
       "category": "trees",
@@ -407,7 +839,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "1dfec90b829c71453fec8f96a80a896afa06988aa460610dd7a26da52c566a3f"
+      "sha256": "de36e022835d2632318a251cffd90ba38f55dbfc2f7a34cb29457b733e6cbfcc",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_bush_01.png": {
       "category": "bushes",
@@ -415,7 +863,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3aa215892a3cb9439201a3db2745312fd9035170a8d3d12d12a48e98b6b71848"
+      "sha256": "d336c4da0ae08c3bc8a46979307b37db5926a780c8317248670de63a688a3983",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_bush_02.png": {
       "category": "bushes",
@@ -423,7 +887,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "52daa40c8c027d3f210568e446c7fbc9cf06358af32980c5f9b42603639ca160"
+      "sha256": "16100ef048da48ea0ac9b0a5a1ab810e351927bd613a2839c9e6faaaf7814317",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_bush_03.png": {
       "category": "bushes",
@@ -431,7 +911,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4119b706c509ed5008b71eedbbafd29b9a1c96cb642e9fca0df299f7c9a6deab"
+      "sha256": "255366f065739936344fcacf76eacf463e64a044b6a289bac5acda15962b6a88",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_bush_04.png": {
       "category": "bushes",
@@ -439,7 +935,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8a7a648e9c68051fff13b78d9a76f7d9e5df8968e4e3aeccc6ff19b4d4d2a4c1"
+      "sha256": "5a65eb829ea95b9e3cc484db53d0298307aaba70ae4d4e5b9aa531f27eca4e44",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_grass_01.png": {
       "category": "grass",
@@ -447,7 +959,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "733498a7d502217609e0e3ab2de6834b3fca6bebe108aca85fc34192d6fc3aa6"
+      "sha256": "6bafd19c4aabebd4b9c031a1715adaa6ffb51782be6113bc59e119255481bbd9",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_grass_02.png": {
       "category": "grass",
@@ -455,7 +983,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b9175f106791ce9db9d6cf4fe2a34dc289ff02fa730084143659c03fe5928d7c"
+      "sha256": "9a86a6e84837912699f60c2a94d9f0b19723227878798b41c69b0972670143c8",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_grass_03.png": {
       "category": "grass",
@@ -463,7 +1007,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "2cb102e925da7b47151241b357e571527fc27934d6bfd94dee018e54fe973b04"
+      "sha256": "85a2712e689c11879d8c054296a3f95f7822115eb9d4e60101663190dcb24a4d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_grass_04.png": {
       "category": "grass",
@@ -471,7 +1031,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5b277d240ab2d3f7622d0ba0f5ad5b00c8d92e69077a2d76dd8efa2a20e1e3fc"
+      "sha256": "7d572f6394749d64fbecf2d15d8dc848c8ffa97f6367eca91e770917f11037f7",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/west/high/south_america_west_high_building_01.png": {
       "category": "fake_buildings",
@@ -535,7 +1111,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "75e8b585cdba8b4b10786bdd5e65145178f78edc9435705f604bd67d9786a604"
+      "sha256": "a191500c8c3f0fc33e7090b243ce9dcadc2e9a909e8ba5925046e992f2ca8a35",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_tree_02.png": {
       "category": "trees",
@@ -543,7 +1135,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "44ec797823f6f1ac4d8d820594159f8e02cf68c9ba78ce9197d6c33e16c80b2a"
+      "sha256": "9a9d4abc799adf2493549672b0cd6c117f110aeea5e917c0dc28dd19c66668d8",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_tree_03.png": {
       "category": "trees",
@@ -551,7 +1159,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e054e69ed840b2a2d13c3919316e9afd8271e59380c21aeb12b842289aae704"
+      "sha256": "11da9ca7d26242ff2feca1afa2b4b109a9f2eef8a058e51e8f2a91ebc3e0e4b2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_tree_04.png": {
       "category": "trees",
@@ -559,7 +1183,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "934eab56fb47043cd504fe5b45f99999cb1bd9ee0c022db185b56e3214e66ace"
+      "sha256": "df1c72e272473f28b0d1109c1b2e3bf6aa20793f91d46b16fb6bc3c5244b7d10",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_bush_01.png": {
       "category": "bushes",
@@ -567,7 +1207,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "d4bf5e123e6e91e67b88cecb278eee1617043176945c6ff7c0e020ec43365f47"
+      "sha256": "944a1a58b673908ea7f6e0d8473dfb69545d5a46e029d69bdbe665ae9c72e37a",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_bush_02.png": {
       "category": "bushes",
@@ -575,7 +1231,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "767447da04aa09a5682db842df3bececccf726602a145f22b0b2680f309ed587"
+      "sha256": "2e05cc9bbb2804074fd75f478186c0e85a078117e3c266468856d4643f0ca04d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_bush_03.png": {
       "category": "bushes",
@@ -583,7 +1255,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b6b987a869a1b7ddc358d2d90e23941150a6004ba25f2c2cd8b9177ce6e7ba9d"
+      "sha256": "507282346d0a8a52973aec06355fd47d68f90b8fff90529ba366b9ca8699c545",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_bush_04.png": {
       "category": "bushes",
@@ -591,7 +1279,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "ae97c9234414808df4159d2aea62cf9e2b586e9450a381f214b4c97e655036be"
+      "sha256": "6bce7b8b8fcf845df9a263e5bc07c7ca743f7460fafe9a5843bb9fe9e64c4ee2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_grass_01.png": {
       "category": "grass",
@@ -599,7 +1303,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "80d49a79951606dac3ae377414d42208ec79858c28f0ccc814004541c63e3765"
+      "sha256": "ad12daec632d058e1fe97387a5002f53f20b94c4db1e10356dfcd47e80831aa9",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_grass_02.png": {
       "category": "grass",
@@ -607,7 +1327,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "024eead2871c1809922da4ebf4047a0d1df88381e8359ae2cd2af6f0d832188e"
+      "sha256": "8c30a5778805548c5a2a35da01e90f9e045ce02490455672418830b31261c297",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_grass_03.png": {
       "category": "grass",
@@ -615,7 +1351,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e0bc806200466735594748c28082cf15ec882a6d99674805065ff374ab93881"
+      "sha256": "673b5615edde6f9ef53d11e5f81349941ac1dad501a6aff6a831ec286e879ff2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_grass_04.png": {
       "category": "grass",
@@ -623,7 +1375,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3079871c4cf4fb0846fa88f586599ceeeb8aecac3b9a2d1147552704661ac8ba"
+      "sha256": "fa4c15c845636a8afacdd2c03c72a0ac538558d8c9881096e82280e8495a1e26",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/low/south_america_center_low_building_01.png": {
       "category": "fake_buildings",
@@ -687,7 +1455,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "75e15e31db20f2fd889d6750e370e6a11fb0a432147689eadc63c922a58c7303"
+      "sha256": "3c4d802bebf50a4a4fe838edfc18d953aacd8063e10e544e08b5340c412e605d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_02.png": {
       "category": "trees",
@@ -695,7 +1479,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "394e96dbc938f267185fb2e157395ac57d6f01f9fc1ff2cd6bda9aac947fcfde"
+      "sha256": "e3790e3af4992586ce50bb3ef77849dca1894434699ae4e623bc98252357bb3b",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_03.png": {
       "category": "trees",
@@ -703,7 +1503,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "7d58ae82c58db2a30f132294ee423108a263a3d3d693dbc6951260ce70edad0d"
+      "sha256": "dc667095d160ff4023f182830a0cfe90ecb8a83d982f64262925f46b793e4604",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_04.png": {
       "category": "trees",
@@ -711,7 +1527,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6dc3eff3a5c6e5ed4df4a2d4396621477ab02085911889c37411c49d62bd3fba"
+      "sha256": "00c4ea758946d32af58eab6b290e79dddc4b0342b7d50a290b9c7fcf5e6faa15",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_01.png": {
       "category": "bushes",
@@ -719,7 +1551,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e94d59e909acbde039f39f4f165b6af43776ad3ca09073e03f118e5a9f6d3b2"
+      "sha256": "8813a7fffa20857ad9c7055544a09d298b898186c2c92d3822643b522681e5fe",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_02.png": {
       "category": "bushes",
@@ -727,7 +1575,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "98bdb46eeb0f0aaa41b34f72e3efbf0f8ebc5668b408d453dc1a91499041c9b0"
+      "sha256": "da0f7df1714e3d3fa23e49b6a47dabe35862370d9c0a92dcbd1edd55e3cb607e",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_03.png": {
       "category": "bushes",
@@ -735,7 +1599,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4a9e9c75bf8f28df462dd74e76158279c8276c9a6c4fe730b53ba46dc6e29511"
+      "sha256": "edcf2690089c29ebedeae069af075f5f57d61356068a2479f865488dac9ca627",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_04.png": {
       "category": "bushes",
@@ -743,7 +1623,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "09cd9bba1b896ff1dc32c1e138eeed651a40a370bcf05b025799a4f5f1f760ab"
+      "sha256": "3d190153f1b347174794f6a7006b8b671867ead9194eb7cfa4b7f5aee1fe3a0e",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_01.png": {
       "category": "grass",
@@ -751,7 +1647,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "13ff2bef7431706d1307505e9e7e0f49bdebcb25e097a0046ed5fa6fb77eaa8a"
+      "sha256": "f01edac9bcda16a7649b4c1b3e1a8331f4e91c5f2d27910de4ef1639d55d9690",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_02.png": {
       "category": "grass",
@@ -759,7 +1671,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "531cfee296949eb2950ebde809cb41775f98652c32620b3dd27d6be5ce1cc2f5"
+      "sha256": "2d4b034e6dae7a9233e48fd7e456f26c076bbd247a14d7d5770bb54d54c30397",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_03.png": {
       "category": "grass",
@@ -767,7 +1695,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "603adb3e5a5704c16f5a4f6b8d77c69e59ab8e52969712d311eecd99f2603ae5"
+      "sha256": "cb8d9ed0ce3fb38d0936bf0996d9ab063d1277bd48d516fc8e880716075ce11f",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_04.png": {
       "category": "grass",
@@ -775,7 +1719,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "46b16c13e15f9e6ff081672b2c186e63a05ea43a51fd5dbe2ab5baee555fc9b4"
+      "sha256": "4008a759f41656a76265a15d5be0cd00deedcdb630f135676d86d8b62775b14d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/medium/south_america_center_medium_building_01.png": {
       "category": "fake_buildings",
@@ -839,7 +1799,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "9b16ebccfb9cc53b5483e38e2cc963731ba4d9c85e06b0aad6b9fe544ef3d826"
+      "sha256": "af981ff7a108cfde8e07397894a80bcf897542b8d3dfd52d9e93ae4f25d96bae",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_tree_02.png": {
       "category": "trees",
@@ -847,7 +1823,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e962555ed0046746cd5d0d0efd3d65fcf2d9244f8661541deaac072c308235fd"
+      "sha256": "50d5748bd48612a19aa6e6f75a992c0f60a19e0f573e79fe44d6cb9b04bbaecf",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_tree_03.png": {
       "category": "trees",
@@ -855,7 +1847,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "c4ff8f3b2493979a62efe10b786599e4f375f443b99a885f67359b8f5b0a75b8"
+      "sha256": "14f4c8ad40ea7b724a7dc9c9da9c5555212e5f883fd6defb84809a3fcf4058f6",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_tree_04.png": {
       "category": "trees",
@@ -863,7 +1871,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "72827663ae4261a2fd11f14822e3c807ae4533f52ba3ff6a52747586a9336a50"
+      "sha256": "a3e3ef08713d40a5122ab275603e3022dc96f592b2baf0ab2e0ac8af5829b238",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_bush_01.png": {
       "category": "bushes",
@@ -871,7 +1895,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "0cccce7d5dc3a1ac0fa3ecbb227c1ebc251242ebcb011758cdff75b5ef035292"
+      "sha256": "ab5cd4b9ccdce2b0e9e97507a836b804cbb4ae3f01224585920ebcdbfc3b129b",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_bush_02.png": {
       "category": "bushes",
@@ -879,7 +1919,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "d2100f43d64c39fdc774798f75cefc56504f3eeb131975c4cbc9690c6f9998be"
+      "sha256": "c6afc6fd5a97e63f8164477d2a8b3f10bd41cf3fac2c944d545d2ff00ffd9de3",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_bush_03.png": {
       "category": "bushes",
@@ -887,7 +1943,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b361cac3784f896ec55a50cebd2af645f2a6cb375b0a0923c69b1c254d094aba"
+      "sha256": "f310a22bbdad27acb40a2c851e0bb7c7e09b6f5bb2aeb3c0986be6af6e5ddf4c",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_bush_04.png": {
       "category": "bushes",
@@ -895,7 +1967,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5ba34c85d53bb085309812cb2a6519f53e702215d98da87959d4cc3d5e9f154f"
+      "sha256": "e1e10be1dea0b3d030dce9454e07005da6a97894b4f5a298b11b805f666c87d1",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_grass_01.png": {
       "category": "grass",
@@ -903,7 +1991,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5709f7510797bebaa95b098a2f1c08349a13a44c0a5f348e4c968a982867565e"
+      "sha256": "7dc0180d060db547ea591c64b367f9a097a4f0455102fd2e7fa81cb9ee46f93b",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_grass_02.png": {
       "category": "grass",
@@ -911,7 +2015,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "02fe211840699a7b54fac6490baeb28abbb10577e75bf726464bc5bf7948316a"
+      "sha256": "0a1403888836ba322538d3a2a42454c613e5bd7efc4abc035bc0464f7f446197",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_grass_03.png": {
       "category": "grass",
@@ -919,7 +2039,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "395628ade7e59c3d76d61e393b3125a545fab06f14d766fbe79dc226d6275c91"
+      "sha256": "92e0ba49cc27dee2c358a7c697a6ddd18156bb8aca1a6a12727a9cf556496f81",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_grass_04.png": {
       "category": "grass",
@@ -927,7 +2063,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "cd02496ce179ef2b1487b0379e6a98fe88b5b054e25605f2d5183a26123bf6b1"
+      "sha256": "eafe3c8aa9b1320bfb14d4cd2111f23a97b8d2f383acd58927e92d2b9f2c9702",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/center/high/south_america_center_high_building_01.png": {
       "category": "fake_buildings",
@@ -991,7 +2143,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "fd187cfcec1e7061bb1103dc3a59c7c85ee958a966b01564ee6fc4a38b084eb8"
+      "sha256": "517d17d0507ff2162cd512c3ce813caf936083a8f519f66a1171874dd0d6bd27",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_tree_02.png": {
       "category": "trees",
@@ -999,7 +2167,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e69f15fdb2d6531a2208fa6b94b04b9a0e9705ed33b5c975b85384f32685e20"
+      "sha256": "ba6541b62cbb460fd18cddd854c87e6e7bfe9a68baa947fc52aa32b9ae753cc2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_tree_03.png": {
       "category": "trees",
@@ -1007,7 +2191,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "71d3bc31ea080832797d11614e5e9d55ae5f48aae893e86b09cfbca754438d7c"
+      "sha256": "0f07d85be3de13f88c0c3ba42345471eec80e3c27395e7e6091c9a189aaa595d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_tree_04.png": {
       "category": "trees",
@@ -1015,7 +2215,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "1dfec90b829c71453fec8f96a80a896afa06988aa460610dd7a26da52c566a3f"
+      "sha256": "de36e022835d2632318a251cffd90ba38f55dbfc2f7a34cb29457b733e6cbfcc",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_bush_01.png": {
       "category": "bushes",
@@ -1023,7 +2239,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3aa215892a3cb9439201a3db2745312fd9035170a8d3d12d12a48e98b6b71848"
+      "sha256": "d336c4da0ae08c3bc8a46979307b37db5926a780c8317248670de63a688a3983",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_bush_02.png": {
       "category": "bushes",
@@ -1031,7 +2263,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "52daa40c8c027d3f210568e446c7fbc9cf06358af32980c5f9b42603639ca160"
+      "sha256": "16100ef048da48ea0ac9b0a5a1ab810e351927bd613a2839c9e6faaaf7814317",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_bush_03.png": {
       "category": "bushes",
@@ -1039,7 +2287,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4119b706c509ed5008b71eedbbafd29b9a1c96cb642e9fca0df299f7c9a6deab"
+      "sha256": "255366f065739936344fcacf76eacf463e64a044b6a289bac5acda15962b6a88",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_bush_04.png": {
       "category": "bushes",
@@ -1047,7 +2311,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8a7a648e9c68051fff13b78d9a76f7d9e5df8968e4e3aeccc6ff19b4d4d2a4c1"
+      "sha256": "5a65eb829ea95b9e3cc484db53d0298307aaba70ae4d4e5b9aa531f27eca4e44",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_grass_01.png": {
       "category": "grass",
@@ -1055,7 +2335,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "733498a7d502217609e0e3ab2de6834b3fca6bebe108aca85fc34192d6fc3aa6"
+      "sha256": "6bafd19c4aabebd4b9c031a1715adaa6ffb51782be6113bc59e119255481bbd9",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_grass_02.png": {
       "category": "grass",
@@ -1063,7 +2359,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b9175f106791ce9db9d6cf4fe2a34dc289ff02fa730084143659c03fe5928d7c"
+      "sha256": "9a86a6e84837912699f60c2a94d9f0b19723227878798b41c69b0972670143c8",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_grass_03.png": {
       "category": "grass",
@@ -1071,7 +2383,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "2cb102e925da7b47151241b357e571527fc27934d6bfd94dee018e54fe973b04"
+      "sha256": "85a2712e689c11879d8c054296a3f95f7822115eb9d4e60101663190dcb24a4d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_grass_04.png": {
       "category": "grass",
@@ -1079,7 +2407,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5b277d240ab2d3f7622d0ba0f5ad5b00c8d92e69077a2d76dd8efa2a20e1e3fc"
+      "sha256": "7d572f6394749d64fbecf2d15d8dc848c8ffa97f6367eca91e770917f11037f7",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/low/south_america_east_low_building_01.png": {
       "category": "fake_buildings",
@@ -1143,7 +2487,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "75e8b585cdba8b4b10786bdd5e65145178f78edc9435705f604bd67d9786a604"
+      "sha256": "a191500c8c3f0fc33e7090b243ce9dcadc2e9a909e8ba5925046e992f2ca8a35",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_02.png": {
       "category": "trees",
@@ -1151,7 +2511,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "44ec797823f6f1ac4d8d820594159f8e02cf68c9ba78ce9197d6c33e16c80b2a"
+      "sha256": "9a9d4abc799adf2493549672b0cd6c117f110aeea5e917c0dc28dd19c66668d8",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_03.png": {
       "category": "trees",
@@ -1159,7 +2535,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e054e69ed840b2a2d13c3919316e9afd8271e59380c21aeb12b842289aae704"
+      "sha256": "11da9ca7d26242ff2feca1afa2b4b109a9f2eef8a058e51e8f2a91ebc3e0e4b2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_04.png": {
       "category": "trees",
@@ -1167,7 +2559,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "934eab56fb47043cd504fe5b45f99999cb1bd9ee0c022db185b56e3214e66ace"
+      "sha256": "df1c72e272473f28b0d1109c1b2e3bf6aa20793f91d46b16fb6bc3c5244b7d10",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_01.png": {
       "category": "bushes",
@@ -1175,7 +2583,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "d4bf5e123e6e91e67b88cecb278eee1617043176945c6ff7c0e020ec43365f47"
+      "sha256": "944a1a58b673908ea7f6e0d8473dfb69545d5a46e029d69bdbe665ae9c72e37a",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_02.png": {
       "category": "bushes",
@@ -1183,7 +2607,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "767447da04aa09a5682db842df3bececccf726602a145f22b0b2680f309ed587"
+      "sha256": "2e05cc9bbb2804074fd75f478186c0e85a078117e3c266468856d4643f0ca04d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_03.png": {
       "category": "bushes",
@@ -1191,7 +2631,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b6b987a869a1b7ddc358d2d90e23941150a6004ba25f2c2cd8b9177ce6e7ba9d"
+      "sha256": "507282346d0a8a52973aec06355fd47d68f90b8fff90529ba366b9ca8699c545",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_04.png": {
       "category": "bushes",
@@ -1199,7 +2655,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "ae97c9234414808df4159d2aea62cf9e2b586e9450a381f214b4c97e655036be"
+      "sha256": "6bce7b8b8fcf845df9a263e5bc07c7ca743f7460fafe9a5843bb9fe9e64c4ee2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_01.png": {
       "category": "grass",
@@ -1207,7 +2679,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "80d49a79951606dac3ae377414d42208ec79858c28f0ccc814004541c63e3765"
+      "sha256": "ad12daec632d058e1fe97387a5002f53f20b94c4db1e10356dfcd47e80831aa9",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_02.png": {
       "category": "grass",
@@ -1215,7 +2703,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "024eead2871c1809922da4ebf4047a0d1df88381e8359ae2cd2af6f0d832188e"
+      "sha256": "8c30a5778805548c5a2a35da01e90f9e045ce02490455672418830b31261c297",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_03.png": {
       "category": "grass",
@@ -1223,7 +2727,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e0bc806200466735594748c28082cf15ec882a6d99674805065ff374ab93881"
+      "sha256": "673b5615edde6f9ef53d11e5f81349941ac1dad501a6aff6a831ec286e879ff2",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_04.png": {
       "category": "grass",
@@ -1231,7 +2751,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3079871c4cf4fb0846fa88f586599ceeeb8aecac3b9a2d1147552704661ac8ba"
+      "sha256": "fa4c15c845636a8afacdd2c03c72a0ac538558d8c9881096e82280e8495a1e26",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/medium/south_america_east_medium_building_01.png": {
       "category": "fake_buildings",
@@ -1295,7 +2831,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "75e15e31db20f2fd889d6750e370e6a11fb0a432147689eadc63c922a58c7303"
+      "sha256": "3c4d802bebf50a4a4fe838edfc18d953aacd8063e10e544e08b5340c412e605d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_tree_02.png": {
       "category": "trees",
@@ -1303,7 +2855,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "394e96dbc938f267185fb2e157395ac57d6f01f9fc1ff2cd6bda9aac947fcfde"
+      "sha256": "e3790e3af4992586ce50bb3ef77849dca1894434699ae4e623bc98252357bb3b",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_tree_03.png": {
       "category": "trees",
@@ -1311,7 +2879,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "7d58ae82c58db2a30f132294ee423108a263a3d3d693dbc6951260ce70edad0d"
+      "sha256": "dc667095d160ff4023f182830a0cfe90ecb8a83d982f64262925f46b793e4604",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_tree_04.png": {
       "category": "trees",
@@ -1319,7 +2903,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6dc3eff3a5c6e5ed4df4a2d4396621477ab02085911889c37411c49d62bd3fba"
+      "sha256": "00c4ea758946d32af58eab6b290e79dddc4b0342b7d50a290b9c7fcf5e6faa15",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_bush_01.png": {
       "category": "bushes",
@@ -1327,7 +2927,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4e94d59e909acbde039f39f4f165b6af43776ad3ca09073e03f118e5a9f6d3b2"
+      "sha256": "8813a7fffa20857ad9c7055544a09d298b898186c2c92d3822643b522681e5fe",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_bush_02.png": {
       "category": "bushes",
@@ -1335,7 +2951,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "98bdb46eeb0f0aaa41b34f72e3efbf0f8ebc5668b408d453dc1a91499041c9b0"
+      "sha256": "da0f7df1714e3d3fa23e49b6a47dabe35862370d9c0a92dcbd1edd55e3cb607e",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_bush_03.png": {
       "category": "bushes",
@@ -1343,7 +2975,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "4a9e9c75bf8f28df462dd74e76158279c8276c9a6c4fe730b53ba46dc6e29511"
+      "sha256": "edcf2690089c29ebedeae069af075f5f57d61356068a2479f865488dac9ca627",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_bush_04.png": {
       "category": "bushes",
@@ -1351,7 +2999,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "09cd9bba1b896ff1dc32c1e138eeed651a40a370bcf05b025799a4f5f1f760ab"
+      "sha256": "3d190153f1b347174794f6a7006b8b671867ead9194eb7cfa4b7f5aee1fe3a0e",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_grass_01.png": {
       "category": "grass",
@@ -1359,7 +3023,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "13ff2bef7431706d1307505e9e7e0f49bdebcb25e097a0046ed5fa6fb77eaa8a"
+      "sha256": "f01edac9bcda16a7649b4c1b3e1a8331f4e91c5f2d27910de4ef1639d55d9690",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_grass_02.png": {
       "category": "grass",
@@ -1367,7 +3047,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "531cfee296949eb2950ebde809cb41775f98652c32620b3dd27d6be5ce1cc2f5"
+      "sha256": "2d4b034e6dae7a9233e48fd7e456f26c076bbd247a14d7d5770bb54d54c30397",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_grass_03.png": {
       "category": "grass",
@@ -1375,7 +3071,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "603adb3e5a5704c16f5a4f6b8d77c69e59ab8e52969712d311eecd99f2603ae5"
+      "sha256": "cb8d9ed0ce3fb38d0936bf0996d9ab063d1277bd48d516fc8e880716075ce11f",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_grass_04.png": {
       "category": "grass",
@@ -1383,7 +3095,23 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "46b16c13e15f9e6ff081672b2c186e63a05ea43a51fd5dbe2ab5baee555fc9b4"
+      "sha256": "4008a759f41656a76265a15d5be0cd00deedcdb630f135676d86d8b62775b14d",
+      "vegetation_postprocess": {
+        "id": "vegetation_magenta_key_align_bottom",
+        "version": 1,
+        "pass": 1,
+        "key_rgb": [
+          255,
+          0,
+          255
+        ],
+        "key_tolerance_rgb": 80,
+        "key_min_rb": 135,
+        "key_green_gap_min": 45,
+        "key_channel_spread_max": 75,
+        "edge_radius_px": 2,
+        "bottom_anchor": "last_visible_alpha_row"
+      }
     },
     "biomes/south_america/east/high/south_america_east_high_building_01.png": {
       "category": "fake_buildings",
@@ -1417,5 +3145,21 @@
       "forge_recipe": "ps1_rally_clean",
       "sha256": "7a35540db0ed12a34d3bf26e9415c32a9da5a5f04a264f1694dfaad70c3f997c"
     }
+  },
+  "vegetation_postprocess": {
+    "id": "vegetation_magenta_key_align_bottom",
+    "version": 1,
+    "pass": 1,
+    "key_rgb": [
+      255,
+      0,
+      255
+    ],
+    "key_tolerance_rgb": 80,
+    "key_min_rb": 135,
+    "key_green_gap_min": 45,
+    "key_channel_spread_max": 75,
+    "edge_radius_px": 2,
+    "bottom_anchor": "last_visible_alpha_row"
   }
 }
