@@ -1,16 +1,16 @@
-# Guardrail asset drop zone
+# Procedural guardrails
 
-Place one or more repeatable low-poly guardrail modules here (`.blend`, `.glb` or `.gltf`).
+The default racetrack pipeline generates its own low-poly classic guardrail modules. No source `.blend`/`.glb` is required.
 
-The inspector uses the longest horizontal dimension as the default module length. If the source orientation needs correction, add a sidecar:
+Configuration controls:
 
-```json
-{
-  "id": "classic_guardrail",
-  "category": "guardrails",
-  "long_axis": "X",
-  "rotation_correction_deg": 90.0
-}
-```
+- module length;
+- W-beam-like visual height/depth;
+- post spacing and dimensions;
+- circuit fractions/side;
+- distance from track edge;
+- simplified collision height/thickness.
 
-Visual modules are instanced in Blender. Collision is **not** taken from the detailed guardrail mesh: the environment builder creates simplified box collision geometry named with Godot's `-colonly` suffix.
+The visible rail is assembled from a few shared low-poly strips and posts. Collision is always a separate box proxy named with Godot's `-colonly` suffix so the detailed visual mesh is never used for vehicle collision.
+
+This folder remains available for a future hand-authored visual override, but procedural generation is the default and must continue to work with the folder empty.
