@@ -1,48 +1,81 @@
-# La Chutana handling test track
+# La Chutana Formula90s handling track
 
-The active Jordan handling scene consumes the canonical Blender export:
+La Chutana is the current real-circuit handling test before the next Jordan physics-tuning phase.
+
+Active runtime track:
 
 `res://assets/generated/tracks/la_chutana/la_chutana.glb`
 
-Generate Base with:
+Generate Base:
 
 ```powershell
 .\scripts\run_track_pipeline.ps1 -Mode Base -Track la_chutana -Seed 1995
 ```
 
-## Geometry authority
+Then test through the Jordan handling scene. Only after human approval should Procedural mode run.
 
-The stored reference targets approximately 2.420 km, ~800 m main straight and seven reference turns. This remains a gameplay reconstruction rather than survey CAD.
+## Current geometric targets
 
-Road width is a 12 m Formula90s development choice. Curbs remain the low crowned ~0.58 m profile with ~22 mm maximum rise.
+- approximately 2.420 km lap;
+- approximately 800 m main straight reference;
+- 7-turn public reference;
+- 12 m Formula90s development width;
+- conservative ~0.58 m smooth curb profile with ~22 mm maximum crown.
+
+This is a gameplay reconstruction, not survey-grade CAD.
 
 ## Off-track collision fix
 
-Telemetry from the prior shoulder implementation showed a sudden extreme deceleration followed by saturated suspension after leaving asphalt. The old grass collision used wide normal-offset ribbons; at tight-radius corners those offsets could self-intersect and create invisible collision wedges.
+Telemetry from the previous generated track showed a world-escape/freefall signature: all four suspension compression values reached zero while vehicle speed continued rising with zero throttle. The pipeline diagnosis found a terrain-generation problem rather than a Jordan physics problem.
 
-The Blender builder now creates a regular heightfield terrain grid instead. Cells fully below the asphalt corridor are omitted. Boundary terrain collision follows the banked road edge continuously, while only the visual grass mesh receives a tiny sink to prevent z-fighting. `validate_track.py` checks terrain topology, triangle budget and road/grass collision seam before Base export.
+The corrected Base generation now uses:
 
-## Active art profile
+1. a continuous terrain collision grid with no holes deleted under the road;
+2. an under-road collision layer below the dedicated Road collider;
+3. corrected terrain triangle winding after Godot-XZ -> Blender conversion;
+4. exact narrow Grass collision ribbons at both road edges;
+5. a large `GrassSafetyFloor-colonly` several metres below the world as a failsafe;
+6. visual terrain pushed below the road to prevent grass/asphalt clipping.
 
-La Chutana uses:
+The safety floor must not normally be contacted. If telemetry shows it being reached, the primary terrain collision still needs investigation.
+
+## Art direction
+
+Current procedural art target:
 
 ```text
-continent = south_america
-longitude = west
-altitude = low
-terrain palette = balanced green/dry/dirt
-structures = mixed residential + industrial
+late-90s PS1 rally/racing
+painted/prerendered texture character
+strong card silhouettes
+clean retro readability
+macro terrain variation
 ```
 
-This is an artistic environment profile rather than an ecological or historical simulation.
+La Chutana biome:
 
-The generated South America bank contains four tree cards, four bush cards, four grass cards and four structure facades for every west/center/east × low/medium/high combination. Trees use three crossed planes, bushes two, grass one. Structures remain simple low-poly 3D shells with a basic roof.
+```text
+South America / west / low
+balanced dry + green palette
+mixed simple residential + industrial medium/far structures
+```
 
-## Validation before Phase C
+Texture Forge generates asymmetric terrain zones containing greener vegetation pigment, dry grass pigment and smaller soil-exposure patches. Vegetation cards receive deterministic fake lighting, AO, posterization and subtle Bayer dithering.
 
-1. Regenerate Base and run the Jordan handling scene.
-2. Leave asphalt at several corners and confirm there is no invisible impact, clipping or trapped chassis.
-3. Re-enter asphalt slowly and at moderate speed; there must be no hard collision step at the seam.
-4. Confirm Road/Grass/Curb still produce distinct GEVP surface behavior.
-5. Test selected curbs with two wheels at low/medium/high speed.
-6. Human-approve Base before running Procedural mode.
+Geometry:
+
+- trees: 3 crossed planes;
+- bushes: 2 crossed planes and wider silhouettes;
+- grass: 1 plane with much higher density than the original pass;
+- buildings: simple 3D boxes with a basic top face;
+- guardrails: modular visual geometry with separate simplified collision.
+
+## Validation checklist
+
+1. Regenerate Base after pulling pipeline changes.
+2. Drive over both road edges repeatedly at low/medium/high speed.
+3. Test Road -> Grass -> Road re-entry with steering angle.
+4. Confirm no grass visual triangles clip through asphalt.
+5. Confirm no sustained four-wheel `Comp = 0` freefall state occurs after leaving the road.
+6. Verify curbs do not launch the Jordan under ordinary contact.
+7. Confirm the procedural Base remains visually readable without environment decoration.
+8. Only then run Procedural mode.
