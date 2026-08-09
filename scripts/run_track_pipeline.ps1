@@ -63,16 +63,27 @@ if ($TextureSource -eq "Procedural") {
         throw "Curated texture bank seed=$activeSeed does not match requested seed=$Seed. Pass -TextureSource Procedural or use the matching seed."
     }
     Write-Host "Texture source: existing curated bank ($textureRoot)" -ForegroundColor DarkGray
+
+    # Stage 1: authoritative source-backed assets are keyed before any resize.
     & $python (Join-Path $pipeline "rebuild_curated_vegetation.py") `
         --config $config `
         --pass-index $VegetationPass
     if ($LASTEXITCODE -ne 0) { throw "Source-backed vegetation rebuild failed" }
+
+    # Stage 2: legacy 128px cards without source manifests still need deterministic cleanup.
+    # Never reprocess source-backed outputs here; they already used the higher-quality path above.
+    & $python (Join-Path $pipeline "recut_vegetation_textures.py") `
+        --config $config `
+        --pass-index $VegetationPass `
+        --skip-source-backed
+    if ($LASTEXITCODE -ne 0) { throw "Legacy vegetation cleanup failed" }
+
+    # Stage 3: strict independent gate over the complete bank.
     & $python (Join-Path $pipeline "analyze_vegetation_textures.py") `
         --config $config `
         --strict
     if ($LASTEXITCODE -ne 0) { throw "Vegetation analysis failed" }
-    Write-Host "Vegetation gate: source-resolution key/rebuild + independent analysis pass $VegetationPass" -ForegroundColor DarkGray
-    Write-Host "Legacy recut_vegetation_textures.py remains manual fallback only." -ForegroundColor DarkGray
+    Write-Host "Vegetation gate: source rebuild + legacy cleanup + independent strict analysis pass $VegetationPass" -ForegroundColor DarkGray
 }
 & $python (Join-Path $pipeline "validate_texture_forge.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Texture Forge validation failed" }
