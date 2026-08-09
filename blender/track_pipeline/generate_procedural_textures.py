@@ -2,117 +2,344 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-import hashlib
 import json
 import math
+import hashlib
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 from pipeline_common import read_json
 from procedural_catalog import biome_from_config, palette_for, supported_biomes, specs_for_biome
+from texture_forge import (
+    CardRecipe,
+    SurfaceRecipe,
+    STYLE_ID,
+    FORGE_VERSION,
+    forge_card,
+    forge_surface,
+    low_frequency_field,
+    recipe_dict,
+    rng_for,
+    write_recipe_manifest,
+)
 
 
-def seed_for(base_seed: int, name: str) -> int:
-    digest=hashlib.sha256(f"{base_seed}:{name}".encode("utf-8")).digest()
-    return int.from_bytes(digest[:8],"little",signed=False)
+def rgb8(color):
+    return tuple(int(max(0, min(255, round(float(c) * 255)))) for c in color)
 
-def rng_for(base_seed: int,name: str): return np.random.default_rng(seed_for(base_seed,name))
-def rgb8(color): return tuple(int(max(0,min(255,round(float(c)*255)))) for c in color)
-def vary(color,factor):
-    c=np.clip(np.asarray(color,dtype=float)*factor,0,1); return (*rgb8(c),255)
 
-def low_frequency_field(rng,size,coarse=9):
-    small=rng.random((coarse,coarse)).astype(np.float32)
-    img=Image.fromarray((small*255).astype(np.uint8),"L").resize((size,size),Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(radius=max(1.0,size/48)))
-    return np.asarray(img,dtype=np.float32)/255.0
+def vary(color, factor, alpha=255):
+    c = np.clip(np.asarray(color, dtype=float) * float(factor), 0, 1)
+    return (*rgb8(c), int(alpha))
 
-def save_asphalt(path,size,seed):
-    rng=rng_for(seed,"asphalt"); fine=rng.normal(0,0.017,(size,size)).astype(np.float32); macro=low_frequency_field(rng,size,11)-0.5; warm=low_frequency_field(rng,size,7)-0.5
-    value=np.clip(0.185+fine+macro*0.050,0.105,0.285)
-    rgb=np.stack([value*(0.985+warm*0.025),value,value*(1.015-warm*0.020)],axis=-1)
-    Image.fromarray(np.clip(rgb*255,0,255).astype(np.uint8),"RGB").save(path)
 
-def save_terrain(path,size,seed,palette):
-    rng=rng_for(seed,path.as_posix()); green=np.asarray(palette["terrain"]["green"],np.float32); dry=np.asarray(palette["terrain"]["dry"],np.float32); dirt=np.asarray(palette["terrain"]["dirt"],np.float32); gm,dm,tm=map(float,palette["terrain"]["mix"])
-    f1=low_frequency_field(rng,size,8); f2=low_frequency_field(rng,size,6); f3=low_frequency_field(rng,size,5)
-    yy,xx=np.mgrid[0:size,0:size].astype(np.float32)
-    gx=(xx-size*0.30)/(size*0.45); gy=(yy-size*0.63)/(size*0.58); green_bias=np.exp(-(gx*gx+gy*gy)*1.35)
-    dx=(xx-size*0.76)/(size*0.28); dy=(yy-size*0.27)/(size*0.34); dirt_bias=np.exp(-(dx*dx+dy*dy)*1.75)
-    base=green*gm+dry*dm+dirt*tm
-    green_patch=np.clip((f1-0.46)*1.25+green_bias*0.62,0,1); dry_patch=np.clip((f2-0.54)*1.10,0,0.72); dirt_patch=np.clip((f3-0.64)*1.55+dirt_bias*0.70,0,0.78)
-    rgb=np.broadcast_to(base,(size,size,3)).copy(); rgb+=(green-base)[None,None,:]*green_patch[...,None]*0.42; rgb+=(dry-base)[None,None,:]*dry_patch[...,None]*0.30; rgb+=(dirt-base)[None,None,:]*dirt_patch[...,None]*0.38
-    rgb=np.clip(rgb+rng.normal(0,0.013,(size,size,1)).astype(np.float32),0,1)
-    Image.fromarray((rgb*255).astype(np.uint8),"RGB").save(path)
+def _save_surface(image: Image.Image, path: Path, recipe: SurfaceRecipe, recipes: dict, metadata: dict):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    forge_surface(image, recipe).save(path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    recipes[str(path)] = {"kind": "surface", "recipe": recipe_dict(recipe), "sha256": digest, **metadata}
 
-def save_tree_card(path,size,seed,base_color,variant):
-    rng=rng_for(seed,path.as_posix()); image=Image.new("RGBA",(size,size),(0,0,0,0)); draw=ImageDraw.Draw(image)
-    trunk_w=size*(0.055+0.012*(variant%2)); trunk_top=size*(0.38+0.05*(variant==2))
-    draw.polygon([(size/2-trunk_w,size*0.94),(size/2+trunk_w,size*0.94),(size/2+trunk_w*0.65,trunk_top),(size/2-trunk_w*0.55,trunk_top)],fill=(91,65,39,255))
-    centers={0:[(.50,.40,.29,.22),(.34,.48,.22,.18),(.66,.47,.22,.18),(.50,.28,.20,.15)],1:[(.50,.38,.33,.20),(.28,.46,.20,.16),(.72,.46,.20,.16),(.50,.24,.16,.12)],2:[(.50,.32,.20,.28),(.43,.48,.17,.22),(.60,.46,.16,.21),(.50,.18,.13,.15)],3:[(.48,.42,.34,.22),(.25,.47,.18,.14),(.72,.48,.24,.17),(.58,.27,.19,.14)]}[variant]
-    for idx,(cx,cy,rx,ry) in enumerate(centers):
-        jitter=rng.uniform(.94,1.07); box=((cx-rx*jitter)*size,(cy-ry*jitter)*size,(cx+rx*jitter)*size,(cy+ry*jitter)*size); factor=[.86,1,1.10,.94][idx%4]
-        draw.ellipse(box,fill=vary(base_color,factor)); x0,y0,x1,y1=box
-        draw.polygon([(x0+(x1-x0)*.18,y0+(y1-y0)*.18),(x0+(x1-x0)*.55,y0+(y1-y0)*.08),(x0+(x1-x0)*.44,y0+(y1-y0)*.42)],fill=vary(base_color,min(1.22,factor+.14)))
-    draw.polygon([(size*.53,size*.47),(size*.78,size*.43),(size*.69,size*.60),(size*.48,size*.61)],fill=vary(base_color,.76)); image.save(path)
 
-def save_bush_card(path,size,seed,base_color,variant):
-    rng=rng_for(seed,path.as_posix()); image=Image.new("RGBA",(size,size),(0,0,0,0)); draw=ImageDraw.Draw(image); draw.rectangle((size*.47,size*.72,size*.53,size*.96),fill=(86,65,41,230))
-    for _ in range(13+variant*2):
-        rx=rng.uniform(size*.08,size*.16); ry=rng.uniform(size*.07,size*.14); cx=rng.uniform(size*.18,size*.82); cy=rng.uniform(size*.43,size*.79); lighting=.83+.30*(1-(cx/size)*.65-(cy/size)*.20)
-        draw.ellipse((cx-rx,cy-ry,cx+rx,cy+ry),fill=vary(base_color,lighting))
-    draw.polygon([(size*.12,size*.76),(size*.24,size*.67),(size*.43,size*.72),(size*.58,size*.66),(size*.76,size*.71),(size*.88,size*.78),(size*.80,size*.84),(size*.18,size*.84)],fill=vary(base_color,.82)); image.save(path)
+def _save_card(image: Image.Image, path: Path, card_size: int, recipe: CardRecipe, recipes: dict, metadata: dict):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    forge_card(image, card_size, recipe).save(path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    recipes[str(path)] = {"kind": "card", "recipe": recipe_dict(recipe), "sha256": digest, **metadata}
 
-def save_grass_card(path,size,seed,base_color,variant):
-    rng=rng_for(seed,path.as_posix()); image=Image.new("RGBA",(size,size),(0,0,0,0)); draw=ImageDraw.Draw(image)
-    for _ in range(14+variant*3):
-        x0=size*.5+rng.uniform(-size*.28,size*.28); y0=size*.96; length=rng.uniform(size*.34,size*(.70+.04*variant)); lean=rng.uniform(-size*.23,size*.23)
-        draw.line((x0,y0,x0+lean,y0-length),fill=vary(base_color,rng.uniform(.78,1.16)),width=max(1,int(size/64)))
-    image.save(path)
 
-def save_building_facade(path,size,seed,base_color,variant,biome):
-    rng=rng_for(seed,path.as_posix()); image=Image.new("RGBA",(size,size),(*rgb8(base_color),255)); draw=ImageDraw.Draw(image); industrial=variant in (1,3); rows=2 if industrial else 4; cols=(5+variant) if industrial else (4+variant%2); margin=size*.08; bottom=size*.84; cell_w=(size-2*margin)/(cols*1.32); xgap=(size-2*margin-cols*cell_w)/max(1,cols-1); cell_h=(bottom-margin)/(rows*1.55); ygap=(bottom-margin-rows*cell_h)/max(1,rows)
-    cornice=.075 if biome.altitude=="high" else (.040 if biome.longitude=="east" else .055); cf=.63 if biome.altitude=="high" else (.82 if biome.longitude=="east" else .68); draw.rectangle((0,0,size,size*cornice),fill=vary(base_color,cf))
+def make_asphalt(size: int, seed: int) -> Image.Image:
+    rng = rng_for(seed, "asphalt")
+    macro = low_frequency_field(rng, size, coarse=11, blur=max(0.8, size / 160.0)) - 0.5
+    warm = low_frequency_field(rng, size, coarse=7, blur=max(1.0, size / 120.0)) - 0.5
+    fine = rng.normal(0.0, 0.020, (size, size)).astype(np.float32)
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float32)
+    patch = np.exp(-(((xx - size * 0.68) / (size * 0.36)) ** 2 + ((yy - size * 0.32) / (size * 0.48)) ** 2))
+    value = np.clip(0.19 + fine + macro * 0.050 - patch * 0.016, 0.105, 0.29)
+    rgb = np.stack([
+        value * (0.985 + warm * 0.022),
+        value,
+        value * (1.015 - warm * 0.018),
+    ], axis=-1)
+    return Image.fromarray(np.clip(rgb * 255, 0, 255).astype(np.uint8), "RGB")
+
+
+def make_terrain(size: int, seed: int, palette: dict, label: str) -> Image.Image:
+    rng = rng_for(seed, f"terrain:{label}")
+    green = np.asarray(palette["terrain"]["green"], np.float32)
+    dry = np.asarray(palette["terrain"]["dry"], np.float32)
+    dirt = np.asarray(palette["terrain"]["dirt"], np.float32)
+    gm, dm, tm = map(float, palette["terrain"]["mix"])
+
+    f_green = low_frequency_field(rng, size, coarse=7, blur=max(1.0, size / 110.0))
+    f_dry = low_frequency_field(rng, size, coarse=6, blur=max(1.0, size / 100.0))
+    f_dirt = low_frequency_field(rng, size, coarse=5, blur=max(1.2, size / 90.0))
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float32)
+
+    green_blob_a = np.exp(-(((xx - size * 0.27) / (size * 0.34)) ** 2 + ((yy - size * 0.68) / (size * 0.45)) ** 2) * 1.25)
+    green_blob_b = np.exp(-(((xx - size * 0.78) / (size * 0.24)) ** 2 + ((yy - size * 0.73) / (size * 0.28)) ** 2) * 1.70)
+    dirt_blob_a = np.exp(-(((xx - size * 0.76) / (size * 0.25)) ** 2 + ((yy - size * 0.23) / (size * 0.31)) ** 2) * 1.55)
+    dirt_blob_b = np.exp(-(((xx - size * 0.43) / (size * 0.18)) ** 2 + ((yy - size * 0.36) / (size * 0.16)) ** 2) * 2.10)
+
+    base = green * gm + dry * dm + dirt * tm
+    green_mask = np.clip((f_green - 0.47) * 1.28 + green_blob_a * 0.55 + green_blob_b * 0.28, 0, 1)
+    dry_mask = np.clip((f_dry - 0.50) * 1.05 + (1.0 - green_blob_a) * 0.10, 0, 0.78)
+    dirt_mask = np.clip((f_dirt - 0.62) * 1.58 + dirt_blob_a * 0.62 + dirt_blob_b * 0.35, 0, 0.80)
+
+    rgb = np.broadcast_to(base, (size, size, 3)).copy()
+    rgb += (green - base)[None, None, :] * green_mask[..., None] * 0.50
+    rgb += (dry - base)[None, None, :] * dry_mask[..., None] * 0.34
+    rgb += (dirt - base)[None, None, :] * dirt_mask[..., None] * 0.46
+
+    speckle = rng.random((size, size))
+    dry_speck = speckle > 0.993
+    dirt_speck = speckle < 0.006
+    rgb[dry_speck] = rgb[dry_speck] * 0.75 + dry * 0.25
+    rgb[dirt_speck] = rgb[dirt_speck] * 0.60 + dirt * 0.40
+    rgb = np.clip(rgb + rng.normal(0.0, 0.010, (size, size, 1)).astype(np.float32), 0, 1)
+    return Image.fromarray((rgb * 255).astype(np.uint8), "RGB")
+
+
+def make_shoulder(size: int, seed: int, palette: dict, label: str) -> Image.Image:
+    rng = rng_for(seed, f"shoulder:{label}")
+    dry = np.asarray(palette["terrain"]["dry"], np.float32)
+    dirt = np.asarray(palette["terrain"]["dirt"], np.float32)
+    field = low_frequency_field(rng, size, coarse=8, blur=max(0.8, size / 150.0))
+    mix = np.clip(0.58 + (field - 0.5) * 0.48, 0.22, 0.88)
+    rgb = dry[None, None, :] * mix[..., None] + dirt[None, None, :] * (1.0 - mix[..., None])
+    grit = rng.normal(0.0, 0.020, (size, size, 1)).astype(np.float32)
+    rgb = np.clip(rgb + grit, 0, 1)
+    return Image.fromarray((rgb * 255).astype(np.uint8), "RGB")
+
+
+def make_tree_source(size: int, seed: int, base_color, variant: int) -> Image.Image:
+    rng = rng_for(seed, f"tree-source:{variant}:{base_color}")
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    trunk_w = size * (0.050 + 0.008 * (variant % 2))
+    trunk_top = size * (0.39 + 0.045 * (variant == 2))
+    draw.polygon([
+        (size / 2 - trunk_w, size * 0.96),
+        (size / 2 + trunk_w, size * 0.96),
+        (size / 2 + trunk_w * 0.58, trunk_top),
+        (size / 2 - trunk_w * 0.52, trunk_top),
+    ], fill=(92, 67, 42, 255))
+
+    forms = {
+        0: [(.50,.39,.30,.22),(.32,.49,.22,.18),(.68,.47,.23,.19),(.50,.26,.20,.16)],
+        1: [(.50,.39,.34,.20),(.27,.47,.19,.15),(.73,.46,.19,.15),(.50,.25,.17,.13)],
+        2: [(.50,.31,.19,.30),(.41,.50,.16,.22),(.60,.47,.17,.22),(.50,.16,.13,.15)],
+        3: [(.47,.41,.34,.23),(.24,.48,.18,.15),(.73,.49,.24,.18),(.60,.27,.19,.15)],
+    }[variant]
+    for idx, (cx, cy, rx, ry) in enumerate(forms):
+        j = rng.uniform(0.94, 1.07)
+        box = ((cx-rx*j)*size, (cy-ry*j)*size, (cx+rx*j)*size, (cy+ry*j)*size)
+        factor = [0.88, 1.00, 1.10, 0.95][idx % 4]
+        draw.ellipse(box, fill=vary(base_color, factor))
+        x0, y0, x1, y1 = box
+        draw.polygon([
+            (x0 + (x1-x0)*.16, y0 + (y1-y0)*.20),
+            (x0 + (x1-x0)*.55, y0 + (y1-y0)*.08),
+            (x0 + (x1-x0)*.44, y0 + (y1-y0)*.43),
+        ], fill=vary(base_color, min(1.24, factor + .14)))
+    draw.polygon([
+        (size*.50,size*.47),(size*.80,size*.44),(size*.71,size*.62),(size*.48,size*.63)
+    ], fill=vary(base_color, .74))
+    return image
+
+
+def make_bush_source(size: int, seed: int, base_color, variant: int) -> Image.Image:
+    rng = rng_for(seed, f"bush-source:{variant}:{base_color}")
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((size*.48,size*.72,size*.52,size*.96), fill=(85,65,42,220))
+    count = 16 + variant * 2
+    for _ in range(count):
+        rx = rng.uniform(size*.085, size*.18)
+        ry = rng.uniform(size*.075, size*.15)
+        cx = rng.uniform(size*.14, size*.86)
+        cy = rng.uniform(size*.42, size*.79)
+        lighting = .86 + .30 * (1 - (cx/size)*.62 - (cy/size)*.18)
+        draw.ellipse((cx-rx,cy-ry,cx+rx,cy+ry), fill=vary(base_color, lighting))
+    draw.polygon([
+        (size*.08,size*.76),(size*.20,size*.66),(size*.42,size*.70),(size*.58,size*.64),
+        (size*.80,size*.69),(size*.93,size*.78),(size*.82,size*.87),(size*.15,size*.87)
+    ], fill=vary(base_color,.80))
+    return image
+
+
+def make_grass_source(size: int, seed: int, base_color, variant: int) -> Image.Image:
+    rng = rng_for(seed, f"grass-source:{variant}:{base_color}")
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    blades = 22 + variant * 4
+    for _ in range(blades):
+        x0 = size*.5 + rng.uniform(-size*.34, size*.34)
+        y0 = size*.96
+        length = rng.uniform(size*.34, size*(.72+.035*variant))
+        lean = rng.uniform(-size*.26, size*.26)
+        width = max(1, int(round(rng.uniform(1.0, 2.2) * size / 128.0)))
+        draw.line((x0,y0,x0+lean,y0-length), fill=vary(base_color,rng.uniform(.76,1.17),235), width=width)
+    draw.ellipse((size*.24,size*.88,size*.76,size*.99), fill=vary(base_color,.60,110))
+    return image
+
+
+def make_building_facade(size: int, seed: int, base_color, variant: int, biome) -> Image.Image:
+    rng = rng_for(seed, f"building:{biome.id}:{variant}")
+    image = Image.new("RGBA", (size, size), (*rgb8(base_color), 255))
+    draw = ImageDraw.Draw(image)
+    industrial = variant in (1, 3)
+    rows = 2 if industrial else 4
+    cols = (5 + variant) if industrial else (4 + variant % 2)
+    margin = size*.08
+    bottom = size*.84
+    cell_w = (size - 2*margin) / (cols*1.32)
+    xgap = (size - 2*margin - cols*cell_w) / max(1, cols-1)
+    cell_h = (bottom-margin) / (rows*1.55)
+    ygap = (bottom-margin-rows*cell_h) / max(1, rows)
+    cornice = .075 if biome.altitude == "high" else (.040 if biome.longitude == "east" else .055)
+    cornice_factor = .63 if biome.altitude == "high" else (.82 if biome.longitude == "east" else .68)
+    draw.rectangle((0,0,size,size*cornice), fill=vary(base_color,cornice_factor))
+    draw.rectangle((size*.72,0,size,size), fill=vary(base_color,.88,78))
     for r in range(rows):
         for c in range(cols):
-            x0=margin+c*(cell_w+xgap); y0=margin+r*(cell_h+ygap); window=(48,58,61,255) if not industrial else (58,65,65,255)
-            if rng.random()<.06: window=(169,153,105,255)
-            draw.rectangle((x0-2,y0-2,x0+cell_w+2,y0+cell_h+2),fill=(35,35,33,110)); draw.rectangle((x0,y0,x0+cell_w,y0+cell_h),fill=window)
-    if biome.altitude=="high" and not industrial: draw.rectangle((0,size*.82,size,size*.90),fill=vary(base_color,.78))
-    elif biome.longitude=="east" and not industrial: draw.rectangle((0,size*.80,size,size*.87),fill=vary(base_color,1.12))
+            x0 = margin + c*(cell_w+xgap)
+            y0 = margin + r*(cell_h+ygap)
+            window = (48,58,61,255) if not industrial else (58,65,65,255)
+            if rng.random() < .06:
+                window = (169,153,105,255)
+            draw.rectangle((x0-2,y0-2,x0+cell_w+2,y0+cell_h+2), fill=(35,35,33,150))
+            draw.rectangle((x0,y0,x0+cell_w,y0+cell_h), fill=window)
     if industrial:
-        door_w=size*(.22 if variant==1 else .28); draw.rectangle((size*.5-door_w/2,size*.60,size*.5+door_w/2,size*.96),fill=(82,79,72,255))
-        for y in np.linspace(size*.64,size*.91,4): draw.line((size*.5-door_w/2,y,size*.5+door_w/2,y),fill=(52,52,49,255),width=1)
-    else: draw.rectangle((size*.44,size*.67,size*.56,size*.96),fill=(75,66,56,255))
-    draw.rectangle((0,size*.90,size,size),fill=vary(base_color,.72)); image.save(path)
+        door_w = size*(.22 if variant == 1 else .28)
+        draw.rectangle((size*.5-door_w/2,size*.60,size*.5+door_w/2,size*.96), fill=(82,79,72,255))
+        for y in np.linspace(size*.64,size*.91,4):
+            draw.line((size*.5-door_w/2,y,size*.5+door_w/2,y), fill=(52,52,49,255), width=1)
+    else:
+        draw.rectangle((size*.44,size*.67,size*.56,size*.96), fill=(75,66,56,255))
+    draw.rectangle((0,size*.90,size,size), fill=vary(base_color,.70))
+    return image
 
-def save_simple_noise(path,size,base_rgb,strength,seed):
-    rng=rng_for(seed,path.as_posix()); base=np.asarray(base_rgb,np.float32); macro=low_frequency_field(rng,size,8)-.5; fine=rng.normal(0,strength,(size,size,1)).astype(np.float32); rgb=np.clip(base[None,None,:]+macro[...,None]*strength*1.3+fine,0,1); Image.fromarray((rgb*255).astype(np.uint8),"RGB").save(path)
 
-def save_checker(path,size):
-    image=Image.new("RGB",(size,size),(238,238,238)); draw=ImageDraw.Draw(image); cell=max(1,size//8)
+def make_simple_noise(size: int, seed: int, label: str, base_rgb, strength: float) -> Image.Image:
+    rng = rng_for(seed, label)
+    base = np.asarray(base_rgb, np.float32)
+    macro = low_frequency_field(rng, size, coarse=8, blur=max(.6, size/180.0)) - .5
+    fine = rng.normal(0,strength,(size,size,1)).astype(np.float32)
+    rgb = np.clip(base[None,None,:]+macro[...,None]*strength*1.3+fine,0,1)
+    return Image.fromarray((rgb*255).astype(np.uint8),"RGB")
+
+
+def make_checker(size: int) -> Image.Image:
+    image = Image.new("RGB",(size,size),(238,238,238))
+    draw = ImageDraw.Draw(image)
+    cell=max(1,size//8)
     for y in range(8):
-        for x in range(8): draw.rectangle((x*cell,y*cell,(x+1)*cell,(y+1)*cell),fill=(18,18,18) if (x+y)%2==0 else (238,238,238))
-    image.save(path)
+        for x in range(8):
+            draw.rectangle((x*cell,y*cell,(x+1)*cell,(y+1)*cell),fill=(18,18,18) if (x+y)%2==0 else (238,238,238))
+    return image
 
-def generate_biome_bank(root,biome,card_size,terrain_size,seed):
-    palette=palette_for(biome); d=root/"biomes"/biome.continent/biome.longitude/biome.altitude; d.mkdir(parents=True,exist_ok=True); save_terrain(d/"terrain.png",terrain_size,seed,palette); save_simple_noise(d/"bark.png",card_size,(.29,.19,.105),.03,seed); assets={}
+
+def generate_biome_bank(root: Path, biome, card_size: int, terrain_size: int, seed: int, recipes: dict):
+    palette = palette_for(biome)
+    d = root / "biomes" / biome.continent / biome.longitude / biome.altitude
+    d.mkdir(parents=True, exist_ok=True)
+
+    surface_recipe = SurfaceRecipe(posterize_levels=28, dither_strength=.010, contrast=1.035)
+    terrain_path = d / "terrain.png"
+    _save_surface(make_terrain(terrain_size, seed, palette, biome.id), terrain_path, surface_recipe, recipes, {"biome":biome.id,"role":"terrain"})
+    shoulder_path = d / "shoulder.png"
+    _save_surface(make_shoulder(max(256,terrain_size//2), seed, palette, biome.id), shoulder_path, SurfaceRecipe(24,.012,1.045), recipes, {"biome":biome.id,"role":"roadside_shoulder"})
+    bark_path = d / "bark.png"
+    _save_surface(make_simple_noise(card_size,seed,f"bark:{biome.id}",(.29,.19,.105),.028), bark_path, SurfaceRecipe(18,.010,1.05), recipes, {"biome":biome.id,"role":"bark"})
+
+    assets = {}
+    source_size = max(256, card_size*2)
+    tree_recipe = CardRecipe(18,.018,40,64,.17,.22,.075,.10)
+    bush_recipe = CardRecipe(16,.020,38,64,.15,.18,.065,.08)
+    grass_recipe = CardRecipe(14,.022,34,64,.10,.10,.045,.06)
+    building_recipe = SurfaceRecipe(22,.012,1.06)
+
     for category in ("trees","bushes","grass","fake_buildings"):
-        key={"trees":"tree","bushes":"bush","grass":"grass","fake_buildings":"structures"}[category]; colors=palette[key]
-        for spec in specs_for_biome(biome,category):
-            path=d/f"{spec.id}.png"; color=colors[spec.variant_index%4]
-            if category=="trees": save_tree_card(path,card_size,seed,color,spec.variant_index)
-            elif category=="bushes": save_bush_card(path,card_size,seed,color,spec.variant_index)
-            elif category=="grass": save_grass_card(path,card_size,seed,color,spec.variant_index)
-            else: save_building_facade(path,card_size,seed,color,spec.variant_index,biome)
-            assets[spec.id]=str(path.relative_to(root)).replace("\\","/")
-    return {"biome":biome.id,"terrain":str((d/"terrain.png").relative_to(root)).replace("\\","/"),"bark":str((d/"bark.png").relative_to(root)).replace("\\","/"),"assets":assets}
+        key = {"trees":"tree","bushes":"bush","grass":"grass","fake_buildings":"structures"}[category]
+        colors = palette[key]
+        for spec in specs_for_biome(biome, category):
+            path = d / f"{spec.id}.png"
+            color = colors[spec.variant_index % 4]
+            metadata = {"biome": biome.id, "category": category, "variant": spec.variant_index}
+            if category == "trees":
+                _save_card(make_tree_source(source_size,seed,color,spec.variant_index),path,card_size,tree_recipe,recipes,metadata)
+            elif category == "bushes":
+                _save_card(make_bush_source(source_size,seed,color,spec.variant_index),path,card_size,bush_recipe,recipes,metadata)
+            elif category == "grass":
+                _save_card(make_grass_source(source_size,seed,color,spec.variant_index),path,card_size,grass_recipe,recipes,metadata)
+            else:
+                _save_surface(make_building_facade(card_size,seed,color,spec.variant_index,biome),path,building_recipe,recipes,metadata)
+            assets[spec.id] = str(path.relative_to(root)).replace("\\","/")
 
-def main():
-    p=argparse.ArgumentParser(); p.add_argument("--config",required=True); p.add_argument("--seed",type=int,default=1995); ns=p.parse_args(); cp=Path(ns.config).resolve(); repo=cp.parents[3]; config=read_json(cp); out=repo/config["generated_dir"]/"textures"; shared=out/"shared"; shared.mkdir(parents=True,exist_ok=True); size=int(config.get("materials",{}).get("texture_size",256)); card=int(config.get("materials",{}).get("card_texture_size",128))
-    save_asphalt(shared/"asphalt.png",size,ns.seed); save_simple_noise(shared/"guardrail.png",card,(.52,.54,.55),.025,ns.seed); save_checker(shared/"start_finish.png",card)
-    manifests={b.id:generate_biome_bank(out,b,card,size,ns.seed) for b in supported_biomes()}; active=biome_from_config(config); m={"seed":ns.seed,"active_biome":active.id,"shared":{"asphalt":"shared/asphalt.png","guardrail":"shared/guardrail.png","start_finish":"shared/start_finish.png"},**manifests[active.id]}
-    (out/"active_manifest.json").write_text(json.dumps(m,indent=2),encoding="utf-8"); (out/"bank_manifest.json").write_text(json.dumps({"seed":ns.seed,"biomes":manifests},indent=2),encoding="utf-8")
-    print(f"[textures] generated {len(manifests)} South America biome combinations"); print("[textures] bank: 4 trees + 4 bushes + 4 grass cards + 4 facades per biome"); print(f"[textures] active={active.id} seed={ns.seed}"); print(f"[textures] wrote {out}"); return 0
+    return {
+        "biome": biome.id,
+        "terrain": str(terrain_path.relative_to(root)).replace("\\","/"),
+        "shoulder": str(shoulder_path.relative_to(root)).replace("\\","/"),
+        "bark": str(bark_path.relative_to(root)).replace("\\","/"),
+        "assets": assets,
+    }
 
-if __name__=="__main__": raise SystemExit(main())
+
+def main() -> int:
+    p = argparse.ArgumentParser(description="Generate deterministic Formula90s PS1-rally texture bank.")
+    p.add_argument("--config", required=True)
+    p.add_argument("--seed", type=int, default=1995)
+    ns = p.parse_args()
+    cp = Path(ns.config).resolve()
+    repo = cp.parents[3]
+    config = read_json(cp)
+    out = repo / config["generated_dir"] / "textures"
+    shared = out / "shared"
+    shared.mkdir(parents=True, exist_ok=True)
+
+    materials_cfg = config.get("materials", {})
+    surface_size = int(materials_cfg.get("texture_size",256))
+    terrain_size = int(materials_cfg.get("terrain_texture_size",512))
+    card_size = int(materials_cfg.get("card_texture_size",128))
+    recipes: dict[str,dict] = {}
+
+    _save_surface(make_asphalt(surface_size,ns.seed),shared/"asphalt.png",SurfaceRecipe(26,.009,1.04),recipes,{"role":"asphalt"})
+    _save_surface(make_simple_noise(card_size,ns.seed,"guardrail",(.50,.52,.52),.026),shared/"guardrail.png",SurfaceRecipe(18,.012,1.05),recipes,{"role":"guardrail"})
+    _save_surface(make_checker(card_size),shared/"start_finish.png",SurfaceRecipe(8,0.0,1.0),recipes,{"role":"start_finish"})
+
+    manifests = {b.id: generate_biome_bank(out,b,card_size,terrain_size,ns.seed,recipes) for b in supported_biomes()}
+    active = biome_from_config(config)
+    active_manifest = {
+        "forge": {"version":FORGE_VERSION,"style":STYLE_ID,"seed":ns.seed},
+        "active_biome": active.id,
+        "shared": {
+            "asphalt":"shared/asphalt.png",
+            "guardrail":"shared/guardrail.png",
+            "start_finish":"shared/start_finish.png",
+        },
+        **manifests[active.id],
+    }
+    (out/"active_manifest.json").write_text(json.dumps(active_manifest,indent=2),encoding="utf-8")
+    (out/"bank_manifest.json").write_text(json.dumps({"forge":active_manifest["forge"],"biomes":manifests},indent=2),encoding="utf-8")
+
+    normalized_recipes = {}
+    for path, data in recipes.items():
+        pth = Path(path)
+        try:
+            rel = str(pth.resolve().relative_to(out.resolve())).replace("\\","/")
+        except Exception:
+            rel = str(pth).replace("\\","/")
+        normalized_recipes[rel] = data
+    write_recipe_manifest(out/"texture_forge_manifest.json",seed=ns.seed,entries=normalized_recipes)
+
+    print(f"[textures] forge={STYLE_ID} v{FORGE_VERSION}")
+    print(f"[textures] generated {len(manifests)} South America biome combinations")
+    print("[textures] bank: 4 trees + 4 bushes + 4 grass cards + 4 facades per biome")
+    print(f"[textures] active={active.id} seed={ns.seed}")
+    print(f"[textures] wrote {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
