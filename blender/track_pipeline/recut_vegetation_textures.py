@@ -10,11 +10,11 @@ import numpy as np
 from PIL import Image
 
 from pipeline_common import read_json
-from vegetation_texture_common import MAGENTA_RGB, border_connected, magenta_key_mask, transparent_edge
+from vegetation_texture_common import MAGENTA_RGB, align_bottom, key_background_rgba, pad_transparent_rgb
 
 
-POSTPROCESS_ID = "vegetation_magenta_key_align_bottom"
-POSTPROCESS_VERSION = 1
+POSTPROCESS_ID = "vegetation_legacy_card_recut"
+POSTPROCESS_VERSION = 2
 VEGETATION_CATEGORIES = {"trees", "bushes", "grass"}
 ASSET_RE = re.compile(r"_(tree|bush|grass)_\d+\.png$")
 
@@ -30,44 +30,19 @@ def recut_image(path: Path, pass_index: int) -> dict:
     image = Image.open(path).convert("RGBA")
     rgba = np.asarray(image, dtype=np.uint8).copy()
     height, width = rgba.shape[:2]
-    alpha = rgba[..., 3].copy()
-    alpha[alpha < 42] = 0
+    rgba[..., 3][rgba[..., 3] < 2] = 0
 
-    candidate = magenta_key_mask(rgba[..., :3], pass_index)
-    radius = 2 if pass_index == 1 else 5
-    border_candidates = border_connected(candidate)
-    removed_magenta_px = 0
-    # Removing a key pixel can expose another key pixel on the next edge.
-    # A fixed small bound keeps this second pass deterministic and convergent.
-    for _ in range(8):
-        near_transparent = transparent_edge(alpha, radius)
-        removable = candidate & (alpha > 0) & (near_transparent | border_candidates)
-        if not removable.any():
-            break
-        alpha[removable] = 0
-        removed_magenta_px += int(removable.sum())
+    rgba, key_metrics = key_background_rgba(rgba, MAGENTA_RGB, pass_index)
+    rgba, shift_down = align_bottom(rgba)
+    rgba = pad_transparent_rgb(rgba, radius=4)
 
-    # Keep the magenta rule in RGB even when the pixel is transparent.
-    rgba[..., 3] = alpha
-    rgba[alpha == 0, :3] = MAGENTA_RGB
-
-    visible = alpha > 0
+    visible = rgba[..., 3] > 0
     ys, xs = np.where(visible)
     if len(xs) == 0:
         raise RuntimeError(f"Vegetation card became empty: {path}")
     bbox = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
-    shift_down = height - bbox[3]
-    if shift_down > 0:
-        shifted = np.zeros_like(rgba)
-        shifted[..., :3] = MAGENTA_RGB
-        shifted[shift_down:] = rgba[:-shift_down]
-        rgba = shifted
-        alpha = rgba[..., 3]
-        visible = alpha > 0
-        ys, xs = np.where(visible)
-        bbox = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
 
-    Image.fromarray(rgba).save(path)
+    Image.fromarray(rgba, "RGBA").save(path)
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     return {
         "path": str(path),
@@ -75,7 +50,7 @@ def recut_image(path: Path, pass_index: int) -> dict:
         "bbox": list(bbox),
         "bottom_gap_px": height - bbox[3],
         "shift_down_px": int(shift_down),
-        "removed_magenta_px": removed_magenta_px,
+        "key": key_metrics,
         "sha256": digest,
     }
 
@@ -91,15 +66,12 @@ def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int) -> N
         "id": POSTPROCESS_ID,
         "version": POSTPROCESS_VERSION,
         "pass": pass_index,
+        "scope": "legacy_128px_fallback_only",
         "key_rgb": MAGENTA_RGB.tolist(),
-        "key_tolerance_rgb": 80 if pass_index == 1 else 125,
-        "key_min_rb": 135 if pass_index == 1 else 100,
-        "key_green_gap_min": 45 if pass_index == 1 else 30,
-        "key_channel_spread_max": 75 if pass_index == 1 else 100,
-        "edge_radius_px": 2 if pass_index == 1 else 5,
+        "transparent_rgb": "foreground_edge_padding_4px",
         "bottom_anchor": "last_visible_alpha_row",
     }
-    manifest["vegetation_postprocess"] = recipe
+    manifest["vegetation_legacy_recut"] = recipe
     for rel, item in by_rel.items():
         entry = manifest["entries"].get(rel)
         if entry is None:
@@ -110,7 +82,7 @@ def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int) -> N
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Deterministically recut curated vegetation cards.")
+    parser = argparse.ArgumentParser(description="Legacy fallback: recut existing 128px vegetation cards. Prefer source rebuild.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--pass-index", type=int, choices=(1, 2), default=1)
     parser.add_argument("--report", default="")
@@ -120,10 +92,7 @@ def main() -> int:
     repo = config_path.parents[3]
     config = read_json(config_path)
     root = repo / config["generated_dir"] / "textures"
-    paths = sorted(
-        p for p in root.glob("biomes/**/*.png")
-        if category_for(p) in VEGETATION_CATEGORIES
-    )
+    paths = sorted(p for p in root.glob("biomes/**/*.png") if category_for(p) in VEGETATION_CATEGORIES)
     if not paths:
         raise RuntimeError(f"No vegetation cards found under {root}")
 
@@ -134,14 +103,10 @@ def main() -> int:
         report_path = repo / report_path
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps({
-        "postprocess": {
-            "id": POSTPROCESS_ID,
-            "version": POSTPROCESS_VERSION,
-            "pass": ns.pass_index,
-        },
+        "postprocess": {"id": POSTPROCESS_ID, "version": POSTPROCESS_VERSION, "pass": ns.pass_index, "scope": "legacy_128px_fallback_only"},
         "assets": metrics,
     }, indent=2) + "\n", encoding="utf-8")
-    print(f"[vegetation] recut={len(metrics)} pass={ns.pass_index} root={root}")
+    print(f"[vegetation] legacy_recut={len(metrics)} pass={ns.pass_index} root={root}")
     print(f"[vegetation] report={report_path}")
     return 0
 
