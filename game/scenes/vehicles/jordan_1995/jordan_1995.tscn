@@ -1,12 +1,10 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle.gd" id="1_vehicle"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/wheel.gd" id="2_wheel"]
 [ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_chassis.glb" id="3_chassis"]
-[ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_fl.glb" id="4_fl"]
-[ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_fr.glb" id="5_fr"]
-[ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_rl.glb" id="6_rl"]
-[ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_rr.glb" id="7_rr"]
+[ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_front.glb" id="4_front"]
+[ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_rear.glb" id="5_rear"]
 
 [sub_resource type="Curve" id="Curve_reference_powertrain"]
 _data = [Vector2(0, 0.2), 0.0, 1.2, 0, 0, Vector2(0.85, 1.0), 0.0, 0.0, 0, 0, Vector2(1.0, 0.1), -10.0, 0.0, 0, 0]
@@ -177,25 +175,31 @@ shape = SubResource("Box_nose")
 position = Vector3(0, 0.00, 1.4812)
 shape = SubResource("Box_rear")
 
+; Canonical wheel contract: one visual geometry per axle. GEVP still owns four
+; independent RayCast3D wheels, while Formula90s reuses the same PackedScene
+; for both sides. L/R placement is perfectly symmetric around vehicle X=0.
 [node name="WheelFrontLeft" type="RayCast3D" parent="." node_paths=PackedStringArray("wheel_node")]
-position = Vector3(-0.739479, 0.0575, -1.4394)
+position = Vector3(-0.739368, 0.0575, -1.4394)
 script = ExtResource("2_wheel")
 wheel_node = NodePath("Pivot")
 
 [node name="Pivot" type="Node3D" parent="WheelFrontLeft"]
-position = Vector3(0, -0.05, 0)
 
-[node name="Visual" parent="WheelFrontLeft/Pivot" instance=ExtResource("4_fl")]
+[node name="Orientation" type="Node3D" parent="WheelFrontLeft/Pivot"]
+
+[node name="Visual" parent="WheelFrontLeft/Pivot/Orientation" instance=ExtResource("4_front")]
 
 [node name="WheelFrontRight" type="RayCast3D" parent="." node_paths=PackedStringArray("wheel_node")]
-position = Vector3(0.739257, 0.0575, -1.4394)
+position = Vector3(0.739368, 0.0575, -1.4394)
 script = ExtResource("2_wheel")
 wheel_node = NodePath("Pivot")
 
 [node name="Pivot" type="Node3D" parent="WheelFrontRight"]
-position = Vector3(0, -0.05, 0)
 
-[node name="Visual" parent="WheelFrontRight/Pivot" instance=ExtResource("5_fr")]
+[node name="Orientation" type="Node3D" parent="WheelFrontRight/Pivot"]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="WheelFrontRight/Pivot/Orientation" instance=ExtResource("4_front")]
 
 [node name="WheelRearLeft" type="RayCast3D" parent="." node_paths=PackedStringArray("wheel_node")]
 position = Vector3(-0.718479, 0.0525, 1.4906)
@@ -203,9 +207,10 @@ script = ExtResource("2_wheel")
 wheel_node = NodePath("Pivot")
 
 [node name="Pivot" type="Node3D" parent="WheelRearLeft"]
-position = Vector3(0, -0.06, 0)
 
-[node name="Visual" parent="WheelRearLeft/Pivot" instance=ExtResource("6_rl")]
+[node name="Orientation" type="Node3D" parent="WheelRearLeft/Pivot"]
+
+[node name="Visual" parent="WheelRearLeft/Pivot/Orientation" instance=ExtResource("5_rear")]
 
 [node name="WheelRearRight" type="RayCast3D" parent="." node_paths=PackedStringArray("wheel_node")]
 position = Vector3(0.718479, 0.0525, 1.4906)
@@ -213,6 +218,8 @@ script = ExtResource("2_wheel")
 wheel_node = NodePath("Pivot")
 
 [node name="Pivot" type="Node3D" parent="WheelRearRight"]
-position = Vector3(0, -0.06, 0)
 
-[node name="Visual" parent="WheelRearRight/Pivot" instance=ExtResource("7_rr")]
+[node name="Orientation" type="Node3D" parent="WheelRearRight/Pivot"]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="WheelRearRight/Pivot/Orientation" instance=ExtResource("5_rear")]
