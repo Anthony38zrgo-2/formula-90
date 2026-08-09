@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle.gd" id="1_vehicle"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/wheel.gd" id="2_wheel"]
 [ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_chassis.glb" id="3_chassis"]
 [ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_front.glb" id="4_front"]
 [ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_rear.glb" id="5_rear"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/vehicle_visual_contract_guard.gd" id="6_guard"]
 
 [sub_resource type="Curve" id="Curve_reference_powertrain"]
 _data = [Vector2(0, 0.2), 0.0, 1.2, 0, 0, Vector2(0.85, 1.0), 0.0, 0.0, 0, 0, Vector2(1.0, 0.1), -10.0, 0.0, 0, 0]
@@ -223,3 +224,6 @@ wheel_node = NodePath("Pivot")
 rotation = Vector3(0, 3.14159265, 0)
 
 [node name="Visual" parent="WheelRearRight/Pivot/Orientation" instance=ExtResource("5_rear")]
+
+[node name="VisualContractGuard" type="Node" parent="."]
+script = ExtResource("6_guard")
