@@ -5,74 +5,39 @@ description: Deterministic real-circuit reconstruction and procedural Blender ra
 
 # Skill: Track Reconstruction
 
-Use this skill for real circuit geometry, Blender racetrack generation, curbs, guardrails, procedural materials, vegetation, distant scenery, or the phrase "ejecuta el renderizado procedural".
+Use for real circuit geometry, Blender racetracks, curbs, terrain, guardrails, procedural materials/vegetation, or "ejecuta el renderizado procedural".
 
-## Authority order
+## Gate
 
-1. geospatial/vector measurements if available;
-2. georeferenced imagery;
-3. orthographic/top-down reference;
-4. perspective-corrected imagery;
-5. manual approximation only as fallback.
-
-Never replace measurable geometry with guessed `Vector3` values when a deterministic data source exists.
-
-## Two-stage gate
-
-### Base
-
+Base:
 ```powershell
 .\scripts\run_track_pipeline.ps1 -Mode Base -Track <track> -Seed <seed>
 ```
+Human-test Base before Procedural.
 
-Base mode owns track geometry, smooth curbs, terrain shoulders, start/finish and the canonical runtime GLB. A Base result must be human-tested.
-
-### Procedural
-
-Only after explicit user acceptance:
-
+Procedural:
 ```powershell
 .\scripts\run_track_pipeline.ps1 -Mode Procedural -Track <track> `
-  -TreesDensity <density> `
-  -BushesDensity <density> `
-  -GrassDensity <density> `
-  -BuildingsDensity <density> `
-  -Seed <seed>
+  -TreesDensity <density> -BushesDensity <density> `
+  -GrassDensity <density> -BuildingsDensity <density> -Seed <seed>
 ```
 
-Allowed densities: `none`, `very_low`, `low`, `medium`, `high`.
+## Hard rules
 
-The default environment path must not require external assets. Region-specific canonical prototypes are generated in Blender and intentionally kept few in number.
+- Same config + seed must reproduce centerline, texture bank and placement.
+- Never decorate `track_base.blend` in place; reopen it for every procedural run.
+- Back up previous `.blend` outputs and atomically replace runtime GLBs.
+- Terrain collision must be a single-valued heightfield/grid or another topology proven not to self-intersect. Do not use wide normal-offset shoulder ribbons on tight curves.
+- Collision terrain must meet the road edge continuously; visual-only sink may be millimetric.
+- Smooth low curbs only; never rectangular launch ramps.
+- Guardrail visual mesh never acts as vehicle collision; use simple `-colonly` proxies.
+- Procedural biome is `continent + longitude band + altitude band`.
+- South America must expose four variants for vegetation/structure categories in every west/center/east × low/medium/high combination.
+- Trees use 3 crossed planes, bushes 2, grass 1. Do not replace them with full 3D crowns unless explicitly requested.
+- Buildings may be simple 3D shells with a basic top and no underside.
+- Keep base texture count small; reuse deterministic textures instead of per-instance files.
+- Validate overlaps and track clearances before Blender export.
 
-## Hard constraints
+## Failure
 
-- Same config + seed must reproduce placement and textures.
-- Track geometry is independent from procedural decoration.
-- `track_base.blend` is the human-validated clean source and must not be decorated in-place.
-- Procedural runs start from `track_base.blend`, back up any previous `track_environment.blend`, then replace `track_environment.blend`.
-- Never delete the live runtime GLB before a replacement exists; export to a temporary path and atomically replace.
-- No two placed environment objects may overlap declared bounding radii.
-- All categories must respect configured distance zones from the circuit.
-- Grass and bushes are near-field 2D crossed cards.
-- Trees are a small low-poly region-specific prototype set.
-- Distant generic buildings are fake billboard scenery with no collision.
-- Guardrails are modular procedural geometry and use simplified `-colonly` collision boxes.
-- Curbs use the configured low smooth profile, never rectangular steps.
-- Banked road geometry must not intersect a flat terrain plane. Use bank-aware grass shoulders and a lower far-ground plane.
-- Do not fix road/terrain clipping by translating the whole Godot track scene.
-- Generated textures should remain low-resolution and reusable; do not generate a unique texture per instance.
-- Do not create persistent mesh/material duplicates merely for color variation.
-
-## Region policy
-
-Current region: `south_america`.
-
-A region should have only a small number of canonical vegetation variants. Add a new region profile instead of continuously adding one-off models.
-
-## Failure protocol
-
-If Base validation fails, do not run Blender.
-
-If procedural placement validation reports overlaps or clearance violations, do not export or claim success.
-
-If the canonical runtime GLB cannot be atomically replaced after a successful export, leave the previous canonical asset intact and report failure.
+If track/terrain validation fails, do not run Blender. If environment validation fails, do not publish the decorated GLB. Preserve the last known-good canonical GLB on export failure.
