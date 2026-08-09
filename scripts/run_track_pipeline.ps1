@@ -63,16 +63,16 @@ if ($TextureSource -eq "Procedural") {
         throw "Curated texture bank seed=$activeSeed does not match requested seed=$Seed. Pass -TextureSource Procedural or use the matching seed."
     }
     Write-Host "Texture source: existing curated bank ($textureRoot)" -ForegroundColor DarkGray
-    & $python (Join-Path $pipeline "recut_vegetation_textures.py") `
+    & $python (Join-Path $pipeline "rebuild_curated_vegetation.py") `
         --config $config `
         --pass-index $VegetationPass
-    if ($LASTEXITCODE -ne 0) { throw "Vegetation recut failed" }
+    if ($LASTEXITCODE -ne 0) { throw "Source-backed vegetation rebuild failed" }
     & $python (Join-Path $pipeline "analyze_vegetation_textures.py") `
         --config $config `
-        --pass-index $VegetationPass `
         --strict
     if ($LASTEXITCODE -ne 0) { throw "Vegetation analysis failed" }
-    Write-Host "Vegetation gate: deterministic recut/analyze pass $VegetationPass" -ForegroundColor DarkGray
+    Write-Host "Vegetation gate: source-resolution key/rebuild + independent analysis pass $VegetationPass" -ForegroundColor DarkGray
+    Write-Host "Legacy recut_vegetation_textures.py remains manual fallback only." -ForegroundColor DarkGray
 }
 & $python (Join-Path $pipeline "validate_texture_forge.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Texture Forge validation failed" }
