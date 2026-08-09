@@ -1,121 +1,79 @@
 # Formula90s deterministic Blender racetrack pipeline
 
-The pipeline has two gated stages and now requires **no external environment assets** for its default workflow.
+Two gated stages: **Base** builds a clean playable circuit; **Procedural** decorates only after human approval.
 
-## Stage 1 — deterministic base track
+## Base
 
 ```powershell
 .\scripts\setup_track_pipeline.ps1
 .\scripts\run_track_pipeline.ps1 -Mode Base -Track la_chutana -Seed 1995
 ```
 
-Base mode:
+Base reconstructs/validates the centerline, generates deterministic low-resolution texture banks, builds the Blender track, backs up the previous `track_base.blend`, exports through a temporary GLB and atomically publishes `<track>.glb`.
 
-1. reconstructs/resamples the stored circuit reference;
-2. validates length, intersections, road/curb limits;
-3. generates low-resolution procedural textures;
-4. builds road, smooth curbs, edge lines and bank-aware grass shoulders in Blender;
-5. keeps a small vertical separation between drivable geometry and terrain;
-6. backs up an existing `track_base.blend`;
-7. atomically replaces the base GLB and publishes the canonical runtime GLB.
+### Terrain collision contract
 
-The generated base must be tested in Godot by a human before procedural decoration.
+Wide normal-offset grass ribbons are forbidden: on tight corners they can fold over themselves and create invisible collision wedges. The current builder uses a regular deterministic heightfield grid. Cells fully beneath the asphalt corridor are omitted; boundary terrain collision is continuous with the banked road edge. Only the visual terrain gets the configured millimetric sink.
 
-## Stage 2 — procedural environment
+`validate_track.py` checks finite/non-degenerate terrain triangles, seam error and triangle budget before Blender runs.
 
-After explicit acceptance of the base:
+## Procedural
 
 ```powershell
 .\scripts\run_track_pipeline.ps1 -Mode Procedural -Track la_chutana `
-  -TreesDensity low `
-  -BushesDensity low `
-  -GrassDensity medium `
-  -BuildingsDensity very_low `
-  -Seed 1995
+  -TreesDensity low -BushesDensity low -GrassDensity medium `
+  -BuildingsDensity very_low -Seed 1995
 ```
 
-Procedural mode does **not** require tree/building source files. For `south_america` it creates a deliberately small reusable set of low-poly prototypes:
+Every procedural run reopens the clean `track_base.blend`; it never stacks new decoration over an old result. Previous `.blend` outputs are backed up and runtime GLBs are replaced atomically.
 
-- broadleaf tree;
-- dry-canopy tree;
-- palm;
-- crossed 2D grass cards;
-- crossed 2D bush cards;
-- distant fake-building billboards;
-- modular low-poly guardrails plus simplified collision boxes.
+## Biome model
 
-Placement is seed-based, respects configured track-distance zones and uses a spatial hash to reject overlaps.
+Environment art is selected by:
 
-## Region authority
-
-Current track config:
-
-```json
-"procedural_environment": {
-  "region": "south_america"
-}
+```text
+continent: south_america
+longitude: west | center | east
+altitude:  low | medium | high
 ```
 
-Region profiles intentionally contain only a few canonical variants. Diversity should come primarily from scale, rotation, placement and small material variation—not from dozens of duplicated assets.
+That yields nine South America combinations. `generate_procedural_textures.py` creates **4 trees, 4 bushes, 4 grass cards and 4 building facades per combination**. La Chutana uses `south_america / west / low`, a balanced green/dry/dirt terrain palette and mixed residential/industrial distant structures. This is an artistic model, not ecological or historical simulation.
 
-## Textures/materials
+## Retro geometry rules
 
-`generate_procedural_textures.py` creates small deterministic textures under:
+- tree: 3 crossed double-sided planes = 6 directional faces;
+- bush: 2 crossed planes = 4 directional faces;
+- grass: 1 double-sided card;
+- distant/medium buildings: low-poly 3D shell, four walls + basic roof, no underside;
+- guardrail: low-poly visual module + separate `-colonly` box collision.
 
-`blender/generated/<track>/textures/`
+Cards use a small bank of clean PS1-style textures with fake/pre-rendered self-shadow facets. Instance variety comes from deterministic selection, rotation and scale rather than unique per-instance textures.
 
-These include asphalt, dry ground, bark, guardrail metal, grass/bush cards and distant-building facades.
+## Texture bank
 
-Generated textures are source inputs for the `.blend` and are embedded by the GLB export. They are generated artifacts, not hand-authored source-of-truth.
+Generated under `blender/generated/<track>/textures/`:
 
-## Anti-clipping terrain rule
+- shared asphalt, guardrail and start/finish;
+- per-biome terrain, bark and 16 cards/facades;
+- `bank_manifest.json` for all nine combinations;
+- `active_manifest.json` consumed by Blender.
 
-Road surface elevation is configured separately from terrain clearance. Banked sections can have a road edge lower than the centerline, so merely placing a flat grass plane a few millimetres below the centerline is insufficient.
+Terrain pigmentation uses asymmetric low-frequency masks so some broad regions are greener, drier or slightly earthy. Large world-space UV scaling keeps those changes subtle instead of visibly tiled every few metres.
 
-The Blender builder therefore:
+## Density
 
-1. keeps the road centerline slightly elevated;
-2. creates grass shoulders that start below each banked road edge;
-3. transitions those shoulders toward a lower far-ground plane;
-4. automatically lowers the far-ground plane enough to stay below the lowest banked road edge.
+Grass is cheap and intentionally more abundant. La Chutana `very_low` now starts around the previous low-density order of magnitude; higher presets scale from there. Spatial-hash overlap and distance-zone validation remain mandatory.
 
-Do not fix this by applying a Y translation to the Godot track scene.
+## Outputs
 
-## Backups and atomic runtime replacement
+```text
+blender/generated/<track>/track_base.blend
+blender/generated/<track>/track_environment.blend
+blender/generated/<track>/backups/base/
+blender/generated/<track>/backups/environment/
+game/assets/generated/tracks/<track>/<track>_base.glb
+game/assets/generated/tracks/<track>/<track>_environment.glb
+game/assets/generated/tracks/<track>/<track>.glb
+```
 
-Base output:
-
-`blender/generated/<track>/track_base.blend`
-
-Base backups:
-
-`blender/generated/<track>/backups/base/`
-
-Decorated output:
-
-`blender/generated/<track>/track_environment.blend`
-
-Decorated backups:
-
-`blender/generated/<track>/backups/environment/`
-
-Runtime debug exports:
-
-- `<track>_base.glb`
-- `<track>_environment.glb`
-
-Godot loads the canonical:
-
-`<track>.glb`
-
-Base mode publishes the base GLB there. Procedural mode replaces it with the decorated GLB.
-
-The scripts do **not** delete the live export before a new one exists. They export to a temporary file and use an atomic replace, which is safer than delete-then-write.
-
-## Determinism contract
-
-Same config + same seed => same textures and placement.
-
-A procedural run must fail rather than silently continue when validation detects overlap/clearance violations.
-
-`track_base.blend` remains the validated clean source. Re-running Procedural always starts from it, then backs up and replaces `track_environment.blend`. This prevents old procedural objects from accumulating across runs.
+The last file is the canonical asset consumed by Godot. Never delete it before a replacement has exported successfully.
