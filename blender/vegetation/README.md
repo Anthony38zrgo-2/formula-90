@@ -1,17 +1,26 @@
-# Procedural vegetation
+# Formula90s procedural vegetation
 
-`blender/vegetation/` is reserved for optional future art overrides. The active Formula90s racetrack pipeline no longer requires external vegetation assets.
+External vegetation assets are optional overrides; the default track pipeline generates its own retro vegetation.
 
-Default procedural environment generation creates a deliberately small reusable set for the configured region (`south_america` currently):
+Biome selection is deterministic:
 
-- low-poly broadleaf tree;
-- low-poly dry-canopy tree;
-- low-poly palm;
-- crossed 2D grass cards;
-- crossed 2D bush cards.
+```text
+continent + longitude (west/center/east) + altitude (low/medium/high)
+```
 
-The number of canonical tree types is intentionally small. Variety comes from deterministic placement, scale and rotation rather than dozens of unique meshes.
+For every South America combination the generated texture bank contains at least:
 
-Generated textures are small and live under `blender/generated/<track>/textures/`; they are embedded into runtime GLBs and are not source-of-truth.
+- 4 tree cards;
+- 4 bush cards;
+- 4 grass cards;
+- 4 facade textures used by distant/medium structures.
 
-If hand-authored vegetation is reintroduced later, treat files in this folder as optional overrides rather than a required dependency of Base or Procedural mode.
+Geometry contract:
+
+- trees: 3 crossed double-sided planes (6 directional faces), deliberately taller than the first prototype generation;
+- bushes: 2 crossed planes, low and relatively wide;
+- grass: one double-sided card, intended for high instance counts.
+
+Textures use strong-clean PS1 styling with hard silhouettes and fake/pre-rendered self-shadow facets. Tree and bush palettes are intentionally offset so they do not collapse into one identical green mass.
+
+`blender/vegetation/` remains available for future hand-authored overrides, but an empty folder must never break the default pipeline.
