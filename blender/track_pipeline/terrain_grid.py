@@ -51,6 +51,11 @@ class SegmentSpatialIndex:
         return result
 
 
+def _smoothstep01(value: float) -> float:
+    t = min(1.0, max(0.0, float(value)))
+    return t * t * (3.0 - 2.0 * t)
+
+
 def bank_degrees_at_fraction(config: dict, fraction: float) -> float:
     result = 0.0
     f = float(fraction) % 1.0
@@ -121,35 +126,55 @@ def road_surface_height(config: dict, fraction: float, signed_offset_m: float) -
 
 
 def terrain_height_from_sample(config: dict, sample: NearestTrackSample | None, *, visual: bool = False) -> float:
+    """Return terrain height for a point near the track.
+
+    Collision terrain is a continuous underlay below the road instead of a grid with
+    deleted road cells. It rises to the exact road-edge height at the boundary, then
+    becomes the grass/runoff surface. This prevents gaps between separate imported
+    concave meshes. The visual terrain is pushed further below the road and blended
+    back outside the edge, preventing coarse grid triangles from visibly clipping
+    through asphalt.
+    """
     terrain = config.get("terrain", {})
     far_z = effective_far_ground_z(config)
     if sample is None:
-        return far_z - (float(terrain.get("visual_sink_m", 0.002)) if visual else 0.0)
+        return far_z - (float(terrain.get("visual_sink_m", 0.003)) if visual else 0.0)
 
     road_half = float(config["road"]["width_m"]) * 0.5
     shoulder_width = max(float(terrain.get("shoulder_falloff_m", 18.0)), 0.1)
-    visual_sink = float(terrain.get("visual_sink_m", 0.002)) if visual else 0.0
+    distance = float(sample.distance_m)
 
-    if sample.distance_m <= road_half:
-        height = road_surface_height(config, sample.fraction, sample.signed_offset_m)
-        return height - visual_sink
+    if distance <= road_half:
+        road_h = road_surface_height(config, sample.fraction, sample.signed_offset_m)
+        inside = road_half - distance
+        if visual:
+            drop = max(0.0, float(terrain.get("visual_under_road_drop_m", 0.22)))
+            blend = max(0.05, float(terrain.get("visual_under_road_blend_m", 1.4)))
+        else:
+            drop = max(0.0, float(terrain.get("collision_underlay_drop_m", 0.12)))
+            blend = max(0.05, float(terrain.get("collision_underlay_blend_m", 1.0)))
+        return road_h - drop * _smoothstep01(inside / blend)
 
     edge_signed = road_half * sample.side
     edge_height = road_surface_height(config, sample.fraction, edge_signed)
-    outside = sample.distance_m - road_half
-    t = min(1.0, max(0.0, outside / shoulder_width))
-    t = t * t * (3.0 - 2.0 * t)
+    outside = distance - road_half
+    t = _smoothstep01(outside / shoulder_width)
     height = edge_height * (1.0 - t) + far_z * t
-    return height - visual_sink
+
+    if visual:
+        sink = max(0.0, float(terrain.get("visual_sink_m", 0.003)))
+        edge_blend = max(0.05, float(terrain.get("visual_edge_blend_m", 1.25)))
+        under_edge = max(0.0, float(terrain.get("visual_under_road_drop_m", 0.22)))
+        height -= sink + under_edge * (1.0 - _smoothstep01(outside / edge_blend))
+    return height
 
 
 def build_heightfield(points: Sequence[Sequence[float]], config: dict, *, visual: bool = False) -> tuple[list[tuple[float, float, float]], list[tuple[int, int, int]], dict]:
     terrain = config.get("terrain", {})
-    cell = max(2.0, float(terrain.get("grid_cell_m", 8.0)))
+    cell = max(2.0, float(terrain.get("grid_cell_m", 6.0)))
     margin = max(20.0, float(terrain.get("far_ground_margin_m", 220.0)))
     road_half = float(config["road"]["width_m"]) * 0.5
     shoulder_width = max(float(terrain.get("shoulder_falloff_m", 18.0)), 0.1)
-    seam_overlap = max(0.0, float(terrain.get("collision_seam_overlap_m", 0.15)))
 
     pts = [(float(p[0]), float(p[1])) for p in points]
     min_x = math.floor((min(p[0] for p in pts) - margin) / cell) * cell
@@ -163,31 +188,24 @@ def build_heightfield(points: Sequence[Sequence[float]], config: dict, *, visual
     influence = road_half + shoulder_width + cell * 2.0
 
     vertices: list[tuple[float, float, float]] = []
-    distances: list[float] = []
     for iz in range(nz):
         z = min_z + iz * cell
         for ix in range(nx):
             x = min_x + ix * cell
             sample = nearest_track_sample(index, x, z, influence)
-            distance = sample.distance_m if sample is not None else float("inf")
             y = terrain_height_from_sample(config, sample, visual=visual)
             vertices.append((x, z, y))
-            distances.append(distance)
 
+    # Winding is chosen so after (x,z,height)->Blender(x,-z,height), normals point +Z.
     faces: list[tuple[int, int, int]] = []
-    skipped_inside = 0
     for iz in range(nz - 1):
         for ix in range(nx - 1):
             a = iz * nx + ix
             b = a + 1
             c = a + nx + 1
             d = a + nx
-            ds = (distances[a], distances[b], distances[c], distances[d])
-            if max(ds) < road_half - seam_overlap:
-                skipped_inside += 1
-                continue
-            faces.append((a, b, c))
-            faces.append((a, c, d))
+            faces.append((a, c, b))
+            faces.append((a, d, c))
 
     stats = {
         "cell_m": cell,
@@ -195,16 +213,30 @@ def build_heightfield(points: Sequence[Sequence[float]], config: dict, *, visual
         "triangles": len(faces),
         "nx": nx,
         "nz": nz,
-        "skipped_inside_quads": skipped_inside,
+        "skipped_inside_quads": 0,
         "far_ground_z_m": effective_far_ground_z(config),
+        "min_x": min_x,
+        "max_x": max_x,
+        "min_z": min_z,
+        "max_z": max_z,
     }
     return vertices, faces, stats
+
+
+def _blender_normal_z(vertices: Sequence[Sequence[float]], face: Sequence[int]) -> float:
+    def conv(v):
+        return float(v[0]), -float(v[1]), float(v[2])
+    a, b, c = (conv(vertices[i]) for i in face)
+    ab = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+    ac = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
+    return ab[0] * ac[1] - ab[1] * ac[0]
 
 
 def validate_heightfield(points: Sequence[Sequence[float]], config: dict) -> dict[str, object]:
     vertices, faces, stats = build_heightfield(points, config, visual=False)
     finite = all(all(math.isfinite(v) for v in vertex) for vertex in vertices)
     nondegenerate = True
+    upward = True
     for ia, ib, ic in faces:
         ax, az, _ = vertices[ia]
         bx, bz, _ = vertices[ib]
@@ -213,10 +245,13 @@ def validate_heightfield(points: Sequence[Sequence[float]], config: dict) -> dic
         if area2 <= 1e-9:
             nondegenerate = False
             break
+        if _blender_normal_z(vertices, (ia, ib, ic)) <= 0.0:
+            upward = False
+            break
 
     road_half = float(config["road"]["width_m"]) * 0.5
     max_seam_error = 0.0
-    samples = 64
+    samples = 128
     for i in range(samples):
         fraction = i / samples
         for side in (-1.0, 1.0):
@@ -226,9 +261,14 @@ def validate_heightfield(points: Sequence[Sequence[float]], config: dict) -> dic
             road_h = road_surface_height(config, fraction, signed)
             max_seam_error = max(max_seam_error, abs(terrain_h - road_h))
 
+    safety_z = float(config.get("terrain", {}).get("safety_floor_z_m", -6.0))
+    safety_thickness = float(config.get("terrain", {}).get("safety_floor_thickness_m", 0.6))
     return {
         **stats,
         "finite_vertices": finite,
         "nondegenerate_triangles": nondegenerate,
+        "blender_winding_upward": upward,
+        "continuous_collision_grid": stats["skipped_inside_quads"] == 0,
         "max_collision_seam_error_m": max_seam_error,
+        "safety_floor_valid": safety_z < stats["far_ground_z_m"] - 1.0 and safety_thickness >= 0.2,
     }
