@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://addons/formula90s/scenes/formula_vehicle_controller.tscn" id="1_ctrl"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn" id="2_car"]
-[ext_resource type="PackedScene" path="res://scenes/tracks/test_field/formula90s_test_track.tscn" id="3_track"]
+[ext_resource type="PackedScene" path="res://scenes/tracks/test_field/la_chutana_track.tscn" id="3_track"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/driving_aids.gd" id="4_aids"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="5_hud"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/wheel_diagnostics_overlay.gd" id="6_wheel_debug"]
@@ -17,7 +17,7 @@ string_toggle_transmission = "Toggle Transmission"
 reverse_engage_max_speed = 0.15
 
 [node name="VehicleRigidBody" parent="VehicleController" instance=ExtResource("2_car")]
-position = Vector3(0, 0.45, 0)
+position = Vector3(0, 0.55, 18)
 
 [node name="BaselineCamera" type="Camera3D" parent="VehicleController/VehicleRigidBody"]
 position = Vector3(0, 2.8, 6.5)
