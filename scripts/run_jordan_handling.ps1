@@ -112,12 +112,20 @@ try {
     }
 
     $assetDir = Join-Path $game 'assets\generated\jordan_1995'
+
+    # Canonical Formula90s vehicle visual contract: chassis + one wheel visual
+    # per axle. The source bundle may still contain four side-specific wheel
+    # files, but runtime intentionally materializes only the verified left-side
+    # source for each axle and reuses it for both sides in Godot.
+    $assetSources = @{
+        'jordan_191_1995_chassis.glb' = 'jordan_191_1995_chassis.glb'
+        'jordan_191_1995_wheel_front.glb' = 'jordan_191_1995_wheel_fl.glb'
+        'jordan_191_1995_wheel_rear.glb' = 'jordan_191_1995_wheel_rl.glb'
+    }
     $expected = @(
         'jordan_191_1995_chassis.glb',
-        'jordan_191_1995_wheel_fl.glb',
-        'jordan_191_1995_wheel_fr.glb',
-        'jordan_191_1995_wheel_rl.glb',
-        'jordan_191_1995_wheel_rr.glb'
+        'jordan_191_1995_wheel_front.glb',
+        'jordan_191_1995_wheel_rear.glb'
     )
 
     Write-Host "Bundle:   $bundle"
@@ -150,20 +158,58 @@ Use un bundle valido con:
     }
 
     if ($needsExtract) {
-        Write-Host 'Materializando assets runtime del Jordan 1995...' -ForegroundColor Cyan
+        Write-Host 'Materializando contrato canonico de 3 assets del Jordan 1995...' -ForegroundColor Cyan
         if (Test-Path $assetDir) {
             Remove-Item $assetDir -Recurse -Force
         }
         New-Item -ItemType Directory -Path $assetDir -Force | Out-Null
-        Expand-Archive -Path $bundle -DestinationPath $assetDir -Force
+
+        $extractTemp = Join-Path $game 'assets\generated\.jordan_1995_extract_tmp'
+        if (Test-Path $extractTemp) {
+            Remove-Item $extractTemp -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $extractTemp -Force | Out-Null
+
+        try {
+            Expand-Archive -Path $bundle -DestinationPath $extractTemp -Force
+            foreach ($runtimeName in $expected) {
+                $sourceName = $assetSources[$runtimeName]
+                $sourcePath = Join-Path $extractTemp $sourceName
+                if (-not (Test-Path $sourcePath -PathType Leaf)) {
+                    throw "Asset fuente Jordan faltante dentro del bundle: $sourceName"
+                }
+                Copy-Item -Path $sourcePath -Destination (Join-Path $assetDir $runtimeName) -Force
+            }
+        }
+        finally {
+            if (Test-Path $extractTemp) {
+                Remove-Item $extractTemp -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    # Enforce the dedicated generated directory invariant even after older runs:
+    # only the three canonical runtime GLBs and their Godot .import sidecars may
+    # remain here. This prevents stale FR/RR assets from being scanned/imported.
+    if (Test-Path $assetDir) {
+        $allowedNames = @()
+        foreach ($name in $expected) {
+            $allowedNames += $name
+            $allowedNames += "$name.import"
+        }
+        foreach ($file in Get-ChildItem -Path $assetDir -File -ErrorAction SilentlyContinue) {
+            if ($allowedNames -notcontains $file.Name) {
+                Remove-Item $file.FullName -Force -ErrorAction SilentlyContinue
+            }
+        }
     }
 
     foreach ($name in $expected) {
         $path = Join-Path $assetDir $name
         if (-not (Test-Path $path)) {
-            throw "Asset Jordan faltante despues de extraer: $path"
+            throw "Asset Jordan faltante despues de materializar: $path"
         }
-        Write-Host "OK asset: $name"
+        Write-Host "OK canonical asset: $name"
     }
 
     $godot = Resolve-Godot $GodotPath
