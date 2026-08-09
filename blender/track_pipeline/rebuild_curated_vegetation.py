@@ -9,7 +9,17 @@ import numpy as np
 from PIL import Image
 
 from pipeline_common import read_json
-from vegetation_texture_common import POSTPROCESS_ID, POSTPROCESS_VERSION, postprocess_recipe, prepare_vegetation_card_rgba
+from vegetation_texture_common import (
+    CYAN_ELECTRIC_HEX,
+    DEFAULT_BACKGROUND_HEX,
+    DEFAULT_BACKGROUND_NAME,
+    DEFAULT_BACKGROUND_RGB,
+    LEGACY_MAGENTA_RGB,
+    POSTPROCESS_ID,
+    POSTPROCESS_VERSION,
+    postprocess_recipe,
+    prepare_vegetation_card_rgba,
+)
 
 
 EXPECTED_SIZE = (128, 128)
@@ -39,10 +49,24 @@ def _safe_repo_path(repo: Path, raw: str) -> Path:
     return path
 
 
-def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: str, entry: dict, pass_index: int) -> dict:
-    background_rgb = np.asarray(manifest.get("background_rgb", [255, 0, 255]), dtype=np.uint8)
+def _key_identity(background_rgb: np.ndarray) -> dict:
+    values = [int(value) for value in background_rgb]
+    if values == DEFAULT_BACKGROUND_RGB.tolist():
+        return {"name": DEFAULT_BACKGROUND_NAME, "hex": DEFAULT_BACKGROUND_HEX, "rgb": values, "legacy": False}
+    if values == LEGACY_MAGENTA_RGB.tolist():
+        return {"name": "legacy_magenta", "hex": "#FF00FF", "rgb": values, "legacy": True}
+    return {"name": "custom", "hex": "#%02X%02X%02X" % tuple(values), "rgb": values, "legacy": False}
+
+
+def _normalize_background_rgb(manifest: dict) -> np.ndarray:
+    background_rgb = np.asarray(manifest.get("background_rgb", DEFAULT_BACKGROUND_RGB.tolist()), dtype=np.uint8)
     if background_rgb.shape != (3,):
-        raise RuntimeError(f"Invalid background_rgb in {manifest_path}")
+        raise RuntimeError("Invalid background_rgb in source manifest")
+    return background_rgb
+
+
+def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: str, entry: dict, pass_index: int) -> dict:
+    background_rgb = _normalize_background_rgb(manifest)
     source = (manifest_path.parent / entry["source"]).resolve()
     destination = _safe_repo_path(repo, entry["output"])
     if not source.exists():
@@ -70,6 +94,7 @@ def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: st
         "destination": str(destination),
         "destination_sha256": sha256(destination),
         "declared_output_sha256": entry.get("output_sha256"),
+        "source_key": _key_identity(background_rgb),
         "postprocess": postprocess_recipe(pass_index, background_rgb),
         "metrics": metrics,
     }
@@ -101,6 +126,32 @@ def _update_forge_manifest(texture_root: Path, assets: list[dict], recipe: dict)
     forge_path.write_text(json.dumps(forge, indent=2) + "\n", encoding="utf-8")
 
 
+def _aggregate_recipe(assets: list[dict], pass_index: int) -> dict:
+    key_counts: dict[str, int] = {}
+    for asset in assets:
+        key = asset["source_key"]
+        name = str(key["name"])
+        key_counts[name] = key_counts.get(name, 0) + 1
+    key_names = sorted(key_counts)
+    if len(key_names) == 1:
+        recipe = dict(assets[0]["postprocess"])
+    else:
+        recipe = {
+            "id": POSTPROCESS_ID,
+            "version": POSTPROCESS_VERSION,
+            "pass": int(pass_index),
+            "key_name": "mixed",
+            "key_names": key_names,
+            "key_stage": "source_resolution_before_resize",
+            "resize": "premultiplied_lanczos4",
+            "transparent_rgb": "foreground_edge_padding_4px",
+            "bottom_anchor": "last_visible_alpha_row",
+        }
+    recipe["scope"] = "source_backed_manifest_assets"
+    recipe["source_key_counts"] = key_counts
+    return recipe
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Rebuild source-backed curated vegetation before Blender consumes it.")
     parser.add_argument("--config", required=True)
@@ -122,6 +173,9 @@ def main() -> int:
         category = manifest.get("category")
         if category not in SUPPORTED_CATEGORIES:
             continue
+        source_key = _key_identity(_normalize_background_rgb(manifest))
+        manifest.setdefault("background_key_name", source_key["name"])
+        manifest.setdefault("background_key_hex", source_key["hex"])
         manifest_assets = manifest.get("assets", {})
         processed_here: list[dict] = []
         for asset_id, entry in sorted(manifest_assets.items()):
@@ -138,8 +192,7 @@ def main() -> int:
             manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     if assets:
-        # Per-asset manifests can declare different key colors; the top-level recipe records the algorithm only.
-        recipe = postprocess_recipe(ns.pass_index)
+        recipe = _aggregate_recipe(assets, ns.pass_index)
         _update_forge_manifest(texture_root, assets, recipe)
 
     report_path = Path(ns.report) if ns.report else texture_root / "curated_vegetation_rebuild_report.json"
@@ -149,11 +202,15 @@ def main() -> int:
     report_path.write_text(json.dumps({
         "operation": "source_backed_curated_vegetation_rebuild",
         "track_id": track_id,
+        "source_key_policy": {
+            "new_sources": {"name": DEFAULT_BACKGROUND_NAME, "hex": CYAN_ELECTRIC_HEX, "rgb": DEFAULT_BACKGROUND_RGB.tolist()},
+            "legacy_sources_preserved": {"name": "legacy_magenta", "hex": "#FF00FF", "rgb": LEGACY_MAGENTA_RGB.tolist()},
+        },
         "manifest_count": len(manifests),
         "asset_count": len(assets),
         "assets": assets,
     }, indent=2) + "\n", encoding="utf-8")
-    print(f"[vegetation-rebuild] manifests={len(manifests)} assets={len(assets)}")
+    print(f"[vegetation-rebuild] manifests={len(manifests)} assets={len(assets)} key={DEFAULT_BACKGROUND_HEX} legacy-preserved=#FF00FF")
     print(f"[vegetation-rebuild] report={report_path}")
     return 0
 

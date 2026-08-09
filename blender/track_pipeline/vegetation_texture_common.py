@@ -4,9 +4,14 @@ import cv2
 import numpy as np
 
 
-MAGENTA_RGB = np.array([255, 0, 255], dtype=np.uint8)
+CYAN_ELECTRIC_RGB = np.array([0, 255, 255], dtype=np.uint8)
+CYAN_ELECTRIC_HEX = "#00FFFF"
+LEGACY_MAGENTA_RGB = np.array([255, 0, 255], dtype=np.uint8)
+DEFAULT_BACKGROUND_RGB = CYAN_ELECTRIC_RGB
+DEFAULT_BACKGROUND_HEX = CYAN_ELECTRIC_HEX
+DEFAULT_BACKGROUND_NAME = "electric_cyan"
 POSTPROCESS_ID = "vegetation_source_key_premultiplied_resize"
-POSTPROCESS_VERSION = 2
+POSTPROCESS_VERSION = 3
 
 
 def _as_key_rgb(value) -> np.ndarray:
@@ -19,23 +24,38 @@ def _as_key_rgb(value) -> np.ndarray:
     return key.astype(np.uint8)
 
 
-def magenta_key_mask(rgb: np.ndarray, pass_index: int) -> np.ndarray:
-    """Legacy-compatible near-magenta detector used only by fallback recut tooling."""
+def key_name_for_rgb(key_rgb) -> str:
+    key = _as_key_rgb(key_rgb)
+    if np.array_equal(key, DEFAULT_BACKGROUND_RGB):
+        return DEFAULT_BACKGROUND_NAME
+    if np.array_equal(key, LEGACY_MAGENTA_RGB):
+        return "legacy_magenta"
+    return "custom"
+
+
+def _key_channel_metrics(rgb_i: np.ndarray, key_rgb: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    key_i = key_rgb.astype(np.int32)
+    distance = np.sqrt(((rgb_i - key_i) ** 2).sum(axis=-1)).astype(np.float32)
+    dominant = np.max(key_i)
+    weak = np.min(key_i)
+    dominant_channels = key_i == dominant
+    weak_channels = key_i == weak
+    strong_signal = rgb_i[..., dominant_channels].mean(axis=-1)
+    weak_signal = rgb_i[..., weak_channels].mean(axis=-1)
+    spread = np.ptp(rgb_i[..., dominant_channels], axis=-1) if dominant_channels.sum() > 1 else np.zeros(distance.shape, dtype=np.int32)
+    return distance, strong_signal, weak_signal, spread
+
+
+def key_candidate_mask(rgb: np.ndarray, key_rgb=DEFAULT_BACKGROUND_RGB, tolerance: float = 170.0) -> np.ndarray:
     rgb_i = rgb.astype(np.int32)
-    distance = np.sqrt(((rgb_i - MAGENTA_RGB.astype(np.int32)) ** 2).sum(axis=-1))
-    r = rgb_i[..., 0]
-    g = rgb_i[..., 1]
-    b = rgb_i[..., 2]
-    min_rb = np.minimum(r, b)
-    tolerance = 80.0 if pass_index == 1 else 125.0
-    min_rb_floor = 135 if pass_index == 1 else 100
-    green_gap = 45 if pass_index == 1 else 30
-    channel_spread = 75 if pass_index == 1 else 100
+    key_rgb = _as_key_rgb(key_rgb)
+    distance, strong_signal, weak_signal, spread = _key_channel_metrics(rgb_i, key_rgb)
     return (
         (distance <= tolerance)
-        & (min_rb >= min_rb_floor)
-        & (((r + b) // 2 - g) >= green_gap)
-        & (np.abs(r - b) <= channel_spread)
+        & (strong_signal >= 140)
+        & (weak_signal <= 105)
+        & ((strong_signal - weak_signal) >= 55)
+        & (spread <= 95)
     )
 
 
@@ -59,8 +79,7 @@ def border_connected(mask: np.ndarray) -> np.ndarray:
     return np.isin(labels, list(border_labels))
 
 
-def estimate_key_color(rgb: np.ndarray, nominal_rgb=MAGENTA_RGB) -> np.ndarray:
-    """Estimate the actual key from border pixels while staying anchored to nominal magenta."""
+def estimate_key_color(rgb: np.ndarray, nominal_rgb=DEFAULT_BACKGROUND_RGB) -> np.ndarray:
     nominal = _as_key_rgb(nominal_rgb).astype(np.int32)
     h, w = rgb.shape[:2]
     band = max(2, int(round(min(h, w) * 0.04)))
@@ -70,20 +89,12 @@ def estimate_key_color(rgb: np.ndarray, nominal_rgb=MAGENTA_RGB) -> np.ndarray:
         rgb[:, :band].reshape(-1, 3),
         rgb[:, -band:].reshape(-1, 3),
     ], axis=0).astype(np.int32)
-    distance = np.sqrt(((border - nominal) ** 2).sum(axis=1))
-    r, g, b = border[:, 0], border[:, 1], border[:, 2]
-    plausible = (
-        (distance <= 120.0)
-        & (np.minimum(r, b) >= 120)
-        & ((((r + b) // 2) - g) >= 40)
-        & (np.abs(r - b) <= 100)
-    )
+    plausible = key_candidate_mask(border.reshape(-1, 1, 3).astype(np.uint8), nominal, tolerance=120.0).reshape(-1)
     selected = border[plausible]
     minimum_samples = max(16, int(round(border.shape[0] * 0.02)))
     if selected.shape[0] < minimum_samples:
         return nominal.astype(np.uint8)
     estimate = np.median(selected, axis=0)
-    # Do not let a noisy border redefine the semantic key.
     if float(np.linalg.norm(estimate - nominal)) > 72.0:
         return nominal.astype(np.uint8)
     return np.clip(np.rint(estimate), 0, 255).astype(np.uint8)
@@ -91,34 +102,28 @@ def estimate_key_color(rgb: np.ndarray, nominal_rgb=MAGENTA_RGB) -> np.ndarray:
 
 def _key_regions(rgb: np.ndarray, key_rgb: np.ndarray, pass_index: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, float, float]:
     rgb_i = rgb.astype(np.int32)
-    key_i = key_rgb.astype(np.int32)
-    distance = np.sqrt(((rgb_i - key_i) ** 2).sum(axis=-1)).astype(np.float32)
-    r, g, b = rgb_i[..., 0], rgb_i[..., 1], rgb_i[..., 2]
-    min_rb = np.minimum(r, b)
-    magenta_gap = ((r + b) // 2) - g
-    spread = np.abs(r - b)
-
+    distance, strong_signal, weak_signal, spread = _key_channel_metrics(rgb_i, key_rgb)
     if pass_index == 1:
         core_distance, outer_distance = 52.0, 220.0
         core_floor, possible_floor = 170, 92
-        core_gap, possible_gap = 78, 28
+        signal_gap_core, signal_gap_possible = 78, 28
         core_spread, possible_spread = 64, 118
     else:
         core_distance, outer_distance = 68.0, 245.0
         core_floor, possible_floor = 145, 72
-        core_gap, possible_gap = 62, 20
+        signal_gap_core, signal_gap_possible = 62, 20
         core_spread, possible_spread = 82, 138
-
+    signal_gap = strong_signal - weak_signal
     core = (
         (distance <= core_distance)
-        & (min_rb >= core_floor)
-        & (magenta_gap >= core_gap)
+        & (strong_signal >= core_floor)
+        & (signal_gap >= signal_gap_core)
         & (spread <= core_spread)
     )
     possible = (
         (distance <= outer_distance)
-        & (min_rb >= possible_floor)
-        & (magenta_gap >= possible_gap)
+        & (strong_signal >= possible_floor)
+        & (signal_gap >= signal_gap_possible)
         & (spread <= possible_spread)
     )
     return core, possible, distance, core_distance, outer_distance
@@ -135,12 +140,41 @@ def _components_seeded_by_core(possible: np.ndarray, core: np.ndarray) -> np.nda
     return np.isin(labels, seed_labels)
 
 
+def remove_isolated_key_speckles_rgba(
+    rgba: np.ndarray,
+    key_rgb=DEFAULT_BACKGROUND_RGB,
+    tolerance: float = 170.0,
+    max_component_px: int = 24,
+    max_bbox_span: int = 8,
+) -> tuple[np.ndarray, dict]:
+    """Remove tiny isolated visible key-colored speckles left inside already-downscaled legacy cards."""
+    out = rgba.copy()
+    alpha = out[..., 3]
+    visible_candidates = (alpha >= 16) & key_candidate_mask(out[..., :3], key_rgb=key_rgb, tolerance=tolerance)
+    labels_count, labels, stats, _ = cv2.connectedComponentsWithStats(visible_candidates.astype(np.uint8), connectivity=8)
+    removed = np.zeros(visible_candidates.shape, dtype=bool)
+    for label in range(1, labels_count):
+        area = int(stats[label, cv2.CC_STAT_AREA])
+        width = int(stats[label, cv2.CC_STAT_WIDTH])
+        height = int(stats[label, cv2.CC_STAT_HEIGHT])
+        if area <= max_component_px and max(width, height) <= max_bbox_span:
+            removed |= labels == label
+    out[..., 3][removed] = 0
+    out = pad_transparent_rgb(out, radius=4)
+    return out, {
+        "candidate_pixels": int(visible_candidates.sum()),
+        "removed_pixels": int(removed.sum()),
+        "removed_components": int(np.unique(labels[removed]).size - (1 if removed.any() and 0 in np.unique(labels[removed]) else 0)),
+        "max_component_px": int(max_component_px),
+        "max_bbox_span": int(max_bbox_span),
+    }
+
+
 def key_background_rgba(
     rgba: np.ndarray,
-    background_rgb=MAGENTA_RGB,
+    background_rgb=DEFAULT_BACKGROUND_RGB,
     pass_index: int = 1,
 ) -> tuple[np.ndarray, dict]:
-    """Build an alpha matte at source resolution and despill magenta before resizing."""
     if rgba.ndim != 3 or rgba.shape[2] != 4:
         raise ValueError("Expected an RGBA uint8 image")
     src = rgba.astype(np.uint8, copy=True)
@@ -160,7 +194,6 @@ def key_background_rgba(
 
     rgb_f = rgb.astype(np.float32) / 255.0
     key_f = key_rgb.astype(np.float32) / 255.0
-    # Reverse the foreground-over-key mixture for pixels whose original alpha is effectively opaque.
     mixed = affected & (object_alpha > (1.0 / 255.0)) & (object_alpha < 0.999) & (source_alpha > 0.98)
     if mixed.any():
         a = object_alpha[mixed, None]
@@ -173,6 +206,7 @@ def key_background_rgba(
     out[..., 3][out[..., 3] < 2] = 0
     return out, {
         "key_rgb": key_rgb.tolist(),
+        "key_hex": "#%02X%02X%02X" % tuple(int(v) for v in key_rgb),
         "core_pixels": int(core.sum()),
         "affected_pixels": int(affected.sum()),
         "transparent_pixels": int((out[..., 3] == 0).sum()),
@@ -180,7 +214,6 @@ def key_background_rgba(
 
 
 def premultiplied_resize(rgba: np.ndarray, size: tuple[int, int]) -> np.ndarray:
-    """Resize RGBA without allowing transparent background RGB to bleed into the silhouette."""
     target_w, target_h = int(size[0]), int(size[1])
     arr = rgba.astype(np.float32) / 255.0
     alpha = arr[..., 3:4]
@@ -200,7 +233,6 @@ def premultiplied_resize(rgba: np.ndarray, size: tuple[int, int]) -> np.ndarray:
 
 
 def pad_transparent_rgb(rgba: np.ndarray, radius: int = 4) -> np.ndarray:
-    """Fill only transparent RGB near the silhouette with nearby foreground colors for mip safety."""
     out = rgba.copy()
     known = out[..., 3] > 0
     if not known.any() or radius <= 0:
@@ -226,7 +258,6 @@ def pad_transparent_rgb(rgba: np.ndarray, radius: int = 4) -> np.ndarray:
 
     out[..., :3] = np.clip(np.rint(rgb_f), 0, 255).astype(np.uint8)
     out[(~known), :3] = 0
-    # Alpha is untouched; only hidden RGB is padded.
     out[..., 3] = rgba[..., 3]
     return out
 
@@ -272,12 +303,16 @@ def prepare_vegetation_card_rgba(
     return working, metrics
 
 
-def postprocess_recipe(pass_index: int = 1, key_rgb=MAGENTA_RGB) -> dict:
+def postprocess_recipe(pass_index: int = 1, key_rgb=DEFAULT_BACKGROUND_RGB) -> dict:
+    key_rgb = _as_key_rgb(key_rgb)
     return {
         "id": POSTPROCESS_ID,
         "version": POSTPROCESS_VERSION,
         "pass": int(pass_index),
-        "key_rgb": _as_key_rgb(key_rgb).tolist(),
+        "key_name": key_name_for_rgb(key_rgb),
+        "key_rgb": key_rgb.tolist(),
+        "key_hex": "#%02X%02X%02X" % tuple(int(v) for v in key_rgb),
+        "legacy_previous_key_rgb": LEGACY_MAGENTA_RGB.tolist(),
         "key_stage": "source_resolution_before_resize",
         "resize": "premultiplied_lanczos4",
         "transparent_rgb": "foreground_edge_padding_4px",

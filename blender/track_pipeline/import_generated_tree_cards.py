@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from vegetation_texture_common import MAGENTA_RGB, postprocess_recipe, prepare_vegetation_card_rgba
+from vegetation_texture_common import DEFAULT_BACKGROUND_HEX, DEFAULT_BACKGROUND_RGB, postprocess_recipe, prepare_vegetation_card_rgba
 
 
 EXPECTED_SIZE = (128, 128)
@@ -40,9 +40,12 @@ def parse_mapping(values: list[str]) -> dict[str, Path]:
 
 
 def parse_rgb(value: str) -> np.ndarray:
+    value = value.strip()
+    if value.startswith("#") and len(value) == 7:
+        return np.asarray([int(value[i:i + 2], 16) for i in (1, 3, 5)], dtype=np.uint8)
     parts = [int(part.strip()) for part in value.split(",")]
     if len(parts) != 3 or any(part < 0 or part > 255 for part in parts):
-        raise ValueError(f"Expected R,G,B in 0..255, got: {value}")
+        raise ValueError(f"Expected #RRGGBB or R,G,B in 0..255, got: {value}")
     return np.asarray(parts, dtype=np.uint8)
 
 
@@ -86,7 +89,7 @@ def main() -> int:
     parser.add_argument("--root", required=True, help="Generated La Chutana textures root")
     parser.add_argument("--report", default="", help="Optional provenance report path")
     parser.add_argument("--map", dest="mappings", action="append", required=True)
-    parser.add_argument("--background-rgb", default="255,0,255")
+    parser.add_argument("--background-rgb", default=DEFAULT_BACKGROUND_HEX)
     parser.add_argument("--pass-index", type=int, choices=(1, 2), default=1)
     ns = parser.parse_args()
 
@@ -110,10 +113,15 @@ def main() -> int:
         "operation": "reference_tree_regeneration_import",
         "active_biome": "south_america/west/low",
         "expected_size": list(EXPECTED_SIZE),
+        "required_source_background_key": {
+            "name": "electric_cyan",
+            "hex": DEFAULT_BACKGROUND_HEX,
+            "rgb": DEFAULT_BACKGROUND_RGB.tolist(),
+        },
         "postprocess": postprocess_recipe(ns.pass_index, background_rgb),
         "assets": assets,
     }, indent=2) + "\n", encoding="utf-8")
-    print(f"[tree-import] imported={len(assets)} size={EXPECTED_SIZE[0]}x{EXPECTED_SIZE[1]}")
+    print(f"[tree-import] imported={len(assets)} size={EXPECTED_SIZE[0]}x{EXPECTED_SIZE[1]} key={DEFAULT_BACKGROUND_HEX}")
     print(f"[tree-import] report={report_path}")
     return 0
 
