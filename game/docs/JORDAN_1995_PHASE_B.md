@@ -14,6 +14,12 @@ The test scene instantiates:
 
 `res://scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn`
 
+and the dedicated Formula90s handling circuit:
+
+`res://scenes/tracks/test_field/formula90s_test_track.tscn`
+
+The GEVP vendor demo track remains untouched. See `FORMULA90S_TEST_TRACK.md` for the circuit design/test rules.
+
 Phase A remains the geometry/reference parent at:
 
 `res://scenes/vehicles/jordan_1995/jordan_1995.tscn`
@@ -89,21 +95,24 @@ Manual reverse is gated by the Formula90s controller: Neutral -> Reverse is allo
 - Base TC, ABS and stability parameters.
 - Reference powertrain and gear ratios.
 - Aero/downforce layers.
-- GEVP vendor controller and wheel implementation.
+- GEVP vendor controller, wheel implementation and demo track.
 
 Suspension is deliberately not retuned merely because a visual wheel problem was previously observed. Mechanical suspension changes require evidence from the wheel diagnostics.
 
 ## Validation sequence
 
 1. Stationary/slow-spin inspection: FL and FR must present the same geometry and apparent radius; RL and RR likewise.
-2. Straight acceleration: FL and FR should show similar contact/compression behavior.
+2. Flat straight acceleration: FL and FR should show similar contact/compression behavior.
 3. Straight-line braking from medium speed: rear must remain stable without excessive front-lock tendency.
-4. Low-speed corner entry: car should accept rotation without instant snap oversteer.
-5. Constant-radius medium-speed corner: grip limit should arrive progressively rather than feeling glued to the road.
-6. Corner exit throttle: rear slip may occur but should remain recoverable; one-wheel spin should not dominate.
-7. Lift-off recovery: releasing throttle should help regain line without an abrupt artificial correction.
-8. Curb crossing: curb grip must be lower than Road without minor contacts generating artificial spins.
-9. Wheel overlay check: if one wheel repeatedly loses contact or its spring-length delta is substantially larger than its opposite wheel on flat road, treat that as a physical suspension/raycast issue before Phase C.
+4. Two-wheel grass excursion: cross a white line gently and confirm the lower-grip transition is recoverable.
+5. Full grass excursion/rejoin: verify the car can leave and rejoin without an artificial continuous guardrail blocking the test.
+6. Low-speed corner entry: car should accept rotation without instant snap oversteer.
+7. Constant-radius medium-speed corner: grip limit should arrive progressively rather than feeling glued to the road.
+8. Corner exit throttle: rear slip may occur but should remain recoverable; one-wheel spin should not dominate.
+9. Lift-off recovery: releasing throttle should help regain line without an abrupt artificial correction.
+10. Local curb crossing: curb grip must be lower than Road without minor contacts generating artificial spins.
+11. Banked corners: compression should remain controlled and no longitudinal ramp/jump should be present.
+12. Wheel overlay check: if one wheel repeatedly loses contact or its spring-length delta is substantially larger than its opposite wheel on flat road, treat that as a physical suspension/raycast issue before Phase C.
 
 ## Phase B completion criteria
 
@@ -112,9 +121,11 @@ Phase B is ready to close when:
 - no side-specific visual wheel geometry anomaly remains,
 - left/right wheel contact is stable on flat road,
 - braking is predictable,
+- Road -> Grass -> Road transitions are controllable,
 - low/medium-speed grip loss is progressive,
 - throttle-on rear slip is recoverable,
-- curb behavior is predictable,
+- local curb behavior is predictable,
+- banked sections do not introduce artificial ramp behavior,
 - no persistent left/right suspension anomaly is visible in wheel diagnostics.
 
 ## Next phase
