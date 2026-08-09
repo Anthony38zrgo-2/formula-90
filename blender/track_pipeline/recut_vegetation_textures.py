@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from atomic_json import write_json_atomic
 from pipeline_common import read_json
 from vegetation_texture_common import (
     LEGACY_MAGENTA_RGB,
@@ -109,7 +110,7 @@ def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int, skip
             raise RuntimeError(f"Missing forge manifest entry: {rel}")
         entry["sha256"] = item["sha256"]
         entry["vegetation_postprocess"] = recipe
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    write_json_atomic(manifest_path, manifest)
 
 
 def main() -> int:
@@ -141,7 +142,7 @@ def main() -> int:
     if not report_path.is_absolute():
         report_path = repo / report_path
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps({
+    write_json_atomic(report_path, {
         "postprocess": {
             "id": POSTPROCESS_ID,
             "version": POSTPROCESS_VERSION,
@@ -151,7 +152,7 @@ def main() -> int:
         },
         "source_backed_skipped": sorted(protected),
         "assets": metrics,
-    }, indent=2) + "\n", encoding="utf-8")
+    })
     print(
         f"[vegetation] legacy_recut={len(metrics)} "
         f"source_backed_skipped={len(paths) - len(recut_paths)} pass={ns.pass_index} root={root}"
