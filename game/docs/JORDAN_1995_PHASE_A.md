@@ -12,7 +12,42 @@ Windows helper:
 
 `.\scripts\run_jordan_handling.ps1`
 
-The helper extracts the committed runtime bundle into `game/assets/generated/jordan_1995/` before Godot starts. That generated directory is intentionally ignored by Git.
+The helper validates the committed runtime bundle and materializes only the canonical Formula90s runtime geometry into `game/assets/generated/jordan_1995/`. That generated directory is intentionally ignored by Git.
+
+## Canonical visual geometry
+
+The Jordan now follows `VEHICLE_VISUAL_ASSET_CONTRACT.md`.
+
+Runtime requires only three visual geometries:
+
+- `jordan_191_1995_chassis.glb`
+- `jordan_191_1995_wheel_front.glb`
+- `jordan_191_1995_wheel_rear.glb`
+
+The original bundle still contains side-specific prototype wheels, but the launcher deliberately chooses one verified source per axle:
+
+- front canonical source: `jordan_191_1995_wheel_fl.glb`
+- rear canonical source: `jordan_191_1995_wheel_rl.glb`
+
+Godot reuses the same front wheel `PackedScene` for FL/FR and the same rear wheel `PackedScene` for RL/RR. The right-side visual is oriented by a static child node below the GEVP `Pivot`; no negative scale is used.
+
+This guarantees left/right visual geometry symmetry by construction and removes the need for per-wheel runtime mesh calibration.
+
+## Physical wheel placement
+
+The four GEVP `RayCast3D` wheels remain independent physics objects.
+
+Front axle:
+
+- FL: `(-0.739368, 0.0575, -1.4394)`
+- FR: `(+0.739368, 0.0575, -1.4394)`
+
+Rear axle:
+
+- RL: `(-0.718479, 0.0525, +1.4906)`
+- RR: `(+0.718479, 0.0525, +1.4906)`
+
+Per axle, X is an exact mirror and Y/Z are identical.
 
 ## What changes versus the frozen baseline
 
@@ -33,14 +68,13 @@ The helper extracts the committed runtime bundle into `game/assets/generated/jor
 - ABS/TC/stability baseline behavior.
 - Suspension baseline values.
 - Reference powertrain.
-- No Formula90s DrivingAids node.
 - No custom downforce/aero layer.
 
 This is intentional. If Phase A behaves incorrectly, investigate geometry, raycast placement, collision shapes, mass/CG, or wheel dimensions before tuning grip or aero.
 
 ## Runtime asset optimization
 
-The committed bundle contains a prototype-optimized copy of the previously prepared Jordan GLBs. Vertex clustering was used only to reduce repository/runtime size; overall scale and extents were preserved. The high-detail source remains the reference for later visual refinement.
+The bundle contains prototype-optimized Jordan GLBs. Runtime now imports only three canonical geometries instead of chassis plus four separate wheel meshes. This reduces redundant imports and prevents side-specific wheel defects from entering the active vehicle scene.
 
 ## Next phases
 
