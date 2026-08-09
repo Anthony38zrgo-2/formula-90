@@ -1,12 +1,13 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_1995/jordan_1995.tscn" id="1_phase_a"]
-[ext_resource type="Script" path="res://scenes/vehicles/jordan_1995/jordan_wheel_visual_calibrator.gd" id="2_wheel_calibration"]
 
 [node name="Jordan1995PhaseB" instance=ExtResource("1_phase_a")]
 
-; Phase B: mechanical grip + brake balance + visual wheel-axis calibration.
-; Steering, assists, suspension tuning and reference powertrain remain Phase A.
+; Phase B: mechanical grip + brake balance only.
+; Wheel visual symmetry is guaranteed by the canonical one-wheel-per-axle
+; architecture inherited from Phase A. Steering, assists, suspension tuning
+; and reference powertrain remain unchanged.
 front_brake_bias = 0.57
 rear_locking_differential_engage_torque = 170.0
 
@@ -43,6 +44,3 @@ longitudinal_grip_ratio = {
 "Grass": 0.45,
 "Road": 0.48
 }
-
-[node name="WheelVisualCalibration" type="Node" parent="."]
-script = ExtResource("2_wheel_calibration")
