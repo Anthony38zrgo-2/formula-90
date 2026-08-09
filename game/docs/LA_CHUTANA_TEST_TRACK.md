@@ -1,153 +1,48 @@
 # La Chutana handling test track
 
-Purpose: use a real Peruvian circuit shape as the Formula90s handling-development reference before Phase C steering/countersteer work.
-
-## Active Jordan scene
-
-`res://scenes/tracks/test_field/jordan_handling_test.tscn`
-
-Godot wrapper:
-
-`res://scenes/tracks/test_field/la_chutana_generated.tscn`
-
-The wrapper loads the canonical generated racetrack:
+The active Jordan handling scene consumes the canonical Blender export:
 
 `res://assets/generated/tracks/la_chutana/la_chutana.glb`
 
-The canonical file is generated locally and ignored by Git.
-
-Base mode publishes the clean track to this path. Procedural mode later replaces the same canonical path with the decorated version, so the Jordan scene does not need to change between stages.
-
-## Base generation
+Generate Base with:
 
 ```powershell
 .\scripts\run_track_pipeline.ps1 -Mode Base -Track la_chutana -Seed 1995
 ```
 
-Base outputs:
-
-- `blender/generated/la_chutana/track_base.blend`
-- `game/assets/generated/tracks/la_chutana/la_chutana_base.glb`
-- canonical `game/assets/generated/tracks/la_chutana/la_chutana.glb`
-
-If `track_base.blend` already exists it is backed up under:
-
-`blender/generated/la_chutana/backups/base/`
-
-The new GLB is exported to a temporary file and atomically replaces the old runtime export. The pipeline intentionally does not use delete-then-write.
-
 ## Geometry authority
 
-Track geometry is generated from:
+The stored reference targets approximately 2.420 km, ~800 m main straight and seven reference turns. This remains a gameplay reconstruction rather than survey CAD.
 
-- `blender/track_pipeline/data/la_chutana_reference.json`
-- `blender/track_pipeline/configs/la_chutana.json`
+Road width is a 12 m Formula90s development choice. Curbs remain the low crowned ~0.58 m profile with ~22 mm maximum rise.
 
-Targets:
+## Off-track collision fix
 
-- lap length: approximately **2.420 km**;
-- main straight: approximately **800 m**;
-- reference turn count: **7**;
-- current direction: **clockwise**.
+Telemetry from the prior shoulder implementation showed a sudden extreme deceleration followed by saturated suspension after leaving asphalt. The old grass collision used wide normal-offset ribbons; at tight-radius corners those offsets could self-intersect and create invisible collision wedges.
 
-This remains a gameplay/physics reconstruction rather than survey-grade CAD.
+The Blender builder now creates a regular heightfield terrain grid instead. Cells fully below the asphalt corridor are omitted. Boundary terrain collision follows the banked road edge continuously, while only the visual grass mesh receives a tiny sink to prevent z-fighting. `validate_track.py` checks terrain topology, triangle budget and road/grass collision seam before Base export.
 
-## Road / grass clipping correction
+## Active art profile
 
-The road center surface now has a small configured elevation (`surface_elevation_m`) instead of sharing a nearly coplanar grass surface.
+La Chutana uses:
 
-A flat grass plane alone is not sufficient in banked sections: the low road edge can be substantially below the centerline.
-
-The Blender builder therefore generates:
-
-1. road surface at the configured small elevation;
-2. bank-aware grass shoulders beginning just below each road edge;
-3. a gradual transition across the shoulder;
-4. a far-ground plane automatically lowered below the lowest banked road edge.
-
-This removes grass/asphalt clipping without translating the whole Godot scene and without removing the configured banking.
-
-## Curbs
-
-The Blender pipeline uses the existing conservative low crowned profile:
-
-- width: ~0.58 m;
-- road-side transition: ~+5 mm;
-- maximum crown: ~+22 mm;
-- outer transition: ~+12 mm then ~+2 mm;
-- local apex/exit placement only.
-
-Red/white sections are generated deterministically along the curb length.
-
-## Procedural environment
-
-Only after the Base track is human-approved:
-
-```powershell
-.\scripts\run_track_pipeline.ps1 -Mode Procedural -Track la_chutana `
-  -TreesDensity low `
-  -BushesDensity low `
-  -GrassDensity medium `
-  -BuildingsDensity very_low `
-  -Seed 1995
+```text
+continent = south_america
+longitude = west
+altitude = low
+terrain palette = balanced green/dry/dirt
+structures = mixed residential + industrial
 ```
 
-Current environment region:
+This is an artistic environment profile rather than an ecological or historical simulation.
 
-`south_america`
-
-No external vegetation/building/guardrail asset is required by the default pipeline.
-
-It generates:
-
-- a small set of reusable low-poly regional tree prototypes;
-- crossed 2D grass cards;
-- crossed 2D bush cards;
-- distant fake-building billboards;
-- modular low-poly guardrails;
-- simplified guardrail collision boxes;
-- low-resolution procedural textures/materials.
-
-Placement is deterministic and rejects object overlaps.
-
-Procedural output:
-
-- `blender/generated/la_chutana/track_environment.blend`
-- `game/assets/generated/tracks/la_chutana/la_chutana_environment.glb`
-- canonical `game/assets/generated/tracks/la_chutana/la_chutana.glb`
-
-An existing `track_environment.blend` is backed up under:
-
-`blender/generated/la_chutana/backups/environment/`
-
-Every procedural run starts from the clean validated `track_base.blend`; it does not decorate the previous procedural result. This prevents accumulated stale objects.
-
-## Runtime collision/surface contract
-
-Generated collision meshes use Godot import naming:
-
-- `RoadCollision-colonly`
-- `CurbCollision_<segment>-colonly`
-- `GrassShoulderCollision...-colonly`
-- `GrassFarCollision-colonly`
-- `GuardrailCollision_...-colonly`
-
-`generated_track_surface_groups.gd` restores the expected Formula90s/GEVP groups:
-
-- `Road`
-- `Curb`
-- `Grass`
-- `Wall`
+The generated South America bank contains four tree cards, four bush cards, four grass cards and four structure facades for every west/center/east × low/medium/high combination. Trees use three crossed planes, bushes two, grass one. Structures remain simple low-poly 3D shells with a basic roof.
 
 ## Validation before Phase C
 
-1. Regenerate Base.
-2. Run the Jordan handling scene.
-3. Confirm asphalt no longer clips through grass in banked sections.
-4. Complete a full lap without hidden ramps, gaps or collision seams.
-5. Touch curbs at several speeds; normal contact must not catapult the car.
-6. Run two wheels and then the whole car onto grass and recover.
-7. Confirm Road/Curb/Grass still produce distinct GEVP behavior.
-8. Confirm start/spawn remains correct.
-9. Human-approve the base.
-10. Only then run Procedural mode.
+1. Regenerate Base and run the Jordan handling scene.
+2. Leave asphalt at several corners and confirm there is no invisible impact, clipping or trapped chassis.
+3. Re-enter asphalt slowly and at moderate speed; there must be no hard collision step at the seam.
+4. Confirm Road/Grass/Curb still produce distinct GEVP surface behavior.
+5. Test selected curbs with two wheels at low/medium/high speed.
+6. Human-approve Base before running Procedural mode.
