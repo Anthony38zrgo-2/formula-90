@@ -1,79 +1,131 @@
-# Formula90s deterministic Blender racetrack pipeline
+# Formula90s deterministic racetrack pipeline
 
-Two gated stages: **Base** builds a clean playable circuit; **Procedural** decorates only after human approval.
+The racetrack toolchain has two human-gated stages:
 
-## Base
+1. **Base**: deterministic track geometry, collision, curbs, terrain and Texture Forge output.
+2. **Procedural**: vegetation, medium/far buildings and guardrails on top of the validated base `.blend`.
+
+Do not decorate an unvalidated Base track.
+
+## Commands
 
 ```powershell
 .\scripts\setup_track_pipeline.ps1
-.\scripts\run_track_pipeline.ps1 -Mode Base -Track la_chutana -Seed 1995
+
+.\scripts\run_track_pipeline.ps1 `
+  -Mode Base `
+  -Track la_chutana `
+  -Seed 1995
 ```
 
-Base reconstructs/validates the centerline, generates deterministic low-resolution texture banks, builds the Blender track, backs up the previous `track_base.blend`, exports through a temporary GLB and atomically publishes `<track>.glb`.
-
-### Terrain collision contract
-
-Wide normal-offset grass ribbons are forbidden: on tight corners they can fold over themselves and create invisible collision wedges. The current builder uses a regular deterministic heightfield grid. Cells fully beneath the asphalt corridor are omitted; boundary terrain collision is continuous with the banked road edge. Only the visual terrain gets the configured millimetric sink.
-
-`validate_track.py` checks finite/non-degenerate terrain triangles, seam error and triangle budget before Blender runs.
-
-## Procedural
+After human validation:
 
 ```powershell
-.\scripts\run_track_pipeline.ps1 -Mode Procedural -Track la_chutana `
-  -TreesDensity low -BushesDensity low -GrassDensity medium `
-  -BuildingsDensity very_low -Seed 1995
+.\scripts\run_track_pipeline.ps1 `
+  -Mode Procedural `
+  -Track la_chutana `
+  -TreesDensity medium `
+  -BushesDensity medium `
+  -GrassDensity medium `
+  -BuildingsDensity medium `
+  -Seed 1995
 ```
 
-Every procedural run reopens the clean `track_base.blend`; it never stacks new decoration over an old result. Previous `.blend` outputs are backed up and runtime GLBs are replaced atomically.
+## Collision contract
+
+The terrain collision is a continuous regular heightfield. It is **not** produced by wide centerline-offset ribbons.
+
+Important rules:
+
+- the terrain collision grid never deletes road cells;
+- inside the road it becomes a lower underlay, while the dedicated Road collision remains authoritative;
+- a narrow exact Grass collision ribbon bridges each road edge to the terrain grid;
+- terrain triangle winding is explicitly authored for Blender +Z after Godot-XZ -> Blender conversion;
+- `validate_track.py` rejects downward terrain winding;
+- a large `GrassSafetyFloor-colonly` sits well below the circuit as a last-resort world-escape guard;
+- the safety floor is a fallback, not a substitute for valid terrain collision.
+
+The previous bug where the generated terrain faces became downward-facing after `(x,z,h) -> (x,-z,h)` conversion could make one-sided imported concave collision unreliable from above. That winding is now validated explicitly.
+
+## Visual road/runoff transition
+
+Visual terrain is intentionally lower beneath asphalt, so coarse grid triangles cannot clip through the road. A narrow dirt/dry shoulder ribbon is placed immediately outside the road for the late-90s racing/rally look. It is visual-only; collision comes from the exact edge bridge + continuous terrain grid.
+
+## Formula90s Texture Forge
+
+`texture_forge.py` is the deterministic art compiler between procedural/source artwork and Blender.
+
+Authority:
+
+```text
+seed + biome + source recipe + forge preset
+                 ↓
+        deterministic pixels
+                 ↓
+              Blender
+                 ↓
+               Godot
+```
+
+Current style preset:
+
+`ps1_rally_clean`
+
+Texture Forge applies deterministic operations such as:
+
+- alpha/silhouette cleanup at controlled low resolution;
+- palette-constrained source colors;
+- fake upper-left prerendered lighting;
+- fake interior AO / lower shadow;
+- edge darkening;
+- posterization;
+- subtle Bayer ordered dithering;
+- large asymmetric terrain pigment masks;
+- SHA-256 provenance for every generated PNG.
+
+`validate_texture_forge.py` verifies the generated bank and hashes before Blender runs.
+
+Generated images are intentionally not versioned. The reproducible recipe and source code are versioned instead.
 
 ## Biome model
 
-Environment art is selected by:
+Current artistic biome key:
 
 ```text
-continent: south_america
-longitude: west | center | east
-altitude:  low | medium | high
+continent = south_america
+longitude = west | center | east
+altitude = low | medium | high
 ```
 
-That yields nine South America combinations. `generate_procedural_textures.py` creates **4 trees, 4 bushes, 4 grass cards and 4 building facades per combination**. La Chutana uses `south_america / west / low`, a balanced green/dry/dirt terrain palette and mixed residential/industrial distant structures. This is an artistic model, not ecological or historical simulation.
+There are 9 South America combinations. Each combination generates:
 
-## Retro geometry rules
+- 4 tree cards;
+- 4 bush cards;
+- 4 grass cards;
+- 4 building facades;
+- terrain, shoulder and bark textures.
 
-- tree: 3 crossed double-sided planes = 6 directional faces;
-- bush: 2 crossed planes = 4 directional faces;
-- grass: 1 double-sided card;
-- distant/medium buildings: low-poly 3D shell, four walls + basic roof, no underside;
-- guardrail: low-poly visual module + separate `-colonly` box collision.
-
-Cards use a small bank of clean PS1-style textures with fake/pre-rendered self-shadow facets. Instance variety comes from deterministic selection, rotation and scale rather than unique per-instance textures.
-
-## Texture bank
-
-Generated under `blender/generated/<track>/textures/`:
-
-- shared asphalt, guardrail and start/finish;
-- per-biome terrain, bark and 16 cards/facades;
-- `bank_manifest.json` for all nine combinations;
-- `active_manifest.json` consumed by Blender.
-
-Terrain pigmentation uses asymmetric low-frequency masks so some broad regions are greener, drier or slightly earthy. Large world-space UV scaling keeps those changes subtle instead of visibly tiled every few metres.
-
-## Density
-
-Grass is cheap and intentionally more abundant. La Chutana `very_low` now starts around the previous low-density order of magnitude; higher presets scale from there. Spatial-hash overlap and distance-zone validation remain mandatory.
-
-## Outputs
+La Chutana currently uses:
 
 ```text
-blender/generated/<track>/track_base.blend
-blender/generated/<track>/track_environment.blend
-blender/generated/<track>/backups/base/
-blender/generated/<track>/backups/environment/
-game/assets/generated/tracks/<track>/<track>_base.glb
-game/assets/generated/tracks/<track>/<track>_environment.glb
-game/assets/generated/tracks/<track>/<track>.glb
+south_america / west / low
 ```
 
-The last file is the canonical asset consumed by Godot. Never delete it before a replacement has exported successfully.
+This is an art-direction system, not a scientific vegetation classifier.
+
+## Retro geometry contract
+
+- Trees: exactly **3 crossed planes** (6 directional faces), tall silhouette-driven cards.
+- Bushes: exactly **2 crossed planes** (4 directional faces), lower and wider than trees.
+- Grass: exactly **1 plane/card**.
+- Buildings: low-poly 3D, four walls plus one very simple top face and no bottom face.
+- Vegetation has no gameplay collision by default.
+- Guardrail visuals are independent from simplified box collision.
+
+## Placement
+
+Placement is seeded and reproducible. It uses clustered composition rather than uniform scatter, while a spatial hash rejects overlap.
+
+Minimum placement distance is measured from the actual road edge plus the asset bounding radius, preventing rotated vegetation cards from entering asphalt.
+
+The same config + seed must produce the same `placements.json` and the same texture hashes.
