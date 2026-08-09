@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana_base.glb" id="1_track"]
+[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/generated_track_surface_groups.gd" id="2_groups"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_generated"]
