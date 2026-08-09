@@ -2,6 +2,22 @@
   "forge_version": 1,
   "style": "ps1_rally_clean",
   "seed": 1995,
+  "refinement": {
+    "rounds": [
+      "R1 conservative",
+      "R2 strong artistic push",
+      "R3 directed correction"
+    ],
+    "winner_by_category": {
+      "trees": "R1",
+      "bushes": "R3",
+      "grass": "R3",
+      "buildings": "R3",
+      "terrain": "R3",
+      "shoulder": "R3",
+      "bark": "R3"
+    }
+  },
   "entries": {
     "shared/asphalt.png": {
       "kind": "surface",
@@ -37,1198 +53,1369 @@
       "category": "terrain",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a4f4df24ab7a122975d60b5f481f2dcd509666f2c49bbf352e2a986d13558ae0"
+      "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
     },
     "biomes/south_america/west/low/shoulder.png": {
       "category": "roadside_shoulder",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e1366bffb7a7d289652994b6addc8c75807bf503280aefd9dbec8a2cc645a98b"
+      "sha256": "e9a9c76db6bc0d8b1e9a26ad08968af1081d3a4c6aa36f0d9d596c1c1bece15c"
     },
     "biomes/south_america/west/low/bark.png": {
       "category": "bark",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "fa3e14640a8c67eb56b740d25333a5a5a9a718e2ed1c115b3d21f631239aa6d2"
-    },
-    "biomes/south_america/west/medium/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_west_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "39857d5830e7bdd23194f59e683a466fe5f6e2cf602806441f993dc2731e6541"
-    },
-    "biomes/south_america/west/medium/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_west_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "9b3b697aacb3dc3e21d5e649687c329c5e3f5e8e4e7461619e9a5fcc199ff934"
-    },
-    "biomes/south_america/west/medium/bark.png": {
-      "category": "bark",
-      "biome": "south_america_west_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "eb8ceed886351ae9bb620df1b9812a170f6c478616ddcf30fe274d0dc58ede74"
-    },
-    "biomes/south_america/west/high/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_west_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "54156353ce48360c61f77ee0df10272f728a9896e0a157bbe9c9b2e1033586aa"
-    },
-    "biomes/south_america/west/high/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_west_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "9e8fb60c65cee40a43a4a6e3390665c7aa74ed34ef28352c852cfd7fa4fb2624"
-    },
-    "biomes/south_america/west/high/bark.png": {
-      "category": "bark",
-      "biome": "south_america_west_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "6163326d7ad6a0a3893cdce9e5625d3d67967490be0c3f0465112ebe2ed4500e"
-    },
-    "biomes/south_america/center/low/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_center_low",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "54071d43145b1052bd408f71a108510c5e502520ab60a1a1beef376af46c0b84"
-    },
-    "biomes/south_america/center/low/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_center_low",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "89ed595bc780568c0b5bbb49cdc756c17757c5a3cb2fb0404d4552bee04691b9"
-    },
-    "biomes/south_america/center/low/bark.png": {
-      "category": "bark",
-      "biome": "south_america_center_low",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "443f542294f984a7c6ec5458720f21bbadf987ee2737291969c2508f8e0490b2"
-    },
-    "biomes/south_america/center/medium/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_center_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "a4f4df24ab7a122975d60b5f481f2dcd509666f2c49bbf352e2a986d13558ae0"
-    },
-    "biomes/south_america/center/medium/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_center_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "e1366bffb7a7d289652994b6addc8c75807bf503280aefd9dbec8a2cc645a98b"
-    },
-    "biomes/south_america/center/medium/bark.png": {
-      "category": "bark",
-      "biome": "south_america_center_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "fa3e14640a8c67eb56b740d25333a5a5a9a718e2ed1c115b3d21f631239aa6d2"
-    },
-    "biomes/south_america/center/high/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_center_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "39857d5830e7bdd23194f59e683a466fe5f6e2cf602806441f993dc2731e6541"
-    },
-    "biomes/south_america/center/high/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_center_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "9b3b697aacb3dc3e21d5e649687c329c5e3f5e8e4e7461619e9a5fcc199ff934"
-    },
-    "biomes/south_america/center/high/bark.png": {
-      "category": "bark",
-      "biome": "south_america_center_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "eb8ceed886351ae9bb620df1b9812a170f6c478616ddcf30fe274d0dc58ede74"
-    },
-    "biomes/south_america/east/low/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_east_low",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "54156353ce48360c61f77ee0df10272f728a9896e0a157bbe9c9b2e1033586aa"
-    },
-    "biomes/south_america/east/low/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_east_low",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "9e8fb60c65cee40a43a4a6e3390665c7aa74ed34ef28352c852cfd7fa4fb2624"
-    },
-    "biomes/south_america/east/low/bark.png": {
-      "category": "bark",
-      "biome": "south_america_east_low",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "6163326d7ad6a0a3893cdce9e5625d3d67967490be0c3f0465112ebe2ed4500e"
-    },
-    "biomes/south_america/east/medium/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_east_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "54071d43145b1052bd408f71a108510c5e502520ab60a1a1beef376af46c0b84"
-    },
-    "biomes/south_america/east/medium/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_east_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "89ed595bc780568c0b5bbb49cdc756c17757c5a3cb2fb0404d4552bee04691b9"
-    },
-    "biomes/south_america/east/medium/bark.png": {
-      "category": "bark",
-      "biome": "south_america_east_medium",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "443f542294f984a7c6ec5458720f21bbadf987ee2737291969c2508f8e0490b2"
-    },
-    "biomes/south_america/east/high/terrain.png": {
-      "category": "terrain",
-      "biome": "south_america_east_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "a4f4df24ab7a122975d60b5f481f2dcd509666f2c49bbf352e2a986d13558ae0"
-    },
-    "biomes/south_america/east/high/shoulder.png": {
-      "category": "roadside_shoulder",
-      "biome": "south_america_east_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "e1366bffb7a7d289652994b6addc8c75807bf503280aefd9dbec8a2cc645a98b"
-    },
-    "biomes/south_america/east/high/bark.png": {
-      "category": "bark",
-      "biome": "south_america_east_high",
-      "source": "reference_image_generation",
-      "forge_recipe": "ps1_rally_clean",
-      "sha256": "fa3e14640a8c67eb56b740d25333a5a5a9a718e2ed1c115b3d21f631239aa6d2"
+      "sha256": "ffb6ebfa48068f4dbd84b9d35641d083218affdd4aaf37440b75ad4c87de1346"
     },
     "biomes/south_america/west/low/south_america_west_low_tree_01.png": {
       "category": "trees",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f4cc6e514386cd76644d19c198b1b326c7f2447ff414cbf83d1d38f4a134f75"
+      "sha256": "75e15e31db20f2fd889d6750e370e6a11fb0a432147689eadc63c922a58c7303"
     },
     "biomes/south_america/west/low/south_america_west_low_tree_02.png": {
       "category": "trees",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "c285d7569dff8e8a874f3cd3a5c0cee5d51dfcfd5c3dd16c9c970826a7b65a67"
+      "sha256": "394e96dbc938f267185fb2e157395ac57d6f01f9fc1ff2cd6bda9aac947fcfde"
     },
     "biomes/south_america/west/low/south_america_west_low_tree_03.png": {
       "category": "trees",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a56a57cced23491ca9ae2b8b7944713746132336ce01d490e912e0acc1acb4d7"
+      "sha256": "7d58ae82c58db2a30f132294ee423108a263a3d3d693dbc6951260ce70edad0d"
     },
     "biomes/south_america/west/low/south_america_west_low_tree_04.png": {
       "category": "trees",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e8b3f7f3f50f00e278f9561398ec25f30f2fe5e9ad006e8cf7c0fbd5d2ea494b"
+      "sha256": "6dc3eff3a5c6e5ed4df4a2d4396621477ab02085911889c37411c49d62bd3fba"
     },
     "biomes/south_america/west/low/south_america_west_low_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a9daff1f2f9e44756c959db701ec855c75b14dee5e9d27e041cf38651f24d5d6"
+      "sha256": "4e94d59e909acbde039f39f4f165b6af43776ad3ca09073e03f118e5a9f6d3b2"
     },
     "biomes/south_america/west/low/south_america_west_low_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "9d43b17d3340fa6bd6b9b11b6d6cbaf6bfc251da34cb40bcbc79bb6cd1706a11"
+      "sha256": "98bdb46eeb0f0aaa41b34f72e3efbf0f8ebc5668b408d453dc1a91499041c9b0"
     },
     "biomes/south_america/west/low/south_america_west_low_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6832b225171d5f79d3960c8d2a8deabc53319699c6ee3d4c7fc12a7b3c09ba51"
+      "sha256": "4a9e9c75bf8f28df462dd74e76158279c8276c9a6c4fe730b53ba46dc6e29511"
     },
     "biomes/south_america/west/low/south_america_west_low_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e1724a971c5cffa1b1e036e8369bbaf450ba0d9bdf650d9ac6754581cd1e464"
+      "sha256": "09cd9bba1b896ff1dc32c1e138eeed651a40a370bcf05b025799a4f5f1f760ab"
     },
     "biomes/south_america/west/low/south_america_west_low_grass_01.png": {
       "category": "grass",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6bd5105af893e2ccec04a61025ae761d0c6014971d0dcbe7878f5df5432d1d86"
+      "sha256": "13ff2bef7431706d1307505e9e7e0f49bdebcb25e097a0046ed5fa6fb77eaa8a"
     },
     "biomes/south_america/west/low/south_america_west_low_grass_02.png": {
       "category": "grass",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6d52ca8c61ad577d022f8e2f973541b2f44eaa9cddd32c6b87c3d737058a51d6"
+      "sha256": "531cfee296949eb2950ebde809cb41775f98652c32620b3dd27d6be5ce1cc2f5"
     },
     "biomes/south_america/west/low/south_america_west_low_grass_03.png": {
       "category": "grass",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "95456143cd870e25439d226ce06fd8712d8b72f0325c8360552c67f64928fd39"
+      "sha256": "603adb3e5a5704c16f5a4f6b8d77c69e59ab8e52969712d311eecd99f2603ae5"
     },
     "biomes/south_america/west/low/south_america_west_low_grass_04.png": {
       "category": "grass",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b13710980b45fa4674d39996848d24b703b1470104237024a08ca43e32c1b28d"
+      "sha256": "46b16c13e15f9e6ff081672b2c186e63a05ea43a51fd5dbe2ab5baee555fc9b4"
     },
     "biomes/south_america/west/low/south_america_west_low_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "348eaf658a825c3c0248a5aff224706bf0f3debb7aa5641e461472b59f219da7"
+      "sha256": "44f7883f78582f9e5d2f97612c9150755ebb5c40d0ffefa90a3d84c1c85d045b"
     },
     "biomes/south_america/west/low/south_america_west_low_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "adcaac1f9195ddfe63ed491ba380d1f96b3e734e9dd54799770e3ce19829468d"
+      "sha256": "c0f53ae3cf0a445a959d648c66f37ff2d301905d8fb285f0168d11375b15fcac"
     },
     "biomes/south_america/west/low/south_america_west_low_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "855b6c5a805a4b125769d6c58e4f6871960d88768286c5abe815f85df9d7ba2c"
+      "sha256": "3a5ccca52dd6f93615a18e25365711e7713e42dcf6c88dff5b9284b24bbffe92"
     },
     "biomes/south_america/west/low/south_america_west_low_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "41c84efe12878039df6b04b1483d565cad5a305b0056834d0b25552ef084e795"
+      "sha256": "7a35540db0ed12a34d3bf26e9415c32a9da5a5f04a264f1694dfaad70c3f997c"
+    },
+    "biomes/south_america/west/medium/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_west_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "e9a9c76db6bc0d8b1e9a26ad08968af1081d3a4c6aa36f0d9d596c1c1bece15c"
+    },
+    "biomes/south_america/west/medium/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_west_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "b4829ea8337421fa6f40b92d290d18f677238fa372eebbdf402ac54dae0bc559"
+    },
+    "biomes/south_america/west/medium/bark.png": {
+      "category": "bark",
+      "biome": "south_america_west_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "571655cb6203a5de6cd1005959c14f02c34d37da368f98c9710fb9a8d1c79be7"
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_01.png": {
       "category": "trees",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "0866750f33077a3c245bf94b4cf36ddfceb3d4bf9730621f16374aeb54ab9616"
+      "sha256": "9b16ebccfb9cc53b5483e38e2cc963731ba4d9c85e06b0aad6b9fe544ef3d826"
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_02.png": {
       "category": "trees",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "515b61dd512a55617d1da5558b312f980eef4797beaa787db371b306173fd43c"
+      "sha256": "e962555ed0046746cd5d0d0efd3d65fcf2d9244f8661541deaac072c308235fd"
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_03.png": {
       "category": "trees",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3ce5a34a743087c10417682044a34d87ef3de1303a246df00b5fb234519876c4"
+      "sha256": "c4ff8f3b2493979a62efe10b786599e4f375f443b99a885f67359b8f5b0a75b8"
     },
     "biomes/south_america/west/medium/south_america_west_medium_tree_04.png": {
       "category": "trees",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f4cc6e514386cd76644d19c198b1b326c7f2447ff414cbf83d1d38f4a134f75"
+      "sha256": "72827663ae4261a2fd11f14822e3c807ae4533f52ba3ff6a52747586a9336a50"
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b1d1cc118314b0f3509f42ec0288cd10fe4712e73f9509338097ba46aaa867a7"
+      "sha256": "0cccce7d5dc3a1ac0fa3ecbb227c1ebc251242ebcb011758cdff75b5ef035292"
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "653290e13c9ed9470e1fe58b329f938acd94b45d50659be88a3834f3be2eb0e5"
+      "sha256": "d2100f43d64c39fdc774798f75cefc56504f3eeb131975c4cbc9690c6f9998be"
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "eb3a8ef675489fd659137e77f41d27388da5ae57c39b9ea8cc91231e187e3e84"
+      "sha256": "b361cac3784f896ec55a50cebd2af645f2a6cb375b0a0923c69b1c254d094aba"
     },
     "biomes/south_america/west/medium/south_america_west_medium_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a9daff1f2f9e44756c959db701ec855c75b14dee5e9d27e041cf38651f24d5d6"
+      "sha256": "5ba34c85d53bb085309812cb2a6519f53e702215d98da87959d4cc3d5e9f154f"
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_01.png": {
       "category": "grass",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a45f465243a66f7c9ffdcc962cef2f03989a11eb394737c3607dc514163ccff4"
+      "sha256": "5709f7510797bebaa95b098a2f1c08349a13a44c0a5f348e4c968a982867565e"
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_02.png": {
       "category": "grass",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "eb4c5968b6cbe0e55d7929ae77660d82a25d8cef12670c1e10d4d81bd70b16ef"
+      "sha256": "02fe211840699a7b54fac6490baeb28abbb10577e75bf726464bc5bf7948316a"
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_03.png": {
       "category": "grass",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5aeb5962aa435232e52beaa16bbbde0a93276b80d47b0792e8d329a8222fda99"
+      "sha256": "395628ade7e59c3d76d61e393b3125a545fab06f14d766fbe79dc226d6275c91"
     },
     "biomes/south_america/west/medium/south_america_west_medium_grass_04.png": {
       "category": "grass",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6bd5105af893e2ccec04a61025ae761d0c6014971d0dcbe7878f5df5432d1d86"
+      "sha256": "cd02496ce179ef2b1487b0379e6a98fe88b5b054e25605f2d5183a26123bf6b1"
     },
     "biomes/south_america/west/medium/south_america_west_medium_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8ec8212e1eead349d306a04a25eea0a26ccc7674913081608437e68555bbcad1"
+      "sha256": "196c5321954aaaa26f4c43aa9e8c534495f1aa1ab565ec0eb21ec59afbde9380"
     },
     "biomes/south_america/west/medium/south_america_west_medium_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "1916048b2284eeeb83dda9c70aee4ccbc7da45fc687ae28ce7270cb790971229"
+      "sha256": "954dfac9bf9b528caf923e2f007f17d6cd95f36632fdd633b832e5468f782ff1"
     },
     "biomes/south_america/west/medium/south_america_west_medium_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e78a0e56ee0d1dd5ca6981eb9ac4b108a4f482c27219c386b954a09c666e10bd"
+      "sha256": "58e3988fddc4732daf5452ac1faee3747c44f80a58699d4df4979c07cd22bd32"
     },
     "biomes/south_america/west/medium/south_america_west_medium_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "1fecc109555bacaee07804f8351607a009f239e2107f10122cb99851dd847149"
+      "sha256": "b64de3e3b311c63975f69ef661f1336d88211a0de5b981310727240a9e6a2911"
+    },
+    "biomes/south_america/west/high/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_west_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "b4829ea8337421fa6f40b92d290d18f677238fa372eebbdf402ac54dae0bc559"
+    },
+    "biomes/south_america/west/high/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_west_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7e4c6e38e54eafeddf17d277f927bc51a4c5bae5813b6e4e4069f822247e58fc"
+    },
+    "biomes/south_america/west/high/bark.png": {
+      "category": "bark",
+      "biome": "south_america_west_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "d721559cacca78243a2009c04473082a9691d2c74532dd3e715a8d1fc7b408fd"
     },
     "biomes/south_america/west/high/south_america_west_high_tree_01.png": {
       "category": "trees",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "f6d8f53e3de29b01fd3794717b06cfd52cf85322b888b58731eed6813762d3c1"
+      "sha256": "fd187cfcec1e7061bb1103dc3a59c7c85ee958a966b01564ee6fc4a38b084eb8"
     },
     "biomes/south_america/west/high/south_america_west_high_tree_02.png": {
       "category": "trees",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8f7fbbd12c774988f1a7d3cfed98b81052edb82181215a019a9ad3c5b4fcb1a1"
+      "sha256": "4e69f15fdb2d6531a2208fa6b94b04b9a0e9705ed33b5c975b85384f32685e20"
     },
     "biomes/south_america/west/high/south_america_west_high_tree_03.png": {
       "category": "trees",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "36b7c6a8a522669270489d8d4c1c9b27ad92ddf3ee828b045fbf7260ce017591"
+      "sha256": "71d3bc31ea080832797d11614e5e9d55ae5f48aae893e86b09cfbca754438d7c"
     },
     "biomes/south_america/west/high/south_america_west_high_tree_04.png": {
       "category": "trees",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "0866750f33077a3c245bf94b4cf36ddfceb3d4bf9730621f16374aeb54ab9616"
+      "sha256": "1dfec90b829c71453fec8f96a80a896afa06988aa460610dd7a26da52c566a3f"
     },
     "biomes/south_america/west/high/south_america_west_high_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "da9981d65b2a3f9dc45d014ae9950063c60f681741bc1564f0e7643222ab2bf8"
+      "sha256": "3aa215892a3cb9439201a3db2745312fd9035170a8d3d12d12a48e98b6b71848"
     },
     "biomes/south_america/west/high/south_america_west_high_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "42ff9e4fbefe67bd4e301ed98612e5d602122831ace6dd7247a63871c4e64e36"
+      "sha256": "52daa40c8c027d3f210568e446c7fbc9cf06358af32980c5f9b42603639ca160"
     },
     "biomes/south_america/west/high/south_america_west_high_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "32724023fb6117654998e40ff58396ebfd49542ab877740b85d61507dffbfc2b"
+      "sha256": "4119b706c509ed5008b71eedbbafd29b9a1c96cb642e9fca0df299f7c9a6deab"
     },
     "biomes/south_america/west/high/south_america_west_high_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b1d1cc118314b0f3509f42ec0288cd10fe4712e73f9509338097ba46aaa867a7"
+      "sha256": "8a7a648e9c68051fff13b78d9a76f7d9e5df8968e4e3aeccc6ff19b4d4d2a4c1"
     },
     "biomes/south_america/west/high/south_america_west_high_grass_01.png": {
       "category": "grass",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3f5d3f1d3634ff5be62ff28ef44e751b919332789f8362e203da3c46fa8872f5"
+      "sha256": "733498a7d502217609e0e3ab2de6834b3fca6bebe108aca85fc34192d6fc3aa6"
     },
     "biomes/south_america/west/high/south_america_west_high_grass_02.png": {
       "category": "grass",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "761161fbbbc9661d8be16d6ef60496c3ee8d47fd8c0ad64b32a19e4f7abdbccb"
+      "sha256": "b9175f106791ce9db9d6cf4fe2a34dc289ff02fa730084143659c03fe5928d7c"
     },
     "biomes/south_america/west/high/south_america_west_high_grass_03.png": {
       "category": "grass",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e5b279b353b2d6d348673c88aeec07338db7ab737a15a13413b500c8ee48f331"
+      "sha256": "2cb102e925da7b47151241b357e571527fc27934d6bfd94dee018e54fe973b04"
     },
     "biomes/south_america/west/high/south_america_west_high_grass_04.png": {
       "category": "grass",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a45f465243a66f7c9ffdcc962cef2f03989a11eb394737c3607dc514163ccff4"
+      "sha256": "5b277d240ab2d3f7622d0ba0f5ad5b00c8d92e69077a2d76dd8efa2a20e1e3fc"
     },
     "biomes/south_america/west/high/south_america_west_high_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3308550f5bc5470c81a9e60b94dde7299c1667fb8beb9f38830534ea9c03b43f"
+      "sha256": "7bbc69bd7eae9309e8f10b74562c631fee7a6e1441a470e166f17fe04647e1d7"
     },
     "biomes/south_america/west/high/south_america_west_high_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "91ac639da4b0ffb4442d106c4302a38c86b0c7ac3b5ad4e31b5d2fbbfaa0c2d2"
+      "sha256": "dbbdaa4f6adffdfcbc96890c9d7e9fe31a28fdc4dc1d7b25c14b2eddd6eccda5"
     },
     "biomes/south_america/west/high/south_america_west_high_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3fe3b4ab3747eeaf59ebb97e1e6bbae4a3c71b35dcd0600cd20ea63c79956c3e"
+      "sha256": "6dbb7238345527389c4d35b67caaadfabd317f862658e62fbbcc06e10f33c568"
     },
     "biomes/south_america/west/high/south_america_west_high_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_west_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "14da284e34b83075e20688feb9ec0692aa1d63c414c8824e7578a77ec8101fc8"
+      "sha256": "738f17faa8e34785cbf10824118972233cc89449c490b5d3b6ddd4096023d6e2"
+    },
+    "biomes/south_america/center/low/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_center_low",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7e4c6e38e54eafeddf17d277f927bc51a4c5bae5813b6e4e4069f822247e58fc"
+    },
+    "biomes/south_america/center/low/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_center_low",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
+    },
+    "biomes/south_america/center/low/bark.png": {
+      "category": "bark",
+      "biome": "south_america_center_low",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "541449548f53949b45f1215b688544db27106044b5dc47770b300b7ec1fcf41b"
     },
     "biomes/south_america/center/low/south_america_center_low_tree_01.png": {
       "category": "trees",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e8b3f7f3f50f00e278f9561398ec25f30f2fe5e9ad006e8cf7c0fbd5d2ea494b"
+      "sha256": "75e8b585cdba8b4b10786bdd5e65145178f78edc9435705f604bd67d9786a604"
     },
     "biomes/south_america/center/low/south_america_center_low_tree_02.png": {
       "category": "trees",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "973ac9a56963dc5988c4d769b065f528fbd9c19ee0b75a6c74246fdc94be8a74"
+      "sha256": "44ec797823f6f1ac4d8d820594159f8e02cf68c9ba78ce9197d6c33e16c80b2a"
     },
     "biomes/south_america/center/low/south_america_center_low_tree_03.png": {
       "category": "trees",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "f67181304390a44ec246db5c7cfab74ff4d6c436ebdadc01d317b287b27799a3"
+      "sha256": "8e054e69ed840b2a2d13c3919316e9afd8271e59380c21aeb12b842289aae704"
     },
     "biomes/south_america/center/low/south_america_center_low_tree_04.png": {
       "category": "trees",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "f6d8f53e3de29b01fd3794717b06cfd52cf85322b888b58731eed6813762d3c1"
+      "sha256": "934eab56fb47043cd504fe5b45f99999cb1bd9ee0c022db185b56e3214e66ace"
     },
     "biomes/south_america/center/low/south_america_center_low_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e1724a971c5cffa1b1e036e8369bbaf450ba0d9bdf650d9ac6754581cd1e464"
+      "sha256": "d4bf5e123e6e91e67b88cecb278eee1617043176945c6ff7c0e020ec43365f47"
     },
     "biomes/south_america/center/low/south_america_center_low_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "022fb26eeba45f372ec65f49ee1d815b797e204b48b414ed265db92713101d89"
+      "sha256": "767447da04aa09a5682db842df3bececccf726602a145f22b0b2680f309ed587"
     },
     "biomes/south_america/center/low/south_america_center_low_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "671cbb3d36f0dd7806b4603a074ed9f19a1a77c74b2f0b9656c70fdae96956f4"
+      "sha256": "b6b987a869a1b7ddc358d2d90e23941150a6004ba25f2c2cd8b9177ce6e7ba9d"
     },
     "biomes/south_america/center/low/south_america_center_low_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "da9981d65b2a3f9dc45d014ae9950063c60f681741bc1564f0e7643222ab2bf8"
+      "sha256": "ae97c9234414808df4159d2aea62cf9e2b586e9450a381f214b4c97e655036be"
     },
     "biomes/south_america/center/low/south_america_center_low_grass_01.png": {
       "category": "grass",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b13710980b45fa4674d39996848d24b703b1470104237024a08ca43e32c1b28d"
+      "sha256": "80d49a79951606dac3ae377414d42208ec79858c28f0ccc814004541c63e3765"
     },
     "biomes/south_america/center/low/south_america_center_low_grass_02.png": {
       "category": "grass",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f01bda5afb9b3e66bf488094d17d0435d1f8a98effefe39913b88325ebea242"
+      "sha256": "024eead2871c1809922da4ebf4047a0d1df88381e8359ae2cd2af6f0d832188e"
     },
     "biomes/south_america/center/low/south_america_center_low_grass_03.png": {
       "category": "grass",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "adc5306bebfae25e3317db91e96377486ee06394c309754fb8dfafcba026d568"
+      "sha256": "4e0bc806200466735594748c28082cf15ec882a6d99674805065ff374ab93881"
     },
     "biomes/south_america/center/low/south_america_center_low_grass_04.png": {
       "category": "grass",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3f5d3f1d3634ff5be62ff28ef44e751b919332789f8362e203da3c46fa8872f5"
+      "sha256": "3079871c4cf4fb0846fa88f586599ceeeb8aecac3b9a2d1147552704661ac8ba"
     },
     "biomes/south_america/center/low/south_america_center_low_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e0badb4f8f3befc588c9980c25704f9b892c1ee7e4376314fa31d2d54ee1e23d"
+      "sha256": "78e72c99cecd320d7442a5904d64c19c163af009862d084e80babed4462016f4"
     },
     "biomes/south_america/center/low/south_america_center_low_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5ed1920a65d0592eeacc9632ba3c9db2095aa277c9f5fd0c3032173cbea1e66f"
+      "sha256": "08cbbb6942d2762d536774ca7fde66835ae3422f5aac7fa4f4c7928dcbdb3342"
     },
     "biomes/south_america/center/low/south_america_center_low_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6a3a7766b240ef11d959022ade2f28a4676a54890ab3f527b5005780e13be3b2"
+      "sha256": "f49c92632c66cb3a47328d13a685a4b081bfe75876bcebb28135dc4dc53b2133"
     },
     "biomes/south_america/center/low/south_america_center_low_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5539dc0cfa91c2fbccde39943bc13e1743e917c9a02c1a5f94c501b094b9d559"
+      "sha256": "e64f97412a58a2e99257795259a355143de2488a62e0c2426d6d3d40b105aede"
+    },
+    "biomes/south_america/center/medium/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_center_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
+    },
+    "biomes/south_america/center/medium/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_center_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "e9a9c76db6bc0d8b1e9a26ad08968af1081d3a4c6aa36f0d9d596c1c1bece15c"
+    },
+    "biomes/south_america/center/medium/bark.png": {
+      "category": "bark",
+      "biome": "south_america_center_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "ffb6ebfa48068f4dbd84b9d35641d083218affdd4aaf37440b75ad4c87de1346"
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_01.png": {
       "category": "trees",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f4cc6e514386cd76644d19c198b1b326c7f2447ff414cbf83d1d38f4a134f75"
+      "sha256": "75e15e31db20f2fd889d6750e370e6a11fb0a432147689eadc63c922a58c7303"
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_02.png": {
       "category": "trees",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "c285d7569dff8e8a874f3cd3a5c0cee5d51dfcfd5c3dd16c9c970826a7b65a67"
+      "sha256": "394e96dbc938f267185fb2e157395ac57d6f01f9fc1ff2cd6bda9aac947fcfde"
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_03.png": {
       "category": "trees",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a56a57cced23491ca9ae2b8b7944713746132336ce01d490e912e0acc1acb4d7"
+      "sha256": "7d58ae82c58db2a30f132294ee423108a263a3d3d693dbc6951260ce70edad0d"
     },
     "biomes/south_america/center/medium/south_america_center_medium_tree_04.png": {
       "category": "trees",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e8b3f7f3f50f00e278f9561398ec25f30f2fe5e9ad006e8cf7c0fbd5d2ea494b"
+      "sha256": "6dc3eff3a5c6e5ed4df4a2d4396621477ab02085911889c37411c49d62bd3fba"
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a9daff1f2f9e44756c959db701ec855c75b14dee5e9d27e041cf38651f24d5d6"
+      "sha256": "4e94d59e909acbde039f39f4f165b6af43776ad3ca09073e03f118e5a9f6d3b2"
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "9d43b17d3340fa6bd6b9b11b6d6cbaf6bfc251da34cb40bcbc79bb6cd1706a11"
+      "sha256": "98bdb46eeb0f0aaa41b34f72e3efbf0f8ebc5668b408d453dc1a91499041c9b0"
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6832b225171d5f79d3960c8d2a8deabc53319699c6ee3d4c7fc12a7b3c09ba51"
+      "sha256": "4a9e9c75bf8f28df462dd74e76158279c8276c9a6c4fe730b53ba46dc6e29511"
     },
     "biomes/south_america/center/medium/south_america_center_medium_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e1724a971c5cffa1b1e036e8369bbaf450ba0d9bdf650d9ac6754581cd1e464"
+      "sha256": "09cd9bba1b896ff1dc32c1e138eeed651a40a370bcf05b025799a4f5f1f760ab"
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_01.png": {
       "category": "grass",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6bd5105af893e2ccec04a61025ae761d0c6014971d0dcbe7878f5df5432d1d86"
+      "sha256": "13ff2bef7431706d1307505e9e7e0f49bdebcb25e097a0046ed5fa6fb77eaa8a"
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_02.png": {
       "category": "grass",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6d52ca8c61ad577d022f8e2f973541b2f44eaa9cddd32c6b87c3d737058a51d6"
+      "sha256": "531cfee296949eb2950ebde809cb41775f98652c32620b3dd27d6be5ce1cc2f5"
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_03.png": {
       "category": "grass",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "95456143cd870e25439d226ce06fd8712d8b72f0325c8360552c67f64928fd39"
+      "sha256": "603adb3e5a5704c16f5a4f6b8d77c69e59ab8e52969712d311eecd99f2603ae5"
     },
     "biomes/south_america/center/medium/south_america_center_medium_grass_04.png": {
       "category": "grass",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b13710980b45fa4674d39996848d24b703b1470104237024a08ca43e32c1b28d"
+      "sha256": "46b16c13e15f9e6ff081672b2c186e63a05ea43a51fd5dbe2ab5baee555fc9b4"
     },
     "biomes/south_america/center/medium/south_america_center_medium_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "348eaf658a825c3c0248a5aff224706bf0f3debb7aa5641e461472b59f219da7"
+      "sha256": "44f7883f78582f9e5d2f97612c9150755ebb5c40d0ffefa90a3d84c1c85d045b"
     },
     "biomes/south_america/center/medium/south_america_center_medium_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "adcaac1f9195ddfe63ed491ba380d1f96b3e734e9dd54799770e3ce19829468d"
+      "sha256": "c0f53ae3cf0a445a959d648c66f37ff2d301905d8fb285f0168d11375b15fcac"
     },
     "biomes/south_america/center/medium/south_america_center_medium_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "855b6c5a805a4b125769d6c58e4f6871960d88768286c5abe815f85df9d7ba2c"
+      "sha256": "3a5ccca52dd6f93615a18e25365711e7713e42dcf6c88dff5b9284b24bbffe92"
     },
     "biomes/south_america/center/medium/south_america_center_medium_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "41c84efe12878039df6b04b1483d565cad5a305b0056834d0b25552ef084e795"
+      "sha256": "7a35540db0ed12a34d3bf26e9415c32a9da5a5f04a264f1694dfaad70c3f997c"
+    },
+    "biomes/south_america/center/high/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_center_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "e9a9c76db6bc0d8b1e9a26ad08968af1081d3a4c6aa36f0d9d596c1c1bece15c"
+    },
+    "biomes/south_america/center/high/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_center_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "b4829ea8337421fa6f40b92d290d18f677238fa372eebbdf402ac54dae0bc559"
+    },
+    "biomes/south_america/center/high/bark.png": {
+      "category": "bark",
+      "biome": "south_america_center_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "571655cb6203a5de6cd1005959c14f02c34d37da368f98c9710fb9a8d1c79be7"
     },
     "biomes/south_america/center/high/south_america_center_high_tree_01.png": {
       "category": "trees",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "0866750f33077a3c245bf94b4cf36ddfceb3d4bf9730621f16374aeb54ab9616"
+      "sha256": "9b16ebccfb9cc53b5483e38e2cc963731ba4d9c85e06b0aad6b9fe544ef3d826"
     },
     "biomes/south_america/center/high/south_america_center_high_tree_02.png": {
       "category": "trees",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "515b61dd512a55617d1da5558b312f980eef4797beaa787db371b306173fd43c"
+      "sha256": "e962555ed0046746cd5d0d0efd3d65fcf2d9244f8661541deaac072c308235fd"
     },
     "biomes/south_america/center/high/south_america_center_high_tree_03.png": {
       "category": "trees",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3ce5a34a743087c10417682044a34d87ef3de1303a246df00b5fb234519876c4"
+      "sha256": "c4ff8f3b2493979a62efe10b786599e4f375f443b99a885f67359b8f5b0a75b8"
     },
     "biomes/south_america/center/high/south_america_center_high_tree_04.png": {
       "category": "trees",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f4cc6e514386cd76644d19c198b1b326c7f2447ff414cbf83d1d38f4a134f75"
+      "sha256": "72827663ae4261a2fd11f14822e3c807ae4533f52ba3ff6a52747586a9336a50"
     },
     "biomes/south_america/center/high/south_america_center_high_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b1d1cc118314b0f3509f42ec0288cd10fe4712e73f9509338097ba46aaa867a7"
+      "sha256": "0cccce7d5dc3a1ac0fa3ecbb227c1ebc251242ebcb011758cdff75b5ef035292"
     },
     "biomes/south_america/center/high/south_america_center_high_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "653290e13c9ed9470e1fe58b329f938acd94b45d50659be88a3834f3be2eb0e5"
+      "sha256": "d2100f43d64c39fdc774798f75cefc56504f3eeb131975c4cbc9690c6f9998be"
     },
     "biomes/south_america/center/high/south_america_center_high_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "eb3a8ef675489fd659137e77f41d27388da5ae57c39b9ea8cc91231e187e3e84"
+      "sha256": "b361cac3784f896ec55a50cebd2af645f2a6cb375b0a0923c69b1c254d094aba"
     },
     "biomes/south_america/center/high/south_america_center_high_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a9daff1f2f9e44756c959db701ec855c75b14dee5e9d27e041cf38651f24d5d6"
+      "sha256": "5ba34c85d53bb085309812cb2a6519f53e702215d98da87959d4cc3d5e9f154f"
     },
     "biomes/south_america/center/high/south_america_center_high_grass_01.png": {
       "category": "grass",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a45f465243a66f7c9ffdcc962cef2f03989a11eb394737c3607dc514163ccff4"
+      "sha256": "5709f7510797bebaa95b098a2f1c08349a13a44c0a5f348e4c968a982867565e"
     },
     "biomes/south_america/center/high/south_america_center_high_grass_02.png": {
       "category": "grass",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "eb4c5968b6cbe0e55d7929ae77660d82a25d8cef12670c1e10d4d81bd70b16ef"
+      "sha256": "02fe211840699a7b54fac6490baeb28abbb10577e75bf726464bc5bf7948316a"
     },
     "biomes/south_america/center/high/south_america_center_high_grass_03.png": {
       "category": "grass",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5aeb5962aa435232e52beaa16bbbde0a93276b80d47b0792e8d329a8222fda99"
+      "sha256": "395628ade7e59c3d76d61e393b3125a545fab06f14d766fbe79dc226d6275c91"
     },
     "biomes/south_america/center/high/south_america_center_high_grass_04.png": {
       "category": "grass",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6bd5105af893e2ccec04a61025ae761d0c6014971d0dcbe7878f5df5432d1d86"
+      "sha256": "cd02496ce179ef2b1487b0379e6a98fe88b5b054e25605f2d5183a26123bf6b1"
     },
     "biomes/south_america/center/high/south_america_center_high_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8ec8212e1eead349d306a04a25eea0a26ccc7674913081608437e68555bbcad1"
+      "sha256": "196c5321954aaaa26f4c43aa9e8c534495f1aa1ab565ec0eb21ec59afbde9380"
     },
     "biomes/south_america/center/high/south_america_center_high_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "1916048b2284eeeb83dda9c70aee4ccbc7da45fc687ae28ce7270cb790971229"
+      "sha256": "954dfac9bf9b528caf923e2f007f17d6cd95f36632fdd633b832e5468f782ff1"
     },
     "biomes/south_america/center/high/south_america_center_high_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e78a0e56ee0d1dd5ca6981eb9ac4b108a4f482c27219c386b954a09c666e10bd"
+      "sha256": "58e3988fddc4732daf5452ac1faee3747c44f80a58699d4df4979c07cd22bd32"
     },
     "biomes/south_america/center/high/south_america_center_high_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_center_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "1fecc109555bacaee07804f8351607a009f239e2107f10122cb99851dd847149"
+      "sha256": "b64de3e3b311c63975f69ef661f1336d88211a0de5b981310727240a9e6a2911"
+    },
+    "biomes/south_america/east/low/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_east_low",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "b4829ea8337421fa6f40b92d290d18f677238fa372eebbdf402ac54dae0bc559"
+    },
+    "biomes/south_america/east/low/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_east_low",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7e4c6e38e54eafeddf17d277f927bc51a4c5bae5813b6e4e4069f822247e58fc"
+    },
+    "biomes/south_america/east/low/bark.png": {
+      "category": "bark",
+      "biome": "south_america_east_low",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "d721559cacca78243a2009c04473082a9691d2c74532dd3e715a8d1fc7b408fd"
     },
     "biomes/south_america/east/low/south_america_east_low_tree_01.png": {
       "category": "trees",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "f6d8f53e3de29b01fd3794717b06cfd52cf85322b888b58731eed6813762d3c1"
+      "sha256": "fd187cfcec1e7061bb1103dc3a59c7c85ee958a966b01564ee6fc4a38b084eb8"
     },
     "biomes/south_america/east/low/south_america_east_low_tree_02.png": {
       "category": "trees",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8f7fbbd12c774988f1a7d3cfed98b81052edb82181215a019a9ad3c5b4fcb1a1"
+      "sha256": "4e69f15fdb2d6531a2208fa6b94b04b9a0e9705ed33b5c975b85384f32685e20"
     },
     "biomes/south_america/east/low/south_america_east_low_tree_03.png": {
       "category": "trees",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "36b7c6a8a522669270489d8d4c1c9b27ad92ddf3ee828b045fbf7260ce017591"
+      "sha256": "71d3bc31ea080832797d11614e5e9d55ae5f48aae893e86b09cfbca754438d7c"
     },
     "biomes/south_america/east/low/south_america_east_low_tree_04.png": {
       "category": "trees",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "0866750f33077a3c245bf94b4cf36ddfceb3d4bf9730621f16374aeb54ab9616"
+      "sha256": "1dfec90b829c71453fec8f96a80a896afa06988aa460610dd7a26da52c566a3f"
     },
     "biomes/south_america/east/low/south_america_east_low_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "da9981d65b2a3f9dc45d014ae9950063c60f681741bc1564f0e7643222ab2bf8"
+      "sha256": "3aa215892a3cb9439201a3db2745312fd9035170a8d3d12d12a48e98b6b71848"
     },
     "biomes/south_america/east/low/south_america_east_low_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "42ff9e4fbefe67bd4e301ed98612e5d602122831ace6dd7247a63871c4e64e36"
+      "sha256": "52daa40c8c027d3f210568e446c7fbc9cf06358af32980c5f9b42603639ca160"
     },
     "biomes/south_america/east/low/south_america_east_low_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "32724023fb6117654998e40ff58396ebfd49542ab877740b85d61507dffbfc2b"
+      "sha256": "4119b706c509ed5008b71eedbbafd29b9a1c96cb642e9fca0df299f7c9a6deab"
     },
     "biomes/south_america/east/low/south_america_east_low_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b1d1cc118314b0f3509f42ec0288cd10fe4712e73f9509338097ba46aaa867a7"
+      "sha256": "8a7a648e9c68051fff13b78d9a76f7d9e5df8968e4e3aeccc6ff19b4d4d2a4c1"
     },
     "biomes/south_america/east/low/south_america_east_low_grass_01.png": {
       "category": "grass",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3f5d3f1d3634ff5be62ff28ef44e751b919332789f8362e203da3c46fa8872f5"
+      "sha256": "733498a7d502217609e0e3ab2de6834b3fca6bebe108aca85fc34192d6fc3aa6"
     },
     "biomes/south_america/east/low/south_america_east_low_grass_02.png": {
       "category": "grass",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "761161fbbbc9661d8be16d6ef60496c3ee8d47fd8c0ad64b32a19e4f7abdbccb"
+      "sha256": "b9175f106791ce9db9d6cf4fe2a34dc289ff02fa730084143659c03fe5928d7c"
     },
     "biomes/south_america/east/low/south_america_east_low_grass_03.png": {
       "category": "grass",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e5b279b353b2d6d348673c88aeec07338db7ab737a15a13413b500c8ee48f331"
+      "sha256": "2cb102e925da7b47151241b357e571527fc27934d6bfd94dee018e54fe973b04"
     },
     "biomes/south_america/east/low/south_america_east_low_grass_04.png": {
       "category": "grass",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a45f465243a66f7c9ffdcc962cef2f03989a11eb394737c3607dc514163ccff4"
+      "sha256": "5b277d240ab2d3f7622d0ba0f5ad5b00c8d92e69077a2d76dd8efa2a20e1e3fc"
     },
     "biomes/south_america/east/low/south_america_east_low_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3308550f5bc5470c81a9e60b94dde7299c1667fb8beb9f38830534ea9c03b43f"
+      "sha256": "7bbc69bd7eae9309e8f10b74562c631fee7a6e1441a470e166f17fe04647e1d7"
     },
     "biomes/south_america/east/low/south_america_east_low_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "91ac639da4b0ffb4442d106c4302a38c86b0c7ac3b5ad4e31b5d2fbbfaa0c2d2"
+      "sha256": "dbbdaa4f6adffdfcbc96890c9d7e9fe31a28fdc4dc1d7b25c14b2eddd6eccda5"
     },
     "biomes/south_america/east/low/south_america_east_low_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3fe3b4ab3747eeaf59ebb97e1e6bbae4a3c71b35dcd0600cd20ea63c79956c3e"
+      "sha256": "6dbb7238345527389c4d35b67caaadfabd317f862658e62fbbcc06e10f33c568"
     },
     "biomes/south_america/east/low/south_america_east_low_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_low",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "14da284e34b83075e20688feb9ec0692aa1d63c414c8824e7578a77ec8101fc8"
+      "sha256": "738f17faa8e34785cbf10824118972233cc89449c490b5d3b6ddd4096023d6e2"
+    },
+    "biomes/south_america/east/medium/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_east_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7e4c6e38e54eafeddf17d277f927bc51a4c5bae5813b6e4e4069f822247e58fc"
+    },
+    "biomes/south_america/east/medium/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_east_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
+    },
+    "biomes/south_america/east/medium/bark.png": {
+      "category": "bark",
+      "biome": "south_america_east_medium",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "541449548f53949b45f1215b688544db27106044b5dc47770b300b7ec1fcf41b"
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_01.png": {
       "category": "trees",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e8b3f7f3f50f00e278f9561398ec25f30f2fe5e9ad006e8cf7c0fbd5d2ea494b"
+      "sha256": "75e8b585cdba8b4b10786bdd5e65145178f78edc9435705f604bd67d9786a604"
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_02.png": {
       "category": "trees",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "973ac9a56963dc5988c4d769b065f528fbd9c19ee0b75a6c74246fdc94be8a74"
+      "sha256": "44ec797823f6f1ac4d8d820594159f8e02cf68c9ba78ce9197d6c33e16c80b2a"
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_03.png": {
       "category": "trees",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "f67181304390a44ec246db5c7cfab74ff4d6c436ebdadc01d317b287b27799a3"
+      "sha256": "8e054e69ed840b2a2d13c3919316e9afd8271e59380c21aeb12b842289aae704"
     },
     "biomes/south_america/east/medium/south_america_east_medium_tree_04.png": {
       "category": "trees",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "f6d8f53e3de29b01fd3794717b06cfd52cf85322b888b58731eed6813762d3c1"
+      "sha256": "934eab56fb47043cd504fe5b45f99999cb1bd9ee0c022db185b56e3214e66ace"
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e1724a971c5cffa1b1e036e8369bbaf450ba0d9bdf650d9ac6754581cd1e464"
+      "sha256": "d4bf5e123e6e91e67b88cecb278eee1617043176945c6ff7c0e020ec43365f47"
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "022fb26eeba45f372ec65f49ee1d815b797e204b48b414ed265db92713101d89"
+      "sha256": "767447da04aa09a5682db842df3bececccf726602a145f22b0b2680f309ed587"
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "671cbb3d36f0dd7806b4603a074ed9f19a1a77c74b2f0b9656c70fdae96956f4"
+      "sha256": "b6b987a869a1b7ddc358d2d90e23941150a6004ba25f2c2cd8b9177ce6e7ba9d"
     },
     "biomes/south_america/east/medium/south_america_east_medium_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "da9981d65b2a3f9dc45d014ae9950063c60f681741bc1564f0e7643222ab2bf8"
+      "sha256": "ae97c9234414808df4159d2aea62cf9e2b586e9450a381f214b4c97e655036be"
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_01.png": {
       "category": "grass",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b13710980b45fa4674d39996848d24b703b1470104237024a08ca43e32c1b28d"
+      "sha256": "80d49a79951606dac3ae377414d42208ec79858c28f0ccc814004541c63e3765"
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_02.png": {
       "category": "grass",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f01bda5afb9b3e66bf488094d17d0435d1f8a98effefe39913b88325ebea242"
+      "sha256": "024eead2871c1809922da4ebf4047a0d1df88381e8359ae2cd2af6f0d832188e"
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_03.png": {
       "category": "grass",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "adc5306bebfae25e3317db91e96377486ee06394c309754fb8dfafcba026d568"
+      "sha256": "4e0bc806200466735594748c28082cf15ec882a6d99674805065ff374ab93881"
     },
     "biomes/south_america/east/medium/south_america_east_medium_grass_04.png": {
       "category": "grass",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "3f5d3f1d3634ff5be62ff28ef44e751b919332789f8362e203da3c46fa8872f5"
+      "sha256": "3079871c4cf4fb0846fa88f586599ceeeb8aecac3b9a2d1147552704661ac8ba"
     },
     "biomes/south_america/east/medium/south_america_east_medium_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e0badb4f8f3befc588c9980c25704f9b892c1ee7e4376314fa31d2d54ee1e23d"
+      "sha256": "78e72c99cecd320d7442a5904d64c19c163af009862d084e80babed4462016f4"
     },
     "biomes/south_america/east/medium/south_america_east_medium_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5ed1920a65d0592eeacc9632ba3c9db2095aa277c9f5fd0c3032173cbea1e66f"
+      "sha256": "08cbbb6942d2762d536774ca7fde66835ae3422f5aac7fa4f4c7928dcbdb3342"
     },
     "biomes/south_america/east/medium/south_america_east_medium_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6a3a7766b240ef11d959022ade2f28a4676a54890ab3f527b5005780e13be3b2"
+      "sha256": "f49c92632c66cb3a47328d13a685a4b081bfe75876bcebb28135dc4dc53b2133"
     },
     "biomes/south_america/east/medium/south_america_east_medium_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_medium",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5539dc0cfa91c2fbccde39943bc13e1743e917c9a02c1a5f94c501b094b9d559"
+      "sha256": "e64f97412a58a2e99257795259a355143de2488a62e0c2426d6d3d40b105aede"
+    },
+    "biomes/south_america/east/high/terrain.png": {
+      "category": "terrain",
+      "biome": "south_america_east_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
+    },
+    "biomes/south_america/east/high/shoulder.png": {
+      "category": "roadside_shoulder",
+      "biome": "south_america_east_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "e9a9c76db6bc0d8b1e9a26ad08968af1081d3a4c6aa36f0d9d596c1c1bece15c"
+    },
+    "biomes/south_america/east/high/bark.png": {
+      "category": "bark",
+      "biome": "south_america_east_high",
+      "source": "reference_image_generation",
+      "refinement_round": "R3",
+      "forge_recipe": "ps1_rally_clean",
+      "sha256": "ffb6ebfa48068f4dbd84b9d35641d083218affdd4aaf37440b75ad4c87de1346"
     },
     "biomes/south_america/east/high/south_america_east_high_tree_01.png": {
       "category": "trees",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "5f4cc6e514386cd76644d19c198b1b326c7f2447ff414cbf83d1d38f4a134f75"
+      "sha256": "75e15e31db20f2fd889d6750e370e6a11fb0a432147689eadc63c922a58c7303"
     },
     "biomes/south_america/east/high/south_america_east_high_tree_02.png": {
       "category": "trees",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "c285d7569dff8e8a874f3cd3a5c0cee5d51dfcfd5c3dd16c9c970826a7b65a67"
+      "sha256": "394e96dbc938f267185fb2e157395ac57d6f01f9fc1ff2cd6bda9aac947fcfde"
     },
     "biomes/south_america/east/high/south_america_east_high_tree_03.png": {
       "category": "trees",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a56a57cced23491ca9ae2b8b7944713746132336ce01d490e912e0acc1acb4d7"
+      "sha256": "7d58ae82c58db2a30f132294ee423108a263a3d3d693dbc6951260ce70edad0d"
     },
     "biomes/south_america/east/high/south_america_east_high_tree_04.png": {
       "category": "trees",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R1",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "e8b3f7f3f50f00e278f9561398ec25f30f2fe5e9ad006e8cf7c0fbd5d2ea494b"
+      "sha256": "6dc3eff3a5c6e5ed4df4a2d4396621477ab02085911889c37411c49d62bd3fba"
     },
     "biomes/south_america/east/high/south_america_east_high_bush_01.png": {
       "category": "bushes",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "a9daff1f2f9e44756c959db701ec855c75b14dee5e9d27e041cf38651f24d5d6"
+      "sha256": "4e94d59e909acbde039f39f4f165b6af43776ad3ca09073e03f118e5a9f6d3b2"
     },
     "biomes/south_america/east/high/south_america_east_high_bush_02.png": {
       "category": "bushes",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "9d43b17d3340fa6bd6b9b11b6d6cbaf6bfc251da34cb40bcbc79bb6cd1706a11"
+      "sha256": "98bdb46eeb0f0aaa41b34f72e3efbf0f8ebc5668b408d453dc1a91499041c9b0"
     },
     "biomes/south_america/east/high/south_america_east_high_bush_03.png": {
       "category": "bushes",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6832b225171d5f79d3960c8d2a8deabc53319699c6ee3d4c7fc12a7b3c09ba51"
+      "sha256": "4a9e9c75bf8f28df462dd74e76158279c8276c9a6c4fe730b53ba46dc6e29511"
     },
     "biomes/south_america/east/high/south_america_east_high_bush_04.png": {
       "category": "bushes",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "8e1724a971c5cffa1b1e036e8369bbaf450ba0d9bdf650d9ac6754581cd1e464"
+      "sha256": "09cd9bba1b896ff1dc32c1e138eeed651a40a370bcf05b025799a4f5f1f760ab"
     },
     "biomes/south_america/east/high/south_america_east_high_grass_01.png": {
       "category": "grass",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6bd5105af893e2ccec04a61025ae761d0c6014971d0dcbe7878f5df5432d1d86"
+      "sha256": "13ff2bef7431706d1307505e9e7e0f49bdebcb25e097a0046ed5fa6fb77eaa8a"
     },
     "biomes/south_america/east/high/south_america_east_high_grass_02.png": {
       "category": "grass",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "6d52ca8c61ad577d022f8e2f973541b2f44eaa9cddd32c6b87c3d737058a51d6"
+      "sha256": "531cfee296949eb2950ebde809cb41775f98652c32620b3dd27d6be5ce1cc2f5"
     },
     "biomes/south_america/east/high/south_america_east_high_grass_03.png": {
       "category": "grass",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "95456143cd870e25439d226ce06fd8712d8b72f0325c8360552c67f64928fd39"
+      "sha256": "603adb3e5a5704c16f5a4f6b8d77c69e59ab8e52969712d311eecd99f2603ae5"
     },
     "biomes/south_america/east/high/south_america_east_high_grass_04.png": {
       "category": "grass",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "b13710980b45fa4674d39996848d24b703b1470104237024a08ca43e32c1b28d"
+      "sha256": "46b16c13e15f9e6ff081672b2c186e63a05ea43a51fd5dbe2ab5baee555fc9b4"
     },
     "biomes/south_america/east/high/south_america_east_high_building_01.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "348eaf658a825c3c0248a5aff224706bf0f3debb7aa5641e461472b59f219da7"
+      "sha256": "44f7883f78582f9e5d2f97612c9150755ebb5c40d0ffefa90a3d84c1c85d045b"
     },
     "biomes/south_america/east/high/south_america_east_high_building_02.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "adcaac1f9195ddfe63ed491ba380d1f96b3e734e9dd54799770e3ce19829468d"
+      "sha256": "c0f53ae3cf0a445a959d648c66f37ff2d301905d8fb285f0168d11375b15fcac"
     },
     "biomes/south_america/east/high/south_america_east_high_building_03.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "855b6c5a805a4b125769d6c58e4f6871960d88768286c5abe815f85df9d7ba2c"
+      "sha256": "3a5ccca52dd6f93615a18e25365711e7713e42dcf6c88dff5b9284b24bbffe92"
     },
     "biomes/south_america/east/high/south_america_east_high_building_04.png": {
       "category": "fake_buildings",
       "biome": "south_america_east_high",
       "source": "reference_image_generation",
+      "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "41c84efe12878039df6b04b1483d565cad5a305b0056834d0b25552ef084e795"
+      "sha256": "7a35540db0ed12a34d3bf26e9415c32a9da5a5f04a264f1694dfaad70c3f997c"
     }
   }
 }
