@@ -1,38 +1,17 @@
-# Vegetation asset drop zone
+# Procedural vegetation
 
-Place local low-poly vegetation source assets here.
+`blender/vegetation/` is reserved for optional future art overrides. The active Formula90s racetrack pipeline no longer requires external vegetation assets.
 
-Recommended structure:
+Default procedural environment generation creates a deliberately small reusable set for the configured region (`south_america` currently):
 
-```text
-blender/vegetation/
-├── trees/
-├── bushes/
-└── grass/
-```
+- low-poly broadleaf tree;
+- low-poly dry-canopy tree;
+- low-poly palm;
+- crossed 2D grass cards;
+- crossed 2D bush cards.
 
-Supported source formats for the procedural tooling:
+The number of canonical tree types is intentionally small. Variety comes from deterministic placement, scale and rotation rather than dozens of unique meshes.
 
-- `.blend`
-- `.glb`
-- `.gltf`
+Generated textures are small and live under `blender/generated/<track>/textures/`; they are embedded into runtime GLBs and are not source-of-truth.
 
-Raw `.blend` files are intentionally ignored by Git. They are source assets, not runtime packaging.
-
-The asset inspector measures each model before placement. Assets outside the plausible dimensional ranges in the track config are rejected unless a sidecar explicitly overrides the rule.
-
-Optional sidecar next to an asset:
-
-`tree_a.blend.asset.json`
-
-```json
-{
-  "id": "tree_a",
-  "category": "trees",
-  "scale_min": 0.85,
-  "scale_max": 1.20,
-  "weight": 1.0
-}
-```
-
-Do not create persistent color duplicates of the same tree. The placement manifest stores small tint metadata while all instances reuse the same geometry/material data.
+If hand-authored vegetation is reintroduced later, treat files in this folder as optional overrides rather than a required dependency of Base or Procedural mode.
