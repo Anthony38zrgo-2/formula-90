@@ -19,11 +19,15 @@ from vegetation_texture_common import (
     POSTPROCESS_VERSION,
     postprocess_recipe,
     prepare_vegetation_card_rgba,
+    remove_isolated_key_speckles_rgba,
 )
 
 
 EXPECTED_SIZE = (128, 128)
 SUPPORTED_CATEGORIES = {"trees", "bushes", "grass"}
+POST_RESIZE_KEY_TOLERANCE = 170.0
+POST_RESIZE_KEY_MAX_COMPONENT_PX = 24
+POST_RESIZE_KEY_MAX_BBOX_SPAN = 8
 
 
 def sha256(path: Path) -> str:
@@ -65,6 +69,22 @@ def _normalize_background_rgb(manifest: dict) -> np.ndarray:
     return background_rgb
 
 
+def cleanup_source_backed_output(rgba: np.ndarray, background_rgb: np.ndarray) -> tuple[np.ndarray, dict]:
+    """Remove only tiny post-resize remnants of the exact key declared by the source manifest.
+
+    Large key-colored regions are intentionally left for the strict analyzer to reject instead of
+    silently hiding a bad key extraction. The canonical vegetation palette reserves the chroma key,
+    so a tiny isolated key-colored component is an artifact rather than valid source color.
+    """
+    return remove_isolated_key_speckles_rgba(
+        rgba,
+        key_rgb=background_rgb,
+        tolerance=POST_RESIZE_KEY_TOLERANCE,
+        max_component_px=POST_RESIZE_KEY_MAX_COMPONENT_PX,
+        max_bbox_span=POST_RESIZE_KEY_MAX_BBOX_SPAN,
+    )
+
+
 def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: str, entry: dict, pass_index: int) -> dict:
     background_rgb = _normalize_background_rgb(manifest)
     source = (manifest_path.parent / entry["source"]).resolve()
@@ -82,8 +102,18 @@ def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: st
         background_rgb=background_rgb,
         pass_index=pass_index,
     )
+    output, cleanup_metrics = cleanup_source_backed_output(output, background_rgb)
+    metrics["post_resize_key_cleanup"] = cleanup_metrics
+
     destination.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(output, "RGBA").save(destination)
+    Image.fromarray(output).save(destination)
+    recipe = postprocess_recipe(pass_index, background_rgb)
+    recipe["post_resize_key_cleanup"] = {
+        "method": "isolated_visible_declared_key_speckles",
+        "tolerance": POST_RESIZE_KEY_TOLERANCE,
+        "max_component_px": POST_RESIZE_KEY_MAX_COMPONENT_PX,
+        "max_bbox_span": POST_RESIZE_KEY_MAX_BBOX_SPAN,
+    }
     return {
         "asset_id": asset_id,
         "category": manifest.get("category"),
@@ -95,7 +125,7 @@ def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: st
         "destination_sha256": sha256(destination),
         "declared_output_sha256": entry.get("output_sha256"),
         "source_key": _key_identity(background_rgb),
-        "postprocess": postprocess_recipe(pass_index, background_rgb),
+        "postprocess": recipe,
         "metrics": metrics,
     }
 
@@ -146,6 +176,12 @@ def _aggregate_recipe(assets: list[dict], pass_index: int) -> dict:
             "resize": "premultiplied_lanczos4",
             "transparent_rgb": "foreground_edge_padding_4px",
             "bottom_anchor": "last_visible_alpha_row",
+            "post_resize_key_cleanup": {
+                "method": "isolated_visible_declared_key_speckles",
+                "tolerance": POST_RESIZE_KEY_TOLERANCE,
+                "max_component_px": POST_RESIZE_KEY_MAX_COMPONENT_PX,
+                "max_bbox_span": POST_RESIZE_KEY_MAX_BBOX_SPAN,
+            },
         }
     recipe["scope"] = "source_backed_manifest_assets"
     recipe["source_key_counts"] = key_counts
