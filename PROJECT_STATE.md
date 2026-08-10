@@ -14,6 +14,9 @@ scenes and resources outrank this document if they disagree.
 - **Native presentation:** C++20 GDExtension provides bootstrap, camera,
   vehicle presentation, audio, reset, and menu integration. It reads vehicle
   state through `VehicleStateReader`; it must not become a second physics engine.
+- **Chase camera calculation:** `ChaseCameraSolver` owns the stateful follow,
+  look-ahead, inertia, turn-offset, and FOV calculation. `ArcadeChaseCamera`
+  only reads vehicle state and applies the resulting pose to Godot nodes.
 - **World/UI composition:** `WorldHudCompositor` renders the 3D world at
   640x360 and moves gameplay controls to the unfiltered root `HudLayer`.
 

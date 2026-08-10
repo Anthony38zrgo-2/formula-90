@@ -1,5 +1,6 @@
 #pragma once
 
+#include "formula90s/camera/chase_camera_solver.hpp"
 #include "formula90s/vehicle/vehicle_state_reader.hpp"
 #include <godot_cpp/classes/node3d.hpp>
 
@@ -30,26 +31,13 @@ class ArcadeChaseCamera : public Node3D {
 	double maximum_follow_lag = 1.25;
 	double turn_offset_smoothing = 4.5;
 	double turn_activation_speed = 0.75;
-	double locked_world_y = 0.0;
-	double locked_look_y = 0.0;
 	double locked_pitch = 0.0;
-	double smoothed_turn_amount = 0.0;
-	double smoothed_longitudinal_inertia = 0.0;
-	double previous_longitudinal_source = 0.0;
-	Vector3 smoothed_velocity_lead;
-	Vector3 smoothed_look_target;
-	Vector3 filtered_acceleration;
-	Vector3 smoothed_forward;
-	bool initialized = false;
-	bool inertia_initialized = false;
 
 	VehicleStateReader car_state;
-	Vector3 previous_world_velocity;
-	Vector3 last_car_position;
-	bool acceleration_initialized = false;
-	uint64_t epoch = 0;
+	formula90s::camera::ChaseCameraSolver solver;
 
 	NodePath car_path = "..";
+	formula90s::camera::ChaseCameraConfig current_config() const;
 
 protected:
 	static void _bind_methods();

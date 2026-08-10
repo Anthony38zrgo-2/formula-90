@@ -14,6 +14,8 @@ physical simulation              bootstrap and menu integration
 GEVP is the sole authority for vehicle motion, wheel contacts, suspension,
 transmission, and driving assists. Native presentation code reads vehicle state
 through `VehicleStateReader`; it must not implement a second vehicle simulation.
+`ArcadeChaseCamera` delegates its node-free follow calculation to
+`ChaseCameraSolver`, then applies the returned pose and FOV to `Camera3D`.
 
 ## Gameplay composition
 
