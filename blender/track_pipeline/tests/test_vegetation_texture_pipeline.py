@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from analyze_vegetation_textures import visible_key_mask
 from recut_vegetation_textures import recut_image
 from migrate_vegetation_source_keys import rekey_source_rgba
+from rebuild_curated_vegetation import cleanup_source_backed_output
 from vegetation_texture_common import (
     DEFAULT_BACKGROUND_RGB,
     LEGACY_MAGENTA_RGB,
@@ -117,6 +118,17 @@ class VegetationTexturePipelineTests(unittest.TestCase):
         cleaned, metrics = remove_isolated_key_speckles_rgba(rgba, key_rgb=LEGACY_MAGENTA_RGB)
         self.assertGreaterEqual(metrics["removed_pixels"], 1)
         self.assertEqual(int(cleaned[16, 16, 3]), 0)
+
+    def test_source_backed_post_resize_cleanup_removes_isolated_cyan_candidate(self):
+        rgba = np.zeros((32, 32, 4), dtype=np.uint8)
+        rgba[4:28, 6:26, :3] = (70, 120, 60)
+        rgba[4:28, 6:26, 3] = 255
+        rgba[15:17, 15:17, :3] = (90, 190, 200)
+        rgba[15:17, 15:17, 3] = 255
+        self.assertGreater(int(visible_key_mask(rgba, DEFAULT_BACKGROUND_RGB).sum()), 0)
+        cleaned, metrics = cleanup_source_backed_output(rgba, DEFAULT_BACKGROUND_RGB)
+        self.assertEqual(int(visible_key_mask(cleaned, DEFAULT_BACKGROUND_RGB).sum()), 0)
+        self.assertGreaterEqual(metrics["removed_pixels"], 4)
 
     def test_rekey_source_moves_background_to_cyan_and_preserves_pink(self):
         img = np.empty((128, 128, 4), dtype=np.uint8)
