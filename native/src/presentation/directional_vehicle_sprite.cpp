@@ -73,7 +73,7 @@ void DirectionalVehicleSprite::_ready() {
 	visual_local_offset = get_position();
 	set_as_top_level(true);
 
-	car_adapter = VehicleAdapter(car_path.is_empty() ? nullptr : get_node_or_null(car_path));
+	car_state = VehicleStateReader(car_path.is_empty() ? nullptr : get_node_or_null(car_path));
 }
 
 bool DirectionalVehicleSprite::load_metadata() {
@@ -128,11 +128,10 @@ void DirectionalVehicleSprite::_process(double) {
 	Node3D *visual_owner = Object::cast_to<Node3D>(get_parent());
 	if (!camera || !visual_owner) return;
 
-	Node3D *car_node = car_adapter.is_valid() ? car_adapter.get_node() : visual_owner;
-	const Transform3D visual_pose = car_node->get_global_transform();
+	const Transform3D visual_pose = car_state.is_valid() ? car_state.get_global_transform() : visual_owner->get_global_transform();
 	set_global_position(visual_pose.xform(visual_local_offset));
 
-	Vector3 velocity = car_adapter.is_valid() ? car_adapter.get_linear_velocity() : Vector3();
+	Vector3 velocity = car_state.is_valid() ? car_state.get_linear_velocity() : Vector3();
 	velocity.y = 0;
 	const double speed = velocity.length();
 

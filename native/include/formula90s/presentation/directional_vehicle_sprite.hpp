@@ -1,6 +1,6 @@
 #pragma once
 
-#include "formula90s/vehicle/vehicle_adapter.hpp"
+#include "formula90s/vehicle/vehicle_state_reader.hpp"
 #include <godot_cpp/classes/sprite3d.hpp>
 
 namespace godot {
@@ -26,7 +26,7 @@ class DirectionalVehicleSprite : public Sprite3D {
 	uint64_t camera_instance_id = 0;
 	double current_relative_angle = 0.0;
 
-	VehicleAdapter car_adapter;
+	VehicleStateReader car_state;
 	NodePath car_path;
 
 	bool load_metadata();

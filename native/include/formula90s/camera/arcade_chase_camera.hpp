@@ -1,6 +1,6 @@
 #pragma once
 
-#include "formula90s/vehicle/vehicle_adapter.hpp"
+#include "formula90s/vehicle/vehicle_state_reader.hpp"
 #include <godot_cpp/classes/node3d.hpp>
 
 namespace godot {
@@ -43,7 +43,7 @@ class ArcadeChaseCamera : public Node3D {
 	bool initialized = false;
 	bool inertia_initialized = false;
 
-	VehicleAdapter car_adapter;
+	VehicleStateReader car_state;
 	Vector3 previous_world_velocity;
 	Vector3 last_car_position;
 	bool acceleration_initialized = false;

@@ -78,14 +78,14 @@ void EngineAudioController::create_audio_nodes() {
 
 void EngineAudioController::_ready() {
 	set_process(true);
-	car_adapter = VehicleAdapter(get_node_or_null(car_path));
-	if (!car_adapter.is_valid()) {
+	car_state = VehicleStateReader(get_node_or_null(car_path));
+	if (!car_state.is_valid()) {
 		UtilityFunctions::push_error("EngineAudioController: car not found at ", car_path);
 		return;
 	}
 	if (!load_all_samples()) return;
 	create_audio_nodes();
-	previous_gear = car_adapter.get_current_gear();
+	previous_gear = car_state.get_current_gear();
 }
 
 float EngineAudioController::read_looped(SampleLayer &layer, double ratio) {
@@ -107,14 +107,14 @@ float EngineAudioController::read_shift() {
 }
 
 void EngineAudioController::fill_audio_buffer() {
-	if (playback.is_null() || !car_adapter.is_valid() || config.is_null()) return;
+	if (playback.is_null() || !car_state.is_valid() || config.is_null()) return;
 	EngineDspState state;
-	state.rpm = car_adapter.get_motor_rpm();
+	state.rpm = car_state.get_motor_rpm();
 	state.normalized_rpm = std::clamp(
 		(state.rpm - config->get_idle_rpm()) / (config->get_maximum_rpm() - config->get_idle_rpm()), 0.0, 1.0);
-	state.throttle = car_adapter.get_throttle_amount();
-	state.speed_kph = car_adapter.get_speed() * 3.6;
-	state.gear = car_adapter.get_current_gear();
+	state.throttle = car_state.get_throttle_amount();
+	state.speed_kph = car_state.get_speed() * 3.6;
+	state.gear = car_state.get_current_gear();
 	state.reverse = state.gear < 0;
 	state.rev_cut = state.rpm >= config->get_maximum_rpm() * 0.995;
 	const auto weights = EngineLayerMixer::weights(state.normalized_rpm);
@@ -138,8 +138,8 @@ void EngineAudioController::fill_audio_buffer() {
 }
 
 void EngineAudioController::_process(double) {
-	if (car_adapter.is_valid()) {
-		const int gear = car_adapter.get_current_gear();
+	if (car_state.is_valid()) {
+		const int gear = car_state.get_current_gear();
 		if (gear != previous_gear) { notify_gear_shift(gear); previous_gear = gear; }
 	}
 	fill_audio_buffer();

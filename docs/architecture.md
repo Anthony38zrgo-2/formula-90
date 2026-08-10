@@ -13,7 +13,7 @@ physical simulation              bootstrap and menu integration
 
 GEVP is the sole authority for vehicle motion, wheel contacts, suspension,
 transmission, and driving assists. Native presentation code reads vehicle state
-through `VehicleAdapter`; it must not implement a second vehicle simulation.
+through `VehicleStateReader`; it must not implement a second vehicle simulation.
 
 ## Gameplay composition
 

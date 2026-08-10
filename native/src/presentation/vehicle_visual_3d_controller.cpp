@@ -139,25 +139,25 @@ void VehicleVisual3DController::apply_wheel_animation(double signed_speed, doubl
 }
 
 void VehicleVisual3DController::_ready() {
-	car_adapter = VehicleAdapter(get_node_or_null(car_path));
-	if (!car_adapter.is_valid()) {
+	car_state = VehicleStateReader(get_node_or_null(car_path));
+	if (!car_state.is_valid()) {
 		UtilityFunctions::push_error("[formula90s] VehicleVisual3DController: car not found at ", car_path);
 		return;
 	}
 	set_as_top_level(true);
 	resolve_nodes();
 	epoch = 0;
-	last_car_position = car_adapter.get_global_position();
+	last_car_position = car_state.get_global_position();
 	acceleration_initialized = false;
-	set_global_transform(car_adapter.get_global_transform());
+	set_global_transform(car_state.get_global_transform());
 	initialized = true;
 }
 
 void VehicleVisual3DController::_process(double delta) {
-	if (!car_adapter.is_valid() || config.is_null() || !config->is_valid() || delta <= 0.0) {
+	if (!car_state.is_valid() || config.is_null() || !config->is_valid() || delta <= 0.0) {
 		return;
 	}
-	const Transform3D visual_pose = car_adapter.get_global_transform();
+	const Transform3D visual_pose = car_state.get_global_transform();
 
 	const bool discontinuity = !initialized || !acceleration_initialized ||
 		(visual_pose.origin - last_car_position).length_squared() > TELEPORT_THRESHOLD_SQ;
@@ -171,7 +171,7 @@ void VehicleVisual3DController::_process(double delta) {
 	right = right.normalized();
 	forward = forward.normalized();
 
-	const Vector3 current_world_velocity = car_adapter.get_linear_velocity();
+	const Vector3 current_world_velocity = car_state.get_linear_velocity();
 	Vector3 acceleration;
 	if (acceleration_initialized && delta > 0.000001)
 		acceleration = (current_world_velocity - previous_world_velocity) / delta;
@@ -183,7 +183,7 @@ void VehicleVisual3DController::_process(double delta) {
 	const double pitch_target = formula90s::presentation::clamped_visual_response(
 		acceleration.dot(forward), config->get_pitch_acceleration_gain(), config->get_maximum_pitch_degrees());
 	const double steering_target = Math::deg_to_rad(config->get_maximum_steering_degrees()) *
-		car_adapter.get_steering_input();
+		car_state.get_steering_input();
 
 	if (discontinuity) {
 		smoothed_roll = 0.0;
@@ -213,7 +213,7 @@ void VehicleVisual3DController::_process(double delta) {
 	presentation.origin += visual_pose.basis.xform(vibration_local);
 	set_global_transform(presentation);
 
-	const double signed_speed = car_adapter.get_linear_velocity().dot(forward);
+	const double signed_speed = car_state.get_linear_velocity().dot(forward);
 	apply_wheel_animation(signed_speed, delta);
 }
 

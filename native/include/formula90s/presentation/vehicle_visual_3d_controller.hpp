@@ -1,7 +1,7 @@
 #pragma once
 
 #include "formula90s/presentation/vehicle_visual_3d_config.hpp"
-#include "formula90s/vehicle/vehicle_adapter.hpp"
+#include "formula90s/vehicle/vehicle_state_reader.hpp"
 #include <godot_cpp/classes/node3d.hpp>
 #include <array>
 
@@ -13,7 +13,7 @@ class VehicleVisual3DController : public Node3D {
 	GDCLASS(VehicleVisual3DController, Node3D)
 
 	Ref<VehicleVisual3DConfig> config;
-	VehicleAdapter car_adapter;
+	VehicleStateReader car_state;
 	Node3D *model = nullptr;
 	Node *surface_probes = nullptr;
 	std::array<Node3D *, 4> wheels = {nullptr, nullptr, nullptr, nullptr};

@@ -2,7 +2,7 @@
 
 #include "formula90s/audio/engine_audio_config.hpp"
 #include "formula90s/audio/engine_dsp.hpp"
-#include "formula90s/vehicle/vehicle_adapter.hpp"
+#include "formula90s/vehicle/vehicle_state_reader.hpp"
 #include <godot_cpp/classes/audio_stream_generator.hpp>
 #include <godot_cpp/classes/audio_stream_generator_playback.hpp>
 #include <godot_cpp/classes/audio_stream_player3d.hpp>
@@ -20,7 +20,7 @@ class EngineAudioController : public Node {
 	Ref<AudioStreamGenerator> generator;
 	Ref<AudioStreamGeneratorPlayback> playback;
 	AudioStreamPlayer3D *player = nullptr;
-	VehicleAdapter car_adapter;
+	VehicleStateReader car_state;
 	std::array<SampleLayer, 5> engine_layers;
 	SampleLayer gear_up, gear_down;
 	formula90s::audio::EngineDspChain dsp;

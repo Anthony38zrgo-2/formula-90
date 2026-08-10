@@ -1,6 +1,5 @@
 #include "formula90s/camera/arcade_chase_camera.hpp"
 #include "formula90s/camera/camera_math.hpp"
-#include "formula90s/vehicle/vehicle_adapter.hpp"
 #include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/core/math.hpp>
 
@@ -40,10 +39,10 @@ void ArcadeChaseCamera::_bind_methods() {
 }
 
 void ArcadeChaseCamera::_ready() {
-	car_adapter = VehicleAdapter(get_node_or_null(car_path));
-	if (!car_adapter.is_valid()) return;
+	car_state = VehicleStateReader(get_node_or_null(car_path));
+	if (!car_state.is_valid()) return;
 
-	const Transform3D pose = car_adapter.get_global_transform();
+	const Transform3D pose = car_state.get_global_transform();
 	Vector3 forward = -pose.basis.get_column(2);
 	forward.y = 0;
 	forward.normalize();
@@ -67,11 +66,11 @@ void ArcadeChaseCamera::_ready() {
 }
 
 void ArcadeChaseCamera::_process(double delta) {
-	if (!car_adapter.is_valid() || delta <= 0.0) return;
+	if (!car_state.is_valid() || delta <= 0.0) return;
 	Camera3D *camera = Object::cast_to<Camera3D>(get_node_or_null("Camera3D"));
 	if (!camera) return;
 
-	const Transform3D visual_pose = car_adapter.get_global_transform();
+	const Transform3D visual_pose = car_state.get_global_transform();
 	Vector3 physical_forward = -visual_pose.basis.get_column(2);
 	physical_forward.y = 0;
 	physical_forward.normalize();
@@ -96,7 +95,7 @@ void ArcadeChaseCamera::_process(double delta) {
 	Vector3 right(-smoothed_forward.z, 0, smoothed_forward.x);
 
 	const Vector3 car_position = visual_pose.origin;
-	Vector3 horizontal_velocity = car_adapter.get_linear_velocity();
+	Vector3 horizontal_velocity = car_state.get_linear_velocity();
 	horizontal_velocity.y = 0;
 
 	const Vector3 current_world_velocity = horizontal_velocity;
@@ -132,7 +131,7 @@ void ArcadeChaseCamera::_process(double delta) {
 		smoothed_longitudinal_inertia, 0.0, smoothing_alpha(offset_smoothing, delta));
 
 	const double turn_target = formula90s::camera::travel_corrected_turn(
-		car_adapter.get_true_steering_amount(), signed_forward_speed, turn_activation_speed);
+		car_state.get_true_steering_amount(), signed_forward_speed, turn_activation_speed);
 	smoothed_turn_amount = Math::lerp(smoothed_turn_amount, turn_target, smoothing_alpha(turn_offset_smoothing, delta));
 	const Vector3 longitudinal_offset = smoothed_forward * smoothed_longitudinal_inertia;
 	const double lateral_position = formula90s::camera::lateral_camera_offset(smoothed_turn_amount, lateral_swing);
@@ -168,6 +167,6 @@ void ArcadeChaseCamera::_process(double delta) {
 	locked_rotation.z = 0.0;
 	set_global_rotation(locked_rotation);
 
-	const double fov_target = base_fov + speed_fov_gain * Math::clamp(car_adapter.get_speed() * 3.6 / 285.0, 0.0, 1.0);
+	const double fov_target = base_fov + speed_fov_gain * Math::clamp(car_state.get_speed() * 3.6 / 285.0, 0.0, 1.0);
 	camera->set_fov(Math::lerp(double(camera->get_fov()), fov_target, smoothing_alpha(follow_damping, delta)));
 }
