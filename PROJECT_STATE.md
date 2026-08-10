@@ -55,6 +55,10 @@ scenes and resources outrank this document if they disagree.
   it does not materialize the ignored Jordan runtime GLBs before world smoke
   tests, and `native/tests/unit_tests.cpp` includes a missing
   `formula90s/vehicle/physics_math.hpp` header.
+- After `scripts/run_jordan_handling.ps1` (or equivalent canonical asset
+  materialization), the isolated worktree imports the three Jordan GLBs and
+  loads `jordan_handling_test.tscn`; `VehicleVisual3DController` resolves its
+  chassis and all four configured wheel-orientation nodes.
 
 ## Refactor guardrails
 
