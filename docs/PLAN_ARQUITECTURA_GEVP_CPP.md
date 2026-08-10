@@ -1,5 +1,9 @@
 # Plan de Arquitectura Híbrida: GEVP (GDScript) + Módulos C++20
 
+> **Plan histórico/sustituido.** La dirección GEVP + C++ sigue vigente, pero
+> sus afirmaciones sobre HUD nativo y retirar `DirectionalVehicleSprite` no
+> describen el runtime actual. Consultar `docs/architecture.md`.
+
 ## 1. Resumen de la Redefinición
 Se establece una división clara de responsabilidades entre el complemento **GEVP (GDScript)** para la simulación física del vehículo y la extensión **GDExtension (C++20)** para los módulos de presentación de alto rendimiento, cámara arcade, DSP de audio y telemetría/UI.
 

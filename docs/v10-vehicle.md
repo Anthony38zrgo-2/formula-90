@@ -1,5 +1,10 @@
 # Vehículo V10
 
+> **Nota histórica de integración visual.** El V10 y sus referencias a
+> `ArcadeCarController` documentan un corte previo. El vehículo activo utiliza
+> GEVP; consultar `docs/architecture.md` antes de reutilizar sus detalles de
+> runtime.
+
 V10 es el primer coche jugable de `formula-90s`. Su física y transmisión no cambiaron durante la migración visual 3D.
 
 ## Fuente 3D

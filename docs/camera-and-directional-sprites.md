@@ -1,5 +1,10 @@
 # Cámara y presentación de vehículos
 
+> **Referencia mixta.** Los detalles del V10/`ArcadeCarController` corresponden
+> a un corte histórico. La cámara y el sprite direccional siguen registrados,
+> pero consumen el vehículo GEVP mediante `VehicleAdapter`; la autoridad actual
+> está en `docs/architecture.md`.
+
 `ArcadeCarController` mantiene la simulación en `_physics_process` y conserva los transforms físicos anterior y actual. Cámara y presentación consumen `get_visual_transform()`, interpolado con la fracción física de Godot, sin alterar la simulación.
 
 ## Cámara

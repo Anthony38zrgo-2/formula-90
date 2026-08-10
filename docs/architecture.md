@@ -1,46 +1,74 @@
-# Arquitectura
+# Current runtime architecture
 
-`formula-90s` separa simulación, presentación y contenido declarativo. Toda lógica de runtime permanece en C++20 mediante GDExtension; no hay GDScript.
+Status: **current architecture reference**. Verify runtime facts against
+`PROJECT_STATE.md` and the loaded Godot scene before changing a subsystem.
 
-## Flujo principal
-
-`GameBootstrap` mantiene la raíz y carga `MainMenu` o `TestField`. `ArcadeCarController` ejecuta movimiento y transmisión en `_physics_process`; conserva los transforms físicos anterior y actual y expone `get_visual_transform()` interpolado. Cámara, visual, HUD, reset y audio consumen ese estado sin decidir física.
-
-## Vehículo jugable
-
-La composición de `player_car.tscn` es:
+## Authority boundaries
 
 ```text
-PlayerCar (ArcadeCarController)
-├─ CollisionShape3D
-├─ VehicleVisualRoot (VehicleVisual3DController)
-│  └─ V10Model
-├─ SurfaceProbes
-│  ├─ FrontProbe
-│  └─ RearProbe
-├─ CameraRig
-├─ AudioRoot
-└─ ResetMarker
+GEVP GDScript                    C++20 GDExtension
+vehicle.gd + wheel.gd            camera, visual presentation, audio, reset,
+physical simulation              bootstrap and menu integration
 ```
 
-La colisión continúa siendo un `BoxShape3D` simple de `1.7 × 0.8 × 3.8 m`. La malla importada nunca participa en la colisión dinámica. `VehicleVisualRoot` se vuelve top-level durante el runtime y sigue la pose interpolada; escala, corrección Y de 180°, offset de contacto y movimientos secundarios se aplican solo a la presentación.
+GEVP is the sole authority for vehicle motion, wheel contacts, suspension,
+transmission, and driving assists. Native presentation code reads vehicle state
+through `VehicleAdapter`; it must not implement a second vehicle simulation.
 
-`VehicleVisual3DConfig` declara escala, rotación, offset, rutas opcionales de ruedas, radio, dirección visual, límites de roll/pitch, suavizado y vibración. `VehicleVisual3DController` tolera modelo, ruedas o sondas opcionales ausentes y registra el resultado al iniciar.
+## Gameplay composition
 
-Las dos `RayCast3D` consultan grupos `kerb`/`gravel` o metadata `surface_type`. En superficies no etiquetadas la vibración es cero. El GLB actual no separa ruedas, de modo que las rutas están vacías y la animación individual no se ejecuta.
+`GameBootstrap` starts a gameplay world through `WorldHudCompositor`:
 
-## Importación del GLB
+```text
+GameBootstrap
+└── WorldHudCompositor
+    ├── WorldViewport (fixed 640x360 3D world)
+    │   └── WorldContent (track and vehicle scene)
+    ├── WorldPresenter (ViewportTexture in the root canvas)
+    └── HudLayer (unfiltered root-canvas HUD)
+```
 
-`game/assets/models/vehicles/v10/v10.glb` es una copia byte por byte de la fuente conservada en `references`. Godot genera su escena importada; el proyecto no la edita. `v10_visual.tscn` la envuelve y `player_car.tscn` instancia esa escena bajo `VehicleVisualRoot`.
+This is a deliberate rendering boundary: world-only postprocessing belongs on
+`WorldPresenter`; HUD, minimap, and menus must remain outside that viewport.
 
-## Cámara y presentación
+## Vehicle composition
 
-`ArcadeChaseCamera` consume la misma pose interpolada. Altura mundial y pitch quedan bloqueados; `look_height` permite ajustar el centro vertical al modelo sin diving. La cámara mantiene el impulso Z sutil y el desplazamiento X por giro establecidos previamente.
+The active test scenes use a GDScript controller with a GEVP vehicle body:
 
-`DirectionalVehicleSprite` ya no representa al jugador. Se conserva para el placeholder estático, validación y futura decoración 2.5D. El pipeline de sprites y sus pruebas permanecen activos.
+```text
+VehicleController (GEVP vehicle_controllergd.gd)
+└── VehicleRigidBody (GEVP vehicle.gd on RigidBody3D)
+    ├── RayCast3D wheels and collision shapes
+    ├── ArcadeChaseCamera (C++ presentation consumer)
+    ├── EngineAudioController (C++ presentation consumer)
+    └── ResetMarker / ResetManager integration
+```
 
-## Otros sistemas
+The Jordan scene owns physical geometry and wheel layout. Visual assets are a
+separate concern and must not be used as collision authority.
 
-`EngineAudioController` sigue siendo hijo directo del coche bajo el nombre `AudioRoot`; así conserva acceso a RPM, marcha y throttle. `StaticMinimapController` dibuja una proyección fija y continúa usando la raíz física del jugador, no la malla visual.
+## UI and presentation status
 
-La decisión se documenta en `docs/decisions/0002-3d-vehicle-visuals.md`.
+- The active HUD is GDScript/Control-based: `arcade_race_hud.gd`,
+  `arcade_speed_gauge.gd`, and `track_minimap_controller.gd` in `HudLayer`.
+- `DrivingAidsController` emits HUD notifications; `TrackMapData` is
+  presentation-only and is not lap-progress authority.
+- `DirectionalVehicleSprite` remains registered and is used by the static
+  directional validation scene. It is not the player rendering path.
+- `DebugHudController` and `StaticMinimapController` remain registered native
+  classes, but current gameplay scenes do not use them. Their removal or
+  migration requires the separate reference audit in the next refactor phase.
+
+## Documentation authority
+
+Use these documents in this order:
+
+1. `PROJECT_STATE.md` — current validated state and runtime invariants.
+2. This document and `docs/architecture/` — current structural boundaries.
+3. `docs/game-design/` — desired product direction.
+4. `docs/decisions/` and files labelled historical — rationale and past cuts,
+   not runtime authority.
+
+Historical plans that mention `ArcadeCarController` as the active physics
+engine describe earlier migration work. They must not be used to choose current
+scene ownership or implementation targets.

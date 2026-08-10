@@ -1,5 +1,10 @@
 # Arquitectura de Telemetría
 
+Estado: **infraestructura pendiente de ampliación**. El HUD arcade actual es
+GDScript y muestra velocidad, marcha, ayudas y minimapa; no se debe interpretar
+esta lista como una promesa de que todas las métricas ya estén capturadas o
+expuestas en runtime.
+
 La telemetría es crucial para que los agentes puedan diagnosticar y testear el vehículo objetivamente.
 
 ## Métricas Clave

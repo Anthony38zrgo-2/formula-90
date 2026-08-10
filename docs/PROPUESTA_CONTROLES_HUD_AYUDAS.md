@@ -1,5 +1,9 @@
 # Propuesta: Remapeo de Controles, Control de Ayudas y HUD
 
+> **Propuesta histórica.** El HUD arcade actual está en `HudLayer` y usa
+> GDScript; esta propuesta no es una especificación de implementación vigente.
+> Consultar `PROJECT_STATE.md` para el contrato actual de ayudas y minimapa.
+
 ## 1. Resumen Ejecutivo
 El objetivo es adaptar el esquema de controles del vehículo a un layout puramente arcade/teclado, introducir un sistema dinámico de **Ayudas a la Conducción** alternables en tiempo real mediante las teclas numéricas (`1` a `5`), y reflejar claramente el estado de estas ayudas y la telemetría en el **HUD (UI)**.
 

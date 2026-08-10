@@ -1,5 +1,9 @@
 # Auditoría de integración de la Fase 2
 
+> **Registro histórico (corte 2026-08-05).** Describe el runtime anterior a la
+> migración GEVP actual. No es autoridad para escenas, física ni consumidores
+> activos; consultar `PROJECT_STATE.md` y `docs/architecture.md`.
+
 Fecha de corte: 2026-08-05. Checkpoint: `c5e0697`. Rama de evaluación: `refactor/vitavehicle-racing-camera-directional-sprite`.
 
 ## Línea base verificada

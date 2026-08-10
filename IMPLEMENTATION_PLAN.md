@@ -1,5 +1,9 @@
 # Diagnostic & Implementation Plan - GEVP & C++ Integration Fixes
 
+> **Historical migration plan.** This records the transition away from the
+> `ArcadeCarController` runtime. It is not the current architecture contract;
+> use `PROJECT_STATE.md` and `docs/architecture.md` for current ownership.
+
 ## Executive Summary & Commit History Review
 
 Following an audit of the repository history (`git log`) and current codebase state, we identified the progression of vehicle simulation in `formula-90s`:

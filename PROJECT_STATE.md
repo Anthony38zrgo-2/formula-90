@@ -1,22 +1,64 @@
-# Estado Actual del Proyecto (F1 2030)
+# Formula-90s current project state
 
-*Última actualización: Agosto 2026*
+Last reviewed: 2026-08-10
+Branch baseline: `codex/ref-001-phase-1` from `bb56af7`
 
-Este documento rastrea el estado del proyecto a nivel macro. No contiene reglas ni tutoriales, solo el estatus de los subsistemas y deuda técnica.
+This is the compact current-state reference for the tracked repository. Runtime
+scenes and resources outrank this document if they disagree.
 
-## 🟢 Sistemas Funcionales
-- **Arquitectura GDExtension:** El núcleo en C++20 compila correctamente usando la API de Godot 4.7.
-- **Físicas de Vehículo (GEVP):** El coche de jugador inicializado y funcional.
-- **Motor Powertrain:** Adaptado recientemente al F1 2026 para comportarse como un **V10 sin ERS**.
-  - El peso ha sido ajustado a la normativa 2026 (708kg teórico sin batería).
-  - El motor sube a 18,500 RPM.
-- **Entorno de Pruebas (`test_field.tscn`):** Implementada pista CSG con geometría corregida para bordillos (Curbs) y muros perimetrales de contención en `X=8`.
+## Active runtime authority
 
-## 🟡 Sistemas Parciales o en Desarrollo
-- **Pipeline de Audio (V10):** Existen herramientas en Python pero la integración final DSP C++ necesita balanceo.
-- **HUD / Telemetría:** Se debe expandir la exposición de variables (ver `telemetry.md`).
+- **Vehicle simulation:** GEVP GDScript (`vehicle.gd`, `wheel.gd`, and
+  `vehicle_controllergd.gd`) owns vehicle motion, wheels, contacts,
+  suspension, transmission, and assists.
+- **Native presentation:** C++20 GDExtension provides bootstrap, camera,
+  vehicle presentation, audio, reset, and menu integration. It reads vehicle
+  state through `VehicleAdapter`; it must not become a second physics engine.
+- **World/UI composition:** `WorldHudCompositor` renders the 3D world at
+  640x360 and moves gameplay controls to the unfiltered root `HudLayer`.
 
-## 🔴 Deuda Técnica y Problemas Abiertos
-- **Hardcoding de Vehículos:** Las curvas de motor y aerodinámica están harcodeadas dentro de los `.tscn` individuales (ej. `f1_2026_car.tscn`). 
-- **Acción requerida (Próximo Milestone):** Mover estas configuraciones hacia una arquitectura orientada a datos (Data-Driven) mediante recursos `.tres` almacenados en `data/engines/`, `data/aero/`, etc.
-- **Corrupción de `node_paths`:** Constantes problemas con agentes IA rompiendo referencias de nodos de Godot 4 al sobreescribir escenas. Mantener vigilancia extrema en modificaciones a `.tscn`.
+## Current gameplay assets
+
+- Current development circuit: La Chutana.
+- Current handling vehicle: Jordan 1995, using GEVP physical hierarchy.
+- The canonical La Chutana runtime GLB and validated Texture Forge bank are
+  committed. Jordan visual GLBs are intentionally materialized locally from
+  the committed runtime bundle by `scripts/run_jordan_handling.ps1`.
+
+## HUD status
+
+- The normal HUD is GDScript-based: speed, gear, transient aid messages, and
+  a presentation-only La Chutana minimap.
+- The minimap marker is driven by the active vehicle transform; it is not lap
+  progress, race position, or session authority.
+- `DebugHudController` and `StaticMinimapController` remain registered C++
+  classes but are not current gameplay HUD dependencies. Their lifecycle is
+  pending a separate reference audit.
+
+## Validation baseline and known gaps
+
+- The native extension builds in the isolated REF-001 baseline.
+- `smoke_test_arcade_hud_scene.gd` passes after the standard Godot editor
+  import/class-cache pass.
+- The official test route currently has two pre-existing reproducibility gaps:
+  it does not materialize the ignored Jordan runtime GLBs before world smoke
+  tests, and `native/tests/unit_tests.cpp` includes a missing
+  `formula90s/vehicle/physics_math.hpp` header.
+
+## Refactor guardrails
+
+1. Do not retune vehicle physics during REF-001.
+2. Preserve GEVP as physical authority.
+3. Do not delete registered classes, generated outputs, or assets until their
+   consumers have been traced and a focused validation has passed.
+4. Update this file only with verified runtime evidence in the same commit
+   family as the change.
+
+## Documentation hierarchy
+
+1. Root and subsystem `AGENTS.md`: operational rules.
+2. This file: current verified state.
+3. `docs/architecture.md`: structural ownership and composition.
+4. `docs/game-design/`: desired product direction.
+5. `docs/decisions/` and files marked historical: rationale, not current
+   implementation authority.
