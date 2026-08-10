@@ -20,6 +20,10 @@ scenes and resources outrank this document if they disagree.
 - **Engine audio calculation:** `EngineAudioMixer` owns PCM layer cursors,
   crossfade, gain, shift samples, and DSP. `EngineAudioController` loads Godot
   resources, reads vehicle state, and sends mixed samples to `AudioStreamPlayer3D`.
+- **Jordan visual presentation:** The canonical Jordan 1995 scene consumes a
+  `VehicleVisual3DConfig`. GEVP remains the owner of wheel compression,
+  steering, and spin; the native presentation controller only owns the chassis
+  pose and references the wheel visual-orientation nodes without duplicating it.
 - **World/UI composition:** `WorldHudCompositor` renders the 3D world at
   640x360 and moves gameplay controls to the unfiltered root `HudLayer`.
 

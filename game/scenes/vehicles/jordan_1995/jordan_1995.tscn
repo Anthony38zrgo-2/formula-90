@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle.gd" id="1_vehicle"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/wheel.gd" id="2_wheel"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_front.glb" id="4_front"]
 [ext_resource type="PackedScene" path="res://assets/generated/jordan_1995/jordan_191_1995_wheel_rear.glb" id="5_rear"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/vehicle_visual_contract_guard.gd" id="6_guard"]
+[ext_resource type="VehicleVisual3DConfig" path="res://resources/vehicles/jordan_1995_visual_3d.tres" id="7_visual"]
 
 [sub_resource type="Curve" id="Curve_reference_powertrain"]
 _data = [Vector2(0, 0.2), 0.0, 1.2, 0, 0, Vector2(0.85, 1.0), 0.0, 0.0, 0, 0, Vector2(1.0, 0.1), -10.0, 0.0, 0, 0]
@@ -162,7 +163,10 @@ coefficient_of_drag = 0.95
 air_density = 1.225
 frontal_area = 1.50
 
-[node name="ChassisVisual" parent="." instance=ExtResource("3_chassis")]
+[node name="VehicleVisual3D" type="VehicleVisual3DController" parent="."]
+config = ExtResource("7_visual")
+
+[node name="ChassisVisual" parent="VehicleVisual3D" instance=ExtResource("3_chassis")]
 
 [node name="CollisionTub" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.02, 0.18)

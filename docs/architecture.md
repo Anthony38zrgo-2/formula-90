@@ -19,6 +19,10 @@ through `VehicleStateReader`; it must not implement a second vehicle simulation.
 `EngineAudioController` likewise delegates PCM mixing and DSP state to
 `EngineAudioMixer`; it retains resource loading, vehicle reads, Godot audio-node
 lifetime, and signals.
+The Jordan 1995 scene consumes `VehicleVisual3DConfig` through
+`VehicleVisual3DController`. Its physical GEVP wheel pivots remain authoritative
+for wheel compression, steering, and spin; the config's wheel paths target only
+their visual orientation children.
 
 ## Gameplay composition
 

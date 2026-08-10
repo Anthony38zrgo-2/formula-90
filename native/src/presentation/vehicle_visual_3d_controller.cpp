@@ -70,7 +70,7 @@ void VehicleVisual3DController::resolve_nodes() {
 	}
 	model = resolve_optional_node(config->get_model_path());
 	if (model == nullptr) {
-		UtilityFunctions::push_error("[formula90s] V10 visual model node was not found at ", String(config->get_model_path()));
+		UtilityFunctions::push_error("[formula90s] Vehicle visual model node was not found at ", String(config->get_model_path()));
 		return;
 	}
 	wheels[FRONT_LEFT] = resolve_optional_node(config->get_front_left_wheel_path());
@@ -87,7 +87,7 @@ void VehicleVisual3DController::resolve_nodes() {
 	}
 	apply_model_configuration();
 	model_ready = true;
-	UtilityFunctions::print("[formula90s] V10 3D visual ready; optional wheel nodes: ", get_resolved_wheel_count());
+	UtilityFunctions::print("[formula90s] Vehicle 3D visual ready; optional wheel nodes: ", get_resolved_wheel_count());
 }
 
 void VehicleVisual3DController::apply_model_configuration() {
