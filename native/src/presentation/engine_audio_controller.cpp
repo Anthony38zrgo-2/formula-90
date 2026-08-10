@@ -7,7 +7,8 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <algorithm>
-#include <cmath>
+#include <array>
+#include <vector>
 
 using namespace godot;
 using namespace formula90s::audio;
@@ -24,7 +25,7 @@ void EngineAudioController::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("gear_shift", PropertyInfo(Variant::INT, "gear")));
 }
 
-bool EngineAudioController::load_sample(const String &path, SampleLayer &target) {
+bool EngineAudioController::load_sample(const String &path, std::vector<float> &target) {
 	Ref<AudioStreamWAV> wav = ResourceLoader::get_singleton()->load(path);
 	if (wav.is_null() || wav->get_format() != AudioStreamWAV::FORMAT_16_BITS || wav->is_stereo()) {
 		UtilityFunctions::push_error("V10 audio must be mono PCM16: ", path);
@@ -35,14 +36,14 @@ bool EngineAudioController::load_sample(const String &path, SampleLayer &target)
 		UtilityFunctions::push_error("V10 audio must be 44.1 or 48 kHz: ", path);
 		return false;
 	}
-	sample_rate = rate;
+	mixer.set_sample_rate(rate);
 	const PackedByteArray data = wav->get_data();
-	target.samples.resize(static_cast<std::size_t>(data.size() / 2));
+	target.resize(static_cast<std::size_t>(data.size() / 2));
 	for (int64_t i = 0; i + 1 < data.size(); i += 2) {
 		const uint16_t bits = static_cast<uint16_t>(data[i]) | (static_cast<uint16_t>(data[i + 1]) << 8U);
-		target.samples[static_cast<std::size_t>(i / 2)] = static_cast<float>(static_cast<int16_t>(bits)) / 32768.0F;
+		target[static_cast<std::size_t>(i / 2)] = static_cast<float>(static_cast<int16_t>(bits)) / 32768.0F;
 	}
-	return !target.samples.empty();
+	return !target.empty();
 }
 
 bool EngineAudioController::load_all_samples() {
@@ -53,10 +54,17 @@ bool EngineAudioController::load_all_samples() {
 	const String root = config->get_bank_path().trim_suffix("/") + "/";
 	constexpr std::array<const char *, 5> names{"engine_idle.wav", "engine_low.wav", "engine_mid.wav", "engine_high.wav", "engine_redline.wav"};
 	bool valid = true;
-	for (std::size_t i = 0; i < engine_layers.size(); ++i)
-		valid = load_sample(root + String(names[i]), engine_layers[i]) && valid;
-	valid = load_sample(root + String("gear_up.wav"), gear_up) && valid;
-	valid = load_sample(root + String("gear_down.wav"), gear_down) && valid;
+	for (std::size_t i = 0; i < names.size(); ++i) {
+		std::vector<float> samples;
+		valid = load_sample(root + String(names[i]), samples) && valid;
+		mixer.set_engine_layer(i, std::move(samples));
+	}
+	std::vector<float> up_samples;
+	valid = load_sample(root + String("gear_up.wav"), up_samples) && valid;
+	mixer.set_gear_up(std::move(up_samples));
+	std::vector<float> down_samples;
+	valid = load_sample(root + String("gear_down.wav"), down_samples) && valid;
+	mixer.set_gear_down(std::move(down_samples));
 	return valid;
 }
 
@@ -64,7 +72,7 @@ void EngineAudioController::create_audio_nodes() {
 	if (OS::get_singleton()->has_feature("headless") || AudioServer::get_singleton()->get_driver_name() == "Dummy") return;
 	generator.instantiate();
 	generator->set_mix_rate_mode(AudioStreamGenerator::MIX_RATE_CUSTOM);
-	generator->set_mix_rate(sample_rate);
+	generator->set_mix_rate(mixer.get_sample_rate());
 	generator->set_buffer_length(0.12F);
 	player = memnew(AudioStreamPlayer3D);
 	add_child(player);
@@ -72,7 +80,6 @@ void EngineAudioController::create_audio_nodes() {
 	player->set_unit_size(8.0F);
 	player->play();
 	playback = player->get_stream_playback();
-	dsp.set_sample_rate(sample_rate);
 	fill_audio_buffer();
 }
 
@@ -88,24 +95,6 @@ void EngineAudioController::_ready() {
 	previous_gear = car_state.get_current_gear();
 }
 
-float EngineAudioController::read_looped(SampleLayer &layer, double ratio) {
-	if (layer.samples.empty()) return 0.0F;
-	const std::size_t a = static_cast<std::size_t>(layer.cursor) % layer.samples.size();
-	const std::size_t b = (a + 1) % layer.samples.size();
-	const float fraction = static_cast<float>(layer.cursor - std::floor(layer.cursor));
-	const float sample = layer.samples[a] + (layer.samples[b] - layer.samples[a]) * fraction;
-	layer.cursor += ratio;
-	if (layer.cursor >= static_cast<double>(layer.samples.size()))
-		layer.cursor = std::fmod(layer.cursor, static_cast<double>(layer.samples.size()));
-	return sample;
-}
-
-float EngineAudioController::read_shift() {
-	SampleLayer *layer = active_shift > 0 ? &gear_up : active_shift < 0 ? &gear_down : nullptr;
-	if (!layer || shift_cursor >= layer->samples.size()) { active_shift = 0; return 0.0F; }
-	return layer->samples[shift_cursor++] * static_cast<float>(config->get_shift_gain());
-}
-
 void EngineAudioController::fill_audio_buffer() {
 	if (playback.is_null() || !car_state.is_valid() || config.is_null()) return;
 	EngineDspState state;
@@ -117,22 +106,14 @@ void EngineAudioController::fill_audio_buffer() {
 	state.gear = car_state.get_current_gear();
 	state.reverse = state.gear < 0;
 	state.rev_cut = state.rpm >= config->get_maximum_rpm() * 0.995;
-	const auto weights = EngineLayerMixer::weights(state.normalized_rpm);
-	const float ratio = EnginePitchProcessor::ratio(state,
-		static_cast<float>(config->get_pitch_minimum()), static_cast<float>(config->get_pitch_maximum()));
-	const float target_gain = static_cast<float>(config->get_coast_gain() + state.throttle * config->get_throttle_gain());
-	const double smoothing_seconds = target_gain > smoothed_gain ? config->get_attack_seconds() : config->get_release_seconds();
-	const float smoothing = static_cast<float>(1.0 - std::exp(-1.0 / (static_cast<double>(sample_rate) * std::max(smoothing_seconds, 0.001))));
+	const EngineAudioMixConfig mix_config{
+		config->get_pitch_minimum(), config->get_pitch_maximum(), config->get_coast_gain(),
+		config->get_throttle_gain(), config->get_attack_seconds(), config->get_release_seconds(),
+		config->get_saturation(), config->get_limiter_threshold(), config->get_shift_gain()
+	};
 	int frames = playback->get_frames_available();
 	for (int i = 0; i < frames; ++i) {
-		smoothed_gain += (target_gain - smoothed_gain) * smoothing;
-		float mixed = 0.0F;
-		for (std::size_t layer = 0; layer < engine_layers.size(); ++layer)
-			mixed += read_looped(engine_layers[layer], ratio) * weights[layer];
-		if (state.rev_cut && ((i / 96) & 1) != 0) mixed *= 0.3F;
-		mixed = mixed * smoothed_gain + read_shift();
-		const float output = dsp.process(mixed, state,
-			static_cast<float>(config->get_saturation()), static_cast<float>(config->get_limiter_threshold()));
+		const float output = mixer.mix_next(state, mix_config, i);
 		playback->push_frame(Vector2(output, output));
 	}
 }
@@ -160,7 +141,6 @@ void EngineAudioController::_exit_tree() {
 void EngineAudioController::set_engine_state(double, double) { fill_audio_buffer(); }
 
 void EngineAudioController::notify_gear_shift(int gear) {
-	active_shift = gear > previous_gear ? 1 : -1;
-	shift_cursor = 0;
+	mixer.start_shift(gear > previous_gear);
 	emit_signal("gear_shift", gear);
 }

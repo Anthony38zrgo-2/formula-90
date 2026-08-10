@@ -1,13 +1,12 @@
 #pragma once
 
 #include "formula90s/audio/engine_audio_config.hpp"
-#include "formula90s/audio/engine_dsp.hpp"
+#include "formula90s/audio/engine_audio_mixer.hpp"
 #include "formula90s/vehicle/vehicle_state_reader.hpp"
 #include <godot_cpp/classes/audio_stream_generator.hpp>
 #include <godot_cpp/classes/audio_stream_generator_playback.hpp>
 #include <godot_cpp/classes/audio_stream_player3d.hpp>
 #include <godot_cpp/classes/node.hpp>
-#include <array>
 #include <vector>
 
 namespace godot {
@@ -15,25 +14,16 @@ namespace godot {
 class EngineAudioController : public Node {
 	GDCLASS(EngineAudioController, Node)
 
-	struct SampleLayer { std::vector<float> samples; double cursor = 0.0; };
 	Ref<EngineAudioConfig> config;
 	Ref<AudioStreamGenerator> generator;
 	Ref<AudioStreamGeneratorPlayback> playback;
 	AudioStreamPlayer3D *player = nullptr;
 	VehicleStateReader car_state;
-	std::array<SampleLayer, 5> engine_layers;
-	SampleLayer gear_up, gear_down;
-	formula90s::audio::EngineDspChain dsp;
+	formula90s::audio::EngineAudioMixer mixer;
 	int previous_gear = 1;
-	int active_shift = 0;
-	std::size_t shift_cursor = 0;
-	float smoothed_gain = 0.0F;
-	float sample_rate = 44100.0F;
 	NodePath car_path = "..";
 
-	bool load_sample(const String &path, SampleLayer &target);
-	float read_looped(SampleLayer &layer, double ratio);
-	float read_shift();
+	bool load_sample(const String &path, std::vector<float> &target);
 	void fill_audio_buffer();
 	bool load_all_samples();
 	void create_audio_nodes();

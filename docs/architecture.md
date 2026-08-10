@@ -16,6 +16,9 @@ transmission, and driving assists. Native presentation code reads vehicle state
 through `VehicleStateReader`; it must not implement a second vehicle simulation.
 `ArcadeChaseCamera` delegates its node-free follow calculation to
 `ChaseCameraSolver`, then applies the returned pose and FOV to `Camera3D`.
+`EngineAudioController` likewise delegates PCM mixing and DSP state to
+`EngineAudioMixer`; it retains resource loading, vehicle reads, Godot audio-node
+lifetime, and signals.
 
 ## Gameplay composition
 

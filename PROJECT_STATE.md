@@ -17,6 +17,9 @@ scenes and resources outrank this document if they disagree.
 - **Chase camera calculation:** `ChaseCameraSolver` owns the stateful follow,
   look-ahead, inertia, turn-offset, and FOV calculation. `ArcadeChaseCamera`
   only reads vehicle state and applies the resulting pose to Godot nodes.
+- **Engine audio calculation:** `EngineAudioMixer` owns PCM layer cursors,
+  crossfade, gain, shift samples, and DSP. `EngineAudioController` loads Godot
+  resources, reads vehicle state, and sends mixed samples to `AudioStreamPlayer3D`.
 - **World/UI composition:** `WorldHudCompositor` renders the 3D world at
   640x360 and moves gameplay controls to the unfiltered root `HudLayer`.
 
