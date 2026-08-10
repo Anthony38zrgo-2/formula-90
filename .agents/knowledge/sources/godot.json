@@ -1,0 +1,68 @@
+{
+  "source_id": "godot-official-curated",
+  "channel": "godot",
+  "authority": 1000,
+  "version_policy": "match-project",
+  "source_type": "official-manual",
+  "source_ref": "Godot official documentation",
+  "entries": [
+    {
+      "id": "godot.scene.node-paths",
+      "lookup_key": "scene.node_paths",
+      "topic": "Scene references and exported node paths",
+      "symbols": [
+        "NodePath",
+        "node_paths",
+        "@export"
+      ],
+      "keywords": [
+        "tscn",
+        "scene",
+        "reference",
+        "export",
+        "node"
+      ],
+      "content": "When editing serialized Godot scenes, preserve reference metadata and validate scene structure after changes. Prefer surgical edits over broad text replacement.",
+      "source_ref": "Godot scene format / project validated practice",
+      "source_version": "project-current"
+    },
+    {
+      "id": "godot.physics.raycast3d",
+      "lookup_key": "physics.raycast3d",
+      "topic": "RayCast3D direction and collision probing",
+      "symbols": [
+        "RayCast3D",
+        "target_position"
+      ],
+      "keywords": [
+        "raycast",
+        "physics",
+        "collision",
+        "wheel",
+        "ground"
+      ],
+      "content": "RayCast3D only detects geometry intersecting its configured cast segment. For wheel/suspension diagnostics verify ray origin, target direction and obstacle height before retuning suspension.",
+      "source_ref": "Godot RayCast3D documentation + project validated incident",
+      "source_version": "project-current"
+    },
+    {
+      "id": "godot.rigidbody.force",
+      "lookup_key": "physics.rigidbody.force",
+      "topic": "Rigid body forces",
+      "symbols": [
+        "RigidBody3D",
+        "apply_force",
+        "apply_central_force"
+      ],
+      "keywords": [
+        "rigidbody",
+        "force",
+        "physics",
+        "impulse"
+      ],
+      "content": "Distinguish continuous force application from one-shot impulses and verify the API semantics for the project Godot version before changing vehicle dynamics code.",
+      "source_ref": "Godot RigidBody3D documentation",
+      "source_version": "project-current"
+    }
+  ]
+}

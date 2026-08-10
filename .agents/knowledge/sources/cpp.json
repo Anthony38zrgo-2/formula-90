@@ -1,0 +1,48 @@
+{
+  "source_id": "cpp-curated",
+  "channel": "cpp",
+  "authority": 900,
+  "version_policy": "project-standard",
+  "source_type": "human-curated-language-manual",
+  "source_ref": "Project C++20 guidance derived from authoritative language/compiler documentation",
+  "entries": [
+    {
+      "id": "cpp.ownership.raii",
+      "lookup_key": "ownership.raii",
+      "topic": "Ownership and RAII",
+      "symbols": [
+        "RAII",
+        "std::unique_ptr",
+        "std::shared_ptr"
+      ],
+      "keywords": [
+        "ownership",
+        "lifetime",
+        "resource",
+        "memory"
+      ],
+      "content": "Prefer explicit ownership and RAII. Use shared ownership only when ownership is genuinely shared; avoid introducing heap ownership into hot paths without evidence.",
+      "source_ref": "C++20 project guidance",
+      "source_version": "C++20"
+    },
+    {
+      "id": "cpp.hotloop.allocations",
+      "lookup_key": "performance.hot_loop_allocations",
+      "topic": "Hot-loop allocation discipline",
+      "symbols": [
+        "std::vector",
+        "reserve"
+      ],
+      "keywords": [
+        "performance",
+        "allocation",
+        "hotloop",
+        "audio",
+        "physics"
+      ],
+      "content": "Avoid avoidable allocations, blocking I/O and verbose logging in per-frame, physics and audio-processing loops. Reuse buffers and precompute stable data.",
+      "source_ref": "Formula-90 native runtime policy",
+      "source_version": "C++20"
+    }
+  ]
+}

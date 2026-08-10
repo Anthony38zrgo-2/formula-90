@@ -1,0 +1,29 @@
+{
+  "source_id": "trimesh-official-curated",
+  "channel": "python",
+  "authority": 900,
+  "version_policy": "installed-version",
+  "source_type": "official-library-manual",
+  "source_ref": "trimesh official documentation",
+  "entries": [
+    {
+      "id": "python.trimesh.scene-geometry",
+      "lookup_key": "trimesh.scene_geometry",
+      "topic": "Scene versus mesh geometry",
+      "symbols": [
+        "trimesh.Scene",
+        "trimesh.Trimesh"
+      ],
+      "keywords": [
+        "trimesh",
+        "mesh",
+        "scene",
+        "glb",
+        "geometry"
+      ],
+      "content": "When importing GLB/GLTF with trimesh, distinguish a multi-object Scene from a single Trimesh before applying mesh-only operations or exporting split assets.",
+      "source_ref": "trimesh Scene/Trimesh documentation",
+      "source_version": "installed-version"
+    }
+  ]
+}

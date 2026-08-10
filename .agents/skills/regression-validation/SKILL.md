@@ -1,38 +1,17 @@
 ---
 name: regression-validation
-description: Protocolo para comparar el comportamiento propuesto (Candidate) contra el estado anterior (Baseline).
+description: Compare a candidate change against a baseline and reject fixes that silently regress a secondary scenario.
 ---
 
-# Skill: Regression Validation
+# Regression Validation
 
-## Purpose
-Every significant handling improvement should be compared against a baseline. A fix for one condition must not silently destroy another.
+For significant behavior changes:
+1. Choose the primary scenario.
+2. Choose at least one likely secondary regression scenario.
+3. Capture baseline evidence.
+4. Apply the candidate.
+5. Capture candidate evidence.
+6. Compare deltas.
+7. Return PASS, FAIL, or INCONCLUSIVE with evidence.
 
-## Concept
-1. **Baseline:** The measured state of the system *before* the change.
-2. **Candidate:** The measured state of the system *after* the change.
-3. **Delta:** The difference between them.
-4. **Result:** PASS / FAIL / INCONCLUSIVE.
-
-## Workflow
-1. Identify the primary scenario (e.g. `curb_behavior`).
-2. Identify a secondary scenario that could be affected (e.g. `suspension_behavior` under braking).
-3. Record Baseline telemetry for both.
-4. Apply the Candidate change.
-5. Record Candidate telemetry for both.
-6. If the primary scenario improves but the secondary regresses beyond the accepted threshold, the result is FAIL.
-
-## Output Format
-```text
-TEST: [Scenario Name]
-
-Baseline:
-- Metric A: X
-- Metric B: Y
-
-Candidate:
-- Metric A: Z (Improved)
-- Metric B: W (Regressed)
-
-Result: [PASS/FAIL/INCONCLUSIVE]
-```
+A primary improvement with an unacceptable secondary regression is FAIL.

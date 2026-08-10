@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "signature": "godot.tscn.node_paths_removed",
+      "domain": "godot",
+      "symptom": "Scene loads with null references or loses exported node assignments after a text edit.",
+      "cause": "A broad .tscn replacement deleted or overwrote node_paths/reference metadata.",
+      "solution": "Revert the structural damage, perform a surgical edit, then run structural/scene-load validation.",
+      "prevention": "Use scene-safety; never rewrite unrelated node blocks for a small property change.",
+      "search_terms": [
+        "node_paths",
+        "tscn",
+        "null reference",
+        "scene corruption",
+        "exported node"
+      ],
+      "confidence": 1000,
+      "occurrences": 1,
+      "status": "active",
+      "source_ref": ".agents/skills/scene-safety/SKILL.md"
+    },
+    {
+      "signature": "godot.gevp.raycast_curb_blindness",
+      "domain": "godot",
+      "symptom": "Extreme G spike or chassis impact at curbs while suspension telemetry does not explain the hit.",
+      "cause": "A downward wheel RayCast starts below the obstacle top, so suspension probing misses the curb while the chassis collider hits it.",
+      "solution": "Verify curb geometry, chassis ground clearance and wheel RayCast origin/target before changing spring or damping values.",
+      "prevention": "Treat geometry and probe reach as first-class diagnostic inputs for curb-only impacts.",
+      "search_terms": [
+        "curb",
+        "raycast",
+        "bottom-out",
+        "G spike",
+        "GEVP",
+        "wheel",
+        "chassis"
+      ],
+      "confidence": 950,
+      "occurrences": 1,
+      "status": "active",
+      "source_ref": ".agents/skills/scene-safety/SKILL.md"
+    },
+    {
+      "signature": "agent.repeated_blind_fix_loop",
+      "domain": "agent-runtime",
+      "symptom": "The same bug receives multiple speculative patches without new evidence.",
+      "cause": "Attempt budget and diagnostic mode were not enforced.",
+      "solution": "Stop implementation, query common problems, inspect evidence/history, define a falsifiable hypothesis and run one diagnostic experiment.",
+      "prevention": "Second equivalent failure triggers problem lookup and diagnostic mode before another implementation attempt.",
+      "search_terms": [
+        "retry",
+        "attempt",
+        "loop",
+        "guess",
+        "brute force",
+        "diagnostic"
+      ],
+      "confidence": 1000,
+      "occurrences": 1,
+      "status": "active",
+      "source_ref": ".agents/skills/problem-solving-guardrails/SKILL.md"
+    },
+    {
+      "signature": "agent.routing.missing_skill",
+      "domain": "agent-runtime",
+      "symptom": "Agent bootstrap routes to a skill path that does not exist.",
+      "cause": "Routing instructions and skill files drifted independently.",
+      "solution": "Use the central skill registry and run agentdb validate after registry/skill changes.",
+      "prevention": "Registry is the discoverable source for skill paths; validation must pass before an agent-system increment is accepted.",
+      "search_terms": [
+        "missing skill",
+        "routing",
+        "manifest",
+        "registry",
+        "physics-diagnostics"
+      ],
+      "confidence": 1000,
+      "occurrences": 1,
+      "status": "active",
+      "source_ref": "Observed in current Formula-90 bootstrap before this POC"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "retrospective",
+  "role": "Retrospective / Root-Cause Analyst",
+  "model_tier": "strong",
+  "purpose": "Convert repeated failures and expensive trajectories into validated lessons, skills, guardrails or tooling changes.",
+  "skills": [
+    "problem-lookup",
+    "context-garbage-collection",
+    "regression-validation"
+  ],
+  "knowledge_channels": [
+    "godot",
+    "blender",
+    "cpp",
+    "python"
+  ],
+  "rules": [
+    "Do not promote a lesson without evidence.",
+    "Prefer converting stable repeated lessons into deterministic tooling."
+  ]
+}

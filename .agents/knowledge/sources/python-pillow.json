@@ -1,0 +1,30 @@
+{
+  "source_id": "pillow-official-curated",
+  "channel": "python",
+  "authority": 900,
+  "version_policy": "installed-version",
+  "source_type": "official-library-manual",
+  "source_ref": "Pillow official documentation",
+  "entries": [
+    {
+      "id": "python.pillow.image-mode",
+      "lookup_key": "pillow.image_mode",
+      "topic": "Image mode and export",
+      "symbols": [
+        "PIL.Image",
+        "Image.mode"
+      ],
+      "keywords": [
+        "pillow",
+        "image",
+        "texture",
+        "rgb",
+        "rgba",
+        "export"
+      ],
+      "content": "Texture tooling should verify image mode and alpha requirements before conversion/export instead of assuming RGB/RGBA compatibility.",
+      "source_ref": "Pillow Image documentation",
+      "source_version": "installed-version"
+    }
+  ]
+}

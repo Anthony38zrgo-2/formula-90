@@ -1,0 +1,29 @@
+{
+  "source_id": "numpy-official-curated",
+  "channel": "python",
+  "authority": 950,
+  "version_policy": "installed-version",
+  "source_type": "official-library-manual",
+  "source_ref": "NumPy official documentation",
+  "entries": [
+    {
+      "id": "python.numpy.array-shape",
+      "lookup_key": "numpy.array_shape",
+      "topic": "Array shape and numeric diagnostics",
+      "symbols": [
+        "numpy.ndarray",
+        "shape"
+      ],
+      "keywords": [
+        "numpy",
+        "array",
+        "shape",
+        "numeric",
+        "telemetry"
+      ],
+      "content": "When diagnostic tooling uses NumPy, validate array shape/dtype assumptions explicitly before vectorized calculations; do not infer telemetry layout from example data.",
+      "source_ref": "NumPy ndarray documentation",
+      "source_version": "installed-version"
+    }
+  ]
+}

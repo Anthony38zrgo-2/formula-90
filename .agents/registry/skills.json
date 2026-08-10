@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "skills": [
+    {
+      "id": "knowledge-query",
+      "manifest_path": ".agents/skills/knowledge-query/SKILL.md",
+      "triggers": [
+        "uncertain API",
+        "manual lookup",
+        "framework detail"
+      ],
+      "knowledge_channels": [
+        "godot",
+        "blender",
+        "cpp",
+        "python"
+      ],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "problem-lookup",
+      "manifest_path": ".agents/skills/problem-lookup/SKILL.md",
+      "triggers": [
+        "error",
+        "repeated failure",
+        "known issue"
+      ],
+      "knowledge_channels": [],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "physics-diagnostics",
+      "manifest_path": ".agents/skills/physics-diagnostics/SKILL.md",
+      "triggers": [
+        "vehicle handling",
+        "GEVP",
+        "suspension",
+        "grip",
+        "curb impact"
+      ],
+      "knowledge_channels": [
+        "godot"
+      ],
+      "risk": "medium",
+      "enabled": true
+    },
+    {
+      "id": "context-garbage-collection",
+      "manifest_path": ".agents/skills/context-garbage-collection/SKILL.md",
+      "triggers": [
+        "handoff",
+        "attempt budget exhausted",
+        "context growth"
+      ],
+      "knowledge_channels": [],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "context-handoff",
+      "manifest_path": ".agents/skills/context-handoff/SKILL.md",
+      "triggers": [
+        "delegation",
+        "planner executor transition"
+      ],
+      "knowledge_channels": [],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "problem-solving-guardrails",
+      "manifest_path": ".agents/skills/problem-solving-guardrails/SKILL.md",
+      "triggers": [
+        "second failed attempt",
+        "workaround stacking",
+        "uncertain root cause"
+      ],
+      "knowledge_channels": [],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "regression-validation",
+      "manifest_path": ".agents/skills/regression-validation/SKILL.md",
+      "triggers": [
+        "accepted fix",
+        "handling change",
+        "candidate validation"
+      ],
+      "knowledge_channels": [],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "scene-safety",
+      "manifest_path": ".agents/skills/scene-safety/SKILL.md",
+      "triggers": [
+        "tscn",
+        "scene edit",
+        "NodePath"
+      ],
+      "knowledge_channels": [
+        "godot"
+      ],
+      "risk": "medium",
+      "enabled": true
+    },
+    {
+      "id": "aerodynamics",
+      "manifest_path": ".agents/skills/aerodynamics/SKILL.md",
+      "triggers": [
+        "downforce",
+        "drag",
+        "aerodynamic balance",
+        "lift-off oversteer"
+      ],
+      "knowledge_channels": [
+        "godot"
+      ],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "powertrain",
+      "manifest_path": ".agents/skills/powertrain/SKILL.md",
+      "triggers": [
+        "engine",
+        "motor",
+        "transmission",
+        "gearbox",
+        "RPM",
+        "torque curve"
+      ],
+      "knowledge_channels": [
+        "godot"
+      ],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "repo-analysis",
+      "manifest_path": ".agents/skills/repo-analysis/SKILL.md",
+      "triggers": [
+        "audit",
+        "root cause",
+        "repository analysis",
+        "diagnostic planning"
+      ],
+      "knowledge_channels": [
+        "godot",
+        "blender",
+        "cpp",
+        "python"
+      ],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "telemetry",
+      "manifest_path": ".agents/skills/telemetry/SKILL.md",
+      "triggers": [
+        "telemetry",
+        "CSV analysis",
+        "HUD",
+        "data logging"
+      ],
+      "knowledge_channels": [
+        "python"
+      ],
+      "risk": "low",
+      "enabled": true
+    },
+    {
+      "id": "track-reconstruction",
+      "manifest_path": ".agents/skills/track-reconstruction/SKILL.md",
+      "triggers": [
+        "Blender track",
+        "circuit",
+        "curbs",
+        "guardrails",
+        "vegetation",
+        "terrain",
+        "texture forge"
+      ],
+      "knowledge_channels": [
+        "blender",
+        "godot"
+      ],
+      "risk": "medium",
+      "enabled": true
+    },
+    {
+      "id": "vehicle-physics",
+      "manifest_path": ".agents/skills/vehicle-physics/SKILL.md",
+      "triggers": [
+        "handling",
+        "suspension",
+        "brakes",
+        "chassis",
+        "steering",
+        "center of gravity",
+        "tires",
+        "weight transfer"
+      ],
+      "knowledge_channels": [
+        "godot"
+      ],
+      "risk": "medium",
+      "enabled": true
+    },
+    {
+      "id": "vehicle-testing",
+      "manifest_path": ".agents/skills/vehicle-testing/SKILL.md",
+      "triggers": [
+        "test field",
+        "scenario validation",
+        "test drive",
+        "regression test"
+      ],
+      "knowledge_channels": [
+        "godot"
+      ],
+      "risk": "low",
+      "enabled": true
+    }
+  ]
+}

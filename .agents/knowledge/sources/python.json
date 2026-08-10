@@ -1,0 +1,42 @@
+{
+  "source_id": "python-official-curated",
+  "channel": "python",
+  "authority": 1000,
+  "version_policy": "match-toolchain",
+  "source_type": "official-manual-plus-library-index",
+  "source_ref": "Python official documentation and official library documentation",
+  "entries": [
+    {
+      "id": "python.pathlib",
+      "lookup_key": "stdlib.pathlib",
+      "topic": "Filesystem paths",
+      "symbols": [
+        "pathlib.Path"
+      ],
+      "keywords": [
+        "path",
+        "filesystem",
+        "tooling",
+        "windows"
+      ],
+      "content": "Use pathlib.Path for project-relative tooling paths where practical; resolve repository roots explicitly instead of relying on process working-directory assumptions.",
+      "source_ref": "Python pathlib documentation",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "python.tooling.boundary",
+      "lookup_key": "project.tooling_boundary",
+      "topic": "Formula-90 Python boundary",
+      "symbols": [],
+      "keywords": [
+        "python",
+        "tooling",
+        "runtime",
+        "offline"
+      ],
+      "content": "Python is intended for support/offline tooling in Formula-90. Do not move game runtime responsibilities into Python without an explicit architecture decision.",
+      "source_ref": "Formula-90 project policy",
+      "source_version": "project-current"
+    }
+  ]
+}
