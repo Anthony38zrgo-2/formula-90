@@ -14,8 +14,8 @@ El proyecto utiliza un modelo de procesamiento paralelo estricto:
 
 `DirectionalVehicleSprite` se conserva para validación/placeholder estático,
 no como render del jugador. El HUD de gameplay vigente es GDScript en
-`HudLayer`; las clases nativas de HUD antiguas siguen registradas hasta su
-auditoría de referencias.
+`HudLayer`; las clases nativas antiguas de HUD/minimapa sin consumidores fueron
+retiradas tras la auditoría REF-001 Fase 4.
 
 ## Reglas de Compilación
 Cualquier cambio a la extensión C++ requiere compilar usando SCons para el entorno y perfil exacto de Godot 4.7.1-stable.

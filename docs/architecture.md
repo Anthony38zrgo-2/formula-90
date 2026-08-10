@@ -55,9 +55,11 @@ separate concern and must not be used as collision authority.
   presentation-only and is not lap-progress authority.
 - `DirectionalVehicleSprite` remains registered and is used by the static
   directional validation scene. It is not the player rendering path.
-- `DebugHudController` and `StaticMinimapController` remain registered native
-  classes, but current gameplay scenes do not use them. Their removal or
-  migration requires the separate reference audit in the next refactor phase.
+- The unreferenced native `DebugHudController`, `StaticMinimapController`,
+  `ResetManager`, and `DirectionalSpriteValidationController` were removed in
+  REF-001 Phase 4 after a complete consumer audit. Reset behavior now requires
+  a future, explicitly owned gameplay implementation rather than an unused
+  native node.
 
 ## Documentation authority
 

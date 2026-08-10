@@ -31,9 +31,10 @@ scenes and resources outrank this document if they disagree.
   a presentation-only La Chutana minimap.
 - The minimap marker is driven by the active vehicle transform; it is not lap
   progress, race position, or session authority.
-- `DebugHudController` and `StaticMinimapController` remain registered C++
-  classes but are not current gameplay HUD dependencies. Their lifecycle is
-  pending a separate reference audit.
+- `DebugHudController`, `StaticMinimapController`, `ResetManager`, and
+  `DirectionalSpriteValidationController` were removed after REF-001 Phase 4
+  confirmed that no scene, script, resource, test, or native consumer used
+  them.
 
 ## Validation baseline and known gaps
 
