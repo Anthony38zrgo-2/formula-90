@@ -10,8 +10,8 @@ LEGACY_MAGENTA_RGB = np.array([255, 0, 255], dtype=np.uint8)
 DEFAULT_BACKGROUND_RGB = CYAN_ELECTRIC_RGB
 DEFAULT_BACKGROUND_HEX = CYAN_ELECTRIC_HEX
 DEFAULT_BACKGROUND_NAME = "electric_cyan"
-POSTPROCESS_ID = "vegetation_source_key_premultiplied_resize"
-POSTPROCESS_VERSION = 3
+POSTPROCESS_ID = "vegetation_precut_rgba_premultiplied_resize"
+POSTPROCESS_VERSION = 4
 
 
 def _as_key_rgb(value) -> np.ndarray:
@@ -303,18 +303,28 @@ def prepare_vegetation_card_rgba(
     return working, metrics
 
 
-def postprocess_recipe(pass_index: int = 1, key_rgb=DEFAULT_BACKGROUND_RGB) -> dict:
-    key_rgb = _as_key_rgb(key_rgb)
-    return {
+def postprocess_recipe(pass_index: int = 1, key_rgb=None) -> dict:
+    recipe = {
         "id": POSTPROCESS_ID,
         "version": POSTPROCESS_VERSION,
         "pass": int(pass_index),
-        "key_name": key_name_for_rgb(key_rgb),
-        "key_rgb": key_rgb.tolist(),
-        "key_hex": "#%02X%02X%02X" % tuple(int(v) for v in key_rgb),
         "legacy_previous_key_rgb": LEGACY_MAGENTA_RGB.tolist(),
-        "key_stage": "source_resolution_before_resize",
         "resize": "premultiplied_lanczos4",
         "transparent_rgb": "foreground_edge_padding_4px",
         "bottom_anchor": "last_visible_alpha_row",
     }
+    if key_rgb is None:
+        recipe.update({
+            "source_contract": "precut_rgba_transparent",
+            "key_stage": "not_applied_to_precut_sources",
+        })
+    else:
+        key_rgb = _as_key_rgb(key_rgb)
+        recipe.update({
+            "source_contract": "legacy_chroma_compatibility",
+            "key_name": key_name_for_rgb(key_rgb),
+            "key_rgb": key_rgb.tolist(),
+            "key_hex": "#%02X%02X%02X" % tuple(int(v) for v in key_rgb),
+            "key_stage": "source_resolution_before_resize",
+        })
+    return recipe

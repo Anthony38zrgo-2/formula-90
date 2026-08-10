@@ -20,6 +20,7 @@ from procedural_catalog import biome_from_config, specs_for_biome, weighted_choi
 from terrain_grid import SegmentSpatialIndex, nearest_track_sample
 
 DENSITIES = ("none", "very_low", "low", "medium", "high")
+TRACKSIDE_PROP_TYPES = ("spectator", "marshal", "photographer", "flag", "sign")
 
 
 @dataclass(frozen=True)
@@ -161,6 +162,41 @@ def place_category(category, density, config, points, track_index, occupancy, se
     return output, attempts, len(clusters)
 
 
+def generate_trackside_props(config: dict, points: np.ndarray) -> list[dict]:
+    """Place lightweight non-collidable 2D trackside cards outside the tire perimeter."""
+    props_config = config.get("trackside_props", {})
+    tire_config = config.get("tire_barriers", {})
+    if not props_config.get("procedural", True):
+        return []
+    lap_length = closed_polyline_length(points)
+    road_half = float(config["road"]["width_m"]) * 0.5
+    barrier_distance = road_half + float(tire_config.get("separation_from_edge_m", 5.0))
+    outside_offset = float(props_config.get("outside_barrier_offset_m", 1.8))
+    max_cards = max(0, int(props_config.get("max_visible_cards", 260)))
+    spacing = props_config.get("spacing_m", {})
+    output: list[dict] = []
+    for type_index, prop_type in enumerate(TRACKSIDE_PROP_TYPES):
+        step = max(12.0, float(spacing.get(prop_type, 80.0)))
+        count = max(1, int(math.ceil(lap_length / step)))
+        for index in range(count):
+            if len(output) >= max_cards:
+                return output
+            fraction = ((index + 0.37 + type_index * 0.11) / count) % 1.0
+            side = -1 if (index + type_index) % 2 else 1
+            distance = barrier_distance + outside_offset
+            pos, _, _ = interpolate_at_fraction(points, fraction)
+            output.append({
+                "prop_type": prop_type,
+                "prop_id": f"{prop_type}_{index:03d}",
+                "position_xz": [round(float(pos[0]), 4), round(float(pos[1]), 4)],
+                "track_fraction": round(float(fraction), 7),
+                "side": side,
+                "distance_from_center_m": round(distance, 4),
+                "collision": False,
+            })
+    return output
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate reproducible clustered procedural environment placement.")
     parser.add_argument("--config", required=True)
@@ -192,6 +228,8 @@ def main() -> int:
         placements.extend(placed)
         stats[category] = {"density": density, "placed": len(placed), "attempts": attempts, "clusters": clusters}
 
+    trackside_props = generate_trackside_props(config, points)
+
     output = repo / config["generated_dir"] / "placements.json"
     write_json(output, {
         "track_id": config["track_id"],
@@ -199,10 +237,12 @@ def main() -> int:
         "seed": ns.seed,
         "stats": stats,
         "placements": placements,
+        "trackside_props": trackside_props,
     })
     print(f"[environment] biome={biome.id} wrote {output}")
     for category, stat in stats.items():
         print(f"[environment] {category}: {stat['placed']} ({stat['density']}) clusters={stat['clusters']} attempts={stat['attempts']}")
+    print(f"[environment] trackside_props: {len(trackside_props)} non-collidable cards")
     return 0
 
 

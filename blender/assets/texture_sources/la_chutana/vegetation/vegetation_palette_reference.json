@@ -1,4 +1,5 @@
 {
+  "source_contract": "precut_rgba_transparent",
   "source_key": {
     "name": "electric_cyan",
     "hex": "#00FFFF",

@@ -3,10 +3,19 @@ from __future__ import annotations
 import math
 
 import bpy
+import numpy as np
 from mathutils import Vector
 
 from procedural_catalog import biome_from_config, specs_for_biome
 from terrain_grid import bank_degrees_at_fraction, effective_far_ground_z
+
+
+def _closed_polyline_length(points) -> float:
+    total = 0.0
+    for index, point in enumerate(points):
+        next_point = points[(index + 1) % len(points)]
+        total += math.hypot(float(next_point[0]) - float(point[0]), float(next_point[1]) - float(point[1]))
+    return total
 
 
 def godot_xz_to_blender(x: float, z: float, height: float = 0.0) -> Vector:
@@ -216,4 +225,132 @@ def create_guardrail_collision(name, pos, tangent, length, ground_z, config):
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.hide_render = True
     obj.display_type = "WIRE"
+    return obj
+
+
+def _append_low_poly_tire(vertices, faces, center: Vector, tangent_b: Vector, outward_b: Vector, major: float, minor: float):
+    major_segments = 8
+    minor_segments = 4
+    start = len(vertices)
+    tangent_b = tangent_b.normalized()
+    outward_b = outward_b.normalized()
+    up = Vector((0.0, 0.0, 1.0))
+    for i in range(major_segments):
+        theta = math.tau * i / major_segments
+        radial = tangent_b * math.cos(theta) + up * math.sin(theta)
+        for j in range(minor_segments):
+            phi = math.tau * j / minor_segments
+            point = center + radial * (major + minor * math.sin(phi)) + outward_b * (minor * math.cos(phi))
+            vertices.append(tuple(point))
+    for i in range(major_segments):
+        ni = (i + 1) % major_segments
+        for j in range(minor_segments):
+            nj = (j + 1) % minor_segments
+            a = start + i * minor_segments + j
+            b = start + ni * minor_segments + j
+            c = start + ni * minor_segments + nj
+            d = start + i * minor_segments + nj
+            faces.append((a, b, c, d))
+
+
+def create_tire_barrier_visual(name, points, side, config, material):
+    tire_cfg = config["tire_barriers"]
+    module_length = max(0.8, float(tire_cfg.get("module_length_m", 2.4)))
+    radius = max(0.12, float(tire_cfg.get("tire_major_radius_m", 0.34)))
+    minor = max(0.04, float(tire_cfg.get("tire_minor_radius_m", 0.11)))
+    rows = max(1, int(tire_cfg.get("stack_rows", 2)))
+    per_row = max(1, int(tire_cfg.get("tires_per_row", 2)))
+    road_half = float(config["road"]["width_m"]) * 0.5
+    distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
+    lap = _closed_polyline_length(points)
+    count = max(1, int(math.ceil(lap / module_length)))
+    vertices = []
+    faces = []
+    for index in range(count):
+        fraction = (index + 0.5) / count
+        pos, tangent, normal = sample_centerline(points, fraction)
+        ground = terrain_height(config, fraction, side, distance)
+        center = godot_xz_to_blender(pos[0] + normal[0] * side * distance, pos[1] + normal[1] * side * distance, ground)
+        tangent_b = Vector((tangent[0], -tangent[1], 0.0))
+        outward_b = Vector((side * normal[0], -side * normal[1], 0.0))
+        for row in range(rows):
+            height = radius + minor + row * (2.0 * radius * 0.82)
+            for col in range(per_row):
+                along = (col - (per_row - 1) * 0.5) * radius * 1.62
+                tire_center = center + tangent_b * along + Vector((0.0, 0.0, height))
+                _append_low_poly_tire(vertices, faces, tire_center, tangent_b, outward_b, radius, minor)
+    obj = _mesh_object(name, vertices, faces, [material])
+    obj["formula90s_continuous_tire_barrier"] = True
+    obj["formula90s_collision"] = False
+    return obj, count
+
+
+def create_tire_barrier_collision(name, points, side, config):
+    tire_cfg = config["tire_barriers"]
+    module_length = max(2.0, float(tire_cfg.get("module_length_m", 2.4)) * 2.0)
+    thickness = max(0.08, float(tire_cfg.get("collision_thickness_m", 0.28)))
+    height = max(0.5, float(tire_cfg.get("collision_height_m", 1.45)))
+    road_half = float(config["road"]["width_m"]) * 0.5
+    distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
+    lap = _closed_polyline_length(points)
+    count = max(8, int(math.ceil(lap / module_length)))
+    vertices = []
+    for index in range(count):
+        fraction = index / count
+        pos, _, normal = sample_centerline(points, fraction)
+        ground = terrain_height(config, fraction, side, distance)
+        barrier = np.array([pos[0] + normal[0] * side * distance, pos[1] + normal[1] * side * distance], dtype=float)
+        outward = np.array([normal[0] * side, normal[1] * side], dtype=float)
+        inner = barrier - outward * (thickness * 0.5)
+        outer = barrier + outward * (thickness * 0.5)
+        vertices.extend([
+            tuple(godot_xz_to_blender(inner[0], inner[1], ground)),
+            tuple(godot_xz_to_blender(outer[0], outer[1], ground)),
+            tuple(godot_xz_to_blender(inner[0], inner[1], ground + height)),
+            tuple(godot_xz_to_blender(outer[0], outer[1], ground + height)),
+        ])
+    faces = []
+    for index in range(count):
+        next_index = (index + 1) % count
+        i = index * 4
+        j = next_index * 4
+        faces.extend([
+            (i, j, j + 2, i + 2),
+            (i + 1, i + 3, j + 3, j + 1),
+            (i + 2, j + 2, j + 3, i + 3),
+            (i, i + 1, j + 1, j),
+        ])
+    obj = _mesh_object(name + "-colonly", vertices, faces)
+    obj.hide_render = True
+    obj.display_type = "WIRE"
+    obj["formula90s_collision"] = True
+    obj["formula90s_collision_kind"] = "continuous_tire_barrier_wall"
+    return obj, count
+
+
+def trackside_card_shape(prop_type: str) -> list[tuple[float, float]]:
+    shapes = {
+        "spectator": [(-0.18, 0.0), (0.18, 0.0), (0.14, 0.55), (0.09, 0.73), (0.0, 0.93), (-0.09, 0.73), (-0.14, 0.55)],
+        "marshal": [(-0.20, 0.0), (0.20, 0.0), (0.16, 0.62), (0.10, 0.84), (0.0, 1.04), (-0.10, 0.84), (-0.16, 0.62)],
+        "photographer": [(-0.25, 0.0), (0.25, 0.0), (0.22, 0.35), (0.08, 0.48), (0.18, 0.62), (-0.02, 0.70), (-0.20, 0.58), (-0.08, 0.36)],
+        "flag": [(-0.04, 0.0), (0.04, 0.0), (0.04, 1.75), (0.40, 1.62), (0.04, 1.42), (-0.04, 1.42)],
+        "sign": [(-0.70, 0.0), (0.70, 0.0), (0.70, 1.15), (-0.70, 1.15)],
+    }
+    if prop_type not in shapes:
+        raise KeyError(prop_type)
+    return shapes[prop_type]
+
+
+def create_trackside_card(name, pos, tangent, normal, side, ground, prop_type, material):
+    shape = trackside_card_shape(prop_type)
+    tangent_b = Vector((float(tangent[0]), -float(tangent[1]), 0.0)).normalized()
+    outward_b = Vector((float(side) * float(normal[0]), -float(side) * float(normal[1]), 0.0)).normalized()
+    center = godot_xz_to_blender(pos[0], pos[1], ground)
+    vertices = [tuple(center + tangent_b * x + Vector((0.0, 0.0, z))) for x, z in shape]
+    face = tuple(range(len(vertices)))
+    if side < 0:
+        face = tuple(reversed(face))
+    obj = _mesh_object(name, vertices, [face], [material])
+    obj["formula90s_trackside_card"] = prop_type
+    obj["formula90s_collision"] = False
     return obj

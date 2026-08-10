@@ -56,6 +56,22 @@ def main() -> int:
     else:
         print("PASS overlaps=0")
 
+    props = placements_doc.get("trackside_props", [])
+    tire = config.get("tire_barriers", {})
+    props_cfg = config.get("trackside_props", {})
+    road_half = float(config["road"]["width_m"]) * 0.5
+    minimum_prop_distance = road_half + float(tire.get("separation_from_edge_m", 5.0)) + float(props_cfg.get("outside_barrier_offset_m", 1.8))
+    prop_failures = 0
+    for prop in props:
+        distance = float(prop.get("distance_from_center_m", 0.0))
+        if distance + 1e-4 < minimum_prop_distance or prop.get("collision", False):
+            prop_failures += 1
+    if prop_failures:
+        print(f"FAIL trackside props={prop_failures} required_distance={minimum_prop_distance:.3f}m")
+        failures += prop_failures
+    else:
+        print(f"PASS trackside props={len(props)} non-collidable outside perimeter")
+
     expected = sum(int(v["placed"]) for v in placements_doc["stats"].values())
     if expected != len(items):
         print(f"FAIL manifest count expected={expected} actual={len(items)}")

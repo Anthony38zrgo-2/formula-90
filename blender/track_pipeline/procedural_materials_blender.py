@@ -83,6 +83,12 @@ def build_material_library(texture_dir: str | Path) -> dict[str, bpy.types.Mater
         "curb_white": flat_material("F90_CurbWhite", (0.91, 0.91, 0.87), roughness=0.84),
         "edge_line": flat_material("F90_EdgeLine", (0.94, 0.94, 0.91), roughness=0.86),
         "roof": flat_material("F90_SimpleRoof", (0.31, 0.30, 0.28), roughness=0.96),
+        "tire_barrier": flat_material("F90_TireBarrier", (0.025, 0.022, 0.018), roughness=0.98),
+        "spectator": flat_material("F90_SpectatorSilhouette", (0.035, 0.045, 0.055), roughness=1.0),
+        "marshal": flat_material("F90_MarshalSilhouette", (0.82, 0.40, 0.08), roughness=0.96),
+        "photographer": flat_material("F90_PhotographerSilhouette", (0.08, 0.10, 0.12), roughness=1.0),
+        "flag": flat_material("F90_TracksideFlag", (0.72, 0.055, 0.035), roughness=0.92),
+        "sign": flat_material("F90_TracksideSign", (0.72, 0.62, 0.30), roughness=0.94),
     }
     for asset_id, rel in manifest["assets"].items():
         alpha = ("_tree_" in asset_id or "_bush_" in asset_id or "_grass_" in asset_id)

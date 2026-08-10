@@ -49,6 +49,7 @@ def main() -> int:
     palette_reference = build_palette_reference()
     (doc_root / "vegetation_palette_reference.json").write_text(
         json.dumps({
+            "source_contract": "precut_rgba_transparent",
             "source_key": {
                 "name": DEFAULT_BACKGROUND_NAME,
                 "hex": DEFAULT_BACKGROUND_HEX,
@@ -66,27 +67,28 @@ def main() -> int:
 
     md = f"""# Vegetation color policy
 
-## Source-key background
+## Source contract
 
-- Canonical name: `{DEFAULT_BACKGROUND_NAME}`
-- Canonical hex: `{DEFAULT_BACKGROUND_HEX}`
-- Canonical RGB: `{DEFAULT_BACKGROUND_RGB.tolist()}`
+New vegetation sources must be delivered as pre-cut RGBA images:
 
-All newly generated vegetation source images that require a solid chroma background **must** use this exact color.
-Do not use legacy magenta (`#FF00FF`) for new vegetation generations.
+- transparent background in the alpha channel;
+- no opaque studio background;
+- no chroma-key recut in the normal source-backed path;
+- bottom of the visible subject aligned by the deterministic pipeline.
 
-Legacy source images that still use `#FF00FF` remain explicitly supported only by the fallback recut path.
-They are not represented as newly regenerated electric-cyan sources.
+The canonical compatibility color remains documented as `{DEFAULT_BACKGROUND_NAME}` / `{DEFAULT_BACKGROUND_HEX}` / `{DEFAULT_BACKGROUND_RGB.tolist()}`.
+It may be used only when an external generator cannot emit transparency and a temporary local extraction is explicitly recorded.
 
-## Why this key color
-
-Vegetation art direction can contain pink/magenta-adjacent hues (autumn leaves, flowers, stylized highlights).
-Electric cyan is less likely to collide with the vegetation palette while remaining easy to segment.
+Legacy magenta (`#FF00FF`) is compatibility-only for old assets. It must never be the default key for new sources.
 
 ## Palette lock
 
 The current procedural vegetation palette is snapshotted in `vegetation_palette_reference.json`.
 Use that file as the canonical reference to avoid drift in tree, bush, grass, and terrain colors across biomes.
+
+## Deterministic stylization
+
+`vegetation_texture_stylizer.py` maps visible RGB to this catalog, applies fixed Bayer dithering and derives fake occlusion from luminance and alpha topology. Alpha, bounding box and placement semantics are preserved.
 """
     (doc_root / "VEGETATION_COLOR_POLICY.md").write_text(md, encoding="utf-8")
     print(f"[vegetation-docs] root={doc_root}")

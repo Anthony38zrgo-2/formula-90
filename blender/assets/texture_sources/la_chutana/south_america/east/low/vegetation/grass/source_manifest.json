@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "track_id": "la_chutana",
+  "biome": "south_america/east/low",
+  "category": "grass",
+  "generator": "propagated latest west/low RGBA reference sources",
+  "source_contract": "precut_rgba_transparent",
+  "postprocess": "vegetation_precut_rgba_premultiplied_resize",
+  "assets": {
+    "grass_01": {
+      "source": "../../../../west/low/vegetation/grass/south_america_west_low_grass_01_source.png",
+      "source_sha256": "279f6ca04c7dd0a2446b5f2b25d10d5b476439ecc0789b35ce973ca7f892496d",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/east/low/south_america_east_low_grass_01.png",
+      "output_sha256": "cb662f9132c41fa7dfb19d0e3ef6f1d83143a7aa8c8fbac81e91e3a600edfa0f"
+    },
+    "grass_02": {
+      "source": "../../../../west/low/vegetation/grass/south_america_west_low_grass_02_source.png",
+      "source_sha256": "96a97c2dc6672bb1d6e4f1fca40cbfef3882909eec8f40cf49e06bd0cd5ddb6c",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/east/low/south_america_east_low_grass_02.png",
+      "output_sha256": "faf33986384df0a57602fe38768ec07684cb187a4472bd8432c623ea1f1e2dca"
+    },
+    "grass_03": {
+      "source": "../../../../west/low/vegetation/grass/south_america_west_low_grass_03_source.png",
+      "source_sha256": "2044d6146e858d7008b0976d4b3ecc0f4d5c15fcbde8b76be09ea8aa7b9b161a",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/east/low/south_america_east_low_grass_03.png",
+      "output_sha256": "54ee6575ce9273c66721864994dbb2e53b121ecbb5e3d729e5827b7847b3da5d"
+    },
+    "grass_04": {
+      "source": "../../../../west/low/vegetation/grass/south_america_west_low_grass_04_source.png",
+      "source_sha256": "d186b375edb11ff4f850b8ec41083fd31e3f47ac2100311f0a404e89ab65bb5e",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/east/low/south_america_east_low_grass_04.png",
+      "output_sha256": "481e9140bf0f6db0412bed7feed8f2dbbd4426435c52b49780b6ce7567797117"
+    }
+  },
+  "postprocess_version": 4,
+  "postprocess_recipe": {
+    "id": "vegetation_precut_rgba_premultiplied_resize",
+    "version": 4,
+    "pass": 1,
+    "source_contract": "precut_rgba_transparent",
+    "key_stage": "not_applied_to_precut_sources",
+    "resize": "premultiplied_lanczos4",
+    "transparent_rgb": "foreground_edge_padding_4px",
+    "bottom_anchor": "last_visible_alpha_row",
+    "stylizer": {
+      "id": "vegetation_ps1_palette_occlusion",
+      "version": 1,
+      "category": "grass",
+      "palette_hex": [
+        "#7D653D",
+        "#716937",
+        "#717838",
+        "#657C33"
+      ],
+      "occlusion_strength": 0.18,
+      "dither_limit": 0.22,
+      "shadow_threshold": 16.0,
+      "dither": "ordered_bayer_4x4",
+      "coordinates": "cached_in_memory_from_source_card",
+      "alpha": "preserved"
+    }
+  }
+}

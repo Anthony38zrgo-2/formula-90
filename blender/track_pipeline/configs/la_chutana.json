@@ -68,6 +68,32 @@
       {"name": "BackOuter", "side": "right", "start_fraction": 0.69, "end_fraction": 0.805, "offset_from_edge_m": 5.0}
     ]
   },
+  "tire_barriers": {
+    "procedural": true,
+    "continuous_visual": true,
+    "both_sides": true,
+    "separation_from_edge_m": 5.0,
+    "module_length_m": 2.4,
+    "tire_major_radius_m": 0.34,
+    "tire_minor_radius_m": 0.11,
+    "stack_rows": 2,
+    "tires_per_row": 2,
+    "collision_height_m": 1.45,
+    "collision_thickness_m": 0.28
+  },
+  "trackside_props": {
+    "procedural": true,
+    "collision": false,
+    "outside_barrier_offset_m": 1.8,
+    "spacing_m": {
+      "spectator": 58.0,
+      "marshal": 150.0,
+      "photographer": 190.0,
+      "flag": 74.0,
+      "sign": 132.0
+    },
+    "max_visible_cards": 260
+  },
   "procedural_environment": {
     "region": "south_america",
     "biome": {"continent": "south_america", "longitude": "west", "altitude": "low"},

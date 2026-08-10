@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "track_id": "la_chutana",
+  "biome": "south_america/center/high",
+  "category": "trees",
+  "generator": "propagated latest west/low RGBA reference sources",
+  "source_contract": "precut_rgba_transparent",
+  "postprocess": "vegetation_precut_rgba_premultiplied_resize",
+  "assets": {
+    "tree_01": {
+      "source": "../../../../west/low/vegetation/trees/south_america_west_low_tree_01_source.png",
+      "source_sha256": "81a333e2038af3e5772087c7b490b8347f71525b86d4ecf923e12dda04444c45",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_tree_01.png",
+      "output_sha256": "3a336dc5e6432039773359e5bad9aadfde6afbf69dc521f32164f7549fd002b3"
+    },
+    "tree_02": {
+      "source": "../../../../west/low/vegetation/trees/south_america_west_low_tree_02_source.png",
+      "source_sha256": "e7bea695e8b14a5fdfa8e95d0dc6c301d44568713c674d32631d848b82265a50",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_tree_02.png",
+      "output_sha256": "0e78b738c7db0446e7b95268b744ff9c3fddecff41f481cbd32290a988b527c1"
+    },
+    "tree_03": {
+      "source": "../../../../west/low/vegetation/trees/south_america_west_low_tree_03_source.png",
+      "source_sha256": "6b880a10a1933dacf70234fefe7a8c457ae3b58534bb19da0f9bff046d3eb761",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_tree_03.png",
+      "output_sha256": "ff0abe36817248d8881c57d39bf7b3cced9b1305dbf7ab0080eb9a67236b608d"
+    },
+    "tree_04": {
+      "source": "../../../../west/low/vegetation/trees/south_america_west_low_tree_04_source.png",
+      "source_sha256": "980d9497c2551c0fe84ab918d66f059d58d9d3ffe9812b06cea10bcc5cbe69f2",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_tree_04.png",
+      "output_sha256": "42c3d150b9f1afd65769a99c7124a4fa92cc4a52803dbcc6bc85a84b24b87d6a"
+    }
+  },
+  "postprocess_version": 4,
+  "postprocess_recipe": {
+    "id": "vegetation_precut_rgba_premultiplied_resize",
+    "version": 4,
+    "pass": 1,
+    "source_contract": "precut_rgba_transparent",
+    "key_stage": "not_applied_to_precut_sources",
+    "resize": "premultiplied_lanczos4",
+    "transparent_rgb": "foreground_edge_padding_4px",
+    "bottom_anchor": "last_visible_alpha_row",
+    "stylizer": {
+      "id": "vegetation_ps1_palette_occlusion",
+      "version": 1,
+      "category": "trees",
+      "palette_hex": [
+        "#443D28",
+        "#3A4023",
+        "#3A4C24",
+        "#304F20"
+      ],
+      "occlusion_strength": 0.34,
+      "dither_limit": 0.34,
+      "shadow_threshold": 12.0,
+      "dither": "ordered_bayer_4x4",
+      "coordinates": "cached_in_memory_from_source_card",
+      "alpha": "preserved"
+    }
+  }
+}

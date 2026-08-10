@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "track_id": "la_chutana",
+  "biome": "south_america/center/high",
+  "category": "bushes",
+  "generator": "propagated latest west/low RGBA reference sources",
+  "source_contract": "precut_rgba_transparent",
+  "postprocess": "vegetation_precut_rgba_premultiplied_resize",
+  "assets": {
+    "bush_01": {
+      "source": "../../../../west/low/vegetation/bushes/south_america_west_low_bush_01_source.png",
+      "source_sha256": "c993113586ddd035ddd88e5b45c45faf6dc355f6d5c94f741fdf7d2d533affdb",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_bush_01.png",
+      "output_sha256": "86094a15faa512eba3b863d8c4ec5df72f66f5bb69c28b08f47c1b8489d9157b"
+    },
+    "bush_02": {
+      "source": "../../../../west/low/vegetation/bushes/south_america_west_low_bush_02_source.png",
+      "source_sha256": "71d6243b5c81e51f14d9db8c7b43980eee4a07af58906fa4ed531ee65f0e7127",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_bush_02.png",
+      "output_sha256": "067eb95719737926c35aaf699a18a6aa92318937dc47c1a7f9708047729b707e"
+    },
+    "bush_03": {
+      "source": "../../../../west/low/vegetation/bushes/south_america_west_low_bush_03_source.png",
+      "source_sha256": "df39c39f905618aea007e0cad4304c9a75e9fc6a4c676d8f4d1be7cbf70ef528",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_bush_03.png",
+      "output_sha256": "b4a76c917cb2647ecc9b8754cf86403f1a2e936b4bdddac74e2acf10ddd33e4a"
+    },
+    "bush_04": {
+      "source": "../../../../west/low/vegetation/bushes/south_america_west_low_bush_04_source.png",
+      "source_sha256": "fd3ee86108c59cb2fb5b7f13a896ec79d9c4f7844a8b5a6ad05155c778fd2afd",
+      "output": "blender/generated/la_chutana/textures/biomes/south_america/center/high/south_america_center_high_bush_04.png",
+      "output_sha256": "93a3da9e41937bcb94eff4aec1394402dbc0270561a1d8908c757352ebad284e"
+    }
+  },
+  "postprocess_version": 4,
+  "postprocess_recipe": {
+    "id": "vegetation_precut_rgba_premultiplied_resize",
+    "version": 4,
+    "pass": 1,
+    "source_contract": "precut_rgba_transparent",
+    "key_stage": "not_applied_to_precut_sources",
+    "resize": "premultiplied_lanczos4",
+    "transparent_rgb": "foreground_edge_padding_4px",
+    "bottom_anchor": "last_visible_alpha_row",
+    "stylizer": {
+      "id": "vegetation_ps1_palette_occlusion",
+      "version": 1,
+      "category": "bushes",
+      "palette_hex": [
+        "#5E4F33",
+        "#52532E",
+        "#51602E",
+        "#466429"
+      ],
+      "occlusion_strength": 0.38,
+      "dither_limit": 0.36,
+      "shadow_threshold": 10.0,
+      "dither": "ordered_bayer_4x4",
+      "coordinates": "cached_in_memory_from_source_card",
+      "alpha": "preserved"
+    }
+  }
+}

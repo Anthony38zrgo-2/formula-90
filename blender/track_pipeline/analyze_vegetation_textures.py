@@ -42,20 +42,17 @@ def visible_key_mask(rgba: np.ndarray, key_rgb=DEFAULT_BACKGROUND_RGB) -> np.nda
     return (alpha >= 16) & key_candidate_mask(rgba[..., :3], key_rgb=key_rgb, tolerance=170.0)
 
 
-def _manifest_key_map(root: Path) -> dict[str, np.ndarray]:
+def _manifest_recipe_map(root: Path) -> dict[str, dict]:
     forge_path = root / "texture_forge_manifest.json"
     if not forge_path.exists():
         return {}
     forge = json.loads(forge_path.read_text(encoding="utf-8"))
-    out: dict[str, np.ndarray] = {}
+    out: dict[str, dict] = {}
     for rel, entry in forge.get("entries", {}).items():
         recipe = entry.get("vegetation_postprocess") if isinstance(entry, dict) else None
-        key_rgb = recipe.get("key_rgb") if isinstance(recipe, dict) else None
-        if key_rgb is None:
+        if not isinstance(recipe, dict):
             continue
-        arr = np.asarray(key_rgb, dtype=np.uint8)
-        if arr.shape == (3,):
-            out[str(Path(rel)).replace("\\", "/")] = arr
+        out[str(Path(rel)).replace("\\", "/")] = recipe
     return out
 
 
@@ -73,7 +70,7 @@ def main() -> int:
     config = read_json(config_path)
     root = repo / config["generated_dir"] / "textures"
     paths = sorted(p for p in root.glob("biomes/**/*.png") if category_for(p))
-    key_map = _manifest_key_map(root)
+    recipe_map = _manifest_recipe_map(root)
     override_key = None if ns.key_rgb.lower() == "auto" else parse_rgb(ns.key_rgb)
 
     failures: list[str] = []
@@ -87,13 +84,12 @@ def main() -> int:
         bbox = None if len(xs) == 0 else [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
         bottom_gap = None if bbox is None else rgba.shape[0] - bbox[3]
         rel = path.resolve().relative_to(root.resolve()).as_posix()
-        declared_key = key_map.get(rel)
-        key_rgb = override_key if override_key is not None else declared_key
-        if key_rgb is None:
-            key_rgb = DEFAULT_BACKGROUND_RGB
-            if ns.strict:
-                failures.append(f"key_metadata_missing:{path}")
-        key_visible = visible_key_mask(rgba, key_rgb=key_rgb)
+        recipe = recipe_map.get(rel, {})
+        declared_key = recipe.get("key_rgb") if isinstance(recipe, dict) else None
+        key_rgb = override_key if override_key is not None else (
+            np.asarray(declared_key, dtype=np.uint8) if declared_key is not None else None
+        )
+        key_visible = visible_key_mask(rgba, key_rgb=key_rgb) if key_rgb is not None else np.zeros_like(alpha, dtype=bool)
         key_count = int(key_visible.sum())
         semi_transparent_key = int((key_visible & (alpha < 224)).sum())
         alpha_coverage = float(visible.mean())
@@ -106,10 +102,11 @@ def main() -> int:
             "alpha_coverage": alpha_coverage,
             "bbox": bbox,
             "bottom_gap_px": bottom_gap,
-            "key_name": key_name_for_rgb(key_rgb),
-            "key_rgb": key_rgb.tolist(),
-            "key_hex": _key_hex(key_rgb),
-            "key_source": "override" if override_key is not None else ("forge_manifest" if declared_key is not None else "default_missing_metadata"),
+            "key_name": key_name_for_rgb(key_rgb) if key_rgb is not None else None,
+            "key_rgb": None if key_rgb is None else key_rgb.tolist(),
+            "key_hex": None if key_rgb is None else _key_hex(key_rgb),
+            "key_source": "override" if override_key is not None else ("forge_manifest" if declared_key is not None else "not_applicable_precut_rgba"),
+            "source_contract": recipe.get("source_contract", "unknown") if isinstance(recipe, dict) else "unknown",
             "visible_key_px": key_count,
             "semi_transparent_key_px": semi_transparent_key,
         }
@@ -122,7 +119,7 @@ def main() -> int:
             failures.append(f"alpha_coverage:{path}:{alpha_coverage:.4f}")
         if ns.strict and bottom_gap != 0:
             failures.append(f"bottom_gap:{path}:{bottom_gap}")
-        if ns.strict and key_count != 0:
+        if ns.strict and key_rgb is not None and key_count != 0:
             failures.append(f"visible_key:{_key_hex(key_rgb)}:{path}:{key_count}")
 
     report_path = Path(ns.report) if ns.report else root / "vegetation_analysis_report.json"
@@ -133,7 +130,7 @@ def main() -> int:
         "root": str(root),
         "expected_size": list(EXPECTED_SIZE),
         "strict": bool(ns.strict),
-        "validator": "independent_manifest_key_v4",
+        "validator": "independent_precut_alpha_v5",
         "key_mode": "override" if override_key is not None else "per_asset_forge_manifest",
         "override_key_hex": None if override_key is None else _key_hex(override_key),
         "assets": assets,

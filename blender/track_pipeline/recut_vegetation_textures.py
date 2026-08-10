@@ -11,17 +11,10 @@ from PIL import Image
 
 from atomic_json import write_json_atomic
 from pipeline_common import read_json
-from vegetation_texture_common import (
-    LEGACY_MAGENTA_RGB,
-    align_bottom,
-    key_background_rgba,
-    pad_transparent_rgb,
-    remove_isolated_key_speckles_rgba,
-)
 
 
-POSTPROCESS_ID = "vegetation_legacy_card_recut"
-POSTPROCESS_VERSION = 3
+POSTPROCESS_ID = "vegetation_bottom_anchor_validation"
+POSTPROCESS_VERSION = 1
 VEGETATION_CATEGORIES = {"trees", "bushes", "grass"}
 ASSET_RE = re.compile(r"_(tree|bush|grass)_\d+\.png$")
 
@@ -33,96 +26,79 @@ def category_for(path: Path) -> str | None:
     return {"tree": "trees", "bush": "bushes", "grass": "grass"}[match.group(1)]
 
 
-def recut_image(path: Path, pass_index: int) -> dict:
-    image = Image.open(path).convert("RGBA")
-    rgba = np.asarray(image, dtype=np.uint8).copy()
-    height, width = rgba.shape[:2]
-    rgba[..., 3][rgba[..., 3] < 2] = 0
-
-    rgba, key_metrics = key_background_rgba(rgba, LEGACY_MAGENTA_RGB, pass_index)
-    rgba, speckle_metrics = remove_isolated_key_speckles_rgba(
-        rgba,
-        key_rgb=LEGACY_MAGENTA_RGB,
-        tolerance=170.0,
-        max_component_px=24,
-        max_bbox_span=8,
-    )
-    rgba, shift_down = align_bottom(rgba)
-    rgba = pad_transparent_rgb(rgba, radius=4)
-
-    visible = rgba[..., 3] > 0
+def recut_image(path: Path, pass_index: int = 1) -> dict:
+    """Validate a pre-cut card without changing its pixels."""
+    del pass_index
+    before = hashlib.sha256(path.read_bytes()).hexdigest()
+    image = Image.open(path)
+    rgba = np.asarray(image.convert("RGBA"), dtype=np.uint8)
+    alpha = rgba[..., 3]
+    visible = alpha > 0
     ys, xs = np.where(visible)
     if len(xs) == 0:
         raise RuntimeError(f"Vegetation card became empty: {path}")
     bbox = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
-
-    Image.fromarray(rgba, "RGBA").save(path)
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    bottom_gap = int(rgba.shape[0] - bbox[3])
+    if bottom_gap != 0:
+        raise RuntimeError(f"Vegetation card is not bottom anchored: {path} gap={bottom_gap}px")
+    after = hashlib.sha256(path.read_bytes()).hexdigest()
+    if before != after:
+        raise RuntimeError(f"Anchor validation modified source unexpectedly: {path}")
     return {
         "path": str(path),
-        "size": [width, height],
+        "size": [int(rgba.shape[1]), int(rgba.shape[0])],
         "bbox": list(bbox),
-        "bottom_gap_px": height - bbox[3],
-        "shift_down_px": int(shift_down),
-        "key": key_metrics,
-        "legacy_speckle_cleanup": speckle_metrics,
-        "sha256": digest,
+        "bottom_gap_px": bottom_gap,
+        "alpha_nonzero": int(visible.sum()),
+        "sha256": after,
+        "modified": False,
     }
-
-
-def source_backed_paths(root: Path) -> set[str]:
-    manifest_path = root / "texture_forge_manifest.json"
-    if not manifest_path.exists():
-        return set()
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assets = manifest.get("curated_vegetation_rebuild", {}).get("assets", [])
-    return {str(Path(item)).replace("\\", "/") for item in assets if isinstance(item, str)}
 
 
 def relative_texture_path(path: Path, root: Path) -> str:
     return path.resolve().relative_to(root.resolve()).as_posix()
 
 
-def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int, skipped_source_backed: int) -> None:
+def update_forge_manifest(root: Path, metrics: list[dict], pass_index: int) -> None:
     manifest_path = root / "texture_forge_manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    by_rel = {
-        relative_texture_path(Path(item["path"]), root): item
-        for item in metrics
-    }
     recipe = {
         "id": POSTPROCESS_ID,
         "version": POSTPROCESS_VERSION,
-        "pass": pass_index,
-        "scope": "legacy_128px_non_source_backed_only",
-        "key_name": "legacy_magenta",
-        "key_rgb": LEGACY_MAGENTA_RGB.tolist(),
-        "key_hex": "#FF00FF",
-        "transparent_rgb": "foreground_edge_padding_4px",
+        "pass": int(pass_index),
+        "scope": "all_pre_cut_vegetation_cards",
+        "operation": "validate_only",
         "bottom_anchor": "last_visible_alpha_row",
-        "cleanup": "isolated_visible_legacy_magenta_speckles_removed",
-        "skipped_source_backed": int(skipped_source_backed),
+        "chroma_key": "not_applied",
     }
-    manifest["vegetation_legacy_recut"] = recipe
-    for rel, item in by_rel.items():
-        entry = manifest["entries"].get(rel)
+    manifest["vegetation_bottom_anchor_validation"] = recipe
+    manifest["vegetation_legacy_recut"] = {
+        "id": "vegetation_legacy_card_recut",
+        "version": 4,
+        "scope": "legacy_assets_without_source_manifest",
+        "operation": "compatibility_only_not_run_for_pre_cut_sources",
+        "key_name": "legacy_magenta",
+        "key_rgb": [255, 0, 255],
+        "key_hex": "#FF00FF",
+        "legacy_assets": 0,
+        "skipped_source_backed": len(metrics),
+    }
+    for item in metrics:
+        rel = relative_texture_path(Path(item["path"]), root)
+        entry = manifest.get("entries", {}).get(rel)
         if entry is None:
             raise RuntimeError(f"Missing forge manifest entry: {rel}")
         entry["sha256"] = item["sha256"]
-        entry["vegetation_postprocess"] = recipe
+        entry["vegetation_anchor_validation"] = recipe
     write_json_atomic(manifest_path, manifest)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fallback cleanup for curated 128px vegetation without original sources.")
+    parser = argparse.ArgumentParser(description="Validate pre-cut vegetation card bottom anchors without recutting pixels.")
     parser.add_argument("--config", required=True)
     parser.add_argument("--pass-index", type=int, choices=(1, 2), default=1)
     parser.add_argument("--report", default="")
-    parser.add_argument(
-        "--skip-source-backed",
-        action="store_true",
-        help="Do not touch cards rebuilt from source manifests in the preceding source-resolution stage.",
-    )
+    parser.add_argument("--skip-source-backed", action="store_true", help="Deprecated compatibility flag; validation remains read-only.")
     ns = parser.parse_args()
 
     config_path = Path(ns.config).resolve()
@@ -132,11 +108,8 @@ def main() -> int:
     paths = sorted(p for p in root.glob("biomes/**/*.png") if category_for(p) in VEGETATION_CATEGORIES)
     if not paths:
         raise RuntimeError(f"No vegetation cards found under {root}")
-
-    protected = source_backed_paths(root) if ns.skip_source_backed else set()
-    recut_paths = [p for p in paths if relative_texture_path(p, root) not in protected]
-    metrics = [recut_image(path, ns.pass_index) for path in recut_paths]
-    update_forge_manifest(root, metrics, ns.pass_index, len(paths) - len(recut_paths))
+    metrics = [recut_image(path, ns.pass_index) for path in paths]
+    update_forge_manifest(root, metrics, ns.pass_index)
 
     report_path = Path(ns.report) if ns.report else root / "vegetation_recut_report.json"
     if not report_path.is_absolute():
@@ -147,16 +120,12 @@ def main() -> int:
             "id": POSTPROCESS_ID,
             "version": POSTPROCESS_VERSION,
             "pass": ns.pass_index,
-            "scope": "legacy_128px_non_source_backed_only",
-            "legacy_key_hex": "#FF00FF",
+            "scope": "all_pre_cut_vegetation_cards",
+            "operation": "validate_only",
         },
-        "source_backed_skipped": sorted(protected),
         "assets": metrics,
     })
-    print(
-        f"[vegetation] legacy_recut={len(metrics)} "
-        f"source_backed_skipped={len(paths) - len(recut_paths)} pass={ns.pass_index} root={root}"
-    )
+    print(f"[vegetation] anchor_validation={len(metrics)} pass={ns.pass_index} root={root}")
     print(f"[vegetation] report={report_path}")
     return 0
 

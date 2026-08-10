@@ -1,68 +1,64 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "track_id": "la_chutana",
   "biome": "south_america/west/low",
   "category": "trees",
-  "generator": "OpenAI built-in image generation",
-  "source_dimensions": [
-    1254,
-    1254
-  ],
-  "background_rgb": [
-    255,
-    0,
-    255
-  ],
+  "generator": "OpenAI built-in image generation from latest conversation references",
+  "source_contract": "precut_rgba_transparent",
   "import_pipeline": "blender/track_pipeline/import_generated_tree_cards.py",
-  "postprocess": "vegetation_source_key_premultiplied_resize",
+  "postprocess": "vegetation_precut_rgba_premultiplied_resize",
   "assets": {
     "tree_01": {
       "source": "south_america_west_low_tree_01_source.png",
-      "source_sha256": "e9d4b625ab2f1bcdb2099000995932c3a71197b82157a2b46bd87ac1a9631150",
+      "source_sha256": "81a333e2038af3e5772087c7b490b8347f71525b86d4ecf923e12dda04444c45",
       "output": "blender/generated/la_chutana/textures/biomes/south_america/west/low/south_america_west_low_tree_01.png",
-      "output_sha256": "15457b606db35fd04cf7cb2b75e64642f209873dfb8cef08f975ea591071875a"
+      "output_sha256": "0ee104d1fe3dae7b66bf27c3127b9b2a454e7ccdcb8aecdb3dbc1f76256677a5"
     },
     "tree_02": {
       "source": "south_america_west_low_tree_02_source.png",
-      "source_sha256": "8f7789d420897f331f48a53aa1722dc9e93016f1a4f5ffb4d9dce95a230b299c",
+      "source_sha256": "e7bea695e8b14a5fdfa8e95d0dc6c301d44568713c674d32631d848b82265a50",
       "output": "blender/generated/la_chutana/textures/biomes/south_america/west/low/south_america_west_low_tree_02.png",
-      "output_sha256": "29b152c1e6e0f87853e75f16412bd07603e21c7ce448d79ece5ec09ffed4a09b"
+      "output_sha256": "c0196505cd462534e67d3c8a86b78d751b7447ad78d67b568cc0b5c009da45c4"
     },
     "tree_03": {
       "source": "south_america_west_low_tree_03_source.png",
-      "source_sha256": "cd0fecbe40a2d324a1bb3c9b11aeea343368388c6105ad229b6d3b0a7cd4a33f",
+      "source_sha256": "6b880a10a1933dacf70234fefe7a8c457ae3b58534bb19da0f9bff046d3eb761",
       "output": "blender/generated/la_chutana/textures/biomes/south_america/west/low/south_america_west_low_tree_03.png",
-      "output_sha256": "5a44bb5ee9d27e0da6d0be6e45c7ead96ba8352ebc9ca8709eeb8164e3e8a2dd"
+      "output_sha256": "2bda7bbbf77e6468428972f4516c14368dd499f159101429c7f8d2eaef9c5ce8"
     },
     "tree_04": {
       "source": "south_america_west_low_tree_04_source.png",
-      "source_sha256": "ff1b2634f1cf5edb2e4ce6e7c6960a131c5fdcb326982864b0d6d7e1e484ca64",
+      "source_sha256": "980d9497c2551c0fe84ab918d66f059d58d9d3ffe9812b06cea10bcc5cbe69f2",
       "output": "blender/generated/la_chutana/textures/biomes/south_america/west/low/south_america_west_low_tree_04.png",
-      "output_sha256": "7b651d4778dff4ca88c43aaa856400d47d963c22192c2a56fc7d84f7adc07e3a"
+      "output_sha256": "2c061e3786f45209decfce4c7b049ba343d12ed4a00477558bb7ceb220ac5b06"
     }
   },
-  "postprocess_version": 3,
+  "postprocess_version": 4,
   "postprocess_recipe": {
-    "id": "vegetation_source_key_premultiplied_resize",
-    "version": 3,
+    "id": "vegetation_precut_rgba_premultiplied_resize",
+    "version": 4,
     "pass": 1,
-    "key_name": "legacy_magenta",
-    "key_rgb": [
-      255,
-      0,
-      255
-    ],
-    "key_hex": "#FF00FF",
-    "legacy_previous_key_rgb": [
-      255,
-      0,
-      255
-    ],
-    "key_stage": "source_resolution_before_resize",
+    "source_contract": "precut_rgba_transparent",
+    "key_stage": "not_applied_to_precut_sources",
     "resize": "premultiplied_lanczos4",
     "transparent_rgb": "foreground_edge_padding_4px",
-    "bottom_anchor": "last_visible_alpha_row"
-  },
-  "background_key_name": "legacy_magenta",
-  "background_key_hex": "#FF00FF"
+    "bottom_anchor": "last_visible_alpha_row",
+    "stylizer": {
+      "id": "vegetation_ps1_palette_occlusion",
+      "version": 1,
+      "category": "trees",
+      "palette_hex": [
+        "#483B2A",
+        "#3E3E25",
+        "#3D4B26",
+        "#334E22"
+      ],
+      "occlusion_strength": 0.34,
+      "dither_limit": 0.34,
+      "shadow_threshold": 12.0,
+      "dither": "ordered_bayer_4x4",
+      "coordinates": "cached_in_memory_from_source_card",
+      "alpha": "preserved"
+    }
+  }
 }

@@ -13,8 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from analyze_vegetation_textures import visible_key_mask
 from recut_vegetation_textures import recut_image
-from migrate_vegetation_source_keys import rekey_source_rgba
-from rebuild_curated_vegetation import cleanup_source_backed_output
+from vegetation_texture_stylizer import stylize_card_rgba
 from vegetation_texture_common import (
     DEFAULT_BACKGROUND_RGB,
     LEGACY_MAGENTA_RGB,
@@ -93,21 +92,19 @@ class VegetationTexturePipelineTests(unittest.TestCase):
         self.assertEqual(metrics["bottom_gap_px"], 0)
         self.assertEqual(int(visible_key_mask(output, DEFAULT_BACKGROUND_RGB).sum()), 0)
 
-    def test_legacy_recut_cleans_existing_128px_magenta_card(self):
-        rgba = np.empty((128, 128, 4), dtype=np.uint8)
-        rgba[..., :3] = LEGACY_MAGENTA_RGB
-        rgba[..., 3] = 255
-        rgba[15:120, 28:100, :3] = (45, 116, 55)
-        rgba[48:68, 52:76, :3] = LEGACY_MAGENTA_RGB
+    def test_anchor_validation_is_read_only(self):
+        rgba = np.zeros((128, 128, 4), dtype=np.uint8)
+        rgba[15:128, 28:100, :3] = (45, 116, 55)
+        rgba[15:128, 28:100, 3] = 255
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "south_america_west_low_tree_99.png"
             Image.fromarray(rgba, "RGBA").save(path)
+            before = path.read_bytes()
             metrics = recut_image(path, pass_index=1)
-            output = np.asarray(Image.open(path).convert("RGBA"), dtype=np.uint8)
+            after = path.read_bytes()
         self.assertEqual(metrics["bottom_gap_px"], 0)
-        self.assertEqual(int(visible_key_mask(output, LEGACY_MAGENTA_RGB).sum()), 0)
-        self.assertEqual(int(output[0, 0, 3]), 0)
-        self.assertLess(int(output[58, 64, 3]), 20)
+        self.assertEqual(before, after)
+        self.assertFalse(metrics["modified"])
 
     def test_legacy_speckle_cleanup_removes_isolated_magenta(self):
         rgba = np.zeros((32, 32, 4), dtype=np.uint8)
@@ -119,29 +116,18 @@ class VegetationTexturePipelineTests(unittest.TestCase):
         self.assertGreaterEqual(metrics["removed_pixels"], 1)
         self.assertEqual(int(cleaned[16, 16, 3]), 0)
 
-    def test_source_backed_post_resize_cleanup_removes_isolated_cyan_candidate(self):
-        rgba = np.zeros((32, 32, 4), dtype=np.uint8)
-        rgba[4:28, 6:26, :3] = (70, 120, 60)
-        rgba[4:28, 6:26, 3] = 255
-        rgba[15:17, 15:17, :3] = (90, 190, 200)
-        rgba[15:17, 15:17, 3] = 255
-        self.assertGreater(int(visible_key_mask(rgba, DEFAULT_BACKGROUND_RGB).sum()), 0)
-        cleaned, metrics = cleanup_source_backed_output(rgba, DEFAULT_BACKGROUND_RGB)
-        self.assertEqual(int(visible_key_mask(cleaned, DEFAULT_BACKGROUND_RGB).sum()), 0)
-        self.assertGreaterEqual(metrics["removed_pixels"], 4)
-
-    def test_rekey_source_moves_background_to_cyan_and_preserves_pink(self):
-        img = np.empty((128, 128, 4), dtype=np.uint8)
-        img[..., :3] = LEGACY_MAGENTA_RGB
-        img[..., 3] = 255
-        img[20:120, 30:100, :3] = (45, 116, 55)
-        img[55:70, 45:60, :3] = (220, 82, 168)
-        migrated, metrics = rekey_source_rgba(img, LEGACY_MAGENTA_RGB, DEFAULT_BACKGROUND_RGB, 1)
-        self.assertTrue(np.all(migrated[..., 3] == 255))
-        self.assertTrue(np.all(migrated[0, 0, :3] == DEFAULT_BACKGROUND_RGB))
-        self.assertGreater(int(migrated[60, 50, 0]), 180)
-        self.assertEqual(metrics["source_key_hex"], "#FF00FF")
-        self.assertEqual(metrics["target_key_hex"], "#00FFFF")
+    def test_ps1_stylizer_preserves_alpha_and_is_palette_locked(self):
+        rgba = np.zeros((128, 128, 4), dtype=np.uint8)
+        rgba[18:128, 28:104, :3] = (184, 105, 52)
+        rgba[18:128, 28:104, 3] = 255
+        palette = np.asarray([[72, 59, 42], [62, 62, 37], [61, 75, 38], [51, 78, 34]], dtype=np.float32)
+        styled_a, metrics_a = stylize_card_rgba(rgba, palette, "trees")
+        styled_b, metrics_b = stylize_card_rgba(rgba, palette, "trees")
+        self.assertTrue(np.array_equal(styled_a, styled_b))
+        self.assertEqual(metrics_a, metrics_b)
+        self.assertTrue(np.array_equal(styled_a[..., 3], rgba[..., 3]))
+        colors = np.unique(styled_a[rgba[..., 3] > 0, :3], axis=0)
+        self.assertTrue(all(any(np.array_equal(color, item) for item in palette.astype(np.uint8)) for color in colors))
 
 
 if __name__ == "__main__":

@@ -17,6 +17,9 @@ from procedural_assets_blender import (
     create_guardrail_collision,
     create_guardrail_prototype,
     create_prototypes,
+    create_tire_barrier_collision,
+    create_tire_barrier_visual,
+    create_trackside_card,
     instantiate_prototype,
     sample_centerline,
     terrain_height,
@@ -69,6 +72,51 @@ def build_guardrails(config, points, materials):
     return created
 
 
+def build_tire_barriers(config, points, materials):
+    settings = config.get("tire_barriers", {})
+    if not settings.get("procedural", True):
+        return {"visual_modules": 0, "collision_segments": 0}
+    sides = (1, -1) if settings.get("both_sides", True) else (1,)
+    visual_modules = 0
+    collision_segments = 0
+    for side in sides:
+        side_name = "Right" if side > 0 else "Left"
+        visual, modules = create_tire_barrier_visual(
+            f"TireBarrierVisual{side_name}", points, side, config, materials["tire_barrier"]
+        )
+        collision, segments = create_tire_barrier_collision(
+            f"TireBarrierCollision{side_name}", points, side, config
+        )
+        visual_modules += modules
+        collision_segments += segments
+    return {"visual_modules": visual_modules, "collision_segments": collision_segments}
+
+
+def build_trackside_props(config, points, props, materials):
+    created = 0
+    for item in props:
+        prop_type = str(item["prop_type"])
+        if prop_type not in {"spectator", "marshal", "photographer", "flag", "sign"}:
+            raise RuntimeError(f"Unknown trackside prop type: {prop_type}")
+        pos, tangent, normal = sample_centerline(points, float(item["track_fraction"]))
+        side = int(item["side"])
+        distance = float(item["distance_from_center_m"])
+        card_pos = (pos[0] + normal[0] * side * distance, pos[1] + normal[1] * side * distance)
+        ground = terrain_height(config, float(item["track_fraction"]), side, distance)
+        create_trackside_card(
+            f"Trackside_{prop_type}_{item['prop_id']}",
+            card_pos,
+            tangent,
+            normal,
+            side,
+            ground,
+            prop_type,
+            materials[prop_type],
+        )
+        created += 1
+    return created
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
@@ -89,6 +137,8 @@ def main():
     bpy.ops.wm.open_mainfile(filepath=str(base))
 
     materials = build_material_library(generated / "textures")
+    for key in ("spectator", "marshal", "photographer", "flag", "sign"):
+        materials[key].use_backface_culling = True
     biome = biome_from_config(config)
     prototypes = create_prototypes(materials, config)
     placed = 0
@@ -116,6 +166,8 @@ def main():
         placed += 1
 
     guards = build_guardrails(config, points, materials)
+    tire_barriers = build_tire_barriers(config, points, materials)
+    trackside_props = build_trackside_props(config, points, placements.get("trackside_props", []), materials)
     blend = generated / "track_environment.blend"
     glb = runtime / f"{config['track_id']}_environment.glb"
     live = runtime / f"{config['track_id']}.glb"
@@ -124,6 +176,8 @@ def main():
     atomic_publish(glb, live)
     print(f"[blender] biome={biome.id} procedural placements={placed}")
     print(f"[blender] guardrail modules={guards}")
+    print(f"[blender] tire barriers visual_modules={tire_barriers['visual_modules']} collision_segments={tire_barriers['collision_segments']}")
+    print(f"[blender] trackside cards={trackside_props} collision=False")
     print(f"[blender] published runtime: {live}")
 
 

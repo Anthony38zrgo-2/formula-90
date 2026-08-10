@@ -51,6 +51,15 @@ Art direction:
 - subtle ordered dithering;
 - terrain uses large asymmetric green/dry/soil zones rather than uniform noise.
 
+### Vegetation source and stylization contract
+
+- New vegetation sources are pre-cut RGBA PNGs with transparent backgrounds.
+- `migrate_vegetation_source_keys.py` is not part of the active source-backed pipeline.
+- `recut_vegetation_textures.py` is read-only and validates only the last visible alpha row.
+- Magenta `#FF00FF` is legacy compatibility only; it is never the default for new sources.
+- `vegetation_texture_stylizer.py` applies the documented biome palette, deterministic shadow/occlusion masks, fixed Bayer dithering and palette quantization while preserving alpha and the bottom anchor.
+- The stylizer cache is deterministic: source hash, palette, recipe and algorithm version define the result.
+
 ## Vegetation contract
 
 - trees: 3 crossed planes;
@@ -60,6 +69,14 @@ Art direction:
 - four base variants per category per South America longitude/altitude combination;
 - placement must account for bounding radius when enforcing road-edge clearance;
 - clustered placement is preferred over uniform scatter.
+
+## Trackside perimeter contract
+
+- The preferred La Chutana layout is: asphalt -> curb when present -> grass/gravel -> continuous tire-stack perimeter.
+- Tire stacks use a 5 m separation from the road edge as the default escape margin.
+- Tire visuals are continuous low-poly modules; their gameplay collision is a separate continuous simplified wall, tall enough to prevent the car from leaving the playable perimeter.
+- Spectators, marshals, photographers, flags, signs and rocks are visual-only and must not receive gameplay collision.
+- Trackside 2D cards are single-face objects placed outside the tire perimeter and must remain within the configured visual-card budget.
 
 ## Failure protocol
 

@@ -8,26 +8,22 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+from atomic_json import write_json_atomic
 from pipeline_common import read_json
+from vegetation_texture_stylizer import palette_from_catalog, stylize_card_rgba, stylizer_recipe
 from vegetation_texture_common import (
-    CYAN_ELECTRIC_HEX,
-    DEFAULT_BACKGROUND_HEX,
-    DEFAULT_BACKGROUND_NAME,
-    DEFAULT_BACKGROUND_RGB,
-    LEGACY_MAGENTA_RGB,
     POSTPROCESS_ID,
     POSTPROCESS_VERSION,
-    postprocess_recipe,
+    pad_transparent_rgb,
     prepare_vegetation_card_rgba,
-    remove_isolated_key_speckles_rgba,
 )
 
 
 EXPECTED_SIZE = (128, 128)
 SUPPORTED_CATEGORIES = {"trees", "bushes", "grass"}
-POST_RESIZE_KEY_TOLERANCE = 170.0
-POST_RESIZE_KEY_MAX_COMPONENT_PX = 24
-POST_RESIZE_KEY_MAX_BBOX_SPAN = 8
+SOURCE_CONTRACT = "precut_rgba_transparent"
+PROPAGATION_LONGITUDES = ("west", "center", "east")
+PROPAGATION_ALTITUDES = ("low", "medium", "high")
 
 
 def sha256(path: Path) -> str:
@@ -53,40 +49,74 @@ def _safe_repo_path(repo: Path, raw: str) -> Path:
     return path
 
 
-def _key_identity(background_rgb: np.ndarray) -> dict:
-    values = [int(value) for value in background_rgb]
-    if values == DEFAULT_BACKGROUND_RGB.tolist():
-        return {"name": DEFAULT_BACKGROUND_NAME, "hex": DEFAULT_BACKGROUND_HEX, "rgb": values, "legacy": False}
-    if values == LEGACY_MAGENTA_RGB.tolist():
-        return {"name": "legacy_magenta", "hex": "#FF00FF", "rgb": values, "legacy": True}
-    return {"name": "custom", "hex": "#%02X%02X%02X" % tuple(values), "rgb": values, "legacy": False}
+def _validate_precut_source(rgba: np.ndarray, source: Path) -> None:
+    if rgba.ndim != 3 or rgba.shape[2] != 4:
+        raise RuntimeError(f"Source must be RGBA: {source}")
+    alpha = rgba[..., 3]
+    if not np.any(alpha == 0):
+        raise RuntimeError(f"Source is opaque; new vegetation sources must be pre-cut RGBA: {source}")
+    if not np.any(alpha > 0):
+        raise RuntimeError(f"Source has no visible pixels: {source}")
 
 
-def _normalize_background_rgb(manifest: dict) -> np.ndarray:
-    background_rgb = np.asarray(manifest.get("background_rgb", DEFAULT_BACKGROUND_RGB.tolist()), dtype=np.uint8)
-    if background_rgb.shape != (3,):
-        raise RuntimeError("Invalid background_rgb in source manifest")
-    return background_rgb
+def _biome_id(manifest: dict) -> str:
+    raw = str(manifest.get("biome", "")).replace("/", "_")
+    if not raw:
+        raise RuntimeError("Source manifest is missing biome")
+    return raw
 
 
-def cleanup_source_backed_output(rgba: np.ndarray, background_rgb: np.ndarray) -> tuple[np.ndarray, dict]:
-    """Remove only tiny post-resize remnants of the exact key declared by the source manifest.
+def _propagate_west_low_manifests(source_root: Path) -> int:
+    baseline = source_root / "south_america" / "west" / "low" / "vegetation"
+    created = 0
+    baseline_manifests = {
+        path.parent.name: json.loads(path.read_text(encoding="utf-8"))
+        for path in baseline.glob("*/source_manifest.json")
+    }
+    if set(baseline_manifests) != SUPPORTED_CATEGORIES:
+        raise RuntimeError(f"west/low propagation requires manifests for {sorted(SUPPORTED_CATEGORIES)}")
+    for longitude in PROPAGATION_LONGITUDES:
+        for altitude in PROPAGATION_ALTITUDES:
+            if longitude == "west" and altitude == "low":
+                continue
+            biome_path = source_root / "south_america" / longitude / altitude / "vegetation"
+            biome_id = f"south_america/{longitude}/{altitude}"
+            for category, template in sorted(baseline_manifests.items()):
+                target_dir = biome_path / category
+                target_dir.mkdir(parents=True, exist_ok=True)
+                assets = {}
+                relative_source_root = Path("../../../../west/low/vegetation") / category
+                singular_category = {"trees": "tree", "bushes": "bush", "grass": "grass"}[category]
+                for asset_id, entry in sorted(template.get("assets", {}).items()):
+                    filename = str(entry["source"])
+                    variant = asset_id.rsplit("_", 1)[-1]
+                    output_name = f"south_america_{longitude}_{altitude}_{singular_category}_{variant}.png"
+                    assets[asset_id] = {
+                        "source": (relative_source_root / filename).as_posix(),
+                        "source_sha256": entry["source_sha256"],
+                        "output": f"blender/generated/la_chutana/textures/biomes/south_america/{longitude}/{altitude}/{output_name}",
+                    }
+                manifest = {
+                    "schema_version": 2,
+                    "track_id": "la_chutana",
+                    "biome": biome_id,
+                    "category": category,
+                    "generator": "propagated latest west/low RGBA reference sources",
+                    "source_contract": SOURCE_CONTRACT,
+                    "postprocess": POSTPROCESS_ID,
+                    "assets": assets,
+                }
+                write_json_atomic(target_dir / "source_manifest.json", manifest)
+                created += 1
+    return created
 
-    Large key-colored regions are intentionally left for the strict analyzer to reject instead of
-    silently hiding a bad key extraction. The canonical vegetation palette reserves the chroma key,
-    so a tiny isolated key-colored component is an artifact rather than valid source color.
-    """
-    return remove_isolated_key_speckles_rgba(
-        rgba,
-        key_rgb=background_rgb,
-        tolerance=POST_RESIZE_KEY_TOLERANCE,
-        max_component_px=POST_RESIZE_KEY_MAX_COMPONENT_PX,
-        max_bbox_span=POST_RESIZE_KEY_MAX_BBOX_SPAN,
-    )
 
-
-def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: str, entry: dict, pass_index: int) -> dict:
-    background_rgb = _normalize_background_rgb(manifest)
+def _process_asset(repo: Path, palette_catalog: Path, manifest_path: Path, manifest: dict, asset_id: str, entry: dict, pass_index: int) -> dict:
+    category = str(manifest.get("category", ""))
+    if category not in SUPPORTED_CATEGORIES:
+        raise RuntimeError(f"Unsupported source-backed vegetation category: {category}")
+    if manifest.get("source_contract", SOURCE_CONTRACT) != SOURCE_CONTRACT:
+        raise RuntimeError(f"Source manifest must declare {SOURCE_CONTRACT}: {manifest_path}")
     source = (manifest_path.parent / entry["source"]).resolve()
     destination = _safe_repo_path(repo, entry["output"])
     if not source.exists():
@@ -96,27 +126,33 @@ def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: st
     original_size = list(image.size)
     image = _center_crop_square(image)
     rgba = np.asarray(image, dtype=np.uint8)
+    _validate_precut_source(rgba, source)
     output, metrics = prepare_vegetation_card_rgba(
         rgba,
         output_size=EXPECTED_SIZE,
-        background_rgb=background_rgb,
-        pass_index=pass_index,
+        background_rgb=None,
     )
-    output, cleanup_metrics = cleanup_source_backed_output(output, background_rgb)
-    metrics["post_resize_key_cleanup"] = cleanup_metrics
+    palette, palette_hex = palette_from_catalog(palette_catalog, _biome_id(manifest), category)
+    output, stylizer_metrics = stylize_card_rgba(output, palette, category)
+    output = pad_transparent_rgb(output, radius=4)
+    metrics["stylizer"] = stylizer_metrics
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     Image.fromarray(output).save(destination)
-    recipe = postprocess_recipe(pass_index, background_rgb)
-    recipe["post_resize_key_cleanup"] = {
-        "method": "isolated_visible_declared_key_speckles",
-        "tolerance": POST_RESIZE_KEY_TOLERANCE,
-        "max_component_px": POST_RESIZE_KEY_MAX_COMPONENT_PX,
-        "max_bbox_span": POST_RESIZE_KEY_MAX_BBOX_SPAN,
+    recipe = {
+        "id": POSTPROCESS_ID,
+        "version": POSTPROCESS_VERSION,
+        "pass": int(pass_index),
+        "source_contract": SOURCE_CONTRACT,
+        "key_stage": "not_applied_to_precut_sources",
+        "resize": "premultiplied_lanczos4",
+        "transparent_rgb": "foreground_edge_padding_4px",
+        "bottom_anchor": "last_visible_alpha_row",
+        "stylizer": stylizer_recipe(category, palette_hex),
     }
     return {
         "asset_id": asset_id,
-        "category": manifest.get("category"),
+        "category": category,
         "manifest": str(manifest_path),
         "source": str(source),
         "source_size": original_size,
@@ -124,7 +160,7 @@ def _process_asset(repo: Path, manifest_path: Path, manifest: dict, asset_id: st
         "destination": str(destination),
         "destination_sha256": sha256(destination),
         "declared_output_sha256": entry.get("output_sha256"),
-        "source_key": _key_identity(background_rgb),
+        "source_contract": SOURCE_CONTRACT,
         "postprocess": recipe,
         "metrics": metrics,
     }
@@ -157,34 +193,13 @@ def _update_forge_manifest(texture_root: Path, assets: list[dict], recipe: dict)
 
 
 def _aggregate_recipe(assets: list[dict], pass_index: int) -> dict:
-    key_counts: dict[str, int] = {}
-    for asset in assets:
-        key = asset["source_key"]
-        name = str(key["name"])
-        key_counts[name] = key_counts.get(name, 0) + 1
-    key_names = sorted(key_counts)
-    if len(key_names) == 1:
-        recipe = dict(assets[0]["postprocess"])
-    else:
-        recipe = {
-            "id": POSTPROCESS_ID,
-            "version": POSTPROCESS_VERSION,
-            "pass": int(pass_index),
-            "key_name": "mixed",
-            "key_names": key_names,
-            "key_stage": "source_resolution_before_resize",
-            "resize": "premultiplied_lanczos4",
-            "transparent_rgb": "foreground_edge_padding_4px",
-            "bottom_anchor": "last_visible_alpha_row",
-            "post_resize_key_cleanup": {
-                "method": "isolated_visible_declared_key_speckles",
-                "tolerance": POST_RESIZE_KEY_TOLERANCE,
-                "max_component_px": POST_RESIZE_KEY_MAX_COMPONENT_PX,
-                "max_bbox_span": POST_RESIZE_KEY_MAX_BBOX_SPAN,
-            },
-        }
+    recipe = dict(assets[0]["postprocess"]) if assets else {
+        "id": POSTPROCESS_ID,
+        "version": POSTPROCESS_VERSION,
+        "pass": int(pass_index),
+    }
     recipe["scope"] = "source_backed_manifest_assets"
-    recipe["source_key_counts"] = key_counts
+    recipe["source_contract"] = SOURCE_CONTRACT
     return recipe
 
 
@@ -193,6 +208,7 @@ def main() -> int:
     parser.add_argument("--config", required=True)
     parser.add_argument("--pass-index", type=int, choices=(1, 2), default=1)
     parser.add_argument("--report", default="")
+    parser.add_argument("--propagate-west-low", action="store_true", help="Create shared-source manifests for all South America biomes from the approved west/low bank.")
     ns = parser.parse_args()
 
     config_path = Path(ns.config).resolve()
@@ -201,6 +217,10 @@ def main() -> int:
     track_id = str(config.get("track_id") or config_path.stem)
     texture_root = repo / config["generated_dir"] / "textures"
     source_root = repo / "blender" / "assets" / "texture_sources" / track_id
+    propagated = _propagate_west_low_manifests(source_root) if ns.propagate_west_low else 0
+    palette_catalog = repo / "blender" / "assets" / "texture_sources" / track_id / "vegetation" / "vegetation_palette_reference.json"
+    if not palette_catalog.exists():
+        raise FileNotFoundError(palette_catalog)
     manifests = sorted(source_root.rglob("source_manifest.json")) if source_root.exists() else []
 
     assets: list[dict] = []
@@ -209,15 +229,17 @@ def main() -> int:
         category = manifest.get("category")
         if category not in SUPPORTED_CATEGORIES:
             continue
-        source_key = _key_identity(_normalize_background_rgb(manifest))
-        manifest.setdefault("background_key_name", source_key["name"])
-        manifest.setdefault("background_key_hex", source_key["hex"])
+        manifest["source_contract"] = SOURCE_CONTRACT
+        manifest.pop("background_rgb", None)
+        manifest.pop("background_key_name", None)
+        manifest.pop("background_key_hex", None)
+        manifest.pop("source_key_migration", None)
         manifest_assets = manifest.get("assets", {})
         processed_here: list[dict] = []
         for asset_id, entry in sorted(manifest_assets.items()):
             if not isinstance(entry, dict) or "source" not in entry or "output" not in entry:
                 raise RuntimeError(f"Invalid asset {asset_id} in {manifest_path}")
-            result = _process_asset(repo, manifest_path, manifest, asset_id, entry, ns.pass_index)
+            result = _process_asset(repo, palette_catalog, manifest_path, manifest, asset_id, entry, ns.pass_index)
             processed_here.append(result)
             assets.append(result)
             entry["output_sha256"] = result["destination_sha256"]
@@ -238,15 +260,14 @@ def main() -> int:
     report_path.write_text(json.dumps({
         "operation": "source_backed_curated_vegetation_rebuild",
         "track_id": track_id,
-        "source_key_policy": {
-            "new_sources": {"name": DEFAULT_BACKGROUND_NAME, "hex": CYAN_ELECTRIC_HEX, "rgb": DEFAULT_BACKGROUND_RGB.tolist()},
-            "legacy_sources_preserved": {"name": "legacy_magenta", "hex": "#FF00FF", "rgb": LEGACY_MAGENTA_RGB.tolist()},
-        },
+        "source_contract": SOURCE_CONTRACT,
+        "source_key_policy": "not_applied_to_new_pre-cut_sources; legacy assets remain outside this source-backed path",
         "manifest_count": len(manifests),
+        "propagated_manifest_count": propagated,
         "asset_count": len(assets),
         "assets": assets,
     }, indent=2) + "\n", encoding="utf-8")
-    print(f"[vegetation-rebuild] manifests={len(manifests)} assets={len(assets)} key={DEFAULT_BACKGROUND_HEX} legacy-preserved=#FF00FF")
+    print(f"[vegetation-rebuild] manifests={len(manifests)} assets={len(assets)} propagated={propagated} source_contract={SOURCE_CONTRACT} stylizer=deterministic")
     print(f"[vegetation-rebuild] report={report_path}")
     return 0
 
