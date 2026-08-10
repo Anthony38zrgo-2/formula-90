@@ -7,7 +7,14 @@ game/addons/formula90s/bin/*
 game/telemetry/
 game/assets/generated/jordan_1995/
 game/assets/generated/tracks/
-blender/generated/
+# Keep the validated La Chutana Texture Forge bank versioned so a clone has
+# the approved runtime texture outputs. Other Blender generation intermediates
+# remain local unless a future delivery policy explicitly promotes them.
+blender/generated/*
+!blender/generated/la_chutana/
+blender/generated/la_chutana/*
+!blender/generated/la_chutana/textures/
+!blender/generated/la_chutana/textures/**
 compile_commands.json
 .sconsign.dblite
 
