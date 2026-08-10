@@ -81,6 +81,10 @@
     "collision_height_m": 1.45,
     "collision_thickness_m": 0.28
   },
+  "vegetation_barrier_clearance_m": {
+    "trees": 1.0,
+    "bushes": 0.5
+  },
   "trackside_props": {
     "procedural": true,
     "collision": false,

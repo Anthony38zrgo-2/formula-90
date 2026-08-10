@@ -12,11 +12,25 @@ $pipeline = Join-Path $repo "blender\track_pipeline"
 $python = Join-Path $pipeline ".venv\Scripts\python.exe"
 $layout = Join-Path $pipeline "layouts\$Track\layout_config.json"
 $rawConfig = Join-Path $pipeline "configs\${Track}_raw.json"
+$v2SourceManifest = Join-Path $repo "blender\vegetation_v2_upload_bundle\source_manifest.json"
+$v2Output = Join-Path $repo "blender\generated\$Track\raw_vegetation\assets_v2"
+$v2PreparedManifest = Join-Path $v2Output "prepared_manifest.json"
+$v2AssetManifest = Join-Path $v2Output "asset_manifest.json"
 
 if (-not (Test-Path $python)) { throw "Pipeline venv missing: $python" }
 if (-not (Test-Path $layout)) { throw "Semantic layout config missing: $layout" }
 if (-not (Test-Path $rawConfig)) { throw "Raw config missing: $rawConfig" }
 if (-not (Test-Path $BlenderExe)) { throw "Blender missing: $BlenderExe" }
+if (-not (Test-Path $v2SourceManifest)) { throw "Vegetation v2 source manifest missing: $v2SourceManifest" }
+
+& $python (Join-Path $pipeline "prepare_raw_vegetation_v2.py") --manifest $v2SourceManifest --output-dir $v2Output
+if ($LASTEXITCODE -ne 0) { throw "Vegetation v2 source preparation failed" }
+
+& $BlenderExe --background --python (Join-Path $pipeline "build_raw_vegetation_assets_blender.py") -- --prepared-manifest $v2PreparedManifest --repo $repo
+if ($LASTEXITCODE -ne 0) { throw "Vegetation v2 reusable GLB build failed" }
+
+& $python (Join-Path $pipeline "validate_raw_vegetation_v2.py") --source-manifest $v2SourceManifest --asset-manifest $v2AssetManifest
+if ($LASTEXITCODE -ne 0) { throw "Vegetation v2 asset validation failed" }
 
 if ($Bootstrap) {
     Write-Warning "Bootstrap recreates the semantic PNGs and overwrites manual map edits."
@@ -32,6 +46,11 @@ if ($LASTEXITCODE -ne 0) { throw "Semantic layout validation failed; Blender was
 
 & $BlenderExe --background --python (Join-Path $pipeline "build_raw_vegetation_blender.py") -- --config $rawConfig
 if ($LASTEXITCODE -ne 0) { throw "Semantic Blender build failed" }
+
+$rawBlend = Join-Path $repo "blender\generated\$Track\raw_vegetation\${Track}_raw_environment.blend"
+$compiledLayout = Join-Path $repo "blender\generated\$Track\semantic_layout\compiled_layout.json"
+& $BlenderExe --background --python (Join-Path $pipeline "validate_raw_vegetation_blender.py") -- --blend $rawBlend --compiled $compiledLayout
+if ($LASTEXITCODE -ne 0) { throw "Raw vegetation Blender validation failed; runtime was not published" }
 
 if ($Publish) {
     $source = Join-Path $repo "blender\generated\$Track\raw_vegetation\${Track}_raw_environment.glb"

@@ -18,11 +18,21 @@ from vegetation_texture_common import (
     DEFAULT_BACKGROUND_RGB,
     LEGACY_MAGENTA_RGB,
     prepare_vegetation_card_rgba,
+    prepare_precut_card_preserve_aspect,
     remove_isolated_key_speckles_rgba,
 )
 
 
 class VegetationTexturePipelineTests(unittest.TestCase):
+    def test_precut_aspect_fit_preserves_shape_and_bottom_anchor(self):
+        rgba = np.zeros((100, 300, 4), dtype=np.uint8)
+        rgba[10:90, 20:280, :3] = (185, 130, 55)
+        rgba[10:90, 20:280, 3] = 255
+        output, metrics = prepare_precut_card_preserve_aspect(rgba, (256, 256))
+        self.assertEqual(metrics["bottom_gap_px"], 0)
+        self.assertGreater(metrics["resized_visible_size"][0], metrics["resized_visible_size"][1] * 2)
+        self.assertEqual(output.shape, (256, 256, 4))
+
     def test_keys_cyan_and_interior_holes_but_preserves_autumn_pink(self):
         img = np.empty((256, 256, 4), dtype=np.uint8)
         img[..., :3] = DEFAULT_BACKGROUND_RGB

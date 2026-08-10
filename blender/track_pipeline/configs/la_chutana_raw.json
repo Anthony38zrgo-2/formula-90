@@ -1,0 +1,32 @@
+{
+  "track_id": "la_chutana",
+  "base_blend": "blender/generated/la_chutana/track_base.blend",
+  "centerline": "blender/generated/la_chutana/centerline.json",
+  "placements": "blender/generated/la_chutana/placements.json",
+  "track_config": "blender/track_pipeline/configs/la_chutana.json",
+  "semantic_layout_config": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+  "compiled_layout": "blender/generated/la_chutana/semantic_layout/compiled_layout.json",
+  "raw_output_dir": "blender/generated/la_chutana/raw_vegetation",
+  "asset_root": "blender/generated/la_chutana/raw_vegetation/assets_v2",
+  "vegetation_v2_source_manifest": "blender/vegetation_v2_upload_bundle/source_manifest.json",
+  "vegetation_v2_prepared_manifest": "blender/generated/la_chutana/raw_vegetation/assets_v2/prepared_manifest.json",
+  "people_manifest": "blender/assets/texture_sources/la_chutana/trackside/people/source_manifest.json",
+  "signs_manifest": "blender/assets/texture_sources/la_chutana/trackside/signs/source_manifest.json",
+  "seed": 1995,
+  "outer_side": 1,
+  "barrier": {
+    "distance_from_edge_m": 20.0,
+    "module_length_m": 2.4,
+    "tire_major_radius_m": 0.34,
+    "tire_minor_radius_m": 0.11,
+    "stack_rows": 2,
+    "tires_per_row": 4,
+    "collision_height_m": 1.45,
+    "collision_thickness_m": 0.28,
+    "outside_prop_offset_m": 2.0
+  },
+  "zones": {
+    "grass_max_distance_to_track_m": 23.5,
+    "exterior_min_distance_to_track_m": 29.0
+  }
+}

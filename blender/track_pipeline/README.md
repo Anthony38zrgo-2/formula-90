@@ -1,5 +1,46 @@
 # Formula90s deterministic racetrack pipeline
 
+## Semantic layout and indexed objects
+
+La Chutana has an editable deterministic authoring layer:
+
+- `layouts/la_chutana/semantic_layout.png` contains exact-color procedural zones;
+- `layouts/la_chutana/object_markers.png` contains machine-readable indexed markers;
+- `layouts/la_chutana/layout_preview.png` displays the same markers with human-readable labels;
+- `layouts/la_chutana/object_catalog.json` maps every index to an asset and placement constraint;
+- `compiled_layout.json` is the Blender placement authority.
+
+The marker text is never parsed with OCR. Marker index `N` is encoded as exact RGB
+`[224, high_byte(N), low_byte(N)]`. Repeated indices instantiate the same reusable asset.
+
+Build the initial editable maps once:
+
+```powershell
+blender\track_pipeline\.venv\Scripts\python.exe blender\track_pipeline\bootstrap_semantic_layout.py `
+  --layout-config blender\track_pipeline\layouts\la_chutana\layout_config.json
+```
+
+After editing either PNG, compile and validate before Blender:
+
+```powershell
+blender\track_pipeline\.venv\Scripts\python.exe blender\track_pipeline\compile_semantic_layout.py `
+  --layout-config blender\track_pipeline\layouts\la_chutana\layout_config.json
+
+blender\track_pipeline\.venv\Scripts\python.exe blender\track_pipeline\validate_semantic_layout.py `
+  --layout-config blender\track_pipeline\layouts\la_chutana\layout_config.json `
+  --raw-config blender\track_pipeline\configs\la_chutana_raw.json
+```
+
+Do not run the bootstrap command after hand-editing the maps: it intentionally recreates the initial template.
+
+The complete guarded workflow is available as one command:
+
+```powershell
+.\scripts\run_semantic_track_pipeline.ps1 -Track la_chutana -Publish
+```
+
+Use `-Bootstrap` only to recreate the initial maps from the legacy placement data.
+
 The racetrack toolchain has two human-gated stages:
 
 1. **Base**: deterministic track geometry, collision, curbs, terrain and Texture Forge output.

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "track_id": "la_chutana",
+  "source_contract": "precut_rgba_transparent",
+  "postprocess": "vegetation_precut_rgba_aspect_fit_bottom_anchor",
+  "sources": {
+    "tree_tall": {
+      "file": "tree_v2_03_source.png",
+      "category": "trees",
+      "sha256": "5b93c528fd19103246389d587352baf29186fdd63eda7c781fccaa7ba98f1f0d"
+    },
+    "tree_broad": {
+      "file": "generated_extra_01_source.png",
+      "category": "trees",
+      "sha256": "fef3c48338e8af243522d5bd7329dfe74481d92637243ffc8fc60a37877642c5"
+    },
+    "bush": {
+      "file": "bush_v2_01_source.png",
+      "category": "bushes",
+      "sha256": "4acea6b91490c6c54af24c89835fa0632f51340dd876a05ae71c155a1ae958c0"
+    },
+    "grass": {
+      "file": "grass_v2_01_source.png",
+      "category": "grass",
+      "sha256": "af22dde5e8b0bd238c96d1fb8ab3aedbe5754ce44de96a46327be27a808b7c0a"
+    }
+  },
+  "variants": [
+    {"id": "tree_v2_01", "category": "trees", "source": "tree_tall", "planes": 3, "width_m": 7.4, "height_m": 11.8},
+    {"id": "tree_v2_02", "category": "trees", "source": "tree_broad", "planes": 3, "width_m": 9.2, "height_m": 10.8},
+    {"id": "tree_v2_03", "category": "trees", "source": "tree_tall", "planes": 3, "width_m": 8.2, "height_m": 13.2},
+    {"id": "tree_v2_04", "category": "trees", "source": "tree_broad", "planes": 3, "width_m": 10.0, "height_m": 12.0},
+    {"id": "bush_v2_01", "category": "bushes", "source": "bush", "planes": 2, "width_m": 4.8, "height_m": 1.9},
+    {"id": "bush_v2_02", "category": "bushes", "source": "bush", "planes": 2, "width_m": 5.7, "height_m": 2.2},
+    {"id": "bush_v2_03", "category": "bushes", "source": "bush", "planes": 2, "width_m": 4.3, "height_m": 1.7},
+    {"id": "bush_v2_04", "category": "bushes", "source": "bush", "planes": 2, "width_m": 6.2, "height_m": 2.05},
+    {"id": "grass_v2_01", "category": "grass", "source": "grass", "planes": 1, "width_m": 0.9, "height_m": 0.62},
+    {"id": "grass_v2_02", "category": "grass", "source": "grass", "planes": 1, "width_m": 1.08, "height_m": 0.78},
+    {"id": "grass_v2_03", "category": "grass", "source": "grass", "planes": 1, "width_m": 0.82, "height_m": 0.56},
+    {"id": "grass_v2_04", "category": "grass", "source": "grass", "planes": 1, "width_m": 1.0, "height_m": 0.72}
+  ]
+}

@@ -38,6 +38,17 @@ CLUSTER_DEFAULTS = {
 }
 
 
+def barrier_minimum_center_distance(config: dict, category: str, radius: float) -> float:
+    if category not in {"trees", "bushes"}:
+        return 0.0
+    road_half = float(config["road"]["width_m"]) * 0.5
+    tire = config.get("tire_barriers", {})
+    barrier_center = road_half + float(tire.get("separation_from_edge_m", 5.0))
+    barrier_half = float(tire.get("collision_thickness_m", 0.28)) * 0.5
+    clearance = float(config.get("vegetation_barrier_clearance_m", {}).get(category, 0.0))
+    return barrier_center + barrier_half + clearance + float(radius)
+
+
 def _zone_distances(config: dict, category: str) -> tuple[float, float]:
     env = config["procedural_environment"]
     zone = env["zones"][category]
@@ -115,6 +126,11 @@ def place_category(category, density, config, points, track_index, occupancy, se
         if global_distance + 1e-6 < minimum_center_distance or global_distance > max_d + 1.0:
             continue
 
+        if category in {"trees", "bushes"}:
+            required_outside = barrier_minimum_center_distance(config, category, radius)
+            if global_distance + 1e-6 < required_outside:
+                continue
+
         padding = {"grass": .04, "bushes": .30, "trees": .95, "fake_buildings": 2.5}[category]
         if not occupancy.can_place(float(candidate[0]), float(candidate[1]), radius, padding):
             continue
@@ -152,6 +168,7 @@ def place_category(category, density, config, points, track_index, occupancy, se
             "width_scale": round(float(width_scale), 5),
             "height_scale": round(float(height_scale), 5),
             "radius_m": round(float(radius), 4),
+            "barrier_clearance_required_m": round(float(required_outside), 4) if category in {"trees", "bushes"} else 0.0,
             "tint_rgb": tint,
         }
         output.append(record)

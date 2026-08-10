@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from pipeline_common import read_json, SpatialHash, Occupant
+from generate_environment import barrier_minimum_center_distance
 
 
 def _minimum_center_distance(config: dict, category: str, radius: float) -> float:
@@ -40,6 +41,11 @@ def main() -> int:
         if d + 1e-4 < minimum:
             print(f"FAIL clearance {item['variant_id']} d={d:.3f} required={minimum:.3f}")
             clearance_failures += 1
+        if category in {"trees", "bushes"}:
+            barrier_minimum = barrier_minimum_center_distance(config, category, radius)
+            if d + 1e-4 < barrier_minimum:
+                print(f"FAIL barrier clearance {item['variant_id']} d={d:.3f} required={barrier_minimum:.3f}")
+                clearance_failures += 1
 
         padding = padding_by_category[category]
         if not occupancy.can_place(x, z, radius, padding):

@@ -303,6 +303,54 @@ def prepare_vegetation_card_rgba(
     return working, metrics
 
 
+def prepare_precut_card_preserve_aspect(
+    rgba: np.ndarray,
+    output_size: tuple[int, int] = (256, 256),
+    padding_px: int = 4,
+) -> tuple[np.ndarray, dict]:
+    """Fit a pre-cut RGBA source into a transparent canvas without distorting it."""
+    if rgba.ndim != 3 or rgba.shape[2] != 4:
+        raise ValueError("Expected an RGBA uint8 image")
+    working = rgba.astype(np.uint8, copy=True)
+    visible = working[..., 3] > 0
+    ys, xs = np.where(visible)
+    if len(xs) == 0:
+        raise RuntimeError("Vegetation card source is empty")
+
+    source_bbox = [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]
+    cropped = working[source_bbox[1]:source_bbox[3], source_bbox[0]:source_bbox[2]]
+    target_w, target_h = (int(output_size[0]), int(output_size[1]))
+    padding = max(0, int(padding_px))
+    available_w = max(1, target_w - padding * 2)
+    available_h = max(1, target_h - padding)
+    scale = min(available_w / cropped.shape[1], available_h / cropped.shape[0])
+    resized_w = max(1, int(round(cropped.shape[1] * scale)))
+    resized_h = max(1, int(round(cropped.shape[0] * scale)))
+    resized = premultiplied_resize(cropped, (resized_w, resized_h))
+
+    canvas = np.zeros((target_h, target_w, 4), dtype=np.uint8)
+    x0 = (target_w - resized_w) // 2
+    y0 = target_h - resized_h
+    canvas[y0:y0 + resized_h, x0:x0 + resized_w] = resized
+    canvas, shift_down = align_bottom(canvas)
+    canvas = pad_transparent_rgb(canvas, radius=4)
+
+    final_visible = canvas[..., 3] > 0
+    fys, fxs = np.where(final_visible)
+    metrics = {
+        "source_size": [int(working.shape[1]), int(working.shape[0])],
+        "source_bbox": source_bbox,
+        "output_size": [target_w, target_h],
+        "resized_visible_size": [resized_w, resized_h],
+        "output_bbox": [int(fxs.min()), int(fys.min()), int(fxs.max()) + 1, int(fys.max()) + 1],
+        "bottom_gap_px": int(target_h - (int(fys.max()) + 1)),
+        "shift_down_px": int(shift_down),
+        "alpha_nonzero": int(final_visible.sum()),
+        "resize": "premultiplied_lanczos4_aspect_fit",
+    }
+    return canvas, metrics
+
+
 def postprocess_recipe(pass_index: int = 1, key_rgb=None) -> dict:
     recipe = {
         "id": POSTPROCESS_ID,
