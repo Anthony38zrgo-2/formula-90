@@ -1,8 +1,9 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" uid="uid://c3ixqkc6k13yi" path="res://addons/gevp/scenes/vehicle_controller.tscn" id="1_ctrl"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/f1_1996_car.tscn" id="2_car"]
 [ext_resource type="PackedScene" uid="uid://dxnvsoi1pvfeu" path="res://addons/gevp/scenes/track.tscn" id="3_track"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/driving_aids.gd" id="4_aids"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="5_hud"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/forest.gd" id="6_forest"]
 
@@ -34,6 +35,10 @@ car_path = NodePath("../VehicleController/VehicleRigidBody")
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
 current = true
 fov = 60.0
+
+[node name="DrivingAids" type="Node" parent="." node_paths=PackedStringArray("vehicle_node")]
+script = ExtResource("4_aids")
+vehicle_node = NodePath("../VehicleController/VehicleRigidBody")
 
 [node name="DebugHud" parent="." instance=ExtResource("5_hud")]
 

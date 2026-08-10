@@ -1,68 +1,121 @@
-[gd_scene format=3]
+[gd_scene load_steps=5 format=3]
 
-[node name="DebugHud" type="DebugHudController"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_race_hud.gd" id="1"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/track_minimap_controller.gd" id="2"]
+[ext_resource type="Resource" path="res://scenes/ui/la_chutana_hud_map.tres" id="3"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_speed_gauge.gd" id="4"]
+
+[node name="DebugHud" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
+script = ExtResource("1")
 vehicle_path = NodePath("../VehicleController/VehicleRigidBody")
 aids_path = NodePath("../DrivingAids")
 
-[node name="Panel" type="ColorRect" parent="."]
-offset_left = 12.0
-offset_top = 12.0
-offset_right = 200.0
-offset_bottom = 272.0
-color = Color(0.02, 0.03, 0.05, 0.78)
+; The map uses the canonical La Chutana centerline and deliberately has no
+; panel/background so the world remains dominant at 16:9.
+[node name="Minimap" type="Control" parent="."]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 104.0
+offset_right = 126.0
+offset_bottom = 232.0
+mouse_filter = 2
+script = ExtResource("2")
+target_path = NodePath("../../VehicleController/VehicleRigidBody")
+map_data = ExtResource("3")
 
-[node name="Readout" type="Label" parent="Panel"]
-offset_left = 10.0
-offset_top = 6.0
-offset_right = 190.0
-offset_bottom = 260.0
-theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 15
-text = "VEHICULO NO DETECTADO"
+[node name="SpeedGauge" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -194.0
+offset_top = -126.0
+offset_right = -18.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("4")
 
-[node name="Minimap" type="StaticMinimapController" parent="."]
+[node name="SpeedValue" type="Label" parent="SpeedGauge"]
+layout_mode = 0
+offset_left = 38.0
+offset_top = 40.0
+offset_right = 132.0
+offset_bottom = 76.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.02, 0.06, 0.92)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 28
+text = "0"
+horizontal_alignment = 2
+
+[node name="Unit" type="Label" parent="SpeedGauge"]
+layout_mode = 0
+offset_left = 55.0
+offset_top = 74.0
+offset_right = 130.0
+offset_bottom = 90.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.04, 0.02, 0.06, 0.92)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "KPH"
+horizontal_alignment = 2
+
+[node name="GearPlate" type="ColorRect" parent="SpeedGauge"]
+layout_mode = 0
+offset_left = 136.0
+offset_top = 54.0
+offset_right = 170.0
+offset_bottom = 90.0
+mouse_filter = 2
+color = Color(0.05, 0.08, 0.37, 0.94)
+
+[node name="GearValue" type="Label" parent="SpeedGauge/GearPlate"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.9, 1, 0.18, 1)
+theme_override_colors/font_outline_color = Color(0.02, 0.03, 0.08, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 22
+text = "N"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AidMessage" type="Label" parent="."]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -172.0
-offset_top = 12.0
-offset_right = -12.0
-offset_bottom = 232.0
+offset_left = -300.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = 50.0
 grow_horizontal = 0
 mouse_filter = 2
-clip_contents = true
-target_path = NodePath("../../../VehicleController/VehicleRigidBody")
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.03, 0.02, 0.05, 0.95)
+theme_override_constants/outline_size = 3
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.9)
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 2
+vertical_alignment = 1
 
-[node name="Title" type="Label" parent="Minimap"]
-offset_left = 8.0
-offset_top = 2.0
-offset_right = 104.0
-offset_bottom = 22.0
-theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 13
-text = "MAPA"
-
-[node name="North" type="Label" parent="Minimap"]
-offset_left = 137.0
-offset_top = 18.0
-offset_right = 154.0
-offset_bottom = 38.0
-theme_override_colors/font_color = Color(1, 0.82, 0.12, 1)
-theme_override_font_sizes/font_size = 12
-text = "N"
-
-[node name="Legend" type="Label" parent="Minimap"]
-offset_left = 5.0
-offset_top = 202.0
-offset_right = 158.0
-offset_bottom = 219.0
-theme_override_colors/font_color = Color(0.8, 0.84, 0.9, 1)
-theme_override_font_sizes/font_size = 9
-text = "ROJO: POSTES   VERDE: SALIDA"
-horizontal_alignment = 1
+; FUTURE_UI-002: LAP, POS, countdown, and opponent markers stay absent until
+; RaceSession supplies authoritative values. See .agents/backlog UI-002.

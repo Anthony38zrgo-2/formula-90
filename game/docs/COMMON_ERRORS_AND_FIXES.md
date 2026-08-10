@@ -826,3 +826,75 @@ validation method
 ```
 
 The purpose is not to archive every bug. It is to preserve reusable engineering knowledge.
+
+---
+
+## 29. `#` comments corrupt a Godot `.tscn` scene
+
+### Symptom
+
+A scene loads without a parser error, but a child script or property appears on
+the root node. Later nodes may be absent at runtime even though their text is
+visible in the `.tscn` file.
+
+### Root cause
+
+Godot text scenes use `;` for comments. A line beginning with `#` is parsed as
+scene data, and subsequent node headers can be consumed as malformed root-node
+properties instead of beginning a new node.
+
+### Correct solution
+
+Use `;` for explanatory and `FUTURE_*` comments in `.tscn` files, then run a
+scene-load/smoke test that verifies the expected child hierarchy.
+
+### Do not
+
+Do not assume a successful text diff or a lack of an immediate parser error
+means the scene hierarchy was preserved.
+
+### Validation
+
+`game/tests/smoke_test_arcade_hud_scene.gd` loads the HUD and verifies its map,
+speed gauge, and notification Label exist as distinct child nodes.
+
+---
+
+## 30. HUD controls extracted from a world scene lose their runtime references
+
+### Symptom
+
+After the world/HUD compositor moves HUD controls from `WorldViewport` into a
+root `CanvasLayer`, minimap/vehicle or aid bindings are null at runtime, or a
+feature works in one track scene but not on the default bootstrap route.
+
+### Root cause
+
+Controls extracted from a world scene into a root CanvasLayer require explicit
+runtime references. Cross-tree relative `NodePath`s are fallback-only: once a
+Control is reparented out of the world tree, paths that were valid in the
+original scene may resolve to nothing. In particular, a track scene without a
+`DrivingAids` controller silently breaks every path that consumes aid state,
+because the compositor treats a missing controller as "no aids" instead of
+failing loudly.
+
+### Correct solution
+
+- The compositor must inject runtime references (`minimap.set_target(vehicle)`)
+  after reparenting, keeping relative `NodePath`s only as isolated-scene
+  fallback.
+- Every default/gameplay route scene must expose the full HUD contract
+  (VehicleRigidBody + DrivingAids), not only the primary handling-test scene.
+- Cover the default route with a bootstrap smoke test and a visual capture
+  test; a passing isolated-scene test is not evidence for the default route.
+
+### Do not
+
+Do not assume a HUD bug is fixed because source inspection looks correct or
+because the handling-test scene passes. Run the default-route tests.
+
+### Validation
+
+`smoke_test_bootstrap_world_hud_compositor.gd` (default route movement test)
+and `visual_test_arcade_hud_capture.gd` (1280x720 capture with all HUD
+elements) must pass together.

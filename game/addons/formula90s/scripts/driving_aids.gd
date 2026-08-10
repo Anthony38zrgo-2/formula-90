@@ -1,6 +1,8 @@
 extends Node
 class_name DrivingAidsController
 
+signal aid_toggled(aid_label: String, enabled: bool)
+
 @export var vehicle_node: Node
 var aids := [true, false, false, false, false]
 var _baseline: Dictionary = {}
@@ -41,6 +43,7 @@ func toggle(index: int):
 		_restore(index)
 	else:
 		_apply_aid(index)
+	aid_toggled.emit(get_aid_label(index), aids[index])
 
 func _apply_aids():
 	for i in range(aids.size()):
