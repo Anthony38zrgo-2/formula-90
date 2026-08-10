@@ -59,6 +59,9 @@ scenes and resources outrank this document if they disagree.
   materialization), the isolated worktree imports the three Jordan GLBs and
   loads `jordan_handling_test.tscn`; `VehicleVisual3DController` resolves its
   chassis and all four configured wheel-orientation nodes.
+- **Telemetry gate:** every new telemetry CSV now has an immutable sibling
+  `_setup.json`, sourced from runtime vehicle values. A setup change rotates to
+  a new CSV/JSON pair; unpaired legacy captures remain non-authoritative.
 
 ## Refactor guardrails
 
