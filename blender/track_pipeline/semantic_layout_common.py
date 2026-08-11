@@ -310,6 +310,7 @@ def compile_layout(layout_config_path: Path) -> dict:
         pool = [_asset_repo_path(path) for path in zone_spec["asset_pool"]]
         accepted = 0
         near_accepted = 0
+        accepted_trees = []  # (x, z, footprint_radius) for tree-to-tree rejection
         for pixel, density_band in density_bands:
             if accepted >= int(zone_spec["max_count"]):
                 break
@@ -322,7 +323,15 @@ def compile_layout(layout_config_path: Path) -> dict:
                 continue
             low, high = (float(v) for v in zone_spec["target_height_m"])
             target_height = _stable_float(f"height:{config['seed']}:{zone_name}:{pixel}", low, high)
+            # tree_visual_scale is owned by the semantic contract, not the GLB
+            # geometry: it scales the final target height AND the footprint so the
+            # runtime world tree is larger. Applied only to category "trees".
+            visual_scale = 1.0
+            if zone_spec["category"] == "trees":
+                visual_scale = float(config.get("tree_visual_scale", 1.0))
             scale = target_height / max(dimensions[asset]["height_m"], 1e-6)
+            scale *= visual_scale
+            target_height *= visual_scale
             yaw = _stable_float(f"yaw:{config['seed']}:{zone_name}:{pixel}", -math.pi, math.pi)
             footprint_radius = max(dimensions[asset]["width_m"], dimensions[asset]["depth_m"]) * scale * 0.5
             barrier_distance = _nearest_barrier_distance(world, barrier_world)
@@ -335,6 +344,14 @@ def compile_layout(layout_config_path: Path) -> dict:
                 )
                 if int(track["side"]) != int(config["outer_side"]) or barrier_distance + 1e-6 < required_barrier_distance:
                     continue
+            if zone_spec["category"] == "trees":
+                overlap = any(
+                    math.hypot(world[0] - other[0], world[1] - other[1]) < footprint_radius + other[2] - 1e-3
+                    for other in accepted_trees
+                )
+                if overlap:
+                    continue
+                accepted_trees.append((world[0], world[1], footprint_radius))
             compiled_vegetation.append({
                 "instance_id": f"{zone_name}_{accepted:04d}",
                 "category": zone_spec["category"],

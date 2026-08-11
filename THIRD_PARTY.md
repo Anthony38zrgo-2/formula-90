@@ -44,3 +44,14 @@ Este archivo registra tanto dependencias incorporadas como dependencias evaluada
 - Función evaluada: selección genérica de sprites direccionales.
 - Modificaciones locales: ninguna.
 - Limitaciones: sin repositorio accesible, commit ni licencia no es legal ni reproducible distribuirlo. No se infiere su API desde referencias de terceros.
+
+## xBRZ (3xBRZ upscaler) — gate de licencia, bloqueado, no incorporado
+
+- Fuente pública oficial: <https://sourceforge.net/projects/xbrz/> (proyecto "xBRZ: Scale by rules" por Zenju).
+- Revisión: página del proyecto y metadatos SourceForge verificados el 2026-08-10; última actualización 2026-02-23.
+- Licencia: **GNU GPL v3.0** (declarada en SourceForge). El repositorio Formula-90s es **MIT**; una implementación derivada de xBRZ no es redistribuible bajo MIT sin compatibilización de licencias.
+- Carpeta de integración: ninguna.
+- Archivos incorporados: ninguno.
+- Función evaluada: upscaling offline 3x de tarjetas de vegetación (tree cards) en Texture Forge.
+- Modificaciones locales: ninguna.
+- Conclusión de compatibilidad: **no compatible**. No hay implementación MIT aprobada verificable ni ruta clean-room documentada aprobada dentro de este incremento, por lo que el trabajo 3xBRZ queda bloqueado en el gate de licencia (instrucciones sección 47). El upscaler offline se mantiene como trabajo futuro condicionado a una implementación con licencia compatible o derivación no-derivativa autorizada.

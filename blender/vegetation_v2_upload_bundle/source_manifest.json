@@ -4,15 +4,25 @@
   "source_contract": "precut_rgba_transparent",
   "postprocess": "vegetation_precut_rgba_aspect_fit_bottom_anchor",
   "sources": {
-    "tree_tall": {
-      "file": "tree_v2_03_source.png",
+    "tree_v2_a": {
+      "file": "new_tree.png",
       "category": "trees",
-      "sha256": "5b93c528fd19103246389d587352baf29186fdd63eda7c781fccaa7ba98f1f0d"
+      "sha256": "fe46d5afb35a4ae167b610526cb24c370baa4c204a97a767a7636e03f98714bb"
     },
-    "tree_broad": {
-      "file": "generated_extra_01_source.png",
+    "tree_v2_b": {
+      "file": "new_tree2.png",
       "category": "trees",
-      "sha256": "fef3c48338e8af243522d5bd7329dfe74481d92637243ffc8fc60a37877642c5"
+      "sha256": "144e34708e5945e8faa504839ef8152cc5788e8787eafeeb0f2e80b0df8e5228"
+    },
+    "tree_v2_c": {
+      "file": "new_tree3.png",
+      "category": "trees",
+      "sha256": "d5c6237f7a2fb91cf2b77a878f49ae871e65790ea5dc16f29ff9198063d6d908"
+    },
+    "tree_v2_d": {
+      "file": "new_tree4.png",
+      "category": "trees",
+      "sha256": "f6b1912dbc99da150c162074371dfa4d6f470cfd065eaeaa4d3761ad94f51267"
     },
     "bush": {
       "file": "bush_v2_01_source.png",
@@ -26,10 +36,10 @@
     }
   },
   "variants": [
-    {"id": "tree_v2_01", "category": "trees", "source": "tree_tall", "planes": 3, "width_m": 7.4, "height_m": 11.8},
-    {"id": "tree_v2_02", "category": "trees", "source": "tree_broad", "planes": 3, "width_m": 9.2, "height_m": 10.8},
-    {"id": "tree_v2_03", "category": "trees", "source": "tree_tall", "planes": 3, "width_m": 8.2, "height_m": 13.2},
-    {"id": "tree_v2_04", "category": "trees", "source": "tree_broad", "planes": 3, "width_m": 10.0, "height_m": 12.0},
+    {"id": "tree_v2_01", "category": "trees", "source": "tree_v2_a", "planes": 3, "width_m": 10.8, "height_m": 17.2},
+    {"id": "tree_v2_02", "category": "trees", "source": "tree_v2_b", "planes": 3, "width_m": 15.0, "height_m": 13.0},
+    {"id": "tree_v2_03", "category": "trees", "source": "tree_v2_c", "planes": 3, "width_m": 11.4, "height_m": 18.6},
+    {"id": "tree_v2_04", "category": "trees", "source": "tree_v2_d", "planes": 3, "width_m": 12.6, "height_m": 17.4},
     {"id": "bush_v2_01", "category": "bushes", "source": "bush", "planes": 2, "width_m": 4.8, "height_m": 1.9},
     {"id": "bush_v2_02", "category": "bushes", "source": "bush", "planes": 2, "width_m": 5.7, "height_m": 2.2},
     {"id": "bush_v2_03", "category": "bushes", "source": "bush", "planes": 2, "width_m": 4.3, "height_m": 1.7},
