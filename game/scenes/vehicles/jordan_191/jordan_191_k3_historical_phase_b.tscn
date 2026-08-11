@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191_phase_b.tscn" id="1_phase_b"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_90s_canonical_1997/candidate_k3_historical/jordan_191_candidate_chassis.glb" id="2_k3_chassis"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_90s_canonical_1997/candidate_k3_historical/jordan_191_candidate_wheel_front.glb" id="3_k3_front"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_90s_canonical_1997/candidate_k3_historical/jordan_191_candidate_wheel_rear.glb" id="4_k3_rear"]
+
+; Historical K3 visual candidate mounted on the established FormulaVehicleController
+; and Phase B VehicleRigidBody. Physics, collision shapes and wheel raycasts are
+; inherited unchanged from jordan_191_phase_b.tscn.
+[node name="VehicleController" instance=ExtResource("1_phase_b")]
+
+[node name="ChassisVisual" parent="VehicleRigidBody" index="0" instance=ExtResource("2_k3_chassis")]
+
+[node name="Visual" parent="VehicleRigidBody/WheelFrontLeft/FrontLeftWheel" index="0" instance=ExtResource("3_k3_front")]
+
+[node name="Visual" parent="VehicleRigidBody/WheelFrontRight/FrontRightWheel" index="0" instance=ExtResource("3_k3_front")]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="VehicleRigidBody/WheelRearLeft/RearLeftWheel" index="0" instance=ExtResource("4_k3_rear")]
+
+[node name="Visual" parent="VehicleRigidBody/WheelRearRight/RearRightWheel" index="0" instance=ExtResource("4_k3_rear")]
+rotation = Vector3(0, 3.14159265, 0)
+
+[editable path="VehicleRigidBody"]

@@ -3,9 +3,24 @@
 Canonical scene:
 
 ```text
-res://scenes/tracks/test_field/jordan_191_handling_test.tscn
-res://scenes/vehicles/jordan_191/jordan_191.tscn
+res://scenes/tracks/test_field/jordan_handling_test.tscn
+res://scenes/vehicles/jordan_191/jordan_191_k3_historical_phase_b.tscn
 ```
+
+## Runtime authority
+
+The K3 historical Jordan 191 is the authoritative runtime baseline for
+Formula-90 handling work. It is mounted in La Chutana through
+`FormulaVehicleController/VehicleRigidBody` and inherits the approved Phase B
+physics configuration. The K3 chassis and axle wheel assets are visual-only:
+wheel raycasts, collision shapes, controller ownership and handling values stay
+in the inherited Phase B scene.
+
+Use `scripts/run_jordan_handling.ps1` to launch this exact route. Do not use the
+isolated `jordan_191_handling_test.tscn` or the K3 candidate-validation scene as
+the handling authority; they remain useful for focused asset or controller
+checks. Future handling changes must start from this K3/La Chutana baseline and
+be evaluated against the matrix below.
 
 This matrix defines observable behavior. It does not prescribe final numerical
 parameters. Fuel load, fuel burn, tire wear and dynamic center-of-mass changes
