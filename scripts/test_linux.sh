@@ -6,3 +6,4 @@ CXX="$(command -v g++ || command -v clang++)"; mkdir -p "$ROOT/build/tests"
 GODOT="${1:-${GODOT_BIN:-}}"; [[ -n "$GODOT" ]] || GODOT="$(command -v godot4 || command -v godot || true)"; [[ -x "$GODOT" ]] || { echo 'Godot no encontrado.' >&2; exit 1; }
 "$GODOT" --headless --editor --path "$ROOT/game" --quit
 for scene in scenes/ui/main_menu.tscn scenes/tracks/test_field/test_field.tscn scenes/vehicles/player_car.tscn scenes/vehicles/static_directional_car.tscn scenes/ui/debug_hud.tscn scenes/tests/directional_sprite_validation.tscn; do "$GODOT" --headless --path "$ROOT/game" "$scene" --quit-after 2; done
+bash "$ROOT/scripts/test_gdunit.sh" "$GODOT"

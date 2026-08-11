@@ -17,6 +17,16 @@ var _setup_json := ""
 const LOG_MS := 50
 const BUFFER_SIZE := 100
 const VEHICLE_SEARCH_INTERVAL := 1.0
+const CSV_COLUMNS := [
+	"Time_ms", "Speed_kmh", "RPM", "Gear",
+	"Throttle", "Brake", "Steering",
+	"Lat_G", "Long_G",
+	"FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
+	"Front_Slip", "Rear_Slip",
+	"Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
+	"Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
+	"Vehicle_Script", "Setup_Schema_Version", "Setup_JSON"
+]
 
 func _ready():
 	_prev_sample_time = Time.get_ticks_msec()
@@ -83,16 +93,7 @@ func _open_file():
 	_session_id = name.trim_suffix(".csv")
 	_session_timestamp_utc = Time.get_datetime_string_from_system(true)
 	_setup_json = JSON.stringify(_build_setup_snapshot(name))
-	_file.store_csv_line(PackedStringArray([
-		"Time_ms", "Speed_kmh", "RPM", "Gear",
-		"Throttle", "Brake", "Steering",
-		"Lat_G", "Long_G",
-		"FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
-		"Front_Slip", "Rear_Slip",
-		"Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
-		"Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
-		"Vehicle_Script", "Setup_Schema_Version", "Setup_JSON"
-	]))
+	_file.store_csv_line(PackedStringArray(CSV_COLUMNS))
 
 
 func _format_line(now_msec: int, current_velocity: Vector3) -> String:

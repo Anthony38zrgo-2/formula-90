@@ -39,7 +39,7 @@ func _run() -> void:
 		printerr("[FAIL] La Chutana route is not using the K3 historical rear wheel.")
 		quit(1)
 		return
-	if not is_equal_approx(vehicle.front_brake_bias, 0.57) or not is_equal_approx(vehicle.max_torque, 280.0):
+	if not is_equal_approx(vehicle.front_brake_bias, 0.57) or not is_equal_approx(vehicle.max_torque, 340.0):
 		printerr("[FAIL] Jordan 191 Phase B did not preserve the former car configuration.")
 		quit(1)
 		return

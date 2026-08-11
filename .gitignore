@@ -6,6 +6,7 @@ game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 game/telemetry/*
 !game/telemetry/.gdignore
+game/reports/
 game/assets/generated/jordan_1995/
 game/assets/generated/tracks/*
 !game/assets/generated/tracks/la_chutana/
