@@ -35,6 +35,7 @@ def main() -> int:
             failures.append(f"source alpha contract failed: {source_id}")
 
     category_counts = {"trees": 0, "bushes": 0, "grass": 0}
+    source_variants = {item["id"]: item for item in source["variants"]}
     for item in assets.get("assets", []):
         glb = source_path.parents[2] / item["glb"]
         if not glb.exists() or sha256(glb) != item["glb_sha256"]:
@@ -46,16 +47,19 @@ def main() -> int:
             failures.append(f"prepared texture is not bottom anchored: {item['id']}")
         if item.get("collision"):
             failures.append(f"visual vegetation cannot have collision: {item['id']}")
+        variant = source_variants[item["id"]]
+        if item["category"] == "trees" and int(variant.get("planes", 0)) != 2:
+            failures.append(f"tree must use exactly two crossed cards: {item['id']}")
         category_counts[item["category"]] += 1
 
     if category_counts != {"trees": 3, "bushes": 4, "grass": 4}:
-        failures.append(f"expected four reusable variants per category, got {category_counts}")
+        failures.append(f"expected reusable variants trees=3 bushes=4 grass=4, got {category_counts}")
     if failures:
         for failure in failures:
             print(f"FAIL {failure}")
         return 2
     print(f"PASS vegetation v2 sources={len(source['sources'])} assets={len(assets['assets'])} variants={category_counts}")
-    print("PASS alpha bottom anchors, hashes and visual-only collision contract")
+    print("PASS alpha bottom anchors, hashes, two-card trees and visual-only collision contract")
     return 0
 
 

@@ -39,6 +39,11 @@ The complete guarded workflow is available as one command:
 .\scripts\run_semantic_track_pipeline.ps1 -Track la_chutana -Publish
 ```
 
+Publishing produces two runtime GLBs: `la_chutana.glb` for the physical environment
+and barriers, plus `la_chutana_vegetation.glb` for collision-free vegetation. The
+canonical Godot scene instances both resources; keeping them split avoids the Godot
+4.7.1 scene-import crash caused by the monolithic node set.
+
 Use `-Bootstrap` only to recreate the initial maps from the legacy placement data.
 
 The racetrack toolchain has two human-gated stages:
@@ -156,7 +161,7 @@ This is an art-direction system, not a scientific vegetation classifier.
 
 ## Retro geometry contract
 
-- Trees: exactly **3 crossed planes** (6 directional faces), tall silhouette-driven cards.
+- La Chutana trees: exactly **2 crossed planes** (4 directional faces), tall silhouette-driven cards.
 - Bushes: exactly **2 crossed planes** (4 directional faces), lower and wider than trees.
 - Grass: exactly **1 plane/card**.
 - Buildings: low-poly 3D, four walls plus one very simple top face and no bottom face.

@@ -2,9 +2,15 @@
 
 La Chutana is the current real-circuit handling test before the next Jordan physics-tuning phase.
 
-Active runtime track:
+Active runtime resources:
 
 `res://assets/generated/tracks/la_chutana/la_chutana.glb`
+
+`res://assets/generated/tracks/la_chutana/la_chutana_vegetation.glb`
+
+The first resource owns the physical environment, barrier visuals and collision.
+The second owns collision-free vegetation. They remain separate because Godot 4.7.1
+cannot reliably import the combined scene at its current node count.
 
 Generate Base:
 
@@ -63,7 +69,7 @@ Texture Forge generates asymmetric terrain zones containing greener vegetation p
 
 Geometry:
 
-- trees: 3 crossed planes;
+- trees: 2 crossed planes;
 - bushes: 2 crossed planes and wider silhouettes;
 - grass: 1 plane with much higher density than the original pass;
 - buildings: simple 3D boxes with a basic top face;

@@ -39,11 +39,20 @@ def main() -> None:
     collidable = [obj.name for obj in roots if bool(obj.get("formula90s_collision", False))]
     if collidable:
         failures.append(f"visual vegetation roots with collision={len(collidable)}")
+    tree_plane_errors = [
+        root.name for root in roots
+        if root.get("formula90s_category") == "trees"
+        # glTF triangulates each authored quad, so two crossed cards arrive as four triangles.
+        and sum(len(mesh.data.polygons) for mesh in ([root] if root.type == "MESH" else root.children) if mesh.type == "MESH") != 4
+    ]
+    if tree_plane_errors:
+        failures.append(f"tree roots without exactly two mesh cards={len(tree_plane_errors)}")
 
     bottom_errors = []
     heights = {"trees": [], "bushes": [], "grass": []}
     for root in roots:
-        corners = [child.matrix_world @ Vector(corner) for child in root.children if child.type == "MESH" for corner in child.bound_box]
+        root_meshes = [root] if root.type == "MESH" else [child for child in root.children if child.type == "MESH"]
+        corners = [mesh.matrix_world @ Vector(corner) for mesh in root_meshes for corner in mesh.bound_box]
         if not corners:
             bottom_errors.append(root.name)
             continue
@@ -68,6 +77,15 @@ def main() -> None:
     raw_collisions = [obj.name for obj in env.all_objects if obj.get("formula90s_raw_collision")]
     if len(raw_collisions) != 1:
         failures.append(f"expected one simplified raw barrier collision object, got {len(raw_collisions)}")
+    barrier_visuals = [obj for obj in env.all_objects if obj.get("formula90s_barrier_geometry") == "rectangular_prism"]
+    if len(barrier_visuals) != 1:
+        failures.append(f"expected one rectangular-prism barrier visual object, got {len(barrier_visuals)}")
+    elif (
+        barrier_visuals[0].get("formula90s_collision")
+        or int(barrier_visuals[0].get("formula90s_quads_per_module", 0)) != 6
+        or int(barrier_visuals[0].get("formula90s_vertices_per_module", 0)) != 8
+    ):
+        failures.append("barrier visual geometry/collision contract failed")
 
     margins = [float(item["barrier_distance_m"]) - float(item["required_barrier_distance_m"]) for item in compiled["vegetation"] if item["category"] in {"trees", "bushes"}]
     if margins and min(margins) < -1e-4:
@@ -85,6 +103,7 @@ def main() -> None:
         "minimum_barrier_footprint_margin_m": round(min(margins), 4) if margins else None,
         "v2_materials": len(v2_materials),
         "simplified_barrier_collision_objects": len(raw_collisions),
+        "barrier_card_visual_objects": len(barrier_visuals),
         "buildings": len(building_like),
     }
     print("PASS raw Blender vegetation v2 assembly")

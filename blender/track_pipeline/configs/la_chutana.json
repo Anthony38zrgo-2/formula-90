@@ -73,12 +73,12 @@
     "continuous_visual": true,
     "both_sides": true,
     "separation_from_edge_m": 5.0,
-    "module_length_m": 1.81,
-    "visual_asset_glb": "game/assets/trackside/tire_barrier_jordan_6.glb",
-    "tire_major_radius_m": 0.34,
-    "tire_minor_radius_m": 0.11,
-    "stack_rows": 2,
-    "tires_per_row": 2,
+    "visual_mode": "rectangular_prism",
+    "prepared_manifest": "blender/generated/la_chutana/tire_barrier_cards/prepared_manifest.json",
+    "module_length_m": 0.68,
+    "visual_height_m": 1.45,
+    "visual_depth_m": 0.68,
+    "side_repeats": 5,
     "collision_height_m": 1.45,
     "collision_thickness_m": 0.28
   },
@@ -100,6 +100,7 @@
     "max_visible_cards": 260
   },
   "procedural_environment": {
+    "tree_planes": 2,
     "region": "south_america",
     "biome": {"continent": "south_america", "longitude": "west", "altitude": "low"},
     "terrain_palette": "balanced",

@@ -41,7 +41,12 @@ def atomic_save_blend(target: str | Path, backup_dir: str | Path) -> Path:
     return target
 
 
-def atomic_export_glb(target: str | Path) -> Path:
+def atomic_export_glb(
+    target: str | Path,
+    *,
+    use_selection: bool = False,
+    export_extras: bool = True,
+) -> Path:
     target = Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
     temp = target.with_name(f".{target.stem}.new{target.suffix}")
@@ -51,7 +56,8 @@ def atomic_export_glb(target: str | Path) -> Path:
         filepath=str(temp),
         export_format="GLB",
         export_apply=True,
-        export_extras=True,
+        export_extras=export_extras,
+        use_selection=use_selection,
         use_visible=True,
     )
     os.replace(temp, target)

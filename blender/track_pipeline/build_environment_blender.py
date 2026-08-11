@@ -18,6 +18,7 @@ from procedural_assets_blender import (
     create_guardrail_prototype,
     create_prototypes,
     create_tire_barrier_collision,
+    create_tire_barrier_card_visual,
     create_tire_barrier_visual,
     create_trackside_card,
     instantiate_prototype,
@@ -81,13 +82,40 @@ def build_tire_barriers(config, points, materials):
     sides = (1, -1) if settings.get("both_sides", True) else (1,)
     visual_modules = 0
     collision_segments = 0
+    visual_mode = settings.get("visual_mode", "legacy")
     asset_glb = settings.get("visual_asset_glb")
+    card_materials = None
+    front_uv_bounds = (0.0, 0.0, 1.0, 1.0)
+    if visual_mode == "rectangular_prism":
+        manifest_path = Path(settings["prepared_manifest"])
+        if not manifest_path.is_absolute():
+            manifest_path = Path(config["_repo_root"]) / manifest_path
+        prepared = read_json(manifest_path)
+        front_entry = prepared["sources"][prepared["module"]["front_source"]]
+        front = Path(front_entry["texture"])
+        side_texture = Path(prepared["sources"][prepared["module"]["side_source"]]["texture"])
+        top_texture = Path(prepared["sources"][prepared["module"]["top_source"]]["texture"])
+        x0, y0, x1, y1 = front_entry["metrics"]["output_bbox"]
+        width, height = front_entry["metrics"]["output_size"]
+        front_uv_bounds = (x0 / width, 1.0 - y1 / height, x1 / width, 1.0 - y0 / height)
+        from procedural_materials_blender import texture_material
+        card_materials = (
+            texture_material("F90_TireBarrierCardFront", front, roughness=1.0, metallic=0.0, alpha=True),
+            texture_material("F90_TireBarrierCardSide", side_texture, roughness=1.0, metallic=0.0, alpha=True),
+            texture_material("F90_TireBarrierCardTop", top_texture, roughness=1.0, metallic=0.0, alpha=False),
+        )
     for side in sides:
         side_name = "Right" if side > 0 else "Left"
-        visual, modules = create_tire_barrier_visual(
-            f"TireBarrierVisual{side_name}", points, side, config, materials["tire_barrier"],
-            asset_glb=asset_glb,
-        )
+        if card_materials:
+            visual, modules = create_tire_barrier_card_visual(
+                f"TireBarrierVisual{side_name}", points, side, config, *card_materials,
+                front_uv_bounds=front_uv_bounds,
+            )
+        else:
+            visual, modules = create_tire_barrier_visual(
+                f"TireBarrierVisual{side_name}", points, side, config, materials["tire_barrier"],
+                asset_glb=asset_glb,
+            )
         collision, segments = create_tire_barrier_collision(
             f"TireBarrierCollision{side_name}", points, side, config
         )
@@ -128,6 +156,7 @@ def main():
     cp = Path(ns.config).resolve()
     repo = cp.parents[3]
     config = read_json(cp)
+    config["_repo_root"] = str(repo)
     generated = repo / config["generated_dir"]
     runtime = repo / config["runtime_dir"]
     base = generated / "track_base.blend"

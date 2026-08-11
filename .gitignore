@@ -4,9 +4,13 @@ build/
 bin/
 game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
-game/telemetry/
+game/telemetry/*
+!game/telemetry/.gdignore
 game/assets/generated/jordan_1995/
-game/assets/generated/tracks/
+game/assets/generated/tracks/*
+!game/assets/generated/tracks/la_chutana/
+game/assets/generated/tracks/la_chutana/*
+!game/assets/generated/tracks/la_chutana/la_chutana_vegetation.glb
 blender/generated/
 compile_commands.json
 .sconsign.dblite

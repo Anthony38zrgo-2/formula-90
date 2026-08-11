@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$GodotPath
+    [string]$GodotPath,
+    [switch]$ValidateRuntimeOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -11,6 +12,13 @@ $logDir = Join-Path $game 'logs'
 $runGodotLog = Join-Path $logDir 'jordan_handling_godot.log'
 $runStdout = Join-Path $logDir 'jordan_handling_stdout.log'
 $runStderr = Join-Path $logDir 'jordan_handling_stderr.log'
+$importGodotLog = Join-Path $logDir 'jordan_handling_import_godot.log'
+$importStdout = Join-Path $logDir 'jordan_handling_import_stdout.log'
+$importStderr = Join-Path $logDir 'jordan_handling_import_stderr.log'
+$trackRuntimes = @(
+    (Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'),
+    (Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana_vegetation.glb')
+)
 
 function Resolve-Godot([string]$explicit) {
     if ($explicit) {
@@ -44,8 +52,42 @@ function Show-LogTail([string]$path, [int]$lines = 80) {
     }
 }
 
+function Resolve-ImportedRuntime([string]$runtime) {
+    $importConfig = "$runtime.import"
+    if (-not (Test-Path $importConfig -PathType Leaf)) {
+        return $null
+    }
+    $descriptor = Get-Content -LiteralPath $importConfig -Raw
+    $match = [regex]::Match($descriptor, 'path="res://([^\"]+\.scn)"')
+    if (-not $match.Success) {
+        return $null
+    }
+    $imported = Join-Path $game ($match.Groups[1].Value -replace '/', '\')
+    if (-not (Test-Path $imported -PathType Leaf)) {
+        return $null
+    }
+    return $imported
+}
+
+function Test-ImportedRuntimeFresh([string]$runtime, [string]$imported) {
+    if (-not $imported) {
+        return $false
+    }
+    $md5Path = [System.IO.Path]::ChangeExtension($imported, '.md5')
+    if (-not (Test-Path $md5Path -PathType Leaf)) {
+        return $false
+    }
+    $md5Descriptor = Get-Content -LiteralPath $md5Path -Raw
+    $sourceMatch = [regex]::Match($md5Descriptor, 'source_md5="([0-9a-fA-F]{32})"')
+    if (-not $sourceMatch.Success) {
+        return $false
+    }
+    $runtimeMd5 = (Get-FileHash -Algorithm MD5 -LiteralPath $runtime).Hash
+    return $sourceMatch.Groups[1].Value.Equals($runtimeMd5, [System.StringComparison]::OrdinalIgnoreCase)
+}
+
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-Remove-Item -LiteralPath $runGodotLog, $runStdout, $runStderr -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $runGodotLog, $runStdout, $runStderr, $importGodotLog, $importStdout, $importStderr -Force -ErrorAction SilentlyContinue
 
 try {
     $k3Assets = @(
@@ -60,6 +102,11 @@ try {
     }
 
     $godot = Resolve-Godot $GodotPath
+    foreach ($trackRuntime in $trackRuntimes) {
+        if (-not (Test-Path $trackRuntime -PathType Leaf)) {
+            throw "Runtime canonico de La Chutana faltante: $trackRuntime"
+        }
+    }
     $dll = Join-Path $game 'addons\formula90s\bin\libformula90s.windows.template_debug.x86_64.dll'
     if (-not (Test-Path $dll)) {
         throw 'GDExtension no compilada. Ejecute .\scripts\build_windows.ps1 -Configuration debug.'
@@ -81,6 +128,65 @@ try {
     Write-Host "Godot:    $godot"
     Write-Host "Proyecto: $game"
     Write-Host "Escena:   $scene"
+    Write-Host 'Sincronizando importacion del runtime de La Chutana...' -ForegroundColor Cyan
+
+    $requiresImport = $false
+    foreach ($trackRuntime in $trackRuntimes) {
+        $importedTrack = Resolve-ImportedRuntime $trackRuntime
+        if (-not $importedTrack) {
+            $requiresImport = $true
+            break
+        }
+        if (-not (Test-ImportedRuntimeFresh $trackRuntime $importedTrack)) {
+            $requiresImport = $true
+            break
+        }
+    }
+
+    if ($requiresImport) {
+        $previousPreference = $ErrorActionPreference
+        try {
+            # Opening the scene directly can reuse a stale .godot/imported PackedScene
+            # after the semantic pipeline replaces either canonical GLB. Import first
+            # and wait for Godot to finish before starting the handling session.
+            $ErrorActionPreference = 'Continue'
+            & $godot --headless --path $game --log-file $importGodotLog --import 1> $importStdout 2> $importStderr
+            $importExitCode = $LASTEXITCODE
+        }
+        finally {
+            $ErrorActionPreference = $previousPreference
+        }
+
+        if ($importExitCode -ne 0) {
+            Write-Host "Godot no pudo importar el runtime de La Chutana ($importExitCode)." -ForegroundColor Red
+            Show-LogTail $importStderr
+            Show-LogTail $importStdout
+            Show-LogTail $importGodotLog
+            exit $importExitCode
+        }
+    }
+    else {
+        Write-Host 'Caches de La Chutana vigentes; no se requiere reimportar.' -ForegroundColor DarkGreen
+    }
+
+    foreach ($trackRuntime in $trackRuntimes) {
+        $trackImportConfig = "$trackRuntime.import"
+        if (-not (Test-Path $trackImportConfig -PathType Leaf)) {
+            throw "Godot no genero el descriptor de importacion: $trackImportConfig"
+        }
+        $importedTrack = Resolve-ImportedRuntime $trackRuntime
+        if (-not $importedTrack) {
+            throw "No se pudo resolver el PackedScene importado desde: $trackImportConfig"
+        }
+        if (-not (Test-ImportedRuntimeFresh $trackRuntime $importedTrack)) {
+            throw "La cache importada de La Chutana no corresponde al GLB canonico: $importedTrack"
+        }
+        Write-Host "Runtime importado: $importedTrack" -ForegroundColor Green
+    }
+    if ($ValidateRuntimeOnly) {
+        Write-Host 'Validacion del runtime canonico completada; lanzamiento omitido.' -ForegroundColor Green
+        return
+    }
     Write-Host 'Iniciando La Chutana con FormulaVehicleController/VehicleRigidBody...' -ForegroundColor Cyan
 
     $previousPreference = $ErrorActionPreference

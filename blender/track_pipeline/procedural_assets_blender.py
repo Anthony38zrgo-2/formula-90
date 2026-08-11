@@ -120,12 +120,13 @@ def _building(prefix, width, height, depth, facade, roof):
 
 def create_prototypes(materials, config):
     biome = biome_from_config(config)
+    tree_planes = max(1, int(config.get("procedural_environment", {}).get("tree_planes", 2)))
     out = {}
     for category in ("trees", "bushes", "grass", "fake_buildings"):
         for spec in specs_for_biome(biome, category):
             mat = materials[f"asset:{spec.id}"]
             if category == "trees":
-                out[spec.id] = _crossed(f"Proto_{spec.id}", spec.width_m, spec.height_m, mat, 3)
+                out[spec.id] = _crossed(f"Proto_{spec.id}", spec.width_m, spec.height_m, mat, tree_planes)
             elif category == "bushes":
                 out[spec.id] = _crossed(f"Proto_{spec.id}", spec.width_m, spec.height_m, mat, 2)
             elif category == "grass":
@@ -308,6 +309,68 @@ def create_tire_barrier_visual(name, points, side, config, material, asset_glb=N
     obj = _mesh_object(name, vertices, faces, [material])
     obj["formula90s_continuous_tire_barrier"] = True
     obj["formula90s_collision"] = False
+    return obj, count
+
+
+def create_tire_barrier_card_visual(name, points, side, config, front_material, side_material, top_material, front_uv_bounds=(0.0, 0.0, 1.0, 1.0)):
+    """Build one closed six-quad rectangular tire-stack module per sample."""
+    tire_cfg = config["tire_barriers"]
+    road_half = float(config["road"]["width_m"]) * 0.5
+    distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
+    module_length = max(0.25, float(tire_cfg.get("module_length_m", 0.68)))
+    visual_height = max(0.5, float(tire_cfg.get("visual_height_m", 1.45)))
+    visual_depth = max(0.1, float(tire_cfg.get("visual_depth_m", 0.32)))
+    side_repeats = max(1, int(tire_cfg.get("side_repeats", 5)))
+    count = max(1, int(math.ceil(_closed_polyline_length(points) / module_length)))
+    vertices = []
+    faces = []
+    face_materials = []
+    uv_by_face = []
+    up = Vector((0.0, 0.0, visual_height))
+    for index in range(count):
+        fraction = (index + 0.5) / count
+        pos, tangent, normal = sample_centerline(points, fraction)
+        ground = terrain_height(config, fraction, side, distance)
+        center = godot_xz_to_blender(
+            pos[0] + normal[0] * side * distance,
+            pos[1] + normal[1] * side * distance,
+            ground,
+        )
+        tangent_b = Vector((tangent[0], -tangent[1], 0.0)).normalized()
+        outward_b = Vector((side * normal[0], -side * normal[1], 0.0)).normalized()
+
+        half_front = tangent_b * (module_length * 0.5)
+        half_side = outward_b * (visual_depth * 0.5)
+        u0, v0, u1, v1 = front_uv_bounds
+        corners = (
+            center - half_front - half_side,
+            center + half_front - half_side,
+            center + half_front + half_side,
+            center - half_front + half_side,
+        )
+        start = len(vertices)
+        vertices.extend(tuple(corner) for corner in corners)
+        vertices.extend(tuple(corner + up) for corner in corners)
+        module_faces = (
+            ((0, 1, 5, 4), 0, [(u0, v0), (u1, v0), (u1, v1), (u0, v1)]),
+            ((3, 7, 6, 2), 0, [(u0, v0), (u0, v1), (u1, v1), (u1, v0)]),
+            ((0, 4, 7, 3), 1, [(0, 0), (0, side_repeats), (1, side_repeats), (1, 0)]),
+            ((2, 6, 5, 1), 1, [(0, 0), (0, side_repeats), (1, side_repeats), (1, 0)]),
+            ((4, 5, 6, 7), 2, [(0, 0), (1, 0), (1, 1), (0, 1)]),
+            ((3, 2, 1, 0), 2, [(0, 0), (1, 0), (1, 1), (0, 1)]),
+        )
+        for indices, material_index, face_uv in module_faces:
+            faces.append(tuple(start + offset for offset in indices))
+            face_materials.append(material_index)
+            uv_by_face.append(face_uv)
+
+    obj = _mesh_object(name, vertices, faces, [front_material, side_material, top_material], face_materials, uv_by_face)
+    obj["formula90s_continuous_tire_barrier"] = True
+    obj["formula90s_collision"] = False
+    obj["formula90s_barrier_geometry"] = "rectangular_prism"
+    obj["formula90s_quads_per_module"] = 6
+    obj["formula90s_vertices_per_module"] = 8
+    obj["formula90s_side_repeats"] = side_repeats
     return obj, count
 
 

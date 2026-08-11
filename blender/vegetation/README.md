@@ -6,7 +6,7 @@ Vegetation is generated from the deterministic biome + Texture Forge system unde
 
 Current visual contract:
 
-- tree = 3 crossed textured planes;
+- tree = 2 crossed textured planes;
 - bush = 2 crossed textured planes;
 - grass = 1 textured plane;
 - no gameplay collision on vegetation cards;

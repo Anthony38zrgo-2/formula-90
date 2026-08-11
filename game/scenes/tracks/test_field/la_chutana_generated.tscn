@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
+[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana_vegetation.glb" id="5_vegetation"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/generated_track_surface_groups.gd" id="2_groups"]
 [ext_resource type="PackedScene" path="res://scenes/visuals/la_chutana_source_skybox.tscn" id="3_skybox"]
 [ext_resource type="Texture2D" path="res://assets/skybox/la_chutana/la_chutana_sky_panorama_2048x1024.png" id="4_panorama"]
@@ -21,6 +22,8 @@ glow_enabled = false
 [node name="LaChutanaGenerated" type="Node3D"]
 
 [node name="GeneratedTrack" parent="." instance=ExtResource("1_track")]
+
+[node name="GeneratedVegetation" parent="." instance=ExtResource("5_vegetation")]
 
 [node name="SurfaceGroups" type="Node" parent="."]
 script = ExtResource("2_groups")

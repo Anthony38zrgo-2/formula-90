@@ -41,10 +41,12 @@ class EnvironmentPerimeterTests(unittest.TestCase):
         self.assertTrue(config["tire_barriers"]["procedural"])
         self.assertTrue(config["tire_barriers"]["both_sides"])
         self.assertTrue(config["tire_barriers"]["continuous_visual"])
-        self.assertIn("visual_asset_glb", config["tire_barriers"])
+        self.assertEqual(config["tire_barriers"]["visual_mode"], "rectangular_prism")
+        self.assertEqual(int(config["tire_barriers"]["side_repeats"]), 5)
+        self.assertAlmostEqual(float(config["tire_barriers"]["module_length_m"]), float(config["tire_barriers"]["visual_depth_m"]))
         repo = Path(__file__).resolve().parents[3]
-        asset = repo / config["tire_barriers"]["visual_asset_glb"]
-        self.assertTrue(asset.exists(), f"tire barrier asset missing: {asset}")
+        source_manifest = repo / "blender/assets/texture_sources/la_chutana/trackside/tire_barrier/source_manifest.json"
+        self.assertTrue(source_manifest.exists(), f"tire barrier source manifest missing: {source_manifest}")
         self.assertEqual(float(config["tire_barriers"]["collision_height_m"]), 1.45)
         self.assertEqual(float(config["tire_barriers"]["collision_thickness_m"]), 0.28)
 
@@ -73,33 +75,16 @@ class EnvironmentPerimeterTests(unittest.TestCase):
 
 
 class TireBarrierAssetContractTests(unittest.TestCase):
-    def test_glb_has_6_units_blue_bottom_white_top_no_collision(self):
-        import struct
+    def test_source_manifest_has_two_textures_and_rectangular_geometry(self):
         repo = Path(__file__).resolve().parents[3]
-        asset = repo / "game" / "assets" / "trackside" / "tire_barrier_jordan_6.glb"
-        self.assertTrue(asset.exists(), f"tire barrier asset missing: {asset}")
-        data = asset.read_bytes()
-        magic, version, length = struct.unpack("<III", data[:12])
-        self.assertEqual(magic, 0x46546C67)
-        chunks = {}
-        off = 12
-        while off < len(data):
-            clen, ctype = struct.unpack("<II", data[off:off + 8])
-            chunks[ctype] = data[off + 8:off + 8 + clen]
-            off += 8 + clen
-        self.assertIn(0x4E4F534A, chunks)
-        scene = json.loads(chunks[0x4E4F534A])
-        nodes = scene.get("nodes", [])
-        root = [n for n in nodes if n.get("name") == "TireBarrierJordan6"]
-        self.assertEqual(len(root), 1)
-        # Single fused module mesh under the root.
-        root_node = root[0]
-        child_count = len(root_node.get("children", []))
-        self.assertEqual(child_count, 1)
-        child = nodes[root_node["children"][0]]
-        self.assertIn("mesh", child)
-        # No -colonly and no collision flag nodes.
-        self.assertFalse(any("-colonly" in n.get("name", "") for n in nodes))
+        path = repo / "blender/assets/texture_sources/la_chutana/trackside/tire_barrier/source_manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(set(manifest["sources"]), {"stack_front", "single_side", "top_tread"})
+        self.assertEqual(manifest["module"]["geometry"], "rectangular_prism")
+        self.assertEqual(int(manifest["module"]["stack_count"]), 5)
+        self.assertEqual(manifest["module"]["top_source"], "top_tread")
+        for entry in manifest["sources"].values():
+            self.assertTrue((path.parent / entry["file"]).exists())
 
 
 if __name__ == "__main__":

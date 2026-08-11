@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "track_id": "la_chutana",
+  "source_contract": "mixed_rgba_cards_and_opaque_tiles",
+  "sources": {
+    "stack_front": {
+      "file": "tire_stack_source.png",
+      "sha256": "a1749796317e6e4c3f6b6af198f3587d3da097b889d951876bcc9c25b633160d",
+      "kind": "precut_card"
+    },
+    "single_side": {
+      "file": "tire_side_source.png",
+      "sha256": "5c800e304594881eb56429ddcfec81442f18e0d8365713e7d0f293f855e03d1a",
+      "kind": "precut_card"
+    },
+    "top_tread": {
+      "file": "tire_top_tread_source.png",
+      "sha256": "b1667f81f2d239371827f001e315dc389237359f637b8b9f2aa726f1db17f220",
+      "kind": "opaque_tile",
+      "generator": "image_gen",
+      "generator_prompt": "Seamless square orthographic navy-blue racing tire tread, filled edge-to-edge, matte and non-metallic; no sidewall, wheel hole, background, text or shadow."
+    }
+  },
+  "module": {
+    "geometry": "rectangular_prism",
+    "front_source": "stack_front",
+    "side_source": "single_side",
+    "top_source": "top_tread",
+    "stack_count": 5
+  }
+}

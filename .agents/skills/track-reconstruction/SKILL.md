@@ -74,7 +74,7 @@ Art direction:
 
 ## Vegetation contract
 
-- trees: 3 crossed planes;
+- La Chutana trees: 2 crossed planes (4 directional faces);
 - bushes: 2 crossed planes;
 - grass: 1 plane;
 - buildings: simple 3D with basic roof/top;

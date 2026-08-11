@@ -4,6 +4,7 @@ import argparse
 import copy
 import json
 import math
+import struct
 import sys
 from pathlib import Path
 
@@ -17,7 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from blender_output import atomic_export_glb, atomic_save_blend
 from procedural_assets_blender import (
     create_tire_barrier_collision,
-    create_tire_barrier_visual,
+    create_tire_barrier_card_visual,
     godot_xz_to_blender,
     sample_centerline,
     terrain_height,
@@ -57,34 +58,32 @@ def import_asset_instances(path: Path, placements, target_collection, asset_key:
     bpy.ops.import_scene.gltf(filepath=str(path))
     imported = [obj for obj in bpy.data.objects if obj not in before]
     meshes = [obj for obj in imported if obj.type == "MESH"]
-    if not meshes:
+    if len(meshes) != 1:
         for obj in imported:
             bpy.data.objects.remove(obj, do_unlink=True)
-        raise RuntimeError(f"No mesh objects in raw asset: {path}")
+        raise RuntimeError(f"Raw vegetation asset must contain exactly one mesh: {path} meshes={len(meshes)}")
     corners = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
     min_z = min(v.z for v in corners)
     center_x = (min(v.x for v in corners) + max(v.x for v in corners)) * 0.5
     center_y = (min(v.y for v in corners) + max(v.y for v in corners)) * 0.5
-    normalized = [(obj, Matrix.Translation((-center_x, -center_y, -min_z)) @ obj.matrix_world.copy()) for obj in meshes]
+    source = meshes[0]
+    normalized = Matrix.Translation((-center_x, -center_y, -min_z)) @ source.matrix_world.copy()
     for number, item in enumerate(placements):
         instance_id = item.get("instance_id", f"{number:04d}")
-        root = bpy.data.objects.new(f"Raw_{item['category']}_{instance_id}_{asset_key}", None)
+        root = source.copy()
+        root.data = source.data
+        root.name = f"Raw_{item['category']}_{instance_id}_{asset_key}"
         target_collection.objects.link(root)
         x, z = item["position_xz"]
-        root.location = godot_xz_to_blender(float(x), float(z), float(item.get("ground_m", 0.0)))
-        root.rotation_euler[2] = -float(item.get("yaw_rad", 0.0))
+        position = godot_xz_to_blender(float(x), float(z), float(item.get("ground_m", 0.0)))
+        transform = Matrix.Translation(position) @ Matrix.Rotation(-float(item.get("yaw_rad", 0.0)), 4, "Z")
         scale = float(item.get("scale", 1.0))
-        root.scale = (scale, scale, scale)
+        transform @= Matrix.Diagonal((scale, scale, scale, 1.0))
+        root.matrix_world = transform @ normalized
         root["formula90s_raw_asset"] = str(path.as_posix())
         root["formula90s_category"] = item["category"]
         root["formula90s_instance_id"] = instance_id
         root["formula90s_collision"] = False
-        for source, matrix in normalized:
-            copy = source.copy()
-            copy.data = source.data
-            target_collection.objects.link(copy)
-            copy.parent = root
-            copy.matrix_basis = matrix
     for obj in imported:
         bpy.data.objects.remove(obj, do_unlink=True)
 
@@ -176,6 +175,52 @@ def build_indexed_objects(config, track_config, center, compiled, collection_tar
     return created
 
 
+def export_runtime_part(target: Path, objects):
+    bpy.ops.object.select_all(action="DESELECT")
+    selected = 0
+    for obj in objects:
+        if obj.hide_get():
+            continue
+        obj.select_set(True)
+        selected += 1
+    if selected == 0:
+        raise RuntimeError(f"Runtime GLB part has no visible objects: {target}")
+    atomic_export_glb(target, use_selection=True, export_extras=False)
+    bpy.ops.object.select_all(action="DESELECT")
+    return selected
+
+
+def is_collision_proxy(obj) -> bool:
+    return bool(
+        obj.name.endswith("-colonly")
+        or obj.get("formula90s_collision")
+        or obj.get("formula90s_raw_collision")
+    )
+
+
+def glb_node_names(path: Path) -> set[str]:
+    with path.open("rb") as handle:
+        if handle.read(4) != b"glTF":
+            raise RuntimeError(f"Invalid GLB magic: {path}")
+        handle.read(8)
+        json_length = struct.unpack("<I", handle.read(4))[0]
+        if handle.read(4) != b"JSON":
+            raise RuntimeError(f"GLB JSON chunk missing: {path}")
+        document = json.loads(handle.read(json_length).decode("utf-8").rstrip("\x00 \t\r\n"))
+    return {str(node.get("name", "")) for node in document.get("nodes", [])}
+
+
+def validate_runtime_split(environment_glb: Path, vegetation_glb: Path, collision_names: set[str]):
+    environment_names = glb_node_names(environment_glb)
+    vegetation_names = glb_node_names(vegetation_glb)
+    missing = sorted(collision_names - environment_names)
+    leaked = sorted(collision_names & vegetation_names)
+    if missing:
+        raise RuntimeError(f"Physical runtime omitted collision proxies: {missing}")
+    if leaked:
+        raise RuntimeError(f"Vegetation runtime contains collision proxies: {leaked}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
@@ -209,14 +254,22 @@ def main():
     barrier_cfg["tire_barriers"]["collision_thickness_m"] = config["barrier"]["collision_thickness_m"]
     points = center["points_xz"]
     side = int(config["outer_side"])
-    white = flat_material("F90_RawBarrierWhite", (0.92, 0.94, 0.96), roughness=0.92)
-    navy = flat_material("F90_RawBarrierLightNavy", (0.12, 0.18, 0.28), roughness=0.94)
-    visual, visual_count = create_tire_barrier_visual("Raw_Outer_TireBarrier", points, side, barrier_cfg, white)
-    visual.data.materials.append(navy)
-    for poly in visual.data.polygons:
-        poly.material_index = (poly.index // 32) % 2
+    prepared_barrier = read_json(repo / config["barrier"]["prepared_manifest"])
+    front_entry = prepared_barrier["sources"][prepared_barrier["module"]["front_source"]]
+    front_texture = Path(front_entry["texture"])
+    side_texture = Path(prepared_barrier["sources"][prepared_barrier["module"]["side_source"]]["texture"])
+    top_texture = Path(prepared_barrier["sources"][prepared_barrier["module"]["top_source"]]["texture"])
+    front_material = texture_material("F90_RawBarrierCardFront", front_texture, roughness=1.0, metallic=0.0, alpha=True)
+    side_material = texture_material("F90_RawBarrierCardSide", side_texture, roughness=1.0, metallic=0.0, alpha=True)
+    top_material = texture_material("F90_RawBarrierCardTop", top_texture, roughness=1.0, metallic=0.0, alpha=False)
+    x0, y0, x1, y1 = front_entry["metrics"]["output_bbox"]
+    width, height = front_entry["metrics"]["output_size"]
+    front_uv_bounds = (x0 / width, 1.0 - y1 / height, x1 / width, 1.0 - y0 / height)
+    visual, visual_count = create_tire_barrier_card_visual(
+        "Raw_Outer_TireBarrier", points, side, barrier_cfg, front_material, side_material, top_material,
+        front_uv_bounds=front_uv_bounds,
+    )
     move_to_collection(visual, env)
-    create_barrier_base("Raw_Outer_TireBarrierBase", points, side, config, track_config, white, navy, env)
     collision, collision_count = create_tire_barrier_collision("Raw_Outer_TireBarrier", points, side, barrier_cfg)
     move_to_collection(collision, env)
     collision["formula90s_raw_collision"] = True
@@ -234,10 +287,34 @@ def main():
     indexed_count = build_indexed_objects(config, track_config, center, compiled, cards, repo)
     building_like = [obj.name for obj in env.all_objects if "fake_building" in obj.name.lower() or "building_" in obj.name.lower()]
     blend = out / "la_chutana_raw_environment.blend"
-    glb = out / "la_chutana_raw_environment.glb"
+    environment_glb = out / "la_chutana_raw_environment.glb"
+    vegetation_glb = out / "la_chutana_raw_vegetation.glb"
     atomic_save_blend(blend, out / "backups")
-    atomic_export_glb(glb)
-    print(json.dumps({"semantic_vegetation": len(compiled["vegetation"]), "indexed_objects": indexed_count, "barrier_visual_modules": visual_count, "barrier_collision_segments": collision_count, "buildings": len(building_like), "glb": str(glb), "blend": str(blend)}, indent=2))
+    scene_objects = [obj for obj in bpy.context.scene.objects if not obj.hide_get()]
+    vegetation_objects = [obj for obj in scene_objects if obj.get("formula90s_raw_asset") and not obj.hide_render]
+    environment_objects = [
+        obj for obj in scene_objects
+        if not obj.get("formula90s_raw_asset") and (not obj.hide_render or is_collision_proxy(obj))
+    ]
+    collision_names = {obj.name for obj in environment_objects if is_collision_proxy(obj)}
+    if not collision_names:
+        raise RuntimeError("Physical runtime selection contains no collision proxies")
+    environment_object_count = export_runtime_part(environment_glb, environment_objects)
+    vegetation_object_count = export_runtime_part(vegetation_glb, vegetation_objects)
+    validate_runtime_split(environment_glb, vegetation_glb, collision_names)
+    print(json.dumps({
+        "semantic_vegetation": len(compiled["vegetation"]),
+        "indexed_objects": indexed_count,
+        "barrier_visual_modules": visual_count,
+        "barrier_collision_segments": collision_count,
+        "buildings": len(building_like),
+        "environment_objects": environment_object_count,
+        "vegetation_objects": vegetation_object_count,
+        "collision_proxies": len(collision_names),
+        "environment_glb": str(environment_glb),
+        "vegetation_glb": str(vegetation_glb),
+        "blend": str(blend),
+    }, indent=2))
 
 
 if __name__ == "__main__":
