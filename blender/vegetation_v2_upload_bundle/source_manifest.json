@@ -5,24 +5,19 @@
   "postprocess": "vegetation_precut_rgba_aspect_fit_bottom_anchor",
   "sources": {
     "tree_v2_a": {
-      "file": "new_tree.png",
+      "file": "peru_tree_1.png",
       "category": "trees",
-      "sha256": "fe46d5afb35a4ae167b610526cb24c370baa4c204a97a767a7636e03f98714bb"
+      "sha256": "a469d54c5d5b62c8024a2e1803d97da0e5dde20edfe9b01d4cc36687cdb4a785"
     },
     "tree_v2_b": {
-      "file": "new_tree2.png",
+      "file": "peru_tree_2.png",
       "category": "trees",
-      "sha256": "144e34708e5945e8faa504839ef8152cc5788e8787eafeeb0f2e80b0df8e5228"
+      "sha256": "c7844a5f0bf08019e1f7ef7972b955e61583c75b1146a41b523b71f36f1307cb"
     },
     "tree_v2_c": {
-      "file": "new_tree3.png",
+      "file": "peru_tree_3.png",
       "category": "trees",
-      "sha256": "d5c6237f7a2fb91cf2b77a878f49ae871e65790ea5dc16f29ff9198063d6d908"
-    },
-    "tree_v2_d": {
-      "file": "new_tree4.png",
-      "category": "trees",
-      "sha256": "f6b1912dbc99da150c162074371dfa4d6f470cfd065eaeaa4d3761ad94f51267"
+      "sha256": "08e5128399896d90ea7e9aee7cbd14d801be54f1924702d98795d1fc8e4e34a5"
     },
     "bush": {
       "file": "bush_v2_01_source.png",
@@ -39,7 +34,6 @@
     {"id": "tree_v2_01", "category": "trees", "source": "tree_v2_a", "planes": 3, "width_m": 10.8, "height_m": 17.2},
     {"id": "tree_v2_02", "category": "trees", "source": "tree_v2_b", "planes": 3, "width_m": 15.0, "height_m": 13.0},
     {"id": "tree_v2_03", "category": "trees", "source": "tree_v2_c", "planes": 3, "width_m": 11.4, "height_m": 18.6},
-    {"id": "tree_v2_04", "category": "trees", "source": "tree_v2_d", "planes": 3, "width_m": 12.6, "height_m": 17.4},
     {"id": "bush_v2_01", "category": "bushes", "source": "bush", "planes": 2, "width_m": 4.8, "height_m": 1.9},
     {"id": "bush_v2_02", "category": "bushes", "source": "bush", "planes": 2, "width_m": 5.7, "height_m": 2.2},
     {"id": "bush_v2_03", "category": "bushes", "source": "bush", "planes": 2, "width_m": 4.3, "height_m": 1.7},

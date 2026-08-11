@@ -48,7 +48,7 @@ def main() -> int:
             failures.append(f"visual vegetation cannot have collision: {item['id']}")
         category_counts[item["category"]] += 1
 
-    if category_counts != {"trees": 4, "bushes": 4, "grass": 4}:
+    if category_counts != {"trees": 3, "bushes": 4, "grass": 4}:
         failures.append(f"expected four reusable variants per category, got {category_counts}")
     if failures:
         for failure in failures:

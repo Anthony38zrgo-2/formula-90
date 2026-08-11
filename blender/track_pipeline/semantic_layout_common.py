@@ -344,6 +344,15 @@ def compile_layout(layout_config_path: Path) -> dict:
                 )
                 if int(track["side"]) != int(config["outer_side"]) or barrier_distance + 1e-6 < required_barrier_distance:
                     continue
+                # Perimeter guard: the inner edge of the footprint must stay
+                # outside the real guardrail line, not merely clear of the
+                # thin barrier pixels in the semantic map. A tree sampled from
+                # the interior side of the tree-zone discs (24-26 m from the
+                # centerline) used to pass the pixel-distance check above.
+                guardrail_center_m = float(config.get("bootstrap", {}).get("barrier_distance_from_center_m", 26.0))
+                inner_edge_m = track["distance_from_center_m"] - footprint_radius
+                if inner_edge_m < guardrail_center_m - 0.01:
+                    continue
             if zone_spec["category"] == "trees":
                 overlap = any(
                     math.hypot(world[0] - other[0], world[1] - other[1]) < footprint_radius + other[2] - 1e-3
