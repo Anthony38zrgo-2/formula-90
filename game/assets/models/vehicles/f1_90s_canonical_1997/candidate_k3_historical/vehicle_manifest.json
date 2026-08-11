@@ -1,0 +1,36 @@
+{
+  "schema": "formula90s/vehicle-candidate/v1",
+  "candidate_id": "jordan_191_k3_historical",
+  "status": "isolated_validation_only",
+  "source": {
+    "obj": "blender/models/jordan-191/Jordan 191.obj",
+    "mtl": "blender/models/jordan-191/Jordan 191.mtl",
+    "historical_split_directory": "game/scenes/vehicles/jordan_191",
+    "reason": "The raw OBJ imports as anonymous mesh fragments; the historical K3 split is the only existing deterministic chassis/front-wheel/rear-wheel grouping."
+  },
+  "assets": {
+    "chassis": {
+      "path": "game/assets/models/vehicles/f1_90s_canonical_1997/candidate_k3_historical/jordan_191_candidate_chassis.glb",
+      "sha256": "CF04B52DE43AACBBE10A04405C0AADAC9A6F33F854474D1B8827BCD5F2D5BE50"
+    },
+    "wheel_front": {
+      "path": "game/assets/models/vehicles/f1_90s_canonical_1997/candidate_k3_historical/jordan_191_candidate_wheel_front.glb",
+      "sha256": "2756F41DE3B6F767C0E466E697D866CF95D8C7686C2D3AA36B96CA3822F0C6B7"
+    },
+    "wheel_rear": {
+      "path": "game/assets/models/vehicles/f1_90s_canonical_1997/candidate_k3_historical/jordan_191_candidate_wheel_rear.glb",
+      "sha256": "C271D7E0E6C86030B96500153714A12325F47D75663F8333A40E3000B8A6DD8A"
+    }
+  },
+  "coordinate_convention": {"right": "+X", "up": "+Y", "forward": "-Z", "units": "m"},
+  "validation_datums": {
+    "front_axle_z": -1.4394,
+    "rear_axle_z": 1.4394,
+    "front_half_track_x": 0.739479,
+    "rear_half_track_x": 0.718479,
+    "front_raycast_y": 0.0575,
+    "rear_raycast_y": 0.0525,
+    "measured_wheelbase_m": 2.8788
+  },
+  "integration_gate": "This manifest is not authority for jordan_1995.tscn. The active Jordan retains its 2.930 m physics wheelbase until isolated functional and visual review are accepted."
+}

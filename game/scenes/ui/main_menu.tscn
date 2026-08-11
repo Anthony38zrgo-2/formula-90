@@ -54,4 +54,3 @@ layout_mode = 2
 button_pressed = true
 text = "Telemetria"
 script = ExtResource("1_toggle")
-

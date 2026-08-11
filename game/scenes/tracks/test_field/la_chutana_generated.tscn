@@ -1,16 +1,16 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/generated_track_surface_groups.gd" id="2_groups"]
+[ext_resource type="PackedScene" path="res://scenes/visuals/la_chutana_source_skybox.tscn" id="3_skybox"]
+[ext_resource type="Texture2D" path="res://assets/skybox/la_chutana/la_chutana_sky_panorama_2048x1024.png" id="4_panorama"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_generated"]
-sky_top_color = Color(0.341176, 0.505882, 0.745098, 1)
-sky_horizon_color = Color(0.737255, 0.792157, 0.858824, 1)
-ground_bottom_color = Color(0.321569, 0.298039, 0.27451, 1)
-ground_horizon_color = Color(0.643137, 0.627451, 0.580392, 1)
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_la_chutana"]
+panorama = ExtResource("4_panorama")
+filter = false
 
 [sub_resource type="Sky" id="Sky_generated"]
-sky_material = SubResource("ProceduralSkyMaterial_generated")
+sky_material = SubResource("PanoramaSkyMaterial_la_chutana")
 
 [sub_resource type="Environment" id="Environment_generated"]
 background_mode = 2
@@ -24,6 +24,8 @@ glow_enabled = true
 
 [node name="SurfaceGroups" type="Node" parent="."]
 script = ExtResource("2_groups")
+
+[node name="SourceSkyboxRig" parent="." instance=ExtResource("3_skybox")]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_generated")

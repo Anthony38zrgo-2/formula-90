@@ -1,21 +1,13 @@
----
+﻿---
 name: problem-solving-guardrails
-description: Detect brute-force debugging loops and switch execution from guessing to evidence-driven diagnosis.
+description: Keep normal iteration fast and escalate only when evidence says guessing has stopped helping.
 ---
+# Fast Iteration
+1. Form a hypothesis.
+2. Make the smallest reversible change.
+3. Test it.
+4. Keep it if improved; revert it if worse.
+5. Record discoveries only when useful.
 
-# Problem Solving Guardrails
-
-- Attempt 1: direct, bounded implementation is allowed.
-- If Attempt 1 fails: query `agentdb problem` and gather new evidence.
-- If an equivalent Attempt 2 fails: stop implementation and escalate to diagnostic mode.
-- Strong-model escalation is reserved for unresolved root cause, architectural uncertainty, or cross-system risk.
-
-Diagnostic mode:
-1. observed vs expected;
-2. common-problem lookup;
-3. ownership and dependency check;
-4. one falsifiable hypothesis;
-5. one experiment that reduces uncertainty;
-6. minimal fix only after root cause evidence.
-
-Project-specific failure facts must live in the common-problem index, not inside this generic procedure.
+# Diagnostic Escalation
+Escalate after three meaningful failed hypotheses, recurring failure, unclear ownership, contradictory results, or when the next step is a workaround/speculative refactor. Inspect evidence and ownership; use logs, telemetry, offline tools, and git history only when they reduce uncertainty; apply the smallest root-cause fix.

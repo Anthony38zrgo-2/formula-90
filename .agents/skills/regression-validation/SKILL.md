@@ -1,17 +1,12 @@
----
+﻿---
 name: regression-validation
-description: Compare a candidate change against a baseline and reject fixes that silently regress a secondary scenario.
+description: Targeted checks for iteration; full regression for milestone freezes and high-risk changes.
 ---
+# Normal iteration
+Change, test affected behavior, keep or revert.
 
-# Regression Validation
+# Periodic sanity
+After several related accepted handling changes, check braking, slow/fast cornering, and curbs.
 
-For significant behavior changes:
-1. Choose the primary scenario.
-2. Choose at least one likely secondary regression scenario.
-3. Capture baseline evidence.
-4. Apply the candidate.
-5. Capture candidate evidence.
-6. Compare deltas.
-7. Return PASS, FAIL, or INCONCLUSIVE with evidence.
-
-A primary improvement with an unacceptable secondary regression is FAIL.
+# Milestone or high risk
+Compare baseline and candidate in relevant scenarios. Use telemetry where valuable and report PASS, FAIL, or INCONCLUSIVE.

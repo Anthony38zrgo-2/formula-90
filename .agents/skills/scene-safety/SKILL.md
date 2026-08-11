@@ -1,15 +1,10 @@
----
+﻿---
 name: scene-safety
-description: Safe procedure for modifying Godot .tscn files without losing serialized references or introducing structural corruption.
+description: Safe, lightweight procedure for Godot .tscn edits.
 ---
-
 # Scene Safety
-
-1. Query `agentdb problem node_paths` before broad scene work.
-2. Prefer surgical changes to specific properties/nodes.
-3. Preserve serialized references and exported NodePath metadata.
-4. Do not rewrite a whole scene/node block for a small change.
-5. Run structural parsing and a Godot scene-load/smoke validation after modification.
-6. If vehicle collision/curb symptoms appear, query the problem index rather than embedding one-off physics incidents in this skill.
-
-This skill is procedural. Specific incidents belong in `common_problems`.
+- Make surgical edits; do not rewrite unrelated scene blocks.
+- Preserve `node_paths`, serialized references, and exported assignments.
+- Never edit imported GLB scene internals directly.
+- Parse/load the modified scene and test the affected behavior.
+- When changing vehicle wheel/chassis geometry, confirm RayCast origin is above expected surfaces, chassis clearance is adequate, and the scene loads.

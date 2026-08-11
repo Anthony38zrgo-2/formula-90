@@ -17,6 +17,18 @@ Run Base first and stop for human testing:
 
 Only after explicit human acceptance may Procedural run.
 
+## Visual validation gate
+
+DeepSeek V4 cannot inspect screenshots, Blender viewports or game renders. It may build
+the track, run deterministic validation and capture named proof images, but it cannot
+approve visual acceptance.
+
+For any art-direction, asset, vegetation, skybox, barrier or composition change, split
+the work as: DeepSeek execution -> GPT image-capable or manual human review -> explicit
+user confirmation. Do not proceed to the next visual stage, or report visual success,
+without that confirmation. Automated checks cover geometry, counts, transforms, collision,
+paths and deterministic output only; they do not certify appearance.
+
 ## Collision hard rules
 
 - Never reintroduce wide centerline-offset Grass collision ribbons.

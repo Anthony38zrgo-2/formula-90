@@ -2,592 +2,321 @@
   "schema_version": 1,
   "items": [
     {
-      "id": "REF-001",
-      "epic": "architecture-stabilization",
-      "title": "Audit and incrementally refactor repository hygiene, SOLID/SRP, and GEVP-to-C++ boundaries",
-      "description": "Perform an evidence-first architectural stabilization milestone before the next feature. First audit tracked debris, generated artifacts, dead code, duplicated or contradictory documentation, and current runtime references. Then execute focused, behavior-preserving refactor stages only where verified by the repository: repository hygiene; documentation source-of-truth consolidation; removal of proven obsolete architecture; explicit read-only VehicleState boundary and separate command adapter; camera SRP; audio SRP; and the smallest justified move toward typed data-driven vehicle configuration. Do not blindly implement the external audit report; current repository, scenes, tests, AGENTS.md, and runtime behavior are authoritative.",
-      "item_type": "architecture",
-      "status": "proposed",
+      "id": "HAN-001",
+      "epic": "canonical-f1-handling",
+      "title": "Establish one canonical Jordan 191 handling scene and Monaco GP2-style acceptance matrix",
+      "description": "Select one canonical vehicle (Jordan 191) and one repeatable handling scene; define behavior-first acceptance tests covering progressive turn-in, recoverable oversteer, entry understeer when overdriven, stable straight-line braking, short transient settling, manageable curbs, and clearly greater high-speed stability than low-speed stability. Mostly scene/source-of-truth cleanup and test definition; do not change physics parameters until the canonical route is bootable and repeatable.",
+      "item_type": "feature",
+      "status": "next",
       "priority": 100,
-      "sort_order": 1,
-      "rationale": "The product owner selected architectural stabilization as the next milestone after the active HUD and vegetation work. Feature work and physics tuning will compound debt unless ownership, dead architecture, documentation authority, and the GEVP/GDScript-to-native presentation boundary are audited first.",
-      "technical_risk": "High. This spans tracked assets, native C++, GDScript, Godot scenes, documentation, and build tooling. It must be staged with baseline behavior evidence, focused commits, scene-safety validation, and no handling retuning.",
-      "user_value": "Creates a smaller, clearer, testable baseline that makes future vehicle, camera, audio, graphics, AI, and multi-agent changes safer.",
+      "sort_order": 10,
+      "rationale": "The repository currently has multiple vehicle baselines: test_field.tscn still instantiates f1_1996_car.tscn, while jordan_191.tscn is the intended 1990s single-seater baseline, and the previous backlog referenced non-existent jordan_1995/jordan_handling_test paths. Before tuning, select one canonical vehicle and one repeatable handling scene.",
+      "technical_risk": "Low-medium. This is mostly scene/source-of-truth cleanup and test definition. Avoid changing physics parameters until the canonical route is bootable and repeatable.",
+      "user_value": "Creates a single authoritative car and test loop so every subsequent handling change is comparable and intentional.",
       "dependencies": [],
       "affected_areas": [
-        ".gitignore",
-        "PROJECT_STATE.md",
-        "IMPLEMENTATION_PLAN.md",
-        "docs/architecture/",
-        "docs/engineering/",
-        "docs/game-design/",
-        "docs/ai/",
-        "native/include/",
-        "native/src/",
-        "game/scenes/",
-        "game/addons/formula90s/",
-        "game/addons/gevp/",
-        "tools/",
-        "tests/"
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/scenes/tracks/test_field/test_field.tscn",
+        "PROJECT_STATE.md"
       ],
       "acceptance_criteria": [
-        "A repository audit report classifies tracked files and records evidence before deletion or untracking.",
-        "Every suspected obsolete system, including DirectionalVehicleSprite, is confirmed, partially confirmed, or rejected by references from code, scenes, resources, build files, tests, and documentation.",
-        "GEVP remains the physical simulation authority; native presentation consumers do not become a second physics engine.",
-        "Vehicle read state and vehicle mutation are separated only after current consumer requirements are verified.",
-        "Camera and audio responsibility splits are incremental and preserve observable behavior unless a separately documented bug is fixed.",
-        "No physics tuning is mixed into refactor commits; acceleration, braking, steering, grip, suspension, transmission, reset, camera, audio, HUD telemetry, and scene loading are regression-checked.",
-        "Every stage builds, runs relevant automated and Godot smoke tests, checks stale references, and updates current architecture documentation with verified results.",
-        "No generated artifact, source asset, third-party dependency, or local developer data is removed merely because it is large or ignored."
+        "Single canonical car is selected (jordan_191.tscn) and test_field.tscn routes through it (no f1_1996_car.tscn instantiation remains in the bootstrap path).",
+        "Acceptance matrix is documented with the seven behavior-first criteria: progressive turn-in, recoverable oversteer, entry understeer when overdriven, stable straight-line braking, short transient settling, manageable curbs, greater high-speed stability than low-speed stability.",
+        "Handling scene is bootable and repeatable without parameter tuning side effects."
       ],
       "evidence": [
-        "User-provided FORMULA-90 repository cleanup, SOLID/SRP and Clean Code refactor audit, 2026-08-10.",
-        "PROJECT_STATE.md: current architecture and technical-debt state.",
-        "docs/architecture.md and docs/architecture/: current architecture references.",
-        "native/src/core/game_bootstrap.cpp and game/scenes/runtime/world_hud_compositor.gd: current mixed native/GDScript runtime boundary.",
-        "README.md: current project stack and runtime claims."
+        "Backlog pruned for Canonical F1 Handling v1, 2026-08-11."
       ],
       "source_agent": "product-owner",
-      "source_context": "User selected this as the next milestone after active UI HUD and vegetation increments, 2026-08-10."
-    },
-    {
-      "id": "PHY-001",
-      "epic": "vehicle-physics",
-      "title": "Pair telemetry CSV with immutable _setup.json snapshots",
-      "description": "Extend telemetry_manager.gd so every telemetry capture writes a paired <session>_setup.json snapshot generated from actual runtime values (provenance, chassis, tires, steering, brakes, differential, suspension, engine, transmission, aerodynamics, assists, surfaces) per PROJECT_STATE.md sections 13-19.",
-      "item_type": "infrastructure",
-      "status": "proposed",
-      "priority": 90,
-      "sort_order": 10,
-      "rationale": "PROJECT_STATE.md declares setup pairing the REQUIRED gate before Phase C. Existing game/telemetry/*.csv captures have no setup provenance, so they cannot be attributed to a physical setup or compared safely.",
-      "technical_risk": "Low. TelemetryManager is project-owned (game/addons/formula90s/scripts/telemetry_manager.gd); no vendor code touched. Schema is already proposed in PROJECT_STATE.md section 16.",
-      "user_value": "Enables evidence-based physics decisions; prevents interpreting unprovenanced telemetry as authority.",
-      "dependencies": [],
-      "affected_areas": ["game/addons/formula90s/scripts/telemetry_manager.gd", "game/telemetry/", "PROJECT_STATE.md"],
-      "acceptance_criteria": [
-        "Each CSV capture produces a _setup.json with identical basename.",
-        "Setup JSON values are read from runtime vehicle node, not typed manually.",
-        "Changing a physical parameter during a run starts a new session/CSV.",
-        "Missing optional families remain explicit in JSON instead of invented."
-      ],
-      "evidence": [
-        "game/addons/formula90s/scripts/telemetry_manager.gd:64-86 (CSV-only writer)",
-        "game/telemetry/ (30+ CSV captures, zero _setup.json)",
-        "PROJECT_STATE.md sections 13-19",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-015",
-      "epic": "vehicle-physics",
-      "title": "Capture verified baseline telemetry with setup provenance",
-      "description": "After PHY-001, record a reference telemetry session of the current validated Phase B Jordan setup (jordan_1995_phase_b.tscn on la_chutana_generated) to freeze a measurable baseline before any tuning.",
-      "item_type": "test",
-      "status": "proposed",
-      "priority": 90,
-      "sort_order": 20,
-      "rationale": "No existing capture can be attributed to a known setup. A verified baseline is required to detect regressions across Phases C-G and to investigate the observed 2nd-gear top speed.",
-      "technical_risk": "Low. Requires only PHY-001 and a controlled driving run.",
-      "user_value": "Single source of truth for future physics comparisons.",
-      "dependencies": ["PHY-001"],
-      "affected_areas": ["game/telemetry/", "game/scenes/tracks/test_field/jordan_handling_test.tscn"],
-      "acceptance_criteria": [
-        "At least one paired CSV+_setup.json captured on la_chutana_generated with Phase B scene.",
-        "Session records vehicle scene, track scene, git commit and aid state.",
-        "Baseline CSV contains full-throttle straight and at least one braking/corner sequence."
-      ],
-      "evidence": [
-        "game/scenes/tracks/test_field/jordan_handling_test.tscn:4 (phase_b instance)",
-        "Existing telemetry top speed 195.2 km/h and gears -1..2 only: game/telemetry/telemetry_20260809_191812_160.csv",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-002",
-      "epic": "vehicle-physics",
-      "title": "Update physics_diagnostics defaults to Jordan Phase B configuration",
-      "description": "Refresh tools/physics_diagnostics defaults (mass 505 kg, tire radii/widths, weights, wheelbase, tracks, powertrain) to mirror jordan_1995_phase_b.tscn instead of f1_2026_car.tscn (708 kg). Verify tscn_parser.py can read the Jordan scene.",
-      "item_type": "refactor",
-      "status": "proposed",
-      "priority": 55,
-      "sort_order": 30,
-      "rationale": "All offline diagnostic scripts currently produce numbers for a 708 kg 2026 car; results are misleading for the 1995 Jordan and cannot be used as validation authority.",
-      "technical_risk": "Low-medium. Scripts take overrides on the CLI; defaults must match the canonical Phase B scene exactly to keep offline/runtime agreement.",
-      "user_value": "Restores trust in offline validation used by Phases D/E/F.",
-      "dependencies": [],
-      "affected_areas": ["tools/physics_diagnostics/analyze_suspension.py", "tools/physics_diagnostics/analyze_powertrain.py", "tools/physics_diagnostics/analyze_tires.py", "tools/physics_diagnostics/analyze_aero_and_weight.py", "tools/physics_diagnostics/tscn_parser.py"],
-      "acceptance_criteria": [
-        "run_all_diagnostics.py reports flags computed from Jordan Phase B values.",
-        "Documented comparison: old vs new default-derived top speed / spring frequencies.",
-        "No source of truth change: values match runtime scene."
-      ],
-      "evidence": [
-        "tools/physics_diagnostics/README.md:37 (defaults sync with f1_2026_car.tscn)",
-        "tools/physics_diagnostics/analyze_suspension.py:36-68 (708 kg defaults)",
-        "tools/physics_diagnostics/analyze_powertrain.py:29-47",
-        "game/scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
+      "source_context": "Backlog pruned for Canonical F1 Handling v1, 2026-08-11."
     },
     {
       "id": "PHY-003",
-      "epic": "vehicle-physics",
-      "title": "Correct 1995 tire widths and wheel masses",
-      "description": "Change front_tire_width 335->254 mm and rear_tire_width 420->325 mm (Goodyear slick era 1993-1997) and wheel masses 12/16 kg -> ~10/12 kg in jordan_1995.tscn Phase A values.",
+      "epic": "canonical-f1-handling",
+      "title": "Normalize the canonical 1990s F1 physical envelope (mass, CG, track and wheel geometry)",
+      "description": "Merge the old tire-width, track-width and tire-radius tasks into one sanity pass over mass, CG, track and wheel geometry. Use plausible 1990s F1 values constrained by the actual Jordan 191 model dimensions; do not pursue millimeter-perfect historical homologation. Change the minimum coherent set once, then freeze it before behavioral tuning.",
       "item_type": "feature",
       "status": "proposed",
-      "priority": 70,
+      "priority": 95,
+      "sort_order": 20,
+      "rationale": "Steering, suspension, load transfer and tire tuning are unreliable if the basic physical envelope is not formula-like. Merge the old tire-width, track-width and tire-radius tasks into one sanity pass. Use plausible 1990s F1 values and the actual Jordan 191 model dimensions as constraints; do not pursue millimeter-perfect historical homologation.",
+      "technical_risk": "Medium. These values affect grip, Ackermann, gearing and weight transfer simultaneously. Change the minimum coherent set once, then freeze it before behavioral tuning.",
+      "user_value": "Removes GT-like geometric assumptions before handling tuning without turning the task into a historical reconstruction project.",
+      "dependencies": [
+        "HAN-001"
+      ],
+      "affected_areas": [
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/addons/gevp/scripts/vehicle.gd",
+        "game/addons/gevp/scripts/wheel.gd"
+      ],
+      "acceptance_criteria": [
+        "Mass, CG, track widths and wheel dimensions on jordan_191.tscn are set to a coherent 1990s F1 envelope derived from the model dimensions, not from later-era GT values.",
+        "No Phase A/B physical parameter outside mass, CG, track and wheel geometry is changed in the same commit.",
+        "Runtime values are documented and frozen before subsequent handling tuning."
+      ],
+      "evidence": [
+        "Merged PHY-003/PHY-004/PHY-005 for Canonical F1 Handling v1, 2026-08-11."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Merged PHY-003/PHY-004/PHY-005 for Canonical F1 Handling v1, 2026-08-11."
+    },
+    {
+      "id": "PHY-014",
+      "epic": "canonical-f1-handling",
+      "title": "Define the canonical assist policy and remove undocumented stabilization from handling tests",
+      "description": "Establish the exact baseline assist state for the canonical car: Monaco GP2-style handling may use mild intentional steering/countersteer assistance, but every assist that affects yaw, wheelspin or braking must be explicit and reproducible. Do not compensate by retuning multiple subsystems at once.",
+      "item_type": "feature",
+      "status": "proposed",
+      "priority": 93,
+      "sort_order": 30,
+      "rationale": "The canonical handling baseline must not be tuned against unknown hidden stabilization. Monaco GP2-style handling may use mild intentional steering/countersteer assistance, but every assist that affects yaw, wheelspin or braking must be explicit and reproducible. Establish the exact baseline assist state before tuning.",
+      "technical_risk": "Medium. Removing or changing assists can expose underlying instability; do not compensate by retuning multiple subsystems at once.",
+      "user_value": "Makes the car's behavior intentional: approachable arcade-sim assistance is allowed, but hidden physics compensation is not.",
+      "dependencies": [
+        "HAN-001"
+      ],
+      "affected_areas": [
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/addons/formula90s/scripts/driving_aids.gd",
+        "game/addons/gevp/scripts/vehicle.gd"
+      ],
+      "acceptance_criteria": [
+        "Canonical assist state is documented for yaw, wheelspin and braking aids.",
+        "No undocumented stabilization is observable during the handling acceptance matrix.",
+        "Aids can be toggled reproducibly without code changes."
+      ],
+      "evidence": [
+        "Reframed from precise OFF semantics into a short-term canonical baseline requirement, 2026-08-11."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Reframed from precise OFF semantics into a short-term canonical baseline requirement, 2026-08-11."
+    },
+    {
+      "id": "PHY-010",
+      "epic": "canonical-f1-handling",
+      "title": "Reproduce and fix automatic-transmission top-out or incomplete shift progression",
+      "description": "Reproduce the reported second-gear top-out using the canonical scene and current ratios. If confirmed, fix only the shift-condition defect; do not redesign the transmission. Verify all forward gears and downshifts after the minimal fix.",
+      "item_type": "bugfix",
+      "status": "proposed",
+      "priority": 92,
       "sort_order": 40,
-      "rationale": "Width enters the friction load-sensitivity term friction = mu*F - F/(width*contact_patch*0.2) (wheel.gd:301). The current 335/420 mm belong to a later era; narrower 1995 tires reduce grip under load transfer, a core 1995 handling trait. Mass is physical authority from Phase A.",
-      "technical_risk": "Medium. Reopens [VALIDATED] Phase A physical values; affects load transfer balance. Must be validated on jordan_handling_test.tscn before Phase C tuning starts, and Phase B values stay untouched.",
-      "user_value": "Foundation for 1995 mechanical-grip character; affects all later phases.",
-      "dependencies": [],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "game/addons/gevp/scripts/wheel.gd:301"],
+      "rationale": "A canonical car cannot be evaluated if automatic shifting fails to reach the full gearbox. Reproduce the reported second-gear top-out using the canonical scene and current ratios. If confirmed, fix only the shift-condition defect; do not redesign the transmission.",
+      "technical_risk": "Low-medium. The change can alter engine/gear interaction, so verify all forward gears and downshifts after the minimal fix.",
+      "user_value": "Ensures the car can complete full-speed handling tests and later race sessions without a basic drivetrain blocker.",
+      "dependencies": [
+        "HAN-001"
+      ],
+      "affected_areas": [
+        "game/addons/gevp/scripts/vehicle.gd",
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn"
+      ],
       "acceptance_criteria": [
-        "Runtime values confirmed as 254/325 mm and ~10/12 kg.",
-        "No Phase B parameter (friction, contact patch, brake bias, differential) changed.",
-        "Baseline telemetry re-captured after change (paired with setup JSON)."
+        "Reproduction of the second-gear top-out is documented using the canonical scene.",
+        "If the defect is confirmed, the minimal fix is applied to the shift condition only.",
+        "All forward gears and downshifts are validated after the fix."
       ],
       "evidence": [
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:154-158",
-        "game/addons/gevp/scripts/wheel.gd:301",
-        "Reference: Wikipedia Formula_One_tyres (1993 rear width reduced 18in->15in, ~325 mm; front ~254 mm)",
-        "PROJECT_STATE.md section 5.1",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
+        "Promoted as a blocking reproducibility/fix task for Canonical F1 Handling v1, 2026-08-11."
       ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-004",
-      "epic": "vehicle-physics",
-      "title": "Correct 1995 track widths (wheel RayCast X positions)",
-      "description": "Move front wheel RayCasts from X +/-0.739368 to +/-0.850 and rear from +/-0.718479 to +/-0.809 to match Jordan 195 front 1700 mm / rear 1618 mm track.",
-      "item_type": "feature",
-      "status": "proposed",
-      "priority": 60,
-      "sort_order": 50,
-      "rationale": "Track width drives the Ackermann correction (vehicle.gd:554-556) and roll-weight distribution; current tracks (1479/1437 mm) are narrower than the real 195 (1700/1618 mm).",
-      "technical_risk": "Medium. Wheel RayCast positions are physical authority (PROJECT_STATE 5.1); visual wheel contract must remain symmetric; collision shapes and ackermann recompute automatically. Requires structural scene validation after edit.",
-      "user_value": "Geometrically faithful 1995 platform for steering/suspension tuning.",
-      "dependencies": [],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "game/addons/gevp/scripts/vehicle.gd:554-556"],
-      "acceptance_criteria": [
-        "Runtime RayCast X positions match target track widths.",
-        "Visual wheel symmetry preserved (one visual per axle, 180-degree orientation).",
-        "Scene loads and drives without collision artifacts on jordan_handling_test.tscn."
-      ],
-      "evidence": [
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:182-226",
-        "game/addons/gevp/scripts/vehicle.gd:552-556",
-        "Reference: Wikipedia Jordan_195 (front track 1700 mm, rear 1618 mm)",
-        "PROJECT_STATE.md section 5.1",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-005",
-      "epic": "vehicle-physics",
-      "title": "Correct 1995 tire radii (25in front / 26in rear maximums)",
-      "description": "Change front/rear tire radius from 0.3473 m toward era maximums: front ~0.330 m (25 in), rear ~0.346 m (26 in).",
-      "item_type": "feature",
-      "status": "proposed",
-      "priority": 40,
-      "sort_order": 60,
-      "rationale": "Radius affects wheel speed conversion, tire-size correction and gearing. 1995 F1 max diameters were 25 in front / 26 in rear; current 0.3473 m equals 13.67 in radius (27.3 in diameter), slightly over era maximum.",
-      "technical_risk": "Low-medium. Changing radius changes top speed per gear and contact geometry; keep both axles consistent with the max_tire_radius correction in vehicle.gd:492-494.",
-      "user_value": "Small but correct era alignment; consistent gearing math in Phase E.",
-      "dependencies": [],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "game/addons/gevp/scripts/vehicle.gd:492-494"],
-      "acceptance_criteria": [
-        "Runtime radii match target values.",
-        "No Phase B/C/D parameter changed in the same commit."
-      ],
-      "evidence": [
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:153-158",
-        "Reference: Wikipedia Formula_One_tyres (diameter limits 25 in front / 26 in rear era)",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
+      "source_agent": "product-owner",
+      "source_context": "Promoted as a blocking reproducibility/fix task for Canonical F1 Handling v1, 2026-08-11."
     },
     {
       "id": "PHY-006",
-      "epic": "vehicle-physics",
-      "title": "Phase C: tune 1995 steering/countersteer progression",
-      "description": "Replace baseline steering values with the PROJECT_STATE section 8.1 candidates (steering_speed ~3.7, countersteer_speed ~9.0, decay ~0.26, slip_assist ~0.11, countersteer_assist ~0.70, exponent ~1.70, max angle ~25 deg) and validate progressive keyboard response, unwind and recoverable-but-not-omniscient countersteer.",
+      "epic": "canonical-f1-handling",
+      "title": "Tune canonical F1 steering, yaw response and countersteer progression",
+      "description": "Target a late-1990s arcade-sim formula feel: quick but progressive turn-in, low rotational inertia, mild entry understeer when overdriven, progressive throttle/lift-off rotation, and recoverable oversteer when countersteer is applied early. Steering assist, tire response and yaw damping are coupled; tune one behavior family at a time against the acceptance matrix.",
       "item_type": "feature",
       "status": "proposed",
-      "priority": 80,
-      "sort_order": 70,
-      "rationale": "Steering is the next physics phase in the project roadmap (PROJECT_STATE section 8) and the first tuning step toward late-1990s formula feel (Monaco GP Racing Simulation 2 inspiration).",
-      "technical_risk": "Medium. Must not touch tire/suspension/powertrain families simultaneously (phase discipline); telemetry pairing is required first; candidates are not validated values.",
-      "user_value": "Readable, progressive steering - the first perceivable 1995 handling trait.",
-      "dependencies": ["PHY-001", "PHY-015", "PHY-003"],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "game/addons/gevp/scripts/vehicle.gd:664-723"],
+      "priority": 90,
+      "sort_order": 50,
+      "rationale": "The current car is described as halfway between a GT3 and excessive oversteer. Target a late-1990s arcade-sim formula feel: quick but progressive turn-in, low rotational inertia, mild entry understeer when overdriven, progressive throttle/lift-off rotation, and recoverable oversteer when countersteer is applied early.",
+      "technical_risk": "High. Steering assist, tire response and yaw damping are coupled. Tune one behavior family at a time against the acceptance matrix.",
+      "user_value": "This is the core 'it feels like an F1 car' milestone and the highest-value handling change.",
+      "dependencies": [
+        "PHY-003",
+        "PHY-014"
+      ],
+      "affected_areas": [
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/addons/gevp/scripts/vehicle.gd"
+      ],
       "acceptance_criteria": [
-        "Paired telemetry/setup records for every steering run.",
-        "Progressive keyboard response; predictable unwind; countersteer recoverable in time but a late correction still spins.",
-        "No regression in Phase B mechanical grip behavior.",
-        "Validated on multiple corners/speeds of la_chutana_generated."
+        "Steering satisfies the acceptance matrix: progressive turn-in, mild entry understeer when overdriven, progressive throttle/lift-off rotation, recoverable oversteer.",
+        "Countersteer applied early recovers the car; late countersteer still rotates it.",
+        "Tuning is documented per behavior family (assist, tire, yaw damping)."
       ],
       "evidence": [
-        "PROJECT_STATE.md sections 8, 46, 47",
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:35-43 (current baseline steering)",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
+        "Retargeted from exact 1995 steering to Monaco GP2-style canonical F1 feel, 2026-08-11."
       ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
+      "source_agent": "product-owner",
+      "source_context": "Retargeted from exact 1995 steering to Monaco GP2-style canonical F1 feel, 2026-08-11."
     },
     {
       "id": "PHY-007",
-      "epic": "vehicle-physics",
-      "title": "Phase D: tune 1995 suspension behavior",
-      "description": "Tune springs, damping, anti-roll and weight-transfer behavior toward stiff 1995 race setup (damping ratio 0.70-0.85, race bump/rebound split, balanced ARB) using telemetry for braking pitch, direction changes and curb response on la_chutana curbs (~22 mm rise).",
+      "epic": "canonical-f1-handling",
+      "title": "Tune canonical F1 suspension, transient weight transfer and curb stability",
+      "description": "Remove the GT3-like sense of mass and long body settling. The car should react sharply, roll little, settle quickly after braking or direction changes, remain stable under straight braking, and tolerate normal curbs without random launches or persistent bottom-out. Historical damper values are not required; suspension changes must not mask tire, geometry or track-collision problems.",
       "item_type": "feature",
       "status": "proposed",
-      "priority": 70,
-      "sort_order": 80,
-      "rationale": "Phase D is the suspension family phase; 1995 cars relied on mechanical grip with very stiff springs and strong damping. Current values are the known-good baseline (spring 0.15 m, resting 0.50, damping 0.75, bump 1.3, rebound 1.1, ARB 0.45/0.40).",
-      "technical_risk": "Medium. Do not raise tire grip to conceal suspension problems; verify natural frequencies with analyze_suspension.py; bottom-out events (150 mm compression observed) must be diagnosed before curbs are blamed.",
-      "user_value": "Mechanical, readable weight transfer - the core 1995 handling feel.",
-      "dependencies": ["PHY-006"],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "tools/physics_diagnostics/analyze_suspension.py", "game/addons/gevp/scripts/wheel.gd:204-266"],
+      "priority": 85,
+      "sort_order": 60,
+      "rationale": "Remove the GT3-like sense of mass and long body settling. The car should react sharply, roll little, settle quickly after braking or direction changes, remain stable under straight braking, and tolerate normal curbs without random launches or persistent bottom-out. Historical damper values are not required.",
+      "technical_risk": "High. Suspension changes can mask tire, geometry or track-collision problems. Use the existing diagnostic guardrails only when a concrete symptom appears.",
+      "user_value": "Creates the short, stiff, responsive chassis behavior expected from a single-seater instead of a heavy GT car.",
+      "dependencies": [
+        "PHY-006"
+      ],
+      "affected_areas": [
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/addons/gevp/scripts/wheel.gd",
+        "game/addons/gevp/scenes/track.tscn"
+      ],
       "acceptance_criteria": [
-        "No unexplained chassis bottom-out during reference curb test.",
-        "Front/rear natural frequencies documented and balanced.",
-        "No Phase B grip/brake values changed.",
-        "Paired telemetry for pitch/direction-change tests."
+        "Suspension produces short transient settling (no long body settling).",
+        "Stable under straight braking.",
+        "Normal curbs are tolerated without random launches or persistent bottom-out.",
+        "Tire, geometry and track-collision symptoms are checked before any damper/spring change."
       ],
       "evidence": [
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:97-117",
-        "game/telemetry/telemetry_20260809_191812_160.csv (FL/RL_Comp reached 150 mm full travel)",
-        "PROJECT_STATE.md sections 9, 24",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
+        "Retargeted from exact 1995 suspension values to behavior-first canonical handling, 2026-08-11."
       ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
+      "source_agent": "product-owner",
+      "source_context": "Retargeted from exact 1995 suspension values to behavior-first canonical handling, 2026-08-11."
+    },
+    {
+      "id": "PHY-012",
+      "epic": "canonical-f1-handling",
+      "title": "Add a simple speed-squared aero balance with a clear low-speed/high-speed handling transition",
+      "description": "Add the minimum tunable V^2 downforce model needed so low-speed behavior is primarily mechanical and lively while medium/high-speed corners become distinctly more planted. Keep front/rear balance and drag simple; no CFD, ground-effect simulation or historical aero map. Implement only after steering and suspension are acceptable at low/medium speed.",
+      "item_type": "feature",
+      "status": "proposed",
+      "priority": 82,
+      "sort_order": 70,
+      "rationale": "A formula car should not feel like a lightweight GT at every speed. Add the minimum tunable V^2 downforce model needed so low-speed behavior is primarily mechanical and lively while medium/high-speed corners become distinctly more planted. Keep front/rear balance and drag simple; no CFD, ground-effect simulation or historical aero map.",
+      "technical_risk": "High. Aero can hide bad mechanical balance. Implement only after steering and suspension are acceptable at low/medium speed.",
+      "user_value": "Provides one of the strongest perceptual cues that the vehicle is an F1-style single-seater.",
+      "dependencies": [
+        "PHY-007"
+      ],
+      "affected_areas": [
+        "game/addons/formula90s/",
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn"
+      ],
+      "acceptance_criteria": [
+        "Downforce scales with V^2 and is configurable.",
+        "No downforce is applied at rest/low speed (mechanical behavior unchanged).",
+        "Low-speed behavior is primarily mechanical and lively; medium/high-speed corners are distinctly more planted.",
+        "Front/rear balance and drag are exposed for tuning."
+      ],
+      "evidence": [
+        "Simplified from historical Phase F aero into the minimum model needed for Canonical F1 Handling v1, 2026-08-11."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Simplified from historical Phase F aero into the minimum model needed for Canonical F1 Handling v1, 2026-08-11."
     },
     {
       "id": "PHY-008",
-      "epic": "vehicle-physics",
-      "title": "Phase E: implement 1995 Peugeot A10 V10 powertrain character",
-      "description": "Replace the reference powertrain with a 1995-era V10 character: max_rpm ~15500, peak torque ~350 Nm with a peaky high-rpm torque curve, strong engine braking (motor_brake/motor_drag), preserving powertrain-philosophy.md (no hybrid/ERS).",
+      "epic": "canonical-f1-handling",
+      "title": "Tune the canonical high-rev V10 powertrain and close-ratio gearbox as one package",
+      "description": "Tune fast rev response, strong top-end character, useful engine braking, shift cadence and close ratios together. The deterministic per-gear speed and shift-point checks are acceptance criteria for this task; they are not separate backlog features. Preserve the working GEVP ownership model.",
       "item_type": "feature",
       "status": "proposed",
-      "priority": 80,
-      "sort_order": 90,
-      "rationale": "The current engine (280 Nm @ 17000 rpm, curve (0,0.2)-(0.85,1.0)-(1.0,0.1)) is a placeholder, not 1995. The real Jordan 195 used the Peugeot A10 V10 (~700-760 hp @ 15500 rpm). Engine braking must be tactical per powertrain-philosophy.md.",
-      "technical_risk": "High. Powertrain interacts with clutch model, auto-shift logic and traction; must not begin until mechanical handling (Phases C/D) is understood; validate offline with analyze_powertrain.py first.",
-      "user_value": "The most iconic 1995 identity element: screaming high-revving V10.",
-      "dependencies": ["PHY-007"],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "game/addons/gevp/scripts/vehicle.gd:748-816", "tools/physics_diagnostics/analyze_powertrain.py"],
+      "priority": 78,
+      "sort_order": 80,
+      "rationale": "Powertrain character must support the F1 identity without becoming an engine-simulation project. Tune fast rev response, strong top-end character, useful engine braking, shift cadence and close ratios together. Fold the old separate gearbox and offline powertrain-validation items into this task; deterministic per-gear speed/shift checks are acceptance criteria, not separate backlog features.",
+      "technical_risk": "Medium-high. Torque curve, inertia, clutch, final drive and shift thresholds interact; preserve the working GEVP ownership model.",
+      "user_value": "Adds the high-revving, closely geared response expected from a late-1990s-style Formula car.",
+      "dependencies": [
+        "PHY-010",
+        "PHY-007"
+      ],
+      "affected_areas": [
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/addons/gevp/scripts/vehicle.gd",
+        "tools/physics_diagnostics/analyze_powertrain.py"
+      ],
       "acceptance_criteria": [
-        "Torque curve and max_rpm verified offline before runtime tuning.",
-        "Engine braking is severe and tactically usable.",
-        "Top speed target (~300 km/h on la_chutana straight) measured with paired telemetry.",
-        "No hybrid/electrical system introduced."
+        "Torque curve has strong top-end character and fast rev response.",
+        "Engine braking is useful and tactically exploitable.",
+        "Per-gear top speed and shift-RPM are documented offline (analyze_powertrain.py) and reproduced at runtime.",
+        "Close-ratio gearbox with correct overlap/shift cadence is implemented together with the engine curve."
       ],
       "evidence": [
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:64-79 (reference powertrain placeholder)",
-        "docs/game-design/powertrain-philosophy.md",
-        "Reference: Wikipedia Jordan_195 (Peugeot A10 3.0L V10 700-760 hp @ 15500 rpm)",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
+        "Merged PHY-008/PHY-009/PHY-011 into one short-term powertrain package, 2026-08-11."
       ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
+      "source_agent": "product-owner",
+      "source_context": "Merged PHY-008/PHY-009/PHY-011 into one short-term powertrain package, 2026-08-11."
     },
     {
-      "id": "PHY-009",
-      "epic": "vehicle-physics",
-      "title": "Phase E: implement 7-speed 1995 transmission ratios",
-      "description": "Extend gear_ratios from 6 to 7 elements with closer 1995-style ratios and adjust final drive so the V10 stays in its power band; the real Jordan 195 used a 7-speed semi-automatic gearbox.",
+      "id": "PHY-015",
+      "epic": "canonical-f1-handling",
+      "title": "Freeze Canonical F1 Handling v1 and capture a lightweight regression baseline",
+      "description": "Once steering, suspension, aero and powertrain satisfy the Monaco GP2-style acceptance matrix, stop major handling work. Record the final setup plus a small repeatable telemetry set for low-speed rotation, braking, direction change, fast corner, curb and full-gear acceleration. Goal: regression protection, not a telemetry platform.",
+      "item_type": "test",
+      "status": "proposed",
+      "priority": 75,
+      "sort_order": 90,
+      "rationale": "Once steering, suspension, aero and powertrain satisfy the Monaco GP2-style acceptance matrix, stop major handling work. Record the final setup plus a small repeatable telemetry set for low-speed rotation, braking, direction change, fast corner, curb and full-gear acceleration. The goal is regression protection, not a telemetry platform.",
+      "technical_risk": "Low. Avoid building immutable telemetry infrastructure or a generalized analytics system; a small versioned baseline is sufficient.",
+      "user_value": "Prevents endless physics tuning and establishes the canonical car that track, AI and race systems can safely target.",
+      "dependencies": [
+        "PHY-006",
+        "PHY-007",
+        "PHY-012",
+        "PHY-008",
+        "PHY-014"
+      ],
+      "affected_areas": [
+        "game/scenes/vehicles/jordan_191/jordan_191.tscn",
+        "game/telemetry/",
+        "PROJECT_STATE.md",
+        "tests/"
+      ],
+      "acceptance_criteria": [
+        "Final setup values are recorded in PROJECT_STATE.md and on the canonical scene.",
+        "A small versioned telemetry set covers low-speed rotation, braking, direction change, fast corner, curb and full-gear acceleration.",
+        "No immutable telemetry infrastructure is introduced; a versioned baseline is sufficient."
+      ],
+      "evidence": [
+        "Rewritten from telemetry-provenance infrastructure into a minimal handling-freeze gate, 2026-08-11."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Rewritten from telemetry-provenance infrastructure into a minimal handling-freeze gate, 2026-08-11."
+    },
+    {
+      "id": "UI-002",
+      "epic": "race-loop",
+      "title": "Build RaceSession MVP: countdown, checkpoints, lap timing, finish and retry",
+      "description": "After Canonical F1 Handling v1 is frozen, implement truthful race-session state for countdown, checkpoint order, lap count/time, finish and retry/menu. Defer position ranking, opponent roster and rival minimap markers until an actual opponent system exists. Requires one game-state owner and reliable track progression; keep competition/AI out of the MVP.",
       "item_type": "feature",
       "status": "proposed",
       "priority": 70,
       "sort_order": 100,
-      "rationale": "Current 6-ratio set [2.85, 2.29, 1.89, 1.60, 1.38, 1.20] x 3.60 belongs to the reference placeholder. 7 speeds with a peaky engine require tighter spacing to exploit the narrow power band.",
-      "technical_risk": "Medium. gear_ratios array size drives auto-shift thresholds in vehicle.gd:828-868; must be validated together with the V10 curve (PHY-008).",
-      "user_value": "Authentic 1995 gearbox feel and shift cadence.",
-      "dependencies": ["PHY-008"],
-      "affected_areas": ["game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "game/addons/gevp/scripts/vehicle.gd:818-868", "tools/physics_diagnostics/analyze_powertrain.py"],
-      "acceptance_criteria": [
-        "Offline per-gear speed chart shows correct overlap/shift points.",
-        "Auto-shift selects all 7 gears on the straight (previous telemetry only reached gear 2).",
-        "Paired telemetry validates shift behavior."
+      "rationale": "After Canonical F1 Handling v1 is frozen, the next value milestone is a complete playable loop. Implement truthful race-session state for countdown, checkpoint order, lap count/time, finish and retry/menu. Defer position ranking, opponent roster and rival minimap markers until an actual opponent system exists.",
+      "technical_risk": "Medium. Requires one game-state owner and reliable track progression; keep competition/AI out of the MVP.",
+      "user_value": "Turns the handling prototype into a small complete game mode instead of continuing physics/tooling work indefinitely.",
+      "dependencies": [
+        "PHY-015"
       ],
-      "evidence": [
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:73 (6 gears, final 3.60)",
-        "game/telemetry/telemetry_20260809_191812_160.csv (gears used -1..2 only)",
-        "Reference: Wikipedia Jordan_195 (7-speed semi-automatic)",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-010",
-      "epic": "vehicle-physics",
-      "title": "Investigate automatic-transmission top-out in 2nd gear",
-      "description": "Confirm or reject the hypothesis that the GEVP auto-shift logic never upshifts past gear 2 at ~195 km/h because upshifts require ideal (no-slip) wheel RPM above max_rpm. Use verified baseline telemetry (PHY-015) before touching vehicle.gd.",
-      "item_type": "research",
-      "status": "proposed",
-      "priority": 60,
-      "sort_order": 110,
-      "rationale": "Observed in unprovenanced telemetry: max speed 195.2 km/h, max RPM 15896, gears -1..2 only. vehicle.gd:828-850 upshifts only when current_ideal_gear_rpm > max_rpm; if confirmed, the car never leaves low gears with the current curve.",
-      "technical_risk": "Low. Research only; vehicle.gd is 'not pristine upstream' (PROJECT_STATE 4.3) so justified changes are possible, but require telemetry evidence first.",
-      "user_value": "Prevents a powertrain tuning phase built on a transmission logic defect.",
-      "dependencies": ["PHY-008", "PHY-015"],
-      "affected_areas": ["game/addons/gevp/scripts/vehicle.gd:818-868"],
-      "acceptance_criteria": [
-        "Reproduction with paired telemetry on the verified baseline.",
-        "Documented root cause (or explicit rejection of the hypothesis).",
-        "Any change to vehicle.gd justified by measured behavior."
-      ],
-      "evidence": [
-        "game/telemetry/telemetry_20260809_191812_160.csv (79k rows; gears -1..2; 195.2 km/h)",
-        "game/addons/gevp/scripts/vehicle.gd:828-850 (shift condition)",
-        "PROJECT_STATE.md section 4.3 (vehicle.gd not pristine upstream)",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-011",
-      "epic": "vehicle-physics",
-      "title": "Validate Phase E powertrain offline (per-gear speeds, shift points)",
-      "description": "Use analyze_powertrain.py with Jordan defaults (after PHY-002) to precompute torque/power curves, per-gear top speeds and ideal shift points for the new V10 and 7-speed gearbox before runtime tuning.",
-      "item_type": "test",
-      "status": "proposed",
-      "priority": 50,
-      "sort_order": 120,
-      "rationale": "powertrain skill and ai_physics_manual mandate offline verification when engine tuning is involved; avoids runtime brute-force.",
-      "technical_risk": "Low. Offline-only; requires PHY-002 defaults to be Jordan-accurate.",
-      "user_value": "Fast deterministic validation of engine/gearbox pairing.",
-      "dependencies": ["PHY-008"],
-      "affected_areas": ["tools/physics_diagnostics/analyze_powertrain.py"],
-      "acceptance_criteria": [
-        "Report documents power curve, per-gear top speed and shift RPM.",
-        "Report reviewed before runtime changes begin."
-      ],
-      "evidence": [
-        "tools/physics_diagnostics/analyze_powertrain.py",
-        ".agents/skills/powertrain/SKILL.md (offline verification step)",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-012",
-      "epic": "vehicle-physics",
-      "title": "Phase F: implement 1995 speed-squared downforce layer",
-      "description": "Create a project-owned (formula90s) speed-dependent downforce layer (V^2 scaling, front/rear split, high drag character) - no Formula90s aero layer exists today; GEVP only offers coefficient_of_drag/area.",
-      "item_type": "feature",
-      "status": "proposed",
-      "priority": 60,
-      "sort_order": 130,
-      "rationale": "1995 cars had flat-bottom + wings: high drag, moderate downforce (~1.4-1.8x weight at top speed), rearward balance ~45-55%. Mechanical handling (Phases C/D) must already work so aero shapes only high-speed behavior.",
-      "technical_risk": "High. New physics code in the project addon; must not mask mechanical grip problems; lift-off behavior must remain predictable; validate with analyze_aero_and_weight.py.",
-      "user_value": "High-speed stability and era-authentic cornering at speed.",
-      "dependencies": ["PHY-007"],
-      "affected_areas": ["game/addons/formula90s/", "game/scenes/vehicles/jordan_1995/jordan_1995.tscn", "tools/physics_diagnostics/analyze_aero_and_weight.py"],
-      "acceptance_criteria": [
-        "Downforce scales with V^2 and is configurable in scene/inspector.",
-        "No downforce applied at rest/low speed (mechanical handling unchanged).",
-        "Balance front/rear adjustable without touching tire grip."
-      ],
-      "evidence": [
-        "game/addons/formula90s/scripts/ (no aero script exists)",
-        "game/scenes/vehicles/jordan_1995/jordan_1995.tscn:160-163 (drag-only placeholder)",
-        ".agents/skills/aerodynamics/SKILL.md",
-        "PROJECT_STATE.md section 11",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-013",
-      "epic": "vehicle-physics",
-      "title": "Validate Phase F aero balance offline",
-      "description": "Precompute drag/downforce forces and weight transfer at reference speeds with analyze_aero_and_weight.py (after PHY-002 defaults fix) before runtime aero tuning.",
-      "item_type": "test",
-      "status": "proposed",
-      "priority": 40,
-      "sort_order": 140,
-      "rationale": "aerodynamics skill requires offline precomputation of drag and weight transfer before altering GDScript.",
-      "technical_risk": "Low. Offline-only.",
-      "user_value": "Deterministic aero configuration instead of runtime guessing.",
-      "dependencies": ["PHY-012"],
-      "affected_areas": ["tools/physics_diagnostics/analyze_aero_and_weight.py"],
-      "acceptance_criteria": [
-        "Report covers drag and downforce at low/medium/high speed.",
-        "Front/rear balance documented at reference speeds."
-      ],
-      "evidence": [
-        "tools/physics_diagnostics/analyze_aero_and_weight.py",
-        ".agents/skills/aerodynamics/SKILL.md",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "PHY-014",
-      "epic": "vehicle-physics",
-      "title": "Phase G: precise OFF semantics for driving aids",
-      "description": "Separate natural vehicle physics, GEVP baseline stabilization and Formula90s optional aids (driving_aids.gd); define what 'OFF' means per aid (stability, steering, braking, grip, auto transmission) and make it measurable in telemetry.",
-      "item_type": "feature",
-      "status": "proposed",
-      "priority": 50,
-      "sort_order": 150,
-      "rationale": "PROJECT_STATE section 12: 'aid OFF' must have a precise behavioral meaning, not an undocumented fallback to hidden stabilization. 1995 cars had no ABS/TCS - wheel lock and spin must be possible.",
-      "technical_risk": "Medium. Existing driving_aids.gd captures and restores baseline values; OFF semantics must be verified per aid without changing the natural physics already tuned in Phases C-F.",
-      "user_value": "Authentic no-assists driving (era-correct risk) while keeping accessible assists.",
-      "dependencies": ["PHY-007"],
-      "affected_areas": ["game/addons/formula90s/scripts/driving_aids.gd", "PROJECT_STATE.md section 12", "game/addons/gevp/scripts/vehicle.gd:946-972"],
-      "acceptance_criteria": [
-        "Each aid OFF state documented and verified in telemetry (no hidden stabilization).",
-        "Wheel lock under heavy braking and rear wheelspin on throttle possible with all aids OFF.",
-        "Aid ON/OFF toggles start new telemetry sessions."
-      ],
-      "evidence": [
-        "game/addons/formula90s/scripts/driving_aids.gd (current override behavior)",
-        "PROJECT_STATE.md sections 6, 12",
-        "git 88e79b10cc4f493e52fe0f6508dcd2904dbb8c02"
-      ],
-      "source_agent": "deepseek-physics-analysis",
-      "source_context": "Initial Formula90 GEVP physics assessment"
-    },
-    {
-      "id": "UI-001",
-      "epic": "race-presentation",
-      "title": "Remodel the gameplay HUD with a dynamic La Chutana minimap",
-      "description": "Replace the debug-oriented gameplay HUD with a late-1990s arcade racing presentation inspired by the supplied reference: a compact left-side circuit map, an oriented player marker updated from the vehicle transform, a visible start/finish marker, a bottom-right speed/gear gauge, and transient white top-right messages when a driving aid changes state. Preserve the world/HUD compositor boundary so UI remains outside world-only filtering.",
-      "item_type": "feature",
-      "status": "validated",
-      "priority": 75,
-      "sort_order": 160,
-      "rationale": "The predecessor was a cyan diagnostic panel and its minimap was a hard-coded rectangle with arbitrary markers. La Chutana has a canonical centerline and start/finish data, so the player map can be accurate, simple, and real-time without coupling to visual track meshes.",
-      "technical_risk": "Medium. The runtime compositor retargets HUD NodePaths after moving the scene outside WorldViewport. Preserve those paths, source aid-state changes from DrivingAidsController, and do not reintroduce HUD rendering inside WorldViewport.",
-      "user_value": "A readable, authentic retro race HUD that makes speed, gear, player orientation, circuit layout, and the start point instantly legible.",
-      "dependencies": [],
-      "affected_areas": [
-        "game/scenes/ui/debug_hud.tscn",
-        "game/scenes/ui/la_chutana_hud_map.tres",
-        "game/addons/formula90s/scripts/arcade_race_hud.gd",
-        "game/addons/formula90s/scripts/arcade_speed_gauge.gd",
-        "game/addons/formula90s/scripts/track_minimap_controller.gd",
-        "game/addons/formula90s/scripts/track_map_data.gd",
-        "game/addons/formula90s/scripts/driving_aids.gd",
-        "game/scenes/runtime/world_hud_compositor.gd",
-        "blender/generated/la_chutana/centerline.json",
-        "blender/track_pipeline/configs/la_chutana.json"
-      ],
-      "acceptance_criteria": [
-        "The gameplay HUD visually follows the supplied late-1990s arcade reference without copying logos or proprietary artwork.",
-        "The minimap draws the canonical La Chutana centerline, a distinct start/finish marker, and an oriented player marker that follows the vehicle in real time.",
-        "Speed and gear display actual vehicle runtime values; HUD remains crisp when world-only post-processing is enabled.",
-        "A white, background-free top-right message appears only when a driving aid is enabled or disabled, then fades without permanently occupying HUD space.",
-        "The legacy diagnostic/aids readout is not shown in normal gameplay and remains available only as an explicit debug/future feature.",
-        "A scene-load smoke test and a GPU visual capture validate the HUD at the active 16:9 presentation resolution."
-      ],
-      "evidence": [
-        "game/scenes/ui/debug_hud.tscn",
-        "game/scenes/ui/la_chutana_hud_map.tres",
-        "game/addons/formula90s/scripts/arcade_race_hud.gd",
-        "game/addons/formula90s/scripts/track_minimap_controller.gd",
-        "game/addons/formula90s/scripts/driving_aids.gd",
-        "blender/generated/la_chutana/centerline.json",
-        "blender/track_pipeline/configs/la_chutana.json:start_finish",
-        "game/tests/smoke_test_arcade_hud_scene.gd",
-        "game/tests/smoke_test_arcade_hud_runtime.gd",
-        "PROJECT_STATE.md section 49.2"
-      ],
-      "source_agent": "codex",
-      "source_context": "User-requested HUD redesign based on supplied reference image, 2026-08-10"
-    },
-    {
-      "id": "UI-002",
-      "epic": "race-presentation",
-      "title": "Add race-session data for lap, position, countdown, and rival markers",
-      "description": "Implement a race-session authority that exposes real lap count, position, countdown/start lights, and opponent transforms to the HUD. The HUD composition should reserve/document these reference-inspired blocks, but it must not display invented values before this data exists.",
-      "item_type": "feature",
-      "status": "proposed",
-      "priority": 55,
-      "sort_order": 170,
-      "rationale": "The supplied HUD reference includes lap, position, a central countdown, and multiple map markers, but the current project has no race manager or opponent roster that can provide truthful values.",
-      "technical_risk": "Medium-high. Requires a game-state/race progression owner rather than HUD-local counters; position must be derived from valid lap/progress data and not inferred from raw world coordinates alone.",
-      "user_value": "Completes the race presentation with trustworthy progression and competition information once race gameplay exists.",
-      "dependencies": ["UI-001"],
       "affected_areas": [
         "game/scenes/ui/debug_hud.tscn",
         "game/scenes/runtime/world_hud_compositor.gd",
-        "game/scenes/tracks/test_field/jordan_handling_test.tscn",
+        "game/scenes/tracks/",
         "game/addons/formula90s/"
       ],
       "acceptance_criteria": [
-        "Lap, position, countdown, and rival markers are driven by a single authoritative race-session model.",
-        "No placeholder race values are visible in normal gameplay before the model is present.",
-        "Position and lap transitions are tested around the La Chutana start/finish line.",
-        "The minimap supports several player/opponent markers without obscuring the track outline."
+        "Countdown, checkpoint order, lap count/time, finish and retry/menu are driven by a single authoritative race-session model.",
+        "No placeholder race values are visible in normal gameplay.",
+        "Lap transitions are tested around the canonical track start/finish line.",
+        "Position ranking and opponent roster remain deferred until an opponent system exists."
       ],
       "evidence": [
-        "User-supplied HUD reference image",
-        "native/src/ui/debug_hud_controller.cpp (current data is vehicle/aids only)",
-        "native/src/ui/static_minimap_controller.cpp (current arbitrary static markers)"
+        "Reduced from lap/position/countdown/rivals into the first post-handling race-loop milestone, 2026-08-11."
       ],
-      "source_agent": "codex",
-      "source_context": "Deferred from user-requested HUD redesign, 2026-08-10"
-    },
-    {
-      "id": "UI-003",
-      "epic": "race-presentation",
-      "title": "HUD regression recovery: default bootstrap route HUD completeness",
-      "description": "After the arcade HUD increment, the default GameBootstrap route (test_field.tscn) lacked a DrivingAids controller, so the visual capture could not toggle the aid notification and the full HUD contract was not exercised on the default route. Added the same DrivingAids node/script used by jordan_handling_test.tscn and re-validated the full mandatory suite.",
-      "item_type": "bugfix",
-      "status": "validated",
-      "priority": 70,
-      "sort_order": 175,
-      "rationale": "Acceptance criterion for the HUD increment requires the default bootstrap route, not only jordan_handling_test.tscn, to support the aid notification and dynamic minimap tracking.",
-      "technical_risk": "Low. Surgical scene edit adding one controller node already present in the reference handling scene; validated with scene-load and default-route smoke tests.",
-      "user_value": "The normal game entry path shows the complete arcade HUD contract (minimap, gauge, transient aid message) from the first session.",
-      "dependencies": [],
-      "affected_areas": [
-        "game/scenes/tracks/test_field/test_field.tscn",
-        "game/tests/visual_test_arcade_hud_capture.gd",
-        "game/tests/smoke_test_bootstrap_world_hud_compositor.gd",
-        "PROJECT_STATE.md section 49.2",
-        "game/docs/COMMON_ERRORS_AND_FIXES.md"
-      ],
-      "acceptance_criteria": [
-        "Default bootstrap route exercises minimap tracking, gauge readout and aid notification.",
-        "smoke_test_bootstrap_world_hud_compositor.gd passes on the default route.",
-        "visual_test_arcade_hud_capture.gd produces a 1280x720 capture with all HUD elements."
-      ],
-      "evidence": [
-        "game/scenes/tracks/test_field/test_field.tscn",
-        "game/tests/smoke_test_bootstrap_world_hud_compositor.gd",
-        "game/tests/visual_test_arcade_hud_capture.gd",
-        "game/tests/smoke_test_arcade_hud_runtime.gd",
-        "game/tests/smoke_test_arcade_hud_scene.gd",
-        "game/tests/smoke_test_world_hud_compositor.gd",
-        "game/tests/smoke_test_jordan_skybox_runtime.gd",
-        "game/tests/smoke_test_la_chutana_skybox.gd",
-        "PROJECT_STATE.md section 49.2"
-      ],
-      "source_agent": "deepseek",
-      "source_context": "HUD regression recovery per instrucciones_deepseek.txt section 48, 2026-08-10. Surgical correction: smoke_test_jordan_skybox_runtime.gd camera-follow assertion needs two process frames for SourceSkyboxRig._process; single await was a one-frame race."
+      "source_agent": "product-owner",
+      "source_context": "Reduced from lap/position/countdown/rivals into the first post-handling race-loop milestone, 2026-08-11."
     }
   ]
 }
