@@ -10,7 +10,16 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+mod router;
+mod telemetry;
+
+mod context_packet;
+
 const SCHEMA: &str = include_str!("../migrations/001_init.sql");
+const SCHEMA_V2: &str = include_str!("../migrations/002_backlog.sql");
+const SCHEMA_V3: &str = include_str!("../migrations/003_telemetry.sql");
+const SCHEMA_V4: &str = include_str!("../migrations/004_routing_source.sql");
+const SCHEMA_V5: &str = include_str!("../migrations/005_experiment_semantics.sql");
 
 #[derive(Deserialize)]
 struct InstructionsFile {
@@ -105,8 +114,52 @@ struct AgentSeed {
     knowledge_channels: Vec<String>,
 }
 
+#[derive(Deserialize)]
+struct BacklogFile {
+    schema_version: u32,
+    items: Vec<BacklogSeed>,
+}
+
+#[derive(Deserialize)]
+struct BacklogSeed {
+    id: String,
+    epic: Option<String>,
+    title: String,
+    description: String,
+    item_type: String,
+    #[serde(default = "default_status")]
+    status: String,
+    #[serde(default = "default_priority")]
+    priority: i64,
+    #[serde(default)]
+    sort_order: i64,
+    rationale: Option<String>,
+    technical_risk: Option<String>,
+    user_value: Option<String>,
+    #[serde(default)]
+    dependencies: Vec<String>,
+    #[serde(default)]
+    affected_areas: Vec<String>,
+    #[serde(default)]
+    acceptance_criteria: Vec<String>,
+    #[serde(default)]
+    evidence: Vec<String>,
+    #[serde(default)]
+    source_agent: String,
+    #[serde(default)]
+    source_context: String,
+}
+
+fn default_status() -> String {
+    "proposed".into()
+}
+
+fn default_priority() -> i64 {
+    50
+}
+
 #[derive(Serialize, Clone)]
-struct KnowledgeHit {
+pub(crate) struct KnowledgeHit {
     id: String,
     channel: String,
     lookup_key: String,
@@ -119,7 +172,25 @@ struct KnowledgeHit {
 }
 
 #[derive(Serialize, Clone)]
-struct ProblemHit {
+struct BacklogHit {
+    id: String,
+    epic: Option<String>,
+    title: String,
+    item_type: String,
+    status: String,
+    priority: i64,
+    sort_order: i64,
+    rationale: Option<String>,
+    technical_risk: Option<String>,
+    user_value: Option<String>,
+    dependencies: Vec<String>,
+    affected_areas: Vec<String>,
+    acceptance_criteria: Vec<String>,
+    evidence: Vec<String>,
+}
+
+#[derive(Serialize, Clone)]
+pub(crate) struct ProblemHit {
     signature: String,
     domain: String,
     symptom: String,
@@ -143,9 +214,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     let args: Vec<String> = env::args().collect();
     let command = args.get(1).map(String::as_str).unwrap_or("help");
     let agents_root = PathBuf::from(env::var("AGENTS_ROOT").unwrap_or_else(|_| ".agents".into()));
-    let db_path = PathBuf::from(
-        env::var("AGENT_DB").unwrap_or_else(|_| ".agents/data/agents.db".into()),
-    );
+    let db_path =
+        PathBuf::from(env::var("AGENT_DB").unwrap_or_else(|_| ".agents/data/agents.db".into()));
 
     match command {
         "init" => {
@@ -169,12 +239,56 @@ fn run() -> Result<(), Box<dyn Error>> {
             let channel = required_arg(&args, 2, "channel")?;
             let query = required_arg(&args, 3, "query")?;
             let conn = open_db(&db_path)?;
-            print_json(query_knowledge(&conn, channel, query, 5)?);
+            let result = query_knowledge(&conn, channel, query, 5)?;
+            let run_id = telemetry::run_id_from_env();
+            if let Some(rid) = run_id.as_deref() {
+                let hit = result
+                    .get("results")
+                    .and_then(|v| v.as_array())
+                    .map(|a| !a.is_empty())
+                    .unwrap_or(false);
+                telemetry::emit_event(
+                    &conn,
+                    Some(rid),
+                    if hit {
+                        "knowledge_hit"
+                    } else {
+                        "knowledge_miss"
+                    },
+                    Some("knowledge"),
+                    Some(query),
+                    None,
+                    None,
+                )?;
+            }
+            print_json(result);
         }
         "problem" => {
             let query = required_arg(&args, 2, "query")?;
             let conn = open_db(&db_path)?;
-            print_json(query_problems(&conn, query, 5)?);
+            let result = query_problems(&conn, query, 5)?;
+            let run_id = telemetry::run_id_from_env();
+            if let Some(rid) = run_id.as_deref() {
+                let hit = result
+                    .get("results")
+                    .and_then(|v| v.as_array())
+                    .map(|a| !a.is_empty())
+                    .unwrap_or(false);
+                telemetry::emit_event(
+                    &conn,
+                    Some(rid),
+                    if hit { "problem_hit" } else { "problem_miss" },
+                    Some("problem"),
+                    Some(query),
+                    None,
+                    None,
+                )?;
+            }
+            print_json(result);
+        }
+        "backlog" => {
+            let conn = open_db(&db_path)?;
+            print_json(query_backlog(&conn, &args[2..])?);
         }
         "agent" => {
             let id = required_arg(&args, 2, "agent-id")?;
@@ -190,15 +304,37 @@ fn run() -> Result<(), Box<dyn Error>> {
             let scope = required_arg(&args, 2, "scope")?;
             let key = required_arg(&args, 3, "key")?;
             let conn = open_db(&db_path)?;
-            print_json(cache_get(&conn, scope, key)?);
+            let result = cache_get(&conn, scope, key)?;
+            let run_id = telemetry::run_id_from_env();
+            if let Some(rid) = run_id.as_deref() {
+                let hit = result
+                    .get("result")
+                    .and_then(|v| v.as_object())
+                    .map(|o| !o.is_empty())
+                    .unwrap_or(false);
+                telemetry::emit_event(
+                    &conn,
+                    Some(rid),
+                    if hit { "cache_hit" } else { "cache_miss" },
+                    Some("cache"),
+                    Some(key),
+                    None,
+                    None,
+                )?;
+            }
+            print_json(result);
         }
         "cache-put" => {
             let scope = required_arg(&args, 2, "scope")?;
             let key = required_arg(&args, 3, "key")?;
             let payload = required_arg(&args, 4, "json-payload")?;
-            let ttl = args.get(5).and_then(|v| v.parse::<i64>().ok()).unwrap_or(3600);
+            let payload = telemetry::decode_payload_arg(payload)?;
+            let ttl = args
+                .get(5)
+                .and_then(|v| v.parse::<i64>().ok())
+                .unwrap_or(3600);
             let conn = open_db(&db_path)?;
-            cache_put(&conn, scope, key, payload, ttl)?;
+            cache_put(&conn, scope, key, &payload, ttl)?;
             print_json(json!({"ok": true, "scope": scope, "key": key}));
         }
         "validate" => {
@@ -209,6 +345,52 @@ fn run() -> Result<(), Box<dyn Error>> {
             let conn = open_db(&db_path)?;
             print_json(stats(&conn)?);
         }
+        "run-start" => {
+            let conn = open_db(&db_path)?;
+            ensure_schema(&conn)?;
+            print_json(telemetry::cmd_run_start(&conn, &args, &agents_root)?);
+        }
+        "run-end" => {
+            let conn = open_db(&db_path)?;
+            print_json(telemetry::cmd_run_end(&conn, &args)?);
+        }
+        "model-call" => match args.get(2).map(String::as_str) {
+            Some("start") => {
+                let conn = open_db(&db_path)?;
+                ensure_schema(&conn)?;
+                print_json(telemetry::cmd_model_call_start(&conn, &args)?);
+            }
+            Some("end") => {
+                let conn = open_db(&db_path)?;
+                print_json(telemetry::cmd_model_call_end(&conn, &args)?);
+            }
+            _ => {
+                return Err("usage: agentdb model-call start|end ...".into());
+            }
+        },
+        "event" => {
+            let conn = open_db(&db_path)?;
+            print_json(telemetry::cmd_event(&conn, &args)?);
+        }
+        "route" => {
+            let conn = open_db(&db_path)?;
+            print_json(router::cmd_route(&conn, &args, &agents_root)?);
+        }
+        "metrics" => {
+            let conn = open_db(&db_path)?;
+            ensure_schema(&conn)?;
+            print_json(telemetry::cmd_metrics(&conn, &args)?);
+        }
+        "context-packet" => {
+            let conn = open_db(&db_path)?;
+            ensure_schema(&conn)?;
+            print_json(context_packet::cmd_context_packet(
+                &conn,
+                &args,
+                &agents_root,
+                &db_path,
+            )?);
+        }
         _ => print_json(json!({
             "ok": true,
             "usage": [
@@ -217,12 +399,21 @@ fn run() -> Result<(), Box<dyn Error>> {
                 "agentdb instruction <scope> [trigger]",
                 "agentdb knowledge <channel> <term>",
                 "agentdb problem <signature-or-term>",
+                "agentdb backlog [--status <status>] [--epic <epic>]",
                 "agentdb agent <agent-id>",
                 "agentdb skill <skill-id>",
                 "agentdb cache-get <scope> <key>",
                 "agentdb cache-put <scope> <key> <json> [ttl-seconds]",
                 "agentdb validate",
-                "agentdb stats"
+                "agentdb stats",
+                "agentdb run-start <agent-id> [task-id] [backlog-id] [--run-id <id>]",
+                "agentdb run-end <run-id> <success|failure>",
+                "agentdb model-call start <run-id> '<json>'",
+                "agentdb model-call end <call-id> '<json>'",
+                "agentdb event <run-id|-|anonymous> <event-type> [key] [value] [detail]",
+                "agentdb route '<task-metadata-json>'",
+                "agentdb metrics [all|productive] [phase <phase>]",
+                "agentdb context-packet <backlog-id> <planning|execution>"
             ]
         })),
     }
@@ -243,11 +434,40 @@ fn open_db(path: &Path) -> Result<Connection, Box<dyn Error>> {
 
 fn init_schema(conn: &Connection) -> Result<(), Box<dyn Error>> {
     conn.execute_batch(SCHEMA)?;
+    conn.execute_batch(SCHEMA_V2)?;
+    conn.execute_batch(SCHEMA_V3)?;
+    let has_routing_source: bool = conn
+        .prepare("PRAGMA table_info(model_calls)")?
+        .query_map([], |r| r.get::<_, String>(1))?
+        .any(|r| r.map(|name| name == "routing_source").unwrap_or(false));
+    if !has_routing_source {
+        conn.execute_batch(SCHEMA_V4)?;
+    }
+    let has_run_kind: bool = conn
+        .prepare("PRAGMA table_info(agent_runs)")?
+        .query_map([], |r| r.get::<_, String>(1))?
+        .any(|r| r.map(|name| name == "run_kind").unwrap_or(false));
+    if !has_run_kind {
+        conn.execute_batch(SCHEMA_V5)?;
+    }
     conn.execute(
-        "INSERT INTO schema_meta(key,value) VALUES('schema_version','1')
+        "INSERT INTO schema_meta(key,value) VALUES('schema_version','5')
          ON CONFLICT(key) DO UPDATE SET value=excluded.value",
         [],
     )?;
+    Ok(())
+}
+
+/// Apply additive migrations on demand so commands that read/write the new
+/// semantics columns never fail on a database that predates them. Idempotent.
+fn ensure_schema(conn: &Connection) -> Result<(), Box<dyn Error>> {
+    let has_run_kind: bool = conn
+        .prepare("PRAGMA table_info(agent_runs)")?
+        .query_map([], |r| r.get::<_, String>(1))?
+        .any(|r| r.map(|name| name == "run_kind").unwrap_or(false));
+    if !has_run_kind {
+        init_schema(conn)?;
+    }
     Ok(())
 }
 
@@ -258,6 +478,7 @@ fn seed_all(conn: &mut Connection, root: &Path) -> Result<(), Box<dyn Error>> {
     seed_knowledge_dir(&tx, &root.join("knowledge/sources"))?;
     seed_skills(&tx, &root.join("registry/skills.json"))?;
     seed_agents(&tx, &root.join("agents"))?;
+    seed_backlog(&tx, &root.join("backlog/backlog_seed.json"))?;
     tx.commit()?;
     Ok(())
 }
@@ -278,7 +499,14 @@ fn seed_instructions(tx: &Transaction<'_>, path: &Path) -> Result<(), Box<dyn Er
                scope=excluded.scope, trigger=excluded.trigger, priority=excluded.priority,
                body=excluded.body, source_ref=excluded.source_ref, enabled=1,
                updated_at=unixepoch()",
-            params![item.id, item.scope, item.trigger, item.priority, item.body, item.source_ref],
+            params![
+                item.id,
+                item.scope,
+                item.trigger,
+                item.priority,
+                item.body,
+                item.source_ref
+            ],
         )?;
     }
     Ok(())
@@ -312,7 +540,10 @@ fn seed_knowledge_dir(tx: &Transaction<'_>, dir: &Path) -> Result<(), Box<dyn Er
         )?;
 
         for entry in file.entries {
-            tx.execute("DELETE FROM knowledge_terms WHERE entry_id=?1", params![entry.id])?;
+            tx.execute(
+                "DELETE FROM knowledge_terms WHERE entry_id=?1",
+                params![entry.id],
+            )?;
             tx.execute(
                 "INSERT INTO knowledge_entries(
                     id,channel,lookup_key,topic,content,symbols_json,keywords_json,
@@ -340,8 +571,22 @@ fn seed_knowledge_dir(tx: &Transaction<'_>, dir: &Path) -> Result<(), Box<dyn Er
                 ],
             )?;
 
-            insert_terms(tx, &entry.id, &entry.lookup_key, 12, "knowledge_terms", "entry_id")?;
-            insert_terms(tx, &entry.id, &entry.topic, 4, "knowledge_terms", "entry_id")?;
+            insert_terms(
+                tx,
+                &entry.id,
+                &entry.lookup_key,
+                12,
+                "knowledge_terms",
+                "entry_id",
+            )?;
+            insert_terms(
+                tx,
+                &entry.id,
+                &entry.topic,
+                4,
+                "knowledge_terms",
+                "entry_id",
+            )?;
             for symbol in &entry.symbols {
                 insert_terms(tx, &entry.id, symbol, 10, "knowledge_terms", "entry_id")?;
             }
@@ -382,9 +627,26 @@ fn seed_problems(tx: &Transaction<'_>, path: &Path) -> Result<(), Box<dyn Error>
                 item.source_ref
             ],
         )?;
-        tx.execute("DELETE FROM problem_terms WHERE signature=?1", params![item.signature])?;
-        insert_terms(tx, &item.signature, &item.signature, 12, "problem_terms", "signature")?;
-        insert_terms(tx, &item.signature, &item.domain, 5, "problem_terms", "signature")?;
+        tx.execute(
+            "DELETE FROM problem_terms WHERE signature=?1",
+            params![item.signature],
+        )?;
+        insert_terms(
+            tx,
+            &item.signature,
+            &item.signature,
+            12,
+            "problem_terms",
+            "signature",
+        )?;
+        insert_terms(
+            tx,
+            &item.signature,
+            &item.domain,
+            5,
+            "problem_terms",
+            "signature",
+        )?;
         for term in &item.search_terms {
             insert_terms(tx, &item.signature, term, 8, "problem_terms", "signature")?;
         }
@@ -444,7 +706,10 @@ fn seed_agents(tx: &Transaction<'_>, dir: &Path) -> Result<(), Box<dyn Error>> {
 
     for path in paths {
         let item: AgentSeed = read_json(&path)?;
-        let manifest_path = format!(".agents/agents/{}", path.file_name().unwrap().to_string_lossy());
+        let manifest_path = format!(
+            ".agents/agents/{}",
+            path.file_name().unwrap().to_string_lossy()
+        );
         tx.execute(
             "INSERT INTO agent_registry(
                id,role,model_tier,manifest_path,purpose,skills_json,knowledge_channels_json,enabled
@@ -468,7 +733,127 @@ fn seed_agents(tx: &Transaction<'_>, dir: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn query_instructions(
+fn seed_backlog(tx: &Transaction<'_>, path: &Path) -> Result<(), Box<dyn Error>> {
+    let file: BacklogFile = read_json(path)?;
+    let _ = file.schema_version;
+    for item in file.items {
+        tx.execute(
+            "INSERT INTO backlog_items(
+               id,epic,title,description,item_type,status,priority,sort_order,
+               rationale,technical_risk,user_value,dependencies_json,affected_areas_json,
+               acceptance_criteria_json,evidence_json,source_agent,source_context,updated_at
+             ) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,unixepoch())
+             ON CONFLICT(id) DO UPDATE SET
+               epic=excluded.epic, title=excluded.title, description=excluded.description,
+               item_type=excluded.item_type, status=excluded.status, priority=excluded.priority,
+               sort_order=excluded.sort_order, rationale=excluded.rationale,
+               technical_risk=excluded.technical_risk, user_value=excluded.user_value,
+               dependencies_json=excluded.dependencies_json,
+               affected_areas_json=excluded.affected_areas_json,
+               acceptance_criteria_json=excluded.acceptance_criteria_json,
+               evidence_json=excluded.evidence_json, source_agent=excluded.source_agent,
+               source_context=excluded.source_context, updated_at=unixepoch()",
+            params![
+                item.id,
+                item.epic,
+                item.title,
+                item.description,
+                item.item_type,
+                item.status,
+                item.priority,
+                item.sort_order,
+                item.rationale,
+                item.technical_risk,
+                item.user_value,
+                serde_json::to_string(&item.dependencies)?,
+                serde_json::to_string(&item.affected_areas)?,
+                serde_json::to_string(&item.acceptance_criteria)?,
+                serde_json::to_string(&item.evidence)?,
+                item.source_agent,
+                item.source_context,
+            ],
+        )?;
+    }
+    Ok(())
+}
+
+fn query_backlog(conn: &Connection, args: &[String]) -> Result<Value, Box<dyn Error>> {
+    let mut status_filter: Option<String> = None;
+    let mut epic_filter: Option<String> = None;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--status" => {
+                i += 1;
+                status_filter = Some(required_arg(args, i, "--status value")?.to_string());
+            }
+            "--epic" => {
+                i += 1;
+                epic_filter = Some(required_arg(args, i, "--epic value")?.to_string());
+            }
+            _ => {
+                return Err(format!("unknown backlog option: {}", args[i]).into());
+            }
+        }
+        i += 1;
+    }
+
+    let mut sql = String::from(
+        "SELECT id,epic,title,item_type,status,priority,sort_order,
+                rationale,technical_risk,user_value,dependencies_json,affected_areas_json,
+                acceptance_criteria_json,evidence_json
+         FROM backlog_items WHERE 1=1",
+    );
+    if status_filter.is_some() {
+        sql.push_str(" AND status=?");
+    }
+    if epic_filter.is_some() {
+        sql.push_str(" AND epic=?");
+    }
+    sql.push_str(" ORDER BY status, priority DESC, sort_order ASC");
+
+    let mut status_ref: &str = "";
+    let mut epic_ref: &str = "";
+    if let Some(s) = status_filter.as_deref() {
+        status_ref = s;
+    }
+    if let Some(e) = epic_filter.as_deref() {
+        epic_ref = e;
+    }
+    let mut params: Vec<&dyn rusqlite::ToSql> = Vec::new();
+    if status_filter.is_some() {
+        params.push(&status_ref);
+    }
+    if epic_filter.is_some() {
+        params.push(&epic_ref);
+    }
+    let mut stmt = conn.prepare(&sql)?;
+    let rows = stmt.query_map(params.as_slice(), |r| {
+        let deps: String = r.get(10)?;
+        let areas: String = r.get(11)?;
+        let criteria: String = r.get(12)?;
+        let evidence: String = r.get(13)?;
+        Ok(BacklogHit {
+            id: r.get(0)?,
+            epic: r.get(1)?,
+            title: r.get(2)?,
+            item_type: r.get(3)?,
+            status: r.get(4)?,
+            priority: r.get(5)?,
+            sort_order: r.get(6)?,
+            rationale: r.get(7)?,
+            technical_risk: r.get(8)?,
+            user_value: r.get(9)?,
+            dependencies: serde_json::from_str(&deps).unwrap_or_default(),
+            affected_areas: serde_json::from_str(&areas).unwrap_or_default(),
+            acceptance_criteria: serde_json::from_str(&criteria).unwrap_or_default(),
+            evidence: serde_json::from_str(&evidence).unwrap_or_default(),
+        })
+    })?;
+    Ok(json!({"ok": true, "results": rows.collect::<Result<Vec<_>, _>>()?}))
+}
+
+pub(crate) fn query_instructions(
     conn: &Connection,
     scope: &str,
     trigger: Option<&str>,
@@ -494,7 +879,7 @@ fn query_instructions(
     Ok(json!({"ok": true, "results": rows.collect::<Result<Vec<_>, _>>()?}))
 }
 
-fn query_knowledge(
+pub(crate) fn query_knowledge(
     conn: &Connection,
     channel: &str,
     query: &str,
@@ -563,7 +948,11 @@ fn query_knowledge(
     Ok(json!({"ok": true, "mode": "indexed", "results": values}))
 }
 
-fn query_problems(conn: &Connection, query: &str, limit: usize) -> Result<Value, Box<dyn Error>> {
+pub(crate) fn query_problems(
+    conn: &Connection,
+    query: &str,
+    limit: usize,
+) -> Result<Value, Box<dyn Error>> {
     let exact: Option<ProblemHit> = conn
         .query_row(
             "SELECT signature,domain,symptom,cause,solution,prevention,
@@ -721,10 +1110,10 @@ fn cache_get(conn: &Connection, scope: &str, key: &str) -> Result<Value, Box<dyn
 fn validate_registry(conn: &Connection, repo_root: &Path) -> Result<Value, Box<dyn Error>> {
     let mut missing = Vec::new();
 
-    let mut skill_stmt = conn.prepare(
-        "SELECT id,manifest_path FROM skill_registry WHERE enabled=1 ORDER BY id"
-    )?;
-    let skills = skill_stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+    let mut skill_stmt =
+        conn.prepare("SELECT id,manifest_path FROM skill_registry WHERE enabled=1 ORDER BY id")?;
+    let skills =
+        skill_stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
     for row in skills {
         let (id, path) = row?;
         if !repo_root.join(&path).exists() {
@@ -732,10 +1121,10 @@ fn validate_registry(conn: &Connection, repo_root: &Path) -> Result<Value, Box<d
         }
     }
 
-    let mut agent_stmt = conn.prepare(
-        "SELECT id,manifest_path FROM agent_registry WHERE enabled=1 ORDER BY id"
-    )?;
-    let agents = agent_stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+    let mut agent_stmt =
+        conn.prepare("SELECT id,manifest_path FROM agent_registry WHERE enabled=1 ORDER BY id")?;
+    let agents =
+        agent_stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
     for row in agents {
         let (id, path) = row?;
         if !repo_root.join(&path).exists() {
@@ -757,19 +1146,24 @@ fn stats(conn: &Connection) -> Result<Value, Box<dyn Error>> {
         "knowledge_terms": count("knowledge_terms")?,
         "common_problems": count("common_problems")?,
         "problem_terms": count("problem_terms")?,
+        "backlog_items": count("backlog_items")?,
         "skills": count("skill_registry")?,
         "agents": count("agent_registry")?,
         "context_cache": count("context_cache")?
     }))
 }
 
-fn required_arg<'a>(args: &'a [String], index: usize, name: &str) -> Result<&'a str, Box<dyn Error>> {
+fn required_arg<'a>(
+    args: &'a [String],
+    index: usize,
+    name: &str,
+) -> Result<&'a str, Box<dyn Error>> {
     args.get(index)
         .map(String::as_str)
         .ok_or_else(|| format!("missing argument: {name}").into())
 }
 
-fn tokenize(text: &str) -> Vec<String> {
+pub(crate) fn tokenize(text: &str) -> Vec<String> {
     text.split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '.' || c == '-'))
         .filter(|s| !s.is_empty())
         .map(|s| s.to_lowercase())

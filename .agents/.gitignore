@@ -1,4 +1,7 @@
 data/*.db
 data/*.db-shm
 data/*.db-wal
+data/backups/
 runtime/target/
+tools/sqlite/*.exe
+tools/sqlite/*.dll

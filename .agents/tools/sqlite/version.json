@@ -1,0 +1,10 @@
+{
+  "tool": "sqlite",
+  "version": "3.53.4",
+  "platform": "windows-x64",
+  "source": "official-sqlite",
+  "binary": "sqlite3.exe",
+  "archive": "sqlite-tools-win-x64-3530400.zip",
+  "url": "https://www.sqlite.org/2026/sqlite-tools-win-x64-3530400.zip",
+  "release_date": "2026-07-24"
+}

@@ -36,7 +36,8 @@ Version-controlled JSON is the curated/canonical layer. SQLite is the compiled r
 
 ## Bootstrap
 
-From repository root:
+The runtime bootstraps itself; a manual build is only needed the first time in a
+fresh checkout/worktree.
 
 ```text
 cd .agents/runtime
@@ -47,8 +48,17 @@ cd ../..
 .agents/runtime/target/release/agentdb validate
 ```
 
+All scripts under `.agents/scripts` resolve the repository root with
+`git rev-parse --show-toplevel` (from any CWD, including worktrees), resolve or
+build `agentdb` automatically (`cargo build --release` when the binary is
+absent), and run agentdb with absolute `AGENTS_ROOT` / `AGENT_DB` environment
+variables. Preflight (`.agents/scripts/00-preflight.ps1`) performs the full
+bootstrap gate; `.agents/scripts/00-bootstrap-tests.ps1` verifies it.
+
 The database path defaults to `.agents/data/agents.db`. Override with `AGENT_DB`.
 The agent root defaults to `.agents`. Override with `AGENTS_ROOT`.
+Point `AGENTDB_EXE` at a valid agentdb binary to force an explicit resolution
+source (`explicit_env`). `AGENTDB_BIN` is accepted as a legacy alias.
 
 ## Query examples
 

@@ -1,29 +1,112 @@
 {
-  "source_id": "pillow-official-curated",
+  "source_id": "pillow-official-curated-v2",
   "channel": "python",
-  "authority": 900,
+  "authority": 930,
   "version_policy": "installed-version",
   "source_type": "official-library-manual",
   "source_ref": "Pillow official documentation",
   "entries": [
     {
-      "id": "python.pillow.image-mode",
+      "id": "python.pillow.modes",
       "lookup_key": "pillow.image_mode",
-      "topic": "Image mode and export",
+      "topic": "Image modes and channels",
       "symbols": [
-        "PIL.Image",
-        "Image.mode"
+        "PIL.Image.Image",
+        "Image.mode",
+        "RGB",
+        "RGBA",
+        "L"
       ],
       "keywords": [
         "pillow",
         "image",
-        "texture",
+        "mode",
         "rgb",
         "rgba",
-        "export"
+        "alpha",
+        "texture"
       ],
-      "content": "Texture tooling should verify image mode and alpha requirements before conversion/export instead of assuming RGB/RGBA compatibility.",
-      "source_ref": "Pillow Image documentation",
+      "content": "Inspect Image.mode before texture processing. RGB and RGBA differ in alpha presence, and palette/grayscale modes may need an explicit conversion before code assumes channel count or transparency.",
+      "source_ref": "https://pillow.readthedocs.io/en/stable/handbook/concepts.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.pillow.exif-orientation",
+      "lookup_key": "pillow.exif_orientation",
+      "topic": "Normalize EXIF orientation",
+      "symbols": [
+        "PIL.ImageOps.exif_transpose"
+      ],
+      "keywords": [
+        "pillow",
+        "exif",
+        "orientation",
+        "rotate",
+        "image"
+      ],
+      "content": "Camera/JPEG orientation may live in EXIF metadata rather than pixel order. Apply ImageOps.exif_transpose when physical pixel orientation must match what users see before downstream resize/crop operations.",
+      "source_ref": "https://pillow.readthedocs.io/en/stable/reference/ImageOps.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.pillow.resize",
+      "lookup_key": "pillow.resize",
+      "topic": "Choose resize behavior deliberately",
+      "symbols": [
+        "Image.resize",
+        "Image.Resampling",
+        "ImageOps.contain",
+        "ImageOps.fit",
+        "ImageOps.pad"
+      ],
+      "keywords": [
+        "pillow",
+        "resize",
+        "texture",
+        "aspect",
+        "resampling"
+      ],
+      "content": "Choose whether resizing should stretch, contain, crop-to-fit or pad while preserving aspect ratio. Select a resampling filter deliberately; nearest-neighbor is appropriate when preserving hard pixel-art texels is required.",
+      "source_ref": "https://pillow.readthedocs.io/en/stable/handbook/tutorial.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.pillow.context",
+      "lookup_key": "pillow.open_close",
+      "topic": "Image file lifecycle",
+      "symbols": [
+        "Image.open"
+      ],
+      "keywords": [
+        "pillow",
+        "open",
+        "file",
+        "context-manager",
+        "close"
+      ],
+      "content": "Open image files with a context manager when practical so file handles are released deterministically, especially in batch texture pipelines on Windows.",
+      "source_ref": "https://pillow.readthedocs.io/en/stable/handbook/tutorial.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.pillow.export-validation",
+      "lookup_key": "pillow.export_validation",
+      "topic": "Validate texture output contract",
+      "symbols": [
+        "Image.save",
+        "Image.mode",
+        "Image.size"
+      ],
+      "keywords": [
+        "pillow",
+        "save",
+        "texture",
+        "format",
+        "dimensions",
+        "alpha"
+      ],
+      "content": "Before saving a generated game texture, validate dimensions, mode/alpha policy and intended file format. Do not use successful Image.save() alone as proof that the output matches the engine asset contract.",
+      "source_ref": "https://pillow.readthedocs.io/en/stable/reference/Image.html",
       "source_version": "installed-version"
     }
   ]

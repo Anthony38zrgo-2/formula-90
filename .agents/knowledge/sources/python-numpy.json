@@ -1,5 +1,5 @@
 {
-  "source_id": "numpy-official-curated",
+  "source_id": "numpy-official-curated-v2",
   "channel": "python",
   "authority": 950,
   "version_policy": "installed-version",
@@ -7,22 +7,137 @@
   "source_ref": "NumPy official documentation",
   "entries": [
     {
-      "id": "python.numpy.array-shape",
-      "lookup_key": "numpy.array_shape",
-      "topic": "Array shape and numeric diagnostics",
+      "id": "python.numpy.shape-dtype",
+      "lookup_key": "numpy.shape_dtype",
+      "topic": "Validate ndarray shape and dtype",
       "symbols": [
         "numpy.ndarray",
-        "shape"
+        "shape",
+        "dtype"
       ],
       "keywords": [
         "numpy",
         "array",
         "shape",
-        "numeric",
+        "dtype",
         "telemetry"
       ],
-      "content": "When diagnostic tooling uses NumPy, validate array shape/dtype assumptions explicitly before vectorized calculations; do not infer telemetry layout from example data.",
-      "source_ref": "NumPy ndarray documentation",
+      "content": "Validate shape and dtype assumptions at tool boundaries before vectorized processing. Do not infer telemetry layout from a sample file or rely on implicit dtype conversion when units/ranges matter.",
+      "source_ref": "https://numpy.org/doc/stable/user/basics.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.numpy.broadcasting",
+      "lookup_key": "numpy.broadcasting",
+      "topic": "Broadcasting semantics",
+      "symbols": [
+        "numpy.broadcast",
+        "broadcast_to",
+        "broadcast_shapes"
+      ],
+      "keywords": [
+        "numpy",
+        "broadcast",
+        "shape",
+        "vectorize"
+      ],
+      "content": "Broadcasting combines compatible shapes without writing explicit Python loops, but an unintended broadcast can produce a much larger result than expected. Check resulting shapes when operands come from external data.",
+      "source_ref": "https://numpy.org/doc/stable/user/basics.broadcasting.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.numpy.views",
+      "lookup_key": "numpy.copies_views",
+      "topic": "Copies versus views",
+      "symbols": [
+        "ndarray.view",
+        "ndarray.copy"
+      ],
+      "keywords": [
+        "numpy",
+        "view",
+        "copy",
+        "memory",
+        "mutation"
+      ],
+      "content": "Slicing and other NumPy operations can return views that share underlying data. Before mutating an intermediate array, determine whether a copy is required to avoid changing the source unexpectedly.",
+      "source_ref": "https://numpy.org/doc/stable/user/basics.copies.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.numpy.loadtxt",
+      "lookup_key": "numpy.loadtxt",
+      "topic": "Simple structured text loading",
+      "symbols": [
+        "numpy.loadtxt"
+      ],
+      "keywords": [
+        "numpy",
+        "csv",
+        "text",
+        "load",
+        "dtype"
+      ],
+      "content": "Use numpy.loadtxt for consistently formatted numeric text and specify dtype/delimiter/usecols when the contract is known. Use a more tolerant parser only when missing or irregular values are an intentional input condition.",
+      "source_ref": "https://numpy.org/doc/stable/reference/generated/numpy.loadtxt.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.numpy.genfromtxt",
+      "lookup_key": "numpy.genfromtxt",
+      "topic": "Text loading with missing values",
+      "symbols": [
+        "numpy.genfromtxt"
+      ],
+      "keywords": [
+        "numpy",
+        "text",
+        "missing",
+        "dtype",
+        "parse"
+      ],
+      "content": "genfromtxt supports missing and more complex text data but performs more parsing work. Prefer explicit dtype/layout instead of dtype inference for stable project-generated telemetry formats.",
+      "source_ref": "https://numpy.org/doc/stable/reference/generated/numpy.genfromtxt.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.numpy.npy",
+      "lookup_key": "numpy.npy_storage",
+      "topic": "Portable NumPy array persistence",
+      "symbols": [
+        "numpy.save",
+        "numpy.load",
+        ".npy",
+        ".npz"
+      ],
+      "keywords": [
+        "numpy",
+        "save",
+        "load",
+        "binary",
+        "npy",
+        "npz"
+      ],
+      "content": "Use .npy/.npz through NumPy save/load when preserving dtype and shape matters. Raw tofile/fromfile pairs are not a portable archival format because raw files do not encode all dtype/byte-order metadata.",
+      "source_ref": "https://numpy.org/doc/stable/reference/routines.io.html",
+      "source_version": "installed-version"
+    },
+    {
+      "id": "python.numpy.memory",
+      "lookup_key": "numpy.vectorization_memory",
+      "topic": "Vectorization versus temporary memory",
+      "symbols": [
+        "numpy.ndarray"
+      ],
+      "keywords": [
+        "numpy",
+        "performance",
+        "vectorization",
+        "memory",
+        "temporary"
+      ],
+      "content": "Vectorization can remove Python-loop overhead, but chained broadcasts/temporary arrays can raise memory use. Optimize diagnostic scripts from measurements and consider in-place/out parameters only when semantics remain clear.",
+      "source_ref": "https://numpy.org/doc/stable/user/basics.broadcasting.html",
       "source_version": "installed-version"
     }
   ]

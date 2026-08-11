@@ -1,50 +1,251 @@
 {
-  "source_id": "blender-official-curated",
+  "source_id": "blender-official-curated-v2",
   "channel": "blender",
   "authority": 1000,
   "version_policy": "match-toolchain",
-  "source_type": "official-manual",
-  "source_ref": "Blender official manual and Python API",
+  "source_type": "official-manual-and-api",
+  "source_ref": "Blender official Manual and Python API",
   "entries": [
     {
-      "id": "blender.transforms.apply",
-      "lookup_key": "object.apply_transforms",
-      "topic": "Object transforms before export",
+      "id": "blender.object.data-vs-transform",
+      "lookup_key": "object.data_vs_transform",
+      "topic": "Object transform versus mesh data",
       "symbols": [
-        "transform",
-        "scale",
-        "rotation",
-        "bpy.ops.object.transform_apply"
+        "bpy.types.Object",
+        "bpy.types.Mesh",
+        "matrix_world",
+        "data"
       ],
       "keywords": [
-        "export",
-        "gltf",
-        "glb",
-        "scale",
-        "rotation",
-        "origin"
+        "object",
+        "mesh",
+        "transform",
+        "coordinates",
+        "data"
       ],
-      "content": "Before automating export, distinguish object transforms from mesh coordinates. Apply transforms only when the asset pipeline requires baked scale/rotation and verify that origins and child relationships remain correct.",
-      "source_ref": "Blender manual: Apply transforms",
+      "content": "Treat the Object transform and underlying mesh coordinates as separate state. Decide whether an operation should move the object, modify mesh vertices, or bake the object transform before automating it.",
+      "source_ref": "https://docs.blender.org/api/current/info_quickstart.html",
       "source_version": "toolchain-current"
     },
     {
-      "id": "blender.gltf.export",
-      "lookup_key": "export.gltf",
-      "topic": "glTF/GLB export",
+      "id": "blender.transforms.apply",
+      "lookup_key": "object.apply_transforms",
+      "topic": "Applying object transforms",
+      "symbols": [
+        "bpy.ops.object.transform_apply",
+        "location",
+        "rotation_euler",
+        "scale"
+      ],
+      "keywords": [
+        "apply",
+        "transform",
+        "scale",
+        "rotation",
+        "export"
+      ],
+      "content": "Applying transforms transfers selected object transform components into object data while keeping the visible result. Apply only the components the asset pipeline requires and re-check children, modifiers and constraints that depend on transforms.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/scene_layout/object/editing/apply.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.operators.context",
+      "lookup_key": "python.operators_context",
+      "topic": "Blender operators are context-sensitive",
+      "symbols": [
+        "bpy.ops",
+        "poll",
+        "bpy.context"
+      ],
+      "keywords": [
+        "python",
+        "operator",
+        "context",
+        "poll",
+        "automation"
+      ],
+      "content": "Many bpy.ops calls require a valid Blender context and can fail their poll check. For automation, verify poll/context first and prefer direct data APIs when the same change can be made without UI/operator state.",
+      "source_ref": "https://docs.blender.org/api/current/info_quickstart.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.data.direct-access",
+      "lookup_key": "python.data_access",
+      "topic": "Direct Blender data access",
+      "symbols": [
+        "bpy.data",
+        "bpy.types.BlendData"
+      ],
+      "keywords": [
+        "python",
+        "data",
+        "object",
+        "mesh",
+        "automation"
+      ],
+      "content": "Use bpy.data and object data-block APIs for deterministic data access when an operator is unnecessary. This reduces dependence on selection, active object, editor area and mode state.",
+      "source_ref": "https://docs.blender.org/api/current/bpy.data.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.mathutils.transforms",
+      "lookup_key": "python.mathutils",
+      "topic": "Transformation math",
+      "symbols": [
+        "mathutils.Matrix",
+        "mathutils.Vector",
+        "mathutils.Quaternion",
+        "matrix_world"
+      ],
+      "keywords": [
+        "matrix",
+        "vector",
+        "quaternion",
+        "transform",
+        "coordinate"
+      ],
+      "content": "Use mathutils types for explicit coordinate and transform math. Be clear about local versus world space and compose matrices deliberately rather than mixing Euler edits and mesh-coordinate changes implicitly.",
+      "source_ref": "https://docs.blender.org/api/current/mathutils.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.gltf.format",
+      "lookup_key": "export.gltf_format",
+      "topic": "GLB versus glTF packaging",
       "symbols": [
         "glTF",
-        "GLB"
+        "GLB",
+        ".gltf",
+        ".glb"
       ],
       "keywords": [
         "gltf",
         "glb",
         "export",
         "godot",
-        "materials"
+        "binary"
       ],
-      "content": "For Godot-bound assets, validate transform orientation, object hierarchy, material assignments and selected-export scope before treating a GLB as production-ready.",
-      "source_ref": "Blender glTF exporter documentation",
+      "content": "Use GLB when a single binary deliverable is convenient; use text glTF plus external data when inspectability or separate resources matter. Both are glTF 2.0 interchange paths for Godot.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.gltf.scope",
+      "lookup_key": "export.gltf_scope",
+      "topic": "Export only intended Blender objects",
+      "symbols": [
+        "Selected Objects",
+        "Visible Objects",
+        "Active Collection"
+      ],
+      "keywords": [
+        "gltf",
+        "selection",
+        "collection",
+        "export",
+        "scope"
+      ],
+      "content": "Define export scope explicitly. For automated asset generation, exporting selected objects or a controlled collection prevents helper meshes, cameras or unrelated scene content from leaking into the GLB.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.gltf.modifiers",
+      "lookup_key": "export.gltf_modifiers",
+      "topic": "Export evaluated modifier result",
+      "symbols": [
+        "Apply Modifiers",
+        "evaluated mesh",
+        "modifier"
+      ],
+      "keywords": [
+        "gltf",
+        "modifier",
+        "geometry",
+        "export",
+        "evaluated"
+      ],
+      "content": "When the exported asset must include modifier results, enable the exporter option that uses evaluated geometry. Do not assume viewport modifiers are baked into exported mesh data unless the export setting guarantees it.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.gltf.custom-properties",
+      "lookup_key": "export.gltf_extras",
+      "topic": "Custom properties as glTF extras",
+      "symbols": [
+        "Custom Properties",
+        "extras"
+      ],
+      "keywords": [
+        "gltf",
+        "metadata",
+        "custom-properties",
+        "extras"
+      ],
+      "content": "Use glTF custom properties/extras only for lightweight metadata the receiving pipeline intentionally understands. Treat them as an explicit interchange contract, not an unstructured dumping ground.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.gltf.materials",
+      "lookup_key": "export.gltf_materials",
+      "topic": "glTF material compatibility",
+      "symbols": [
+        "Principled BSDF",
+        "Base Color",
+        "Metallic",
+        "Roughness"
+      ],
+      "keywords": [
+        "material",
+        "pbr",
+        "gltf",
+        "texture",
+        "godot"
+      ],
+      "content": "Keep game-bound materials within features that map cleanly to glTF PBR when predictable Godot import is required. Validate texture assignments and alpha behavior after export rather than assuming every Blender shader node has a direct glTF equivalent.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.gltf.vertex-splits",
+      "lookup_key": "export.gltf_vertex_splits",
+      "topic": "Normals and UV seams can increase exported vertices",
+      "symbols": [
+        "UV",
+        "normals",
+        "triangulation"
+      ],
+      "keywords": [
+        "gltf",
+        "vertex",
+        "uv",
+        "normal",
+        "seam",
+        "triangle"
+      ],
+      "content": "Game-export vertex counts can exceed Blender vertex counts because glTF needs separate vertex records at attribute discontinuities such as UV seams or split normals. Judge runtime geometry from the exported asset, not only the edit-mode count.",
+      "source_ref": "https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html",
+      "source_version": "toolchain-current"
+    },
+    {
+      "id": "blender.headless.validation",
+      "lookup_key": "automation.headless_validation",
+      "topic": "Headless Blender scripts need explicit state validation",
+      "symbols": [
+        "blender --background",
+        "bpy"
+      ],
+      "keywords": [
+        "headless",
+        "automation",
+        "script",
+        "export",
+        "validation"
+      ],
+      "content": "For reproducible asset tooling, make scripts derive paths and object targets explicitly and validate expected objects before destructive edits/export. Avoid assuming the interactive file selection or active-object state exists in background execution.",
+      "source_ref": "https://docs.blender.org/api/current/info_quickstart.html",
       "source_version": "toolchain-current"
     }
   ]
