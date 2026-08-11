@@ -1,22 +1,21 @@
 ---
 name: vehicle-testing
-description: Procedimiento para validar cambios en el comportamiento del vehículo mediante escenarios reproducibles.
+description: Validate Formula-90 vehicle behavior through reproducible isolated scenarios, baseline/candidate comparison, telemetry, and explicit PASS, FAIL, or INCONCLUSIVE results.
 ---
 
-# Skill: Vehicle Testing
+# Vehicle Testing
 
-## Purpose
-Validar cualquier cambio en físicas, aerodinámica o powertrain de manera repetible, garantizando que no se introducen regresiones en el manejo básico.
+Use the smallest scenario that isolates the hypothesis. Prefer the existing test field over a new framework.
 
-## Workflow
-Para probar un vehículo, utiliza `test_field.tscn` y ejecuta de ser posible los siguientes escenarios de control:
-1. **Aceleración en línea recta:** Validar marchas, RPM y ausencia de wheelspin incontrolable.
-2. **Frenada a alta velocidad:** Validar distancias, bloqueo de ruedas y el impacto del brake bias.
-3. **Curva de radio constante:** Validar el balance understeer/oversteer a mid-corner.
-4. **Slalom / Cambios de dirección rápidos:** Validar la transferencia de peso.
-5. **Lift-off mid-corner:** Validar que levantar el pie del acelerador súbitamente en curva genera el esperado oversteer por retención del V10.
+Relevant scenarios include straight acceleration, high-speed braking, constant-radius corner, slalom, lift-off mid-corner, fast corner, and curb impact. Do not run all scenarios when one targeted test answers the current question.
 
-No inventes un nuevo framework de test si el circuito de pruebas (`test_field`) ya permite realizar estas validaciones manuales o semiautomáticas.
+For behavioral changes:
 
-## Failure Escalation
-If a test continues to fail unexpectedly and causes cannot be identified within 2 attempts, stop testing and invoke `../problem-solving-guardrails/SKILL.md`.
+1. capture the same scenario as baseline;
+2. state acceptance criteria and noise tolerance;
+3. apply the candidate;
+4. repeat the scenario under equivalent setup;
+5. report delta as PASS, FAIL, or INCONCLUSIVE;
+6. rollback FAIL candidates.
+
+If causes remain unknown or the same signature survives two implementation attempts, stop driving/testing loops and enter Diagnostic Mode.

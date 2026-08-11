@@ -406,7 +406,9 @@ fn derive_capacity_source(meta: &ModelCallStart) -> String {
         return "manual_override".into();
     }
     match meta.routing_rule.as_deref() {
-        Some("attempt_budget_exhausted") => "automatic_escalation".into(),
+        Some("attempt_budget_exhausted")
+        | Some("evidence_stagnation")
+        | Some("diagnostic_mode") => "automatic_escalation".into(),
         Some("architecture_change")
         | Some("cross_subsystem_change")
         | Some("high_technical_risk")

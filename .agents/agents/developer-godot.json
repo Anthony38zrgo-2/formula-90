@@ -14,6 +14,8 @@
     "godot"
   ],
   "rules": [
+    "Complete preflight and identify state ownership before production edits.",
+    "Use one causal micro-patch and validate the smallest affected surface immediately.",
     "Query Godot knowledge for uncertain APIs or scene semantics.",
     "Check common problems before a second equivalent attempt."
   ]

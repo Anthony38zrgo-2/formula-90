@@ -53,9 +53,14 @@ if ($savedDeepseek) { $env:AGENT_DEEPSEEK_AVAILABLE = $savedDeepseek } else { Re
 if (-not $caseBf) { $failed = $true }
 
 $caseC = Invoke-RouteCase -Name "CASE C (debug attempt 1 -> Luna high)" -Metadata @{
-    agent_id = "developer-tooling"; task_type = "debugging"; attempt_count = 1; technical_risk = "medium"
+    agent_id = "developer-tooling"; task_type = "debugging"; attempt_count = 1; technical_risk = "medium"; new_evidence = $true
 } -ExpectedModel "gpt-5.6-luna" -ExpectedEffort "high" -ExpectedRule "debug_attempt_1"
 if (-not $caseC) { $failed = $true }
+
+$caseC2 = Invoke-RouteCase -Name "CASE C2 (same evidence -> Diagnostic Mode escalation)" -Metadata @{
+    agent_id = "developer-tooling"; task_type = "debugging"; attempt_count = 1; technical_risk = "medium"; same_failure_signature = $true
+} -ExpectedModel "gpt-5.6-sol" -ExpectedEffort "medium" -ExpectedRule "evidence_stagnation"
+if (-not $caseC2) { $failed = $true }
 
 $caseD = Invoke-RouteCase -Name "CASE D (attempt 2 unresolved -> Sol medium)" -Metadata @{
     agent_id = "developer-tooling"; task_type = "debugging"; attempt_count = 2; technical_risk = "medium"; root_cause_unknown = $true

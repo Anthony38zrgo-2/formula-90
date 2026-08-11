@@ -10,6 +10,9 @@ var _prev_velocity_time := 0
 var _prev_sample_time := 0
 var _file_opened := false
 var _search_timer := 0.0
+var _session_id := ""
+var _session_timestamp_utc := ""
+var _setup_json := ""
 
 const LOG_MS := 50
 const BUFFER_SIZE := 100
@@ -77,12 +80,18 @@ func _open_file():
 		push_error("[TelemetryManager] Cannot open file: ", path)
 		return
 	_file_opened = true
+	_session_id = name.trim_suffix(".csv")
+	_session_timestamp_utc = Time.get_datetime_string_from_system(true)
+	_setup_json = JSON.stringify(_build_setup_snapshot(name))
 	_file.store_csv_line(PackedStringArray([
 		"Time_ms", "Speed_kmh", "RPM", "Gear",
 		"Throttle", "Brake", "Steering",
 		"Lat_G", "Long_G",
 		"FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
-		"Front_Slip", "Rear_Slip"
+		"Front_Slip", "Rear_Slip",
+		"Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
+		"Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
+		"Vehicle_Script", "Setup_Schema_Version", "Setup_JSON"
 	]))
 
 
@@ -113,13 +122,94 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
 	var front_slip = vehicle.front_axle.get_max_wheel_slip_y() if vehicle.front_axle else 0.0
 	var rear_slip = vehicle.rear_axle.get_max_wheel_slip_y() if vehicle.rear_axle else 0.0
 
-	return "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f" % [
+	return "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s" % [
 		now_msec, speed_kmh, rpm, gear,
 		throttle, brake_amt, steering,
 		lat_g, long_g,
 		fl_comp, fr_comp, rl_comp, rr_comp,
-		front_slip, rear_slip
+		front_slip, rear_slip,
+		_csv_escape(_session_id), _csv_escape(_session_timestamp_utc), Engine.physics_ticks_per_second,
+		_csv_escape(_test_id()), _csv_escape(_current_scene_path()), _csv_escape(str(vehicle.get_path())), _csv_escape(_vehicle_scene_path()),
+		_csv_escape(_vehicle_script_path()), 1, _csv_escape(_setup_json)
 	]
+
+func _csv_escape(value: String) -> String:
+	return "\"%s\"" % value.replace("\"", "\"\"")
+
+func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
+	return {
+		"schema_version": 1,
+		"session": {
+			"telemetry_file": telemetry_filename,
+			"session_id": _session_id,
+			"timestamp_utc": _session_timestamp_utc,
+			"physics_hz": Engine.physics_ticks_per_second,
+			"test_id": _test_id()
+		},
+		"provenance": {
+			"track_scene": _current_scene_path(),
+			"vehicle_node_path": str(vehicle.get_path()),
+			"vehicle_scene": _vehicle_scene_path(),
+			"vehicle_script": _vehicle_script_path(),
+			"engine_config": _resource_path(vehicle.engine_config),
+			"torque_curve": _resource_path(vehicle.torque_curve),
+			"git_commit": OS.get_environment("FORMULA90S_GIT_COMMIT"),
+			"git_branch": OS.get_environment("FORMULA90S_GIT_BRANCH")
+		},
+		"vehicle": {
+			"runtime_class": vehicle.get_class(),
+			"configuration": ""
+		},
+		"chassis": _build_chassis_snapshot(),
+		"tires": _snapshot_properties(["front_tire_radius", "front_tire_width", "front_wheel_mass", "rear_tire_radius", "rear_tire_width", "rear_wheel_mass", "contact_patch", "braking_grip_multiplier", "wheel_to_body_torque_multiplier", "tire_stiffnesses", "coefficient_of_friction", "rolling_resistance", "lateral_grip_assist", "longitudinal_grip_ratio"]),
+		"steering": _snapshot_properties(["steering_speed", "countersteer_speed", "steering_speed_decay", "steering_slip_assist", "countersteer_assist", "steering_exponent", "max_steering_angle", "front_steering_ratio", "rear_steering_ratio"]),
+		"brakes": _snapshot_properties(["braking_speed", "brake_force_multiplier", "front_brake_bias", "traction_control_max_slip", "front_abs_pulse_time", "front_abs_spin_difference_threshold", "rear_abs_pulse_time", "rear_abs_spin_difference_threshold"]),
+		"differential": _snapshot_properties(["front_torque_split", "variable_torque_split", "front_variable_split", "variable_split_speed", "front_locking_differential_engage_torque", "rear_locking_differential_engage_torque", "front_torque_vectoring", "rear_torque_vectoring"]),
+		"suspension": _snapshot_properties(["front_spring_length", "front_resting_ratio", "front_damping_ratio", "front_bump_damp_multiplier", "front_rebound_damp_multiplier", "front_arb_ratio", "front_camber", "front_toe", "front_bump_stop_multiplier", "front_beam_axle", "rear_spring_length", "rear_resting_ratio", "rear_damping_ratio", "rear_bump_damp_multiplier", "rear_rebound_damp_multiplier", "rear_arb_ratio", "rear_camber", "rear_toe", "rear_bump_stop_multiplier", "rear_beam_axle"]),
+		"engine": _snapshot_properties(["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]),
+		"transmission": _snapshot_properties(["gear_ratios", "final_drive", "reverse_ratio", "shift_time", "automatic_transmission", "automatic_time_between_shifts", "gear_inertia"]),
+		"aerodynamics": _snapshot_properties(["coefficient_of_drag", "air_density", "frontal_area"]),
+		"assists": _snapshot_properties(["enable_stability", "stability_yaw_engage_angle", "stability_yaw_strength", "stability_yaw_ground_multiplier", "stability_upright_spring", "stability_upright_damping", "automatic_transmission", "steering_slip_assist", "countersteer_assist"])
+	}
+
+func _snapshot_properties(property_names: Array[String]) -> Dictionary:
+	var snapshot := {}
+	for property_name in property_names:
+		snapshot[property_name] = vehicle.get(property_name)
+	return snapshot
+
+func _build_chassis_snapshot() -> Dictionary:
+	var snapshot := _snapshot_properties(["vehicle_mass", "front_weight_distribution", "center_of_gravity_height_offset", "inertia_multiplier"])
+	snapshot["rigid_body_mass"] = vehicle.mass
+	if vehicle.front_left_wheel and vehicle.front_right_wheel and vehicle.rear_left_wheel and vehicle.rear_right_wheel:
+		var front_center := (vehicle.front_left_wheel.position + vehicle.front_right_wheel.position) * 0.5
+		var rear_center := (vehicle.rear_left_wheel.position + vehicle.rear_right_wheel.position) * 0.5
+		snapshot["wheelbase_m"] = absf(front_center.z - rear_center.z)
+		snapshot["front_track_m"] = absf(vehicle.front_left_wheel.position.x - vehicle.front_right_wheel.position.x)
+		snapshot["rear_track_m"] = absf(vehicle.rear_left_wheel.position.x - vehicle.rear_right_wheel.position.x)
+	return snapshot
+
+func _current_scene_path() -> String:
+	var scene := get_tree().current_scene
+	return String(scene.scene_file_path) if scene else ""
+
+func _test_id() -> String:
+	var scene_path := _current_scene_path()
+	return scene_path.get_file().get_basename() if not scene_path.is_empty() else ""
+
+func _vehicle_scene_path() -> String:
+	var scene_path := String(vehicle.scene_file_path)
+	if not scene_path.is_empty():
+		return scene_path
+	var parent := vehicle.get_parent()
+	return String(parent.scene_file_path) if parent else ""
+
+func _vehicle_script_path() -> String:
+	var script := vehicle.get_script() as Script
+	return script.resource_path if script else ""
+
+func _resource_path(resource: Resource) -> String:
+	return resource.resource_path if resource else ""
 
 func _flush():
 	if _file and _buffer.size() > 0:

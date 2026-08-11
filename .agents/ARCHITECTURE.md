@@ -252,11 +252,19 @@ decides, and the decision is persisted as a `routing_decision` event plus the
 Order of evaluation:
 1. user override (`user_model_override` in task metadata);
 2. hard Sol rules (product-owner/architect/retrospective roles, architecture
-   change, cross-subsystem >= 3, attempt budget exhausted, high risk, ...);
+   change, cross-subsystem >= 3, Diagnostic Mode, evidence stagnation,
+   implementation budget exhausted, high risk, ...);
 3. bounded read-only/lookup/test -> Luna low;
 4. routine implementation -> DeepSeek Flash, fallback Luna medium;
-5. bounded debugging after first failure -> Luna high;
-6. second unresolved failure -> Sol medium.
+5. bounded debugging after the first implementation -> Luna high only when new
+   evidence, a changed hypothesis, or a changed failure signature exists;
+6. same hypothesis/signature without new evidence -> Diagnostic Mode / Sol;
+7. two completed implementation attempts -> Sol.
+
+`attempt_count` counts completed production implementation attempts, not static
+inspection, telemetry, parsers, offline models, or parameter values tried within
+the same causal hypothesis. The canonical Attempt 0/1/2 policy is defined in
+`.agents/AGENTS.md`.
 
 Never escalate merely for large context, many files, or pre-tooling uncertainty.
 

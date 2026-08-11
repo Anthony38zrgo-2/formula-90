@@ -43,7 +43,7 @@ pub struct Defaults {
 
 #[derive(Deserialize, Clone)]
 pub struct Limits {
-    pub max_attempts_before_strong_escalation: i64,
+    pub max_implementation_attempts: i64,
     pub cross_subsystem_threshold: i64,
 }
 
@@ -60,6 +60,11 @@ pub struct TaskMetadata {
     pub role: String,
     pub task_type: String,
     pub attempt_count: i64,
+    pub hypothesis_changed: bool,
+    pub new_evidence: bool,
+    pub failure_signature_changed: bool,
+    pub same_failure_signature: bool,
+    pub diagnostic_mode: bool,
     pub affected_files: i64,
     pub affected_subsystems: i64,
     pub architecture_change: bool,
@@ -197,7 +202,7 @@ pub fn decide(
     };
     let task_type = meta.task_type.trim().to_lowercase();
     let risk = meta.technical_risk.trim().to_lowercase();
-    let max_attempts = cfg.limits.max_attempts_before_strong_escalation.max(1);
+    let max_attempts = cfg.limits.max_implementation_attempts.max(1);
     let cross_threshold = cfg.limits.cross_subsystem_threshold.max(1);
 
     if let Some(override_raw) = &meta.user_model_override {
@@ -298,10 +303,28 @@ pub fn decide(
         "major refactor involving ownership boundaries"
     );
     hard_if!(
+        meta.diagnostic_mode,
+        "diagnostic_mode",
+        "task is in Diagnostic Mode; production implementation is stopped"
+    );
+    hard_if!(
+        meta.same_failure_signature && !meta.hypothesis_changed && !meta.new_evidence,
+        "evidence_stagnation",
+        "same hypothesis and failure signature without new evidence"
+    );
+    hard_if!(
+        meta.attempt_count == 1
+            && !meta.hypothesis_changed
+            && !meta.new_evidence
+            && !meta.failure_signature_changed,
+        "evidence_stagnation",
+        "second implementation lacks new evidence, a changed hypothesis, or a changed failure signature"
+    );
+    hard_if!(
         meta.attempt_count >= max_attempts,
         "attempt_budget_exhausted",
         format!(
-            "same unresolved failure after {0} attempts",
+            "implementation budget exhausted after {0} attempts",
             meta.attempt_count
         )
     );
@@ -353,15 +376,15 @@ pub fn decide(
                 return cheap_decision(
                     cfg,
                     deepseek_avail,
-                    "initial debugging attempt",
-                    "debug_initial",
+                    "Attempt 0 diagnostic work",
+                    "debug_attempt_0",
                 );
             }
             if meta.attempt_count == 1 {
                 return luna_decision(
                     cfg,
                     "high",
-                    "bounded debugging after first failed attempt",
+                    "bounded debugging with new information after first implementation",
                     "debug_attempt_1",
                 );
             }
@@ -385,8 +408,8 @@ pub fn decide(
         return cheap_decision(
             cfg,
             deepseek_avail,
-            "routine implementation retry",
-            "routine_implementation_retry",
+            "final local implementation supported by new information",
+            "final_local_implementation",
         );
     }
 

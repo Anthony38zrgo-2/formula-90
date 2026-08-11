@@ -1,20 +1,27 @@
 # Formula-90 agent workflow
 
-The operational guide is [`.agents/AGENTS.md`](.agents/AGENTS.md).
+The operational authority is [`.agents/AGENTS.md`](.agents/AGENTS.md).
 
-Default iteration is simple:
+The canonical rule is **Fail Faster, Adapt Faster**:
 
-```text
-hypothesis -> smallest reversible change -> targeted test -> keep or revert
-```
+> Never make a code change when a cheaper experiment can reject the hypothesis first.
 
-Use heavier diagnostics only for repeated uncertainty, unclear ownership,
-cross-system failures, milestones, or high-risk changes. Keep gameplay
-architecture unchanged unless the task explicitly changes it.
+Use this order: classify -> preflight -> baseline when behavior matters -> identify
+ownership -> form a falsifiable hypothesis -> run the cheapest useful experiment ->
+make one reversible causal change -> validate immediately -> keep or rollback.
+
+Fail Fast does not mean implement immediately. It means invalidate wrong assumptions
+early. Adapt Fast means update the problem model from evidence, not switch randomly.
 
 Before editing a Godot `.tscn`, use `scene-safety`. Before vehicle tuning, use
-`vehicle-physics`; use telemetry and full regression only when they answer a
-real uncertainty or a milestone/high-risk need.
+`vehicle-physics`. Use the relevant domain skill for aero, powertrain, telemetry,
+track generation, or physics diagnostics.
 
-Clear tasks may be completed directly. Delegate complex work only when useful;
-the compact handoff format is defined in `.agents/AGENTS.md`.
+Stop implementation and enter Diagnostic Mode when the same failure signature
+survives two implementation attempts, ownership is unknown, validation is broken,
+or the next patch would stack a workaround. Diagnostic Mode permits inspection,
+telemetry, parsers, offline models, minimal reproductions, and tests, but no
+production patches.
+
+Preserve unrelated work. Keep gameplay architecture unchanged unless the task
+explicitly changes it or verified evidence identifies it as the cause.

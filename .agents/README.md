@@ -48,6 +48,14 @@ cd ../..
 .agents/runtime/target/release/agentdb validate
 ```
 
+Validate the Markdown/skill/routing governance itself with:
+
+```powershell
+python tools/agent_validation/validate_agents.py
+```
+
+This check is also part of `scripts/01-health.ps1` and `scripts/08-smoke-test.ps1`.
+
 All scripts under `.agents/scripts` resolve the repository root with
 `git rev-parse --show-toplevel` (from any CWD, including worktrees), resolve or
 build `agentdb` automatically (`cargo build --release` when the binary is

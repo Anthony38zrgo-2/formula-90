@@ -75,7 +75,7 @@ Write-Section "DEFAULTS"
 Write-Host ("Default coding        {0}" -f $config.defaults.cheap_worker)
 Write-Host ("Default Codex worker  {0} (effort {1})" -f $config.defaults.codex_worker, $config.luna_effort.implementation)
 Write-Host ("Strong escalation     {0} (effort {1})" -f $config.defaults.strong_model, $config.sol_effort.default)
-Write-Host ("Max attempts before Sol escalation: {0}" -f $config.limits.max_attempts_before_strong_escalation)
+Write-Host ("Max implementation attempts: {0}" -f $config.limits.max_implementation_attempts)
 Write-Host ("Cross-subsystem threshold: {0}" -f $config.limits.cross_subsystem_threshold)
 
 Write-Host ""

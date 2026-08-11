@@ -1,8 +1,20 @@
 ﻿---
 name: repo-analysis
-description: Deep diagnostic tool for cross-system bugs, unclear ownership, migrations, and unclear regressions.
+description: Perform bounded repository analysis for unclear ownership, cross-system failures, migrations, architecture changes, or regressions without defaulting to exhaustive exploration.
 ---
-# Deep Repository Diagnostics
-Use this only for cross-system bugs, unknown ownership, architecture investigation, subsystem migration, broad dependency analysis, or an unclear regression. Do not use it for normal tuning, small fixes, isolated scene edits, or straightforward implementation.
 
-Inspect only the evidence needed to identify ownership and a minimal change. Git history, test logs, troubleshooting documents, and offline tools are optional techniques, not a checklist. Do not create `instrucciones.txt` unless a complex task is intentionally delegated; then use the compact handoff from `.agents/AGENTS.md`.
+# Bounded Repository Analysis
+
+Inspect only enough to identify execution flow, ownership, constraints, unknowns, and the cheapest useful experiment.
+
+1. Read root `AGENTS.md`.
+2. Identify the affected subsystem and observable failure.
+3. Inspect authoritative configuration and relevant recent history.
+4. Check known incidents and indexed problems.
+5. Trace who owns, computes, mutates, consumes, and serializes the state.
+6. List remaining unknowns.
+7. Define the failure signature.
+8. Design the cheapest falsification experiment.
+9. Expand analysis only when evidence requires it.
+
+Do not require understanding the entire repository for a focused task. Do not create a handoff artifact unless work is actually delegated or resumed; then use `context-handoff`.

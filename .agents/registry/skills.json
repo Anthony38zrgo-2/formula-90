@@ -52,7 +52,9 @@
       "triggers": [
         "handoff",
         "attempt budget exhausted",
-        "context growth"
+        "context growth",
+        "falsified hypothesis",
+        "failed candidate"
       ],
       "knowledge_channels": [],
       "risk": "low",
@@ -63,7 +65,8 @@
       "manifest_path": ".agents/skills/context-handoff/SKILL.md",
       "triggers": [
         "delegation",
-        "planner executor transition"
+        "planner executor transition",
+        "task resumption"
       ],
       "knowledge_channels": [],
       "risk": "low",

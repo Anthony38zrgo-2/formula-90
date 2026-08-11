@@ -1,21 +1,14 @@
 ---
 name: powertrain
-description: Procedimiento para configurar y afinar los motores de combustión y transmisiones.
+description: Configure and diagnose Formula-90 combustion engines, torque curves, RPM behavior, clutch, gearing, and transmission with offline models and measurable runtime validation.
 ---
 
-# Skill: Powertrain
+# Powertrain
 
-## Purpose
-Simular y balancear motores V8, V10 o V12 atmosféricos, asegurando una curva de potencia, inercias y revoluciones correctas.
+Read `docs/game-design/powertrain-philosophy.md`. Preserve naturally aspirated V8/V10/V12 scope; do not introduce ERS, MGU-K, batteries, or duplicated engine implementations when data resources suffice.
 
-## Related Documentation
-- Leer `docs/game-design/powertrain-philosophy.md`.
+Capture RPM, gear, throttle, speed, and acceleration baseline. Define the failure signature and identify whether the engine curve, clutch, ratio, shift logic, drag, or tire slip owns it.
 
-## Workflow & Constraints
-1. **Atmosférico Puro:** Queda estrictamente prohibido introducir ERS, MGU-K, despliegue eléctrico o baterías. 
-2. **Implementación Única:** Evitar crear múltiples archivos rígidos (`V10Engine.cpp`, `V12Engine.cpp`). Modificar o usar los recursos (`.tres`) o parámetros GEVP base que permitan que un motor difiera de otro simplemente cambiando los datos (Torque, Max RPM, Inercia, Freno motor).
-3. **Engine Braking:** Asegurar que el freno motor sea sustancial.
-4. **Verificación Python:** Si el tuning del motor genera comportamientos extraños, utiliza los scripts de verificación offline en Python (en `tools/physics_diagnostics/`) para graficar la curva de torque y las relaciones de caja teóricas.
+Use `tools/physics_diagnostics/analyze_powertrain.py` before production changes when theoretical per-gear speed, shift point, torque, or RPM behavior can reject the hypothesis. Change one causal group and validate immediately.
 
-## Failure Escalation
-If tuning fails repeatedly (e.g. RPM oscillations or torque curve issues), stop adjusting parameters and invoke `../problem-solving-guardrails/SKILL.md`.
+Enter Diagnostic Mode when two attempts preserve the signature, the next patch still relies on a falsified engine hypothesis, or runtime behavior contradicts the offline model.

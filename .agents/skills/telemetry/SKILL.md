@@ -1,24 +1,17 @@
 ---
 name: telemetry
-description: Procedimiento para exponer y utilizar telemetría en el análisis de físicas.
+description: Expose, capture, validate, and summarize Formula-90 vehicle telemetry when measurements are required to falsify physics or runtime hypotheses.
 ---
 
-# Skill: Telemetry
+# Telemetry
 
-## Purpose
-Hacer observables los sistemas internos del vehículo para permitir un tuning objetivo y diagnóstico de fallos por parte de agentes o humanos, sin depender de descripciones subjetivas ("se siente raro").
+Read `docs/architecture/telemetry.md`.
 
-## Related Documentation
-- Leer `docs/architecture/telemetry.md`.
+1. Define the question telemetry must answer and the expected signal.
+2. Verify runtime configuration/setup provenance before comparing sessions.
+3. Capture only metrics needed for the hypothesis: speed, RPM, gear, inputs, slip, G forces, suspension, aero, contacts, or other owning-system state.
+4. If a critical metric is missing, add the smallest observation point before guessing at physics.
+5. Summarize large CSV files with `python tools/physics_diagnostics/analyze_telemetry.py game/telemetry/<file>.csv`. Do not load an entire large CSV into model context.
+6. Compare candidate versus baseline and report uncertainty.
 
-## Workflow
-1. Asegurar que GEVP o el script del coche exponga variables críticas (velocidad, RPM, marcha, inputs, deslizamiento frontal y trasero, downforce, fuerzas G).
-2. Si una métrica crítica falta durante el tuning de un problema, añádela a la telemetría del HUD o a la consola temporalmente antes de intentar adivinar los parámetros físicos.
-3. **Lectura Asíncrona (V4 Flash):** Si hay problemas con un componente (suspensión, aero, etc.), el agente **V4 Flash** debe ser invocado para inspeccionar el CSV generado en `res://telemetry/` (o `game/telemetry/`).
-   - **Eficiencia Obligatoria:** Un CSV puede tener decenas de miles de líneas. V4 Flash **JAMÁS** debe intentar leer el archivo entero usando herramientas de lectura de texto (`view_file`, `cat`).
-   - **Método Correcto:** Flash debe utilizar el script Python dedicado para extraer un resumen automático de las anomalías:
-     `python tools/physics_diagnostics/analyze_telemetry.py game/telemetry/<archivo>.csv`
-   - El script escupirá un reporte de fuerzas G, compresiones y detectará si hubo impactos contra el chasis. Flash debe tomar este reporte y devolvérselo a V4 Pro.
-
-## Failure Escalation
-If telemetry integration fails repeatedly (e.g. values are incorrect or out of sync), stop coding and invoke `../problem-solving-guardrails/SKILL.md`.
+Telemetry is evidence, not automatic proof of cause. If values are missing, out of sync, contradict configuration, or preserve the same signature across two implementations, enter Diagnostic Mode and repair observability before further tuning.

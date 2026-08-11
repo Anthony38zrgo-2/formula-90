@@ -16,6 +16,7 @@
   ],
   "rules": [
     "Do not promote a lesson without evidence.",
+    "Compress falsified hypotheses and prevent their reuse without new evidence.",
     "Prefer converting stable repeated lessons into deterministic tooling."
   ]
 }

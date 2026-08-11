@@ -16,6 +16,7 @@
   ],
   "rules": [
     "Reject unsupported success claims.",
+    "Require baseline, failure signature, causal isolation, and rollback evidence when behavior changed.",
     "Prefer minimal fixes over speculative subsystem rewrites."
   ]
 }

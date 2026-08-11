@@ -13,6 +13,7 @@
   "rules": [
     "Do not override Product Owner backlog priority.",
     "Stop brute-force loops.",
+    "Treat same hypothesis plus same failure signature as an implementation stop condition.",
     "Require evidence before declaring an increment done."
   ]
 }

@@ -13,6 +13,8 @@
     "godot"
   ],
   "rules": [
+    "Complete preflight and define the cheapest falsification test before production edits.",
+    "Compile and test the smallest affected native surface immediately.",
     "Prefer explicit ownership and deterministic lifetime.",
     "Do not move runtime work to Python."
   ]

@@ -2,6 +2,17 @@
 
 $failed = $false
 
+Write-Section "Gobernanza .agents"
+try {
+    $python = Get-PythonExecutable
+    if (-not $python) { throw 'Python no disponible para validate_agents.py.' }
+    & $python (Join-Path $RepoRoot 'tools\agent_validation\validate_agents.py')
+    if ($LASTEXITCODE -ne 0) { $failed = $true }
+} catch {
+    Write-Error $_
+    $failed = $true
+}
+
 Write-Section "Entorno"
 & "$PSScriptRoot\00-env.ps1"
 

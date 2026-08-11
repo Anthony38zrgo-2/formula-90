@@ -5,6 +5,11 @@
     [string]$BacklogId = "",
     [string]$TaskType = "implementation",
     [int]$AttemptCount = 0,
+    [switch]$HypothesisChanged,
+    [switch]$NewEvidence,
+    [switch]$FailureSignatureChanged,
+    [switch]$SameFailureSignature,
+    [switch]$DiagnosticMode,
     [int]$AffectedFiles = 0,
     [int]$AffectedSubsystems = 1,
     [switch]$ArchitectureChange,
@@ -102,6 +107,11 @@ try {
         agent_id = $AgentId
         task_type = $TaskType
         attempt_count = $AttemptCount
+        hypothesis_changed = [bool]$HypothesisChanged
+        new_evidence = [bool]$NewEvidence
+        failure_signature_changed = [bool]$FailureSignatureChanged
+        same_failure_signature = [bool]$SameFailureSignature
+        diagnostic_mode = [bool]$DiagnosticMode
         affected_files = $AffectedFiles
         affected_subsystems = $AffectedSubsystems
         architecture_change = [bool]$ArchitectureChange

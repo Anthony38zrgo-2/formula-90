@@ -12,6 +12,17 @@ $tests = @(
 
 $failed = $false
 
+Write-Section "agent governance"
+try {
+    $python = Get-PythonExecutable
+    if (-not $python) { throw 'Python no disponible para validate_agents.py.' }
+    & $python (Join-Path $RepoRoot 'tools\agent_validation\validate_agents.py')
+    if ($LASTEXITCODE -ne 0) { $failed = $true }
+} catch {
+    Write-Error $_
+    $failed = $true
+}
+
 Write-Section "validate"
 try {
     Invoke-AgentDb -Arguments @("validate")

@@ -65,6 +65,18 @@ try {
         throw 'GDExtension no compilada. Ejecute .\scripts\build_windows.ps1 -Configuration debug.'
     }
 
+    # Provenance consumed by TelemetryManager when it opens the session CSV.
+    # Keep this best-effort so launching a source archive remains possible.
+    $env:FORMULA90S_GIT_COMMIT = ''
+    $env:FORMULA90S_GIT_BRANCH = ''
+    try {
+        $env:FORMULA90S_GIT_COMMIT = (git -C $root rev-parse HEAD 2>$null).Trim()
+        $env:FORMULA90S_GIT_BRANCH = (git -C $root branch --show-current 2>$null).Trim()
+    }
+    catch {
+        Write-Verbose 'No se pudo obtener la procedencia Git para la telemetria.'
+    }
+
     Write-Host 'Formula-90 / Jordan 191 K3 historical handling' -ForegroundColor Cyan
     Write-Host "Godot:    $godot"
     Write-Host "Proyecto: $game"

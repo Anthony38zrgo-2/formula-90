@@ -16,7 +16,7 @@ sky_material = SubResource("PanoramaSkyMaterial_la_chutana")
 background_mode = 2
 sky = SubResource("Sky_generated")
 tonemap_mode = 2
-glow_enabled = true
+glow_enabled = false
 
 [node name="LaChutanaGenerated" type="Node3D"]
 

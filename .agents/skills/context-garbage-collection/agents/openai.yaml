@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Garbage Collection"
+  short_description: "Compress rejected hypotheses and remove stale debugging context."
+  default_prompt: "Compact the active debugging context into verified facts, rejected hypotheses, current unknowns, and the cheapest next experiment."

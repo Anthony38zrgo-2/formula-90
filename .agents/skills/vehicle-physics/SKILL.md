@@ -1,53 +1,35 @@
 ---
 name: vehicle-physics
-description: Procedimiento para ajustar o depurar dinámicas del chasis y comportamiento del vehículo.
+description: Tune or diagnose Formula-90 chassis, steering, suspension, braking, tire, weight-transfer, and handling behavior through baselines, physical hypotheses, offline falsification, telemetry, and reversible micro-patches.
 ---
 
-# Skill: Vehicle Physics
+# Vehicle Physics
 
-## Purpose
-Modificar el handling (manejo), suspensiones, frenos, centro de gravedad y neumáticos utilizando el motor GEVP subyacente, garantizando un estilo de conducción regido por las leyes de la física.
+Read `docs/game-design/ai_physics_manual.md` and `docs/game-design/handling-philosophy.md`.
 
-## Scope
-Archivos `.tscn` de los vehículos (ej. `f1_2026_car.tscn`) y scripts de GEVP.
+Use this sequence:
 
-## Workflow
-1. **Obligatorio:** Leer `docs/game-design/ai_physics_manual.md` para evitar asumir parámetros con intuición lingüística errónea.
-2. Leer `docs/game-design/handling-philosophy.md`.
-2. Identificar el parámetro físico a ajustar en lugar de añadir multiplicadores o "magia".
-   - *Ej: Si el coche subvira, ajusta la distribución de peso, aerodinámica o rigidez del neumático, NO un multiplicador mágico de giro.*
-3. **Verificación Python:** Si experimentas problemas ajustando los valores, ejecuta los scripts de verificación offline en Python (dentro de `tools/physics_diagnostics/`) para validar las fórmulas físicas.
-4. Validar el cambio en `test_field.tscn`.
+```text
+observed behavior -> baseline telemetry -> configuration authority -> ownership
+-> physical hypothesis -> cheapest offline/static falsification
+-> micro-patch -> isolated test field -> telemetry delta -> regression
+```
 
-## Constraints & Forbidden Changes
-- **No** aplicar grip instantáneo o ayudas invisibles.
-- Todo cambio debe mantener la transferencia de peso comprensible.
-- La pérdida de adherencia debe ser gradual.
+Prefer physical parameters over opaque multipliers. Maintain understandable weight transfer, gradual grip loss, recoverable oversteer, stable braking, and predictable curbs.
 
-## Common Pitfall: Chassis Collision vs RayCast Suspension (Two Separate Systems)
+One experiment normally changes one causal dimension. Tightly coupled geometry changes are allowed only when the physical relationship proves they form one fix.
 
-GEVP vehicles have **two independent collision systems** that can interact destructively:
+## Chassis collision versus RayCast suspension
 
-| System | Node | What it does |
-|---|---|---|
-| **RayCast suspension** | `WheelFrontLeft` etc. (`RayCast3D`) | Shoots downward from Y-origin, detects surface, applies spring/damping forces |
-| **RigidBody chassis** | `CollisionShape3D` (`BoxShape3D`) | Standard Godot rigid body collision — generates instantaneous impulse forces on contact |
+Treat the rigid chassis collider and RayCast suspension as independent systems. A curb signature with full suspension travel, an extreme rigid-body G spike, and wheel unload may mean the chassis collides before the RayCast responds.
 
-**The pitfall:** If the `CollisionShape3D` extends below the RayCast origins or has zero ground clearance, the chassis will hit track geometry (curbs) BEFORE the RayCasts can detect them. This produces:
-- `FL_Comp/FR_Comp = 150mm` (full travel, bottom-out) at curb contact
-- `Long_G = -7 to -11G` (physically impossible via tire friction — it's a rigid body impact)
-- `Front_Slip = 50-70+` (wheels unloaded after impact)
-- Staggered pattern: left wheel bottoms → 100-200ms → right wheel bottoms with G-spike
+Before changing springs or damping:
 
-**Diagnosis checklist when telemetry shows bottom-outs + extreme G-spikes:**
-1. Calculate chassis bottom at rest: `CollisionShape3D.transform.Y - BoxShape3D.size.y/2 - static_sag`. If ≤ 0.02m, chassis is too low.
-2. Compare RayCast origin Y to expected curb height. If `RayCast.Y < curb_height`, the curb is above the ray and invisible to the suspension.
-3. Check that `RayCast.Y > chassis_bottom_Y` by a safety margin (5cm+).
+1. calculate chassis bottom at rest;
+2. compare RayCast origin/target with curb height;
+3. verify RayCast origin remains above chassis bottom with margin;
+4. inspect whether the G spike precedes suspension compression.
 
-**Fix protocol:**
-1. Raise `CollisionShape3D` transform Y to give the chassis 5-10cm ground clearance at rest
-2. Raise wheel `RayCast3D` transform Y proportionally so RayCast.Y > curb_height
-3. Validate with telemetry: bottom-out events should disappear, G-spikes should be limited to tire grip limits (~2.6G on Road surface)
+If geometry owns the failure, modify only the proven collider/RayCast relationship and run `scene-safety`.
 
-## Failure Escalation
-If physics tuning fails repeatedly (e.g. attempting to fix understeer 3 times without success), stop adjusting coefficients and invoke `../problem-solving-guardrails/SKILL.md`.
+Enter Diagnostic Mode when two implementation attempts preserve the same signature, a falsified parameter family is proposed again without new evidence, ownership remains unknown, or telemetry contradicts the assumed physical model.

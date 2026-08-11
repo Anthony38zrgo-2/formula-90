@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Handoff"
+  short_description: "Create evidence-focused handoffs without obsolete context."
+  default_prompt: "Build a compact Context Bundle with evidence, hypothesis state, validation, rollback, and escalation conditions."

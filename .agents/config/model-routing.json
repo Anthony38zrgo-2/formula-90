@@ -35,7 +35,7 @@
   },
 
   "limits": {
-    "max_attempts_before_strong_escalation": 2,
+    "max_implementation_attempts": 2,
     "cross_subsystem_threshold": 3
   },
 

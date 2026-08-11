@@ -63,6 +63,18 @@ function Write-Section {
     Write-Host ("=== {0} ===" -f $Title)
 }
 
+function Get-PythonExecutable {
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    $bundled = Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
+    if (Test-Path -LiteralPath $bundled) {
+        return [System.IO.Path]::GetFullPath($bundled)
+    }
+
+    return $null
+}
+
 function Get-SqliteExe {
     $LocalSqlite = Join-Path $AgentsRoot "tools\sqlite\sqlite3.exe"
 

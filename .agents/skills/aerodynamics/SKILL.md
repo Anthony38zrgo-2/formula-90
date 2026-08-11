@@ -1,18 +1,14 @@
 ---
 name: aerodynamics
-description: Procedimiento para balancear y configurar carga aerodinámica y drag.
+description: Configure and diagnose Formula-90 drag, downforce, and aerodynamic balance with offline falsification, runtime telemetry, and isolated causal changes.
 ---
 
-# Skill: Aerodynamics
+# Aerodynamics
 
-## Purpose
-Establecer la carga aerodinámica (Downforce) y resistencia al avance (Drag) dependientes de la velocidad, logrando un balance realista Front/Rear.
+Capture the high-speed baseline and define the expected signal before modifying coefficients. Identify whether drag, lift/downforce, balance, tire grip, or weight transfer owns the symptom.
 
-## Workflow
-1. Modificar parámetros en GEVP o el script aerodinámico (`coefficient_of_drag`, áreas frontales).
-2. Asegurar que los efectos aumenten geométricamente con la velocidad ($V^2$).
-3. **Simplicidad:** No implementar CFD ni fórmulas fluidodinámicas innecesariamente complejas. El comportamiento debe ser determinista, fácilmente ajustable vía Inspector y observable mediante Telemetría.
-4. **Verificación Python:** Utiliza los scripts de análisis aerodinámico offline en Python (`tools/physics_diagnostics/`) para precalcular las fuerzas de drag (resistencia) y transferencia de peso a distintas velocidades antes de alterar el código en GDScript.
+When the hypothesis can be checked mathematically, run the relevant offline model in `tools/physics_diagnostics/` before changing production values. Verify velocity-squared behavior and units.
 
-## Failure Escalation
-If aerodynamic tuning fails repeatedly (e.g. lift-off oversteer is unpredictable after multiple tweaks), stop adjusting coefficients and invoke `../problem-solving-guardrails/SKILL.md`.
+Change one causal dimension: drag, total load, or balance. Treat coupled front/rear changes as one experiment only when maintaining a defined total or balance constraint. Validate in an isolated speed range, then compare telemetry to baseline.
+
+Do not introduce CFD or opaque compensation layers. Enter Diagnostic Mode immediately when two implementation attempts preserve the same signature, values contradict the model, ownership is unknown, or the next change would stack a workaround.

@@ -13,6 +13,8 @@
     "blender"
   ],
   "rules": [
+    "Prefer deterministic inspection or validation that can falsify the hypothesis before implementation.",
+    "Keep tooling bounded to the owning workflow and validate it with a negative case.",
     "Use Python for offline/support tooling only unless the project explicitly changes this constraint."
   ]
 }

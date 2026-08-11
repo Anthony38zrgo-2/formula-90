@@ -1,41 +1,68 @@
 # OBJECTIVE
-[Define exactly what the Executor must accomplish]
+[Exact outcome]
 
 # OBSERVED PROBLEM
-[Describe the symptom or issue]
+[Observable symptom]
 
 # EXPECTED BEHAVIOR
-[Describe the observable behavior when the task is successful]
+[Measurable successful behavior]
 
-# CURRENT EVIDENCE (VERIFIED FACTS)
-[List telemetry, logs, or parser outputs. No interpretations.]
+# FAILURE SIGNATURE
+[Stable combination of signals identifying this failure]
+
+# CURRENT EVIDENCE
+[Telemetry, logs, parser output, or tests; no interpretation]
+
+# VERIFIED FACTS
+[Facts established by evidence]
+
+# CURRENT HYPOTHESIS
+[Causal mechanism]
+
+# HYPOTHESIS STATUS
+[UNTESTED | SUPPORTED | FALSIFIED | INCONCLUSIVE | SUPERSEDED]
+
+# CHEAPEST FALSIFICATION TEST
+[Lowest-cost experiment that can reject the hypothesis]
+
+# EXPECTED SIGNAL
+[Signal expected if the hypothesis is correct]
 
 # RELEVANT FILES
-[Absolute or repository-relative paths to files]
+[Repository-relative paths]
 
 # RELEVANT SYMBOLS
-[Function names, node paths, or exact variables]
+[Functions, nodes, resources, or variables]
+
+# OWNERSHIP
+[Who owns, computes, mutates, consumes, and serializes the state]
 
 # DEPENDENCIES
-[Any autoloads, scripts, or systems this relies on]
+[Runtime and tooling dependencies]
 
 # KNOWN CONSTRAINTS
-[What limits the acceptable solution?]
+[Limits on acceptable solutions]
 
 # DO NOT MODIFY
-[List systems, files, or variables that are strictly off-limits]
+[Explicit boundaries]
 
-# REJECTED APPROACHES
-[List previously failed attempts. Do NOT retry without new evidence.]
+# REJECTED HYPOTHESES
+[Rejected cause + evidence + verified learning; do not retry without new evidence]
 
 # VALIDATION COMMANDS
-[Commands to verify compilation, structural safety, or physics]
+[Smallest checks first]
+
+# BASELINE
+[Relevant pre-change measurements or NOT APPLICABLE]
 
 # ACCEPTANCE CRITERIA
-[Conditions for PASS / FAIL]
+[PASS, FAIL, and INCONCLUSIVE conditions]
 
-# ATTEMPT BUDGET
-[Maximum number of implementation attempts before ESCALATION]
+# ATTEMPT / HYPOTHESIS BUDGET
+[Attempt 0/1/2 state and remaining allowed implementation work]
 
-# ROLLBACK / FAILURE CONDITIONS
-[What triggers an immediate revert and escalation?]
+# ROLLBACK CONDITIONS
+[Conditions requiring candidate rollback]
+
+# ESCALATION CONDITIONS
+[Conditions requiring Diagnostic Mode or stronger review]

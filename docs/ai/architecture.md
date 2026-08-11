@@ -1,53 +1,50 @@
-# Multi-Agent Architecture
+# Agent Collaboration Architecture
 
 ## Purpose
-This document defines the roles, responsibilities, and constraints of the multi-agent system in the F1 2030 project. It enforces the SRP (Single Responsibility Principle) for agents.
 
-## Core Agents
+Keep planning, execution, validation, and context transfer causally clear without
+binding governance to a specific model name. Model routing may change; the protocol
+in `.agents/AGENTS.md` remains authoritative.
 
-### 1. Architect / Planner (V4 Pro)
-- **Role:** Reasoning, system design, context gathering, and delegation.
-- **Responsibilities:**
-  - Understand the user objective.
-  - Formulate hypotheses based on evidence.
-  - Compile the Context Bundle (using Context GC principles).
-  - Define the Acceptance Criteria.
-  - Delegate execution to the Implementation Agent via `instrucciones.txt`.
-- **Constraints:** Must NOT perform massive code changes directly. Must NOT guess physics variables without consulting the Physics Manual.
+## Roles
 
-### 2. Implementation Agent (V4 Flash / DeepSeek)
-- **Role:** Code execution, modification, and direct testing.
-- **Responsibilities:**
-  - Read the Context Bundle provided by the Architect.
-  - Read relevant Skills (`scene-safety`, `godot_traps`).
-  - Implement the minimal coherent change required to test the hypothesis.
-  - Report evidence (telemetry, test results).
-- **Constraints:** 
-  - Must strictly adhere to the Attempt Budget.
-  - Must STOP implementation if the Attempt Budget is exhausted.
-  - Must NOT silently broaden the scope of the fix (e.g., modifying aero when fixing suspension).
+### Planner / diagnostic owner
 
-### 3. Validation Agent (Concept)
-- **Role:** Independent verification of changes.
-- **Responsibilities:**
-  - Assess if code compiles.
-  - Check scene structural integrity (using `tscn_parser`).
-  - Compare baseline vs candidate telemetry.
-- **Outputs:** PASS / FAIL / INCONCLUSIVE.
+- classify the task and complete preflight;
+- establish expected behavior, baseline, ownership, and unknowns;
+- define a falsifiable hypothesis, expected signal, and failure signature;
+- choose the cheapest experiment that can reduce uncertainty;
+- create a Context Bundle only when delegation is useful.
 
-## Agent Collaboration Workflow
+### Executor
+
+- consume the evidence-focused Context Bundle;
+- run Attempt 0 checks before production implementation;
+- apply one causal micro-patch only when the hypothesis survives;
+- validate the smallest affected surface immediately;
+- report evidence and rollback failed candidates.
+
+### Validator
+
+- verify structural/build integrity;
+- compare baseline and candidate under equivalent conditions;
+- classify the result as `PASS`, `FAIL`, or `INCONCLUSIVE`;
+- reject unsupported success claims.
+
+The same agent may perform more than one role on a bounded task, but must not merge
+observations and interpretations or bypass the attempt budget.
+
+## Collaboration workflow
+
 ```text
-User Request
-      ↓
-Architect (Context GC + Planning)
-      ↓
-Context Bundle (`instrucciones.txt`)
-      ↓
-Executor (Minimal Implementation)
-      ↓
-Evidence Gathering (Tests / Telemetry)
-      ↓
-Validator (Baseline vs Candidate)
-      ↓
-Result (PASS / FAIL / Escalation)
+TASK -> PREFLIGHT -> BASELINE/OWNERSHIP -> HYPOTHESIS
+     -> CHEAPEST FALSIFICATION TEST
+     -> survives? no: RECORD + CONTEXT GC + NEW HYPOTHESIS
+                  yes: MICRO-PATCH + FAST VALIDATION
+     -> pass: REGRESSION -> DONE
+     -> fail: RECORD + ROLLBACK + CONTEXT GC
+     -> same signature/evidence stagnation: DIAGNOSTIC MODE
 ```
+
+Diagnostic Mode permits inspection, telemetry, parsers, offline models, minimal
+reproductions, and isolated tests, but no production patches.
