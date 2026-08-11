@@ -32,6 +32,7 @@ func _load_world() -> void:
 	world_content.name = WORLD_CONTENT_NAME
 	_extract_hud(world_content)
 	world_viewport.add_child(world_content)
+	_bind_handling_tuner(world_content)
 
 
 func _resolve_world_scene_path() -> String:
@@ -81,3 +82,10 @@ func _clear_runtime_owners(node: Node) -> void:
 	node.owner = null
 	for child in node.get_children():
 		_clear_runtime_owners(child)
+
+
+func _bind_handling_tuner(world_content: Node) -> void:
+	var vehicle := world_content.get_node_or_null(VEHICLE_PATH) as Vehicle
+	var tuner := hud_layer.get_node_or_null("DebugHud/HandlingTuningPanel")
+	if vehicle != null and tuner != null and tuner.has_method("bind_vehicle"):
+		tuner.call("bind_vehicle", vehicle, vehicle.get_parent())

@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_race_hud.gd" id="1"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/track_minimap_controller.gd" id="2"]
 [ext_resource type="Resource" path="res://scenes/ui/la_chutana_hud_map.tres" id="3"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_speed_gauge.gd" id="4"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/handling_tuning_panel.gd" id="5_tuner"]
 
 [node name="DebugHud" type="Control"]
 layout_mode = 3
@@ -16,6 +17,16 @@ mouse_filter = 2
 script = ExtResource("1")
 vehicle_path = NodePath("../VehicleController/VehicleRigidBody")
 aids_path = NodePath("../DrivingAids")
+
+[node name="HandlingTuningPanel" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_tuner")
 
 ; The map uses the canonical La Chutana centerline and deliberately has no
 ; panel/background so the world remains dominant at 16:9.

@@ -27,9 +27,21 @@ func _run() -> void:
 
 	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap") as TrackMinimapController
 	var vehicle := compositor.get_node_or_null("WorldViewport/WorldContent/VehicleController/VehicleRigidBody") as Node3D
+	var tuner := compositor.get_node_or_null("HudLayer/DebugHud/HandlingTuningPanel") as Control
 
-	if minimap == null or vehicle == null:
-		printerr("[FAIL] Minimap or vehicle missing in default bootstrap route.")
+	if minimap == null or vehicle == null or tuner == null:
+		printerr("[FAIL] Minimap, vehicle, or handling tuner missing in default bootstrap route.")
+		quit(1)
+		return
+
+	var tuning_panel := tuner.get_node_or_null("LiveTuningPanel") as Control
+	var key_event := InputEventKey.new()
+	key_event.keycode = KEY_F10
+	key_event.pressed = true
+	Input.parse_input_event(key_event)
+	await process_frame
+	if tuning_panel == null or not tuning_panel.visible:
+		printerr("[FAIL] F10 did not open the handling tuner in the default bootstrap route.")
 		quit(1)
 		return
 
