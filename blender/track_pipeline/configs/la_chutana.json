@@ -52,7 +52,7 @@
     {"center_fraction": 0.815, "half_width_fraction": 0.03, "degrees": 2.5}
   ],
   "guardrails": {
-    "procedural": true,
+    "procedural": false,
     "module_length_m": 4.0,
     "visual_depth_m": 0.11,
     "beam_height_m": 0.34,
@@ -73,7 +73,8 @@
     "continuous_visual": true,
     "both_sides": true,
     "separation_from_edge_m": 5.0,
-    "module_length_m": 2.4,
+    "module_length_m": 1.81,
+    "visual_asset_glb": "game/assets/trackside/tire_barrier_jordan_6.glb",
     "tire_major_radius_m": 0.34,
     "tire_minor_radius_m": 0.11,
     "stack_rows": 2,

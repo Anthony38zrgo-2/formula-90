@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import bpy
 import numpy as np
@@ -253,16 +254,41 @@ def _append_low_poly_tire(vertices, faces, center: Vector, tangent_b: Vector, ou
             faces.append((a, b, c, d))
 
 
-def create_tire_barrier_visual(name, points, side, config, material):
+def create_tire_barrier_visual(name, points, side, config, material, asset_glb=None):
     tire_cfg = config["tire_barriers"]
+    road_half = float(config["road"]["width_m"]) * 0.5
+    distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
+    lap = _closed_polyline_length(points)
+
+    if asset_glb:
+        # Reusable Jordan 3x2 module: import once, hide as prototype, then
+        # linked-duplicate per module along the centerline. The module's X axis
+        # runs along the wall; module length is its measured along-track width.
+        module_length = float(tire_cfg.get("module_length_m", 1.8))
+        count = max(1, int(math.ceil(lap / module_length)))
+        root = bpy.data.objects.new(name, None)
+        bpy.context.scene.collection.objects.link(root)
+        root["formula90s_continuous_tire_barrier"] = True
+        root["formula90s_collision"] = False
+        for index in range(count):
+            fraction = (index + 0.5) / count
+            pos, tangent, normal = sample_centerline(points, fraction)
+            ground = terrain_height(config, fraction, side, distance)
+            center = godot_xz_to_blender(pos[0] + normal[0] * side * distance, pos[1] + normal[1] * side * distance, ground)
+            tangent_b = Vector((tangent[0], -tangent[1], 0.0))
+            duplicate = _import_asset_instance(asset_glb, f"{name}_m{index:04d}")
+            duplicate.parent = root
+            duplicate.location = center
+            # Rotate the module so its local X (wall direction) aligns with the tangent.
+            yaw = math.atan2(tangent_b.y, tangent_b.x)
+            duplicate.rotation_euler[2] = yaw
+        return root, count
+
     module_length = max(0.8, float(tire_cfg.get("module_length_m", 2.4)))
     radius = max(0.12, float(tire_cfg.get("tire_major_radius_m", 0.34)))
     minor = max(0.04, float(tire_cfg.get("tire_minor_radius_m", 0.11)))
     rows = max(1, int(tire_cfg.get("stack_rows", 2)))
     per_row = max(1, int(tire_cfg.get("tires_per_row", 2)))
-    road_half = float(config["road"]["width_m"]) * 0.5
-    distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
-    lap = _closed_polyline_length(points)
     count = max(1, int(math.ceil(lap / module_length)))
     vertices = []
     faces = []
@@ -283,6 +309,48 @@ def create_tire_barrier_visual(name, points, side, config, material):
     obj["formula90s_continuous_tire_barrier"] = True
     obj["formula90s_collision"] = False
     return obj, count
+
+
+def _import_asset_instance(asset_glb, instance_name):
+    """Import a GLB asset once into a hidden prototype and return a linked copy
+    as a fresh object instance. The imported source objects are removed after
+    the prototype is captured so repeated calls stay cheap."""
+    cache = getattr(bpy, "_tire_module_prototype_meshes", None)
+    if cache is None:
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=str(Path(asset_glb).resolve()))
+        imported = [obj for obj in bpy.data.objects if obj not in before]
+        root = None
+        for obj in imported:
+            if obj.type == "EMPTY" and obj.name.startswith("TireBarrierJordan6"):
+                root = obj
+                break
+        if root is None:
+            raise RuntimeError("tire barrier GLB is missing the TireBarrierJordan6 root")
+        meshes = [obj for obj in root.children if obj.type == "MESH"]
+        if len(meshes) != 1:
+            raise RuntimeError(f"tire barrier GLB expected 1 fused module mesh, got {len(meshes)}")
+        for obj in imported:
+            obj.hide_render = True
+            obj.hide_viewport = True
+            obj.hide_set(True)
+        bpy._tire_module_prototype_meshes = meshes
+    meshes = bpy._tire_module_prototype_meshes
+    duplicate = bpy.data.objects.new(instance_name, None)
+    bpy.context.scene.collection.objects.link(duplicate)
+    for child in meshes:
+        copy = child.copy()
+        copy.data = child.data
+        bpy.context.scene.collection.objects.link(copy)
+        copy.parent = duplicate
+        copy.matrix_basis = child.matrix_basis.copy()
+        copy.hide_render = False
+        copy.hide_viewport = False
+        copy.hide_set(False)
+    duplicate.hide_render = False
+    duplicate.hide_viewport = False
+    duplicate.hide_set(False)
+    return duplicate
 
 
 def create_tire_barrier_collision(name, points, side, config):

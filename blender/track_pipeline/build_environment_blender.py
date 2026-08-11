@@ -37,6 +37,8 @@ def read_json(path):
 
 
 def build_guardrails(config, points, materials):
+    if not config.get("guardrails", {}).get("procedural", True):
+        return 0
     sources, module_length = create_guardrail_prototype(config, materials)
     road_half = float(config["road"]["width_m"]) * 0.5
     lap = float(config["_centerline_length_m"])
@@ -79,10 +81,12 @@ def build_tire_barriers(config, points, materials):
     sides = (1, -1) if settings.get("both_sides", True) else (1,)
     visual_modules = 0
     collision_segments = 0
+    asset_glb = settings.get("visual_asset_glb")
     for side in sides:
         side_name = "Right" if side > 0 else "Left"
         visual, modules = create_tire_barrier_visual(
-            f"TireBarrierVisual{side_name}", points, side, config, materials["tire_barrier"]
+            f"TireBarrierVisual{side_name}", points, side, config, materials["tire_barrier"],
+            asset_glb=asset_glb,
         )
         collision, segments = create_tire_barrier_collision(
             f"TireBarrierCollision{side_name}", points, side, config
