@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "track_id": "la_chutana",
+  "seed": 1995,
+  "world_bounds_xz": [0.0, 0.0, 120.0, 80.0],
+  "resolution": [120, 80],
+  "objects": [
+    {
+      "instance_id": "marker_001_000",
+      "catalog_index": "001",
+      "asset_id": "spectator_wave",
+      "kind": "card",
+      "category": "spectator",
+      "position_xz": [60.0, 50.0],
+      "yaw_rad": 0.0,
+      "barrier_position_xz": [60.0, 55.0],
+      "track_fraction": 0.1,
+      "collision": false
+    },
+    {
+      "instance_id": "marker_003_000",
+      "catalog_index": "003",
+      "asset_id": "marshal_flag",
+      "kind": "card",
+      "category": "marshal",
+      "position_xz": [40.0, 50.0],
+      "yaw_rad": 1.0,
+      "barrier_position_xz": [40.0, 55.0],
+      "track_fraction": 0.3,
+      "collision": false
+    },
+    {
+      "instance_id": "marker_009_000",
+      "catalog_index": "009",
+      "asset_id": "track_flag",
+      "kind": "procedural_flag",
+      "category": "flag",
+      "position_xz": [80.0, 20.0],
+      "yaw_rad": 2.0,
+      "barrier_position_xz": [80.0, 25.0],
+      "track_fraction": 0.6,
+      "collision": false
+    }
+  ],
+  "vegetation": [
+    {
+      "instance_id": "grass_0000",
+      "category": "grass",
+      "asset_path": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_01.glb",
+      "position_xz": [20.0, 20.0],
+      "yaw_rad": 0.5,
+      "scale": 1.0,
+      "collision": false
+    },
+    {
+      "instance_id": "grass_0001",
+      "category": "grass",
+      "asset_path": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_01.glb",
+      "position_xz": [100.0, 60.0],
+      "yaw_rad": -0.5,
+      "scale": 0.8,
+      "collision": false
+    },
+    {
+      "instance_id": "bushes_0000",
+      "category": "bushes",
+      "asset_path": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_01.glb",
+      "position_xz": [15.0, 60.0],
+      "yaw_rad": 1.5,
+      "scale": 1.2,
+      "collision": false
+    },
+    {
+      "instance_id": "trees_0000",
+      "category": "trees",
+      "asset_path": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_01.glb",
+      "position_xz": [10.0, 10.0],
+      "yaw_rad": 0.0,
+      "scale": 1.5,
+      "collision": false
+    }
+  ],
+  "counts": {
+    "objects": 3,
+    "vegetation": 4,
+    "by_object_category": {"spectator": 1, "marshal": 1, "flag": 1},
+    "by_vegetation_category": {"grass": 2, "bushes": 1, "trees": 1}
+  }
+}

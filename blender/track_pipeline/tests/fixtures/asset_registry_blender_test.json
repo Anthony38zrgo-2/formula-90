@@ -1,0 +1,50 @@
+{
+  "asset_count": 2,
+  "assets": [
+    {
+      "budget": {
+        "max_instances": 2,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 10.8,
+        "height": 17.2,
+        "width": 10.8
+      },
+      "id": "tree_v2_01",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "stage-4 blender smoke fixture"
+      },
+      "preview": null,
+      "source": "blender/track_pipeline/tests/fixtures/assets/valid_tree.glb",
+      "source_sha256": null
+    },
+    {
+      "budget": {
+        "max_instances": 0,
+        "min_instances": 0
+      },
+      "category": "flag",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 0.05,
+        "height": 1.8,
+        "width": 0.8
+      },
+      "id": "track_flag",
+      "kind": "flag",
+      "metadata": {
+        "origin": "stage-4 blender smoke fixture"
+      },
+      "preview": null,
+      "source": null,
+      "source_sha256": null
+    }
+  ],
+  "note": "Hermetic registry for the real Blender smoke; references an importable GLB.",
+  "profile_version": "f90-track-1",
+  "schema_version": 1
+}

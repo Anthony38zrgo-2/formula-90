@@ -1,0 +1,336 @@
+# OBJECTIVE
+Plan and implement a versioned local Track Authoring System for Formula90s.
+
+The user must manually author the full track layout in a canonical SVG: centerline,
+road parameters, elevation/banking controls, terrain zones, barriers, vegetation,
+2D cards, grandstands, pit boxes, buildings, gameplay markers, and asset instances.
+The system must normalize and validate the SVG, deterministically compile it through
+Blender, and produce inspectable Blender output plus GLB runtime assets ready for
+Godot. Every intentional save must retain a recoverable Git-tracked revision of the
+specific track without capturing unrelated work.
+
+# OBSERVED PROBLEM
+The current La Chutana semantic-authoring pipeline is raster- and track-specific:
+it uses semantic_layout.png, object_markers.png, object_catalog.json, and hard-coded
+La Chutana validation counts. It has no local interactive editor, no SVG import
+boundary, no general Asset Registry, and no revision model for author edits.
+
+# EXPECTED BEHAVIOR
+1. A user imports an external AI- or tool-generated SVG.
+2. The server sanitizes and canonicalizes it into the restricted F90 Track SVG profile.
+3. The editor lets the user edit all track-owned information and save an immutable,
+   Git-tracked revision.
+4. Validation normalizes the SVG to generated JSON and reports errors without Blender.
+5. An explicit human-approved build checks the validated source hash, runs Blender
+   headless, emits a .blend and scoped GLB outputs, validates them, then activates the
+   build atomically for Godot.
+6. Editor undo/redo and Git history can both restore a prior revision without
+   destructive overwrite.
+
+# FAILURE SIGNATURE
+NOT APPLICABLE: this is a planned product, not an active runtime defect.
+
+# CURRENT EVIDENCE
+- docs/roadmap.md defines the backlog initiative and explicitly requires an approved
+  plan before implementation.
+- blender/track_pipeline/layouts/la_chutana/layout_config.json sets resolution
+  [2440, 4096] and world_bounds_xz [-150, -570, 580, 650]. This is approximately
+  0.299 m/pixel in X and 0.298 m/pixel in Z.
+- blender/track_pipeline/semantic_layout_common.py compiles exact RGB semantic PNGs
+  and RGB-indexed marker PNGs into compiled_layout.json.
+- blender/track_pipeline/validate_semantic_layout.py contains hard-coded La Chutana
+  object and vegetation counts.
+- scripts/run_semantic_track_pipeline.ps1 performs prepare -> compile -> validate ->
+  Blender -> Blender validation -> optional publish. It refuses Blender when the
+  semantic validator fails, but publishing currently copies directly into runtime.
+- blender/track_pipeline/build_raw_vegetation_blender.py produces separate environment
+  and vegetation GLBs; game/scenes/tracks/test_field/la_chutana_generated.tscn instances
+  both resources.
+- blender/track_pipeline/blender_output.py already has atomic Blender save/GLB export
+  helpers. Base track publication also uses atomic publishing.
+- Godot project version is 4.7 (game/project.godot). Godot documentation recommends
+  glTF 2.0 and supports both .gltf and .glb.
+- Local knowledge query confirms GLB is appropriate as a single binary delivery and
+  export scope must be explicit. Its results also confirm Godot 4.7 glTF interchange.
+- Web research: SVG paths model exact lines/curves/arcs; SVG is appropriate for vector
+  track topology when canonicalized. Godot HeightMapShape3D accepts R8, RH (16-bit),
+  or RF (32-bit) height data; use generated RH/RF height fields, not 8-bit color PNG,
+  for terrain elevations and banking.
+- No source files were changed during planning. The prior semantic baseline command
+  did not complete inside a 64-second tool timeout, so current full-pipeline baseline
+  status is INCONCLUSIVE, not failed.
+
+# VERIFIED FACTS
+- The user confirmed SVG is the authoring interface: the user, not an AI, decides
+  placement of trees, grass, and all other track-side content.
+- The user requires editable centerline and banking in the MVP.
+- Imported SVG can originate from AI image/SVG tools; it must therefore be treated as
+  untrusted input and must not be built directly.
+- Required outputs are GLB for Godot and a Blender format; the latter is a generated
+  .blend inspection/interchange artifact, never a second editable source of truth.
+- The editor controls the placement and parameters of registered assets. It does not
+  edit internal GLB mesh/material geometry.
+- Each edit/save must create a recoverable copy tracked in Git. Editor-level revert
+  must be additive (new revision from old content), never destructive checkout.
+- La Chutana is the visual/functional reference track and will grow to include more
+  buildings, pit boxes, grandstands, 2D spectator cards, and additional assets.
+- SVG must be canonical authority for topology and placements. Raster remains valid
+  only as a derived preview, semantic mask, or heightfield artifact.
+- Existing collision hard rules remain mandatory: continuous terrain heightfield,
+  no deleted road cells, correct Blender +Z winding, exact narrow roadside collision
+  bridge, safety floor, simplified barrier proxies, and no gameplay collision on
+  vegetation/visual cards.
+
+# CURRENT HYPOTHESIS
+A restricted, canonical SVG profile expressed in metre-based Godot X/Z coordinates,
+combined with a generated normalized JSON contract and generated raster height/mask
+artifacts, will be more precise and deterministic for manual authoring than the
+current PNG-authoritative workflow while preserving the established Blender/Godot
+pipeline contracts.
+
+# HYPOTHESIS STATUS
+SUPPORTED for authoring precision and separation of concerns. UNTESTED for complete
+end-to-end migration/build parity; do not claim it is proven until the vertical-slice
+falsification test passes.
+
+# CHEAPEST FALSIFICATION TEST
+Before building the editor, implement a no-UI parser/normalizer prototype and create
+a minimal canonical SVG fixture containing:
+- one closed centerline;
+- road width plus three elevation/banking controls;
+- one terrain polygon;
+- one barrier line;
+- one asset instance.
+
+Compile it twice and assert byte-identical normalized JSON. Then use the existing
+terrain-grid/track validation code to validate its derived base geometry without
+running Blender. Reject the SVG-profile design if the same canonical source cannot
+yield stable geometry/JSON or cannot preserve mandatory collision invariants.
+
+# EXPECTED SIGNAL
+PASS: the two normalized JSON outputs match byte-for-byte; the derived centerline,
+road, banking samples, heightfield checks, asset IDs and collision invariants validate;
+no external reference or disallowed SVG element survives sanitization.
+
+FAIL: non-deterministic output, unbounded/ambiguous coordinate conversion, unsupported
+or unsafe SVG content accepted, invalid heightfield/winding/road-edge contract, or a
+required track concept cannot be represented by the restricted profile.
+
+# RELEVANT FILES
+- docs/roadmap.md
+- blender/track_pipeline/README.md
+- blender/track_pipeline/layouts/la_chutana/layout_config.json
+- blender/track_pipeline/layouts/la_chutana/object_catalog.json
+- blender/track_pipeline/layouts/la_chutana/semantic_layout.png
+- blender/track_pipeline/layouts/la_chutana/object_markers.png
+- blender/track_pipeline/semantic_layout_common.py
+- blender/track_pipeline/compile_semantic_layout.py
+- blender/track_pipeline/validate_semantic_layout.py
+- blender/track_pipeline/terrain_grid.py
+- blender/track_pipeline/build_track_blender.py
+- blender/track_pipeline/build_raw_vegetation_blender.py
+- blender/track_pipeline/blender_output.py
+- blender/track_pipeline/validate_track.py
+- blender/track_pipeline/validate_raw_vegetation_blender.py
+- blender/track_pipeline/tests/test_semantic_layout.py
+- blender/track_pipeline/configs/la_chutana.json
+- blender/track_pipeline/configs/la_chutana_raw.json
+- scripts/run_track_pipeline.ps1
+- scripts/run_semantic_track_pipeline.ps1
+- game/scenes/tracks/test_field/la_chutana_generated.tscn
+- game/project.godot
+- .agents/AGENTS.md
+- .agents/skills/track-reconstruction/SKILL.md
+
+# RELEVANT SYMBOLS
+- semantic_layout_common.py: WorldRasterTransform, nearest_centerline,
+  compile_layout, extract_markers, sha256_file
+- terrain_grid.py: build_heightfield, terrain_height, terrain_height_from_sample
+- blender_output.py: atomic_save_blend, atomic_export_glb, atomic_publish
+- build_raw_vegetation_blender.py: build_indexed_objects, export_runtime_part,
+  validate_runtime_split
+- build_track_blender.py: build_terrain, build_roadside_collision, build_safety_floor
+
+# OWNERSHIP
+- SVG source: editor/server owns import, sanitization, canonicalization, saves,
+  revision metadata and source hashes.
+- Asset Registry: owns semantic asset IDs, allowed kinds, source paths, dimensions,
+  previews, collision class, build budget and asset provenance.
+- Normalizer/validator: owns schema validation, coordinate conversion, deterministic
+  sampling, generated JSON and source/registry/compiler provenance.
+- Blender compiler: owns mesh construction, terrain/road/collision generation,
+  registered asset resolution, .blend output and GLB export.
+- Godot: consumes only the activated generated GLB resources; it must not infer
+  authoring information from Blender or SVG.
+- Git revision service: owns scoped snapshots/commits for track-specific authoring
+  files. It must not stage unrelated repository changes.
+
+# DEPENDENCIES
+- Vue 3 + SVG.js for the local browser editor, as specified in docs/roadmap.md.
+- Python track pipeline virtual environment at blender/track_pipeline/.venv.
+- NumPy, SciPy, OpenCV, Pillow already listed in blender/track_pipeline/requirements.txt.
+- Blender 5.x headless, currently located by existing scripts.
+- Godot 4.7 consuming generated GLB scenes.
+- Git; use Git LFS if generated binary outputs are intentionally retained in history.
+- Reference sources: https://www.w3.org/TR/SVG2/paths.html,
+  https://www.w3.org/TR/SVG/coords.html,
+  https://docs.godotengine.org/en/4.4/classes/class_heightmapshape3d.html,
+  https://docs.godotengine.org/en/4.7/tutorials/assets_pipeline/importing_3d_scenes/available_formats.html
+
+# KNOWN CONSTRAINTS
+- Canonical editable source is SVG, not PNG, JSON, .blend or GLB.
+- Use a restricted F90 SVG profile only. Accept at minimum the known-safe structural
+  and geometry subset required by the editor (svg, g, path, polygon, polyline, line,
+  circle, rect, metadata) and F90 `data-*` attributes. Reject scripts, event handlers,
+  foreignObject, external references, image/use/iframe/audio/video, style/filter,
+  animations, embedded fonts and unknown namespaces/elements.
+- Define fixed coordinates: 1 SVG unit = 1 metre. The profile must state an immutable
+  `viewBox`, axis convention, and SVG-to-Godot/Blender conversion. Do not rely on CSS
+  pixels, browser tessellation, implicit transforms, or Blender import behavior.
+- Canonicalization must expand allowed transforms, use explicit absolute path commands,
+  deterministically order layers/elements/attributes, normalize decimals, and assign
+  stable instance IDs. Compile from canonical data with project math, never rendered SVG.
+- Centerline must be closed and have an own deterministic arc-length sampler. If Bézier
+  paths are supported, define a fixed flattening tolerance and sampling rule.
+- Store elevation and bank controls against centerline distance `s` (metres), not pixel
+  positions. Store terrain edits as deterministic SVG-owned stamps/zones/parameters;
+  generate the RF/RH heightfield during normalization/build.
+- Preserve the stage gate: Base build requires human validation before procedural or
+  decorative build. Do not run Blender after validation failure.
+- Preserve split runtime GLBs for environment/collision versus collision-free vegetation
+  until evidence supports a different Godot import budget.
+- Cards, spectator stands, trees, grass, bushes, signs, flags and similar visual props
+  remain collision-free. Detailed barrier visuals cannot be their collision geometry.
+- Generated texture Forge images are not source authority; retain recipes/hashes instead.
+- Preserve unrelated dirty worktree changes. Never reset, checkout, stage or commit
+  unrelated files.
+
+# DO NOT MODIFY
+- Do not modify vehicle/GEVP/Jordan physics to compensate for track failures.
+- Do not remove the continuous terrain collision, exact roadside collision bridge, or
+  GrassSafetyFloor-colonly contract.
+- Do not replace Blender as the deterministic final compiler in the MVP.
+- Do not make .blend, GLB, generated JSON, generated PNG, or a raw third-party SVG a
+  parallel editable authority.
+- Do not implement Three.js/editor-3D, automatic scatter as authority, road painter,
+  pitlane, AI, weather or a Blender replacement in the MVP.
+- Do not run a destructive Git operation or automatic broad commit.
+
+# REJECTED HYPOTHESES
+REJECTED HYPOTHESIS: The existing PNG layout should remain the editable authority for
+the complete editor.
+EVIDENCE: La Chutana's current resolution and world bounds produce roughly 0.30 m per
+pixel. Raster masks also cannot express exact centerline curves, elevation/bank controls
+or stable individual placement data without an additional parallel data model.
+NEW VERIFIED FACT: PNG is suitable as a derived preview/mask/height artifact, not as the
+authoritative source for precise manual track authoring.
+STATUS: Do not revisit without a project requirement favoring raster painting over exact
+topology and controls.
+
+REJECTED HYPOTHESIS: Raw AI-generated SVG can be passed directly to Blender/build tools.
+EVIDENCE: SVG permits executable, referenced, styled and mixed content beyond required
+track geometry; imported SVG format/coordinate conventions are not controlled.
+NEW VERIFIED FACT: Import must sanitize and canonicalize to the F90 SVG profile.
+STATUS: Do not revisit without a verified safe import boundary and deterministic schema.
+
+REJECTED HYPOTHESIS: A rendered/build GLB or .blend can be a second editable source.
+EVIDENCE: Two editable authorities would break reproducibility and Git source history.
+NEW VERIFIED FACT: .blend and GLBs must be generated output tied to provenance hashes.
+STATUS: Do not revisit without an explicit bidirectional round-trip design.
+
+# VALIDATION COMMANDS
+Run checks from smallest to largest. Update/add commands as the new module is created.
+
+1. New parser/normalizer unit tests (expected first command):
+   blender/track_pipeline/.venv/Scripts/python.exe -m unittest discover -s blender/track_pipeline/tests
+
+2. Existing semantic baseline (before migration; expected to be run with sufficient
+   timeout and without publishing):
+   blender/track_pipeline/.venv/Scripts/python.exe blender/track_pipeline/compile_semantic_layout.py --layout-config blender/track_pipeline/layouts/la_chutana/layout_config.json
+   blender/track_pipeline/.venv/Scripts/python.exe blender/track_pipeline/validate_semantic_layout.py --layout-config blender/track_pipeline/layouts/la_chutana/layout_config.json --raw-config blender/track_pipeline/configs/la_chutana_raw.json
+
+3. New vertical-slice SVG validation must run twice and compare normalized JSON hashes.
+
+4. Existing base build, only after source/validation passes:
+   .\scripts\run_track_pipeline.ps1 -Mode Base -Track la_chutana -Seed 1995
+
+5. Human/image-capable visual inspection of generated track before procedural stage.
+
+6. Existing procedural stage, only after explicit human acceptance:
+   .\scripts\run_track_pipeline.ps1 -Mode Procedural -Track la_chutana -Seed 1995
+
+7. New post-export validation: inspect GLB node/material/collision contracts, validate
+   manifest hashes, then launch/load the generated Godot scene headlessly. Add a specific
+   command before reporting implementation complete.
+
+# BASELINE
+- Current source authority: La Chutana semantic PNG + object marker PNG + JSON catalog.
+- Current generated runtime: separate la_chutana.glb and la_chutana_vegetation.glb
+  consumed by game/scenes/tracks/test_field/la_chutana_generated.tscn.
+- Current Git working tree was clean when last checked during planning.
+- Full existing semantic pipeline baseline: INCONCLUSIVE because the no-write test/
+  compile/validate command exceeded a 64-second execution limit; this is not evidence
+  of a pipeline regression.
+
+# ACCEPTANCE CRITERIA
+PASS only when all are true:
+1. A valid external SVG is sanitized into a canonical F90 Track SVG; unsafe/unsupported
+   input is rejected with actionable diagnostics.
+2. The SVG alone, plus immutable registry/compiler versions, deterministically generates
+   byte-identical normalized JSON across two runs.
+3. The editor supports required user-controlled topology, banking/elevation controls,
+   zones and individual/zone-based asset placement, including undo/redo.
+4. Every intentional save creates a scoped immutable revision and a Git-tracked commit
+   or documented equivalent Git object; restoring a revision is additive and safe.
+5. Invalid/dirty/stale source cannot invoke Blender. Build requires explicit human
+   action/approval and validated hash match.
+6. Base and procedural stage gates remain enforced.
+7. Generated terrain/collision preserves all existing hard collision contracts.
+8. The output includes a generated .blend and GLB runtime parts with manifests/hashes;
+   only validated complete parts are atomically activated for Godot.
+9. La Chutana migrates with verified parity for its baseline, then supports added
+   buildings, boxes, grandstands and 2D spectator cards within declared budgets.
+10. Godot loads the activated output and visual acceptance is explicitly confirmed by a
+    human or image-capable reviewer.
+
+FAIL if any source is silently altered, SVG/JSON/.blend/GLB become competing editable
+authorities, validation is bypassed, generated content receives unintended collision,
+an invalid source reaches Blender, or publication leaves partially activated output.
+
+INCONCLUSIVE if deterministic tests pass but no visual reviewer has accepted the result,
+or if complete build/Godot validation cannot run in the available environment.
+
+# ATTEMPT / HYPOTHESIS BUDGET
+Attempt 0 is pending: no implementation has begun. Complete the SVG-profile vertical
+slice and current baseline capture before production edits.
+
+Attempt 1: one reversible vertical slice only: profile + sanitizer + normalizer fixture
++ deterministic unit tests. Do not build the UI, registry migration, or Blender rewrite
+until it passes.
+
+Attempt 2: permitted only if new evidence changes the failure signature or supports a
+different isolated hypothesis. If the same deterministic/profile failure persists after
+two attempts, stop production patches and enter Diagnostic Mode.
+
+# ROLLBACK CONDITIONS
+- Any candidate violates existing collision invariants or fails current La Chutana parity.
+- New output cannot be reproduced from its SVG/registry/compiler provenance.
+- A save/restore flow stages or overwrites unrelated worktree files.
+- A failed build replaces the active Godot assets or leaves a partial runtime pair.
+- SVG import permits unsafe/unsupported content or ambiguous coordinates.
+
+Rollback candidate code and retain only tests, fixtures, reports or evidence that are
+independently valid and useful. Restore active runtime assets only through the build
+activation manifest or an additive Git revision; never force-reset the repository.
+
+# USER-APPROVED HANDOFF CONDITIONS
+The user explicitly approved handing this task to OpenCode and requested this text
+instruction bundle. OpenCode may inspect, plan and implement only the Track Authoring
+System described here. It must preserve unrelated work and remain within the stated
+MVP boundaries. No further delegation, model escalation, external publishing, broad Git
+commit, or destructive Git action is authorized by this handoff.
+
+# ESCALATION CONDITIONS
+Enter Diagnostic Mode (no production patch) if ownership becomes unclear, the existing
+baseline cannot be executed/validated, the same profile failure survives two attempts,
+the next change would stack a workaround, or source/build/provenance contracts conflict.

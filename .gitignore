@@ -13,6 +13,7 @@ game/assets/generated/tracks/*
 game/assets/generated/tracks/la_chutana/*
 !game/assets/generated/tracks/la_chutana/la_chutana_vegetation.glb
 blender/generated/
+blender/track_pipeline/authoring/workspace/
 compile_commands.json
 .sconsign.dblite
 

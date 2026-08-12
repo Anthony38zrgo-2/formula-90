@@ -175,3 +175,36 @@ Placement is seeded and reproducible. It uses clustered composition rather than 
 Minimum placement distance is measured from the actual road edge plus the asset bounding radius, preventing rotated vegetation cards from entering asphalt.
 
 The same config + seed must produce the same `placements.json` and the same texture hashes.
+
+## Godot-load validation (Stage 5 acceptance)
+
+The generated environment/vegetation GLB pair is validated inside a real headless
+Godot 4.7 runtime before it may replace the active build. `build_svg_track.py`
+gains a `--godot [EXE]` gate: after the Blender build validates, the pair is
+loaded with `game/tools/validate_generated_track.gd` (via GLTFDocument) and every
+runtime split invariant must PASS before activation. A candidate that fails
+returns a nonzero exit and never replaces the previous active pair.
+
+Real smoke (temporary runtime root, does not touch `game/assets/generated/`):
+
+```powershell
+blender\track_pipeline\.venv\Scripts\python.exe blender\track_pipeline\build_svg_track.py `
+  --source blender\track_pipeline\tests\fixtures\compile_track.svg `
+  --registry blender\track_pipeline\tests\fixtures\asset_registry_blender_test.json `
+  --output-root <temp>\builds --approved --activate --runtime-root <temp>\runtime --godot
+```
+
+Direct wrapper against any GLB pair (auto-detects the console build under
+`.tools/godot/` unless `--godot` is given):
+
+```powershell
+blender\track_pipeline\.venv\Scripts\python.exe blender\track_pipeline\validate_godot_load.py `
+  --env-glb <temp>\runtime\<track_id>.glb `
+  --veg-glb <temp>\runtime\<track_id>_vegetation.glb `
+  --track-id <track_id>
+```
+
+Exit codes: `0` PASS, `1` FAIL (corrupt/missing GLB or broken invariant), `3`
+Godot executable not found. The GDScript validator is the single source of truth
+for the invariant checks; `validate_godot_load.py` only resolves Godot and relays
+its exit code and report.

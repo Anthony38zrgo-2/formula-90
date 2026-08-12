@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "objects": {
+    "001": {"asset_id": "spectator_wave", "kind": "card", "category": "spectator"},
+    "003": {"asset_id": "marshal_flag", "kind": "card", "category": "marshal"},
+    "009": {"asset_id": "track_flag", "kind": "procedural_flag", "category": "flag"}
+  }
+}

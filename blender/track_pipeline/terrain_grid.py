@@ -119,10 +119,42 @@ def nearest_track_sample(index: SegmentSpatialIndex, x: float, z: float, search_
     return NearestTrackSample(math.sqrt(best_d2), best_fraction % 1.0, best_side, best_signed)
 
 
+def elevation_at_fraction(config: dict, fraction: float) -> float:
+    """Return the terrain elevation offset (metres) at a centerline fraction.
+
+    Elevation controls are stored against centerline arc-length ``s_m``; they are
+    converted to fractions of the total centerline length and interpolated
+    linearly around the closed loop. Legacy configs without an ``elevation`` key
+    (or with a non-positive length) yield a zero offset, so existing raster
+    pipelines are unaffected.
+    """
+    elevation = config.get("elevation") or []
+    length = float(config.get("centerline_length_m", 0.0) or 0.0)
+    if not elevation or length <= 0.0:
+        return 0.0
+    controls = sorted(
+        ((float(e["s_m"]) % length) / length, float(e["height_m"]))
+        for e in elevation
+    )
+    if len(controls) == 1:
+        return controls[0][1]
+    f = float(fraction) % 1.0
+    wrapped = controls + [(c[0] + 1.0, c[1]) for c in controls]
+    lo = wrapped[0]
+    for hi in wrapped[1:]:
+        if lo[0] <= f <= hi[0]:
+            if hi[0] - lo[0] <= 1e-12:
+                return lo[1]
+            t = (f - lo[0]) / (hi[0] - lo[0])
+            return lo[1] * (1.0 - t) + hi[1] * t
+        lo = hi
+    return controls[-1][1]
+
+
 def road_surface_height(config: dict, fraction: float, signed_offset_m: float) -> float:
     surface_z = float(config["road"].get("surface_elevation_m", 0.025))
     bank = math.radians(bank_degrees_at_fraction(config, fraction))
-    return surface_z + math.tan(bank) * float(signed_offset_m)
+    return surface_z + math.tan(bank) * float(signed_offset_m) + elevation_at_fraction(config, fraction)
 
 
 def terrain_height_from_sample(config: dict, sample: NearestTrackSample | None, *, visual: bool = False) -> float:
