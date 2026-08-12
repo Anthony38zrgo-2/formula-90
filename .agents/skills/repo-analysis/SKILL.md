@@ -17,4 +17,8 @@ Inspect only enough to identify execution flow, ownership, constraints, unknowns
 8. Design the cheapest falsification experiment.
 9. Expand analysis only when evidence requires it.
 
-Do not require understanding the entire repository for a focused task. Do not create a handoff artifact unless work is actually delegated or resumed; then use `context-handoff`.
+Do not require understanding the entire repository for a focused task. Do not
+create a handoff artifact unless work is user-approved for delegation or is
+being resumed; then use `context-handoff`. Never infer approval to delegate,
+escalate, or transfer work to another agent, subagent, model, or
+higher-capability model.

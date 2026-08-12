@@ -1,0 +1,46 @@
+{
+  "source_id": "jordan-196-dimensional-reference",
+  "channel": "formula90.vehicle",
+  "authority": 65,
+  "version_policy": "historical-snapshot",
+  "source_type": "external-reference",
+  "source_ref": "https://en.wikipedia.org/wiki/Jordan_196; https://historicdb.fia.com/content/formula-one-technical-5; https://www.f1technical.net/features/23219",
+  "entries": [
+    {
+      "id": "j196dim-001",
+      "lookup_key": "jordan-196-documented-dimensions",
+      "topic": "Jordan 196 documented dimensions and dimensional confidence",
+      "symbols": ["Jordan_196", "wheelbase", "front_track", "rear_track"],
+      "keywords": ["jordan 196", "1996", "dimensions", "length", "width", "height", "wheelbase", "track", "documented"],
+      "content": "HISTORICAL REFERENCE. Publicly corroborated Jordan 196 dimensions: wheelbase 2950 mm; front track 1700 mm; rear track 1618 mm. The period car occupied the 1996 maximum-width envelope of approximately 2000 mm including wheels and front-wing endplates, and the bodywork height envelope was 950 mm above the reference plane. No public Jordan factory drawing or homologation sheet was located that states an exact overall length, overall width or total height. Therefore use 4500 mm overall length, 2000 mm overall width and 950 mm reference-plane-to-highest-bodywork as RECONSTRUCTION TARGETS, not factory-certified measurements. Confidence: wheelbase/tracks HIGH; overall width/height MEDIUM because they combine period rules with photographs; overall length LOW-MEDIUM because it is photogrammetric/period-typical.",
+      "source_ref": "https://en.wikipedia.org/wiki/Jordan_196; https://historicdb.fia.com/content/formula-one-technical-5"
+    },
+    {
+      "id": "j196dim-002",
+      "lookup_key": "jordan-196-floor-height",
+      "topic": "Jordan 196 floor datum and ground-clearance interpretation",
+      "symbols": ["reference_plane", "step_plane", "skid_block", "ride_height"],
+      "keywords": ["jordan 196", "floor", "floor height", "ground clearance", "reference plane", "step plane", "plank", "ride height"],
+      "content": "REGULATORY/RECONSTRUCTION REFERENCE. Treat the chassis reference plane as Z=0. The stepped-floor surface is 50 mm above that datum and the mandatory skid block is nominally 10 mm below the reference plane. 'Floor height above ground' is not a fixed Jordan 196 construction dimension: it changes with setup, fuel, speed, pitch and suspension travel. For a static game/CAD reconstruction use 35-50 mm ground-to-reference-plane and 85-100 mm ground-to-step-plane as an adjustable starting envelope; do not label these values as historical setup data. Confidence: 50 mm step and 10 mm plank HIGH for the 1995-1996 regulatory architecture; suggested static clearance LOW-MEDIUM.",
+      "source_ref": "https://historicdb.fia.com/content/formula-one-technical-5; https://www.f1technical.net/features/23219"
+    },
+    {
+      "id": "j196dim-003",
+      "lookup_key": "jordan-196-reconstruction-sections",
+      "topic": "Jordan 196 monocoque sectional reconstruction targets",
+      "symbols": ["nose_section", "front_bulkhead", "cockpit_section", "rear_bulkhead", "monocoque"],
+      "keywords": ["jordan 196", "monocoque", "section", "width", "height", "nose", "bulkhead", "cockpit", "reconstruction"],
+      "content": "DERIVED RECONSTRUCTION TARGETS; NOT FACTORY DRAWING DIMENSIONS. Coordinate convention: X lateral width, Y vertical height, Z longitudinal; dimensions are W x H. Nose tip: 220 x 180 mm. Nose at front-wing trailing region: 300 x 250 mm. Front axle/front bulkhead region: 460 x 420 mm. Pedal/forward survival-cell section: 500 x 470 mm. Cockpit opening/upper survival-cell section: 620 x 580 mm externally. Rear cockpit/fuel-cell bulkhead: 650 x 650 mm. Engine-interface/rear bulkhead: 580 x 620 mm. Preserve smooth transitions between stations and validate silhouette against orthographic images after fixing wheelbase at 2950 mm and overall reconstruction length at 4500 mm. Expected tolerance for visual reconstruction: +/-50 mm per section. Confidence LOW-MEDIUM; these are proportional modeling constraints inferred from period photographs, known tracks/wheelbase and 1996 safety envelopes.",
+      "source_ref": "derived from https://en.wikipedia.org/wiki/Jordan_196 and period photographic proportions; regulatory context https://historicdb.fia.com/content/formula-one-technical-5"
+    },
+    {
+      "id": "j196dim-004",
+      "lookup_key": "jordan-196-aero-body-component-dimensions",
+      "topic": "Jordan 196 wings, sidepods, cockpit and airbox reconstruction targets",
+      "symbols": ["front_wing", "rear_wing", "sidepods", "cockpit", "airbox"],
+      "keywords": ["jordan 196", "front wing", "rear wing", "sidepod", "cockpit", "air intake", "airbox", "dimensions", "reconstruction"],
+      "content": "DERIVED RECONSTRUCTION TARGETS; NOT FACTORY DRAWING DIMENSIONS. Front wing: 1950-2000 mm span, 430-500 mm planform chord, lower surface approximately 50 mm above the reference plane. Rear wing assembly: 950-1000 mm span, 380-450 mm longitudinal envelope, top approximately 900-950 mm above the reference plane. Sidepods, each: 1500-1650 mm long, 430-500 mm maximum lateral width from the survival-cell side, 480-560 mm maximum height; combined car width across sidepods approximately 1450-1600 mm. Cockpit opening: 850-900 mm long and 500-550 mm maximum clear width; external cockpit surround approximately 620-700 mm wide and 580-650 mm above the reference plane. Airbox intake: 420-500 mm external width, 180-240 mm external height, opening approximately 300-380 x 120-170 mm; top must remain within the approximately 950 mm bodywork envelope except safety structures. Use left/right symmetry, low polygon counts and silhouette priority. Expected tolerance: wings +/-40 mm, body components +/-60 mm. Confidence LOW-MEDIUM; refine from calibrated front/side/top references before treating as final asset dimensions.",
+      "source_ref": "derived from period Jordan 196 photographs and known 2950 mm wheelbase/1700 mm front track; regulatory context https://historicdb.fia.com/content/formula-one-technical-5; https://www.f1technical.net/features/23219"
+    }
+  ]
+}

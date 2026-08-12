@@ -1,0 +1,41 @@
+{
+  "asset": "grandstand_lowpoly",
+  "format": "GLB",
+  "module": "repeatable grandstand tile with seated spectators",
+  "dimensions_m": {
+    "width_x": 20.0,
+    "depth_z": 12.0,
+    "height_y": 11.21
+  },
+  "rows": 10,
+  "spectators": 280,
+  "vertices": 6888,
+  "faces": 10332,
+  "bbox": {
+    "min": [
+      -10.0,
+      0.0,
+      -0.02
+    ],
+    "max": [
+      10.0,
+      11.21,
+      12.0
+    ],
+    "dims": [
+      20.0,
+      11.21,
+      12.02
+    ]
+  },
+  "center": [
+    -0.05457150385350412,
+    4.365938838021291,
+    5.857660068506635
+  ],
+  "vertex_colors": true,
+  "uv_textures": false,
+  "material": "pbrMetallicRoughness (white baseColor, vertex colors as albedo)",
+  "seed": 1997,
+  "output": "grandstand_lowpoly.glb"
+}

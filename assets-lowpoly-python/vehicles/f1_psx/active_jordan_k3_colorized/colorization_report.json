@@ -1,0 +1,57 @@
+{
+  "pipeline": "flat_region_materials_v1",
+  "assets": [
+    {
+      "source": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\active_jordan_k3_colorized\\input\\jordan_191_candidate_chassis.glb",
+      "output": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\active_jordan_k3_colorized\\output\\jordan_191_candidate_chassis.glb",
+      "kind": "chassis",
+      "vertices_before": 482894,
+      "faces_before": 652164,
+      "faces_by_material": {
+        "body_gold_shadow": 141388,
+        "body_gold_base": 261766,
+        "accent_red": 47000,
+        "body_gold_light": 202010
+      },
+      "materials": [
+        "accent_red",
+        "body_gold_base",
+        "body_gold_light",
+        "body_gold_shadow"
+      ],
+      "classification": "geometry position + face normal; no object names or vertex IDs used"
+    },
+    {
+      "source": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\active_jordan_k3_colorized\\input\\jordan_191_candidate_wheel_front.glb",
+      "output": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\active_jordan_k3_colorized\\output\\jordan_191_candidate_wheel_front.glb",
+      "kind": "wheel",
+      "vertices_before": 27571,
+      "faces_before": 41165,
+      "faces_by_material": {
+        "rim_gold": 22782,
+        "tire_black": 18383
+      },
+      "materials": [
+        "rim_gold",
+        "tire_black"
+      ],
+      "classification": "geometry position + face normal; no object names or vertex IDs used"
+    },
+    {
+      "source": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\active_jordan_k3_colorized\\input\\jordan_191_candidate_wheel_rear.glb",
+      "output": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\active_jordan_k3_colorized\\output\\jordan_191_candidate_wheel_rear.glb",
+      "kind": "wheel",
+      "vertices_before": 28583,
+      "faces_before": 45583,
+      "faces_by_material": {
+        "rim_gold": 26217,
+        "tire_black": 19366
+      },
+      "materials": [
+        "rim_gold",
+        "tire_black"
+      ],
+      "classification": "geometry position + face normal; no object names or vertex IDs used"
+    }
+  ]
+}

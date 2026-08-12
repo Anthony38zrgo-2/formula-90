@@ -1,0 +1,89 @@
+{
+  "file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_90s_canonical_1997\\candidate_k3_historical\\jordan_191_candidate_wheel_rear.glb",
+  "format": "glb",
+  "sha256": "cc74669322305425014712d977d6dafa7177a07af4455dda099b35d3e419303d",
+  "objects": 1,
+  "meshes": 1,
+  "vertices": 5774,
+  "faces": 5465,
+  "components": 558,
+  "bounds": {
+    "min": [
+      -0.21032931,
+      -0.34732246,
+      -0.34756631
+    ],
+    "max": [
+      0.2100881,
+      0.34731901,
+      0.34738299
+    ]
+  },
+  "dimensions": {
+    "x": 0.4204174131155014,
+    "y": 0.6946414709091187,
+    "z": 0.6949492990970612
+  },
+  "center": [
+    -0.0001206,
+    -1.73e-06,
+    -9.166e-05
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        -0.33357396,
+        -0.32188628,
+        -0.88606864
+      ],
+      [
+        -0.93691347,
+        0.21738795,
+        0.27374374
+      ],
+      [
+        0.10450629,
+        0.92148343,
+        -0.37409455
+      ]
+    ],
+    "variance": [
+      0.03327338,
+      0.02201921,
+      0.02107369
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "Formula90s_LowPoly"
+  ],
+  "has_uv": true,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 557,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1627,
+      "boundary_edges": 5089,
+      "non_manifold_edges": 0,
+      "watertight": false
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "Formula90s_LowPoly",
+      "uv": true,
+      "uv_count": 5774,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

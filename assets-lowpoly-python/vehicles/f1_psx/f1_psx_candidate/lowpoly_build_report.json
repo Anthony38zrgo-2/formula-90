@@ -1,0 +1,69 @@
+{
+  "candidate": "f1_psx_candidate",
+  "tools": "numpy / scipy.cKDTree / trimesh / pymeshlab",
+  "pipeline": [
+    "extract_textures(source glb)",
+    "masked chassis submesh, drop wheel quadrants",
+    "LEFT half submesh -> intermediate glb",
+    "pymeshlab load glb -> clean -> decimate to half budget",
+    "pymeshlab extract vertex_matrix / face_matrix / wedge_tex_coord_matrix",
+    "deindex + embed baseColorTexture",
+    "mirror LEFT -> RIGHT (x<-x, swap face winding) -> merge",
+    "export f1_psx_candidate_chassis.glb",
+    "procedural front/rear wheels: 10-sided cylinder tire + 2 rim fans, ~80 tris"
+  ],
+  "assets": [
+    {
+      "asset": "chassis",
+      "source": "f1-97v-v1.glb",
+      "output": "f1_psx_candidate_chassis.glb",
+      "faces_before": 546532,
+      "faces_after": 1200,
+      "vertices_after": 3600,
+      "reduction": 0.9978,
+      "texture_embedded": true,
+      "symmetry_method": "decimate LEFT half -> mirror-X -> merge",
+      "output_bytes": 405860
+    },
+    {
+      "asset": "wheel_front",
+      "method": "procedural radial",
+      "diameter_front_m": 0.67,
+      "width_m": 0.28,
+      "sides": 10,
+      "segments": 2,
+      "material": [
+        "tire_black",
+        "rim_gold"
+      ],
+      "faces_after": 60,
+      "placement_front_axle_z": -1.475,
+      "output_bytes": 4592
+    },
+    {
+      "asset": "wheel_rear",
+      "method": "procedural radial",
+      "diameter_rear_m": 0.71,
+      "width_m": 0.4,
+      "sides": 10,
+      "segments": 2,
+      "material": [
+        "tire_black",
+        "rim_gold"
+      ],
+      "faces_after": 60,
+      "placement_rear_axle_z": 1.475,
+      "output_bytes": 4592
+    }
+  ],
+  "total_triangles_after": 1320,
+  "total_triangles_instanced": 1440,
+  "validation_targets_fia_1996": {
+    "wheelbase": "2.95 m (PASS)",
+    "front_track": "1.70 m (PASS)",
+    "rear_track": "1.618 m (PASS)",
+    "wheelbase_window": "+/-0.01",
+    "track_window": "+/-0.02",
+    "note": "Wheel placements grounded at FIA '96 axle/track values. Chassis bodywork scale is preserved from source Tripo mesh; rescale is the integrator's responsibility via Godot node Transform if exact FIA length is required."
+  }
+}

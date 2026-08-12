@@ -1,10 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://r30hkn4hriqm"]
 
-[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
-[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana_vegetation.glb" id="5_vegetation"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/generated_track_surface_groups.gd" id="2_groups"]
+[ext_resource type="PackedScene" uid="uid://c2w5vea5kkt3u" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
+[ext_resource type="Script" uid="uid://bkrhcahm56i8q" path="res://addons/formula90s/scripts/generated_track_surface_groups.gd" id="2_groups"]
 [ext_resource type="PackedScene" path="res://scenes/visuals/la_chutana_source_skybox.tscn" id="3_skybox"]
-[ext_resource type="Texture2D" path="res://assets/skybox/la_chutana/la_chutana_sky_panorama_2048x1024.png" id="4_panorama"]
+[ext_resource type="Texture2D" uid="uid://b6i2p2ccgciwr" path="res://assets/skybox/la_chutana/la_chutana_sky_panorama_2048x1024.png" id="4_panorama"]
+[ext_resource type="PackedScene" uid="uid://cxq6hehb35xpn" path="res://assets/generated/tracks/la_chutana/la_chutana_vegetation.glb" id="5_vegetation"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_la_chutana"]
 panorama = ExtResource("4_panorama")
@@ -16,24 +16,37 @@ sky_material = SubResource("PanoramaSkyMaterial_la_chutana")
 [sub_resource type="Environment" id="Environment_generated"]
 background_mode = 2
 sky = SubResource("Sky_generated")
+ambient_light_source = 2
+ambient_light_color = Color(0.54, 0.5, 0.42, 1)
+ambient_light_energy = 0.65
+reflected_light_source = 1
 tonemap_mode = 2
-glow_enabled = false
+fog_enabled = false
+fog_light_color = Color(0.62, 0.66, 0.68, 1)
+fog_light_energy = 0.7
+fog_density = 0.001
+fog_sky_affect = 0.35
+fog_depth_begin = 120.0
+fog_depth_end = 350.0
 
-[node name="LaChutanaGenerated" type="Node3D"]
+[node name="LaChutanaGenerated" type="Node3D" unique_id=1346781085]
 
-[node name="GeneratedTrack" parent="." instance=ExtResource("1_track")]
+[node name="GeneratedTrack" parent="." unique_id=645807028 instance=ExtResource("1_track")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2188797, -0.40935707, -0.0060043335)
 
-[node name="GeneratedVegetation" parent="." instance=ExtResource("5_vegetation")]
+[node name="GeneratedVegetation" parent="." unique_id=1269061341 instance=ExtResource("5_vegetation")]
 
-[node name="SurfaceGroups" type="Node" parent="."]
+[node name="SurfaceGroups" type="Node" parent="." unique_id=1341364364]
 script = ExtResource("2_groups")
 
-[node name="SourceSkyboxRig" parent="." instance=ExtResource("3_skybox")]
+[node name="SourceSkyboxRig" parent="." unique_id=79218294 instance=ExtResource("3_skybox")]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=582342505]
 environment = SubResource("Environment_generated")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1949381454]
 transform = Transform3D(0.642788, -0.422618, 0.638968, 0, 0.834848, 0.550482, -0.766044, -0.353553, 0.5373, 0, 2, 0)
 light_energy = 1.2
 shadow_enabled = true
+shadow_bias = 0.08
+directional_shadow_max_distance = 180.0

@@ -1,0 +1,58 @@
+{
+  "schema": "formula90s/vehicle-candidate/v1",
+  "candidate_id": "f1_psx_candidate",
+  "status": "isolated_validation_only",
+  "source": {
+    "glb": "f1-97v-v1.glb",
+    "source_type": "tripo_ai_proxy",
+    "note": "Tripo-AI generated GLB monolithic mesh with single PBR material + textures.",
+    "raw_copy": "obj/f1-97v-v1.glb"
+  },
+  "assets": {
+    "chassis": {
+      "path": "f1_psx_candidate_chassis.glb",
+      "sha256": "DF80CA4E3A3C1D454FB739AEDA1AB2795891A789877510373976BC9CF432B567",
+      "triangles": 1200
+    },
+    "wheel_front": {
+      "path": "f1_psx_candidate_wheel_front.glb",
+      "sha256": "1E685610003E6734C77DC438331D7832D202D52ADAEE76E367F501B84675CD24",
+      "triangles": 60
+    },
+    "wheel_rear": {
+      "path": "f1_psx_candidate_wheel_rear.glb",
+      "sha256": "C6DB74F99A00FBA7A6D1A59250D057F994E1744CC11F073BC2996B5826120B3B",
+      "triangles": 60
+    }
+  },
+  "coordinate_convention": {
+    "right": "+X",
+    "up": "+Y",
+    "forward": "-Z",
+    "units": "m"
+  },
+  "validation_datums": {
+    "front_axle_z": -1.475,
+    "rear_axle_z": 1.475,
+    "front_half_track_x": 0.85,
+    "rear_half_track_x": 0.809,
+    "front_wheel_radius": 0.335,
+    "rear_wheel_radius": 0.355,
+    "wheelbase_m": 2.95,
+    "front_track_m": 1.7,
+    "rear_track_m": 1.618,
+    "envelope_long_z_m": 4.5,
+    "envelope_height_y_m": 0.95
+  },
+  "fia_1996_compliance": {
+    "wheelbase": "2.95 m (PASS)",
+    "front_track": "1.70 m (PASS)",
+    "rear_track": "1.618 m (PASS)",
+    "wheelbase_window": "+/-0.01",
+    "track_window": "+/-0.02",
+    "note": "Wheel placements grounded at FIA '96 axle/track values. Chassis bodywork scale is preserved from source Tripo mesh; rescale is the integrator's responsibility via Godot node Transform if exact FIA length is required."
+  },
+  "integration_gate": "Candidate is ready-for-Godot-import structure (3 GLB + manifest). Wheel reusability: single wheel_front/wheel_rear asset placed at both L and R positions via Node3D Transform with scale.x=1 (right) or scale.x=-1 (left).",
+  "generated_by": "f1_psx_optimize.py",
+  "generated_at": "2026-08-12T06:34:22.423464+00:00"
+}

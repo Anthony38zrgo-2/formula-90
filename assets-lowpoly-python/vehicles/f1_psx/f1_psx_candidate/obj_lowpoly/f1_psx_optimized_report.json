@@ -1,0 +1,72 @@
+{
+  "candidate": "f1_psx_candidate",
+  "source_sha256": "E04F8A37070040A52D00A1EB3C30AFA1BDDEC9588DA27F76EC78B0DE0B38D52E",
+  "chassis": {
+    "vertices": 3600,
+    "triangles": 1200,
+    "source_vertices": 350893,
+    "source_faces": 546532,
+    "chassis_left_after_dec": 600,
+    "intermediate_glb_kib": 12919,
+    "duration_sec": 6.99,
+    "pml_filters": [
+      "meshing_remove_null_faces",
+      "meshing_remove_duplicate_faces",
+      "meshing_remove_unreferenced_vertices",
+      "meshing_decimation_quadric_edge_collapse(targetfacenum=600)",
+      "compute_normal_per_face"
+    ],
+    "texture_embedded": true
+  },
+  "wheel_front": {
+    "triangles": 60,
+    "method": "procedural radial"
+  },
+  "wheel_rear": {
+    "triangles": 60,
+    "method": "procedural radial"
+  },
+  "fia_1996_datums": {
+    "front_axle_z": -1.475,
+    "rear_axle_z": 1.475,
+    "front_half_track_x": 0.85,
+    "rear_half_track_x": 0.809,
+    "front_wheel_radius": 0.335,
+    "rear_wheel_radius": 0.355,
+    "wheelbase_m": 2.95,
+    "front_track_m": 1.7,
+    "rear_track_m": 1.618,
+    "envelope_long_z_m": 4.5,
+    "envelope_height_y_m": 0.95
+  },
+  "files": [
+    "f1_psx_candidate\\f1_psx_candidate",
+    "f1_psx_candidate\\f1_psx_candidate\\obj",
+    "f1_psx_candidate\\f1_psx_candidate_chassis.glb",
+    "f1_psx_candidate\\f1_psx_candidate_chassis.glb.import",
+    "f1_psx_candidate\\f1_psx_candidate_wheel_front.glb",
+    "f1_psx_candidate\\f1_psx_candidate_wheel_front.glb.import",
+    "f1_psx_candidate\\f1_psx_candidate_wheel_rear.glb",
+    "f1_psx_candidate\\f1_psx_candidate_wheel_rear.glb.import",
+    "f1_psx_candidate\\lowpoly_build_report.json",
+    "f1_psx_candidate\\obj",
+    "f1_psx_candidate\\obj\\.gdignore",
+    "f1_psx_candidate\\obj\\f1-97v-v1.glb",
+    "f1_psx_candidate\\obj_lowpoly",
+    "f1_psx_candidate\\obj_lowpoly\\.gdignore",
+    "f1_psx_candidate\\obj_lowpoly\\_chassis_left.glb",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_candidate_chassis.mtl",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_candidate_chassis.obj",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_candidate_wheel_front.mtl",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_candidate_wheel_front.obj",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_candidate_wheel_rear.mtl",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_candidate_wheel_rear.obj",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_optimize.py",
+    "f1_psx_candidate\\obj_lowpoly\\f1_psx_optimized_report.json",
+    "f1_psx_candidate\\reports",
+    "f1_psx_candidate\\reports\\f1_psx_candidate_chassis.validate.json",
+    "f1_psx_candidate\\reports\\f1_psx_candidate_wheel_front.validate.json",
+    "f1_psx_candidate\\reports\\f1_psx_candidate_wheel_rear.validate.json",
+    "f1_psx_candidate\\vehicle_manifest.json"
+  ]
+}

@@ -5,3 +5,41 @@ La Fase 2 integra el V10 procesado, herramientas C++ de sprites y validación, e
 - Fase 1: bootstrap jugable y probado.
 - Fase 2: herramientas validadas de sprites y audio, sin entrar en runtime.
 - Posterior: circuito, rivales, vueltas y contenido original.
+
+## Backlog — Editor de pistas y pipelines independientes
+
+Refactorizar la autoría de circuitos para reducir el coste de iteración manual.
+No iniciar esta iniciativa sin planificación y aprobación explícita.
+
+Objetivo arquitectónico:
+
+- Separar el pipeline de producción de assets reutilizables del pipeline de
+  autoría y compilación de pistas.
+- Mantener un Asset Registry único: las pistas referencian assets por ID
+  semántico, nunca por rutas de archivo.
+- Convertir `track.source.svg` en la única fuente editable de verdad; el JSON
+  normalizado será generado, nunca editado manualmente.
+- Crear un editor local, ligero y basado en navegador (Vue 3 + SVG.js), con
+  modos Objects y Terrain sobre el mismo documento.
+- Permitir colocar, mover, rotar, escalar, duplicar y borrar instancias; las
+  instancias ancladas al terreno conservan X/Z y derivan Y del heightfield.
+- Separar Save de Build: guardar sólo persiste SVG; Validate & Build será una
+  acción humana explícita, validada por hash y nunca invocará Blender con SVG
+  inválido o sin aprobación humana.
+- Reducir Blender a compilador headless determinista: consume el JSON
+  normalizado, genera pista/terreno/colisión, resuelve assets registrados y
+  exporta GLB. Godot permanece como consumidor runtime.
+
+MVP y validación:
+
+1. Auditoría y clasificación KEEP/MOVE/REFACTOR/DEPRECATE de los pipelines
+   actuales.
+2. Asset Registry con validación de IDs duplicados, rutas inexistentes y
+   previews.
+3. Esquema SVG, parser, normalizador, validación y bloqueo por estado DIRTY.
+4. Servidor local y editor 2D para assets, objetos, terreno, undo/redo y guardado.
+5. Build explícito con Blender headless, prueba de ground-lock y carga de la
+   pista resultante en Godot.
+
+Fuera del MVP: Three.js, editor 3D, scatter automático, road painter,
+banking/camber, pitlane, IA, climatología y un sustituto de Blender.

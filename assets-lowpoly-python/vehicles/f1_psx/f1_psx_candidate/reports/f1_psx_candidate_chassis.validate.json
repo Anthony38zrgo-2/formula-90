@@ -1,0 +1,104 @@
+{
+  "asset": {
+    "file": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\f1_psx\\f1_psx_candidate\\f1_psx_candidate_chassis.glb",
+    "format": "glb",
+    "sha256": "df80ca4e3a3c1d454fb739aeda1ab2795891a789877510373976bc9cf432b567",
+    "objects": 1,
+    "meshes": 1,
+    "vertices": 3600,
+    "faces": 1200,
+    "components": 1200,
+    "bounds": {
+      "min": [
+        -0.38521156,
+        -0.20822917,
+        -0.51670331
+      ],
+      "max": [
+        0.38521156,
+        0.35008866,
+        0.48894805
+      ]
+    },
+    "dimensions": {
+      "x": 0.7704231142997742,
+      "y": 0.5583178251981735,
+      "z": 1.0056513547897339
+    },
+    "center": [
+      0.0,
+      0.07092974,
+      -0.01387763
+    ],
+    "orientation": {
+      "principal_axes": [
+        [
+          -0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.05584737,
+          0.0,
+          -0.99843932
+        ],
+        [
+          -0.99843932,
+          0.0,
+          -0.05584737
+        ]
+      ],
+      "variance": [
+        0.07549693,
+        0.01549825,
+        0.00374088
+      ],
+      "note": "PCA axes; sign is arbitrary"
+    },
+    "materials": [
+      "chassis_baseColor"
+    ],
+    "has_uv": true,
+    "has_vertex_colors": false,
+    "has_normals": true,
+    "disconnected_components": 1199,
+    "topology": [
+      {
+        "finite_vertices": true,
+        "finite_faces": true,
+        "valid_face_indices": true,
+        "degenerate_faces": 0,
+        "duplicate_vertices": 2116,
+        "boundary_edges": 3600,
+        "non_manifold_edges": 0,
+        "watertight": false
+      }
+    ],
+    "attributes": [
+      {
+        "materials": 1,
+        "material_name": "chassis_baseColor",
+        "uv": true,
+        "uv_count": 3600,
+        "uv_valid": true,
+        "vertex_colors": false,
+        "vertex_color_count": 0,
+        "normals": true,
+        "material_assignments_valid": true
+      }
+    ]
+  },
+  "checks": {
+    "finite_vertices": true,
+    "finite_faces": true,
+    "valid_face_indices": true,
+    "uv_integrity": true,
+    "material_assignments": true
+  },
+  "fatal_failures": [],
+  "warnings": [
+    "duplicate vertices present"
+  ],
+  "status": "PASS_WITH_WARNINGS",
+  "comparison": null
+}

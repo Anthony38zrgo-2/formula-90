@@ -7,6 +7,14 @@ description: Deterministic real-circuit reconstruction, collision-safe Blender g
 
 Use this skill for real circuit geometry, Blender racetracks, curbs, terrain, guardrails, procedural vegetation or Texture Forge work.
 
+## Geometry tooling
+
+Use PyMeshLab as the default non-visual 3D geometry tool. Inspect topology,
+face/vertex counts, bounds, normals, transforms and format conversion with it
+before opening Blender when possible. Use Blender for authored finishing,
+materials, UVs, scene composition and final exports. CAD-derived props follow
+`CadQuery -> PyMeshLab -> Blender`.
+
 ## Stage gate
 
 Run Base first and stop for human testing:

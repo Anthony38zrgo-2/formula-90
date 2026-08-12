@@ -16,6 +16,8 @@ early. Adapt Fast means update the problem model from evidence, not switch rando
 Before editing a Godot `.tscn`, use `scene-safety`. Before vehicle tuning, use
 `vehicle-physics`. Use the relevant domain skill for aero, powertrain, telemetry,
 track generation, or physics diagnostics.
+For 3D asset generation, analysis, modification, or export, use
+`3d-asset-generation` and prefer its deterministic Python tooling before Blender.
 
 Stop implementation and enter Diagnostic Mode when the same failure signature
 survives two implementation attempts, ownership is unknown, validation is broken,
@@ -25,3 +27,14 @@ production patches.
 
 Preserve unrelated work. Keep gameplay architecture unchanged unless the task
 explicitly changes it or verified evidence identifies it as the cause.
+
+## Agent escalation gate
+
+Never promote, escalate, hand off, delegate, or transfer any task to another
+agent, subagent, model, or a higher-capability model unless the user explicitly
+requests that specific action in the current task. This prohibition applies in
+every context, including planning, implementation, diagnostics, validation,
+reviews, retries, time pressure, or suspected task complexity. A prior approval
+for delegation, a prior model choice, completion of local attempts, or the
+availability of a stronger model does not constitute approval for a new
+escalation.

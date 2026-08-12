@@ -77,13 +77,13 @@ def main() -> None:
     raw_collisions = [obj.name for obj in env.all_objects if obj.get("formula90s_raw_collision")]
     if len(raw_collisions) != 1:
         failures.append(f"expected one simplified raw barrier collision object, got {len(raw_collisions)}")
-    barrier_visuals = [obj for obj in env.all_objects if obj.get("formula90s_barrier_geometry") == "rectangular_prism"]
+    barrier_visuals = [obj for obj in env.all_objects if obj.get("formula90s_barrier_geometry") == "continuous_rectangular_ribbon"]
     if len(barrier_visuals) != 1:
-        failures.append(f"expected one rectangular-prism barrier visual object, got {len(barrier_visuals)}")
+        failures.append(f"expected one continuous rectangular barrier visual object, got {len(barrier_visuals)}")
     elif (
         barrier_visuals[0].get("formula90s_collision")
-        or int(barrier_visuals[0].get("formula90s_quads_per_module", 0)) != 6
-        or int(barrier_visuals[0].get("formula90s_vertices_per_module", 0)) != 8
+        or int(barrier_visuals[0].get("formula90s_quads_per_segment", 0)) != 4
+        or int(barrier_visuals[0].get("formula90s_vertices_per_segment", 0)) != 4
     ):
         failures.append("barrier visual geometry/collision contract failed")
 

@@ -1,0 +1,552 @@
+{
+  "file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1_90s_canonical_1997\\candidate_k3_historical\\jordan_191_candidate_wheel_rear.glb",
+  "format": "glb",
+  "sha256": "b8708e2177c7046b7e2a6d56a16338e910830c02874bf6e98efbe9e1cdcb9868",
+  "objects": 23,
+  "meshes": 23,
+  "vertices": 29053,
+  "faces": 45583,
+  "components": 236,
+  "bounds": {
+    "min": [
+      -0.21000001,
+      -0.34724492,
+      -0.34717971
+    ],
+    "max": [
+      0.21000001,
+      0.34731883,
+      0.34738299
+    ]
+  },
+  "dimensions": {
+    "x": 0.42000001668930054,
+    "y": 0.6945637464523315,
+    "z": 0.694562703371048
+  },
+  "center": [
+    0.0,
+    3.695e-05,
+    0.00010164
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        -0.7145566,
+        -0.69672886,
+        0.06306945
+      ],
+      [
+        -0.68244067,
+        0.71404643,
+        0.15624476
+      ],
+      [
+        0.15389475,
+        -0.06860457,
+        0.9857027
+      ]
+    ],
+    "variance": [
+      0.03364512,
+      0.02527996,
+      0.01964058
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "rim_gold",
+    "tire_black"
+  ],
+  "has_uv": false,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 213,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 1,
+      "duplicate_vertices": 2,
+      "boundary_edges": 394,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 143,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 8,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 6,
+      "duplicate_vertices": 11,
+      "boundary_edges": 1198,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 25,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 6,
+      "duplicate_vertices": 20,
+      "boundary_edges": 1759,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 3,
+      "duplicate_vertices": 10,
+      "boundary_edges": 1203,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 1,
+      "duplicate_vertices": 2,
+      "boundary_edges": 162,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 288,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 288,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 144,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 570,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 9,
+      "duplicate_vertices": 16,
+      "boundary_edges": 1854,
+      "non_manifold_edges": 1,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 288,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 432,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 432,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 288,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 288,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 1,
+      "duplicate_vertices": 2,
+      "boundary_edges": 1202,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 292,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 292,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 144,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 736,
+      "non_manifold_edges": 0,
+      "watertight": false
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "tire_black",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "rim_gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

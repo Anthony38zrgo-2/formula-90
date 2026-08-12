@@ -195,6 +195,25 @@
       "enabled": true
     },
     {
+      "id": "3d-asset-generation",
+      "manifest_path": ".agents/skills/3d-asset-generation/SKILL.md",
+      "triggers": [
+        "3D asset",
+        "mesh analysis",
+        "mesh simplification",
+        "component separation",
+        "UV preparation",
+        "texture generation",
+        "GLB export"
+      ],
+      "knowledge_channels": [
+        "python",
+        "blender"
+      ],
+      "risk": "medium",
+      "enabled": true
+    },
+    {
       "id": "vehicle-physics",
       "manifest_path": ".agents/skills/vehicle-physics/SKILL.md",
       "triggers": [

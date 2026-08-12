@@ -1,0 +1,100 @@
+{
+  "asset": {
+    "file": "D:\\Formula90s\\assets-lowpoly-python\\buildings\\grandstand\\grandstand_lowpoly.glb",
+    "format": "glb",
+    "sha256": "30645831682c356ad39ee8720c53cdd02245feba470fa8a17af13b169366f888",
+    "objects": 1,
+    "meshes": 1,
+    "vertices": 6888,
+    "faces": 10332,
+    "components": 861,
+    "bounds": {
+      "min": [
+        -10.0,
+        0.0,
+        -0.02
+      ],
+      "max": [
+        10.0,
+        11.21000004,
+        12.0
+      ]
+    },
+    "dimensions": {
+      "x": 20.0,
+      "y": 11.210000038146973,
+      "z": 12.019999999552965
+    },
+    "center": [
+      0.0,
+      5.60500002,
+      5.99
+    ],
+    "orientation": {
+      "principal_axes": [
+        [
+          -0.99999994,
+          0.0003253,
+          -0.00010353
+        ],
+        [
+          0.0002882,
+          0.64193216,
+          -0.76676139
+        ],
+        [
+          0.00018297,
+          0.76676137,
+          0.64193221
+        ]
+      ],
+      "variance": [
+        33.66154792,
+        20.22664832,
+        0.12068769
+      ],
+      "note": "PCA axes; sign is arbitrary"
+    },
+    "materials": [],
+    "has_uv": false,
+    "has_vertex_colors": true,
+    "has_normals": true,
+    "disconnected_components": 860,
+    "topology": [
+      {
+        "finite_vertices": true,
+        "finite_faces": true,
+        "valid_face_indices": true,
+        "degenerate_faces": 0,
+        "duplicate_vertices": 0,
+        "boundary_edges": 0,
+        "non_manifold_edges": 0,
+        "watertight": true
+      }
+    ],
+    "attributes": [
+      {
+        "materials": 0,
+        "material_name": null,
+        "uv": false,
+        "uv_count": 0,
+        "uv_valid": true,
+        "vertex_colors": true,
+        "vertex_color_count": 6888,
+        "normals": true,
+        "material_assignments_valid": true
+      }
+    ]
+  },
+  "checks": {
+    "finite_vertices": true,
+    "finite_faces": true,
+    "valid_face_indices": true,
+    "uv_integrity": true,
+    "material_assignments": true
+  },
+  "fatal_failures": [],
+  "warnings": [],
+  "status": "PASS",
+  "comparison": null
+}

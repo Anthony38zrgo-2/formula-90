@@ -313,7 +313,15 @@ def create_tire_barrier_visual(name, points, side, config, material, asset_glb=N
 
 
 def create_tire_barrier_card_visual(name, points, side, config, front_material, side_material, top_material, front_uv_bounds=(0.0, 0.0, 1.0, 1.0)):
-    """Build one closed six-quad rectangular tire-stack module per sample."""
+    """Build a closed, continuous rectangular tire-stack ribbon.
+
+    The old implementation generated a closed prism for every 0.68 m sample.
+    Although the objects were exported together, its repeated end caps created
+    visible steps and dark seams.  This version shares each cross-section with
+    its neighbours and only emits the four continuous surfaces of the ribbon.
+    The front card still repeats once per nominal tire-stack length, while the
+    top tread uses its authored seamless tiling.
+    """
     tire_cfg = config["tire_barriers"]
     road_half = float(config["road"]["width_m"]) * 0.5
     distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
@@ -327,8 +335,11 @@ def create_tire_barrier_card_visual(name, points, side, config, front_material, 
     face_materials = []
     uv_by_face = []
     up = Vector((0.0, 0.0, visual_height))
+    u0, v0, u1, v1 = front_uv_bounds
     for index in range(count):
-        fraction = (index + 0.5) / count
+        # Cross-sections lie on the sample boundaries, allowing adjacent faces
+        # to share their vertices instead of behaving as separate prisms.
+        fraction = index / count
         pos, tangent, normal = sample_centerline(points, fraction)
         ground = terrain_height(config, fraction, side, distance)
         center = godot_xz_to_blender(
@@ -339,37 +350,35 @@ def create_tire_barrier_card_visual(name, points, side, config, front_material, 
         tangent_b = Vector((tangent[0], -tangent[1], 0.0)).normalized()
         outward_b = Vector((side * normal[0], -side * normal[1], 0.0)).normalized()
 
-        half_front = tangent_b * (module_length * 0.5)
         half_side = outward_b * (visual_depth * 0.5)
-        u0, v0, u1, v1 = front_uv_bounds
-        corners = (
-            center - half_front - half_side,
-            center + half_front - half_side,
-            center + half_front + half_side,
-            center - half_front + half_side,
-        )
-        start = len(vertices)
-        vertices.extend(tuple(corner) for corner in corners)
-        vertices.extend(tuple(corner + up) for corner in corners)
-        module_faces = (
-            ((0, 1, 5, 4), 0, [(u0, v0), (u1, v0), (u1, v1), (u0, v1)]),
-            ((3, 7, 6, 2), 0, [(u0, v0), (u0, v1), (u1, v1), (u1, v0)]),
-            ((0, 4, 7, 3), 1, [(0, 0), (0, side_repeats), (1, side_repeats), (1, 0)]),
-            ((2, 6, 5, 1), 1, [(0, 0), (0, side_repeats), (1, side_repeats), (1, 0)]),
-            ((4, 5, 6, 7), 2, [(0, 0), (1, 0), (1, 1), (0, 1)]),
-            ((3, 2, 1, 0), 2, [(0, 0), (1, 0), (1, 1), (0, 1)]),
-        )
-        for indices, material_index, face_uv in module_faces:
-            faces.append(tuple(start + offset for offset in indices))
-            face_materials.append(material_index)
-            uv_by_face.append(face_uv)
+        inner = center - half_side
+        outer = center + half_side
+        vertices.extend((tuple(inner), tuple(outer), tuple(inner + up), tuple(outer + up)))
+
+    for index in range(count):
+        next_index = (index + 1) % count
+        i = index * 4
+        j = next_index * 4
+        # The external facade carries the stack-front card.  The inner facade
+        # uses the side card; it remains available from close/camera-free views
+        # without adding the old terminal planes to every module.
+        faces.extend(((i + 1, j + 1, j + 3, i + 3), (j, i, i + 2, j + 2), (i + 2, i + 3, j + 3, j + 2), (j, j + 1, i + 1, i)))
+        face_materials.extend((0, 1, 2, 2))
+        front_u0 = u0 + (u1 - u0) * index
+        front_u1 = u0 + (u1 - u0) * (index + 1)
+        uv_by_face.extend((
+            [(front_u0, v0), (front_u1, v0), (front_u1, v1), (front_u0, v1)],
+            [(index, 0), (index + 1, 0), (index + 1, side_repeats), (index, side_repeats)],
+            [(index, 0), (index, 1), (index + 1, 1), (index + 1, 0)],
+            [(index, 0), (index + 1, 0), (index + 1, 1), (index, 1)],
+        ))
 
     obj = _mesh_object(name, vertices, faces, [front_material, side_material, top_material], face_materials, uv_by_face)
     obj["formula90s_continuous_tire_barrier"] = True
     obj["formula90s_collision"] = False
-    obj["formula90s_barrier_geometry"] = "rectangular_prism"
-    obj["formula90s_quads_per_module"] = 6
-    obj["formula90s_vertices_per_module"] = 8
+    obj["formula90s_barrier_geometry"] = "continuous_rectangular_ribbon"
+    obj["formula90s_quads_per_segment"] = 4
+    obj["formula90s_vertices_per_segment"] = 4
     obj["formula90s_side_repeats"] = side_repeats
     return obj, count
 

@@ -5,7 +5,13 @@ description: Compact active debugging context after a falsified hypothesis, fail
 
 # Context Garbage Collection
 
-Run Context GC after every meaningful hypothesis falsification and before complex handoffs. Preserve only information that changes the next decision.
+Run Context GC after every meaningful hypothesis falsification and before complex
+user-approved handoffs. Preserve only information that changes the next decision.
+
+Context GC never authorizes delegation or escalation. Do not promote, escalate,
+hand off, delegate, or transfer work to another agent, subagent, model, or
+higher-capability model unless the user explicitly requested that exact action
+in the current task.
 
 For each rejected hypothesis, emit:
 
