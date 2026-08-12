@@ -1,0 +1,15 @@
+{
+  "artifacts":{
+    "canonical":{
+      "file":"track.canonical.svg",
+      "sha256":"19bfa28be424add70600f14c95d544202a53ba26f6f74611f011d10f72702d32"
+    }
+  },
+  "created_unix_ns":1786574911352701400,
+  "manifest_sha256":"263aaa0f6978b210ef51e7a7118003f8c4da1324630b28cc3d75a821ea3c6dce",
+  "parent_revision_sha256":null,
+  "revision_sha256":"1f49978e1d7de1401b616a65d31f990b49ec3b154cd6a86b58b8a21ba7aa71b8",
+  "schema_version":1,
+  "source_revision_sha256":null,
+  "track_id":"la_chutana"
+}
