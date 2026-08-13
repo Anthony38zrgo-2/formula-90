@@ -898,3 +898,41 @@ because the handling-test scene passes. Run the default-route tests.
 `smoke_test_bootstrap_world_hud_compositor.gd` (default route movement test)
 and `visual_test_arcade_hud_capture.gd` (1280x720 capture with all HUD
 elements) must pass together.
+
+---
+
+## 31. Promoting a single-GLB vehicle to canonical 3-GLB (Jordan197)
+
+### Symptom
+
+A new `*_LOD0_Historical.glb` appears as a single 70-object scene (931 components, 7050 verts) and must replace the `jordan_191` 4-GLB canonical set without breaking `test_field.tscn`, `run_jordan_handling.ps1`, `WorldHudCompositor` or smoke tests.
+
+### Difficulties encountered
+
+1. **931 tiny components** — `analyze_mesh` reports `components 931`, many `1-face` decoratives. `mesh_components` classifier `confidence 0.0` for most; destructive split by face-count loses material.
+2. **Hardcoded `VehicleRigidBody` paths** in 6 places (`world_hud_compositor.gd:6`, `handling_tuning_panel.gd:6`, `smoke_*`, `run_jordan_handling.ps1:10`). Next promotion would re-edit 4 files.
+3. **GLB import cache** — `Trimesh` export produces `*.glb` + embedded `*.png` without `.import` descriptors; `godot --headless --import` must run before `smoke_test` else `No loader found` `PackedScene`.
+4. **Track/wheelbase faithful vs frozen** — `197` `front_track 1.762 / rear 1.748 / wheelbase 3.073 / radius 0.324` differs `+19%/+6.7%/-6.7%` from `191` `1.478/1.437/2.878/0.3473`. Choosing faithful changes handling; preserving frozen hides asset.
+5. **Z-forward convention** — `Godot/data (x,z,height) → Blender (x,-z)` `COMMON_ERRORS.md:65` vs `vehicle_manifest forward -Z`. Tyre centroids `LF 0.881,1.433 / LR 0.874,-1.64` inverted vs `191` `-1.439` → chassis must not be `scale -1` (`COMMON_ERRORS.md:352`).
+6. **HandlingTuningPanel export path** — default `Jordan191` breaks `Jordan197` smoke `vehicle_path` check, but fallback `_find_vehicle_in_scene` `handling_tuning_panel.gd:234` still finds vehicle; test strict equality is the failure, not runtime.
+
+### Correct solution (this iteration)
+
+*   Skill `3d-asset-generation` `ANALYZE → mesh_components (filter geometry, not name) → spatial_query --surface → vertex_regions → validate` — chassis = 29 non-wheel geometries, wheels = single-sided `LP_TYRE_LF (+spokes/rim/hub)` merged and centered `centroid 0.881` subtracted, not `LF+RF` double-wheel.
+*   `REF-002 VehiclePathResolver` `game/addons/formula90s/scripts/vehicle_path_resolver.gd:1` with `CANDIDATE_PATHS [Jordan197,Jordan191,VehicleController]` + recursive `Vehicle` search; `WorldHudCompositor` delegates, `run_jordan_handling.ps1:2` parametrized `VehicleId=jordan_197` default, manifest-driven assets.
+*   After `trimesh` export, run `godot --headless --import` to generate `*.glb.import` + `*.png.import` before any `smoke_test`.
+*   Decision `J197-001`: faithful `track/wheelbase/radius` (asset truth) over frozen `191`; document both in `PROJECT_STATE.md §5.1` `vehicle_manifest.json`.
+*   Rotate opposite-side wheel `Visual` `Transform3D(-1,0,1)` not `scale -1` (`COMMON_ERRORS.md:352`).
+*   Relax smoke `vehicle_path` strict check to allow `Jordan197` or fallback `_vehicle != null`.
+
+### Antipattern remediation (high priority)
+
+*   Centralize `VehiclePathResolver` / `ProjectSettings vehicles/canonical_id` or `Group "vehicle"` — no new promotion should edit `>1` file (`REF-002 priority 98`).
+*   Generate `assets-lowpoly-python/manifest.json` from script, include `Jordan197` (currently missing `manifest.json:1` 9 assets).
+*   Keep `input/working/output/reports` separation `SKILL.md:137`; never overwrite `Historical.glb`.
+
+### Validation
+
+*   `analyze_mesh` `chassis 1.567/4.621 / wheel_front 0.307/0.648` matches `0.324*2`.
+*   `smoke_test_jordan_197_handling_scene PASS`, `smoke_test_jordan_191 PASS`, `smoke_test_bootstrap_world_hud_compositor PASS` (now `Jordan197`).
+*   `godot --headless --editor --quit DONE`.

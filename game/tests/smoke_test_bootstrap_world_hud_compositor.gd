@@ -26,7 +26,9 @@ func _run() -> void:
 		return
 
 	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap") as TrackMinimapController
-	var vehicle := compositor.get_node_or_null("WorldViewport/WorldContent/Jordan191/VehicleRigidBody") as Node3D
+	var vehicle := compositor.get_node_or_null("WorldViewport/WorldContent/Jordan197/VehicleRigidBody") as Node3D
+	if vehicle == null:
+		vehicle = compositor.get_node_or_null("WorldViewport/WorldContent/Jordan191/VehicleRigidBody") as Node3D
 	if vehicle == null:
 		vehicle = compositor.get_node_or_null("WorldViewport/WorldContent/VehicleController/VehicleRigidBody") as Node3D
 	var tuner := compositor.get_node_or_null("HudLayer/DebugHud/HandlingTuningPanel") as Control

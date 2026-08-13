@@ -1,28 +1,26 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle_controllergd.gd" id="1_controller"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle.gd" id="2_vehicle"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/wheel.gd" id="3_wheel"]
-[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191_chassis.glb" id="4_chassis"]
-[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191_wheel_fl.glb" id="5_fl"]
-[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191_wheel_fr.glb" id="6_fr"]
-[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191_wheel_rl.glb" id="7_rl"]
-[ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191_wheel_rr.glb" id="8_rr"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/jordan_197/jordan_197_chassis.glb" id="4_chassis"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/jordan_197/jordan_197_wheel_front.glb" id="5_front"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/jordan_197/jordan_197_wheel_rear.glb" id="6_rear"]
 
-[sub_resource type="Curve" id="Curve_jordan191"]
+[sub_resource type="Curve" id="Curve_jordan197"]
 _data = [Vector2(0, 0.38), 0.0, 1.35, 0, 0, Vector2(0.72, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.76), -1.1, 0.0, 0, 0]
 point_count = 3
 
 [sub_resource type="BoxShape3D" id="Box_tub"]
-size = Vector3(0.92, 0.40, 2.35)
+size = Vector3(1.35, 0.40, 2.80)
 
 [sub_resource type="BoxShape3D" id="Box_nose"]
-size = Vector3(0.44, 0.24, 1.45)
+size = Vector3(0.60, 0.24, 1.60)
 
 [sub_resource type="BoxShape3D" id="Box_rear"]
-size = Vector3(0.88, 0.32, 0.95)
+size = Vector3(1.20, 0.32, 1.10)
 
-[node name="Jordan191" type="Node3D" node_paths=PackedStringArray("vehicle_node")]
+[node name="Jordan197" type="Node3D" node_paths=PackedStringArray("vehicle_node")]
 script = ExtResource("1_controller")
 vehicle_node = NodePath("VehicleRigidBody")
 
@@ -33,7 +31,7 @@ front_right_wheel = NodePath("WheelFrontRight")
 rear_left_wheel = NodePath("WheelRearLeft")
 rear_right_wheel = NodePath("WheelRearRight")
 
-; PHY-006 canonical steering (Monaco GP2-style) — single behavior family, frozen for handling matrix §7.1.
+; PHY-003/006/007 frozen envelope for Jordan197 — RayCast positions derived from Jordan197_LOD0_Historical tyre centroids 0.881/0.874 @ Z +/-1.433/1.64, radius 0.324 (diam 0.648), widths 308/358.
 max_steering_angle = 0.436332
 front_steering_ratio = 1.0
 steering_speed = 3.7
@@ -46,7 +44,7 @@ steering_exponent = 1.70
 max_torque = 430.0
 max_rpm = 13000.0
 idle_rpm = 3500.0
-torque_curve = SubResource("Curve_jordan191")
+torque_curve = SubResource("Curve_jordan197")
 motor_moment = 0.22
 gear_ratios = Array[float]([3.00, 2.25, 1.75, 1.42, 1.20, 1.03])
 final_drive = 3.10
@@ -61,7 +59,6 @@ center_of_gravity_height_offset = -0.12
 inertia_multiplier = 1.10
 enable_stability = false
 
-; PHY-007 canonical suspension — short transient, little roll, curb-tolerant, no grip masking.
 front_spring_length = 0.10
 front_resting_ratio = 0.50
 front_damping_ratio = 0.80
@@ -98,10 +95,10 @@ longitudinal_grip_ratio = {
 "Grass": 0.8
 }
 
-front_tire_radius = 0.3473
-rear_tire_radius = 0.3473
-front_tire_width = 335.0
-rear_tire_width = 420.0
+front_tire_radius = 0.324
+rear_tire_radius = 0.324
+front_tire_width = 308.0
+rear_tire_width = 358.0
 front_wheel_mass = 12.0
 rear_wheel_mass = 16.0
 
@@ -109,55 +106,58 @@ coefficient_of_drag = 0.75
 frontal_area = 1.20
 
 [node name="ChassisVisual" parent="VehicleRigidBody" instance=ExtResource("4_chassis")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
 
 [node name="CollisionTub" type="CollisionShape3D" parent="VehicleRigidBody"]
-position = Vector3(0, 0.02, 0.18)
+position = Vector3(0, 0.02, 0.15)
 shape = SubResource("Box_tub")
 
 [node name="CollisionNose" type="CollisionShape3D" parent="VehicleRigidBody"]
-position = Vector3(0, -0.08, -1.43)
+position = Vector3(0, -0.08, -1.60)
 shape = SubResource("Box_nose")
 
 [node name="CollisionRear" type="CollisionShape3D" parent="VehicleRigidBody"]
-position = Vector3(0, 0.00, 1.43)
+position = Vector3(0, 0.00, 1.65)
 shape = SubResource("Box_rear")
 
 [node name="WheelFrontLeft" type="RayCast3D" parent="VehicleRigidBody" node_paths=PackedStringArray("wheel_node")]
-position = Vector3(-0.739479, 0.0575, -1.4394)
+position = Vector3(-0.881, 0.32, -1.433)
 script = ExtResource("3_wheel")
 wheel_node = NodePath("FrontLeftWheel")
 
 [node name="FrontLeftWheel" type="Node3D" parent="VehicleRigidBody/WheelFrontLeft"]
-position = Vector3(0, -0.05, 0)
+position = Vector3(0, -0.32, 0)
 
-[node name="Visual" parent="VehicleRigidBody/WheelFrontLeft/FrontLeftWheel" instance=ExtResource("5_fl")]
+[node name="Visual" parent="VehicleRigidBody/WheelFrontLeft/FrontLeftWheel" instance=ExtResource("5_front")]
 
 [node name="WheelFrontRight" type="RayCast3D" parent="VehicleRigidBody" node_paths=PackedStringArray("wheel_node")]
-position = Vector3(0.739257, 0.0575, -1.4394)
+position = Vector3(0.881, 0.32, -1.433)
 script = ExtResource("3_wheel")
 wheel_node = NodePath("FrontRightWheel")
 
 [node name="FrontRightWheel" type="Node3D" parent="VehicleRigidBody/WheelFrontRight"]
-position = Vector3(0, -0.05, 0)
+position = Vector3(0, -0.32, 0)
 
-[node name="Visual" parent="VehicleRigidBody/WheelFrontRight/FrontRightWheel" instance=ExtResource("6_fr")]
+[node name="Visual" parent="VehicleRigidBody/WheelFrontRight/FrontRightWheel" instance=ExtResource("5_front")]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, 0, 0, 0)
 
 [node name="WheelRearLeft" type="RayCast3D" parent="VehicleRigidBody" node_paths=PackedStringArray("wheel_node")]
-position = Vector3(-0.718479, 0.0525, 1.4394)
+position = Vector3(-0.874, 0.32, 1.64)
 script = ExtResource("3_wheel")
 wheel_node = NodePath("RearLeftWheel")
 
 [node name="RearLeftWheel" type="Node3D" parent="VehicleRigidBody/WheelRearLeft"]
-position = Vector3(0, -0.06, 0)
+position = Vector3(0, -0.32, 0)
 
-[node name="Visual" parent="VehicleRigidBody/WheelRearLeft/RearLeftWheel" instance=ExtResource("7_rl")]
+[node name="Visual" parent="VehicleRigidBody/WheelRearLeft/RearLeftWheel" instance=ExtResource("6_rear")]
 
 [node name="WheelRearRight" type="RayCast3D" parent="VehicleRigidBody" node_paths=PackedStringArray("wheel_node")]
-position = Vector3(0.718479, 0.0525, 1.4394)
+position = Vector3(0.874, 0.32, 1.64)
 script = ExtResource("3_wheel")
 wheel_node = NodePath("RearRightWheel")
 
 [node name="RearRightWheel" type="Node3D" parent="VehicleRigidBody/WheelRearRight"]
-position = Vector3(0, -0.06, 0)
+position = Vector3(0, -0.32, 0)
 
-[node name="Visual" parent="VehicleRigidBody/WheelRearRight/RearRightWheel" instance=ExtResource("8_rr")]
+[node name="Visual" parent="VehicleRigidBody/WheelRearRight/RearRightWheel" instance=ExtResource("6_rear")]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, 0, 0, 0)

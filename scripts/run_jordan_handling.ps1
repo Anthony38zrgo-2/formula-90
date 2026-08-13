@@ -136,7 +136,7 @@ try {
         )
         foreach ($asset in $k3Assets) {
             if (-not (Test-Path $asset -PathType Leaf)) {
-                Write-Warning "Asset K3 historico faltante (legacy fallback): $asset â€” continuando con $VehicleId"
+                Write-Warning "Asset K3 historico faltante (legacy fallback): $asset ÔÇö continuando con $VehicleId"
             }
         }
     }

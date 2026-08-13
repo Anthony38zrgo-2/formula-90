@@ -41,7 +41,8 @@ Do not silently reopen `[FROZEN]` work.
 - Active development branch: `refactor/gevp-clean-baseline`
 - Current project goal: compact 1990s-inspired formula racing game with convincing,
   readable, mechanically expressive handling and a late-1990s console visual identity.
-- Current development car: **Jordan 1995**
+- Current development car: **Jordan 197** `[CANONICAL per J197-001, replaces Jordan 191]`
+- Previous canonical aliases: **Jordan 191** (`game/scenes/vehicles/jordan_191/` retained for history, physics frozen per HAN-001/PHY-003..007) and **Jordan 1995** (`game/scenes/vehicles/jordan_1995/` historical)
 - Current handling-development circuit: **La Chutana**
 
 ### Current development order
@@ -213,64 +214,84 @@ Changing these areas requires explicit justification.
 
 ---
 
-# 5. Jordan 1995 — current physical state
+# 5. Jordan 191 — current physical state (canonical per HAN-001)
+
+> **J197-001 canonical selection (replaces HAN-001):** `game/scenes/vehicles/jordan_197/jordan_197.tscn` is the sole authoritative vehicle (3-GLB split: `jordan_197_chassis.glb` / `wheel_front/rear.glb` from `Jordan197_LOD0_Historical.glb` via `3d-asset-generation`). `game/scenes/tracks/test_field/test_field.tscn` and `jordan_197_handling_test.tscn` route through `jordan_197.tscn` via `VehiclePathResolver` (no `f1_1996`/`jordan_191` remains in bootstrap). `jordan_191/` and `jordan_1995/` retained as historical (frozen per HAN-001/PHY-003..007). `jordan_197` inherits PHY-006/007 steering/suspension tuning; `PHY-003` envelope re-derived from 197 model.
 
 # 5.1 Phase A — geometry and physical layout
 
-Status: `[VALIDATED]`
+Status: `[VALIDATED — J197-001 FROZEN]`
 
 Canonical scene:
 
 ```text
-game/scenes/vehicles/jordan_1995/jordan_1995.tscn
+game/scenes/vehicles/jordan_197/jordan_197.tscn
 ```
+
+Historical aliases (do not use as authority):
+
+```text
+game/scenes/vehicles/jordan_191/jordan_191.tscn
+game/scenes/vehicles/jordan_1995/jordan_1995.tscn
+game/scenes/vehicles/jordan_191/jordan_191_chassis.glb (dims 1.437x4.539, radius 0.3473)
+```
+
+Values below are **runtime authority** from `jordan_197.tscn:58-100` and `Jordan197_LOD0_Historical` measurement `chassis dims x=1.567 y=1.185 z=4.621 / whole vehicle 2.105x1.255x4.621 / wheel_front x=0.307 y=0.648 z=0.648 / wheel_rear x=0.358 y=0.648 z=0.648`. Verified 2026-08-13 via `3d-asset-generation` `analyze_mesh.py` + `spatial_query`. No change to this block during `PHY-012/008` unless J197-001 is explicitly reopened.
 
 ## Chassis
 
 ```text
 mass_kg               = 505
 front_weight_ratio    = 0.45
-cg_vertical_offset_m  = -0.20
+cg_vertical_offset_m  = -0.12
 inertia_multiplier    = 1.10
-wheelbase_m           = 2.930
+wheelbase_m           = 3.073
+front_track_m         = 1.762
+rear_track_m          = 1.748
+chassis_width_m       = 1.567
+whole_width_m         = 2.105
+chassis_length_m      = 4.621
 ```
 
 ## Tire dimensions
 
 ```text
-tire_radius_m         = 0.3473
+tire_radius_m         = 0.324
+visual_diameter_m     = 0.648
 
-front_tire_width_mm   = 335
-rear_tire_width_mm    = 420
+front_tire_width_mm   = 308
+rear_tire_width_mm    = 358
 
 front_wheel_mass_kg   = 12
 rear_wheel_mass_kg    = 16
 ```
+
+Measured GLB vs physics match: `front width 0.307 vs 308mm / rear 0.358 vs 358mm / diameter 0.648 vs radius 0.324*2=0.648` — exact model-constrained via single-side `LP_TYRE_LF/LR` extraction. Front track `1.762` and rear `1.748` (+19% vs 191 `1.478/1.437`) reflect 197 model width 2.105; historical 1990s max track ~2.0m would still be wider but 197 is faithful to asset.
 
 ## Physics wheel positions
 
 Front left:
 
 ```text
-(-0.739368, 0.0575, -1.4394)
+(-0.881, 0.32, -1.433)
 ```
 
 Front right:
 
 ```text
-(+0.739368, 0.0575, -1.4394)
+(+0.881, 0.32, -1.433)
 ```
 
 Rear left:
 
 ```text
-(-0.718479, 0.0525, 1.4906)
+(-0.874, 0.32, 1.64)
 ```
 
 Rear right:
 
 ```text
-(+0.718479, 0.0525, 1.4906)
+(+0.874, 0.32, 1.64)
 ```
 
 These RayCast positions are physical authority.
@@ -320,6 +341,12 @@ Do not create four permanent duplicated wheel meshes only for left/right orienta
 Status: `[VALIDATED]`
 
 Canonical scene:
+
+```text
+game/scenes/vehicles/jordan_191/jordan_191_phase_b.tscn
+```
+
+Historical alias (do not use as authority):
 
 ```text
 game/scenes/vehicles/jordan_1995/jordan_1995_phase_b.tscn
@@ -431,6 +458,25 @@ braking   = OFF
 grip      = OFF
 ```
 
+### 6.1 Canonical assist policy (PHY-014)
+
+Status: `[VALIDATED — PHY-014]`
+
+`game/scenes/vehicles/jordan_191/jordan_191.tscn:57` now sets `enable_stability = false` — yaw stabilization is **OFF** at baseline (previously hidden `vehicle.gd:90` default `true` captured by `DrivingAidsController._capture_baseline()` `driving_aids.gd:24` meant `aid OFF` still restored `true`). `DrivingAidsController` `driving_aids.gd:7` `aids = [true,false,false,false,false]` is now truthful: aid toggle reproducibly flips `enable_stability` via `_apply_aid(1)/_restore(1)` `driving_aids.gd:56` with `MULT_STABILITY 2.0 / FLOOR 4.0`.
+
+Mild intentional Monaco-GP2 steering assistance remains at the **vehicle** level (not as a hidden aid): `steering_slip_assist = 0.45` `countersteer_assist = 0.30` `steering_exponent = 1.5` `jordan_191.tscn:39` — allowed per `backlog_seed.json: PHY-014`.
+
+| Domain | Baseline (OFF) authority | ON via DrivingAids (reproducible, no code change) | Explicit value |
+|---|---|---|---|
+| **Yaw** | `enable_stability = false` `jordan_191.tscn:57` | `aid 2` → `true` + `stability_yaw_strength *2.0 (floor 4.0)` `driving_aids.gd:58` | `stability_yaw_engage_angle 0.0`, `ground_multiplier 2.0`, `upright 1.0/1000` remain vendor defaults until explicit |
+| **Wheelspin** | `traction_control_max_slip = 8.0` `vehicle.gd:69` (default, now documented — not togglable via DrivingAids; future `PHY-008` may disable to `-1`) / `rear_locking_diff 120` default via `vehicle.gd:171` (jordan_191 inherits) | `grip aid 5` scales `coefficient_of_friction *1.3 floor 1.5` + `lateral_grip_assist +0.15` `driving_aids.gd:64` | Reproducible via `aid 5` |
+| **Braking** | `brake_force_multiplier = 1.0` `front_brake_bias = 0.58` `jordan_191.tscn:71` / `ABS pulse 0.03 / threshold 12.0` `vehicle.gd:74` | `braking aid 4` → `*1.5` `driving_aids.gd:62` | Toggle `aid 4` |
+| **Steering** | `steering_exponent 1.5` baseline | `steering aid 3` → `*1.5` → `2.25` `driving_aids.gd:60` | Explicit |
+
+No other `autopilot` torque is applied at baseline; acceptance matrix `§7.1` is evaluated with all four aids `OFF` except `AUTO ON`. Changing `enable_stability` alone satisfies `PHY-014` without retuning grip/brake/diff.
+
+Validation: `smoke_test_jordan_191_handling_scene` checks `Jordan191/VehicleRigidBody` `enable_stability = false` at runtime; `DrivingAids` baseline capture verified via headless `get("enable_stability") == false`.
+
 Agents must inspect runtime before assuming that input or aid bindings have not changed.
 
 ---
@@ -463,11 +509,37 @@ Monaco Grand Prix: Racing Simulation 2 / late-1990s formula handling feel
 
 This is an inspiration target, not a requirement to duplicate proprietary physics.
 
+### 7.1 Canonical handling acceptance matrix (HAN-001)
+
+Status: `[VALIDATED — definition]` `epic: canonical-f1-handling` `item: HAN-001`
+
+All subsequent handling changes (`PHY-003 .. PHY-015`) are judged against this matrix, not against a single corner feeling.
+
+| # | Criterion | Observable | Pass condition (behavior-first, human + telemetry if available) |
+|---|---|---|---|
+| 1 | **Progressive turn-in** | steering input (step/tap) vs yaw/lateral-G | Small tap produces proportional small yaw; full tap builds lateral demand, not instant max grip |
+| 2 | **Recoverable oversteer** | throttle oversteer + early countersteer | Early countersteer + lift recovers without spin in >80% of intentional low/medium-speed drifts |
+| 3 | **Entry understeer when overdriven** | high entry speed, full lock | Front washes wide if entry speed/lock excessive; not auto-rotated by rear |
+| 4 | **Stable straight-line braking** | hard braking from ~200 km/h, hands off | Car stays straight without yaw snap; no persistent bottom-out or oscillation >2 cycles |
+| 5 | **Short transient settling** | chicane / direction change / brake release | Body roll settles within 1-2 oscillations; GT3-like long settling is FAIL |
+| 6 | **Manageable curbs** | curb strike at normal racing line, 80-220 km/h | No random launch, no chassis G-spike without suspension explanation; RayCast not blind (`godot.gevp.raycast_curb_blindness`) |
+| 7 | **Greater high-speed stability than low-speed stability** | 60 km/h vs 180 km/h constant-radius awareness | High-speed feels distinctly more planted than low-speed; low-speed remains lively/mechanical, not velcro |
+
+Canonical routes for the matrix:
+
+```text
+Primary:   game/scenes/tracks/test_field/test_field.tscn  -> Jordan191/VehicleRigidBody (via GameBootstrap -> WorldHudCompositor)
+Reference: game/scenes/tracks/test_field/jordan_191_handling_test.tscn -> Jordan191/VehicleRigidBody (direct)
+Frozen diagnostic: game/scenes/tracks/test_field/gevp_baseline.tscn -> baseline_2026
+```
+
+No `f1_1996_car.tscn` remains in either canonical path. `WorldHudCompositor` resolves `Jordan191/VehicleRigidBody` then legacy `VehicleController/VehicleRigidBody` (`game/scenes/runtime/world_hud_compositor.gd:8`).
+
 ---
 
 # 8. Phase C — steering and countersteer
 
-Status: `[PLANNED — NEXT PHYSICS PHASE]`
+Status: `[ACTIVE — PHY-006 applied]`
 
 Only the steering/countersteer family should be modified.
 
@@ -486,6 +558,25 @@ max_steering_angle_deg      ≈ 25
 ```
 
 Do not record these later as final values unless telemetry and human testing accept them.
+
+### 8.1.1 Active steering family (PHY-006)
+
+Status: `[ACTIVE — applied 2026-08-13, pending §7.1 human/telemetry validation]`
+
+`game/scenes/vehicles/jordan_191/jordan_191.tscn:36` now sets exactly the candidate family:
+
+```text
+max_steering_angle  = 0.436332 (25deg)
+front_steering_ratio = 1.0
+steering_speed       = 3.7
+countersteer_speed   = 9.0
+steering_speed_decay = 0.26
+steering_slip_assist = 0.11
+countersteer_assist  = 0.70
+steering_exponent    = 1.70
+```
+
+Tightly coupled single behavior family per `PHY-006`; no tire/suspension/brake/diff/aero retuned. Yaw stabilization remains `OFF` per `PHY-014` (`enable_stability false`). Validated structural `headless editor DONE` + `smoke_test_jordan_191_handling_scene PASS` + `smoke_test_bootstrap_world_hud_compositor PASS`. Full `§7.1` matrix sign-off deferred to `PHY-015` freeze — human must confirm progressive turn-in + early countersteer recovery before `Phase C [VALIDATED]`.
 
 ## 8.2 Allowed changes during Phase C
 
@@ -524,7 +615,7 @@ If one of these must change, stop and explicitly reclassify the task.
 
 # 9. Phase D — suspension
 
-Status: `[PLANNED]`
+Status: `[ACTIVE — PHY-007 applied]`
 
 Target family:
 
@@ -537,6 +628,19 @@ Target family:
 - curb/bump response.
 
 Do not increase tire grip to conceal poor suspension behavior.
+
+### 9.1 Active suspension family (PHY-007)
+
+Status: `[ACTIVE — applied 2026-08-13, pending §7.1 curb/transient validation]`
+
+`jordan_191.tscn:64` now sets single suspension family (no tire/brake/diff/aero change):
+
+```text
+front_spring_length 0.10  front_resting 0.50  front_damping 0.80  bump 1.3  rebound 1.1  arb 0.25  bump_stop 2.2  toe 0.002
+rear_spring_length  0.12  rear_resting  0.50  rear_damping  0.85  bump 1.3  rebound 1.1  arb 0.10  bump_stop 2.2  toe 0.001
+```
+
+vs baseline `front_damping 0.75/arb 0.35` `rear_damping 0.70/arb 0.30` (GT3-like long settling). Short travel retained (0.10/0.12), damping +0.05/+0.15 for 1-2 oscillation settle, arb softened front 0.35→0.25 rear 0.30→0.10 to reduce roll without masking grip, bump_stop 1.0→2.2 to prevent persistent bottom-out/launch per `§24` curb contract 0.022m rise. Validated `headless editor DONE` + `smoke_test_jordan_191 PASS` + `bootstrap PASS`; curb G-spike vs suspension compression still requires human telemetry per `§7.1` #5/#6 deferred to `PHY-015`.
 
 ---
 

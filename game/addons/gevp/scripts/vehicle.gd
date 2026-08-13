@@ -844,10 +844,10 @@ func process_transmission() -> void:
 			
 			if current_gear < gear_ratios.size():
 				if current_gear > 0:
-					if current_ideal_gear_rpm > max_rpm:
+					if current_ideal_gear_rpm >= max_rpm:
 						if delta_time - last_shift_delta_time > shift_time:
 							shift(1)
-					if current_ideal_gear_rpm > max_rpm * 0.8 and current_real_gear_rpm > max_rpm:
+					if current_ideal_gear_rpm >= max_rpm * 0.8 and current_real_gear_rpm >= max_rpm:
 						if delta_time - last_shift_delta_time > shift_time:
 							shift(1)
 				elif current_gear == 0 and motor_rpm > maxf(clutch_out_rpm, idle_rpm):
