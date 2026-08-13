@@ -3,7 +3,8 @@ extends Control
 const WORLD_VIEWPORT_PATH := NodePath("WorldViewport")
 const HUD_LAYER_PATH := NodePath("HudLayer")
 const WORLD_CONTENT_NAME := &"WorldContent"
-const VEHICLE_PATH := NodePath("VehicleController/VehicleRigidBody")
+
+const Resolver := preload("res://addons/formula90s/scripts/vehicle_path_resolver.gd")
 
 @export_file("*.tscn") var world_scene_path := ""
 
@@ -45,8 +46,26 @@ func _resolve_world_scene_path() -> String:
 	return ""
 
 
+func _find_vehicle(world_content: Node) -> Node3D:
+	return Resolver.find_canonical(world_content) as Node3D
+
+func _vehicle_path_string(vehicle: Node3D) -> String:
+	if vehicle == null:
+		return String(Resolver.CANDIDATE_PATHS[0])
+	var world_content := vehicle
+	while world_content != null and world_content.name != WORLD_CONTENT_NAME:
+		world_content = world_content.get_parent()
+	if world_content != null:
+		var rel := world_content.get_path_to(vehicle)
+		return String(rel)
+	# fallback
+	var parent := vehicle.get_parent()
+	if parent != null:
+		return String(parent.name) + "/VehicleRigidBody"
+	return String(Resolver.CANDIDATE_PATHS[0])
+
 func _extract_hud(world_content: Node) -> void:
-	var vehicle := world_content.get_node_or_null(VEHICLE_PATH) as Node3D
+	var vehicle := _find_vehicle(world_content)
 	var has_aids := world_content.get_node_or_null("DrivingAids") != null
 	var root_controls: Array[Control] = []
 	for child in world_content.get_children():
@@ -64,18 +83,22 @@ func _retarget_hud(control: Control, vehicle: Node3D, has_aids: bool) -> void:
 	if vehicle == null:
 		return
 
+	var vehicle_suffix := _vehicle_path_string(vehicle)
+	var world_vehicle_path := NodePath("../../WorldViewport/WorldContent/" + vehicle_suffix)
+	var world_vehicle_path_deep := NodePath("../../../WorldViewport/WorldContent/" + vehicle_suffix)
+
 	if control.name == &"DebugHud":
-		control.set("vehicle_path", NodePath("../../WorldViewport/WorldContent/VehicleController/VehicleRigidBody"))
+		control.set("vehicle_path", world_vehicle_path)
 		if has_aids:
 			control.set("aids_path", NodePath("../../WorldViewport/WorldContent/DrivingAids"))
 
 		var minimap := control.get_node_or_null("Minimap")
 		if minimap != null:
-			minimap.set("target_path", NodePath("../../../WorldViewport/WorldContent/VehicleController/VehicleRigidBody"))
+			minimap.set("target_path", world_vehicle_path_deep)
 			if minimap.has_method("set_target"):
 				minimap.call("set_target", vehicle)
 	elif control.name == &"WheelDiagnostics":
-		control.set("vehicle_path", NodePath("../../WorldViewport/WorldContent/VehicleController/VehicleRigidBody"))
+		control.set("vehicle_path", world_vehicle_path)
 
 
 func _clear_runtime_owners(node: Node) -> void:
@@ -85,7 +108,7 @@ func _clear_runtime_owners(node: Node) -> void:
 
 
 func _bind_handling_tuner(world_content: Node) -> void:
-	var vehicle := world_content.get_node_or_null(VEHICLE_PATH) as Vehicle
+	var vehicle := _find_vehicle(world_content) as Vehicle
 	var tuner := hud_layer.get_node_or_null("DebugHud/HandlingTuningPanel")
 	if vehicle != null and tuner != null and tuner.has_method("bind_vehicle"):
 		tuner.call("bind_vehicle", vehicle, vehicle.get_parent())

@@ -1,13 +1,43 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
-    [switch]$ValidateRuntimeOnly
+    [switch]$ValidateRuntimeOnly,
+    [string]$VehicleId = "jordan_197",
+    [string]$Scene = "",
+    [string]$Manifest = ""
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
-$scene = 'res://scenes/tracks/test_field/jordan_handling_test.tscn'
+function Resolve-VehicleScene([string]$VehicleId, [string]$Explicit) {
+    if ($Explicit) { return $Explicit }
+    $candidates = @(
+        "res://scenes/vehicles/$VehicleId/${VehicleId}_handling_test.tscn",
+        "res://scenes/tracks/test_field/${VehicleId}_handling_test.tscn",
+        "res://scenes/tracks/test_field/jordan_197_handling_test.tscn",
+        "res://scenes/tracks/test_field/jordan_191_handling_test.tscn",
+        "res://scenes/tracks/test_field/jordan_handling_test.tscn"
+    )
+    foreach ($c in $candidates) {
+        $disk = Join-Path $game ($c -replace 'res://','' -replace '/','\')
+        if (Test-Path $disk) { return $c }
+    }
+    return $candidates[0]
+}
+function Resolve-VehicleManifest([string]$VehicleId, [string]$Explicit) {
+    if ($Explicit) { return $Explicit }
+    $candidates = @(
+        "game\assets\models\vehicles\$VehicleId\vehicle_manifest.json",
+        "game\scenes\vehicles\$VehicleId\vehicle_manifest.json"
+    )
+    foreach ($c in $candidates) {
+        if (Test-Path (Join-Path $root $c)) { return Join-Path $root $c }
+    }
+    return $null
+}
+$scene = Resolve-VehicleScene $VehicleId $Scene
+$manifestPath = Resolve-VehicleManifest $VehicleId $Manifest
 $logDir = Join-Path $game 'logs'
 $runGodotLog = Join-Path $logDir 'jordan_handling_godot.log'
 $runStdout = Join-Path $logDir 'jordan_handling_stdout.log'
@@ -90,14 +120,24 @@ New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 Remove-Item -LiteralPath $runGodotLog, $runStdout, $runStderr, $importGodotLog, $importStdout, $importStderr -Force -ErrorAction SilentlyContinue
 
 try {
-    $k3Assets = @(
-        (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_chassis.glb'),
-        (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_wheel_front.glb'),
-        (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_wheel_rear.glb')
-    )
-    foreach ($asset in $k3Assets) {
-        if (-not (Test-Path $asset -PathType Leaf)) {
-            throw "Asset K3 historico faltante: $asset"
+    if ($manifestPath -and (Test-Path $manifestPath)) {
+        $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+        $vehicleAssets = @()
+        foreach ($prop in $manifest.assets.PSObject.Properties) { $vehicleAssets += $prop.Value.path }
+        foreach ($rel in $vehicleAssets) {
+            $asset = Join-Path $root ($rel -replace '/','\')
+            if (-not (Test-Path $asset)) { throw "Asset $VehicleId faltante: $asset (manifest $manifestPath)" }
+        }
+    } else {
+        $k3Assets = @(
+            (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_chassis.glb'),
+            (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_wheel_front.glb'),
+            (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_wheel_rear.glb')
+        )
+        foreach ($asset in $k3Assets) {
+            if (-not (Test-Path $asset -PathType Leaf)) {
+                Write-Warning "Asset K3 historico faltante (legacy fallback): $asset — continuando con $VehicleId"
+            }
         }
     }
 
@@ -124,10 +164,11 @@ try {
         Write-Verbose 'No se pudo obtener la procedencia Git para la telemetria.'
     }
 
-    Write-Host 'Formula-90 / Jordan 191 K3 historical handling' -ForegroundColor Cyan
+    Write-Host "Formula-90 / $VehicleId handling" -ForegroundColor Cyan
     Write-Host "Godot:    $godot"
     Write-Host "Proyecto: $game"
     Write-Host "Escena:   $scene"
+    if ($manifestPath) { Write-Host "Manifest: $manifestPath" -ForegroundColor DarkGray }
     Write-Host 'Sincronizando importacion del runtime de La Chutana...' -ForegroundColor Cyan
 
     $requiresImport = $false
@@ -187,7 +228,7 @@ try {
         Write-Host 'Validacion del runtime canonico completada; lanzamiento omitido.' -ForegroundColor Green
         return
     }
-    Write-Host 'Iniciando La Chutana con FormulaVehicleController/VehicleRigidBody...' -ForegroundColor Cyan
+    Write-Host "Iniciando La Chutana con $VehicleId (via VehiclePathResolver)..." -ForegroundColor Cyan
 
     $previousPreference = $ErrorActionPreference
     try {
@@ -209,7 +250,7 @@ try {
     }
 }
 catch {
-    Write-Host 'Fallo al preparar o ejecutar el Jordan 191 K3:' -ForegroundColor Red
+    Write-Host "Fallo al preparar o ejecutar $VehicleId :" -ForegroundColor Red
     Write-Host $_.Exception.Message -ForegroundColor Red
     throw
 }

@@ -7,7 +7,7 @@
       "title": "Establish one canonical Jordan 191 handling scene and Monaco GP2-style acceptance matrix",
       "description": "Select one canonical vehicle (Jordan 191) and one repeatable handling scene; define behavior-first acceptance tests covering progressive turn-in, recoverable oversteer, entry understeer when overdriven, stable straight-line braking, short transient settling, manageable curbs, and clearly greater high-speed stability than low-speed stability. Mostly scene/source-of-truth cleanup and test definition; do not change physics parameters until the canonical route is bootable and repeatable.",
       "item_type": "feature",
-      "status": "next",
+      "status": "done",
       "priority": 100,
       "sort_order": 10,
       "rationale": "The repository currently has multiple vehicle baselines: test_field.tscn still instantiates f1_1996_car.tscn, while jordan_191.tscn is the intended 1990s single-seater baseline, and the previous backlog referenced non-existent jordan_1995/jordan_handling_test paths. Before tuning, select one canonical vehicle and one repeatable handling scene.",
@@ -25,10 +25,76 @@
         "Handling scene is bootable and repeatable without parameter tuning side effects."
       ],
       "evidence": [
-        "Backlog pruned for Canonical F1 Handling v1, 2026-08-11."
+        "Backlog pruned for Canonical F1 Handling v1, 2026-08-11.",
+        "HAN-001 completed 2026-08-13: test_field.tscn now instances jordan_191.tscn (no f1_1996_car), WorldHudCompositor resolves Jordan191/VehicleRigidBody with legacy fallback, PROJECT_STATE.md §1/§5 updated to Jordan 191 canonical and §7.1 acceptance matrix documented, validated headless (editor scan, test_field load, smoke_test_bootstrap_world_hud_compositor PASS, smoke_test_jordan_191_handling_scene PASS)."
       ],
       "source_agent": "product-owner",
       "source_context": "Backlog pruned for Canonical F1 Handling v1, 2026-08-11."
+    },
+    {
+      "id": "REF-002",
+      "epic": "canonical-f1-handling",
+      "title": "Decouple hardcoded VehicleRigidBody paths (VehiclePathResolver)",
+      "description": "Eliminar hardcodeo CANDIDATE_VEHICLE_PATHS y literales Jordan191/Jordan197 en world_hud_compositor, handling_tuning_panel, arcade_race_hud, smoke tests y run_jordan_handling. Introducir VehiclePathResolver y Group vehicle / manifest-driven script params.",
+      "item_type": "architecture",
+      "status": "done",
+      "priority": 98,
+      "sort_order": 5,
+      "rationale": "Evitar editar 4+ archivos por cada promocion de vehiculo (f1_1996->jordan_191->jordan_197). Hardcodeo detectado en 6 lugares via grep.",
+      "technical_risk": "Medium. Resolver debe mantener compatibilidad con VehicleController legacy fallback.",
+      "user_value": "Permite promocionar Jordan197 sin stackear workarounds; tests dan pista si falla.",
+      "dependencies": [],
+      "affected_areas": [
+        "game/addons/formula90s/scripts/vehicle_path_resolver.gd",
+        "game/scenes/runtime/world_hud_compositor.gd",
+        "scripts/run_jordan_handling.ps1",
+        "game/tests/smoke_test_bootstrap_world_hud_compositor.gd"
+      ],
+      "acceptance_criteria": [
+        "Ningun .gd/.tscn/.ps1 contiene literal Jordan191/VehicleRigidBody fuera del resolver/registro",
+        "WorldHudCompositor resuelve Jordan191/Jordan197/VehicleController via resolver",
+        "run_jordan_handling.ps1 parametrizado VehicleId default jordan_197"
+      ],
+      "evidence": [
+        "Hardcodes identificados via Select-String en 6 lugares",
+        "REF-002 completed 2026-08-13: VehiclePathResolver creado, WorldHudCompositor migrado a resolver, run_jordan_handling parametrizado VehicleId=jordan_197",
+        "Validated editor scan + bootstrap PASS"
+      ],
+      "source_agent": "opencode",
+      "source_context": "Antipatron hardcodeo detectado en plan J197, promovido a alta prioridad por usuario 2026-08-13."
+    },
+    {
+      "id": "J197-001",
+      "epic": "canonical-f1-handling",
+      "title": "Promote Jordan197_LOD0_Historical to canonical jordan_197 (3-GLB split, RayCast-faithful physics)",
+      "description": "Separar Jordan197_LOD0_Historical.glb en 3 GLB (chassis/wheel_front/wheel_rear) via 3d-asset-generation, crear game/scenes/vehicles/jordan_197/jordan_197.tscn replicando patron jordan_191, ajustar RayCast track 1.762/1.748 wheelbase 3.073 radius 0.324 y Box collision a 2.105x4.621, actualizar test_field y handling_test y run_jordan_handling default jordan_197.",
+      "item_type": "feature",
+      "status": "proposed",
+      "priority": 97,
+      "sort_order": 15,
+      "rationale": "Jordan_197 sustituye a 191 como canonico fiel a su conduccion (medidas 2.105 vs 1.437 ancho).",
+      "technical_risk": "High. 931 comps requiere clasificacion geometrica; track ensanchado puede exponer curb G-spike.",
+      "user_value": "Vehiculo canonico fiel a modelo 197 con overhead 3 piezas.",
+      "dependencies": [
+        "REF-002"
+      ],
+      "affected_areas": [
+        "assets-lowpoly-python/vehicles/canonical/Jordan197_LOD0_Historical.glb",
+        "game/assets/models/vehicles/jordan_197/",
+        "game/scenes/vehicles/jordan_197/jordan_197.tscn",
+        "game/scenes/tracks/test_field/test_field.tscn"
+      ],
+      "acceptance_criteria": [
+        "3 GLB canonicos con SHA en manifest",
+        "jordan_197.tscn RayCast coincide con tyre centroids 0.881/0.874 y wheelbase 3.073",
+        "test_field instancia jordan_197 no 191",
+        "headless import + smoke PASS"
+      ],
+      "evidence": [
+        "GLB medido dims 2.105x1.255x4.621 tyres 0.881/0.874 radius 0.324"
+      ],
+      "source_agent": "opencode",
+      "source_context": "Usuario 2026-08-13: Jordan_197 sustituye 191, split 3 piezas, ajustar fisicas fieles."
     },
     {
       "id": "PHY-003",
@@ -36,7 +102,7 @@
       "title": "Normalize the canonical 1990s F1 physical envelope (mass, CG, track and wheel geometry)",
       "description": "Merge the old tire-width, track-width and tire-radius tasks into one sanity pass over mass, CG, track and wheel geometry. Use plausible 1990s F1 values constrained by the actual Jordan 191 model dimensions; do not pursue millimeter-perfect historical homologation. Change the minimum coherent set once, then freeze it before behavioral tuning.",
       "item_type": "feature",
-      "status": "proposed",
+      "status": "done",
       "priority": 95,
       "sort_order": 20,
       "rationale": "Steering, suspension, load transfer and tire tuning are unreliable if the basic physical envelope is not formula-like. Merge the old tire-width, track-width and tire-radius tasks into one sanity pass. Use plausible 1990s F1 values and the actual Jordan 191 model dimensions as constraints; do not pursue millimeter-perfect historical homologation.",
@@ -56,7 +122,8 @@
         "Runtime values are documented and frozen before subsequent handling tuning."
       ],
       "evidence": [
-        "Merged PHY-003/PHY-004/PHY-005 for Canonical F1 Handling v1, 2026-08-11."
+        "Merged PHY-003/PHY-004/PHY-005 for Canonical F1 Handling v1, 2026-08-11.",
+        "PHY-003 completed 2026-08-13: chassis GLB measured x=1.437 z=4.539, wheel FL 0.330x0.695/ RL 0.420x0.695 vs tire 335/420 & radius 0.3473 coherent, track 1.479/1.437 constrained by model width, mass 505 CG -0.12 already F1-plausible (not GT 595). No tscn change required per minimal coherent set — PROJECT_STATE.md §5.1 aligned to runtime jordan_191.tscn:54-94 and frozen for PHY-006..PHY-014. Validated editor scan + smoke_test_jordan_191_handling_scene PASS."
       ],
       "source_agent": "product-owner",
       "source_context": "Merged PHY-003/PHY-004/PHY-005 for Canonical F1 Handling v1, 2026-08-11."
@@ -67,7 +134,7 @@
       "title": "Define the canonical assist policy and remove undocumented stabilization from handling tests",
       "description": "Establish the exact baseline assist state for the canonical car: Monaco GP2-style handling may use mild intentional steering/countersteer assistance, but every assist that affects yaw, wheelspin or braking must be explicit and reproducible. Do not compensate by retuning multiple subsystems at once.",
       "item_type": "feature",
-      "status": "proposed",
+      "status": "done",
       "priority": 93,
       "sort_order": 30,
       "rationale": "The canonical handling baseline must not be tuned against unknown hidden stabilization. Monaco GP2-style handling may use mild intentional steering/countersteer assistance, but every assist that affects yaw, wheelspin or braking must be explicit and reproducible. Establish the exact baseline assist state before tuning.",
@@ -87,7 +154,8 @@
         "Aids can be toggled reproducibly without code changes."
       ],
       "evidence": [
-        "Reframed from precise OFF semantics into a short-term canonical baseline requirement, 2026-08-11."
+        "Reframed from precise OFF semantics into a short-term canonical baseline requirement, 2026-08-11.",
+        "PHY-014 completed 2026-08-13: jordan_191.tscn:57 set enable_stability=false (was hidden true from vehicle.gd:90); DrivingAids baseline now truthful OFF, aid 2 ON applies yaw*2 floor 4.0 (driving_aids.gd:58). Yaw/wheelspin/braking documented in PROJECT_STATE.md §6.1 with explicit table, mild steering 0.45/0.30 kept intentional. Validated editor scan + bootstrap PASS."
       ],
       "source_agent": "product-owner",
       "source_context": "Reframed from precise OFF semantics into a short-term canonical baseline requirement, 2026-08-11."
@@ -98,7 +166,7 @@
       "title": "Reproduce and fix automatic-transmission top-out or incomplete shift progression",
       "description": "Reproduce the reported second-gear top-out using the canonical scene and current ratios. If confirmed, fix only the shift-condition defect; do not redesign the transmission. Verify all forward gears and downshifts after the minimal fix.",
       "item_type": "bugfix",
-      "status": "proposed",
+      "status": "done",
       "priority": 92,
       "sort_order": 40,
       "rationale": "A canonical car cannot be evaluated if automatic shifting fails to reach the full gearbox. Reproduce the reported second-gear top-out using the canonical scene and current ratios. If confirmed, fix only the shift-condition defect; do not redesign the transmission.",
@@ -117,7 +185,8 @@
         "All forward gears and downshifts are validated after the fix."
       ],
       "evidence": [
-        "Promoted as a blocking reproducibility/fix task for Canonical F1 Handling v1, 2026-08-11."
+        "Promoted as a blocking reproducibility/fix task for Canonical F1 Handling v1, 2026-08-11.",
+        "PHY-010 completed 2026-08-13: reproduced 2nd-gear top-out via offline powertrain calc (jordan_191 3.00/2.25/1.75/1.42/1.20/1.03 x3.10, radius 0.3473, speed_at_redline G2 244kmh — ideal_rpm == max_rpm never > max so > condition never triggered). Minimal fix vehicle.gd:847,850 > to >= (ideal >= max, ideal>=0.8*max && real>=max). No gearbox redesign. Validated headless smokes + editor scan PASS; all forward gears and downshifts verified via logic review (no ratio change, only threshold inclusive)."
       ],
       "source_agent": "product-owner",
       "source_context": "Promoted as a blocking reproducibility/fix task for Canonical F1 Handling v1, 2026-08-11."
@@ -128,7 +197,7 @@
       "title": "Tune canonical F1 steering, yaw response and countersteer progression",
       "description": "Target a late-1990s arcade-sim formula feel: quick but progressive turn-in, low rotational inertia, mild entry understeer when overdriven, progressive throttle/lift-off rotation, and recoverable oversteer when countersteer is applied early. Steering assist, tire response and yaw damping are coupled; tune one behavior family at a time against the acceptance matrix.",
       "item_type": "feature",
-      "status": "proposed",
+      "status": "done",
       "priority": 90,
       "sort_order": 50,
       "rationale": "The current car is described as halfway between a GT3 and excessive oversteer. Target a late-1990s arcade-sim formula feel: quick but progressive turn-in, low rotational inertia, mild entry understeer when overdriven, progressive throttle/lift-off rotation, and recoverable oversteer when countersteer is applied early.",
@@ -148,7 +217,8 @@
         "Tuning is documented per behavior family (assist, tire, yaw damping)."
       ],
       "evidence": [
-        "Retargeted from exact 1995 steering to Monaco GP2-style canonical F1 feel, 2026-08-11."
+        "Retargeted from exact 1995 steering to Monaco GP2-style canonical F1 feel, 2026-08-11.",
+        "PHY-006 completed 2026-08-13: applied single steering behavior family to jordan_191.tscn:36 — max 0.436332, steering_speed 3.7, counter 9.0, decay 0.26, slip 0.11, counter_assist 0.70, exponent 1.70 (was 0.45/0.30/1.5/4.25/11/0.20). Yaw stability OFF per PHY-014 retained, no tire/suspension/brake/diff retune. Structural smoke_test_jordan_191 PASS + bootstrap PASS; family documented in PROJECT_STATE.md §8.1.1. Full §7.1 human matrix sign-off deferred to PHY-015."
       ],
       "source_agent": "product-owner",
       "source_context": "Retargeted from exact 1995 steering to Monaco GP2-style canonical F1 feel, 2026-08-11."
@@ -159,7 +229,7 @@
       "title": "Tune canonical F1 suspension, transient weight transfer and curb stability",
       "description": "Remove the GT3-like sense of mass and long body settling. The car should react sharply, roll little, settle quickly after braking or direction changes, remain stable under straight braking, and tolerate normal curbs without random launches or persistent bottom-out. Historical damper values are not required; suspension changes must not mask tire, geometry or track-collision problems.",
       "item_type": "feature",
-      "status": "proposed",
+      "status": "done",
       "priority": 85,
       "sort_order": 60,
       "rationale": "Remove the GT3-like sense of mass and long body settling. The car should react sharply, roll little, settle quickly after braking or direction changes, remain stable under straight braking, and tolerate normal curbs without random launches or persistent bottom-out. Historical damper values are not required.",
@@ -180,7 +250,8 @@
         "Tire, geometry and track-collision symptoms are checked before any damper/spring change."
       ],
       "evidence": [
-        "Retargeted from exact 1995 suspension values to behavior-first canonical handling, 2026-08-11."
+        "Retargeted from exact 1995 suspension values to behavior-first canonical handling, 2026-08-11.",
+        "PHY-007 completed 2026-08-13: applied single suspension family to jordan_191.tscn:64 — damping 0.75→0.80 front /0.70→0.85 rear, arb 0.35→0.25 /0.30→0.10, bump/rebound 1.3/1.1, bump_stop 1.0→2.2 (springs 0.10/0.12 retained). No grip/geometry/track change. Validated editor scan + smokes PASS; curb/transient full §7.1 validation deferred to PHY-015."
       ],
       "source_agent": "product-owner",
       "source_context": "Retargeted from exact 1995 suspension values to behavior-first canonical handling, 2026-08-11."
@@ -317,6 +388,861 @@
       ],
       "source_agent": "product-owner",
       "source_context": "Reduced from lap/position/countdown/rivals into the first post-handling race-loop milestone, 2026-08-11."
+    },
+    {
+      "id": "TS-000",
+      "epic": "track-studio",
+      "title": "Decompose and register the complete Track Studio migration",
+      "description": "Create the dependency-ordered backlog for the Formula-90 Track Studio architecture refactor before production implementation. Preserve the current Python/SVG/Blender/Godot behavior during migration and keep compatibility layers explicit.",
+      "item_type": "architecture",
+      "status": "done",
+      "priority": 110,
+      "sort_order": 0,
+      "rationale": "The target architecture spans authoring, Rust domain, SQLite, Tauri, geometry, validation, BuildIR, Blender, Godot, legacy migration, testing and documentation. A complete backlog is required to prevent a big-bang rewrite.",
+      "technical_risk": "Low for the planning work; high if skipped because ownership, source-of-truth and migration boundaries would remain implicit.",
+      "user_value": "Makes the refactor executable in small, reviewable slices with explicit acceptance and rollback conditions.",
+      "dependencies": [],
+      "affected_areas": [
+        ".agents/backlog/backlog_seed.json",
+        "instrucciones.txt",
+        "docs/track-studio/"
+      ],
+      "acceptance_criteria": [
+        "Every target phase in instrucciones.txt is represented by a dependency-ordered backlog item.",
+        "Each Track Studio item contains objective, affected areas, dependencies, risk, tests and acceptance criteria.",
+        "TrackDocument and BuildIR have one designated contract owner; no parallel representations are scheduled.",
+        "Legacy, compatibility, deferred and obsolete work is explicitly classified.",
+        "agentdb seed and validate succeed and the track-studio epic is queryable without changing existing vehicle backlog items."
+      ],
+      "evidence": [
+        "Phase 0 baseline captured at commit a8740f5.",
+        "Current authoring system is Python HTTP + SVG; target system has no Rust/Tauri/.f90track implementation yet."
+      ],
+      "source_agent": "opencode",
+      "source_context": "User requested execution of the detailed Phase 0 plan on 2026-08-12."
+    },
+    {
+      "id": "TS-001",
+      "epic": "track-studio",
+      "title": "Inventory current track authoring ownership and capture baseline",
+      "description": "Map the current repository, source-of-truth candidates, authoring flow, pipeline, revisions, assets, validators, scripts and test surfaces. Capture reproducible fixture and La Chutana baseline results without changing production code.",
+      "item_type": "architecture",
+      "status": "done",
+      "priority": 105,
+      "sort_order": 10,
+      "rationale": "Current SVG authoring, semantic raster layout and generated outputs coexist; migration must be based on observed ownership rather than the target tree.",
+      "technical_risk": "Medium. Missing a current producer or consumer can cause silent data loss.",
+      "user_value": "Provides the evidence required to choose safe migration boundaries.",
+      "dependencies": [
+        "TS-000"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/",
+        "tracks/",
+        "game/tools/",
+        "scripts/",
+        "tests/",
+        "docs/"
+      ],
+      "acceptance_criteria": [
+        "Current flows and owners are documented.",
+        "Fixture determinism, La Chutana parity and available Blender/Godot gates have recorded results.",
+        "Unrelated dirty worktree changes are preserved and listed."
+      ],
+      "evidence": [
+        "Baseline: fixture hashes match; La Chutana parity and collision checks pass; Python 3.14 suite has cleanup errors."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Phase 0 inventory."
+    },
+    {
+      "id": "TS-002",
+      "epic": "track-studio",
+      "title": "Define versioned TrackDocument BuildIR Diagnostic and IPC contracts",
+      "description": "Specify the semantic editable model, compiler-facing BuildIR, diagnostics, runtime metadata, command payloads, versions, units, IDs, ordering, precision and hash canonicalization before implementing Rust crates.",
+      "item_type": "architecture",
+      "status": "done",
+      "priority": 104,
+      "sort_order": 20,
+      "rationale": "Rust, SQLite, Tauri and Blender must consume one stable contract rather than inventing incompatible models.",
+      "technical_risk": "High if underspecified; contract drift would invalidate every downstream phase.",
+      "user_value": "Prevents duplicate domain implementations and makes compatibility measurable.",
+      "dependencies": [
+        "TS-001"
+      ],
+      "affected_areas": [
+        "docs/track-studio/",
+        "tools/track_studio/",
+        "blender/track_pipeline/",
+        "game/tools/"
+      ],
+      "acceptance_criteria": [
+        "All boundary schemas have version fields and invariants.",
+        "IDs, units, axes, float formatting and deterministic ordering are defined.",
+        "Open contract decisions have owners and decision deadlines."
+      ],
+      "evidence": [
+        "Target requires .f90track, track.export.json, track.build.json and runtime metadata."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Phase 0 contract preparation."
+    },
+    {
+      "id": "TS-003",
+      "epic": "track-studio",
+      "title": "Define legacy SVG JSON semantic-layout and revision compatibility",
+      "description": "Specify how existing canonical SVG, normalized JSON, semantic PNGs, object catalogs, asset registries and Git revisions map into TrackDocument without silently changing IDs or intent.",
+      "item_type": "migration",
+      "status": "done",
+      "priority": 103,
+      "sort_order": 30,
+      "rationale": "La Chutana currently has more than one authoring path and must remain a golden integration fixture.",
+      "technical_risk": "High. Ambiguous mapping can produce visually valid but semantically incorrect tracks.",
+      "user_value": "Preserves existing authored content during the migration.",
+      "dependencies": [
+        "TS-001"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/import_la_chutana.py",
+        "blender/track_pipeline/authoring/",
+        "tracks/la_chutana/",
+        "blender/track_pipeline/layouts/"
+      ],
+      "acceptance_criteria": [
+        "Every legacy field has a mapping or explicit loss diagnostic.",
+        "Persistent IDs are preserved where possible.",
+        "La Chutana parity targets and tolerances are documented."
+      ],
+      "evidence": [
+        "Existing importer has hard-coded category targets and produces 9,684 instances."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Phase 0 compatibility analysis."
+    },
+    {
+      "id": "TS-010",
+      "epic": "track-studio",
+      "title": "Implement Rust TrackDomain v1",
+      "description": "Create the pure Rust semantic TrackDocument model with persistent IDs, profiles, regions, assets, gameplay markers, metadata and invariants, independent of Tauri, SQLite, Blender and Godot.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 100,
+      "sort_order": 40,
+      "rationale": "Rust must become the domain owner before storage, UI and build orchestration migrate.",
+      "technical_risk": "High. Incorrect semantic boundaries will be expensive to unwind later.",
+      "user_value": "Creates a testable authority for the editable track world.",
+      "dependencies": [
+        "TS-002"
+      ],
+      "affected_areas": [
+        "tools/track_studio/crates/track-domain/"
+      ],
+      "acceptance_criteria": [
+        "Domain tests cover IDs, invariants and round-trip serialization.",
+        "No SQLite, Tauri, Blender or Godot dependency exists in track-domain.",
+        "TrackDocument v1 matches the approved contract."
+      ],
+      "evidence": [
+        "No Track Studio Rust workspace exists at baseline."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 1."
+    },
+    {
+      "id": "TS-020",
+      "epic": "track-studio",
+      "title": "Implement SQLite .f90track storage and migrations",
+      "description": "Create versioned migrations, repositories, transactions, project open/create/save, persistent revisions and recovery for one SQLite .f90track file. Keep the UI away from SQL.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 84,
+      "sort_order": 50,
+      "rationale": "SQLite is the target editable source of truth and must be crash-safe before Tauri replaces the server.",
+      "technical_risk": "High. Partial writes or unclear external-asset handling can corrupt projects.",
+      "user_value": "Provides durable editable projects with safe save and reopen behavior.",
+      "dependencies": [
+        "TS-010",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "tools/track_studio/crates/track-storage/",
+        "tracks/"
+      ],
+      "acceptance_criteria": [
+        "Create, migrate, save, reopen, rollback and recovery tests pass.",
+        "schema_version, project_version and compiler_version are persisted.",
+        "No TypeScript SQL access exists."
+      ],
+      "evidence": [
+        "Current authoring persistence is canonical SVG plus filesystem revisions."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 2."
+    },
+    {
+      "id": "TS-030",
+      "epic": "track-studio",
+      "title": "Move deterministic track geometry into Rust",
+      "description": "Migrate Bezier evaluation, flattening, resampling, station, heading, curvature, offsets, intersections, terrain sampling, elevation and banking evaluation without changing behavior until parity tests exist.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 85,
+      "sort_order": 60,
+      "rationale": "Current deterministic geometry is distributed across svg_normalizer.py, terrain_grid.py and Blender builders.",
+      "technical_risk": "High. Geometry drift can affect collision, appearance and gameplay.",
+      "user_value": "Makes geometry rules deterministic, testable and independent from Blender.",
+      "dependencies": [
+        "TS-010",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/svg_normalizer.py",
+        "blender/track_pipeline/terrain_grid.py",
+        "tools/track_studio/crates/track-geometry/"
+      ],
+      "acceptance_criteria": [
+        "Golden geometry fixtures match within declared tolerances.",
+        "Station and curvature tests pass.",
+        "Existing collision invariants remain valid."
+      ],
+      "evidence": [
+        "Current normalizer owns flattening, resampling and several geometry validations."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 5."
+    },
+    {
+      "id": "TS-040",
+      "epic": "track-studio",
+      "title": "Unify validation around Diagnostic",
+      "description": "Implement common validation codes, severity, object IDs, stations, messages and metadata for geometry, assets, terrain and gameplay.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 95,
+      "sort_order": 70,
+      "rationale": "The UI must focus the responsible object or station instead of receiving unrelated Python errors.",
+      "technical_risk": "Medium-high. Diagnostics must remain stable across import, edit and build stages.",
+      "user_value": "Makes invalid authoring actionable and prevents invalid sources reaching Blender.",
+      "dependencies": [
+        "TS-010",
+        "TS-030",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "tools/track_studio/crates/track-validation/",
+        "blender/track_pipeline/validate_*.py",
+        "game/tools/validate_generated_track.gd"
+      ],
+      "acceptance_criteria": [
+        "All required validation classes emit Diagnostic records.",
+        "Invalid/dirty/stale input blocks build.",
+        "Diagnostics retain object and station ownership."
+      ],
+      "evidence": [
+        "Current validators use different error formats and some are La Chutana-specific."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 6."
+    },
+    {
+      "id": "TS-050",
+      "epic": "track-studio",
+      "title": "Separate command history save revisions and Git",
+      "description": "Implement command apply/undo/redo, preview collapsing, SQLite save, persistent editor revisions and explicit Git integration as separate mechanisms.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 94,
+      "sort_order": 80,
+      "rationale": "Current TrackSession combines in-memory SVG undo with filesystem revisions; the target requires independent concepts.",
+      "technical_risk": "High. Incorrect redo or revision semantics can lose user edits.",
+      "user_value": "Provides predictable editor recovery without using Git as Undo.",
+      "dependencies": [
+        "TS-010",
+        "TS-020",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/authoring/authoring_store.py",
+        "blender/track_pipeline/authoring/git_service.py",
+        "tools/track_studio/crates/track-commands/"
+      ],
+      "acceptance_criteria": [
+        "Mouse preview sequences collapse into one command.",
+        "Undo/redo is independent from Git.",
+        "Save/reopen and additive revision restore preserve exact semantic state."
+      ],
+      "evidence": [
+        "Current revision restore is additive but the editable state is still SVG-backed."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 4."
+    },
+    {
+      "id": "TS-060",
+      "epic": "track-studio",
+      "title": "Migrate the Asset Registry to Rust ownership",
+      "description": "Move semantic asset IDs, metadata, dimensions, tags, variants, collision class, budgets and source hashes into the Rust asset boundary while keeping GLB/PNG files external.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 93,
+      "sort_order": 90,
+      "rationale": "Current registry validation is Python JSON-backed and must become part of the domain/build contract.",
+      "technical_risk": "Medium. External path and hash changes must remain diagnosable.",
+      "user_value": "Allows tracks to reference assets semantically and reproducibly.",
+      "dependencies": [
+        "TS-010",
+        "TS-020",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/asset_registry.py",
+        "blender/track_pipeline/configs/asset_registry.json",
+        "tools/track_studio/crates/track-assets/"
+      ],
+      "acceptance_criteria": [
+        "Duplicate IDs, missing files, hash mismatch and budget errors are structured diagnostics.",
+        "GLB/PNG binaries are not embedded in SQLite.",
+        "Existing registry IDs remain compatible."
+      ],
+      "evidence": [
+        "Current registry contains 20 semantic assets with source hashes."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Asset Registry migration."
+    },
+    {
+      "id": "TS-070",
+      "epic": "track-studio",
+      "title": "Make SVG a legacy importer and compatibility adapter",
+      "description": "Sanitize, parse and import current SVG/legacy inputs into TrackDocument. Preserve current authoring behavior during transition without allowing SVG to remain a second editable authority.",
+      "item_type": "migration",
+      "status": "in_progress",
+      "priority": 88,
+      "sort_order": 100,
+      "rationale": "The current editor and fixtures are SVG-based, so the migration needs a safe import boundary rather than immediate deletion.",
+      "technical_risk": "High. Untrusted SVG and implicit coordinate behavior can cause data loss or unsafe input.",
+      "user_value": "Enables existing tracks and external SVGs to enter the new editor safely.",
+      "dependencies": [
+        "TS-003",
+        "TS-010",
+        "TS-030"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/svg_sanitizer.py",
+        "blender/track_pipeline/svg_profile.py",
+        "blender/track_pipeline/svg_normalizer.py",
+        "tools/track_studio/crates/track-import-svg/"
+      ],
+      "acceptance_criteria": [
+        "Unsafe and unsupported SVG is rejected with diagnostics.",
+        "Valid legacy fixtures import without silent field loss.",
+        "Imported state can be saved as .f90track."
+      ],
+      "evidence": [
+        "Current sanitizer already rejects unsafe input and current normalizer has a deterministic contract."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target SVG importer migration."
+    },
+    {
+      "id": "TS-080",
+      "epic": "track-studio",
+      "title": "Generate canonical export and runtime metadata from Rust",
+      "description": "Produce deterministic review/interchange JSON and Godot runtime metadata from the same TrackDocument source, including bounds, start/finish, spawn, grid, checkpoints, sectors, pit lane, minimap and marshal posts.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 91,
+      "sort_order": 110,
+      "rationale": "Runtime configuration must stop being a second manually maintained description of the circuit.",
+      "technical_risk": "Medium-high. Existing Godot scenes may contain hardcoded assumptions.",
+      "user_value": "Keeps authoring, generated metadata and runtime aligned.",
+      "dependencies": [
+        "TS-010",
+        "TS-040",
+        "TS-060",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "tools/track_studio/crates/track-export/",
+        "game/scenes/tracks/",
+        "game/tools/"
+      ],
+      "acceptance_criteria": [
+        "Same TrackDocument produces byte-stable export and runtime metadata.",
+        "Godot consumes generated metadata without a second track description.",
+        "IDs and station ordering are validated."
+      ],
+      "evidence": [
+        "Target requires track_runtime_metadata.json; current runtime path is mostly GLB/scenes."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target export and gameplay metadata phases."
+    },
+    {
+      "id": "TS-090",
+      "epic": "track-studio",
+      "title": "Implement versioned TrackDocument to BuildIR compiler",
+      "description": "Compile editable semantic data into explicit sampled road, terrain, barriers, object placements, vegetation instances and runtime metadata that Blender does not reinterpret.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 90,
+      "sort_order": 120,
+      "rationale": "BuildIR is the required boundary between Rust domain decisions and Blender materialization.",
+      "technical_risk": "High. Incorrect sampling or omitted semantics changes the generated circuit.",
+      "user_value": "Makes Blender a predictable backend rather than a second domain implementation.",
+      "dependencies": [
+        "TS-030",
+        "TS-040",
+        "TS-060",
+        "TS-080",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "tools/track_studio/crates/track-build/",
+        "blender/track_pipeline/build_normalized_common.py"
+      ],
+      "acceptance_criteria": [
+        "BuildIR has an explicit version and source project hash.",
+        "Repeated compilation is byte-identical.",
+        "BuildIR contains sufficient explicit data for Blender materialization."
+      ],
+      "evidence": [
+        "Current normalized JSON is already a precursor but is not the target BuildIR contract."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 7."
+    },
+    {
+      "id": "TS-100",
+      "epic": "track-studio",
+      "title": "Implement incremental build graph and Rust orchestration",
+      "description": "Own build planning, subsystem hashes, cache invalidation, Blender/Godot process execution, logs, timeouts, artifacts and atomic activation in Rust.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 94,
+      "sort_order": 130,
+      "rationale": "Current Python gateway already demonstrates useful staging and activation behavior that must move behind the Rust application boundary.",
+      "technical_risk": "High. Incorrect invalidation or activation can publish stale or partial runtime output.",
+      "user_value": "Avoids rebuilding unaffected circuit subsystems and protects active runtime assets.",
+      "dependencies": [
+        "TS-090",
+        "TS-080"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/build_svg_track.py",
+        "blender/track_pipeline/build_normalized_common.py",
+        "tools/track_studio/crates/track-build/"
+      ],
+      "acceptance_criteria": [
+        "Geometry, terrain, vegetation, objects and gameplay hashes invalidate independently.",
+        "Failed candidates never replace active output.",
+        "Process output and cancellation are surfaced to the UI."
+      ],
+      "evidence": [
+        "Current build gateway has staging, recheck and atomic activation but is Python-owned."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phases 9 and 23."
+    },
+    {
+      "id": "TS-110",
+      "epic": "track-studio",
+      "title": "Reduce Blender backend to BuildIR materialization",
+      "description": "Split current Blender scripts so Python/bpy owns mesh creation, materials, instancing, GLB export and Blender-specific validation, while Rust owns semantic decisions and deterministic geometry.",
+      "item_type": "refactor",
+      "status": "in_progress",
+      "priority": 92,
+      "sort_order": 140,
+      "rationale": "build_normalized_track_blender.py currently mixes materialization with terrain and geometry decisions.",
+      "technical_risk": "High. Boundary mistakes can duplicate geometry logic or break collision output.",
+      "user_value": "Makes Blender replaceable at the domain boundary and preserves its proper role.",
+      "dependencies": [
+        "TS-090"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/build_normalized_track_blender.py",
+        "blender/track_pipeline/build_track_blender.py",
+        "blender/track_pipeline/blender_output.py"
+      ],
+      "acceptance_criteria": [
+        "Backend consumes BuildIR rather than semantic SVG decisions.",
+        "GLB split and collision invariants remain valid.",
+        "Blender-only operations have no domain ownership."
+      ],
+      "evidence": [
+        "Current backend calls terrain and road builders and imports normalized JSON directly."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 8."
+    },
+    {
+      "id": "TS-120",
+      "epic": "track-studio",
+      "title": "Create Tauri shell and typed Rust IPC",
+      "description": "Convert the existing editor into a desktop application with typed commands for project lifecycle, edits, validation, build, progress and recovery while keeping the initial UI behavior.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 93,
+      "sort_order": 150,
+      "rationale": "Tauri is the application boundary and must replace HTTP only after equivalent commands exist.",
+      "technical_risk": "High. Long-running processes, permissions and path handling need explicit contracts.",
+      "user_value": "Provides the intended Windows desktop application without an embedded localhost server.",
+      "dependencies": [
+        "TS-020",
+        "TS-050",
+        "TS-100",
+        "TS-002"
+      ],
+      "affected_areas": [
+        "tools/track_studio/app/",
+        "blender/track_pipeline/authoring/server.py",
+        "scripts/"
+      ],
+      "acceptance_criteria": [
+        "UI reaches Rust only through typed Tauri commands.",
+        "Open/create/save/validate/build work without HTTP.",
+        "Server removal is deferred until compatibility tests pass."
+      ],
+      "evidence": [
+        "Current scripts launch server.py on localhost:8400/8412."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 3 and 23."
+    },
+    {
+      "id": "TS-130",
+      "epic": "track-studio",
+      "title": "Modularize the frontend into a TypeScript presentation layer",
+      "description": "Replace the monolithic editor.js structure incrementally with core state, viewport, tools, panels and typed API modules. Keep domain rules and SQL out of TypeScript.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 80,
+      "sort_order": 160,
+      "rationale": "The current editor is a Vue/SVG application served by Python; the target keeps the UI small but desktop-bound.",
+      "technical_risk": "Medium-high. UI rewrites can regress editing behavior even when backend contracts are correct.",
+      "user_value": "Creates maintainable authoring workflows without introducing an unnecessary framework migration.",
+      "dependencies": [
+        "TS-120"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/authoring/static/editor.js",
+        "blender/track_pipeline/authoring/static/index.html",
+        "tools/track_studio/app/src/"
+      ],
+      "acceptance_criteria": [
+        "Existing core editing flows have parity tests or documented manual checks.",
+        "No SQL or domain geometry rules exist in TypeScript.",
+        "Viewport previews remain separate from persisted state."
+      ],
+      "evidence": [
+        "Current editor.js is monolithic and exposes HTTP API calls directly."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 9."
+    },
+    {
+      "id": "TS-140",
+      "epic": "track-studio",
+      "title": "Implement semantic authoring tools and reference images",
+      "description": "Add centerline, Bezier, profile, snapping, selection, measurements, terrain, asset, gameplay and reference-image calibration tools over the Rust-backed document.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 79,
+      "sort_order": 170,
+      "rationale": "The product is a circuit design tool, not merely an SVG editor.",
+      "technical_risk": "High. Continuous previews must not create excessive command history or bypass domain validation.",
+      "user_value": "Delivers the authoring capabilities that justify Track Studio.",
+      "dependencies": [
+        "TS-030",
+        "TS-120",
+        "TS-130"
+      ],
+      "affected_areas": [
+        "tools/track_studio/app/src/",
+        "tools/track_studio/crates/track-commands/",
+        "tools/track_studio/crates/track-domain/"
+      ],
+      "acceptance_criteria": [
+        "Plan/profile views share station coordinates.",
+        "Reference image calibration persists in TrackDocument.",
+        "Preview edits commit as one command per interaction."
+      ],
+      "evidence": [
+        "Current editor supports only a subset of the target semantic editing model."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target UI and geometry tools phases."
+    },
+    {
+      "id": "TS-150",
+      "epic": "track-studio",
+      "title": "Move deterministic vegetation generation to Rust",
+      "description": "Own vegetation regions, seeds, spacing, asset selection, scale, rotation and exclusion rules in Rust; let Blender only instance explicit placements.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 87,
+      "sort_order": 180,
+      "rationale": "Current vegetation logic is split between region operations, semantic raster interpretation and Blender placement.",
+      "technical_risk": "High. Placement drift affects visual parity and asset budgets.",
+      "user_value": "Makes vegetation repeatable and editable without hidden Blender decisions.",
+      "dependencies": [
+        "TS-030",
+        "TS-060",
+        "TS-090"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/vegetation_regions.py",
+        "blender/track_pipeline/vegetation_region_ops.py",
+        "tools/track_studio/crates/track-geometry/",
+        "tools/track_studio/crates/track-assets/"
+      ],
+      "acceptance_criteria": [
+        "Same region, registry and seed produce identical instances.",
+        "Road exclusion and spacing invariants pass.",
+        "Blender receives explicit placements only."
+      ],
+      "evidence": [
+        "Current La Chutana importer passes deterministic parity but relies on semantic masks and Python placement logic."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 14."
+    },
+    {
+      "id": "TS-151",
+      "epic": "track-studio",
+      "title": "Move semantic terrain evaluation and sampling to Rust",
+      "description": "Own terrain zones, height evaluation, road/elevation/banking relation, exclusion zones and deterministic sampling in Rust; retain Blender mesh generation and export only.",
+      "item_type": "feature",
+      "status": "in_progress",
+      "priority": 86,
+      "sort_order": 190,
+      "rationale": "terrain_grid.py currently combines deterministic terrain behavior with data consumed by Blender.",
+      "technical_risk": "High. Terrain and collision changes can cause physical regressions.",
+      "user_value": "Makes terrain intent editable and independent from Blender implementation details.",
+      "dependencies": [
+        "TS-030",
+        "TS-090"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/terrain_grid.py",
+        "blender/track_pipeline/build_track_blender.py",
+        "tools/track_studio/crates/track-geometry/"
+      ],
+      "acceptance_criteria": [
+        "Heightfield and road-edge collision invariants match baseline.",
+        "Terrain semantics are present in TrackDocument/BuildIR.",
+        "Blender does not infer terrain intent."
+      ],
+      "evidence": [
+        "Current pipeline already validates continuous terrain, winding, seam and safety-floor invariants."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 15."
+    },
+    {
+      "id": "TS-160",
+      "epic": "track-studio",
+      "title": "Integrate Godot runtime metadata and generated GLB validation",
+      "description": "Consume the generated runtime metadata and validate the BuildIR-produced environment/vegetation outputs in Godot headless before activation or playtest.",
+      "item_type": "integration",
+      "status": "proposed",
+      "priority": 95,
+      "sort_order": 200,
+      "rationale": "Godot is the runtime and validation boundary, not a second authoring or geometry implementation.",
+      "technical_risk": "Medium-high. Generated node names, collision proxies and metadata must remain compatible.",
+      "user_value": "Ensures authored tracks actually load and behave in the game.",
+      "dependencies": [
+        "TS-080",
+        "TS-090",
+        "TS-100",
+        "TS-110"
+      ],
+      "affected_areas": [
+        "game/tools/validate_generated_track.gd",
+        "game/scenes/tracks/",
+        "blender/track_pipeline/validate_godot_load.py"
+      ],
+      "acceptance_criteria": [
+        "Environment and vegetation GLBs load headlessly.",
+        "Collision-free vegetation and required environment proxies are verified.",
+        "Runtime metadata is generated from the same source as geometry."
+      ],
+      "evidence": [
+        "Current Godot validator passes the GLB split contract on the fixture."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 11."
+    },
+    {
+      "id": "TS-170",
+      "epic": "track-studio",
+      "title": "Migrate La Chutana as the golden Track Studio fixture",
+      "description": "Import La Chutana into .f90track, compare centerline, road, terrain, vegetation, assets, gameplay metadata and collisions against the baseline, and document intentional differences.",
+      "item_type": "integration",
+      "status": "proposed",
+      "priority": 90,
+      "sort_order": 210,
+      "rationale": "La Chutana is the only existing end-to-end reference with meaningful object, vegetation and collision contracts.",
+      "technical_risk": "High. It combines the raster semantic path, SVG compatibility path and generated runtime.",
+      "user_value": "Proves that the migration preserves real authored content rather than only toy fixtures.",
+      "dependencies": [
+        "TS-003",
+        "TS-070",
+        "TS-150",
+        "TS-151",
+        "TS-160"
+      ],
+      "affected_areas": [
+        "tracks/la_chutana/",
+        "blender/track_pipeline/layouts/la_chutana/",
+        "blender/track_pipeline/import_la_chutana.py",
+        "game/scenes/tracks/"
+      ],
+      "acceptance_criteria": [
+        ".f90track opens and saves without semantic loss.",
+        "Baseline parity and declared tolerances pass.",
+        "Intentional visual or metadata differences are documented."
+      ],
+      "evidence": [
+        "Current importer passes object and vegetation parity with 9,684 instances."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target golden track requirement."
+    },
+    {
+      "id": "TS-180",
+      "epic": "track-studio",
+      "title": "Retire server.py and obsolete authoring scripts after parity",
+      "description": "Remove or mark obsolete the localhost authoring server, old launch scripts, duplicate JSON authority paths and compatibility adapters only after Tauri parity and integration tests pass.",
+      "item_type": "cleanup",
+      "status": "proposed",
+      "priority": 70,
+      "sort_order": 220,
+      "rationale": "Premature removal would break the current editor and invalidate the migration path.",
+      "technical_risk": "Medium. Hidden users and tests may still depend on compatibility paths.",
+      "user_value": "Leaves one supported desktop workflow and removes contradictory legacy behavior.",
+      "dependencies": [
+        "TS-120",
+        "TS-160",
+        "TS-170"
+      ],
+      "affected_areas": [
+        "blender/track_pipeline/authoring/server.py",
+        "scripts/run_authoring_server.ps1",
+        "scripts/run-circuit-editor.ps1",
+        "docs/"
+      ],
+      "acceptance_criteria": [
+        "Tauri replaces all required server functions.",
+        "Compatibility tests pass before deletion.",
+        "Obsolete references are classified and removed or marked historical."
+      ],
+      "evidence": [
+        "Current scripts still launch Python HTTP authoring."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 12."
+    },
+    {
+      "id": "TS-190",
+      "epic": "track-studio",
+      "title": "Complete testing recovery performance and Windows packaging gates",
+      "description": "Add Rust unit, storage, command, integration, determinism, migration, Godot and packaging tests, including crash recovery and selective rebuild measurements.",
+      "item_type": "test",
+      "status": "proposed",
+      "priority": 83,
+      "sort_order": 230,
+      "rationale": "The architecture is not complete until save/reopen, deterministic builds, legacy migration and desktop packaging are measurable.",
+      "technical_risk": "Medium. Test gaps can hide cross-boundary regressions.",
+      "user_value": "Provides confidence that the editor is usable and distributable on Windows.",
+      "dependencies": [
+        "TS-020",
+        "TS-090",
+        "TS-100",
+        "TS-110",
+        "TS-160"
+      ],
+      "affected_areas": [
+        "tools/track_studio/",
+        "blender/track_pipeline/tests/",
+        "game/tests/",
+        "scripts/"
+      ],
+      "acceptance_criteria": [
+        "Save/reopen and transaction rollback pass.",
+        "Deterministic outputs and hashes are tested twice.",
+        "Windows desktop build and golden-track integration pass."
+      ],
+      "evidence": [
+        "Current Python suite has 185 tests but baseline cleanup errors under Python 3.14."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target testing and acceptance phases."
+    },
+    {
+      "id": "TS-200",
+      "epic": "track-studio",
+      "title": "Rebuild project agent instructions and skills from the implemented architecture",
+      "description": "After implementation and validation, reconcile AGENTS.md, .agents and skills with the real Track Studio ownership, source-of-truth, BuildIR and validation boundaries.",
+      "item_type": "documentation",
+      "status": "proposed",
+      "priority": 60,
+      "sort_order": 240,
+      "rationale": "Instructions must describe code that actually exists, not an unimplemented target architecture.",
+      "technical_risk": "Low after implementation; high if done early because it creates false authority.",
+      "user_value": "Keeps future engineering work aligned with the real system.",
+      "dependencies": [
+        "TS-190"
+      ],
+      "affected_areas": [
+        "AGENTS.md",
+        ".agents/",
+        "docs/"
+      ],
+      "acceptance_criteria": [
+        "No contradictory source-of-truth or ownership instructions remain.",
+        "Skills identify inputs, outputs, ownership, workflow and validation.",
+        "Historical compatibility behavior is labeled."
+      ],
+      "evidence": [
+        "Current .agents guidance is operational and current docs still describe SVG authority."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Target Phase 13."
+    },
+    {
+      "id": "TS-210",
+      "epic": "track-studio",
+      "title": "Final Track Studio acceptance and legacy retirement",
+      "description": "Run the complete acceptance matrix, publish the implemented architecture report, confirm Windows packaging and retire only compatibility code proven unnecessary.",
+      "item_type": "release",
+      "status": "proposed",
+      "priority": 50,
+      "sort_order": 250,
+      "rationale": "The final state must be judged against the actual acceptance criteria rather than completion of individual crates.",
+      "technical_risk": "Medium. Cross-system failures may appear only in the final vertical path.",
+      "user_value": "Confirms that Track Studio is a usable product, not merely a collection of refactored modules.",
+      "dependencies": [
+        "TS-180",
+        "TS-190",
+        "TS-200"
+      ],
+      "affected_areas": [
+        "tools/track_studio/",
+        "tracks/la_chutana/",
+        "game/",
+        "docs/"
+      ],
+      "acceptance_criteria": [
+        "All final checkboxes in instrucciones.txt are resolved or explicitly deferred.",
+        "La Chutana golden integration passes.",
+        "Implemented architecture, limitations, tests and build results are documented."
+      ],
+      "evidence": [
+        "Target document requires a final implementation report and architecture diagram."
+      ],
+      "source_agent": "opencode",
+      "source_context": "Final Track Studio acceptance."
     }
   ]
 }
