@@ -35,6 +35,7 @@ func _run() -> void:
 
 	var minimap := hud.get_node_or_null("Minimap") as TrackMinimapController
 	var speed_gauge := hud.get_node_or_null("SpeedGauge")
+	var retro_hud := hud.get_node_or_null("RetroHud")
 	var aid_message := hud.get_node_or_null("AidMessage") as Label
 	if minimap == null or minimap.get("map_data") == null:
 		printerr("[FAIL] Arcade HUD minimap or its track data is missing.")
@@ -55,6 +56,15 @@ func _run() -> void:
 			failures += 1
 	if speed_gauge == null or not speed_gauge.has_method("set_readout"):
 		printerr("[FAIL] Arcade speed gauge is missing its readout API.")
+		failures += 1
+	if retro_hud == null or not retro_hud.has_method("set_readout"):
+		printerr("[FAIL] Retro HUD is missing its decoupled readout API.")
+		failures += 1
+	elif retro_hud.get("state").gear_label != "N":
+		printerr("[FAIL] Retro HUD did not receive the standalone adapter state.")
+		failures += 1
+	elif not is_equal_approx(retro_hud.scale.x, 0.28):
+		printerr("[FAIL] Embedded Retro HUD layout was overridden by its config.")
 		failures += 1
 	if aid_message == null or aid_message.visible:
 		printerr("[FAIL] Aid message should begin hidden until an aid state changes.")

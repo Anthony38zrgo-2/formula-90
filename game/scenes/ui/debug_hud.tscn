@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_race_hud.gd" id="1"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/track_minimap_controller.gd" id="2"]
 [ext_resource type="Resource" path="res://scenes/ui/la_chutana_hud_map.tres" id="3"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_speed_gauge.gd" id="4"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/handling_tuning_panel.gd" id="5_tuner"]
+[ext_resource type="PackedScene" path="res://features/retro_hud/scenes/retro_hud_display.tscn" id="6_retro_hud"]
 
 [node name="DebugHud" type="Control"]
 layout_mode = 3
@@ -55,7 +56,23 @@ offset_bottom = -16.0
 grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
+visible = false
 script = ExtResource("4")
+
+[node name="RetroHud" parent="." instance=ExtResource("6_retro_hud")]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -173.0
+offset_top = -105.0
+offset_right = 387.0
+offset_bottom = 210.0
+grow_horizontal = 0
+grow_vertical = 0
+scale = Vector2(0.28, 0.28)
 
 [node name="SpeedValue" type="Label" parent="SpeedGauge"]
 layout_mode = 0

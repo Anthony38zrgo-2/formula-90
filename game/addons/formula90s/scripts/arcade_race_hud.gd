@@ -8,6 +8,7 @@ const AID_FADE_SECONDS := 0.35
 @export var aids_path: NodePath
 
 @onready var speed_gauge: ArcadeSpeedGauge = $SpeedGauge
+@onready var retro_hud: Node = $RetroHud
 @onready var aid_message: Label = $AidMessage
 
 var _vehicle: Node
@@ -56,8 +57,12 @@ func _update_speed_gauge() -> void:
 
 	var speed_mps := float(_vehicle.get("speed"))
 	var gear := int(_vehicle.get("current_gear"))
+	var motor_rpm_value: Variant = _vehicle.get("motor_rpm")
+	var motor_rpm := float(motor_rpm_value) if motor_rpm_value != null else 0.0
 	var displayed_gear := "R" if gear < 0 else ("N" if gear == 0 else str(gear))
 	speed_gauge.set_readout(absf(speed_mps) * 3.6, displayed_gear)
+	if retro_hud != null and retro_hud.has_method("set_readout"):
+		retro_hud.call("set_readout", absf(speed_mps) * 3.6, motor_rpm, displayed_gear)
 
 
 func _on_aid_toggled(aid_label: String, enabled: bool) -> void:

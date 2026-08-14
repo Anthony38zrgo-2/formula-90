@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "base_texture": "res://features/retro_hud/assets/retro_lcd_bezel_base.png",
+  "speed_unit": "KPH",
+  "rpm_max": 15000.0,
+  "rpm_redline": 12200.0,
+  "tach_segments": 14,
+  "tach_start_degrees": 201.0,
+  "tach_end_degrees": 339.0,
+  "normal_color": "#65ffe0",
+  "high_rpm_color": "#f4d35e",
+  "redline_color": "#ff5a5f",
+  "glyph_color": "#061414",
+  "gear_color": "#7fffe8",
+  "background_opacity": 1.0,
+  "scale": 1.0,
+  "position": [0.0, 0.0]
+}
