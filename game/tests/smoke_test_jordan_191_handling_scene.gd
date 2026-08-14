@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SCENE := preload("res://scenes/tracks/test_field/jordan_191_handling_test.tscn")
+const SCENE := preload("res://scenes/tests/vehicle_track_combinations/jordan_191_handling_test.tscn")
 
 
 func _init() -> void:

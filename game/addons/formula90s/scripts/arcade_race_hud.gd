@@ -14,6 +14,11 @@ var _vehicle: Node
 var _aids: Node
 var _notification_remaining := 0.0
 
+func bind_runtime(vehicle: Node, aids: Node) -> void:
+	_vehicle = vehicle
+	_aids = aids
+	_connect_aid_notifications()
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE

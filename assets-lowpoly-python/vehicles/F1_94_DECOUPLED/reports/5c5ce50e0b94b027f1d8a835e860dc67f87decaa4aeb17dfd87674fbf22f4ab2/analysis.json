@@ -1,0 +1,485 @@
+{
+  "file": "D:\\Formula90s\\.codex-staging\\f1_94_decoupled_20260814\\F1_94_DECOUPLED\\geometry\\F1_94_chassis_geometry.glb",
+  "format": "glb",
+  "sha256": "5c5ce50e0b94b027f1d8a835e860dc67f87decaa4aeb17dfd87674fbf22f4ab2",
+  "objects": 19,
+  "meshes": 19,
+  "vertices": 7488,
+  "faces": 2496,
+  "components": 2496,
+  "bounds": {
+    "min": [
+      -0.71222001,
+      -0.23288675,
+      -2.32041144
+    ],
+    "max": [
+      0.71222001,
+      0.7149123,
+      1.93766856
+    ]
+  },
+  "dimensions": {
+    "x": 1.4244400262832642,
+    "y": 0.9477990418672562,
+    "z": 4.258080005645752
+  },
+  "center": [
+    0.0,
+    0.24101277,
+    -0.19137144
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        -0.00366783,
+        -0.99998024,
+        0.00510596
+      ],
+      [
+        -0.05381574,
+        -0.00490121,
+        -0.99853885
+      ],
+      [
+        -0.99854415,
+        0.00393726,
+        0.0537967
+      ]
+    ],
+    "variance": [
+      2.41992866,
+      0.1287122,
+      0.02654311
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "MAT_GEO_AERO_FRONT_WING",
+    "MAT_GEO_AERO_REAR_WING",
+    "MAT_GEO_BODY_INTERIOR",
+    "MAT_GEO_CHASSIS",
+    "MAT_GEO_COCKPIT_LCD_06",
+    "MAT_GEO_COCKPIT_LCD_07",
+    "MAT_GEO_COCKPIT_LCD_08",
+    "MAT_GEO_COCKPIT_LCD_09",
+    "MAT_GEO_COCKPIT_LCD_13",
+    "MAT_GEO_COCKPIT_LCD_16",
+    "MAT_GEO_COCKPIT_LCD_17",
+    "MAT_GEO_COCKPIT_LCD_18",
+    "MAT_GEO_COCKPIT_LCD_INDICATOR",
+    "MAT_GEO_DRIVER_HELMET",
+    "MAT_GEO_NOSE",
+    "MAT_GEO_SUSPENSION_FL",
+    "MAT_GEO_SUSPENSION_FR",
+    "MAT_GEO_SUSPENSION_RL",
+    "MAT_GEO_SUSPENSION_RR"
+  ],
+  "has_uv": true,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 2477,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1915,
+      "boundary_edges": 2376,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 6,
+      "boundary_edges": 12,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1004,
+      "boundary_edges": 1260,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1760,
+      "boundary_edges": 2202,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 484,
+      "boundary_edges": 606,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 140,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 140,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 112,
+      "boundary_edges": 144,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 112,
+      "boundary_edges": 144,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 273,
+      "boundary_edges": 330,
+      "non_manifold_edges": 0,
+      "watertight": false
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_CHASSIS",
+      "uv": true,
+      "uv_count": 2376,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_BODY_INTERIOR",
+      "uv": true,
+      "uv_count": 12,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_AERO_FRONT_WING",
+      "uv": true,
+      "uv_count": 1260,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_AERO_REAR_WING",
+      "uv": true,
+      "uv_count": 2202,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_NOSE",
+      "uv": true,
+      "uv_count": 606,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_06",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_07",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_08",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_09",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_13",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_16",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_17",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_18",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_INDICATOR",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_FL",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_FR",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_RL",
+      "uv": true,
+      "uv_count": 144,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_RR",
+      "uv": true,
+      "uv_count": 144,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_DRIVER_HELMET",
+      "uv": true,
+      "uv_count": 330,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

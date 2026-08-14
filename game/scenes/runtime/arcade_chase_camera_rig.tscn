@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[node name="CameraRig" type="ArcadeChaseCamera"]
+position = Vector3(0, 3.4, 7.2)
+top_level = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 60.0

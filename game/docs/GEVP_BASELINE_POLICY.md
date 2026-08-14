@@ -1,6 +1,6 @@
 # GEVP baseline policy
 
-`res://scenes/tracks/test_field/gevp_baseline.tscn` is the known-good physics regression scene.
+`res://scenes/tests/vehicle_track_combinations/gevp_baseline.tscn` is the known-good physics regression scene.
 
 Rules:
 
@@ -11,4 +11,4 @@ Rules:
 - New vehicles must be tested in separate scenes using the same GEVP controller/track structure.
 - The legacy internal node/resource names inside the frozen vehicle are intentionally retained to avoid changing the validated baseline.
 
-Jordan development belongs in `res://scenes/tracks/test_field/jordan_handling_test.tscn` and must not modify this reference vehicle.
+Jordan development belongs in `res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn` and must not modify this reference vehicle.

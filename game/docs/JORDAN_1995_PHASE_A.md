@@ -6,7 +6,7 @@ Purpose: validate the Jordan geometry on the same known-good GEVP physics founda
 
 Run:
 
-`res://scenes/tracks/test_field/jordan_handling_test.tscn`
+`res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn`
 
 Windows helper:
 

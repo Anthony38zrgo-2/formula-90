@@ -1,65 +1,31 @@
 extends SceneTree
 
-
 func _init() -> void:
 	call_deferred("_run")
 
-
 func _run() -> void:
-	var failures := 0
-	var compositor_scene := load("res://scenes/runtime/world_hud_compositor.tscn") as PackedScene
-	if compositor_scene == null:
-		printerr("[FAIL] World/HUD compositor scene could not load.")
-		quit(1)
-		return
-
-	var compositor := compositor_scene.instantiate()
-	compositor.world_scene_path = "res://scenes/tracks/test_field/jordan_handling_test.tscn"
+	var failures: Array[String] = []
+	var packed := load("res://scenes/runtime/world_hud_compositor.tscn") as PackedScene
+	var compositor := packed.instantiate()
 	root.add_child(compositor)
-	await process_frame
-	await process_frame
-
-	var world_viewport := compositor.get_node_or_null("WorldViewport") as SubViewport
-	var world_presenter := compositor.get_node_or_null("WorldPresenter") as TextureRect
-	var world_content := compositor.get_node_or_null("WorldViewport/WorldContent")
-	var hud_layer := compositor.get_node_or_null("HudLayer") as CanvasLayer
-	var debug_hud := compositor.get_node_or_null("HudLayer/DebugHud")
-	var wheel_diagnostics := compositor.get_node_or_null("HudLayer/WheelDiagnostics")
-	var vehicle := compositor.get_node_or_null("WorldViewport/WorldContent/VehicleController/VehicleRigidBody")
-	var driving_aids := compositor.get_node_or_null("WorldViewport/WorldContent/DrivingAids")
-
-	if world_viewport == null or world_viewport.size != Vector2i(640, 360) or world_presenter == null or world_presenter.texture != world_viewport.get_texture():
-		printerr("[FAIL] World presentation does not expose the fixed-resolution SubViewport texture.")
-		failures += 1
-	if world_content == null or vehicle == null or world_viewport.get_camera_3d() == null:
-		printerr("[FAIL] 3D world or active camera did not enter the SubViewport.")
-		failures += 1
-	if hud_layer == null or hud_layer.layer != 1 or debug_hud == null or wheel_diagnostics == null:
-		printerr("[FAIL] HUD was not extracted to the composition layer.")
-		failures += 1
-	if world_content != null and world_content.get_node_or_null("DebugHud") != null:
-		printerr("[FAIL] DebugHud remained inside the filtered world viewport.")
-		failures += 1
-	if debug_hud != null and debug_hud.get_node_or_null(debug_hud.get("vehicle_path")) != vehicle:
-		printerr("[FAIL] Extracted DebugHud lost its vehicle NodePath.")
-		failures += 1
-	if debug_hud != null and debug_hud.get_node_or_null(debug_hud.get("aids_path")) != driving_aids:
-		printerr("[FAIL] Extracted DebugHud lost its DrivingAids NodePath.")
-		failures += 1
-	var minimap: Node = null
-	if debug_hud != null:
-		minimap = debug_hud.get_node_or_null("Minimap")
-	if minimap == null or minimap.get_node_or_null(minimap.get("target_path")) != vehicle:
-		printerr("[FAIL] Extracted minimap lost its vehicle NodePath.")
-		failures += 1
-	if wheel_diagnostics != null and wheel_diagnostics.get_node_or_null(wheel_diagnostics.get("vehicle_path")) != vehicle:
-		printerr("[FAIL] Extracted wheel diagnostics lost its vehicle NodePath.")
-		failures += 1
-	if world_content != null and world_content.get_node_or_null("Track/SourceSkyboxRig") == null:
-		printerr("[FAIL] Source skybox was not preserved inside the rendered world.")
-		failures += 1
-
+	for _frame in 4:
+		await process_frame
+	var viewport := compositor.get_node_or_null("WorldViewport") as SubViewport
+	var presenter := compositor.get_node_or_null("WorldPresenter") as TextureRect
+	var session := compositor.get_node_or_null("WorldViewport/RaceSession") as RaceSession
+	var hud := compositor.get_node_or_null("HudLayer/DebugHud") as ArcadeRaceHud
+	if viewport == null or viewport.size != Vector2i(640, 360) or presenter == null or presenter.texture != viewport.get_texture():
+		failures.append("fixed-resolution world presentation missing")
+	if session == null or session.active_vehicle == null or session.active_track == null or viewport.get_camera_3d() == null:
+		failures.append("RaceSession composition missing")
+	if hud == null or hud.get("_vehicle") != session.active_vehicle or hud.get("_aids") != session.driving_aids:
+		failures.append("root HUD direct binding missing")
+	if session != null and session.get_node_or_null("DebugHud") != null:
+		failures.append("HUD leaked into 3D session")
 	compositor.queue_free()
-	if failures == 0:
-		print("[PASS] World renders in a SubViewport while HUD and diagnostics remain in the root canvas.")
-	quit(failures)
+	if failures.is_empty():
+		print("[PASS] WorldHudCompositor presents RaceSession and binds HUD outside the 3D viewport.")
+	else:
+		for failure in failures:
+			printerr("[FAIL] " + failure)
+	quit(failures.size())

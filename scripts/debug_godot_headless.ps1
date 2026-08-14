@@ -4,7 +4,7 @@ param(
     [string]$Mode = 'Runtime',
     [string]$GodotPath,
     [string]$Resource = 'res://assets/generated/tracks/la_chutana/la_chutana.glb',
-    [string]$Scene = 'res://scenes/tracks/test_field/jordan_handling_test.tscn',
+    [string]$Scene = 'res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn',
     [int]$PhysicsFrames = 300,
     [int]$QuitAfter = 30
 )

@@ -17,6 +17,9 @@ tonemap_mode = 2
 [node name="Formula90sTestTrack" type="Node3D"]
 script = ExtResource("1_track")
 
+[node name="VehicleSpawn" type="Marker3D" parent="." groups=["vehicle_spawn"]]
+position = Vector3(0, 0.65, 18)
+
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_test")
 

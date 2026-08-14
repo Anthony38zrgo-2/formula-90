@@ -195,8 +195,67 @@ inspect, re-analyze, determine ownership, and change strategy.
 For CAD-derived assets, use `CadQuery -> PyMeshLab -> Blender`; for ordinary
 assets, use the smallest applicable tool in the hierarchy above.
 
+## Vehicle visual coordinate contract
+
+For every new or replaced 3D vehicle, prove the asset/runtime coordinate
+relationship before editing physics or accepting a smoke test:
+
+1. Read `coordinate_contract` and `validation_datums` from the manifest. If the
+   contract is absent, derive and document it before integration.
+2. Derive `asset_forward` from measured geometry (`nose - tail`) or from
+   `front_axle - rear_axle`; object names alone are insufficient.
+3. Derive `physical_forward` from the centers of the front and rear RayCast
+   pairs. Do not assume that an importer changes semantic forward axes.
+4. Declare exactly one conversion owner: export pipeline, visual scene, or a
+   dedicated presentation node. Multiple compensating rotations are forbidden.
+5. Require `normalized_visual_forward.dot(normalized_physical_forward) >= 0.99`
+   and transformed axle datums within the documented tolerance before runtime
+   acceptance.
+6. Verify that front/rear wheel instances use their corresponding canonical GLB.
+   Resource existence, surface counts and materials alone are not sufficient.
+7. A proper 180-degree yaw has determinant `+1`; it is not the prohibited
+   negative-scale mirroring used to fake side orientation.
+
+If an orientation defect is visible at rest, in neutral, and at zero speed,
+falsify visual assembly and coordinate ownership before invoking
+`vehicle-physics`, suspension tuning, grip changes, or GEVP patches.
+
+The canonical Formula-90 import contract is defined in
+`docs/vehicles/VEHICLE_IMPORT_STANDARD.md`:
+
+```text
+asset/runtime: front -Z, up +Y, right +X
+runtime:       chassis GLB + four independent FL/FR/RL/RR wheel GLBs
+hierarchy:     Wheel -> {Corner}Wheel -> Visual
+conversion:    applied before export; no runtime correction node
+```
+
+Any vehicle that intentionally differs must declare the exception in its
+manifest and provide an equivalent semantic smoke test.
+
+## Godot validation environment
+
+Before launching Godot headless from a sandbox or automation:
+
+- use the console executable so stdout/stderr are captured;
+- ensure the effective `user://` log directory is writable, normally by setting
+  task-local `APPDATA` and `LOCALAPPDATA` under the workspace, or use an approved
+  unsandboxed execution when that is the established workflow;
+- check for stale Godot processes before treating an access error as a test result;
+- classify a crash before test assertions as `INCONCLUSIVE`, not candidate FAIL;
+- if output contains `Failed to open user://logs`, fix the validation environment
+  before investigating production code;
+- distinguish read failure from value mismatch: never compare a null/absent hash
+  after `Get-FileHash`, parser, or file-open failure.
+
+If `agentdb` is unavailable, search `docs/troubleshooting/resolved-incidents.md`
+and `game/docs/COMMON_ERRORS_AND_FIXES.md`, then record the lookup as unavailable.
+Do not report “no known incident” when the lookup tool itself did not run.
+
 ## Safety and context
 
+- Run every repository Git operation through Git Bash. On Windows use
+  `C:\Program Files\Git\bin\bash.exe`; do not invoke Git from PowerShell.
 - Preserve unrelated dirty-worktree changes.
 - Never promote, escalate, hand off, delegate, or transfer any task to another
   agent, subagent, model, or a higher-capability model unless the user explicitly

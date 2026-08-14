@@ -1,17 +1,16 @@
 [gd_scene load_steps=7 format=3]
 
-[ext_resource type="PackedScene" path="res://addons/gevp/scenes/track.tscn" id="1_track"]
+[ext_resource type="PackedScene" path="res://scenes/tracks/test_field/la_chutana_generated.tscn" id="1_track"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/jordan_191/jordan_191.tscn" id="2_vehicle"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/driving_aids.gd" id="3_aids"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="4_hud"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/forest.gd" id="5_forest"]
 
 [node name="Jordan191HandlingTest" type="Node3D"]
 
-[node name="Demo" parent="." instance=ExtResource("1_track")]
+[node name="Track" parent="." instance=ExtResource("1_track")]
 
 [node name="Jordan191" parent="." instance=ExtResource("2_vehicle")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.926611, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 18)
 
 [node name="CameraRig" type="ArcadeChaseCamera" parent="."]
 position = Vector3(0, 3.4, 7.2)
@@ -27,7 +26,3 @@ script = ExtResource("3_aids")
 vehicle_node = NodePath("../Jordan191/VehicleRigidBody")
 
 [node name="DebugHud" parent="." instance=ExtResource("4_hud")]
-
-[node name="Forest" type="Node3D" parent="."]
-script = ExtResource("5_forest")
-track_path = NodePath("../Demo/Path3D")

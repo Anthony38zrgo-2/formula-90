@@ -19,6 +19,16 @@ track generation, or physics diagnostics.
 For 3D asset generation, analysis, modification, or export, use
 `3d-asset-generation` and prefer its deterministic Python tooling before Blender.
 
+For 3D vehicles, prove asset-forward versus runtime-forward from geometry and
+RayCast datums before editing physics. Godot import does not by itself prove a
+semantic `+Z` to `-Z` conversion. Smokes must validate forward alignment, axle
+mapping and front/rear wheel resources, not only node/material presence.
+
+Before running Godot headless, ensure `user://` is writable. A crash before test
+assertions, especially `Failed to open user://logs`, is `INCONCLUSIVE` and must
+not trigger a production patch. Never treat a failed file/hash read as a content
+mismatch.
+
 Stop implementation and enter Diagnostic Mode when the same failure signature
 survives two implementation attempts, ownership is unknown, validation is broken,
 or the next patch would stack a workaround. Diagnostic Mode permits inspection,
@@ -27,6 +37,13 @@ production patches.
 
 Preserve unrelated work. Keep gameplay architecture unchanged unless the task
 explicitly changes it or verified evidence identifies it as the cause.
+
+## Git shell
+
+All repository Git operations (`status`, `diff`, `add`, `commit`, `fetch`,
+`pull`, `push`, branch and remote operations) must run through Git Bash. On
+Windows, invoke `C:\Program Files\Git\bin\bash.exe`; do not use PowerShell's
+Git invocation for repository operations.
 
 ## Agent escalation gate
 

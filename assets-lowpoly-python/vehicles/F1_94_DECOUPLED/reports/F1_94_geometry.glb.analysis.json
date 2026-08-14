@@ -1,0 +1,837 @@
+{
+  "file": "D:\\Formula90s\\.codex-staging\\f1_94_decoupled_20260814\\F1_94_DECOUPLED\\geometry\\F1_94_geometry.glb",
+  "format": "glb",
+  "sha256": "64a19d20bf998abcc56bda199d3a990bd2018d8609427f8b26244ea71556a0cc",
+  "objects": 35,
+  "meshes": 35,
+  "vertices": 9552,
+  "faces": 3184,
+  "components": 3184,
+  "bounds": {
+    "min": [
+      -0.94646901,
+      -0.32298175,
+      -2.32041144
+    ],
+    "max": [
+      0.94646901,
+      0.7149123,
+      1.93766856
+    ]
+  },
+  "dimensions": {
+    "x": 1.8929380150408937,
+    "y": 1.0378940413641358,
+    "z": 4.258080005645752
+  },
+  "center": [
+    0.0,
+    0.19596527,
+    -0.19137144
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        -0.00312305,
+        -0.99999342,
+        0.0018438
+      ],
+      [
+        -0.04415751,
+        -0.00170411,
+        -0.99902313
+      ],
+      [
+        -0.9990197,
+        0.00320142,
+        0.0441519
+      ]
+    ],
+    "variance": [
+      2.36282541,
+      0.26008835,
+      0.02829162
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "MAT_GEO_AERO_FRONT_WING",
+    "MAT_GEO_AERO_REAR_WING",
+    "MAT_GEO_BODY_INTERIOR",
+    "MAT_GEO_CHASSIS",
+    "MAT_GEO_COCKPIT_LCD_06",
+    "MAT_GEO_COCKPIT_LCD_07",
+    "MAT_GEO_COCKPIT_LCD_08",
+    "MAT_GEO_COCKPIT_LCD_09",
+    "MAT_GEO_COCKPIT_LCD_13",
+    "MAT_GEO_COCKPIT_LCD_16",
+    "MAT_GEO_COCKPIT_LCD_17",
+    "MAT_GEO_COCKPIT_LCD_18",
+    "MAT_GEO_COCKPIT_LCD_INDICATOR",
+    "MAT_GEO_DRIVER_HELMET",
+    "MAT_GEO_NOSE",
+    "MAT_GEO_SUSPENSION_FL",
+    "MAT_GEO_SUSPENSION_FR",
+    "MAT_GEO_SUSPENSION_RL",
+    "MAT_GEO_SUSPENSION_RR",
+    "MAT_GEO_WHEEL_FL_HUB",
+    "MAT_GEO_WHEEL_FL_TIRE_INNER",
+    "MAT_GEO_WHEEL_FL_TIRE_OUTER",
+    "MAT_GEO_WHEEL_FL_TREAD",
+    "MAT_GEO_WHEEL_FR_HUB",
+    "MAT_GEO_WHEEL_FR_TIRE_INNER",
+    "MAT_GEO_WHEEL_FR_TIRE_OUTER",
+    "MAT_GEO_WHEEL_FR_TREAD",
+    "MAT_GEO_WHEEL_RL_HUB",
+    "MAT_GEO_WHEEL_RL_TIRE_INNER",
+    "MAT_GEO_WHEEL_RL_TIRE_OUTER",
+    "MAT_GEO_WHEEL_RL_TREAD",
+    "MAT_GEO_WHEEL_RR_HUB",
+    "MAT_GEO_WHEEL_RR_TIRE_INNER",
+    "MAT_GEO_WHEEL_RR_TIRE_OUTER",
+    "MAT_GEO_WHEEL_RR_TREAD"
+  ],
+  "has_uv": true,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 3149,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1915,
+      "boundary_edges": 2376,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 6,
+      "boundary_edges": 12,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1004,
+      "boundary_edges": 1260,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 1760,
+      "boundary_edges": 2202,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 484,
+      "boundary_edges": 606,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 2,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 140,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 140,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 112,
+      "boundary_edges": 144,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 112,
+      "boundary_edges": 144,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 273,
+      "boundary_edges": 330,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 139,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 80,
+      "boundary_edges": 120,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 119,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 23,
+      "boundary_edges": 36,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 139,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 80,
+      "boundary_edges": 120,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 119,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 23,
+      "boundary_edges": 36,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 80,
+      "boundary_edges": 120,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 119,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 139,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 23,
+      "boundary_edges": 36,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 80,
+      "boundary_edges": 120,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 119,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 139,
+      "boundary_edges": 180,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 23,
+      "boundary_edges": 36,
+      "non_manifold_edges": 0,
+      "watertight": false
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_CHASSIS",
+      "uv": true,
+      "uv_count": 2376,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_BODY_INTERIOR",
+      "uv": true,
+      "uv_count": 12,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_AERO_FRONT_WING",
+      "uv": true,
+      "uv_count": 1260,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_AERO_REAR_WING",
+      "uv": true,
+      "uv_count": 2202,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_NOSE",
+      "uv": true,
+      "uv_count": 606,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_06",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_07",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_08",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_09",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_13",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_16",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_17",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_18",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_COCKPIT_LCD_INDICATOR",
+      "uv": true,
+      "uv_count": 6,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_FL",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_FR",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_RL",
+      "uv": true,
+      "uv_count": 144,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_SUSPENSION_RR",
+      "uv": true,
+      "uv_count": 144,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_DRIVER_HELMET",
+      "uv": true,
+      "uv_count": 330,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FL_TIRE_OUTER",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FL_TREAD",
+      "uv": true,
+      "uv_count": 120,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FL_TIRE_INNER",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FL_HUB",
+      "uv": true,
+      "uv_count": 36,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FR_TIRE_OUTER",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FR_TREAD",
+      "uv": true,
+      "uv_count": 120,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FR_TIRE_INNER",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_FR_HUB",
+      "uv": true,
+      "uv_count": 36,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RL_TIRE_OUTER",
+      "uv": true,
+      "uv_count": 120,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RL_TREAD",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RL_TIRE_INNER",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RL_HUB",
+      "uv": true,
+      "uv_count": 36,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RR_TIRE_OUTER",
+      "uv": true,
+      "uv_count": 120,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RR_TREAD",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RR_TIRE_INNER",
+      "uv": true,
+      "uv_count": 180,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MAT_GEO_WHEEL_RR_HUB",
+      "uv": true,
+      "uv_count": 36,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

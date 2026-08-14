@@ -4,7 +4,7 @@ Purpose: stabilize the Jordan mechanical baseline before steering, powertrain or
 
 ## Active scene
 
-`res://scenes/tracks/test_field/jordan_handling_test.tscn`
+`res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn`
 
 Windows helper:
 

@@ -7,7 +7,7 @@ func _init() -> void:
 
 func _run() -> void:
 	var failures := 0
-	var test_scene := load("res://scenes/tracks/test_field/jordan_handling_test.tscn") as PackedScene
+	var test_scene := load("res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn") as PackedScene
 	if test_scene == null:
 		printerr("[FAIL] Jordan handling scene could not load.")
 		quit(1)

@@ -13,7 +13,6 @@ func _run() -> void:
 		return
 
 	var compositor := compositor_scene.instantiate()
-	compositor.world_scene_path = "res://scenes/tracks/test_field/jordan_handling_test.tscn"
 	root.add_child(compositor)
 	await _await_render()
 	await _await_render()

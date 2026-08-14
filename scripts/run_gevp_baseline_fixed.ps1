@@ -7,7 +7,7 @@
     - Localiza Godot portable/global.
     - Prefiere Godot *_console.exe para mostrar errores en PowerShell.
     - Ejecuta explícitamente:
-        --path <game> --scene res://scenes/tracks/test_field/gevp_baseline.tscn
+        --path <game> --scene res://scenes/tests/vehicle_track_combinations/gevp_baseline.tscn
     - Guarda un log en game/logs/gevp_baseline.log.
 
 .EXAMPLE
@@ -30,7 +30,7 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 $ExpectedBranch = "refactor/gevp-clean-baseline"
-$SceneRes = "res://scenes/tracks/test_field/gevp_baseline.tscn"
+$SceneRes = "res://scenes/tests/vehicle_track_combinations/gevp_baseline.tscn"
 
 function Find-ProjectRoot {
     param([string]$StartDir)

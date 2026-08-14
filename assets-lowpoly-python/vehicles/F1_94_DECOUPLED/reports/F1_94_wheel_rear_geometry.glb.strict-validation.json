@@ -1,0 +1,170 @@
+{
+  "asset": {
+    "file": "D:\\Formula90s\\.codex-staging\\f1_94_decoupled_20260814\\F1_94_DECOUPLED\\geometry\\F1_94_wheel_rear_geometry.glb",
+    "format": "glb",
+    "sha256": "32a9f4e78f9b7ccedfff72aca851e54ba650a89d639b08622390ce451a2e1d75",
+    "objects": 4,
+    "meshes": 4,
+    "vertices": 516,
+    "faces": 172,
+    "components": 172,
+    "bounds": {
+      "min": [
+        -0.1841625,
+        -0.329009,
+        -0.32900906
+      ],
+      "max": [
+        0.1841625,
+        0.329009,
+        0.32900906
+      ]
+    },
+    "dimensions": {
+      "x": 0.36832499504089355,
+      "y": 0.6580179929733276,
+      "z": 0.6580181121826172
+    },
+    "center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "orientation": {
+      "principal_axes": [
+        [
+          0.00163387,
+          -0.00170757,
+          0.99999721
+        ],
+        [
+          -0.58768049,
+          0.80908971,
+          0.00234178
+        ],
+        [
+          0.80909144,
+          0.58768268,
+          -0.00031844
+        ]
+      ],
+      "variance": [
+        0.02769313,
+        0.02759307,
+        0.01966826
+      ],
+      "note": "PCA axes; sign is arbitrary"
+    },
+    "materials": [
+      "MAT_GEO_WHEEL_HUB",
+      "MAT_GEO_WHEEL_TIRE_INNER",
+      "MAT_GEO_WHEEL_TIRE_OUTER",
+      "MAT_GEO_WHEEL_TREAD"
+    ],
+    "has_uv": true,
+    "has_vertex_colors": false,
+    "has_normals": true,
+    "disconnected_components": 168,
+    "topology": [
+      {
+        "finite_vertices": true,
+        "finite_faces": true,
+        "valid_face_indices": true,
+        "degenerate_faces": 0,
+        "duplicate_vertices": 80,
+        "boundary_edges": 120,
+        "non_manifold_edges": 0,
+        "watertight": false
+      },
+      {
+        "finite_vertices": true,
+        "finite_faces": true,
+        "valid_face_indices": true,
+        "degenerate_faces": 0,
+        "duplicate_vertices": 119,
+        "boundary_edges": 180,
+        "non_manifold_edges": 0,
+        "watertight": false
+      },
+      {
+        "finite_vertices": true,
+        "finite_faces": true,
+        "valid_face_indices": true,
+        "degenerate_faces": 0,
+        "duplicate_vertices": 139,
+        "boundary_edges": 180,
+        "non_manifold_edges": 0,
+        "watertight": false
+      },
+      {
+        "finite_vertices": true,
+        "finite_faces": true,
+        "valid_face_indices": true,
+        "degenerate_faces": 0,
+        "duplicate_vertices": 23,
+        "boundary_edges": 36,
+        "non_manifold_edges": 0,
+        "watertight": false
+      }
+    ],
+    "attributes": [
+      {
+        "materials": 1,
+        "material_name": "MAT_GEO_WHEEL_TIRE_OUTER",
+        "uv": true,
+        "uv_count": 120,
+        "uv_valid": true,
+        "vertex_colors": false,
+        "vertex_color_count": 0,
+        "normals": true,
+        "material_assignments_valid": true
+      },
+      {
+        "materials": 1,
+        "material_name": "MAT_GEO_WHEEL_TREAD",
+        "uv": true,
+        "uv_count": 180,
+        "uv_valid": true,
+        "vertex_colors": false,
+        "vertex_color_count": 0,
+        "normals": true,
+        "material_assignments_valid": true
+      },
+      {
+        "materials": 1,
+        "material_name": "MAT_GEO_WHEEL_TIRE_INNER",
+        "uv": true,
+        "uv_count": 180,
+        "uv_valid": true,
+        "vertex_colors": false,
+        "vertex_color_count": 0,
+        "normals": true,
+        "material_assignments_valid": true
+      },
+      {
+        "materials": 1,
+        "material_name": "MAT_GEO_WHEEL_HUB",
+        "uv": true,
+        "uv_count": 36,
+        "uv_valid": true,
+        "vertex_colors": false,
+        "vertex_color_count": 0,
+        "normals": true,
+        "material_assignments_valid": true
+      }
+    ]
+  },
+  "checks": {
+    "finite_vertices": true,
+    "finite_faces": true,
+    "valid_face_indices": true,
+    "uv_integrity": true,
+    "material_assignments": true
+  },
+  "fatal_failures": [],
+  "warnings": [
+    "duplicate vertices present"
+  ],
+  "status": "PASS_WITH_WARNINGS",
+  "comparison": null
+}

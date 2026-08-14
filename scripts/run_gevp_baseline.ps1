@@ -42,7 +42,7 @@ if (-not (Test-Path $dll)) {
 }
 
 $game = Join-Path $root 'game'
-$scene = 'res://scenes/tracks/test_field/gevp_baseline.tscn'
+$scene = 'res://scenes/tests/vehicle_track_combinations/gevp_baseline.tscn'
 
 Write-Host "Godot: $godot"
 Write-Host "Proyecto: $game"

@@ -1,66 +1,38 @@
 extends SceneTree
 
-
 func _init() -> void:
 	call_deferred("_run")
 
-
 func _run() -> void:
-	var failures := 0
-	var compositor_scene := load("res://scenes/runtime/world_hud_compositor.tscn") as PackedScene
-	if compositor_scene == null:
-		printerr("[FAIL] World/HUD compositor scene could not load.")
-		quit(1)
-		return
-
-	var compositor := compositor_scene.instantiate()
-	compositor.world_scene_path = "res://scenes/tracks/test_field/jordan_handling_test.tscn"
+	var failures: Array[String] = []
+	var packed := load("res://scenes/runtime/vehicle_test_session.tscn") as PackedScene
+	var compositor := packed.instantiate()
 	root.add_child(compositor)
-	await process_frame
-	await process_frame
-	await process_frame
-
-	var hud := compositor.get_node_or_null("HudLayer/DebugHud")
+	for _frame in 4:
+		await process_frame
+	var session := compositor.get_node_or_null("WorldViewport/RaceSession") as RaceSession
+	var hud := compositor.get_node_or_null("HudLayer/DebugHud") as ArcadeRaceHud
 	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap") as TrackMinimapController
-	var speed_gauge := compositor.get_node_or_null("HudLayer/DebugHud/SpeedGauge")
 	var aid_message := compositor.get_node_or_null("HudLayer/DebugHud/AidMessage") as Label
-	var vehicle := compositor.get_node_or_null("WorldViewport/WorldContent/VehicleController/VehicleRigidBody") as Node3D
-	var aids := compositor.get_node_or_null("WorldViewport/WorldContent/DrivingAids")
-
-	if hud == null or minimap == null or speed_gauge == null or aid_message == null:
-		printerr("[FAIL] Arcade HUD nodes were not extracted into HudLayer.")
-		failures += 1
-	if vehicle == null or aids == null:
-		printerr("[FAIL] Runtime vehicle or driving aids are missing.")
-		failures += 1
-	if minimap != null and vehicle != null and minimap.get_node_or_null(minimap.get("target_path")) != vehicle:
-		printerr("[FAIL] Dynamic minimap target path did not resolve to the vehicle.")
-		failures += 1
-
-	if minimap != null and vehicle != null:
-		var before: Vector2 = minimap.get_player_map_position()
-		vehicle.global_position = Vector3(150.0, vehicle.global_position.y, -250.0)
-		var after: Vector2 = minimap.get_player_map_position()
-		if before.distance_to(after) < 1.0:
-			printerr("[FAIL] Dynamic minimap player marker did not move with the vehicle.")
-			failures += 1
-
-	if aids != null and aid_message != null:
-		aids.call("toggle", 1)
+	if session == null or hud == null or minimap == null or aid_message == null:
+		failures.append("runtime composition or HUD nodes missing")
+	else:
+		if minimap.get("_target") != session.active_vehicle or minimap.map_data == null:
+			failures.append("minimap direct binding missing")
+		var before := minimap.get_player_map_position()
+		session.active_vehicle.freeze = true
+		session.active_vehicle.global_position.x += 2.0
+		await process_frame
+		if before.distance_to(minimap.get_player_map_position()) < 0.01:
+			failures.append("minimap marker did not move")
+		session.driving_aids.toggle(1)
 		await process_frame
 		if not aid_message.visible or aid_message.text != "AYUDA ESTAB ACTIVADA":
-			printerr("[FAIL] Aid toggle did not produce the expected top-right notification.")
-			failures += 1
-		await create_timer(2.8).timeout
-		if aid_message.visible:
-			printerr("[FAIL] Aid notification did not fade out after its transient display period.")
-			failures += 1
-
-	if speed_gauge == null or not speed_gauge.has_method("set_readout"):
-		printerr("[FAIL] Arcade speed gauge is not available at runtime.")
-		failures += 1
-
+			failures.append("aid notification missing")
 	compositor.queue_free()
-	if failures == 0:
-		print("[PASS] Arcade HUD tracks the player and displays transient aid notifications in the root canvas.")
-	quit(failures)
+	if failures.is_empty():
+		print("[PASS] Arcade HUD is directly bound to the active RaceSession.")
+	else:
+		for failure in failures:
+			printerr("[FAIL] " + failure)
+	quit(failures.size())

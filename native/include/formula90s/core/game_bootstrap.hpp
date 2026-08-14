@@ -4,7 +4,7 @@ namespace godot {
 class GameBootstrap : public Node {
     GDCLASS(GameBootstrap, Node)
     String menu_scene_path = "res://scenes/ui/main_menu.tscn";
-    String track_scene_path = "res://scenes/tracks/test_field/test_field.tscn";
+    String track_scene_path = "res://scenes/tracks/test_field/formula90s_test_track.tscn";
     String world_compositor_scene_path = "res://scenes/runtime/world_hud_compositor.tscn";
 protected:
     static void _bind_methods();

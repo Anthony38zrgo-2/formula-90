@@ -13,7 +13,7 @@ This branch isolates Godot Easy Vehicle Physics (GEVP) from Formula90s-specific 
 
 Open:
 
-`res://scenes/tracks/test_field/gevp_baseline.tscn`
+`res://scenes/tests/vehicle_track_combinations/gevp_baseline.tscn`
 
 It contains only:
 

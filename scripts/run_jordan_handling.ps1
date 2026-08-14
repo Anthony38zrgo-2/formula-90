@@ -15,9 +15,9 @@ function Resolve-VehicleScene([string]$VehicleId, [string]$Explicit) {
     $candidates = @(
         "res://scenes/vehicles/$VehicleId/${VehicleId}_handling_test.tscn",
         "res://scenes/tracks/test_field/${VehicleId}_handling_test.tscn",
-        "res://scenes/tracks/test_field/jordan_197_handling_test.tscn",
-        "res://scenes/tracks/test_field/jordan_191_handling_test.tscn",
-        "res://scenes/tracks/test_field/jordan_handling_test.tscn"
+        "res://scenes/tests/vehicle_track_combinations/jordan_197_handling_test.tscn",
+        "res://scenes/tests/vehicle_track_combinations/jordan_191_handling_test.tscn",
+        "res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn"
     )
     foreach ($c in $candidates) {
         $disk = Join-Path $game ($c -replace 'res://','' -replace '/','\')
@@ -49,6 +49,7 @@ $trackRuntimes = @(
     (Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'),
     (Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana_vegetation.glb')
 )
+$vehicleRuntimes = @()
 
 function Resolve-Godot([string]$explicit) {
     if ($explicit) {
@@ -121,13 +122,21 @@ Remove-Item -LiteralPath $runGodotLog, $runStdout, $runStderr, $importGodotLog, 
 
 try {
     if ($manifestPath -and (Test-Path $manifestPath)) {
-        $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-        $vehicleAssets = @()
-        foreach ($prop in $manifest.assets.PSObject.Properties) { $vehicleAssets += $prop.Value.path }
-        foreach ($rel in $vehicleAssets) {
+        $manifestData = Get-Content $manifestPath -Raw | ConvertFrom-Json
+        $vehicleRuntimes = @($manifestData.assets.PSObject.Properties | ForEach-Object {
+            $rel = $_.Value.path
             $asset = Join-Path $root ($rel -replace '/','\')
             if (-not (Test-Path $asset)) { throw "Asset $VehicleId faltante: $asset (manifest $manifestPath)" }
-        }
+            $expectedHash = $_.Value.sha256
+            if ($expectedHash) {
+                $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $asset).Hash
+                if (-not $actualHash.Equals($expectedHash, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    throw "Hash SHA256 invalido para $asset (manifest $manifestPath)"
+                }
+            }
+            $asset
+        })
+        Write-Verbose "Runtimes de vehiculo resueltos: $($vehicleRuntimes.Count)"
     } else {
         $k3Assets = @(
             (Join-Path $game 'assets\models\vehicles\f1_90s_canonical_1997\candidate_k3_historical\jordan_191_candidate_chassis.glb'),
@@ -136,7 +145,7 @@ try {
         )
         foreach ($asset in $k3Assets) {
             if (-not (Test-Path $asset -PathType Leaf)) {
-                Write-Warning "Asset K3 historico faltante (legacy fallback): $asset ÔÇö continuando con $VehicleId"
+                Write-Warning "Asset K3 historico faltante (legacy fallback): $asset -- continuando con $VehicleId"
             }
         }
     }
@@ -169,16 +178,18 @@ try {
     Write-Host "Proyecto: $game"
     Write-Host "Escena:   $scene"
     if ($manifestPath) { Write-Host "Manifest: $manifestPath" -ForegroundColor DarkGray }
-    Write-Host 'Sincronizando importacion del runtime de La Chutana...' -ForegroundColor Cyan
+    Write-Host 'Sincronizando importacion de La Chutana y del vehiculo...' -ForegroundColor Cyan
 
+    $runtimeAssets = @($trackRuntimes) + @($vehicleRuntimes)
+    Write-Verbose "Runtimes totales a validar: $($runtimeAssets.Count)"
     $requiresImport = $false
-    foreach ($trackRuntime in $trackRuntimes) {
-        $importedTrack = Resolve-ImportedRuntime $trackRuntime
-        if (-not $importedTrack) {
+    foreach ($runtimeAsset in $runtimeAssets) {
+        $importedRuntime = Resolve-ImportedRuntime $runtimeAsset
+        if (-not $importedRuntime) {
             $requiresImport = $true
             break
         }
-        if (-not (Test-ImportedRuntimeFresh $trackRuntime $importedTrack)) {
+        if (-not (Test-ImportedRuntimeFresh $runtimeAsset $importedRuntime)) {
             $requiresImport = $true
             break
         }
@@ -188,8 +199,8 @@ try {
         $previousPreference = $ErrorActionPreference
         try {
             # Opening the scene directly can reuse a stale .godot/imported PackedScene
-            # after the semantic pipeline replaces either canonical GLB. Import first
-            # and wait for Godot to finish before starting the handling session.
+            # after either the track or vehicle pipeline replaces a canonical GLB.
+            # Import first and wait for Godot before starting the handling session.
             $ErrorActionPreference = 'Continue'
             & $godot --headless --path $game --log-file $importGodotLog --import 1> $importStdout 2> $importStderr
             $importExitCode = $LASTEXITCODE
@@ -199,7 +210,7 @@ try {
         }
 
         if ($importExitCode -ne 0) {
-            Write-Host "Godot no pudo importar el runtime de La Chutana ($importExitCode)." -ForegroundColor Red
+            Write-Host "Godot no pudo importar los runtimes de pista y vehiculo ($importExitCode)." -ForegroundColor Red
             Show-LogTail $importStderr
             Show-LogTail $importStdout
             Show-LogTail $importGodotLog
@@ -207,22 +218,22 @@ try {
         }
     }
     else {
-        Write-Host 'Caches de La Chutana vigentes; no se requiere reimportar.' -ForegroundColor DarkGreen
+        Write-Host 'Caches de pista y vehiculo vigentes; no se requiere reimportar.' -ForegroundColor DarkGreen
     }
 
-    foreach ($trackRuntime in $trackRuntimes) {
-        $trackImportConfig = "$trackRuntime.import"
-        if (-not (Test-Path $trackImportConfig -PathType Leaf)) {
-            throw "Godot no genero el descriptor de importacion: $trackImportConfig"
+    foreach ($runtimeAsset in $runtimeAssets) {
+        $runtimeImportConfig = "$runtimeAsset.import"
+        if (-not (Test-Path $runtimeImportConfig -PathType Leaf)) {
+            throw "Godot no genero el descriptor de importacion: $runtimeImportConfig"
         }
-        $importedTrack = Resolve-ImportedRuntime $trackRuntime
-        if (-not $importedTrack) {
-            throw "No se pudo resolver el PackedScene importado desde: $trackImportConfig"
+        $importedRuntime = Resolve-ImportedRuntime $runtimeAsset
+        if (-not $importedRuntime) {
+            throw "No se pudo resolver el PackedScene importado desde: $runtimeImportConfig"
         }
-        if (-not (Test-ImportedRuntimeFresh $trackRuntime $importedTrack)) {
-            throw "La cache importada de La Chutana no corresponde al GLB canonico: $importedTrack"
+        if (-not (Test-ImportedRuntimeFresh $runtimeAsset $importedRuntime)) {
+            throw "La cache importada no corresponde al GLB canonico: $importedRuntime"
         }
-        Write-Host "Runtime importado: $importedTrack" -ForegroundColor Green
+        Write-Host "Runtime importado: $importedRuntime" -ForegroundColor Green
     }
     if ($ValidateRuntimeOnly) {
         Write-Host 'Validacion del runtime canonico completada; lanzamiento omitido.' -ForegroundColor Green

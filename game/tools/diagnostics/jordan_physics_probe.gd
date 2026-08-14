@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DEFAULT_SCENE := "res://scenes/tracks/test_field/jordan_handling_test.tscn"
+const DEFAULT_SCENE := "res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn"
 const VEHICLE_PATH := NodePath("VehicleController/VehicleRigidBody")
 const WHEEL_NAMES := [
 	"WheelFrontLeft",

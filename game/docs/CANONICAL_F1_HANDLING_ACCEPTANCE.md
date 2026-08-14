@@ -3,7 +3,7 @@
 Canonical scene:
 
 ```text
-res://scenes/tracks/test_field/jordan_handling_test.tscn
+res://scenes/tests/vehicle_track_combinations/jordan_handling_test.tscn
 res://scenes/vehicles/jordan_191/jordan_191_k3_historical_phase_b.tscn
 ```
 
