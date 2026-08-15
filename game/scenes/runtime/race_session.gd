@@ -87,12 +87,17 @@ func _setup_background(camera_rig: Node3D) -> void:
 		add_child(controller)
 		background_controller = controller
 		
-		# Ocultar rig legacy si existe para dar paso al nuevo sistema multicapa
+		# Ocultar rig legacy y desactivar PanoramaSky para dar paso al nuevo sistema multicapa
 		if active_track != null:
 			var legacy_skybox := active_track.get_node_or_null("SourceSkyboxRig") as Node3D
 			if legacy_skybox != null:
 				legacy_skybox.visible = false
 				legacy_skybox.set_process(false)
+			var world_env := active_track.get_node_or_null("WorldEnvironment") as WorldEnvironment
+			if world_env != null and world_env.environment != null:
+				# PanoramaSky tapa los Sprite3D lejanos; desactívalo cuando el preset multicapa está activo
+				world_env.environment.background_mode = Environment.BG_CANVAS
+				world_env.environment.background_canvas_max_layer = 0
 	else:
 		push_warning("RaceSession: No se pudo activar el BackgroundController; se conserva el fallback legacy.")
 

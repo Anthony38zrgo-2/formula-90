@@ -141,8 +141,8 @@ func _resolve_current_camera() -> void:
 func _follow_active_camera() -> void:
 	if not is_inside_tree() or not is_instance_valid(_camera) or not _camera.is_inside_tree():
 		return
-	# Sigue la posicion de la camara sin heredar su rotacion en el nodo raiz
-	global_position = Vector3(_camera.global_position.x, global_position.y, _camera.global_position.z)
+	# Sigue la posicion de la camara (incluye Y para alinear horizonte con altura de camara)
+	global_position = _camera.global_position
 
 
 func _update_layers_parallax() -> void:

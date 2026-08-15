@@ -15,7 +15,7 @@
       "repeat_y": false,
       "pixel_snap": true,
       "distance_z": -800.0,
-      "pixel_size": 0.5
+      "pixel_size": 2.0
     },
     {
       "id": "far_mountains",
@@ -25,12 +25,12 @@
       "parallax_y": 0.01,
       "scale": 1.0,
       "offset_x": 0.0,
-      "offset_y": -70.0,
+      "offset_y": 0.0,
       "repeat_x": false,
       "repeat_y": false,
       "pixel_snap": true,
       "distance_z": -700.0,
-      "pixel_size": 0.5
+      "pixel_size": 1.5
     },
     {
       "id": "near_mountains",
@@ -40,12 +40,12 @@
       "parallax_y": 0.02,
       "scale": 1.0,
       "offset_x": 0.0,
-      "offset_y": -60.0,
+      "offset_y": 0.0,
       "repeat_x": false,
       "repeat_y": false,
       "pixel_snap": true,
       "distance_z": -600.0,
-      "pixel_size": 0.5
+      "pixel_size": 1.2
     }
   ]
 }
