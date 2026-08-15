@@ -3,7 +3,8 @@ param(
     [string]$GodotPath,
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
-    [switch]$SmokeAudio
+    [switch]$SmokeAudio,
+    [switch]$SmokeBackground
 )
 
 $ErrorActionPreference = 'Stop'
@@ -12,6 +13,7 @@ $game = Join-Path $root 'game'
 $scene = 'res://scenes/runtime/vehicle_test_session.tscn'
 $manifestPath = Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
 $smokeScript = 'res://tests/smoke_test_f1_94_la_chutana_hud.gd'
+$smokeBackgroundScript = 'res://tests/smoke_test_la_chutana_3_layer_background.gd'
 
 function Resolve-Godot([string]$ExplicitPath) {
     if ($ExplicitPath -and (Test-Path -LiteralPath $ExplicitPath -PathType Leaf)) {
@@ -69,10 +71,27 @@ if ($SmokeAudio) {
     & $godot --headless --path $game --script 'res://tests/smoke_test_f1_94_audio.gd'
     exit $LASTEXITCODE
 }
-if ($Smoke) {
-    Write-Host 'Ejecutando smoke de F1-94 + La Chutana + HUD...' -ForegroundColor Cyan
-    & $godot --headless --path $game --script $smokeScript
+if ($SmokeBackground) {
+    Write-Host 'Ejecutando smoke de background (skybox gradient + 3 capas parallax)...' -ForegroundColor Cyan
+    & $godot --headless --path $game --script $smokeBackgroundScript
     exit $LASTEXITCODE
+}
+if ($Smoke) {
+    Write-Host 'Ejecutando smoke de F1-94 + La Chutana + HUD + Background...' -ForegroundColor Cyan
+    & $godot --headless --path $game --script $smokeScript
+    $hudExit = $LASTEXITCODE
+    if ($hudExit -ne 0) {
+        Write-Host "Smoke HUD fallo ($hudExit)." -ForegroundColor Red
+        exit $hudExit
+    }
+    & $godot --headless --path $game --script $smokeBackgroundScript
+    $bgExit = $LASTEXITCODE
+    if ($bgExit -ne 0) {
+        Write-Host "Smoke Background fallo ($bgExit)." -ForegroundColor Red
+        exit $bgExit
+    }
+    Write-Host 'Smoke completo: HUD + Background.' -ForegroundColor Green
+    exit 0
 }
 if ($ValidateRuntimeOnly) {
     Write-Host 'Runtime F1-94 desacoplado validado.' -ForegroundColor Green
