@@ -23,6 +23,8 @@ func _run_tests() -> void:
 	_test_duplicate_depth()
 	_test_missing_texture_path()
 	_test_non_positive_scale()
+	_test_positive_distance_z()
+	_test_negative_parallax()
 	_test_depth_sorting()
 	_test_json_roundtrip()
 
@@ -45,6 +47,7 @@ func _test_valid_preset() -> void:
 	l0.texture_path = VALID_SKY_TEX
 	l0.depth = 0
 	l0.parallax_x = 0.02
+	l0.distance_z = -800.0
 	preset.layers.append(l0)
 
 	var l1 := BackgroundLayerConfig.new()
@@ -52,6 +55,7 @@ func _test_valid_preset() -> void:
 	l1.texture_path = VALID_FAR_TEX
 	l1.depth = 1
 	l1.parallax_x = 0.08
+	l1.distance_z = -700.0
 	preset.layers.append(l1)
 
 	var l2 := BackgroundLayerConfig.new()
@@ -59,6 +63,7 @@ func _test_valid_preset() -> void:
 	l2.texture_path = VALID_NEAR_TEX
 	l2.depth = 2
 	l2.parallax_x = 0.18
+	l2.distance_z = -600.0
 	preset.layers.append(l2)
 
 	var result := BackgroundValidator.validate_preset(preset)
@@ -77,6 +82,7 @@ func _test_missing_preset_id() -> void:
 	l0.id = &"sky"
 	l0.texture_path = VALID_SKY_TEX
 	l0.depth = 0
+	l0.distance_z = -800.0
 	preset.layers.append(l0)
 
 	var result := BackgroundValidator.validate_preset(preset)
@@ -108,12 +114,14 @@ func _test_duplicate_layer_id() -> void:
 	l0.id = &"sky"
 	l0.texture_path = VALID_SKY_TEX
 	l0.depth = 0
+	l0.distance_z = -800.0
 	preset.layers.append(l0)
 
 	var l1 := BackgroundLayerConfig.new()
 	l1.id = &"sky" # Duplicado!
 	l1.texture_path = VALID_FAR_TEX
 	l1.depth = 1
+	l1.distance_z = -700.0
 	preset.layers.append(l1)
 
 	var result := BackgroundValidator.validate_preset(preset)
@@ -132,12 +140,14 @@ func _test_duplicate_depth() -> void:
 	l0.id = &"sky"
 	l0.texture_path = VALID_SKY_TEX
 	l0.depth = 0
+	l0.distance_z = -800.0
 	preset.layers.append(l0)
 
 	var l1 := BackgroundLayerConfig.new()
 	l1.id = &"far_mountains"
 	l1.texture_path = VALID_FAR_TEX
 	l1.depth = 0 # Duplicado!
+	l1.distance_z = -700.0
 	preset.layers.append(l1)
 
 	var result := BackgroundValidator.validate_preset(preset)
@@ -156,6 +166,7 @@ func _test_missing_texture_path() -> void:
 	l0.id = &"sky"
 	l0.texture_path = "res://assets/backgrounds/non_existent_sky_image.png"
 	l0.depth = 0
+	l0.distance_z = -800.0
 	preset.layers.append(l0)
 
 	var result := BackgroundValidator.validate_preset(preset)
@@ -175,6 +186,7 @@ func _test_non_positive_scale() -> void:
 	l0.texture_path = VALID_SKY_TEX
 	l0.depth = 0
 	l0.scale = Vector2(-1.0, 1.0) # Invalido
+	l0.distance_z = -800.0
 	preset.layers.append(l0)
 
 	var result := BackgroundValidator.validate_preset(preset)
@@ -185,6 +197,45 @@ func _test_non_positive_scale() -> void:
 		print("[OK] _test_non_positive_scale detecto escala <= 0: %s" % result.errors[0])
 
 
+func _test_positive_distance_z() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"positive_z_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	l0.distance_z = 100.0 # Invalido: delante de la camara
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_positive_distance_z deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_positive_distance_z detecto distance_z >= 0: %s" % result.errors[0])
+
+
+func _test_negative_parallax() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"neg_parallax_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	l0.parallax_x = -0.1 # Invalido: invertiria la direccion
+	l0.distance_z = -800.0
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_negative_parallax deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_negative_parallax detecto parallax negativo: %s" % result.errors[0])
+
+
 func _test_depth_sorting() -> void:
 	var preset := BackgroundPreset.new()
 	preset.id = &"sort_test"
@@ -193,18 +244,21 @@ func _test_depth_sorting() -> void:
 	l_near.id = &"near"
 	l_near.texture_path = VALID_NEAR_TEX
 	l_near.depth = 2
+	l_near.distance_z = -600.0
 	preset.layers.append(l_near)
 
 	var l_sky := BackgroundLayerConfig.new()
 	l_sky.id = &"sky"
 	l_sky.texture_path = VALID_SKY_TEX
 	l_sky.depth = 0
+	l_sky.distance_z = -800.0
 	preset.layers.append(l_sky)
 
 	var l_far := BackgroundLayerConfig.new()
 	l_far.id = &"far"
 	l_far.texture_path = VALID_FAR_TEX
 	l_far.depth = 1
+	l_far.distance_z = -700.0
 	preset.layers.append(l_far)
 
 	var sorted := preset.get_layers_sorted_by_depth()

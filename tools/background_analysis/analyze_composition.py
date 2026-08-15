@@ -74,6 +74,36 @@ def compare_compositions(comp, ref, label):
         match = "OK" if dist < 60 else "DIFF"
         print(f"    y={y_pct:3d}%: comp=RGB({c[0]:3d},{c[1]:3d},{c[2]:3d}) ref=RGB({r[0]:3d},{r[1]:3d},{r[2]:3d}) dist={dist:.0f} [{match}]")
 
+
+## Metrica estructural: primera fila donde el composite difiere del cielo.
+## El RMSE contra la foto de referencia es un oracle pobre (la foto contiene
+## pista/coches/edificios ausentes en el arte pixel-art); la posicion de la
+## primera montana visible es la metrica estructural que guia el ajuste.
+def first_mountain_row_pct(comp, sky):
+    comp_arr = np.array(comp.convert("RGBA"))
+    sky_arr = np.array(sky.convert("RGBA"))
+    h = comp_arr.shape[0]
+    for y in range(h):
+        comp_row = comp_arr[y, :, :3].astype(float)
+        sky_row = sky_arr[y, :, :3].astype(float)
+        diff = np.mean(np.abs(comp_row - sky_row))
+        if diff > 8.0:
+            return 100.0 * y / h
+    return 100.0
+
+
+def report_structure(comp, sky, label):
+    pct = first_mountain_row_pct(comp, sky)
+    # Banda objetivo derivada de la referencia: montana visible ~35-45%
+    if 30.0 <= pct <= 50.0:
+        verdict = "OK"
+    elif pct < 30.0:
+        verdict = "DEMASIADO ALTA"
+    else:
+        verdict = "DEMASIADO BAJA"
+    print(f"  {label}: primera montana visible en {pct:.1f}% desde arriba [{verdict}]")
+    return pct
+
 def main():
     print("=== BG3-007: Analisis de composicion ===\n")
 
@@ -91,69 +121,76 @@ def main():
     print("\n--- Composicion actual (offset_y = 0) ---")
     current = composite_layers(sky, far, near)
     current.save(os.path.join(OUT_DIR, "composite_current.png"))
+    print("\n[Estructura]")
+    report_structure(current, sky, "Actual")
+    print("\n[RMSE (referencia de color, oracle secundario)]")
     compare_compositions(current, ref, "Actual")
 
-    # Try different far_mountains offsets
-    print("\n--- Buscando offset_y optimo para far_mountains ---")
+    # Buscar offset_y optimo con la METRICA ESTRUCTURAL (primera montana ~40%).
+    # El RMSE contra la foto es un oracle pobre: la foto incluye pista/coches
+    # que el arte pixel-art no reproduce. La estructura es la autoridad.
+    print("\n--- Buscando offset_y optimo (metrica estructural: primera montana ~40%) ---")
     best_offset = 0
     best_score = float("inf")
 
-    for offset in range(-200, 1, 10):
+    for offset in range(-400, 1, 10):
         test = composite_layers(sky, far, near, far_offset_y=offset)
-        test_arr = np.array(test.convert("RGB"))
-        ref_arr = np.array(ref.convert("RGB").resize((TARGET_W, TARGET_H), Image.NEAREST))
-        # Compare the mountain band (y 30%-80%)
-        band = slice(int(TARGET_H * 0.3), int(TARGET_H * 0.8))
-        diff = np.sqrt(np.mean((test_arr[band].astype(float) - ref_arr[band].astype(float)) ** 2))
-        if diff < best_score:
-            best_score = diff
+        pct = first_mountain_row_pct(test, sky)
+        score = abs(pct - 40.0)
+        if score < best_score:
+            best_score = score
             best_offset = offset
 
-    print(f"  Mejor offset para far_mountains: {best_offset}px (RMSE={best_score:.1f})")
+    print(f"  Mejor offset para far_mountains: {best_offset}px (primera montana ~{40 + best_score:.0f}%)")
     optimized = composite_layers(sky, far, near, far_offset_y=best_offset)
     optimized.save(os.path.join(OUT_DIR, "composite_optimized_far.png"))
+    print("\n[Estructura]")
+    report_structure(optimized, sky, "Optimizado (solo far)")
+    print("\n[RMSE]")
     compare_compositions(optimized, ref, "Optimizado (solo far)")
 
-    # Try combined far + near offsets
-    print("\n--- Buscando offset combinado far + near ---")
+    # Buscar offset combinado far + near con la metrica estructural
+    print("\n--- Buscando offset combinado far + near (metrica estructural) ---")
     best_combo = (0, 0)
     best_combo_score = float("inf")
 
-    for far_off in range(-200, 1, 20):
-        for near_off in range(-100, 50, 20):
+    for far_off in range(-400, 1, 20):
+        for near_off in range(-300, 100, 20):
             test = composite_layers(sky, far, near, far_offset_y=far_off, near_offset_y=near_off)
-            test_arr = np.array(test.convert("RGB"))
-            ref_arr = np.array(ref.convert("RGB").resize((TARGET_W, TARGET_H), Image.NEAREST))
-            band = slice(int(TARGET_H * 0.25), int(TARGET_H * 0.85))
-            diff = np.sqrt(np.mean((test_arr[band].astype(float) - ref_arr[band].astype(float)) ** 2))
-            if diff < best_combo_score:
-                best_combo_score = diff
+            pct = first_mountain_row_pct(test, sky)
+            score = abs(pct - 40.0)
+            if score < best_combo_score:
+                best_combo_score = score
                 best_combo = (far_off, near_off)
 
-    print(f"  Mejor combo: far={best_combo[0]}px, near={best_combo[1]}px (RMSE={best_combo_score:.1f})")
+    print(f"  Mejor combo: far={best_combo[0]}px, near={best_combo[1]}px (primera montana ~{40 + best_combo_score:.0f}%)")
     combo = composite_layers(sky, far, near, far_offset_y=best_combo[0], near_offset_y=best_combo[1])
     combo.save(os.path.join(OUT_DIR, "composite_optimized_combo.png"))
+    print("\n[Estructura]")
+    report_structure(combo, sky, "Optimizado (combo)")
+    print("\n[RMSE]")
     compare_compositions(combo, ref, "Optimizado (combo)")
 
-    # Fine-tune around best combo
+    # Fine-tuning alrededor del mejor combo
     print("\n--- Fine-tuning alrededor del mejor combo ---")
     best_fine = best_combo
     best_fine_score = best_combo_score
 
-    for far_off in range(best_combo[0] - 30, best_combo[0] + 30, 5):
-        for near_off in range(best_combo[1] - 20, best_combo[1] + 20, 5):
+    for far_off in range(best_combo[0] - 60, best_combo[0] + 60, 5):
+        for near_off in range(best_combo[1] - 40, best_combo[1] + 40, 5):
             test = composite_layers(sky, far, near, far_offset_y=far_off, near_offset_y=near_off)
-            test_arr = np.array(test.convert("RGB"))
-            ref_arr = np.array(ref.convert("RGB").resize((TARGET_W, TARGET_H), Image.NEAREST))
-            band = slice(int(TARGET_H * 0.25), int(TARGET_H * 0.85))
-            diff = np.sqrt(np.mean((test_arr[band].astype(float) - ref_arr[band].astype(float)) ** 2))
-            if diff < best_fine_score:
-                best_fine_score = diff
+            pct = first_mountain_row_pct(test, sky)
+            score = abs(pct - 40.0)
+            if score < best_fine_score:
+                best_fine_score = score
                 best_fine = (far_off, near_off)
 
-    print(f"  Fine-tune: far={best_fine[0]}px, near={best_fine[1]}px (RMSE={best_fine_score:.1f})")
+    print(f"  Fine-tune: far={best_fine[0]}px, near={best_fine[1]}px (primera montana ~{40 + best_fine_score:.0f}%)")
     final = composite_layers(sky, far, near, far_offset_y=best_fine[0], near_offset_y=best_fine[1])
     final.save(os.path.join(OUT_DIR, "composite_final.png"))
+    print("\n[Estructura]")
+    report_structure(final, sky, "Final")
+    print("\n[RMSE]")
     compare_compositions(final, ref, "Final")
 
     # Convert pixel offsets to world-space offset_y for background.json
@@ -163,7 +200,7 @@ def main():
     # For our case: pixel_size=0.5, scale=1.0
     # sprite_world_height = 720 * 0.5 * 1.0 = 360 units
     # world_offset_y = pixel_offset * (sprite_world_height / texture_height) = pixel_offset * 0.5
-    print("\n=== AJUSTES RECOMENDADOS PARA background.json ===")
+    print("\n=== AJUSTES RECOMENDADOS PARA background.json (referencia estructural) ===")
     print(f"  far_mountains.offset_y: {best_fine[0] * 0.5:.1f} (pixel offset: {best_fine[0]})")
     print(f"  near_mountains.offset_y: {best_fine[1] * 0.5:.1f} (pixel offset: {best_fine[1]})")
     print(f"  sky.offset_y: 0.0 (sin cambio)")
@@ -172,10 +209,12 @@ def main():
     with open(os.path.join(OUT_DIR, "bg3_007_analysis.txt"), "w") as f:
         f.write("BG3-007 Composition Analysis\n")
         f.write("============================\n\n")
+        f.write("Oracle: metrica estructural (primera fila de montana visible, ~40% objetivo).\n")
+        f.write("El RMSE de color contra la foto de referencia es oracle secundario.\n\n")
         f.write(f"Reference: {REF_PATH}\n")
         f.write(f"Far mountains best offset: {best_fine[0]}px -> {best_fine[0] * 0.5:.1f} world units\n")
         f.write(f"Near mountains best offset: {best_fine[1]}px -> {best_fine[1] * 0.5:.1f} world units\n")
-        f.write(f"Final RMSE: {best_fine_score:.1f}\n")
+        f.write(f"Final structural score (|first_mountain_pct - 40|): {best_fine_score:.1f}\n")
         f.write(f"\nOutputs:\n  composite_current.png\n  composite_optimized_far.png\n  composite_optimized_combo.png\n  composite_final.png\n")
 
     print(f"\nReportes guardados en: {OUT_DIR}")

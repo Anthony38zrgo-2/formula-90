@@ -149,7 +149,9 @@ func _update_layers_parallax() -> void:
 	if not is_inside_tree() or not is_instance_valid(_camera) or not _camera.is_inside_tree() or _layer_instances.is_empty():
 		return
 	
-	# Extraer rotacion yaw y pitch de la camara
+	# Asume rotacion de camara chase sin roll (euler XYZ): euler.x = pitch, euler.y = yaw.
+	# Si la camara llegara a incluir roll, el parallax deberia derivar yaw/pitch del basis
+	# descomponiendo roll explícitamente; hoy la chase camera no tiene roll.
 	var cam_euler := _camera.global_transform.basis.get_euler()
 	var yaw_rad: float = cam_euler.y
 	var pitch_rad: float = cam_euler.x

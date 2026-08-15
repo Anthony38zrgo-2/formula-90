@@ -30,7 +30,8 @@ func setup_layer(config: BackgroundLayerConfig) -> bool:
 	alpha_cut = Sprite3D.ALPHA_CUT_DISABLED # Preserva mezcla alfa
 	
 	scale = Vector3(config.scale.x, config.scale.y, 1.0)
-	position = Vector3(config.offset.x, config.offset.y, config.distance_z)
+	var snapped := _apply_pixel_snap(config.offset.x, config.offset.y)
+	position = Vector3(snapped.x, snapped.y, config.distance_z)
 	return true
 
 
@@ -46,14 +47,19 @@ func update_parallax(yaw_rad: float, pitch_rad: float) -> void:
 	# Desplazamiento vertical (pitch)
 	var raw_y := (pitch_rad * layer_config.parallax_y * radius) + layer_config.offset.y
 	
-	# Pixel Snapping opcional para mantener consistencia de pixel art
-	if layer_config.pixel_snap and layer_config.pixel_size > 0.0:
+	var snapped := _apply_pixel_snap(raw_x, raw_y)
+	position.x = snapped.x
+	position.y = snapped.y
+
+
+## Aplica pixel snapping consistente en setup y parallax para evitar
+## desalineacion de un frame entre posicion inicial y posicion calculada.
+func _apply_pixel_snap(value_x: float, value_y: float) -> Vector2:
+	if layer_config != null and layer_config.pixel_snap and layer_config.pixel_size > 0.0:
 		var step_x := layer_config.pixel_size * layer_config.scale.x
 		var step_y := layer_config.pixel_size * layer_config.scale.y
 		if step_x > 0.0001:
-			raw_x = roundf(raw_x / step_x) * step_x
+			value_x = roundf(value_x / step_x) * step_x
 		if step_y > 0.0001:
-			raw_y = roundf(raw_y / step_y) * step_y
-	
-	position.x = raw_x
-	position.y = raw_y
+			value_y = roundf(value_y / step_y) * step_y
+	return Vector2(value_x, value_y)

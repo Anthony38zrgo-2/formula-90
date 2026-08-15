@@ -95,6 +95,15 @@ static func validate_preset(preset: BackgroundPreset) -> ValidationResult:
 			
 		if is_nan(layer.offset.x) or is_inf(layer.offset.x) or is_nan(layer.offset.y) or is_inf(layer.offset.y):
 			result.add_error("%s tiene valores no finitos de offset (x=%.2f, y=%.2f)." % [layer_context, layer.offset.x, layer.offset.y])
+		
+		# Validar distancia detras de la camara (Z < 0): una capa en Z >= 0
+		# quedaria delante del mundo y romperia el contrato de fondo.
+		if layer.distance_z >= 0.0:
+			result.add_error("%s tiene distance_z >= 0 (%.1f). Las capas de background deben estar detras de la camara (Z < 0)." % [layer_context, layer.distance_z])
+		
+		# Validar parallax no negativo: valores negativos invertirian la direccion del parallax.
+		if layer.parallax_x < 0.0 or layer.parallax_y < 0.0:
+			result.add_error("%s tiene parallax negativo (x=%.2f, y=%.2f). Los valores deben ser >= 0." % [layer_context, layer.parallax_x, layer.parallax_y])
 	
 	return result
 

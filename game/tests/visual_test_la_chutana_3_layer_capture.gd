@@ -1,6 +1,8 @@
 extends SceneTree
 
 ## Visual Capture Test: Captura de 3 encuadres de La Chutana 3-Layer Background con F1-94
+## NOTA: Este test requiere display (no headless). En headless no guarda capturas
+## y emite [WARN]; su proposito es produccion de evidencia visual, no validacion de contrato.
 ## Captura:
 ## 1. user://la_chutana_f1_94_straight.png
 ## 2. user://la_chutana_f1_94_turn_left.png
@@ -14,6 +16,8 @@ func _init() -> void:
 
 
 func _run_captures() -> void:
+	if DisplayServer.get_name() == "headless":
+		print("[WARN] Ejecutando en headless: este test requiere display para guardar capturas.")
 	print("=== INICIANDO CAPTURA VISUAL DE LA CHUTANA (F1-94 + 3-LAYER BACKGROUND) ===")
 	
 	var packed := load(SCENE_PATH) as PackedScene
