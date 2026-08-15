@@ -11,3 +11,4 @@ networkx==3.6.1
 shapely==2.1.2
 rtree==1.4.1
 pyglet==2.1.16
+matplotlib>=3.7

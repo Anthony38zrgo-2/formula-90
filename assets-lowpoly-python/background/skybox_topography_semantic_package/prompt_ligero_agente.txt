@@ -1,0 +1,38 @@
+PROMPT LIGERO — AGENTE PLANIFICADOR SKYBOX TOPOGRÁFICO
+
+Objetivo:
+Usa el archivo `skybox_topography_semantic.svg` como fuente de verdad para planificar un pipeline de extrusión topográfica en Python y generar montañas low-poly para una skybox de Godot / Formula-90.
+
+Reglas de lectura del SVG:
+1. Procesa únicamente el grupo `#terrain`.
+2. Usa `#terrain_boundary` como dominio de recorte y cierre.
+3. Usa `data-elevation` como única fuente de altura. No infieras altura por color.
+4. Ignora cualquier grupo con `data-ignore="true"`.
+5. Si `data-closed="true"`, trata el path como contorno cerrado.
+6. Si `data-open="true"`, asume que el contorno toca el borde del dominio y ciérralo/clípalo contra `terrain_boundary` antes de polygonizar.
+
+Requisitos del plan:
+- Validar que no haya self-intersections ni cruces entre curvas.
+- Verificar nesting topológico entre niveles de elevación.
+- Filtrar microcontornos o ruido (umbral configurable por área o bounding box).
+- Simplificar puntos si hace falta, manteniendo la silueta.
+- Construir polígonos por nivel y generar malla low-poly.
+- Triangular tapas y laterales.
+- Aplicar flat shading.
+- Mantener estética de montañas lejanas para skybox: formas legibles, poco ruido, silueta fuerte.
+- Exportar una salida lista para Godot (idealmente GLB u OBJ).
+
+Parámetros sugeridos:
+- layer: far
+- distance: 3000
+- height_scale: 1.8
+- depth_scale: 0.7
+- min_contour_area: configurable
+- simplify_tolerance: configurable
+
+Entregables esperados del agente:
+1. Plan técnico por etapas.
+2. Validaciones geométricas necesarias.
+3. Estructura de módulos / scripts Python.
+4. Riesgos del pipeline.
+5. Criterios de exportación para Godot.

@@ -1,0 +1,73 @@
+{
+  "far_mountains": {
+    "vertices": 2560,
+    "faces": 3840,
+    "bbox_min": [
+      -1631.5,
+      0.0,
+      -1631.5
+    ],
+    "bbox_max": [
+      1631.5,
+      127.5,
+      1631.5
+    ],
+    "dimensions": [
+      3263.0,
+      127.5,
+      3263.0
+    ]
+  },
+  "near_mountains": {
+    "vertices": 2560,
+    "faces": 3840,
+    "bbox_min": [
+      -1171.0,
+      0.0,
+      -1171.0
+    ],
+    "bbox_max": [
+      1171.0,
+      67.5,
+      1171.0
+    ],
+    "dimensions": [
+      2342.0,
+      67.5,
+      2342.0
+    ]
+  },
+  "sky_dome": {
+    "vertices": 1025,
+    "faces": 1984,
+    "bbox_min": [
+      -1500.0,
+      9.184850993605149e-14,
+      -1500.0
+    ],
+    "bbox_max": [
+      1500.0,
+      1500.0,
+      1500.0
+    ],
+    "dimensions": [
+      3000.0,
+      1500.0,
+      3000.0
+    ]
+  },
+  "contours": 13,
+  "elevation_levels": [
+    25,
+    50,
+    75
+  ],
+  "heightmap_far_range": [
+    0.0,
+    127.5
+  ],
+  "heightmap_near_range": [
+    0.0,
+    67.5
+  ]
+}

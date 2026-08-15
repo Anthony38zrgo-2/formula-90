@@ -3,6 +3,9 @@ extends Resource
 
 ## Define la configuracion completa de un preset de background (Formula-90).
 ## El skybox (si existe) esta desacoplado de las capas parallax.
+##
+## JSON parsing mirrors `game/graphics/engine/skybox/src/preset.rs`.
+## Same inputs must produce same outputs. Rust is the authority.
 
 @export var id: StringName = &""
 @export var display_name: String = ""

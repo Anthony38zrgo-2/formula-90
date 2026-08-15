@@ -1,0 +1,28 @@
+[package]
+name = "skybox_engine"
+version = "0.1.0"
+edition = "2021"
+description = "Formula-90 background/skybox runtime core: deterministic preset validation, parallax math, pixel-size calculation (pure Rust, no Godot deps)."
+license = "proprietary"
+
+[lib]
+name = "skybox_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bg_validate"
+path = "src/bin/bg_validate.rs"
+
+[[bin]]
+name = "bg_diagnose"
+path = "src/bin/bg_diagnose.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+
+[dev-dependencies]
+
+[profile.release]
+lto = true

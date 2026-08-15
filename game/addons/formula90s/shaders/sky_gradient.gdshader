@@ -1,5 +1,5 @@
 shader_type spatial;
-render_mode unshaded, cull_disabled, fog_disabled;
+render_mode unshaded, cull_disabled, fog_disabled, depth_draw_never;
 
 // Sky gradient shader — degradado de cielo según hora del día (Formula-90)
 // Reemplaza sky.png como fondo. El sprite llena el frustum y sigue la cámara.

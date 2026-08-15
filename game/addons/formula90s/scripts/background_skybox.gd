@@ -10,9 +10,12 @@ extends Node3D
 ## En ambos modos, el sprite se adosa a la cámara: cada frame se coloca a
 ## [param distance] delante de la cámara y se alinea a su orientación.
 ## El pixel_size se calcula desde el FOV para llenar el frustum completo.
+##
+## pixel_size calculation mirrors `game/graphics/engine/skybox/src/skybox.rs`.
+## Same inputs must produce same outputs. Rust is the authority.
 
-const COVERAGE_FACTOR := 1.05
-const PIXEL_SIZE_SNAP := 0.05
+const COVERAGE_FACTOR := 1.05  # mirrors Rust skybox.rs COVERAGE_FACTOR
+const PIXEL_SIZE_SNAP := 0.05  # mirrors Rust skybox.rs PIXEL_SIZE_SNAP
 const SKY_GRADIENT_SHADER := "res://addons/formula90s/shaders/sky_gradient.gdshader"
 
 var config: BackgroundSkyboxConfig
@@ -67,6 +70,12 @@ func _create_sprite(tex: Texture2D) -> void:
 	_sprite.gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 	_sprite.render_priority = -100
 	_sprite.alpha_cut = Sprite3D.ALPHA_CUT_DISABLED
+	# BG3-009 fix: skybox must ALWAYS render behind everything.
+	# no_depth_test=true disables depth testing so the sprite renders regardless
+	# of depth buffer state. Combined with render_priority=-100, it renders first.
+	# The shader uses depth_draw_never to prevent writing to the depth buffer,
+	# ensuring closer objects (mountain layers) can render on top.
+	_sprite.no_depth_test = true
 	if config.pixel_size > 0.0:
 		_sprite.pixel_size = config.pixel_size
 		_manual_pixel_size = true

@@ -14,6 +14,7 @@ var active_vehicle: Vehicle
 var driving_aids: DrivingAidsController
 var background_controller: BackgroundController
 var background_skybox: BackgroundSkybox
+var background_mountains_3d: BackgroundMountains3D
 
 func _ready() -> void:
 	if config != null:
@@ -68,17 +69,47 @@ func _add_runtime_systems() -> void:
 	
 	_setup_background(camera_rig)
 
+func _find_camera3d_recursive(node: Node) -> Camera3D:
+	if node is Camera3D:
+		return node as Camera3D
+	for child in node.get_children():
+		var found := _find_camera3d_recursive(child)
+		if found != null:
+			return found
+	return null
+
+
 func _setup_background(camera_rig: Node3D) -> void:
 	if config == null or config.selected_track == null:
 		return
 	
+	var cam := camera_rig.get_node_or_null("Camera3D") as Camera3D
+	if cam == null:
+		cam = _find_camera3d_recursive(camera_rig)
+	if cam == null:
+		push_warning("RaceSession: No se encontró Camera3D en camera_rig '%s'; skybox sin seguimiento." % camera_rig.name)
+	
+	# Try 3D mountains system first (new procedural approach)
+	var mountains_manifest := _resolve_mountains_3d_manifest()
+	if not mountains_manifest.is_empty():
+		var mountains := BackgroundMountains3D.new()
+		mountains.name = "BackgroundMountains3D"
+		if mountains.setup(mountains_manifest):
+			if cam != null:
+				mountains.set_camera_source(cam)
+			add_child(mountains)
+			background_mountains_3d = mountains
+			
+			# Hide legacy skybox and disable PanoramaSky
+			_hide_legacy_background()
+			return
+		else:
+			push_warning("RaceSession: No se pudo activar BackgroundMountains3D; intentando fallback.")
+	
+	# Fallback: legacy 2D parallax system
 	var preset := config.selected_track.get_effective_background_preset()
 	if preset == null:
 		return
-	
-	var cam := camera_rig.get_node_or_null("Camera3D") as Camera3D
-	if cam == null:
-		cam = camera_rig.find_child("*", true, false) as Camera3D
 	
 	# 1. Skybox desacoplado: sigue la camara y llena el frustum en todo momento.
 	if preset.skybox != null and cam != null:
@@ -101,26 +132,54 @@ func _setup_background(camera_rig: Node3D) -> void:
 		add_child(controller)
 		background_controller = controller
 		
-		# Ocultar rig legacy y desactivar PanoramaSky para dar paso al nuevo sistema multicapa
-		if active_track != null:
-			var legacy_skybox := active_track.get_node_or_null("SourceSkyboxRig") as Node3D
-			if legacy_skybox != null:
-				legacy_skybox.visible = false
-				legacy_skybox.set_process(false)
-			var world_env := active_track.get_node_or_null("WorldEnvironment") as WorldEnvironment
-			if world_env != null and world_env.environment != null:
-				# PanoramaSky tapa los Sprite3D lejanos; desactívalo cuando el preset multicapa está activo
-				world_env.environment.background_mode = Environment.BG_CANVAS
-				world_env.environment.background_canvas_max_layer = 0
+		_hide_legacy_background()
 	else:
 		push_warning("RaceSession: No se pudo activar el BackgroundController; se conserva el fallback legacy.")
+
+
+func _resolve_mountains_3d_manifest() -> String:
+	if config == null or config.selected_track == null:
+		return ""
+	
+	var preset := config.selected_track.get_effective_background_preset()
+	if preset == null:
+		return ""
+	
+	# Ruta esperada: mountains_3d/manifest.json junto al preset
+	var preset_path: String = config.selected_track.background_preset_path
+	if preset_path.is_empty():
+		push_warning("RaceSession: background_preset_path vacío; no se puede resolver mountains_3d/manifest.json")
+		return ""
+	
+	var base_dir := preset_path.get_base_dir()
+	var manifest_res := base_dir.path_join("mountains_3d/manifest.json")
+	
+	if FileAccess.file_exists(manifest_res):
+		print("RaceSession: Mountains3D manifest cargado: %s" % manifest_res)
+		return manifest_res
+	
+	push_warning("RaceSession: No se encontró mountains_3d/manifest.json en '%s'; usando fallback legacy." % manifest_res)
+	return ""
+
+
+func _hide_legacy_background() -> void:
+	if active_track == null:
+		return
+	var legacy_skybox := active_track.get_node_or_null("SourceSkyboxRig") as Node3D
+	if legacy_skybox != null:
+		legacy_skybox.visible = false
+		legacy_skybox.set_process(false)
+	var world_env := active_track.get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if world_env != null and world_env.environment != null:
+		world_env.environment.background_mode = Environment.BG_CANVAS
+		world_env.environment.background_canvas_max_layer = 0
 
 func _clear_composition() -> void:
 	for container in [$TrackContainer, $VehicleContainer]:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"DrivingAids", &"BackgroundController", &"BackgroundSkybox"]:
+	for child_name in [&"CameraRig", &"DrivingAids", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -131,3 +190,4 @@ func _clear_composition() -> void:
 	driving_aids = null
 	background_controller = null
 	background_skybox = null
+	background_mountains_3d = null
