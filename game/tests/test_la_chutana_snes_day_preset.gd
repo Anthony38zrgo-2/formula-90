@@ -53,26 +53,32 @@ func _test_preset_json_and_validation() -> void:
 		_failures += 1
 		return
 
+	if preset.skybox.mode != "gradient":
+		printerr("[FAIL] _test_preset_json_and_validation: Skybox deberia ser mode='gradient', no '%s'." % preset.skybox.mode)
+		_failures += 1
+		return
+
 	var sorted := preset.get_layers_sorted_by_depth()
-	if sorted.size() != 2:
-		printerr("[FAIL] _test_preset_json_and_validation: Se esperaban 2 capas parallax, encontradas %d." % sorted.size())
+	if sorted.size() != 3:
+		printerr("[FAIL] _test_preset_json_and_validation: Se esperaban 3 capas parallax, encontradas %d." % sorted.size())
 		_failures += 1
 		return
 
 	var l_far := sorted[0]
 	var l_near := sorted[1]
+	var l_clouds := sorted[2]
 
-	if l_far.id != &"far_mountains" or l_near.id != &"near_mountains":
+	if l_far.id != &"far_mountains" or l_near.id != &"near_mountains" or l_clouds.id != &"clouds":
 		printerr("[FAIL] _test_preset_json_and_validation: Orden o IDs de capas incorrectos.")
 		_failures += 1
 		return
 
-	if not (l_far.parallax_x < l_near.parallax_x):
-		printerr("[FAIL] _test_preset_json_and_validation: Jerarquia de parallax configurada no cumple far < near.")
+	if not (l_far.parallax_x < l_near.parallax_x and l_near.parallax_x < l_clouds.parallax_x):
+		printerr("[FAIL] _test_preset_json_and_validation: Jerarquia de parallax configurada no cumple far < near < clouds.")
 		_failures += 1
 		return
 
-	print("[OK] _test_preset_json_and_validation: Preset JSON valido, skybox desacoplado y parallax (%.2f < %.2f) verificado." % [l_far.parallax_x, l_near.parallax_x])
+	print("[OK] _test_preset_json_and_validation: Preset JSON valido, skybox gradient, parallax (%.2f < %.2f < %.2f) verificado." % [l_far.parallax_x, l_near.parallax_x, l_clouds.parallax_x])
 
 
 func _test_track_definition_link() -> void:
@@ -127,11 +133,11 @@ func _test_race_session_composition() -> void:
 		printerr("[FAIL] _test_race_session_composition: background_controller no fue instanciado.")
 		_failures += 1
 	else:
-		if session.background_controller.get_layer_instances().size() != 2:
-			printerr("[FAIL] _test_race_session_composition: Se esperaban 2 instancias de capa parallax en runtime.")
+		if session.background_controller.get_layer_instances().size() != 3:
+			printerr("[FAIL] _test_race_session_composition: Se esperaban 3 instancias de capa parallax en runtime.")
 			_failures += 1
 		else:
-			print("[OK] _test_race_session_composition: BackgroundController activo con 2 capas parallax instanciadas.")
+			print("[OK] _test_race_session_composition: BackgroundController activo con 3 capas parallax instanciadas.")
 
 	if session.background_skybox == null:
 		printerr("[FAIL] _test_race_session_composition: background_skybox desacoplado no fue instanciado.")

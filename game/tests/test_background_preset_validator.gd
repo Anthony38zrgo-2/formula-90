@@ -28,6 +28,8 @@ func _run_tests() -> void:
 	_test_depth_sorting()
 	_test_valid_skybox()
 	_test_missing_skybox_texture()
+	_test_skybox_gradient_mode()
+	_test_procedural_layer()
 	_test_json_roundtrip()
 
 	print("\n=== RESUMEN DE PRUEBAS BG3-003 ===")
@@ -275,9 +277,10 @@ func _test_valid_skybox() -> void:
 	var preset := BackgroundPreset.new()
 	preset.id = &"skybox_valid_preset"
 	preset.skybox = BackgroundSkyboxConfig.new()
-	preset.skybox.texture_path = VALID_SKY_TEX
+	preset.skybox.mode = "gradient"
 	preset.skybox.distance = 800.0
 	preset.skybox.pixel_size = 0.0
+	preset.skybox.gradient = {"zenith_color": [0.18, 0.42, 0.82], "horizon_color": [0.95, 0.92, 0.82]}
 
 	var l0 := BackgroundLayerConfig.new()
 	l0.id = &"far_mountains"
@@ -291,7 +294,7 @@ func _test_valid_skybox() -> void:
 		printerr("[FAIL] _test_valid_skybox deberia ser valido, pero fallo: %s" % result.get_error_summary())
 		_failures += 1
 	else:
-		print("[OK] _test_valid_skybox: skybox desacoplado valido aceptado correctamente.")
+		print("[OK] _test_valid_skybox: skybox gradient desacoplado valido aceptado correctamente.")
 
 
 func _test_missing_skybox_texture() -> void:
@@ -316,14 +319,70 @@ func _test_missing_skybox_texture() -> void:
 		print("[OK] _test_missing_skybox_texture detecto textura de skybox inexistente: %s" % result.errors[0])
 
 
+func _test_skybox_gradient_mode() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"skybox_gradient_preset"
+	preset.skybox = BackgroundSkyboxConfig.new()
+	preset.skybox.mode = "gradient"
+	preset.skybox.distance = 800.0
+	preset.skybox.gradient = {"zenith_color": [0.18, 0.42, 0.82], "horizon_color": [0.95, 0.92, 0.82]}
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"far_mountains"
+	l0.texture_path = VALID_FAR_TEX
+	l0.depth = 0
+	l0.distance_z = -700.0
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if not result.is_valid:
+		printerr("[FAIL] _test_skybox_gradient_mode deberia ser valido: %s" % result.get_error_summary())
+		_failures += 1
+	else:
+		print("[OK] _test_skybox_gradient_mode: skybox gradient aceptado correctamente.")
+
+
+func _test_procedural_layer() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"procedural_layer_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"far_mountains"
+	l0.texture_path = VALID_FAR_TEX
+	l0.depth = 0
+	l0.distance_z = -700.0
+	preset.layers.append(l0)
+
+	var l1 := BackgroundLayerConfig.new()
+	l1.id = &"clouds"
+	l1.depth = 1
+	l1.procedural = true
+	l1.shader_path = "res://addons/formula90s/shaders/cloud_layer.gdshader"
+	l1.distance_z = -500.0
+	l1.pixel_size = 0.0
+	preset.layers.append(l1)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if not result.is_valid:
+		printerr("[FAIL] _test_procedural_layer deberia ser valido: %s" % result.get_error_summary())
+		_failures += 1
+	else:
+		print("[OK] _test_procedural_layer: capa procedural aceptada correctamente.")
+
+
 func _test_json_roundtrip() -> void:
 	var json_dict := {
 		"id": "json_preset_test",
 		"display_name": "JSON Preset Test",
 		"skybox": {
-			"texture": VALID_SKY_TEX,
+			"mode": "gradient",
 			"distance": 800.0,
-			"pixel_size": 0.0
+			"pixel_size": 0.0,
+			"gradient": {
+				"zenith_color": [0.18, 0.42, 0.82],
+				"horizon_color": [0.95, 0.92, 0.82]
+			},
+			"time_of_day": 11.0
 		},
 		"layers": [
 			{
@@ -334,23 +393,29 @@ func _test_json_roundtrip() -> void:
 				"parallax_y": 0.01,
 				"scale": 1.0,
 				"offset_x": 0.0,
-				"offset_y": 0.0,
+				"offset_y": 76.0,
 				"repeat_x": false,
 				"repeat_y": false,
-				"pixel_snap": true
+				"pixel_snap": true,
+				"distance_z": -700.0,
+				"pixel_size": 1.5
 			},
 			{
-				"id": "near_mountains",
-				"texture": VALID_NEAR_TEX,
-				"depth": 1,
-				"parallax_x": 0.18,
-				"parallax_y": 0.02,
+				"id": "clouds",
+				"depth": 2,
+				"procedural": true,
+				"shader_path": "res://addons/formula90s/shaders/cloud_layer.gdshader",
+				"parallax_x": 0.28,
+				"parallax_y": 0.0,
 				"scale": 1.0,
 				"offset_x": 0.0,
-				"offset_y": 0.0,
+				"offset_y": 30.0,
 				"repeat_x": false,
 				"repeat_y": false,
-				"pixel_snap": true
+				"pixel_snap": false,
+				"distance_z": -500.0,
+				"pixel_size": 0.0,
+				"uniforms": {"cloud_scale": 0.012, "cloud_opacity": 0.6}
 			}
 		]
 	}
@@ -367,8 +432,12 @@ func _test_json_roundtrip() -> void:
 		printerr("[FAIL] _test_json_roundtrip no serializo correctamente.")
 		_failures += 1
 		return
-	if out_dict["skybox"]["texture"] != VALID_SKY_TEX or out_dict["skybox"]["distance"] != 800.0:
-		printerr("[FAIL] _test_json_roundtrip no serializo el skybox correctamente.")
+	if out_dict["skybox"]["mode"] != "gradient" or out_dict["skybox"]["time_of_day"] != 11.0:
+		printerr("[FAIL] _test_json_roundtrip no serializo el skybox gradient correctamente.")
+		_failures += 1
+		return
+	if out_dict["layers"][1]["procedural"] != true or out_dict["layers"][1]["shader_path"] != "res://addons/formula90s/shaders/cloud_layer.gdshader":
+		printerr("[FAIL] _test_json_roundtrip no serializo la capa procedural correctamente.")
 		_failures += 1
 	else:
-		print("[OK] _test_json_roundtrip deserializo y serializo JSON (skybox + capas) correctamente.")
+		print("[OK] _test_json_roundtrip deserializo y serializo JSON (skybox gradient + capas procedural) correctamente.")

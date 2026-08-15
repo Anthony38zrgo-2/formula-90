@@ -17,18 +17,16 @@ func _run():
 	if sb == null:
 		printerr("FAIL no BackgroundSkybox"); comp.queue_free(); quit(1); return
 	var sb_sprite := sb.get_node_or_null("SkySprite") as Sprite3D
-	print("skybox: pos=%s dist=%.1f px=%.2f tex=%s" % [str(sb.global_position), sb.config.distance, sb_sprite.pixel_size if sb_sprite else 0.0, str(sb_sprite.texture.get_size()) if sb_sprite and sb_sprite.texture else "null"])
+	var sb_mode := sb.config.mode if sb.config else "null"
+	print("skybox: mode=%s pos=%s dist=%.1f px=%.2f tex=%s" % [sb_mode, str(sb.global_position), sb.config.distance, sb_sprite.pixel_size if sb_sprite else 0.0, str(sb_sprite.texture.get_size()) if sb_sprite and sb_sprite.texture else "null"])
 	var bg := rs.background_controller
 	if bg==null:
 		printerr("FAIL no BackgroundController"); comp.queue_free(); quit(1); return
 	print("bg_controller global_pos=%s is_active=%s preset=%s layers=%d cam_valid=%s" % [str(bg.global_position), str(bg.is_active), str(bg.get_active_preset().id) if bg.get_active_preset() else "null", bg.get_layer_instances().size(), str(bg.get_debug_info()["camera_valid"])])
 	for inst in bg.get_layer_instances():
 		var tex_size = inst.texture.get_size() if inst.texture else Vector2.ZERO
-		print(" layer %s: pos=%s gpos=%s px=%.2f scale=%s tex=%s vis=%s render_prio=%d" % [inst.name, str(inst.position), str(inst.global_position), inst.pixel_size, str(inst.scale), str(tex_size), str(inst.visible and inst.is_visible_in_tree()), inst.render_priority])
-	var legacy := rs.active_track.get_node_or_null("SourceSkyboxRig")
-	if legacy: print(" legacy SourceSkyboxRig vis=%s" % str(legacy.visible))
-	var env := rs.active_track.get_node_or_null("WorldEnvironment") as WorldEnvironment
-	if env: print(" WorldEnvironment env=%s bg_mode=%s sky=%s" % [str(env.environment!=null), str(env.environment.background_mode) if env.environment else "null", str(env.environment.sky!=null) if env.environment else "null"])
+		var is_proc := "procedural" if inst.layer_config and inst.layer_config.procedural else "textured"
+		print(" layer %s [%s]: pos=%s gpos=%s px=%.2f tex=%s vis=%s render_prio=%d" % [inst.name, is_proc, str(inst.position), str(inst.global_position), inst.pixel_size, str(tex_size), str(inst.visible and inst.is_visible_in_tree()), inst.render_priority])
 	var cam := rs.get_node_or_null("CameraRig/Camera3D") as Camera3D
 	if cam: print(" camera gpos=%s fov=%.1f" % [str(cam.global_position), cam.fov])
 	comp.queue_free()

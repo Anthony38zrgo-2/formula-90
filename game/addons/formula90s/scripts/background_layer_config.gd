@@ -3,6 +3,10 @@ extends Resource
 
 ## Configuracion individual para una capa parallax de background (Formula-90).
 ## El skybox ya no es una capa: es un componente desacoplado (BackgroundSkybox).
+##
+## Soporta dos modos:
+## - Textura: texture_path apunta a un PNG (montañas, etc.)
+## - Procedural: shader_path apunta a un .gdshader, uniforms pasan parámetros
 
 @export var id: StringName = &""
 @export var texture_path: String = ""
@@ -16,6 +20,9 @@ extends Resource
 @export var pixel_snap: bool = true
 @export var distance_z: float = -800.0
 @export var pixel_size: float = 0.5
+@export var procedural: bool = false
+@export var shader_path: String = ""
+@export var uniforms: Dictionary = {}
 
 
 static func from_dict(dict: Dictionary) -> BackgroundLayerConfig:
@@ -47,13 +54,17 @@ static func from_dict(dict: Dictionary) -> BackgroundLayerConfig:
 		layer.distance_z = -800.0 + (layer.depth * 100.0)
 		
 	layer.pixel_size = float(dict.get("pixel_size", 0.5))
+	layer.procedural = bool(dict.get("procedural", false))
+	layer.shader_path = str(dict.get("shader_path", ""))
+	var raw_uniforms = dict.get("uniforms", null)
+	if raw_uniforms is Dictionary:
+		layer.uniforms = raw_uniforms.duplicate()
 	return layer
 
 
 func to_dict() -> Dictionary:
-	return {
+	var d := {
 		"id": String(id),
-		"texture": texture_path,
 		"depth": depth,
 		"parallax_x": parallax_x,
 		"parallax_y": parallax_y,
@@ -66,3 +77,10 @@ func to_dict() -> Dictionary:
 		"distance_z": distance_z,
 		"pixel_size": pixel_size
 	}
+	if procedural:
+		d["procedural"] = true
+		d["shader_path"] = shader_path
+		d["uniforms"] = uniforms.duplicate()
+	else:
+		d["texture"] = texture_path
+	return d

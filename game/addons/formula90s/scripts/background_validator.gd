@@ -76,19 +76,26 @@ static func validate_preset(preset: BackgroundPreset) -> ValidationResult:
 		else:
 			seen_depths[layer.depth] = layer.id
 		
-		# Validar existencia de textura
-		if layer.texture_path.is_empty():
-			result.add_error("%s no especifica 'texture_path' o 'texture'." % layer_context)
+		# Validar existencia de textura o shader
+		if layer.procedural:
+			if layer.shader_path.is_empty():
+				result.add_error("%s es procedural pero no especifica 'shader_path'." % layer_context)
+			elif not (ResourceLoader.exists(layer.shader_path) or FileAccess.file_exists(layer.shader_path)):
+				result.add_error("%s especifica un shader inexistente: '%s'." % [layer_context, layer.shader_path])
+			elif not layer.shader_path.ends_with(".gdshader"):
+				result.add_error("%s especifica un archivo que no es .gdshader: '%s'." % [layer_context, layer.shader_path])
 		else:
-			if not (ResourceLoader.exists(layer.texture_path) or FileAccess.file_exists(layer.texture_path)):
+			if layer.texture_path.is_empty():
+				result.add_error("%s no especifica 'texture_path' o 'texture'." % layer_context)
+			elif not (ResourceLoader.exists(layer.texture_path) or FileAccess.file_exists(layer.texture_path)):
 				result.add_error("%s especifica una textura inexistente: '%s'." % [layer_context, layer.texture_path])
 		
 		# Validar escala positiva
 		if layer.scale.x <= 0.0 or layer.scale.y <= 0.0:
 			result.add_error("%s tiene escala invalida o no positiva (%s). La escala debe ser > 0.0." % [layer_context, layer.scale])
 		
-		# Validar pixel size positivo
-		if layer.pixel_size <= 0.0:
+		# Validar pixel size positivo (las capas procedurales usan 0 = auto en runtime)
+		if not layer.procedural and layer.pixel_size <= 0.0:
 			result.add_error("%s tiene pixel_size invalido o no positivo (%.4f). Debe ser > 0.0." % [layer_context, layer.pixel_size])
 		
 		# Validar valores numericos finitos
@@ -114,10 +121,18 @@ static func _validate_skybox(preset: BackgroundPreset, result: ValidationResult)
 	if preset.skybox == null:
 		return
 	var sky := preset.skybox
-	if sky.texture_path.is_empty():
-		result.add_error("El skybox del preset '%s' no especifica 'texture'." % preset.id)
-	elif not (ResourceLoader.exists(sky.texture_path) or FileAccess.file_exists(sky.texture_path)):
-		result.add_error("El skybox del preset '%s' especifica una textura inexistente: '%s'." % [preset.id, sky.texture_path])
+	if sky.mode == "gradient":
+		if sky.gradient.is_empty():
+			result.add_error("El skybox del preset '%s' tiene mode=gradient pero no declara 'gradient'." % preset.id)
+		elif not sky.gradient.has("zenith_color") or not sky.gradient.has("horizon_color"):
+			result.add_error("El skybox del preset '%s' requiere al menos 'zenith_color' y 'horizon_color' en gradient." % preset.id)
+	elif sky.mode == "texture":
+		if sky.texture_path.is_empty():
+			result.add_error("El skybox del preset '%s' tiene mode=texture pero no especifica 'texture'." % preset.id)
+		elif not (ResourceLoader.exists(sky.texture_path) or FileAccess.file_exists(sky.texture_path)):
+			result.add_error("El skybox del preset '%s' especifica una textura inexistente: '%s'." % [preset.id, sky.texture_path])
+	else:
+		result.add_error("El skybox del preset '%s' tiene mode desconocido '%s'. Usa 'texture' o 'gradient'." % [preset.id, sky.mode])
 	if sky.distance <= 0.0:
 		result.add_error("El skybox del preset '%s' tiene distance invalida (%.1f). Debe ser > 0.0." % [preset.id, sky.distance])
 	if sky.pixel_size < 0.0:

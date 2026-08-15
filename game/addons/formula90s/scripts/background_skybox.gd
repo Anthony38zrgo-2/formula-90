@@ -3,13 +3,17 @@ extends Node3D
 
 ## Skybox desacoplado del sistema de capas parallax (Formula-90).
 ##
-## Un Sprite3D adosado a la camara: cada frame se coloca a [param distance]
-## delante de la camara y se alinea a su orientacion. El pixel_size se calcula
-## desde el FOV y el tamano del viewport para llenar el frustum completo, por
-## lo que el cielo siempre cubre la pantalla sin importar la rotacion de la camara.
+## Soporta dos modos:
+## - "texture": textura PNG estática (sky.png legacy)
+## - "gradient": degradado procedural según hora del día (shader spatial)
+##
+## En ambos modos, el sprite se adosa a la cámara: cada frame se coloca a
+## [param distance] delante de la cámara y se alinea a su orientación.
+## El pixel_size se calcula desde el FOV para llenar el frustum completo.
 
 const COVERAGE_FACTOR := 1.05
 const PIXEL_SIZE_SNAP := 0.05
+const SKY_GRADIENT_SHADER := "res://addons/formula90s/shaders/sky_gradient.gdshader"
 
 var config: BackgroundSkyboxConfig
 var _sprite: Sprite3D
@@ -18,16 +22,42 @@ var _manual_pixel_size := false
 
 
 func setup(cfg: BackgroundSkyboxConfig) -> bool:
-	if cfg == null or cfg.texture_path.is_empty():
-		push_error("BackgroundSkybox: config invalida o sin textura.")
+	if cfg == null:
+		push_error("BackgroundSkybox: config nula.")
 		return false
-	
+	if cfg.mode == "gradient":
+		return _setup_gradient(cfg)
+	return _setup_texture(cfg)
+
+
+func _setup_texture(cfg: BackgroundSkyboxConfig) -> bool:
+	if cfg.texture_path.is_empty():
+		push_error("BackgroundSkybox: mode=texture pero no se especifica 'texture'.")
+		return false
 	var tex := load(cfg.texture_path) as Texture2D
 	if tex == null:
-		push_error("BackgroundSkybox: no se pudo cargar la textura '%s'." % cfg.texture_path)
+		push_error("BackgroundSkybox: no se pudo cargar '%s'." % cfg.texture_path)
 		return false
-	
 	config = cfg
+	_create_sprite(tex)
+	return true
+
+
+func _setup_gradient(cfg: BackgroundSkyboxConfig) -> bool:
+	var shader := load(SKY_GRADIENT_SHADER) as Shader
+	if shader == null:
+		push_error("BackgroundSkybox: no se pudo cargar el shader '%s'." % SKY_GRADIENT_SHADER)
+		return false
+	config = cfg
+	_create_sprite(_make_dummy_texture())
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	_apply_gradient_uniforms(mat, cfg.gradient)
+	_sprite.material_override = mat
+	return true
+
+
+func _create_sprite(tex: Texture2D) -> void:
 	_sprite = Sprite3D.new()
 	_sprite.name = "SkySprite"
 	_sprite.texture = tex
@@ -41,7 +71,6 @@ func setup(cfg: BackgroundSkyboxConfig) -> bool:
 		_sprite.pixel_size = config.pixel_size
 		_manual_pixel_size = true
 	add_child(_sprite)
-	return true
 
 
 func set_camera_source(cam: Camera3D) -> void:
@@ -51,22 +80,13 @@ func set_camera_source(cam: Camera3D) -> void:
 func _process(_delta: float) -> void:
 	if not is_instance_valid(_camera) or not _camera.is_inside_tree() or _sprite == null:
 		return
-	
-	# Re-calcular el pixel_size desde el FOV actual de la camara: el FOV puede
-	# cambiar en runtime (p.ej. chase camera), y el calculo es barato.
 	if not _manual_pixel_size:
 		_resolve_pixel_size()
-	
-	# Posicionar el sprite delante de la camara, alineado a su orientacion.
-	# La cara frontal del sprite (+Z) debe apuntar hacia la camara para evitar
-	# el espejado horizontal de la textura.
 	var cam_basis := _camera.global_transform.basis
 	_sprite.global_position = _camera.global_position - cam_basis.z * config.distance
 	_sprite.global_basis = cam_basis * Basis(Vector3(-1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, -1))
 
 
-## Calcula el pixel_size minimo para que el sprite llene el frustum de la camara:
-## sprite_world_h = texture_h * pixel_size debe ser >= visible_h * COVERAGE_FACTOR.
 func _resolve_pixel_size() -> void:
 	if _sprite == null or _sprite.texture == null or not is_instance_valid(_camera):
 		return
@@ -93,3 +113,28 @@ static func compute_pixel_size_from_camera(
 	var visible_h := 2.0 * absf(distance) * tan(fov_v_rad * 0.5)
 	var needed_px := visible_h * coverage_factor / float(texture_size.y)
 	return snappedf(maxf(needed_px, 0.1), PIXEL_SIZE_SNAP)
+
+
+static func _apply_gradient_uniforms(mat: ShaderMaterial, gradient: Dictionary) -> void:
+	if gradient.has("zenith_color"):
+		var c = gradient["zenith_color"]
+		if c is Array and c.size() >= 3:
+			mat.set_shader_parameter("zenith_color", Vector3(float(c[0]), float(c[1]), float(c[2])))
+	if gradient.has("horizon_color"):
+		var c = gradient["horizon_color"]
+		if c is Array and c.size() >= 3:
+			mat.set_shader_parameter("horizon_color", Vector3(float(c[0]), float(c[1]), float(c[2])))
+	if gradient.has("ground_color"):
+		var c = gradient["ground_color"]
+		if c is Array and c.size() >= 3:
+			mat.set_shader_parameter("ground_color", Vector3(float(c[0]), float(c[1]), float(c[2])))
+	if gradient.has("horizon_sharpness"):
+		mat.set_shader_parameter("horizon_sharpness", float(gradient["horizon_sharpness"]))
+	if gradient.has("ground_start"):
+		mat.set_shader_parameter("ground_start", float(gradient["ground_start"]))
+
+
+static func _make_dummy_texture() -> ImageTexture:
+	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+	img.set_pixel(0, 0, Color.WHITE)
+	return ImageTexture.create_from_image(img)

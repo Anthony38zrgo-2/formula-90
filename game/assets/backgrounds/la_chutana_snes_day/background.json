@@ -2,9 +2,17 @@
   "id": "la_chutana_snes_day",
   "display_name": "La Chutana SNES Day",
   "skybox": {
-    "texture": "res://assets/backgrounds/la_chutana_snes_day/sky.png",
+    "mode": "gradient",
     "distance": 800.0,
-    "pixel_size": 0.0
+    "pixel_size": 0.0,
+    "gradient": {
+      "zenith_color": [0.18, 0.42, 0.82],
+      "horizon_color": [0.95, 0.92, 0.82],
+      "ground_color": [0.72, 0.68, 0.55],
+      "horizon_sharpness": 0.65,
+      "ground_start": 0.48
+    },
+    "time_of_day": 11.0
   },
   "layers": [
     {
@@ -15,7 +23,7 @@
       "parallax_y": 0.01,
       "scale": 1.0,
       "offset_x": 0.0,
-      "offset_y": 0.0,
+      "offset_y": 76.0,
       "repeat_x": false,
       "repeat_y": false,
       "pixel_snap": true,
@@ -30,12 +38,36 @@
       "parallax_y": 0.02,
       "scale": 1.0,
       "offset_x": 0.0,
-      "offset_y": 0.0,
+      "offset_y": -15.0,
       "repeat_x": false,
       "repeat_y": false,
       "pixel_snap": true,
       "distance_z": -600.0,
       "pixel_size": 1.2
+    },
+    {
+      "id": "clouds",
+      "depth": 2,
+      "procedural": true,
+      "shader_path": "res://addons/formula90s/shaders/cloud_layer.gdshader",
+      "parallax_x": 0.28,
+      "parallax_y": 0.0,
+      "scale": 1.0,
+      "offset_x": 0.0,
+      "offset_y": 30.0,
+      "repeat_x": false,
+      "repeat_y": false,
+      "pixel_snap": false,
+      "distance_z": -500.0,
+      "pixel_size": 0.0,
+      "uniforms": {
+        "cloud_scale": 0.012,
+        "cloud_coverage": 0.45,
+        "cloud_sharpness": 2.5,
+        "wind_speed": 0.005,
+        "cloud_color": [1.0, 1.0, 1.0],
+        "cloud_opacity": 0.6
+      }
     }
   ]
 }
