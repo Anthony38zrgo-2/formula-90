@@ -1830,6 +1830,39 @@
       ],
       "source_agent": "codex",
       "source_context": "Prompt codex 2026-08-14: deprecate legacy after visual acceptance. BG3-007 must be accepted first."
+    },
+    {
+      "id": "BG3-009",
+      "epic": "race-presentation",
+      "title": "Fix skybox gradient rendering as visible square (desajuste visual)",
+      "description": "El skybox de degradado se renderiza como un cuadrado visible en la escena. El BackgroundSkybox usa un Sprite3D con textura dummy 1x1 y pixel_size alto (100) que crea una geometría cuadrada visible contra el cielo degradado. El shader spatial proyecta el degradado pero la geometría del sprite sigue siendo un quad opaco con bordes visibles. Necesita: (1) que el degradado use SCREEN_UV en vez de UV del sprite, o (2) que el sprite sea lo suficientemente grande para que los bordes queden fuera del frustum, o (3) usar un MeshInstance3D con PlaneMesh en vez de Sprite3D.",
+      "item_type": "bugfix",
+      "status": "proposed",
+      "priority": 115,
+      "sort_order": 190,
+      "rationale": "El skybox aparece como un cuadrado visible. El shader spatial usa UV del sprite (que es 1x1 dummy) en vez de SCREEN_UV. La geometría del Sprite3D con pixel_size=100 crea un quad visible con bordes duros.",
+      "technical_risk": "Medium. El fix puede requerir cambiar la arquitectura del skybox de Sprite3D a MeshInstance3D o ajustar el shader para que IGNORE la geometría del sprite y pinte directamente en pantalla.",
+      "user_value": "El cielo se verá como un degradado continuo sin bordes ni cuadrados visibles, igual que un skybox profesional.",
+      "dependencies": ["BG3-007"],
+      "affected_areas": [
+        "game/addons/formula90s/scripts/background_skybox.gd",
+        "game/addons/formula90s/shaders/sky_gradient.gdshader",
+        "game/addons/formula90s/scripts/background_skybox_config.gd",
+        "game/tests/smoke_test_la_chutana_3_layer_background.gd"
+      ],
+      "acceptance_criteria": [
+        "El degradado del cielo NO muestra bordes ni cuadrados visibles.",
+        "El degradado llena toda la pantalla sin importar la rotación de la camara.",
+        "smoke_test_la_chutana_3_layer_background.gd PASS.",
+        "Telemetría muestra skybox mode=gradient sin artefactos visuales."
+      ],
+      "evidence": [
+        "BackgroundSkybox._setup_gradient usa Sprite3D con textura dummy 1x1 y pixel_size=100.",
+        "sky_gradient.gdshader usa UV del sprite, no SCREEN_UV.",
+        "User report 2026-08-15: skybox se ve como un cuadrado."
+      ],
+      "source_agent": "user",
+      "source_context": "User report 2026-08-15: skybox se ve como un cuadrado, desajuste visual."
     }
   ]
 }
