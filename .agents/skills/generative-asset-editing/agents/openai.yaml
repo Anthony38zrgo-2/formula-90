@@ -1,0 +1,4 @@
+interface:
+  display_name: "Edición de Assets con IA"
+  short_description: "Genera assets desde un input verificable"
+  default_prompt: "Use $generative-asset-editing para editar un asset inicial con IA y registrar su procedencia."

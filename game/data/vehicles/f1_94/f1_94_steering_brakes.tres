@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="SteeringBrakesSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/formula90s/scripts/specs/steering_brakes_spec.gd" id="1_steer"]
+
+[resource]
+script = ExtResource("1_steer")
+max_steering_angle = 0.436332
+steering_speed = 4.25
+countersteer_speed = 11.0
+steering_speed_decay = 0.2
+steering_slip_assist = 0.54
+countersteer_assist = 0.89
+steering_exponent = 1.5
+front_steering_ratio = 1.0
+rear_steering_ratio = 0.0
+front_brake_bias = 0.57
+braking_speed = 10.0
+brake_force_multiplier = 1.0
+braking_grip_multiplier = 1.08
+traction_control_max_slip = 8.0
+enable_stability = true
+stability_yaw_engage_angle = 0.01
+stability_yaw_strength = 5.25
+stability_yaw_ground_multiplier = 2.0
+stability_upright_spring = 1.0
+stability_upright_damping = 1000.0

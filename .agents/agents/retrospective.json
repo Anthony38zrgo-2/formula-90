@@ -17,6 +17,9 @@
   "rules": [
     "Do not promote a lesson without evidence.",
     "Compress falsified hypotheses and prevent their reuse without new evidence.",
-    "Prefer converting stable repeated lessons into deterministic tooling."
+    "Prefer converting stable repeated lessons into deterministic tooling.",
+    "For 3D vehicle incidents, prove asset-forward, physical-forward and conversion ownership before recommending physics changes.",
+    "Treat validator crashes before assertions as INCONCLUSIVE and separate environment failures from candidate failures.",
+    "Distinguish failed reads from mismatched values before reporting cache, manifest or hash corruption."
   ]
 }

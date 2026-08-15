@@ -1,0 +1,92 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-08-12",
+  "nomenclature_rules": {
+    "single_element": "<asset_name>_lowpoly.<ext>",
+    "pack_element": "<asset_name>_lowpoly_pack.<ext>"
+  },
+  "total_assets": 9,
+  "assets": [
+    {
+      "id": "grandstand_lowpoly",
+      "name": "grandstand_lowpoly",
+      "category": "buildings",
+      "is_pack": false,
+      "path": "buildings/grandstand/grandstand_lowpoly.glb",
+      "format": "glb",
+      "description": "Procedural low-poly spectator grandstand module with seated spectators"
+    },
+    {
+      "id": "soviet_housing_lowpoly",
+      "name": "soviet_housing_lowpoly",
+      "category": "buildings",
+      "is_pack": false,
+      "path": "buildings/soviet_housing/soviet_housing_lowpoly.glb",
+      "format": "glb",
+      "description": "PSX style Russian/Soviet housing residential building model"
+    },
+    {
+      "id": "pine_tree_lowpoly",
+      "name": "pine_tree_lowpoly",
+      "category": "nature",
+      "is_pack": false,
+      "path": "nature/pine_tree_lowpoly.glb",
+      "format": "glb",
+      "description": "PSX/1990s style low-poly pine tree model"
+    },
+    {
+      "id": "safety_rail_lowpoly",
+      "name": "safety_rail_lowpoly",
+      "category": "track_props",
+      "is_pack": false,
+      "path": "track_props/safety_rail_lowpoly.glb",
+      "format": "glb",
+      "description": "Single metal safety rail segment"
+    },
+    {
+      "id": "starting_line_lowpoly",
+      "name": "starting_line_lowpoly",
+      "category": "track_props",
+      "is_pack": false,
+      "path": "track_props/starting_line_lowpoly.glb",
+      "format": "glb",
+      "description": "Race track starting line banner and arch structure"
+    },
+    {
+      "id": "modular_guardrail_lowpoly_pack",
+      "name": "modular_guardrail_lowpoly_pack",
+      "category": "track_props",
+      "is_pack": true,
+      "path": "track_props/modular_guardrail_lowpoly_pack.glb",
+      "format": "glb",
+      "description": "Game-ready modular metal guardrail component pack"
+    },
+    {
+      "id": "race_track_assets_lowpoly_pack",
+      "name": "race_track_assets_lowpoly_pack",
+      "category": "track_props",
+      "is_pack": true,
+      "path": "track_props/race_track_assets_lowpoly_pack.glb",
+      "format": "glb",
+      "description": "Collection pack of race track props and environment assets"
+    },
+    {
+      "id": "brabham_1983_lowpoly",
+      "name": "brabham_1983_lowpoly",
+      "category": "vehicles",
+      "is_pack": false,
+      "path": "vehicles/brabham_1983_lowpoly.glb",
+      "format": "glb",
+      "description": "1983 Brabham BT52 F1 vehicle low-poly model"
+    },
+    {
+      "id": "f1_1997_canonical_lowpoly",
+      "name": "f1_1997_canonical_lowpoly",
+      "category": "vehicles",
+      "is_pack": false,
+      "path": "vehicles/f1_1997_canonical_lowpoly.glb",
+      "format": "glb",
+      "description": "1997 F1 canonical low-poly car model"
+    }
+  ]
+}

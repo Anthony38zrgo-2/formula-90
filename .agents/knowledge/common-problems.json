@@ -79,6 +79,53 @@
       "occurrences": 1,
       "status": "active",
       "source_ref": "Observed in current Formula-90 bootstrap before this POC"
+    },
+    {
+      "signature": "agentdb.unavailable_due_to_sandbox_permissions",
+      "domain": "agent-runtime",
+      "symptom": "AgentDB commands fail even though the release binary exists; direct access reports unable to open database file and the Cargo fallback fails on target/release/.cargo-lock with Access denied.",
+      "cause": "The execution identity can read .agents but cannot write .agents/data/agents.db or its SQLite WAL/journal files, so the binary probe rejects a valid release binary and the resolver attempts an unnecessary build in a protected target directory.",
+      "solution": "Stop feature work, run the existing release binary and preflight in an execution context with write access to the configured database, or repair the ACL for the actual execution identity; then run stats, validate, health and smoke checks.",
+      "prevention": "Treat AgentDB access as a hard prerequisite. Do not rebuild blindly, recreate the database, interpret an unexecuted problem lookup as no known problem, or proceed with vehicle/physics/gameplay changes while AgentDB is unavailable.",
+      "search_terms": [
+        "agentdb",
+        "unable to open database file",
+        "target/release/.cargo-lock",
+        "Access denied",
+        "permission",
+        "sandbox",
+        "SQLite",
+        "preflight"
+      ],
+      "confidence": 1000,
+      "occurrences": 1,
+      "status": "active",
+      "source_ref": "docs/troubleshooting/resolved-incidents.md#incident-003-agentdb-rejected-by-sandbox-permissions"
+    },
+    {
+      "signature": "windows.powershell.ps1_launcher_and_protected_asset_acl",
+      "domain": "windows-powershell",
+      "symptom": "A Formula-90 .ps1 appears not to run from Explorer or PowerShell reports Get-Content Access denied for a vehicle manifest or GLB even though the containing folder looks accessible.",
+      "cause": "Explorer may register Microsoft.PowerShellScript.1/Open to a text editor and have no RunWithPowerShell verb, so opening a .ps1 is not execution. Independently, protected per-file ACLs can prevent child assets from inheriting permissions granted to their parent folder.",
+      "solution": "Check the registered .ps1 shell verbs and invoke the script explicitly with powershell.exe -NoProfile -File. Check Get-ExecutionPolicy -List separately. For a verified protected vehicle-asset tree, elevate only for that exact folder: take ownership, enable inheritance, grant the interactive user (OI)(CI) Modify recursively, verify every file opens for read, then run the script smoke without Bypass.",
+      "prevention": "Do not rely on the Explorer Open/Open with association for project scripts; provide a project-local launcher if double-click execution is required. Keep generated runtime asset trees inheriting the project ACL and validate file reads before interpreting hashes or manifests as content mismatches.",
+      "search_terms": [
+        "PowerShell",
+        "ps1",
+        "Open with PowerShell",
+        "RunWithPowerShell",
+        "execution policy",
+        "Access denied",
+        "ACL",
+        "icacls",
+        "takeown",
+        "vehicle_runtime_manifest.json",
+        "F1-94"
+      ],
+      "confidence": 1000,
+      "occurrences": 1,
+      "status": "active",
+      "source_ref": "docs/troubleshooting/resolved-incidents.md#incident-005-powershell-launcher-and-protected-f1-94-assets-f194-ops-001"
     }
   ]
 }

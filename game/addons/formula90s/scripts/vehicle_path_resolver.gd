@@ -5,6 +5,7 @@ class_name VehiclePathResolver
 ## Replaces hardcoded NodePath literals scattered in HUD/compositor/tests.
 
 const CANDIDATE_PATHS: Array[NodePath] = [
+	NodePath("F194/VehicleRigidBody"),
 	NodePath("Jordan197/VehicleRigidBody"),
 	NodePath("Jordan191/VehicleRigidBody"),
 	NodePath("VehicleController/VehicleRigidBody"),

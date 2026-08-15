@@ -21,13 +21,15 @@ func _ready():
 		_apply_aids()
 
 func _capture_baseline():
-	_baseline["enable_stability"] = vehicle_node.get("enable_stability")
-	_baseline["stability_yaw_strength"] = vehicle_node.get("stability_yaw_strength")
-	_baseline["steering_exponent"] = vehicle_node.get("steering_exponent")
-	_baseline["brake_force_multiplier"] = vehicle_node.get("brake_force_multiplier")
-	_baseline["friction"] = vehicle_node.get("coefficient_of_friction").duplicate()
-	_baseline["lateral_grip_assist"] = vehicle_node.get("lateral_grip_assist").duplicate() if vehicle_node.get("lateral_grip_assist") else {}
-	_baseline["automatic_transmission"] = vehicle_node.get("automatic_transmission")
+	_baseline["enable_stability"] = VehicleTunableContract.get_value(vehicle_node, "enable_stability")
+	_baseline["stability_yaw_strength"] = VehicleTunableContract.get_value(vehicle_node, "stability_yaw_strength")
+	_baseline["steering_exponent"] = VehicleTunableContract.get_value(vehicle_node, "steering_exponent")
+	_baseline["brake_force_multiplier"] = VehicleTunableContract.get_value(vehicle_node, "brake_force_multiplier")
+	var fric = VehicleTunableContract.get_value(vehicle_node, "coefficient_of_friction")
+	_baseline["friction"] = fric.duplicate() if fric else {}
+	var lat_grip = VehicleTunableContract.get_value(vehicle_node, "lateral_grip_assist")
+	_baseline["lateral_grip_assist"] = lat_grip.duplicate() if lat_grip else {}
+	_baseline["automatic_transmission"] = VehicleTunableContract.get_value(vehicle_node, "automatic_transmission")
 	_captured = true
 
 func _physics_process(_delta):
@@ -52,40 +54,40 @@ func _apply_aids():
 func _apply_aid(index: int):
 	match index:
 		0:
-			vehicle_node.set("automatic_transmission", true)
+			VehicleTunableContract.set_value(vehicle_node, "automatic_transmission", true)
 		1:
-			vehicle_node.set("enable_stability", true)
-			vehicle_node.set("stability_yaw_strength", max(_baseline["stability_yaw_strength"] * MULT_STABILITY, FLOOR_STABILITY_STRENGTH))
+			VehicleTunableContract.set_value(vehicle_node, "enable_stability", true)
+			VehicleTunableContract.set_value(vehicle_node, "stability_yaw_strength", max(_baseline["stability_yaw_strength"] * MULT_STABILITY, FLOOR_STABILITY_STRENGTH))
 		2:
-			vehicle_node.set("steering_exponent", _baseline["steering_exponent"] * MULT_STEERING)
+			VehicleTunableContract.set_value(vehicle_node, "steering_exponent", _baseline["steering_exponent"] * MULT_STEERING)
 		3:
-			vehicle_node.set("brake_force_multiplier", _baseline["brake_force_multiplier"] * MULT_BRAKING)
+			VehicleTunableContract.set_value(vehicle_node, "brake_force_multiplier", _baseline["brake_force_multiplier"] * MULT_BRAKING)
 		4:
 			var friction = _baseline["friction"].duplicate()
 			for key in friction:
 				friction[key] = max(friction[key] * MULT_GRIP, FLOOR_GRIP)
-			vehicle_node.set("coefficient_of_friction", friction)
+			VehicleTunableContract.set_value(vehicle_node, "coefficient_of_friction", friction)
 			if _baseline.has("lateral_grip_assist") and _baseline["lateral_grip_assist"].size() > 0:
 				var grip = _baseline["lateral_grip_assist"].duplicate()
 				for key in grip:
 					grip[key] = max(grip[key] + 0.15, 0.15)
-				vehicle_node.set("lateral_grip_assist", grip)
+				VehicleTunableContract.set_value(vehicle_node, "lateral_grip_assist", grip)
 
 func _restore(index: int):
 	match index:
 		0:
-			vehicle_node.set("automatic_transmission", false)
+			VehicleTunableContract.set_value(vehicle_node, "automatic_transmission", false)
 		1:
-			vehicle_node.set("enable_stability", _baseline["enable_stability"])
-			vehicle_node.set("stability_yaw_strength", _baseline["stability_yaw_strength"])
+			VehicleTunableContract.set_value(vehicle_node, "enable_stability", _baseline["enable_stability"])
+			VehicleTunableContract.set_value(vehicle_node, "stability_yaw_strength", _baseline["stability_yaw_strength"])
 		2:
-			vehicle_node.set("steering_exponent", _baseline["steering_exponent"])
+			VehicleTunableContract.set_value(vehicle_node, "steering_exponent", _baseline["steering_exponent"])
 		3:
-			vehicle_node.set("brake_force_multiplier", _baseline["brake_force_multiplier"])
+			VehicleTunableContract.set_value(vehicle_node, "brake_force_multiplier", _baseline["brake_force_multiplier"])
 		4:
-			vehicle_node.set("coefficient_of_friction", _baseline["friction"])
+			VehicleTunableContract.set_value(vehicle_node, "coefficient_of_friction", _baseline["friction"])
 			if _baseline.has("lateral_grip_assist") and _baseline["lateral_grip_assist"].size() > 0:
-				vehicle_node.set("lateral_grip_assist", _baseline["lateral_grip_assist"])
+				VehicleTunableContract.set_value(vehicle_node, "lateral_grip_assist", _baseline["lateral_grip_assist"])
 
 func is_aid_enabled(index: int) -> bool:
 	return aids[index] if index >= 0 and index < aids.size() else false

@@ -1,0 +1,14 @@
+{
+  "bank": "v10_vehicle",
+  "channels": 1,
+  "csv": "reports/audio/idle_to_redline_with_shifts.csv",
+  "description": "Idle -> redline through 3 shifts, throttle lift on each shift (asphalt, engine only).",
+  "duration_s": 4.2,
+  "events": [],
+  "frames": 210,
+  "peak": 0.89,
+  "rms": 0.282279,
+  "sample_rate": 44100,
+  "scenario": "idle_to_redline_with_shifts",
+  "wav": "reports/audio/idle_to_redline_with_shifts.wav"
+}

@@ -1,0 +1,14 @@
+{
+  "bank": "v10_vehicle",
+  "channels": 1,
+  "csv": "reports/audio/grass_skid.csv",
+  "description": "High-slip grass skid with throttle.",
+  "duration_s": 2.4,
+  "events": [],
+  "frames": 120,
+  "peak": 0.89,
+  "rms": 0.209112,
+  "sample_rate": 44100,
+  "scenario": "grass_skid",
+  "wav": "reports/audio/grass_skid.wav"
+}

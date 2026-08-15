@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:f90="urn:formula90:track" viewBox="0 0 120 80" data-track-id="curve_fixture" data-road-surface-elevation-m="0.025">
+  <metadata>
+    <f90:author>track-geometry-parity</f90:author>
+  </metadata>
+  <g data-layer="centerline">
+    <path data-role="centerline" d="M 10 40 C 10 10 110 10 110 40 C 110 70 10 70 10 40 Z"/>
+  </g>
+  <g data-layer="road">
+    <path data-role="road" data-width-m="12"/>
+    <path data-role="banking" data-s-m="40" data-degrees="3.0"/>
+    <path data-role="elevation" data-s-m="120" data-height-m="1.0"/>
+  </g>
+  <g data-layer="terrain">
+    <polygon data-role="terrain-zone" data-kind="grass" data-name="infiel" points="0,0 120,0 120,80 0,80"/>
+  </g>
+  <g data-layer="barrier">
+    <line data-role="barrier" data-kind="guardrail" x1="4" y1="36" x2="4" y2="44"/>
+  </g>
+  <g data-layer="assets">
+    <circle data-role="asset-instance" data-instance-id="tree_a" data-asset-id="tree_v2_01" data-kind="tree" cx="8" cy="8" r="0.4" data-scale="1.0" data-yaw-rad="0.3"/>
+  </g>
+</svg>

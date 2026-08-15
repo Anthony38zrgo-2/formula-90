@@ -79,7 +79,14 @@ var vehicle : Vehicle
 
 func _process(delta : float) -> void:
 	if wheel_node:
-		wheel_node.position.y = minf(0.0, -spring_current_length)
+		# Suspension travel is vertical in vehicle space. RayCast camber/toe and
+		# steering rotate this node, so assigning local Y directly also translated
+		# the hub laterally. Convert the vertical offset back into RayCast-local
+		# space; the visual still inherits wheel orientation around a fixed hub.
+		var vehicle_space_suspension_offset := Vector3(
+			0.0, minf(0.0, -spring_current_length), 0.0
+		)
+		wheel_node.position = transform.basis.inverse() * vehicle_space_suspension_offset
 		if not is_zero_approx(beam_axle):
 			var wheel_lookat_vector := (opposite_wheel.transform * opposite_wheel.wheel_node.position) - (transform * wheel_node.position)
 			wheel_node.rotation.z = wheel_lookat_vector.angle_to(Vector3.RIGHT * beam_axle) * signf(wheel_lookat_vector.y * beam_axle)

@@ -1,0 +1,258 @@
+{
+  "schema_version": 2,
+  "schema": "formula90s/vehicle-runtime/v2",
+  "vehicle_id": "f1_94",
+  "source": {
+    "asset": "assets-lowpoly-python/vehicles/canonical/f1_94_normalized.glb",
+    "sha256": "fab085648344e38a71cb1f2b090cc13a104580877581e3f40d00b71fbdc66d0c",
+    "forward": "+Z",
+    "up": "+Y",
+    "left": "+X",
+    "units": "meters",
+    "golden_reference": "original_fully_assembled_source_glb",
+    "original_asset": "assets-lowpoly-python/vehicles/F194/F1-94.obj",
+    "original_sha256": "6985369abb3130e61499857052afd0e9bb0ba67db097e123886f15c9bdaa6fba"
+  },
+  "runtime": {
+    "forward": "-Z",
+    "up": "+Y",
+    "right": "+X",
+    "units": "meters",
+    "conversion_owner": "export_pipeline_single_T_vehicle",
+    "source_origin_used_for_normalization": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "source_to_runtime_rotation_3x3": [
+      [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -1.0
+      ]
+    ],
+    "translation_after_rotation": [
+      -0.0,
+      -0.0,
+      -0.0
+    ]
+  },
+  "wheel_hubs_source_m": {
+    "FL": [
+      0.7962504923343658,
+      -0.006027252413332462,
+      1.4603254795074463
+    ],
+    "FR": [
+      -0.7962504923343658,
+      -0.006027252413332462,
+      1.4603254795074463
+    ],
+    "RL": [
+      0.7623065114021301,
+      0.006027252413332462,
+      -1.4603254795074463
+    ],
+    "RR": [
+      -0.7623065114021301,
+      0.006027252413332462,
+      -1.4603254795074463
+    ]
+  },
+  "wheel_hubs_runtime_m": {
+    "FL": [
+      -0.7962504923343658,
+      -0.006027252413332462,
+      -1.4603254795074463
+    ],
+    "FR": [
+      0.7962504923343658,
+      -0.006027252413332462,
+      -1.4603254795074463
+    ],
+    "RL": [
+      -0.7623065114021301,
+      0.006027252413332462,
+      1.4603254795074463
+    ],
+    "RR": [
+      0.7623065114021301,
+      0.006027252413332462,
+      1.4603254795074463
+    ]
+  },
+  "front_axle_center_runtime_m": [
+    0.0,
+    -0.006027252413332462,
+    -1.4603254795074463
+  ],
+  "rear_axle_center_runtime_m": [
+    0.0,
+    0.006027252413332462,
+    1.4603254795074463
+  ],
+  "wheelbase_m": 2.920675835398586,
+  "front_track_m": 1.5925009846687317,
+  "rear_track_m": 1.5246130228042603,
+  "front_tire": {
+    "radius_m": 0.31695449352264404,
+    "width_mm": 300.2989888191223
+  },
+  "rear_tire": {
+    "radius_m": 0.3290089964866638,
+    "width_mm": 368.32499504089355
+  },
+  "assets": {
+    "chassis": "res://assets/models/vehicles/f1_94/f1_94_chassis.glb",
+    "wheel_fl": "res://assets/models/vehicles/f1_94/f1_94_wheel_fl.glb",
+    "wheel_fr": "res://assets/models/vehicles/f1_94/f1_94_wheel_fr.glb",
+    "wheel_rl": "res://assets/models/vehicles/f1_94/f1_94_wheel_rl.glb",
+    "wheel_rr": "res://assets/models/vehicles/f1_94/f1_94_wheel_rr.glb"
+  },
+  "export_validation": {
+    "chassis": {
+      "geometries": 5,
+      "vertices": 7488,
+      "materials": [
+        "F194_PIXELART_NEAREST"
+      ],
+      "bounds": [
+        [
+          -0.7122200131416321,
+          -0.23288674652576447,
+          -2.320411443710327
+        ],
+        [
+          0.7122200131416321,
+          0.7149122953414917,
+          1.9376685619354248
+        ]
+      ],
+      "normal_coverage": {
+        "triangle_primitives": 5,
+        "with_normals": 5,
+        "missing_normals": 0
+      }
+    },
+    "wheel_fl": {
+      "geometries": 1,
+      "vertices": 516,
+      "materials": [
+        "F194_PIXELART_NEAREST"
+      ],
+      "bounds": [
+        [
+          -0.15014949440956116,
+          -0.31695449352264404,
+          -0.3169550895690918
+        ],
+        [
+          0.15014949440956116,
+          0.31695449352264404,
+          0.31695497035980225
+        ]
+      ],
+      "normal_coverage": {
+        "triangle_primitives": 1,
+        "with_normals": 1,
+        "missing_normals": 0
+      }
+    },
+    "wheel_fr": {
+      "geometries": 1,
+      "vertices": 516,
+      "materials": [
+        "F194_PIXELART_NEAREST"
+      ],
+      "bounds": [
+        [
+          -0.15014949440956116,
+          -0.31695449352264404,
+          -0.3169550895690918
+        ],
+        [
+          0.15014949440956116,
+          0.31695449352264404,
+          0.31695497035980225
+        ]
+      ],
+      "normal_coverage": {
+        "triangle_primitives": 1,
+        "with_normals": 1,
+        "missing_normals": 0
+      }
+    },
+    "wheel_rl": {
+      "geometries": 1,
+      "vertices": 516,
+      "materials": [
+        "F194_PIXELART_NEAREST"
+      ],
+      "bounds": [
+        [
+          -0.18416249752044678,
+          -0.3290089964866638,
+          -0.3290090560913086
+        ],
+        [
+          0.18416249752044678,
+          0.3290089964866638,
+          0.3290090560913086
+        ]
+      ],
+      "normal_coverage": {
+        "triangle_primitives": 1,
+        "with_normals": 1,
+        "missing_normals": 0
+      }
+    },
+    "wheel_rr": {
+      "geometries": 1,
+      "vertices": 516,
+      "materials": [
+        "F194_PIXELART_NEAREST"
+      ],
+      "bounds": [
+        [
+          -0.18416249752044678,
+          -0.3290089964866638,
+          -0.3290090560913086
+        ],
+        [
+          0.18416249752044678,
+          0.3290089964866638,
+          0.3290090560913086
+        ]
+      ],
+      "normal_coverage": {
+        "triangle_primitives": 1,
+        "with_normals": 1,
+        "missing_normals": 0
+      }
+    }
+  },
+  "assembly_equivalence": {
+    "status": "PASS",
+    "tolerance_mm": 2.0,
+    "maxima": {
+      "node_geometry_error_mm": 6.51925802230835e-06,
+      "anchor_error_mm": 8.326672684688674e-14,
+      "distance_error_mm": 0.0,
+      "hub_to_suspension_error_mm": 0.0,
+      "ground_clearance_error_mm": 0.0
+    },
+    "report": "assembly_equivalence_report.json",
+    "overlay": "assembly_equivalence_overlay.glb",
+    "source_snapshot": "source_assembly.json"
+  }
+}

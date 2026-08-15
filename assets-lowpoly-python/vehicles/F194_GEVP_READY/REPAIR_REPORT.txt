@@ -1,0 +1,30 @@
+F1-94 deterministic repair report
+================================
+
+Source faces: 3184
+Objects: 35
+Faces reversed after topology/orientation analysis: 2126
+Wheelbase: 2.920651 m
+Front track (visual tire center): 1.592501 m
+Rear track (visual tire center): 1.524613 m
+Front visual tire radius: 0.316955 m
+Rear visual tire radius: 0.329009 m
+Origin shift from source-after-180Y: [0.0, 0.19979574749999998, 0.26341149250000007]
+
+Repairs performed:
+- Rotated source 180 deg around Y to match Formula-90 current GEVP scene semantics (FL x<0,z<0).
+- Rebased origin to axle midpoint and mean wheel-center height.
+- Reconstructed topological adjacency from duplicated Blockbench vertices.
+- Corrected inconsistent/inward winding per connected shell/surface.
+- Recomputed flat face normals from corrected winding.
+- Preserved original UV coordinates and 64x64 texture atlas.
+- Embedded texture in GLB with nearest-neighbor sampler and alpha mask.
+- Added explicit geometry names, wheel pivots, suspension-arm endpoints, axle datums and wing/nose mount markers.
+- Exported canonical reusable front-left and rear-left wheel assets with wheel center at local origin.
+
+Validation:
+- F1_94_GEVP_READY.glb: OK, geometries=35, bounds=[[-0.946469, -0.322982, -2.320411], [0.946469, 0.714912, 1.937669]]
+- F1_94_chassis.glb: OK, geometries=19, bounds=[[-0.71222, -0.232887, -2.320411], [0.71222, 0.714912, 1.937669]]
+- F1_94_wheel_front.glb: OK, geometries=4, bounds=[[-0.150149, -0.316954, -0.316955], [0.150149, 0.316954, 0.316955]]
+- F1_94_wheel_rear.glb: OK, geometries=4, bounds=[[-0.184162, -0.329009, -0.329009], [0.184162, 0.329009, 0.329009]]
+- F1_94_GEVP_READY.obj: OK, geometries=1, bounds=[[-0.946469, -0.322982, -2.320411], [0.946469, 0.714912, 1.937669]]

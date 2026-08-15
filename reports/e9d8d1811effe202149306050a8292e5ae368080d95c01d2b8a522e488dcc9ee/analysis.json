@@ -1,0 +1,1559 @@
+{
+  "file": "D:\\Formula90s\\assets-lowpoly-python\\vehicles\\canonical\\Jordan197_LOD0_Historical.glb",
+  "format": "glb",
+  "sha256": "e9d8d1811effe202149306050a8292e5ae368080d95c01d2b8a522e488dcc9ee",
+  "objects": 70,
+  "meshes": 70,
+  "vertices": 7050,
+  "faces": 7536,
+  "components": 931,
+  "bounds": {
+    "min": [
+      -1.05280006,
+      -0.0025,
+      -2.19534945
+    ],
+    "max": [
+      1.05280006,
+      1.25261629,
+      2.42605829
+    ]
+  },
+  "dimensions": {
+    "x": 2.105600118637085,
+    "y": 1.2551162862218916,
+    "z": 4.621407747268677
+  },
+  "center": [
+    0.0,
+    0.62505814,
+    0.11535442
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        -2.255e-05,
+        0.99999101,
+        -0.00424122
+      ],
+      [
+        -0.00625718,
+        0.004241,
+        0.99997143
+      ],
+      [
+        0.99998042,
+        4.909e-05,
+        0.00625703
+      ]
+    ],
+    "variance": [
+      1.9355128,
+      0.30894385,
+      0.04565366
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "Black",
+    "CARBFBD",
+    "CARBFBM",
+    "CARBON_COCKPIT",
+    "CARBON_SUSP",
+    "CPJOR97",
+    "JORDANBLK",
+    "JORFRONT",
+    "JORWAXLE",
+    "LP_Brake",
+    "LP_Mechanical",
+    "LP_Rim_Gold",
+    "LP_Tire",
+    "MIRROR",
+    "PIRES_DASH",
+    "PIRES_RTEC_BAR24",
+    "RAINLIGHT",
+    "REAR",
+    "TEXTURED MATERIAL: CPIT6",
+    "WCCARBODY",
+    "WCWING",
+    "WIND"
+  ],
+  "has_uv": true,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 861,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 18,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 60,
+      "boundary_edges": 128,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 6,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 92,
+      "boundary_edges": 174,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 64,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 64,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 10,
+      "boundary_edges": 62,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 125,
+      "boundary_edges": 189,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 20,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 275,
+      "boundary_edges": 374,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 526,
+      "boundary_edges": 764,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 297,
+      "boundary_edges": 406,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 116,
+      "boundary_edges": 346,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 56,
+      "boundary_edges": 162,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 4,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 14,
+      "boundary_edges": 38,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 1,
+      "duplicate_vertices": 111,
+      "boundary_edges": 295,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 82,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 4,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 23,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 22,
+      "boundary_edges": 66,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 221,
+      "boundary_edges": 701,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 146,
+      "boundary_edges": 403,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 16,
+      "boundary_edges": 52,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 170,
+      "boundary_edges": 237,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 8,
+      "non_manifold_edges": 0,
+      "watertight": false
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Brake",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Mechanical",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Tire",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Brake",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Mechanical",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Tire",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Brake",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Mechanical",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Tire",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Brake",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Mechanical",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Gold",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Tire",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "JORFRONT",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "JORFRONT",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WIND",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCCARBODY",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCCARBODY",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "PIRES_RTEC_BAR24",
+      "uv": true,
+      "uv_count": 128,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "PIRES_DASH",
+      "uv": true,
+      "uv_count": 24,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBFBD",
+      "uv": true,
+      "uv_count": 188,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MIRROR",
+      "uv": true,
+      "uv_count": 64,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "MIRROR",
+      "uv": true,
+      "uv_count": 64,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBON_COCKPIT",
+      "uv": true,
+      "uv_count": 115,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBON_COCKPIT",
+      "uv": true,
+      "uv_count": 189,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CPJOR97",
+      "uv": true,
+      "uv_count": 24,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBON_SUSP",
+      "uv": true,
+      "uv_count": 372,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBON_SUSP",
+      "uv": true,
+      "uv_count": 761,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBON_SUSP",
+      "uv": true,
+      "uv_count": 406,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCCARBODY",
+      "uv": true,
+      "uv_count": 396,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCWING",
+      "uv": true,
+      "uv_count": 178,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBFBD",
+      "uv": true,
+      "uv_count": 4,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCCARBODY",
+      "uv": true,
+      "uv_count": 38,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCWING",
+      "uv": true,
+      "uv_count": 337,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBFBM",
+      "uv": true,
+      "uv_count": 123,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "RAINLIGHT",
+      "uv": true,
+      "uv_count": 4,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "JORDANBLK",
+      "uv": true,
+      "uv_count": 23,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "Black",
+      "uv": true,
+      "uv_count": 66,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "WCCARBODY",
+      "uv": true,
+      "uv_count": 1216,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "CARBFBD",
+      "uv": true,
+      "uv_count": 526,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "REAR",
+      "uv": true,
+      "uv_count": 50,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "TEXTURED MATERIAL: CPIT6",
+      "uv": true,
+      "uv_count": 235,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "JORWAXLE",
+      "uv": true,
+      "uv_count": 9,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

@@ -420,7 +420,9 @@ class Axle:
 	func get_max_wheel_slip_y() -> float:
 		var slip := 0.0
 		for wheel in wheels:
-			slip = maxf(slip, wheel.slip_vector.y)
+			# Longitudinal wheelspin is negative in Wheel's signed-slip convention.
+			# Consumers of this aggregate (notably TCS) need severity, not direction.
+			slip = maxf(slip, absf(wheel.slip_vector.y))
 		return slip
 
 func _ready():
@@ -796,8 +798,16 @@ func process_clutch(delta : float):
 		for axle in axles:
 			slip_y = maxf(slip_y, axle.get_max_wheel_slip_y())
 		if slip_y > traction_control_max_slip:
-			tcs_torque_reduction = torque_output
-			clutch_torque = 0.0
+			# Reduce torque continuously instead of opening the clutch completely.
+			# The previous binary cut oscillated between full wheelspin and zero
+			# drive, which kept high-power cars near idle at useful slip limits.
+			var slip_excess_ratio := clampf(
+				1.0 - (traction_control_max_slip / slip_y),
+				0.0,
+				1.0
+			)
+			tcs_torque_reduction = torque_output * slip_excess_ratio
+			clutch_torque *= 1.0 - slip_excess_ratio
 			tcs_active = true
 		else:
 			tcs_active = false

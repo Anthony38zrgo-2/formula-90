@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GearboxSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/formula90s/scripts/specs/gearbox_spec.gd" id="1_gearbox"]
+
+[resource]
+script = ExtResource("1_gearbox")
+gear_ratios = Array[float]([2.85, 2.29, 1.89, 1.6, 1.38, 1.2])
+final_drive = 6.3
+reverse_ratio = 3.0
+shift_time = 0.12
+automatic_time_between_shifts = 700.0
+gear_inertia = 0.03
+front_locking_differential_engage_torque = -1.0
+rear_locking_differential_engage_torque = 170.0

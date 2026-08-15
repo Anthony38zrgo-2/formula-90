@@ -1,0 +1,58 @@
+{
+  "schema": "formula90s/normalized-vehicle-source/v1",
+  "candidate_id": "f1_94",
+  "source_asset": "F1-94_pixelart_32bit_nearest.glb",
+  "source_sha256": "aa2a649d6c90f3b4ff143c78e4b5ecac69cf24715420a0d2cc71b918cb81ae1b",
+  "wheel_name_prefix": "LP_",
+  "coordinate_contract": {
+    "forward": "+Z",
+    "up": "+Y",
+    "left": "+X",
+    "units": "meters",
+    "conversion_owner": "export_pipeline_single_T_vehicle"
+  },
+  "normalization_translation_m": [
+    -0.0,
+    -0.19979574903845787,
+    0.2634114921092987
+  ],
+  "origin": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "nose": [
+    0.0,
+    0.0,
+    2.3204114139080048
+  ],
+  "tail": [
+    0.0,
+    0.0,
+    -1.9376685917377472
+  ],
+  "wheel_hubs": {
+    "FL": [
+      0.7962504923343658,
+      -0.006027251482009888,
+      1.4603255093097687
+    ],
+    "FR": [
+      -0.7962504923343658,
+      -0.006027251482009888,
+      1.4603255093097687
+    ],
+    "RL": [
+      0.7623065114021301,
+      0.006027251482009888,
+      -1.4603255093097687
+    ],
+    "RR": [
+      -0.7623065114021301,
+      0.006027251482009888,
+      -1.4603255093097687
+    ]
+  },
+  "front_axle_z": 1.4603255093097687,
+  "rear_axle_z": -1.4603255093097687
+}

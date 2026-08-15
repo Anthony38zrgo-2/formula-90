@@ -1,0 +1,14 @@
+{
+  "bank": "v10_vehicle",
+  "channels": 1,
+  "csv": "reports/audio/road_to_sand_with_kerb.csv",
+  "description": "Asphalt -> kerb rumble -> sand runoff.",
+  "duration_s": 3.0,
+  "events": [],
+  "frames": 150,
+  "peak": 0.89,
+  "rms": 0.255212,
+  "sample_rate": 44100,
+  "scenario": "road_to_sand_with_kerb",
+  "wav": "reports/audio/road_to_sand_with_kerb.wav"
+}

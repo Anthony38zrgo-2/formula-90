@@ -1,0 +1,69 @@
+{
+  "bank_integrity": {
+    "bank": "v10_vehicle",
+    "entries": 23,
+    "issues": []
+  },
+  "engine_band_native_rpm": [
+    3941.0,
+    7429.0,
+    8196.0,
+    5580.0,
+    7687.0
+  ],
+  "idle_rpm": 4500.0,
+  "max_rpm": 17000.0,
+  "note": "surface is fixed to asphalt (CSV does not carry surface); engine bands reflect the native RPMs measured on v10_vehicle.",
+  "session": "telemetry_20260814_183708_611",
+  "source_csv": "game/telemetry/telemetry_20260814_183708_611.csv",
+  "summary": {
+    "clamp_high_hits": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "clamp_low_hits": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "crossfade_share": 0.7769726514816284,
+    "pitch_max": [
+      1.8896219730377197,
+      1.4232063293457031,
+      1.672767162322998,
+      3.0150537490844727,
+      2.300377368927002
+    ],
+    "pitch_mean": [
+      1.4049257040023804,
+      1.111832618713379,
+      1.3719059228897095,
+      2.5563583374023438,
+      2.011880397796631
+    ],
+    "pitch_min": [
+      1.1418421268463135,
+      0.6315789222717285,
+      0.9499756097793579,
+      1.9589605331420898,
+      1.8256796598434448
+    ],
+    "rows": 1242,
+    "rpm_max": 17683.0,
+    "rpm_min": 4500.0,
+    "shift_down": 12,
+    "shift_up": 12,
+    "time_shares": [
+      0.08937197923660278,
+      0.11755233258008957,
+      0.19887278974056244,
+      0.38164252042770386,
+      0.21256038546562195
+    ]
+  }
+}

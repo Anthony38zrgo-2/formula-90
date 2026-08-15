@@ -16,5 +16,6 @@ if(-not(Test-Path $godot)){throw 'Godot console no encontrado para smoke tests.'
 $env:APPDATA=Join-Path $root '.tools\appdata'; $env:LOCALAPPDATA=Join-Path $root '.tools\localappdata'; New-Item -ItemType Directory -Force $env:APPDATA,$env:LOCALAPPDATA|Out-Null
 & $godot --headless --editor --path (Join-Path $root 'game') --quit; if($LASTEXITCODE -ne 0){throw 'Smoke editor falló.'}
 foreach($scene in @('scenes/ui/main_menu.tscn','scenes/tracks/test_field/test_field.tscn','scenes/vehicles/player_car.tscn','scenes/vehicles/static_directional_car.tscn','scenes/ui/debug_hud.tscn','scenes/tests/directional_sprite_validation.tscn')){Write-Host "Smoke: $scene";& $godot --headless --path (Join-Path $root 'game') $scene --quit-after 2;if($LASTEXITCODE -ne 0){throw "Smoke falló: $scene"}}
+foreach($script in @('res://tests/smoke_test_jordan_197_handling_scene.gd')){Write-Host "Smoke script: $script";& $godot --headless --path (Join-Path $root 'game') --script $script;if($LASTEXITCODE -ne 0){throw "Smoke script failed: $script"}}
 & "$PSScriptRoot\test_gdunit.ps1" -GodotPath $godot
 Write-Host 'Todas las pruebas automáticas pasaron.'

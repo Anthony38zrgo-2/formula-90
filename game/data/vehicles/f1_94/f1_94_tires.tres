@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="TiresSpec" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/formula90s/scripts/specs/tires_spec.gd" id="1_tires"]
+
+[resource]
+script = ExtResource("1_tires")
+front_tire_radius = 0.316954494
+front_tire_width = 300.298989
+front_wheel_mass = 12.0
+rear_tire_radius = 0.329008996
+rear_tire_width = 368.324995
+rear_wheel_mass = 16.0
+contact_patch = 0.21
+tire_stiffnesses = {
+"Curb": 7.0,
+"Dirt": 0.5,
+"Grass": 0.5,
+"Gravel": 0.5,
+"Road": 8.75
+}
+coefficient_of_friction = {
+"Curb": 2.2,
+"Dirt": 1.4,
+"Grass": 0.9,
+"Gravel": 1.1,
+"Road": 2.9
+}
+rolling_resistance = {
+"Curb": 1.5,
+"Dirt": 2.0,
+"Grass": 4.0,
+"Gravel": 2.0,
+"Road": 1.0
+}
+lateral_grip_assist = {
+"Curb": 0.0,
+"Dirt": 0.0,
+"Grass": 0.0,
+"Gravel": 0.0,
+"Road": 0.02
+}
+longitudinal_grip_ratio = {
+"Curb": 0.45,
+"Dirt": 0.56,
+"Grass": 0.45,
+"Gravel": 0.45,
+"Road": 0.52
+}

@@ -2,6 +2,21 @@
   "schema_version": 1,
   "skills": [
     {
+      "id": "compact-context-advise",
+      "manifest_path": ".agents/skills/compact-context-advise/SKILL.md",
+      "triggers": [
+        "feature complete",
+        "feature closeout",
+        "validated milestone",
+        "context compaction",
+        "before next feature"
+      ],
+      "knowledge_channels": [],
+      "risk": "low",
+      "priority": "high",
+      "enabled": true
+    },
+    {
       "id": "knowledge-query",
       "manifest_path": ".agents/skills/knowledge-query/SKILL.md",
       "triggers": [
@@ -176,6 +191,24 @@
       "enabled": true
     },
     {
+      "id": "telemetry-read-advise",
+      "manifest_path": ".agents/skills/telemetry-read-advise/SKILL.md",
+      "triggers": [
+        "read telemetry",
+        "telemetry file",
+        "telemetry CSV",
+        "telemetry log",
+        "analyze telemetry",
+        "latest telemetry"
+      ],
+      "knowledge_channels": [
+        "godot",
+        "python"
+      ],
+      "risk": "low",
+      "enabled": true
+    },
+    {
       "id": "track-reconstruction",
       "manifest_path": ".agents/skills/track-reconstruction/SKILL.md",
       "triggers": [
@@ -228,6 +261,24 @@
       ],
       "knowledge_channels": [
         "godot"
+      ],
+      "risk": "medium",
+      "enabled": true
+    },
+    {
+      "id": "generative-asset-editing",
+      "manifest_path": ".agents/skills/generative-asset-editing/SKILL.md",
+      "triggers": [
+        "generative asset",
+        "AI image edit",
+        "image generation",
+        "pixel-art asset",
+        "background layers",
+        "texture generation"
+      ],
+      "knowledge_channels": [
+        "godot",
+        "blender"
       ],
       "risk": "medium",
       "enabled": true

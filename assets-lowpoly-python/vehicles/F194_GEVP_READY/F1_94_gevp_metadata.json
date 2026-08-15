@@ -1,0 +1,1474 @@
+{
+  "asset": "F1_94_GEVP_READY",
+  "source": "Blockbench OBJ repaired deterministically",
+  "units": "meters",
+  "coordinate_convention": {
+    "X": "+right / -left",
+    "Y": "+up",
+    "Z": "front axle at negative Z; rear axle at positive Z",
+    "origin": "midpoint between front/rear axle centers, at mean wheel-center height",
+    "transform_from_source": "rotate 180 degrees around Y, then translate to canonical origin"
+  },
+  "dimensions_m": {
+    "wheelbase": 2.920651,
+    "front_track_center": 1.592501,
+    "rear_track_center": 1.524613,
+    "front_tire_radius_visual": 0.316955,
+    "rear_tire_radius_visual": 0.329009,
+    "front_tire_width_visual": 0.300299,
+    "rear_tire_width_visual": 0.368325
+  },
+  "wheel_centers_m": {
+    "FL": [
+      -0.79625,
+      -0.006027,
+      -1.460326
+    ],
+    "FR": [
+      0.79625,
+      -0.006027,
+      -1.460326
+    ],
+    "RL": [
+      -0.762307,
+      0.006027,
+      1.460326
+    ],
+    "RR": [
+      0.762307,
+      0.006027,
+      1.460326
+    ]
+  },
+  "gevp_mapping": {
+    "WheelFrontLeft": "JNT_WHEEL_FL",
+    "WheelFrontRight": "JNT_WHEEL_FR",
+    "WheelRearLeft": "JNT_WHEEL_RL",
+    "WheelRearRight": "JNT_WHEEL_RR",
+    "wheel_node_rule": "Keep GEVP RayCast3D -> wheel_node Pivot -> Visual hierarchy. Do not bake persistent visual offsets into the GEVP-controlled pivot.",
+    "recommended_raycast_anchor_m_at_50pct_rest": {
+      "WheelFrontLeft": [
+        -0.79625,
+        0.043973,
+        -1.460326
+      ],
+      "WheelFrontRight": [
+        0.79625,
+        0.043973,
+        -1.460326
+      ],
+      "WheelRearLeft": [
+        -0.762307,
+        0.066027,
+        1.460326
+      ],
+      "WheelRearRight": [
+        0.762307,
+        0.066027,
+        1.460326
+      ]
+    }
+  },
+  "joints_and_datums_m": {
+    "DATUM_FRONT_AXLE_CENTER": [
+      0.0,
+      -0.006027,
+      -1.460326
+    ],
+    "DATUM_REAR_AXLE_CENTER": [
+      0.0,
+      0.006027,
+      1.460326
+    ],
+    "DATUM_VEHICLE_ORIGIN": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "JNT_DRIVER_HEAD": [
+      -7e-06,
+      0.325601,
+      -0.245785
+    ],
+    "JNT_FRONT_WING_MOUNT": [
+      -0.072546,
+      -0.011417,
+      -1.853379
+    ],
+    "JNT_NOSE_CHASSIS": [
+      -0.021962,
+      0.029535,
+      -1.641881
+    ],
+    "JNT_REAR_WING_MOUNT": [
+      0.001793,
+      0.220824,
+      1.594086
+    ],
+    "JNT_SUSP_FL_ARM_01_INNER": [
+      -0.166516,
+      0.037642,
+      -1.129797
+    ],
+    "JNT_SUSP_FL_ARM_01_OUTER": [
+      -0.666173,
+      0.064599,
+      -1.466474
+    ],
+    "JNT_SUSP_FL_ARM_02_INNER": [
+      -0.140156,
+      0.181701,
+      -1.459723
+    ],
+    "JNT_SUSP_FL_ARM_02_OUTER": [
+      -0.674538,
+      -0.123479,
+      -1.459723
+    ],
+    "JNT_SUSP_FL_ARM_03_INNER": [
+      -0.142394,
+      -0.139007,
+      -1.632904
+    ],
+    "JNT_SUSP_FL_ARM_03_OUTER": [
+      -0.677778,
+      -0.113591,
+      -1.450713
+    ],
+    "JNT_SUSP_FL_ARM_04_INNER": [
+      -0.166402,
+      -0.138735,
+      -1.129479
+    ],
+    "JNT_SUSP_FL_ARM_04_OUTER": [
+      -0.666286,
+      -0.113613,
+      -1.466792
+    ],
+    "JNT_SUSP_FL_ARM_05_INNER": [
+      -0.142755,
+      0.036698,
+      -1.632904
+    ],
+    "JNT_SUSP_FL_ARM_05_OUTER": [
+      -0.677417,
+      0.065543,
+      -1.450713
+    ],
+    "JNT_SUSP_FL_CHASSIS": [
+      -0.151645,
+      -0.00434,
+      -1.396962
+    ],
+    "JNT_SUSP_FL_HUB": [
+      -0.672438,
+      -0.044108,
+      -1.458883
+    ],
+    "JNT_SUSP_FR_ARM_01_INNER": [
+      0.166516,
+      0.037642,
+      -1.129797
+    ],
+    "JNT_SUSP_FR_ARM_01_OUTER": [
+      0.666173,
+      0.064599,
+      -1.466474
+    ],
+    "JNT_SUSP_FR_ARM_02_INNER": [
+      0.140156,
+      0.181701,
+      -1.459723
+    ],
+    "JNT_SUSP_FR_ARM_02_OUTER": [
+      0.674538,
+      -0.123479,
+      -1.459723
+    ],
+    "JNT_SUSP_FR_ARM_03_INNER": [
+      0.142394,
+      -0.139007,
+      -1.632904
+    ],
+    "JNT_SUSP_FR_ARM_03_OUTER": [
+      0.677778,
+      -0.113591,
+      -1.450713
+    ],
+    "JNT_SUSP_FR_ARM_04_INNER": [
+      0.166402,
+      -0.138735,
+      -1.129479
+    ],
+    "JNT_SUSP_FR_ARM_04_OUTER": [
+      0.666286,
+      -0.113613,
+      -1.466792
+    ],
+    "JNT_SUSP_FR_ARM_05_INNER": [
+      0.142755,
+      0.036698,
+      -1.632904
+    ],
+    "JNT_SUSP_FR_ARM_05_OUTER": [
+      0.677417,
+      0.065543,
+      -1.450713
+    ],
+    "JNT_SUSP_FR_CHASSIS": [
+      0.151645,
+      -0.00434,
+      -1.396962
+    ],
+    "JNT_SUSP_FR_HUB": [
+      0.672438,
+      -0.044108,
+      -1.458883
+    ],
+    "JNT_SUSP_RL_ARM_01_INNER": [
+      -0.366248,
+      0.044162,
+      1.338632
+    ],
+    "JNT_SUSP_RL_ARM_01_OUTER": [
+      -0.600965,
+      0.044162,
+      1.465639
+    ],
+    "JNT_SUSP_RL_ARM_02_INNER": [
+      -0.361263,
+      0.044162,
+      1.571261
+    ],
+    "JNT_SUSP_RL_ARM_02_OUTER": [
+      -0.599212,
+      0.044162,
+      1.459299
+    ],
+    "JNT_SUSP_RL_ARM_03_INNER": [
+      -0.361263,
+      -0.208007,
+      1.571261
+    ],
+    "JNT_SUSP_RL_ARM_03_OUTER": [
+      -0.599212,
+      -0.208007,
+      1.459299
+    ],
+    "JNT_SUSP_RL_ARM_04_INNER": [
+      -0.366248,
+      -0.208007,
+      1.338632
+    ],
+    "JNT_SUSP_RL_ARM_04_OUTER": [
+      -0.600965,
+      -0.208007,
+      1.465639
+    ],
+    "JNT_SUSP_RL_CHASSIS": [
+      -0.363756,
+      -0.081922,
+      1.454947
+    ],
+    "JNT_SUSP_RL_HUB": [
+      -0.600089,
+      -0.081922,
+      1.462469
+    ],
+    "JNT_SUSP_RR_ARM_01_INNER": [
+      0.366248,
+      0.044162,
+      1.338632
+    ],
+    "JNT_SUSP_RR_ARM_01_OUTER": [
+      0.600965,
+      0.044162,
+      1.465639
+    ],
+    "JNT_SUSP_RR_ARM_02_INNER": [
+      0.361263,
+      0.044162,
+      1.571261
+    ],
+    "JNT_SUSP_RR_ARM_02_OUTER": [
+      0.599212,
+      0.044162,
+      1.459299
+    ],
+    "JNT_SUSP_RR_ARM_03_INNER": [
+      0.361263,
+      -0.208007,
+      1.571261
+    ],
+    "JNT_SUSP_RR_ARM_03_OUTER": [
+      0.599212,
+      -0.208007,
+      1.459299
+    ],
+    "JNT_SUSP_RR_ARM_04_INNER": [
+      0.366248,
+      -0.208007,
+      1.338632
+    ],
+    "JNT_SUSP_RR_ARM_04_OUTER": [
+      0.600965,
+      -0.208007,
+      1.465639
+    ],
+    "JNT_SUSP_RR_CHASSIS": [
+      0.363756,
+      -0.081922,
+      1.454947
+    ],
+    "JNT_SUSP_RR_HUB": [
+      0.600089,
+      -0.081922,
+      1.462469
+    ],
+    "JNT_WHEEL_FL": [
+      -0.79625,
+      -0.006027,
+      -1.460326
+    ],
+    "JNT_WHEEL_FR": [
+      0.79625,
+      -0.006027,
+      -1.460326
+    ],
+    "JNT_WHEEL_RL": [
+      -0.762307,
+      0.006027,
+      1.460326
+    ],
+    "JNT_WHEEL_RR": [
+      0.762307,
+      0.006027,
+      1.460326
+    ]
+  },
+  "suspension_arms_detected": {
+    "FL": 5,
+    "FR": 5,
+    "RL": 4,
+    "RR": 4
+  },
+  "geometry_names": {
+    "LP_CHASSIS": "GEO_CHASSIS",
+    "LP_BODY_INTERIOR": "GEO_BODY_INTERIOR",
+    "LP_FRONT_WING": "GEO_AERO_FRONT_WING",
+    "LP_REAR_WING": "GEO_AERO_REAR_WING",
+    "LP_NOSE": "GEO_NOSE",
+    "LP_LCD_PART_6": "GEO_COCKPIT_LCD_06",
+    "LP_LCD_PART_7": "GEO_COCKPIT_LCD_07",
+    "LP_LCD_PART_8": "GEO_COCKPIT_LCD_08",
+    "LP_LCD_PART_9": "GEO_COCKPIT_LCD_09",
+    "LP_LCD_PART_13": "GEO_COCKPIT_LCD_13",
+    "LP_LCD_PART_16": "GEO_COCKPIT_LCD_16",
+    "LP_LCD_PART_17": "GEO_COCKPIT_LCD_17",
+    "LP_LCD_PART_18": "GEO_COCKPIT_LCD_18",
+    "LP_LCD_INDICATOR": "GEO_COCKPIT_LCD_INDICATOR",
+    "LP_SUSP_LF": "GEO_SUSPENSION_FL",
+    "LP_SUSP_RF": "GEO_SUSPENSION_FR",
+    "LP_SUSP_LR": "GEO_SUSPENSION_RL",
+    "LP_SUSP_RR": "GEO_SUSPENSION_RR",
+    "LP_TIRE_LF_SIDE_OUTER": "GEO_WHEEL_FL_TIRE_OUTER",
+    "LP_TIRE_LF_TREAD": "GEO_WHEEL_FL_TREAD",
+    "LP_TIRE_LF_SIDE_INNER": "GEO_WHEEL_FL_TIRE_INNER",
+    "LP_HUB_LF": "GEO_WHEEL_FL_HUB",
+    "LP_TIRE_RF_SIDE_OUTER": "GEO_WHEEL_FR_TIRE_OUTER",
+    "LP_TIRE_RF_TREAD": "GEO_WHEEL_FR_TREAD",
+    "LP_TIRE_RF_SIDE_INNER": "GEO_WHEEL_FR_TIRE_INNER",
+    "LP_HUB_RF": "GEO_WHEEL_FR_HUB",
+    "LP_TIRE_LR_SIDE_OUTER": "GEO_WHEEL_RL_TIRE_OUTER",
+    "LP_TIRE_LR_TREAD": "GEO_WHEEL_RL_TREAD",
+    "LP_TIRE_LR_SIDE_INNER": "GEO_WHEEL_RL_TIRE_INNER",
+    "LP_HUB_LR": "GEO_WHEEL_RL_HUB",
+    "LP_TIRE_RR_SIDE_OUTER": "GEO_WHEEL_RR_TIRE_OUTER",
+    "LP_TIRE_RR_TREAD": "GEO_WHEEL_RR_TREAD",
+    "LP_TIRE_RR_SIDE_INNER": "GEO_WHEEL_RR_TIRE_INNER",
+    "LP_HUB_RR": "GEO_WHEEL_RR_HUB",
+    "LP_HELMET": "GEO_DRIVER_HELMET"
+  },
+  "rendering": {
+    "material": "F1_94_PIXEL_MATERIAL",
+    "culling": "back-face enabled",
+    "alpha_mode": "MASK",
+    "alpha_cutoff": 0.5,
+    "texture_filter": "NEAREST embedded in GLB"
+  },
+  "repair": {
+    "faces": 3184,
+    "source_vertices": 9552,
+    "source_uvs": 9552,
+    "degenerate_faces": 0,
+    "faces_reversed": 2126,
+    "objects": 35,
+    "topology_by_object": {
+      "LP_CHASSIS": {
+        "faces": 792,
+        "geometric_vertices": 461,
+        "boundary_edges": 188,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 576,
+            "closed": false,
+            "signed_volume_before_global": -0.5713822321782003,
+            "radial_score": -0.4749300567813318,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 2,
+            "faces": 29,
+            "closed": false,
+            "signed_volume_before_global": -0.3914776786260279,
+            "radial_score": -0.5322865038701572,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 3,
+            "faces": 65,
+            "closed": false,
+            "signed_volume_before_global": -0.27143881845439966,
+            "radial_score": -0.08170980546732805,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 4,
+            "faces": 1,
+            "closed": false,
+            "signed_volume_before_global": -1.0438673386248423e-05,
+            "radial_score": -0.6738110786316007,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 5,
+            "faces": 60,
+            "closed": true,
+            "signed_volume_before_global": 1.724039200408821e-05,
+            "radial_score": 0.0020875781893338074,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 6,
+            "faces": 1,
+            "closed": false,
+            "signed_volume_before_global": -1.0438673386249758e-05,
+            "radial_score": -0.6738110786316006,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 7,
+            "faces": 60,
+            "closed": true,
+            "signed_volume_before_global": 1.722307362905478e-05,
+            "radial_score": 0.0020855256116049927,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "signed_volume"
+          }
+        ]
+      },
+      "LP_BODY_INTERIOR": {
+        "faces": 4,
+        "geometric_vertices": 6,
+        "boundary_edges": 6,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 4,
+            "closed": false,
+            "signed_volume_before_global": -0.06511183989658903,
+            "radial_score": 0.0,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "interior_faces_rear_+Z"
+          }
+        ]
+      },
+      "LP_FRONT_WING": {
+        "faces": 420,
+        "geometric_vertices": 256,
+        "boundary_edges": 114,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.0008164715816205929,
+            "radial_score": -0.015922066360226313,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 2,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.0008164715816206362,
+            "radial_score": -0.015922066360226313,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 3,
+            "faces": 384,
+            "closed": false,
+            "signed_volume_before_global": -0.02204238769679343,
+            "radial_score": 0.006641749925982484,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 4,
+            "faces": 6,
+            "closed": false,
+            "signed_volume_before_global": 0.014848929307783542,
+            "radial_score": -0.0675368897166473,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 5,
+            "faces": 3,
+            "closed": false,
+            "signed_volume_before_global": 0.0021485770532911437,
+            "radial_score": 0.1584007991783489,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 6,
+            "faces": 3,
+            "closed": false,
+            "signed_volume_before_global": 0.002148577053291148,
+            "radial_score": 0.15840079917834896,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_REAR_WING": {
+        "faces": 734,
+        "geometric_vertices": 442,
+        "boundary_edges": 198,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 20,
+            "closed": true,
+            "signed_volume_before_global": -0.004008675738215203,
+            "radial_score": -0.016098380321876084,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 2,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.014462780649545901,
+            "radial_score": 0.28720545687653004,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 3,
+            "faces": 20,
+            "closed": true,
+            "signed_volume_before_global": -0.0020926162081033655,
+            "radial_score": -0.013640671444006368,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 4,
+            "faces": 320,
+            "closed": false,
+            "signed_volume_before_global": 0.0012728419515705615,
+            "radial_score": -0.0017257802704297102,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 5,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": -0.014479729145439026,
+            "radial_score": -0.28860358715250384,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 6,
+            "faces": 320,
+            "closed": false,
+            "signed_volume_before_global": 0.0012722623114775693,
+            "radial_score": -0.0017289703844531694,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 7,
+            "faces": 20,
+            "closed": true,
+            "signed_volume_before_global": -0.002092839296570683,
+            "radial_score": -0.013642067272552388,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 8,
+            "faces": 4,
+            "closed": false,
+            "signed_volume_before_global": -0.0003232248647323198,
+            "radial_score": -0.4483374950000001,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 9,
+            "faces": 4,
+            "closed": false,
+            "signed_volume_before_global": -0.00032293661660837077,
+            "radial_score": -0.448336485,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 10,
+            "faces": 22,
+            "closed": false,
+            "signed_volume_before_global": 0.0004403952534484122,
+            "radial_score": -0.005818661992222096,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_NOSE": {
+        "faces": 202,
+        "geometric_vertices": 122,
+        "boundary_edges": 62,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 192,
+            "closed": false,
+            "signed_volume_before_global": -0.0008268396905559145,
+            "radial_score": 0.14668759841543139,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 2,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": -0.007338212094087481,
+            "radial_score": -0.1963480296183885,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 3,
+            "faces": 8,
+            "closed": false,
+            "signed_volume_before_global": -0.026367005397298356,
+            "radial_score": -0.014418121114736528,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_LCD_PART_6": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.0002193496810089741,
+            "radial_score": 0.0,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_7": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.00022308132070327668,
+            "radial_score": -5.5506197377161947e-17,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_8": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.00021934968100897374,
+            "radial_score": 0.0,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_9": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.007922426145266245,
+            "radial_score": -5.5510811778368394e-17,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_13": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.00024388977178841858,
+            "radial_score": -5.590417451878298e-20,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_16": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.0001841955256077914,
+            "radial_score": 0.0,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_17": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.00044952898237523317,
+            "radial_score": 0.0,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_PART_18": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 0.00024934709837124,
+            "radial_score": 0.0,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_LCD_INDICATOR": {
+        "faces": 2,
+        "geometric_vertices": 4,
+        "boundary_edges": 4,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 2,
+            "closed": false,
+            "signed_volume_before_global": 5.9714543234872285e-05,
+            "radial_score": 1.1101143360293854e-16,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "cockpit_faces_driver_+Z"
+          }
+        ]
+      },
+      "LP_SUSP_LF": {
+        "faces": 60,
+        "geometric_vertices": 40,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00020390437461992878,
+            "radial_score": -0.011192371204922112,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 2,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.0002014507319986919,
+            "radial_score": -0.011136885112093677,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 3,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00019099217724941614,
+            "radial_score": -0.011173182538077834,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 4,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.0002062798161201796,
+            "radial_score": -0.011207452684421427,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 5,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00019104469912770394,
+            "radial_score": -0.01117486320455874,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          }
+        ]
+      },
+      "LP_SUSP_RF": {
+        "faces": 60,
+        "geometric_vertices": 40,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00020390437461992382,
+            "radial_score": -0.011192371204922127,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 2,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00020145073199867407,
+            "radial_score": -0.011136885112093672,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 3,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00019099217724939926,
+            "radial_score": -0.011173182538077843,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 4,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.00020627981612017315,
+            "radial_score": -0.011207452684421422,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 5,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -0.0001910446991277067,
+            "radial_score": -0.011174863204558724,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          }
+        ]
+      },
+      "LP_SUSP_LR": {
+        "faces": 48,
+        "geometric_vertices": 32,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.714404978416558e-05,
+            "radial_score": -0.011756707568128057,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 2,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.579579334327202e-05,
+            "radial_score": -0.011758878520061666,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 3,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.57957933432718e-05,
+            "radial_score": -0.011758878520061675,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 4,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.714404978415137e-05,
+            "radial_score": -0.011756707568128067,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          }
+        ]
+      },
+      "LP_SUSP_RR": {
+        "faces": 48,
+        "geometric_vertices": 32,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.714404978416373e-05,
+            "radial_score": -0.01175670756812806,
+            "semantic_score": -0.02847355001495134,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 2,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.579579334327202e-05,
+            "radial_score": -0.011758878520061671,
+            "semantic_score": -0.02782172741076754,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 3,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.579579334326118e-05,
+            "radial_score": -0.011758878520061675,
+            "semantic_score": -0.02264363949246997,
+            "global_flip": true,
+            "rule": "signed_volume"
+          },
+          {
+            "component": 4,
+            "faces": 12,
+            "closed": true,
+            "signed_volume_before_global": -9.714404978417067e-05,
+            "radial_score": -0.011756707568128062,
+            "semantic_score": -0.02225094090777826,
+            "global_flip": true,
+            "rule": "signed_volume"
+          }
+        ]
+      },
+      "LP_TIRE_LF_SIDE_OUTER": {
+        "faces": 60,
+        "geometric_vertices": 41,
+        "boundary_edges": 20,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 60,
+            "closed": false,
+            "signed_volume_before_global": -0.01967482026879612,
+            "radial_score": 0.08668753551443374,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_LF_TREAD": {
+        "faces": 40,
+        "geometric_vertices": 40,
+        "boundary_edges": 40,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.05555032334367419,
+            "radial_score": -0.3130533098377582,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_LF_SIDE_INNER": {
+        "faces": 60,
+        "geometric_vertices": 61,
+        "boundary_edges": 60,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 20,
+            "closed": false,
+            "signed_volume_before_global": 0.06685875237723277,
+            "radial_score": -0.14997743036487124,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 2,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.0754200078851705,
+            "radial_score": -0.16563532430404365,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_HUB_LF": {
+        "faces": 12,
+        "geometric_vertices": 13,
+        "boundary_edges": 12,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": false,
+            "signed_volume_before_global": -0.0015428562496717312,
+            "radial_score": -0.01390505731700395,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_RF_SIDE_OUTER": {
+        "faces": 60,
+        "geometric_vertices": 41,
+        "boundary_edges": 20,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 60,
+            "closed": false,
+            "signed_volume_before_global": -0.0196748202687962,
+            "radial_score": 0.08668753551443376,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_RF_TREAD": {
+        "faces": 40,
+        "geometric_vertices": 40,
+        "boundary_edges": 40,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.055550323343674185,
+            "radial_score": -0.3130533098377582,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_RF_SIDE_INNER": {
+        "faces": 60,
+        "geometric_vertices": 61,
+        "boundary_edges": 60,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 20,
+            "closed": false,
+            "signed_volume_before_global": 0.06685875237723272,
+            "radial_score": -0.1499774303648712,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 2,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.07542000788517061,
+            "radial_score": -0.16563532430404365,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_HUB_RF": {
+        "faces": 12,
+        "geometric_vertices": 13,
+        "boundary_edges": 12,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": false,
+            "signed_volume_before_global": -0.00154285624967173,
+            "radial_score": -0.013905057317003948,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_LR_SIDE_OUTER": {
+        "faces": 40,
+        "geometric_vertices": 40,
+        "boundary_edges": 40,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.07506034229236536,
+            "radial_score": -0.32495837710105246,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_LR_TREAD": {
+        "faces": 60,
+        "geometric_vertices": 61,
+        "boundary_edges": 60,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.08261098906816243,
+            "radial_score": -0.1985963364965841,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          },
+          {
+            "component": 2,
+            "faces": 20,
+            "closed": false,
+            "signed_volume_before_global": 0.06446333351111629,
+            "radial_score": -0.18396661358064245,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_LR_SIDE_INNER": {
+        "faces": 60,
+        "geometric_vertices": 41,
+        "boundary_edges": 20,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 60,
+            "closed": false,
+            "signed_volume_before_global": -0.02021171639038179,
+            "radial_score": 0.08514876046545695,
+            "semantic_score": 0.0,
+            "global_flip": false,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_HUB_LR": {
+        "faces": 12,
+        "geometric_vertices": 13,
+        "boundary_edges": 12,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": false,
+            "signed_volume_before_global": -0.0015471363606603277,
+            "radial_score": -0.013904890325180008,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_RR_SIDE_OUTER": {
+        "faces": 40,
+        "geometric_vertices": 40,
+        "boundary_edges": 40,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.07506034229236523,
+            "radial_score": -0.32495837710105246,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "object_center_outward"
+          }
+        ]
+      },
+      "LP_TIRE_RR_TREAD": {
+        "faces": 60,
+        "geometric_vertices": 61,
+        "boundary_edges": 60,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 40,
+            "closed": false,
+            "signed_volume_before_global": -0.08261098906816255,
+            "radial_score": -0.1985963364965841,
+            "semantic_score": -0.09827633089077027,
+            "global_flip": true,
+            "rule": "wheel_semantic"
+          },
+          {
+            "component": 2,
+            "faces": 20,
+            "closed": false,
+            "signed_volume_before_global": 0.06446333351111629,
+            "radial_score": -0.18396661358064245,
+            "semantic_score": -0.04611062879260351,
+            "global_flip": true,
+            "rule": "wheel_semantic"
+          }
+        ]
+      },
+      "LP_TIRE_RR_SIDE_INNER": {
+        "faces": 60,
+        "geometric_vertices": 41,
+        "boundary_edges": 20,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 60,
+            "closed": false,
+            "signed_volume_before_global": -0.0202117163903818,
+            "radial_score": 0.08514876046545695,
+            "semantic_score": 0.678426922240049,
+            "global_flip": false,
+            "rule": "wheel_semantic"
+          }
+        ]
+      },
+      "LP_HUB_RR": {
+        "faces": 12,
+        "geometric_vertices": 13,
+        "boundary_edges": 12,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 12,
+            "closed": false,
+            "signed_volume_before_global": -0.0015471363606603245,
+            "radial_score": -0.013904890325180011,
+            "semantic_score": -0.711829247949671,
+            "global_flip": true,
+            "rule": "wheel_semantic"
+          }
+        ]
+      },
+      "LP_HELMET": {
+        "faces": 110,
+        "geometric_vertices": 57,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "orientation_conflicts": 0,
+        "components": [
+          {
+            "component": 1,
+            "faces": 110,
+            "closed": true,
+            "signed_volume_before_global": -0.01767305357124529,
+            "radial_score": -0.150803545907009,
+            "semantic_score": 0.0,
+            "global_flip": true,
+            "rule": "signed_volume"
+          }
+        ]
+      }
+    }
+  }
+}

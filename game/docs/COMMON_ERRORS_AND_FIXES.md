@@ -913,7 +913,7 @@ A new `*_LOD0_Historical.glb` appears as a single 70-object scene (931 component
 2. **Hardcoded `VehicleRigidBody` paths** in 6 places (`world_hud_compositor.gd:6`, `handling_tuning_panel.gd:6`, `smoke_*`, `run_jordan_handling.ps1:10`). Next promotion would re-edit 4 files.
 3. **GLB import cache** — `Trimesh` export produces `*.glb` + embedded `*.png` without `.import` descriptors; `godot --headless --import` must run before `smoke_test` else `No loader found` `PackedScene`.
 4. **Track/wheelbase faithful vs frozen** — `197` `front_track 1.762 / rear 1.748 / wheelbase 3.073 / radius 0.324` differs `+19%/+6.7%/-6.7%` from `191` `1.478/1.437/2.878/0.3473`. Choosing faithful changes handling; preserving frozen hides asset.
-5. **Z-forward convention** — `Godot/data (x,z,height) → Blender (x,-z)` `COMMON_ERRORS.md:65` vs `vehicle_manifest forward -Z`. Tyre centroids `LF 0.881,1.433 / LR 0.874,-1.64` inverted vs `191` `-1.439` → chassis must not be `scale -1` (`COMMON_ERRORS.md:352`).
+5. **Z-forward convention** — the canonical asset is front `+Z`, while GEVP and the chase camera use front `-Z`. Godot import does not prove or own this semantic conversion. The vehicle scene must apply a proper yaw 180 (`diag(-1,1,-1)`, determinant `+1`) to `ChassisVisual`; this is not negative-scale mirroring. Tyre datums remain in asset space and must be transformed before comparing them with RayCast positions.
 6. **HandlingTuningPanel export path** — default `Jordan191` breaks `Jordan197` smoke `vehicle_path` check, but fallback `_find_vehicle_in_scene` `handling_tuning_panel.gd:234` still finds vehicle; test strict equality is the failure, not runtime.
 
 ### Correct solution (this iteration)
@@ -922,8 +922,11 @@ A new `*_LOD0_Historical.glb` appears as a single 70-object scene (931 component
 *   `REF-002 VehiclePathResolver` `game/addons/formula90s/scripts/vehicle_path_resolver.gd:1` with `CANDIDATE_PATHS [Jordan197,Jordan191,VehicleController]` + recursive `Vehicle` search; `WorldHudCompositor` delegates, `run_jordan_handling.ps1:2` parametrized `VehicleId=jordan_197` default, manifest-driven assets.
 *   After `trimesh` export, run `godot --headless --import` to generate `*.glb.import` + `*.png.import` before any `smoke_test`.
 *   Decision `J197-001`: faithful `track/wheelbase/radius` (asset truth) over frozen `191`; document both in `PROJECT_STATE.md §5.1` `vehicle_manifest.json`.
+*   Declare `coordinate_contract`: asset front `+Z`, runtime front `-Z`, conversion owner `vehicle_scene_visual_yaw_180`.
+*   Rotate `ChassisVisual` 180 degrees around Y while preserving its vertical offset; do not rotate/re-export the canonical GLB to hide scene ownership.
 *   Rotate opposite-side wheel `Visual` `Transform3D(-1,0,1)` not `scale -1` (`COMMON_ERRORS.md:352`).
 *   Relax smoke `vehicle_path` strict check to allow `Jordan197` or fallback `_vehicle != null`.
+*   Extend the smoke beyond presence/material checks: require forward dot `>=0.99`, transformed axle datums within `0.01 m`, and correct front/rear wheel PackedScenes.
 
 ### Antipattern remediation (high priority)
 
@@ -936,3 +939,62 @@ A new `*_LOD0_Historical.glb` appears as a single 70-object scene (931 component
 *   `analyze_mesh` `chassis 1.567/4.621 / wheel_front 0.307/0.648` matches `0.324*2`.
 *   `smoke_test_jordan_197_handling_scene PASS`, `smoke_test_jordan_191 PASS`, `smoke_test_bootstrap_world_hud_compositor PASS` (now `Jordan197`).
 *   `godot --headless --editor --quit DONE`.
+*   Visual capture from the chase camera shows the rear wing nearest the camera, nose toward the track, and wider rear tyres on the rear axle.
+
+### Follow-up retrospective
+
+The complete `J197-VIS-001` root-cause analysis, rejected hypotheses, validation
+environment failures and permanent agent guardrails are documented in
+`docs/troubleshooting/retrospective-jordan-197-orientation-2026-08-13.md`.
+
+---
+
+## 32. AgentDB unavailable because the execution sandbox cannot write SQLite state
+
+### Symptom
+
+An agent cannot run `agentdb problem`, `agentdb knowledge` or the bootstrap
+scripts. The resolver reports `agentdb no disponible`, even though
+`.agents/runtime/target/release/agentdb.exe` exists. A direct binary invocation
+may report `unable to open database file`, while the fallback Cargo build fails
+with `target/release/.cargo-lock: Access denied`.
+
+### Root cause
+
+The current execution identity can read `.agents`, but cannot write
+`.agents/data/agents.db` or its SQLite journal/WAL files. `Test-AgentDbBinary`
+therefore rejects an otherwise valid release binary and `Resolve-AgentDb` falls
+through to an unnecessary `cargo build --release`, which requires write access
+to the protected Cargo target directory.
+
+### Correct solution
+
+1. Stop the feature or debugging task; AgentDB is a prerequisite for agent work.
+2. Run the existing release binary and preflight with an execution context that
+   has write access to the configured AgentDB database, or repair the ACL for
+   the actual execution identity.
+3. Validate in order:
+
+   ```text
+   agentdb stats
+   agentdb validate
+   .agents/scripts/08-smoke-test.ps1
+   ```
+
+4. Continue only after `PREFLIGHT: PASS`, `HEALTHCHECK: PASS` and
+   `SMOKE TEST: PASS`.
+
+### Do not
+
+- Do not rebuild Rust blindly when a valid release binary already exists.
+- Do not delete, recreate or silently switch the AgentDB database to hide an
+  access failure.
+- Do not report “no known problem” when the problem lookup itself could not run.
+- Do not proceed with vehicle, physics or gameplay changes while AgentDB remains
+  unavailable.
+
+### Validation
+
+The required evidence is a successful `00-preflight.ps1`, `01-health.ps1` and
+`08-smoke-test.ps1`. A problem query returning an empty result is valid only
+after the command has executed successfully with `{"mode":"indexed"}`.

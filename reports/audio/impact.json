@@ -1,0 +1,30 @@
+{
+  "bank": "v10_vehicle",
+  "channels": 1,
+  "csv": "reports/audio/impact.csv",
+  "description": "Cone tap + heavy barrier hit + body hit.",
+  "duration_s": 2.8,
+  "events": [
+    {
+      "gain": 0.9,
+      "kind": "cone",
+      "t": 1.0
+    },
+    {
+      "gain": 1.0,
+      "kind": "barrier",
+      "t": 1.8
+    },
+    {
+      "gain": 0.7,
+      "kind": "hit_3",
+      "t": 2.3
+    }
+  ],
+  "frames": 140,
+  "peak": 0.89,
+  "rms": 0.161189,
+  "sample_rate": 44100,
+  "scenario": "impact",
+  "wav": "reports/audio/impact.wav"
+}
