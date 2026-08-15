@@ -1,0 +1,264 @@
+extends SceneTree
+
+## Suite de pruebas para BackgroundPreset, BackgroundLayerConfig y BackgroundValidator (BG3-003)
+
+const VALID_SKY_TEX := "res://assets/backgrounds/spike_la_chutana_v3/sky.png"
+const VALID_FAR_TEX := "res://assets/backgrounds/spike_la_chutana_v3/far_mountains.png"
+const VALID_NEAR_TEX := "res://assets/backgrounds/spike_la_chutana_v3/near_mountains.png"
+
+var _failures := 0
+
+
+func _init() -> void:
+	call_deferred("_run_tests")
+
+
+func _run_tests() -> void:
+	print("=== INICIANDO PRUEBAS DE BG3-003: BACKGROUND PRESET Y VALIDATOR ===")
+
+	_test_valid_preset()
+	_test_missing_preset_id()
+	_test_empty_layers()
+	_test_duplicate_layer_id()
+	_test_duplicate_depth()
+	_test_missing_texture_path()
+	_test_non_positive_scale()
+	_test_depth_sorting()
+	_test_json_roundtrip()
+
+	print("\n=== RESUMEN DE PRUEBAS BG3-003 ===")
+	if _failures == 0:
+		print("[PASS] Todas las pruebas de validacion y presets pasaron exitosamente.")
+		quit(0)
+	else:
+		printerr("[FAIL] Se detectaron %d fallos en las pruebas de validacion." % _failures)
+		quit(1)
+
+
+func _test_valid_preset() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"test_snes_day"
+	preset.display_name = "Test SNES Day"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	l0.parallax_x = 0.02
+	preset.layers.append(l0)
+
+	var l1 := BackgroundLayerConfig.new()
+	l1.id = &"far_mountains"
+	l1.texture_path = VALID_FAR_TEX
+	l1.depth = 1
+	l1.parallax_x = 0.08
+	preset.layers.append(l1)
+
+	var l2 := BackgroundLayerConfig.new()
+	l2.id = &"near_mountains"
+	l2.texture_path = VALID_NEAR_TEX
+	l2.depth = 2
+	l2.parallax_x = 0.18
+	preset.layers.append(l2)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if not result.is_valid:
+		printerr("[FAIL] _test_valid_preset deberia ser valido, pero fallo: %s" % result.get_error_summary())
+		_failures += 1
+	else:
+		print("[OK] _test_valid_preset paso correctamente.")
+
+
+func _test_missing_preset_id() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"" # Vacio
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_missing_preset_id deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_missing_preset_id detecto ID vacio correctamente: %s" % result.errors[0])
+
+
+func _test_empty_layers() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"empty_preset"
+	preset.layers = []
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_empty_layers deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_empty_layers detecto lista vacia correctamente: %s" % result.errors[0])
+
+
+func _test_duplicate_layer_id() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"dup_id_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	preset.layers.append(l0)
+
+	var l1 := BackgroundLayerConfig.new()
+	l1.id = &"sky" # Duplicado!
+	l1.texture_path = VALID_FAR_TEX
+	l1.depth = 1
+	preset.layers.append(l1)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_duplicate_layer_id deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_duplicate_layer_id detecto duplicado correctamente: %s" % result.errors[0])
+
+
+func _test_duplicate_depth() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"dup_depth_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	preset.layers.append(l0)
+
+	var l1 := BackgroundLayerConfig.new()
+	l1.id = &"far_mountains"
+	l1.texture_path = VALID_FAR_TEX
+	l1.depth = 0 # Duplicado!
+	preset.layers.append(l1)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_duplicate_depth deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_duplicate_depth detecto conflicto de orden/depth correctamente: %s" % result.errors[0])
+
+
+func _test_missing_texture_path() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"missing_tex_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = "res://assets/backgrounds/non_existent_sky_image.png"
+	l0.depth = 0
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_missing_texture_path deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_missing_texture_path detecto textura inexistente: %s" % result.errors[0])
+
+
+func _test_non_positive_scale() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"invalid_scale_preset"
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"sky"
+	l0.texture_path = VALID_SKY_TEX
+	l0.depth = 0
+	l0.scale = Vector2(-1.0, 1.0) # Invalido
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_non_positive_scale deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_non_positive_scale detecto escala <= 0: %s" % result.errors[0])
+
+
+func _test_depth_sorting() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"sort_test"
+
+	var l_near := BackgroundLayerConfig.new()
+	l_near.id = &"near"
+	l_near.texture_path = VALID_NEAR_TEX
+	l_near.depth = 2
+	preset.layers.append(l_near)
+
+	var l_sky := BackgroundLayerConfig.new()
+	l_sky.id = &"sky"
+	l_sky.texture_path = VALID_SKY_TEX
+	l_sky.depth = 0
+	preset.layers.append(l_sky)
+
+	var l_far := BackgroundLayerConfig.new()
+	l_far.id = &"far"
+	l_far.texture_path = VALID_FAR_TEX
+	l_far.depth = 1
+	preset.layers.append(l_far)
+
+	var sorted := preset.get_layers_sorted_by_depth()
+	if sorted[0].id != &"sky" or sorted[1].id != &"far" or sorted[2].id != &"near":
+		printerr("[FAIL] _test_depth_sorting ordeno incorrectamente: %s, %s, %s" % [sorted[0].id, sorted[1].id, sorted[2].id])
+		_failures += 1
+	else:
+		print("[OK] _test_depth_sorting ordeno capas por profundidad: sky (0) -> far (1) -> near (2).")
+
+
+func _test_json_roundtrip() -> void:
+	var json_dict := {
+		"id": "json_preset_test",
+		"display_name": "JSON Preset Test",
+		"layers": [
+			{
+				"id": "sky",
+				"texture": VALID_SKY_TEX,
+				"depth": 0,
+				"parallax_x": 0.02,
+				"parallax_y": 0.0,
+				"scale": 1.0,
+				"offset_x": 0.0,
+				"offset_y": 0.0,
+				"repeat_x": false,
+				"repeat_y": false,
+				"pixel_snap": true
+			},
+			{
+				"id": "far_mountains",
+				"texture": VALID_FAR_TEX,
+				"depth": 1,
+				"parallax_x": 0.08,
+				"parallax_y": 0.01,
+				"scale": 1.0,
+				"offset_x": 0.0,
+				"offset_y": 0.0,
+				"repeat_x": false,
+				"repeat_y": false,
+				"pixel_snap": true
+			}
+		]
+	}
+
+	var preset := BackgroundPreset.from_dict(json_dict)
+	var validation := BackgroundValidator.validate_preset(preset)
+	if not validation.is_valid:
+		printerr("[FAIL] _test_json_roundtrip fallo validacion: %s" % validation.get_error_summary())
+		_failures += 1
+		return
+
+	var out_dict := preset.to_dict()
+	if out_dict["id"] != "json_preset_test" or out_dict["layers"].size() != 2:
+		printerr("[FAIL] _test_json_roundtrip no serializo correctamente.")
+		_failures += 1
+	else:
+		print("[OK] _test_json_roundtrip deserializo y serializo JSON correctamente.")

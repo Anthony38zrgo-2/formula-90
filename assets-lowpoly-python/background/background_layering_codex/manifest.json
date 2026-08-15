@@ -1,0 +1,14 @@
+{
+  "package": "background_layering_codex",
+  "purpose": "Prompt, visual references, and generated La Chutana layers for the Formula-90 parallax-background refactor",
+  "files": [
+    "PROMPT_CODEX.md",
+    "reference/00_original_reference.jpg",
+    "reference/01_mountains_near.png",
+    "reference/02_mountains_far.png",
+    "reference/03_sky.png",
+    "layers/la_chutana_sky_layer_v3_reference_edit.png",
+    "layers/la_chutana_far_mountains_layer_v3_reference_edit.png",
+    "layers/la_chutana_near_mountains_layer_v3_reference_edit.png"
+  ]
+}

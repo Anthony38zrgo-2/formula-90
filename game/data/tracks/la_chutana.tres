@@ -10,3 +10,4 @@ id = &"la_chutana"
 display_name = "La Chutana"
 track_scene = ExtResource("2")
 map_data = ExtResource("3")
+background_preset_path = "res://assets/backgrounds/la_chutana_snes_day/background.json"

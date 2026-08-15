@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "asset_id": "la_chutana_background_layers",
+  "asset_type": "pixel_art_parallax_layers",
+  "authority": "assets-lowpoly-python/background/background_layering_codex",
+  "generation": {
+    "mode": "edit",
+    "tool": "image_gen",
+    "intent": "Transferir paleta y tratamiento canonico 16-bit preservando la composicion de los inputs de referencia."
+  },
+  "inputs": [
+    {
+      "role": "canonical_composition_reference",
+      "path": "reference/00_original_reference.jpg",
+      "sha256": "849d07c0af0b038d301cef09ab36135824e5a950461fbe2fe49975f9aab6aed1",
+      "immutable": true
+    },
+    {
+      "role": "near_mountains_edit_target",
+      "path": "reference/01_mountains_near.png",
+      "sha256": "0b4cbb143d214b881ca3a152e76708a8b8ad9885105daa31978fc3d7daca7092",
+      "immutable": true
+    },
+    {
+      "role": "far_mountains_edit_target",
+      "path": "reference/02_mountains_far.png",
+      "sha256": "9b10d8aca4710afbe4f309b4fbbf252b6f58ebe2fe551bc6ea7b8a7dced6098b",
+      "immutable": true
+    },
+    {
+      "role": "sky_edit_target",
+      "path": "reference/03_sky.png",
+      "sha256": "44adddeef199ce4350aa290235d734f1c4114de94be40fc768c3addec84059f4",
+      "immutable": true
+    }
+  ],
+  "working_sources": [
+    {
+      "role": "near_mountains_chroma_intermediate",
+      "path": "working/la_chutana_near_mountains_v3_reference_edit_chroma.png",
+      "sha256": "7d47fcd6c6a4efae80b4dd0624afcda7aa90e6dacd2fd8d45367156756575dc6"
+    },
+    {
+      "role": "near_mountains_alpha_mask",
+      "path": "working/la_chutana_near_mountains_v3_reference_edit_alpha.png",
+      "sha256": "68325ddb9a6986552fb4e8aa7a88a50ae26d80ebf6246f037ea3fa497aba63f1"
+    },
+    {
+      "role": "far_mountains_chroma_intermediate",
+      "path": "working/la_chutana_far_mountains_v3_reference_edit_chroma.png",
+      "sha256": "8ef4acc8583d881bb39172f9f8d147edbb12afd0d022bc61027b6a0f9fa4c196"
+    },
+    {
+      "role": "far_mountains_alpha_mask",
+      "path": "working/la_chutana_far_mountains_v3_reference_edit_alpha.png",
+      "sha256": "e36fda33b5f6863faaf05508e9b48fbe8b18db45dd66807c97a3a098473ad09d"
+    },
+    {
+      "role": "sky_edit_source",
+      "path": "working/la_chutana_sky_v3_reference_edit_source.png",
+      "sha256": "e1104e249cd81a2aac13309cfed1d178a37af6cc55ea9b63e00905690132e31c"
+    }
+  ],
+  "transformations": [
+    "edit_transfer_from_reference",
+    "chroma_key_to_alpha_mask",
+    "palette_quantize_16bit_snes",
+    "nearest_resize_to_1280x720"
+  ],
+  "outputs": [
+    {
+      "layer_id": "sky",
+      "version": "v3",
+      "depth": 0,
+      "path": "layers/la_chutana_sky_layer_v3_reference_edit.png",
+      "sha256": "5fd5cc0574b1330c4e96a650fd2dd498736856a1801a8278ae528dc5dda2c036",
+      "width": 1280,
+      "height": 720,
+      "alpha": "opaque",
+      "palette_colors": 20,
+      "status": "accepted"
+    },
+    {
+      "layer_id": "far_mountains",
+      "version": "v3",
+      "depth": 1,
+      "path": "layers/la_chutana_far_mountains_layer_v3_reference_edit.png",
+      "sha256": "0deb3e705c9f75116af89fc680d8161bf86792917fd9c8c52c6979d40f195159",
+      "width": 1280,
+      "height": 720,
+      "alpha": "binary",
+      "palette_colors": 21,
+      "status": "accepted"
+    },
+    {
+      "layer_id": "near_mountains",
+      "version": "v3",
+      "depth": 2,
+      "path": "layers/la_chutana_near_mountains_layer_v3_reference_edit.png",
+      "sha256": "3566b213c4079d9ad981918a934d595b498bb1615f0e31e534c6071a6d414937",
+      "width": 1280,
+      "height": 720,
+      "alpha": "binary",
+      "palette_colors": 24,
+      "status": "accepted"
+    }
+  ],
+  "validation": {
+    "paths_resolve": true,
+    "hashes_match": true,
+    "visual_review": "accepted",
+    "reviewer": "race-presentation"
+  }
+}

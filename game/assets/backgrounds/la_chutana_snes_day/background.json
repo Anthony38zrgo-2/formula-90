@@ -1,0 +1,51 @@
+{
+  "id": "la_chutana_snes_day",
+  "display_name": "La Chutana SNES Day",
+  "layers": [
+    {
+      "id": "sky",
+      "texture": "res://assets/backgrounds/la_chutana_snes_day/sky.png",
+      "depth": 0,
+      "parallax_x": 0.02,
+      "parallax_y": 0.00,
+      "scale": 1.0,
+      "offset_x": 0.0,
+      "offset_y": 0.0,
+      "repeat_x": false,
+      "repeat_y": false,
+      "pixel_snap": true,
+      "distance_z": -800.0,
+      "pixel_size": 0.5
+    },
+    {
+      "id": "far_mountains",
+      "texture": "res://assets/backgrounds/la_chutana_snes_day/far_mountains.png",
+      "depth": 1,
+      "parallax_x": 0.08,
+      "parallax_y": 0.01,
+      "scale": 1.0,
+      "offset_x": 0.0,
+      "offset_y": 0.0,
+      "repeat_x": false,
+      "repeat_y": false,
+      "pixel_snap": true,
+      "distance_z": -700.0,
+      "pixel_size": 0.5
+    },
+    {
+      "id": "near_mountains",
+      "texture": "res://assets/backgrounds/la_chutana_snes_day/near_mountains.png",
+      "depth": 2,
+      "parallax_x": 0.18,
+      "parallax_y": 0.02,
+      "scale": 1.0,
+      "offset_x": 0.0,
+      "offset_y": 0.0,
+      "repeat_x": false,
+      "repeat_y": false,
+      "pixel_snap": true,
+      "distance_z": -600.0,
+      "pixel_size": 0.5
+    }
+  ]
+}

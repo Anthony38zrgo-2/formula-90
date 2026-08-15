@@ -2,6 +2,37 @@
   "schema_version": 1,
   "items": [
     {
+      "id": "J196-001",
+      "epic": "canonical-f1-handling",
+      "title": "Correct Jordan 196 visual orientation (currently faces backwards)",
+      "description": "Diagnose the forward-axis contract between the legacy f1_1996 GLBs, f1_1996_car.tscn visual hierarchy, VehicleRigidBody and controllers. Correct the owning visual/import transform so the Jordan 196 nose, front axle, steering and chase-camera direction agree, without inverting vehicle physics or destructively rewriting source geometry unless evidence proves that the asset itself owns the error.",
+      "item_type": "bugfix",
+      "status": "proposed",
+      "priority": 120,
+      "sort_order": 0,
+      "rationale": "The user reports that the Jordan 196 is visibly facing backwards. Vehicle orientation is a blocking presentation and control-contract defect and must be resolved before further promotion or handling comparison work.",
+      "technical_risk": "Medium. Rotating the physics owner or applying a negative scale could invert controls, wheel ownership, collision orientation or camera behavior; diagnose visual and physical forward axes separately before changing anything.",
+      "user_value": "Restores a visually and mechanically coherent Jordan 196 that can be compared and tested without driving a backwards-facing car.",
+      "dependencies": [],
+      "affected_areas": [
+        "game/scenes/vehicles/f1_1996_car.tscn",
+        "game/assets/models/vehicles/f1_1996/",
+        "game/tests/"
+      ],
+      "acceptance_criteria": [
+        "The visual nose points in the same direction as the canonical vehicle forward vector and positive throttle travel.",
+        "The visual front axle, steering wheels and RayCast front axle refer to the same end of the car.",
+        "The chase camera remains behind the car and controls are not inverted after the correction.",
+        "The fix is applied at the owning transform/import boundary; source GLBs are regenerated only if analysis proves their coordinate contract is wrong.",
+        "Structural scene validation and an interactive forward-motion visual check pass without regressions to Jordan 197."
+      ],
+      "evidence": [
+        "User report 2026-08-13: Jordan 196 is looking backwards."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Promoted to top backlog priority by explicit user request on 2026-08-13 before the Jordan 197 commit/push handoff."
+    },
+    {
       "id": "HAN-001",
       "epic": "canonical-f1-handling",
       "title": "Establish one canonical Jordan 191 handling scene and Monaco GP2-style acceptance matrix",
@@ -1212,6 +1243,217 @@
       "source_context": "Target Phase 13."
     },
     {
+      "id": "AUD-001",
+      "epic": "vehicle-audio",
+      "title": "Phase 1: build the original F1 vehicle sound bank and offline scenario renderer",
+      "description": "Create an offline deterministic Python audio suite and an ordered bank in game/sounds/banks/v10_vehicle derived from the ORIGINAL samples in assets-lowpoly-python/sounds (F1-1998 engine internal + Grand Prix surfaces/impacts), before any VehicleAudioState, VehicleSoundBank, GEVP adapter or Godot runtime change. No synthesis: samples are resampled deterministically to mono PCM16 44.1 kHz, DC-normalized, peak-normalized and (for loops) seam-crossfaded. A declarative bank_spec maps each source to a stable role. A scenario renderer consumes RPM, speed, throttle, gear, wheel slip, surface and impact events and writes an auditionable WAV plus event/level report under reports/audio/.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 130,
+      "sort_order": -10,
+      "rationale": "The product owner selected the original sample set in assets-lowpoly-python/sounds as the correct source for the vehicle-audio bank (2026-08-14 replan): no synthesis, bank derived from those samples. Runtime integration before a valid and testable bank would couple unverified content to vehicle physics prematurely.",
+      "technical_risk": "Medium. Source samples mix rates (11.025/22.05/44.1 kHz) and one is 8-bit; upsampling does not restore detail, so resampling must be deterministic and format must be unified to mono PCM16 44.1 kHz for the native loader.",
+      "user_value": "Produces an audible, reviewable foundation for all F1 car sounds from the approved original samples before any runtime architecture is committed, and gives each later vehicle a reusable declarative sound-bank contract.",
+      "dependencies": [],
+      "affected_areas": [
+        "game/sounds/",
+        "tools/audio/",
+        "reports/audio/",
+        "game/tests/"
+      ],
+      "acceptance_criteria": [
+        "game/sounds/banks/v10_vehicle contains the ordered bank derived from assets-lowpoly-python/sounds with bank_manifest.json declaring provenance (derived from original samples), source_file, source_sha256, role, duration, loop flag, loudness, peak and DC per entry.",
+        "No synthesis modules remain; the bank is produced by bank_spec.py mapping + bank_generator.py resample/organize.",
+        "Every runtime candidate is mono PCM16 44.1 kHz, has no clipping, and passes peak, DC and loop-continuity validation.",
+        "tools/audio/render_audio_scenario.py accepts a deterministic scenario fixture with RPM, speed, throttle, gear, slip, surface and impact events and writes a WAV preview plus CSV/JSON timing and level report in reports/audio/.",
+        "Idle-to-redline-with-shifts, road-to-sand-with-kerb, grass skid and impact scenarios are rendered and manually audible (wind dropped: no wind sample in the set; asphalt has no tire bed).",
+        "Python tests cover deterministic output hashes/metadata and the bank validator; no Godot scene, GEVP physics or native audio-controller behavior changes in this phase."
+      ],
+      "evidence": [
+        "assets-lowpoly-python/sounds contains the original F1-1998 internal (98_int_*) and Grand Prix (GP_*) sample set across 11.025/22.05/44.1 kHz.",
+        "Current EngineAudioController accepts mono PCM16 at 44.1/48 kHz and currently provides only engine loops and gear one-shots.",
+        "Product owner replan 2026-08-14: use the samples in assets-lowpoly-python/sounds; these are correct; no synthesis.",
+        "AUD-001 completed 2026-08-14: v10_vehicle bank (23 entries) built from original samples via bank_spec/bank_generator, bank_validator green, 4 offline scenario renders in reports/audio, 11 pytest PASS."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Product owner replan 2026-08-14: bank built from the original samples in assets-lowpoly-python/sounds (correct), no synthesis. Bank name v10_vehicle (generic referencing a V10)."
+    },
+    {
+      "id": "AUD-002",
+      "epic": "vehicle-audio",
+      "title": "Phase 2: Rust runtime — VehicleAudioState + VehicleSoundBank + GEVP adapter",
+      "description": "Implement the runtime vehicle-audio layer in pure Rust under game/audio/engine/ that reuses the approved v10_vehicle bank (no synthesis, no wind, no ambient one-shots). VehicleSoundBank loads game/sounds/banks/v10_vehicle/*.wav + bank_manifest.json and exposes mono PCM16 44.1k buffers by key. VehicleAudioState is a deterministic pure mix core computing 5-band engine weights by normalized_rpm/gear, throttle/slip/surface gains (asphalt = no bed; sand/grass/rumble only), and one-shot triggers (shift_up/down, engine_backfire, impact_hit_*, barrier, cone, fire, scrape). A thin adapter maps GEVP telemetry (vehicle.gd / vehicle_controllergd.gd: rpm, throttle, speed_kph, gear, slip, surface, impact) into the State. A thin Godot controller instantiates the state and drives AudioStreamWAV per role. Parity with tools/audio/render_audio_scenario.py scenarios.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 120,
+      "sort_order": -5,
+      "rationale": "AUD-001 delivered and approved the offline bank + scenario oracle. Runtime integration before a validated bank would couple unverified content to physics; the bank now exists, so the pure-Rust runtime (state + bank + adapter) is the next step, keeping audio rules out of GDScript and GEVP.",
+      "technical_risk": "Medium. Requires a pure-Rust crate under game/audio/engine/ with no Godot deps in the mix core, exact parity with the offline mixer (crossfade LOOP_XFADE=512, 5-band weights), and a thin Godot adapter. Mono PCM16 44.1/48 kHz loader contract.",
+      "user_value": "Gives every F1 car a deterministic, testable runtime audio core that consumes the approved bank, and a reusable declarative state/adaptor contract for future vehicles.",
+      "dependencies": ["AUD-001"],
+      "affected_areas": [
+        "game/audio/engine/",
+        "game/sounds/banks/v10_vehicle/",
+        "game/addons/formula90s/scripts/audio/",
+        "game/tests/",
+        "tools/validation/"
+      ],
+      "acceptance_criteria": [
+        "game/audio/engine/ is a pure-Rust crate (lib) with modules state, bank, dsp, adapter and lib re-exports.",
+        "VehicleSoundBank::load reads bank_manifest.json + WAVs from game/sounds/banks/v10_vehicle and exposes buffers by key with validation (mono PCM16 44.1k, sha256 vs manifest).",
+        "VehicleAudioState computes deterministic 5-band engine weights by normalized_rpm/gear, throttle/slip/surface gains, and one-shot triggers; no wind and no ambient entries.",
+        "GEVP adapter maps vehicle.gd/vehicle_controllergd.gd telemetry into VehicleAudioState without duplicating audio rules in GDScript.",
+        "Godot controller vehicle_audio_controller.gd is thin: instantiates state, feeds telemetry per frame, drives AudioStreamWAV per role.",
+        "Runtime mix parity checks against render_audio_scenario scenarios (idle_to_redline_with_shifts, road_to_sand_with_kerb, grass_skid, impact).",
+        "Rust tests pass (cargo test) and Godot headless validation passes; no change to v10_vehicle sample set."
+      ],
+      "evidence": [
+        "AUD-001 delivered and approved the v10_vehicle bank and 4 offline scenario renders in reports/audio/.",
+        "native/include/formula90s/audio/engine_dsp.hpp already defines EngineLayerMixer 5-band weights and DSP chain semantics.",
+        "GEVP vehicle.gd / vehicle_controllergd.gd expose rpm, throttle, speed, gear and slip telemetry used by the adapter.",
+        "Product owner 2026-08-14: state in game/audio (engine subfolder), pure Rust, connect as planned; no wind; no ambient one-shots.",
+        "AUD-002 completed 2026-08-14: game/audio/engine crate (state/bank/dsp/adapter/lib) with ENGINE_BAND_NATIVE_RPM, pitch tracking, loop integrity (loop_end in frames), 24 Rust tests + bank integration 6 tests PASS."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "Product owner 2026-08-14: AUD-002 runtime in game/audio/engine/ (pure Rust), no wind, no ambient one-shots in this iteration; connect GEVP->audio as planned."
+    },
+    {
+      "id": "AUD-003",
+      "epic": "vehicle-audio",
+      "title": "Phase 3: integrate v10_vehicle audio into the F1-94 decoupled pipeline",
+      "description": "Wire game/audio/engine (VehicleSoundBank + VehicleAudioState) into the F1-94 decoupled vehicle pipeline validated by run_f1-94.ps1. Attach vehicle_audio_controller.gd to F194 / VehicleRigidBody, read GEVP telemetry (motor_rpm, throttle_amount, current_gear, speed, wheel slip) and map track surface via generated_track_surface_groups (asphalt=none, sand, grass, rumble) plus one-shot triggers (shift, backfire, hits, barrier, cone, fire, scrape). Keep parity with tools/audio/render_audio_scenario scenarios. No wind or ambient.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 110,
+      "sort_order": 0,
+      "rationale": "Follows the validated run_f1-94.ps1 pipeline (manifest/geometry hash checks, headless import, smoke_test_f1_94_la_chutana_hud). Audio must be proven inside the same decoupled F1-94 session that already guarantees visuals, HUD and physics contacts, instead of a separate test harness.",
+      "technical_risk": "Medium. Surface detection via CollisionShape groups and GEVP wheel slip aggregation must not pollute the decoupled scene or break the existing HUD/minimap/contact smoke.",
+      "user_value": "The F-94 driven in vehicle_test_session.tscn now has deterministic V10 engine/surface/impact audio that is validated by the same pipeline that proves the visual/physics integration.",
+      "dependencies": ["AUD-002"],
+      "affected_areas": [
+        "game/scenes/vehicles/f1_94/f1_94.tscn",
+        "game/addons/formula90s/scripts/audio/vehicle_audio_controller.gd",
+        "game/audio/engine/",
+        "game/addons/formula90s/scripts/generated_track_surface_groups.gd",
+        "game/tests/smoke_test_f1_94_audio.gd",
+        "scripts/run_f1-94.ps1"
+      ],
+      "acceptance_criteria": [
+        "F1-94 decoupled scene loads with VehicleAudioController attached and bound to VehicleRigidBody.",
+        "GEVP telemetry flows to VehicleAudioState (rpm, throttle, gear, speed, slip, surface) and drives AudioStreamWAV per role.",
+        "Surface mapping covers asphalt (none), sand, grass, rumble via generated_track_surface_groups.",
+        "Headless smoke passes 4/4 contacts plus audio controller validation alongside the existing HUD/minimap smoke.",
+        "run_f1-94.ps1 -SmokeAudio validates audio integration headlessly; no wind or ambient entries are added."
+      ],
+      "evidence": [
+        "run_f1-94.ps1 validates F1_94 chassis/wheels hashes and runs smoke_test_f1_94_la_chutana_hud.gd as the quality gate.",
+        "AUD-002 delivered the pure-Rust core under game/audio/engine and the thin GDScript controller.",
+        "AUD-003 completed 2026-08-14: VehicleAudioController attached to F1-94 scene, surface via GEVP wheel.surface_type, smoke_test_f1_94_audio.gd headless PASS, run_f1-94.ps1 -SmokeAudio exit 0."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "User 2026-08-14: follow the run_f1-94.ps1 pipeline; that is the scope."
+    },
+    {
+      "id": "AUD-004",
+      "epic": "vehicle-audio",
+      "title": "Phase 4: fix runtime audio playback in Godot (loop_end, surfaces, pitch tracking)",
+      "description": "Fix the in-game audio problems found while validating the F1-94 audio integration: (1) engine/surface loops sounded high-pitched/choppy because AudioStreamWAV loop_end was computed from compressed data bytes (QOA import) instead of stream frames; (2) surface beds were not audible because the controller duplicated surface detection instead of reading GEVP wheel.surface_type; (3) engine revs did not track the tachometer because bands played at native pitch without pitch tracking; (4) shift one-shots only fired for gear changes. Add per-band pitch_scale = rpm / native_rpm with measured ENGINE_BAND_NATIVE_RPM, PITCH clamp, and weight-gated telemetry stats.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 105,
+      "sort_order": 5,
+      "rationale": "Validating the runtime audio revealed Godot-side playback bugs that made the approved bank sound wrong in game (loop truncation, silent surfaces, desynced revs). These are runtime fixes, not content changes.",
+      "technical_risk": "Low-medium. Runtime-only changes; the bank WAVs and offline oracle are unchanged.",
+      "user_value": "The F-94 now plays the approved v10_vehicle bank correctly in game: clean loops, audible surfaces, and revs that follow the tachometer.",
+      "dependencies": ["AUD-003"],
+      "affected_areas": [
+        "game/addons/formula90s/scripts/audio/vehicle_audio_controller.gd",
+        "game/audio/engine/src/state.rs",
+        "tools/audio/bank_spec.py",
+        "game/tests/smoke_test_f1_94_audio.gd"
+      ],
+      "acceptance_criteria": [
+        "Loop playback uses the imported stream duration (get_length()*mix_rate) for loop_end; the smoke fails if loop_end truncates below 90% of the stream.",
+        "Surface detection reads GEVP wheel.surface_type (Road/Curb/Grass/Gravel/Dirt) with collider fallback.",
+        "Per-band pitch_scale = rpm / ENGINE_BAND_NATIVE_RPM clamped [0.5, 3.5]; idle/redline smoke asserts track the tachometer.",
+        "Weight-gated telemetry summary ignores muted bands for pitch/clamp stats."
+      ],
+      "evidence": [
+        "Pair review 2026-08-14: loop_end was 20.2% of stream (QOA data.size() != frames); fixed to get_length()*mix_rate and falsified via smoke (6 FAIL with old formula).",
+        "ENGINE_BAND_NATIVE_RPM measured from 98_int_* sources via full-loop spectral peaks (3941/7429/8196/5580/7687).",
+        "PITCH_MAX raised 2.0->3.5: telemetry showed engine_high saturated at 2.0 (mean 1.9995); after fix clamp_high_hits all zero.",
+        "24 Rust tests + smoke_test_f1_94_audio PASS."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "User 2026-08-14: audio sounds wrong in game (engine/revs); diagnose via telemetry; same GEVP pitch concept; keep crossfade."
+    },
+    {
+      "id": "AUD-005",
+      "epic": "vehicle-audio",
+      "title": "Phase 5: Rust audio telemetry — va_replay + optional in-game sampler",
+      "description": "Add observability for the audio mix core: (A) va_replay binary replays a real telemetry CSV through VehicleAudioState and emits per-frame weights/pitches/gains plus a summary (band shares, pitch stats, clamp hits, shift counts, bank integrity); (B) optional audio_telemetry.gd in-game sampler (off by default) writes game/telemetry/audio_telemetry_*.csv + _setup.json paired with the session, capturing the controller's last mix.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 100,
+      "sort_order": 10,
+      "rationale": "To know exactly what the audio module is doing and why, the Rust core needs first-party telemetry: offline replay from real sessions and an optional in-game sampler. This was the basis for the PITCH_MAX fix.",
+      "technical_risk": "Low. Pure Rust + optional GDScript sampler; no runtime audio changes when disabled.",
+      "user_value": "Deterministic, inspectable audio decisions per frame and session summaries to diagnose rev/sync/loop issues without guessing.",
+      "dependencies": ["AUD-004"],
+      "affected_areas": [
+        "game/audio/engine/src/telemetry.rs",
+        "game/audio/engine/src/bin/va_replay.rs",
+        "game/addons/formula90s/scripts/audio/audio_telemetry.gd",
+        "game/scenes/vehicles/f1_94/f1_94.tscn"
+      ],
+      "acceptance_criteria": [
+        "va_replay parses telemetry_manager CSV, replays mix deterministically, emits mix CSV + summary JSON including bank_integrity when --bank given.",
+        "Weight-gated summary ignores muted bands (regression test).",
+        "audio_telemetry.gd is off by default; when enabled it writes paired CSV+setup and rows are produced in a session.",
+        "cargo test, clippy -D warnings, fmt, Godot check-only and smoke all pass."
+      ],
+      "evidence": [
+        "va_replay on telemetry_20260814_183708_611.csv: 1242 rows, rpm 4500..17683, shifts 12/12, crossfade 78%; weight-gated clamp_high [0,0,0,777,282] before PITCH_MAX fix, [0,0,0,0,0] after.",
+        "In-game sampler verified headless: rows written with surface/weights/pitches/gain; setup JSON carries engine_native_rpm.",
+        "24 Rust tests + smoke PASS."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "User 2026-08-14: is there a way to implement audio module telemetry in Rust to know exactly what is happening and why? Test option A (va_replay); add optional in-game sampler."
+    },
+    {
+      "id": "AUD-006",
+      "epic": "vehicle-audio",
+      "title": "Wire remaining v10_vehicle bank samples not yet used in game",
+      "description": "The v10_vehicle bank contains samples that are NOT currently triggered by any game event. Wire them or explicitly drop them: engine_tc (traction control loop), engine_limiter (limiter engage), engine_backfire (98_start_backfire), engine_starter (98_starter), shift_3 (98_int_shift_3, extra shift variant), and all impacts (impact_hit_1..4, impact_barrier, impact_cone, impact_fire, impact_scrape) which need collision event wiring in the controller (barrier/wall hits, cone hits, curb hits, scrape, fire). Currently only engine bands, surf_grass/sand/rumble and shift_up/shift_down are used.",
+      "item_type": "feature",
+      "status": "proposed",
+      "priority": 80,
+      "sort_order": 20,
+      "rationale": "The approved bank has 23 entries but only ~10 are wired; the remaining engine/impact one-shots and loops exist in the bank and should either be triggered by real game events (impacts via wheel.last_collider groups, limiter at max rpm, tc when TCS active, starter/backfire) or be removed from the bank to avoid dead assets.",
+      "technical_risk": "Medium. Impact triggering needs collision-event wiring in the GDScript controller with cooldowns; must not disturb the physics or HUD pipeline.",
+      "user_value": "Completes the audio experience (impacts, limiter, tc, starter) and removes dead bank entries or documents their intended triggers.",
+      "dependencies": ["AUD-004"],
+      "affected_areas": [
+        "game/addons/formula90s/scripts/audio/vehicle_audio_controller.gd",
+        "game/sounds/banks/v10_vehicle/",
+        "tools/audio/bank_spec.py",
+        "game/tests/smoke_test_f1_94_audio.gd"
+      ],
+      "acceptance_criteria": [
+        "Each unused bank entry is either wired to a game event (with cooldown) or removed from BANK_SPEC/manifest with a documented reason.",
+        "Impacts trigger on wheel.last_collider groups (Wall->barrier, Curb@speed->hit_*, etc.) without spamming.",
+        "engine_limiter triggers at rpm >= max*1.05; engine_tc loops when TCS active; starter on first 0->1 gear; backfire on lift-off at high rpm.",
+        "shift_3 used as an alternate upshift variant (deterministic alternation).",
+        "Headless smoke + run_f1-94.ps1 -SmokeAudio stay green."
+      ],
+      "evidence": [
+        "Bank manifest 23 entries; controller currently triggers only shift_up/shift_down on gear change (vehicle_audio_controller.gd:216).",
+        "Samples engine_tc, engine_limiter, engine_backfire, engine_starter, shift_3, impact_* have no triggering event in game code (grep confirmed)."
+      ],
+      "source_agent": "product-owner",
+      "source_context": "User 2026-08-14: mark AUD done; leave pending in backlog the samples not being used."
+    },
+    {
       "id": "TS-210",
       "epic": "track-studio",
       "title": "Final Track Studio acceptance and legacy retirement",
@@ -1244,6 +1486,345 @@
       ],
       "source_agent": "opencode",
       "source_context": "Final Track Studio acceptance."
+    },
+    {
+      "id": "AUDIT-OBJ-001",
+      "epic": "audit-pending",
+      "title": "Audit pending: verify destructive OBJ validator fixes (BUG-007 to BUG-010)",
+      "description": "Create minimal non-destructive regression fixtures to reproduce or falsify the audited OBJ-validator claims: front/rear wheel classification against the Formula-90 -Z-front import standard, decimation retention of UVs/normals/materials, duplicate newmtl emission, and mirrored-face normal preservation. Do not change implementation or run bulk fixes until each fixture establishes the failure signature.",
+      "item_type": "audit",
+      "status": "proposed",
+      "priority": 1,
+      "sort_order": 1000,
+      "rationale": "Static audit found credible defects in wheel front/rear classification, decimation preservation, MTL emission and symmetry normals. They stay parked until minimal fixtures reproduce each fault and establish the current vehicle-import standard as the oracle.",
+      "technical_risk": "Medium. The affected commands can silently alter asset geometry or material data; no automatic --all workflow should be changed from a static report alone.",
+      "user_value": "Preserves a traceable path to harden the vehicle-import validator without interrupting current work.",
+      "dependencies": [],
+      "affected_areas": [
+        "blender/obj_validator/",
+        "docs/vehicles/VEHICLE_IMPORT_STANDARD.md"
+      ],
+      "acceptance_criteria": [
+        "Each of BUG-007, BUG-008, BUG-009 and BUG-010 has a minimal reproducible fixture and an expected failure signature.",
+        "The wheel fixture validates the Formula-90 convention: front is -Z, right is +X.",
+        "No asset or production validator implementation changes are made as part of this audit task."
+      ],
+      "evidence": [
+        "Static audit 2026-08-14: fix_wheels.py classifies positive Z as front despite its own negative-Z documentation.",
+        "Static audit 2026-08-14: decimate_object writes zero UV/normal indices, MTL emission can duplicate newmtl, and force_symmetry writes zero normal indices."
+      ],
+      "source_agent": "audit",
+      "source_context": "External formula-90 backlog audited 2026-08-14; explicitly retained by user at minimum priority, pending reproduction."
+    },
+    {
+      "id": "AUDIT-GEVP-001",
+      "epic": "audit-pending",
+      "title": "Audit pending: reproduce steering-at-rest and neutral gear-ratio behavior (BUG-004 and BUG-014)",
+      "description": "Use an isolated F1-94 runtime probe to reproduce or falsify the steering-at-rest division and automatic-transmission neutral gear-ratio indexing claims. Capture finite-state telemetry for speed, steering amount, velocity, current gear and computed RPM. Repair the AgentDB/validation environment first; a crash before assertions is inconclusive.",
+      "item_type": "audit",
+      "status": "proposed",
+      "priority": 1,
+      "sort_order": 1001,
+      "rationale": "Static inspection found an unguarded steering division by speed and a negative gear-ratio index while neutral. Do not patch GEVP until an isolated F1-94 runtime probe captures the actual behavior and excludes setup or validation-environment failures.",
+      "technical_risk": "High if confirmed, but unknown until reproduced. Changes would affect vendor GEVP handling and transmission behavior.",
+      "user_value": "Keeps potentially important vehicle-simulation findings visible without treating static code as a gameplay regression.",
+      "dependencies": [],
+      "affected_areas": [
+        "game/addons/gevp/scripts/vehicle.gd",
+        "game/scenes/vehicles/f1_94/",
+        "game/tests/"
+      ],
+      "acceptance_criteria": [
+        "A reproducible F1-94 probe records finite steering and velocity at rest with steering input.",
+        "A neutral automatic-transmission probe establishes whether gear_ratios[-1] changes observable RPM or shifting behavior.",
+        "Every result is PASS, FAIL or INCONCLUSIVE; no production patch is included."
+      ],
+      "evidence": [
+        "Static audit 2026-08-14: vehicle.gd divides steering correction by speed.",
+        "Static audit 2026-08-14: vehicle.gd indexes gear_ratios[current_gear - 1] before neutral branching."
+      ],
+      "source_agent": "audit",
+      "source_context": "External formula-90 backlog audited 2026-08-14; explicitly retained by user at minimum priority, pending reproduction."
+    },
+    {
+      "id": "AUDIT-GEVP-002",
+      "epic": "audit-pending",
+      "title": "Audit pending: contain conditional rear-wheel debug logging (BUG-002)",
+      "description": "Measure rear-wheel high-compression and bottom-out logging during a representative F1-94 run, then decide whether to replace it with opt-in telemetry or a throttled diagnostic channel. Preserve an observable suspension signal before removing logs.",
+      "item_type": "audit",
+      "status": "proposed",
+      "priority": 1,
+      "sort_order": 1002,
+      "rationale": "Rear-wheel high-compression and bottom-out branches emit runtime prints. The condition is real, but the external report overstated it as unconditional per-frame logging; measure it under a representative F1-94 run before changing diagnostics.",
+      "technical_risk": "Low. Removing diagnostics without an alternate telemetry signal could hide a suspension issue.",
+      "user_value": "Keeps the logging cleanup visible while preserving diagnostic evidence until it is measured.",
+      "dependencies": [],
+      "affected_areas": [
+        "game/addons/gevp/scripts/wheel.gd",
+        "game/scenes/vehicles/f1_94/",
+        "game/tests/"
+      ],
+      "acceptance_criteria": [
+        "A representative run reports frequency and conditions of each rear-wheel debug message.",
+        "A proposed replacement preserves the relevant diagnostic signal without unconditional stdout output.",
+        "No production logging change is included in the audit task."
+      ],
+      "evidence": [
+        "Static audit 2026-08-14: wheel.gd prints only in rear bottom-out and high-compression branches."
+      ],
+      "source_agent": "audit",
+      "source_context": "External formula-90 backlog audited 2026-08-14; explicitly retained by user at minimum priority, pending measurement."
+    },
+    {
+      "id": "BG3-001",
+      "epic": "race-presentation",
+      "title": "Freeze La Chutana 3-layer PNG v3 provenance with SHA-256 manifest",
+      "description": "Create generative_asset_manifest.json registering SHA-256 hashes, roles, dimensions, palette counts and visual review status for the 3 canonical background layers (sky, far_mountains, near_mountains). Freeze the v3 asset set as the accepted baseline; no regeneration or overwrite without explicit review.",
+      "item_type": "infrastructure",
+      "status": "done",
+      "priority": 100,
+      "sort_order": 150,
+      "rationale": "La Chutana background refactor requires frozen canonical layers with deterministic hashes before any runtime integration or visual tuning.",
+      "technical_risk": "Low. Manifest-only asset freezing; no runtime or pipeline changes.",
+      "user_value": "Establishes traceable provenance for the 3 background layers so future visual adjustments or layer replacements can be compared against an accepted baseline.",
+      "dependencies": [],
+      "affected_areas": [
+        "assets-lowpoly-python/background/background_layering_codex/generative_asset_manifest.json",
+        "game/assets/backgrounds/la_chutana_snes_day/"
+      ],
+      "acceptance_criteria": [
+        "generative_asset_manifest.json declares SHA-256, dimensions, palette, alpha mode and status for each v3 layer.",
+        "No v3 PNG is overwritten or regenerated after manifest freeze.",
+        "Visual review status is recorded as 'accepted'."
+      ],
+      "evidence": [
+        "generative_asset_manifest.json exists with 3 accepted outputs, SHA-256 hashes, 1280x720 dimensions.",
+        "Visual review accepted by race-presentation owner."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: freeze provenance, register hashes, roles and visual review."
+    },
+    {
+      "id": "BG3-002",
+      "epic": "race-presentation",
+      "title": "Spike: decoupled 3-layer camera-followed render architecture",
+      "description": "Prove that 3 independent Sprite3D layers (sky/far_mountains/near_mountains) can sit behind world geometry with correct parallax hierarchy, Nearest filtering, unshaded rendering and camera-follow positioning. The spike must demonstrate: (1) world geometry occludes background, (2) pixel art preserved, (3) parallax Sky < Far < Near at 30-degree turns. No legacy track modification in this phase.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 98,
+      "sort_order": 155,
+      "rationale": "The old background was a monolithic panorama embedded in the track scene. A decoupled camera-followed compositor must prove the architecture before committing to the full system.",
+      "technical_risk": "Medium. Must choose one movement owner (camera -> BackgroundController) and prove that world geometry occludes background layers correctly.",
+      "user_value": "Proves the technical foundation for all future background presets without coupling to any specific track or physics system.",
+      "dependencies": ["BG3-001"],
+      "affected_areas": [
+        "game/tests/spike_3_layer_background.gd",
+        "game/addons/formula90s/scripts/background_controller.gd",
+        "game/assets/backgrounds/spike_la_chutana_v3/"
+      ],
+      "acceptance_criteria": [
+        "3 layers instantiate behind world geometry with correct depth ordering.",
+        "Nearest filtering, unshaded, no shadows, no GI on all layers.",
+        "Parallax hierarchy verified at +30 and -30 degree camera yaw: abs(sky) < abs(far) < abs(near).",
+        "No CollisionObject3D or NavigationRegion3D descendants in the background rig."
+      ],
+      "evidence": [
+        "spike_3_layer_background.gd PASS: 3 layers, parallax hierarchy verified, no physics nodes."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: spike render minimum, compare compositor vs tarjetas 3D camera-followed."
+    },
+    {
+      "id": "BG3-003",
+      "epic": "race-presentation",
+      "title": "Define BackgroundPreset external config and BackgroundValidator",
+      "description": "Create BackgroundPreset (Resource) and BackgroundLayerConfig (Resource) as the external configuration model for background composition. Implement BackgroundValidator with strict checks: unique layer IDs, unique depths, existing texture paths, positive scale, positive pixel_size, finite parallax/offset values. JSON deserialization via from_dict/to_dict. Failures must be explicit and legible, never a silent black background.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 96,
+      "sort_order": 160,
+      "rationale": "Background composition must be externally configurable with strict validation to prevent silent misconfiguration.",
+      "technical_risk": "Low. Pure data model and validation logic; no runtime rendering changes.",
+      "user_value": "Makes the background system data-driven and prevents silent misconfiguration from producing broken visuals.",
+      "dependencies": ["BG3-002"],
+      "affected_areas": [
+        "game/addons/formula90s/scripts/background_preset.gd",
+        "game/addons/formula90s/scripts/background_layer_config.gd",
+        "game/addons/formula90s/scripts/background_validator.gd",
+        "game/tests/test_background_preset_validator.gd"
+      ],
+      "acceptance_criteria": [
+        "BackgroundPreset loads from JSON file and serializes back via to_dict.",
+        "BackgroundValidator catches: empty ID, empty layers, duplicate layer ID, duplicate depth, missing texture, non-positive scale, non-positive pixel_size, NaN/Inf parallax or offset.",
+        "9 unit tests pass in test_background_preset_validator.gd."
+      ],
+      "evidence": [
+        "test_background_preset_validator.gd: 9 tests PASS (valid_preset, missing_id, empty_layers, duplicate_id, duplicate_depth, missing_texture, non_positive_scale, depth_sorting, json_roundtrip)."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: BackgroundPreset external config, validator with legible errors."
+    },
+    {
+      "id": "BG3-004",
+      "epic": "race-presentation",
+      "title": "Implement BackgroundController and reusable BackgroundLayerInstance",
+      "description": "BackgroundController (Node3D) manages preset loading, layer lifecycle, camera tracking and parallax calculation. BackgroundLayerInstance (Sprite3D) is an independent render unit with Nearest filtering, unshaded, no shadows, no GI, no collision. API: load_preset, load_preset_from_file, clear_layers, set_camera_source, set_enabled. Supports N future layers without code changes.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 94,
+      "sort_order": 165,
+      "rationale": "The BackgroundController is the runtime backbone that ties presets, layers and camera together.",
+      "technical_risk": "Low-medium. Sprite3D-based rendering with camera-follow; no physics coupling.",
+      "user_value": "Provides the reusable runtime backbone for all background presets.",
+      "dependencies": ["BG3-003"],
+      "affected_areas": [
+        "game/addons/formula90s/scripts/background_controller.gd",
+        "game/addons/formula90s/scripts/background_layer_instance.gd",
+        "game/tests/test_background_controller.gd"
+      ],
+      "acceptance_criteria": [
+        "load_preset instantiates N layers sorted by depth.",
+        "Camera follow updates root position to camera X/Z.",
+        "Parallax update applies yaw/pitch offsets per layer with pixel snapping.",
+        "set_enabled toggles visibility and processing.",
+        "Invalid preset is rejected with push_error.",
+        "5 layers loaded successfully (extensibility test)."
+      ],
+      "evidence": [
+        "test_background_controller.gd: 6 tests PASS (load_preset, camera_follow, parallax_motion, enable_toggle, reject_invalid, extensible_layers)."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: BackgroundController + reusable layer units, API minimum."
+    },
+    {
+      "id": "BG3-005",
+      "epic": "race-presentation",
+      "title": "Create la_chutana_snes_day preset and wire via TrackDefinition",
+      "description": "Create the first production preset (la_chutana_snes_day) using the 3 accepted v3 layers with initial parallax factors (sky=0.02, far_mountains=0.08, near_mountains=0.18). Wire through TrackDefinition.background_preset_path in la_chutana.tres so the circuit requests the preset and BackgroundController handles the rest. RaceSession._setup_background loads the preset, binds camera and hides legacy SourceSkyboxRig when active.",
+      "item_type": "feature",
+      "status": "done",
+      "priority": 92,
+      "sort_order": 170,
+      "rationale": "La Chutana needs a configurable 3-layer parallax background that loads via track definition without hardcoding paths.",
+      "technical_risk": "Medium. Integration touches race_session.gd and track_definition.gd; must not break existing track loading.",
+      "user_value": "La Chutana now has a configurable 3-layer parallax background loaded via track definition.",
+      "dependencies": ["BG3-004", "BG3-001"],
+      "affected_areas": [
+        "game/assets/backgrounds/la_chutana_snes_day/background.json",
+        "game/data/tracks/la_chutana.tres",
+        "game/addons/formula90s/scripts/track_definition.gd",
+        "game/scenes/runtime/race_session.gd"
+      ],
+      "acceptance_criteria": [
+        "la_chutana_snes_day/background.json declares 3 layers with correct parallax hierarchy.",
+        "la_chutana.tres references the preset via background_preset_path.",
+        "TrackDefinition.get_effective_background_preset() loads from path when no inline preset.",
+        "RaceSession._setup_background loads preset, binds camera, hides SourceSkyboxRig.",
+        "Legacy fallback preserved when no preset is configured."
+      ],
+      "evidence": [
+        "la_chutana.tres has background_preset_path pointing to la_chutana_snes_day/background.json.",
+        "race_session.gd._setup_background loads preset and hides legacy rig."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: preset la_chutana_snes_day, wire via TrackDefinition, preserve legacy fallback."
+    },
+    {
+      "id": "BG3-006",
+      "epic": "race-presentation",
+      "title": "Smoke tests and parallax captures with F1-94",
+      "description": "Validate the complete 3-layer background integration in the F1-94 decoupled session: preset loading, 3 layers with correct invariants (Nearest, unshaded, alpha, depth order, no collision nodes), parallax hierarchy (sky < far < near) at +30/-30 degree turns, legacy rig hidden. Captures: straight, turn_left, turn_right.",
+      "item_type": "test",
+      "status": "done",
+      "priority": 90,
+      "sort_order": 175,
+      "rationale": "End-to-end validation in the same session that validates F1-94 visuals/HUD/physics.",
+      "technical_risk": "Low. Test-only; no production rendering or physics changes.",
+      "user_value": "Confirms the background system works end-to-end with the F1-94 pipeline.",
+      "dependencies": ["BG3-005"],
+      "affected_areas": [
+        "game/tests/smoke_test_la_chutana_3_layer_background.gd",
+        "game/tests/visual_test_la_chutana_3_layer_capture.gd"
+      ],
+      "acceptance_criteria": [
+        "Preset la_chutana_snes_day loaded and active.",
+        "Legacy SourceSkyboxRig hidden.",
+        "3 layers with correct invariants (Nearest, unshaded, no shadows/GI, correct Z order).",
+        "No CollisionObject3D or NavigationRegion3D in BackgroundController.",
+        "Parallax hierarchy verified at +30 and -30 degrees."
+      ],
+      "evidence": [
+        "smoke_test_la_chutana_3_layer_background.gd PASS.",
+        "visual_test_la_chutana_3_layer_capture.gd generates 3 captures."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: smoke tests + visual captures with F1-94."
+    },
+    {
+      "id": "BG3-007",
+      "epic": "race-presentation",
+      "title": "Visual adjustment against reference (horizon, scale, seams, shimmering)",
+      "description": "Final visual tuning pass against reference/00_original_reference.jpg: (1) evaluate horizon alignment and adjust offset_y per layer, (2) evaluate mountain scale and adjust scale values, (3) evaluate perceptible parallax spread and adjust parallax_x/y if insufficient, (4) evaluate seams at layer edges and create seam-safe v4 edits if needed (never auto-stretch v3), (5) evaluate shimmering in movement and adjust pixel_size if needed. Requires display or manual visual review.",
+      "item_type": "feature",
+      "status": "proposed",
+      "priority": 110,
+      "sort_order": 180,
+      "rationale": "The accepted v3 layers need a final visual tuning pass to match the intended SNES/16-bit depth composition from the original reference.",
+      "technical_risk": "Medium. Visual tuning may require new asset versions (v4 seam-safe) or parameter-only adjustments.",
+      "user_value": "Delivers a background that matches the intended depth composition from the original reference, not just a technically correct but visually uncalibrated implementation.",
+      "dependencies": ["BG3-006"],
+      "affected_areas": [
+        "game/assets/backgrounds/la_chutana_snes_day/background.json",
+        "game/assets/backgrounds/la_chutana_snes_day/*.png",
+        "assets-lowpoly-python/background/background_layering_codex/"
+      ],
+      "acceptance_criteria": [
+        "Horizon position matches reference composition.",
+        "Mountain scale is proportionally consistent with reference.",
+        "Parallax spread is perceptibly different: sky nearly static, near clearly moving.",
+        "No visible seams at layer edges in the validated framing.",
+        "No severe shimmering during camera movement.",
+        "If seams exist, a v4 seam-safe edit is created from inputs (not auto-stretched v3).",
+        "Visual captures accepted by user."
+      ],
+      "evidence": [
+        "reference/00_original_reference.jpg is the composition oracle.",
+        "v3 assets accepted in BG3-001 with visual review status 'accepted'."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: visual adjustment against reference, seams, shimmering. User 2026-08-15: high priority, resolve in this round."
+    },
+    {
+      "id": "BG3-008",
+      "epic": "race-presentation",
+      "title": "Deprecate legacy panorama/cascades after explicit visual acceptance",
+      "description": "After BG3-007 visual acceptance, remove the legacy background system: panorama Sprite3D, cascadas animadas (16 nodes), source_skybox_rig.gd, SourceSkyboxRig nodes from la_chutana_generated.tscn, and smoke_test_la_chutana_skybox.gd. Document rollback procedure. Verify that race_session fallback still works for circuits without a new preset.",
+      "item_type": "cleanup",
+      "status": "proposed",
+      "priority": 50,
+      "sort_order": 185,
+      "rationale": "Premature legacy removal would break circuits without a new preset. BG3-007 must be accepted first.",
+      "technical_risk": "Medium. Legacy removal must not break track loading for circuits without a new preset.",
+      "user_value": "Leaves one supported background workflow (3-layer presets) and removes contradictory legacy behavior.",
+      "dependencies": ["BG3-007"],
+      "affected_areas": [
+        "game/scenes/visuals/la_chutana_source_skybox.tscn",
+        "game/addons/formula90s/scripts/source_skybox_rig.gd",
+        "game/scenes/tracks/test_field/la_chutana_generated.tscn",
+        "game/tests/smoke_test_la_chutana_skybox.gd"
+      ],
+      "acceptance_criteria": [
+        "No legacy panorama, cascades or source_skybox_rig files remain.",
+        "smoke_test_la_chutana_3_layer_background.gd PASS without fallback.",
+        "smoke_test_race_session_matrix.gd PASS.",
+        "Rollback procedure documented."
+      ],
+      "evidence": [
+        "Legacy system: la_chutana_source_skybox.tscn (8 Sprite3D + 16 cascadas), source_skybox_rig.gd.",
+        "Fallback: race_session.gd hides SourceSkyboxRig when new preset active."
+      ],
+      "source_agent": "codex",
+      "source_context": "Prompt codex 2026-08-14: deprecate legacy after visual acceptance. BG3-007 must be accepted first."
     }
   ]
 }
