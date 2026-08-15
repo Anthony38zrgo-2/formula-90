@@ -1,0 +1,13 @@
+BG3-007 Composition Analysis
+============================
+
+Reference: D:\Formula90s\tools\background_analysis\..\..\assets-lowpoly-python\background\background_layering_codex\reference\00_original_reference.jpg
+Far mountains best offset: -230px -> -115.0 world units
+Near mountains best offset: -110px -> -55.0 world units
+Final RMSE: 88.1
+
+Outputs:
+  composite_current.png
+  composite_optimized_far.png
+  composite_optimized_combo.png
+  composite_final.png
