@@ -42,6 +42,8 @@ static func validate_preset(preset: BackgroundPreset) -> ValidationResult:
 	if preset.id.is_empty():
 		result.add_error("El preset no tiene un 'id' valido o esta vacio.")
 	
+	_validate_skybox(preset, result)
+	
 	if preset.layers.is_empty():
 		result.add_error("El preset '%s' no contiene ninguna capa ('layers' esta vacio)." % preset.id)
 		return result
@@ -106,6 +108,20 @@ static func validate_preset(preset: BackgroundPreset) -> ValidationResult:
 			result.add_error("%s tiene parallax negativo (x=%.2f, y=%.2f). Los valores deben ser >= 0." % [layer_context, layer.parallax_x, layer.parallax_y])
 	
 	return result
+
+
+static func _validate_skybox(preset: BackgroundPreset, result: ValidationResult) -> void:
+	if preset.skybox == null:
+		return
+	var sky := preset.skybox
+	if sky.texture_path.is_empty():
+		result.add_error("El skybox del preset '%s' no especifica 'texture'." % preset.id)
+	elif not (ResourceLoader.exists(sky.texture_path) or FileAccess.file_exists(sky.texture_path)):
+		result.add_error("El skybox del preset '%s' especifica una textura inexistente: '%s'." % [preset.id, sky.texture_path])
+	if sky.distance <= 0.0:
+		result.add_error("El skybox del preset '%s' tiene distance invalida (%.1f). Debe ser > 0.0." % [preset.id, sky.distance])
+	if sky.pixel_size < 0.0:
+		result.add_error("El skybox del preset '%s' tiene pixel_size negativo (%.4f). Debe ser >= 0 (0 = auto)." % [preset.id, sky.pixel_size])
 
 
 static func validate_json_dict(dict: Dictionary) -> ValidationResult:

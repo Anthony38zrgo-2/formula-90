@@ -48,27 +48,31 @@ func _test_preset_json_and_validation() -> void:
 		_failures += 1
 		return
 
-	var sorted := preset.get_layers_sorted_by_depth()
-	if sorted.size() != 3:
-		printerr("[FAIL] _test_preset_json_and_validation: Se esperaban 3 capas, encontradas %d." % sorted.size())
+	if preset.skybox == null:
+		printerr("[FAIL] _test_preset_json_and_validation: El preset no declara skybox desacoplado.")
 		_failures += 1
 		return
 
-	var l_sky := sorted[0]
-	var l_far := sorted[1]
-	var l_near := sorted[2]
+	var sorted := preset.get_layers_sorted_by_depth()
+	if sorted.size() != 2:
+		printerr("[FAIL] _test_preset_json_and_validation: Se esperaban 2 capas parallax, encontradas %d." % sorted.size())
+		_failures += 1
+		return
 
-	if l_sky.id != &"sky" or l_far.id != &"far_mountains" or l_near.id != &"near_mountains":
+	var l_far := sorted[0]
+	var l_near := sorted[1]
+
+	if l_far.id != &"far_mountains" or l_near.id != &"near_mountains":
 		printerr("[FAIL] _test_preset_json_and_validation: Orden o IDs de capas incorrectos.")
 		_failures += 1
 		return
 
-	if not (l_sky.parallax_x < l_far.parallax_x and l_far.parallax_x < l_near.parallax_x):
-		printerr("[FAIL] _test_preset_json_and_validation: Jerarquia de parallax configurada no cumple sky < far < near.")
+	if not (l_far.parallax_x < l_near.parallax_x):
+		printerr("[FAIL] _test_preset_json_and_validation: Jerarquia de parallax configurada no cumple far < near.")
 		_failures += 1
 		return
 
-	print("[OK] _test_preset_json_and_validation: Preset JSON valido, 3 capas ordenadas y parallax (%.2f < %.2f < %.2f) verificado." % [l_sky.parallax_x, l_far.parallax_x, l_near.parallax_x])
+	print("[OK] _test_preset_json_and_validation: Preset JSON valido, skybox desacoplado y parallax (%.2f < %.2f) verificado." % [l_far.parallax_x, l_near.parallax_x])
 
 
 func _test_track_definition_link() -> void:
@@ -123,11 +127,17 @@ func _test_race_session_composition() -> void:
 		printerr("[FAIL] _test_race_session_composition: background_controller no fue instanciado.")
 		_failures += 1
 	else:
-		if session.background_controller.get_layer_instances().size() != 3:
-			printerr("[FAIL] _test_race_session_composition: Se esperaban 3 instancias de capa en runtime.")
+		if session.background_controller.get_layer_instances().size() != 2:
+			printerr("[FAIL] _test_race_session_composition: Se esperaban 2 instancias de capa parallax en runtime.")
 			_failures += 1
 		else:
-			print("[OK] _test_race_session_composition: BackgroundController activo con 3 capas instanciadas.")
+			print("[OK] _test_race_session_composition: BackgroundController activo con 2 capas parallax instanciadas.")
+
+	if session.background_skybox == null:
+		printerr("[FAIL] _test_race_session_composition: background_skybox desacoplado no fue instanciado.")
+		_failures += 1
+	else:
+		print("[OK] _test_race_session_composition: BackgroundSkybox desacoplado activo junto al controller.")
 
 	if session.active_track != null:
 		var legacy_sky := session.active_track.get_node_or_null("SourceSkyboxRig") as Node3D
@@ -171,6 +181,10 @@ func _test_legacy_fallback_behavior() -> void:
 	else:
 		if session.background_controller != null:
 			printerr("[FAIL] _test_legacy_fallback_behavior: No debio crearse BackgroundController si la pista no tiene preset.")
+			_failures += 1
+		
+		if session.background_skybox != null:
+			printerr("[FAIL] _test_legacy_fallback_behavior: No debio crearse BackgroundSkybox si la pista no tiene preset.")
 			_failures += 1
 		
 		var legacy_sky := session.active_track.get_node_or_null("SourceSkyboxRig") as Node3D

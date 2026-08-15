@@ -1,11 +1,12 @@
 extends SceneTree
 
-## Smoke Test BG3-006: Validacion y capturas de La Chutana 3-Layer Background con F1-94
+## Smoke Test BG3-006: Validacion y capturas de La Chutana Background con F1-94
 ## Valida:
 ## 1. Configuracion y carga del preset la_chutana_snes_day en runtime.
-## 2. Invariantes de los 3 layers: Nearest, unshaded, alpha, depth/render_priority y ausencia de colisiones.
-## 3. Integracion en RaceSession con vehiculo F1-94 y desactivacion del rig legacy.
-## 4. Captura visual y verificacion de parallax: Recta, Giro Izquierda (+30 deg), Giro Derecha (-30 deg).
+## 2. Skybox desacoplado (BackgroundSkybox) instanciado por separado.
+## 3. Invariantes de las 2 capas parallax: Nearest, unshaded, alpha, depth/render_priority y ausencia de colisiones.
+## 4. Integracion en RaceSession con vehiculo F1-94 y desactivacion del rig legacy.
+## 5. Captura visual y verificacion de parallax: Recta, Giro Izquierda (+30 deg), Giro Derecha (-30 deg).
 
 const SESSION_SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
 
@@ -58,6 +59,12 @@ func _run_smoke_test() -> void:
 	if active_preset == null or active_preset.id != &"la_chutana_snes_day":
 		_fail("El preset activo no es la_chutana_snes_day.")
 
+	# 1b. Validar skybox desacoplado
+	if race_session.background_skybox == null:
+		_fail("BackgroundSkybox desacoplado no fue instanciado en RaceSession.")
+	else:
+		print("[OK] BackgroundSkybox desacoplado activo, independiente del controller de capas.")
+
 	# 2. Validar que el rig legacy quedo oculto
 	if race_session.active_track != null:
 		var legacy_sky := race_session.active_track.get_node_or_null("SourceSkyboxRig") as Node3D
@@ -68,24 +75,23 @@ func _run_smoke_test() -> void:
 
 	# 3. Validar capas e invariantes estructurales
 	var instances := bg_controller.get_layer_instances()
-	if instances.size() != 3:
-		_fail("Se esperaban exactamente 3 capas instanciadas, encontradas: %d" % instances.size())
+	if instances.size() != 2:
+		_fail("Se esperaban exactamente 2 capas parallax instanciadas, encontradas: %d" % instances.size())
 	else:
-		var sky_inst := bg_controller.get_layer_instance_by_id(&"sky")
 		var far_inst := bg_controller.get_layer_instance_by_id(&"far_mountains")
 		var near_inst := bg_controller.get_layer_instance_by_id(&"near_mountains")
 
-		if sky_inst == null or far_inst == null or near_inst == null:
-			_fail("Una o mas capas obligatorias (sky, far_mountains, near_mountains) no se pudieron obtener por ID.")
+		if far_inst == null or near_inst == null:
+			_fail("Una o mas capas obligatorias (far_mountains, near_mountains) no se pudieron obtener por ID.")
 		else:
 			# Chequeo de orden de profundidad y prioridades
-			if sky_inst.render_priority != 0 or far_inst.render_priority != 1 or near_inst.render_priority != 2:
-				_fail("Render priorities incorrectas: sky=%d, far=%d, near=%d" % [sky_inst.render_priority, far_inst.render_priority, near_inst.render_priority])
+			if far_inst.render_priority != 0 or near_inst.render_priority != 1:
+				_fail("Render priorities incorrectas: far=%d, near=%d" % [far_inst.render_priority, near_inst.render_priority])
 			
-			if not (sky_inst.position.z < far_inst.position.z and far_inst.position.z < near_inst.position.z and near_inst.position.z < 0.0):
-				_fail("Orden de distancia Z incorrecto: sky=%.1f, far=%.1f, near=%.1f" % [sky_inst.position.z, far_inst.position.z, near_inst.position.z])
+			if not (far_inst.position.z < near_inst.position.z and near_inst.position.z < 0.0):
+				_fail("Orden de distancia Z incorrecto: far=%.1f, near=%.1f" % [far_inst.position.z, near_inst.position.z])
 
-			for inst in [sky_inst, far_inst, near_inst]:
+			for inst in [far_inst, near_inst]:
 				if inst.texture == null:
 					_fail("La capa '%s' no tiene textura asignada." % inst.name)
 				if inst.texture_filter != BaseMaterial3D.TEXTURE_FILTER_NEAREST:
@@ -97,7 +103,7 @@ func _run_smoke_test() -> void:
 				if inst.gi_mode != GeometryInstance3D.GI_MODE_DISABLED:
 					_fail("La capa '%s' tiene GI activo." % inst.name)
 
-			print("[OK] Invariantes estructurales (3 capas, Nearest, Unshaded, sin sombras/GI, orden Z) verificados.")
+			print("[OK] Invariantes estructurales (2 capas parallax, Nearest, Unshaded, sin sombras/GI, orden Z) verificados.")
 
 	# 4. Validar ausencia de nodos de colision
 	for child in bg_controller.find_children("*", "", true, false):
@@ -136,19 +142,17 @@ func _run_smoke_test() -> void:
 			await process_frame
 		RenderingServer.force_draw(false, 0.0)
 
-		var sky_inst := bg_controller.get_layer_instance_by_id(&"sky")
 		var far_inst := bg_controller.get_layer_instance_by_id(&"far_mountains")
 		var near_inst := bg_controller.get_layer_instance_by_id(&"near_mountains")
 
-		if sky_inst != null and far_inst != null and near_inst != null and deg != 0.0:
-			var abs_sky := absf(sky_inst.position.x)
+		if far_inst != null and near_inst != null and deg != 0.0:
 			var abs_far := absf(far_inst.position.x)
 			var abs_near := absf(near_inst.position.x)
 
-			if not (abs_sky < abs_far and abs_far < abs_near):
-				_fail("Jerarquia de parallax violada en %s: Sky=%.2f, Far=%.2f, Near=%.2f" % [label, abs_sky, abs_far, abs_near])
+			if not (abs_far < abs_near):
+				_fail("Jerarquia de parallax violada en %s: Far=%.2f, Near=%.2f" % [label, abs_far, abs_near])
 			else:
-				print("[OK] Parallax dinamico verificado en %s (deg=%.1f): Sky=%.2f < Far=%.2f < Near=%.2f" % [label, deg, abs_sky, abs_far, abs_near])
+				print("[OK] Parallax dinamico verificado en %s (deg=%.1f): Far=%.2f < Near=%.2f" % [label, deg, abs_far, abs_near])
 
 		# Guardar captura
 		if DisplayServer.get_name() != "headless":

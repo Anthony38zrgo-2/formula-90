@@ -13,6 +13,7 @@ var active_vehicle_root: Node3D
 var active_vehicle: Vehicle
 var driving_aids: DrivingAidsController
 var background_controller: BackgroundController
+var background_skybox: BackgroundSkybox
 
 func _ready() -> void:
 	if config != null:
@@ -75,13 +76,26 @@ func _setup_background(camera_rig: Node3D) -> void:
 	if preset == null:
 		return
 	
+	var cam := camera_rig.get_node_or_null("Camera3D") as Camera3D
+	if cam == null:
+		cam = camera_rig.find_child("*", true, false) as Camera3D
+	
+	# 1. Skybox desacoplado: sigue la camara y llena el frustum en todo momento.
+	if preset.skybox != null and cam != null:
+		var skybox := BackgroundSkybox.new()
+		skybox.name = "BackgroundSkybox"
+		if skybox.setup(preset.skybox):
+			skybox.set_camera_source(cam)
+			add_child(skybox)
+			background_skybox = skybox
+		else:
+			push_warning("RaceSession: No se pudo activar el BackgroundSkybox; se conserva el fallback legacy.")
+	
+	# 2. Capas parallax gestionadas por BackgroundController.
 	var controller := BackgroundController.new()
 	controller.name = "BackgroundController"
 	var success := controller.load_preset(preset)
 	if success:
-		var cam := camera_rig.get_node_or_null("Camera3D") as Camera3D
-		if cam == null:
-			cam = camera_rig.find_child("*", true, false) as Camera3D
 		if cam != null:
 			controller.set_camera_source(cam)
 		add_child(controller)
@@ -106,7 +120,7 @@ func _clear_composition() -> void:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"DrivingAids", &"BackgroundController"]:
+	for child_name in [&"CameraRig", &"DrivingAids", &"BackgroundController", &"BackgroundSkybox"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -116,3 +130,4 @@ func _clear_composition() -> void:
 	active_vehicle = null
 	driving_aids = null
 	background_controller = null
+	background_skybox = null

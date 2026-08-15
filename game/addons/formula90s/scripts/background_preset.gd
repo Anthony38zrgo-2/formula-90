@@ -1,10 +1,12 @@
 class_name BackgroundPreset
 extends Resource
 
-## Define la configuracion completa de un preset de background multicapa (Formula-90)
+## Define la configuracion completa de un preset de background (Formula-90).
+## El skybox (si existe) esta desacoplado de las capas parallax.
 
 @export var id: StringName = &""
 @export var display_name: String = ""
+@export var skybox: BackgroundSkyboxConfig
 @export var layers: Array[BackgroundLayerConfig] = []
 
 
@@ -12,6 +14,10 @@ static func from_dict(dict: Dictionary) -> BackgroundPreset:
 	var preset := BackgroundPreset.new()
 	preset.id = StringName(dict.get("id", ""))
 	preset.display_name = str(dict.get("display_name", preset.id))
+	
+	var raw_skybox = dict.get("skybox", null)
+	if raw_skybox is Dictionary:
+		preset.skybox = BackgroundSkyboxConfig.from_dict(raw_skybox)
 	
 	var raw_layers = dict.get("layers", [])
 	if raw_layers is Array:
@@ -54,6 +60,7 @@ func to_dict() -> Dictionary:
 	return {
 		"id": String(id),
 		"display_name": display_name,
+		"skybox": skybox.to_dict() if skybox != null else {},
 		"layers": layers_data
 	}
 

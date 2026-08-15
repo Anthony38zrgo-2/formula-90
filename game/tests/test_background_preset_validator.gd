@@ -26,6 +26,8 @@ func _run_tests() -> void:
 	_test_positive_distance_z()
 	_test_negative_parallax()
 	_test_depth_sorting()
+	_test_valid_skybox()
+	_test_missing_skybox_texture()
 	_test_json_roundtrip()
 
 	print("\n=== RESUMEN DE PRUEBAS BG3-003 ===")
@@ -269,17 +271,67 @@ func _test_depth_sorting() -> void:
 		print("[OK] _test_depth_sorting ordeno capas por profundidad: sky (0) -> far (1) -> near (2).")
 
 
+func _test_valid_skybox() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"skybox_valid_preset"
+	preset.skybox = BackgroundSkyboxConfig.new()
+	preset.skybox.texture_path = VALID_SKY_TEX
+	preset.skybox.distance = 800.0
+	preset.skybox.pixel_size = 0.0
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"far_mountains"
+	l0.texture_path = VALID_FAR_TEX
+	l0.depth = 0
+	l0.distance_z = -700.0
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if not result.is_valid:
+		printerr("[FAIL] _test_valid_skybox deberia ser valido, pero fallo: %s" % result.get_error_summary())
+		_failures += 1
+	else:
+		print("[OK] _test_valid_skybox: skybox desacoplado valido aceptado correctamente.")
+
+
+func _test_missing_skybox_texture() -> void:
+	var preset := BackgroundPreset.new()
+	preset.id = &"skybox_missing_tex_preset"
+	preset.skybox = BackgroundSkyboxConfig.new()
+	preset.skybox.texture_path = "res://assets/backgrounds/non_existent_sky.png"
+	preset.skybox.distance = 800.0
+
+	var l0 := BackgroundLayerConfig.new()
+	l0.id = &"far_mountains"
+	l0.texture_path = VALID_FAR_TEX
+	l0.depth = 0
+	l0.distance_z = -700.0
+	preset.layers.append(l0)
+
+	var result := BackgroundValidator.validate_preset(preset)
+	if result.is_valid:
+		printerr("[FAIL] _test_missing_skybox_texture deberia haber fallado.")
+		_failures += 1
+	else:
+		print("[OK] _test_missing_skybox_texture detecto textura de skybox inexistente: %s" % result.errors[0])
+
+
 func _test_json_roundtrip() -> void:
 	var json_dict := {
 		"id": "json_preset_test",
 		"display_name": "JSON Preset Test",
+		"skybox": {
+			"texture": VALID_SKY_TEX,
+			"distance": 800.0,
+			"pixel_size": 0.0
+		},
 		"layers": [
 			{
-				"id": "sky",
-				"texture": VALID_SKY_TEX,
+				"id": "far_mountains",
+				"texture": VALID_FAR_TEX,
 				"depth": 0,
-				"parallax_x": 0.02,
-				"parallax_y": 0.0,
+				"parallax_x": 0.08,
+				"parallax_y": 0.01,
 				"scale": 1.0,
 				"offset_x": 0.0,
 				"offset_y": 0.0,
@@ -288,11 +340,11 @@ func _test_json_roundtrip() -> void:
 				"pixel_snap": true
 			},
 			{
-				"id": "far_mountains",
-				"texture": VALID_FAR_TEX,
+				"id": "near_mountains",
+				"texture": VALID_NEAR_TEX,
 				"depth": 1,
-				"parallax_x": 0.08,
-				"parallax_y": 0.01,
+				"parallax_x": 0.18,
+				"parallax_y": 0.02,
 				"scale": 1.0,
 				"offset_x": 0.0,
 				"offset_y": 0.0,
@@ -314,5 +366,9 @@ func _test_json_roundtrip() -> void:
 	if out_dict["id"] != "json_preset_test" or out_dict["layers"].size() != 2:
 		printerr("[FAIL] _test_json_roundtrip no serializo correctamente.")
 		_failures += 1
+		return
+	if out_dict["skybox"]["texture"] != VALID_SKY_TEX or out_dict["skybox"]["distance"] != 800.0:
+		printerr("[FAIL] _test_json_roundtrip no serializo el skybox correctamente.")
+		_failures += 1
 	else:
-		print("[OK] _test_json_roundtrip deserializo y serializo JSON correctamente.")
+		print("[OK] _test_json_roundtrip deserializo y serializo JSON (skybox + capas) correctamente.")
