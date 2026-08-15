@@ -37,21 +37,21 @@ func setup(manifest_path: String) -> bool:
 	_manifest = json.data
 	var base_dir: String = manifest_path.get_base_dir()
 
-	# Load sky dome
+	# Load sky dome (background sky only)
 	var sky_path: String = base_dir + "/" + String(_manifest.geometry_assets.sky_dome)
-	_sky_dome = _load_mesh(sky_path, "SkyDome")
+	_sky_dome = _load_mesh(sky_path, "SkyDome", true)
 	if _sky_dome == null:
 		return false
 
-	# Load far mountains ring
+	# Load far mountains ring (real 3D geometry at R=1600m)
 	var far_path: String = base_dir + "/" + String(_manifest.geometry_assets.far_mountains)
-	_far_ring = _load_mesh(far_path, "FarMountains")
+	_far_ring = _load_mesh(far_path, "FarMountains", false)
 	if _far_ring == null:
 		return false
 
-	# Load near mountains ring
+	# Load near mountains ring (real 3D geometry at R=1150m)
 	var near_path: String = base_dir + "/" + String(_manifest.geometry_assets.near_mountains)
-	_near_ring = _load_mesh(near_path, "NearMountains")
+	_near_ring = _load_mesh(near_path, "NearMountains", false)
 	if _near_ring == null:
 		return false
 
@@ -62,7 +62,7 @@ func setup(manifest_path: String) -> bool:
 	return true
 
 
-func _load_mesh(glb_path: String, node_name: String) -> MeshInstance3D:
+func _load_mesh(glb_path: String, node_name: String, is_sky: bool = false) -> MeshInstance3D:
 	var loaded = load(glb_path)
 	if loaded == null:
 		push_error("BackgroundMountains3D: No se pudo cargar '%s'." % glb_path)
@@ -91,9 +91,18 @@ func _load_mesh(glb_path: String, node_name: String) -> MeshInstance3D:
 	mat.vertex_color_use_as_albedo = true
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	# Sky dome must never occlude the mountain rings or write depth (legacy pattern:
-	# sky_gradient.gdshader uses depth_draw_never; background_skybox.gd uses no_depth_test).
-	mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+
+	if is_sky:
+		# Sky dome is background only: does not write depth and draws first
+		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+		mat.render_priority = -10
+	else:
+		# Mountains are real 3D geometry at distance (1150m / 1600m):
+		# must write depth so foreground track, trees, fences and vehicles
+		# at Z < 600m correctly occlude the background.
+		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_OPAQUE_ONLY
+		mat.render_priority = 0
+
 	mi.material_override = mat
 
 	add_child(mi)

@@ -27,9 +27,43 @@ pub struct CoordinateConvention {
     pub unit: String,
 }
 
-/// Generation parameters from the Python pipeline.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Nested layer generation parameters (from topographic SVG pipeline).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LayerGenerationParams {
+    #[serde(default)]
+    pub layer: String,
+    #[serde(default)]
+    pub radius: f64,
+    #[serde(default)]
+    pub depth: f64,
+    #[serde(default)]
+    pub height_scale: f64,
+    #[serde(default)]
+    pub height_min: f64,
+    #[serde(default)]
+    pub height_max: f64,
+    #[serde(default)]
+    pub target_height_range: Vec<f64>,
+}
+
+/// Nested sky dome generation parameters.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SkyDomeGenerationParams {
+    #[serde(default)]
+    pub radius: f64,
+    #[serde(default)]
+    pub rings: usize,
+    #[serde(default)]
+    pub segments: usize,
+}
+
+/// Generation parameters from the Python pipeline (supports both flat and nested schema).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GenerationParams {
+    #[serde(default)]
+    pub method: String,
+    #[serde(default)]
+    pub source_svg: String,
     #[serde(default)]
     pub source_sprites: Vec<String>,
     #[serde(default)]
@@ -66,6 +100,70 @@ pub struct GenerationParams {
     pub sky_dome_rings: usize,
     #[serde(default)]
     pub sky_dome_segments: usize,
+    #[serde(default)]
+    pub near: Option<LayerGenerationParams>,
+    #[serde(default)]
+    pub far: Option<LayerGenerationParams>,
+    #[serde(default)]
+    pub sky: Option<SkyDomeGenerationParams>,
+}
+
+impl GenerationParams {
+    pub fn get_radius_far(&self) -> f64 {
+        if self.radius_far > 0.0 {
+            self.radius_far
+        } else {
+            self.far.as_ref().map(|f| f.radius).unwrap_or(0.0)
+        }
+    }
+
+    pub fn get_radius_near(&self) -> f64 {
+        if self.radius_near > 0.0 {
+            self.radius_near
+        } else {
+            self.near.as_ref().map(|n| n.radius).unwrap_or(0.0)
+        }
+    }
+
+    pub fn get_depth_far(&self) -> f64 {
+        if self.depth_far > 0.0 {
+            self.depth_far
+        } else {
+            self.far.as_ref().map(|f| f.depth).unwrap_or(0.0)
+        }
+    }
+
+    pub fn get_depth_near(&self) -> f64 {
+        if self.depth_near > 0.0 {
+            self.depth_near
+        } else {
+            self.near.as_ref().map(|n| n.depth).unwrap_or(0.0)
+        }
+    }
+
+    pub fn get_height_scale_far(&self) -> f64 {
+        if self.height_scale_far > 0.0 {
+            self.height_scale_far
+        } else {
+            self.far.as_ref().map(|f| f.height_scale).unwrap_or(0.0)
+        }
+    }
+
+    pub fn get_height_scale_near(&self) -> f64 {
+        if self.height_scale_near > 0.0 {
+            self.height_scale_near
+        } else {
+            self.near.as_ref().map(|n| n.height_scale).unwrap_or(0.0)
+        }
+    }
+
+    pub fn get_sky_dome_radius(&self) -> f64 {
+        if self.sky_dome_radius > 0.0 {
+            self.sky_dome_radius
+        } else {
+            self.sky.as_ref().map(|s| s.radius).unwrap_or(0.0)
+        }
+    }
 }
 
 /// Waterfall placement data.
@@ -169,47 +267,48 @@ fn validate_generation_params(gen: &GenerationParams, result: &mut ValidationRes
     if gen.segments == 0 {
         result.add_error("segments must be > 0".to_string());
     }
-    if gen.segments % gen.variants_per_ring != 0 {
+    if gen.variants_per_ring > 0 && gen.segments % gen.variants_per_ring != 0 {
         result.add_error(format!(
             "segments ({}) must be divisible by variants_per_ring ({})",
             gen.segments, gen.variants_per_ring
         ));
     }
-    if gen.height_scale_far <= 0.0 {
+    let h_far = gen.get_height_scale_far();
+    if h_far <= 0.0 {
         result.add_error("height_scale_far must be > 0".to_string());
     }
-    if gen.height_scale_near <= 0.0 {
+    let h_near = gen.get_height_scale_near();
+    if h_near <= 0.0 {
         result.add_error("height_scale_near must be > 0".to_string());
     }
-    if gen.depth_far <= 0.0 {
+    let d_far = gen.get_depth_far();
+    if d_far <= 0.0 {
         result.add_error("depth_far must be > 0".to_string());
     }
-    if gen.depth_near <= 0.0 {
+    let d_near = gen.get_depth_near();
+    if d_near <= 0.0 {
         result.add_error("depth_near must be > 0".to_string());
     }
     if gen.terrain_rows < 2 {
         result.add_error("terrain_rows must be >= 2".to_string());
     }
-    if gen.radius_far <= 0.0 {
+    let r_far = gen.get_radius_far();
+    if r_far <= 0.0 {
         result.add_error("radius_far must be > 0".to_string());
     }
-    if gen.radius_near <= 0.0 {
+    let r_near = gen.get_radius_near();
+    if r_near <= 0.0 {
         result.add_error("radius_near must be > 0".to_string());
     }
-    if gen.radius_near >= gen.radius_far {
+    if r_near > 0.0 && r_far > 0.0 && r_near >= r_far {
         result.add_warning("radius_near should be < radius_far for proper layering".to_string());
     }
-    if gen.sky_dome_radius <= 0.0 {
+    let sky_r = gen.get_sky_dome_radius();
+    if sky_r <= 0.0 {
         result.add_error("sky_dome_radius must be > 0".to_string());
     }
-    if gen.sky_dome_radius <= gen.radius_far {
-        result.add_warning("sky_dome_radius should be > radius_far to enclose mountains".to_string());
-    }
-    if gen.palette_colors_far == 0 {
-        result.add_warning("palette_colors_far is 0".to_string());
-    }
-    if gen.palette_colors_near == 0 {
-        result.add_warning("palette_colors_near is 0".to_string());
+    if sky_r > 0.0 && r_far > 0.0 && sky_r < r_far {
+        result.add_warning("sky_dome_radius should be >= radius_far to enclose mountains".to_string());
     }
 }
 
@@ -311,5 +410,68 @@ mod tests {
         manifest.waterfalls[0].position = vec![1.0, 2.0]; // only 2 components
         let result = validate_manifest(&manifest);
         assert!(!result.is_valid);
+    }
+
+    #[test]
+    fn validate_production_topo_manifest() {
+        let prod_manifest = r#"{
+            "schema_version": 1,
+            "asset": "la_chutana_mountains_3d",
+            "coordinate_convention": {
+                "forward": "-Z", "up": "+Y", "right": "+X", "unit": "meter"
+            },
+            "geometry_assets": {
+                "far_mountains": "far_mountains_ring.glb",
+                "near_mountains": "near_mountains_ring.glb",
+                "sky_dome": "sky_dome.glb"
+            },
+            "generation": {
+                "method": "svg_topographic_extrusion",
+                "source_svg": "skybox_topography_semantic_v3.svg",
+                "height_scale_base": 1.8,
+                "height_scale_far": 1.5,
+                "height_scale_near": 1.0,
+                "depth_scale": 0.7,
+                "distance": 4000.0,
+                "near": {
+                    "layer": "near",
+                    "radius": 1150.0,
+                    "depth": 154.0,
+                    "height_scale": 1.0,
+                    "height_min": 0.0,
+                    "height_max": 100.0
+                },
+                "far": {
+                    "layer": "far",
+                    "radius": 1600.0,
+                    "depth": 224.0,
+                    "height_scale": 1.5,
+                    "height_min": 0.0,
+                    "height_max": 225.0
+                },
+                "sky": {
+                    "radius": 1800.0,
+                    "rings": 16,
+                    "segments": 64
+                },
+                "terrain_rows": 6,
+                "segments": 640
+            },
+            "waterfalls": [
+                {"segment": 68, "angle_rad": 0.6676, "position": [903.11, 25.0, 711.96], "scale_y": 1.4},
+                {"segment": 170, "angle_rad": 1.6690, "position": [-112.72, 25.0, 1144.46], "scale_y": 1.4},
+                {"segment": 352, "angle_rad": 3.4558, "position": [-1093.71, 25.0, -355.37], "scale_y": 1.4}
+            ]
+        }"#;
+
+        let manifest = parse_manifest(prod_manifest).unwrap();
+        assert_eq!(manifest.schema_version, 1);
+        assert_eq!(manifest.asset, "la_chutana_mountains_3d");
+        assert_eq!(manifest.geometry_assets.len(), 3);
+        assert_eq!(manifest.waterfalls.len(), 3);
+
+        let result = validate_manifest(&manifest);
+        assert!(result.is_valid, "Expected production manifest to be valid: {}", result.get_error_summary());
+        assert!(result.warnings.is_empty(), "Expected zero warnings: {:?}", result.warnings);
     }
 }

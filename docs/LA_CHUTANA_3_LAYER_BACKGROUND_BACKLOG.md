@@ -1,6 +1,6 @@
 # Backlog: migracion del background de La Chutana a tres layers
 
-Estado: `IN_PROGRESS` (BG3-001 a BG3-006 completados y validados)  
+Estado: `IN_PROGRESS` (BG3-001 a BG3-006, BG3-009 y BG3-010 completados y validados; BG3-007 pendiente de ajuste fino visual)  
 Owner: race-presentation  
 Alcance: solo presentacion visual; no fisicas, track mesh, vehiculo ni HUD.
 
@@ -68,6 +68,8 @@ El sistema legacy permanece funcional como fallback durante la transicion:
 | `BG3-006` | P1 | `BG3-005` | `DONE` | Smoke tests de configuracion, carga, orden de los tres layers, filtros nearest, alfa y ausencia de nodos fisicos (`smoke_test_la_chutana_3_layer_background.gd`). Capturas de recta, giro izquierda (+30 deg) y giro derecha (-30 deg) con F1-94. Resultado: `PASS`. |
 | `BG3-007` | P2 | `BG3-006` | `PROPOSED` | Ajuste visual contra `reference/00_original_reference.jpg`: horizonte, escala, offsets y diferencia perceptible de parallax. Evaluar seams y shimmering; si hay costura, crear una nueva version seam-safe editada desde los inputs, nunca estirar automaticamente la v3. |
 | `BG3-008` | P3 | `BG3-007` | `PROPOSED` | Deprecar panorama, tarjetas y cascadas legacy solo despues de aceptacion visual explicita y regresion de La Chutana. Eliminar el contrato legacy y documentar rollback por preset. |
+| `BG3-009` | P0 | - | `DONE` | Sustituir el skybox 2D por geometria 3D topografica: anillos `far_mountains_ring.glb` (1600m) y `near_mountains_ring.glb` (1150m) + `sky_dome.glb` con vertex colors (azul-dominante), generados desde SVG semantico (`data-elevation` como unica fuente de altura) via `generate_topo_terrain.py`. Modulo Rust offline `game/graphics/engine/skybox` (44 tests) como autoridad de validacion. Smoke test `smoke_test_mountains_3d.gd` `PASS` (8/8). |
+| `BG3-010` | P0 | `BG3-009` | `DONE` | Corregir la geometria de las montanas 3D topograficas: redisenado SVG semantico v3 con cobertura 360° en 8 sectores y 42 contornos jerarquicos (25m a 150m); perfil facetado de 6 filas (apron, talus, cliff, summit, crest, skirt); escala Near (hasta 100m) y Far (hasta 225m); deteccion de 3 cascadas en canadas naturales; exportacion GLB y manifest.json actualizados; smoke test `smoke_test_mountains_3d.gd` `PASS` (8/8) y `cargo test` `PASS` (44/44). |
 
 ## Resumen de validacion y suites ejecutadas
 
@@ -77,6 +79,8 @@ El sistema legacy permanece funcional como fallback durante la transicion:
 - `BG3-004`: `game/tests/test_background_controller.gd` (6 tests unitarios, `PASS`).
 - `BG3-005`: `game/tests/test_la_chutana_snes_day_preset.gd` (5 tests de integración, `PASS`).
 - `BG3-006`: `game/tests/smoke_test_la_chutana_3_layer_background.gd` (`PASS`).
+- `BG3-009`: `game/tests/smoke_test_mountains_3d.gd` (`PASS`, 8/8); `cargo test` en `game/graphics/engine/skybox` (`PASS`, 44 tests); validacion Python de normales, perfil de pendiente y gradiente del domo (`PASS`).
+- `BG3-010`: Cobertura 360° y 42 contornos validados; Far range $[0.0, 225.0]\text{m}$, Near range $[0.0, 100.0]\text{m}$; perfil de 6 filas facetado; `smoke_test_mountains_3d.gd` (`PASS`, 8/8); `cargo test` (`PASS`, 44/44); análisis de elevación y perfil angular (`reports/background/mountains_3d_profile.png`).
 - Regresión Legacy: `game/tests/smoke_test_la_chutana_skybox.gd` (`PASS`) y `smoke_test_race_session_matrix.gd` (`PASS`).
 
 ## Regresion y rollback

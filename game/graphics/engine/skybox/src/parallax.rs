@@ -28,16 +28,19 @@ pub fn compute_parallax(
     let raw_x = -(camera.yaw_rad * layer.parallax_x * radius) + layer.offset_x;
     let raw_y = (camera.pitch_rad * layer.parallax_y * radius) + layer.offset_y;
 
-    let (mut x, y) = if layer.repeat_x && sprite_w > 0.0 {
+    let (x, y) = if layer.repeat_x && sprite_w > 0.0 {
         (modular_wrap(raw_x, sprite_w), raw_y)
     } else {
         (raw_x, raw_y)
     };
 
-    // Apply pixel snap
-    let (snapped_x, snapped_y) = pixel_snap((x, y), layer.pixel_size, layer.scale);
-    x = snapped_x;
-    (x, snapped_y)
+    // Apply pixel snap only if enabled
+    if layer.pixel_snap {
+        let (snapped_x, snapped_y) = pixel_snap((x, y), layer.pixel_size, layer.scale);
+        (snapped_x, snapped_y)
+    } else {
+        (x, y)
+    }
 }
 
 /// Pixel snap: round to nearest grid step.

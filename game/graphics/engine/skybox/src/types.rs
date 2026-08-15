@@ -169,6 +169,13 @@ impl<'de> Deserialize<'de> for Scale2 {
                 })
             }
 
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Scale2, E> {
+                Ok(Scale2 {
+                    x: v as f64,
+                    y: v as f64,
+                })
+            }
+
             fn visit_seq<A: serde::de::SeqAccess<'de>>(
                 self,
                 mut seq: A,

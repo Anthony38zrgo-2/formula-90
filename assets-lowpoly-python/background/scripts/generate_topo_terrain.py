@@ -23,6 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import trimesh
+from scipy.ndimage import gaussian_filter1d
 from shapely.geometry import Polygon, LineString, Point, MultiPolygon, GeometryCollection
 from shapely.ops import unary_union
 from shapely.validation import make_valid
@@ -41,12 +42,42 @@ BAND_COLORS = {
     "summit": [0x40, 0x39, 0x28],
 }
 
-ELEVATION_ORDER = [0, 25, 50, 75, 100]
+ELEV_THRESHOLDS = [0.0, 25.0, 50.0, 75.0, 100.0, 150.0]
+COLOR_KEYS = ["base", "base", "lower", "mid", "upper", "summit"]
+
+
+def interpolate_elevation_color(elevation: float) -> np.ndarray:
+    """Interpolate vertex color smoothly based on continuous elevation."""
+    if elevation <= 0.0:
+        return np.array(BAND_COLORS["base"], dtype=np.float64)
+    if elevation >= 150.0:
+        return np.array(BAND_COLORS["summit"], dtype=np.float64)
+
+    for idx in range(len(ELEV_THRESHOLDS) - 1):
+        e0 = ELEV_THRESHOLDS[idx]
+        e1 = ELEV_THRESHOLDS[idx + 1]
+        if e0 <= elevation <= e1:
+            t = (elevation - e0) / (e1 - e0)
+            c0 = np.array(BAND_COLORS[COLOR_KEYS[idx]], dtype=np.float64)
+            c1 = np.array(BAND_COLORS[COLOR_KEYS[idx + 1]], dtype=np.float64)
+            return c0 * (1.0 - t) + c1 * t
+    return np.array(BAND_COLORS["summit"], dtype=np.float64)
+
+
+def smooth_circular_heightmap(heightmap: np.ndarray, sigma: float = 4.0) -> np.ndarray:
+    """Apply Gaussian smoothing with circular boundary conditions (360-degree wrap-around)."""
+    n = len(heightmap)
+    extended = np.tile(heightmap, 3)
+    smoothed = gaussian_filter1d(extended, sigma=sigma, mode="wrap")
+    return smoothed[n:2 * n]
+
+
+ELEVATION_ORDER = [0, 25, 50, 75, 100, 125, 150]
 MIN_CONTOUR_AREA = 50.0
 SIMPLIFY_TOLERANCE = 2.0
 SEGMENTS_ANGULAR = 640
 
-SKY_DOME_RADIUS = 1500.0
+SKY_DOME_RADIUS = 1800.0
 SKY_DOME_RINGS = 16
 SKY_DOME_SEGMENTS = 64
 ZENITH_COLOR = [0.18, 0.42, 0.82]
@@ -334,16 +365,19 @@ def _sample_point_elevation(svg_x: float, svg_y: float, contours_by_elev: dict,
 def sample_contours_radial(contours_by_elev: dict, radius: float,
                            segments: int, svg_size: float,
                            height_scale: float, distance: float) -> tuple:
-    """Sample contour elevations along a circular ring.
+    """Sample contour elevations along a circular ring with continuous organic shaping.
 
-    For each angular segment, find the highest elevation contour that contains
-    the point on the ring. Deterministic transform: world_height = data-elevation * height_scale.
+    1. Samples raw discrete elevations from topographic contours.
+    2. Fills continuous zero gaps.
+    3. Applies circular Gaussian smoothing (sigma=4.5) to convert step staircases
+       into continuous mountain slopes and valleys.
+    4. Sharpens mountain apexes to preserve peak heights.
+    5. Computes continuous color gradient from base sand to summit rock.
 
     Returns (heightmap, colormap) arrays.
     """
     angles = np.linspace(0, 2 * np.pi, segments, endpoint=False)
-    heightmap = np.zeros(segments)
-    colormap = np.zeros((segments, 3), dtype=np.uint8)
+    raw_elevations = np.zeros(segments)
 
     cx, cy = svg_size / 2, svg_size / 2
     svg_to_world = distance / svg_size
@@ -355,19 +389,33 @@ def sample_contours_radial(contours_by_elev: dict, radius: float,
         svg_x = cx + ray_x / svg_to_world
         svg_y = cy + ray_z / svg_to_world
 
-        max_elev, best_color = _sample_point_elevation(svg_x, svg_y, contours_by_elev)
+        max_elev, _ = _sample_point_elevation(svg_x, svg_y, contours_by_elev)
+        raw_elevations[i] = max_elev
 
-        # Deterministic height: data-elevation is sole source
-        heightmap[i] = max_elev * height_scale
-        colormap[i] = best_color
+    raw_heightmap = raw_elevations * height_scale
+    raw_heightmap = _fill_continuous_gaps(raw_heightmap, segments, height_scale)
 
-    # Avoid continuous disappearance: fill long zero gaps by nearest non-zero
-    heightmap = _fill_continuous_gaps(heightmap, colormap, segments, height_scale)
+    # 1. Circular smooth transition across 360 degrees (eliminates flat box steps)
+    smoothed_heightmap = smooth_circular_heightmap(raw_heightmap, sigma=4.5)
 
-    return heightmap, colormap
+    # 2. Apex / peak sharpening: preserve peak altitudes so summits remain towering
+    peak_mask = raw_heightmap > (smoothed_heightmap * 1.05)
+    final_heightmap = smoothed_heightmap.copy()
+    final_heightmap[peak_mask] = np.maximum(smoothed_heightmap[peak_mask], raw_heightmap[peak_mask] * 0.95)
+    # Re-smooth with light sigma=1.5 for seamless continuity
+    final_heightmap = smooth_circular_heightmap(final_heightmap, sigma=1.5)
+
+    # 3. Continuous colormap based on elevation gradient
+    colormap = np.zeros((segments, 3), dtype=np.uint8)
+    for i in range(segments):
+        elev_equiv = final_heightmap[i] / max(height_scale, 0.001)
+        col = interpolate_elevation_color(elev_equiv)
+        colormap[i] = [int(np.clip(c, 0, 255)) for c in col]
+
+    return final_heightmap, colormap
 
 
-def _fill_continuous_gaps(heightmap: np.ndarray, colormap: np.ndarray, segments: int,
+def _fill_continuous_gaps(heightmap: np.ndarray, segments: int,
                           height_scale: float = 1.0) -> np.ndarray:
     """Prevent continuous 80deg gaps: if a stretch of zeros > 40deg, keep variation.
 
@@ -395,8 +443,6 @@ def _fill_continuous_gaps(heightmap: np.ndarray, colormap: np.ndarray, segments:
             for k in range(i, j):
                 t = (k - i) / max(gap_len, 1)
                 filled[k] = left_val * (1 - t) + right_val * t
-                if np.all(colormap[k] == 0):
-                    colormap[k] = BAND_COLORS["base"]
         i = j if j > i else i + 1
     return filled
 
@@ -498,33 +544,31 @@ def generate_terrain_ring(heightmap, colormap, radius, segments, depth, rows=4):
 
 def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, segments: int,
                                         depth: float, svg_size: float, height_scale: float,
-                                        distance: float, rows: int = 4):
-    """Generate terrain ring with a real mountain slope profile.
+                                        distance: float, rows: int = 6):
+    """Generate terrain ring with continuous organic profile and baked arcade facet lighting.
 
-    Samples ONE peak heightmap at the ring radius (data-elevation * height_scale,
-    deterministic), then applies the ordered profile multipliers per row:
-        inner_base=0.0, inner_slope=0.4, peak=1.0, outer_slope=0.6
-    This guarantees base < slope < peak > back for every segment.
-
-    Winding is flipped so the visible face from inside the ring has inward+up
-    normals (fixes back-facing geometry).
+    Profile multipliers per row:
+        inner_apron=0.0, lower_talus=0.25, mid_cliff=0.65, summit_ridge=1.0, rear_crest=0.65, outer_skirt=0.15
+    Vertices are shaded with directional sun lighting baked into vertex colors,
+    giving crisp 3D facet definition to rock faces and ridges.
     """
-    # Sample the peak row (row index 2) at the ring radius
     peak_heightmap, peak_colormap = sample_contours_radial(
         contours_by_elev, radius, segments, svg_size, height_scale, distance
     )
 
-    r_offsets = [-depth * 0.5, -depth * 0.2, 0.0, depth * 0.15]
-    h_multipliers = [0.0, 0.4, 1.0, 0.6]
+    r_offsets = [-depth * 0.50, -depth * 0.30, -depth * 0.10, 0.0, depth * 0.15, depth * 0.35]
+    h_multipliers = [0.0, 0.25, 0.65, 1.0, 0.65, 0.15]
     row_tints = [
-        [0.5, 0.45, 0.4],
-        [0.8, 0.75, 0.7],
-        [1.0, 1.0, 1.0],
-        [0.6, 0.55, 0.5],
+        [0.60, 0.55, 0.50],  # inner apron (sandy base)
+        [0.80, 0.75, 0.70],  # lower talus
+        [0.95, 0.90, 0.85],  # mid cliff
+        [1.10, 1.05, 1.00],  # summit ridge (sunlit crest)
+        [0.85, 0.80, 0.75],  # rear crest
+        [0.55, 0.50, 0.45],  # outer skirt
     ]
     vertices = []
     faces = []
-    vertex_colors = []
+    base_vertex_colors = []
 
     for i in range(segments):
         angle = (i / segments) * 2 * np.pi
@@ -539,10 +583,10 @@ def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, s
             y = h_peak * h_multipliers[row]
             vertices.append([x, y, z])
             tint = row_tints[row]
-            r_c = int(np.clip(base_color[0] * tint[0], 0, 255))
-            g_c = int(np.clip(base_color[1] * tint[1], 0, 255))
-            b_c = int(np.clip(base_color[2] * tint[2], 0, 255))
-            vertex_colors.append([r_c, g_c, b_c, 255])
+            r_c = base_color[0] * tint[0]
+            g_c = base_color[1] * tint[1]
+            b_c = base_color[2] * tint[2]
+            base_vertex_colors.append([r_c, g_c, b_c])
 
     # Regular quads: winding flipped so normals face inward+up (visible from track)
     for i in range(segments - 1):
@@ -563,9 +607,31 @@ def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, s
         faces.append([v0, v2, v1])
         faces.append([v2, v3, v1])
 
+    verts_arr = np.array(vertices, dtype=np.float64)
+    faces_arr = np.array(faces, dtype=np.int64)
+
+    # Compute normals and bake directional low-poly lighting
+    mesh_temp = trimesh.Trimesh(vertices=verts_arr, faces=faces_arr, process=False)
+    vertex_normals = mesh_temp.vertex_normals
+
+    # Directional sun vector from South-East at 45 deg elevation
+    sun_dir = np.array([0.4, 0.8, -0.45], dtype=np.float64)
+    sun_dir /= np.linalg.norm(sun_dir)
+
+    vertex_colors = []
+    for idx, norm in enumerate(vertex_normals):
+        dot = np.dot(norm, sun_dir)
+        # Low-poly arcade diffuse + ambient lighting curve
+        light = np.clip(0.65 + 0.35 * dot, 0.45, 1.15)
+        bc = base_vertex_colors[idx]
+        r_lit = int(np.clip(bc[0] * light, 0, 255))
+        g_lit = int(np.clip(bc[1] * light, 0, 255))
+        b_lit = int(np.clip(bc[2] * light, 0, 255))
+        vertex_colors.append([r_lit, g_lit, b_lit, 255])
+
     mesh = trimesh.Trimesh(
-        vertices=np.array(vertices, dtype=np.float64),
-        faces=np.array(faces, dtype=np.int64),
+        vertices=verts_arr,
+        faces=faces_arr,
         vertex_colors=np.array(vertex_colors, dtype=np.uint8),
         process=False,
     )
@@ -575,38 +641,29 @@ def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, s
 # --- Waterfall Detection ---
 
 def detect_waterfalls(heightmap, segments, count=3, min_distance=80):
-    """Detect waterfall placement candidates from radial heightmap."""
+    """Detect waterfall placement candidates in valleys/saddles on the Near ring."""
     h_min = heightmap.min()
     h_max = heightmap.max()
-    if h_max > h_min:
-        h_norm = (heightmap - h_min) / (h_max - h_min)
-    else:
+    if h_max <= h_min:
         return []
-
+    h_norm = (heightmap - h_min) / (h_max - h_min)
     candidates = []
     window = max(segments // 20, 10)
-
     for i in range(window, segments - window):
-        # Avoid flat ground (no mountain) — waterfalls must be on slope, not at y=0
-        if heightmap[i] < h_max * 0.15:
-            continue
-        if heightmap[i] > h_max * 0.85:
+        # Valleys on Near ring with substantial elevation
+        if heightmap[i] < h_max * 0.15 or heightmap[i] > h_max * 0.75:
             continue
         left_max = np.max(h_norm[max(0, i - window):i])
         right_max = np.max(h_norm[i + 1:min(segments, i + window + 1)])
         local_avg = (left_max + right_max) / 2.0
-
         if h_norm[i] < local_avg * 0.92:
             steepness = (local_avg - h_norm[i]) / max(local_avg, 0.01)
             candidates.append({
                 "segment": i,
                 "height_pct": float(h_norm[i]),
                 "steepness": float(steepness),
+                "score": float(steepness * 0.6 + (1.0 - abs(h_norm[i] - 0.4)) * 0.4),
             })
-
-    for c in candidates:
-        height_score = 1.0 - abs(c["height_pct"] - 0.4)
-        c["score"] = c["steepness"] * 0.6 + height_score * 0.4
 
     candidates.sort(key=lambda c: c["score"], reverse=True)
     selected = []
@@ -616,7 +673,6 @@ def detect_waterfalls(heightmap, segments, count=3, min_distance=80):
         too_close = any(abs(cand["segment"] - s["segment"]) < min_distance for s in selected)
         if not too_close:
             selected.append(cand)
-
     return selected
 
 
@@ -856,38 +912,38 @@ def main():
     # Deterministic: world_height = data-elevation * height_scale (data-elevation sole source)
     svg_size = 800.0
     distance = metadata["distance"]
-    base_height_scale = metadata["height_scale"]  # 1.7 from redesigned SVG
-    # Visual balance: Near 1150m (50-80m), Far 1600m (90-130m)
+    base_height_scale = metadata["height_scale"]
+    # Visual balance: Near 1150m (50-110m), Far 1600m (90-240m)
     # Radios outside track ground (990m) and drivable bounds (711m).
     radius_far = 1600.0
     radius_near = 1150.0
-    height_scale_far = base_height_scale  # 1.7 -> 75*1.7=127.5 (within 90-130)
-    height_scale_near = 0.9  # 75*0.9=67.5 (within 50-80, and < Far)
-    depth_far = 300.0 * metadata["depth_scale"]
-    depth_near = 200.0 * metadata["depth_scale"]
+    height_scale_far = 1.5   # 150m summit -> 225m, 100m peak -> 150m (within 90-240m)
+    height_scale_near = 1.0  # 100m peak -> 100m, 75m -> 75m (within 50-110m)
+    depth_far = 320.0 * metadata["depth_scale"]
+    depth_near = 220.0 * metadata["depth_scale"]
 
     print("Generating far mountains terrain ring (radius=%.0f, depth=%.0f, height_scale=%.1f)..." % (radius_far, depth_far, height_scale_far))
     far_ring = generate_terrain_ring_from_contours(
-        contours_by_elev, radius_far, SEGMENTS_ANGULAR, depth_far, svg_size, height_scale_far, distance
+        contours_by_elev, radius_far, SEGMENTS_ANGULAR, depth_far, svg_size, height_scale_far, distance, rows=6
     )
     far_path = str(output_dir / "far_mountains_ring.glb")
     scene = trimesh.Scene()
     scene.add_geometry(far_ring)
     scene.export(far_path)
     print(f"  -> {far_path} ({far_ring.vertices.shape[0]} verts, {far_ring.faces.shape[0]} faces)")
-    # Derive heightmap for waterfall detection from far ring peak row
-    far_heightmap = np.array([far_ring.vertices[i*4+2][1] for i in range(SEGMENTS_ANGULAR)])
+    # Derive heightmap for waterfall detection from far ring peak row (row index 3 in 6-row profile)
+    far_heightmap = np.array([far_ring.vertices[i*6+3][1] for i in range(SEGMENTS_ANGULAR)])
 
     print("Generating near mountains terrain ring (radius=%.0f, depth=%.0f, height_scale=%.1f)..." % (radius_near, depth_near, height_scale_near))
     near_ring = generate_terrain_ring_from_contours(
-        contours_by_elev, radius_near, SEGMENTS_ANGULAR, depth_near, svg_size, height_scale_near, distance
+        contours_by_elev, radius_near, SEGMENTS_ANGULAR, depth_near, svg_size, height_scale_near, distance, rows=6
     )
     near_path = str(output_dir / "near_mountains_ring.glb")
     scene = trimesh.Scene()
     scene.add_geometry(near_ring)
     scene.export(near_path)
     print(f"  -> {near_path} ({near_ring.vertices.shape[0]} verts, {near_ring.faces.shape[0]} faces)")
-    near_heightmap = np.array([near_ring.vertices[i*4+2][1] for i in range(SEGMENTS_ANGULAR)])
+    near_heightmap = np.array([near_ring.vertices[i*6+3][1] for i in range(SEGMENTS_ANGULAR)])
     print(f"  Far height range: {far_heightmap.min():.1f}m to {far_heightmap.max():.1f}m")
     print(f"  Near height range: {near_heightmap.min():.1f}m to {near_heightmap.max():.1f}m")
 
@@ -967,7 +1023,7 @@ def main():
                 "height_scale": height_scale_near,
                 "height_min": float(near_heightmap.min()),
                 "height_max": float(near_heightmap.max()),
-                "target_height_range": [50, 80],
+                "target_height_range": [50, 110],
             },
             "far": {
                 "layer": "far",
@@ -976,14 +1032,14 @@ def main():
                 "height_scale": height_scale_far,
                 "height_min": float(far_heightmap.min()),
                 "height_max": float(far_heightmap.max()),
-                "target_height_range": [90, 130],
+                "target_height_range": [90, 240],
             },
             "sky": {
                 "radius": SKY_DOME_RADIUS,
                 "rings": SKY_DOME_RINGS,
                 "segments": SKY_DOME_SEGMENTS,
             },
-            "terrain_rows": 4,
+            "terrain_rows": 6,
             "segments": SEGMENTS_ANGULAR,
         },
         "waterfalls": waterfalls,

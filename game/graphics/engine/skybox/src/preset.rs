@@ -143,6 +143,15 @@ mod tests {
     }
 
     #[test]
+    fn scale_as_integer() {
+        let json = r#"{"id": "test", "layers": [{"id": "l1", "texture_path": "t.png", "depth": 0, "scale": 1}]}"#;
+        let preset = parse_preset_json(json).unwrap();
+        let l1 = get_layer_by_id(&preset, "l1").unwrap();
+        assert_eq!(l1.scale.x, 1.0);
+        assert_eq!(l1.scale.y, 1.0);
+    }
+
+    #[test]
     fn distance_z_default_applied() {
         let preset = parse_preset_json(VALID_JSON).unwrap();
         // near_mountains has depth=1, no explicit distance_z
