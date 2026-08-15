@@ -51,13 +51,16 @@ func _setup_procedural(config: BackgroundLayerConfig) -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = shader
 	_apply_uniforms(mat, config.uniforms)
-	material_override = mat
 	# Textura dummy 1x1 para que el Sprite3D tenga aabb válido (no frustum-culled)
 	var img := Image.create(1, 1, false, Image.FORMAT_RGBA8)
 	img.set_pixel(0, 0, Color.WHITE)
 	texture = ImageTexture.create_from_image(img)
 	# pixel_size alto para que el sprite sea siempre visible en el frustum
 	pixel_size = 100.0
+	# Informar al shader del tamaño real del quad en unidades mundo para
+	# que la resolución del ruido FBM sea independiente de la textura dummy.
+	mat.set_shader_parameter("quad_size", pixel_size)
+	material_override = mat
 
 
 func _apply_uniforms(mat: ShaderMaterial, uniforms: Dictionary) -> void:
