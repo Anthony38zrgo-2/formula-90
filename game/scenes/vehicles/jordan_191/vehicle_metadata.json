@@ -1,0 +1,36 @@
+{
+  "vehicle_id": "jordan_191",
+  "replacement_bundle": "formula_blend_2026-08-14",
+  "coordinate_contract": {
+    "right": "+X",
+    "up": "+Y",
+    "front": "-Z",
+    "units": "meters",
+    "chassis_origin": "midpoint_between_front_and_rear_axle_centers",
+    "wheel_origin": "center_of_rotation"
+  },
+  "assets": {
+    "chassis": "jordan_191_chassis.glb",
+    "wheel_fl": "jordan_191_wheel_fl.glb",
+    "wheel_fr": "jordan_191_wheel_fr.glb",
+    "wheel_rl": "jordan_191_wheel_rl.glb",
+    "wheel_rr": "jordan_191_wheel_rr.glb"
+  },
+  "validation_datums_m": {
+    "front_axle_center": [0.0, 0.0, -1.4394],
+    "rear_axle_center": [0.0, 0.0, 1.4394],
+    "wheel_hubs": {
+      "FL": [-0.739479, 0.0, -1.4394],
+      "FR": [0.739257, 0.0, -1.4394],
+      "RL": [-0.718479, 0.0, 1.4394],
+      "RR": [0.718479, 0.0, 1.4394]
+    }
+  },
+  "sources": {
+    "chassis": "formula.blend",
+    "wheel_fl": "llanta delantera izquierdo.blend",
+    "wheel_fr": "llanta delantera derecha.blend",
+    "wheel_rl": "llanta trasera izquierda.blend",
+    "wheel_rr": "llanta trasera derecha.blend"
+  }
+}
