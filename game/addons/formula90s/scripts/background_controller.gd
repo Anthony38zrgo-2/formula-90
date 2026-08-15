@@ -141,8 +141,11 @@ func _resolve_current_camera() -> void:
 func _follow_active_camera() -> void:
 	if not is_inside_tree() or not is_instance_valid(_camera) or not _camera.is_inside_tree():
 		return
-	# Sigue la posicion de la camara (incluye Y para alinear horizonte con altura de camara)
+	# Follow the camera position and yaw so layers are always in front of the
+	# camera.  Only yaw is applied; pitch and roll are zero to keep layers upright.
 	global_position = _camera.global_position
+	var cam_yaw := _camera.global_transform.basis.get_euler().y
+	global_rotation = Vector3(0.0, cam_yaw, 0.0)
 
 
 func _update_layers_parallax() -> void:

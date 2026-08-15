@@ -24,7 +24,7 @@
       "scale": 1.0,
       "offset_x": 0.0,
       "offset_y": 76.0,
-      "repeat_x": false,
+      "repeat_x": true,
       "repeat_y": false,
       "pixel_snap": true,
       "distance_z": -700.0,
@@ -39,35 +39,11 @@
       "scale": 1.0,
       "offset_x": 0.0,
       "offset_y": -15.0,
-      "repeat_x": false,
+      "repeat_x": true,
       "repeat_y": false,
       "pixel_snap": true,
       "distance_z": -600.0,
       "pixel_size": 1.2
-    },
-    {
-      "id": "clouds",
-      "depth": 2,
-      "procedural": true,
-      "shader_path": "res://addons/formula90s/shaders/cloud_layer.gdshader",
-      "parallax_x": 0.28,
-      "parallax_y": 0.0,
-      "scale": 1.0,
-      "offset_x": 0.0,
-      "offset_y": 30.0,
-      "repeat_x": false,
-      "repeat_y": false,
-      "pixel_snap": false,
-      "distance_z": -500.0,
-      "pixel_size": 0.0,
-      "uniforms": {
-        "cloud_scale": 0.012,
-        "cloud_coverage": 0.45,
-        "cloud_sharpness": 2.5,
-        "wind_speed": 0.005,
-        "cloud_color": [1.0, 1.0, 1.0],
-        "cloud_opacity": 0.6
-      }
     }
   ]
 }

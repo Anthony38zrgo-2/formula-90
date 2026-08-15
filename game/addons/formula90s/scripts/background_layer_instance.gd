@@ -4,8 +4,11 @@ extends Sprite3D
 ## Instancia individual de renderizado para una capa parallax (Formula-90).
 ## Soporta capas con textura (PNG) y capas procedurales (shader FBM).
 ## Aplica filtrado Nearest, configuracion unshaded, orden de profundidad y snapping a pixel.
+## Cuando repeat_x es true, crea copias de tile a los lados para cobertura continua.
 
 var layer_config: BackgroundLayerConfig
+var _tile_copies: Array[Sprite3D] = []
+var _sprite_width: float = 0.0
 
 
 func setup_layer(config: BackgroundLayerConfig) -> bool:
@@ -31,6 +34,15 @@ func setup_layer(config: BackgroundLayerConfig) -> bool:
 	scale = Vector3(config.scale.x, config.scale.y, 1.0)
 	var snapped := _apply_pixel_snap(config.offset.x, config.offset.y)
 	position = Vector3(snapped.x, snapped.y, config.distance_z)
+
+	# Calculate sprite width for tiling (in local space before parent scale)
+	if texture != null and pixel_size > 0.0:
+		_sprite_width = texture.get_width() * pixel_size
+
+	# Create horizontal tile copies so mountains wrap continuously
+	if config.repeat_x and _sprite_width > 0.0:
+		_create_tile_copies()
+
 	return true
 
 
@@ -57,10 +69,28 @@ func _setup_procedural(config: BackgroundLayerConfig) -> void:
 	texture = ImageTexture.create_from_image(img)
 	# pixel_size alto para que el sprite sea siempre visible en el frustum
 	pixel_size = 100.0
-	# Informar al shader del tamaño real del quad en unidades mundo para
-	# que la resolución del ruido FBM sea independiente de la textura dummy.
 	mat.set_shader_parameter("quad_size", pixel_size)
 	material_override = mat
+
+
+## Crea dos copias del sprite a izquierda y derecha para tiling horizontal continuo.
+func _create_tile_copies() -> void:
+	for side in [-1, 1]:
+		var copy := Sprite3D.new()
+		copy.texture = texture
+		copy.texture_filter = texture_filter
+		copy.shaded = shaded
+		copy.cast_shadow = cast_shadow
+		copy.gi_mode = gi_mode
+		copy.render_priority = render_priority
+		copy.alpha_cut = alpha_cut
+		copy.pixel_size = pixel_size
+		if material_override != null:
+			copy.material_override = material_override
+		copy.position = Vector3(float(side) * _sprite_width, 0.0, 0.0)
+		copy.name = "TileCopy_%s" % ("L" if side == -1 else "R")
+		add_child(copy)
+		_tile_copies.append(copy)
 
 
 func _apply_uniforms(mat: ShaderMaterial, uniforms: Dictionary) -> void:
@@ -76,15 +106,24 @@ func _apply_uniforms(mat: ShaderMaterial, uniforms: Dictionary) -> void:
 			mat.set_shader_parameter(key, value)
 
 
-## Desplazamiento parallax proporcional a yaw/pitch y distancia.
-## Usa sin() para que el offset sea correcto a cualquier angulo de giro.
+## Desplazamiento parallax proporcional a yaw/pitch.
+## El controller rota con el yaw de la cámara, así que el offset en X local
+## crea la ilusión de profundidad: capas lejanas se desplazan poco, cercanas más.
+## Con repeat_x, el offset se envuelve módulo el ancho del sprite para tiling continuo.
 func update_parallax(yaw_rad: float, pitch_rad: float) -> void:
 	if layer_config == null:
 		return
 	
 	var radius := absf(layer_config.distance_z)
-	var raw_x := (sin(yaw_rad) * layer_config.parallax_x * radius) + layer_config.offset.x
-	var raw_y := (sin(pitch_rad) * layer_config.parallax_y * radius) + layer_config.offset.y
+	# Negativo: cuando la cámara gira a la derecha (yaw+), las montañas
+	# se desplazan a la izquierda en el espacio local de la cámara.
+	var raw_x := -(yaw_rad * layer_config.parallax_x * radius) + layer_config.offset.x
+	var raw_y := (pitch_rad * layer_config.parallax_y * radius) + layer_config.offset.y
+	
+	if layer_config.repeat_x and _sprite_width > 0.0:
+		# Wrap modular para tiling continuo: el sprite principal siempre queda
+		# dentro de [-ancho/2, +ancho/2] y las copias cubren los lados.
+		raw_x = fposmod(raw_x + _sprite_width * 0.5, _sprite_width) - _sprite_width * 0.5
 	
 	var snapped := _apply_pixel_snap(raw_x, raw_y)
 	position.x = snapped.x
