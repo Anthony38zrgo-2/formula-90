@@ -106,12 +106,23 @@ static func compute_pixel_size_from_camera(
 ) -> float:
 	if viewport == null or camera == null or texture_size.y <= 0 or camera.fov <= 0.0:
 		return 1.0
-	var fov_h_rad := deg_to_rad(camera.fov)
+	var fov_rad := deg_to_rad(camera.fov)
 	var viewport_size := viewport.get_visible_rect().size
 	var aspect := viewport_size.x / maxf(viewport_size.y, 0.001)
-	var fov_v_rad := 2.0 * atan(tan(fov_h_rad * 0.5) / aspect)
-	var visible_h := 2.0 * absf(distance) * tan(fov_v_rad * 0.5)
-	var needed_px := visible_h * coverage_factor / float(texture_size.y)
+	# camera.fov is the vertical FOV when keep_aspect == KEEP_HEIGHT (Godot default)
+	# and horizontal FOV when KEEP_WIDTH.  Compute both frustum dimensions so a
+	# square quad (e.g. 1×1 dummy texture) covers the entire viewport.
+	var visible_fov := 2.0 * absf(distance) * tan(fov_rad * 0.5)
+	var visible_h: float
+	var visible_w: float
+	if camera.keep_aspect == Camera3D.KEEP_HEIGHT:
+		visible_h = visible_fov
+		visible_w = visible_fov * aspect
+	else:
+		visible_w = visible_fov
+		visible_h = visible_fov / maxf(aspect, 0.001)
+	var largest := maxf(visible_h, visible_w)
+	var needed_px := largest * coverage_factor / float(texture_size.y)
 	return snappedf(maxf(needed_px, 0.1), PIXEL_SIZE_SNAP)
 
 
