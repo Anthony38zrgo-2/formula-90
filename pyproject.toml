@@ -6,6 +6,7 @@ dependencies = ["PyYAML>=6,<7"]
 
 [tool.pytest.ini_options]
 testpaths = ["tools/audio/tests"]
+addopts = "--basetemp=.tmp/pytest"
 
 [tool.ruff]
 line-length = 100

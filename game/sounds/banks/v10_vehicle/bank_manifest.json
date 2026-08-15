@@ -1,0 +1,453 @@
+{
+  "bank_name": "v10_vehicle",
+  "channels": 1,
+  "files": [
+    {
+      "dc_offset": -0.0,
+      "duration_s": 3.285624,
+      "file": "engine_backfire.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -10.31,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_backfire",
+      "sha256": "8174637993898bf59c07dca62f41c1ac607b91634c43e890033006de30ebf022",
+      "synthesis": {
+        "category": "start",
+        "source_file": "98_start_backfire.wav",
+        "source_rate": 22050,
+        "source_sha256": "10501a48937a1df99353bace8d17e789be84bb7b0be66d93d282da5a226be119"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.5,
+      "file": "engine_high.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -8.24,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_high",
+      "sha256": "1089df9b2235f1fcf96c9cb1e8709dc42d06f86cfca99668c42d9623b2665861",
+      "synthesis": {
+        "category": "engine",
+        "native_rpm": 5580.0,
+        "source_file": "98_int_high_1.wav",
+        "source_rate": 44100,
+        "source_sha256": "fc68bc279e3f8098be009be24eb4249c4ab76ab805e595af7bc5c509b1413477"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 2.0,
+      "file": "engine_idle.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -10.9,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_idle",
+      "sha256": "735ce3ff953ba3071772c8cf58fc37f565159d9a6e1506e821eff7bc1e8a1e71",
+      "synthesis": {
+        "category": "engine",
+        "native_rpm": 3941.0,
+        "source_file": "98_int_idle.wav",
+        "source_rate": 44100,
+        "source_sha256": "f0021afba4048c59ae237325c932abef76433f03c437794d73de0e417384ddea"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.53551,
+      "file": "engine_limiter.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -13.58,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_limiter",
+      "sha256": "f20fa2eb4f5d681810e692d8561a1e475077ed0e21d2a3729935d489606094d7",
+      "synthesis": {
+        "category": "engine",
+        "source_file": "98_INT_limiter_engage_disengage.wav",
+        "source_rate": 22050,
+        "source_sha256": "682b3f78204a550ce60b575405315ef2671b3ccfb8aea7520a819ac11cf3167c"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 2.5,
+      "file": "engine_low.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -12.75,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_low",
+      "sha256": "97745bcf4e85e5e55bb98eda6bbf3d72623dfea5072a610ea14627b09c54815c",
+      "synthesis": {
+        "category": "engine",
+        "native_rpm": 7429.0,
+        "source_file": "98_int_low.wav",
+        "source_rate": 44100,
+        "source_sha256": "2eac0ef746c818ecac50fe77ca0099894f4762d55428a3cddfeb3007a6092cc5"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.5,
+      "file": "engine_mid.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -11.33,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_mid",
+      "sha256": "439a41c016ff1e72d3e797823157b712058ea376adad9cef9bd99f4e2664221a",
+      "synthesis": {
+        "category": "engine",
+        "native_rpm": 8196.0,
+        "source_file": "98_int_med.wav",
+        "source_rate": 44100,
+        "source_sha256": "d1a527d5ddf3ec6d4f38127d1c6a3b00d7b7771d5473f68315e4352c98db4007"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 5.05424,
+      "file": "engine_redline.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -8.53,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_redline",
+      "sha256": "f6e085e4c1efa1a5ccf937d6c474f8f2b4eef0cebffee0287b6460e475749be0",
+      "synthesis": {
+        "category": "engine",
+        "native_rpm": 7687.0,
+        "source_file": "98_int_max_5.wav",
+        "source_rate": 44100,
+        "source_sha256": "f6b6cd4389fee32cb5f4b41a550e7aa146d4a5d0912fda86551dabfd598aa50b"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 2.442585,
+      "file": "engine_starter.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -14.56,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_starter",
+      "sha256": "c27833ef25079e1503a281a1be71bfc433c1a96c3fd476a5539fd5a2357f32ba",
+      "synthesis": {
+        "category": "start",
+        "source_file": "98_starter.wav",
+        "source_rate": 22050,
+        "source_sha256": "9cd06da343af654960fa27f6d294b7f5970d1366f200b5a88e15f5aa06d94821"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 1.531156,
+      "file": "engine_tc.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -11.54,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_tc",
+      "sha256": "efc97b1da82be493adfd4f61c21b5ca4f5af9bb6d7c45bf4d1d09f86e0447182",
+      "synthesis": {
+        "category": "engine",
+        "source_file": "98_INT_tc.wav",
+        "source_rate": 44100,
+        "source_sha256": "4198b9e21b098371a80eb8990317778e6bb62294af9eaded88c0f75f0ba2f553"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.44322,
+      "file": "impact_barrier.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -10.34,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_barrier",
+      "sha256": "cb490f0d809218a94cc0e6c6d433cbd6d54f9c7213a5e6d506489239efc426d4",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_barrier.wav",
+        "source_rate": 44100,
+        "source_sha256": "c4c3210cdc1119f4ef38055e15e843a085111806e45b1bdea28c8a8d87784b68"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.351519,
+      "file": "impact_cone.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -15.32,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_cone",
+      "sha256": "9fbfcc38f94ee30a79f40bbdb5c4f03e2faf2844b7ba374818a8b01535162622",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_conehit.wav",
+        "source_rate": 22050,
+        "source_sha256": "664225b6d640c799d2752cf37a45d3258fdcc478ace3f41d011c1af5e7552ee4"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 1.6,
+      "file": "impact_fire.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -10.52,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_fire",
+      "sha256": "5b6aa34f4793b614e62da4f3895c901f6a8bb7f05974cf607006391d73aaebe4",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_fire.WAV",
+        "source_rate": 22050,
+        "source_sha256": "1d9e6ddba4cd06561c96e97bcf578fa0f0c2a9656cc4e86b755256a0c4ae9c34"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.377188,
+      "file": "impact_hit_1.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -14.45,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_hit",
+      "sha256": "dc858fe92d7904734d2ff7fac2f1ed556c60a1024bf660a35795212c80582baa",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_hit1.WAV",
+        "source_rate": 22050,
+        "source_sha256": "e170d99e544c4c23ddbab438de86b72f5aaf833ceba1a6929cfc91eb560b5abe"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 0.418095,
+      "file": "impact_hit_2.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -12.44,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_hit",
+      "sha256": "0cb76b4385a140b3003cffd6c369756163bf9f350f97a7ac554f352191f035a0",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_hit2.WAV",
+        "source_rate": 22050,
+        "source_sha256": "b8750c1e99d8121fa4b60e1c4151ea7ce2f590ec910f2335cf3e8818da25ac9f"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.535465,
+      "file": "impact_hit_3.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -13.31,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_hit",
+      "sha256": "5f344271def5afb0f077c11a9d0daf68c643d416e5709b9adc44689876ad2083",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_hit3.WAV",
+        "source_rate": 22050,
+        "source_sha256": "d5e49e03543d1419da7ca63b37e1327775847c2d3f01b92e6918cdd85afbed72"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.493968,
+      "file": "impact_hit_4.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -12.22,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_hit",
+      "sha256": "a3bc39e06086333a6821a4e56ee74e93c1fe58200997ec9819baae668c365070",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_hit4.WAV",
+        "source_rate": 22050,
+        "source_sha256": "a30118f571509349db6dce1e3de5d2679530c6bdc1f90520ddff2419e782b54e"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 0.276463,
+      "file": "impact_scrape.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -13.07,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "impact_scrape",
+      "sha256": "0898114bdaa1aaec640ff2ebb5be3ffc9bbaeb7312b75996080b0a591b5a7a13",
+      "synthesis": {
+        "category": "impact",
+        "source_file": "GP_scrape.WAV",
+        "source_rate": 11025,
+        "source_sha256": "422cef1ff81897bbdd1097bd2d76b8a40ea7a01af8c926590c41db2c8fbb8885"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.712834,
+      "file": "shift_3.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -17.41,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "shift_3",
+      "sha256": "19179cc2bfb4fa5b7dd818b86f3179c3cf101353d79d8b81d172690f77e66230",
+      "synthesis": {
+        "category": "shift",
+        "source_file": "98_int_shift_3.wav",
+        "source_rate": 11025,
+        "source_sha256": "c817c3e6d73d19eaf85bdf71efc55704f4d0fdb8917a51b18d0e35a49a781dba"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.679093,
+      "file": "shift_down.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -17.87,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "shift_down",
+      "sha256": "b27cbc82a946b636ffab078739cd263e49a4b9cfb122321153e8dd1b594fa678",
+      "synthesis": {
+        "category": "shift",
+        "source_file": "98_int_shift_2.wav",
+        "source_rate": 11025,
+        "source_sha256": "6d5d07dbf847b3a4d55e81377061f4165bae85d5d1722adc8720bc2958fd4844"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.481723,
+      "file": "shift_up.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -17.38,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "shift_up",
+      "sha256": "e3ef8ebab2c83557d98335ac7465ee0cd8412a59a380b4955ff52673ca321011",
+      "synthesis": {
+        "category": "shift",
+        "source_file": "98_int_shift.wav",
+        "source_rate": 11025,
+        "source_sha256": "943de55bb25e8fd88630fb4a3fec5177c8c79e222a7ebdb1901c76c34ca4dc95"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 1.547846,
+      "file": "surf_grass.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -11.21,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "surf_grass",
+      "sha256": "eb0295ab5d3ccf630e5cef7c869a509c7dcc6ae2dc27becc7e26dfd057ded57b",
+      "synthesis": {
+        "category": "surface",
+        "source_file": "GP_grass_2.wav",
+        "source_rate": 11025,
+        "source_sha256": "03e80386d5b1ac4dc7546340c290137d17f007210f545b71b57b4b5ccff2ec23"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.0,
+      "file": "surf_rumble.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -8.28,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "surf_rumble",
+      "sha256": "2bd139d9eb8e00473b111877ab33213db23c094507240f36c07c38d4ea70f74f",
+      "synthesis": {
+        "category": "surface",
+        "source_file": "GP_rumble_2.wav",
+        "source_rate": 44100,
+        "source_sha256": "4579d32366de7d78ac3282ae0ff90d2506f01cdd2a1eab5e83144f76f69d879e"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.174966,
+      "file": "surf_sand.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -15.61,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "surf_sand",
+      "sha256": "ba5020c2f6eb9e33b6665209d44ccef147610bc636cd23bf80f3a5291bc1b8c6",
+      "synthesis": {
+        "category": "surface",
+        "source_file": "GP_sand_2.wav",
+        "source_rate": 44100,
+        "source_sha256": "16268a8e60bfc8b5a5f1801507200e220d3f171b960be961e31265a5490e1875"
+      }
+    }
+  ],
+  "generator": "formula90s sample-based bank builder 1.0",
+  "pcm_bits": 16,
+  "sample_rate": 44100,
+  "schema_version": 1,
+  "seed": 0
+}

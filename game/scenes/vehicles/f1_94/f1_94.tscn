@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle_controllergd.gd" id="1_controller"]
 [ext_resource type="Script" path="res://addons/gevp/scripts/vehicle.gd" id="2_vehicle"]
@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_front_geometry.glb" id="5_front"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_rear_geometry.glb" id="6_rear"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_external_albedo_binder.gd" id="7_binder"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/audio/vehicle_audio_controller.gd" id="8_audio"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/audio/audio_telemetry.gd" id="9_audiotel"]
 
 [sub_resource type="Curve" id="Curve_f194"]
 _data = [Vector2(0, 0.38), 0.0, 0.0, 0, 0, Vector2(0.45, 0.82), 0.0, 0.0, 0, 0, Vector2(0.62, 0.95), 0.0, 0.0, 0, 0, Vector2(0.82, 1), 0.0, 0.0, 0, 0, Vector2(0.95, 0.96), 0.0, 0.0, 0, 0, Vector2(1, 0.88), 0.0, 0.0, 0, 0]
@@ -24,6 +26,15 @@ size = Vector3(1.2, 0.32, 1.1)
 [node name="F194" type="Node3D" node_paths=PackedStringArray("vehicle_node")]
 script = ExtResource("1_controller")
 vehicle_node = NodePath("VehicleRigidBody")
+
+[node name="VehicleAudio" type="Node" parent="." node_paths=PackedStringArray("vehicle")]
+script = ExtResource("8_audio")
+vehicle = NodePath("../VehicleRigidBody")
+
+[node name="AudioTelemetry" type="Node" parent="." node_paths=PackedStringArray("audio")]
+script = ExtResource("9_audiotel")
+enabled = false
+audio = NodePath("VehicleAudio")
 
 [node name="VehicleRigidBody" type="RigidBody3D" parent="." node_paths=PackedStringArray("front_left_wheel", "front_right_wheel", "rear_left_wheel", "rear_right_wheel")]
 script = ExtResource("2_vehicle")

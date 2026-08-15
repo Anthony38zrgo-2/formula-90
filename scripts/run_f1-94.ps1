@@ -2,7 +2,8 @@
 param(
     [string]$GodotPath,
     [switch]$ValidateRuntimeOnly,
-    [switch]$Smoke
+    [switch]$Smoke,
+    [switch]$SmokeAudio
 )
 
 $ErrorActionPreference = 'Stop'
@@ -63,6 +64,11 @@ if ($LASTEXITCODE -ne 0) {
     throw "Godot no pudo importar el runtime F1-94 ($LASTEXITCODE)."
 }
 
+if ($SmokeAudio) {
+    Write-Host 'Ejecutando smoke de F1-94 audio (v10_vehicle + GEVP)...' -ForegroundColor Cyan
+    & $godot --headless --path $game --script 'res://tests/smoke_test_f1_94_audio.gd'
+    exit $LASTEXITCODE
+}
 if ($Smoke) {
     Write-Host 'Ejecutando smoke de F1-94 + La Chutana + HUD...' -ForegroundColor Cyan
     & $godot --headless --path $game --script $smokeScript

@@ -1,0 +1,13 @@
+# v10_vehicle bank configuration.
+# The bank is derived from the original F1-1998 engine internal + Grand Prix
+# sample set in assets-lowpoly-python/sounds/. No synthesis.
+
+bank_name: v10_vehicle
+source_dir: assets-lowpoly-python/sounds
+sample_rate: 44100
+channels: 1
+pcm_bits: 16
+# Loop seam crossfade in frames (~46 ms) applied to loopable entries.
+loop_xfade_frames: 2048
+# Peak normalization ceiling.
+normalization_peak: 0.89
