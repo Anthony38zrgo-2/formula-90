@@ -225,9 +225,9 @@ The canonical Formula-90 import contract is defined in
 
 ```text
 asset/runtime: front -Z, up +Y, right +X
-runtime:       chassis GLB + four independent FL/FR/RL/RR wheel GLBs
+runtime:       chassis GLB + shared front-wheel GLB + shared rear-wheel GLB
 hierarchy:     Wheel -> {Corner}Wheel -> Visual
-conversion:    applied before export; no runtime correction node
+orientation:   a presentation child may apply proper side yaw; no negative scale
 ```
 
 Any vehicle that intentionally differs must declare the exception in its

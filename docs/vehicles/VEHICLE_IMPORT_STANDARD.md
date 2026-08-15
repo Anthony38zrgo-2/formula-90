@@ -43,16 +43,17 @@ GEO_SUSPENSION_FL
 GEO_SUSPENSION_FR
 GEO_SUSPENSION_RL
 GEO_SUSPENSION_RR
-GEO_WHEEL_FL_*
-GEO_WHEEL_FR_*
-GEO_WHEEL_RL_*
-GEO_WHEEL_RR_*
+GEO_WHEEL_FRONT_*
+GEO_WHEEL_REAR_*
 GEO_DRIVER_*
 ```
 
-`FL`, `FR`, `RL` y `RR` significan, respectivamente, `Front Left`, `Front
-Right`, `Rear Left` y `Rear Right`. `GEO_` identifica geometría visible,
-`JNT_` un punto de unión/pivot y `DATUM_` una referencia espacial.
+`FRONT` y `REAR` identifican los recursos visuales compartidos por eje. `FL`,
+`FR`, `RL` y `RR` se reservan para datums, puntos de unión e instancias de
+escena: `Front Left`, `Front Right`, `Rear Left` y `Rear Right`. `GEO_`
+identifica geometría visible, `JNT_` un punto de unión/pivot y `DATUM_` una
+referencia espacial. Un paquete asimétrico puede usar nombres `GEO_WHEEL_FL_*`
+por esquina si declara la excepción.
 
 ## Puntos de unión
 
@@ -76,11 +77,14 @@ identificar también sus extremos `INNER` y `OUTER`.
 
 ## Ruedas y GEVP
 
-- Cada rueda debe poder existir como asset independiente.
-- El origen de cada rueda debe coincidir exactamente con su centro de rotación.
+- El paquete runtime estándar contiene una rueda delantera y una rueda trasera compartibles.
+- Las cuatro esquinas deben ser instancias de escena independientes, aunque reutilicen esos dos GLB.
+- El origen de cada GLB de rueda debe coincidir exactamente con su centro de rotación.
 - La geometría visual no debe contener offsets arbitrarios.
 - Los pivotes deben permitir que GEVP controle directamente rotación, dirección y desplazamiento vertical.
 - La posición física se define mediante `RayCast3D`, nunca horneada en la geometría.
+- La orientación visual de cada lado puede resolverse con un nodo de presentación bajo el `wheel_node`; no debe mutar ni compartir el estado físico de GEVP.
+- Cuatro GLB de rueda por esquina son una excepción permitida solamente cuando exista asimetría geométrica o visual real y esté documentada en el manifiesto.
 
 Jerarquía esperada:
 
@@ -96,10 +100,18 @@ La misma forma se aplica a las otras tres ruedas.
 
 El formato principal es `GLB/glTF`. OBJ puede conservarse como edición o
 respaldo, pero no es el formato principal de integración en Godot. El paquete
-ideal contiene `vehicle.glb`, `vehicle_chassis.glb`,
-`vehicle_wheel_front.glb`, `vehicle_wheel_rear.glb`, `textures/` y
-`vehicle_metadata.json`; el runtime materializado debe exponer además cuatro
-ruedas independientes cuando el manifiesto las identifique por esquina.
+runtime contiene `vehicle_chassis.glb`, `vehicle_wheel_front.glb`,
+`vehicle_wheel_rear.glb`, `textures/` y `vehicle_metadata.json`. Un
+`vehicle.glb` completamente ensamblado puede conservarse como referencia de
+autoría o validación, pero no forma parte del runtime obligatorio. Los tres GLB
+runtime obligatorios son el chasis, la
+rueda delantera compartida y la rueda trasera compartida. Godot debe crear
+cuatro instancias visuales independientes sobre cuatro `RayCast3D`; compartir
+el recurso GLB no comparte el estado físico.
+
+El manifiesto debe declarar como mínimo las claves `chassis`, `wheel_front` y
+`wheel_rear`. Sólo una excepción asimétrica documentada puede sustituirlas por
+`wheel_fl`, `wheel_fr`, `wheel_rl` y `wheel_rr`.
 
 Un modelo está listo cuando puede importarse en Godot sin correcciones manuales
 de escala, orientación, normales, UV, pivotes o nombres.

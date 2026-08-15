@@ -35,6 +35,13 @@
     "wheel_front_canonical": "geometry/F1_94_wheel_front_geometry.glb",
     "wheel_rear_canonical": "geometry/F1_94_wheel_rear_geometry.glb"
   },
+  "runtime_assets": {
+    "chassis": "geometry/F1_94_chassis_geometry.glb",
+    "wheel_front": "geometry/F1_94_wheel_front_geometry.glb",
+    "wheel_rear": "geometry/F1_94_wheel_rear_geometry.glb",
+    "wheel_instances": ["FL", "FR", "RL", "RR"],
+    "shared_by_axle": true
+  },
   "meshes": [
     {
       "name": "GEO_AERO_FRONT_WING",
