@@ -16,12 +16,12 @@ const PROPERTY_LIMITS := {
 	"brake_force_multiplier": {"min": 0.1, "max": 5.0}
 }
 
-static func get_value(vehicle: Vehicle, property_name: String) -> Variant:
+static func get_value(vehicle: Node, property_name: String) -> Variant:
 	if vehicle == null:
 		return null
 	return vehicle.get(property_name)
 
-static func set_value(vehicle: Vehicle, property_name: String, value: Variant) -> bool:
+static func set_value(vehicle: Node, property_name: String, value: Variant) -> bool:
 	if vehicle == null:
 		return false
 	

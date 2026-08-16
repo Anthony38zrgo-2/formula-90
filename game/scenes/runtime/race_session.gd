@@ -1,7 +1,7 @@
 class_name RaceSession
 extends Node3D
 
-signal composition_ready(vehicle: Vehicle, track: Node3D, aids: DrivingAidsController)
+signal composition_ready(vehicle: Node, track: Node3D, aids: DrivingAidsController)
 
 const CAMERA_SCENE := preload("res://scenes/runtime/arcade_chase_camera_rig.tscn")
 const AIDS_SCRIPT := preload("res://addons/formula90s/scripts/driving_aids.gd")
@@ -10,7 +10,7 @@ const AIDS_SCRIPT := preload("res://addons/formula90s/scripts/driving_aids.gd")
 
 var active_track: Node3D
 var active_vehicle_root: Node3D
-var active_vehicle: Vehicle
+var active_vehicle: Node
 var driving_aids: DrivingAidsController
 var background_controller: BackgroundController
 var background_skybox: BackgroundSkybox
@@ -38,7 +38,7 @@ func compose(next_config: RaceSessionConfig) -> bool:
 	active_vehicle_root.name = "ActiveVehicle"
 	$VehicleContainer.add_child(active_vehicle_root)
 	active_vehicle_root.global_transform = spawn.global_transform
-	active_vehicle = active_vehicle_root.get_node_or_null("VehicleRigidBody") as Vehicle
+	active_vehicle = active_vehicle_root.get_node_or_null("VehicleRigidBody")
 	if active_vehicle == null:
 		push_error("Vehicle '%s' does not expose VehicleRigidBody." % config.selected_vehicle.id)
 		_clear_composition()

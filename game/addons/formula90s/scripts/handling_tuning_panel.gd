@@ -17,7 +17,7 @@ const CONTROL_DEFINITIONS := [
 	{"id": "air_density", "label": "Aero: densidad aire", "min": 0.80, "max": 1.40, "step": 0.005},
 ]
 
-var _vehicle: Vehicle
+var _vehicle: Node
 var _controller: Node
 var _panel: PanelContainer
 var _status_label: Label
@@ -31,7 +31,7 @@ var _controller_was_processing := true
 func _ready() -> void:
 	_build_ui()
 	_panel.visible = false
-	var exported_vehicle := get_node_or_null(vehicle_path) as Vehicle
+	var exported_vehicle := get_node_or_null(vehicle_path)
 	var exported_controller := get_node_or_null(controller_path)
 	if exported_vehicle != null:
 		bind_vehicle(exported_vehicle, exported_controller)
@@ -72,7 +72,7 @@ func set_panel_visible(show_panel: bool) -> void:
 		_status_label.text = "F10 abre el panel"
 
 
-func bind_vehicle(vehicle: Vehicle, controller: Node = null) -> void:
+func bind_vehicle(vehicle: Node, controller: Node = null) -> void:
 	_vehicle = vehicle
 	_controller = controller if controller != null else vehicle.get_parent()
 	_capture_baseline()

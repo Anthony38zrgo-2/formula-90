@@ -19,7 +19,7 @@ func _ready() -> void:
 	session.composition_ready.connect(_on_composition_ready)
 	world_viewport.add_child(session)
 
-func _on_composition_ready(vehicle: Vehicle, _track: Node3D, aids: DrivingAidsController) -> void:
+func _on_composition_ready(vehicle: Node, _track: Node3D, aids: DrivingAidsController) -> void:
 	debug_hud.bind_runtime(vehicle, aids)
 	var minimap := debug_hud.get_node_or_null("Minimap") as TrackMinimapController
 	if minimap != null:

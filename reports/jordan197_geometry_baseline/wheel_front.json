@@ -1,0 +1,281 @@
+{
+  "file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\jordan_197\\jordan_197_wheel_front.glb",
+  "format": "glb",
+  "sha256": "45417280f286a3e73261cfcc9934cf2bd2b4c9f7d7e10d413a739b97e2f59551",
+  "objects": 10,
+  "meshes": 10,
+  "vertices": 338,
+  "faces": 640,
+  "components": 10,
+  "bounds": {
+    "min": [
+      -0.15375003,
+      -0.324,
+      -0.32400006
+    ],
+    "max": [
+      0.15374997,
+      0.324,
+      0.32399994
+    ]
+  },
+  "dimensions": {
+    "x": 0.3075000047683716,
+    "y": 0.6480000019073486,
+    "z": 0.6480000019073486
+  },
+  "center": [
+    -3e-08,
+    0.0,
+    -6e-08
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        -0.0,
+        -0.0,
+        1.0
+      ],
+      [
+        1.0,
+        -1e-08,
+        0.0
+      ],
+      [
+        -1e-08,
+        -1.0,
+        -0.0
+      ]
+    ],
+    "variance": [
+      0.01852372,
+      0.01852372,
+      0.00733562
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "LP_Brake",
+    "LP_Mechanical",
+    "LP_Rim_Graphite_REFERENCE",
+    "LP_Tire"
+  ],
+  "has_uv": false,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 0,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 0,
+      "non_manifold_edges": 0,
+      "watertight": true
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "LP_Tire",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Rim_Graphite_REFERENCE",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Mechanical",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "LP_Brake",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

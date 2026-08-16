@@ -1,0 +1,155 @@
+{
+  "file": "D:\\Formula90s\\build\\jordan_191_replacement_staging\\jordan_191_wheel_rl.glb",
+  "format": "glb",
+  "sha256": "97b7bed7dfdcbc072b5db0f07901f91cfda9f9f232ea60b2439c1bbb96f08cd8",
+  "objects": 4,
+  "meshes": 4,
+  "vertices": 28944,
+  "faces": 44009,
+  "components": 301,
+  "bounds": {
+    "min": [
+      -0.05175495,
+      -0.21164812,
+      -0.30073118
+    ],
+    "max": [
+      0.36822766,
+      0.48253343,
+      0.34943989
+    ]
+  },
+  "dimensions": {
+    "x": 0.4199826084077358,
+    "y": 0.6941815465688705,
+    "z": 0.6501710712909698
+  },
+  "center": [
+    0.15823636,
+    0.13544265,
+    0.02435435
+  ],
+  "orientation": {
+    "principal_axes": [
+      [
+        0.16120428,
+        0.50844566,
+        0.84587008
+      ],
+      [
+        0.98013755,
+        -0.18279605,
+        -0.07691548
+      ],
+      [
+        -0.11551437,
+        -0.84146813,
+        0.52781419
+      ]
+    ],
+    "variance": [
+      0.01458565,
+      0.00587283,
+      0.00399469
+    ],
+    "note": "PCA axes; sign is arbitrary"
+  },
+  "materials": [
+    "0.090196_0.086275_0.086275_0.000000_0.000000",
+    "0.156863_0.156863_0.156863_0.000000_0.000000",
+    "0.901961_0.901961_0.901961_0.000000_0.000000",
+    "0.980392_0.713725_0.003922_0.000000_0.000000"
+  ],
+  "has_uv": false,
+  "has_vertex_colors": false,
+  "has_normals": true,
+  "disconnected_components": 297,
+  "topology": [
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 904,
+      "boundary_edges": 4817,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 144,
+      "boundary_edges": 1028,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 1,
+      "duplicate_vertices": 2622,
+      "boundary_edges": 7106,
+      "non_manifold_edges": 0,
+      "watertight": false
+    },
+    {
+      "finite_vertices": true,
+      "finite_faces": true,
+      "valid_face_indices": true,
+      "degenerate_faces": 0,
+      "duplicate_vertices": 0,
+      "boundary_edges": 394,
+      "non_manifold_edges": 0,
+      "watertight": false
+    }
+  ],
+  "attributes": [
+    {
+      "materials": 1,
+      "material_name": "0.156863_0.156863_0.156863_0.000000_0.000000",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "0.090196_0.086275_0.086275_0.000000_0.000000",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "0.901961_0.901961_0.901961_0.000000_0.000000",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    },
+    {
+      "materials": 1,
+      "material_name": "0.980392_0.713725_0.003922_0.000000_0.000000",
+      "uv": false,
+      "uv_count": 0,
+      "uv_valid": true,
+      "vertex_colors": false,
+      "vertex_color_count": 0,
+      "normals": true,
+      "material_assignments_valid": true
+    }
+  ]
+}

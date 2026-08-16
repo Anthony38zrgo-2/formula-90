@@ -34,6 +34,21 @@ var wheel_slip: float = 0.0
 var clutch_engagement: float = 0.0
 var engine_torque: float = 0.0
 
+# --- Tunable Contract & Driving Aids Compatibility ---
+var enable_stability: bool = true
+var stability_yaw_strength: float = 5.25
+var brake_force_multiplier: float = 1.0
+var front_brake_bias: float = 0.57
+var max_steering_angle: float = 0.436332
+var max_torque: float = 340.0
+var motor_drag: float = 0.006
+var coefficient_of_drag: float = 0.15
+var frontal_area: float = 0.45
+var air_density: float = 1.225
+var automatic_transmission: bool = true
+var coefficient_of_friction: Dictionary = {"Road": 2.9, "Curb": 2.2, "Grass": 0.9, "Dirt": 1.4}
+var lateral_grip_assist: Dictionary = {"Road": 0.02, "Curb": 0.0, "Grass": 0.0, "Dirt": 0.0}
+
 # --- F1-94 Canonical Specifications ---
 const VEHICLE_MASS: float = 505.0
 const FRONT_WEIGHT_DIST: float = 0.45
@@ -289,13 +304,19 @@ func _physics_process(delta: float) -> void:
 		
 		# Wheel spin dynamics
 		if w >= 2: # Driven rear wheels
-			var gear_r = 2.5 * FINAL_DRIVE
+			var gear_r = effective_ratio
 			var ref_inertia = 0.08 * (gear_r * gear_r) * 0.5
 			var tot_inertia = 16.0 * (tire_rad * tire_rad) * 0.5 + ref_inertia
 			var net_trq = drive_torques[w]
 			if absf(_wheel_spins[w]) > 0.01:
 				net_trq -= brake_torques[w] * signf(_wheel_spins[w])
-			_wheel_spins[w] += (net_trq / tot_inertia) * delta
+			var target_spin = v_wheel_lin / tire_rad
+			var trq_acc = (net_trq / tot_inertia) * delta
+			if samples_contact[w]:
+				var grip_damping = (norm_f * 2.9 * tire_rad / tot_inertia) * delta
+				_wheel_spins[w] = move_toward(_wheel_spins[w] + trq_acc, target_spin, grip_damping)
+			else:
+				_wheel_spins[w] += trq_acc
 		else: # Free rolling front wheels
 			if brake_torques[w] > 10.0:
 				var brk_acc = (brake_torques[w] / 1.2) * signf(_wheel_spins[w])
@@ -310,15 +331,24 @@ func _physics_process(delta: float) -> void:
 			var f_max = norm_f * 2.9
 			var v_spin = _wheel_spins[w] * tire_rad
 			var slip_ratio = clampf((v_spin - v_wheel_lin) / maxf(absf(v_wheel_lin), 1.0), -2.0, 2.0)
-			var slip_angle = -atan2(v_wheel_lat, maxf(absf(v_wheel_lin), 0.5))
+			var slip_angle = atan2(v_wheel_lat, maxf(absf(v_wheel_lin), 0.5))
 			
-			var sigma_x = 8.75 * 50000.0 * slip_ratio
-			var sigma_y = 8.75 * 35000.0 * sin(slip_angle)
+			var sigma_x = 45100000.0 * 0.04 * slip_ratio
+			var sigma_y = -41000000.0 * 0.04 * tan(slip_angle)
 			var sigma_comb = sqrt(sigma_x * sigma_x + sigma_y * sigma_y)
 			
+			var crit = 0.5 * f_max * maxf(1.0 - absf(slip_ratio), 0.1)
 			var force_comb = minf(sigma_comb, f_max)
+			if sigma_comb > crit:
+				var brush = maxf(1.0 - crit / (3.0 * sigma_comb), 0.0)
+				force_comb = f_max * brush
+			
 			var fx = force_comb * (sigma_x / maxf(sigma_comb, 1e-4))
 			var fy = force_comb * (sigma_y / maxf(sigma_comb, 1e-4))
+			
+			if w >= 2 and brake_torques[w] <= 10.0:
+				var drive_f = drive_torques[w] / tire_rad
+				fx = clampf(drive_f, -f_max, f_max)
 			
 			var f_tire_world = wheel_fwd * fx + wheel_right * fy
 			var f_susp_world = samples_normal[w] * norm_f
