@@ -119,16 +119,16 @@ impl PowertrainState {
             if self.current_gear > 0 {
                 let max_gear = config.gear_ratios.len() as i8;
                 let gear_idx = (self.current_gear - 1) as usize;
-                // Upshift when engine is high AND vehicle true ground speed supports next gear
+                // Upshift when engine is high AND vehicle true speed supports next gear
                 if self.rpm > config.max_rpm * 0.90
                     && self.current_gear < max_gear
                     && gear_idx < UPSHIFT_SPEED_KMH.len()
-                    && ground_speed_kmh >= UPSHIFT_SPEED_KMH[gear_idx]
+                    && (ground_speed_kmh >= UPSHIFT_SPEED_KMH[gear_idx] || real_wheel_speed_kmh >= UPSHIFT_SPEED_KMH[gear_idx])
                 {
                     desired_gear = self.current_gear + 1;
                 }
-                // Downshift if RPM drops near idle
-                else if self.rpm < (config.idle_rpm + 800.0) && self.current_gear > 1 {
+                // Downshift if braking/coasting and RPM drops near idle
+                else if self.rpm < (config.idle_rpm + 300.0) && self.current_gear > 1 && input.throttle < 0.20 {
                     desired_gear = self.current_gear - 1;
                 }
                 // Auto-reverse if stationary/reversing with brake
@@ -186,36 +186,7 @@ impl PowertrainState {
         let raw_motor_torque = torque_factor * config.max_torque * effective_throttle;
         let motor_drag = (self.rpm / config.max_rpm) * (config.max_torque * 0.15);
 
-        // Clutch engagement modulation (launch slipping only in 1st gear / reverse at standstill)
-        let clutch_out_rpm = config.idle_rpm * 1.6; // Launch bite threshold (~5600 RPM)
-        let shift_factor = if self.shift_timer > 0.0 {
-            (1.0 - (self.shift_timer / config.shift_time.max(1e-4))).clamp(0.0, 1.0)
-        } else {
-            1.0
-        };
-
-        let bite_factor = if self.current_gear == 0 {
-            0.0
-        } else if (self.current_gear == 1 || self.current_gear == -1) && target_rpm_from_wheels < clutch_out_rpm {
-            ((self.rpm - config.idle_rpm) / (clutch_out_rpm - config.idle_rpm).max(1.0)).clamp(0.0, 1.0)
-        } else {
-            1.0
-        };
-        self.clutch_engagement = bite_factor * shift_factor * (1.0 - input.clutch.clamp(0.0, 1.0));
-
-        // Continuous viscoelastic clutch torque capacity (eliminates discrete 0.85 threshold)
-        let engine_omega = self.rpm * (2.0 * std::f64::consts::PI) / 60.0;
-        let target_omega = target_rpm_from_wheels.max(config.idle_rpm) * (2.0 * std::f64::consts::PI) / 60.0;
-        let t_max_clutch = config.max_torque * T_MAX_CLUTCH_RATIO;
-        self.clutch_torque = (K_CLUTCH * (engine_omega - target_omega)).clamp(-t_max_clutch, t_max_clutch)
-            * self.clutch_engagement;
-
-        let net_torque = raw_motor_torque - motor_drag - self.clutch_torque;
-        let rpm_accel = (net_torque / config.motor_moment) * (60.0 / (2.0 * std::f64::consts::PI));
-        self.rpm = (self.rpm + rpm_accel * dt).clamp(config.idle_rpm, config.max_rpm + 500.0);
-
-        // Progressive soft rev limiter (17000 to 17500 RPM taper):
-        // Scales power down continuously without binary clutch disconnect
+        // Progressive soft rev limiter (17000 to 17500 RPM taper)
         let limiter_factor = if self.rpm >= config.max_rpm + 500.0 {
             0.0
         } else if self.rpm > config.max_rpm {
@@ -225,6 +196,45 @@ impl PowertrainState {
         };
         self.is_rev_limited = self.rpm >= config.max_rpm;
         self.engine_torque = raw_motor_torque * limiter_factor;
+
+        // Clutch engagement and tractive torque transmission
+        let launch_rpm_target = 11500.0; // Peak torque launch powerband (~75 km/h in 1st)
+        let is_launching = (self.current_gear == 1 || self.current_gear == -1) && target_rpm_from_wheels < launch_rpm_target;
+
+        let shift_factor = if self.shift_timer > 0.0 {
+            (1.0 - (self.shift_timer / config.shift_time.max(1e-4))).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+
+        let bite_factor = if self.current_gear == 0 {
+            0.0
+        } else if is_launching {
+            let wheel_ratio = (target_rpm_from_wheels / launch_rpm_target).clamp(0.0, 1.0);
+            (0.88 + 0.12 * wheel_ratio).clamp(0.88, 1.0)
+        } else {
+            1.0
+        };
+        self.clutch_engagement = bite_factor * shift_factor * (1.0 - input.clutch.clamp(0.0, 1.0));
+
+        // Transmitted torque to drivetrain
+        let transmitted_torque = self.engine_torque * self.clutch_engagement;
+        self.clutch_torque = transmitted_torque;
+
+        // Engine rotational acceleration:
+        if is_launching && self.current_gear != 0 {
+            let rpm_diff = launch_rpm_target - self.rpm;
+            let rpm_rate = if rpm_diff > 0.0 { (rpm_diff * 14.0).min(30000.0) } else { rpm_diff * 6.0 };
+            self.rpm = (self.rpm + rpm_rate * dt).clamp(config.idle_rpm, config.max_rpm);
+        } else if self.current_gear == 0 || self.clutch_engagement < 0.90 {
+            let net_flywheel_torque = self.engine_torque - transmitted_torque - motor_drag;
+            let rpm_accel = (net_flywheel_torque / config.motor_moment) * (60.0 / (2.0 * std::f64::consts::PI));
+            self.rpm = (self.rpm + rpm_accel * dt).clamp(config.idle_rpm, config.max_rpm + 500.0);
+        } else {
+            let target_clamped = target_rpm_from_wheels.clamp(config.idle_rpm, config.max_rpm + 500.0);
+            let blend_rate = (25.0 * dt).clamp(0.0, 1.0);
+            self.rpm = self.rpm + (target_clamped - self.rpm) * blend_rate;
+        }
     }
 
     fn distribute_drive_torque(&mut self, config: &VehicleConfig) {

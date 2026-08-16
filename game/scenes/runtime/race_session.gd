@@ -37,12 +37,16 @@ func compose(next_config: RaceSessionConfig) -> bool:
 	active_vehicle_root = config.selected_vehicle.vehicle_scene.instantiate() as Node3D
 	active_vehicle_root.name = "ActiveVehicle"
 	$VehicleContainer.add_child(active_vehicle_root)
-	active_vehicle_root.global_transform = spawn.global_transform
+	active_vehicle_root.global_transform = Transform3D.IDENTITY
 	active_vehicle = active_vehicle_root.get_node_or_null("VehicleRigidBody")
 	if active_vehicle == null:
 		push_error("Vehicle '%s' does not expose VehicleRigidBody." % config.selected_vehicle.id)
 		_clear_composition()
 		return false
+	if active_vehicle.has_method("reset_vehicle"):
+		var spawn_pos := spawn.global_position
+		spawn_pos.y += 0.48
+		active_vehicle.reset_vehicle(spawn_pos, spawn.global_rotation.y)
 	_add_runtime_systems()
 	composition_ready.emit(active_vehicle, active_track, driving_aids)
 	return true

@@ -110,9 +110,9 @@ impl TireSystem {
         let v_wheel = state.spin * tire_radius;
 
         // 1. Slip angle alpha (rad) - regularized low-speed using atan2 with 0.25 m/s regularization
-        // Spec Item 4: alpha = -atan2(v_lateral, sqrt(v_forward^2 + 0.25^2))
+        // Clamped to ±85° (1.4835 rad) to prevent tan() from exploding to infinity/NaN
         state.slip_angle_rad = -((v_lateral).atan2((v_forward * v_forward + 0.25 * 0.25).sqrt()))
-            .clamp(-std::f64::consts::FRAC_PI_2, std::f64::consts::FRAC_PI_2);
+            .clamp(-1.4835, 1.4835);
 
         // 2. Slip ratio kappa (unitless)
         state.spin_velocity_diff = v_wheel - v_forward;
@@ -135,7 +135,7 @@ impl TireSystem {
 
         // 4. Combined Brush Tire Model - C1-continuous Fiala/Svendenius unified (Spec Item 2)
         let sigma_x = long_stiffness * state.slip_ratio;
-        let sigma_y = -cornering_stiffness * state.slip_angle_rad.tan();
+        let sigma_y = cornering_stiffness * state.slip_angle_rad.tan();
         let sigma_comb = (sigma_x * sigma_x + sigma_y * sigma_y).sqrt();
 
         let braking_help = if state.slip_ratio < -0.1 && brake_torque_nm > 10.0 {
@@ -180,11 +180,18 @@ impl TireSystem {
             let inertia_force = (state.spin_velocity_diff.abs() * state.wheel_moment) / (tire_radius * tire_radius * dt.max(1e-4));
             let drive_force = drive_torque_nm.abs() / tire_radius;
             let max_avail_force = drive_force.max(inertia_force).min(f_max);
-            state.longitudinal_force = state.longitudinal_force.clamp(-max_avail_force, max_avail_force);
-            // Keep fx_brush in sync with clamped value for torque reaction (chassis-consistent)
+            let limit = max_avail_force.max(0.0);
+            if limit.is_finite() && state.longitudinal_force.is_finite() {
+                state.longitudinal_force = state.longitudinal_force.clamp(-limit, limit);
+            } else if !state.longitudinal_force.is_finite() {
+                state.longitudinal_force = 0.0;
+            }
             fx_brush = state.longitudinal_force;
         } else {
             // Braking: no clamp, fx_brush already equals longitudinal_force
+            if !state.longitudinal_force.is_finite() {
+                state.longitudinal_force = 0.0;
+            }
             fx_brush = state.longitudinal_force;
         }
 
@@ -242,8 +249,8 @@ impl TireSystem {
             if normal_force_n > 10.0 {
                 let road_spin = v_forward / tire_radius;
                 let slip_diff = new_spin - road_spin;
-                let damping_rate = (normal_force_n * 0.08).min(350.0);
-                let damp_factor = (1.0 - (-damping_rate * dt / total_wheel_inertia.max(0.1)).exp()).min(0.15);
+                let damping_rate = (normal_force_n * 0.16).min(500.0);
+                let damp_factor = (1.0 - (-damping_rate * dt / total_wheel_inertia.max(0.1)).exp()).min(0.30);
                 new_spin -= slip_diff * damp_factor;
             }
 

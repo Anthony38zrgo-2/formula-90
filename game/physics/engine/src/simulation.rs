@@ -205,29 +205,51 @@ impl VehicleSimulator {
 
         let inv_inertia = Vec3::new(1.0 / i_xx, 1.0 / i_yy, 1.0 / i_zz);
         let torque_local = basis.inverse_transform_vector(total_torque_world);
-        let omega_local = basis.inverse_transform_vector(st.angular_velocity);
+        let _omega_local = basis.inverse_transform_vector(st.angular_velocity);
 
-        // Euler gyroscopic torque: T - omega x (I * omega)
-        let gyro = Vec3::new(
-            (i_yy - i_zz) * omega_local.y * omega_local.z,
-            (i_zz - i_xx) * omega_local.z * omega_local.x,
-            (i_xx - i_yy) * omega_local.x * omega_local.y,
-        );
-        let ang_accel_local = Vec3::new(
-            (torque_local.x + gyro.x) * inv_inertia.x,
-            (torque_local.y + gyro.y) * inv_inertia.y,
-            (torque_local.z + gyro.z) * inv_inertia.z,
-        );
+        // Rotational dynamics (chassis angular acceleration)
+        let local_vel = basis.inverse_transform_vector(st.linear_velocity);
+        let speed_fwd = -local_vel.z;
+        let v_lateral = local_vel.x;
+
+        // Yaw damping opposing chassis yaw angular velocity
+        let local_omega_y = basis.inverse_transform_vector(st.angular_velocity).y;
+        let yaw_damping_torque = -local_omega_y * (i_yy * (15.0 + speed_fwd.max(0.0) * 0.40));
+
+        // Directional alignment to velocity vector (weathervane stability)
+        let steer_demand = st.steer_input_smoothed.abs();
+        let stability_align_torque = if steer_demand < 0.15 && speed_fwd > 0.5 {
+            let beta = (v_lateral / speed_fwd.max(1.0)).clamp(-0.4, 0.4);
+            -beta * (cfg.vehicle_mass * 9.8 * cfg.wheelbase * 1.50) * (1.0 - steer_demand / 0.15)
+        } else {
+            0.0
+        };
+
+        let ang_accel_x = if (torque_local.x * inv_inertia.x).is_finite() {
+            (torque_local.x * inv_inertia.x).clamp(-150.0, 150.0)
+        } else { 0.0 };
+        let total_yaw_torque = torque_local.y + yaw_damping_torque + stability_align_torque;
+        let ang_accel_y = if (total_yaw_torque * inv_inertia.y).is_finite() {
+            (total_yaw_torque * inv_inertia.y).clamp(-150.0, 150.0)
+        } else { 0.0 };
+        let ang_accel_z = if (torque_local.z * inv_inertia.z).is_finite() {
+            (torque_local.z * inv_inertia.z).clamp(-150.0, 150.0)
+        } else { 0.0 };
+        let ang_accel_local = Vec3::new(ang_accel_x, ang_accel_y, ang_accel_z);
         st.angular_acceleration = basis.transform_vector(ang_accel_local);
 
         // Velocity & Position integration
+        if st.linear_acceleration.length_squared() > 10000.0 * 10000.0 {
+            st.linear_acceleration = st.linear_acceleration.normalized() * 100.0;
+        }
         st.linear_velocity += st.linear_acceleration * dt;
         st.transform.origin += st.linear_velocity * dt;
 
-        // Angular velocity & Orientation integration
+        // Angular velocity & Orientation integration with chassis rotational damping
         st.angular_velocity += st.angular_acceleration * dt;
+        st.angular_velocity *= (1.0 - 6.0 * dt).clamp(0.85, 1.0); // 6 Hz angular damping
         let omega_body = basis.inverse_transform_vector(st.angular_velocity);
-        st.orientation = st.orientation.integrate_angular_velocity(omega_body, dt);
+        st.orientation = st.orientation.integrate_angular_velocity(omega_body, dt).normalized();
         st.transform.basis = st.orientation.to_mat3();
 
         // 8. Produce Telemetry Frame

@@ -22,10 +22,9 @@ size = Vector3(1.2, 0.32, 1.1)
 script = ExtResource("6_audio")
 vehicle = NodePath("../VehicleRigidBody")
 
-[node name="VehicleRigidBody" type="RigidBody3D" parent="." node_paths=PackedStringArray("chassis_node", "front_left_wheel_node", "front_right_wheel_node", "rear_left_wheel_node", "rear_right_wheel_node")]
+[node name="VehicleRigidBody" type="F194RustVehicle" parent="." node_paths=PackedStringArray("chassis_node", "front_left_wheel_node", "front_right_wheel_node", "rear_left_wheel_node", "rear_right_wheel_node")]
 mass = 505.0
 gravity_scale = 0.0
-script = ExtResource("1_rust_vehicle")
 chassis_node = NodePath("ChassisVisual")
 front_left_wheel_node = NodePath("FrontLeftWheel")
 front_right_wheel_node = NodePath("FrontRightWheel")

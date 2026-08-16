@@ -48,55 +48,38 @@ func _run_parity_test() -> void:
 	print("[OK] Composed F1-94 with Track 'La Chutana'")
 	print("Initial Position: %s" % str(vehicle.global_position))
 	
-	if "enable_player_input" in vehicle:
-		vehicle.enable_player_input = false
+	vehicle.enable_player_input = false
+	vehicle.throttle_amount = 1.0
 	
 	var telemetry_rows: Array[String] = []
 	telemetry_rows.append("Time_ms,Speed_kmh,RPM,Gear,Throttle,Brake,Steering,Lat_G,Long_G,Vert_G,FL_Comp,FR_Comp,RL_Comp,RR_Comp,Front_Slip,Rear_Slip,Session_Id,Session_Timestamp_UTC,Physics_Hz,Test_Id,Track_Scene,Vehicle_Node_Path,Vehicle_Scene,Vehicle_Script,Setup_Schema_Version,Setup_JSON")
 	
 	var start_pos_z = vehicle.global_position.z
 	
-	# Simulate 300 frames (5.0 seconds at 60 Hz) of full acceleration on La Chutana
-	for frame in range(300):
-		# Apply full throttle
-		if "throttle_amount" in vehicle:
-			vehicle.throttle_amount = 1.0
-		
+	# Simulate 600 frames (5.0 seconds at 60 Hz) of full acceleration on La Chutana
+	for frame in range(600):
+		vehicle.throttle_amount = 1.0
 		await physics_frame
 		
 		var sim_time_ms = int(frame * (1000.0 / 60.0))
-		var spd = vehicle.get("speed") * 3.6 if vehicle.get("speed") != null else 0.0
+		var spd = vehicle.get("speed_kmh") if vehicle.get("speed_kmh") != null else 0.0
 		var rpm = vehicle.get("motor_rpm") if vehicle.get("motor_rpm") != null else 4500.0
 		var gear = vehicle.get("current_gear") if vehicle.get("current_gear") != null else 1
-		var fl_c = vehicle.get("_wheel_compressions")[0] if vehicle.get("_wheel_compressions") != null else 50.0
-		var fr_c = vehicle.get("_wheel_compressions")[1] if vehicle.get("_wheel_compressions") != null else 50.0
-		var rl_c = vehicle.get("_wheel_compressions")[2] if vehicle.get("_wheel_compressions") != null else 50.0
-		var rr_c = vehicle.get("_wheel_compressions")[3] if vehicle.get("_wheel_compressions") != null else 50.0
+		var comp = vehicle.get_wheel_compressions() if vehicle.has_method("get_wheel_compressions") else [50.0, 50.0, 50.0, 50.0]
+		var fl_c = comp[0] if comp.size() > 0 else 50.0
+		var fr_c = comp[1] if comp.size() > 1 else 50.0
+		var rl_c = comp[2] if comp.size() > 2 else 50.0
+		var rr_c = comp[3] if comp.size() > 3 else 50.0
 		
-		# Compute real G-forces from vehicle's linear acceleration
-		var lat_g := 0.0
-		var long_g := 0.0
-		var vert_g := 1.0
-		var accel: Vector3 = vehicle.get("_current_linear_accel") if vehicle.get("_current_linear_accel") != null else Vector3.ZERO
-		if accel != Vector3.ZERO:
-			lat_g = accel.dot(vehicle.global_transform.basis.x) / 9.80665
-			long_g = accel.dot(-vehicle.global_transform.basis.z) / 9.80665
-			vert_g = accel.dot(vehicle.global_transform.basis.y) / 9.80665 + 1.0  # +1g for gravity
+		# G-forces directly from vehicle telemetry
+		var lat_g: float = vehicle.get("lat_g") if vehicle.get("lat_g") != null else 0.0
+		var long_g: float = vehicle.get("long_g") if vehicle.get("long_g") != null else 0.0
+		var vert_g: float = vehicle.get("vert_g") if vehicle.get("vert_g") != null else 1.0
 
-		# Compute slip from wheel spins vs ground speed
-		var front_slip := 0.0
-		var rear_slip := 0.0
-		var spins: Array = vehicle.get("_wheel_spins") if vehicle.get("_wheel_spins") != null else []
-		if spins.size() == 4 and spd > 1.0:
-			var v_ms = spd / 3.6
-			var tire_rad = 0.33  # approximate F1-94 tire radius
-			for w in range(4):
-				var wheel_v = absf(spins[w]) * tire_rad
-				var slip_ratio = absf(wheel_v - v_ms) / maxf(v_ms, 0.1)
-				if w < 2:
-					front_slip = maxf(front_slip, slip_ratio)
-				else:
-					rear_slip = maxf(rear_slip, slip_ratio)
+		# Slip ratios from wheel slips
+		var slips = vehicle.get_wheel_slips() if vehicle.has_method("get_wheel_slips") else [0.0, 0.0, 0.0, 0.0]
+		var front_slip: float = maxf(absf(slips[0]), absf(slips[1])) if slips.size() >= 2 else 0.0
+		var rear_slip: float = maxf(absf(slips[2]), absf(slips[3])) if slips.size() >= 4 else 0.0
 
 		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.4f,%.4f,godot_parity_session,2026-08-15T00:00:00Z,60,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://addons/formula90s/scripts/f1_94_rust_vehicle.gd,1,{}" % [
 			sim_time_ms, spd, rpm, gear,
@@ -112,7 +95,7 @@ func _run_parity_test() -> void:
 				fl_c, fr_c, rl_c, rr_c
 			])
 	
-	var final_spd = vehicle.get("speed") * 3.6 if vehicle.get("speed") != null else 0.0
+	var final_spd = vehicle.get("speed_kmh") if vehicle.get("speed_kmh") != null else 0.0
 	var final_rpm = vehicle.get("motor_rpm") if vehicle.get("motor_rpm") != null else 0.0
 	var final_gear = vehicle.get("current_gear") if vehicle.get("current_gear") != null else 0
 	var dist_travelled = absf(vehicle.global_position.z - start_pos_z)

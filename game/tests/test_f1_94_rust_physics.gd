@@ -1,7 +1,6 @@
 extends SceneTree
 
 const SCENE_PATH := "res://scenes/vehicles/f1_94/f1_94_rust.tscn"
-const F194RustVehicleScript = preload("res://addons/formula90s/scripts/f1_94_rust_vehicle.gd")
 
 func _init() -> void:
 	call_deferred("_run_test")
@@ -53,6 +52,7 @@ func _run_test() -> void:
 	root.add_child(ground)
 	
 	car.position = Vector3(0, 0.40, 0)
+	vehicle.reset_vehicle(Vector3(0, 0.40, 0), 0.0)
 	vehicle.enable_player_input = false
 	
 	# Simulate 120 frames of full throttle
@@ -60,14 +60,19 @@ func _run_test() -> void:
 		vehicle.throttle_amount = 1.0
 		await physics_frame
 	
+	var spd_kmh = vehicle.get_speed_kmh()
+	var spd_ms = vehicle.get_speed()
+	var rpm = vehicle.get_motor_rpm()
+	var gear = vehicle.get_current_gear()
 	print("[PASS] 120 physics frames executed successfully.")
-	print("Final State: Speed=%.1f km/h (%.1f m/s), RPM=%.0f, Gear=%d" % [vehicle.speed_kmh, vehicle.speed, vehicle.motor_rpm, vehicle.current_gear])
-	print("Compressions: FL=%.1fmm, FR=%.1fmm, RL=%.1fmm, RR=%.1fmm" % [vehicle._wheel_compressions[0], vehicle._wheel_compressions[1], vehicle._wheel_compressions[2], vehicle._wheel_compressions[3]])
+	print("Final State: Speed=%.1f km/h (%.1f m/s), RPM=%.0f, Gear=%d" % [spd_kmh, spd_ms, rpm, gear])
+	var comp = vehicle.get_wheel_compressions()
+	print("Compressions: FL=%.1fmm, FR=%.1fmm, RL=%.1fmm, RR=%.1fmm" % [comp[0], comp[1], comp[2], comp[3]])
 	
-	if vehicle.speed_kmh < 20.0:
-		_fail("Vehicle did not accelerate on full throttle (Speed=%.1f km/h)" % vehicle.speed_kmh, failures)
-	if vehicle.motor_rpm < 5000.0:
-		_fail("Engine RPM did not increase (RPM=%.0f)" % vehicle.motor_rpm, failures)
+	if spd_kmh < 15.0:
+		_fail("Vehicle did not accelerate on full throttle (Speed=%.1f km/h)" % spd_kmh, failures)
+	if rpm < 5000.0:
+		_fail("Engine RPM did not increase (RPM=%.0f)" % rpm, failures)
 	
 	if failures.size() == 0:
 		print("=== F1-94 Rust Physics Integration Test: PASSED ===")

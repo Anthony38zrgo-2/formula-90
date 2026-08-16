@@ -174,7 +174,8 @@ func _sync_controls_from_vehicle() -> void:
 
 
 func _read_display_value(definition: Dictionary) -> float:
-	var value: float = _vehicle.get(definition.id)
+	var raw_val = _vehicle.get(definition.id)
+	var value: float = float(raw_val) if raw_val != null else float(definition.get("min", 0.0))
 	if definition.get("degrees", false):
 		return rad_to_deg(value)
 	return value

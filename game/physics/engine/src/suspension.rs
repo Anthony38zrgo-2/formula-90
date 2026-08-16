@@ -41,21 +41,22 @@ impl WheelSuspensionState {
             config.rear_camber
         };
 
+        let static_weight = config.mass_over_wheel(wheel) * 9.80665;
         Self {
             spring_current_length: nominal_len,
             compression_mm: (max_len - nominal_len) * 1000.0,
             previous_compression_mm: (max_len - nominal_len) * 1000.0,
             spring_speed_mm_s: 0.0,
-            spring_force: 0.0,
+            spring_force: static_weight,
             damping_force: 0.0,
             antiroll_force: 0.0,
             bottom_out_force: 0.0,
-            total_normal_force: 0.0,
-            is_grounded: false,
+            total_normal_force: static_weight,
+            is_grounded: true,
             effective_contact_point: Vec3::ZERO,
             effective_normal: Vec3::UP,
             effective_surface: SurfaceType::Road,
-            effective_friction: 2.0,
+            effective_friction: 2.9,
             dynamic_camber: base_camber,
         }
     }
@@ -191,7 +192,8 @@ impl SuspensionSystem {
         }
 
         // Suspension velocity (positive = compressing into bump, negative = rebounding)
-        state.spring_speed_mm_s = (state.compression_mm - state.previous_compression_mm) / dt.max(1e-4);
+        let raw_speed = (state.compression_mm - state.previous_compression_mm) / dt.max(1e-4);
+        state.spring_speed_mm_s = if raw_speed.is_finite() { raw_speed.clamp(-3000.0, 3000.0) } else { 0.0 };
         state.previous_compression_mm = state.compression_mm;
 
         let spring_rate_n_m = config.calculate_spring_rate(wheel);
