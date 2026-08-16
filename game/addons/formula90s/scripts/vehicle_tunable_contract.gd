@@ -16,8 +16,27 @@ const PROPERTY_LIMITS := {
 	"brake_force_multiplier": {"min": 0.1, "max": 5.0}
 }
 
+const UNSUPPORTED_F1_94_PROPERTIES := [
+	"motor_drag",
+	"stability_yaw_strength",
+	"enable_stability",
+	"brake_force_multiplier",
+	"coefficient_of_friction",
+	"lateral_grip_assist"
+]
+
+static func is_property_supported(vehicle: Node, property_name: String) -> bool:
+	if vehicle == null:
+		return false
+	if vehicle is F194RustVehicle or vehicle.get_class() == "F194RustVehicle" or vehicle.has_method("solve_forces_for_state"):
+		if property_name in UNSUPPORTED_F1_94_PROPERTIES:
+			return false
+	return true
+
 static func get_value(vehicle: Node, property_name: String) -> Variant:
 	if vehicle == null:
+		return null
+	if not is_property_supported(vehicle, property_name):
 		return null
 	return vehicle.get(property_name)
 
@@ -25,6 +44,9 @@ static func set_value(vehicle: Node, property_name: String, value: Variant) -> b
 	if vehicle == null:
 		return false
 	
+	if not is_property_supported(vehicle, property_name):
+		return false
+
 	var final_value = value
 	if PROPERTY_LIMITS.has(property_name) and (value is float or value is int):
 		var lim = PROPERTY_LIMITS[property_name]

@@ -24,7 +24,13 @@ fn tire_reaction_torque_feeds_back_into_clutch() {
 
     let mut loaded = PowertrainState::new(&cfg);
     loaded.rpm = 9000.0;
-    loaded.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, 200.0, 200.0], 10.0, 1.0 / 120.0);
+    // Road exerts resisting reaction torque (negative) on rear wheels
+    loaded.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -200.0, -200.0], 10.0, 1.0 / 120.0);
 
-    assert!((loaded.clutch_torque - unloaded.clutch_torque).abs() > 1e-9);
+    assert!(
+        loaded.clutch_torque > unloaded.clutch_torque,
+        "Loaded clutch torque ({}) must exceed unloaded ({}) in resisting direction",
+        loaded.clutch_torque,
+        unloaded.clutch_torque
+    );
 }

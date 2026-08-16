@@ -93,9 +93,9 @@ impl TireSystem {
             (drive_torque_nm - brake_torque_nm * state.spin.signum()).abs()
         };
 
-        // Tire reaction always participates. A driven wheel remains driven at zero
-        // throttle; this is intentionally independent from instantaneous drive torque.
-        let mut net_torque = drive_torque_nm - state.reaction_torque;
+        // Tire reaction always participates. reaction_torque is the torque exerted
+        // BY THE ROAD ON THE WHEEL (opposing drive torque).
+        let mut net_torque = drive_torque_nm + state.reaction_torque;
         if state.spin.abs() > 1e-5 {
             net_torque -= brake_torque_nm * state.spin.signum();
         } else if brake_torque_nm >= net_torque.abs() {
@@ -226,7 +226,9 @@ impl TireSystem {
         state.lateral_force = finite_or_zero(force_x);
         state.longitudinal_force = finite_or_zero(longitudinal_force);
         state.aligning_torque = 0.0; // GEVP produces yaw through contact forces, not a hidden Mz.
-        state.reaction_torque = finite_or_zero(state.longitudinal_force * radius);
+        // Invariant: reaction_torque is the torque exerted BY THE ROAD ON THE WHEEL.
+        // For forward traction (longitudinal_force > 0), road reaction opposes forward spin (< 0).
+        state.reaction_torque = finite_or_zero(-state.longitudinal_force * radius);
     }
 
     /// Compatibility entry point retained for existing Rust callers. New simulation

@@ -32,7 +32,7 @@ fog_depth_end = 350.0
 [node name="LaChutanaGenerated" type="Node3D" unique_id=1346781085]
 
 [node name="VehicleSpawn" type="Marker3D" parent="." groups=["vehicle_spawn"]]
-position = Vector3(0, -0.03, 18)
+position = Vector3(0, -0.5589, 18)
 
 [node name="GeneratedTrack" parent="." unique_id=645807028 instance=ExtResource("1_track")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2188797, -0.40935707, -0.0060043335)

@@ -92,7 +92,9 @@ pub struct VehicleConfig {
     pub coefficient_of_drag: f64,
     pub frontal_area: f64,
     pub coefficient_of_downforce: f64,
-    pub aero_balance_front: f64,
+    pub aero_split_front: f64,
+    pub aero_split_diffuser: f64,
+    pub aero_split_rear: f64,
     pub air_density: f64,
 }
 
@@ -154,13 +156,15 @@ impl VehicleConfig {
             max_torque: 340.0,
             max_rpm: 17000.0,
             idle_rpm: 4500.0,
-            motor_moment: 0.08,
+            motor_moment: 0.12,
             torque_curve: vec![
-                (0.00, 0.38),
-                (0.45, 0.82),
-                (0.62, 0.95),
-                (0.82, 1.00),
-                (0.95, 0.96),
+                (0.00, 0.20),
+                (0.265, 0.28),
+                (0.44, 0.58),
+                (0.62, 0.85),
+                (0.79, 0.98),
+                (0.88, 1.00),
+                (0.97, 0.95),
                 (1.00, 0.88),
             ],
             gear_ratios: vec![2.85, 2.29, 1.89, 1.60, 1.38, 1.20],
@@ -172,7 +176,7 @@ impl VehicleConfig {
 
             // Suspension (Front)
             front_spring_length: 0.250,
-            front_resting_ratio: 0.400,
+            front_resting_ratio: 0.280,
             front_damping_ratio: 0.80,
             front_bump_damp_multiplier: 1.3,
             front_rebound_damp_multiplier: 1.1,
@@ -217,11 +221,13 @@ impl VehicleConfig {
             surface_stiffness,
             surface_rolling_resistance,
 
-            // Aerodynamics
+            // Aerodynamics (3-point distribution: 15% front, 60% diffuser, 25% rear = 45% front / 55% rear axle load)
             coefficient_of_drag: 0.78,
             frontal_area: 1.25,
-            coefficient_of_downforce: 2.85,
-            aero_balance_front: 0.44,
+            coefficient_of_downforce: 1.995,
+            aero_split_front: 0.15,
+            aero_split_diffuser: 0.60,
+            aero_split_rear: 0.25,
             air_density: 1.225,
         }
     }
@@ -242,9 +248,9 @@ impl VehicleConfig {
 
         let mut surface_rolling_resistance = HashMap::new();
         surface_rolling_resistance.insert(SurfaceType::Road, 1.0);
-        surface_rolling_resistance.insert(SurfaceType::Curb, 1.2);
-        surface_rolling_resistance.insert(SurfaceType::Dirt, 2.0);
-        surface_rolling_resistance.insert(SurfaceType::Grass, 4.0);
+        surface_rolling_resistance.insert(SurfaceType::Curb, 1.0);
+        surface_rolling_resistance.insert(SurfaceType::Dirt, 1.5);
+        surface_rolling_resistance.insert(SurfaceType::Grass, 2.0);
 
         Self {
             vehicle_name: "Jordan 197 (V10)".to_string(),
@@ -340,8 +346,10 @@ impl VehicleConfig {
             // Aerodynamics
             coefficient_of_drag: 0.75,
             frontal_area: 1.20,
-            coefficient_of_downforce: 1.85,
-            aero_balance_front: 0.42,
+            coefficient_of_downforce: 1.995,
+            aero_split_front: 0.20,
+            aero_split_diffuser: 0.60,
+            aero_split_rear: 0.20,
             air_density: 1.225,
         }
     }
@@ -402,18 +410,13 @@ impl VehicleConfig {
         }
     }
 
-    /// Nominal suspension-ray origin in vehicle-local space (-Z forward, +Y up, +X right).
-    ///
-    /// Front and rear Y offsets intentionally differ when tire radii/suspension rest
-    /// lengths differ. This lets both axles start at their configured static compression
-    /// while sharing one chassis origin; the previous migration forced every hub to Y=0.
+    /// Nominal suspension-ray origin in vehicle-local geometric space (-Z forward, +Y up, +X right),
+    /// where origin (0, 0, 0) is centered between axles at mean wheel-center height.
     pub fn wheel_anchor_local(&self, wheel: WheelIndex) -> Vec3 {
-        // X/Z are expressed around the configured static center of mass so axle loads
-        // create the intended front/rear moment balance.
         let z = if wheel.is_front() {
-            -(1.0 - self.front_weight_distribution) * self.wheelbase
+            -self.wheelbase * 0.5
         } else {
-            self.front_weight_distribution * self.wheelbase
+            self.wheelbase * 0.5
         };
         let x = if wheel.is_front() {
             if wheel.is_right() { self.front_track * 0.5 } else { -self.front_track * 0.5 }
@@ -423,15 +426,16 @@ impl VehicleConfig {
             -self.rear_track * 0.5
         };
 
-        let front_static_height = self.front_tire_radius
-            + self.front_spring_length * (1.0 - self.front_resting_ratio);
-        let rear_static_height = self.rear_tire_radius
-            + self.rear_spring_length * (1.0 - self.rear_resting_ratio);
-        let body_reference_height = front_static_height * self.front_weight_distribution
-            + rear_static_height * (1.0 - self.front_weight_distribution);
-        let axle_static_height = if wheel.is_front() { front_static_height } else { rear_static_height };
-        let y = axle_static_height - body_reference_height;
+        let mean_radius = (self.front_tire_radius + self.rear_tire_radius) * 0.5;
+        let hub_y = if wheel.is_front() {
+            self.front_tire_radius - mean_radius
+        } else {
+            self.rear_tire_radius - mean_radius
+        };
+        let spring_length = if wheel.is_front() { self.front_spring_length } else { self.rear_spring_length };
+        let resting_ratio = if wheel.is_front() { self.front_resting_ratio } else { self.rear_resting_ratio };
+        let anchor_y = hub_y + spring_length * (1.0 - resting_ratio);
 
-        Vec3::new(x, y, z)
+        Vec3::new(x, anchor_y, z)
     }
 }

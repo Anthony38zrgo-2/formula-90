@@ -13,7 +13,107 @@
 use crate::simulation::*;
 use crate::types::*;
 use crate::vehicle_config::*;
-use std::ffi::c_void;
+use std::ffi::{c_char, c_void};
+
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 3;
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct FfiRuntimeConfig {
+    pub vehicle_mass: f64,
+    pub front_brake_bias: f64,
+    pub max_steering_angle: f64,
+    pub max_torque: f64,
+    pub coefficient_of_drag: f64,
+    pub frontal_area: f64,
+    pub air_density: f64,
+    pub steering_exponent: f64,
+    pub steering_speed: f64,
+    pub countersteer_speed: f64,
+    pub automatic_transmission: bool,
+}
+
+#[no_mangle]
+pub extern "C" fn f1_94_physics_abi_version() -> u32 {
+    F1_94_PHYSICS_ABI_VERSION
+}
+
+#[no_mangle]
+pub extern "C" fn f1_94_physics_build_sha() -> *const c_char {
+    concat!(env!("GIT_HASH"), "\0").as_ptr() as *const c_char
+}
+
+#[no_mangle]
+pub extern "C" fn f1_94_physics_get_runtime_config(
+    sim_ptr: *const c_void,
+    out_config: *mut FfiRuntimeConfig,
+) -> bool {
+    if sim_ptr.is_null() || out_config.is_null() {
+        return false;
+    }
+    let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
+    unsafe {
+        *out_config = FfiRuntimeConfig {
+            vehicle_mass: sim.config.vehicle_mass,
+            front_brake_bias: sim.config.front_brake_bias,
+            max_steering_angle: sim.config.max_steering_angle,
+            max_torque: sim.config.max_torque,
+            coefficient_of_drag: sim.config.coefficient_of_drag,
+            frontal_area: sim.config.frontal_area,
+            air_density: sim.config.air_density,
+            steering_exponent: sim.config.steering_exponent,
+            steering_speed: sim.config.steering_speed,
+            countersteer_speed: sim.config.countersteer_speed,
+            automatic_transmission: sim.config.automatic_transmission,
+        };
+    }
+    true
+}
+
+#[no_mangle]
+pub extern "C" fn f1_94_physics_apply_runtime_config(
+    sim_ptr: *mut c_void,
+    config_ptr: *const FfiRuntimeConfig,
+) -> bool {
+    if sim_ptr.is_null() || config_ptr.is_null() {
+        return false;
+    }
+    let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
+    let cfg = unsafe { *config_ptr };
+
+    if cfg.vehicle_mass.is_finite() && cfg.vehicle_mass > 0.0 {
+        sim.config.vehicle_mass = cfg.vehicle_mass;
+    }
+    if cfg.front_brake_bias.is_finite() && cfg.front_brake_bias >= 0.0 && cfg.front_brake_bias <= 1.0 {
+        sim.config.front_brake_bias = cfg.front_brake_bias;
+    }
+    if cfg.max_steering_angle.is_finite() && cfg.max_steering_angle > 0.0 {
+        sim.config.max_steering_angle = cfg.max_steering_angle;
+    }
+    if cfg.max_torque.is_finite() && cfg.max_torque > 0.0 {
+        sim.config.max_torque = cfg.max_torque;
+    }
+    if cfg.coefficient_of_drag.is_finite() && cfg.coefficient_of_drag >= 0.0 {
+        sim.config.coefficient_of_drag = cfg.coefficient_of_drag;
+    }
+    if cfg.frontal_area.is_finite() && cfg.frontal_area > 0.0 {
+        sim.config.frontal_area = cfg.frontal_area;
+    }
+    if cfg.air_density.is_finite() && cfg.air_density > 0.0 {
+        sim.config.air_density = cfg.air_density;
+    }
+    if cfg.steering_exponent.is_finite() && cfg.steering_exponent > 0.0 {
+        sim.config.steering_exponent = cfg.steering_exponent;
+    }
+    if cfg.steering_speed.is_finite() && cfg.steering_speed > 0.0 {
+        sim.config.steering_speed = cfg.steering_speed;
+    }
+    if cfg.countersteer_speed.is_finite() && cfg.countersteer_speed > 0.0 {
+        sim.config.countersteer_speed = cfg.countersteer_speed;
+    }
+    sim.config.automatic_transmission = cfg.automatic_transmission;
+    true
+}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

@@ -56,18 +56,22 @@ func _apply_aid(index: int):
 		0:
 			VehicleTunableContract.set_value(vehicle_node, "automatic_transmission", true)
 		1:
-			VehicleTunableContract.set_value(vehicle_node, "enable_stability", true)
-			VehicleTunableContract.set_value(vehicle_node, "stability_yaw_strength", max(_baseline["stability_yaw_strength"] * MULT_STABILITY, FLOOR_STABILITY_STRENGTH))
+			if _baseline.get("enable_stability") != null and _baseline.get("stability_yaw_strength") != null:
+				VehicleTunableContract.set_value(vehicle_node, "enable_stability", true)
+				VehicleTunableContract.set_value(vehicle_node, "stability_yaw_strength", max(_baseline["stability_yaw_strength"] * MULT_STABILITY, FLOOR_STABILITY_STRENGTH))
 		2:
-			VehicleTunableContract.set_value(vehicle_node, "steering_exponent", _baseline["steering_exponent"] * MULT_STEERING)
+			if _baseline.get("steering_exponent") != null:
+				VehicleTunableContract.set_value(vehicle_node, "steering_exponent", _baseline["steering_exponent"] * MULT_STEERING)
 		3:
-			VehicleTunableContract.set_value(vehicle_node, "brake_force_multiplier", _baseline["brake_force_multiplier"] * MULT_BRAKING)
+			if _baseline.get("brake_force_multiplier") != null:
+				VehicleTunableContract.set_value(vehicle_node, "brake_force_multiplier", _baseline["brake_force_multiplier"] * MULT_BRAKING)
 		4:
-			var friction = _baseline["friction"].duplicate()
-			for key in friction:
-				friction[key] = max(friction[key] * MULT_GRIP, FLOOR_GRIP)
-			VehicleTunableContract.set_value(vehicle_node, "coefficient_of_friction", friction)
-			if _baseline.has("lateral_grip_assist") and _baseline["lateral_grip_assist"].size() > 0:
+			if _baseline.get("friction") is Dictionary and not _baseline["friction"].is_empty():
+				var friction = _baseline["friction"].duplicate()
+				for key in friction:
+					friction[key] = max(friction[key] * MULT_GRIP, FLOOR_GRIP)
+				VehicleTunableContract.set_value(vehicle_node, "coefficient_of_friction", friction)
+			if _baseline.get("lateral_grip_assist") is Dictionary and not _baseline["lateral_grip_assist"].is_empty():
 				var grip = _baseline["lateral_grip_assist"].duplicate()
 				for key in grip:
 					grip[key] = max(grip[key] + 0.15, 0.15)
@@ -78,15 +82,20 @@ func _restore(index: int):
 		0:
 			VehicleTunableContract.set_value(vehicle_node, "automatic_transmission", false)
 		1:
-			VehicleTunableContract.set_value(vehicle_node, "enable_stability", _baseline["enable_stability"])
-			VehicleTunableContract.set_value(vehicle_node, "stability_yaw_strength", _baseline["stability_yaw_strength"])
+			if _baseline.get("enable_stability") != null:
+				VehicleTunableContract.set_value(vehicle_node, "enable_stability", _baseline["enable_stability"])
+			if _baseline.get("stability_yaw_strength") != null:
+				VehicleTunableContract.set_value(vehicle_node, "stability_yaw_strength", _baseline["stability_yaw_strength"])
 		2:
-			VehicleTunableContract.set_value(vehicle_node, "steering_exponent", _baseline["steering_exponent"])
+			if _baseline.get("steering_exponent") != null:
+				VehicleTunableContract.set_value(vehicle_node, "steering_exponent", _baseline["steering_exponent"])
 		3:
-			VehicleTunableContract.set_value(vehicle_node, "brake_force_multiplier", _baseline["brake_force_multiplier"])
+			if _baseline.get("brake_force_multiplier") != null:
+				VehicleTunableContract.set_value(vehicle_node, "brake_force_multiplier", _baseline["brake_force_multiplier"])
 		4:
-			VehicleTunableContract.set_value(vehicle_node, "coefficient_of_friction", _baseline["friction"])
-			if _baseline.has("lateral_grip_assist") and _baseline["lateral_grip_assist"].size() > 0:
+			if _baseline.get("friction") is Dictionary and not _baseline["friction"].is_empty():
+				VehicleTunableContract.set_value(vehicle_node, "coefficient_of_friction", _baseline["friction"])
+			if _baseline.get("lateral_grip_assist") is Dictionary and not _baseline["lateral_grip_assist"].is_empty():
 				VehicleTunableContract.set_value(vehicle_node, "lateral_grip_assist", _baseline["lateral_grip_assist"])
 
 func is_aid_enabled(index: int) -> bool:

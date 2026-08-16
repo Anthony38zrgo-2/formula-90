@@ -185,15 +185,22 @@ impl VehicleSimulator {
         };
         total_force += drag_world;
 
-        // Formula-90 extension kept explicit: downforce is body-normal and distributed
-        // over axle centers. Setting coefficient_of_downforce=0 gives closer GEVP parity.
+        // 3-point aerodynamic load distribution:
+        // Point 1: Front Wing / Axle (20%)
+        // Point 2: Floor / Diffuser (60%) at chassis floor center
+        // Point 3: Rear Wing / Axle (20%)
         if st.aero.total_downforce > 0.0 {
             let front_force = basis.transform_vector(Vec3::new(0.0, -st.aero.front_downforce, 0.0));
+            let diffuser_force = basis.transform_vector(Vec3::new(0.0, -st.aero.diffuser_downforce, 0.0));
             let rear_force = basis.transform_vector(Vec3::new(0.0, -st.aero.rear_downforce, 0.0));
+
             let front_point = st.transform.transform_point(axle_center_local(cfg, true));
+            let diffuser_point = st.transform.transform_point(diffuser_center_local(cfg));
             let rear_point = st.transform.transform_point(axle_center_local(cfg, false));
-            total_force += front_force + rear_force;
+
+            total_force += front_force + diffuser_force + rear_force;
             total_torque += (front_point - cg_world).cross(front_force);
+            total_torque += (diffuser_point - cg_world).cross(diffuser_force);
             total_torque += (rear_point - cg_world).cross(rear_force);
         }
 
@@ -321,6 +328,8 @@ impl VehicleSimulator {
 
         // Same purpose as GEVP steering_slip_assist: refuse additional steering into
         // excessive front slip, but still allow countersteer/recovery.
+        // Both target (LEFT = +1.0, RIGHT = -1.0) and slip_angle_rad (positive when slipping left)
+        // share the canonical sign convention.
         let front_slip = max_abs_signed(
             st.tires.wheels[0].slip_angle_rad,
             st.tires.wheels[1].slip_angle_rad,
@@ -335,10 +344,10 @@ impl VehicleSimulator {
             let speed = (forward_speed * forward_speed + lateral_speed * lateral_speed).sqrt();
             if speed > 1e-6 {
                 let travel_angle = (lateral_speed / speed).clamp(-1.0, 1.0).asin();
-                let correction = (travel_angle / cfg.max_steering_angle.max(1e-5))
+                let countersteer_correction = -(travel_angle / cfg.max_steering_angle.max(1e-5))
                     * cfg.countersteer_assist
                     * (1.0 - requested.abs());
-                target = (target + correction).clamp(-1.0, 1.0);
+                target = (target + countersteer_correction).clamp(-1.0, 1.0);
             }
         }
 
@@ -398,7 +407,8 @@ impl VehicleSimulator {
 }
 
 pub fn center_of_mass_local(config: &VehicleConfig) -> Vec3 {
-    Vec3::new(0.0, config.center_of_gravity_height_offset, 0.0)
+    let com_z = (0.50 - config.front_weight_distribution) * config.wheelbase;
+    Vec3::new(0.0, config.center_of_gravity_height_offset, com_z)
 }
 
 pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> Vec3 {
@@ -406,21 +416,23 @@ pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> 
 }
 
 pub fn default_spawn_height(config: &VehicleConfig) -> f64 {
-    let front = config.front_tire_radius + config.front_spring_length * (1.0 - config.front_resting_ratio);
-    let rear = config.rear_tire_radius + config.rear_spring_length * (1.0 - config.rear_resting_ratio);
-    front * config.front_weight_distribution + rear * (1.0 - config.front_weight_distribution)
+    (config.front_tire_radius + config.rear_tire_radius) * 0.5
 }
 
 fn axle_center_local(config: &VehicleConfig, front: bool) -> Vec3 {
     let z = if front {
-        -(1.0 - config.front_weight_distribution) * config.wheelbase
+        -config.wheelbase * 0.5
     } else {
-        config.front_weight_distribution * config.wheelbase
+        config.wheelbase * 0.5
     };
     Vec3::new(0.0, 0.0, z)
 }
 
-fn steering_angle_for_wheel(config: &VehicleConfig, wheel: WheelIndex, steering: f64) -> f64 {
+pub fn diffuser_center_local(config: &VehicleConfig) -> Vec3 {
+    Vec3::new(0.0, config.center_of_gravity_height_offset, 0.0)
+}
+
+pub fn steering_angle_for_wheel(config: &VehicleConfig, wheel: WheelIndex, steering: f64) -> f64 {
     let ratio = if wheel.is_front() { config.front_steering_ratio } else { config.rear_steering_ratio };
     let input = steering.signum() * steering.abs().powf(config.steering_exponent) * ratio;
 

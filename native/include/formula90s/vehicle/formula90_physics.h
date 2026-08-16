@@ -64,6 +64,28 @@ typedef struct F90TelemetryOutput {
     double steer_angle_rad;
 } F90TelemetryOutput;
 
+#define F1_94_PHYSICS_ABI_VERSION 3
+
+typedef struct F90RuntimeConfig {
+    double vehicle_mass;
+    double front_brake_bias;
+    double max_steering_angle;
+    double max_torque;
+    double coefficient_of_drag;
+    double frontal_area;
+    double air_density;
+    double steering_exponent;
+    double steering_speed;
+    double countersteer_speed;
+    bool automatic_transmission;
+} F90RuntimeConfig;
+
+uint32_t f1_94_physics_abi_version(void);
+const char *f1_94_physics_build_sha(void);
+
+bool f1_94_physics_get_runtime_config(void *sim, F90RuntimeConfig *out_config);
+bool f1_94_physics_apply_runtime_config(void *sim, const F90RuntimeConfig *config);
+
 void *f1_94_physics_create_default(void);
 void *f1_94_physics_create_with_pos(double pos_x, double pos_y, double pos_z, double yaw_rad);
 void f1_94_physics_reset(void *sim, double pos_x, double pos_y, double pos_z, double yaw_rad);

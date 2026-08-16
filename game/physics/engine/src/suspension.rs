@@ -115,12 +115,25 @@ impl SuspensionSystem {
             return;
         }
 
+        let base_camber = camber(config, wheel);
         let distance = sample.weighted_distance(max_ray_length);
         let raw_spring_length = distance - radius;
-        // GEVP limits rebound with max_spring_length so a ray hit outside the wheel's
-        // reachable suspension range cannot generate a tensile/phantom contact force.
-        state.is_grounded = raw_spring_length <= state.max_spring_length + 1e-6;
-        state.spring_current_length = raw_spring_length.min(state.max_spring_length).min(spring_length);
+
+        state.is_grounded = raw_spring_length <= spring_length + 1e-4;
+        if !state.is_grounded {
+            state.spring_current_length = spring_length;
+            state.compression_mm = 0.0;
+            state.effective_normal = Vec3::UP;
+            state.effective_contact_point = Vec3::ZERO;
+            state.effective_surface = dominant_surface(sample);
+            state.effective_friction = blended_surface(config, sample, &config.surface_friction, 1.0);
+            state.effective_stiffness = blended_surface(config, sample, &config.surface_stiffness, 5.0);
+            state.effective_rolling_resistance = blended_surface(config, sample, &config.surface_rolling_resistance, 1.0);
+            state.dynamic_camber = base_camber;
+            return;
+        }
+
+        state.spring_current_length = raw_spring_length.max(0.0).min(spring_length);
         state.compression_mm = (spring_length - state.spring_current_length).max(0.0) * 1000.0;
         state.effective_normal = sample.weighted_normal();
         state.effective_contact_point = weighted_point(sample);
@@ -129,7 +142,6 @@ impl SuspensionSystem {
         state.effective_stiffness = blended_surface(config, sample, &config.surface_stiffness, 5.0);
         state.effective_rolling_resistance = blended_surface(config, sample, &config.surface_rolling_resistance, 1.0);
 
-        let base_camber = camber(config, wheel);
         let span = tire_width(config, wheel) * config.tri_ray_spacing_ratio * 2.0;
         if sample.inner.is_colliding && sample.outer.is_colliding && span > 1e-6 {
             let delta_h = sample.inner.distance - sample.outer.distance;
@@ -142,15 +154,19 @@ impl SuspensionSystem {
 
     fn solve_force(&mut self, config: &VehicleConfig, wheel: WheelIndex, opposite_compression_mm: f64, dt: f64) {
         let state = &mut self.wheels[wheel as usize];
+        let mass = config.mass_over_wheel(wheel);
+        let spring_len = spring_length(config, wheel);
+
         if !state.is_grounded {
             state.spring_force = 0.0;
             state.damping_force = 0.0;
             state.antiroll_force = 0.0;
             state.bottom_out_force = 0.0;
             state.total_normal_force = 0.0;
-            state.spring_speed_mm_s = 0.0;
+            let speed_mm_s = (state.compression_mm - state.previous_compression_mm) / dt;
+            state.spring_speed_mm_s = if speed_mm_s.is_finite() { speed_mm_s.clamp(-10000.0, 10000.0) } else { 0.0 };
             state.previous_compression_mm = state.compression_mm;
-            state.max_spring_length = spring_length(config, wheel);
+            state.max_spring_length = spring_len;
             return;
         }
 
@@ -200,12 +216,14 @@ impl SuspensionSystem {
 
         state.total_normal_force = (state.spring_force + state.antiroll_force + state.damping_force + state.bottom_out_force).max(0.0);
 
-        // Equivalent purpose to GEVP max_spring_length: avoid a numerical rebound impulse
-        // causing contact to persist farther than the configured suspension travel.
-        state.max_spring_length = (((state.total_normal_force / mass.max(1e-6))
-            - suspension_velocity_m_s)
-            * dt
-            + state.spring_current_length)
+        // GEVP-equivalent dynamic rebound integration:
+        // max_spring_length = clamp((((total_normal_force / mass) - spring_speed_mm_s) * dt * 0.001) + spring_current_length, 0.0, spring_length)
+        let dynamic_rebound_m = (
+            (state.total_normal_force / mass.max(1e-6))
+            - state.spring_speed_mm_s
+        ) * dt * 0.001;
+
+        state.max_spring_length = (state.spring_current_length + dynamic_rebound_m)
             .clamp(0.0, spring_len);
     }
 }

@@ -1,0 +1,148 @@
+# FORMULA-90: Progressive & Predictable Aerodynamic Model Implementation Plan
+
+This document details the step-by-step engineering plan to implement a 4-pillar progressive, organic, and predictable aerodynamic simulation model for Formula-90 vehicles (F1-94 and Jordan 197).
+
+---
+
+## 1. Mathematical Architecture & The 4 Pillars
+
+The current aerodynamic solver computes instantaneous quadratic downforce (F_z = 0.5 * rho * C_L * A * v^2) with zero time lag, zero yaw sensitivity, and rigid speed scaling. The new architecture replaces this with an integrated 4-stage pipeline.
+
+```
+                      [ Local Velocity (vx, vy, vz) ]
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+| Stage 1: Dynamic Modulators (Kinematic & Velocity Scaling)             |
+|                                                                         |
+|  1. Smoothstep Speed Blending (Pillar B):                               |
+|     x = clamp((v_fwd - v_blend_min) / (v_blend_full - v_blend_min), 0,1)|
+|     S(v) = 3*x^2 - 2*x^3                                                |
+|                                                                         |
+|  2. Sideslip / Yaw Angle Attenuation (Pillar C):                        |
+|     cos(beta) = v_fwd / sqrt(v_fwd^2 + v_lat^2 + 1e-6)                  |
+|     f_yaw = cos(beta) ^ aero_yaw_decay_exponent                         |
+|                                                                         |
+|  3. High-Speed Aeroelastic Wing Flex (Pillar D):                        |
+|     f_flex = 1.0 / (1.0 + aero_flex_coefficient * v_fwd)                |
++-------------------------------------------------------------------------+
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+| Stage 2: Effective Coefficients & Instantaneous Target Loads            |
+|                                                                         |
+|  C_L_eff = C_L0 * S(v) * f_yaw * f_flex                                 |
+|  F_downforce_target = 0.5 * rho * C_L_eff * A * v_fwd^2                 |
+|  F_drag_target      = 0.5 * rho * C_D   * A * v_fwd^2                 |
++-------------------------------------------------------------------------+
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+| Stage 3: Dynamic Aerodynamic Lag / Flow Relaxation (Pillar A)          |
+|                                                                         |
+|  alpha = clamp(dt / max(aero_lag_tau, 1e-4), 0.0, 1.0)                  |
+|  F_downforce(t) = F_downforce(t - dt) + alpha * (F_target - F_down(t-dt))|
+|  F_drag(t)      = F_drag(t - dt)      + alpha * (F_drag_target - F_drag)|
++-------------------------------------------------------------------------+
+                                     |
+                                     v
++-------------------------------------------------------------------------+
+| Stage 4: 3-Point Axle & Center of Mass Force Distribution               |
+|                                                                         |
+|  F_front_wing = F_downforce(t) * aero_split_front      (15%)            |
+|  F_diffuser   = F_downforce(t) * aero_split_diffuser   (60%)            |
+|  F_rear_wing  = F_downforce(t) * aero_split_rear       (25%)            |
++-------------------------------------------------------------------------+
+```
+
+---
+
+## 2. Configuration Parameters to Add (VehicleConfig)
+
+Add the following fields with serde serialization to `VehicleConfig` in `game/physics/engine/src/vehicle_config.rs`:
+
+```rust
+// Progressive Aerodynamic Extensions
+pub aero_lag_tau: f64,              // Flow relaxation time constant (seconds, default: 0.040 = 40ms)
+pub aero_blend_min_speed: f64,      // Low-speed blend start (m/s, default: 4.167 = 15 km/h)
+pub aero_blend_full_speed: f64,     // Full aero regime speed (m/s, default: 27.778 = 100 km/h)
+pub aero_yaw_decay_exponent: f64,   // Sideslip decay exponent (default: 1.50)
+pub aero_flex_coefficient: f64,     // High-speed wing flex reduction (default: 0.0012)
+```
+
+Canonical values for `VehicleConfig::f1_94_canonical()`:
+* `aero_lag_tau: 0.040` (40 ms vortex establishment lag)
+* `aero_blend_min_speed: 4.167` (15 km/h)
+* `aero_blend_full_speed: 27.778` (100 km/h)
+* `aero_yaw_decay_exponent: 1.50`
+* `aero_flex_coefficient: 0.0012`
+* `aero_split_front: 0.15`
+* `aero_split_diffuser: 0.60`
+* `aero_split_rear: 0.25`
+
+---
+
+## 3. Step-by-Step Implementation Sequence
+
+### Step 1: Data Structures & State Tracking (aero.rs)
+1. Extend `AeroForces` to store both stateful dynamic forces and modulation diagnostics:
+   ```rust
+   pub struct AeroForces {
+       pub total_downforce: f64,
+       pub front_downforce: f64,
+       pub diffuser_downforce: f64,
+       pub rear_downforce: f64,
+       pub drag_force: f64,
+       pub effective_cl: f64,
+       pub yaw_decay_factor: f64,
+       pub blend_factor: f64,
+       pub flex_factor: f64,
+   }
+   ```
+2. Implement `AeroForces::step(&mut self, config: &VehicleConfig, local_velocity: Vec3, dt: f64)`:
+   - Extract `v_fwd = (-local_velocity.z).max(0.0)` and `v_lat = local_velocity.x.abs()`.
+   - Calculate smoothstep factor S(v).
+   - Calculate sideslip angle cos(beta) and decay f_yaw = cos(beta)^1.5.
+   - Calculate aeroelastic flex factor f_flex = 1.0 / (1.0 + kappa * v_fwd).
+   - Compute target downforce and drag.
+   - Apply first-order low-pass filter with alpha = dt / tau_aero.
+   - Distribute across the 3 application points (15% front, 60% diffuser, 25% rear).
+
+### Step 2: Simulation Loop Integration (simulation.rs)
+1. In `VehicleState::step`, call `self.aero.step(&self.config, local_velocity, dt)` preserving state between physical ticks.
+2. Maintain torque arms relative to center of mass for front wing, diffuser center, and rear wing.
+
+### Step 3: FFI & GDExtension Export (ffi.rs, f1_94_rust_vehicle.cpp)
+1. Expose telemetry variables for aero modulation diagnostics: `aero_cl_eff`, `aero_blend`, `aero_yaw_factor`.
+2. Ensure C++ vehicle wrapper and GDScript bindings correctly receive updated state without ABI breakage.
+
+### Step 4: Unit Test Suite & Invariant Validation (types_and_config_test.rs, aero_test.rs)
+Add automated unit tests in `game/physics/engine/tests/`:
+1. `test_aerodynamic_lag_exponential_decay`: Verify step velocity input reaches 63.2% of target in exactly tau seconds.
+2. `test_smoothstep_speed_blending_monotonicity`: Verify S(v) is strictly monotonic, C^1-continuous, and zero at rest.
+3. `test_sideslip_yaw_decay_under_drift`: Verify downforce reduces smoothly as lateral velocity increases without discontinuities.
+4. `test_aero_pitch_moment_remains_zero`: Re-verify zero net pitching moment about CoM.
+
+### Step 5: Binary Compilation & Track Telemetry Validation
+1. Run `cargo test` to achieve 100% pass rate.
+2. Build Release DLL with `cargo build --release` and deploy to `game/addons/formula90s/bin/`.
+3. Run `test_f1_94_la_chutana_parity.gd` in Godot headless mode.
+4. Capture and verify telemetry CSV:
+   - Smooth 0 -> 134+ km/h launch without suspension jitter.
+   - Stable corner-entry and zero snap-oversteer during rapid transient steering inputs.
+
+---
+
+## 4. Subagent Task Delegation Matrix
+
+* **Subagent 1 (Rust Engine Specialist):**
+  - Files: `game/physics/engine/src/vehicle_config.rs`, `game/physics/engine/src/aero.rs`, `game/physics/engine/src/simulation.rs`.
+  - Responsibilities: Implement the 4 pillars, configuration structs, and time-integrated step method.
+
+* **Subagent 2 (Verification & QA Specialist):**
+  - Files: `game/physics/engine/tests/aero_test.rs`, `game/physics/engine/tests/types_and_config_test.rs`.
+  - Responsibilities: Author mathematical test cases verifying lag decay, smoothstep monotonicity, and zero pitching torque.
+
+* **Subagent 3 (Integration & Telemetry Specialist):**
+  - Files: `game/addons/formula90s/bin/`, `game/tests/test_f1_94_la_chutana_parity.gd`, `reports/godot_f1_94_chutana_telemetry.csv`.
+  - Responsibilities: Compile Release DLL, execute 600-frame track simulation in Godot, parse and validate dynamic telemetry.

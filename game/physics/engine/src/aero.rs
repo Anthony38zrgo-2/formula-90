@@ -2,13 +2,14 @@ use crate::types::Vec3;
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
 
-/// Aerodynamic load distribution.
+/// Aerodynamic load distribution across 3 points (front wing, floor/diffuser, rear wing).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct AeroForces {
-    pub total_downforce: f64, // N (downward)
-    pub front_downforce: f64, // N
-    pub rear_downforce: f64,  // N
-    pub drag_force: f64,      // N (opposing motion)
+    pub total_downforce: f64,    // N (downward)
+    pub front_downforce: f64,    // N (front wing, 20%)
+    pub diffuser_downforce: f64, // N (floor/diffuser, 60%)
+    pub rear_downforce: f64,     // N (rear wing, 20%)
+    pub drag_force: f64,         // N (opposing motion)
 }
 
 impl AeroForces {
@@ -16,6 +17,7 @@ impl AeroForces {
         Self {
             total_downforce: 0.0,
             front_downforce: 0.0,
+            diffuser_downforce: 0.0,
             rear_downforce: 0.0,
             drag_force: 0.0,
         }
@@ -35,12 +37,14 @@ impl AeroForces {
             0.0
         };
 
-        let front_downforce = total_downforce * config.aero_balance_front;
-        let rear_downforce = total_downforce * (1.0 - config.aero_balance_front);
+        let front_downforce = total_downforce * config.aero_split_front;
+        let diffuser_downforce = total_downforce * config.aero_split_diffuser;
+        let rear_downforce = total_downforce * config.aero_split_rear;
 
         Self {
             total_downforce,
             front_downforce,
+            diffuser_downforce,
             rear_downforce,
             drag_force,
         }

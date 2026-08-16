@@ -44,8 +44,13 @@ func compose(next_config: RaceSessionConfig) -> bool:
 		_clear_composition()
 		return false
 	if active_vehicle.has_method("reset_vehicle"):
+		var spawn_height: float = 0.35
+		if active_vehicle.has_method("get_default_spawn_height"):
+			spawn_height = float(active_vehicle.get_default_spawn_height())
+		elif "default_spawn_height" in active_vehicle:
+			spawn_height = float(active_vehicle.default_spawn_height)
 		var spawn_pos := spawn.global_position
-		spawn_pos.y += 0.48
+		spawn_pos.y += spawn_height
 		active_vehicle.reset_vehicle(spawn_pos, spawn.global_rotation.y)
 	_add_runtime_systems()
 	composition_ready.emit(active_vehicle, active_track, driving_aids)

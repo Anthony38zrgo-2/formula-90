@@ -4,6 +4,7 @@
 
 #include <godot_cpp/classes/rigid_body3d.hpp>
 #include <godot_cpp/classes/physics_direct_body_state3d.hpp>
+#include <godot_cpp/classes/physics_server3d.hpp>
 #include <godot_cpp/classes/ray_cast3d.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -49,6 +50,10 @@ typedef double (*FnPhysicsGetVehicleMass)(void *sim);
 typedef double (*FnPhysicsGetDefaultSpawnHeight)(void *sim);
 typedef void (*FnPhysicsGetCenterOfMassLocal)(void *sim, double *x, double *y, double *z);
 typedef void (*FnPhysicsDestroy)(void *sim);
+typedef uint32_t (*FnPhysicsAbiVersion)(void);
+typedef const char *(*FnPhysicsBuildSha)(void);
+typedef bool (*FnPhysicsGetRuntimeConfig)(void *sim, F90RuntimeConfig *out_config);
+typedef bool (*FnPhysicsApplyRuntimeConfig)(void *sim, const F90RuntimeConfig *config);
 
 class F194RustVehicle : public RigidBody3D {
 	GDCLASS(F194RustVehicle, RigidBody3D)
@@ -56,8 +61,13 @@ class F194RustVehicle : public RigidBody3D {
 private:
 	void *sim_ptr_ = nullptr;
 	void *dll_handle_ = nullptr;
+	bool inertia_initialized_ = false;
 
 	// FFI function pointers
+	FnPhysicsAbiVersion fn_abi_version_ = nullptr;
+	FnPhysicsBuildSha fn_build_sha_ = nullptr;
+	FnPhysicsGetRuntimeConfig fn_get_runtime_config_ = nullptr;
+	FnPhysicsApplyRuntimeConfig fn_apply_runtime_config_ = nullptr;
 	FnPhysicsCreateDefault fn_create_default_ = nullptr;
 	FnPhysicsCreateWithPos fn_create_with_pos_ = nullptr;
 	FnPhysicsReset fn_reset_ = nullptr;
@@ -173,8 +183,8 @@ public:
 	void set_gear_request(int p_val) { gear_request_ = p_val; }
 	int get_gear_request() const { return gear_request_; }
 
-	void set_automatic_transmission(bool p_val) { automatic_transmission_ = p_val; }
-	bool get_automatic_transmission() const { return automatic_transmission_; }
+	void set_automatic_transmission(bool p_val);
+	bool get_automatic_transmission() const;
 
 	// Telemetry Getters
 	double get_speed() const { return speed_ms_; }
@@ -223,39 +233,42 @@ public:
 	double max_rpm_ = 17000.0;
 	double vehicle_mass_ = 505.0;
 
+	void apply_runtime_config();
+	void sync_runtime_config_from_rust();
+
 	// Tuning Getters/Setters
 	void set_motor_drag(double v) { motor_drag_ = v; }
 	double get_motor_drag() const { return motor_drag_; }
-	void set_max_torque(double v) { max_torque_ = v; }
-	double get_max_torque() const { return max_torque_; }
+	void set_max_torque(double v);
+	double get_max_torque() const;
 	void set_brake_force_multiplier(double v) { brake_force_multiplier_ = v; }
 	double get_brake_force_multiplier() const { return brake_force_multiplier_; }
-	void set_front_brake_bias(double v) { front_brake_bias_ = v; }
-	double get_front_brake_bias() const { return front_brake_bias_; }
+	void set_front_brake_bias(double v);
+	double get_front_brake_bias() const;
 	void set_stability_yaw_strength(double v) { stability_yaw_strength_ = v; }
 	double get_stability_yaw_strength() const { return stability_yaw_strength_; }
 	void set_enable_stability(bool v) { enable_stability_ = v; }
 	bool get_enable_stability() const { return enable_stability_; }
-	void set_steering_exponent(double v) { steering_exponent_ = v; }
-	double get_steering_exponent() const { return steering_exponent_; }
-	void set_steering_speed(double v) { steering_speed_ = v; }
-	double get_steering_speed() const { return steering_speed_; }
-	void set_countersteer_speed(double v) { countersteer_speed_ = v; }
-	double get_countersteer_speed() const { return countersteer_speed_; }
-	void set_max_steering_angle(double v) { max_steering_angle_ = v; }
-	double get_max_steering_angle() const { return max_steering_angle_; }
-	void set_coefficient_of_drag(double v) { coefficient_of_drag_ = v; }
-	double get_coefficient_of_drag() const { return coefficient_of_drag_; }
-	void set_frontal_area(double v) { frontal_area_ = v; }
-	double get_frontal_area() const { return frontal_area_; }
-	void set_air_density(double v) { air_density_ = v; }
-	double get_air_density() const { return air_density_; }
+	void set_steering_exponent(double v);
+	double get_steering_exponent() const;
+	void set_steering_speed(double v);
+	double get_steering_speed() const;
+	void set_countersteer_speed(double v);
+	double get_countersteer_speed() const;
+	void set_max_steering_angle(double v);
+	double get_max_steering_angle() const;
+	void set_coefficient_of_drag(double v);
+	double get_coefficient_of_drag() const;
+	void set_frontal_area(double v);
+	double get_frontal_area() const;
+	void set_air_density(double v);
+	double get_air_density() const;
 	void set_idle_rpm(double v) { idle_rpm_ = v; }
 	double get_idle_rpm() const { return idle_rpm_; }
 	void set_max_rpm(double v) { max_rpm_ = v; }
 	double get_max_rpm() const { return max_rpm_; }
-	void set_vehicle_mass(double v) { vehicle_mass_ = v; set_mass(v); }
-	double get_vehicle_mass() const { return vehicle_mass_; }
+	void set_vehicle_mass(double v);
+	double get_vehicle_mass() const;
 
 	void reset_vehicle(const Vector3 &p_pos, double p_yaw_rad);
 };

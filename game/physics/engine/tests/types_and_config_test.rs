@@ -32,8 +32,8 @@ fn configured_center_of_mass_is_live() {
 #[test]
 fn spawn_height_accounts_for_both_axles() {
     let cfg = VehicleConfig::f1_94_canonical();
-    let front = cfg.front_tire_radius + cfg.front_spring_length * (1.0 - cfg.front_resting_ratio);
-    let rear = cfg.rear_tire_radius + cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio);
+    let front = cfg.front_tire_radius;
+    let rear = cfg.rear_tire_radius;
     let h = default_spawn_height(&cfg);
     assert!(h >= front.min(rear) && h <= front.max(rear));
 }
@@ -52,4 +52,26 @@ fn spring_rate_supports_static_wheel_load() {
         let expected = cfg.mass_over_wheel(wheel) * 9.80665;
         assert!((supported - expected).abs() < 1e-6);
     }
+}
+
+#[test]
+fn aero_pitch_moment_is_zero_around_center_of_mass() {
+    let cfg = VehicleConfig::f1_94_canonical();
+    let cg = center_of_mass_local(&cfg);
+
+    // Front wing at front axle center, Diffuser at (0, -0.12, 0), Rear wing at rear axle center
+    let r_front_z = -cfg.wheelbase * 0.5 - cg.z;
+    let r_diff_z = 0.0 - cg.z;
+    let r_rear_z = cfg.wheelbase * 0.5 - cg.z;
+
+    // Pitch torque per unit of downforce: tau = sum(r_z * (-F_split)) -> net moment
+    let net_pitch_moment_arm = cfg.aero_split_front * r_front_z
+        + cfg.aero_split_diffuser * r_diff_z
+        + cfg.aero_split_rear * r_rear_z;
+
+    assert!(
+        net_pitch_moment_arm.abs() < 1e-6,
+        "Aerodynamic center of pressure must align with center of mass, net arm={}",
+        net_pitch_moment_arm
+    );
 }

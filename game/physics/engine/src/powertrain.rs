@@ -95,7 +95,14 @@ impl PowertrainState {
                 self.current_gear = self.target_gear;
                 let ratio = self.get_total_gear_ratio(config).abs();
                 if ratio > 0.0 {
-                    self.rpm = (self.drivetrain_spin(config, wheel_spins).abs() * ratio * RAD_S_TO_RPM)
+                    let wheel_spin = self.drivetrain_spin(config, wheel_spins).abs();
+                    let road_spin = forward_speed_m_s.abs() / config.rear_tire_radius.max(1e-6);
+                    let target_spin = if (wheel_spin - road_spin).abs() > 10.0 {
+                        road_spin * 0.65 + wheel_spin * 0.35
+                    } else {
+                        wheel_spin
+                    };
+                    self.rpm = (target_spin * ratio * RAD_S_TO_RPM)
                         .clamp(config.idle_rpm, config.max_rpm * 1.1);
                 }
             }
@@ -110,12 +117,33 @@ impl PowertrainState {
             if self.current_gear <= 0 && forward_speed_m_s >= -0.5 {
                 desired = 1;
             } else if self.current_gear > 0 {
-                if self.rpm > config.max_rpm * 0.92 && self.current_gear < max_gear {
+                let total_ratio = self.get_total_gear_ratio(config).abs();
+                let radius = config.rear_tire_radius;
+                let wheel_speed = self.drivetrain_spin(config, wheel_spins).abs() * radius;
+                let road_speed = forward_speed_m_s.abs();
+                let min_shift_speed = (config.max_rpm * 0.65 / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
+
+                // Traction-aware upshift: prevent wheelspin from triggering premature upshifts
+                let can_upshift = self.rpm > config.max_rpm * 0.92
+                    && self.current_gear < max_gear
+                    && (road_speed >= min_shift_speed || (wheel_speed - road_speed) < 6.0);
+
+                let lower_ratio = if self.current_gear > 1 {
+                    (config.gear_ratios[(self.current_gear - 2) as usize] * config.final_drive).abs()
+                } else {
+                    0.0
+                };
+                let lower_rpm_est = (road_speed / radius.max(1e-6)) * lower_ratio * RAD_S_TO_RPM;
+
+                // Intelligent downshift: off-throttle coasting OR kick-down under heavy throttle when bogged down
+                let can_downshift = self.current_gear > 1 && (
+                    (self.rpm < config.max_rpm * 0.45 && input.throttle < 0.35)
+                    || (self.rpm < config.max_rpm * 0.55 && input.throttle > 0.60 && lower_rpm_est < config.max_rpm * 0.88)
+                );
+
+                if can_upshift {
                     desired += 1;
-                } else if self.rpm < config.max_rpm * 0.55
-                    && self.current_gear > 1
-                    && input.throttle < 0.35
-                {
+                } else if can_downshift {
                     desired -= 1;
                 }
             }
@@ -173,8 +201,17 @@ impl PowertrainState {
         let total_ratio = self.get_total_gear_ratio(config);
         let manual_clutch = input.clutch.clamp(0.0, 1.0);
         let shift_clutch = if self.shift_timer > 0.0 { 1.0 } else { 0.0 };
-        let near_idle_clutch = if self.rpm < config.idle_rpm + 100.0 { 0.35 } else { 0.0 };
-        let clutch_disengagement = manual_clutch.max(shift_clutch).max(near_idle_clutch);
+        // GEVP anti-stall clutch: at idle (or below clutch-out RPM when launching from rest),
+        // disengage clutch completely so idle governor does not produce artificial creep torque.
+        let clutch_out_rpm = config.idle_rpm + 1000.0;
+        let idle_disengagement = if self.rpm <= config.idle_rpm + 50.0 {
+            1.0
+        } else if self.rpm >= clutch_out_rpm {
+            0.0
+        } else {
+            (clutch_out_rpm - self.rpm) / (clutch_out_rpm - (config.idle_rpm + 50.0))
+        };
+        let clutch_disengagement = manual_clutch.max(shift_clutch).max(idle_disengagement);
         self.clutch_engagement = 1.0 - clutch_disengagement;
 
         let drive_axles_inertia = driven_wheel_inertia(config);

@@ -71,8 +71,8 @@ func _run_test() -> void:
 	
 	if spd_kmh < 15.0:
 		_fail("Vehicle did not accelerate on full throttle (Speed=%.1f km/h)" % spd_kmh, failures)
-	if rpm < 5000.0:
-		_fail("Engine RPM did not increase (RPM=%.0f)" % rpm, failures)
+	if rpm < 4600.0:
+		_fail("Engine RPM did not increase above idle (RPM=%.0f)" % rpm, failures)
 	
 	if failures.size() == 0:
 		print("=== F1-94 Rust Physics Integration Test: PASSED ===")

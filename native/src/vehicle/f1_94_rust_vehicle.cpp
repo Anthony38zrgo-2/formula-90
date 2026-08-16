@@ -195,12 +195,14 @@ bool F194RustVehicle::load_rust_dll() {
 
 	HMODULE hDll = nullptr;
 	ProjectSettings *ps = ProjectSettings::get_singleton();
+	String loaded_path = "";
 
 	for (int i = 0; i < candidate_paths.size(); ++i) {
 		String p = candidate_paths[i];
 		String global_p = ps ? ps->globalize_path(p) : p;
 		hDll = LoadLibraryW((LPCWSTR)global_p.utf16().get_data());
 		if (hDll) {
+			loaded_path = global_p;
 			break;
 		}
 	}
@@ -212,6 +214,10 @@ bool F194RustVehicle::load_rust_dll() {
 
 	dll_handle_ = (void *)hDll;
 
+	fn_abi_version_ = (FnPhysicsAbiVersion)GetProcAddress(hDll, "f1_94_physics_abi_version");
+	fn_build_sha_ = (FnPhysicsBuildSha)GetProcAddress(hDll, "f1_94_physics_build_sha");
+	fn_get_runtime_config_ = (FnPhysicsGetRuntimeConfig)GetProcAddress(hDll, "f1_94_physics_get_runtime_config");
+	fn_apply_runtime_config_ = (FnPhysicsApplyRuntimeConfig)GetProcAddress(hDll, "f1_94_physics_apply_runtime_config");
 	fn_create_default_ = (FnPhysicsCreateDefault)GetProcAddress(hDll, "f1_94_physics_create_default");
 	fn_create_with_pos_ = (FnPhysicsCreateWithPos)GetProcAddress(hDll, "f1_94_physics_create_with_pos");
 	fn_reset_ = (FnPhysicsReset)GetProcAddress(hDll, "f1_94_physics_reset");
@@ -224,6 +230,17 @@ bool F194RustVehicle::load_rust_dll() {
 	fn_get_default_spawn_height_ = (FnPhysicsGetDefaultSpawnHeight)GetProcAddress(hDll, "f1_94_physics_get_default_spawn_height");
 	fn_get_center_of_mass_local_ = (FnPhysicsGetCenterOfMassLocal)GetProcAddress(hDll, "f1_94_physics_get_center_of_mass_local");
 	fn_destroy_ = (FnPhysicsDestroy)GetProcAddress(hDll, "f1_94_physics_destroy");
+
+	uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
+	const char *build_sha = fn_build_sha_ ? fn_build_sha_() : "unknown";
+
+	UtilityFunctions::print(String("[F194Physics]\nDLL=") + loaded_path + "\nABI=" + String::num_int64(abi_ver) + "\nBUILD=" + String(build_sha));
+
+	if (abi_ver != F1_94_PHYSICS_ABI_VERSION) {
+		UtilityFunctions::printerr(String("[F194Physics] FATAL: ABI mismatch! Expected ") + String::num_int64(F1_94_PHYSICS_ABI_VERSION) + " but loaded DLL has " + String::num_int64(abi_ver));
+		unload_rust_dll();
+		return false;
+	}
 
 	if (!fn_solve_forces_ || !fn_destroy_) {
 		UtilityFunctions::printerr("[F194RustVehicle] Missing required exported symbols in vehicle_physics_engine.dll!");
@@ -260,10 +277,10 @@ void F194RustVehicle::setup_raycasts() {
 			fn_get_anchor_(sim_ptr_, (uint32_t)w, &ax, &ay, &az);
 		} else {
 			const Vector3 default_anchors[4] = {
-				Vector3(-0.79625, 0.0, -1.60636),
-				Vector3(0.79625, 0.0, -1.60636),
-				Vector3(-0.80000, 0.0, 1.31364),
-				Vector3(0.80000, 0.0, 1.31364)
+				Vector3(-0.79625, 0.143973, -1.460326),
+				Vector3(0.79625, 0.143973, -1.460326),
+				Vector3(-0.762307, 0.123027, 1.460326),
+				Vector3(0.762307, 0.123027, 1.460326)
 			};
 			ax = default_anchors[w].x;
 			ay = default_anchors[w].y;
@@ -340,11 +357,8 @@ void F194RustVehicle::_ready() {
 	set_freeze_enabled(false);
 	set_gravity_scale(1.0);
 
-	// 2. Obtain mass from Rust
-	if (fn_get_vehicle_mass_) {
-		double mass = fn_get_vehicle_mass_(sim_ptr_);
-		set_mass((float)mass);
-	}
+	// 2. Synchronize config from authoritative Rust backend
+	sync_runtime_config_from_rust();
 
 	// 3. Center of mass mode and position from Rust
 	if (fn_get_center_of_mass_local_) {
@@ -418,6 +432,28 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 		return;
 	}
 
+	// Synchronize Godot rigid-body inertia once (P1-F)
+	if (!inertia_initialized_) {
+		Vector3 inv_i = p_state->get_inverse_inertia();
+		if (inv_i.x > 0.0f && inv_i.y > 0.0f && inv_i.z > 0.0f && std::isfinite(inv_i.x) && std::isfinite(inv_i.y) && std::isfinite(inv_i.z)) {
+			Vector3 base_inertia(1.0f / inv_i.x, 1.0f / inv_i.y, 1.0f / inv_i.z);
+			Vector3 configured_inertia = base_inertia * 1.10f;
+			if (configured_inertia.x > 0.0f && configured_inertia.y > 0.0f && configured_inertia.z > 0.0f &&
+				std::isfinite(configured_inertia.x) && std::isfinite(configured_inertia.y) && std::isfinite(configured_inertia.z)) {
+				PhysicsServer3D *ps = PhysicsServer3D::get_singleton();
+				if (ps) {
+					ps->body_set_param(get_rid(), PhysicsServer3D::BODY_PARAM_INERTIA, configured_inertia);
+				}
+				inertia_initialized_ = true;
+				UtilityFunctions::print(String("[F194RustVehicle] Base inertia: ") + Variant(base_inertia).stringify() + " -> Configured inertia: " + Variant(configured_inertia).stringify());
+			} else {
+				UtilityFunctions::push_warning("[F194RustVehicle] Configured inertia calculation resulted in invalid values; retaining automatic inertia.");
+			}
+		} else {
+			UtilityFunctions::push_warning("[F194RustVehicle] Base inertia tensor from Godot is invalid; retaining automatic inertia.");
+		}
+	}
+
 	// 1. Extract 6-DOF transform, linear velocity, angular velocity, and delta time
 	Transform3D gt = p_state->get_transform();
 	Vector3 pos = gt.origin;
@@ -447,22 +483,13 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	kinematics.ang_vel_y = ang_vel.y;
 	kinematics.ang_vel_z = ang_vel.z;
 
-	// 2. Gather Driver Inputs
+	// 2. Consume Driver Inputs stored on the vehicle node
 	F90VehicleInput input = {};
-	if (enable_player_input_) {
-		Input *inp = Input::get_singleton();
-		input.throttle = inp ? inp->get_action_strength("Throttle") : 0.0;
-		input.steering = inp ? (inp->get_action_strength("Steer Right") - inp->get_action_strength("Steer Left")) : 0.0;
-		input.brake = inp ? inp->get_action_strength("Brakes") : 0.0;
-		input.handbrake = inp ? inp->get_action_strength("Handbrake") : 0.0;
-		input.clutch = inp ? inp->get_action_strength("Clutch") : 0.0;
-	} else {
-		input.throttle = throttle_amount_;
-		input.steering = steering_input_;
-		input.brake = brake_amount_;
-		input.handbrake = handbrake_amount_;
-		input.clutch = clutch_amount_;
-	}
+	input.throttle = throttle_amount_;
+	input.steering = steering_input_;
+	input.brake = brake_amount_;
+	input.handbrake = handbrake_amount_;
+	input.clutch = clutch_amount_;
 	input.gear_request = gear_request_;
 
 	// 3. Sample 12 RayCast3Ds in Godot (global coordinates)
@@ -571,23 +598,27 @@ void F194RustVehicle::update_wheel_visuals(double delta) {
 			continue;
 		}
 
-		// Vertical suspension displacement (resting compression nominal ~100mm)
-		double comp_m = std::isfinite(wheel_compressions_[w]) ? (wheel_compressions_[w] * 0.001) : 0.100;
-		double rest_y = wheel_base_positions_[w].y;
-		double visual_y = rest_y + (0.100 - comp_m);
+		// Vertical suspension displacement:
+		// Hub Y = anchor_Y - spring_length + compression_m
+		double spring_length = (w < 2) ? 0.250 : 0.180;
+		double resting_ratio = (w < 2) ? 0.400 : 0.350;
+		double anchor_y = wheel_base_positions_[w].y;
+		double comp_m = std::isfinite(wheel_compressions_[w]) ? (wheel_compressions_[w] * 0.001) : (spring_length * resting_ratio);
+		double visual_y = anchor_y - spring_length + comp_m;
+
 		Vector3 pos = w_node->get_position();
 		pos.y = visual_y;
 		if (pos.is_finite()) {
 			w_node->set_position(pos);
 		}
 
-		// Front steering and rolling rotations
+		// Front steering and rolling rotations (-angle to roll forward along -Z)
 		double steer = 0.0;
 		if (w < 2) {
 			steer = std::isfinite(steer_angle_rad_) ? steer_angle_rad_ : (true_steering_amount_ * 0.436332);
 		}
 		double angle = std::isfinite(wheel_angles_[w]) ? wheel_angles_[w] : 0.0;
-		w_node->set_rotation(Vector3(angle, steer, 0.0));
+		w_node->set_rotation(Vector3(-angle, steer, 0.0));
 	}
 }
 
@@ -667,6 +698,212 @@ double F194RustVehicle::get_default_spawn_height_value() const {
 	return 0.35;
 }
 
+void F194RustVehicle::apply_runtime_config() {
+	if (!sim_ptr_ || !fn_apply_runtime_config_) {
+		return;
+	}
+	F90RuntimeConfig cfg = {};
+	cfg.vehicle_mass = vehicle_mass_;
+	cfg.front_brake_bias = front_brake_bias_;
+	cfg.max_steering_angle = max_steering_angle_;
+	cfg.max_torque = max_torque_;
+	cfg.coefficient_of_drag = coefficient_of_drag_;
+	cfg.frontal_area = frontal_area_;
+	cfg.air_density = air_density_;
+	cfg.steering_exponent = steering_exponent_;
+	cfg.steering_speed = steering_speed_;
+	cfg.countersteer_speed = countersteer_speed_;
+	cfg.automatic_transmission = automatic_transmission_;
+	fn_apply_runtime_config_(sim_ptr_, &cfg);
+}
+
+void F194RustVehicle::sync_runtime_config_from_rust() {
+	if (!sim_ptr_ || !fn_get_runtime_config_) {
+		return;
+	}
+	F90RuntimeConfig cfg = {};
+	if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+		vehicle_mass_ = cfg.vehicle_mass;
+		front_brake_bias_ = cfg.front_brake_bias;
+		max_steering_angle_ = cfg.max_steering_angle;
+		max_torque_ = cfg.max_torque;
+		coefficient_of_drag_ = cfg.coefficient_of_drag;
+		frontal_area_ = cfg.frontal_area;
+		air_density_ = cfg.air_density;
+		steering_exponent_ = cfg.steering_exponent;
+		steering_speed_ = cfg.steering_speed;
+		countersteer_speed_ = cfg.countersteer_speed;
+		automatic_transmission_ = cfg.automatic_transmission;
+		set_mass((float)vehicle_mass_);
+	}
+}
+
+void F194RustVehicle::set_vehicle_mass(double v) {
+	vehicle_mass_ = v;
+	set_mass((float)v);
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_vehicle_mass() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.vehicle_mass;
+		}
+	}
+	return vehicle_mass_;
+}
+
+void F194RustVehicle::set_max_torque(double v) {
+	max_torque_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_max_torque() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.max_torque;
+		}
+	}
+	return max_torque_;
+}
+
+void F194RustVehicle::set_front_brake_bias(double v) {
+	front_brake_bias_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_front_brake_bias() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.front_brake_bias;
+		}
+	}
+	return front_brake_bias_;
+}
+
+void F194RustVehicle::set_steering_exponent(double v) {
+	steering_exponent_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_steering_exponent() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.steering_exponent;
+		}
+	}
+	return steering_exponent_;
+}
+
+void F194RustVehicle::set_steering_speed(double v) {
+	steering_speed_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_steering_speed() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.steering_speed;
+		}
+	}
+	return steering_speed_;
+}
+
+void F194RustVehicle::set_countersteer_speed(double v) {
+	countersteer_speed_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_countersteer_speed() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.countersteer_speed;
+		}
+	}
+	return countersteer_speed_;
+}
+
+void F194RustVehicle::set_max_steering_angle(double v) {
+	max_steering_angle_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_max_steering_angle() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.max_steering_angle;
+		}
+	}
+	return max_steering_angle_;
+}
+
+void F194RustVehicle::set_coefficient_of_drag(double v) {
+	coefficient_of_drag_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_coefficient_of_drag() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.coefficient_of_drag;
+		}
+	}
+	return coefficient_of_drag_;
+}
+
+void F194RustVehicle::set_frontal_area(double v) {
+	frontal_area_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_frontal_area() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.frontal_area;
+		}
+	}
+	return frontal_area_;
+}
+
+void F194RustVehicle::set_air_density(double v) {
+	air_density_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_air_density() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.air_density;
+		}
+	}
+	return air_density_;
+}
+
+void F194RustVehicle::set_automatic_transmission(bool p_val) {
+	automatic_transmission_ = p_val;
+	apply_runtime_config();
+}
+
+bool F194RustVehicle::get_automatic_transmission() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.automatic_transmission;
+		}
+	}
+	return automatic_transmission_;
+}
+
 void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 	if (sim_ptr_ && fn_reset_) {
 		fn_reset_(sim_ptr_, p_pos.x, p_pos.y, p_pos.z, p_yaw_rad);
@@ -677,6 +914,13 @@ void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 	set_angular_velocity(Vector3());
 	lin_vel_ = Vector3();
 	ang_vel_ = Vector3();
+	speed_kmh_ = 0.0;
+	speed_ms_ = 0.0;
+	throttle_amount_ = 0.0;
+	steering_input_ = 0.0;
+	brake_amount_ = 0.0;
+	handbrake_amount_ = 0.0;
+	clutch_amount_ = 0.0;
 }
 
 void F194RustVehicle::_exit_tree() {
