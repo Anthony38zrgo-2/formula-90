@@ -13,3 +13,13 @@ if($CompileCommands){$args+='compiledb=yes'}
 Write-Host "Python: $python"; Write-Host "Target: $target / x86_64"; & $python @args
 if($LASTEXITCODE -ne 0){throw "Build falló ($LASTEXITCODE)."}
 
+Write-Host "Compilando Crate Rust Vehicle Physics Engine ($Configuration)..." -ForegroundColor Cyan
+$cargoArgs = @('build', '--manifest-path', 'game/physics/engine/Cargo.toml')
+if ($Configuration -eq 'release') { $cargoArgs += '--release' }
+& cargo @cargoArgs
+if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_physics_engine falló ($LASTEXITCODE)." }
+$rustDllDir = if ($Configuration -eq 'release') { 'game/physics/engine/target/release' } else { 'game/physics/engine/target/debug' }
+$destDllName = "vehicle_physics_engine.windows.$target.x86_64.dll"
+Copy-Item (Join-Path $rustDllDir 'vehicle_physics_engine.dll') (Join-Path 'game/addons/formula90s/bin' $destDllName) -Force
+Write-Host "Vehicle physics DLL copiada a game/addons/formula90s/bin/$destDllName" -ForegroundColor Green
+

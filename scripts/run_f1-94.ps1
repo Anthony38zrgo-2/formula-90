@@ -4,7 +4,9 @@ param(
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
     [switch]$SmokeAudio,
-    [switch]$SmokeBackground
+    [switch]$SmokeBackground,
+    [switch]$TestPhysics,
+    [switch]$Parity
 )
 
 $ErrorActionPreference = 'Stop'
@@ -92,6 +94,18 @@ if ($Smoke) {
     }
     Write-Host 'Smoke completo: HUD + Background.' -ForegroundColor Green
     exit 0
+}
+if ($TestPhysics) {
+    Write-Host 'Ejecutando suite determinista Rust + test de integración Godot (12 raycasts)...' -ForegroundColor Cyan
+    & cargo test --manifest-path (Join-Path $root 'game\physics\engine\Cargo.toml')
+    if ($LASTEXITCODE -ne 0) { throw "Rust vehicle physics unit tests fallaron ($LASTEXITCODE)." }
+    & $godot --headless --path $game --script 'res://tests/test_f1_94_rust_physics.gd'
+    exit $LASTEXITCODE
+}
+if ($Parity) {
+    Write-Host 'Ejecutando test de paridad en pista La Chutana (PHY-010)...' -ForegroundColor Cyan
+    & $godot --headless --path $game --script 'res://tests/test_f1_94_la_chutana_parity.gd'
+    exit $LASTEXITCODE
 }
 if ($ValidateRuntimeOnly) {
     Write-Host 'Runtime F1-94 desacoplado validado.' -ForegroundColor Green
