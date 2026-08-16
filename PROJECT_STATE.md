@@ -57,6 +57,7 @@ Phase D — suspension
 Phase E — V10 powertrain / transmission
 Phase F — aerodynamics
 Phase G — assists / true no-assists behavior
+Phase RUST — GEVP Physics Rust Migration (3-Raycast, deterministic core, telemetry parity) [PLANNED per docs/GEVP_RUST_PHYSICS_MIGRATION_BACKLOG.md]
 ```
 
 ---
