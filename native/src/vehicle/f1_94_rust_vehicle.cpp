@@ -5,6 +5,8 @@
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+#include <cmath>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -76,6 +78,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_engine_torque"), &F194RustVehicle::get_engine_torque);
 	ClassDB::bind_method(D_METHOD("get_clutch_engagement"), &F194RustVehicle::get_clutch_engagement);
 	ClassDB::bind_method(D_METHOD("get_true_steering_amount"), &F194RustVehicle::get_true_steering_amount);
+	ClassDB::bind_method(D_METHOD("get_steer_angle_rad"), &F194RustVehicle::get_steer_angle_rad);
 
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed"), "", "get_speed");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "speed_kmh"), "", "get_speed_kmh");
@@ -84,6 +87,7 @@ void F194RustVehicle::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "engine_torque"), "", "get_engine_torque");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clutch_engagement"), "", "get_clutch_engagement");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "true_steering_amount"), "", "get_true_steering_amount");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "steer_angle_rad"), "", "get_steer_angle_rad");
 
 	ClassDB::bind_method(D_METHOD("get_lat_g"), &F194RustVehicle::get_lat_g);
 	ClassDB::bind_method(D_METHOD("get_long_g"), &F194RustVehicle::get_long_g);
@@ -103,6 +107,14 @@ void F194RustVehicle::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_compressions"), "", "get_wheel_compressions");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_spins"), "", "get_wheel_spins");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_slips"), "", "get_wheel_slips");
+
+	// Rust Dimension and Anchor Queries
+	ClassDB::bind_method(D_METHOD("get_vehicle_mass"), &F194RustVehicle::get_vehicle_mass_value);
+	ClassDB::bind_method(D_METHOD("get_center_of_mass_local"), &F194RustVehicle::get_center_of_mass_local_value);
+	ClassDB::bind_method(D_METHOD("get_wheel_anchor_local", "wheel_idx"), &F194RustVehicle::get_wheel_anchor_local_value);
+	ClassDB::bind_method(D_METHOD("get_tri_ray_span", "wheel_idx"), &F194RustVehicle::get_tri_ray_span_value);
+	ClassDB::bind_method(D_METHOD("get_ray_length", "wheel_idx"), &F194RustVehicle::get_ray_length_value);
+	ClassDB::bind_method(D_METHOD("get_default_spawn_height"), &F194RustVehicle::get_default_spawn_height_value);
 
 	// Tuning Parameters
 	ClassDB::bind_method(D_METHOD("set_motor_drag", "drag"), &F194RustVehicle::set_motor_drag);
@@ -142,15 +154,15 @@ void F194RustVehicle::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "countersteer_speed"), "set_countersteer_speed", "get_countersteer_speed");
 
 	ClassDB::bind_method(D_METHOD("reset_vehicle", "pos", "yaw_rad"), &F194RustVehicle::reset_vehicle);
+	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 }
 
 F194RustVehicle::F194RustVehicle() {
-	set_gravity_scale(0.0);
+	set_gravity_scale(1.0);
 	set_mass(505.0);
-	set_freeze_enabled(true);
-	set_freeze_mode(FREEZE_MODE_KINEMATIC);
+	set_freeze_enabled(false);
 	set_collision_layer(2);
-	set_collision_mask(0);
+	set_collision_mask(1);
 
 	for (int w = 0; w < 4; ++w) {
 		for (int r = 0; r < 3; ++r) {
@@ -164,7 +176,7 @@ F194RustVehicle::~F194RustVehicle() {
 }
 
 bool F194RustVehicle::load_rust_dll() {
-	if (dll_handle_ != nullptr && sim_ptr_ != nullptr) {
+	if (dll_handle_ != nullptr) {
 		return true;
 	}
 
@@ -174,6 +186,11 @@ bool F194RustVehicle::load_rust_dll() {
 	candidate_paths.append("res://addons/formula90s/bin/vehicle_physics_engine.windows.template_release.x86_64.dll");
 	candidate_paths.append("res://addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll");
 	candidate_paths.append("res://addons/formula90s/bin/vehicle_physics_engine.dll");
+	candidate_paths.append("game/addons/formula90s/bin/vehicle_physics_engine.windows.template_release.x86_64.dll");
+	candidate_paths.append("game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll");
+	candidate_paths.append("game/addons/formula90s/bin/vehicle_physics_engine.dll");
+	candidate_paths.append("vehicle_physics_engine.windows.template_release.x86_64.dll");
+	candidate_paths.append("vehicle_physics_engine.windows.template_debug.x86_64.dll");
 	candidate_paths.append("vehicle_physics_engine.dll");
 
 	HMODULE hDll = nullptr;
@@ -195,14 +212,20 @@ bool F194RustVehicle::load_rust_dll() {
 
 	dll_handle_ = (void *)hDll;
 
+	fn_create_default_ = (FnPhysicsCreateDefault)GetProcAddress(hDll, "f1_94_physics_create_default");
 	fn_create_with_pos_ = (FnPhysicsCreateWithPos)GetProcAddress(hDll, "f1_94_physics_create_with_pos");
 	fn_reset_ = (FnPhysicsReset)GetProcAddress(hDll, "f1_94_physics_reset");
+	fn_solve_forces_ = (FnPhysicsSolveForces)GetProcAddress(hDll, "f1_94_physics_solve_forces");
 	fn_step_ = (FnPhysicsStep)GetProcAddress(hDll, "f1_94_physics_step");
 	fn_get_anchor_ = (FnPhysicsGetWheelAnchorLocal)GetProcAddress(hDll, "f1_94_physics_get_wheel_anchor_local");
 	fn_get_tri_span_ = (FnPhysicsGetTriRaySpan)GetProcAddress(hDll, "f1_94_physics_get_tri_ray_span");
+	fn_get_ray_length_ = (FnPhysicsGetRayLength)GetProcAddress(hDll, "f1_94_physics_get_ray_length");
+	fn_get_vehicle_mass_ = (FnPhysicsGetVehicleMass)GetProcAddress(hDll, "f1_94_physics_get_vehicle_mass");
+	fn_get_default_spawn_height_ = (FnPhysicsGetDefaultSpawnHeight)GetProcAddress(hDll, "f1_94_physics_get_default_spawn_height");
+	fn_get_center_of_mass_local_ = (FnPhysicsGetCenterOfMassLocal)GetProcAddress(hDll, "f1_94_physics_get_center_of_mass_local");
 	fn_destroy_ = (FnPhysicsDestroy)GetProcAddress(hDll, "f1_94_physics_destroy");
 
-	if (!fn_create_with_pos_ || !fn_step_ || !fn_destroy_) {
+	if (!fn_solve_forces_ || !fn_destroy_) {
 		UtilityFunctions::printerr("[F194RustVehicle] Missing required exported symbols in vehicle_physics_engine.dll!");
 		unload_rust_dll();
 		return false;
@@ -228,21 +251,31 @@ void F194RustVehicle::unload_rust_dll() {
 }
 
 void F194RustVehicle::setup_raycasts() {
-	// Base hub local positions for F1-94 at axle height (Y=0.0 matching Rust vehicle_config)
-	wheel_base_positions_[0] = Vector3(-0.79625, 0.0, -1.60636); // FL
-	wheel_base_positions_[1] = Vector3(0.79625, 0.0, -1.60636);  // FR
-	wheel_base_positions_[2] = Vector3(-0.80000, 0.0, 1.31364);  // RL
-	wheel_base_positions_[3] = Vector3(0.80000, 0.0, 1.31364);   // RR
-
 	const char *w_names[4] = { "FL", "FR", "RL", "RR" };
 	const char *r_names[3] = { "In", "Mid", "Out" };
 
-	double front_span = 0.305 * 0.40; // ~0.122m
-	double rear_span = 0.380 * 0.40;  // ~0.152m
-
 	for (int w = 0; w < 4; ++w) {
-		double span = (w < 2) ? front_span : rear_span;
-		// Inner, Center, Outer offsets
+		double ax = 0.0, ay = 0.0, az = 0.0;
+		if (fn_get_anchor_ && sim_ptr_) {
+			fn_get_anchor_(sim_ptr_, (uint32_t)w, &ax, &ay, &az);
+		} else {
+			const Vector3 default_anchors[4] = {
+				Vector3(-0.79625, 0.0, -1.60636),
+				Vector3(0.79625, 0.0, -1.60636),
+				Vector3(-0.80000, 0.0, 1.31364),
+				Vector3(0.80000, 0.0, 1.31364)
+			};
+			ax = default_anchors[w].x;
+			ay = default_anchors[w].y;
+			az = default_anchors[w].z;
+		}
+		wheel_base_positions_[w] = Vector3(ax, ay, az);
+
+		double span = (fn_get_tri_span_ && sim_ptr_) ? fn_get_tri_span_(sim_ptr_, (uint32_t)w) : ((w < 2) ? (0.305 * 0.40) : (0.380 * 0.40));
+		double ray_length = (fn_get_ray_length_ && sim_ptr_) ? fn_get_ray_length_(sim_ptr_, (uint32_t)w) : 0.65;
+
+		// For left wheels (FL=0, RL=2), inner is +X and outer is -X.
+		// For right wheels (FR=1, RR=3), inner is -X and outer is +X.
 		double x_offsets[3] = { (w % 2 == 0) ? span : -span, 0.0, (w % 2 == 0) ? -span : span };
 
 		for (int r = 0; r < 3; ++r) {
@@ -257,7 +290,7 @@ void F194RustVehicle::setup_raycasts() {
 
 			Vector3 local_origin = wheel_base_positions_[w] + Vector3(x_offsets[r], 0.0, 0.0);
 			ray->set_position(local_origin);
-			ray->set_target_position(Vector3(0.0, -0.80, 0.0)); // 800mm reach
+			ray->set_target_position(Vector3(0.0, -ray_length, 0.0));
 			ray->set_enabled(true);
 			ray->set_collide_with_areas(false);
 			ray->set_collide_with_bodies(true);
@@ -272,6 +305,14 @@ void F194RustVehicle::setup_raycasts() {
 	}
 }
 
+void F194RustVehicle::_notification(int p_what) {
+	if (p_what == NOTIFICATION_READY) {
+		_ready();
+	} else if (p_what == NOTIFICATION_EXIT_TREE) {
+		_exit_tree();
+	}
+}
+
 void F194RustVehicle::_ready() {
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
@@ -282,16 +323,38 @@ void F194RustVehicle::_ready() {
 		return;
 	}
 
-	Vector3 pos = get_global_position();
-	Vector3 rot = get_global_rotation();
-	double yaw = rot.y;
+	if (fn_create_default_) {
+		sim_ptr_ = fn_create_default_();
+	} else if (fn_create_with_pos_) {
+		Vector3 pos = get_global_position();
+		Vector3 rot = get_global_rotation();
+		sim_ptr_ = fn_create_with_pos_(pos.x, pos.y, pos.z, rot.y);
+	}
 
-	sim_ptr_ = fn_create_with_pos_(pos.x, pos.y, pos.z, yaw);
 	if (!sim_ptr_) {
 		UtilityFunctions::printerr("[F194RustVehicle] Failed to create Rust VehicleSimulator instance!");
 		return;
 	}
 
+	// 1. Dynamic RigidBody3D setup
+	set_freeze_enabled(false);
+	set_gravity_scale(1.0);
+
+	// 2. Obtain mass from Rust
+	if (fn_get_vehicle_mass_) {
+		double mass = fn_get_vehicle_mass_(sim_ptr_);
+		set_mass((float)mass);
+	}
+
+	// 3. Center of mass mode and position from Rust
+	if (fn_get_center_of_mass_local_) {
+		double com_x = 0.0, com_y = 0.0, com_z = 0.0;
+		fn_get_center_of_mass_local_(sim_ptr_, &com_x, &com_y, &com_z);
+		set_center_of_mass_mode(RigidBody3D::CENTER_OF_MASS_MODE_CUSTOM);
+		set_center_of_mass(Vector3(com_x, com_y, com_z));
+	}
+
+	// 4. Setup 12 RayCast3D nodes (inner, center, outer per wheel)
 	setup_raycasts();
 
 	// Resolve visual wheel and chassis nodes from NodePaths
@@ -324,6 +387,16 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) {
 	}
 	Node *node = Object::cast_to<Node>(collider);
 	if (node) {
+		if (node->is_in_group("Curb") || node->is_in_group("curb") || node->is_in_group("Kerb") || node->is_in_group("kerb")) return 1;
+		if (node->is_in_group("Dirt") || node->is_in_group("dirt")) return 2;
+		if (node->is_in_group("Grass") || node->is_in_group("grass") || node->is_in_group("Cesped") || node->is_in_group("cesped")) return 3;
+		if (node->is_in_group("Gravel") || node->is_in_group("gravel") || node->is_in_group("Grava") || node->is_in_group("grava")) return 4;
+		if (node->is_in_group("Sand") || node->is_in_group("sand") || node->is_in_group("Arena") || node->is_in_group("arena")) return 5;
+		if (node->is_in_group("Wall") || node->is_in_group("wall") || node->is_in_group("Barrier") || node->is_in_group("barrier") || node->is_in_group("Guardrail") || node->is_in_group("guardrail")) return 6;
+		if (node->is_in_group("Metal") || node->is_in_group("metal")) return 7;
+		if (node->is_in_group("Road") || node->is_in_group("road") || node->is_in_group("Track") || node->is_in_group("track") || node->is_in_group("Asphalt") || node->is_in_group("asphalt")) return 0;
+
+		// Fallback check by name
 		String name = node->get_name().to_lower();
 		if (name.contains("curb") || name.contains("kerb") || name.contains("piano")) return 1;
 		if (name.contains("dirt")) return 2;
@@ -336,13 +409,46 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) {
 	return 0; // Default Road
 }
 
-void F194RustVehicle::_physics_process(double delta) {
-	if (Engine::get_singleton()->is_editor_hint() || !sim_ptr_ || !fn_step_) {
+void F194RustVehicle::_integrate_forces(PhysicsDirectBodyState3D *p_state) {
+	solve_forces_for_state(p_state);
+}
+
+void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) {
+	if (Engine::get_singleton()->is_editor_hint() || !sim_ptr_ || !fn_solve_forces_ || !p_state) {
 		return;
 	}
 
-	// 1. Gather Driver Inputs
-	FfiVehicleInput input = {};
+	// 1. Extract 6-DOF transform, linear velocity, angular velocity, and delta time
+	Transform3D gt = p_state->get_transform();
+	Vector3 pos = gt.origin;
+	Quaternion rot = gt.basis.get_rotation_quaternion();
+	if (rot.is_finite() && rot.length_squared() > 1e-4) {
+		rot.normalize();
+	} else {
+		rot = Quaternion();
+	}
+
+	Vector3 lin_vel = p_state->get_linear_velocity();
+	Vector3 ang_vel = p_state->get_angular_velocity();
+	double dt = (double)p_state->get_step();
+
+	F90BodyKinematics kinematics = {};
+	kinematics.pos_x = pos.x;
+	kinematics.pos_y = pos.y;
+	kinematics.pos_z = pos.z;
+	kinematics.rot_quat_x = rot.x;
+	kinematics.rot_quat_y = rot.y;
+	kinematics.rot_quat_z = rot.z;
+	kinematics.rot_quat_w = rot.w;
+	kinematics.lin_vel_x = lin_vel.x;
+	kinematics.lin_vel_y = lin_vel.y;
+	kinematics.lin_vel_z = lin_vel.z;
+	kinematics.ang_vel_x = ang_vel.x;
+	kinematics.ang_vel_y = ang_vel.y;
+	kinematics.ang_vel_z = ang_vel.z;
+
+	// 2. Gather Driver Inputs
+	F90VehicleInput input = {};
 	if (enable_player_input_) {
 		Input *inp = Input::get_singleton();
 		input.throttle = inp ? inp->get_action_strength("Throttle") : 0.0;
@@ -359,93 +465,70 @@ void F194RustVehicle::_physics_process(double delta) {
 	}
 	input.gear_request = gear_request_;
 
-	// 2. Sample 12 RayCast3Ds in Godot
-	FfiTriRaycastSample samples[4] = {};
+	// 3. Sample 12 RayCast3Ds in Godot (global coordinates)
+	F90TriRaycastSample samples[4] = {};
 	for (int w = 0; w < 4; ++w) {
 		RayCast3D *r_in = raycasts_[w][0];
 		RayCast3D *r_mid = raycasts_[w][1];
 		RayCast3D *r_out = raycasts_[w][2];
 
-		// Inner
-		samples[w].inner.normal_y = 1.0;
-		samples[w].inner.distance = 0.65;
-		if (r_in) {
-			r_in->force_raycast_update();
-			if (r_in->is_colliding()) {
-				samples[w].inner.is_colliding = true;
-				Vector3 pt = r_in->get_collision_point();
-				Vector3 n = r_in->get_collision_normal();
-				samples[w].inner.distance = (pt - r_in->get_global_position()).length();
-				samples[w].inner.point_x = pt.x; samples[w].inner.point_y = pt.y; samples[w].inner.point_z = pt.z;
-				if (n.is_finite() && n.length_squared() > 1e-4) {
-					n.normalize();
-					samples[w].inner.normal_x = n.x; samples[w].inner.normal_y = n.y; samples[w].inner.normal_z = n.z;
-				}
-				samples[w].inner.surface_type = detect_surface_type(r_in);
-			}
-		}
+		auto sample_ray = [this](RayCast3D *ray, F90RaycastHit &hit) {
+			hit.is_colliding = false;
+			hit.distance = 0.65;
+			hit.point_x = 0.0;
+			hit.point_y = 0.0;
+			hit.point_z = 0.0;
+			hit.normal_x = 0.0;
+			hit.normal_y = 1.0;
+			hit.normal_z = 0.0;
+			hit.surface_type = 0;
 
-		// Center
-		samples[w].center.normal_y = 1.0;
-		samples[w].center.distance = 0.65;
-		if (r_mid) {
-			r_mid->force_raycast_update();
-			if (r_mid->is_colliding()) {
-				samples[w].center.is_colliding = true;
-				Vector3 pt = r_mid->get_collision_point();
-				Vector3 n = r_mid->get_collision_normal();
-				samples[w].center.distance = (pt - r_mid->get_global_position()).length();
-				samples[w].center.point_x = pt.x; samples[w].center.point_y = pt.y; samples[w].center.point_z = pt.z;
-				if (n.is_finite() && n.length_squared() > 1e-4) {
-					n.normalize();
-					samples[w].center.normal_x = n.x; samples[w].center.normal_y = n.y; samples[w].center.normal_z = n.z;
+			if (ray) {
+				ray->force_raycast_update();
+				if (ray->is_colliding()) {
+					hit.is_colliding = true;
+					Vector3 pt = ray->get_collision_point();
+					Vector3 n = ray->get_collision_normal();
+					hit.distance = (pt - ray->get_global_position()).length();
+					hit.point_x = pt.x;
+					hit.point_y = pt.y;
+					hit.point_z = pt.z;
+					if (n.is_finite() && n.length_squared() > 1e-4) {
+						n.normalize();
+						hit.normal_x = n.x;
+						hit.normal_y = n.y;
+						hit.normal_z = n.z;
+					}
+					hit.surface_type = detect_surface_type(ray);
 				}
-				samples[w].center.surface_type = detect_surface_type(r_mid);
 			}
-		}
+		};
 
-		// Outer
-		samples[w].outer.normal_y = 1.0;
-		samples[w].outer.distance = 0.65;
-		if (r_out) {
-			r_out->force_raycast_update();
-			if (r_out->is_colliding()) {
-				samples[w].outer.is_colliding = true;
-				Vector3 pt = r_out->get_collision_point();
-				Vector3 n = r_out->get_collision_normal();
-				samples[w].outer.distance = (pt - r_out->get_global_position()).length();
-				samples[w].outer.point_x = pt.x; samples[w].outer.point_y = pt.y; samples[w].outer.point_z = pt.z;
-				if (n.is_finite() && n.length_squared() > 1e-4) {
-					n.normalize();
-					samples[w].outer.normal_x = n.x; samples[w].outer.normal_y = n.y; samples[w].outer.normal_z = n.z;
-				}
-				samples[w].outer.surface_type = detect_surface_type(r_out);
-			}
-		}
+		sample_ray(r_in, samples[w].inner);
+		sample_ray(r_mid, samples[w].center);
+		sample_ray(r_out, samples[w].outer);
 	}
 
-	// 3. Step Deterministic Rust Physics Core
-	FfiTelemetryOutput telem;
-	fn_step_(sim_ptr_, &input, samples, delta, &telem);
+	// 4. Solve Forces via Rust C FFI
+	F90ForceTorqueOutput out_forces = {};
+	F90TelemetryOutput telem = {};
+	fn_solve_forces_(sim_ptr_, &kinematics, &input, samples, dt, &out_forces, &telem);
 
-	// 4. Update Godot 6-DOF Transform & Velocities
-	Vector3 new_pos(telem.pos_x, telem.pos_y, telem.pos_z);
-	Quaternion new_rot(telem.rot_quat_x, telem.rot_quat_y, telem.rot_quat_z, telem.rot_quat_w);
+	// 5. Apply Forces and Torques Directly (Godot integrates gravity and rigid motion)
+	Vector3 force(out_forces.force_x, out_forces.force_y, out_forces.force_z);
+	Vector3 torque(out_forces.torque_x, out_forces.torque_y, out_forces.torque_z);
 
-	if (new_rot.is_finite() && new_rot.length_squared() > 1e-4) {
-		new_rot.normalize();
-		Transform3D t(Basis(new_rot), new_pos);
-		if (t.is_finite()) {
-			set_global_transform(t);
-		}
-	} else if (new_pos.is_finite()) {
-		set_global_position(new_pos);
+	if (force.is_finite()) {
+		p_state->apply_central_force(force);
+	}
+	if (torque.is_finite()) {
+		p_state->apply_torque(torque);
 	}
 
-	lin_vel_ = Vector3(telem.lin_vel_x, telem.lin_vel_y, telem.lin_vel_z);
-	ang_vel_ = Vector3(telem.ang_vel_x, telem.ang_vel_y, telem.ang_vel_z);
+	// 6. Store Telemetry Variables
+	lin_vel_ = lin_vel;
+	ang_vel_ = ang_vel;
 
-	// 5. Store Telemetry Variables
 	speed_kmh_ = telem.speed_kmh;
 	speed_ms_ = telem.speed_kmh / 3.6;
 	motor_rpm_ = telem.rpm;
@@ -453,6 +536,7 @@ void F194RustVehicle::_physics_process(double delta) {
 	engine_torque_ = telem.engine_torque;
 	clutch_engagement_ = telem.clutch_engagement;
 	true_steering_amount_ = telem.steer;
+	steer_angle_rad_ = telem.steer_angle_rad;
 
 	lat_g_ = telem.lat_g;
 	long_g_ = telem.long_g;
@@ -473,8 +557,8 @@ void F194RustVehicle::_physics_process(double delta) {
 	wheel_slips_[2] = telem.rl_slip;
 	wheel_slips_[3] = telem.rr_slip;
 
-	// 6. Visual Animation of Wheel Meshes
-	update_wheel_visuals(delta);
+	// 7. Visual Animation of Wheel Meshes
+	update_wheel_visuals(dt);
 }
 
 void F194RustVehicle::update_wheel_visuals(double delta) {
@@ -487,10 +571,10 @@ void F194RustVehicle::update_wheel_visuals(double delta) {
 			continue;
 		}
 
-		// Vertical suspension displacement
+		// Vertical suspension displacement (resting compression nominal ~100mm)
 		double comp_m = std::isfinite(wheel_compressions_[w]) ? (wheel_compressions_[w] * 0.001) : 0.100;
 		double rest_y = wheel_base_positions_[w].y;
-		double visual_y = rest_y + (0.100 - comp_m); // spring resting compression 100mm
+		double visual_y = rest_y + (0.100 - comp_m);
 		Vector3 pos = w_node->get_position();
 		pos.y = visual_y;
 		if (pos.is_finite()) {
@@ -499,8 +583,8 @@ void F194RustVehicle::update_wheel_visuals(double delta) {
 
 		// Front steering and rolling rotations
 		double steer = 0.0;
-		if (w < 2 && std::isfinite(true_steering_amount_)) {
-			steer = true_steering_amount_ * 0.436332;
+		if (w < 2) {
+			steer = std::isfinite(steer_angle_rad_) ? steer_angle_rad_ : (true_steering_amount_ * 0.436332);
 		}
 		double angle = std::isfinite(wheel_angles_[w]) ? wheel_angles_[w] : 0.0;
 		w_node->set_rotation(Vector3(angle, steer, 0.0));
@@ -528,12 +612,69 @@ PackedFloat64Array F194RustVehicle::get_wheel_slips() const {
 	return arr;
 }
 
+double F194RustVehicle::get_vehicle_mass_value() const {
+	if (sim_ptr_ && fn_get_vehicle_mass_) {
+		return fn_get_vehicle_mass_(sim_ptr_);
+	}
+	return get_mass();
+}
+
+Vector3 F194RustVehicle::get_center_of_mass_local_value() const {
+	if (sim_ptr_ && fn_get_center_of_mass_local_) {
+		double x = 0.0, y = 0.0, z = 0.0;
+		fn_get_center_of_mass_local_(sim_ptr_, &x, &y, &z);
+		return Vector3(x, y, z);
+	}
+	return get_center_of_mass();
+}
+
+Vector3 F194RustVehicle::get_wheel_anchor_local_value(int p_wheel_idx) const {
+	if (p_wheel_idx < 0 || p_wheel_idx >= 4) {
+		return Vector3();
+	}
+	if (sim_ptr_ && fn_get_anchor_) {
+		double x = 0.0, y = 0.0, z = 0.0;
+		fn_get_anchor_(sim_ptr_, (uint32_t)p_wheel_idx, &x, &y, &z);
+		return Vector3(x, y, z);
+	}
+	return wheel_base_positions_[p_wheel_idx];
+}
+
+double F194RustVehicle::get_tri_ray_span_value(int p_wheel_idx) const {
+	if (p_wheel_idx < 0 || p_wheel_idx >= 4) {
+		return 0.12;
+	}
+	if (sim_ptr_ && fn_get_tri_span_) {
+		return fn_get_tri_span_(sim_ptr_, (uint32_t)p_wheel_idx);
+	}
+	return (p_wheel_idx < 2) ? (0.305 * 0.40) : (0.380 * 0.40);
+}
+
+double F194RustVehicle::get_ray_length_value(int p_wheel_idx) const {
+	if (p_wheel_idx < 0 || p_wheel_idx >= 4) {
+		return 0.65;
+	}
+	if (sim_ptr_ && fn_get_ray_length_) {
+		return fn_get_ray_length_(sim_ptr_, (uint32_t)p_wheel_idx);
+	}
+	return 0.65;
+}
+
+double F194RustVehicle::get_default_spawn_height_value() const {
+	if (sim_ptr_ && fn_get_default_spawn_height_) {
+		return fn_get_default_spawn_height_(sim_ptr_);
+	}
+	return 0.35;
+}
+
 void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 	if (sim_ptr_ && fn_reset_) {
 		fn_reset_(sim_ptr_, p_pos.x, p_pos.y, p_pos.z, p_yaw_rad);
 	}
-	set_global_position(p_pos);
-	set_global_rotation(Vector3(0.0, p_yaw_rad, 0.0));
+	Transform3D t(Basis(Vector3(0.0, 1.0, 0.0), p_yaw_rad), p_pos);
+	set_global_transform(t);
+	set_linear_velocity(Vector3());
+	set_angular_velocity(Vector3());
 	lin_vel_ = Vector3();
 	ang_vel_ = Vector3();
 }

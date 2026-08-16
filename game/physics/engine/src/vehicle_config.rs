@@ -2,7 +2,7 @@ use crate::types::{SurfaceType, Vec3, WheelIndex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Full vehicle configuration schema with canonical Jordan 197 defaults.
+/// Formula-90 vehicle configuration with GEVP-compatible suspension, tire and drivetrain semantics.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehicleConfig {
     pub vehicle_name: String,
@@ -402,10 +402,14 @@ impl VehicleConfig {
         }
     }
 
-    /// Helper to get nominal wheel hub local anchor position in vehicle space (-Z forward, +Y up, +X right).
+    /// Nominal suspension-ray origin in vehicle-local space (-Z forward, +Y up, +X right).
+    ///
+    /// Front and rear Y offsets intentionally differ when tire radii/suspension rest
+    /// lengths differ. This lets both axles start at their configured static compression
+    /// while sharing one chassis origin; the previous migration forced every hub to Y=0.
     pub fn wheel_anchor_local(&self, wheel: WheelIndex) -> Vec3 {
-        // CG is at (0,0,0). To balance moments in static equilibrium:
-        // front axle is at -(1 - w_f) * L, rear axle is at +w_f * L
+        // X/Z are expressed around the configured static center of mass so axle loads
+        // create the intended front/rear moment balance.
         let z = if wheel.is_front() {
             -(1.0 - self.front_weight_distribution) * self.wheelbase
         } else {
@@ -413,9 +417,21 @@ impl VehicleConfig {
         };
         let x = if wheel.is_front() {
             if wheel.is_right() { self.front_track * 0.5 } else { -self.front_track * 0.5 }
+        } else if wheel.is_right() {
+            self.rear_track * 0.5
         } else {
-            if wheel.is_right() { self.rear_track * 0.5 } else { -self.rear_track * 0.5 }
+            -self.rear_track * 0.5
         };
-        Vec3::new(x, 0.0, z)
+
+        let front_static_height = self.front_tire_radius
+            + self.front_spring_length * (1.0 - self.front_resting_ratio);
+        let rear_static_height = self.rear_tire_radius
+            + self.rear_spring_length * (1.0 - self.rear_resting_ratio);
+        let body_reference_height = front_static_height * self.front_weight_distribution
+            + rear_static_height * (1.0 - self.front_weight_distribution);
+        let axle_static_height = if wheel.is_front() { front_static_height } else { rear_static_height };
+        let y = axle_static_height - body_reference_height;
+
+        Vec3::new(x, y, z)
     }
 }

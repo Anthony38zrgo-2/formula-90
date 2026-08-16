@@ -1,6 +1,9 @@
 #pragma once
 
+#include "formula90s/vehicle/formula90_physics.h"
+
 #include <godot_cpp/classes/rigid_body3d.hpp>
+#include <godot_cpp/classes/physics_direct_body_state3d.hpp>
 #include <godot_cpp/classes/ray_cast3d.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -11,93 +14,41 @@
 
 namespace godot {
 
-struct FfiRaycastHit {
-	bool is_colliding;
-	double distance;
-	double point_x;
-	double point_y;
-	double point_z;
-	double normal_x;
-	double normal_y;
-	double normal_z;
-	uint32_t surface_type; // 0=Road, 1=Curb, 2=Dirt, 3=Grass, 4=Gravel, 5=Sand, 6=Wall, 7=Metal
-};
+// C-ABI type aliases matching formula90_physics.h
+using FfiRaycastHit = F90RaycastHit;
+using FfiTriRaycastSample = F90TriRaycastSample;
+using FfiVehicleInput = F90VehicleInput;
+using FfiBodyKinematics = F90BodyKinematics;
+using FfiForceTorqueOutput = F90ForceTorqueOutput;
+using FfiTelemetryOutput = F90TelemetryOutput;
 
-struct FfiTriRaycastSample {
-	FfiRaycastHit inner;
-	FfiRaycastHit center;
-	FfiRaycastHit outer;
-};
-
-struct FfiVehicleInput {
-	double throttle;
-	double steering;
-	double brake;
-	double handbrake;
-	double clutch;
-	int32_t gear_request; // -2 = None, -1 = Reverse, 0 = Neutral, 1..6 = Forward gears
-};
-
-struct FfiTelemetryOutput {
-	double sim_time;
-	double speed_kmh;
-	double rpm;
-	int32_t gear;
-	double engine_torque;
-	double clutch_engagement;
-	double throttle;
-	double brake;
-	double steer;
-
-	// Chassis 3D Pose
-	double pos_x;
-	double pos_y;
-	double pos_z;
-	double rot_quat_x;
-	double rot_quat_y;
-	double rot_quat_z;
-	double rot_quat_w;
-
-	// Chassis 3D Motion
-	double lin_vel_x;
-	double lin_vel_y;
-	double lin_vel_z;
-	double ang_vel_x;
-	double ang_vel_y;
-	double ang_vel_z;
-	double lat_g;
-	double long_g;
-	double vert_g;
-
-	// Wheel Compressions (mm)
-	double fl_comp_mm;
-	double fr_comp_mm;
-	double rl_comp_mm;
-	double rr_comp_mm;
-
-	// Wheel Spin Angular Velocities (rad/s)
-	double fl_spin;
-	double fr_spin;
-	double rl_spin;
-	double rr_spin;
-
-	// Wheel Slip Ratios
-	double fl_slip;
-	double fr_slip;
-	double rl_slip;
-	double rr_slip;
-
-	// Wheel Steer Angle (rad)
-	double steer_angle_rad;
-};
-
-// Rust FFI Function Pointers
+// Rust FFI Function Pointers (C-ABI)
+typedef void *(*FnPhysicsCreateDefault)(void);
 typedef void *(*FnPhysicsCreateWithPos)(double pos_x, double pos_y, double pos_z, double yaw_rad);
 typedef void (*FnPhysicsReset)(void *sim_ptr, double pos_x, double pos_y, double pos_z, double yaw_rad);
-typedef void (*FnPhysicsStep)(void *sim_ptr, const FfiVehicleInput *input_ptr, const FfiTriRaycastSample *samples_ptr, double dt, FfiTelemetryOutput *out_telem);
-typedef void (*FnPhysicsGetWheelAnchorLocal)(const void *sim_ptr, uint32_t wheel_idx, double *out_x, double *out_y, double *out_z);
-typedef double (*FnPhysicsGetTriRaySpan)(const void *sim_ptr, uint32_t wheel_idx);
-typedef void (*FnPhysicsDestroy)(void *sim_ptr);
+typedef void (*FnPhysicsSolveForces)(
+	void *sim_ptr,
+	const F90BodyKinematics *body_ptr,
+	const F90VehicleInput *input_ptr,
+	const F90TriRaycastSample samples_ptr[4],
+	double dt,
+	F90ForceTorqueOutput *out_forces,
+	F90TelemetryOutput *out_telem
+);
+typedef void (*FnPhysicsStep)(
+	void *sim_ptr,
+	const F90VehicleInput *input_ptr,
+	const F90TriRaycastSample samples_ptr[4],
+	double dt,
+	F90TelemetryOutput *out_telem
+);
+typedef void (*FnPhysicsGetWheelAnchorLocal)(void *sim, uint32_t wheel_idx, double *x, double *y, double *z);
+typedef double (*FnPhysicsGetTriRaySpan)(void *sim, uint32_t wheel_idx);
+typedef double (*FnPhysicsGetRayLength)(void *sim, uint32_t wheel_idx);
+typedef double (*FnPhysicsGetVehicleMass)(void *sim);
+typedef double (*FnPhysicsGetDefaultSpawnHeight)(void *sim);
+typedef void (*FnPhysicsGetCenterOfMassLocal)(void *sim, double *x, double *y, double *z);
+typedef void (*FnPhysicsDestroy)(void *sim);
 
 class F194RustVehicle : public RigidBody3D {
 	GDCLASS(F194RustVehicle, RigidBody3D)
@@ -107,11 +58,17 @@ private:
 	void *dll_handle_ = nullptr;
 
 	// FFI function pointers
+	FnPhysicsCreateDefault fn_create_default_ = nullptr;
 	FnPhysicsCreateWithPos fn_create_with_pos_ = nullptr;
 	FnPhysicsReset fn_reset_ = nullptr;
+	FnPhysicsSolveForces fn_solve_forces_ = nullptr;
 	FnPhysicsStep fn_step_ = nullptr;
 	FnPhysicsGetWheelAnchorLocal fn_get_anchor_ = nullptr;
 	FnPhysicsGetTriRaySpan fn_get_tri_span_ = nullptr;
+	FnPhysicsGetRayLength fn_get_ray_length_ = nullptr;
+	FnPhysicsGetVehicleMass fn_get_vehicle_mass_ = nullptr;
+	FnPhysicsGetDefaultSpawnHeight fn_get_default_spawn_height_ = nullptr;
+	FnPhysicsGetCenterOfMassLocal fn_get_center_of_mass_local_ = nullptr;
 	FnPhysicsDestroy fn_destroy_ = nullptr;
 
 	// Visual NodePaths
@@ -126,7 +83,7 @@ private:
 	Vector3 wheel_base_positions_[4];
 
 	// 12 RayCast3D children (3 per wheel: Inner, Center, Outer)
-	RayCast3D *raycasts_[4][3]; // [wheel 0..3][inner=0, center=1, outer=2]
+	RayCast3D *raycasts_[4][3] = {}; // [wheel 0..3][inner=0, center=1, outer=2]
 
 	// Player Inputs / Overrides
 	bool enable_player_input_ = true;
@@ -146,6 +103,7 @@ private:
 	double engine_torque_ = 0.0;
 	double clutch_engagement_ = 1.0;
 	double true_steering_amount_ = 0.0;
+	double steer_angle_rad_ = 0.0;
 
 	Vector3 lin_vel_ = Vector3();
 	Vector3 ang_vel_ = Vector3();
@@ -166,13 +124,15 @@ private:
 
 protected:
 	static void _bind_methods();
+	void _notification(int p_what);
 
 public:
 	F194RustVehicle();
 	~F194RustVehicle() override;
 
 	void _ready() override;
-	void _physics_process(double delta) override;
+	void _integrate_forces(PhysicsDirectBodyState3D *p_state) override;
+	void solve_forces_for_state(PhysicsDirectBodyState3D *p_state);
 	void _exit_tree() override;
 
 	// NodePath Getters/Setters
@@ -224,6 +184,7 @@ public:
 	double get_engine_torque() const { return engine_torque_; }
 	double get_clutch_engagement() const { return clutch_engagement_; }
 	double get_true_steering_amount() const { return true_steering_amount_; }
+	double get_steer_angle_rad() const { return steer_angle_rad_; }
 
 	double get_lat_g() const { return lat_g_; }
 	double get_long_g() const { return long_g_; }
@@ -236,6 +197,14 @@ public:
 	PackedFloat64Array get_wheel_spins() const;
 	PackedFloat64Array get_wheel_slips() const;
 
+	// Dimension & Anchor Queries
+	double get_vehicle_mass_value() const;
+	Vector3 get_center_of_mass_local_value() const;
+	Vector3 get_wheel_anchor_local_value(int p_wheel_idx) const;
+	double get_tri_ray_span_value(int p_wheel_idx) const;
+	double get_ray_length_value(int p_wheel_idx) const;
+	double get_default_spawn_height_value() const;
+
 	// Tuning panel properties (for handling_tuning_panel.gd compatibility)
 	double motor_drag_ = 0.006;
 	double max_torque_ = 340.0;
@@ -246,6 +215,13 @@ public:
 	double steering_exponent_ = 1.50;
 	double steering_speed_ = 4.25;
 	double countersteer_speed_ = 11.0;
+	double max_steering_angle_ = 0.436332;
+	double coefficient_of_drag_ = 0.78;
+	double frontal_area_ = 1.25;
+	double air_density_ = 1.225;
+	double idle_rpm_ = 4500.0;
+	double max_rpm_ = 17000.0;
+	double vehicle_mass_ = 505.0;
 
 	// Tuning Getters/Setters
 	void set_motor_drag(double v) { motor_drag_ = v; }
@@ -266,6 +242,20 @@ public:
 	double get_steering_speed() const { return steering_speed_; }
 	void set_countersteer_speed(double v) { countersteer_speed_ = v; }
 	double get_countersteer_speed() const { return countersteer_speed_; }
+	void set_max_steering_angle(double v) { max_steering_angle_ = v; }
+	double get_max_steering_angle() const { return max_steering_angle_; }
+	void set_coefficient_of_drag(double v) { coefficient_of_drag_ = v; }
+	double get_coefficient_of_drag() const { return coefficient_of_drag_; }
+	void set_frontal_area(double v) { frontal_area_ = v; }
+	double get_frontal_area() const { return frontal_area_; }
+	void set_air_density(double v) { air_density_ = v; }
+	double get_air_density() const { return air_density_; }
+	void set_idle_rpm(double v) { idle_rpm_ = v; }
+	double get_idle_rpm() const { return idle_rpm_; }
+	void set_max_rpm(double v) { max_rpm_ = v; }
+	double get_max_rpm() const { return max_rpm_; }
+	void set_vehicle_mass(double v) { vehicle_mass_ = v; set_mass(v); }
+	double get_vehicle_mass() const { return vehicle_mass_; }
 
 	void reset_vehicle(const Vector3 &p_pos, double p_yaw_rad);
 };

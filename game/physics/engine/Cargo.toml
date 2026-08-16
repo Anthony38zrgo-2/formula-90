@@ -2,7 +2,7 @@
 name = "vehicle_physics_engine"
 version = "0.1.0"
 edition = "2021"
-description = "Formula-90 vehicle physics simulation core: deterministic 6-DOF rigid body, tri-raycast suspension, brush tire dynamics, powertrain and telemetry (pure Rust, no Godot deps in the core)."
+description = "Formula-90 GEVP-aligned tri-raycast vehicle force solver: suspension, brush tires, drivetrain and telemetry with Godot RigidBody3D integration."
 license = "proprietary"
 
 [lib]
