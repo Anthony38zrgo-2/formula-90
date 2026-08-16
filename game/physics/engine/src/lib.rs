@@ -1,4 +1,5 @@
 pub mod aero;
+pub mod ffi;
 pub mod powertrain;
 pub mod simulation;
 pub mod suspension;
@@ -8,6 +9,7 @@ pub mod types;
 pub mod vehicle_config;
 
 pub use aero::*;
+pub use ffi::*;
 pub use powertrain::*;
 pub use simulation::*;
 pub use suspension::*;

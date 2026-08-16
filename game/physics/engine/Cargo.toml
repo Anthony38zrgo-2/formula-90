@@ -8,6 +8,7 @@ license = "proprietary"
 [lib]
 name = "vehicle_physics_engine"
 path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
 
 [[bin]]
 name = "physics_cli"

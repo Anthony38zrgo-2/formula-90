@@ -1,0 +1,76 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_rust_vehicle.gd" id="1_rust_vehicle"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_chassis_geometry.glb" id="2_chassis"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_front_geometry.glb" id="3_front"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_rear_geometry.glb" id="4_rear"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_external_albedo_binder.gd" id="5_binder"]
+[ext_resource type="Script" path="res://addons/formula90s/scripts/audio/vehicle_audio_controller.gd" id="6_audio"]
+
+[sub_resource type="BoxShape3D" id="Box_tub"]
+size = Vector3(1.35, 0.4, 2.8)
+
+[sub_resource type="BoxShape3D" id="Box_nose"]
+size = Vector3(0.6, 0.24, 1.6)
+
+[sub_resource type="BoxShape3D" id="Box_rear"]
+size = Vector3(1.2, 0.32, 1.1)
+
+[node name="F194Rust" type="Node3D"]
+
+[node name="VehicleAudio" type="Node" parent="." node_paths=PackedStringArray("vehicle")]
+script = ExtResource("6_audio")
+vehicle = NodePath("../VehicleRigidBody")
+
+[node name="VehicleRigidBody" type="RigidBody3D" parent="." node_paths=PackedStringArray("chassis_node", "front_left_wheel_node", "front_right_wheel_node", "rear_left_wheel_node", "rear_right_wheel_node")]
+mass = 505.0
+gravity_scale = 0.0
+script = ExtResource("1_rust_vehicle")
+chassis_node = NodePath("ChassisVisual")
+front_left_wheel_node = NodePath("FrontLeftWheel")
+front_right_wheel_node = NodePath("FrontRightWheel")
+rear_left_wheel_node = NodePath("RearLeftWheel")
+rear_right_wheel_node = NodePath("RearRightWheel")
+
+[node name="ChassisVisual" parent="VehicleRigidBody" instance=ExtResource("2_chassis")]
+
+[node name="ExternalAlbedoBinder" type="Node" parent="VehicleRigidBody"]
+script = ExtResource("5_binder")
+
+[node name="CollisionTub" type="CollisionShape3D" parent="VehicleRigidBody"]
+position = Vector3(0, 0.02, 0.0464)
+shape = SubResource("Box_tub")
+
+[node name="CollisionNose" type="CollisionShape3D" parent="VehicleRigidBody"]
+position = Vector3(0, -0.08, -1.7036)
+shape = SubResource("Box_nose")
+
+[node name="CollisionRear" type="CollisionShape3D" parent="VehicleRigidBody"]
+position = Vector3(0, 0, 1.5464)
+shape = SubResource("Box_rear")
+
+[node name="FrontLeftWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(-0.79625, 0.144, -1.60636)
+
+[node name="Visual" parent="VehicleRigidBody/FrontLeftWheel" instance=ExtResource("3_front")]
+
+[node name="FrontRightWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(0.79625, 0.144, -1.60636)
+
+[node name="Orientation" type="Node3D" parent="VehicleRigidBody/FrontRightWheel"]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="VehicleRigidBody/FrontRightWheel/Orientation" instance=ExtResource("3_front")]
+
+[node name="RearLeftWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(-0.7623, 0.186, 1.31429)
+
+[node name="Visual" parent="VehicleRigidBody/RearLeftWheel" instance=ExtResource("4_rear")]
+
+[node name="RearRightWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(0.7623, 0.186, 1.31429)
+
+[node name="Orientation" type="Node3D" parent="VehicleRigidBody/RearRightWheel"]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="VehicleRigidBody/RearRightWheel/Orientation" instance=ExtResource("4_rear")]
