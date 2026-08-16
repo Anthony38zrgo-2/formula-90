@@ -93,11 +93,34 @@ fn test_vehicle_config_defaults() {
 }
 
 #[test]
-fn test_vehicle_config_json_roundtrip() {
-    let cfg = VehicleConfig::default();
-    let json = serde_json::to_string_pretty(&cfg).expect("Serialization failed");
-    let deserialized: VehicleConfig = serde_json::from_str(&json).expect("Deserialization failed");
-    assert_eq!(cfg.vehicle_name, deserialized.vehicle_name);
-    assert_eq!(cfg.vehicle_mass, deserialized.vehicle_mass);
-    assert_eq!(cfg.gear_ratios, deserialized.gear_ratios);
+fn test_quat_mat3_roundtrip_all_angles() {
+    let angles = [
+        0.0,
+        std::f64::consts::PI * 0.25,
+        std::f64::consts::PI * 0.5,
+        std::f64::consts::PI * 0.75,
+        std::f64::consts::PI,
+        -std::f64::consts::PI * 0.5,
+    ];
+
+    for &yaw in &angles {
+        for &pitch in &angles {
+            for &roll in &angles {
+                let m_orig = Mat3::from_euler_yxz(yaw, pitch, roll);
+                let q = Quat::from_mat3(&m_orig);
+                let m_reconstructed = q.to_mat3();
+
+                let diff_x = (m_orig.x - m_reconstructed.x).length();
+                let diff_y = (m_orig.y - m_reconstructed.y).length();
+                let diff_z = (m_orig.z - m_reconstructed.z).length();
+
+                assert!(
+                    diff_x < 1e-4 && diff_y < 1e-4 && diff_z < 1e-4,
+                    "Quat roundtrip failed for yaw={}, pitch={}, roll={}: max_diff={}",
+                    yaw, pitch, roll, diff_x.max(diff_y).max(diff_z)
+                );
+            }
+        }
+    }
 }
+

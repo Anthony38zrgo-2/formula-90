@@ -24,11 +24,16 @@ impl AeroForces {
     /// Compute aerodynamic loads from vehicle velocity in chassis local frame.
     /// local_velocity: +X = right, +Y = up, -Z = forward (Godot convention).
     pub fn calculate(config: &VehicleConfig, local_velocity: Vec3) -> Self {
-        let forward_speed = (-local_velocity.z).max(0.0);
-        let q = 0.5 * config.air_density * forward_speed * forward_speed; // Dynamic pressure
+        let forward_speed = -local_velocity.z;
+        let speed_sq = forward_speed * forward_speed;
+        let q = 0.5 * config.air_density * speed_sq; // Dynamic pressure
 
-        let drag_force = q * config.coefficient_of_drag * config.frontal_area;
-        let total_downforce = q * config.coefficient_of_downforce * config.frontal_area;
+        let drag_force = q * config.coefficient_of_drag * config.frontal_area * forward_speed.signum();
+        let total_downforce = if forward_speed > 0.0 {
+            q * config.coefficient_of_downforce * config.frontal_area
+        } else {
+            0.0
+        };
 
         let front_downforce = total_downforce * config.aero_balance_front;
         let rear_downforce = total_downforce * (1.0 - config.aero_balance_front);

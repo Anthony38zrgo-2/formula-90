@@ -396,18 +396,17 @@ impl Transform3D {
 }
 
 /// Surface types for traction, rolling resistance and acoustics.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum SurfaceType {
+    #[default]
     Road,
     Curb,
     Dirt,
     Grass,
-}
-
-impl Default for SurfaceType {
-    fn default() -> Self {
-        Self::Road
-    }
+    Gravel,
+    Sand,
+    Wall,
+    Metal,
 }
 
 /// Wheel index enumeration (FL=0, FR=1, RL=2, RR=3).
@@ -481,21 +480,11 @@ impl Default for RaycastHit {
 }
 
 /// Tri-Raycast sample containing 3 parallel transverse rays (Inner, Center, Outer).
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
 pub struct TriRaycastSample {
     pub inner: RaycastHit,
     pub center: RaycastHit,
     pub outer: RaycastHit,
-}
-
-impl Default for TriRaycastSample {
-    fn default() -> Self {
-        Self {
-            inner: RaycastHit::default(),
-            center: RaycastHit::default(),
-            outer: RaycastHit::default(),
-        }
-    }
 }
 
 impl TriRaycastSample {

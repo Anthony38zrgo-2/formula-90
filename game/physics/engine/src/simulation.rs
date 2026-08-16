@@ -96,7 +96,7 @@ impl VehicleSimulator {
             st.tires.wheels[2].spin,
             st.tires.wheels[3].spin,
         ];
-        st.powertrain.step(cfg, input, &wheel_spins, dt);
+        st.powertrain.step(cfg, input, &wheel_spins, forward_speed, dt);
 
         // 5. Step 3-Raycast Suspension
         st.suspension.step(cfg, samples, dt);
@@ -109,12 +109,17 @@ impl VehicleSimulator {
         let drag_world = basis.transform_vector(Vec3::new(0.0, 0.0, st.aero.drag_force)); // opposes forward motion
         total_force_world += drag_world;
 
+        // Apply non-linear exponent curve to smoothed steer input
+        let steer_sign = st.steer_input_smoothed.signum();
+        let steer_mag = st.steer_input_smoothed.abs().powf(cfg.steering_exponent);
+        let base_steer_angle = steer_sign * steer_mag * cfg.max_steering_angle;
+
         for i in 0..4 {
             let wheel = WheelIndex::ALL[i];
             let steer_angle = if wheel.is_front() {
-                st.steer_input_smoothed * cfg.front_steering_ratio
+                base_steer_angle * cfg.front_steering_ratio
             } else {
-                st.steer_input_smoothed * cfg.rear_steering_ratio
+                base_steer_angle * cfg.rear_steering_ratio
             };
             st.tires.wheels[i].steer_angle_rad = steer_angle;
 
@@ -208,7 +213,8 @@ impl VehicleSimulator {
 
         // Angular velocity & Orientation integration
         st.angular_velocity += st.angular_acceleration * dt;
-        st.orientation = st.orientation.integrate_angular_velocity(st.angular_velocity, dt);
+        let omega_body = basis.inverse_transform_vector(st.angular_velocity);
+        st.orientation = st.orientation.integrate_angular_velocity(omega_body, dt);
         st.transform.basis = st.orientation.to_mat3();
 
         // 8. Produce Telemetry Frame
@@ -244,13 +250,7 @@ impl VehicleSimulator {
         };
 
         let steer_diff = steer_target - st.steer_input_smoothed;
-        st.steer_input_smoothed += steer_diff.clamp(-rate * dt, rate * dt);
-
-        // Exponent curve
-        let steer_sign = st.steer_input_smoothed.signum();
-        let steer_mag = st.steer_input_smoothed.abs().powf(cfg.steering_exponent);
-        let effective_steer = steer_sign * steer_mag * cfg.max_steering_angle;
-        st.steer_input_smoothed = effective_steer;
+        st.steer_input_smoothed = (st.steer_input_smoothed + steer_diff.clamp(-rate * dt, rate * dt)).clamp(-1.0, 1.0);
 
         // Throttle & Brake smoothing
         st.throttle_input_smoothed = input.throttle.clamp(0.0, 1.0);

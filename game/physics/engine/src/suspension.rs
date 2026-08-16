@@ -87,9 +87,8 @@ impl SuspensionSystem {
         dt: f64,
     ) {
         // 1. Process individual wheel tri-raycast samples and spring compression
-        for i in 0..4 {
-            let wheel = WheelIndex::ALL[i];
-            self.process_wheel_compression(config, wheel, &samples[i], dt);
+        for (&wheel, sample) in WheelIndex::ALL.iter().zip(samples.iter()) {
+            self.process_wheel_compression(config, wheel, sample, dt);
         }
 
         // 2. Process anti-roll bar (ARB) coupling and damping forces

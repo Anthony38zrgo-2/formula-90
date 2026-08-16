@@ -43,10 +43,11 @@ impl PowertrainState {
         config: &VehicleConfig,
         input: &VehicleInput,
         wheel_angular_velocities: &[f64; 4], // rad/s for [FL, FR, RL, RR]
+        forward_speed_m_s: f64,
         dt: f64,
     ) {
         // 1. Gear shifting logic
-        self.process_shifting(config, input, wheel_angular_velocities, dt);
+        self.process_shifting(config, input, wheel_angular_velocities, forward_speed_m_s, dt);
 
         // 2. Compute engine RPM & output torque
         self.process_engine(config, input, wheel_angular_velocities, dt);
@@ -63,14 +64,27 @@ impl PowertrainState {
         config: &VehicleConfig,
         input: &VehicleInput,
         wheel_speeds: &[f64; 4],
+        _forward_speed_m_s: f64,
         dt: f64,
     ) {
+        let driven_tire_radius = if config.front_torque_split > 0.5 {
+            config.front_tire_radius
+        } else {
+            config.rear_tire_radius
+        };
+        let driven_avg_spin = if config.front_torque_split > 0.5 {
+            (wheel_speeds[0] + wheel_speeds[1]) * 0.5
+        } else {
+            (wheel_speeds[2] + wheel_speeds[3]) * 0.5
+        };
+
         if self.shift_timer > 0.0 {
             self.shift_timer -= dt;
-            self.clutch_engagement = (1.0 - (self.shift_timer / config.shift_time)).clamp(0.0, 1.0);
             if self.shift_timer <= 0.0 {
                 self.current_gear = self.target_gear;
-                self.clutch_engagement = 1.0;
+                let ratio = self.get_current_gear_ratio(config);
+                let synced_rpm = (driven_avg_spin * ratio.abs() * config.final_drive * (60.0 / (2.0 * std::f64::consts::PI))).max(config.idle_rpm);
+                self.rpm = synced_rpm;
             }
             return;
         }
@@ -84,25 +98,24 @@ impl PowertrainState {
                 desired_gear = req;
             }
         } else if config.automatic_transmission {
-            // Automatic gear selection
-            let rear_avg_speed = (wheel_speeds[2] + wheel_speeds[3]) * 0.5;
-            let wheel_speed_kmh = rear_avg_speed * config.rear_tire_radius * 3.6;
+            // Automatic gear selection based on ideal gear RPM from chassis speed
+            let real_wheel_speed_kmh = driven_avg_spin * driven_tire_radius * 3.6;
 
             if self.current_gear > 0 {
                 let max_gear = config.gear_ratios.len() as i8;
-                // Upshift at 92% of max RPM
-                if self.rpm > config.max_rpm * 0.92 && self.current_gear < max_gear {
+                // Upshift when engine is high AND vehicle road speed supports next gear
+                if self.rpm > config.max_rpm * 0.90 && self.current_gear < max_gear {
                     desired_gear = self.current_gear + 1;
                 }
-                // Downshift at 50% of max RPM (prevent lugging)
-                else if self.rpm < config.max_rpm * 0.48 && self.current_gear > 1 {
+                // Downshift if RPM drops near idle
+                else if self.rpm < (config.idle_rpm + 800.0) && self.current_gear > 1 {
                     desired_gear = self.current_gear - 1;
                 }
-                // Auto-reverse if reversing with brake
-                if wheel_speed_kmh < -1.0 && input.brake > 0.5 && self.current_gear == 1 {
+                // Auto-reverse if stationary/reversing with brake
+                if real_wheel_speed_kmh < -1.0 && input.brake > 0.5 && self.current_gear == 1 {
                     desired_gear = -1;
                 }
-            } else if self.current_gear == -1 && wheel_speed_kmh > 1.0 && input.throttle > 0.1 {
+            } else if self.current_gear == -1 && real_wheel_speed_kmh > 1.0 && input.throttle > 0.1 {
                 desired_gear = 1;
             }
         }
@@ -110,7 +123,6 @@ impl PowertrainState {
         if desired_gear != self.current_gear {
             self.target_gear = desired_gear;
             self.shift_timer = config.shift_time;
-            self.clutch_engagement = 0.0;
         }
     }
 
@@ -131,18 +143,42 @@ impl PowertrainState {
             (wheel_speeds[2] + wheel_speeds[3]) * 0.5
         };
 
-        let target_rpm_from_wheels = (driven_axle_speed * effective_ratio * 60.0 / (2.0 * std::f64::consts::PI)).abs();
+        let target_rpm_from_wheels = (driven_axle_speed * effective_ratio * (60.0 / (2.0 * std::f64::consts::PI))).abs();
 
-        if self.current_gear == 0 || self.clutch_engagement < 0.2 {
-            // Free revving in neutral or clutch disengaged
-            let net_torque = (input.throttle * config.max_torque) - ((self.rpm - config.idle_rpm) * 0.05);
-            let rpm_accel = (net_torque / config.motor_moment) * (60.0 / (2.0 * std::f64::consts::PI));
-            self.rpm = (self.rpm + rpm_accel * dt).clamp(config.idle_rpm, config.max_rpm + 500.0);
+        let throttle = input.throttle.clamp(0.0, 1.0);
+        let rpm_span = (config.max_rpm - config.idle_rpm).max(1.0);
+        let normalized_rpm = ((self.rpm - config.idle_rpm) / rpm_span).clamp(0.0, 1.0);
+        let torque_factor = config.evaluate_torque_curve(normalized_rpm);
+        let raw_motor_torque = torque_factor * config.max_torque * throttle;
+        let motor_drag = (self.rpm / config.max_rpm) * (config.max_torque * 0.15);
+
+        // Clutch engagement modulation (launch slipping only in 1st gear / reverse at standstill)
+        let clutch_out_rpm = config.idle_rpm * 1.6; // Launch bite threshold (~5600 RPM)
+        let shift_factor = if self.shift_timer > 0.0 {
+            (1.0 - (self.shift_timer / config.shift_time.max(1e-4))).clamp(0.0, 1.0)
         } else {
-            // Clutch engaged: blend wheel speed with engine inertia
+            1.0
+        };
+
+        let bite_factor = if self.current_gear == 0 {
+            0.0
+        } else if (self.current_gear == 1 || self.current_gear == -1) && target_rpm_from_wheels < clutch_out_rpm {
+            ((self.rpm - config.idle_rpm) / (clutch_out_rpm - config.idle_rpm).max(1.0)).clamp(0.0, 1.0)
+        } else {
+            1.0
+        };
+        self.clutch_engagement = bite_factor * shift_factor * (1.0 - input.clutch.clamp(0.0, 1.0));
+
+        // Direct coupling when clutch is engaged
+        if self.clutch_engagement >= 0.85 && self.current_gear != 0 {
             let blended_rpm = target_rpm_from_wheels.max(config.idle_rpm);
             let diff = blended_rpm - self.rpm;
-            self.rpm = (self.rpm + diff * (self.clutch_engagement * 20.0 * dt).min(1.0)).clamp(config.idle_rpm, config.max_rpm + 500.0);
+            self.rpm = (self.rpm + diff * (30.0 * dt).min(1.0)).clamp(config.idle_rpm, config.max_rpm + 500.0);
+        } else {
+            let clutch_load = self.clutch_engagement * (raw_motor_torque * 0.85);
+            let net_torque = raw_motor_torque - motor_drag - clutch_load;
+            let rpm_accel = (net_torque / config.motor_moment) * (60.0 / (2.0 * std::f64::consts::PI));
+            self.rpm = (self.rpm + rpm_accel * dt).clamp(config.idle_rpm, config.max_rpm + 500.0);
         }
 
         // Rev limiter
@@ -151,9 +187,7 @@ impl PowertrainState {
             self.engine_torque = 0.0;
         } else {
             self.is_rev_limited = false;
-            let normalized_rpm = ((self.rpm - config.idle_rpm) / (config.max_rpm - config.idle_rpm)).clamp(0.0, 1.0);
-            let torque_curve_factor = config.evaluate_torque_curve(normalized_rpm);
-            self.engine_torque = torque_curve_factor * config.max_torque * input.throttle.clamp(0.0, 1.0);
+            self.engine_torque = raw_motor_torque;
         }
     }
 
@@ -180,7 +214,7 @@ impl PowertrainState {
         &mut self,
         config: &VehicleConfig,
         input: &VehicleInput,
-        _wheel_speeds: &[f64; 4],
+        wheel_speeds: &[f64; 4],
         dt: f64,
     ) {
         let total_brake_torque = input.brake.clamp(0.0, 1.0) * config.max_brake_torque;
@@ -189,6 +223,17 @@ impl PowertrainState {
 
         // Handbrake adds directly to rear wheels
         let handbrake_torque = input.handbrake.clamp(0.0, 1.0) * config.max_brake_torque * 0.8;
+
+        // ABS processing
+        if config.enable_abs && input.brake > 0.1 {
+            let avg_speed = (wheel_speeds[0].abs() + wheel_speeds[1].abs() + wheel_speeds[2].abs() + wheel_speeds[3].abs()) * 0.25;
+            for (i, speed) in wheel_speeds.iter().enumerate().take(4) {
+                let slip_diff = avg_speed - speed.abs();
+                if slip_diff > config.abs_spin_diff_threshold && self.abs_timers[i] <= 0.0 {
+                    self.abs_timers[i] = config.abs_pulse_time;
+                }
+            }
+        }
 
         for i in 0..4 {
             if self.abs_timers[i] > 0.0 {

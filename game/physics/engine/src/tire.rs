@@ -58,6 +58,7 @@ impl TireSystem {
 
     /// Step tire dynamics for a wheel.
     /// local_velocity: velocity of wheel hub in wheel plane (+X = right, +Y = up, -Z = forward in Godot convention).
+    #[allow(clippy::too_many_arguments)]
     pub fn step_wheel(
         &mut self,
         config: &VehicleConfig,
@@ -149,6 +150,14 @@ impl TireSystem {
             state.lateral_force = force_comb * (sigma_y / sigma_comb.max(1e-4));
         }
 
+        // Tractive & rolling force limit based on drive torque and rolling inertia (GEVP parity)
+        if brake_torque_nm <= 10.0 {
+            let inertia_force = (state.spin_velocity_diff.abs() * state.wheel_moment) / (tire_radius * tire_radius * dt.max(1e-4));
+            let drive_force = drive_torque_nm.abs() / tire_radius;
+            let max_avail_force = drive_force.max(inertia_force).min(f_max);
+            state.longitudinal_force = state.longitudinal_force.clamp(-max_avail_force, max_avail_force);
+        }
+
         // Aligning torque (self-centering pneumatic trail)
         let trail = contact_patch * 0.167 * (1.0 - (sigma_comb / (3.0 * crit_deflection)).min(1.0));
         state.aligning_torque = -state.lateral_force * trail;
@@ -162,20 +171,48 @@ impl TireSystem {
         }
 
         // 6. Wheel rotational dynamics integration
-        let reaction_torque = state.longitudinal_force * tire_radius;
-        let mut net_torque = drive_torque_nm - reaction_torque;
-
-        if state.spin.abs() > 0.1 {
-            net_torque -= brake_torque_nm * state.spin.signum();
-        } else if brake_torque_nm > net_torque.abs() {
-            // Brake locks wheel near zero speed
-            state.spin = 0.0;
-            net_torque = 0.0;
+        let is_driven = drive_torque_nm.abs() > 1e-3;
+        let reflected_motor_inertia = if is_driven {
+            let ratio = 2.5 * config.final_drive;
+            config.motor_moment * (ratio * ratio) * 0.5
         } else {
-            net_torque -= brake_torque_nm * net_torque.signum();
-        }
+            0.0
+        };
+        let total_wheel_inertia = state.wheel_moment + reflected_motor_inertia;
 
-        let spin_accel = net_torque / state.wheel_moment;
-        state.spin += spin_accel * dt;
+        let mut net_torque = drive_torque_nm;
+
+        if is_driven {
+            if state.spin.abs() > 0.01 {
+                net_torque -= brake_torque_nm * state.spin.signum();
+            } else if drive_torque_nm.abs() <= brake_torque_nm {
+                net_torque = 0.0;
+            }
+            let prev_spin = state.spin;
+            let spin_accel = net_torque / total_wheel_inertia;
+            let mut new_spin = state.spin + spin_accel * dt;
+
+            // Dissipative braking: brakes cannot reverse wheel rotation direction
+            if prev_spin != 0.0 && prev_spin.signum() != new_spin.signum() && brake_torque_nm > drive_torque_nm.abs() {
+                new_spin = 0.0;
+            }
+            state.spin = new_spin;
+        } else {
+            // Free-rolling wheel driven by road contact
+            if brake_torque_nm > 10.0 {
+                // Braking applied to non-driven wheel
+                let prev_spin = state.spin;
+                let brake_accel = (brake_torque_nm / state.wheel_moment) * state.spin.signum();
+                let mut new_spin = state.spin - brake_accel * dt;
+                if prev_spin != 0.0 && prev_spin.signum() != new_spin.signum() {
+                    new_spin = 0.0;
+                }
+                state.spin = new_spin;
+            } else {
+                // Free rolling: spins with road contact
+                let ideal_spin = v_forward / tire_radius;
+                state.spin = ideal_spin;
+            }
+        }
     }
 }

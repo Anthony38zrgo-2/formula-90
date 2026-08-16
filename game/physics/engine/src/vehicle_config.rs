@@ -179,7 +179,7 @@ impl VehicleConfig {
             front_bump_stop_multiplier: 2.2,
 
             // Suspension (Rear)
-            rear_spring_length: 0.120,
+            rear_spring_length: 0.100,
             rear_resting_ratio: 0.500,
             rear_damping_ratio: 0.85,
             rear_bump_damp_multiplier: 1.3,
@@ -281,8 +281,13 @@ impl VehicleConfig {
 
     /// Helper to get nominal wheel hub local anchor position in vehicle space (-Z forward, +Y up, +X right).
     pub fn wheel_anchor_local(&self, wheel: WheelIndex) -> Vec3 {
-        let half_wheelbase = self.wheelbase * 0.5;
-        let z = if wheel.is_front() { -half_wheelbase } else { half_wheelbase };
+        // CG is at (0,0,0). To balance moments in static equilibrium:
+        // front axle is at -(1 - w_f) * L, rear axle is at +w_f * L
+        let z = if wheel.is_front() {
+            -(1.0 - self.front_weight_distribution) * self.wheelbase
+        } else {
+            self.front_weight_distribution * self.wheelbase
+        };
         let x = if wheel.is_front() {
             if wheel.is_right() { self.front_track * 0.5 } else { -self.front_track * 0.5 }
         } else {
