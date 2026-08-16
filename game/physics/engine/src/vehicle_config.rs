@@ -96,6 +96,34 @@ pub struct VehicleConfig {
     pub aero_split_diffuser: f64,
     pub aero_split_rear: f64,
     pub air_density: f64,
+
+    // Progressive Aerodynamic Extensions (F1-94 canon, Jordan legacy stub uses same defaults)
+    #[serde(default = "default_aero_lag_tau")]
+    pub aero_lag_tau: f64,
+    #[serde(default = "default_aero_blend_min_speed")]
+    pub aero_blend_min_speed: f64,
+    #[serde(default = "default_aero_blend_full_speed")]
+    pub aero_blend_full_speed: f64,
+    #[serde(default = "default_aero_yaw_decay_exponent")]
+    pub aero_yaw_decay_exponent: f64,
+    #[serde(default = "default_aero_flex_coefficient")]
+    pub aero_flex_coefficient: f64,
+}
+
+fn default_aero_lag_tau() -> f64 {
+    0.048
+}
+fn default_aero_blend_min_speed() -> f64 {
+    4.167
+}
+fn default_aero_blend_full_speed() -> f64 {
+    27.778
+}
+fn default_aero_yaw_decay_exponent() -> f64 {
+    1.30
+}
+fn default_aero_flex_coefficient() -> f64 {
+    0.0012
 }
 
 impl Default for VehicleConfig {
@@ -229,10 +257,17 @@ impl VehicleConfig {
             aero_split_diffuser: 0.60,
             aero_split_rear: 0.25,
             air_density: 1.225,
+
+            // Progressive Aero (Pillars A-D)
+            aero_lag_tau: default_aero_lag_tau(),
+            aero_blend_min_speed: default_aero_blend_min_speed(),
+            aero_blend_full_speed: default_aero_blend_full_speed(),
+            aero_yaw_decay_exponent: default_aero_yaw_decay_exponent(),
+            aero_flex_coefficient: default_aero_flex_coefficient(),
         }
     }
 
-    /// Canonical Jordan 197 specification.
+    /// Canonical Jordan 197 specification (legacy — aero extensions use same defaults, not validated).
     pub fn jordan_197_canonical() -> Self {
         let mut surface_friction = HashMap::new();
         surface_friction.insert(SurfaceType::Road, 2.0);
@@ -343,7 +378,7 @@ impl VehicleConfig {
             surface_stiffness,
             surface_rolling_resistance,
 
-            // Aerodynamics
+            // Aerodynamics (legacy splits preserved)
             coefficient_of_drag: 0.75,
             frontal_area: 1.20,
             coefficient_of_downforce: 1.995,
@@ -351,6 +386,13 @@ impl VehicleConfig {
             aero_split_diffuser: 0.60,
             aero_split_rear: 0.20,
             air_density: 1.225,
+
+            // Progressive Aero (stub defaults, not validated for Jordan)
+            aero_lag_tau: default_aero_lag_tau(),
+            aero_blend_min_speed: default_aero_blend_min_speed(),
+            aero_blend_full_speed: default_aero_blend_full_speed(),
+            aero_yaw_decay_exponent: default_aero_yaw_decay_exponent(),
+            aero_flex_coefficient: default_aero_flex_coefficient(),
         }
     }
 

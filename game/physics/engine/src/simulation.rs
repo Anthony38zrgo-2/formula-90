@@ -141,7 +141,7 @@ impl VehicleSimulator {
             gear_request: input.gear_request,
         };
 
-        st.aero = AeroForces::calculate(cfg, local_velocity);
+        st.aero.step(cfg, local_velocity, dt);
         st.suspension.step(cfg, samples, dt);
 
         let wheel_spins = [
