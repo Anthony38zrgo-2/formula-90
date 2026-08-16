@@ -151,7 +151,8 @@ impl SuspensionSystem {
 
             if sample.inner.is_colliding && sample.outer.is_colliding && lateral_span > 1e-4 {
                 let delta_h = sample.inner.distance - sample.outer.distance;
-                let ground_incline = (delta_h / lateral_span).atan();
+                let mut ground_incline = (delta_h / lateral_span).atan();
+                if wheel.is_right() { ground_incline = -ground_incline; }
                 state.dynamic_camber = base_camber + ground_incline;
             } else {
                 state.dynamic_camber = base_camber;

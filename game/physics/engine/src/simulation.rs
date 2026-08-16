@@ -108,11 +108,22 @@ impl VehicleSimulator {
         // Aero downforce & drag forces
         let drag_world = basis.transform_vector(Vec3::new(0.0, 0.0, st.aero.drag_force)); // opposes forward motion
         total_force_world += drag_world;
+        total_force_world += Vec3::new(0.0, -st.aero.total_downforce, 0.0);
+
+        // Aero pitch moment from front/rear downforce split around CG
+        let pitch_arm_front = -(1.0 - cfg.front_weight_distribution) * cfg.wheelbase;
+        let pitch_arm_rear = cfg.front_weight_distribution * cfg.wheelbase;
+        let tau_x = st.aero.front_downforce * pitch_arm_front + st.aero.rear_downforce * pitch_arm_rear;
+        total_torque_world += basis.transform_vector(Vec3::new(tau_x, 0.0, 0.0));
 
         // Apply non-linear exponent curve to smoothed steer input
         let steer_sign = st.steer_input_smoothed.signum();
         let steer_mag = st.steer_input_smoothed.abs().powf(cfg.steering_exponent);
         let base_steer_angle = steer_sign * steer_mag * cfg.max_steering_angle;
+
+        // Dynamic reflected motor inertia per active gear (Spec Item 3)
+        let effective_gear_ratio = st.powertrain.get_current_gear_ratio(cfg);
+        let clutch_engagement = st.powertrain.clutch_engagement;
 
         for i in 0..4 {
             let wheel = WheelIndex::ALL[i];
@@ -158,6 +169,8 @@ impl VehicleSimulator {
                 brake_torque,
                 hub_vel_wheel,
                 dt,
+                effective_gear_ratio,
+                clutch_engagement,
             );
 
             // Transform tire forces back to world frame
@@ -201,9 +214,9 @@ impl VehicleSimulator {
             (i_xx - i_yy) * omega_local.x * omega_local.y,
         );
         let ang_accel_local = Vec3::new(
-            (torque_local.x - gyro.x) * inv_inertia.x,
-            (torque_local.y - gyro.y) * inv_inertia.y,
-            (torque_local.z - gyro.z) * inv_inertia.z,
+            (torque_local.x + gyro.x) * inv_inertia.x,
+            (torque_local.y + gyro.y) * inv_inertia.y,
+            (torque_local.z + gyro.z) * inv_inertia.z,
         );
         st.angular_acceleration = basis.transform_vector(ang_accel_local);
 
@@ -266,9 +279,10 @@ impl VehicleSimulator {
         let local_accel = basis.inverse_transform_vector(st.linear_acceleration);
         let lat_g = local_accel.x / 9.80665;
         let long_g = -local_accel.z / 9.80665;
+        let vert_g = local_accel.y / 9.80665;
 
-        let front_slip = (st.tires.wheels[0].slip_angle_rad.abs() + st.tires.wheels[1].slip_angle_rad.abs()) * 0.5;
-        let rear_slip = (st.tires.wheels[2].slip_angle_rad.abs() + st.tires.wheels[3].slip_angle_rad.abs()) * 0.5;
+        let front_slip = (st.tires.wheels[0].slip_ratio.abs() + st.tires.wheels[1].slip_ratio.abs()) * 0.5;
+        let rear_slip = (st.tires.wheels[2].slip_ratio.abs() + st.tires.wheels[3].slip_ratio.abs()) * 0.5;
 
         TelemetryFrame {
             time_ms: (st.sim_time * 1000.0) as i64,
@@ -280,6 +294,7 @@ impl VehicleSimulator {
             steering: st.steer_input_smoothed,
             lat_g,
             long_g,
+            vert_g,
             fl_comp_mm: st.suspension.wheels[0].compression_mm,
             fr_comp_mm: st.suspension.wheels[1].compression_mm,
             rl_comp_mm: st.suspension.wheels[2].compression_mm,

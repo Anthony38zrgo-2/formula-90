@@ -4,5 +4,5 @@
 
 [resource]
 script = ExtResource("1_aero")
-coefficient_of_drag = 0.15
-frontal_area = 0.45
+coefficient_of_drag = 0.78
+frontal_area = 1.25

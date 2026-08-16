@@ -176,7 +176,7 @@ impl VehicleConfig {
             front_damping_ratio: 0.80,
             front_bump_damp_multiplier: 1.3,
             front_rebound_damp_multiplier: 1.1,
-            front_arb_ratio: 0.0,
+            front_arb_ratio: 0.20,
             front_toe: 0.0017453,
             front_camber: -0.0174533,
             front_bump_stop_multiplier: 2.2,
@@ -184,7 +184,7 @@ impl VehicleConfig {
             // Suspension (Rear)
             rear_spring_length: 0.180,
             rear_resting_ratio: 0.350,
-            rear_damping_ratio: 0.85,
+            rear_damping_ratio: 0.80,
             rear_bump_damp_multiplier: 1.3,
             rear_rebound_damp_multiplier: 1.1,
             rear_arb_ratio: 0.05,
@@ -218,10 +218,10 @@ impl VehicleConfig {
             surface_rolling_resistance,
 
             // Aerodynamics
-            coefficient_of_drag: 0.15,
-            frontal_area: 0.45,
-            coefficient_of_downforce: 1.85,
-            aero_balance_front: 0.45,
+            coefficient_of_drag: 0.78,
+            frontal_area: 1.25,
+            coefficient_of_downforce: 2.85,
+            aero_balance_front: 0.44,
             air_density: 1.225,
         }
     }

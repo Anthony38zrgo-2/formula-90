@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// Canonical 25-column telemetry snapshot matching TelemetryManager.gd.
+/// Canonical 26-column telemetry snapshot matching TelemetryManager.gd.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelemetryFrame {
     pub time_ms: i64,
@@ -12,6 +12,7 @@ pub struct TelemetryFrame {
     pub steering: f64,
     pub lat_g: f64,
     pub long_g: f64,
+    pub vert_g: f64,
     pub fl_comp_mm: f64,
     pub fr_comp_mm: f64,
     pub rl_comp_mm: f64,
@@ -34,7 +35,7 @@ impl TelemetryFrame {
     pub const CSV_HEADER: &'static [&'static str] = &[
         "Time_ms", "Speed_kmh", "RPM", "Gear",
         "Throttle", "Brake", "Steering",
-        "Lat_G", "Long_G",
+        "Lat_G", "Long_G", "Vert_G",
         "FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
         "Front_Slip", "Rear_Slip",
         "Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
@@ -45,7 +46,7 @@ impl TelemetryFrame {
     /// Formats the telemetry frame into a single comma-separated CSV line.
     pub fn to_csv_line(&self) -> String {
         format!(
-            "{},{:.2},{:.1},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.2},{:.2},{:.2},{:.2},{:.4},{:.4},\"{}\",\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",{},\"{}\"",
+            "{},{:.2},{:.1},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.2},{:.2},{:.2},{:.2},{:.4},{:.4},\"{}\",\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",{},\"{}\"",
             self.time_ms,
             self.speed_kmh,
             self.rpm,
@@ -55,6 +56,7 @@ impl TelemetryFrame {
             self.steering,
             self.lat_g,
             self.long_g,
+            self.vert_g,
             self.fl_comp_mm,
             self.fr_comp_mm,
             self.rl_comp_mm,

@@ -80,7 +80,7 @@ fn test_straight_line_acceleration() {
     // CSV format validation
     let csv = t.to_csv_line();
     assert!(csv.contains("Jordan 197") || csv.contains("rust_physics_benchmark"));
-    assert_eq!(csv.split(',').count(), 25);
+    assert_eq!(csv.split(',').count(), 26);
 }
 
 #[test]

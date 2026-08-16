@@ -501,19 +501,25 @@ impl TriRaycastSample {
     }
 
     /// Calculate weighted average hit distance using 1:2:1 transverse weighting.
+    /// Only colliding rays contribute to the average; if none collide, returns max_length.
     pub fn weighted_distance(&self, max_length: f64) -> f64 {
-        let d_in = if self.inner.is_colliding { self.inner.distance } else { max_length };
-        let d_mid = if self.center.is_colliding { self.center.distance } else { max_length };
-        let d_out = if self.outer.is_colliding { self.outer.distance } else { max_length };
-        (d_in + 2.0 * d_mid + d_out) * 0.25
+        let mut sum = 0.0;
+        let mut weight_sum = 0.0;
+        if self.inner.is_colliding { sum += self.inner.distance; weight_sum += 1.0; }
+        if self.center.is_colliding { sum += 2.0 * self.center.distance; weight_sum += 2.0; }
+        if self.outer.is_colliding { sum += self.outer.distance; weight_sum += 1.0; }
+        if weight_sum > 0.0 { sum / weight_sum } else { max_length }
     }
 
     /// Calculate weighted average surface normal using 1:2:1 transverse weighting.
+    /// Only colliding rays contribute; falls back to Vec3::UP if none collide.
     pub fn weighted_normal(&self) -> Vec3 {
-        let n_in = if self.inner.is_colliding { self.inner.normal } else { Vec3::UP };
-        let n_mid = if self.center.is_colliding { self.center.normal } else { Vec3::UP };
-        let n_out = if self.outer.is_colliding { self.outer.normal } else { Vec3::UP };
-        (n_in + n_mid * 2.0 + n_out).normalized()
+        let mut sum = Vec3::ZERO;
+        let mut weight_sum = 0.0;
+        if self.inner.is_colliding { sum += self.inner.normal; weight_sum += 1.0; }
+        if self.center.is_colliding { sum += self.center.normal * 2.0; weight_sum += 2.0; }
+        if self.outer.is_colliding { sum += self.outer.normal; weight_sum += 1.0; }
+        if weight_sum > 0.0 { sum.normalized() } else { Vec3::UP }
     }
 }
 

@@ -180,12 +180,10 @@ func _detect_surface() -> String:
 ## Called each physics frame by the scene. `slip` in [0,1] (max abs wheel slip).
 func update(_delta: float) -> void:
 	surface = _detect_surface()
-	if vehicle == null:
-		return
-	var rpm: float = vehicle.get("motor_rpm")
-	var throttle: float = vehicle.get("throttle_amount")
-	var gear: int = vehicle.get("current_gear")
-	var speed_kph: float = vehicle.speed * 3.6
+	var rpm: float = vehicle.get("motor_rpm") if vehicle.get("motor_rpm") != null else idle_rpm
+	var throttle: float = vehicle.get("throttle_amount") if vehicle.get("throttle_amount") != null else 0.0
+	var gear: int = vehicle.get("current_gear") if vehicle.get("current_gear") != null else 1
+	var speed_kph: float = (vehicle.get("speed") * 3.6) if vehicle.get("speed") != null else 0.0
 	# RPM range from the vehicle when exposed (F1-94: idle 4500 / max 17000),
 	# falling back to the exported defaults.
 	var vehicle_idle: float = idle_rpm

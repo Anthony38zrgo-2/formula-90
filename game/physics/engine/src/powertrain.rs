@@ -2,6 +2,18 @@ use crate::types::VehicleInput;
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
 
+/// Viscoelastic clutch damping coefficient in N·m·s/rad (engine side).
+const K_CLUTCH: f64 = 4.0;
+/// Maximum clutch torque as a ratio of peak engine torque.
+const T_MAX_CLUTCH_RATIO: f64 = 1.2;
+/// Effective throttle applied during an ignition-cut upshift.
+const IGNITION_CUT_THROTTLE: f64 = 0.05;
+/// Effective throttle applied during a rev-match downshift blip.
+const DOWNSHIFT_BLIP_THROTTLE: f64 = 0.40;
+/// Minimum true ground speed (km/h) required for each sequential upshift
+/// (indexed by current_gear - 1: 1->2, 2->3, ..., 5->6).
+const UPSHIFT_SPEED_KMH: [f64; 5] = [75.0, 105.0, 130.0, 160.0, 190.0];
+
 /// Dynamic runtime state of the powertrain, gearbox and brakes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PowertrainState {
@@ -11,6 +23,7 @@ pub struct PowertrainState {
     pub clutch_engagement: f64, // 0.0 = disengaged, 1.0 = fully engaged
     pub shift_timer: f64,
     pub engine_torque: f64,     // Current output torque from motor in N·m
+    pub clutch_torque: f64,     // Viscoelastic clutch coupling torque in N·m (engine side)
     pub is_rev_limited: bool,
 
     // Per-wheel drive and brake torques in N·m
@@ -29,6 +42,7 @@ impl PowertrainState {
             clutch_engagement: 1.0,
             shift_timer: 0.0,
             engine_torque: 0.0,
+            clutch_torque: 0.0,
             is_rev_limited: false,
             drive_torques: [0.0; 4],
             brake_torques: [0.0; 4],
@@ -64,7 +78,7 @@ impl PowertrainState {
         config: &VehicleConfig,
         input: &VehicleInput,
         wheel_speeds: &[f64; 4],
-        _forward_speed_m_s: f64,
+        forward_speed_m_s: f64,
         dt: f64,
     ) {
         let driven_tire_radius = if config.front_torque_split > 0.5 {
@@ -100,11 +114,17 @@ impl PowertrainState {
         } else if config.automatic_transmission {
             // Automatic gear selection based on ideal gear RPM from chassis speed
             let real_wheel_speed_kmh = driven_avg_spin * driven_tire_radius * 3.6;
+            let ground_speed_kmh = forward_speed_m_s * 3.6;
 
             if self.current_gear > 0 {
                 let max_gear = config.gear_ratios.len() as i8;
-                // Upshift when engine is high AND vehicle road speed supports next gear
-                if self.rpm > config.max_rpm * 0.90 && self.current_gear < max_gear {
+                let gear_idx = (self.current_gear - 1) as usize;
+                // Upshift when engine is high AND vehicle true ground speed supports next gear
+                if self.rpm > config.max_rpm * 0.90
+                    && self.current_gear < max_gear
+                    && gear_idx < UPSHIFT_SPEED_KMH.len()
+                    && ground_speed_kmh >= UPSHIFT_SPEED_KMH[gear_idx]
+                {
                     desired_gear = self.current_gear + 1;
                 }
                 // Downshift if RPM drops near idle
@@ -145,11 +165,25 @@ impl PowertrainState {
 
         let target_rpm_from_wheels = (driven_axle_speed * effective_ratio * (60.0 / (2.0 * std::f64::consts::PI))).abs();
 
+        // Ignition cut on sequential upshift, throttle blip on downshift (rev-match);
+        // no blip on the 1 -> -1 auto-reverse transition
         let throttle = input.throttle.clamp(0.0, 1.0);
+        let effective_throttle = if self.shift_timer > 0.0 {
+            if self.target_gear > self.current_gear {
+                IGNITION_CUT_THROTTLE
+            } else if self.target_gear < self.current_gear && self.target_gear != -1 {
+                DOWNSHIFT_BLIP_THROTTLE
+            } else {
+                throttle
+            }
+        } else {
+            throttle
+        };
+
         let rpm_span = (config.max_rpm - config.idle_rpm).max(1.0);
         let normalized_rpm = ((self.rpm - config.idle_rpm) / rpm_span).clamp(0.0, 1.0);
         let torque_factor = config.evaluate_torque_curve(normalized_rpm);
-        let raw_motor_torque = torque_factor * config.max_torque * throttle;
+        let raw_motor_torque = torque_factor * config.max_torque * effective_throttle;
         let motor_drag = (self.rpm / config.max_rpm) * (config.max_torque * 0.15);
 
         // Clutch engagement modulation (launch slipping only in 1st gear / reverse at standstill)
@@ -169,26 +203,28 @@ impl PowertrainState {
         };
         self.clutch_engagement = bite_factor * shift_factor * (1.0 - input.clutch.clamp(0.0, 1.0));
 
-        // Direct coupling when clutch is engaged
-        if self.clutch_engagement >= 0.85 && self.current_gear != 0 {
-            let blended_rpm = target_rpm_from_wheels.max(config.idle_rpm);
-            let diff = blended_rpm - self.rpm;
-            self.rpm = (self.rpm + diff * (30.0 * dt).min(1.0)).clamp(config.idle_rpm, config.max_rpm + 500.0);
-        } else {
-            let clutch_load = self.clutch_engagement * (raw_motor_torque * 0.85);
-            let net_torque = raw_motor_torque - motor_drag - clutch_load;
-            let rpm_accel = (net_torque / config.motor_moment) * (60.0 / (2.0 * std::f64::consts::PI));
-            self.rpm = (self.rpm + rpm_accel * dt).clamp(config.idle_rpm, config.max_rpm + 500.0);
-        }
+        // Continuous viscoelastic clutch torque capacity (eliminates discrete 0.85 threshold)
+        let engine_omega = self.rpm * (2.0 * std::f64::consts::PI) / 60.0;
+        let target_omega = target_rpm_from_wheels.max(config.idle_rpm) * (2.0 * std::f64::consts::PI) / 60.0;
+        let t_max_clutch = config.max_torque * T_MAX_CLUTCH_RATIO;
+        self.clutch_torque = (K_CLUTCH * (engine_omega - target_omega)).clamp(-t_max_clutch, t_max_clutch)
+            * self.clutch_engagement;
 
-        // Rev limiter
-        if self.rpm >= config.max_rpm {
-            self.is_rev_limited = true;
-            self.engine_torque = 0.0;
+        let net_torque = raw_motor_torque - motor_drag - self.clutch_torque;
+        let rpm_accel = (net_torque / config.motor_moment) * (60.0 / (2.0 * std::f64::consts::PI));
+        self.rpm = (self.rpm + rpm_accel * dt).clamp(config.idle_rpm, config.max_rpm + 500.0);
+
+        // Progressive soft rev limiter (17000 to 17500 RPM taper):
+        // Scales power down continuously without binary clutch disconnect
+        let limiter_factor = if self.rpm >= config.max_rpm + 500.0 {
+            0.0
+        } else if self.rpm > config.max_rpm {
+            1.0 - (self.rpm - config.max_rpm) / 500.0
         } else {
-            self.is_rev_limited = false;
-            self.engine_torque = raw_motor_torque;
-        }
+            1.0
+        };
+        self.is_rev_limited = self.rpm >= config.max_rpm;
+        self.engine_torque = raw_motor_torque * limiter_factor;
     }
 
     fn distribute_drive_torque(&mut self, config: &VehicleConfig) {
@@ -198,7 +234,7 @@ impl PowertrainState {
         }
 
         let gear_ratio = self.get_current_gear_ratio(config);
-        let total_wheel_torque = self.engine_torque * gear_ratio * config.final_drive * self.clutch_engagement;
+        let total_wheel_torque = self.clutch_torque * gear_ratio * config.final_drive;
 
         let front_torque = total_wheel_torque * config.front_torque_split;
         let rear_torque = total_wheel_torque * (1.0 - config.front_torque_split);

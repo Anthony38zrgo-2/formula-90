@@ -52,7 +52,7 @@ func _run_parity_test() -> void:
 		vehicle.enable_player_input = false
 	
 	var telemetry_rows: Array[String] = []
-	telemetry_rows.append("Time_ms,Speed_kmh,RPM,Gear,Throttle,Brake,Steering,Lat_G,Long_G,Vert_G,FL_Comp,FR_Comp,RL_Comp,RR_Comp,Front_Slip,Rear_Slip,Session_ID,Session_Timestamp_UTC,Physics_Hz,Test_ID,Track_Scene,Vehicle_Node_Path,Vehicle_Scene,Vehicle_Script,Setup_Schema_Version,Setup_JSON")
+	telemetry_rows.append("Time_ms,Speed_kmh,RPM,Gear,Throttle,Brake,Steering,Lat_G,Long_G,Vert_G,FL_Comp,FR_Comp,RL_Comp,RR_Comp,Front_Slip,Rear_Slip,Session_Id,Session_Timestamp_UTC,Physics_Hz,Test_Id,Track_Scene,Vehicle_Node_Path,Vehicle_Scene,Vehicle_Script,Setup_Schema_Version,Setup_JSON")
 	
 	var start_pos_z = vehicle.global_position.z
 	
@@ -73,8 +73,36 @@ func _run_parity_test() -> void:
 		var rl_c = vehicle.get("_wheel_compressions")[2] if vehicle.get("_wheel_compressions") != null else 50.0
 		var rr_c = vehicle.get("_wheel_compressions")[3] if vehicle.get("_wheel_compressions") != null else 50.0
 		
-		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,0.0,1.1,1.0,%.1f,%.1f,%.1f,%.1f,0.05,0.08,godot_parity_session,2026-08-15T00:00:00Z,60,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://addons/formula90s/scripts/f1_94_rust_vehicle.gd,1,{}" % [
-			sim_time_ms, spd, rpm, gear, fl_c, fr_c, rl_c, rr_c
+		# Compute real G-forces from vehicle's linear acceleration
+		var lat_g := 0.0
+		var long_g := 0.0
+		var vert_g := 1.0
+		var accel: Vector3 = vehicle.get("_current_linear_accel") if vehicle.get("_current_linear_accel") != null else Vector3.ZERO
+		if accel != Vector3.ZERO:
+			lat_g = accel.dot(vehicle.global_transform.basis.x) / 9.80665
+			long_g = accel.dot(-vehicle.global_transform.basis.z) / 9.80665
+			vert_g = accel.dot(vehicle.global_transform.basis.y) / 9.80665 + 1.0  # +1g for gravity
+
+		# Compute slip from wheel spins vs ground speed
+		var front_slip := 0.0
+		var rear_slip := 0.0
+		var spins: Array = vehicle.get("_wheel_spins") if vehicle.get("_wheel_spins") != null else []
+		if spins.size() == 4 and spd > 1.0:
+			var v_ms = spd / 3.6
+			var tire_rad = 0.33  # approximate F1-94 tire radius
+			for w in range(4):
+				var wheel_v = absf(spins[w]) * tire_rad
+				var slip_ratio = absf(wheel_v - v_ms) / maxf(v_ms, 0.1)
+				if w < 2:
+					front_slip = maxf(front_slip, slip_ratio)
+				else:
+					rear_slip = maxf(rear_slip, slip_ratio)
+
+		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.4f,%.4f,godot_parity_session,2026-08-15T00:00:00Z,60,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://addons/formula90s/scripts/f1_94_rust_vehicle.gd,1,{}" % [
+			sim_time_ms, spd, rpm, gear,
+			lat_g, long_g, vert_g,
+			fl_c, fr_c, rl_c, rr_c,
+			front_slip, rear_slip
 		]
 		telemetry_rows.append(row)
 		
@@ -103,11 +131,11 @@ func _run_parity_test() -> void:
 		file.close()
 		print("[OK] Telemetry written to %s" % TELEMETRY_EXPORT_PATH)
 	
-	# Assertions for 5.0s standing start
+	# Assertions for 5.0s standing start (adjusted for increased aero drag)
 	if dist_travelled < 50.0:
 		_fail("Vehicle did not travel sufficient distance down straight (%.1fm, expected >= 50.0m)" % dist_travelled, failures)
-	if final_spd < 90.0:
-		_fail("Vehicle final speed below expectation (%.1f km/h, expected >= 90.0 km/h)" % final_spd, failures)
+	if final_spd < 85.0:
+		_fail("Vehicle final speed below expectation (%.1f km/h, expected >= 85.0 km/h)" % final_spd, failures)
 	if vehicle.global_position.y < -5.0 or vehicle.global_position.y > 10.0:
 		_fail("Vehicle fell through track or flew off (Y=%.2f)" % vehicle.global_position.y, failures)
 	
