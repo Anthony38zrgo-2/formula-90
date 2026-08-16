@@ -158,7 +158,7 @@ func _physics_process(delta: float) -> void:
 	var gear_request: Variant = null
 	
 	if enable_player_input:
-		input_throttle = _get_action_strength_safe(["Accelerate", "accelerate"])
+		input_throttle = _get_action_strength_safe(["Throttle", "throttle", "Accelerate", "accelerate"])
 		var steer_l = _get_action_strength_safe(["Steer Left", "steer_left"])
 		var steer_r = _get_action_strength_safe(["Steer Right", "steer_right"])
 		input_steer = steer_l - steer_r # +1 = Left, -1 = Right
