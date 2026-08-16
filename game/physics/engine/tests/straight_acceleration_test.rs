@@ -47,7 +47,7 @@ fn flat_ground_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
 
 #[test]
 fn test_straight_line_acceleration() {
-    let cfg = VehicleConfig::jordan_197_canonical();
+    let cfg = VehicleConfig::f1_94_canonical();
     let spawn_height = cfg.front_tire_radius + cfg.front_spring_length * (1.0 - cfg.front_resting_ratio);
     let mut sim = VehicleSimulator::new(cfg, Vec3::new(0.0, spawn_height, 0.0), 0.0);
 
@@ -85,7 +85,7 @@ fn test_straight_line_acceleration() {
 
 #[test]
 fn test_braking_deceleration() {
-    let cfg = VehicleConfig::jordan_197_canonical();
+    let cfg = VehicleConfig::f1_94_canonical();
     let spawn_height = cfg.front_tire_radius + cfg.front_spring_length * (1.0 - cfg.front_resting_ratio);
     let mut sim = VehicleSimulator::new(cfg, Vec3::new(0.0, spawn_height, 0.0), 0.0);
 

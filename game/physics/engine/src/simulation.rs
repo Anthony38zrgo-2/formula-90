@@ -292,7 +292,7 @@ impl VehicleSimulator {
             test_id: "PHY_SIM".to_string(),
             track_scene: "res://scenes/tracks/test_field/la_chutana_generated.tscn".to_string(),
             vehicle_node_path: "VehicleRigidBody".to_string(),
-            vehicle_scene: "res://scenes/vehicles/jordan_197/jordan_197.tscn".to_string(),
+            vehicle_scene: "res://scenes/vehicles/f1_94/f1_94.tscn".to_string(),
             vehicle_script: "res://addons/gevp/scripts/vehicle.gd".to_string(),
             setup_schema_version: 1,
             setup_json: "{}".to_string(),

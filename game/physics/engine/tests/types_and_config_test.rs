@@ -65,7 +65,7 @@ fn test_tri_raycast_sample_weighted_distance() {
 #[test]
 fn test_vehicle_config_defaults() {
     let cfg = VehicleConfig::default();
-    assert_eq!(cfg.vehicle_name, "Jordan 197 (V10)");
+    assert_eq!(cfg.vehicle_name, "F1 1994 (V10)");
     assert_eq!(cfg.vehicle_mass, 505.0);
     assert_eq!(cfg.gear_ratios.len(), 6);
 
@@ -73,11 +73,11 @@ fn test_vehicle_config_defaults() {
     let t_idle = cfg.evaluate_torque_curve(0.0);
     assert_eq!(t_idle, 0.38);
 
-    let t_peak = cfg.evaluate_torque_curve(0.72);
+    let t_peak = cfg.evaluate_torque_curve(0.82);
     assert_eq!(t_peak, 1.00);
 
-    let t_mid = cfg.evaluate_torque_curve(0.15);
-    assert!(t_mid > 0.38 && t_mid < 0.65);
+    let t_mid = cfg.evaluate_torque_curve(0.45);
+    assert_eq!(t_mid, 0.82);
 
     // Mass distribution
     let fl_mass = cfg.mass_over_wheel(WheelIndex::FrontLeft);

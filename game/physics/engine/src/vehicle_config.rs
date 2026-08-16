@@ -98,12 +98,135 @@ pub struct VehicleConfig {
 
 impl Default for VehicleConfig {
     fn default() -> Self {
-        Self::jordan_197_canonical()
+        Self::f1_94_canonical()
     }
 }
 
 impl VehicleConfig {
-    /// Canonical Jordan 197 specification from Formula90s project authority.
+    /// Canonical F1-94 specification matching data/vehicles/f1_94/ resources.
+    pub fn f1_94_canonical() -> Self {
+        let mut surface_friction = HashMap::new();
+        surface_friction.insert(SurfaceType::Road, 2.9);
+        surface_friction.insert(SurfaceType::Curb, 2.2);
+        surface_friction.insert(SurfaceType::Dirt, 1.4);
+        surface_friction.insert(SurfaceType::Grass, 0.9);
+        surface_friction.insert(SurfaceType::Gravel, 1.1);
+
+        let mut surface_stiffness = HashMap::new();
+        surface_stiffness.insert(SurfaceType::Road, 8.75);
+        surface_stiffness.insert(SurfaceType::Curb, 7.0);
+        surface_stiffness.insert(SurfaceType::Dirt, 0.5);
+        surface_stiffness.insert(SurfaceType::Grass, 0.5);
+        surface_stiffness.insert(SurfaceType::Gravel, 0.5);
+
+        let mut surface_rolling_resistance = HashMap::new();
+        surface_rolling_resistance.insert(SurfaceType::Road, 1.0);
+        surface_rolling_resistance.insert(SurfaceType::Curb, 1.5);
+        surface_rolling_resistance.insert(SurfaceType::Dirt, 2.0);
+        surface_rolling_resistance.insert(SurfaceType::Grass, 4.0);
+        surface_rolling_resistance.insert(SurfaceType::Gravel, 2.0);
+
+        Self {
+            vehicle_name: "F1 1994 (V10)".to_string(),
+
+            // Mass & Geometry
+            vehicle_mass: 505.0,
+            front_weight_distribution: 0.45,
+            center_of_gravity_height_offset: -0.12,
+            inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
+            wheelbase: 2.92065,
+            front_track: 1.5925,
+            rear_track: 1.5246,
+
+            // Steering
+            max_steering_angle: 0.436332,
+            front_steering_ratio: 1.0,
+            rear_steering_ratio: 0.0,
+            steering_speed: 4.25,
+            countersteer_speed: 11.0,
+            steering_speed_decay: 0.20,
+            steering_slip_assist: 0.54,
+            countersteer_assist: 0.89,
+            steering_exponent: 1.50,
+            ackermann: 0.15,
+
+            // Powertrain & Gearing
+            max_torque: 340.0,
+            max_rpm: 17000.0,
+            idle_rpm: 4500.0,
+            motor_moment: 0.08,
+            torque_curve: vec![
+                (0.00, 0.38),
+                (0.45, 0.82),
+                (0.62, 0.95),
+                (0.82, 1.00),
+                (0.95, 0.96),
+                (1.00, 0.88),
+            ],
+            gear_ratios: vec![2.85, 2.29, 1.89, 1.60, 1.38, 1.20],
+            final_drive: 6.30,
+            reverse_ratio: 3.00,
+            shift_time: 0.12,
+            automatic_transmission: true,
+            front_torque_split: 0.0,
+
+            // Suspension (Front)
+            front_spring_length: 0.250,
+            front_resting_ratio: 0.400,
+            front_damping_ratio: 0.80,
+            front_bump_damp_multiplier: 1.3,
+            front_rebound_damp_multiplier: 1.1,
+            front_arb_ratio: 0.0,
+            front_toe: 0.0017453,
+            front_camber: -0.0174533,
+            front_bump_stop_multiplier: 2.2,
+
+            // Suspension (Rear)
+            rear_spring_length: 0.180,
+            rear_resting_ratio: 0.350,
+            rear_damping_ratio: 0.85,
+            rear_bump_damp_multiplier: 1.3,
+            rear_rebound_damp_multiplier: 1.1,
+            rear_arb_ratio: 0.05,
+            rear_toe: 0.0017453,
+            rear_camber: -0.0174533,
+            rear_bump_stop_multiplier: 3.5,
+
+            // Tri-Raycast
+            tri_ray_spacing_ratio: 0.40,
+
+            // Tires & Contact
+            front_tire_radius: 0.31695,
+            rear_tire_radius: 0.32901,
+            front_tire_width: 0.30030,
+            rear_tire_width: 0.36832,
+            front_wheel_mass: 12.0,
+            rear_wheel_mass: 16.0,
+            contact_patch: 0.21,
+            braking_grip_multiplier: 1.08,
+            front_brake_bias: 0.57,
+            max_brake_torque: 2800.0,
+
+            // ABS
+            enable_abs: false,
+            abs_pulse_time: 0.03,
+            abs_spin_diff_threshold: 12.0,
+
+            // Surface Maps
+            surface_friction,
+            surface_stiffness,
+            surface_rolling_resistance,
+
+            // Aerodynamics
+            coefficient_of_drag: 0.15,
+            frontal_area: 0.45,
+            coefficient_of_downforce: 1.85,
+            aero_balance_front: 0.45,
+            air_density: 1.225,
+        }
+    }
+
+    /// Canonical Jordan 197 specification.
     pub fn jordan_197_canonical() -> Self {
         let mut surface_friction = HashMap::new();
         surface_friction.insert(SurfaceType::Road, 2.0);
