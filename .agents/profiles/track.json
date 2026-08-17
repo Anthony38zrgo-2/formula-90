@@ -1,0 +1,8 @@
+{
+  "name": "track",
+  "skills": [
+    "track-generation",
+    "asset-3d"
+  ],
+  "max_active_skills": 3
+}

@@ -1,0 +1,9 @@
+{
+  "name": "vehicle-integration",
+  "skills": [
+    "vehicle-physics",
+    "godot-runtime",
+    "runtime-diagnostics"
+  ],
+  "max_active_skills": 3
+}

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Confirmar lectura de telemetría"
-  short_description: "Delimita archivo y sección antes de leer"
-  default_prompt: "Use $telemetry-read-advise antes de analizar esta telemetría y solicita la confirmación de archivo y rango."

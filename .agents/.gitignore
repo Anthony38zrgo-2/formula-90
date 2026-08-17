@@ -1,7 +1,13 @@
-data/*.db
-data/*.db-shm
-data/*.db-wal
-data/backups/
-runtime/target/
-tools/sqlite/*.exe
-tools/sqlite/*.dll
+# Generated active skills
+skills/*
+!skills/.gitkeep
+
+# SQLite transient files
+data/*.sqlite-wal
+data/*.sqlite-shm
+
+# Python
+__pycache__/
+*.pyc
+
+# Runtime logs/exports live outside .agents

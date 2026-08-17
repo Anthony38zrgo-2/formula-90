@@ -1,0 +1,17 @@
+{
+  "name": "formula90-agents-sanitized",
+  "version": "1.1.0",
+  "principles": [
+    "fail-faster-adapt-faster",
+    "ctx-first",
+    "no-broad-discovery",
+    "observability-first",
+    "human-gate",
+    "no-smoke",
+    "preserve-worktree",
+    "arch-scope-lock"
+  ],
+  "max_active_skills": 3,
+  "runtime_db": "diagnostics/runtime.sqlite",
+  "agent_db": ".agents/data/agents.sqlite"
+}

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Recomendar compactación de contexto"
-  short_description: "Solicita autorización al cerrar features"
-  default_prompt: "Use $compact-context-advise al cerrar esta feature y solicita mi autorización antes de compactar el contexto."

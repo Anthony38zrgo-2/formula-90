@@ -1,0 +1,8 @@
+{
+  "name": "rust-physics",
+  "skills": [
+    "vehicle-physics",
+    "runtime-diagnostics"
+  ],
+  "max_active_skills": 3
+}

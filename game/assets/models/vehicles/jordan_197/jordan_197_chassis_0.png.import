@@ -2,23 +2,24 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0sdu7jdulkgb"
-path="res://.godot/imported/jordan_197_chassis_0.png-3fe6885255e9860524c6257491987eea.ctex"
+uid="uid://c36c6xrd5g76c"
+path.s3tc="res://.godot/imported/jordan_197_chassis_0.png-3fe6885255e9860524c6257491987eea.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
-"md5": "285111883c06462639beeeeda6f5320c"
+"md5": "522622666ca344eda45abe07a9bcfea1"
 }
 
 [deps]
 
 source_file="res://assets/models/vehicles/jordan_197/jordan_197_chassis_0.png"
-dest_files=["res://.godot/imported/jordan_197_chassis_0.png-3fe6885255e9860524c6257491987eea.ctex"]
+dest_files=["res://.godot/imported/jordan_197_chassis_0.png-3fe6885255e9860524c6257491987eea.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
