@@ -1,0 +1,20 @@
+[package]
+name = "game_sim"
+version = "0.1.0"
+edition = "2021"
+description = "Formula-90 authoritative Rust simulation core (snapshot-server model): owns world/scene graph, vehicles, aids and session; emits serializable snapshots for a thin Godot mirror."
+license = "proprietary"
+
+[lib]
+name = "game_sim"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "game_cli"
+path = "src/bin/game_cli.rs"
+
+[dependencies]
+vehicle_physics_engine = { path = "../physics/engine" }
+serde = { version = "1", features = ["derive"] }
+bincode = "1"

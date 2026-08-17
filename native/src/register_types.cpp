@@ -12,6 +12,7 @@
 #include "formula90s/ui/debug_hud_controller.hpp"
 #include "formula90s/ui/static_minimap_controller.hpp"
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
+#include "formula90s/sim/f90_sim_bridge.hpp"
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 using namespace godot;
@@ -30,6 +31,7 @@ void initialize_formula90s_module(ModuleInitializationLevel level) {
 	GDREGISTER_CLASS(DebugHudController);
 	GDREGISTER_CLASS(StaticMinimapController);
 	GDREGISTER_CLASS(F194RustVehicle);
+	GDREGISTER_CLASS(F90SimBridge);
 }
 void uninitialize_formula90s_module(ModuleInitializationLevel level) {}
 extern "C" {

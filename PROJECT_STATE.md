@@ -2202,6 +2202,59 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
    (ABI=7, JSON loaded with TC on). Residual low-speed slip ripple is minor; further smoothing optional
    (lower `max_clutch_torque_ratio` or PI TC). Note: `corr_04` baseline `max_torque=340` vs JSON `455`
    still diverges — reconcile per item 1.
+   5. **Rear-grip abruptness + front-heavy diagnosis & follow-up fix (2026-08-17)** — Re-analyzed
+      telemetry against config after the launch fix. Two findings:
+      - *Front-heavy feel*: real in-game trace (`godot_f1_94_chutana_telemetry_B120_fixed_20260816.csv`)
+        shows static compression `FL/FR≈66.6 mm` vs `RL/RR≈30.6 mm` (front ≈2.2× rear) → rear axle
+        statically under-loaded (car sits nose-down/tail-up). Config contributor: `front_weight_distribution=0.46`
+        (high) + shorter/stiffer rear spring. Scene contributor: rear rides ~half its design compression
+        in-engine vs the Rust headless baseline. Fix: `front_weight_distribution=0.46→0.43`, rear
+        `spring_length=0.180→0.200` + `resting_ratio` kept `0.350` (rear design compression now 70 mm,
+        matching front) → headless rest state balanced (`FL=RL=70 mm`) and rear compresses under accel.
+        In-game confirmation still required (scene ride-height may need a separate tweak).
+      - *Abrupt rear-grip changes*: the proportional slip-limiter from item 4 applied its cut instantly
+        across the 120 Hz step → a ~15 Hz torque/slip limit-cycle (`DriveTorque` ~400↔2100 N·m,
+        `Rear_Slip` 0.05↔0.42). Fix: added `tc_cut_ratio_smoothed` state and low-pass the cut
+        (`alpha = 1-exp(-rate*dt)`, `rate = traction_control_cut_gain*20` clamped 5-50) so the limiter no
+        longer hunts. `traction_control_cut_gain` (was a dead knob) now drives smoothing responsiveness.
+        Validation: headless launch `Rear_Slip` settles ~0.10 (no hunt), `DriveTorque` rises smoothly
+        ~1000→1450 N·m; all 9 Rust test suites pass.
+      - *Incident*: `physics_cli` wrote telemetry over the config path (positional misuse without
+        `--config`) and corrupted `f1_94_physics.json` (restored from git, edits re-applied). Hardened
+        `physics_cli.rs` to refuse overwriting the config file, and fixed `scripts/build_windows.ps1`
+        (`$ErrorActionPreference='Stop'` turned cargo stderr into a fatal error, blocking the DLL copy) to
+        use `Continue` + explicit exit-code checks.
+   6. **Snapshot-server architecture decision + `game_sim` core (Fase 0/1, 2026-08-17)** — Evaluated
+      moving the whole simulation into Rust with Godot as a pure render mirror. Decision: **adopt the
+      authoritative Rust core emitting serializable snapshots** (not gdext; the host C++ stays a thin
+      bridge). Rationale: perfect sync by construction (ONE simulator; headless and in-engine share the
+      same code path + identical inputs — this prevents the FL/RL desync class we hit). Implemented
+      `game/sim` crate (`game_sim`): owns world/scene graph, vehicles, aids (`driving_aids.gd` ported to
+      `AidsState`), session, and emits `Snapshot` (bincode) each tick. `World::step` calls the physics
+      crate directly (Rust to Rust, no C-ABI). `game_cli` runs it headless; `World` unit test asserts
+      byte-identical snapshots across identical runs (deterministic). Phase 1 done: core + contracts
+      (snapshot/input/step) + headless harness. Pending: Phase 3 Godot bridge (minimal C++ node reads
+      snapshot / pushes input), Phase 4 race rules/AI, Phase 5 retire GDScript mirrors + physics C-ABI FFI.
+      Note: residual in-engine rear ride-height desync is a scene spawn issue, addressed when wiring the
+      bridge (or separately), not by the core itself.
+   7. **Fase 3 — Bridge nativo Godot (`F90SimBridge`) + C-ABI de `game_sim` (2026-08-17)** —
+      `game_sim` ahora expone un C-ABI (`c_abi.rs`, crate-type rlib+cdylib) con
+      `sim_world_create/destroy/spawn_from_json/spawn_canonical/set_input/step/pose/telemetry`
+      y structs `#[repr(C)]` (`CSimPose`, `CSimTelemetry`, `CSimRaycastHit`,
+      `CSimTriRaycastSample`). Nuevo nodo `F90SimBridge` (godot-cpp,
+      `native/src/sim/f90_sim_bridge.{hpp,cpp}` + header C `f90_sim_bridge.h`): carga
+      `game_sim.dll` (mismo patrón LoadLibraryW/GetProcAddress que F194RustVehicle),
+      crea el `World`, spawnea el F1-94, y cada `_physics_process` lee el InputMap
+      (`Throttle`/`Brakes`/`Steer Left`/`Steer Right`/`Handbrake`), llama
+      `set_input`+`step`, y REFLEJA la pose en `set_global_transform` + imprime
+      telemetría. Godot es espejo puro: el core es el único simulador. Build verde
+      (`build_windows.ps1` ahora también compila/copia `game_sim.dll`,
+      `SConstruct` globs `native/src/sim/*.cpp`). Test `c_abi::c_abi_roundtrip`
+      valida el C-ABI headless. PENDIENTE: validación in-engine (no se puede correr
+      el editor aquí) y, como sub-fase, cablear `F90SimBridge` para que conduzca el
+      `F194RustVehicle` real (reemplazar la integración por fuerzas del body por la
+      transform del snapshot) — hoy el bridge mueve su propio nodo de forma aislada
+      y segura.
 
 ---
 

@@ -30,6 +30,7 @@ pub struct PowertrainState {
     // Traction control (CT / TCS) state
     pub tc_active: bool,
     pub tc_cut_ratio: f64,
+    pub tc_cut_ratio_smoothed: f64,
 }
 
 impl PowertrainState {
@@ -50,6 +51,7 @@ impl PowertrainState {
             abs_timers: [0.0; 4],
             tc_active: false,
             tc_cut_ratio: 0.0,
+            tc_cut_ratio_smoothed: 0.0,
         }
     }
 
@@ -96,7 +98,7 @@ impl PowertrainState {
         let dt = dt.max(1e-5);
         self.process_shift(config, input, wheel_spins, forward_speed_m_s, dt);
         self.process_engine_and_clutch(config, input, wheel_spins, tire_reaction_torques, dt);
-        self.distribute_drive_torque(config, wheel_spins, tc_enabled, forward_speed_m_s);
+        self.distribute_drive_torque(config, wheel_spins, tc_enabled, forward_speed_m_s, dt);
         self.process_brakes(config, input, wheel_spins, dt, brake_assist_enabled, abs_enabled);
     }
 
@@ -275,6 +277,7 @@ impl PowertrainState {
         wheel_spins: &[f64; 4],
         tc_enabled: bool,
         forward_speed_m_s: f64,
+        dt: f64,
     ) {
         self.drive_torques = [0.0; 4];
         if self.current_gear == 0 { return; }
@@ -340,19 +343,26 @@ impl PowertrainState {
                     max_cut = max_cut.max(cut);
                 }
             }
-            if max_cut > 0.0 {
-                self.tc_cut_ratio = max_cut;
-                self.tc_active = tc_enabled;
-                if tc_enabled {
-                    let scale = (1.0 - max_cut).max(0.0);
-                    for wheel in WheelIndex::ALL {
-                        if wheel_is_driven(config, wheel) {
-                            let i = wheel as usize;
-                            self.drive_torques[i] *= scale;
-                        }
-                    }
+        // Smooth the traction-control cut so the limiter does not hunt. The
+        // proportional scale is stable per-step, but applying it instantly across
+        // the 120 Hz step with a hard threshold created a ~15 Hz torque/slip
+        // limit-cycle (DriveTorque swinging ~400<->2100 N·m). `cut_gain` controls
+        // responsiveness of the smoothing.
+        let smoothing_rate = (config.aids.traction_control_cut_gain * 20.0).clamp(5.0, 50.0);
+        let smooth_alpha = (1.0 - (-smoothing_rate * dt).max(-50.0).min(50.0).exp()).clamp(0.0, 1.0);
+        let target_cut = if tc_enabled && max_cut > 0.0 { max_cut } else { 0.0 };
+        self.tc_cut_ratio_smoothed += (target_cut - self.tc_cut_ratio_smoothed) * smooth_alpha;
+        self.tc_cut_ratio = self.tc_cut_ratio_smoothed;
+        self.tc_active = tc_enabled && max_cut > 0.0;
+        if self.tc_active {
+            let scale = (1.0 - self.tc_cut_ratio_smoothed).max(MIN_TC_TORQUE_SCALE);
+            for wheel in WheelIndex::ALL {
+                if wheel_is_driven(config, wheel) {
+                    let i = wheel as usize;
+                    self.drive_torques[i] *= scale;
                 }
             }
+        }
         }
     }
 

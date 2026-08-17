@@ -18,7 +18,7 @@
   "chassis": {
     "vehicle_name": "F1 1994 (3.5L V10 NA)",
     "vehicle_mass": 575.0,
-    "front_weight_distribution": 0.46,
+    "front_weight_distribution": 0.43,
     "center_of_gravity_height_offset": -0.12,
 
     "inertia_multipliers": {
@@ -171,7 +171,7 @@
     },
 
     "rear": {
-      "spring_length": 0.180,
+      "spring_length": 0.200,
       "resting_ratio": 0.350,
 
       "damping_ratio": 0.76,

@@ -154,7 +154,7 @@ impl SuspensionSystem {
 
     fn solve_force(&mut self, config: &VehicleConfig, wheel: WheelIndex, opposite_compression_mm: f64, dt: f64) {
         let state = &mut self.wheels[wheel as usize];
-        let mass = config.mass_over_wheel(wheel);
+        let _mass = config.mass_over_wheel(wheel);
         let spring_len = spring_length(config, wheel);
 
         if !state.is_grounded {
