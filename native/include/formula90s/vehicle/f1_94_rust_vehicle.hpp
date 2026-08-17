@@ -233,6 +233,17 @@ public:
 	double max_rpm_ = 17000.0;
 	double vehicle_mass_ = 505.0;
 
+	// Differential (Salisbury Clutch-Pack LSD) — runtime tunable.
+	// Defaults mirror VehicleConfig::f1_94_canonical() (Fase 2 B calibration).
+	double diff_preload_ = 120.0;
+	double diff_power_ramp_angle_deg_ = 65.0;
+	double diff_coast_ramp_angle_deg_ = 75.0;
+	double diff_clutches_ = 4.0;
+	double diff_clutch_friction_coeff_ = 0.15;
+	// GEVP-facing alias: rear_locking_differential_engage_torque (gearbox_spec.gd).
+	// -1.0 = unset (use Salisbury params above). >=0 maps to preload=value, mu=0.
+	double rear_locking_differential_engage_torque_ = -1.0;
+
 	void apply_runtime_config();
 	void sync_runtime_config_from_rust();
 
@@ -269,6 +280,22 @@ public:
 	double get_max_rpm() const { return max_rpm_; }
 	void set_vehicle_mass(double v);
 	double get_vehicle_mass() const;
+
+	// Differential tuning accessors
+	void set_diff_preload(double v);
+	double get_diff_preload() const;
+	void set_diff_power_ramp_angle_deg(double v);
+	double get_diff_power_ramp_angle_deg() const;
+	void set_diff_coast_ramp_angle_deg(double v);
+	double get_diff_coast_ramp_angle_deg() const;
+	void set_diff_clutches(double v);
+	double get_diff_clutches() const;
+	void set_diff_clutch_friction_coeff(double v);
+	double get_diff_clutch_friction_coeff() const;
+
+	// GEVP-facing alias: rear_locking_differential_engage_torque (gearbox_spec.gd)
+	void set_rear_locking_differential_engage_torque(double v);
+	double get_rear_locking_differential_engage_torque() const;
 
 	void reset_vehicle(const Vector3 &p_pos, double p_yaw_rad);
 };

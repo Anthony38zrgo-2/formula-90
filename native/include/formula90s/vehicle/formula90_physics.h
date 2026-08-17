@@ -78,6 +78,13 @@ typedef struct F90RuntimeConfig {
     double steering_speed;
     double countersteer_speed;
     bool automatic_transmission;
+
+    // Differential (Salisbury Clutch-Pack LSD) — runtime tunable from Godot.
+    double diff_preload;
+    double diff_power_ramp_angle_deg;
+    double diff_coast_ramp_angle_deg;
+    double diff_clutches;
+    double diff_clutch_friction_coeff;
 } F90RuntimeConfig;
 
 uint32_t f1_94_physics_abi_version(void);

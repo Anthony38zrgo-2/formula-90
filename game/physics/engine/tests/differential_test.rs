@@ -110,9 +110,9 @@ fn test_salisbury_differential_preload_acts_at_zero_drive_torque() {
 #[test]
 fn test_salisbury_differential_canonical_config_integration() {
     let cfg = VehicleConfig::f1_94_canonical();
-    assert_eq!(cfg.diff_preload, 90.0);
-    assert_eq!(cfg.diff_power_ramp_angle_deg, 45.0);
-    assert_eq!(cfg.diff_coast_ramp_angle_deg, 60.0);
+    assert_eq!(cfg.diff_preload, 120.0);
+    assert_eq!(cfg.diff_power_ramp_angle_deg, 65.0);
+    assert_eq!(cfg.diff_coast_ramp_angle_deg, 75.0);
     assert_eq!(cfg.diff_clutches, 4.0);
-    assert_eq!(cfg.diff_clutch_friction_coeff, 0.25);
+    assert_eq!(cfg.diff_clutch_friction_coeff, 0.15);
 }

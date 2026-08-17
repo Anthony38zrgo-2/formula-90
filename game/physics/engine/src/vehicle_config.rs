@@ -209,12 +209,12 @@ impl VehicleConfig {
             automatic_transmission: true,
             front_torque_split: 0.0,
 
-            // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned)
-            diff_preload: 90.0,
-            diff_power_ramp_angle_deg: 45.0,
-            diff_coast_ramp_angle_deg: 60.0,
+            // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — Fase 2 B: 120/65/75/mu0.15 (was 90/45/60/0.25, ~6x GEVP 170Nm)
+            diff_preload: 120.0,
+            diff_power_ramp_angle_deg: 65.0,
+            diff_coast_ramp_angle_deg: 75.0,
             diff_clutches: 4.0,
-            diff_clutch_friction_coeff: 0.25,
+            diff_clutch_friction_coeff: 0.15,
 
             // Suspension (Front)
             front_spring_length: 0.250,

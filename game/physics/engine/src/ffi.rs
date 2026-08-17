@@ -31,6 +31,15 @@ pub struct FfiRuntimeConfig {
     pub steering_speed: f64,
     pub countersteer_speed: f64,
     pub automatic_transmission: bool,
+
+    // Differential (Salisbury Clutch-Pack LSD) — tunable at runtime from Godot
+    // without recompiling Rust. GEVP's `rear_locking_differential_engage_torque`
+    // maps to preload=engage_torque & friction_coeff=0 (flat capacity ceiling).
+    pub diff_preload: f64,
+    pub diff_power_ramp_angle_deg: f64,
+    pub diff_coast_ramp_angle_deg: f64,
+    pub diff_clutches: f64,
+    pub diff_clutch_friction_coeff: f64,
 }
 
 #[no_mangle]
@@ -65,6 +74,11 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             steering_speed: sim.config.steering_speed,
             countersteer_speed: sim.config.countersteer_speed,
             automatic_transmission: sim.config.automatic_transmission,
+            diff_preload: sim.config.diff_preload,
+            diff_power_ramp_angle_deg: sim.config.diff_power_ramp_angle_deg,
+            diff_coast_ramp_angle_deg: sim.config.diff_coast_ramp_angle_deg,
+            diff_clutches: sim.config.diff_clutches,
+            diff_clutch_friction_coeff: sim.config.diff_clutch_friction_coeff,
         };
     }
     true
@@ -112,6 +126,22 @@ pub extern "C" fn f1_94_physics_apply_runtime_config(
         sim.config.countersteer_speed = cfg.countersteer_speed;
     }
     sim.config.automatic_transmission = cfg.automatic_transmission;
+
+    if cfg.diff_preload.is_finite() && cfg.diff_preload > 0.0 {
+        sim.config.diff_preload = cfg.diff_preload;
+    }
+    if cfg.diff_power_ramp_angle_deg.is_finite() && cfg.diff_power_ramp_angle_deg > 0.0 {
+        sim.config.diff_power_ramp_angle_deg = cfg.diff_power_ramp_angle_deg;
+    }
+    if cfg.diff_coast_ramp_angle_deg.is_finite() && cfg.diff_coast_ramp_angle_deg > 0.0 {
+        sim.config.diff_coast_ramp_angle_deg = cfg.diff_coast_ramp_angle_deg;
+    }
+    if cfg.diff_clutches.is_finite() && cfg.diff_clutches > 0.0 {
+        sim.config.diff_clutches = cfg.diff_clutches;
+    }
+    if cfg.diff_clutch_friction_coeff.is_finite() && cfg.diff_clutch_friction_coeff >= 0.0 {
+        sim.config.diff_clutch_friction_coeff = cfg.diff_clutch_friction_coeff;
+    }
     true
 }
 

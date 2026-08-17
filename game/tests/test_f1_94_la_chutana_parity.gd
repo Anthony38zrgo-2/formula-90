@@ -56,12 +56,14 @@ func _run_parity_test() -> void:
 	
 	var start_pos_z = vehicle.global_position.z
 	
-	# Simulate 600 frames (5.0 seconds at 60 Hz) of full acceleration on La Chutana
+	# Simulate 600 frames (5.0 seconds at 120 Hz, 10s at 60Hz) — physics rate aware
+	var phys_hz = Engine.physics_ticks_per_second
+	var total_frames = 600 # keep comparable to legacy 600@60=10s baseline; at 120Hz this is 5s real — use phys_hz for time
 	for frame in range(600):
 		vehicle.throttle_amount = 1.0
 		await physics_frame
 		
-		var sim_time_ms = int(frame * (1000.0 / 60.0))
+		var sim_time_ms = int(frame * (1000.0 / float(phys_hz)))
 		var spd = vehicle.get("speed_kmh") if vehicle.get("speed_kmh") != null else 0.0
 		var rpm = vehicle.get("motor_rpm") if vehicle.get("motor_rpm") != null else 4500.0
 		var gear = vehicle.get("current_gear") if vehicle.get("current_gear") != null else 1
@@ -81,17 +83,19 @@ func _run_parity_test() -> void:
 		var front_slip: float = maxf(absf(slips[0]), absf(slips[1])) if slips.size() >= 2 else 0.0
 		var rear_slip: float = maxf(absf(slips[2]), absf(slips[3])) if slips.size() >= 4 else 0.0
 
-		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.4f,%.4f,godot_parity_session,2026-08-15T00:00:00Z,60,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://addons/formula90s/scripts/f1_94_rust_vehicle.gd,1,{}" % [
+		var phys_hz_i = Engine.physics_ticks_per_second
+		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.4f,%.4f,godot_parity_session,2026-08-15T00:00:00Z,%d,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://addons/formula90s/scripts/f1_94_rust_vehicle.gd,1,{}" % [
 			sim_time_ms, spd, rpm, gear,
 			lat_g, long_g, vert_g,
 			fl_c, fr_c, rl_c, rr_c,
-			front_slip, rear_slip
+			front_slip, rear_slip,
+			phys_hz_i
 		]
 		telemetry_rows.append(row)
 		
 		if frame % 30 == 0:
 			print("Frame %3d (T=%.2fs): Speed=%5.1f km/h, RPM=%5.0f, Gear=%d, Pos=(%.1f, %.2f, %.1f), Comp=(%.1f, %.1f, %.1f, %.1f)" % [
-				frame, frame / 60.0, spd, rpm, gear, vehicle.global_position.x, vehicle.global_position.y, vehicle.global_position.z,
+				frame, frame / float(phys_hz_i), spd, rpm, gear, vehicle.global_position.x, vehicle.global_position.y, vehicle.global_position.z,
 				fl_c, fr_c, rl_c, rr_c
 			])
 	

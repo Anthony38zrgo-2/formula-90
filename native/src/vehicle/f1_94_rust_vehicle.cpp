@@ -153,6 +153,32 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_countersteer_speed"), &F194RustVehicle::get_countersteer_speed);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "countersteer_speed"), "set_countersteer_speed", "get_countersteer_speed");
 
+	// Differential (Salisbury LSD) tuning
+	ClassDB::bind_method(D_METHOD("set_diff_preload", "preload"), &F194RustVehicle::set_diff_preload);
+	ClassDB::bind_method(D_METHOD("get_diff_preload"), &F194RustVehicle::get_diff_preload);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "diff_preload"), "set_diff_preload", "get_diff_preload");
+
+	ClassDB::bind_method(D_METHOD("set_diff_power_ramp_angle_deg", "deg"), &F194RustVehicle::set_diff_power_ramp_angle_deg);
+	ClassDB::bind_method(D_METHOD("get_diff_power_ramp_angle_deg"), &F194RustVehicle::get_diff_power_ramp_angle_deg);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "diff_power_ramp_angle_deg"), "set_diff_power_ramp_angle_deg", "get_diff_power_ramp_angle_deg");
+
+	ClassDB::bind_method(D_METHOD("set_diff_coast_ramp_angle_deg", "deg"), &F194RustVehicle::set_diff_coast_ramp_angle_deg);
+	ClassDB::bind_method(D_METHOD("get_diff_coast_ramp_angle_deg"), &F194RustVehicle::get_diff_coast_ramp_angle_deg);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "diff_coast_ramp_angle_deg"), "set_diff_coast_ramp_angle_deg", "get_diff_coast_ramp_angle_deg");
+
+	ClassDB::bind_method(D_METHOD("set_diff_clutches", "clutches"), &F194RustVehicle::set_diff_clutches);
+	ClassDB::bind_method(D_METHOD("get_diff_clutches"), &F194RustVehicle::get_diff_clutches);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "diff_clutches"), "set_diff_clutches", "get_diff_clutches");
+
+	ClassDB::bind_method(D_METHOD("set_diff_clutch_friction_coeff", "mu"), &F194RustVehicle::set_diff_clutch_friction_coeff);
+	ClassDB::bind_method(D_METHOD("get_diff_clutch_friction_coeff"), &F194RustVehicle::get_diff_clutch_friction_coeff);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "diff_clutch_friction_coeff"), "set_diff_clutch_friction_coeff", "get_diff_clutch_friction_coeff");
+
+	// GEVP-facing alias for rear_locking_differential_engage_torque (gearbox_spec.gd)
+	ClassDB::bind_method(D_METHOD("set_rear_locking_differential_engage_torque", "torque"), &F194RustVehicle::set_rear_locking_differential_engage_torque);
+	ClassDB::bind_method(D_METHOD("get_rear_locking_differential_engage_torque"), &F194RustVehicle::get_rear_locking_differential_engage_torque);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rear_locking_differential_engage_torque"), "set_rear_locking_differential_engage_torque", "get_rear_locking_differential_engage_torque");
+
 	ClassDB::bind_method(D_METHOD("reset_vehicle", "pos", "yaw_rad"), &F194RustVehicle::reset_vehicle);
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 }
@@ -714,6 +740,11 @@ void F194RustVehicle::apply_runtime_config() {
 	cfg.steering_speed = steering_speed_;
 	cfg.countersteer_speed = countersteer_speed_;
 	cfg.automatic_transmission = automatic_transmission_;
+	cfg.diff_preload = diff_preload_;
+	cfg.diff_power_ramp_angle_deg = diff_power_ramp_angle_deg_;
+	cfg.diff_coast_ramp_angle_deg = diff_coast_ramp_angle_deg_;
+	cfg.diff_clutches = diff_clutches_;
+	cfg.diff_clutch_friction_coeff = diff_clutch_friction_coeff_;
 	fn_apply_runtime_config_(sim_ptr_, &cfg);
 }
 
@@ -734,6 +765,11 @@ void F194RustVehicle::sync_runtime_config_from_rust() {
 		steering_speed_ = cfg.steering_speed;
 		countersteer_speed_ = cfg.countersteer_speed;
 		automatic_transmission_ = cfg.automatic_transmission;
+		diff_preload_ = cfg.diff_preload;
+		diff_power_ramp_angle_deg_ = cfg.diff_power_ramp_angle_deg;
+		diff_coast_ramp_angle_deg_ = cfg.diff_coast_ramp_angle_deg;
+		diff_clutches_ = cfg.diff_clutches;
+		diff_clutch_friction_coeff_ = cfg.diff_clutch_friction_coeff;
 		set_mass((float)vehicle_mass_);
 	}
 }
@@ -925,6 +961,98 @@ void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 
 void F194RustVehicle::_exit_tree() {
 	unload_rust_dll();
+}
+
+// --- Differential (Salisbury LSD) tuning accessors ---
+
+void F194RustVehicle::set_diff_preload(double v) {
+	diff_preload_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_diff_preload() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.diff_preload;
+		}
+	}
+	return diff_preload_;
+}
+
+void F194RustVehicle::set_diff_power_ramp_angle_deg(double v) {
+	diff_power_ramp_angle_deg_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_diff_power_ramp_angle_deg() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.diff_power_ramp_angle_deg;
+		}
+	}
+	return diff_power_ramp_angle_deg_;
+}
+
+void F194RustVehicle::set_diff_coast_ramp_angle_deg(double v) {
+	diff_coast_ramp_angle_deg_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_diff_coast_ramp_angle_deg() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.diff_coast_ramp_angle_deg;
+		}
+	}
+	return diff_coast_ramp_angle_deg_;
+}
+
+void F194RustVehicle::set_diff_clutches(double v) {
+	diff_clutches_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_diff_clutches() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.diff_clutches;
+		}
+	}
+	return diff_clutches_;
+}
+
+void F194RustVehicle::set_diff_clutch_friction_coeff(double v) {
+	diff_clutch_friction_coeff_ = v;
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_diff_clutch_friction_coeff() const {
+	if (sim_ptr_ && fn_get_runtime_config_) {
+		F90RuntimeConfig cfg = {};
+		if (fn_get_runtime_config_(sim_ptr_, &cfg)) {
+			return cfg.diff_clutch_friction_coeff;
+		}
+	}
+	return diff_clutch_friction_coeff_;
+}
+
+void F194RustVehicle::set_rear_locking_differential_engage_torque(double v) {
+	// GEVP-facing alias: map a single engage-torque threshold onto the Salisbury
+	// model as a flat capacity ceiling (preload = engage_torque, mu = 0 => ramp_lock = 0).
+	rear_locking_differential_engage_torque_ = v;
+	if (v >= 0.0) {
+		diff_preload_ = v;
+		diff_clutch_friction_coeff_ = 0.0;
+	}
+	apply_runtime_config();
+}
+
+double F194RustVehicle::get_rear_locking_differential_engage_torque() const {
+	return rear_locking_differential_engage_torque_;
 }
 
 } // namespace godot
