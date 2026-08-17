@@ -30,12 +30,12 @@ func _run_test() -> void:
 		return
 
 	# Defaults are loaded from the authoritative JSON (data/vehicles/f1_94/f1_94_physics.json).
-	# The JSON differential section sets preload_nm=25.0, clutch_friction_coefficient=0.1.
+	# The JSON differential section sets preload_nm=40.0, clutch_friction_coefficient=0.1.
 	var dp = vehicle.get_diff_preload()
 	var mu = vehicle.get_diff_clutch_friction_coeff()
-	print("[OK] default diff_preload=%.3f (expect 25) mu=%.3f (expect 0.1)" % [dp, mu])
-	if abs(dp - 25.0) > 1e-6:
-		failures.append("default diff_preload=%f expected 25 (JSON)" % dp)
+	print("[OK] default diff_preload=%.3f (expect 40) mu=%.3f (expect 0.1)" % [dp, mu])
+	if abs(dp - 40.0) > 1e-6:
+		failures.append("default diff_preload=%f expected 40 (JSON)" % dp)
 	if abs(mu - 0.1) > 1e-6:
 		failures.append("default mu=%f expected 0.1 (JSON)" % mu)
 

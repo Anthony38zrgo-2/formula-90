@@ -1,8 +1,0 @@
-[gd_scene load_steps=2 format=3]
-
-[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_1996/f1_1996.obj" id="1_model"]
-
-[node name="V10Visual" type="Node3D"]
-
-[node name="ImportedF1_1996" parent="." instance=ExtResource("1_model")]
-

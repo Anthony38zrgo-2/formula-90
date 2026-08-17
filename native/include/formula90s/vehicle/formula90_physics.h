@@ -73,7 +73,7 @@ typedef struct F90TelemetryOutput {
     uint32_t aids_enabled_mask;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 6
+#define F1_94_PHYSICS_ABI_VERSION 7
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;
@@ -99,6 +99,17 @@ typedef struct F90RuntimeConfig {
     // bit3=steering slip, bit4=countersteer, bit5=auto-clutch, bit6=launch,
     // bit7=brake-assist).
     uint32_t aids_enabled_mask;
+
+    // Inertia multipliers from JSON (x, y, z)
+    double inertia_multiplier_x;
+    double inertia_multiplier_y;
+    double inertia_multiplier_z;
+
+    // Suspension geometry from JSON
+    double suspension_front_spring_length;
+    double suspension_rear_spring_length;
+    double suspension_front_resting_ratio;
+    double suspension_rear_resting_ratio;
 } F90RuntimeConfig;
 
 uint32_t f1_94_physics_abi_version(void);

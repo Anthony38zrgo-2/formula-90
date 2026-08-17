@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 6;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 7;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -45,6 +45,17 @@ pub struct FfiRuntimeConfig {
     // bit0=ABS, bit1=TC, bit2=stability, bit3=steering slip, bit4=countersteer,
     // bit5=auto-clutch, bit6=launch, bit7=brake-assist.
     pub aids_enabled_mask: u32,
+
+    // Inertia multipliers from JSON (x, y, z)
+    pub inertia_multiplier_x: f64,
+    pub inertia_multiplier_y: f64,
+    pub inertia_multiplier_z: f64,
+
+    // Suspension geometry from JSON
+    pub suspension_front_spring_length: f64,
+    pub suspension_rear_spring_length: f64,
+    pub suspension_front_resting_ratio: f64,
+    pub suspension_rear_resting_ratio: f64,
 }
 
 #[no_mangle]
@@ -85,6 +96,13 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             diff_clutches: sim.config.diff_clutches,
             diff_clutch_friction_coeff: sim.config.diff_clutch_friction_coeff,
             aids_enabled_mask: sim.aids.to_bits(),
+            inertia_multiplier_x: sim.config.inertia_multipliers.x,
+            inertia_multiplier_y: sim.config.inertia_multipliers.y,
+            inertia_multiplier_z: sim.config.inertia_multipliers.z,
+            suspension_front_spring_length: sim.config.front_spring_length,
+            suspension_rear_spring_length: sim.config.rear_spring_length,
+            suspension_front_resting_ratio: sim.config.front_resting_ratio,
+            suspension_rear_resting_ratio: sim.config.rear_resting_ratio,
         };
     }
     true
@@ -147,6 +165,27 @@ pub extern "C" fn f1_94_physics_apply_runtime_config(
     }
     if cfg.diff_clutch_friction_coeff.is_finite() && cfg.diff_clutch_friction_coeff >= 0.0 {
         sim.config.diff_clutch_friction_coeff = cfg.diff_clutch_friction_coeff;
+    }
+    if cfg.inertia_multiplier_x.is_finite() && cfg.inertia_multiplier_x > 0.0 {
+        sim.config.inertia_multipliers.x = cfg.inertia_multiplier_x;
+    }
+    if cfg.inertia_multiplier_y.is_finite() && cfg.inertia_multiplier_y > 0.0 {
+        sim.config.inertia_multipliers.y = cfg.inertia_multiplier_y;
+    }
+    if cfg.inertia_multiplier_z.is_finite() && cfg.inertia_multiplier_z > 0.0 {
+        sim.config.inertia_multipliers.z = cfg.inertia_multiplier_z;
+    }
+    if cfg.suspension_front_spring_length.is_finite() && cfg.suspension_front_spring_length > 0.0 {
+        sim.config.front_spring_length = cfg.suspension_front_spring_length;
+    }
+    if cfg.suspension_rear_spring_length.is_finite() && cfg.suspension_rear_spring_length > 0.0 {
+        sim.config.rear_spring_length = cfg.suspension_rear_spring_length;
+    }
+    if cfg.suspension_front_resting_ratio.is_finite() && cfg.suspension_front_resting_ratio > 0.0 {
+        sim.config.front_resting_ratio = cfg.suspension_front_resting_ratio;
+    }
+    if cfg.suspension_rear_resting_ratio.is_finite() && cfg.suspension_rear_resting_ratio > 0.0 {
+        sim.config.rear_resting_ratio = cfg.suspension_rear_resting_ratio;
     }
     sim.aids = AidsMask::from_bits(cfg.aids_enabled_mask);
     true

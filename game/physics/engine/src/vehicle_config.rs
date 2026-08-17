@@ -748,7 +748,7 @@ struct JsonVehicleSpec {
 fn default_schema_version() -> u32 { 1 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonChassis {
     #[serde(default = "default_vehicle_name")]
     vehicle_name: String,
@@ -778,13 +778,14 @@ fn default_front_weight_dist() -> f64 { 0.45 }
 fn default_cog_height() -> f64 { -0.12 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonVec3 { x: f64, y: f64, z: f64 }
 impl Default for JsonVec3 {
     fn default() -> Self { Self { x: 1.0, y: 1.0, z: 1.0 } }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonGeometry {
     #[serde(default = "default_wheelbase")]
     wheelbase: f64,
@@ -792,10 +793,17 @@ struct JsonGeometry {
     front_track: f64,
     #[serde(default = "default_rear_track")]
     rear_track: f64,
+    #[serde(default)]
+    wheel_hubs: Option<HashMap<String, JsonVec3>>,
 }
 impl Default for JsonGeometry {
     fn default() -> Self {
-        Self { wheelbase: default_wheelbase(), front_track: default_front_track(), rear_track: default_rear_track() }
+        Self {
+            wheelbase: default_wheelbase(),
+            front_track: default_front_track(),
+            rear_track: default_rear_track(),
+            wheel_hubs: None,
+        }
     }
 }
 fn default_wheelbase() -> f64 { 2.92065 }
@@ -803,7 +811,7 @@ fn default_front_track() -> f64 { 1.5925 }
 fn default_rear_track() -> f64 { 1.5246 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonSteering {
     #[serde(default = "default_max_steer")]
     max_steering_angle: f64,
@@ -847,7 +855,7 @@ fn default_steer_exp() -> f64 { 1.50 }
 fn default_ackermann() -> f64 { 0.15 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonPowertrain {
     #[serde(default = "default_max_torque")]
     max_torque: f64,
@@ -886,6 +894,8 @@ struct JsonPowertrain {
     #[serde(default = "default_handbrake_frac")]
     handbrake_torque_fraction: f64,
     #[serde(default)]
+    automatic_shift: Option<JsonAutomaticShift>,
+    #[serde(default)]
     differential: JsonDifferential,
 }
 impl Default for JsonPowertrain {
@@ -902,6 +912,7 @@ impl Default for JsonPowertrain {
             idle_disengagement_hysteresis_rpm: default_idle_hysteresis(),
             variable_drag_ratio: default_var_drag(), constant_brake_ratio: default_const_brake(),
             handbrake_torque_fraction: default_handbrake_frac(),
+            automatic_shift: None,
             differential: JsonDifferential::default(),
         }
     }
@@ -926,7 +937,43 @@ fn default_var_drag() -> f64 { 0.10 }
 fn default_const_brake() -> f64 { 0.02 }
 fn default_handbrake_frac() -> f64 { 0.4 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonAutomaticShift {
+    #[serde(default)]
+    upshift_normalized_rpm_low_throttle: f64,
+    #[serde(default)]
+    upshift_normalized_rpm_full_throttle: f64,
+    #[serde(default)]
+    downshift_normalized_rpm_low_throttle: f64,
+    #[serde(default)]
+    downshift_normalized_rpm_full_throttle: f64,
+    #[serde(default)]
+    downshift_throttle_aggression_factor: f64,
+    #[serde(default)]
+    upshift_coast_normalized_rpm: f64,
+    #[serde(default)]
+    downshift_coast_normalized_rpm: f64,
+    #[serde(default)]
+    reverse_max_speed_ms: f64,
+    #[serde(default)]
+    parked_resume_speed_ms: f64,
+    #[serde(default)]
+    kickdown_delay_factor: f64,
+    #[serde(default)]
+    wheel_road_spin_blend_threshold_rads: f64,
+    #[serde(default)]
+    wheel_spin_weight: f64,
+    #[serde(default)]
+    road_spin_weight: f64,
+    #[serde(default)]
+    upshift_target_rpm_margin_high: f64,
+    #[serde(default)]
+    downshift_target_rpm_margin_high: f64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonDifferential {
     #[serde(default = "default_preload")]
     preload_nm: f64,
@@ -956,6 +1003,7 @@ fn default_clutches() -> f64 { 4.0 }
 fn default_slip_threshold() -> f64 { 0.5 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonSuspension {
     #[serde(default)]
     front: JsonSuspensionAxle,
@@ -967,6 +1015,7 @@ struct JsonSuspension {
 fn default_tri_ray() -> f64 { 0.40 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonSuspensionAxle {
     #[serde(default)]
     spring_length: f64,
@@ -1002,7 +1051,7 @@ fn default_rebound_mult() -> f64 { 1.1 }
 fn default_bump_stop() -> f64 { 2.2 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonTires {
     #[serde(default)]
     front: JsonTireAxle,
@@ -1031,7 +1080,7 @@ fn default_braking_grip() -> f64 { 1.08 }
 fn default_airborne_decay() -> f64 { 2.0 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonTireAxle {
     #[serde(default = "default_tire_radius_front")]
     radius: f64,
@@ -1049,7 +1098,8 @@ fn default_tire_radius_front() -> f64 { 0.31695 }
 fn default_tire_width_front() -> f64 { 0.30030 }
 fn default_wheel_mass_front() -> f64 { 12.0 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonSurfaceEntry {
     friction: f64,
     stiffness: f64,
@@ -1063,7 +1113,7 @@ fn default_lat_assist() -> f64 { 0.05 }
 fn default_long_ratio() -> f64 { 0.5 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 struct JsonBrakes {
     #[serde(default = "default_brake_bias")]
     front_brake_bias: f64,
@@ -1091,6 +1141,7 @@ fn default_abs_pulse() -> f64 { 0.03 }
 fn default_abs_thresh() -> f64 { 12.0 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonAero {
     #[serde(default = "default_cd")]
     drag_coefficient: f64,
@@ -1134,6 +1185,7 @@ fn default_yaw_exp() -> f64 { 1.30 }
 fn default_flex() -> f64 { 0.0012 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
 struct JsonAeroSplit {
     #[serde(default = "default_split_front")]
     front: f64,
@@ -1551,7 +1603,10 @@ impl JsonVehicleSpec {
                 },
             },
             geometry: JsonGeometry {
-                wheelbase: cfg.wheelbase, front_track: cfg.front_track, rear_track: cfg.rear_track,
+                wheelbase: cfg.wheelbase,
+                front_track: cfg.front_track,
+                rear_track: cfg.rear_track,
+                wheel_hubs: None,
             },
             steering: JsonSteering {
                 max_steering_angle: cfg.max_steering_angle,
@@ -1584,6 +1639,7 @@ impl JsonVehicleSpec {
                 variable_drag_ratio: cfg.variable_drag_ratio,
                 constant_brake_ratio: cfg.constant_brake_ratio,
                 handbrake_torque_fraction: cfg.handbrake_torque_fraction,
+                automatic_shift: None,
                 differential: JsonDifferential {
                     preload_nm: cfg.diff_preload,
                     power_ramp_angle_deg: cfg.diff_power_ramp_angle_deg,
@@ -1821,8 +1877,17 @@ mod json_tests {
 
     #[test]
     fn deny_unknown_fields_rejects_typos() {
-        let json = r#"{"schema_version": 2, "aids": {"traction_controll": true}}"#;
-        assert!(VehicleConfig::from_json_str(json).is_err());
+        let json_aids = r#"{"schema_version": 2, "aids": {"traction_controll": true}}"#;
+        assert!(VehicleConfig::from_json_str(json_aids).is_err());
+
+        let json_chassis = r#"{"schema_version": 2, "chassis": {"veh_mass": 575.0}}"#;
+        assert!(VehicleConfig::from_json_str(json_chassis).is_err());
+
+        let json_powertrain = r#"{"schema_version": 2, "powertrain": {"maximum_torque": 450.0}}"#;
+        assert!(VehicleConfig::from_json_str(json_powertrain).is_err());
+
+        let json_suspension = r#"{"schema_version": 2, "suspension": {"front": {"spring_len": 0.25}}}"#;
+        assert!(VehicleConfig::from_json_str(json_suspension).is_err());
     }
 
     #[test]

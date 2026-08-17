@@ -1,262 +1,142 @@
-# HANDOFF AGENTE — F1-94 DIAGNOSTICO FORENSE Y PLAN DE FALSIFICACION (1-5)
-# BRANCH: f1-94 | HEAD: 58107c7 (66638b3 physics Fase2B + 58107c7 agents v1.1.0) | GODOT: .tools/godot/Godot_v4.7.1-stable_win64_console.exe
-# SOT: diagnostics/runtime.sqlite | AGENT_DB: .agents/data/agents.sqlite | TOOLS: .agents/tools/diag.py, run_godot.py, profile.py
-# INVARIANT: Fail Faster Adapt Faster — cheapest falsification before mutation | ARCH-SCOPE-LOCK activo
+================================================================================
+FORMULA-90: INFORME DE HANDOFF Y PLAN DE ALINEACIÓN DE F1_94_PHYSICS.JSON
+================================================================================
+Fecha: 2026-08-17
+Rama/Workspace: D:\Formula90s
+Script Canónico de Ejecución: scripts/run_f1-94.ps1
+Destino de Deprecación: D:\f1-jordan-197-deprecated
 
-## 0. CONTEXTO OPERATIVO — LEER ANTES DE ACTUAR
-- Ownership: Rust engine (game/physics/engine/src/*) | GDExtension bridge (native/src/vehicle/f1_94_rust_vehicle.cpp, include/formula90s/vehicle/*) | Godot scenes (game/scenes/vehicles/f1_94/f1_94_rust.tscn)
-- Config canonica activa: VehicleConfig::f1_94_canonical() @ game/physics/engine/src/vehicle_config.rs:142
-  - wheelbase 2.92065, front_track 1.5925, rear_track 1.5246, front_radius 0.31695, rear_radius 0.32901
-  - front_spring 0.250/rest 0.28 (k=15928 N/m), rear 0.180/rest 0.35 (k=21650 N/m), damping 0.80, ARB F0.20/R0.05
-  - powertrain: max_torque 340Nm, max_rpm 17000, idle 4500, motor_moment 0.12, final_drive 6.30, gear_ratios [2.65,2.10,1.75,1.50,1.32,1.18]
-  - diff corregido: preload 170, power_ramp 65deg, coast_ramp 75deg, clutches 4, mu 0.0 (GE170 flat capacity) — FfiRuntimeConfig 5 fields runtime-tunable via Godot props
-  - aero 4-pilar: Cdrag 0.78, frontal_area 1.25, Cdownforce 1.995, split F0.15/D0.60/R0.25, air 1.225, lag_tau 0.048, blend 4.167-27.778, yaw_decay 1.30, flex 0.0012
-- Telemetria historica pre-correccion: reports/godot_f1_94_chutana_telemetry_B120_fixed_20260816.csv (120Hz, 601 filas, diff 120/65/75/4/0.15)
-- Telemetria Rust rust_physics_telemetry_sample.csv OBSOLETA (02:14 16/08, pre-aero pre-Fase2B) — NO usar como baseline
-- DLLs desplegadas: game/addons/formula90s/bin/vehicle_physics_engine.dll + libformula90s.windows.template_release.x86_64.dll (scons OK, ABI=4; diagnostics append-only)
-- Scene ray geometry: 12 rays (In/Mid/Out por rueda), span 0.4*width (front 0.12012, rear 0.14733), peso 1/2/1 center-biased; setup_raycasts() en cpp:296 reposiciona tscn a anchors Rust en runtime (fallback tscn front y 0.143973 != 0.17397 config — latente)
+--------------------------------------------------------------------------------
+1. RESUMEN DEL ESTADO ACTUAL DEL PROYECTO
+--------------------------------------------------------------------------------
+- Limpieza y deprecación previa: Se movieron 85 elementos obsoletos (modelos GLB,
+  escenas, scripts y datos de Jordan 191/197/1995, F1 2026 y baseline 2026) a
+  D:\f1-jordan-197-deprecated. La carpeta `game/` quedó 100% enfocada en F1-94 y
+  la pista La Chutana.
+- Análisis de 5 factores de discrepancia en la cadena canónica completado.
+- Código implementado al 100% en las 3 capas:
+  1. Rust Physics Engine (`game/physics/engine/`)
+  2. C++ GDExtension (`native/`)
+  3. GDScript Gameplay & Controllers (`game/addons/formula90s/scripts/`)
 
-## SINTOMAS CUANTIFICADOS (EVIDENCIA TELEMETRICA)
-- ARRANCADA historica pre-correccion: Rear_Slip pico 1.75 @108ms; contaminada por settle vertical y throttle temprano. Launch limpio post-correccion: rear slip inicial 0.2666, forward speed monotona.
-- SNAP-OVERSTEER historico pre-correccion: Rear_Slip 0.27-0.29 y Lat_G divergente en 3a; A/B limpio confirma que el lock dinamico 120/65/75/4/0.15 era causal. Con default GE170, max_abs_lat_g=0.0233 y yaw_rate=0.0316 rad/s.
+--------------------------------------------------------------------------------
+2. DETALLE DE LOS 5 PUNTOS RESUELTOS EN EL CÓDIGO
+--------------------------------------------------------------------------------
 
-## CADENAS CAUSALES RANKEADAS (EVIDENCE BEFORE SYNTHESIS)
-A. WHEELSPIN SOSTENIDO (CONFIRMADA): el brush degrada la fuerza lateral con slip; el clutch torque real debe usarse para tuning. El clamp 544Nm es solo un limite teorico, no una medicion del launch.
-B. LSD DINAMICO (CONFIRMADA): A/B limpio reduce max_abs_lat_g de 0.234 a 0.0178 y yaw_rate de 0.103 a 0.0306. El default fue corregido a preload 170, mu 0.0. Aero yaw decay no participa en el onset: f_yaw~1.0 a 120-130km/h.
-C. CLAMP DT-DEPENDIENTE (NO CAUSA LATERAL CONFIRMADA): Rust standalone estable en yaw a 60/120Hz; la sensibilidad dt sigue siendo una propiedad del modelo pero no explica el onset Godot observado.
-D. INTEGRACION GODOT vs RUST (PARCIAL): el transitorio spawn/settle Godot esta confirmado; un bug numerico del solver Godot no esta probado. Raycasts convergen a carga estatica y el onset post-settle desaparece con el default GE170.
+[PUNTO 1] Fallback silencioso en Rust / C++ (deny_unknown_fields):
+  - Archivos:
+    * `game/physics/engine/src/vehicle_config.rs`
+    * `game/physics/engine/src/ffi.rs`
+    * `native/src/vehicle/f1_94_rust_vehicle.cpp`
+  - Solución aplicada:
+    * Se agregó `#[serde(default, deny_unknown_fields)]` a TODAS las subestructuras
+      del JSON (`JsonChassis`, `JsonGeometry`, `JsonSteering`, `JsonPowertrain`,
+      `JsonDifferential`, `JsonSuspension`, `JsonSuspensionAxle`, `JsonTires`,
+      `JsonTireAxle`, `JsonSurfaceEntry`, `JsonBrakes`, `JsonAero`, `JsonAeroSplit`,
+      `JsonVec3`, `JsonAutomaticShift`).
+    * Se mapearon `automatic_shift` y `wheel_hubs` en las estructuras de Serde.
+    * Si el JSON falla la deserialización, C++ emite un error explícito y visible
+      vía `printerr("[F194RustVehicle] CRITICAL JSON PARSE ERROR: ...")`.
 
-## PIPELINE POR PLAN: classify->preflight->baseline->ownership->hypothesis->cheapest experiment->1 reversible delta->validate->keep|rollback | 1-HYPOTHESIS/ITER | REUSE-BUILDS | PRESERVE-WORKTREE
+[PUNTO 2] Ayudas de conducción sobrescribiendo parámetros (DrivingAidsController):
+  - Archivo: `game/addons/formula90s/scripts/driving_aids.gd`
+  - Solución aplicada:
+    * `_capture_baseline()` ahora lee el valor de `automatic_transmission` directamente
+      del vehículo/JSON y establece `aids[0] = bool(auto_trans)` dinámicamente.
+    * `aids` se inicializa con `[false, false, false, false, false]`, evitando
+      sobrescribir `automatic_transmission: false` en `_ready()`.
+    * Al restaurar la ayuda 0, se recupera el baseline original del JSON.
 
-# ——— PLAN 1 — BENCHMARK RUST FRESCO HEAD 60Hz vs 120Hz (aisla dt vs tuning) ———
-OBJ: Determinar si Lat_G +-0.10-0.15 arrancada es reproducible en solver Rust puro y depende de dt.
-HIPOTESIS: clamp dt-dependiente causa inestabilidad lat; a 120Hz inestable, a 60Hz estable.
+[PUNTO 3] Inercia en Godot RigidBody vs Rust:
+  - Archivos:
+    * `game/physics/engine/src/ffi.rs` (ABI v7, campos `inertia_multiplier_x/y/z`)
+    * `native/include/formula90s/vehicle/formula90_physics.h`
+    * `native/include/formula90s/vehicle/f1_94_rust_vehicle.hpp`
+    * `native/src/vehicle/f1_94_rust_vehicle.cpp`
+  - Solución aplicada:
+    * FFI transfiere `inertia_multiplier_x`, `inertia_multiplier_y`, `inertia_multiplier_z`
+      desde el JSON / Rust hacia C++.
+    * En `solve_forces_for_state()`, se calcula `configured_inertia` multiplicando
+      `base_inertia` por los multiplicadores individuales del JSON (`1.05, 1.15, 1.05`),
+      reemplazando el factor fijo `1.10f`.
 
-PREFLIGHT: cargo --version; Test-Path game/physics/engine/Cargo.toml; probe existence bins (Get-ChildItem game/physics/engine/target/release/*.exe); cargo test --test differential_test -- --nocapture OK 5/5 esperado.
+[PUNTO 4] Desplazamiento visual de suspensión vs Fuerzas físicas:
+  - Archivos:
+    * `game/physics/engine/src/ffi.rs`
+    * `native/include/formula90s/vehicle/formula90_physics.h`
+    * `native/include/formula90s/vehicle/f1_94_rust_vehicle.hpp`
+    * `native/src/vehicle/f1_94_rust_vehicle.cpp`
+  - Solución aplicada:
+    * Se expusieron a través de FFI `suspension_front_spring_length`, `suspension_rear_spring_length`,
+      `suspension_front_resting_ratio` y `suspension_rear_resting_ratio`.
+    * En `update_wheel_visuals()`, se reemplazaron las constantes fijas (0.250/0.180 y 0.400/0.350)
+      por las variables sincronizadas desde el JSON/Rust.
+    * El ángulo de dirección visual de fallback usa `max_steering_angle_` del JSON.
 
-EXPERIMENTO (cheapest, read-only + 1 test reversible):
-1. Crear game/physics/engine/tests/launch_standalone_test.rs:
-   use f194_engine::{VehicleConfig, VehicleSimulator, VehicleInput, TriRaycastSample, RaycastHit, Vec3, SurfaceType};
-   fn synthetic_samples(cfg:&VehicleConfig)->[TriRaycastSample;4] { para cada WheelIndex: anchor=cfg.wheel_anchor_local(w); radius=tire_radius; spring=spring_length; resting_ratio; distance=radius+spring*(1.0-resting_ratio) => raw_spring=spring*(1-resting); grounded true; Hit {is_colliding true, distance, point=anchor+Vec3(0,-distance,0), normal (0,1,0), surface Road} triplicar In/Center/Out con span cfg.tri_ray_spacing_ratio*width }
-   fn run(dt: f64, out: &str) { cfg=f1_94_canonical(); sim=VehicleSimulator::new(cfg, Vec3::ZERO, 0.0); samples=synthetic; input=VehicleInput{throttle:1.0, steering:0.0, brake:0.0, handbrake:0.0, clutch:0.0, gear_request:None}; for _ in 0..(5.0/dt) as usize { sim.solve_forces(&input,&samples,dt); sim.integrate_standalone etc? O mejor sim.step(&input,&samples,dt) y telem=sim.build_telemetry_frame() ; escribir CSV mismo esquema reports incl physics_hz, front_slip rear_slip, lat_g, comps } }
-   tests: #[test] fn run_60() run(1.0/60.0, "reports/rust_launch_head_60hz.csv"); #[test] fn run_120() ...
-2. cargo test --test launch_standalone_test -- --nocapture (workdir game/physics/engine)
+[PUNTO 5] Modulación de entrada en F194RustInputController:
+  - Archivo: `game/addons/formula90s/scripts/f1_94_rust_input_controller.gd`
+  - Solución aplicada:
+    * Se agregó `@export var throttle_exponent: float = 1.0`.
+    * La lectura del acelerador ahora es lineal 1:1 por defecto, eliminando la
+      zona muerta cuadrática (`pow(..., 2.0)`) y entregando la curva de par exacta
+      del JSON al motor.
 
-VALIDATE: Import-Csv ambos, comparar en 0-1.5s: Lat_G p2p (max-min), pico Rear_Slip, Rear_Slip @5s.
-CRITERIO: 60Hz p2p <0.03G Y 120Hz >0.08G => C CONFIRMADA (dt). Ambos inestables => A (tuning). Ambos estables => falsifica C -> escalar a PLAN 5.
-KEEP|ROLLBACK: test file queda staged solo si gate humano ACCEPTED; else rollback.
+--------------------------------------------------------------------------------
+3. ARCHIVOS MODIFICADOS
+--------------------------------------------------------------------------------
+1. `game/physics/engine/src/vehicle_config.rs`
+   - `deny_unknown_fields` en todos los structs JSON.
+   - Declarados `JsonAutomaticShift` y `wheel_hubs`.
+   - Tests de regresión para typos en subestructuras (`json_tests`).
 
-# ——— PLAN 2 — A/B LSD RUNTIME Fase2B vs GEVP flat 170Nm mu0 (aisla lock) ———
-OBJ: Falsificar si lock LSD casi-solido causa snap-oversteer necesario.
-HIPOTESIS: con engage_torque=170 (preload=170 mu0) lock cae y snap desaparece.
+2. `game/physics/engine/src/ffi.rs`
+   - ABI bump a v7 (`F1_94_PHYSICS_ABI_VERSION = 7`).
+   - `FfiRuntimeConfig` ampliado con inercia y suspensión.
+   - Sincronización en `get_runtime_config` y `apply_runtime_config`.
 
-PREFLIGHT: verificar props expuestas nativas (get_diff_preload etc) OK via test_f1_94_diff_runtime.gd PASSED previo; run_godot.py --help OK.
+3. `native/include/formula90s/vehicle/formula90_physics.h`
+   - ABI bump a v7.
+   - `F90RuntimeConfig` actualizado con los nuevos campos de inercia y suspensión.
 
-EXPERIMENTO (1 delta reversible, no rebuild):
-1. Copiar game/tests/test_f1_94_la_chutana_parity.gd -> game/tests/test_f1_94_chutana_diff_ab.gd
-   Modificar _run: dos pasadas seriales cada 600 physics_frames:
-     pasada BASE: leer get_diff_preload confirmar 120; full throttle loop; loguear cada 30 frames CSV a stdout "[AB][BASE] t,v,rpm,gear,lat,rear_slip,RL,RR"
-     pasada GE: antes del frame 0 vehicle.set_rear_locking_differential_engage_torque(170.0); mismo loop "[AB][GE170]"
-   (alternativa A/B preload puro: set_diff_preload(60) + set_diff_clutch_friction_coeff(0.08))
-2. python .agents/tools/run_godot.py --task test_f1_94_chutana_diff_ab --godot .tools/godot/Godot_v4.7.1-stable_win64_console.exe -- --headless --path game --script res://tests/test_f1_94_chutana_diff_ab.gd
-3. Capturar combined.log -> reports/godot_chutana_diff_ab_<yyyymmdd>.csv
+4. `native/include/formula90s/vehicle/f1_94_rust_vehicle.hpp`
+   - Nuevos miembros: `inertia_multiplier_x/y/z_`, `suspension_front/rear_spring_length_`,
+     `suspension_front/rear_resting_ratio_`.
 
-VALIDATE: delta Lat_G ultimos 500ms: BASE >0.15G y GE <0.08G => LSD causal CONFIRMADO. Ambos >0.15 => LSD no suficiente => priorizar PLAN 3/4. Parcial 0.08-0.15 => contribuye no unico -> seguir PLAN 3.
-KEEP|ROLLBACK: script queda si gate ACCEPTED; rollback si FALSIFICADO.
+5. `native/src/vehicle/f1_94_rust_vehicle.cpp`
+   - Log de error explícito en `_ready()`.
+   - Inercia dinámica en `solve_forces_for_state()`.
+   - Posicionamiento visual dinámico en `update_wheel_visuals()`.
+   - Sincronización en `sync_runtime_config_from_rust()` y `apply_runtime_config()`.
 
-# ——— PLAN 3 — TEST UNITARIO RUST PRESUPUESTO CLUTCH-vs-GRIP + curva brush (cuantifica cadena A/B.1) ———
-OBJ: Cuantificar matematicamente budget roto y degradacion lateral del brush model.
-HIPOTESIS: drive/grip >3x en 1a y lateral cae >60% a slip 1.5.
+6. `game/addons/formula90s/scripts/driving_aids.gd`
+   - Inicialización dinámica de `aids[0]` desde el vehículo.
+   - Restauración respetando baseline.
 
-PREFLIGHT: cargo test differential_test OK; vehicle_config::calculate_spring_rate etc accesible.
+7. `game/addons/formula90s/scripts/f1_94_rust_input_controller.gd`
+   - Exponente de aceleración lineal configurable (`throttle_exponent = 1.0`).
 
-EXPERIMENTO (1 file test reversible):
-Crear game/physics/engine/tests/launch_budget_test.rs:
- - test_budget_ratio: cfg f1_94_canonical; N_static rear = mass_over_wheel(RL)*g = 139*9.81=1363N/wheel; con squat (rear comp 110mm -> extra= (110-63mm)/1000 * k_rear =0.047*21650≈1017N) N≈2380; friction per wheel = (2.9*N - N/(368*0.21*0.2)).max0 ≈ (6902-154)≈6748; con clamp 0.5 => long cap 3374N/wheel vs drive per wheel = clutch_clamp*ratio/2 =544*16.695/2≈4541N => ratio drive/grip ≈1.35 al launch estatico, pero con clutch transitorio a* -> 9083 total => 2.7x. Assert print ratio.
- - test_brush_curve: para sy en [0.1,0.5,1.0,1.5] con sx barrido 0-1.0, N estatica, surface Road, llamar tire.process_wheel_forces directo (local_wheel_velocity con v_forward 36m/s, v_lat=sx*v) y recolectar lateral_force vs sx; imprimir tabla.
- cargo test --test launch_budget_test -- --nocapture
+--------------------------------------------------------------------------------
+4. COMANDOS PARA RETOMAR Y VALIDAR EL SISTEMA
+--------------------------------------------------------------------------------
+Para el siguiente agente o desarrollador, ejecutar los siguientes pasos en orden:
 
-VALIDATE: ratio >2.5 => A cuantitativamente CONFIRMADA => candidato fix futuro (bajar MAX_CLUTCH_TORQUE_RATIO, remap torque curva 1a, subir long clamp) requiere decision humana, no auto-fix. Brush: si lateral a sy1.5 <0.4*lateral sy0.1 => degradacion elipse confirmada.
-KEEP|ROLLBACK: test queda si documenta; no muta produccion.
+Paso 1: Compilar la DLL de C++ GDExtension (Release y Debug):
+  scons platform=windows target=template_release
+  scons platform=windows target=template_debug
 
-# ——— PLAN 4 — A/B AERO REGIMEN DOWNFORCE PLENO vs PARCIAL (aisla Pillar C amplificador) ———
-OBJ: Falsificar si downforce pleno (S(v)=1 arriba 27.78m/s) + yaw_decay es condicion necesaria para divergencia.
-HIPOTESIS: a 80km/h (22.2m/s, S<1, q~302Pa) estable; a 130 (S=1, q~795Pa) diverge a mismo throttle history.
+Paso 2: Validar tests unitarios de Rust:
+  cargo test --manifest-path game/physics/engine/Cargo.toml
 
-PREFLIGHT: aero.rs step con s, f_yaw diagnosticos OK (no FFI expuesto, solo internal); run_godot OK.
+Paso 3: Validar físicas de F1-94 en Godot:
+  powershell -ExecutionPolicy Bypass -File scripts/run_f1-94.ps1 -TestPhysics
 
-EXPERIMENTO (1 script reversible):
-Crear game/tests/test_f1_94_chutana_aero_ab.gd (fork de diff_ab): una pasada BASE extendida 900 frames (7.5s @120Hz), full throttle hasta v>=v_target luego throttle=0 coasting;
- variantes v_target 80km/h y 130; loguear cada 20 frames: t, v, lat_g, rear_slip, RL,RR, total_downforce estimado (si expuesto) sino fwd speed.
- Ejecutar dos runs seriales o dos scripts separados con run_godot.py como Plan2.
+Paso 4: Ejecutar Smoke Tests completos (HUD + Minimapa + Mountains3D + Audio):
+  powershell -ExecutionPolicy Bypass -File scripts/run_f1-94.ps1 -Smoke
+  powershell -ExecutionPolicy Bypass -File scripts/run_f1-94.ps1 -SmokeAudio
 
-VALIDATE: post-corte (500ms window), pendiente Lat_G: 130 diverge (>0.02G/s crecimiento) y 80 decae (<0) => aero-pleno condicion necesaria => Pillar C causal. Divergen ambas => aero no dominante => driver es powertrain/tire. Si Plan2 ya estabilizo, este plan es caracterizacion no bloqueante.
-KEEP|ROLLBACK: igual que Plan2.
+Paso 5: Ejecutar Suite Automatizada Completa:
+  powershell -ExecutionPolicy Bypass -File scripts/test_windows.ps1
 
-# ——— PLAN 5 — LATENTE: INTEGRACION GODOT RIGIDBODY3D vs RUST STANDALONE (aisla solver+suspension+spawn) ———
-OBJ: Aislar si la divergencia lat y el mismatch de comps front (Godot 60mm vs Rust 172mm) vienen de la capa Godot (solver, inertia, ray sampling, apply_central_force) y no del core Rust.
-HIPOTESIS: con idem config+samples+dt, Rust standalone (simulation.rs:286 integrate_standalone) permanece estable a 60 y 120Hz y con comps front ~70mm estaticos, mientras Godot diverge y fronta ~49mm reposo — entonces la causa es sampling/force-application en f1_94_rust_vehicle.cpp, no tuning.
-
-CONDICIONES DE ACTIVACION: Se activa SOLO si PLAN1 == AMBOS_ESTABLES (Rust estable a 60 y 120Hz pero Godot sigue inestable en PLAN2 base). Si PLAN1 muestra dt-dependencia, PLAN5 no se ejecuta ( ya atribuido a C ).
-
-PREFLIGHT: leer native/src/vehicle/f1_94_rust_vehicle.cpp:520-615 (sample_ray 12 rays, force_raycast_update, distance=(pt - ray_global_pos).length(), sample_ray default 0.65, fn_solve_forces_, apply_central_force/torque, telem lat_g/long_g de Rust), simulation.rs:100 solve_external sync body kinematics + aero/suspension/powertrain/tire (dt clamp 1/1000-1/20), suspension.rs:98-152 sample_contact (max_ray_length=spring+radius 0.567 front, raw_spring=distance-radius, is_grounded=raw<=spring), sim spawn inertia principal_inertia 722/780/89 (vs Godot BoxShape tub/nose/rear inertia log), center_of_mass_mode CUSTOM.
-
-EXPERIMENTO (cheapest, 2 sub-experimentos, 1 delta reversible si se requiere fix):
- 5a. CAPTURA DE RAY DISTANCES EN VIVO (read-only):
-     Crear game/tests/test_f1_94_capture_rays.gd: spawnear f1_94_rust.tscn estatico 2s throttle 0; cada physics_frame leer para cada rueda: ray_IN/MID/OUT get_global_position, get_collision_point, distance, is_colliding via find_child("RayCast_FL_In" etc) y tambien get_wheel_anchor_local / get_ray_length via ClassDB; loggear CSV a diagnostics/raw/capture.
-     Comparar distance efectiva Godot (pt - ray_global_pos).length() vs synthetic distance Rust Plan1 (radius+spring*(1-resting)) — delta esperado <2mm si anchors coinciden. Si Godot front distance sistematicamente mayor/menor ~30mm -> confirma mismatch fallback 0.143973 vs 0.17397 (cpp:306) o ray_length 0.65 vs 0.567 -> front comp 49% vs 70mm explicado.
- 5b. TELEMETRIA COMPARADA STANDALONE vs EXTERNAL:
-     Reutilizar CSVs Plan1 (standalone) y Godot Plan2 BASE (external) en ventana estable 2-4s (pre-divergencia): comparar FL_comp, RL_comp, lat_g RMS. Metricas: delta_front_comp >15mm estable + lat stdev Godot >3x Rust => capa Godot introduce bias estatico y excitacion yaw.
- 5c. (SI 5a/b CONFIRMA, delta reversible con gate separado): FEATURE-FLAGcpp is_use_synthetic_samples bool (no mutar produccion sin gate):
-     Opcion A: corregir fallback anchors en cpp:305-314 a valores canonicos 0.17397 si fn_get_anchor_==null.
-     Opcion B: normalizar max_lateral_force y needed_rolling_force a rate-invariante: *dt / *0.016667 (neutraliza 1/dt).
-     Opcion C: spawn deterministico: en _ready() clamp initial linear_velocity y sync sim_time 0 antes de primer solve_external (elimina drop 2.46km/h).
-     Cada opcion es UN delta reversible, validar con re-run Plan2 BASE: front comp reposo -> 68-72mm y Lat_G p2p <0.04G @0-1.5s.
-
-VALIDATE:
- - 5a confirma mismatch + 5b confirma bias/divergencia Godot-only => HIPOTESIS LATENTE CONFIRMADA (integracion Godot causal). Falsifica si: ray distances coinciden <2mm Y comps coinciden <5mm Y ya Plan1 dt-dependencia explico inestabilidad -> PLAN5 INCONCLUSO, cerrar latente, priorizar fix tire clamp.
-
-KEEP|ROLLBACK: test capture script es reversible y se mantiene si aporta diagnostico; flags cpp NO se comitean sin segundo gate humano ACCEPTED (separado del handoff).
-
-## ORDEN EJECUCION Y DEPENDENCIAS
-1 y 2 EN PARALELO (read-only + tests aislados). Salida 1 decide si se necesita 5a; salida 2 decide si LSD es causal. 3 siempre util como cuantificacion (puede correr en paralelo con 1/2). 4 despues de 2 (reusa script fork). 5 latente solo si 1 estabiliza en ambos dt.
-
-## ENTREGABLES POR PLAN (artefactos esperados)
-- reports/rust_launch_head_60hz.csv, _120hz.csv (Plan1)
-- reports/godot_chutana_diff_ab_<fecha>.csv (Plan2)
-- stdout cargo launch_budget_test + reports/launch_budget_output.txt (Plan3)
-- reports/godot_chutana_aero_ab_<fecha>.csv (Plan4)
-- diagnostics/raw/capture/ray_distances_*.csv + comparativa front_comp/lat_stdev (Plan5a/b)
-- Veredicto por plan: CONFIRMADO | FALSIFICADO | INCONCLUSO + decision siguiente fase (calibracion torque-map 1a, grip longitudinal, preload LSD, expo yaw_decay, o fix rate-invariante)
-
-## CRITERIOS DE PARADA / HUMAN-GATE
-- Segundo REJECTED en gate -> STOP y Diagnostic Mode.
-- Todo commit requiere human ACCEPTED. No push automatico.
-- PRESERVE-WORKTREE: Jordan assets, physics/refactor, reports/* untracked se preservan; no add -A indiscriminado.
-
-## COMANDOS DE REFERENCIA (PowerShell, REUSE-BUILDS)
-- Rust: cargo test -p f1_94_engine --test differential_test -- --nocapture ; cargo test -- --nocapture
-- Godot: python .agents/tools/run_godot.py --task <t> --profile minimal --godot .tools/godot/Godot_v4.7.1-stable_win64_console.exe -- --headless --path game --script res://tests/<g>.gd
-- Diag: python .agents/tools/diag.py recent --limit 5 ; python .agents/tools/diag.py summary
-- Scons: $env:PYTHONPATH=(Resolve-Path .tools/python-packages); python -m SCons platform=windows target=template_release build_profile=build_profile.json -j4
-
-## PLAN CORREGIDO DE CORRECCIONES — BASADO EN LOS CUATRO EXPERIMENTOS LIMPIOS
-
-### Evidencia que gobierna las correcciones
-- El launch sin settle producia Rear_Slip 1.75; despues de 180 ticks con throttle=0 el pico baja a 0.436 durante los primeros 1.5 s. El transitorio de spawn/suspension es real y no debe mezclarse con el tuning del powertrain.
-- El launch limpio conserva wheelspin moderado: clutch_engagement 0.167 a 500 ms, 0.855 a 1.5 s y 1.0 a 2.0 s. El calculo drive/grip 4.094x era un limite superior con clutch completamente enganchado, no torque real inicial.
-- El A/B limpio confirma el diferencial: BASE 120/65/75/4/0.15 produce max_abs_lat_g=0.234, max_yaw_rate=0.103 rad/s; GE170 170/65/75/4/0 produce 0.0178 G y 0.0306 rad/s.
-- El wheelspin degrada la fuerza lateral: brush lateral 2763 N a slip=0.1, 777 N a 0.5, 395 N a 1.0 y 264 N a 1.5.
-- En throttle fijo la divergencia comienza alrededor de 120-130 km/h con f_yaw_est>=0.999968. `aero_yaw_decay_exponent` no es el disparador inicial; aero queda como amplificador posterior.
-- Los raycasts convergen a 69.95/62.96 mm front/rear y la simetria lateral es correcta despues del settle. No corregir ray geometry sin nueva evidencia.
-
-### Orden de correccion obligatorio
-1. Instrumentar y congelar el fixture de spawn/settle.
-2. Reducir el lock dinamico del LSD mediante matriz A/B runtime.
-3. Recalibrar el launch torque/clutch usando torque real, no el clamp teorico.
-4. Revalidar aero despues de resolver diff y launch; no modificar `aero_yaw_decay_exponent` ahora.
-5. Ejecutar regresion completa y gate humano. Un solo delta productivo por iteracion.
-
-### CORR-01 — Spawn, settle y fixture determinista
-**Hipotesis:** el arranque antiguo mezclaba bounce vertical con throttle y contaminaba Rear_Slip/Lat_G inicial.
-
-**Subagente ejecutor:** `general`, rol `godot-integration-spawn`.
-
-**Ownership:** `game/scenes/runtime/race_session.gd`, `native/src/vehicle/f1_94_rust_vehicle.cpp`, tests Godot de forensics. No tocar Rust tire/diff.
-
-**Trabajo:**
-- Capturar la posicion inmediatamente despues de `reset_vehicle`, antes del primer tick, y despues de 180 ticks con throttle cero.
-- Verificar el contrato de `VehicleSpawn` y `default_spawn_height`; no asumir que el marker representa el body origin.
-- Elegir el delta minimo entre: spawn geometricamente correcto o gate de input hasta settle. No implementar ambos en la misma iteracion.
-- Mantener `front_comp=70+-2 mm`, `rear_comp=63+-2 mm`, lateral velocity menor que 0.02 m/s y yaw rate menor que 0.01 rad/s al finalizar settle.
-- Reejecutar `test_f1_94_clean_launch_forensics.gd` antes y despues del delta.
-
-**Criterio:** `CONFIRMED` si el delta reduce el transitorio sin alterar la posicion estatica; `INCONCLUSIVE` si no se captura el frame inmediato post-reset. No tunear torque hasta cerrar este gate.
-
-### CORR-02 — Telemetria de torque, carga y yaw
-**Hipotesis:** falta observar `clutch_torque`, carga normal y yaw para separar wheelspin, unload y snap real.
-
-**Subagente ejecutor:** `general`, rol `rust-ffi-telemetry`.
-
-**Ownership:** `game/physics/engine/src/ffi.rs`, `native/include/formula90s/vehicle/formula90_physics.h`, `native/src/vehicle/f1_94_rust_vehicle.cpp`, tests de captura. No cambiar formulas fisicas.
-
-**Trabajo:**
-- Exponer diagnosticos append-only: clutch torque real, cuatro normal forces, cuatro drive torques y, si no existe getter fiable, angular velocity/yaw ya disponible en Godot.
-- Si se amplia `F90TelemetryOutput`, anadir campos al final, incrementar ABI de forma explicita, recompilar Rust y GDExtension y actualizar el test ABI. No reutilizar offsets existentes.
-- Extender `test_f1_94_clean_launch_forensics.gd` y `test_f1_94_clean_diff_ab_forensics.gd` con esos campos.
-- Confirmar si el rear slip inicial ocurre con normal force baja o con clutch torque por encima de capacidad.
-
-**Criterio:** producir una tabla por tick para 0-2 s y 4-5 s. Sin estos datos no se acepta una correccion de `MAX_CLUTCH_TORQUE_RATIO` ni de `longitudinal_grip_ratio`.
-
-### CORR-03 — Matriz Salisbury LSD runtime
-**Hipotesis:** la rampa power-lock actual es demasiado alta; GE170 demuestra que eliminar la rampa estabiliza el coche, pero no selecciona aun el valor final.
-
-**Subagente ejecutor:** `general`, rol `rust-differential-specialist`.
-
-**Ownership:** `game/physics/engine/src/powertrain.rs`, `vehicle_config.rs`, `differential_test.rs`, scripts Godot A/B. No tocar aero ni spawn.
-
-**Matriz minima, siempre despues de CORR-01:**
-- A: `120/65/75/4/0.15` actual.
-- B: `170/65/75/4/0.00` GE170 ya validado.
-- C: `120/65/75/4/0.05` para aislar friccion dinamica.
-- D: `150/75/85/4/0.05` como candidato de lock progresivo reducido.
-
-**Trabajo:**
-- Ejecutar cada variante desde una escena nueva, 180 ticks settle, throttle fijo 600 ticks.
-- Registrar `diff_preload`, `diff_mu`, rear slips individuales, normal loads, yaw rate, Lat_G, RL/RR compression y forward speed.
-- Seleccionar la variante Pareto: menor yaw/Lat_G sin aumentar rear wheelspin mas alla de la baseline ni reducir aceleracion final mas de 5%.
-- Anadir test Rust de capacidad de lock y torque transferido antes de cambiar defaults canonicos.
-
-**Criterio provisional:** candidato aceptable si `max_abs_lat_g<=0.05`, `max_yaw_rate<=0.05 rad/s` durante la ventana 4-5 s y conserva `forward_speed` dentro de 5% de BASE. Estos limites son gates de experimento, no valores de tuning definitivos.
-
-### CORR-04 — Launch torque/clutch, despues de diff y fixture
-**Hipotesis:** el wheelspin limpio restante proviene de la interaccion clutch/drivetrain/tire; el clamp teorico 1.6 no puede usarse como prueba de torque real.
-
-**Subagente ejecutor:** `general`, rol `rust-powertrain-specialist`.
-
-**Ownership:** `game/physics/engine/src/powertrain.rs`, `vehicle_config.rs`, tests `powertrain_test.rs` y launch forensics. No tocar diferencial ni aero.
-
-**Trabajo:**
-- Usar CORR-02 para medir `clutch_torque` real, `clutch_engagement`, drive torque por rueda y normal force.
-- Comparar dos mecanismos por separado: torque de primera marcha y rampa de engagement anti-stall. No introducir un `launch_control` generico sin evidencia.
-- Evaluar primero un limite de torque especifico de primera o una rampa de clutch; dejar `longitudinal_grip_ratio=0.5` sin cambios hasta tener una curva de force-vs-slip validada.
-- Ejecutar sensibilidad pequena, una variable por corrida: clutch cap, primera ratio/torque, luego ratio longitudinal. No combinar cambios.
-
-**Criterio:** reducir el pico de rear slip en los primeros 1.5 s respecto de `0.436`, mantener aceleracion monotona positiva y no aumentar `max_abs_lat_g` en la ventana 4-5 s. Si se mejora launch pero empeora alta velocidad, rollback.
-
-### CORR-05 — Aero: solo validacion, no correccion inicial
-**Subagente ejecutor:** `general`, rol `aero-validation-specialist`.
-
-**Ownership:** `game/physics/engine/src/aero.rs`, test fijo de throttle y telemetria beta. No cambiar defaults durante la primera pasada.
-
-**Trabajo:**
-- Reutilizar `test_f1_94_fixed_throttle_aero_forensics.gd` con throttle fijo y settle cerrado.
-- Correlacionar inicio de yaw con rear slip, RL/RR load delta, `beta_rad` y `f_yaw_est`.
-- Solo si la divergencia empieza con `f_yaw_est<0.98`, abrir matriz `aero_yaw_decay_exponent`; con la evidencia actual, el onset ocurre con `f_yaw_est~1.0`, por lo que el cambio debe quedar bloqueado.
-- Separar feedback aero posterior de trigger mecanico inicial en el informe.
-
-### Matriz de subagentes y secuencia
-| Orden | Subagente | Tipo | Entregable | Dependencia |
-|---|---|---|---|---|
-| 0 | `explore` reviewer | `explore` | Auditoria de ownership, baseline y riesgos | Antes de mutar |
-| 1 | `godot-integration-spawn` | `general` | Fixture determinista y evidencia post-reset | Ninguna |
-| 2 | `rust-ffi-telemetry` | `general` | Torque/cargas/yaw observables y ABI validado | CORR-01 |
-| 3 | `rust-differential-specialist` | `general` | Matriz LSD y candidato seleccionado | CORR-01, CORR-02 |
-| 4 | `rust-powertrain-specialist` | `general` | Correccion launch de una variable | CORR-02, CORR-03 |
-| 5 | `aero-validation-specialist` | `general` | Veredicto aero sin cambio prematuro | CORR-03, CORR-04 |
-| 6 | `explore` reviewer | `explore` | Revision final de diff, tests y regresiones | Despues de todos |
-
-### Reglas de ejecucion para subagentes
-- Cada subagente debe trabajar con una hipotesis unica y un delta reversible.
-- El ejecutor no hace `git add -A`, no toca Jordan 197, `physics/refactor`, backups ni assets fuera de ownership.
-- Cada entrega debe incluir: archivos tocados, comando exacto, resultado, artefactos, veredicto `CONFIRMED/FALSIFIED/INCONCLUSIVE` y rollback plan.
-- Ningun subagente hace commit o push sin `HUMAN ACCEPTED`.
-- Si CORR-01 o CORR-02 fallan, detener tuning de powertrain/diff y volver a Diagnostic Mode.
-
-### Gates de aceptacion de la correccion
-- Rust: `cargo test -- --nocapture` sin fallos.
-- Godot: launch limpio con settle, A/B LSD y throttle fijo sin crash.
-- Spawn: compresiones estaticas front/rear dentro de +-2 mm, simetria RL/RR, yaw rate estable antes de throttle.
-- Launch: rear slip inicial reducido respecto de 0.436 sin forward-speed reversal.
-- High speed: BASE corregida sin divergencia de yaw; candidato LSD con `max_abs_lat_g<=0.05` y `max_yaw_rate<=0.05 rad/s` en 4-5 s.
-- Aero: no se cambia hasta demostrar que `f_yaw` participa antes del onset.
+Paso 6: Ejecutar el juego en vivo:
+  powershell -ExecutionPolicy Bypass -File scripts/run_f1-94.ps1
+================================================================================

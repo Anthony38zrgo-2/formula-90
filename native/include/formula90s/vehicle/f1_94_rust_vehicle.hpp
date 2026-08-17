@@ -255,6 +255,16 @@ public:
 	// Runtime aids enable mask (see formula90_physics.h F90RuntimeConfig.aids_enabled_mask).
 	uint32_t aids_enabled_mask_ = 0;
 
+	// Inertia & Suspension parameters from authoritative JSON / Rust
+	double inertia_multiplier_x_ = 1.05;
+	double inertia_multiplier_y_ = 1.15;
+	double inertia_multiplier_z_ = 1.05;
+
+	double suspension_front_spring_length_ = 0.250;
+	double suspension_rear_spring_length_ = 0.180;
+	double suspension_front_resting_ratio_ = 0.280;
+	double suspension_rear_resting_ratio_ = 0.350;
+
 	void apply_runtime_config();
 	void sync_runtime_config_from_rust();
 

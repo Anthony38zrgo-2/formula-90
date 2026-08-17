@@ -396,7 +396,7 @@ void F194RustVehicle::_ready() {
 					UtilityFunctions::print(String("[F194RustVehicle] Loaded physics from JSON: ") + json_path);
 				} else {
 					String err_msg = String(err_buf[0] ? (const char *)err_buf : "unknown error");
-					UtilityFunctions::printerr(String("[F194RustVehicle] JSON config failed (") + err_msg + "), falling back to default.");
+					UtilityFunctions::printerr(String("[F194RustVehicle] CRITICAL JSON PARSE ERROR: ") + err_msg + ". Falling back to default canonical configuration.");
 				}
 			}
 		}
@@ -499,7 +499,11 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 		Vector3 inv_i = p_state->get_inverse_inertia();
 		if (inv_i.x > 0.0f && inv_i.y > 0.0f && inv_i.z > 0.0f && std::isfinite(inv_i.x) && std::isfinite(inv_i.y) && std::isfinite(inv_i.z)) {
 			Vector3 base_inertia(1.0f / inv_i.x, 1.0f / inv_i.y, 1.0f / inv_i.z);
-			Vector3 configured_inertia = base_inertia * 1.10f;
+			Vector3 configured_inertia(
+				base_inertia.x * (float)inertia_multiplier_x_,
+				base_inertia.y * (float)inertia_multiplier_y_,
+				base_inertia.z * (float)inertia_multiplier_z_
+			);
 			if (configured_inertia.x > 0.0f && configured_inertia.y > 0.0f && configured_inertia.z > 0.0f &&
 				std::isfinite(configured_inertia.x) && std::isfinite(configured_inertia.y) && std::isfinite(configured_inertia.z)) {
 				PhysicsServer3D *ps = PhysicsServer3D::get_singleton();
@@ -672,8 +676,8 @@ void F194RustVehicle::update_wheel_visuals(double delta) {
 
 		// Vertical suspension displacement:
 		// Hub Y = anchor_Y - spring_length + compression_m
-		double spring_length = (w < 2) ? 0.250 : 0.180;
-		double resting_ratio = (w < 2) ? 0.400 : 0.350;
+		double spring_length = (w < 2) ? suspension_front_spring_length_ : suspension_rear_spring_length_;
+		double resting_ratio = (w < 2) ? suspension_front_resting_ratio_ : suspension_rear_resting_ratio_;
 		double anchor_y = wheel_base_positions_[w].y;
 		double comp_m = std::isfinite(wheel_compressions_[w]) ? (wheel_compressions_[w] * 0.001) : (spring_length * resting_ratio);
 		double visual_y = anchor_y - spring_length + comp_m;
@@ -687,7 +691,7 @@ void F194RustVehicle::update_wheel_visuals(double delta) {
 		// Front steering and rolling rotations (-angle to roll forward along -Z)
 		double steer = 0.0;
 		if (w < 2) {
-			steer = std::isfinite(steer_angle_rad_) ? steer_angle_rad_ : (true_steering_amount_ * 0.436332);
+			steer = std::isfinite(steer_angle_rad_) ? steer_angle_rad_ : (true_steering_amount_ * max_steering_angle_);
 		}
 		double angle = std::isfinite(wheel_angles_[w]) ? wheel_angles_[w] : 0.0;
 		w_node->set_rotation(Vector3(-angle, steer, 0.0));
@@ -806,6 +810,13 @@ void F194RustVehicle::apply_runtime_config() {
 	cfg.diff_clutches = diff_clutches_;
 	cfg.diff_clutch_friction_coeff = diff_clutch_friction_coeff_;
 	cfg.aids_enabled_mask = aids_enabled_mask_;
+	cfg.inertia_multiplier_x = inertia_multiplier_x_;
+	cfg.inertia_multiplier_y = inertia_multiplier_y_;
+	cfg.inertia_multiplier_z = inertia_multiplier_z_;
+	cfg.suspension_front_spring_length = suspension_front_spring_length_;
+	cfg.suspension_rear_spring_length = suspension_rear_spring_length_;
+	cfg.suspension_front_resting_ratio = suspension_front_resting_ratio_;
+	cfg.suspension_rear_resting_ratio = suspension_rear_resting_ratio_;
 	fn_apply_runtime_config_(sim_ptr_, &cfg);
 }
 
@@ -832,6 +843,13 @@ void F194RustVehicle::sync_runtime_config_from_rust() {
 		diff_clutches_ = cfg.diff_clutches;
 		diff_clutch_friction_coeff_ = cfg.diff_clutch_friction_coeff;
 		aids_enabled_mask_ = cfg.aids_enabled_mask;
+		inertia_multiplier_x_ = cfg.inertia_multiplier_x;
+		inertia_multiplier_y_ = cfg.inertia_multiplier_y;
+		inertia_multiplier_z_ = cfg.inertia_multiplier_z;
+		suspension_front_spring_length_ = cfg.suspension_front_spring_length;
+		suspension_rear_spring_length_ = cfg.suspension_rear_spring_length;
+		suspension_front_resting_ratio_ = cfg.suspension_front_resting_ratio;
+		suspension_rear_resting_ratio_ = cfg.suspension_rear_resting_ratio;
 		set_mass((float)vehicle_mass_);
 	}
 }

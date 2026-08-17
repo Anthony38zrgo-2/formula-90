@@ -4,7 +4,7 @@ class_name DrivingAidsController
 signal aid_toggled(aid_label: String, enabled: bool)
 
 @export var vehicle_node: Node
-var aids := [true, false, false, false, false]
+var aids := [false, false, false, false, false]
 var _baseline: Dictionary = {}
 var _captured := false
 
@@ -29,7 +29,10 @@ func _capture_baseline():
 	_baseline["friction"] = fric.duplicate() if fric else {}
 	var lat_grip = VehicleTunableContract.get_value(vehicle_node, "lateral_grip_assist")
 	_baseline["lateral_grip_assist"] = lat_grip.duplicate() if lat_grip else {}
-	_baseline["automatic_transmission"] = VehicleTunableContract.get_value(vehicle_node, "automatic_transmission")
+	var auto_trans = VehicleTunableContract.get_value(vehicle_node, "automatic_transmission")
+	_baseline["automatic_transmission"] = auto_trans
+	if auto_trans != null:
+		aids[0] = bool(auto_trans)
 	_captured = true
 
 func _physics_process(_delta):
@@ -80,7 +83,9 @@ func _apply_aid(index: int):
 func _restore(index: int):
 	match index:
 		0:
-			VehicleTunableContract.set_value(vehicle_node, "automatic_transmission", false)
+			var base_auto = _baseline.get("automatic_transmission")
+			var restore_val: bool = bool(base_auto) if base_auto != null else false
+			VehicleTunableContract.set_value(vehicle_node, "automatic_transmission", restore_val)
 		1:
 			if _baseline.get("enable_stability") != null:
 				VehicleTunableContract.set_value(vehicle_node, "enable_stability", _baseline["enable_stability"])

@@ -15,7 +15,7 @@ $game = Join-Path $root 'game'
 $scene = 'res://scenes/runtime/vehicle_test_session.tscn'
 $manifestPath = Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
 $smokeScript = 'res://tests/smoke_test_f1_94_la_chutana_hud.gd'
-$smokeBackgroundScript = 'res://tests/smoke_test_la_chutana_3_layer_background.gd'
+$smokeBackgroundScript = 'res://tests/smoke_test_mountains_3d.gd'
 
 function Resolve-Godot([string]$ExplicitPath) {
     if ($ExplicitPath -and (Test-Path -LiteralPath $ExplicitPath -PathType Leaf)) {
