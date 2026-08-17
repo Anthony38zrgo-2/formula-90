@@ -41,6 +41,13 @@ pub struct VehicleConfig {
     pub automatic_transmission: bool,
     pub front_torque_split: f64, // 0.0 = pure RWD, 1.0 = pure FWD
 
+    // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned)
+    pub diff_preload: f64,               // Static preload torque (N·m)
+    pub diff_power_ramp_angle_deg: f64,  // Power lock ramp angle (degrees)
+    pub diff_coast_ramp_angle_deg: f64,  // Coast lock ramp angle (degrees)
+    pub diff_clutches: f64,              // Number of friction plate surfaces
+    pub diff_clutch_friction_coeff: f64, // Clutch plate friction coefficient
+
     // Suspension Parameters (Front)
     pub front_spring_length: f64,
     pub front_resting_ratio: f64,
@@ -195,12 +202,19 @@ impl VehicleConfig {
                 (0.97, 0.95),
                 (1.00, 0.88),
             ],
-            gear_ratios: vec![2.85, 2.29, 1.89, 1.60, 1.38, 1.20],
+            gear_ratios: vec![2.65, 2.10, 1.75, 1.50, 1.32, 1.18],
             final_drive: 6.30,
             reverse_ratio: 3.00,
             shift_time: 0.12,
             automatic_transmission: true,
             front_torque_split: 0.0,
+
+            // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned)
+            diff_preload: 90.0,
+            diff_power_ramp_angle_deg: 45.0,
+            diff_coast_ramp_angle_deg: 60.0,
+            diff_clutches: 4.0,
+            diff_clutch_friction_coeff: 0.25,
 
             // Suspension (Front)
             front_spring_length: 0.250,
@@ -330,6 +344,13 @@ impl VehicleConfig {
             shift_time: 0.16,
             automatic_transmission: true,
             front_torque_split: 0.0, // RWD
+
+            // Differential (Salisbury Clutch-Pack LSD)
+            diff_preload: 90.0,
+            diff_power_ramp_angle_deg: 45.0,
+            diff_coast_ramp_angle_deg: 60.0,
+            diff_clutches: 4.0,
+            diff_clutch_friction_coeff: 0.25,
 
             // Suspension (Front)
             front_spring_length: 0.100,

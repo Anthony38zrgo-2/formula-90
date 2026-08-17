@@ -77,7 +77,7 @@ impl PowertrainState {
         let dt = dt.max(1e-5);
         self.process_shift(config, input, wheel_spins, forward_speed_m_s, dt);
         self.process_engine_and_clutch(config, input, wheel_spins, tire_reaction_torques, dt);
-        self.distribute_drive_torque(config);
+        self.distribute_drive_torque(config, wheel_spins);
         self.process_brakes(config, input, wheel_spins, dt);
     }
 
@@ -103,7 +103,7 @@ impl PowertrainState {
                         wheel_spin
                     };
                     self.rpm = (target_spin * ratio * RAD_S_TO_RPM)
-                        .clamp(config.idle_rpm, config.max_rpm * 1.1);
+                        .clamp(config.idle_rpm, config.max_rpm * 1.01);
                 }
             }
             return;
@@ -121,12 +121,17 @@ impl PowertrainState {
                 let radius = config.rear_tire_radius;
                 let wheel_speed = self.drivetrain_spin(config, wheel_spins).abs() * radius;
                 let road_speed = forward_speed_m_s.abs();
-                let min_shift_speed = (config.max_rpm * 0.65 / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
+                let shift_speed_ratio = if self.current_gear == 1 { 0.45 } else { 0.65 };
+                let min_shift_speed = (config.max_rpm * shift_speed_ratio / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
 
-                // Traction-aware upshift: prevent wheelspin from triggering premature upshifts
-                let can_upshift = self.rpm > config.max_rpm * 0.92
-                    && self.current_gear < max_gear
-                    && (road_speed >= min_shift_speed || (wheel_speed - road_speed) < 6.0);
+                // Traction-aware upshift: prevent wheelspin from triggering premature upshifts,
+                // while enforcing redline protection (>= 98% RPM) to prevent over-revving.
+                let is_at_redline = self.rpm >= config.max_rpm * 0.98;
+                let can_upshift = self.current_gear < max_gear
+                    && (
+                        (self.rpm > config.max_rpm * 0.92 && (road_speed >= min_shift_speed || (wheel_speed - road_speed) < 6.0))
+                        || is_at_redline
+                    );
 
                 let lower_ratio = if self.current_gear > 1 {
                     (config.gear_ratios[(self.current_gear - 2) as usize] * config.final_drive).abs()
@@ -135,10 +140,10 @@ impl PowertrainState {
                 };
                 let lower_rpm_est = (road_speed / radius.max(1e-6)) * lower_ratio * RAD_S_TO_RPM;
 
-                // Intelligent downshift: off-throttle coasting OR kick-down under heavy throttle when bogged down
+                // Intelligent downshift: off-throttle coasting OR kick-down under heavy throttle when genuinely bogged
                 let can_downshift = self.current_gear > 1 && (
-                    (self.rpm < config.max_rpm * 0.45 && input.throttle < 0.35)
-                    || (self.rpm < config.max_rpm * 0.55 && input.throttle > 0.60 && lower_rpm_est < config.max_rpm * 0.88)
+                    (self.rpm < config.max_rpm * 0.40 && input.throttle < 0.35)
+                    || (self.rpm < config.max_rpm * 0.45 && input.throttle > 0.60 && lower_rpm_est < config.max_rpm * 0.88)
                 );
 
                 if can_upshift {
@@ -179,7 +184,7 @@ impl PowertrainState {
         let mut torque_output = positive_torque - variable_drag - constant_brake;
 
         self.is_rev_limited = self.rpm >= config.max_rpm;
-        if self.rpm >= config.max_rpm * 1.1 {
+        if self.rpm >= config.max_rpm * 1.01 {
             torque_output = torque_output.min(0.0);
         }
         if self.shift_timer > 0.0 {
@@ -236,23 +241,41 @@ impl PowertrainState {
         self.clutch_torque = raw_clutch.clamp(-max_clutch_torque, max_clutch_torque);
 
         self.rpm -= RAD_S_TO_RPM * dt * self.clutch_torque / config.motor_moment.max(1e-6);
-        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm * 1.1);
+        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm * 1.01);
 
         // This is the inertia passed to each driven wheel's torque integration,
         // equivalent in purpose to GEVP process_drive/process_torque.
         self.drive_inertia = config.motor_moment + total_ratio.powi(2) * GEVP_GEAR_INERTIA;
     }
 
-    fn distribute_drive_torque(&mut self, config: &VehicleConfig) {
+    fn distribute_drive_torque(&mut self, config: &VehicleConfig, wheel_spins: &[f64; 4]) {
         self.drive_torques = [0.0; 4];
         if self.current_gear == 0 { return; }
         let wheel_torque = self.clutch_torque * self.get_total_gear_ratio(config);
-        let front = wheel_torque * config.front_torque_split;
-        let rear = wheel_torque * (1.0 - config.front_torque_split);
-        self.drive_torques[0] = front * 0.5;
-        self.drive_torques[1] = front * 0.5;
-        self.drive_torques[2] = rear * 0.5;
-        self.drive_torques[3] = rear * 0.5;
+        let front_total = wheel_torque * config.front_torque_split;
+        let rear_total = wheel_torque * (1.0 - config.front_torque_split);
+
+        // Front axle (open 50/50 split if driven, e.g. AWD)
+        if config.front_torque_split > 0.0 {
+            self.drive_torques[0] = front_total * 0.5;
+            self.drive_torques[1] = front_total * 0.5;
+        }
+
+        // Rear axle: Salisbury Clutch-Pack LSD (AMS2 / Reiza aligned 1.5-Way differential)
+        if config.front_torque_split < 1.0 {
+            let (t_rl, t_rr) = solve_salisbury_differential(
+                rear_total,
+                wheel_spins[2], // Rear Left
+                wheel_spins[3], // Rear Right
+                config.diff_preload,
+                config.diff_power_ramp_angle_deg,
+                config.diff_coast_ramp_angle_deg,
+                config.diff_clutches,
+                config.diff_clutch_friction_coeff,
+            );
+            self.drive_torques[2] = t_rl;
+            self.drive_torques[3] = t_rr;
+        }
     }
 
     fn process_brakes(&mut self, config: &VehicleConfig, input: &VehicleInput, wheel_spins: &[f64; 4], dt: f64) {
@@ -335,3 +358,57 @@ fn driven_reaction_torque(config: &VehicleConfig, reactions: &[f64; 4]) -> f64 {
     }
     sum
 }
+
+/// Solves torque distribution across a Salisbury clutch-pack limited slip differential (LSD 1.5-Way).
+/// Models asymmetric ramp angles (power vs coast), static preload, and multi-plate clutch friction.
+/// 
+/// Returns `(torque_left, torque_right)`.
+pub fn solve_salisbury_differential(
+    drive_torque: f64,
+    spin_left: f64,
+    spin_right: f64,
+    preload: f64,
+    power_ramp_angle_deg: f64,
+    coast_ramp_angle_deg: f64,
+    clutches: f64,
+    clutch_friction_coeff: f64,
+) -> (f64, f64) {
+    let half_torque = drive_torque * 0.5;
+
+    // Convert ramp angles from degrees to radians, clamping within safe physical ranges (10° to 85°)
+    let deg_to_rad = std::f64::consts::PI / 180.0;
+    let power_angle_rad = (power_ramp_angle_deg * deg_to_rad).clamp(10.0 * deg_to_rad, 85.0 * deg_to_rad);
+    let coast_angle_rad = (coast_ramp_angle_deg * deg_to_rad).clamp(10.0 * deg_to_rad, 85.0 * deg_to_rad);
+
+    // Ramp clamping force generated by cross-pin wedge action:
+    // F_ramp = |T_drive| / (r_cam * tan(theta))
+    // Multiplied by clutch pack parameters: T_ramp = F_ramp * N_clutches * mu * r_plate
+    // The ratio r_plate / r_cam is approximately 0.90 for standard racing Salisbury differentials.
+    let ramp_angle_rad = if drive_torque >= 0.0 { power_angle_rad } else { coast_angle_rad };
+    let ramp_tan = ramp_angle_rad.tan().max(0.01);
+    let ramp_lock_torque = (drive_torque.abs() / ramp_tan) * clutches.max(1.0) * clutch_friction_coeff.max(0.0) * 0.90;
+
+    // Total maximum friction locking capacity
+    let max_locking_capacity = preload.max(0.0) + ramp_lock_torque;
+
+    // Differential wheel speed (rad/s)
+    let delta_omega = spin_left - spin_right;
+
+    // Smooth anti-chatter slip transition factor around zero speed delta
+    let delta_omega_threshold = 0.50; // rad/s
+    let slip_factor = (delta_omega / delta_omega_threshold).clamp(-1.0, 1.0);
+
+    // Cross-transfer locking torque
+    let mut delta_torque = max_locking_capacity * slip_factor;
+
+    // Conservative limit: locking torque cannot exceed half of drive torque + preload
+    let torque_cap = drive_torque.abs() * 0.5 + preload.max(0.0);
+    delta_torque = delta_torque.clamp(-torque_cap, torque_cap);
+
+    // Subtract from faster spinning wheel, transfer to slower wheel with traction
+    let torque_left = half_torque - delta_torque;
+    let torque_right = half_torque + delta_torque;
+
+    (torque_left, torque_right)
+}
+
