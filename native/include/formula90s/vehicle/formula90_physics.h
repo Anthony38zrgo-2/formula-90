@@ -62,9 +62,18 @@ typedef struct F90TelemetryOutput {
     double fl_spin, fr_spin, rl_spin, rr_spin;
     double fl_slip, fr_slip, rl_slip, rr_slip;
     double steer_angle_rad;
+    // CORR-02 append-only diagnostics: actual clutch/wheel loads.
+    double clutch_torque;
+    double fl_drive_torque, fr_drive_torque, rl_drive_torque, rr_drive_torque;
+    double fl_normal_force, fr_normal_force, rl_normal_force, rr_normal_force;
+    // Append-only aids diagnostics
+    bool abs_active;
+    bool tc_active;
+    double tc_cut_ratio;
+    uint32_t aids_enabled_mask;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 3
+#define F1_94_PHYSICS_ABI_VERSION 6
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;
@@ -85,6 +94,11 @@ typedef struct F90RuntimeConfig {
     double diff_coast_ramp_angle_deg;
     double diff_clutches;
     double diff_clutch_friction_coeff;
+
+    // Driving aids runtime enable mask (bit0=ABS, bit1=TC, bit2=stability,
+    // bit3=steering slip, bit4=countersteer, bit5=auto-clutch, bit6=launch,
+    // bit7=brake-assist).
+    uint32_t aids_enabled_mask;
 } F90RuntimeConfig;
 
 uint32_t f1_94_physics_abi_version(void);
@@ -94,6 +108,7 @@ bool f1_94_physics_get_runtime_config(void *sim, F90RuntimeConfig *out_config);
 bool f1_94_physics_apply_runtime_config(void *sim, const F90RuntimeConfig *config);
 
 void *f1_94_physics_create_default(void);
+void *f1_94_physics_create_from_json(const uint8_t *json_utf8, uint32_t json_len, uint8_t *error_buffer, uint32_t error_buffer_len);
 void *f1_94_physics_create_with_pos(double pos_x, double pos_y, double pos_z, double yaw_rad);
 void f1_94_physics_reset(void *sim, double pos_x, double pos_y, double pos_z, double yaw_rad);
 

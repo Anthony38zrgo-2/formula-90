@@ -81,11 +81,11 @@ fn increasing_road_load_moves_clutch_torque_in_resisting_direction() {
 
     let mut pt_light = PowertrainState::new(&cfg);
     pt_light.rpm = 10000.0;
-    pt_light.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 15.0, dt);
+    pt_light.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 15.0, true, true, cfg.enable_abs, dt);
 
     let mut pt_heavy = PowertrainState::new(&cfg);
     pt_heavy.rpm = 10000.0;
-    pt_heavy.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -300.0, -300.0], 15.0, dt);
+    pt_heavy.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -300.0, -300.0], 15.0, true, true, cfg.enable_abs, dt);
 
     assert!(
         pt_heavy.clutch_torque > pt_light.clutch_torque,
@@ -105,12 +105,12 @@ fn lift_throttle_coupling_remains_continuous() {
 
     // Steady positive drive
     let drive_input = VehicleInput { throttle: 0.6, ..VehicleInput::default() };
-    pt.step_with_reaction(&cfg, &drive_input, &spins, &[0.0, 0.0, -150.0, -150.0], 12.0, dt);
+    pt.step_with_reaction(&cfg, &drive_input, &spins, &[0.0, 0.0, -150.0, -150.0], 12.0, true, true, cfg.enable_abs, dt);
     let drive_clutch = pt.clutch_torque;
 
     // Lift throttle (throttle = 0.0) next frame
     let lift_input = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
-    pt.step_with_reaction(&cfg, &lift_input, &spins, &[0.0, 0.0, -10.0, -10.0], 12.0, dt);
+    pt.step_with_reaction(&cfg, &lift_input, &spins, &[0.0, 0.0, -10.0, -10.0], 12.0, true, true, cfg.enable_abs, dt);
     let lift_clutch = pt.clutch_torque;
 
     assert!(drive_clutch.is_finite());
@@ -136,7 +136,7 @@ fn zero_throttle_at_rest_produces_zero_drive_torque() {
     let spins = [0.0, 0.0, 0.0, 0.0];
     let zero_input = VehicleInput { throttle: 0.0, brake: 0.0, ..VehicleInput::default() };
 
-    pt.step_with_reaction(&cfg, &zero_input, &spins, &[0.0; 4], 0.0, dt);
+    pt.step_with_reaction(&cfg, &zero_input, &spins, &[0.0; 4], 0.0, true, true, cfg.enable_abs, dt);
 
     assert_eq!(pt.clutch_engagement, 0.0, "Clutch must be 100% disengaged at rest with zero throttle");
     assert_eq!(pt.clutch_torque, 0.0, "Clutch torque must be zero at rest with zero throttle");
@@ -154,7 +154,7 @@ fn wheelspin_at_low_speed_does_not_trigger_premature_upshift() {
     let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
     pt.rpm = 16000.0; // High RPM from wheelspin
 
-    pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 5.0, dt);
+    pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 5.0, true, true, cfg.enable_abs, dt);
 
     assert_eq!(
         pt.current_gear, 1,
@@ -176,7 +176,7 @@ fn kick_down_under_full_throttle_downshifts_when_bogged() {
     let wheel_spin = 25.0 / cfg.rear_tire_radius;
     let spins = [0.0, 0.0, wheel_spin, wheel_spin];
 
-    pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 25.0, dt);
+    pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 25.0, true, true, cfg.enable_abs, dt);
 
     assert_eq!(
         pt.target_gear, 3,

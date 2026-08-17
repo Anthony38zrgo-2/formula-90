@@ -25,6 +25,7 @@ using FfiTelemetryOutput = F90TelemetryOutput;
 
 // Rust FFI Function Pointers (C-ABI)
 typedef void *(*FnPhysicsCreateDefault)(void);
+typedef void *(*FnPhysicsCreateFromJson)(const uint8_t *json_utf8, uint32_t json_len, uint8_t *error_buffer, uint32_t error_buffer_len);
 typedef void *(*FnPhysicsCreateWithPos)(double pos_x, double pos_y, double pos_z, double yaw_rad);
 typedef void (*FnPhysicsReset)(void *sim_ptr, double pos_x, double pos_y, double pos_z, double yaw_rad);
 typedef void (*FnPhysicsSolveForces)(
@@ -69,6 +70,7 @@ private:
 	FnPhysicsGetRuntimeConfig fn_get_runtime_config_ = nullptr;
 	FnPhysicsApplyRuntimeConfig fn_apply_runtime_config_ = nullptr;
 	FnPhysicsCreateDefault fn_create_default_ = nullptr;
+	FnPhysicsCreateFromJson fn_create_from_json_ = nullptr;
 	FnPhysicsCreateWithPos fn_create_with_pos_ = nullptr;
 	FnPhysicsReset fn_reset_ = nullptr;
 	FnPhysicsSolveForces fn_solve_forces_ = nullptr;
@@ -112,6 +114,7 @@ private:
 	int current_gear_ = 1;
 	double engine_torque_ = 0.0;
 	double clutch_engagement_ = 1.0;
+	double clutch_torque_ = 0.0;
 	double true_steering_amount_ = 0.0;
 	double steer_angle_rad_ = 0.0;
 
@@ -124,6 +127,8 @@ private:
 	double wheel_compressions_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_spins_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_slips_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double wheel_drive_torques_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double wheel_normal_forces_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_angles_[4] = { 0.0, 0.0, 0.0, 0.0 };
 
 	bool load_rust_dll();
@@ -193,6 +198,7 @@ public:
 	int get_current_gear() const { return current_gear_; }
 	double get_engine_torque() const { return engine_torque_; }
 	double get_clutch_engagement() const { return clutch_engagement_; }
+	double get_clutch_torque() const { return clutch_torque_; }
 	double get_true_steering_amount() const { return true_steering_amount_; }
 	double get_steer_angle_rad() const { return steer_angle_rad_; }
 
@@ -206,6 +212,8 @@ public:
 	PackedFloat64Array get_wheel_compressions() const;
 	PackedFloat64Array get_wheel_spins() const;
 	PackedFloat64Array get_wheel_slips() const;
+	PackedFloat64Array get_drive_torques() const;
+	PackedFloat64Array get_normal_forces() const;
 
 	// Dimension & Anchor Queries
 	double get_vehicle_mass_value() const;
@@ -243,6 +251,9 @@ public:
 	// GEVP-facing alias: rear_locking_differential_engage_torque (gearbox_spec.gd).
 	// -1.0 = unset (use Salisbury params above). >=0 maps to preload=value, mu=0.
 	double rear_locking_differential_engage_torque_ = -1.0;
+
+	// Runtime aids enable mask (see formula90_physics.h F90RuntimeConfig.aids_enabled_mask).
+	uint32_t aids_enabled_mask_ = 0;
 
 	void apply_runtime_config();
 	void sync_runtime_config_from_rust();
@@ -296,6 +307,11 @@ public:
 	// GEVP-facing alias: rear_locking_differential_engage_torque (gearbox_spec.gd)
 	void set_rear_locking_differential_engage_torque(double v);
 	double get_rear_locking_differential_engage_torque() const;
+
+	// Driving aids runtime mask (bit0=ABS, bit1=TC, bit2=stability, bit3=steering slip,
+	// bit4=countersteer, bit5=auto-clutch, bit6=launch, bit7=brake-assist).
+	void set_aids_enabled_mask(uint32_t v);
+	uint32_t get_aids_enabled_mask() const;
 
 	void reset_vehicle(const Vector3 &p_pos, double p_yaw_rad);
 };

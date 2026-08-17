@@ -170,7 +170,7 @@ fn test_powertrain_drivetrain_parity() {
     let spins = [0.0, 0.0, 60.0, 60.0];
     let reactions = [0.0, 0.0, -100.0, -100.0];
     let input_lift = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
-    pt.step_with_reaction(&cfg, &input_lift, &spins, &reactions, 25.0, dt);
+    pt.step_with_reaction(&cfg, &input_lift, &spins, &reactions, 25.0, true, true, cfg.enable_abs, dt);
     assert!(
         pt.engine_torque <= 0.0,
         "Lift-off engine torque must be non-positive (engine braking): {}",

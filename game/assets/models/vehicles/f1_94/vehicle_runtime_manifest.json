@@ -1,7 +1,16 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "schema": "formula90s/vehicle-import/v1",
   "vehicle_id": "f1_94",
+  "physics_profile": "res://data/vehicles/f1_94/f1_94_physics.json",
+  "legacy_resources": {
+    "note": "The .tres files under data/vehicles/f1_94/ are legacy GEVP specs. The active Rust physics runtime loads exclusively from physics_profile JSON.",
+    "engine": "res://data/vehicles/f1_94/f1_94_engine.tres",
+    "gearbox": "res://data/vehicles/f1_94/f1_94_gearbox.tres",
+    "suspension": "res://data/vehicles/f1_94/f1_94_suspension.tres",
+    "aero": "res://data/vehicles/f1_94/f1_94_aero.tres",
+    "tires": "res://data/vehicles/f1_94/f1_94_tires.tres"
+  },
   "source": {
     "vehicle_glb": "assets-lowpoly-python/vehicles/canonical/f1_94_gevp_ready.glb",
     "sha256": "f34e3ce1c4dd1a894ccf079763eecf228ee858090cb868e97ea8e054b0b56cd4",

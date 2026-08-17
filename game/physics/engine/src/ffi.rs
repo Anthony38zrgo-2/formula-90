@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 3;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 6;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -40,6 +40,11 @@ pub struct FfiRuntimeConfig {
     pub diff_coast_ramp_angle_deg: f64,
     pub diff_clutches: f64,
     pub diff_clutch_friction_coeff: f64,
+
+    // Driving aids runtime enable mask (AidsMask::to_bits):
+    // bit0=ABS, bit1=TC, bit2=stability, bit3=steering slip, bit4=countersteer,
+    // bit5=auto-clutch, bit6=launch, bit7=brake-assist.
+    pub aids_enabled_mask: u32,
 }
 
 #[no_mangle]
@@ -79,6 +84,7 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             diff_coast_ramp_angle_deg: sim.config.diff_coast_ramp_angle_deg,
             diff_clutches: sim.config.diff_clutches,
             diff_clutch_friction_coeff: sim.config.diff_clutch_friction_coeff,
+            aids_enabled_mask: sim.aids.to_bits(),
         };
     }
     true
@@ -142,6 +148,7 @@ pub extern "C" fn f1_94_physics_apply_runtime_config(
     if cfg.diff_clutch_friction_coeff.is_finite() && cfg.diff_clutch_friction_coeff >= 0.0 {
         sim.config.diff_clutch_friction_coeff = cfg.diff_clutch_friction_coeff;
     }
+    sim.aids = AidsMask::from_bits(cfg.aids_enabled_mask);
     true
 }
 
@@ -332,6 +339,23 @@ pub struct FfiTelemetryOutput {
     pub rr_slip: f64,
 
     pub steer_angle_rad: f64,
+
+    // CORR-02 append-only diagnostics: actual clutch/wheel loads.
+    pub clutch_torque: f64,
+    pub fl_drive_torque: f64,
+    pub fr_drive_torque: f64,
+    pub rl_drive_torque: f64,
+    pub rr_drive_torque: f64,
+    pub fl_normal_force: f64,
+    pub fr_normal_force: f64,
+    pub rl_normal_force: f64,
+    pub rr_normal_force: f64,
+
+    // Append-only aids diagnostics
+    pub abs_active: bool,
+    pub tc_active: bool,
+    pub tc_cut_ratio: f64,
+    pub aids_enabled_mask: u32,
 }
 
 #[no_mangle]
@@ -340,6 +364,50 @@ pub extern "C" fn f1_94_physics_create_default() -> *mut c_void {
     let spawn_height = default_spawn_height(&cfg);
     let sim = Box::new(VehicleSimulator::new(cfg, Vec3::new(0.0, spawn_height, 0.0), 0.0));
     Box::into_raw(sim) as *mut c_void
+}
+
+/// Create a VehicleSimulator from a JSON configuration string.
+/// Returns null pointer on error. Error message written to error_buffer (null-terminated).
+/// If error_buffer is null or error_buffer_len is 0, error is silently discarded.
+#[no_mangle]
+pub extern "C" fn f1_94_physics_create_from_json(
+    json_ptr: *const u8,
+    json_len: u32,
+    error_buffer: *mut u8,
+    error_buffer_len: u32,
+) -> *mut c_void {
+    if json_ptr.is_null() || json_len == 0 {
+        write_error(error_buffer, error_buffer_len, "null or empty JSON input");
+        return std::ptr::null_mut();
+    }
+    let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
+    let json_str = match std::str::from_utf8(json_bytes) {
+        Ok(s) => s,
+        Err(e) => {
+            write_error(error_buffer, error_buffer_len, &format!("invalid UTF-8: {e}"));
+            return std::ptr::null_mut();
+        }
+    };
+    let cfg = match VehicleConfig::from_json_str(json_str) {
+        Ok(c) => c,
+        Err(e) => {
+            write_error(error_buffer, error_buffer_len, &e);
+            return std::ptr::null_mut();
+        }
+    };
+    let spawn_height = default_spawn_height(&cfg);
+    let sim = Box::new(VehicleSimulator::new(cfg, Vec3::new(0.0, spawn_height, 0.0), 0.0));
+    Box::into_raw(sim) as *mut c_void
+}
+
+fn write_error(buf: *mut u8, buf_len: u32, msg: &str) {
+    if buf.is_null() || buf_len == 0 { return; }
+    let bytes = msg.as_bytes();
+    let copy_len = bytes.len().min(buf_len as usize - 1);
+    unsafe {
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, copy_len);
+        *buf.add(copy_len) = 0;
+    }
 }
 
 #[no_mangle]
@@ -546,6 +614,19 @@ fn write_telemetry(sim: &VehicleSimulator, telem: &crate::telemetry::TelemetryFr
             rl_slip: sim.state.tires.wheels[2].slip_ratio,
             rr_slip: sim.state.tires.wheels[3].slip_ratio,
             steer_angle_rad: sim.state.tires.wheels[0].steer_angle_rad,
+            clutch_torque: sim.state.powertrain.clutch_torque,
+            fl_drive_torque: sim.state.powertrain.drive_torques[0],
+            fr_drive_torque: sim.state.powertrain.drive_torques[1],
+            rl_drive_torque: sim.state.powertrain.drive_torques[2],
+            rr_drive_torque: sim.state.powertrain.drive_torques[3],
+            fl_normal_force: sim.state.suspension.wheels[0].total_normal_force,
+            fr_normal_force: sim.state.suspension.wheels[1].total_normal_force,
+            rl_normal_force: sim.state.suspension.wheels[2].total_normal_force,
+            rr_normal_force: sim.state.suspension.wheels[3].total_normal_force,
+            abs_active: sim.state.powertrain.abs_active.iter().any(|a| *a),
+            tc_active: sim.state.powertrain.tc_active,
+            tc_cut_ratio: sim.state.powertrain.tc_cut_ratio,
+            aids_enabled_mask: sim.aids.to_bits(),
         };
     }
 }

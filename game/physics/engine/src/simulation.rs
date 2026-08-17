@@ -74,16 +74,77 @@ impl VehicleState {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct AidsMask {
+    pub abs: bool,
+    pub traction_control: bool,
+    pub stability: bool,
+    pub steering_slip_assist: bool,
+    pub countersteer: bool,
+    pub auto_clutch: bool,
+    pub launch_control: bool,
+    pub brake_assist: bool,
+}
+
+impl AidsMask {
+    /// Bit layout for the C-ABI `aids_enabled_mask` (ffi.rs):
+    /// bit0=ABS, bit1=TC, bit2=stability, bit3=steering slip, bit4=countersteer,
+    /// bit5=auto-clutch, bit6=launch, bit7=brake-assist.
+    pub fn to_bits(&self) -> u32 {
+        let mut b = 0u32;
+        if self.abs { b |= 1 << 0; }
+        if self.traction_control { b |= 1 << 1; }
+        if self.stability { b |= 1 << 2; }
+        if self.steering_slip_assist { b |= 1 << 3; }
+        if self.countersteer { b |= 1 << 4; }
+        if self.auto_clutch { b |= 1 << 5; }
+        if self.launch_control { b |= 1 << 6; }
+        if self.brake_assist { b |= 1 << 7; }
+        b
+    }
+
+    pub fn from_bits(bits: u32) -> Self {
+        Self {
+            abs: (bits & (1 << 0)) != 0,
+            traction_control: (bits & (1 << 1)) != 0,
+            stability: (bits & (1 << 2)) != 0,
+            steering_slip_assist: (bits & (1 << 3)) != 0,
+            countersteer: (bits & (1 << 4)) != 0,
+            auto_clutch: (bits & (1 << 5)) != 0,
+            launch_control: (bits & (1 << 6)) != 0,
+            brake_assist: (bits & (1 << 7)) != 0,
+        }
+    }
+
+    /// Initial runtime mask derived from the profile's default policy. An aid is
+    /// enabled only if it is available AND its default is on.
+    pub fn from_config(config: &VehicleConfig) -> Self {
+        let a = &config.aids;
+        Self {
+            abs: a.abs_available && a.abs_default_enabled,
+            traction_control: a.traction_control_available && a.traction_control_default_enabled,
+            stability: a.stability_available && a.stability_default_enabled,
+            steering_slip_assist: a.steering_slip_assist_default_enabled,
+            countersteer: a.countersteer_default_enabled,
+            auto_clutch: a.auto_clutch_default_enabled,
+            launch_control: a.launch_control_available && a.launch_control_default_enabled,
+            brake_assist: a.brake_assist_available && a.brake_assist_default_enabled,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehicleSimulator {
     pub config: VehicleConfig,
     pub state: VehicleState,
+    pub aids: AidsMask,
 }
 
 impl VehicleSimulator {
     pub fn new(config: VehicleConfig, spawn_pos: Vec3, spawn_yaw: f64) -> Self {
         let state = VehicleState::new(&config, spawn_pos, spawn_yaw);
-        Self { config, state }
+        let aids = AidsMask::from_config(&config);
+        Self { config, state, aids }
     }
 
     /// Legacy standalone step. It uses the same GEVP force solver as external mode,
@@ -130,7 +191,16 @@ impl VehicleSimulator {
         let forward_speed = -local_velocity.z;
         let lateral_speed = local_velocity.x;
 
-        Self::filter_inputs(cfg, st, input, forward_speed, lateral_speed, dt);
+        Self::filter_inputs(
+            cfg,
+            st,
+            input,
+            forward_speed,
+            lateral_speed,
+            self.aids.steering_slip_assist,
+            self.aids.countersteer,
+            dt,
+        );
 
         let effective_input = VehicleInput {
             throttle: st.throttle_input_smoothed,
@@ -151,12 +221,18 @@ impl VehicleSimulator {
             st.tires.wheels[3].spin,
         ];
         let reactions = st.tires.reaction_torques();
+        let tc_enabled = self.aids.traction_control;
+        let abs_enabled = self.aids.abs;
+        let brake_assist_enabled = self.aids.brake_assist;
         st.powertrain.step_with_reaction(
             cfg,
             &effective_input,
             &wheel_spins,
             &reactions,
             forward_speed,
+            tc_enabled,
+            brake_assist_enabled,
+            abs_enabled,
             dt,
         );
 
@@ -321,10 +397,15 @@ impl VehicleSimulator {
         input: &VehicleInput,
         forward_speed: f64,
         lateral_speed: f64,
+        steering_slip_assist_on: bool,
+        countersteer_on: bool,
         dt: f64,
     ) {
         let requested = input.steering.clamp(-1.0, 1.0);
         let mut target = requested;
+
+        let slip_assist_on = steering_slip_assist_on && cfg.steering_slip_assist > 0.0;
+        let countersteer_on = countersteer_on && cfg.countersteer_assist > 0.0;
 
         // Same purpose as GEVP steering_slip_assist: refuse additional steering into
         // excessive front slip, but still allow countersteer/recovery.
@@ -334,13 +415,13 @@ impl VehicleSimulator {
             st.tires.wheels[0].slip_angle_rad,
             st.tires.wheels[1].slip_angle_rad,
         );
-        if cfg.steering_slip_assist > 0.0 && front_slip.abs() > cfg.steering_slip_assist {
+        if slip_assist_on && front_slip.abs() > cfg.steering_slip_assist {
             if target.signum() == front_slip.signum() && target.abs() > st.steer_input_smoothed.abs() {
                 target = st.steer_input_smoothed;
             }
         }
 
-        if forward_speed > 0.5 && cfg.countersteer_assist > 0.0 {
+        if forward_speed > 0.5 && countersteer_on {
             let speed = (forward_speed * forward_speed + lateral_speed * lateral_speed).sqrt();
             if speed > 1e-6 {
                 let travel_angle = (lateral_speed / speed).clamp(-1.0, 1.0).asin();

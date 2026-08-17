@@ -1,6 +1,7 @@
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
 
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -77,6 +78,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_current_gear"), &F194RustVehicle::get_current_gear);
 	ClassDB::bind_method(D_METHOD("get_engine_torque"), &F194RustVehicle::get_engine_torque);
 	ClassDB::bind_method(D_METHOD("get_clutch_engagement"), &F194RustVehicle::get_clutch_engagement);
+	ClassDB::bind_method(D_METHOD("get_clutch_torque"), &F194RustVehicle::get_clutch_torque);
 	ClassDB::bind_method(D_METHOD("get_true_steering_amount"), &F194RustVehicle::get_true_steering_amount);
 	ClassDB::bind_method(D_METHOD("get_steer_angle_rad"), &F194RustVehicle::get_steer_angle_rad);
 
@@ -86,6 +88,7 @@ void F194RustVehicle::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "current_gear"), "", "get_current_gear");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "engine_torque"), "", "get_engine_torque");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clutch_engagement"), "", "get_clutch_engagement");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "clutch_torque"), "", "get_clutch_torque");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "true_steering_amount"), "", "get_true_steering_amount");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "steer_angle_rad"), "", "get_steer_angle_rad");
 
@@ -103,10 +106,14 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_wheel_compressions"), &F194RustVehicle::get_wheel_compressions);
 	ClassDB::bind_method(D_METHOD("get_wheel_spins"), &F194RustVehicle::get_wheel_spins);
 	ClassDB::bind_method(D_METHOD("get_wheel_slips"), &F194RustVehicle::get_wheel_slips);
+	ClassDB::bind_method(D_METHOD("get_drive_torques"), &F194RustVehicle::get_drive_torques);
+	ClassDB::bind_method(D_METHOD("get_normal_forces"), &F194RustVehicle::get_normal_forces);
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_compressions"), "", "get_wheel_compressions");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_spins"), "", "get_wheel_spins");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_slips"), "", "get_wheel_slips");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "drive_torques"), "", "get_drive_torques");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "normal_forces"), "", "get_normal_forces");
 
 	// Rust Dimension and Anchor Queries
 	ClassDB::bind_method(D_METHOD("get_vehicle_mass"), &F194RustVehicle::get_vehicle_mass_value);
@@ -179,6 +186,10 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_rear_locking_differential_engage_torque"), &F194RustVehicle::get_rear_locking_differential_engage_torque);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "rear_locking_differential_engage_torque"), "set_rear_locking_differential_engage_torque", "get_rear_locking_differential_engage_torque");
 
+	ClassDB::bind_method(D_METHOD("set_aids_enabled_mask", "mask"), &F194RustVehicle::set_aids_enabled_mask);
+	ClassDB::bind_method(D_METHOD("get_aids_enabled_mask"), &F194RustVehicle::get_aids_enabled_mask);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "aids_enabled_mask"), "set_aids_enabled_mask", "get_aids_enabled_mask");
+
 	ClassDB::bind_method(D_METHOD("reset_vehicle", "pos", "yaw_rad"), &F194RustVehicle::reset_vehicle);
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 }
@@ -245,6 +256,7 @@ bool F194RustVehicle::load_rust_dll() {
 	fn_get_runtime_config_ = (FnPhysicsGetRuntimeConfig)GetProcAddress(hDll, "f1_94_physics_get_runtime_config");
 	fn_apply_runtime_config_ = (FnPhysicsApplyRuntimeConfig)GetProcAddress(hDll, "f1_94_physics_apply_runtime_config");
 	fn_create_default_ = (FnPhysicsCreateDefault)GetProcAddress(hDll, "f1_94_physics_create_default");
+	fn_create_from_json_ = (FnPhysicsCreateFromJson)GetProcAddress(hDll, "f1_94_physics_create_from_json");
 	fn_create_with_pos_ = (FnPhysicsCreateWithPos)GetProcAddress(hDll, "f1_94_physics_create_with_pos");
 	fn_reset_ = (FnPhysicsReset)GetProcAddress(hDll, "f1_94_physics_reset");
 	fn_solve_forces_ = (FnPhysicsSolveForces)GetProcAddress(hDll, "f1_94_physics_solve_forces");
@@ -366,9 +378,33 @@ void F194RustVehicle::_ready() {
 		return;
 	}
 
-	if (fn_create_default_) {
+	if (fn_create_from_json_) {
+		const String json_path = "res://data/vehicles/f1_94/f1_94_physics.json";
+		Ref<FileAccess> f = FileAccess::open(json_path, FileAccess::READ);
+		if (f.is_valid()) {
+			PackedByteArray bytes = f->get_buffer(f->get_length());
+			f->close();
+			if (bytes.size() > 0) {
+				uint8_t err_buf[512] = {};
+				void *json_sim = fn_create_from_json_(
+					bytes.ptr(),
+					(uint32_t)bytes.size(),
+					err_buf,
+					sizeof(err_buf));
+				if (json_sim) {
+					sim_ptr_ = json_sim;
+					UtilityFunctions::print(String("[F194RustVehicle] Loaded physics from JSON: ") + json_path);
+				} else {
+					String err_msg = String(err_buf[0] ? (const char *)err_buf : "unknown error");
+					UtilityFunctions::printerr(String("[F194RustVehicle] JSON config failed (") + err_msg + "), falling back to default.");
+				}
+			}
+		}
+	}
+
+	if (!sim_ptr_ && fn_create_default_) {
 		sim_ptr_ = fn_create_default_();
-	} else if (fn_create_with_pos_) {
+	} else if (!sim_ptr_ && fn_create_with_pos_) {
 		Vector3 pos = get_global_position();
 		Vector3 rot = get_global_rotation();
 		sim_ptr_ = fn_create_with_pos_(pos.x, pos.y, pos.z, rot.y);
@@ -588,6 +624,7 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	current_gear_ = telem.gear;
 	engine_torque_ = telem.engine_torque;
 	clutch_engagement_ = telem.clutch_engagement;
+	clutch_torque_ = telem.clutch_torque;
 	true_steering_amount_ = telem.steer;
 	steer_angle_rad_ = telem.steer_angle_rad;
 
@@ -609,6 +646,15 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	wheel_slips_[1] = telem.fr_slip;
 	wheel_slips_[2] = telem.rl_slip;
 	wheel_slips_[3] = telem.rr_slip;
+
+	wheel_drive_torques_[0] = telem.fl_drive_torque;
+	wheel_drive_torques_[1] = telem.fr_drive_torque;
+	wheel_drive_torques_[2] = telem.rl_drive_torque;
+	wheel_drive_torques_[3] = telem.rr_drive_torque;
+	wheel_normal_forces_[0] = telem.fl_normal_force;
+	wheel_normal_forces_[1] = telem.fr_normal_force;
+	wheel_normal_forces_[2] = telem.rl_normal_force;
+	wheel_normal_forces_[3] = telem.rr_normal_force;
 
 	// 7. Visual Animation of Wheel Meshes
 	update_wheel_visuals(dt);
@@ -666,6 +712,20 @@ PackedFloat64Array F194RustVehicle::get_wheel_slips() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
 	for (int i = 0; i < 4; ++i) arr[i] = wheel_slips_[i];
+	return arr;
+}
+
+PackedFloat64Array F194RustVehicle::get_drive_torques() const {
+	PackedFloat64Array arr;
+	arr.resize(4);
+	for (int i = 0; i < 4; ++i) arr[i] = wheel_drive_torques_[i];
+	return arr;
+}
+
+PackedFloat64Array F194RustVehicle::get_normal_forces() const {
+	PackedFloat64Array arr;
+	arr.resize(4);
+	for (int i = 0; i < 4; ++i) arr[i] = wheel_normal_forces_[i];
 	return arr;
 }
 
@@ -745,6 +805,7 @@ void F194RustVehicle::apply_runtime_config() {
 	cfg.diff_coast_ramp_angle_deg = diff_coast_ramp_angle_deg_;
 	cfg.diff_clutches = diff_clutches_;
 	cfg.diff_clutch_friction_coeff = diff_clutch_friction_coeff_;
+	cfg.aids_enabled_mask = aids_enabled_mask_;
 	fn_apply_runtime_config_(sim_ptr_, &cfg);
 }
 
@@ -770,6 +831,7 @@ void F194RustVehicle::sync_runtime_config_from_rust() {
 		diff_coast_ramp_angle_deg_ = cfg.diff_coast_ramp_angle_deg;
 		diff_clutches_ = cfg.diff_clutches;
 		diff_clutch_friction_coeff_ = cfg.diff_clutch_friction_coeff;
+		aids_enabled_mask_ = cfg.aids_enabled_mask;
 		set_mass((float)vehicle_mass_);
 	}
 }
@@ -1053,6 +1115,15 @@ void F194RustVehicle::set_rear_locking_differential_engage_torque(double v) {
 
 double F194RustVehicle::get_rear_locking_differential_engage_torque() const {
 	return rear_locking_differential_engage_torque_;
+}
+
+void F194RustVehicle::set_aids_enabled_mask(uint32_t v) {
+	aids_enabled_mask_ = v;
+	apply_runtime_config();
+}
+
+uint32_t F194RustVehicle::get_aids_enabled_mask() const {
+	return aids_enabled_mask_;
 }
 
 } // namespace godot

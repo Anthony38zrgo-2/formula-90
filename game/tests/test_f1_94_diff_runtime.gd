@@ -29,14 +29,15 @@ func _run_test() -> void:
 		quit(1)
 		return
 
-	# Defaults must mirror Fase 2 B calibration (120/65/75/4/0.15)
+	# Defaults are loaded from the authoritative JSON (data/vehicles/f1_94/f1_94_physics.json).
+	# The JSON differential section sets preload_nm=25.0, clutch_friction_coefficient=0.1.
 	var dp = vehicle.get_diff_preload()
 	var mu = vehicle.get_diff_clutch_friction_coeff()
-	print("[OK] default diff_preload=%.3f (expect 120) mu=%.3f (expect 0.15)" % [dp, mu])
-	if abs(dp - 120.0) > 1e-6:
-		failures.append("default diff_preload=%f expected 120" % dp)
-	if abs(mu - 0.15) > 1e-6:
-		failures.append("default mu=%f expected 0.15" % mu)
+	print("[OK] default diff_preload=%.3f (expect 25) mu=%.3f (expect 0.1)" % [dp, mu])
+	if abs(dp - 25.0) > 1e-6:
+		failures.append("default diff_preload=%f expected 25 (JSON)" % dp)
+	if abs(mu - 0.1) > 1e-6:
+		failures.append("default mu=%f expected 0.1 (JSON)" % mu)
 
 	# GEVP alias: rear_locking_differential_engage_torque=170 -> preload=170, mu=0
 	vehicle.set_rear_locking_differential_engage_torque(170.0)

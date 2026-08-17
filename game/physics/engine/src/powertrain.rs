@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 const RAD_S_TO_RPM: f64 = 60.0 / (2.0 * std::f64::consts::PI);
 const GEVP_GEAR_INERTIA: f64 = 0.02;
-const MAX_CLUTCH_TORQUE_RATIO: f64 = 1.6;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PowertrainState {
@@ -22,6 +21,10 @@ pub struct PowertrainState {
     pub brake_torques: [f64; 4],
     pub abs_active: [bool; 4],
     pub abs_timers: [f64; 4],
+
+    // Traction control (CT / TCS) state
+    pub tc_active: bool,
+    pub tc_cut_ratio: f64,
 }
 
 impl PowertrainState {
@@ -40,6 +43,8 @@ impl PowertrainState {
             brake_torques: [0.0; 4],
             abs_active: [false; 4],
             abs_timers: [0.0; 4],
+            tc_active: false,
+            tc_cut_ratio: 0.0,
         }
     }
 
@@ -58,6 +63,9 @@ impl PowertrainState {
             wheel_angular_velocities,
             &[0.0; 4],
             forward_speed_m_s,
+            true,
+            true,
+            config.enable_abs,
             dt,
         );
     }
@@ -65,6 +73,9 @@ impl PowertrainState {
     /// GEVP-style drivetrain update. Tire reaction torque is fed back from the
     /// previous force solve; this is the coupling that makes lift-off and engine
     /// braking continuous instead of switching a wheel between driven/free modes.
+    ///
+    /// `tc_enabled` gates traction control (CT/TCS): when true, drive torque is
+    /// reduced on wheels whose longitudinal slip exceeds the profile threshold.
     pub fn step_with_reaction(
         &mut self,
         config: &VehicleConfig,
@@ -72,13 +83,16 @@ impl PowertrainState {
         wheel_spins: &[f64; 4],
         tire_reaction_torques: &[f64; 4],
         forward_speed_m_s: f64,
+        tc_enabled: bool,
+        brake_assist_enabled: bool,
+        abs_enabled: bool,
         dt: f64,
     ) {
         let dt = dt.max(1e-5);
         self.process_shift(config, input, wheel_spins, forward_speed_m_s, dt);
         self.process_engine_and_clutch(config, input, wheel_spins, tire_reaction_torques, dt);
-        self.distribute_drive_torque(config, wheel_spins);
-        self.process_brakes(config, input, wheel_spins, dt);
+        self.distribute_drive_torque(config, wheel_spins, tc_enabled, forward_speed_m_s);
+        self.process_brakes(config, input, wheel_spins, dt, brake_assist_enabled, abs_enabled);
     }
 
     fn process_shift(
@@ -178,9 +192,9 @@ impl PowertrainState {
         let positive_torque = curve * config.max_torque * throttle;
 
         // GEVP has variable motor drag and a constant motor brake term. These values
-        // are derived from the existing Formula-90 config to avoid a schema break.
-        let variable_drag = rpm_factor * config.max_torque * 0.10;
-        let constant_brake = config.max_torque * 0.02 * (1.0 - throttle);
+        // are now profile-tunable via JSON (variable_drag_ratio / constant_brake_ratio).
+        let variable_drag = rpm_factor * config.max_torque * config.variable_drag_ratio;
+        let constant_brake = config.max_torque * config.constant_brake_ratio * (1.0 - throttle);
         let mut torque_output = positive_torque - variable_drag - constant_brake;
 
         self.is_rev_limited = self.rpm >= config.max_rpm;
@@ -208,13 +222,15 @@ impl PowertrainState {
         let shift_clutch = if self.shift_timer > 0.0 { 1.0 } else { 0.0 };
         // GEVP anti-stall clutch: at idle (or below clutch-out RPM when launching from rest),
         // disengage clutch completely so idle governor does not produce artificial creep torque.
-        let clutch_out_rpm = config.idle_rpm + 1000.0;
-        let idle_disengagement = if self.rpm <= config.idle_rpm + 50.0 {
+        // Hysteresis and offset are now profile-tunable via JSON.
+        let clutch_out_rpm = config.idle_rpm + config.clutch_out_rpm_offset;
+        let idle_floor = config.idle_rpm + config.idle_disengagement_hysteresis_rpm;
+        let idle_disengagement = if self.rpm <= idle_floor {
             1.0
         } else if self.rpm >= clutch_out_rpm {
             0.0
         } else {
-            (clutch_out_rpm - self.rpm) / (clutch_out_rpm - (config.idle_rpm + 50.0))
+            (clutch_out_rpm - self.rpm) / (clutch_out_rpm - idle_floor).max(1e-6)
         };
         let clutch_disengagement = manual_clutch.max(shift_clutch).max(idle_disengagement);
         self.clutch_engagement = 1.0 - clutch_disengagement;
@@ -234,7 +250,7 @@ impl PowertrainState {
         let b = config.motor_moment * reaction_torque;
         let c = drivetrain_inertia_reflected * torque_output;
         let clutch_factor = self.clutch_engagement;
-        let max_clutch_torque = config.max_torque * MAX_CLUTCH_TORQUE_RATIO * clutch_factor;
+        let max_clutch_torque = config.max_torque * config.max_clutch_torque_ratio * clutch_factor;
         let raw_clutch = ((a - b + c)
             / (config.motor_moment + drivetrain_inertia_reflected).max(1e-8))
             * clutch_factor;
@@ -248,7 +264,13 @@ impl PowertrainState {
         self.drive_inertia = config.motor_moment + total_ratio.powi(2) * GEVP_GEAR_INERTIA;
     }
 
-    fn distribute_drive_torque(&mut self, config: &VehicleConfig, wheel_spins: &[f64; 4]) {
+    fn distribute_drive_torque(
+        &mut self,
+        config: &VehicleConfig,
+        wheel_spins: &[f64; 4],
+        tc_enabled: bool,
+        forward_speed_m_s: f64,
+    ) {
         self.drive_torques = [0.0; 4];
         if self.current_gear == 0 { return; }
         let wheel_torque = self.clutch_torque * self.get_total_gear_ratio(config);
@@ -276,15 +298,80 @@ impl PowertrainState {
             self.drive_torques[2] = t_rl;
             self.drive_torques[3] = t_rr;
         }
+
+        // Traction control (CT / TCS): progressively cut drive torque on driven
+        // wheels whose longitudinal slip exceeds the profile threshold. This is a
+        // pure torque reduction (no braking intervention), matching GEVP's
+        // `tcs_active` behavior. Always computed for telemetry, but only applied
+        // when tc_enabled is true.
+        self.tc_active = false;
+        self.tc_cut_ratio = 0.0;
+        if config.aids.traction_control_slip_threshold > 0.0 && self.throttle_input() > 0.01 {
+            let road_speed = forward_speed_m_s.abs();
+            let threshold = config.aids.traction_control_slip_threshold;
+            let mut max_cut: f64 = 0.0;
+            for wheel in WheelIndex::ALL {
+                if !wheel_is_driven(config, wheel) { continue; }
+                let i = wheel as usize;
+                let radius = if wheel.is_front() { config.front_tire_radius } else { config.rear_tire_radius };
+                if radius <= 1e-6 { continue; }
+                let wheel_road_speed = wheel_spins[i].abs() * radius;
+                // Longitudinal slip ratio: (wheel surface speed - vehicle speed) / vehicle speed.
+                let denom = road_speed.max(1.0);
+                let slip = if forward_speed_m_s >= 0.0 {
+                    (wheel_road_speed - road_speed) / denom
+                } else {
+                    (road_speed - wheel_road_speed) / denom
+                };
+                if slip > threshold {
+                    let excess = (slip - threshold) * config.aids.traction_control_cut_gain;
+                    // Saturate: full cut when excess >= 1.0 (slip ~2x threshold typical).
+                    let cut = (excess / (threshold + 1e-6)).clamp(0.0, 1.0);
+                    max_cut = max_cut.max(cut);
+                }
+            }
+            if max_cut > 0.0 {
+                self.tc_cut_ratio = max_cut;
+                self.tc_active = tc_enabled;
+                if tc_enabled {
+                    let scale = (1.0 - max_cut).max(0.0);
+                    for wheel in WheelIndex::ALL {
+                        if wheel_is_driven(config, wheel) {
+                            let i = wheel as usize;
+                            self.drive_torques[i] *= scale;
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    fn process_brakes(&mut self, config: &VehicleConfig, input: &VehicleInput, wheel_spins: &[f64; 4], dt: f64) {
-        let total = input.brake.clamp(0.0, 1.0) * config.max_brake_torque;
+    fn throttle_input(&self) -> f64 {
+        // Engine torque sign already encodes commanded drive; derive from stored
+        // engine_torque instead of input to avoid borrow conflicts.
+        if self.engine_torque > 0.0 { 1.0 } else { 0.0 }
+    }
+
+    fn process_brakes(
+        &mut self,
+        config: &VehicleConfig,
+        input: &VehicleInput,
+        wheel_spins: &[f64; 4],
+        dt: f64,
+        brake_assist_enabled: bool,
+        abs_enabled: bool,
+    ) {
+        let assist_mult = if brake_assist_enabled {
+            config.aids.brake_assist_force_multiplier.max(0.0)
+        } else {
+            1.0
+        };
+        let total = input.brake.clamp(0.0, 1.0) * config.max_brake_torque * assist_mult;
         let front_each = total * config.front_brake_bias * 0.5;
         let rear_each = total * (1.0 - config.front_brake_bias) * 0.5;
-        let hand_each = input.handbrake.clamp(0.0, 1.0) * config.max_brake_torque * 0.4;
+        let hand_each = input.handbrake.clamp(0.0, 1.0) * config.max_brake_torque * config.handbrake_torque_fraction;
 
-        if config.enable_abs && input.brake > 0.05 {
+        if abs_enabled && input.brake > 0.05 {
             let avg = wheel_spins.iter().map(|v| v.abs()).sum::<f64>() * 0.25;
             for i in 0..4 {
                 if avg - wheel_spins[i].abs() > config.abs_spin_diff_threshold && self.abs_timers[i] <= 0.0 {
