@@ -19,6 +19,8 @@ pub struct TelemetryFrame {
     pub rr_comp_mm: f64,
     pub front_slip: f64,
     pub rear_slip: f64,
+    pub tc_active: bool,
+    pub drive_torque: f64,
     pub session_id: String,
     pub session_timestamp_utc: String,
     pub physics_hz: i32,
@@ -37,7 +39,7 @@ impl TelemetryFrame {
         "Throttle", "Brake", "Steering",
         "Lat_G", "Long_G", "Vert_G",
         "FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
-        "Front_Slip", "Rear_Slip",
+        "Front_Slip", "Rear_Slip", "TC_Active", "DriveTorque",
         "Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
         "Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
         "Vehicle_Script", "Setup_Schema_Version", "Setup_JSON",
@@ -46,7 +48,7 @@ impl TelemetryFrame {
     /// Formats the telemetry frame into a single comma-separated CSV line.
     pub fn to_csv_line(&self) -> String {
         format!(
-            "{},{:.2},{:.1},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.2},{:.2},{:.2},{:.2},{:.4},{:.4},\"{}\",\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",{},\"{}\"",
+            "{},{:.2},{:.1},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.2},{:.2},{:.2},{:.2},{:.4},{:.4},{},{:.1},\"{}\",\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",{},\"{}\"",
             self.time_ms,
             self.speed_kmh,
             self.rpm,
@@ -63,6 +65,8 @@ impl TelemetryFrame {
             self.rr_comp_mm,
             self.front_slip,
             self.rear_slip,
+            self.tc_active,
+            self.drive_torque,
             self.session_id,
             self.session_timestamp_utc,
             self.physics_hz,

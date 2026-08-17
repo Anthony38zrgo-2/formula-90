@@ -41,9 +41,16 @@ Do not silently reopen `[FROZEN]` work.
 - Active development branch: `refactor/gevp-clean-baseline`
 - Current project goal: compact 1990s-inspired formula racing game with convincing,
   readable, mechanically expressive handling and a late-1990s console visual identity.
-- Current development car: **Jordan 197** `[CANONICAL per J197-001, replaces Jordan 191]`
-- Previous canonical aliases: **Jordan 191** (`game/scenes/vehicles/jordan_191/` retained for history, physics frozen per HAN-001/PHY-003..007) and **Jordan 1995** (`game/scenes/vehicles/jordan_1995/` historical)
-- Current handling-development circuit: **La Chutana**
+- Current development car: **F1-94 (3.5L V10 NA)** `[CANONICAL per handoff 2026-08-17; Rust GEVP 3-raycast physics]`
+- Previous canonical aliases (HISTORICAL, superseded by F1-94 Rust): **Jordan 197**
+  (`game/scenes/vehicles/jordan_197/`, GEVP-era tuning, frozen/legacy), **Jordan 191**
+  (`game/scenes/vehicles/jordan_191/` retained for history, physics frozen per HAN-001/PHY-003..007),
+  and **Jordan 1995** (`game/scenes/vehicles/jordan_1995/` historical)
+- Current handling-development circuit: **La Chutana** `[VALIDATED ENOUGH]`
+- Physics architecture: **3-layer Rust GEVP migration** — deterministic 6-DOF Rust core
+  (`game/physics/engine/`, FFI `ABI v7`) → C++ GDExtension (`native/`,
+  `libformula90s.windows.template_*.x86_64.dll`) → GDScript gameplay/controllers
+  (`game/addons/formula90s/scripts/`). See §1.2.
 
 ### Current development order
 
@@ -57,8 +64,88 @@ Phase D — suspension
 Phase E — V10 powertrain / transmission
 Phase F — aerodynamics
 Phase G — assists / true no-assists behavior
-Phase RUST — GEVP Physics Rust Migration (3-Raycast, deterministic core, telemetry parity) [PLANNED per docs/GEVP_RUST_PHYSICS_MIGRATION_BACKLOG.md]
+Phase RUST — GEVP Physics Rust Migration (3-Raycast, deterministic core, telemetry parity) [ACTIVE — F1-94 canonical as of 2026-08-17]
 ```
+
+---
+
+## 1.2 F1-94 Rust Physics — Current Architecture (ACTIVE canonical)
+
+Status: `[ACTIVE — canonical runtime as of 2026-08-17 handoff]`
+
+The Jordan/GEVP-era gameplay vehicle was superseded by a Rust-ported deterministic
+physics core. All F1-94 handling now flows through this 3-layer stack.
+
+### 1.2.1 Layer map
+
+```text
+Rust core            game/physics/engine/                       (cargo, FFI ABI v7)
+  ├─ vehicle_config.rs   JSON schema (deny_unknown_fields) + f1_94_canonical()
+  ├─ ffi.rs              F1_94_PHYSICS_ABI_VERSION = 7, get/apply_runtime_config
+  ├─ simulation.rs       6-DOF solver, inertia from inertia_multipliers
+  └─ build → vehicle_physics_engine.*.dll  (Rust core loaded by the C++ wrapper)
+
+C++ GDExtension      native/                                   (scons → libformula90s.*.dll)
+  ├─ f1_94_rust_vehicle.cpp/.hpp   F194RustVehicle, solve_forces_for_state,
+  │                                 update_wheel_visuals, runtime-config sync
+  └─ include/.../formula90_physics.h  F90RuntimeConfig (ABI v7, inertia + suspension)
+
+GDScript gameplay   game/addons/formula90s/scripts/
+  ├─ f1_94_rust_vehicle.gd            F194RustVehicleGD wrapper (telemetry/HUD/audio)
+  ├─ f1_94_rust_input_controller.gd   linear throttle (throttle_exponent = 1.0)
+  ├─ driving_aids.gd                  aids[0] = automatic_transmission from JSON
+  └─ vehicle_tunable_contract.gd      typed/bounded property access
+```
+
+### 1.2.2 Canonical entry path
+
+```text
+scripts/run_f1-94.ps1
+  → scenes/runtime/vehicle_test_session.tscn
+    → scenes/runtime/world_hud_compositor.tscn
+    → data/race_sessions/f1_94_la_chutana.tres
+  → scenes/vehicles/f1_94/f1_94_rust.tscn
+      VehicleRigidBody (F194RustVehicle) + F194RustInputController + VehicleAudio
+```
+
+### 1.2.3 Runtime physics authority
+
+Per §3.1, the single source of truth for F1-94 tuning is the JSON:
+
+```text
+game/data/vehicles/f1_94/f1_94_physics.json   (schema_version 2)
+```
+
+The Rust `f1_94_canonical()` defaults are only a fallback when JSON parse fails
+(`[F194RustVehicle] CRITICAL JSON PARSE ERROR … Falling back to default canonical`).
+The C++/Rust reject unknown JSON fields (`deny_unknown_fields`), so typos surface
+explicitly instead of silently reverting to defaults.
+
+### 1.2.4 Handoff alignment — 5 discrepancy factors (VALIDATED as of 2026-08-17)
+
+| # | Factor | Resolution | Status |
+|---|---|---|---|
+| 1 | Silent JSON fallback (deny_unknown_fields) | `deny_unknown_fields` on all JSON substructs in `vehicle_config.rs`; explicit C++ printerr | `[VALIDATED]` |
+| 2 | Driving aids overwriting params | `driving_aids.gd` reads `automatic_transmission` dynamically → `aids[0]`; restores baseline | `[VALIDATED]` |
+| 3 | RigidBody vs Rust inertia | FFI `inertia_multiplier_x/y/z` (JSON→Rust→C++); `configured_inertia` in `solve_forces_for_state` (replaces fixed 1.10) | `[VALIDATED]` |
+| 4 | Visual suspension vs forces | FFI `suspension_front/rear_spring_length` + `resting_ratio`; `update_wheel_visuals` uses them; fallback steer uses `max_steering_angle_` | `[VALIDATED]` |
+| 5 | Input modulation | `throttle_exponent = 1.0` (linear) in `f1_94_rust_input_controller.gd`; F1-94 scene uses this controller | `[VALIDATED]` |
+
+### 1.2.5 Known divergences to verify (NOT yet reconciled)
+
+These runtime-authority values differ from the old Jordan/GEVP canonical and from the
+Rust `f1_94_canonical()` defaults. They are documented as-is for traceability; sign-off
+pending.
+
+| Field | JSON (runtime) | Rust `f1_94_canonical()` / scene | Note |
+|---|---|---|---|
+| `vehicle_mass` | 575.0 (JSON) | 505.0 (Rust default) AND `mass = 505.0` in `f1_94_rust.tscn` RigidBody | **Conflicting** — Godot body mass (505) vs Rust sim mass (575) |
+| `front_track` / `rear_track` | 1.670 / 1.590 | 1.5925 / 1.5246 | JSON wins at runtime |
+| `max_steering_angle` | 0.383972 (~22°) | 0.436332 (~25°) | JSON wins at runtime |
+| `automatic_transmission` | false | true (Rust default) | Contradicts old "AUTO = ON" baseline (§6) |
+| wheel visual position | scene `FrontLeftWheel.x = -0.79625` | JSON `wheel_hubs.FL.x = -0.835` | Scene raycast anchor diverges from JSON hub |
+
+See §5.0 for the full F1-94 physical-state snapshot and §45 for next work.
 
 ---
 
@@ -157,6 +244,11 @@ Formula90s-specific behavior should normally be implemented through:
 
 # 4. Frozen GEVP baseline
 
+> **F1-94 note:** This §4 baseline is the legacy **GEVP** reference. The F1-94 (V10)
+> canonical is the Rust core loaded from `game/data/vehicles/f1_94/f1_94_physics.json`
+> via `F194RustVehicle` (see §1.2 / §5.0). Do not use the GEVP frozen baseline as
+> authority for F1-94 tuning.
+
 ## 4.1 Known-good baseline
 
 `[FROZEN]`
@@ -215,7 +307,157 @@ Changing these areas requires explicit justification.
 
 ---
 
+## 5.0 F1-94 (V10) — current physical state (ACTIVE canonical)
+
+Status: `[ACTIVE — runtime authority = game/data/vehicles/f1_94/f1_94_physics.json (schema_version 2)]`
+
+All values below are read by the Rust core at `VehicleRigidBody._ready()` and override
+the Rust `f1_94_canonical()` defaults. Numbers are transcribed from the JSON (authority
+per §3.1). Divergences flagged `[VERIFY]` in §1.2.5 are NOT re-litigated here.
+
+### Chassis
+
+```text
+vehicle_mass              = 575.0        [VERIFY: scene RigidBody mass = 505.0]
+front_weight_distribution = 0.45
+cg_vertical_offset_m      = -0.12
+inertia_multipliers       = (x 1.05, y 1.15, z 1.05)   (applied live; confirmed in smoke)
+wheelbase_m              = 2.92065
+front_track_m            = 1.670        [VERIFY: Rust default 1.5925]
+rear_track_m             = 1.590        [VERIFY: Rust default 1.5246]
+```
+
+### Steering
+
+```text
+max_steering_angle   = 0.383972   (~22.0°)
+front_steering_ratio = 1.0
+rear_steering_ratio  = 0.0
+steering_speed       = 4.60
+countersteer_speed   = 8.00
+steering_speed_decay = 0.25
+steering_slip_assist = 0.30
+countersteer_assist  = 0.48
+steering_exponent    = 1.40
+ackermann            = 0.18
+```
+
+### Powertrain
+
+```text
+max_torque              = 455.0 N·m
+max_rpm                 = 15000
+idle_rpm                = 4500
+motor_moment            = 0.12
+torque_curve            = 9-point (0.0→0.10 … 1.0→0.75)
+gear_ratios             = [2.65, 2.10, 1.75, 1.50, 1.32, 1.18]
+final_drive             = 5.00
+reverse_ratio           = 3.00
+shift_time              = 0.10
+automatic_transmission  = false        [VERIFY: contradicts old AUTO=ON baseline]
+front_torque_split      = 0.0  (RWD)
+gear_inertia            = 0.02
+max_clutch_torque_ratio = 1.70
+clutch_out_rpm_offset   = 1200.0
+idle_disengagement_hysteresis_rpm = 100.0
+variable_drag_ratio     = 0.12
+constant_brake_ratio    = 0.02
+handbrake_torque_fraction = 0.0
+automatic_shift         = present (upshift/downshift RPM bands, kickdown, etc.)
+```
+
+### Differential (Salisbury clutch-pack LSD)
+
+```text
+preload_nm                       = 40.0
+power_ramp_angle_deg             = 45.0
+coast_ramp_angle_deg             = 65.0
+clutches                         = 6.0
+clutch_friction_coefficient      = 0.10
+slip_transition_threshold_rad_s  = 0.65
+```
+
+### Suspension
+
+```text
+front: spring_length 0.250  resting_ratio 0.280  damping_ratio 0.75
+       bump_damp 0.95  rebound_damp 1.25  arb 0.18
+       toe -0.0012217  camber -0.0436332  bump_stop 2.2
+rear:  spring_length 0.180  resting_ratio 0.350  damping_ratio 0.75
+       bump_damp 0.95  rebound_damp 1.25  arb 0.08
+       toe 0.0017453  camber -0.0314159  bump_stop 3.2
+tri_ray_spacing_ratio = 0.40
+```
+
+### Tires & contact
+
+```text
+front: radius 0.31695  width 0.30030  wheel_mass 12.0
+rear:  radius 0.32901  width 0.36832  wheel_mass 16.0
+contact_patch            = 0.21
+braking_grip_multiplier  = 1.05
+airborne_spin_decay_torque = 2.0
+surfaces: Road / Curb / Dirt / Grass / Gravel
+  Road:   friction 2.65  stiffness 8.25  roll_res 1.0   lat_assist 0.03  long_ratio 0.62
+  Curb:   friction 2.10  stiffness 6.50  roll_res 1.5   lat_assist 0.015 long_ratio 0.58
+  Dirt:   friction 1.25  stiffness 0.45  roll_res 2.4   lat_assist 0.0   long_ratio 0.42
+  Grass:  friction 0.75  stiffness 0.35  roll_res 4.2   lat_assist 0.0   long_ratio 0.35
+  Gravel: friction 1.00  stiffness 0.45  roll_res 3.0   lat_assist 0.0   long_ratio 0.40
+```
+
+### Brakes
+
+```text
+front_brake_bias = 0.59
+max_brake_torque = 2800.0
+enable_abs       = false
+abs_pulse_time   = 0.03
+abs_spin_diff_threshold = 12.0
+```
+
+### Aerodynamics
+
+```text
+drag_coefficient        = 0.78
+frontal_area            = 1.25
+downforce_coefficient   = 1.95
+split: front 0.30 / diffuser 0.38 / rear 0.32
+air_density             = 1.225
+lag_tau_s               = 0.022
+blend_min_speed_mps     = 4.167
+blend_full_speed_mps    = 27.778
+yaw_decay_exponent      = 1.15
+flex_coefficient        = 0.0008
+```
+
+### Driving aids policy (JSON)
+
+```text
+traction_control: available, default OFF, selectable
+abs:                available, default OFF, selectable
+stability:          available OFF, default OFF, selectable OFF
+steering_slip_assist_default_enabled = true
+countersteer_default_enabled         = true
+auto_clutch_default_enabled          = true (player not selectable)
+launch_control:     available OFF, default OFF, selectable OFF
+brake_assist:       available OFF, default OFF, selectable OFF
+handbrake:          rear_only OFF / abs_interlock OFF / clutch_coupling OFF
+input_smoothing:    ON (steering 4.60 / throttle 12.0 / brake 14.0)
+```
+
+### Wheel visual architecture (F1-94)
+
+Per `f1_94_rust.tscn`: single `F1_94_chassis_geometry.glb`, reused `wheel_front.glb` /
+`wheel_rear.glb` on both sides (opposite side via 180° `Orientation` node, not negative
+scale). Physics uses 12 RayCasts (FL/FR/RL/RR × In/Mid/Out), `target_position = (0,-0.65,0)`.
+Visual wheel nodes are parented to `VehicleRigidBody`; their transforms are driven by the
+Rust suspension compression (`update_wheel_visuals`) — NOT by Godot's built-in vehicle.
+
+---
+
 # 5. Jordan 191 — current physical state (canonical per HAN-001)
+
+Status: `[DEPRECATED — HISTORICAL, superseded by F1-94 Rust (see §5.0) on 2026-08-17]`
 
 > **J197-001 canonical selection (replaces HAN-001):** `game/scenes/vehicles/jordan_197/jordan_197.tscn` is the sole authoritative vehicle (3-GLB split: `jordan_197_chassis.glb` / `wheel_front/rear.glb` from `Jordan197_LOD0_Historical.glb` via `3d-asset-generation`). `game/scenes/tracks/test_field/test_field.tscn` and `jordan_197_handling_test.tscn` route through `jordan_197.tscn` via `VehiclePathResolver` (no `f1_1996`/`jordan_191` remains in bootstrap). `jordan_191/` and `jordan_1995/` retained as historical (frozen per HAN-001/PHY-003..007). `jordan_197` inherits PHY-006/007 steering/suspension tuning; `PHY-003` envelope re-derived from 197 model.
 
@@ -427,37 +669,38 @@ explicitly reopened.
 
 # 6. Current test controls
 
-Status: `[ACTIVE]`
+Status: `[ACTIVE — F1-94 Rust path]`
 
-Known Jordan test controls:
+Known F1-94 test controls (InputMap actions consumed by `f1_94_rust_input_controller.gd`):
 
 ```text
-1        automatic transmission
-2        stability aid
-3        steering aid
-4        braking aid
-5        grip aid
-
-A        upshift
-Z        downshift
-C        clutch
-Space    handbrake
-R        reset
-
-Arrow keys
-         throttle / brake / steering
+Throttle / Brakes / Steer Left / Steer Right   analog (keyboard/controller)
+Shift Up / Shift Down                          sequential gear change
+Toggle Transmission                            flip automatic_transmission (aids[0])
+Clutch                                        clutch (merged with handbrake)
+Handbrake                                     handbrake
+Reset                                         reset to spawn
 ```
+
+Notes:
+- Throttle is **linear** (`throttle_exponent = 1.0`); the old quadratic `pow(..., 2.0)`
+  deadzone lives only in the legacy `formula_vehicle_controller.gd` (NOT on the F1-94 path).
+- Reverse is engaged from gear 0 when `|speed| < 3 km/h`; in reverse, throttle/brake swap.
+- `DrivingAidsController` (`driving_aids.gd`) is NOT instantiated in `f1_94_rust.tscn`;
+  automatic-transmission toggle is handled directly by the input controller.
 
 Current intended initial aid state:
 
 ```text
-AUTO = ON
+AUTOMATIC_TRANSMISSION = false   (per f1_94_physics.json; [VERIFY — old baseline said AUTO = ON])
 
 stability = OFF
-steering  = OFF
+steering  = OFF   (vehicle-level slip/countersteer assist still applied per JSON aids policy)
 braking   = OFF
 grip      = OFF
 ```
+
+See §5.0 for the full F1-94 aids policy and §1.2.4 for the handoff alignment.
 
 ### 6.1 Canonical assist policy (PHY-014)
 
@@ -1924,7 +2167,50 @@ This minimizes dependence on previous chat history.
 
 Status: `[ACTIVE PRIORITY]`
 
-Before Phase C tuning:
+## 45.0 F1-94 Rust handoff follow-up (2026-08-17)
+
+The physics-alignment handoff (`instrucciones.txt`) is applied and validated end-to-end:
+Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on La Chutana
+(headless smoke PASS, inertia multipliers confirmed live). Open items before deeper tuning:
+
+1. **Reconcile `[VERIFY]` divergences (§1.2.5 / §5.0)** — especially `vehicle_mass`
+   505 (scene RigidBody) vs 575 (JSON) and `automatic_transmission` false vs AUTO=ON intent.
+   Decide the single authoritative value per family.
+2. Extend telemetry setup-snapshot (`<session>.csv` + `_setup.json`) to capture the F1-94
+   Rust runtime config (read from `f1_94_physics.json` at load), per §13-§18.
+3. Re-run the full validation suite (`scripts/test_windows.ps1`) on a clean commit and
+   record the commit SHA as the new known-good baseline for F1-94.
+4. **Launch traction diagnosis + fix (2026-08-17)** — Latest telemetry (`rust_launch_head_120hz.csv`,
+   `rust_physics_telemetry_sample.csv`, on-track `godot_f1_94_chutana_telemetry`) showed rear-slip
+   saturation (0.5–2.0 rad) with `Long_G` oscillating +0.9/−0.9 → wheelspin limit-cycle, **not** an
+   engine/entrega-de-potencia fault (RPM and speed climb normally). Root cause: (a) TC off by default
+   (`traction_control_default_enabled=false`) and (b) launch clutch torque too high
+   (`max_clutch_torque_ratio=1.70` → ~773 N·m, overwhelming rear grip). Fix applied (plan "C: Ambos"):
+   - `f1_94_physics.json`: `traction_control_default_enabled=false→true`, `max_clutch_torque_ratio=1.70→1.15`,
+     `clutch_out_rpm_offset=1200→900`.
+   - `powertrain.rs`: replaced bang-bang TC cut (saturated to 100% → launch stall) with a **proportional
+     slip-limiter** (`scale=threshold/slip`, floored at `MIN_TC_TORQUE_SCALE=0.10`) so TC limits slip
+     instead of killing torque. Removed the low-speed velocity gate (proportional limiter handles
+     standstill gracefully).
+   - `f1_94_rust_input_controller.gd`: added `action_toggle_traction_control` (key "Toggle Traction
+     Control") toggling bit 1 of `aids_enabled_mask` so TC remains player-selectable / OFF driveable.
+   - `telemetry.rs`: added `TC_Active` + `DriveTorque` columns (Rust headless launch); `telemetry_manager.gd`
+     appends `TC_Active` (reads `aids_enabled_mask & 2`) for in-engine captures.
+   - `physics_cli.rs`: `--config <json>` arg + fixed `phys_hz` positional index (was reading wrong argv).
+   Validation: headless launch 0→60 km/h in 3 s, `Long_G` now **monotonic positive** (+0.19…+0.87), rear
+   slip bounded ~0.05–0.42 (no stall, no negative-accel surge). In-engine integration test PASSED
+   (ABI=7, JSON loaded with TC on). Residual low-speed slip ripple is minor; further smoothing optional
+   (lower `max_clutch_torque_ratio` or PI TC). Note: `corr_04` baseline `max_torque=340` vs JSON `455`
+   still diverges — reconcile per item 1.
+
+---
+
+## 45.1 Legacy Jordan/GEVP Phase C work (DEFERRED — historical)
+
+The tasks below were written for the Jordan/GEVP era and are deferred until the F1-94
+Rust path is signed off. Do not reopen them against F1-94 without reclassifying.
+
+Before Phase C tuning (Jordan-era, historical):
 
 ## Task 1 — telemetry setup snapshot
 

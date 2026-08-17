@@ -5,6 +5,11 @@ use serde::{Deserialize, Serialize};
 
 const RAD_S_TO_RPM: f64 = 60.0 / (2.0 * std::f64::consts::PI);
 const GEVP_GEAR_INERTIA: f64 = 0.02;
+// Traction control slip limiter: when a driven wheel exceeds the slip threshold,
+// scale demanded torque down (proportionally to threshold/slip) so slip settles at
+// the threshold instead of saturating to a full cut (which stalls the launch).
+// Keep at least this fraction of demanded torque so the car always retains drive.
+const MIN_TC_TORQUE_SCALE: f64 = 0.10;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PowertrainState {
@@ -306,7 +311,9 @@ impl PowertrainState {
         // when tc_enabled is true.
         self.tc_active = false;
         self.tc_cut_ratio = 0.0;
-        if config.aids.traction_control_slip_threshold > 0.0 && self.throttle_input() > 0.01 {
+        if config.aids.traction_control_slip_threshold > 0.0
+            && self.throttle_input() > 0.01
+        {
             let road_speed = forward_speed_m_s.abs();
             let threshold = config.aids.traction_control_slip_threshold;
             let mut max_cut: f64 = 0.0;
@@ -324,9 +331,12 @@ impl PowertrainState {
                     (road_speed - wheel_road_speed) / denom
                 };
                 if slip > threshold {
-                    let excess = (slip - threshold) * config.aids.traction_control_cut_gain;
-                    // Saturate: full cut when excess >= 1.0 (slip ~2x threshold typical).
-                    let cut = (excess / (threshold + 1e-6)).clamp(0.0, 1.0);
+                    // Proportional slip limiter: reduce demanded torque so the wheel
+                    // slip returns to the threshold. Scale = threshold/slip keeps a
+                    // smooth, oscillation-free reduction instead of a bang-bang cut
+                    // that fully stalls the launch at low speed.
+                    let scale = (threshold / slip).clamp(MIN_TC_TORQUE_SCALE, 1.0);
+                    let cut = (1.0 - scale).max(0.0);
                     max_cut = max_cut.max(cut);
                 }
             }

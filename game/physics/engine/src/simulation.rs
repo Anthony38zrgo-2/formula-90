@@ -473,6 +473,8 @@ impl VehicleSimulator {
             rr_comp_mm: st.suspension.wheels[3].compression_mm,
             front_slip,
             rear_slip,
+            tc_active: self.aids.traction_control,
+            drive_torque: st.powertrain.drive_torques[2] + st.powertrain.drive_torques[3],
             session_id: "rust_gevp_tri_ray".to_string(),
             session_timestamp_utc: "".to_string(),
             physics_hz: st.physics_hz,

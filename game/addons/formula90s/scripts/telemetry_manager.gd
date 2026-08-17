@@ -25,7 +25,7 @@ const CSV_COLUMNS := [
 	"Front_Slip", "Rear_Slip",
 	"Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
 	"Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
-	"Vehicle_Script", "Setup_Schema_Version", "Setup_JSON"
+	"Vehicle_Script", "Setup_Schema_Version", "Setup_JSON", "TC_Active"
 ]
 
 func _ready():
@@ -131,7 +131,8 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
 		front_slip, rear_slip,
 		_csv_escape(_session_id), _csv_escape(_session_timestamp_utc), Engine.physics_ticks_per_second,
 		_csv_escape(_test_id()), _csv_escape(_current_scene_path()), _csv_escape(str(vehicle.get_path())), _csv_escape(_vehicle_scene_path()),
-		_csv_escape(_vehicle_script_path()), 1, _csv_escape(_setup_json)
+		_csv_escape(_vehicle_script_path()), 1, _csv_escape(_setup_json),
+		int((int(vehicle.aids_enabled_mask) & 2) != 0)
 	]
 
 func _csv_escape(value: String) -> String:

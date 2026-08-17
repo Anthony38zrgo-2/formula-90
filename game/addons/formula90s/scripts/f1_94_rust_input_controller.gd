@@ -12,6 +12,8 @@ class_name F194RustInputController
 @export var action_shift_up: String = "Shift Up"
 @export var action_shift_down: String = "Shift Down"
 @export var action_toggle_transmission: String = "Toggle Transmission"
+@export var action_toggle_traction_control: String = "Toggle Traction Control"
+@export var throttle_exponent: float = 1.0
 
 var _has_required_interface: bool = false
 
@@ -62,7 +64,8 @@ func _physics_process(_delta: float) -> void:
 
 	var throttle_val := 0.0
 	if action_throttle != "" and InputMap.has_action(action_throttle):
-		throttle_val = pow(Input.get_action_strength(action_throttle), 2.0)
+		var raw_throttle := Input.get_action_strength(action_throttle)
+		throttle_val = pow(raw_throttle, throttle_exponent) if throttle_exponent != 1.0 else raw_throttle
 
 	var handbrake_val := 0.0
 	if action_handbrake != "" and InputMap.has_action(action_handbrake):
@@ -78,6 +81,13 @@ func _physics_process(_delta: float) -> void:
 			if vehicle_node.has_method("get_automatic_transmission") and vehicle_node.has_method("set_automatic_transmission"):
 				var auto: bool = vehicle_node.get_automatic_transmission()
 				vehicle_node.set_automatic_transmission(not auto)
+
+	if action_toggle_traction_control != "" and InputMap.has_action(action_toggle_traction_control):
+		if Input.is_action_just_pressed(action_toggle_traction_control):
+			if vehicle_node.has_method("get_aids_enabled_mask") and vehicle_node.has_method("set_aids_enabled_mask"):
+				var mask: int = vehicle_node.get_aids_enabled_mask()
+				mask ^= 1 << 1
+				vehicle_node.set_aids_enabled_mask(mask)
 
 	# Manual shift handling
 	var current_gear: int = vehicle_node.get_current_gear()
