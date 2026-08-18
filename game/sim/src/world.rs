@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use vehicle_physics_engine::{
-    RaycastHit, SurfaceType, Transform3D, TriRaycastSample, Vec3, VehicleConfig,
-    VehicleInput, VehicleSimulator, WheelIndex,
+    Mat3, RaycastHit, SurfaceType, Transform3D, TriRaycastSample, Vec3, VehicleConfig, VehicleInput,
+    VehicleSimulator, WheelIndex,
 };
 
 use crate::input::{AidsState, DriverInput};
@@ -136,6 +136,67 @@ impl World {
             let samples = flat_ground_samples(&ent.sim);
             let vi: VehicleInput = input.map(|i| i.to_vehicle_input()).unwrap_or_default();
             let telem = ent.sim.step(&vi, &samples, dt);
+            ent.last = Some(telem);
+        }
+    }
+
+    /// Seed an entity's transform from an external (Godot) pose. Used by the bridge's
+    /// velocity-drive loop so the core steps from the body's real, collision-resolved
+    /// position each frame.
+    pub fn set_pose(&mut self, id: EntityId, x: f64, y: f64, z: f64, yaw: f64) {
+        if let Some(ent) = self.entities.iter_mut().find(|e| e.id == id) {
+            ent.sim.state.transform = Transform3D {
+                origin: Vec3::new(x, y, z),
+                basis: Mat3::from_euler_yxz(yaw, 0.0, 0.0),
+            };
+        }
+    }
+
+    /// Seed an entity's transform AND velocity from an external (Godot) body. Used by
+    /// the bridge's velocity-drive loop so the core integrates consistently with the
+    /// body's real, collision-resolved state (position + velocity), avoiding the
+    /// feedback instability of seeding position alone.
+    pub fn set_pose_and_velocity(
+        &mut self,
+        id: EntityId,
+        x: f64,
+        y: f64,
+        z: f64,
+        yaw: f64,
+        lin: Vec3,
+        ang: Vec3,
+    ) {
+        if let Some(ent) = self.entities.iter_mut().find(|e| e.id == id) {
+            ent.sim.state.transform = Transform3D {
+                origin: Vec3::new(x, y, z),
+                basis: Mat3::from_euler_yxz(yaw, 0.0, 0.0),
+            };
+            ent.sim.state.linear_velocity = lin;
+            ent.sim.state.angular_velocity = ang;
+        }
+    }
+
+    /// Step a single entity with caller-supplied tri-ray samples (the in-engine
+    /// bridge feeds real Godot raycasts; the headless CLI uses `step` with
+    /// flat-ground samples). Same solver + integration path either way -> no
+    /// algorithmic divergence between headless and in-engine.
+    pub fn step_with_samples(
+        &mut self,
+        id: EntityId,
+        input: &DriverInput,
+        samples: &[TriRaycastSample; 4],
+        dt: f64,
+    ) {
+        let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
+        self.time += dt;
+        if let Some(ent) = self.entities.iter_mut().find(|e| e.id == id) {
+            if input.toggle_traction_control {
+                ent.aids.traction_control = !ent.aids.traction_control;
+            }
+            ent.sim.aids.traction_control = ent.aids.traction_control;
+            ent.sim.aids.steering_slip_assist = ent.aids.steering_slip_assist;
+            let vi = input.to_vehicle_input();
+            let telem = ent.sim.step(&vi, samples, dt);
             ent.last = Some(telem);
         }
     }

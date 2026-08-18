@@ -1,4 +1,5 @@
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
+#include "formula90s/sim/f90_sim_bridge.hpp"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -486,10 +487,23 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) {
 }
 
 void F194RustVehicle::_integrate_forces(PhysicsDirectBodyState3D *p_state) {
+	if (bridge_controlled_) {
+		// Snapshot-server wiring: the F90SimBridge owns the dynamics. It samples the
+		// raycasts and steps the authoritative core inside this integrate callback
+		// (the context where force_raycast_update() is guaranteed fresh) and applies
+		// the resulting body velocity via p_state.
+		if (sim_bridge_ != nullptr) {
+			sim_bridge_->drive_integrate(this, p_state);
+		}
+		return;
+	}
 	solve_forces_for_state(p_state);
 }
 
 void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) {
+	if (bridge_controlled_) {
+		return;
+	}
 	if (Engine::get_singleton()->is_editor_hint() || !sim_ptr_ || !fn_solve_forces_ || !p_state) {
 		return;
 	}
@@ -1142,6 +1156,93 @@ void F194RustVehicle::set_aids_enabled_mask(uint32_t v) {
 
 uint32_t F194RustVehicle::get_aids_enabled_mask() const {
 	return aids_enabled_mask_;
+}
+
+void F194RustVehicle::set_bridge_controlled(bool p_v) {
+	bridge_controlled_ = p_v;
+	// The bridge uses the core's force solver (solve_external), which excludes gravity;
+	// Godot supplies gravity and integrates the rigid body, so keep gravity on.
+	set_gravity_scale(1.0);
+	// Keep the body awake while bridge-controlled so applied forces integrate even at rest.
+	set_can_sleep(!p_v);
+	if (p_v) {
+		set_sleeping(false);
+	}
+}
+
+void F194RustVehicle::collect_core_samples(CSimTriRaycastSample p_samples[4]) {
+	for (int w = 0; w < 4; ++w) {
+		RayCast3D *rays[3] = { raycasts_[w][0], raycasts_[w][1], raycasts_[w][2] };
+		for (int k = 0; k < 3; ++k) {
+			RayCast3D *ray = rays[k];
+			CSimRaycastHit &hit = (k == 0) ? p_samples[w].inner : (k == 1) ? p_samples[w].center : p_samples[w].outer;
+			hit.is_colliding = false;
+			hit.distance = 0.65;
+			hit.px = hit.py = hit.pz = 0.0;
+			hit.nx = 0.0;
+			hit.ny = 1.0;
+			hit.nz = 0.0;
+			hit.surface = 0;
+			if (ray) {
+				ray->force_raycast_update();
+				if (ray->is_colliding()) {
+					hit.is_colliding = true;
+					Vector3 pt = ray->get_collision_point();
+					Vector3 n = ray->get_collision_normal();
+					hit.distance = (pt - ray->get_global_position()).length();
+					hit.px = pt.x;
+					hit.py = pt.y;
+					hit.pz = pt.z;
+					if (n.is_finite() && n.length_squared() > 1e-4) {
+						n.normalize();
+						hit.nx = n.x;
+						hit.ny = n.y;
+						hit.nz = n.z;
+					}
+					hit.surface = detect_surface_type(ray);
+				}
+			}
+		}
+	}
+}
+
+void F194RustVehicle::apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel) {
+	set_linear_velocity(p_lin_vel);
+	set_angular_velocity(p_ang_vel);
+}
+
+void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt) {
+	speed_kmh_ = p_telemetry.speed_kmh;
+	speed_ms_ = p_telemetry.speed_kmh / 3.6;
+	motor_rpm_ = p_telemetry.rpm;
+	current_gear_ = (int)p_telemetry.gear;
+	true_steering_amount_ = p_telemetry.steer;
+	steer_angle_rad_ = p_telemetry.steer * max_steering_angle_;
+	lat_g_ = p_telemetry.lat_g;
+	long_g_ = p_telemetry.long_g;
+	vert_g_ = p_telemetry.vert_g;
+
+	wheel_compressions_[0] = p_telemetry.fl_comp_mm;
+	wheel_compressions_[1] = p_telemetry.fr_comp_mm;
+	wheel_compressions_[2] = p_telemetry.rl_comp_mm;
+	wheel_compressions_[3] = p_telemetry.rr_comp_mm;
+
+	wheel_slips_[0] = p_telemetry.front_slip;
+	wheel_slips_[1] = p_telemetry.front_slip;
+	wheel_slips_[2] = p_telemetry.rear_slip;
+	wheel_slips_[3] = p_telemetry.rear_slip;
+
+	// Rolling spin approximation (core telemetry lacks per-wheel spin): derive from speed.
+	double roll = (speed_ms_ / 0.33) * p_dt;
+	wheel_spins_[0] += roll;
+	wheel_spins_[1] += roll;
+	wheel_spins_[2] += roll;
+	wheel_spins_[3] += roll;
+
+	wheel_drive_torques_[2] = p_telemetry.drive_torque;
+	wheel_drive_torques_[3] = p_telemetry.drive_torque;
+
+	update_wheel_visuals(p_dt);
 }
 
 } // namespace godot

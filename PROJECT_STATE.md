@@ -2255,6 +2255,37 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
       `F194RustVehicle` real (reemplazar la integración por fuerzas del body por la
       transform del snapshot) — hoy el bridge mueve su propio nodo de forma aislada
       y segura.
+    8. **Cablear `F90SimBridge` al `F194RustVehicle` real (2026-08-17)** — El core ahora
+      CONDUCE el auto real. `F90SimBridge` auto-descubre el primer `F194RustVehicle` del árbol
+      y, durante el `_integrate_forces` del vehículo (`F194RustVehicle::drive_integrate`), (a)
+      lee el InputMap desde los campos del vehículo (`throttle_amount_`/`steering_input_`/
+      `brake_amount_`/`handbrake_amount_`, poblados por `F194RustInputController`), (b) muestrea
+      las 12 RayCast3D (`collect_core_samples` -> `CSimTriRaycastSample[4]`), (c) pasa la
+      cinemática del body (pose+velocidad) + muestras + input al core vía
+      `sim_world_solve_external`, y (d) aplica las fuerzas/torques mundo que devuelve el core con
+      `apply_central_force`/`apply_torque` (GODOT integra gravedad + colisiones). Telemetría +
+      visuals vía `apply_core_telemetry`. ESTE es el mismo camino estable que el dll legado
+      `vehicle_physics_engine` (fuerzas + Godot integra), así que la integración es robusta.
+      C-ABI: `sim_world_solve_external` (nuevo; combina sembrar cinemática + `solve_external`
+      y devuelve fuerza/torque), `sim_world_set_input`, `sim_world_telemetry`, `sim_world_step`,
+      `sim_world_flat_samples`, `sim_world_spawn_*`. `F194RustVehicle`: `bridge_controlled_` +
+      `drive_integrate`/`collect_core_samples`/`apply_core_telemetry`; `set_bridge_controlled`
+      pone `gravity_scale=1.0` (GODOT aporta gravedad porque `solve_external` la excluye) y
+      mantiene el body despierto (`set_can_sleep(false)`/`set_sleeping(false)`).
+      **BUG RAÍZ CORREGIDO (2026-08-17):** el GDScript `f1_94_rust_vehicle.gd` sobreescribía
+      `_integrate_forces` y llamaba SIEMPRE a `solve_forces_for_state` (dll legado), ocultando
+      el override C++ que delega al bridge -> el drive del bridge era código muerto y el auto se
+      movía con el dll. Se eliminó el override GDScript para que el C++ corra y delegue.
+      Además el bridge leía `Input::get_action_strength` (signo de steering invertido vs el
+      controlador) -> ahora lee los campos del vehículo (signo correcto). Y el primer intento de
+      drive (velocity-drive / pose-mirror sobre `sim_world_step_with_samples` + integrador
+      standalone del core) EXPLOTABA (el integrador propio del core es inestable cuando se siembra
+      cada frame) -> se cambió a la ruta de fuerzas `solve_external` (estable, idéntica al dll).
+      **VALIDACIÓN HEADLESS:** estable en reposo (v=0, posY≈-0.06) y ACELERA con `debug_throttle=1`
+      (17→146 km/h, rpm sube, altura estable, sin explosión). Sigue sin validar headless el giro
+      fino ni colisión de muros (el core solo muestrea suspensión, no muros). PENDIENTE:
+      validación visual in-engine (correr `run_f1-94.ps1`: throttle acelera, steer gira en
+      dirección correcta; muros pueden atravesarse en esta 1ª integración).
 
 ---
 

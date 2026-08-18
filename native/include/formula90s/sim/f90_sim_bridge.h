@@ -27,7 +27,7 @@ typedef struct CSimPose {
 } CSimPose;
 
 typedef struct CSimTelemetry {
-    double speed_kmh, rpm, gear, lat_g, long_g, vert_g;
+    double speed_kmh, rpm, gear, steer, lat_g, long_g, vert_g;
     double fl_comp_mm, fr_comp_mm, rl_comp_mm, rr_comp_mm;
     double front_slip, rear_slip, tc_active, drive_torque;
 } CSimTelemetry;
@@ -39,6 +39,16 @@ typedef uint32_t (*FnSimWorldSpawnCanonical)(void *world);
 typedef void (*FnSimWorldSetInput)(void *world, uint32_t id, double throttle, double brake,
     double steer, double handbrake, double clutch, int8_t gear_request, bool toggle_tc);
 typedef void (*FnSimWorldStep)(void *world);
+typedef void (*FnSimWorldSetPose)(void *world, uint32_t id, double x, double y, double z, double yaw);
+typedef void (*FnSimWorldSetPoseAndVelocity)(void *world, uint32_t id, double x, double y, double z, double yaw,
+    double lx, double ly, double lz, double ax, double ay, double az);
+typedef void (*FnSimWorldStepWithSamples)(void *world, uint32_t id, double throttle, double brake,
+    double steer, double handbrake, double clutch, int8_t gear_request, bool toggle_tc, double dt,
+    const CSimTriRaycastSample *samples);
+typedef void (*FnSimWorldSolveExternal)(void *world, uint32_t id, double x, double y, double z, double yaw,
+    double lx, double ly, double lz, double ax, double ay, double az, double throttle, double brake,
+    double steer, double handbrake, double clutch, int8_t gear_request, bool toggle_tc, double dt,
+    const CSimTriRaycastSample *samples, double *out_force, double *out_torque);
 typedef void (*FnSimWorldPose)(void *world, uint32_t id, CSimPose *out);
 typedef void (*FnSimWorldTelemetry)(void *world, uint32_t id, CSimTelemetry *out);
 typedef void (*FnSimWorldFlatSamples)(void *world, uint32_t id, CSimTriRaycastSample *out);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "formula90s/vehicle/formula90_physics.h"
+#include "formula90s/sim/f90_sim_bridge.h"
 
 #include <godot_cpp/classes/rigid_body3d.hpp>
 #include <godot_cpp/classes/physics_direct_body_state3d.hpp>
@@ -14,6 +15,8 @@
 #include <godot_cpp/variant/vector3.hpp>
 
 namespace godot {
+
+class F90SimBridge;
 
 // C-ABI type aliases matching formula90_physics.h
 using FfiRaycastHit = F90RaycastHit;
@@ -324,6 +327,27 @@ public:
 	uint32_t get_aids_enabled_mask() const;
 
 	void reset_vehicle(const Vector3 &p_pos, double p_yaw_rad);
+
+	// --- Snapshot-server bridge control: F90SimBridge drives this vehicle via the
+	// authoritative Rust core. When bridge_controlled_, _integrate_forces is skipped
+	// (the bridge sets body velocities from the core's predicted pose). ---
+	bool bridge_controlled_ = false;
+	F90SimBridge *sim_bridge_ = nullptr; // back-ref set by F90SimBridge to dispatch integrate
+
+public:
+	void set_bridge_controlled(bool p_v);
+	bool is_bridge_controlled() const { return bridge_controlled_; }
+	// When the F90SimBridge drives this vehicle, it sets this back-ref so the vehicle
+	// can delegate its physics integration step to the bridge during _integrate_forces
+	// (the context where raycasts are reliably updated in Godot).
+	void set_sim_bridge(F90SimBridge *p) { sim_bridge_ = p; }
+
+	// Sample this vehicle's 12 RayCast3D children into the core's sample layout.
+	void collect_core_samples(CSimTriRaycastSample p_samples[4]);
+	// Drive the body by velocity (Godot integrates + collides); core owns dynamics.
+	void apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel);
+	// Forward core telemetry into the vehicle's mirrors + wheel visuals.
+	void apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt);
 };
 
 } // namespace godot

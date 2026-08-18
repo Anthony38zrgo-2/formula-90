@@ -16,7 +16,8 @@ use std::os::raw::c_void;
 use std::path::Path;
 
 use vehicle_physics_engine::{
-    default_spawn_height, Mat3, RaycastHit, Transform3D, Vec3, VehicleConfig,
+    default_spawn_height, BodyKinematics, Mat3, Quat, RaycastHit, SurfaceType, Transform3D,
+    TriRaycastSample, Vec3, VehicleConfig,
 };
 
 use crate::input::DriverInput;
@@ -62,6 +63,7 @@ pub struct CSimTelemetry {
     pub speed_kmh: f64,
     pub rpm: f64,
     pub gear: f64, // i8 expressed as f64 for C ergonomics
+    pub steer: f64, // true steering amount
     pub lat_g: f64,
     pub long_g: f64,
     pub vert_g: f64,
@@ -216,6 +218,7 @@ pub extern "C" fn sim_world_telemetry(world: *mut c_void, id: u32, out: *mut CSi
             speed_kmh: t.speed_kmh,
             rpm: t.rpm,
             gear: t.gear as f64,
+            steer: t.steering,
             lat_g: t.lat_g,
             long_g: t.long_g,
             vert_g: t.vert_g,
@@ -274,6 +277,204 @@ fn to_c_hit(h: &RaycastHit) -> CSimRaycastHit {
         ny: h.normal.y,
         nz: h.normal.z,
         surface: h.surface as u32,
+    }
+}
+
+fn surface_from_u32(v: u32) -> SurfaceType {
+    match v {
+        1 => SurfaceType::Curb,
+        2 => SurfaceType::Dirt,
+        3 => SurfaceType::Grass,
+        4 => SurfaceType::Gravel,
+        5 => SurfaceType::Sand,
+        6 => SurfaceType::Wall,
+        7 => SurfaceType::Metal,
+        _ => SurfaceType::Road,
+    }
+}
+
+fn from_c_hit(h: &CSimRaycastHit) -> RaycastHit {
+    RaycastHit {
+        is_colliding: h.is_colliding,
+        distance: h.distance,
+        point: Vec3::new(h.px, h.py, h.pz),
+        normal: Vec3::new(h.nx, h.ny, h.nz),
+        surface: surface_from_u32(h.surface),
+    }
+}
+
+/// Seed an entity's transform from the engine's resolved pose (velocity-drive loop).
+#[no_mangle]
+pub extern "C" fn sim_world_set_pose(
+    world: *mut c_void,
+    id: u32,
+    x: f64,
+    y: f64,
+    z: f64,
+    yaw: f64,
+) {
+    world_mut(world).set_pose(id, x, y, z, yaw);
+}
+
+/// Seed an entity's transform AND velocity from the engine's resolved body (stable
+/// velocity-drive loop: the core's internal state matches the body each frame).
+#[no_mangle]
+pub extern "C" fn sim_world_set_pose_and_velocity(
+    world: *mut c_void,
+    id: u32,
+    x: f64,
+    y: f64,
+    z: f64,
+    yaw: f64,
+    lx: f64,
+    ly: f64,
+    lz: f64,
+    ax: f64,
+    ay: f64,
+    az: f64,
+) {
+    world_mut(world).set_pose_and_velocity(
+        id,
+        x,
+        y,
+        z,
+        yaw,
+        Vec3::new(lx, ly, lz),
+        Vec3::new(ax, ay, az),
+    );
+}
+
+/// Step a single entity with caller-supplied tri-ray samples (real Godot raycasts).
+#[no_mangle]
+pub extern "C" fn sim_world_step_with_samples(
+    world: *mut c_void,
+    id: u32,
+    throttle: f64,
+    brake: f64,
+    steer: f64,
+    handbrake: f64,
+    clutch: f64,
+    gear_request: i8,
+    toggle_tc: bool,
+    dt: f64,
+    samples: *const CSimTriRaycastSample,
+) {
+    let w = world_mut(world);
+    if samples.is_null() {
+        return;
+    }
+    let slice = unsafe { std::slice::from_raw_parts(samples, 4) };
+    let mut rust_samples: [TriRaycastSample; 4] = [TriRaycastSample::default(); 4];
+    for (i, s) in slice.iter().enumerate() {
+        rust_samples[i] = TriRaycastSample {
+            inner: from_c_hit(&s.inner),
+            center: from_c_hit(&s.center),
+            outer: from_c_hit(&s.outer),
+        };
+    }
+    let inp = DriverInput {
+        throttle,
+        brake,
+        steer,
+        handbrake,
+        clutch,
+        gear_request: if gear_request == 0 {
+            None
+        } else {
+            Some(gear_request)
+        },
+        toggle_traction_control: toggle_tc,
+        shift_up: false,
+        shift_down: false,
+        toggle_transmission: false,
+    };
+    w.step_with_samples(id, &inp, &rust_samples, dt);
+}
+
+/// Solve forces for one entity with caller-supplied body kinematics + tri-ray samples,
+/// and return the world-space force/torque for Godot to integrate (the same proven
+/// path the legacy `vehicle_physics_engine` DLL uses: the core computes forces, Godot
+/// owns gravity + rigid-body integration + collisions). This avoids the core's internal
+/// standalone pose integrator, which is unstable when seeded every frame.
+#[no_mangle]
+pub extern "C" fn sim_world_solve_external(
+    world: *mut c_void,
+    id: u32,
+    x: f64,
+    y: f64,
+    z: f64,
+    yaw: f64,
+    lx: f64,
+    ly: f64,
+    lz: f64,
+    ax: f64,
+    ay: f64,
+    az: f64,
+    throttle: f64,
+    brake: f64,
+    steer: f64,
+    handbrake: f64,
+    clutch: f64,
+    gear_request: i8,
+    toggle_tc: bool,
+    dt: f64,
+    samples: *const CSimTriRaycastSample,
+    out_force: *mut f64,
+    out_torque: *mut f64,
+) {
+    let w = world_mut(world);
+    if samples.is_null() || out_force.is_null() || out_torque.is_null() {
+        return;
+    }
+    let slice = unsafe { std::slice::from_raw_parts(samples, 4) };
+    let mut rust_samples: [TriRaycastSample; 4] = [TriRaycastSample::default(); 4];
+    for (i, s) in slice.iter().enumerate() {
+        rust_samples[i] = TriRaycastSample {
+            inner: from_c_hit(&s.inner),
+            center: from_c_hit(&s.center),
+            outer: from_c_hit(&s.outer),
+        };
+    }
+    let inp = DriverInput {
+        throttle,
+        brake,
+        steer,
+        handbrake,
+        clutch,
+        gear_request: if gear_request == 0 {
+            None
+        } else {
+            Some(gear_request)
+        },
+        toggle_traction_control: toggle_tc,
+        shift_up: false,
+        shift_down: false,
+        toggle_transmission: false,
+    };
+    if let Some(ent) = w.entities.iter_mut().find(|e| e.id == id) {
+        let basis = Mat3::from_euler_yxz(yaw, 0.0, 0.0);
+        let orientation = Quat::from_mat3(&basis);
+        let body = BodyKinematics {
+            transform: Transform3D {
+                origin: Vec3::new(x, y, z),
+                basis,
+            },
+            orientation,
+            linear_velocity: Vec3::new(lx, ly, lz),
+            angular_velocity: Vec3::new(ax, ay, az),
+        };
+        let (forces, telem) = ent.sim.solve_external(body, &inp.to_vehicle_input(), &rust_samples, dt);
+        ent.last = Some(telem);
+        unsafe {
+            let f = std::slice::from_raw_parts_mut(out_force, 3);
+            let t = std::slice::from_raw_parts_mut(out_torque, 3);
+            f[0] = forces.force_world.x;
+            f[1] = forces.force_world.y;
+            f[2] = forces.force_world.z;
+            t[0] = forces.torque_world.x;
+            t[1] = forces.torque_world.y;
+            t[2] = forces.torque_world.z;
+        }
     }
 }
 

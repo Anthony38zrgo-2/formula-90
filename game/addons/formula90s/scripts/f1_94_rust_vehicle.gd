@@ -110,9 +110,6 @@ var clutch_input: float:
 func _ready() -> void:
 	_resolve_raycast_references()
 
-func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
-	solve_forces_for_state(state)
-
 func _resolve_raycast_references() -> void:
 	if ray_fl_in == null: ray_fl_in = _find_ray("RayCast_FL_In", "FL_In")
 	if ray_fl_mid == null: ray_fl_mid = _find_ray("RayCast_FL_Mid", "FL_Mid")
