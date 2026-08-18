@@ -336,8 +336,9 @@ impl VehicleSimulator {
             // Port of GEVP's wheel-to-body longitudinal torque aid. Because this port
             // uses -Z-forward, positive forward tire force corresponds to +X pitch torque.
             let radius = if wheel.is_front() { cfg.front_tire_radius } else { cfg.rear_tire_radius };
+            let grip = if wheel.is_front() { cfg.front_braking_grip } else { cfg.rear_braking_grip };
             let torque_multiplier = if braking {
-                1.0 / (cfg.braking_grip_multiplier + 1.0).max(1e-6)
+                1.0 / (grip + 1.0).max(1e-6)
             } else {
                 1.0
             };
@@ -554,3 +555,63 @@ fn move_toward(current: f64, target: f64, max_delta: f64) -> f64 {
 }
 
 fn max_abs_signed(a: f64, b: f64) -> f64 { if a.abs() >= b.abs() { a } else { b } }
+
+#[cfg(test)]
+mod tests {
+    use crate::simulation::VehicleSimulator;
+    use crate::types::{TriRaycastSample, Vec3, VehicleInput};
+    use crate::vehicle_config::VehicleConfig;
+
+    fn step_to_gear(sim: &mut VehicleSimulator, req: i8, max_steps: usize) -> i8 {
+        let samples = [TriRaycastSample::default(); 4];
+        let inp = VehicleInput {
+            steering: 0.0,
+            throttle: 0.0,
+            brake: 0.0,
+            handbrake: 0.0,
+            clutch: 0.0,
+            gear_request: Some(req),
+        };
+        for _ in 0..max_steps {
+            let _ = sim.step(&inp, &samples, 0.02);
+            if sim.state.powertrain.current_gear == req {
+                return req;
+            }
+        }
+        sim.state.powertrain.current_gear
+    }
+
+    #[test]
+    fn gear_request_sentinel_neutral_and_reverse() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.automatic_transmission = false; // match data/vehicles/f1_94/f1_94_physics.json
+        let mut sim = VehicleSimulator::new(cfg, Vec3::ZERO, 0.0);
+
+        // Initially in gear 1 (or whatever the powertrain starts at).
+        let start = sim.state.powertrain.current_gear;
+
+        // Upshift to 2 (proves forwarding + manual shift works).
+        let g2 = step_to_gear(&mut sim, 2, 2000);
+        assert_eq!(g2, 2, "should shift up to gear 2 (start was {})", start);
+
+        // Neutral (0) must now be reachable — this is the sentinel fix.
+        let g0 = step_to_gear(&mut sim, 0, 2000);
+        assert_eq!(g0, 0, "gear_request=0 must select Neutral (was broken: 0 mapped to no-change)");
+
+        // Reverse (-1) must be reachable.
+        let gR = step_to_gear(&mut sim, -1, 2000);
+        assert_eq!(gR, -1, "gear_request=-1 must select Reverse");
+
+        // No-change sentinel: None must leave the gear untouched.
+        let samples = [TriRaycastSample::default(); 4];
+        let hold = VehicleInput {
+            steering: 0.0, throttle: 0.0, brake: 0.0, handbrake: 0.0, clutch: 0.0,
+            gear_request: None,
+        };
+        let before = sim.state.powertrain.current_gear;
+        for _ in 0..50 {
+            let _ = sim.step(&hold, &samples, 0.02);
+        }
+        assert_eq!(sim.state.powertrain.current_gear, before, "None must not change gear");
+    }
+}

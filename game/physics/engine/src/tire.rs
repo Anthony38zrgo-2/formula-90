@@ -144,7 +144,7 @@ impl TireSystem {
             state.reaction_torque = 0.0;
             state.limit_spin = false;
             // GEVP lets an airborne wheel decay slowly instead of snapping to road speed.
-            state.spin -= state.spin.signum() * (2.0 / state.wheel_moment.max(1e-6)) * dt;
+            state.spin -= state.spin.signum() * (tire_airborne_decay(config, wheel) / state.wheel_moment.max(1e-6)) * dt;
             if state.spin.abs() < 1e-4 { state.spin = 0.0; }
             return;
         }
@@ -167,9 +167,9 @@ impl TireSystem {
         state.spin_velocity_diff = wheel_velocity - v_forward;
 
         let stiffness = 1_000_000.0 + 8_000_000.0 * effective_stiffness.max(0.0);
-        let cornering_stiffness = 0.5 * stiffness * config.contact_patch.powi(2);
+        let cornering_stiffness = 0.5 * stiffness * tire_contact_patch(config, wheel).powi(2);
         let friction = (effective_friction * normal_force_n
-            - normal_force_n / (width_mm * config.contact_patch * 0.2).max(1e-6))
+            - normal_force_n / (width_mm * tire_contact_patch(config, wheel) * 0.2).max(1e-6))
             .max(0.0);
 
         let sx = state.slip_angle_rad;
@@ -186,26 +186,16 @@ impl TireSystem {
         let max_lateral_force = (config.mass_over_wheel(wheel) * v_lateral).abs() / dt;
 
         let braking_help = if sy > 0.3 && braking {
-            1.0 + config.braking_grip_multiplier * sy.abs().clamp(0.0, 1.0)
+            1.0 + tire_braking_grip(config, wheel) * sy.abs().clamp(0.0, 1.0)
         } else {
             1.0
         };
         let longitudinal_grip_ratio = longitudinal_grip_ratio(surface);
         let lateral_assist = lateral_grip_assist(surface);
 
-        let critical_length = friction * (1.0 - sy) * config.contact_patch * 0.5 * deflect;
-        let mut force_y_gevp;
-        let mut force_x;
-        if critical_length >= config.contact_patch {
-            let raw_denom = 1.0 - sy;
-            let denom = if raw_denom.abs() < 1e-5 { if raw_denom < 0.0 { -1e-5 } else { 1e-5 } } else { raw_denom };
-            force_y_gevp = cornering_stiffness * sy / denom;
-            force_x = cornering_stiffness * sx / denom;
-        } else {
-            let brush = (1.0 - friction * (1.0 - sy) * 0.25 * deflect) * deflect;
-            force_y_gevp = friction * longitudinal_grip_ratio * cornering_stiffness * sy * brush * braking_help * forward_sign;
-            force_x = friction * cornering_stiffness * sx * brush * (sx.abs() * lateral_assist + 1.0);
-        }
+        let brush = (1.0 - friction * (1.0 - sy) * 0.25 * deflect) * deflect;
+        let mut force_y_gevp = friction * longitudinal_grip_ratio * cornering_stiffness * sy * brush * braking_help * forward_sign;
+        let mut force_x = friction * cornering_stiffness * sx * brush * (sx.abs() * lateral_assist + 1.0);
 
         if force_y_gevp.abs() > max_long_force {
             force_y_gevp = max_long_force * force_y_gevp.signum();
@@ -284,6 +274,15 @@ fn tire_width(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
 }
 fn wheel_mass(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() { config.front_wheel_mass } else { config.rear_wheel_mass }
+}
+fn tire_contact_patch(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
+    if wheel.is_front() { config.front_contact_patch } else { config.rear_contact_patch }
+}
+fn tire_braking_grip(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
+    if wheel.is_front() { config.front_braking_grip } else { config.rear_braking_grip }
+}
+fn tire_airborne_decay(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
+    if wheel.is_front() { config.front_airborne_decay } else { config.rear_airborne_decay }
 }
 fn lateral_grip_assist(surface: SurfaceType) -> f64 {
     match surface {

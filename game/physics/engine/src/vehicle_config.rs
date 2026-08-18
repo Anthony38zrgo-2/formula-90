@@ -82,8 +82,16 @@ pub struct VehicleConfig {
     pub rear_tire_width: f64,  // meters
     pub front_wheel_mass: f64,
     pub rear_wheel_mass: f64,
+    // Global fallback (used when a per-axle value is omitted in JSON).
     pub contact_patch: f64,
     pub braking_grip_multiplier: f64,
+    // Per-axle tire grip (front/rear) — restores GEVP per-wheel fidelity.
+    pub front_contact_patch: f64,
+    pub rear_contact_patch: f64,
+    pub front_braking_grip: f64,
+    pub rear_braking_grip: f64,
+    pub front_airborne_decay: f64,
+    pub rear_airborne_decay: f64,
     pub front_brake_bias: f64,
     pub max_brake_torque: f64,
 
@@ -316,7 +324,7 @@ impl VehicleConfig {
             vehicle_name: "F1 1994 (V10)".to_string(),
 
             // Mass & Geometry
-            vehicle_mass: 505.0,
+            vehicle_mass: 575.0,
             front_weight_distribution: 0.45,
             center_of_gravity_height_offset: -0.12,
             inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
@@ -337,8 +345,8 @@ impl VehicleConfig {
             ackermann: 0.15,
 
             // Powertrain & Gearing
-            max_torque: 340.0,
-            max_rpm: 17000.0,
+            max_torque: 455.0,
+            max_rpm: 15000.0,
             idle_rpm: 4500.0,
             motor_moment: 0.12,
             torque_curve: vec![
@@ -355,7 +363,7 @@ impl VehicleConfig {
             final_drive: 6.30,
             reverse_ratio: 3.00,
             shift_time: 0.12,
-            automatic_transmission: true,
+            automatic_transmission: false,
             front_torque_split: 0.0,
 
             // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
@@ -399,6 +407,12 @@ impl VehicleConfig {
             rear_wheel_mass: 16.0,
             contact_patch: 0.21,
             braking_grip_multiplier: 1.08,
+            front_contact_patch: 0.21,
+            rear_contact_patch: 0.21,
+            front_braking_grip: 1.08,
+            rear_braking_grip: 1.08,
+            front_airborne_decay: 2.0,
+            rear_airborne_decay: 2.0,
             front_brake_bias: 0.57,
             max_brake_torque: 2800.0,
 
@@ -552,6 +566,12 @@ impl VehicleConfig {
             rear_wheel_mass: 16.0,
             contact_patch: 0.20,
             braking_grip_multiplier: 1.4,
+            front_contact_patch: 0.20,
+            rear_contact_patch: 0.20,
+            front_braking_grip: 1.4,
+            rear_braking_grip: 1.4,
+            front_airborne_decay: 2.0,
+            rear_airborne_decay: 2.0,
             front_brake_bias: 0.58,
             max_brake_torque: 2800.0,
 
@@ -773,7 +793,7 @@ impl Default for JsonChassis {
     }
 }
 fn default_vehicle_name() -> String { "F1 1994 (V10)".to_string() }
-fn default_mass() -> f64 { 505.0 }
+fn default_mass() -> f64 { 575.0 }
 fn default_front_weight_dist() -> f64 { 0.45 }
 fn default_cog_height() -> f64 { -0.12 }
 
@@ -917,8 +937,8 @@ impl Default for JsonPowertrain {
         }
     }
 }
-fn default_max_torque() -> f64 { 340.0 }
-fn default_max_rpm() -> f64 { 17000.0 }
+fn default_max_torque() -> f64 { 455.0 }
+fn default_max_rpm() -> f64 { 15000.0 }
 fn default_idle_rpm() -> f64 { 4500.0 }
 fn default_motor_moment() -> f64 { 0.12 }
 fn default_torque_curve() -> Vec<(f64, f64)> {
@@ -928,7 +948,7 @@ fn default_gear_ratios() -> Vec<f64> { vec![2.65, 2.10, 1.75, 1.50, 1.32, 1.18] 
 fn default_final_drive() -> f64 { 6.30 }
 fn default_reverse_ratio() -> f64 { 3.00 }
 fn default_shift_time() -> f64 { 0.12 }
-fn default_auto_trans() -> bool { true }
+fn default_auto_trans() -> bool { false }
 fn default_gear_inertia() -> f64 { 0.02 }
 fn default_max_clutch_ratio() -> f64 { 1.6 }
 fn default_clutch_out_offset() -> f64 { 1000.0 }
@@ -1088,10 +1108,23 @@ struct JsonTireAxle {
     width: f64,
     #[serde(default = "default_wheel_mass_front")]
     wheel_mass: f64,
+    #[serde(default)]
+    contact_patch: Option<f64>,
+    #[serde(default)]
+    braking_grip_multiplier: Option<f64>,
+    #[serde(default)]
+    airborne_spin_decay_torque: Option<f64>,
 }
 impl Default for JsonTireAxle {
     fn default() -> Self {
-        Self { radius: default_tire_radius_front(), width: default_tire_width_front(), wheel_mass: default_wheel_mass_front() }
+        Self {
+            radius: default_tire_radius_front(),
+            width: default_tire_width_front(),
+            wheel_mass: default_wheel_mass_front(),
+            contact_patch: None,
+            braking_grip_multiplier: None,
+            airborne_spin_decay_torque: None,
+        }
     }
 }
 fn default_tire_radius_front() -> f64 { 0.31695 }
@@ -1496,6 +1529,12 @@ impl JsonVehicleSpec {
             rear_wheel_mass: self.tires.rear.wheel_mass,
             contact_patch: self.tires.contact_patch,
             braking_grip_multiplier: self.tires.braking_grip_multiplier,
+            front_contact_patch: self.tires.front.contact_patch.unwrap_or(self.tires.contact_patch),
+            rear_contact_patch: self.tires.rear.contact_patch.unwrap_or(self.tires.contact_patch),
+            front_braking_grip: self.tires.front.braking_grip_multiplier.unwrap_or(self.tires.braking_grip_multiplier),
+            rear_braking_grip: self.tires.rear.braking_grip_multiplier.unwrap_or(self.tires.braking_grip_multiplier),
+            front_airborne_decay: self.tires.front.airborne_spin_decay_torque.unwrap_or(self.tires.airborne_spin_decay_torque),
+            rear_airborne_decay: self.tires.rear.airborne_spin_decay_torque.unwrap_or(self.tires.airborne_spin_decay_torque),
             front_brake_bias: self.brakes.front_brake_bias,
             max_brake_torque: self.brakes.max_brake_torque,
             enable_abs: self.brakes.enable_abs,
@@ -1675,11 +1714,25 @@ impl JsonVehicleSpec {
                 tri_ray_spacing_ratio: cfg.tri_ray_spacing_ratio,
             },
             tires: JsonTires {
-                front: JsonTireAxle { radius: cfg.front_tire_radius, width: cfg.front_tire_width, wheel_mass: cfg.front_wheel_mass },
-                rear: JsonTireAxle { radius: cfg.rear_tire_radius, width: cfg.rear_tire_width, wheel_mass: cfg.rear_wheel_mass },
+                front: JsonTireAxle {
+                    radius: cfg.front_tire_radius,
+                    width: cfg.front_tire_width,
+                    wheel_mass: cfg.front_wheel_mass,
+                    contact_patch: Some(cfg.front_contact_patch),
+                    braking_grip_multiplier: Some(cfg.front_braking_grip),
+                    airborne_spin_decay_torque: Some(cfg.front_airborne_decay),
+                },
+                rear: JsonTireAxle {
+                    radius: cfg.rear_tire_radius,
+                    width: cfg.rear_tire_width,
+                    wheel_mass: cfg.rear_wheel_mass,
+                    contact_patch: Some(cfg.rear_contact_patch),
+                    braking_grip_multiplier: Some(cfg.rear_braking_grip),
+                    airborne_spin_decay_torque: Some(cfg.rear_airborne_decay),
+                },
                 contact_patch: cfg.contact_patch,
                 braking_grip_multiplier: cfg.braking_grip_multiplier,
-                airborne_spin_decay_torque: 2.0,
+                airborne_spin_decay_torque: cfg.front_airborne_decay,
                 surfaces,
             },
             brakes: JsonBrakes {
@@ -1847,7 +1900,7 @@ mod json_tests {
     fn minimal_json_uses_defaults() {
         let json = r#"{"schema_version": 1}"#;
         let cfg = VehicleConfig::from_json_str(json).unwrap();
-        assert_eq!(cfg.vehicle_mass, 505.0);
+        assert_eq!(cfg.vehicle_mass, 575.0);
         assert_eq!(cfg.diff_preload, 170.0);
     }
 

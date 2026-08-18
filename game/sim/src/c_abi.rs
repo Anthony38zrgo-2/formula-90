@@ -166,7 +166,7 @@ pub extern "C" fn sim_world_set_input(
             steer,
             handbrake,
             clutch,
-            gear_request: if gear_request == 0 {
+            gear_request: if gear_request < -1 {
                 None
             } else {
                 Some(gear_request)
@@ -498,7 +498,7 @@ mod tests {
         let id = sim_world_spawn_from_json(w, path.as_ptr());
         assert!(id != 0, "spawn must succeed");
         for _ in 0..120 {
-            sim_world_set_input(w, id, 1.0, 0.0, 0.0, 0.0, 0.0, 0, false);
+            sim_world_set_input(w, id, 1.0, 0.0, 0.0, 0.0, 0.0, 1, false);
             sim_world_step(w);
         }
         let mut pose = CSimPose::default();

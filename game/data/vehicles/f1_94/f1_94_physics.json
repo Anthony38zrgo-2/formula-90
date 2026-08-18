@@ -18,7 +18,7 @@
   "chassis": {
     "vehicle_name": "F1 1994 (3.5L V10 NA)",
     "vehicle_mass": 575.0,
-    "front_weight_distribution": 0.43,
+    "front_weight_distribution": 0.40,
     "center_of_gravity_height_offset": -0.12,
 
     "inertia_multipliers": {
@@ -164,7 +164,7 @@
 
       "arb_ratio": 0.10,
 
-      "toe": -0.0017453,
+      "toe": -0.0037453,
       "camber": -0.0383972,
 
       "bump_stop_multiplier": 2.1
@@ -178,7 +178,7 @@
       "bump_damp_multiplier": 0.96,
       "rebound_damp_multiplier": 1.22,
 
-      "arb_ratio": 0.09,
+      "arb_ratio": 0.10,
 
       "toe": 0.0020944,
       "camber": -0.0314159,
@@ -193,18 +193,24 @@
     "front": {
       "radius": 0.31695,
       "width": 0.30030,
-      "wheel_mass": 12.0
+      "wheel_mass": 12.0,
+      "contact_patch": 0.34,
+      "braking_grip_multiplier": 1.02,
+      "airborne_spin_decay_torque": 1.0
     },
 
     "rear": {
       "radius": 0.32901,
       "width": 0.36832,
-      "wheel_mass": 16.0
+      "wheel_mass": 16.0,
+      "contact_patch": 0.36,
+      "braking_grip_multiplier": 1.04,
+      "airborne_spin_decay_torque": 1.0
     },
 
-    "contact_patch": 0.21,
+    "contact_patch": 0.35,
     "braking_grip_multiplier": 1.03,
-    "airborne_spin_decay_torque": 2.0,
+    "airborne_spin_decay_torque": 1.0,
 
     "surfaces": {
       "Road": {
