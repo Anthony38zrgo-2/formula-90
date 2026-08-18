@@ -2379,6 +2379,64 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
         `docs/GEVP_RUST_PHYSICS_MIGRATION_BACKLOG.md`) were superseded by the JSON and
         **DELETED on 2026-08-17** (docs-only reconciliation; runtime already read the JSON).
 
+    9. **F1-94 vehicle audio — Rust core + native GDExtension node (2026-08-18) [DONE — 2026-08-18]**
+       Implemented: pure-Rust sample-accurate mixer (`game/audio/engine/`, cdylib
+       `vehicle_audio_engine`) driven by a new `VehicleAudioControllerNative` C++ GDExtension
+       node; both F1-94 scenes (`f1_94_rust.tscn`, `f1_94.tscn`) swapped from the GDScript
+       `VehicleAudioController` to the native node. Same `trigger()` one-shot API and
+       `last_*`/`surface`/`_active_bed`/`ENGINE_BAND_NATIVE_RPM` telemetry contract, so
+       `audio_telemetry.gd` is unchanged except resolving the `vehicle` NodePath. Rust core
+       validated (`cargo test` green; real bank at `game/sounds/banks/v10_vehicle` loads at
+       runtime — headless smoke confirms `is_engine_loaded=true` and live `last_rpm`). Build
+       script (`scripts/build_windows.ps1`) builds/copies the audio DLL; both GDExtension
+       debug+release DLLs rebuilt with the node.
+               - **Latency + clipping fixes (2026-08-18) [DONE]:** With audio confirmed working, user reported a
+          large output delay and clipping/distortion at RPM changes. Fixed: (a) `VehicleAudioControllerNative`
+          `set_buffer_length` 0.12→0.06 s and added `audio/output_latency/buffer_size_ms=10` to `project.godot`
+          (WASAPI shared mode — Godot 4.7 has **no exclusive mode**, so device format/latency is OS-driven;
+          bit depth is irrelevant). (b) Rust `mixer.rs` clipping root cause: the band-crossfade sum sat on the
+          soft `tanh` limiter knee (no headroom), injecting odd-harmonic distortion perceived as clipping on
+          the dry asphalt signal. Added `engine_headroom = 0.62` (mirrors the offline oracle `engine * 0.62`)
+          applied before the limiter, and a per-sample one-pole RPM glide (`RPM_SMOOTH_TAU = 0.025 s`) so band
+          weights + pitch scale continuously instead of stepping per frame (kills the zipper/warble at RPM
+          changes). Bumped `shift_gain` 0.40→0.80 for one-shot presence. Added regression tests
+          `rpm_ramp_stays_below_headroom_ceiling` + `pitch_glides_instead_of_stepping` (`cargo test` green,
+          30 tests). (c) Added `ensure_vehicle_bus.gd` autoload creating the `Vehicle` bus + `AudioEffectLimiter`
+          (ceiling −0.3 dB) as a DAC-clip safety net. Performance was **not** the cause (render is trivial
+          per-sample arithmetic; also reused the C++ mix buffers to drop a per-tick allocation).
+        - **OPEN ISSUE — asphalt / surface beds [STILL OPEN — separate parity gap]:** In the F1-94
+         **rust** variant, `detect_surface()` currently always returns `"asphalt"`, so the
+         grass/rumble/sand bed layers never play (only the dry engine layer is audible). Cause:
+         `F194RustVehicle` exposes neither `axle.wheels[i].surface_type` (the GEVP primary
+         source the GDScript used) nor `WheelFrontLeft/…` RayCasts (the native fallback names),
+         so both detection paths yield nothing. The GEVP `f1_94.tscn` variant DOES get surface
+         beds via `axle`. This is a parity gap (the old GDScript had the same limitation on the
+         rust variant, so no *new* regression, but the surface beds are effectively dead on
+         F1-94-rust). Fix path: expose the rust vehicle's per-wheel `surface_type` (or add
+         `WheelFrontLeft/WheelFrontRight/WheelRearLeft/WheelRearRight` RayCasts) so
+         `VehicleAudioControllerNative::detect_surface` can read it. Track explicitly.
+        - **No-audio fix (2026-08-18) [RESOLVED — in-game audible confirmed by user]:** User reported
+         zero audio after the native swap. Root cause: `create_audio_nodes` used `AudioStreamPlayer3D`,
+         which is **silent without a current `AudioListener3D`** — and the project has none, with the
+         F1-94 rendered inside a `SubViewport` (`WorldViewport`). The original GDScript
+         `VehicleAudioController` used a **non-positional `AudioStreamPlayer`** (line 119), which needs
+         no listener — that is why it worked. This godot-cpp build does NOT wrap the non-3D
+         `AudioStreamPlayer` class, so the node now instantiates it generically via
+         `ClassDB::instantiate("AudioStreamPlayer")` and drives it through the `Object`/`Variant` API
+         (`set("stream"/"bus")`, `call("play"/"get_stream_playback"/"push_frame"/"get_frames_available")`).
+         Removed the earlier `unit_size(10000)/max_distance(0)` 3D workaround. Also: (a) added
+         `windows.editor.dev.x86_64` + `windows.editor.x86_64` keys to `formula90s.gdextension` so the
+         extension loads in the editor/headless binary (previously failed "Cannot get class"); (b)
+         `set_physics_process(true)` in `_ready`. **Structurally validated headless:** node loads,
+         `is_engine_loaded=true`, `last_rpm=4500` (telemetry live), `surface=asphalt` (confirms the
+         separate surface issue below), `is_audio_active=false` only because headless uses the Dummy
+          driver (`create_audio_nodes` early-returns). In-game audible **confirmed by user** (audio plays);
+          subsequent latency + clipping passes applied (see above). The `--audio-driver WASAPI` launch net
+          remains in `scripts/run_f1_94.ps1` as a safety measure. No special Godot 4.7 parameter is required
+          for the compiled-Rust pipeline itself.
+
+     10. **[HIGH PRIORITY] Stutter / frame-pacing analysis & refactor — Rust physics core vs 3D Godot presentation (2026-08-18) [NEW]:** User reports intermittent stutters during gameplay. Scope: profile the authoritative Rust `game_sim` / `game/physics/engine` core (per-tick step cost, snapshot bincode (de)serialization, allocation churn) AND the 3D Godot presentation path (`F194RustVehicle`, `VehicleVisual3DController`, `DirectionalVehicleSprite`/mesh updates, camera) to locate the jitter source. Hypotheses: (a) per-tick snapshot bincode (de)serialization cost; (b) physics-vs-render cadence/threading mismatch; (c) presentation lacks interpolation across the 120 Hz physics tick; (d) per-frame allocation/GC in presentation scripts. First reversible step: instrument frame-time + step-time (min/max/percentile) on both sides, reproduce headlessly via `game_cli` + a timing harness, then decide whether to optimize the Rust core or restructure the Godot 3D update/interpolation. This is a perf/architecture task — do NOT change physics tuning.
+
 ---
 
 ## 45.1 Legacy Jordan/GEVP Phase C work (DEFERRED — historical)

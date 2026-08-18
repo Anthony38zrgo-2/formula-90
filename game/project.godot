@@ -18,6 +18,7 @@ config/features=PackedStringArray("4.7")
 
 InputBindings="*res://addons/formula90s/scripts/input_bindings.gd"
 TelemetryManager="*res://addons/formula90s/scripts/telemetry_manager.gd"
+VehicleAudioBus="*res://addons/formula90s/scripts/audio/ensure_vehicle_bus.gd"
 
 [display]
 
@@ -34,6 +35,14 @@ enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
 [physics]
 
 common/physics_ticks_per_second=120
+
+[audio]
+
+; Drives Godot 4.7's WASAPI shared-mode device period (Engine::get_audio_output_latency()).
+; Lower = smaller device buffer = less output latency. Shared mode floors at the device's
+; fundamental period (~10 ms), so this is a secondary win vs. the AudioStreamGenerator
+; buffer_length set in the native node. No exclusive-mode path exists in Godot 4.7 WASAPI.
+audio/output_latency/buffer_size_ms=10
 
 [rendering]
 

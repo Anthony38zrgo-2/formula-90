@@ -7,6 +7,7 @@
 #include "formula90s/presentation/vehicle_visual_3d_config.hpp"
 #include "formula90s/presentation/vehicle_visual_3d_controller.hpp"
 #include "formula90s/presentation/engine_audio_controller.hpp"
+#include "formula90s/presentation/vehicle_audio_controller_native.hpp"
 #include "formula90s/audio/engine_audio_config.hpp"
 #include "formula90s/ui/main_menu_controller.hpp"
 #include "formula90s/ui/debug_hud_controller.hpp"
@@ -27,6 +28,7 @@ void initialize_formula90s_module(ModuleInitializationLevel level) {
 	GDREGISTER_CLASS(VehicleVisual3DController);
 	GDREGISTER_CLASS(EngineAudioConfig);
 	GDREGISTER_CLASS(EngineAudioController);
+	GDREGISTER_CLASS(VehicleAudioControllerNative);
 	GDREGISTER_CLASS(MainMenuController);
 	GDREGISTER_CLASS(DebugHudController);
 	GDREGISTER_CLASS(StaticMinimapController);

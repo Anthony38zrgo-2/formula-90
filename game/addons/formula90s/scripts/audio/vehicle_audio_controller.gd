@@ -28,6 +28,16 @@ const BAND_WIDTH := 0.25
 const PITCH_MIN := 0.5
 const PITCH_MAX := 3.5
 
+# Headroom applied to every layer's final gain so the summed engine + surface bed
+# + one-shots never tops out the bus. Mirrors the offline oracle, which also keeps
+# nominal peaks under 0 dBFS; the bus limiter (see _ensure_vehicle_bus) is the safety net.
+const TRIM_DB := -6.0
+# Volume floor used for muted layers (kept just below silence to avoid -inf).
+const VOLUME_FLOOR_DB := -80.0
+# Exponential smoothing time constant (s) for volume changes. Removes the click
+# artifacts from abrupt -80<->value snaps and bed/one-shot transitions.
+const VOLUME_SMOOTH_TAU := 0.015
+
 # Surface token -> bank bed key (asphalt has no bed).
 const SURFACE_KEYS := {
 	"asphalt": null,
@@ -45,6 +55,12 @@ var _pending_triggers: Array[String] = []
 # role -> AudioStreamWAV.
 var _players := {}
 
+# Per-loop-player smoothed volume state (key -> dB). Only looping roles (engine
+# bands + surface beds) are smoothed; one-shots are set directly to avoid being
+# overwritten by the smoothing pass.
+var _db_target := {}
+var _db_current := {}
+
 var _last_gear := 0
 var _active_bed := ""
 # Telemetry snapshot (updated each update(); read by audio_telemetry.gd)
@@ -60,11 +76,13 @@ var last_trigger: String = ""
 
 
 func _ready() -> void:
+	_ensure_vehicle_bus()
 	_load_bank()
 
 
-func _physics_process(_delta: float) -> void:
-	update(_delta)
+func _physics_process(delta: float) -> void:
+	update(delta)
+	_smooth_volumes(delta)
 
 
 ## Load every bank WAV into an AudioStreamWAV player, one per role.
@@ -100,8 +118,17 @@ func _load_bank() -> void:
 			wav.loop_end = int(wav.get_length() * wav.mix_rate)
 		var player := AudioStreamPlayer.new()
 		player.stream = wav
+		player.bus = "Vehicle"
+		player.volume_db = VOLUME_FLOOR_DB
 		add_child(player)
 		_players[key] = player
+		# Looping roles are started once and driven purely by smoothed volume so we
+		# never restart a stream (which would click at the loop seam). One-shots are
+		# started on demand in _play_oneshot.
+		if is_loop:
+			_db_target[key] = VOLUME_FLOOR_DB
+			_db_current[key] = VOLUME_FLOOR_DB
+			player.play()
 
 
 ## Extract PCM16 payload from a WAV file (RIFF/WAVE), mirroring the Rust bank loader.
@@ -225,9 +252,9 @@ func update(_delta: float) -> void:
 	if bed != _active_bed:
 		for key in SURFACE_KEYS.values():
 			if key != null and key != bed:
-				var stale: AudioStreamPlayer = _players.get(key)
-				if stale != null and stale.playing:
-					stale.volume_db = -80.0
+				# Mute the stale bed via the smoothed target so it fades out instead
+				# of clicking; the smoothing pass ramps it down to the floor.
+				_set_target_db(key, VOLUME_FLOOR_DB)
 		_active_bed = bed if bed != null else ""
 
 	# Gear-change one-shots.
@@ -280,23 +307,78 @@ func _band_weights(norm: float) -> Array:
 
 
 ## Play a looping role with weight (0..1) and an additional gain.
+## Only sets the smoothed target volume; the actual volume is ramped in
+## _smooth_volumes to avoid click artifacts. The headroom trim keeps the summed
+## layers under 0 dBFS (see TRIM_DB); the bus limiter is the final safety net.
 func _play_loop(key: String, weight: float, gain: float) -> void:
 	var player: AudioStreamPlayer = _players.get(key)
 	if player == null:
 		return
 	if weight <= 0.0:
-		if player.playing:
-			player.volume_db = -80.0
+		_set_target_db(key, VOLUME_FLOOR_DB)
 		return
-	player.volume_db = linear_to_db(weight * gain)
+	_set_target_db(key, linear_to_db(weight * gain) + TRIM_DB)
 	if not player.playing:
 		player.play()
 
 
-## Play a one-shot from the start.
+## Play a one-shot from the start. One-shots bypass the smoothing pass (set
+## directly, trimmed for headroom) and are not retriggered while still playing to
+## avoid restart clicks.
 func _play_oneshot(key: String) -> void:
 	var player: AudioStreamPlayer = _players.get(key)
 	if player == null:
 		return
-	player.volume_db = 0.0
+	if player.playing:
+		return
+	player.volume_db = TRIM_DB
 	player.play()
+
+
+## Set the target volume (dB) for a smoothed loop player.
+func _set_target_db(key: String, db: float) -> void:
+	_db_target[key] = db
+
+
+## Exponentially ramp each loop player's volume toward its target so volume
+## changes (band crossfades, bed switches, mutes) never click.
+func _smooth_volumes(delta: float) -> void:
+	var factor := 1.0 - exp(-delta / VOLUME_SMOOTH_TAU)
+	for key in _db_current.keys():
+		var player: AudioStreamPlayer = _players.get(key)
+		if player == null:
+			continue
+		var target: float = _db_target.get(key, VOLUME_FLOOR_DB)
+		var cur: float = _db_current.get(key, VOLUME_FLOOR_DB)
+		cur += (target - cur) * factor
+		_db_current[key] = cur
+		player.volume_db = cur
+
+
+## Create (once) a dedicated "Vehicle" bus with a limiter so the summed engine
+## bands + surface bed + one-shots can never exceed the ceiling (the "topping
+## out" clipping). Idempotent: safe if called again (reload / multiple nodes).
+func _ensure_vehicle_bus() -> void:
+	if Engine.is_editor_hint():
+		return
+	var idx := -1
+	for i in AudioServer.bus_count:
+		if AudioServer.get_bus_name(i) == "Vehicle":
+			idx = i
+			break
+	if idx == -1:
+		idx = AudioServer.bus_count
+		AudioServer.add_bus(idx)
+		AudioServer.set_bus_name(idx, "Vehicle")
+		AudioServer.set_bus_send(idx, "Master")
+	var has_limiter := false
+	for e in AudioServer.get_bus_effect_count(idx):
+		if AudioServer.get_bus_effect(idx, e) is AudioEffectLimiter:
+			has_limiter = true
+			break
+	if not has_limiter:
+		var lim := AudioEffectLimiter.new()
+		lim.threshold_db = -2.0
+		lim.ceiling_db = -0.1
+		lim.soft_clip_db = 0.0
+		AudioServer.add_bus_effect(idx, lim)

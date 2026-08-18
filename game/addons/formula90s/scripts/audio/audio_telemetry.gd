@@ -110,8 +110,11 @@ func _format_line(now_msec: int) -> String:
 	var rpm: float = audio.get("last_rpm") if audio.get("last_rpm") != null else 0.0
 	var norm: float = audio.get("last_norm") if audio.get("last_norm") != null else 0.0
 	var gear: int = 0
-	if audio.vehicle != null:
-		gear = audio.vehicle.get("current_gear")
+	var veh = audio.get("vehicle")
+	if veh is NodePath:
+		veh = audio.get_node_or_null(veh)
+	if veh != null:
+		gear = veh.get("current_gear")
 	var thr: float = audio.get("last_throttle") if audio.get("last_throttle") != null else 0.0
 	var slip: float = audio.get("last_slip") if audio.get("last_slip") != null else 0.0
 	var surface: String = audio.get("surface") if audio.get("surface") != null else "asphalt"

@@ -34,3 +34,15 @@ Copy-Item (Join-Path $simDllDir 'game_sim.dll') (Join-Path 'game/addons/formula9
 Copy-Item (Join-Path $simDllDir 'game_sim.dll') (Join-Path 'game/addons/formula90s/bin' 'game_sim.dll') -Force
 Write-Host "game_sim DLL copiada a game/addons/formula90s/bin/$simDest (+ game_sim.dll)" -ForegroundColor Green
 
+Write-Host "Compilando Crate Rust Vehicle Audio Engine ($Configuration)..." -ForegroundColor Cyan
+$audioArgs = @('build', '--lib', '--manifest-path', 'game/audio/engine/Cargo.toml')
+if ($Configuration -eq 'release') { $audioArgs += '--release' }
+$audioOut = & cargo @audioArgs 2>&1
+if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_audio_engine fallo ($LASTEXITCODE).`n$audioOut" }
+$audioDllDir = if ($Configuration -eq 'release') { 'game/audio/engine/target/release' } else { 'game/audio/engine/target/debug' }
+$audioDest = "vehicle_audio_engine.windows.$target.x86_64.dll"
+Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/addons/formula90s/bin' $audioDest) -Force
+Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/addons/formula90s/bin' 'vehicle_audio_engine.dll') -Force
+Write-Host "vehicle_audio_engine DLL copiada a game/addons/formula90s/bin/$audioDest (+ vehicle_audio_engine.dll)" -ForegroundColor Green
+
+

@@ -30,8 +30,7 @@ script = ExtResource("10_assembler")
 spec = ExtResource("11_spec")
 vehicle_node = NodePath("../VehicleRigidBody")
 
-[node name="VehicleAudio" type="Node" parent="." node_paths=PackedStringArray("vehicle")]
-script = ExtResource("8_audio")
+[node name="VehicleAudio" type="VehicleAudioControllerNative" parent="."]
 vehicle = NodePath("../VehicleRigidBody")
 
 [node name="AudioTelemetry" type="Node" parent="." node_paths=PackedStringArray("audio")]
