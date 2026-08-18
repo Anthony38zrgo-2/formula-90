@@ -403,7 +403,10 @@ pub extern "C" fn sim_world_solve_external(
     x: f64,
     y: f64,
     z: f64,
-    yaw: f64,
+    qx: f64,
+    qy: f64,
+    qz: f64,
+    qw: f64,
     lx: f64,
     ly: f64,
     lz: f64,
@@ -452,8 +455,8 @@ pub extern "C" fn sim_world_solve_external(
         toggle_transmission: false,
     };
     if let Some(ent) = w.entities.iter_mut().find(|e| e.id == id) {
-        let basis = Mat3::from_euler_yxz(yaw, 0.0, 0.0);
-        let orientation = Quat::from_mat3(&basis);
+        let orientation = Quat::new(qx, qy, qz, qw).normalized();
+        let basis = orientation.to_mat3();
         let body = BodyKinematics {
             transform: Transform3D {
                 origin: Vec3::new(x, y, z),

@@ -258,8 +258,7 @@ void F90SimBridge::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3
 	//    collisions) — the same stable path the legacy vehicle_physics_engine DLL uses.
 	Transform3D gt = state->get_transform();
 	Vector3 old_pos = gt.origin;
-	Vector3 fwd = gt.basis.xform(Vector3(0.0, 0.0, -1.0));
-	double yaw = std::atan2(fwd.x, -fwd.z);
+	Quaternion q = gt.basis.get_rotation_quaternion();
 	Vector3 old_lin = state->get_linear_velocity();
 	Vector3 old_ang = state->get_angular_velocity();
 	double dt = (double)state->get_step();
@@ -269,7 +268,8 @@ void F90SimBridge::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3
 	//    world-space force + torque; Godot applies it and integrates the rigid body.
 	double force_out[3] = {0.0, 0.0, 0.0};
 	double torque_out[3] = {0.0, 0.0, 0.0};
-	fn_solve_external_(world_, entity_id_, old_pos.x, old_pos.y, old_pos.z, yaw,
+	fn_solve_external_(world_, entity_id_, old_pos.x, old_pos.y, old_pos.z,
+		q.x, q.y, q.z, q.w,
 		old_lin.x, old_lin.y, old_lin.z, old_ang.x, old_ang.y, old_ang.z,
 		throttle, brake, steer, handbrake, 0.0, 0, false, dt, samples, force_out, torque_out);
 
@@ -293,7 +293,8 @@ void F90SimBridge::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3
 		UtilityFunctions::print(String("[F90SimBridge->Vehicle] v=") + String::num(tel.speed_kmh, 1) +
 			" km/h rpm=" + String::num(tel.rpm, 0) + " gear=" + String::num(tel.gear, 0) +
 			" RSlip=" + String::num(tel.rear_slip, 3) + " TC=" + String::num(tel.tc_active, 0) +
-			" posY=" + String::num(old_pos.y, 3));
+			" posX=" + String::num(old_pos.x, 2) + " posY=" + String::num(old_pos.y, 3) +
+			" posZ=" + String::num(old_pos.z, 2));
 	}
 }
 

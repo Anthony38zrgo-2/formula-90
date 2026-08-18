@@ -2281,11 +2281,23 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
       drive (velocity-drive / pose-mirror sobre `sim_world_step_with_samples` + integrador
       standalone del core) EXPLOTABA (el integrador propio del core es inestable cuando se siembra
       cada frame) -> se cambió a la ruta de fuerzas `solve_external` (estable, idéntica al dll).
-      **VALIDACIÓN HEADLESS:** estable en reposo (v=0, posY≈-0.06) y ACELERA con `debug_throttle=1`
-      (17→146 km/h, rpm sube, altura estable, sin explosión). Sigue sin validar headless el giro
-      fino ni colisión de muros (el core solo muestrea suspensión, no muros). PENDIENTE:
-      validación visual in-engine (correr `run_f1-94.ps1`: throttle acelera, steer gira en
-      dirección correcta; muros pueden atravesarse en esta 1ª integración).
+       **VALIDACIÓN HEADLESS:** estable en reposo (v=0, posY≈-0.06) y ACELERA con `debug_throttle=1`
+       (17→146 km/h, rpm sube, altura estable, sin explosión). Sigue sin validar headless el giro
+       fino ni colisión de muros (el core solo muestrea suspensión, no muros). PENDIENTE:
+       validación visual in-engine (correr `run_f1-94.ps1`: throttle acelera, steer gira en
+       dirección correcta; muros pueden atravesarse en esta 1ª integración).
+       **DRIFT LATERAL CORREGIDO (2026-08-17):** el bridge reconstruía la orientación del cuerpo
+       desde `yaw` vía `Mat3::from_euler_yxz(yaw,0,0)`, pero `yaw_from_transform` y `from_euler_yxz`
+       NO son inversos (el round-trip invierte el signo de X del forward) -> el empuje se aplicaba
+       en un ángulo espejo y el auto derivaba de costado al acelerar. FIX: `sim_world_solve_external`
+       ahora recibe el quaternion completo `(qx,qy,qz,qw)` (`gt.basis.get_rotation_quaternion()`) y
+       reconstruye la basis con `Quat::to_mat3()` (igual que el dll legado, que pasa el quaternion
+       completo). Validado headless en `sim_bridge_quick_test.tscn` (escena mínima plana):
+       con `debug_throttle=1` el auto acelera en línea recta, **posX se mantiene 0.0** de 4→67 km/h
+       (posZ 0→-24.9, posY estable ~0.32). Sin drift lateral.
+       Nota: physics headless corre ~1 Hz (overhead de arranque/carga), por eso la validación usa
+       `sim_bridge_quick_test.tscn` y se corre con `--quit-after 240`. El print de telemetría del
+       bridge ahora incluye `posX/posY/posZ` para monitorear deriva lateral.
 
 ---
 

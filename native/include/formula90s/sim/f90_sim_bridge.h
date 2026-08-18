@@ -45,7 +45,8 @@ typedef void (*FnSimWorldSetPoseAndVelocity)(void *world, uint32_t id, double x,
 typedef void (*FnSimWorldStepWithSamples)(void *world, uint32_t id, double throttle, double brake,
     double steer, double handbrake, double clutch, int8_t gear_request, bool toggle_tc, double dt,
     const CSimTriRaycastSample *samples);
-typedef void (*FnSimWorldSolveExternal)(void *world, uint32_t id, double x, double y, double z, double yaw,
+typedef void (*FnSimWorldSolveExternal)(void *world, uint32_t id, double x, double y, double z,
+    double qx, double qy, double qz, double qw,
     double lx, double ly, double lz, double ax, double ay, double az, double throttle, double brake,
     double steer, double handbrake, double clutch, int8_t gear_request, bool toggle_tc, double dt,
     const CSimTriRaycastSample *samples, double *out_force, double *out_torque);
