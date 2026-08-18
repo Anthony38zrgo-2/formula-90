@@ -4,9 +4,13 @@ La Fase 2 integra el V10 procesado, herramientas C++ de sprites y validación, e
 
 - Fase 1: bootstrap jugable y probado.
 - Fase 2: herramientas validadas de sprites y audio, sin entrar en runtime.
-- Posterior: circuito, rivales, vueltas y contenido original.
+- Posterior (PRÓXIMA PRIORIDAD): **editor de escenario/pistas**; luego circuito, rivales, vueltas y contenido original.
 
-## Backlog — Editor de pistas y pipelines independientes
+## Backlog — Editor de escenario/pistas y pipelines independientes  `[PRÓXIMA PRIORIDAD]`
+
+> **Estado: PRÓXIMA PRIORIDAD (2026-08-18).** El vehículo F1-94 está en estado bueno
+> (ver `PROJECT_STATE.md` §5.0, pendiente sólo de pulido de detalles). El siguiente
+> trabajo de mayor valor es el editor de escenario/pistas.
 
 Refactorizar la autoría de circuitos para reducir el coste de iteración manual.
 No iniciar esta iniciativa sin planificación y aprobación explícita.
