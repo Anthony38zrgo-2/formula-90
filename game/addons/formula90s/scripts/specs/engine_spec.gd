@@ -1,8 +1,8 @@
 class_name EngineSpec
 extends Resource
 
-@export var max_torque: float = 340.0
-@export var max_rpm: float = 17000.0
+@export var max_torque: float = 455.0
+@export var max_rpm: float = 15000.0
 @export var idle_rpm: float = 4500.0
 @export var torque_curve: Curve
 @export var motor_drag: float = 0.006

@@ -346,6 +346,13 @@ impl VehicleSimulator {
             total_torque += basis.transform_vector(extra_pitch_local);
         }
 
+        // ESP / yaw-stability aid: counter only the excess yaw beyond the engage
+        // threshold so the car stays controllable at the limit without killing
+        // playful rotation.
+        if self.aids.stability {
+            total_torque += Self::stability_yaw_torque(cfg, &*st);
+        }
+
         if !total_force.x.is_finite() || !total_force.y.is_finite() || !total_force.z.is_finite() {
             total_force = Vec3::ZERO;
         }
@@ -358,6 +365,55 @@ impl VehicleSimulator {
         st.linear_acceleration = total_force / cfg.vehicle_mass.max(1e-6);
         let telemetry = self.build_telemetry_frame();
         (ForceTorqueOutput { force_world: total_force, torque_world: total_torque }, telemetry)
+    }
+
+    /// Yaw-stability (ESP) corrective torque in world space.
+    ///
+    /// Compares the actual yaw rate to the bicycle-model yaw rate commanded by the
+    /// current steering angle and speed. Only the *excess* beyond
+    /// `stability_yaw_engage_angle_rad` is corrected, so small playful over/understeer
+    /// is preserved. The correction scales with `stability_yaw_strength` and is
+    /// amplified by `stability_grounded_multiplier` when the car is planted.
+    /// `stability_yaw_engage_angle_rad` is interpreted as a yaw-rate error threshold
+    /// in rad/s (the field name is historical).
+    fn stability_yaw_torque(cfg: &VehicleConfig, st: &VehicleState) -> Vec3 {
+        let basis = st.transform.basis;
+
+        let local_vel = basis.inverse_transform_vector(st.linear_velocity);
+        let forward_speed = -local_vel.z;
+        // Only act when clearly driving forward; reverse/creep is left to the driver.
+        if forward_speed < 2.0 {
+            return Vec3::ZERO;
+        }
+
+        let yaw_rate = basis.inverse_transform_vector(st.angular_velocity).y;
+        let steer = steering_angle_for_wheel(cfg, WheelIndex::FrontLeft, st.steer_input_smoothed);
+        let target_yaw = forward_speed * steer.tan() / cfg.wheelbase.max(1e-3);
+
+        // True stability limiter: only counter rotation that EXCEEDS the yaw the
+        // steering commands (plus a small margin). We never push the car toward the
+        // kinematic target, so a straight / near-straight line at speed (where the
+        // commanded yaw can be large from even a tiny steer) is left alone instead
+        // of being force-yawed into a snap under throttle.
+        let engage = cfg.aids.stability_yaw_engage_angle_rad.max(1e-4);
+        let over = yaw_rate.abs() - target_yaw.abs() - engage;
+        if over <= 0.0 {
+            return Vec3::ZERO;
+        }
+
+        let mut grounded = 0u32;
+        for w in WheelIndex::ALL {
+            if st.suspension.wheels[w as usize].is_grounded {
+                grounded += 1;
+            }
+        }
+        let grounded_fraction = grounded as f64 / 4.0;
+        let grounded_mult = cfg.aids.stability_grounded_multiplier.max(0.0);
+        let ground_factor = (grounded_fraction * (grounded_mult - 1.0)).clamp(0.0, 5.0) + 1.0;
+
+        let inertia_y = principal_inertia(cfg).y;
+        let torque_y = -yaw_rate.signum() * over * cfg.aids.stability_yaw_strength * inertia_y * ground_factor;
+        basis.transform_vector(Vec3::new(0.0, torque_y, 0.0))
     }
 
     fn integrate_standalone(&mut self, forces: ForceTorqueOutput, dt: f64) {
@@ -613,5 +669,51 @@ mod tests {
             let _ = sim.step(&hold, &samples, 0.02);
         }
         assert_eq!(sim.state.powertrain.current_gear, before, "None must not change gear");
+    }
+
+    #[test]
+    fn stability_yaw_torque_only_corrects_excess() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.aids.stability_available = true;
+        cfg.aids.stability_default_enabled = true;
+        cfg.aids.stability_yaw_engage_angle_rad = 0.10;
+        cfg.aids.stability_yaw_strength = 5.0;
+        cfg.aids.stability_grounded_multiplier = 1.0;
+
+        let mut sim = VehicleSimulator::new(cfg, Vec3::ZERO, 0.0);
+        // Drive forward at 20 m/s (world -Z), basis identity, no steer.
+        sim.state.linear_velocity = Vec3::new(0.0, 0.0, -20.0);
+        sim.state.steer_input_smoothed = 0.0;
+
+        // Within engage band: 0.05 rad/s < 0.10 -> no correction.
+        sim.state.angular_velocity = Vec3::new(0.0, 0.05, 0.0);
+        let t_within = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
+        assert!(t_within.length() < 1e-9, "no correction within engage band");
+
+        // Exceeds engage: 0.5 rad/s -> restoring torque opposes +Y (negative Y).
+        sim.state.angular_velocity = Vec3::new(0.0, 0.5, 0.0);
+        let t_excess = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
+        assert!(t_excess.y < 0.0, "excess yaw must be countered (negative Y torque)");
+        assert!(t_excess.x.abs() < 1e-9 && t_excess.z.abs() < 1e-9, "torque is pure yaw");
+    }
+
+    #[test]
+    fn stability_yaw_torque_ignores_straight_line_command() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.aids.stability_available = true;
+        cfg.aids.stability_default_enabled = true;
+        cfg.aids.stability_yaw_engage_angle_rad = 0.15;
+        cfg.aids.stability_yaw_strength = 6.0;
+        cfg.aids.stability_grounded_multiplier = 2.0;
+
+        let mut sim = VehicleSimulator::new(cfg, Vec3::ZERO, 0.0);
+        // Straight-line at speed WITH a small steering command but no actual yaw.
+        // This is the "pedal to the metal on a straight" case that used to snap.
+        sim.state.linear_velocity = Vec3::new(0.0, 0.0, -50.0);
+        sim.state.steer_input_smoothed = 0.05;
+        sim.state.angular_velocity = Vec3::ZERO;
+
+        let t = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
+        assert!(t.length() < 1e-9, "must not force yaw on a straight with a small steer command");
     }
 }

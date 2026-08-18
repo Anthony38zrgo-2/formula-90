@@ -3,19 +3,22 @@ class_name F194RustInputController
 
 @export var vehicle_node: Node
 
-@export var action_throttle: String = "Throttle"
-@export var action_brake: String = "Brakes"
-@export var action_steer_left: String = "Steer Left"
-@export var action_steer_right: String = "Steer Right"
-@export var action_handbrake: String = "Handbrake"
-@export var action_clutch: String = "Clutch"
-@export var action_shift_up: String = "Shift Up"
-@export var action_shift_down: String = "Shift Down"
-@export var action_toggle_transmission: String = "Toggle Transmission"
-@export var action_toggle_traction_control: String = "Toggle Traction Control"
+@export var action_throttle: String = InputBindings.THROTTLE
+@export var action_brake: String = InputBindings.BRAKES
+@export var action_steer_left: String = InputBindings.STEER_LEFT
+@export var action_steer_right: String = InputBindings.STEER_RIGHT
+@export var action_handbrake: String = InputBindings.HANDBRAKE
+@export var action_clutch: String = InputBindings.CLUTCH
+@export var action_shift_up: String = InputBindings.SHIFT_UP
+@export var action_shift_down: String = InputBindings.SHIFT_DOWN
+@export var action_toggle_transmission: String = InputBindings.TOGGLE_TRANSMISSION
+@export var action_toggle_traction_control: String = InputBindings.TOGGLE_TRACTION_CONTROL
+@export var action_reset_vehicle: String = InputBindings.RESET_VEHICLE
 @export var throttle_exponent: float = 1.0
 
 var _has_required_interface: bool = false
+var _spawn_pos: Vector3 = Vector3()
+var _spawn_yaw: float = 0.0
 
 func _ready() -> void:
 	if vehicle_node == null:
@@ -41,6 +44,12 @@ func _ready() -> void:
 			return
 
 	_has_required_interface = true
+
+	# Capture spawn pose so Reset Vehicle can restore it.
+	if vehicle_node.has_method("global_transform"):
+		var t: Transform3D = vehicle_node.global_transform
+		_spawn_pos = t.origin
+		_spawn_yaw = t.basis.get_euler().y
 
 func _physics_process(_delta: float) -> void:
 	if not _has_required_interface or vehicle_node == null:
@@ -88,6 +97,11 @@ func _physics_process(_delta: float) -> void:
 				var mask: int = vehicle_node.get_aids_enabled_mask()
 				mask ^= 1 << 1
 				vehicle_node.set_aids_enabled_mask(mask)
+
+	if action_reset_vehicle != "" and InputMap.has_action(action_reset_vehicle):
+		if Input.is_action_just_pressed(action_reset_vehicle):
+			if vehicle_node.has_method("reset_vehicle"):
+				vehicle_node.reset_vehicle(_spawn_pos, _spawn_yaw)
 
 	# Manual shift handling
 	var current_gear: int = vehicle_node.get_current_gear()

@@ -4,6 +4,6 @@
 
 [resource]
 script = ExtResource("1_chassis")
-vehicle_mass = 505.0
+vehicle_mass = 575.0
 front_weight_distribution = 0.45
 inertia_multiplier = 1.1

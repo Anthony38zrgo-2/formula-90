@@ -185,7 +185,7 @@ impl SuspensionSystem {
 
         let compression_m = state.compression_mm * 0.001;
         state.spring_force = compression_m * spring_k;
-        state.antiroll_force = (state.compression_mm - opposite_compression_mm) * 0.001 * spring_k * arb_ratio;
+        state.antiroll_force = (opposite_compression_mm - state.compression_mm) * 0.001 * spring_k * arb_ratio;
 
         let critical_c = 2.0 * (spring_k * mass).sqrt();
         let base_c = critical_c * damping_ratio;
@@ -297,4 +297,73 @@ fn blended_surface(
 
 fn surface_value(map: &std::collections::HashMap<SurfaceType, f64>, surface: SurfaceType, fallback: f64) -> f64 {
     *map.get(&surface).unwrap_or(&fallback)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::WheelIndex;
+    use crate::vehicle_config::VehicleConfig;
+
+    /// Simulate a right roll: right wheels more compressed than left, both grounded.
+    fn roll_suspension(arb_ratio: f64) -> SuspensionSystem {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.front_arb_ratio = arb_ratio;
+        let mut sus = SuspensionSystem::new(&cfg);
+        sus.wheels[WheelIndex::FrontLeft as usize].compression_mm = 50.0;
+        sus.wheels[WheelIndex::FrontRight as usize].compression_mm = 90.0;
+        sus.wheels[WheelIndex::FrontLeft as usize].is_grounded = true;
+        sus.wheels[WheelIndex::FrontRight as usize].is_grounded = true;
+        let dt = 1.0 / 60.0;
+        sus.solve_force(&cfg, WheelIndex::FrontRight, 50.0, dt);
+        sus.solve_force(&cfg, WheelIndex::FrontLeft, 90.0, dt);
+        sus
+    }
+
+    #[test]
+    fn arb_resists_roll_and_is_axle_neutral() {
+        let sus = roll_suspension(0.20);
+        let arb_r = sus.wheels[WheelIndex::FrontRight as usize].antiroll_force;
+        let arb_l = sus.wheels[WheelIndex::FrontLeft as usize].antiroll_force;
+
+        // Outer (more-compressed right) wheel must be UNLOADED by the ARB.
+        assert!(arb_r < 0.0, "outer wheel ARB force must be negative, got {}", arb_r);
+        // Inner (less-compressed left) wheel must be LOADED by the ARB.
+        assert!(arb_l > 0.0, "inner wheel ARB force must be positive, got {}", arb_l);
+        // ARB transfers load within the axle: net vertical force contribution is zero.
+        assert!(
+            (arb_r + arb_l).abs() < 1e-6,
+            "axle ARB force sum must be ~0, got {}",
+            arb_r + arb_l
+        );
+    }
+
+    #[test]
+    fn higher_arb_ratio_increases_roll_resistance() {
+        let dt = 1.0 / 60.0;
+        let low = roll_suspension(0.10);
+        let high = roll_suspension(0.40);
+
+        // The ARB force on the outer wheel is negative and grows (more negative) with ratio.
+        let arb_low = low.wheels[WheelIndex::FrontRight as usize].antiroll_force;
+        let arb_high = high.wheels[WheelIndex::FrontRight as usize].antiroll_force;
+        assert!(arb_low < 0.0 && arb_high < 0.0);
+        assert!(
+            arb_high < arb_low,
+            "higher arb_ratio must unload the outer wheel more: {} !< {}",
+            arb_high,
+            arb_low
+        );
+
+        // Consequently the outer wheel's total normal load must drop as the ARB stiffens.
+        let norm_low = low.wheels[WheelIndex::FrontRight as usize].total_normal_force;
+        let norm_high = high.wheels[WheelIndex::FrontRight as usize].total_normal_force;
+        assert!(
+            norm_high < norm_low,
+            "outer wheel load must decrease with stiffer ARB: {} !< {}",
+            norm_high,
+            norm_low
+        );
+        let _ = dt;
+    }
 }

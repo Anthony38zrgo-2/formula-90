@@ -5,8 +5,8 @@
 
 [resource]
 script = ExtResource("1_engine")
-max_torque = 340.0
-max_rpm = 17000.0
+max_torque = 455.0
+max_rpm = 15000.0
 idle_rpm = 4500.0
 torque_curve = ExtResource("2_curve")
 motor_drag = 0.006

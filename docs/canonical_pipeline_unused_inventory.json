@@ -303,7 +303,6 @@
     {
       "id": "LEGACY-FORMULA90S-UNUSED-AUXILIARIES",
       "paths": [
-        "game/addons/formula90s/PARAMETROS_F1_1996_GEVP.md",
         "game/addons/formula90s/scenes/formula_vehicle_controller.tscn",
         "game/addons/formula90s/scripts/formula_vehicle_controller.gd",
         "game/addons/formula90s/scripts/formula_vehicle_controller.gd.uid",
@@ -312,12 +311,11 @@
         "game/addons/formula90s/scripts/wheel_diagnostics_overlay.gd",
         "game/addons/formula90s/scripts/wheel_diagnostics_overlay.gd.uid"
       ],
-      "file_count": 8,
+      "file_count": 7,
       "runtime_status": "not_instantiated_by_canonical_routes",
       "evidence": [
         "La escena Jordan197 usa directamente el controller GEVP y no formula_vehicle_controller.tscn.",
-        "vehicle_visual_contract_guard y wheel_diagnostics_overlay aparecen como soporte de validación, no como nodos de las escenas canónicas.",
-        "El documento PARAMETROS_F1_1996_GEVP corresponde a una generación de vehículo distinta."
+        "vehicle_visual_contract_guard y wheel_diagnostics_overlay aparecen como soporte de validación, no como nodos de las escenas canónicas."
       ],
       "why_not_used": "Son un controlador alternativo, un guard de integración antiguo, un overlay de diagnóstico y documentación de F1 1996.",
       "legacy_candidate": true,

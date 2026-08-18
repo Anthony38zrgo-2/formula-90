@@ -41,6 +41,7 @@ private:
 	F194RustVehicle *cached_veh_ = nullptr;
 	double telemetry_print_accum_ = 0.0;
 	double debug_throttle_ = 0.0; // 0 = use InputMap; >0 forces throttle (debug/demo)
+	uint32_t last_aids_mask_ = 0; // edge-detect TC/aids toggle between frames
 
 	bool load_dll();
 	void unload_dll();

@@ -164,12 +164,13 @@ fn wheelspin_at_low_speed_does_not_trigger_premature_upshift() {
 
 #[test]
 fn kick_down_under_full_throttle_downshifts_when_bogged() {
-    let cfg = VehicleConfig::f1_94_canonical();
+    let mut cfg = VehicleConfig::f1_94_canonical();
+    cfg.automatic_transmission = true;
     let mut pt = PowertrainState::new(&cfg);
     let dt = 1.0 / 120.0;
     pt.current_gear = 4;
     pt.target_gear = 4;
-    pt.rpm = 7000.0; // Low RPM bogged down in 4th gear (~41% of max RPM)
+    pt.rpm = cfg.max_rpm * 0.40; // Low RPM bogged down in 4th gear (~40% of max RPM)
 
     // Full throttle at 25 m/s (~90 km/h)
     let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
@@ -182,4 +183,43 @@ fn kick_down_under_full_throttle_downshifts_when_bogged() {
         pt.target_gear, 3,
         "Transmission must trigger kick-down from 4th to 3rd when bogged down under full throttle"
     );
+}
+
+#[test]
+fn rev_limiter_caps_rpm_at_max() {
+    let cfg = VehicleConfig::f1_94_canonical();
+    let mut pt = PowertrainState::new(&cfg);
+    let dt = 1.0 / 120.0;
+    pt.current_gear = 0; // neutral: engine free-revs
+    pt.target_gear = 0;
+    pt.rpm = cfg.max_rpm * 1.5; // simulate an over-rev spike
+    let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+    let spins = [0.0; 4];
+    for _ in 0..3 {
+        pt.step_with_reaction(&cfg, &input, &spins, &[0.0; 4], 0.0, true, true, cfg.enable_abs, dt);
+    }
+    assert!(
+        pt.rpm <= cfg.max_rpm + 1e-6,
+        "RPM must be capped at max_rpm, was {}",
+        pt.rpm
+    );
+}
+
+#[test]
+fn manual_transmission_does_not_auto_shift() {
+    let mut cfg = VehicleConfig::f1_94_canonical();
+    cfg.automatic_transmission = false; // JSON-aligned manual mode
+    let mut pt = PowertrainState::new(&cfg);
+    let dt = 1.0 / 120.0;
+    pt.current_gear = 1;
+    pt.target_gear = 1;
+    pt.rpm = cfg.max_rpm * 0.95; // at/above typical upshift rpm
+    let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+    let wheel_spin = 40.0 / cfg.rear_tire_radius;
+    let spins = [0.0, 0.0, wheel_spin, wheel_spin];
+    for _ in 0..5 {
+        pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 40.0, true, true, cfg.enable_abs, dt);
+    }
+    assert_eq!(pt.current_gear, 1, "Manual transmission must not auto-upshift");
+    assert_eq!(pt.target_gear, 1, "Manual transmission must not request auto-upshift");
 }

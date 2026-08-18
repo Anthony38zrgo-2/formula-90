@@ -244,9 +244,17 @@ void F90SimBridge::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3
 	double brake = veh->get_brake_amount();
 	double steer = veh->get_steering_input();
 	double handbrake = veh->get_handbrake_amount();
+	int      gr       = veh->get_gear_request();
+	double   clutch   = veh->get_clutch_amount();
+	uint32_t aids     = veh->get_aids_enabled_mask();
 	if (debug_throttle_ > 0.0) {
 		throttle = debug_throttle_;
 	}
+
+	// Edge-detect aids-mask changes (e.g. TC toggle from the input controller).
+	// The core treats toggle_tc as a single-frame pulse.
+	bool toggle_tc = (aids != last_aids_mask_);
+	last_aids_mask_ = aids;
 
 	// 2. Sample the vehicle's real raycasts (12 RayCast3D children). In this integrate
 	//    context force_raycast_update() is guaranteed to reflect the current physics state.
@@ -271,7 +279,7 @@ void F90SimBridge::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3
 	fn_solve_external_(world_, entity_id_, old_pos.x, old_pos.y, old_pos.z,
 		q.x, q.y, q.z, q.w,
 		old_lin.x, old_lin.y, old_lin.z, old_ang.x, old_ang.y, old_ang.z,
-		throttle, brake, steer, handbrake, 0.0, 0, false, dt, samples, force_out, torque_out);
+		throttle, brake, steer, handbrake, clutch, (int8_t)gr, toggle_tc, dt, samples, force_out, torque_out);
 
 	Vector3 force(force_out[0], force_out[1], force_out[2]);
 	Vector3 torque(torque_out[0], torque_out[1], torque_out[2]);

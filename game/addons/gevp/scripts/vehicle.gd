@@ -134,7 +134,7 @@ extends RigidBody3D
 ## Time it takes to change gears on up shifts in seconds
 @export var shift_time := 0.3
 ## Enables automatic gear changes
-@export var automatic_transmission := true
+@export var automatic_transmission := false
 ## Timer to prevent the automatic gear shifts changing gears too quickly 
 ## in milliseconds
 @export var automatic_time_between_shifts := 1000.0

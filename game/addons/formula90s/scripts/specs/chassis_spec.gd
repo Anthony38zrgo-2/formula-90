@@ -1,7 +1,7 @@
 class_name ChassisSpec
 extends Resource
 
-@export var vehicle_mass: float = 505.0
+@export var vehicle_mass: float = 575.0
 @export var front_weight_distribution: float = 0.45
 @export var inertia_multiplier: float = 1.1
 

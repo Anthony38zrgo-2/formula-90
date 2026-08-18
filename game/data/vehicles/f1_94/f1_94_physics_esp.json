@@ -62,14 +62,14 @@
     "front_steering_ratio": 1.0,
     "rear_steering_ratio": 0.0,
 
-    "steering_speed": 4.75,
-    "countersteer_speed": 6.85,
+    "steering_speed": 5.50,
+    "countersteer_speed": 6.50,
     "steering_speed_decay": 0.18,
 
-    "steering_slip_assist": 0.50,
-    "countersteer_assist": 0.75,
+    "steering_slip_assist": 0.55,
+    "countersteer_assist": 0.85,
 
-    "steering_exponent": 1.1,
+    "steering_exponent": 1.00,
     "ackermann": 0.20
   },
 
@@ -144,10 +144,10 @@
     },
 
     "differential": {
-      "preload_nm": 40.0,
-      "power_ramp_angle_deg": 48.0,
-      "coast_ramp_angle_deg": 78.0,
-      "clutches": 8.0,
+      "preload_nm": 30.0,
+      "power_ramp_angle_deg": 58.0,
+      "coast_ramp_angle_deg": 68.0,
+      "clutches": 6.0,
       "clutch_friction_coefficient": 0.10,
       "slip_transition_threshold_rad_s": 0.90
     }
@@ -162,7 +162,7 @@
       "bump_damp_multiplier": 0.92,
       "rebound_damp_multiplier": 1.18,
 
-      "arb_ratio": 0.15,
+      "arb_ratio": 0.10,
 
       "toe": -0.0037453,
       "camber": -0.0383972,
@@ -178,7 +178,7 @@
       "bump_damp_multiplier": 0.96,
       "rebound_damp_multiplier": 1.22,
 
-      "arb_ratio": 0.15,
+      "arb_ratio": 0.10,
 
       "toe": 0.0020944,
       "camber": -0.0314159,
@@ -256,7 +256,7 @@
   },
 
   "brakes": {
-    "front_brake_bias": 0.58,
+    "front_brake_bias": 0.59,
     "max_brake_torque": 2800.0,
 
     "enable_abs": false,
@@ -305,8 +305,8 @@
     "stability_default_enabled": true,
     "stability_player_selectable": true,
 
-    "stability_yaw_engage_angle_rad": 0.10,
-    "stability_yaw_strength": 9.0,
+    "stability_yaw_engage_angle_rad": 0.15,
+    "stability_yaw_strength": 6.0,
     "stability_grounded_multiplier": 2.0,
     "stability_upright_spring": 0.0,
     "stability_upright_damping": 0.0,
@@ -338,7 +338,7 @@
 
     "input_smoothing_enabled": true,
 
-    "input_smoothing_steering_rate": 7.00,
+    "input_smoothing_steering_rate": 6.00,
     "input_smoothing_throttle_rate": 7.50,
     "input_smoothing_brake_rate": 14.0
   }

@@ -46,7 +46,7 @@ banking/camber, pitlane, IA, climatología y un sustituto de Blender.
 
 ## Backlog — Migración de Físicas GEVP a Rust
 
-Documento de referencia: [`docs/GEVP_RUST_PHYSICS_MIGRATION_BACKLOG.md`](GEVP_RUST_PHYSICS_MIGRATION_BACKLOG.md)
+Documento de referencia (eliminado): la migración GEVP→Rust está completa; la fuente de verdad para F1-94 es ahora `game/data/vehicles/f1_94/f1_94_physics.json` (ver `PROJECT_STATE.md`).
 
 Migración del núcleo físico del vehículo (GEVP GDScript `vehicle.gd` / `wheel.gd`) a un crate puro en Rust (`game/physics/engine`), siguiendo el patrón arquitectónico desacoplado de `vehicle_audio_engine` y `skybox_engine`.
 

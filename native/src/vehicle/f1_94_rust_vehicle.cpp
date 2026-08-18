@@ -405,6 +405,7 @@ void F194RustVehicle::_ready() {
 
 	if (!sim_ptr_ && fn_create_default_) {
 		sim_ptr_ = fn_create_default_();
+		UtilityFunctions::printerr("[F194RustVehicle] WARNING: JSON physics load failed; falling back to canonical defaults.");
 	} else if (!sim_ptr_ && fn_create_with_pos_) {
 		Vector3 pos = get_global_position();
 		Vector3 rot = get_global_rotation();

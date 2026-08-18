@@ -38,7 +38,7 @@ fn test_straight_acceleration_from_rest() {
     let mut reached_400m = false;
     let mut max_lateral_dev = 0.0f64;
 
-    for tick in 0..1200 { // 10 seconds max @ 120Hz
+    for tick in 0..1800 { // 15 seconds max @ 120Hz (accommodates JSON-aligned max_rpm=15000)
         let samples = make_flat_samples(&sim);
         let telem = sim.step(&input, &samples, dt);
         let pos = sim.state.transform.origin;

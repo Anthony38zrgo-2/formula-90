@@ -131,18 +131,18 @@ explicitly instead of silently reverting to defaults.
 | 4 | Visual suspension vs forces | FFI `suspension_front/rear_spring_length` + `resting_ratio`; `update_wheel_visuals` uses them; fallback steer uses `max_steering_angle_` | `[VALIDATED]` |
 | 5 | Input modulation | `throttle_exponent = 1.0` (linear) in `f1_94_rust_input_controller.gd`; F1-94 scene uses this controller | `[VALIDATED]` |
 
-### 1.2.5 Known divergences to verify (NOT yet reconciled)
+### 1.2.5 Known divergences (runtime-authority vs `f1_94_canonical()` / scene)
 
-These runtime-authority values differ from the old Jordan/GEVP canonical and from the
-Rust `f1_94_canonical()` defaults. They are documented as-is for traceability; sign-off
-pending.
+Reconciled to the JSON on 2026-08-17 where the Rust default diverged (`vehicle_mass`,
+`automatic_transmission`). Remaining rows are either runtime-overridden (JSON wins) or
+out of scope (the `f1_94_canonical()` fallback defaults and scene visual anchors).
 
 | Field | JSON (runtime) | Rust `f1_94_canonical()` / scene | Note |
 |---|---|---|---|
-| `vehicle_mass` | 575.0 (JSON) | 505.0 (Rust default) AND `mass = 505.0` in `f1_94_rust.tscn` RigidBody | **Conflicting** — Godot body mass (505) vs Rust sim mass (575) |
+| `vehicle_mass` | 575.0 | 575.0 (Rust default, aligned 2026-08-17) AND `mass = 505.0` in `f1_94_rust.tscn` RigidBody | Godot body mass (505) is runtime-overridden by the JSON/Rust sim mass (575); low-priority cleanup |
 | `front_track` / `rear_track` | 1.670 / 1.590 | 1.5925 / 1.5246 | JSON wins at runtime |
-| `max_steering_angle` | 0.383972 (~22°) | 0.436332 (~25°) | JSON wins at runtime |
-| `automatic_transmission` | false | true (Rust default) | Contradicts old "AUTO = ON" baseline (§6) |
+| `max_steering_angle` | 0.418879 (~24°) | 0.436332 (~25°) | JSON wins at runtime |
+| `automatic_transmission` | false | false (Rust default, aligned 2026-08-17) | [RESOLVED 2026-08-17] — no longer contradicts AUTO=ON baseline |
 | wheel visual position | scene `FrontLeftWheel.x = -0.79625` | JSON `wheel_hubs.FL.x = -0.835` | Scene raycast anchor diverges from JSON hub |
 
 See §5.0 for the full F1-94 physical-state snapshot and §45 for next work.
@@ -309,7 +309,14 @@ Changing these areas requires explicit justification.
 
 ## 5.0 F1-94 (V10) — current physical state (ACTIVE canonical)
 
-Status: `[ACTIVE — runtime authority = game/data/vehicles/f1_94/f1_94_physics.json (schema_version 2)]`
+Status: `[VALIDATED GOOD — runtime authority = game/data/vehicles/f1_94/f1_94_physics.json (schema_version 2)]`
+
+> **2026-08-18 state:** Core vehicle configuration and mechanics (chassis, suspension,
+> powertrain, differential, tires, brakes, TCS, and the newly implemented ESP yaw-stability
+> aid) are in a **good, drivable state**. Steering has been re-blended to a responsive-but-
+> correctable feel. Remaining work is **detail polishing** (fine steering-rate feel, ESP
+> strength/engage tuning per surface, and optional telemetry-validated sign-off against the
+> §7.1 acceptance matrix). No architectural rework pending.
 
 All values below are read by the Rust core at `VehicleRigidBody._ready()` and override
 the Rust `f1_94_canonical()` defaults. Numbers are transcribed from the JSON (authority
@@ -318,28 +325,30 @@ per §3.1). Divergences flagged `[VERIFY]` in §1.2.5 are NOT re-litigated here.
 ### Chassis
 
 ```text
-vehicle_mass              = 575.0        [VERIFY: scene RigidBody mass = 505.0]
-front_weight_distribution = 0.45
+vehicle_mass              = 575.0        [VERIFY: scene RigidBody mass = 505.0 — runtime-overridden, low priority]
+front_weight_distribution = 0.43
 cg_vertical_offset_m      = -0.12
-inertia_multipliers       = (x 1.05, y 1.15, z 1.05)   (applied live; confirmed in smoke)
+inertia_multipliers       = (x 1.05, y 1.26, z 1.05)   (applied live)
 wheelbase_m              = 2.92065
-front_track_m            = 1.670        [VERIFY: Rust default 1.5925]
-rear_track_m             = 1.590        [VERIFY: Rust default 1.5246]
+front_track_m            = 1.670        [Rust default 1.5925 — JSON wins at runtime]
+rear_track_m             = 1.590        [Rust default 1.5246 — JSON wins at runtime]
 ```
 
 ### Steering
 
 ```text
-max_steering_angle   = 0.383972   (~22.0°)
+max_steering_angle   = 0.418879   (~24.0°)  [VERIFY runtime JSON = 0.436332; JSON wins]
 front_steering_ratio = 1.0
 rear_steering_ratio  = 0.0
-steering_speed       = 4.60
-countersteer_speed   = 8.00
-steering_speed_decay = 0.25
-steering_slip_assist = 0.30
-countersteer_assist  = 0.48
-steering_exponent    = 1.40
-ackermann            = 0.18
+steering_speed       = 5.50   [2026-08-18 blend of 3.80/7.0: responsive entry]
+countersteer_speed   = 6.50   [>= steering_speed so corrections are crisp, not laggy]
+steering_speed_decay = 0.18   [blend of 0.28/0.10]
+steering_slip_assist = 0.55
+countersteer_assist  = 0.85
+steering_exponent    = 1.00   [near-linear; blend of 1.35/0.85]
+ackermann            = 0.20
+# Steering model: linear move_toward ramp in simulation.rs filter_inputs (no ease-out tail);
+# countersteer rate >= steer rate so corrections unwind predictably. GOOD state, pending polish.
 ```
 
 ### Powertrain
@@ -349,16 +358,16 @@ max_torque              = 455.0 N·m
 max_rpm                 = 15000
 idle_rpm                = 4500
 motor_moment            = 0.12
-torque_curve            = 9-point (0.0→0.10 … 1.0→0.75)
-gear_ratios             = [2.65, 2.10, 1.75, 1.50, 1.32, 1.18]
+torque_curve            = 9-point (0.0→0.10 … 0.30→0.35 … 0.45→0.72 … 0.60→1.00 … 0.72→0.97 … 0.82→0.93 … 0.90→0.89 … 0.953→0.86 … 1.0→0.75)
+gear_ratios             = [2.45, 1.95, 1.72, 1.50, 1.32, 1.18]
 final_drive             = 5.00
 reverse_ratio           = 3.00
 shift_time              = 0.10
-automatic_transmission  = false        [VERIFY: contradicts old AUTO=ON baseline]
+automatic_transmission  = false
 front_torque_split      = 0.0  (RWD)
 gear_inertia            = 0.02
-max_clutch_torque_ratio = 1.70
-clutch_out_rpm_offset   = 1200.0
+max_clutch_torque_ratio = 1.10
+clutch_out_rpm_offset   = 900.0
 idle_disengagement_hysteresis_rpm = 100.0
 variable_drag_ratio     = 0.12
 constant_brake_ratio    = 0.02
@@ -369,38 +378,41 @@ automatic_shift         = present (upshift/downshift RPM bands, kickdown, etc.)
 ### Differential (Salisbury clutch-pack LSD)
 
 ```text
-preload_nm                       = 40.0
-power_ramp_angle_deg             = 45.0
-coast_ramp_angle_deg             = 65.0
+preload_nm                       = 30.0
+power_ramp_angle_deg             = 58.0
+coast_ramp_angle_deg             = 68.0
 clutches                         = 6.0
 clutch_friction_coefficient      = 0.10
-slip_transition_threshold_rad_s  = 0.65
+slip_transition_threshold_rad_s  = 0.90
 ```
 
 ### Suspension
 
 ```text
-front: spring_length 0.250  resting_ratio 0.280  damping_ratio 0.75
-       bump_damp 0.95  rebound_damp 1.25  arb 0.18
-       toe -0.0012217  camber -0.0436332  bump_stop 2.2
-rear:  spring_length 0.180  resting_ratio 0.350  damping_ratio 0.75
-       bump_damp 0.95  rebound_damp 1.25  arb 0.08
-       toe 0.0017453  camber -0.0314159  bump_stop 3.2
+front: spring_length 0.250  resting_ratio 0.280  damping_ratio 0.74
+       bump_damp 0.92  rebound_damp 1.18  arb 0.10
+       toe -0.0017453  camber -0.0383972  bump_stop 2.1
+rear:  spring_length 0.200  resting_ratio 0.350  damping_ratio 0.76
+       bump_damp 0.96  rebound_damp 1.22  arb 0.09
+       toe 0.0020944  camber -0.0314159  bump_stop 3.0
 tri_ray_spacing_ratio = 0.40
 ```
 
-### Tires & contact
+### Tires & contact (per-axle)
 
 ```text
 front: radius 0.31695  width 0.30030  wheel_mass 12.0
+       contact_patch 0.35  braking_grip_multiplier 1.03  airborne_spin_decay_torque 1.0
 rear:  radius 0.32901  width 0.36832  wheel_mass 16.0
-contact_patch            = 0.21
-braking_grip_multiplier  = 1.05
-airborne_spin_decay_torque = 2.0
+       contact_patch 0.35  braking_grip_multiplier 1.03  airborne_spin_decay_torque 1.0
+NOTE: contact_patch / braking_grip_multiplier / airborne_spin_decay_torque are now per-axle
+      (front/rear) in f1_94_physics.json; top-level globals remain as fallbacks for missing
+      axles. airborne_spin_decay_torque was previously hard-coded (2.0) and ignored from JSON;
+      it is now wired from config (F1-94 JSON value 1.0 => slower airborne wheel decay).
 surfaces: Road / Curb / Dirt / Grass / Gravel
-  Road:   friction 2.65  stiffness 8.25  roll_res 1.0   lat_assist 0.03  long_ratio 0.62
-  Curb:   friction 2.10  stiffness 6.50  roll_res 1.5   lat_assist 0.015 long_ratio 0.58
-  Dirt:   friction 1.25  stiffness 0.45  roll_res 2.4   lat_assist 0.0   long_ratio 0.42
+  Road:   friction 2.60  stiffness 7.20  roll_res 1.0   lat_assist 0.04  long_ratio 0.64
+  Curb:   friction 2.10  stiffness 5.90  roll_res 1.5   lat_assist 0.015 long_ratio 0.56
+  Dirt:   friction 1.20  stiffness 0.45  roll_res 2.4   lat_assist 0.0   long_ratio 0.42
   Grass:  friction 0.75  stiffness 0.35  roll_res 4.2   lat_assist 0.0   long_ratio 0.35
   Gravel: friction 1.00  stiffness 0.45  roll_res 3.0   lat_assist 0.0   long_ratio 0.40
 ```
@@ -420,29 +432,35 @@ abs_spin_diff_threshold = 12.0
 ```text
 drag_coefficient        = 0.78
 frontal_area            = 1.25
-downforce_coefficient   = 1.95
-split: front 0.30 / diffuser 0.38 / rear 0.32
+downforce_coefficient   = 1.90
+split: front 0.24 / diffuser 0.36 / rear 0.40
 air_density             = 1.225
-lag_tau_s               = 0.022
-blend_min_speed_mps     = 4.167
-blend_full_speed_mps    = 27.778
-yaw_decay_exponent      = 1.15
+lag_tau_s               = 0.030
+blend_min_speed_mps     = 5.556
+blend_full_speed_mps    = 41.667
+yaw_decay_exponent      = 0.80
 flex_coefficient        = 0.0008
 ```
 
 ### Driving aids policy (JSON)
 
 ```text
-traction_control: available, default OFF, selectable
+traction_control: available, default ON, selectable  [tuned: slip_threshold 0.08, cut_gain 1.2]
 abs:                available, default OFF, selectable
-stability:          available OFF, default OFF, selectable OFF
+stability (ESP):    available, default ON in TCS+ESP presets, selectable
+                     [2026-08-18 IMPLEMENTED in Rust core: simulation.rs::stability_yaw_torque,
+                      over-rotation limiter only (damps yaw that exceeds commanded yaw + engage);
+                      params engage 0.15 / strength 6.0 / grounded_mult 2.0]
 steering_slip_assist_default_enabled = true
 countersteer_default_enabled         = true
 auto_clutch_default_enabled          = true (player not selectable)
 launch_control:     available OFF, default OFF, selectable OFF
 brake_assist:       available OFF, default OFF, selectable OFF
 handbrake:          rear_only OFF / abs_interlock OFF / clutch_coupling OFF
-input_smoothing:    ON (steering 4.60 / throttle 12.0 / brake 14.0)
+input_smoothing:    ON (steering 6.00 / throttle 7.50 / brake 14.0)
+# Presets: f1_94_physics.json = TCS+ESP (stability_default_enabled true);
+#          f1_94_physics_esp.json = TCS+ESP variant (identical simcade values).
+# GOOD state — detail polish: ESP strength/engage per surface, §7.1 telemetry sign-off.
 ```
 
 ### Wheel visual architecture (F1-94)
@@ -609,11 +627,15 @@ front_brake_bias = 0.57
 rear_locking_diff_torque = 170
 ```
 
-## Tire/contact behavior
+## Tire/contact behavior (per-axle)
 
 ```text
-contact_patch               = 0.21
-braking_grip_multiplier     = 1.08
+contact_patch / braking_grip_multiplier / airborne_spin_decay_torque are now per-axle:
+  front_contact_patch / rear_contact_patch
+  front_braking_grip  / rear_braking_grip
+  front_airborne_decay / rear_airborne_decay
+(VehicleConfig fields). Legacy globals contact_patch / braking_grip_multiplier kept for
+back-compat and used as fallbacks when an axle value is absent in JSON.
 ```
 
 ## Surface stiffness
@@ -2297,7 +2319,65 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
        (posZ 0→-24.9, posY estable ~0.32). Sin drift lateral.
        Nota: physics headless corre ~1 Hz (overhead de arranque/carga), por eso la validación usa
        `sim_bridge_quick_test.tscn` y se corre con `--quit-after 240`. El print de telemetría del
-       bridge ahora incluye `posX/posY/posZ` para monitorear deriva lateral.
+        bridge ahora incluye `posX/posY/posZ` para monitorear deriva lateral.
+
+    7. **Keymap decoupling + gears-stuck fix (2026-08-17)** — User reported "gears stuck
+       on 1st" and asked to verify the keymap is fully decoupled. Diagnosis: the keymap
+       itself was fine/decentralized (actions live only in `project.godot [input]`, read by
+       `F194RustInputController` by name, no runtime InputMap re-registration) — the real
+       bug was in the bridge glue. `F90SimBridge::drive_integrate` hardcoded
+       `clutch=0.0, gear_request=0, toggle_tc=false` into `fn_solve_external_`, so the
+       controller's `gear_request` (set via Shift Up/Down) was never forwarded; and
+       `c_abi.rs` mapped `gear_request==0 -> None` (no-change), so even a forwarded 0
+       couldn't select Neutral (`types.rs:539` contract: Some(0)=Neutral, Some(-1)=Reverse,
+       None=no-change).
+       Fixes applied:
+       - `native/src/sim/f90_sim_bridge.cpp` `drive_integrate`: now reads
+         `get_gear_request()`, `get_clutch_amount()`, `get_aids_enabled_mask()`; added
+         `last_aids_mask_` member (`f90_sim_bridge.hpp`) to edge-detect TC toggle; passes
+         `clutch` and `(int8_t)gr` to `fn_solve_external_` instead of the literals.
+       - `game/sim/src/c_abi.rs` (3 sites): `if gear_request < -1 { None } else { Some(...) }`
+         so -2=no-request, -1=Reverse, 0=Neutral, 1..6=gears.
+       - Keymap extraction (user chose full extraction, autoload = single source):
+         created `game/addons/formula90s/scripts/input_bindings.gd` autoload that registers
+         ALL actions in `_init()` via `InputMap.add_action`/`action_add_event` with canonical
+         name constants (THROTTLE, STEER_LEFT, SHIFT_UP, …). Registered in `project.godot
+         [autoload]` BEFORE `TelemetryManager`; **removed the entire `[input]` section** so
+         the autoload is the single authoritative source (no drift between two definitions).
+       - `f1_94_rust_input_controller.gd`: `@export` action strings now default to
+         `InputBindings.XXX` (kept `@export` for per-instance override); added
+         `action_reset_vehicle` and wired `Reset Vehicle` -> `vehicle.reset_vehicle(spawn_pos,
+         spawn_yaw)` (spawn pose captured at `_ready`).
+       - Added the previously-MISSING `Toggle Traction Control` binding (referenced by the
+         controller but never defined in `[input]`); the unreferenced `Reset Vehicle` action
+         is now actually wired.
+       Validation: `cargo build` + `scons` both green; headless straight-line launch
+       (`sim_bridge_quick_test.tscn`, `debug_throttle=1.0`) still holds `posX=0.0` (lateral
+       drift fix intact). Gears: headless upshift 1->6 confirmed via auto-shift script; a
+       deterministic Rust unit test (`simulation.rs::gear_request_sentinel_neutral_and_reverse`)
+       proves gear_request Some(2)->gear 2, Some(0)->Neutral, Some(-1)->Reverse, and
+       None->no-change (all PASS). NOTE: headless physics runs ~1 Hz so a full shift
+       (needs `shift_time` of consecutive ticks) can't complete in the headless window — the
+        Rust unit test is the authoritative gear validation.
+
+     8. **JSON = single source of truth for F1-94 (2026-08-17)** — Reconciled the four
+        flagged divergences to `game/data/vehicles/f1_94/f1_94_physics.json` (canonical
+        source), deprecating the hardcoded defaults that contradicted it. Values aligned:
+        `vehicle_mass=575`, `max_torque=455`, `max_rpm=15000`,
+        `automatic_transmission=false`. Edits: `game/physics/engine/src/vehicle_config.rs`
+        (`f1_94_canonical()` + `default_*` serde fns),
+        `native/include/formula90s/vehicle/f1_94_rust_vehicle.hpp` member defaults,
+        `engine_spec.gd`/`chassis_spec.gd`, `f1_94_engine.tres`/`f1_94_chassis.tres`,
+        `game/addons/gevp/scripts/vehicle.gd`. Also hardened the silent `create_default`
+        fallback (`f1_94_rust_vehicle.cpp`) to log a loud WARNING on JSON load failure, and
+        added a HARD rev limiter in `powertrain.rs` (RPM clamped at `max_rpm`, torque cut at
+        `max_rpm`, neutral free-rev also capped). Validated: all engine + sim unit tests pass
+        (incl. new `rev_limiter_caps_rpm_at_max`, `manual_transmission_does_not_auto_shift`,
+        `c_abi_roundtrip`); headless build loads JSON with NO fallback/parse warning.
+        DEPRECATION: the three conflicting docs (`game/docs/CANONICAL_F1_HANDLING_ACCEPTANCE.md`,
+        `game/addons/formula90s/PARAMETROS_F1_1996_GEVP.md`,
+        `docs/GEVP_RUST_PHYSICS_MIGRATION_BACKLOG.md`) were superseded by the JSON and
+        **DELETED on 2026-08-17** (docs-only reconciliation; runtime already read the JSON).
 
 ---
 

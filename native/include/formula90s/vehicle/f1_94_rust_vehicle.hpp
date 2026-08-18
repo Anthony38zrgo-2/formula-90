@@ -108,7 +108,7 @@ private:
 	double handbrake_amount_ = 0.0;
 	double clutch_amount_ = 0.0;
 	int gear_request_ = -2;
-	bool automatic_transmission_ = true;
+	bool automatic_transmission_ = false;
 
 	// Telemetry State
 	double speed_ms_ = 0.0;
@@ -228,7 +228,7 @@ public:
 
 	// Tuning panel properties (for handling_tuning_panel.gd compatibility)
 	double motor_drag_ = 0.006;
-	double max_torque_ = 340.0;
+	double max_torque_ = 455.0;
 	double brake_force_multiplier_ = 1.0;
 	double front_brake_bias_ = 0.58;
 	double stability_yaw_strength_ = 5.25;
@@ -241,8 +241,8 @@ public:
 	double frontal_area_ = 1.25;
 	double air_density_ = 1.225;
 	double idle_rpm_ = 4500.0;
-	double max_rpm_ = 17000.0;
-	double vehicle_mass_ = 505.0;
+	double max_rpm_ = 15000.0;
+	double vehicle_mass_ = 575.0;
 
 	// Differential (Salisbury Clutch-Pack LSD) — runtime tunable.
 	// Defaults mirror VehicleConfig::f1_94_canonical() (Fase 2 B calibration).

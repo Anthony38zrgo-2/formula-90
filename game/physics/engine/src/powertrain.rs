@@ -124,7 +124,7 @@ impl PowertrainState {
                         wheel_spin
                     };
                     self.rpm = (target_spin * ratio * RAD_S_TO_RPM)
-                        .clamp(config.idle_rpm, config.max_rpm * 1.01);
+                        .clamp(config.idle_rpm, config.max_rpm);
                 }
             }
             return;
@@ -205,7 +205,7 @@ impl PowertrainState {
         let mut torque_output = positive_torque - variable_drag - constant_brake;
 
         self.is_rev_limited = self.rpm >= config.max_rpm;
-        if self.rpm >= config.max_rpm * 1.01 {
+        if self.rpm >= config.max_rpm {
             torque_output = torque_output.min(0.0);
         }
         if self.shift_timer > 0.0 {
@@ -215,7 +215,7 @@ impl PowertrainState {
 
         // Free engine integration occurs before clutch reaction, as in GEVP.
         self.rpm += RAD_S_TO_RPM * dt * torque_output / config.motor_moment.max(1e-6);
-        self.rpm = self.rpm.max(config.idle_rpm);
+        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm);
 
         if self.current_gear == 0 {
             self.clutch_engagement = 0.0;
@@ -264,7 +264,7 @@ impl PowertrainState {
         self.clutch_torque = raw_clutch.clamp(-max_clutch_torque, max_clutch_torque);
 
         self.rpm -= RAD_S_TO_RPM * dt * self.clutch_torque / config.motor_moment.max(1e-6);
-        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm * 1.01);
+        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm);
 
         // This is the inertia passed to each driven wheel's torque integration,
         // equivalent in purpose to GEVP process_drive/process_torque.
