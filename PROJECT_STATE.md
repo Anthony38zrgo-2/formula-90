@@ -2842,7 +2842,7 @@ Branch:
 f1-94
 
 Commit:
-<refresh from Git — see git log for the current SHA>
+75a5427 (branch f1-94; see git log for the full lineage — naming/structure re-architecture Phases 0-4 + build fix are all committed and pushed)
 
 Current active phase:
 F1-94 `F90Core` orchestrator (single facade, ABI v2) is the primary driver; `f1_94_physics.json` is single source of truth. F0-F5 done; P0 ayudas/ESP-TCS done; P1 JSON-wiring (grip ratios, diff slip threshold, automatic_shift, input smoothing, aids-mask routing) DONE + build green; P2 Rust telemetry IMPLEMENTED. Project-wide naming/structure re-architecture applied (2026-08-19): GDScript in `game/scripts/`, Rust workspace in `game/crates/`, single `docs/` root (see `docs/engineering/naming-conventions.md`).
