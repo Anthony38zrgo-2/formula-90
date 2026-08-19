@@ -2839,22 +2839,22 @@ Last reviewed:
 2026-08-19
 
 Branch:
-refactor/gevp-clean-baseline
+f1-94
 
 Commit:
-<refresh from Git — working tree has UNCOMMITTED F90Core orchestrator + JSON-SOT wiring changes; do not infer SHA from this snapshot>
+<refresh from Git — see git log for the current SHA>
 
 Current active phase:
-F1-94 `F90Core` orchestrator (single facade, ABI v2) is the primary driver; `f1_94_physics.json` is single source of truth. F0-F5 done; P0 ayudas/ESP-TCS done; P1 JSON-wiring (grip ratios, diff slip threshold, automatic_shift, input smoothing, aids-mask routing) DONE + build green; P2 Rust telemetry IMPLEMENTED. Runtime validation pending in real env (headless blocked in sandbox).
+F1-94 `F90Core` orchestrator (single facade, ABI v2) is the primary driver; `f1_94_physics.json` is single source of truth. F0-F5 done; P0 ayudas/ESP-TCS done; P1 JSON-wiring (grip ratios, diff slip threshold, automatic_shift, input smoothing, aids-mask routing) DONE + build green; P2 Rust telemetry IMPLEMENTED. Project-wide naming/structure re-architecture applied (2026-08-19): GDScript in `game/scripts/`, Rust workspace in `game/crates/`, single `docs/` root (see `docs/engineering/naming-conventions.md`).
 
 Next required gate:
-In-engine runtime validation of `F90Core` driver + Rust telemetry (26-col CSV) + release DLL on a real Godot 4.7 build. Then decide pending JSON-coherence values (diff_preload 40 vs 170, contact_patch 0.35 vs 0.21, enable_abs vs mask bit) per §45.0 item 13 PENDIENTE.
+None pending — full `run_f1_94.ps1 -Smoke` + `-ValidateRuntimeOnly` + `-TestPhysics` green after the relocate phases. Runtime telemetry capture in a real Godot 4.7 build; then decide pending JSON-coherence values (diff_preload 40 vs 170, contact_patch 0.35 vs 0.21, enable_abs vs mask bit) per §45.0 item 13 PENDIENTE.
 
 Next physics phase:
 Detail polish only — ESP strength/engage per surface, §7.1 telemetry sign-off. No architectural rework pending (JSON fidelity already wired).
 
 Reviewed by:
-Agent (DSH) — documentation-only sync to working-tree F90Core re-architecture; no tuning changes.
+Agent (DSH) — F90Core/JSON-SOT sync + project-wide naming/structure relocation (Phase 0-4); no physics tuning changes.
 ```
 
 The exact commit SHA must be refreshed from Git before this file is treated as a
