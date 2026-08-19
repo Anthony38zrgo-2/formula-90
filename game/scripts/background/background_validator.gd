@@ -5,7 +5,7 @@ extends RefCounted
 ## Garantiza que los errores de configuracion sean legibles y explicitos,
 ## evitando fondos negros silenciosos o comportamientos indefinidos.
 ##
-## All validation rules are owned by the Rust core at `game/graphics/engine/skybox`
+## All validation rules are owned by the Rust core at `game/crates/skybox-engine`
 ## (`validation.rs`), whose deterministic contract this file mirrors only as a
 ## presentation layer. No background validation rules originate in GDScript.
 ## Use `cargo run --bin bg_validate` for offline validation.

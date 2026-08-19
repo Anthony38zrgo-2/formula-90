@@ -8,12 +8,12 @@ CONFIG="${1:-debug}"; [[ "$CONFIG" == release ]] && TARGET=template_release || T
 .tools/venv/bin/scons platform=linux target="$TARGET" arch=x86_64 api_version=4.7 build_profile=build_profile.json -j"$(nproc)"
 
 # Fachada-orquestador (formula90_core). Linux runtime rust es opcional en este repo
-# (el runtime de Godot está gateado a Windows); se compila por simetría si cargo existe.
+# (el runtime de Godot estÃ¡ gateado a Windows); se compila por simetrÃ­a si cargo existe.
 if command -v cargo >/dev/null 2>&1; then
   echo "Compilando formula90_core (fachada-orquestador) ..."
   if [[ "$CONFIG" == release ]]; then CARGO_ARGS=(--release); else CARGO_ARGS=(); fi
-  cargo build --manifest-path game/core/Cargo.toml "${CARGO_ARGS[@]}"
-  CORE_DIR="game/core/target/release"; [[ "$CONFIG" == release ]] || CORE_DIR="game/core/target/debug"
+  cargo build --manifest-path game/crates/formula90-core/Cargo.toml "${CARGO_ARGS[@]}"
+  CORE_DIR="game/crates/formula90-core/target/release"; [[ "$CONFIG" == release ]] || CORE_DIR="game/crates/formula90-core/target/debug"
   CORE_DEST="formula90_core.linux.$TARGET.x86_64.so"
   cp -f "$CORE_DIR/libformula90_core.so" "game/addons/formula90s/bin/$CORE_DEST"
   echo "formula90_core copiada a game/addons/formula90s/bin/$CORE_DEST"

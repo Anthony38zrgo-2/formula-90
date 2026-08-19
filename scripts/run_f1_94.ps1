@@ -96,8 +96,8 @@ if ($Smoke) {
     exit 0
 }
 if ($TestPhysics) {
-    Write-Host 'Ejecutando suite determinista Rust + test de integración Godot (12 raycasts)...' -ForegroundColor Cyan
-    & cargo test --manifest-path (Join-Path $root 'game\physics\engine\Cargo.toml')
+    Write-Host 'Ejecutando suite determinista Rust + test de integraciÃ³n Godot (12 raycasts)...' -ForegroundColor Cyan
+    & cargo test --manifest-path (Join-Path $root 'game\crates\vehicle-physics-engine\Cargo.toml')
     if ($LASTEXITCODE -ne 0) { throw "Rust vehicle physics unit tests fallaron ($LASTEXITCODE)." }
     & $godot --headless --path $game --script 'res://tests/test_f1_94_rust_physics.gd'
     exit $LASTEXITCODE

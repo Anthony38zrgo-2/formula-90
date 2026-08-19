@@ -1,6 +1,6 @@
 //! C ABI boundary for the vehicle audio engine.
 //!
-//! Mirrors the physics crate FFI (`game/physics/engine/src/ffi.rs`): a versioned
+//! Mirrors the physics crate FFI (`game/crates/vehicle-physics-engine/src/ffi.rs`): a versioned
 //! symbol so the C++ GDExtension can reject ABI mismatches, plus thin owned-pointer
 //! wrappers around `VehicleAudioEngine`. All pointers crossing the boundary are
 //! plain `void*`/C arrays; safety is documented per function.

@@ -11,7 +11,7 @@ extends Node3D
 ## [param distance] delante de la cámara y se alinea a su orientación.
 ## El pixel_size se calcula desde el FOV para llenar el frustum completo.
 ##
-## pixel_size calculation mirrors `game/graphics/engine/skybox/src/skybox.rs`.
+## pixel_size calculation mirrors `game/crates/skybox-engine/src/skybox.rs`.
 ## Same inputs must produce same outputs. Rust is the authority.
 
 const COVERAGE_FACTOR := 1.05  # mirrors Rust skybox.rs COVERAGE_FACTOR

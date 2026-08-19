@@ -492,7 +492,7 @@ mod tests {
         assert!(!w.is_null());
         let path = CString::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../data/vehicles/f1_94/f1_94_physics.json"
+            "/../../data/vehicles/f1_94/f1_94_physics.json"
         ))
         .unwrap();
         let id = sim_world_spawn_from_json(w, path.as_ptr());

@@ -14,11 +14,13 @@ use vehicle_audio_engine::state::{
 use vehicle_audio_engine::VehicleAudioState;
 
 fn bank_path() -> std::path::PathBuf {
-    // Cargo sets CARGO_MANIFEST_DIR to game/audio/engine.
+    // Cargo sets CARGO_MANIFEST_DIR to game/crates/vehicle-audio-engine.
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
     manifest_dir
         .parent()
         .unwrap()
+        .parent()
+        .unwrap() // game/crates/
         .parent()
         .unwrap() // game/
         .join("sounds/banks/v10_vehicle")

@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = [
+    "vehicle-physics-engine",
+    "vehicle-audio-engine",
+    "game-sim",
+    "formula90-core",
+    "skybox-engine",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"

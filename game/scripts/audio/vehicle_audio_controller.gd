@@ -3,7 +3,7 @@
 ## This controller is deliberately thin: it reads GEVP telemetry (motor_rpm,
 ## throttle_amount, current_gear, speed, wheel slip) and drives AudioStreamWAV
 ## players per role. All mixing rules (5-band weights, surface beds, one-shot
-## triggers) are owned by the Rust core at `game/audio/engine/`
+## triggers) are owned by the Rust core at `game/crates/vehicle-audio-engine/`
 ## (`VehicleAudioState` / `VehicleSoundBank`), whose deterministic contract this
 ## file mirrors only as a presentation layer. No audio rules live in GDScript.
 ##

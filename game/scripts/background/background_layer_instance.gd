@@ -6,7 +6,7 @@ extends Sprite3D
 ## Aplica filtrado Nearest, configuracion unshaded, orden de profundidad y snapping a pixel.
 ## Cuando repeat_x es true, crea copias de tile a los lados para cobertura continua.
 ##
-## Parallax math mirrors `game/graphics/engine/skybox/src/parallax.rs`.
+## Parallax math mirrors `game/crates/skybox-engine/src/parallax.rs`.
 ## Same inputs must produce same outputs. Rust is the authority.
 
 var layer_config: BackgroundLayerConfig

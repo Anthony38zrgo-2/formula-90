@@ -6,7 +6,8 @@ use formula90_core::{CoreConfig, CoreFacade};
 const DT: f64 = 1.0 / 120.0;
 
 fn bank_dir() -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../sounds/banks/v10_vehicle")
+    // Crates live at game/crates/<crate>; the bank is at game/sounds/banks/v10_vehicle.
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10_vehicle")
 }
 
 fn run_steps(facade: &mut CoreFacade, id: u32, throttle: f64, steps: usize) {
