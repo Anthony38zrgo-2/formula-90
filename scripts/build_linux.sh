@@ -13,7 +13,7 @@ if command -v cargo >/dev/null 2>&1; then
   echo "Compilando formula90_core (fachada-orquestador) ..."
   if [[ "$CONFIG" == release ]]; then CARGO_ARGS=(--release); else CARGO_ARGS=(); fi
   cargo build --manifest-path game/crates/formula90-core/Cargo.toml "${CARGO_ARGS[@]}"
-  CORE_DIR="game/crates/formula90-core/target/release"; [[ "$CONFIG" == release ]] || CORE_DIR="game/crates/formula90-core/target/debug"
+  CORE_DIR="game/crates/target/release"; [[ "$CONFIG" == release ]] || CORE_DIR="game/crates/target/debug"
   CORE_DEST="formula90_core.linux.$TARGET.x86_64.so"
   cp -f "$CORE_DIR/libformula90_core.so" "game/addons/formula90s/bin/$CORE_DEST"
   echo "formula90_core copiada a game/addons/formula90s/bin/$CORE_DEST"

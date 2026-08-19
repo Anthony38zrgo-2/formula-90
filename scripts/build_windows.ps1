@@ -18,7 +18,7 @@ $cargoArgs = @('build', '--manifest-path', 'game/crates/vehicle-physics-engine/C
 if ($Configuration -eq 'release') { $cargoArgs += '--release' }
 $cargoOut = & cargo @cargoArgs 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_physics_engine fallÃ³ ($LASTEXITCODE).`n$cargoOut" }
-$rustDllDir = if ($Configuration -eq 'release') { 'game/crates/vehicle-physics-engine/target/release' } else { 'game/crates/vehicle-physics-engine/target/debug' }
+$rustDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $destDllName = "vehicle_physics_engine.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $rustDllDir 'vehicle_physics_engine.dll') (Join-Path 'game/addons/formula90s/bin' $destDllName) -Force
 Write-Host "Vehicle physics DLL copiada a game/addons/formula90s/bin/$destDllName" -ForegroundColor Green
@@ -28,7 +28,7 @@ $simArgs = @('build', '--manifest-path', 'game/crates/game-sim/Cargo.toml')
 if ($Configuration -eq 'release') { $simArgs += '--release' }
 $simOut = & cargo @simArgs 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Build de game_sim fallo ($LASTEXITCODE).`n$simOut" }
-$simDllDir = if ($Configuration -eq 'release') { 'game/crates/game-sim/target/release' } else { 'game/crates/game-sim/target/debug' }
+$simDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $simDest = "game_sim.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $simDllDir 'game_sim.dll') (Join-Path 'game/addons/formula90s/bin' $simDest) -Force
 Copy-Item (Join-Path $simDllDir 'game_sim.dll') (Join-Path 'game/addons/formula90s/bin' 'game_sim.dll') -Force
@@ -39,7 +39,7 @@ $audioArgs = @('build', '--lib', '--manifest-path', 'game/crates/vehicle-audio-e
 if ($Configuration -eq 'release') { $audioArgs += '--release' }
 $audioOut = & cargo @audioArgs 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_audio_engine fallo ($LASTEXITCODE).`n$audioOut" }
-$audioDllDir = if ($Configuration -eq 'release') { 'game/crates/vehicle-audio-engine/target/release' } else { 'game/crates/vehicle-audio-engine/target/debug' }
+$audioDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $audioDest = "vehicle_audio_engine.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/addons/formula90s/bin' $audioDest) -Force
 Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/addons/formula90s/bin' 'vehicle_audio_engine.dll') -Force
@@ -50,7 +50,7 @@ $coreArgs = @('build', '--manifest-path', 'game/crates/formula90-core/Cargo.toml
 if ($Configuration -eq 'release') { $coreArgs += '--release' }
 $coreOut = & cargo @coreArgs 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Build de formula90_core fallo ($LASTEXITCODE).`n$coreOut" }
-$coreDllDir = if ($Configuration -eq 'release') { 'game/crates/formula90-core/target/release' } else { 'game/crates/formula90-core/target/debug' }
+$coreDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $coreDest = "formula90_core.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' $coreDest) -Force
 Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' 'formula90_core.dll') -Force
