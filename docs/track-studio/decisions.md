@@ -33,7 +33,7 @@
 ## Contradictory documentation to reconcile later
 
 - `docs/roadmap.md` describes SVG as the editable source of truth.
-- `docs/ai/opencode_track_authoring_system_handoff.txt` also describes SVG as
+- `docs/ai/opencode-track-authoring-handoff.txt` also describes SVG as
   canonical authority.
 - `instrucciones.txt` changes the target authority to SQLite `.f90track`.
 - `.agents/MIGRATION.md` discusses retiring instruction handoffs, but does not

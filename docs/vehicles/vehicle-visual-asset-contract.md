@@ -1,6 +1,6 @@
 # Formula-90 vehicle import standard
 
-The authoritative import contract is `docs/vehicles/VEHICLE_IMPORT_STANDARD.md`.
+The authoritative import contract is `docs/vehicles/vehicle-import-standard.md`.
 The standard runtime package uses three GLBs: one chassis, one reusable front
 wheel and one reusable rear wheel.
 

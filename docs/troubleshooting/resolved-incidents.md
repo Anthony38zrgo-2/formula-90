@@ -67,7 +67,7 @@ hashes y apertura headless PASS; captura visual PASS.
 
 ### Full retrospective
 
-`docs/troubleshooting/retrospective-jordan-197-orientation-2026-08-13.md`
+`docs/troubleshooting/jordan-197-orientation-retrospective.md`
 
 ---
 

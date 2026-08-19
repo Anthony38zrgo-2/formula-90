@@ -23,4 +23,4 @@ This document is **mandatory reading** for any agent (e.g., DeepSeek/Flash) befo
 
 ## 5. Beware of Damping and Multipliers (Physics Engine)
 - The `damping_ratio` in GEVP is the $\zeta$ coefficient. A value of 1.0 is critical damping. NEVER set it to disproportionate values (e.g., 5.0) assuming you are compensating for mass. The physics engine already calculates the force by multiplying $\zeta$ by the spring stiffness.
-- **Before touching physics**, read `docs/game-design/ai_physics_manual.md`.
+- **Before touching physics**, read `docs/game-design/ai-physics-manual.md`.

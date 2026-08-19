@@ -244,13 +244,13 @@ Todo este tier está 0 refs fuera de `f1_94.tscn`. Rust lee `f1_94_physics.json`
 
 | Path | Estado | Acción |
 |------|--------|--------|
-| `docs/architecture.md` (histórico, 2025) | **Stale** — pre-fachada, describe `ArcadeCarController`/`player_car.tscn` que ya no existe. | Mantener como `docs/architecture/legacy_2025.md` o borrar; **canónico es `docs/ARCHITECTURE.md`**. |
+| `docs/architecture/runtime-map.md` (histórico, 2025) | **Stale** — pre-fachada, describe `ArcadeCarController`/`player_car.tscn` que ya no existe. | Mantener como `docs/architecture/legacy_2025.md` o borrar; **canónico es `docs/ARCHITECTURE.md`**. |
 | `docs/architecture/overview.md`, `vehicle-system.md`, `data-driven-design.md`, `telemetry.md` | Parcialmente stale | Revisar vs `ARCHITECTURE.md` §3/§4. |
-| `docs/physics-model.md`, `docs/v10-vehicle.md`, `docs/PLAN_ARQUITECTURA_GEVP_CPP.md` | Pre-fachada GEVP | Archivar. |
+| `docs/physics-model.md`, `docs/v10-vehicle.md`, `docs/architecture/gevp-cpp-plan.md` | Pre-fachada GEVP | Archivar. |
 | `docs/audio-pipeline.md`, `docs/cpp-dsp-architecture.md` | Legacy audio GDScript | Reemplazado por `F90Core` — archivar. |
 | `docs/track-studio/*.md` (15 ficheros `TS-*.md`, `MIGRATION_PLAN.md`, `CONTRACTS_V0.md`) | Tooling docs | Válidos para `tools/track_studio` pero no para `run_f1_94` — mover a `tools/track_studio/docs/`. |
-| `docs/decisions/0001-gdextension-architecture.md`, `0002-3d-vehicle-visuals.md` | Válidos | Conservar. |
-| `docs/engineering/godot_traps.md`, `failure_patterns.md`, `known_issues.md` | Válidos | Conservar. |
+| `docs/adr/0001-gdextension-architecture.md`, `0002-3d-vehicle-visuals.md` | Válidos | Conservar. |
+| `docs/engineering/godot-traps.md`, `failure_patterns.md`, `known_issues.md` | Válidos | Conservar. |
 
 ---
 
@@ -266,7 +266,7 @@ Todo este tier está 0 refs fuera de `f1_94.tscn`. Rust lee `f1_94_physics.json`
 | `game/data/vehicles/f1_94/f1_94_spec.tres` tier GEVP | `f1_94_physics.json` Rust | Borrar todo tier `*.tres` GEVP si no usas `f1_94.tscn`. |
 | `game/scenes/tracks/test_field/la_chutana_generated.tscn` | `la_chutana_track.tscn` legacy | Borrar legacy. |
 | `game/scenes/visuals/la_chutana_source_skybox.tscn` | Embedido en `la_chutana_generated` | Desembeber y borrar standalone. |
-| `docs/ARCHITECTURE.md` (canónico) | `docs/architecture.md` + `PROJECT_STATE.md` (históricos) | Archivar legacy. |
+| `docs/ARCHITECTURE.md` (canónico) | `docs/architecture/runtime-map.md` + `PROJECT_STATE.md` (históricos) | Archivar legacy. |
 
 ---
 

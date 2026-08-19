@@ -1,0 +1,264 @@
+[
+  {
+    "path": "game/data/engines/v10.tres",
+    "category": "dead-legacy",
+    "reason": "EngineConfig genérico GEVP (Curve v10 sub_resource). No referenciado por ningún .tscn/.gd canónico. Pipeline Rust usa data/vehicles/f1_94/f1_94_physics.json (F90Core). Huérfano total.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_spec.tres",
+    "category": "dead-legacy",
+    "reason": "VehicleSpec agregador GEVP (referencia chassis/engine/gearbox/suspension/tires/aero/steering). Solo consumido por game/scenes/vehicles/f1_94/f1_94.tscn vía VehicleAssembler. Pipeline canónico usa f1_94_rust.tscn + f1_94_physics.json, nunca carga este .tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_chassis.tres",
+    "category": "dead-legacy",
+    "reason": "Sub-spec de f1_94_spec.tres (ChassisSpec). Solo alcanzable vía f1_94_spec.tres legacy. No hay ruta desde f1_94.tres / f1_94_rust.tscn / Rust JSON.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_engine.tres",
+    "category": "dead-legacy",
+    "reason": "EngineSpec GEVP (envuelve f1_94_torque_curve.tres). Parte del grafo f1_94_spec.tres legacy. Rust lee engine desde f1_94_physics.json.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_torque_curve.tres",
+    "category": "dead-legacy",
+    "reason": "Curve recurso solo referenciado por f1_94_engine.tres. Cadena muerta GEVP.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_gearbox.tres",
+    "category": "dead-legacy",
+    "reason": "GearboxSpec GEVP. Solo vía f1_94_spec.tres -> legacy f1_94.tscn.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_suspension.tres",
+    "category": "dead-legacy",
+    "reason": "SuspensionSpec GEVP (spring/damping/ARB/camber). Reemplazado por sección suspension en f1_94_physics.json (12 raycasts deterministas).",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_tires.tres",
+    "category": "dead-legacy",
+    "reason": "TiresSpec GEVP (radius/width/friction/rolling_resistance). Reemplazado por sección tires en f1_94_physics.json.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_aero.tres",
+    "category": "dead-legacy",
+    "reason": "AeroSpec GEVP. Solo vía f1_94_spec.tres legacy.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_steering_brakes.tres",
+    "category": "dead-legacy",
+    "reason": "SteeringBrakesSpec GEVP. Reemplazado por steering/brakes en f1_94_physics.json.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/vehicles/f1_94/f1_94_physics_esp.json",
+    "category": "duplicado",
+    "reason": "Copia byte-idéntica (+1 char) de f1_94_physics.json (7539 vs 7540 bytes). Sin referencias en .gd/.rs/.ps1. F90Core y Rust cargan solo f1_94_physics.json.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/race_sessions/default.tres",
+    "category": "duplicado",
+    "reason": "RaceSessionConfig fallback que apunta a f1_94.tres + la_chutana.tres. world_hud_compositor.tscn lo trae como ext_resource id 2_config pero vehicle_test_session.tscn lo sobrescribe con f1_94_la_chutana.tres. Duplicado funcional de f1_94_la_chutana.tres.",
+    "can_delete": false,
+    "note": "Borrable solo si se edita world_hud_compositor.tscn para preload f1_94_la_chutana.tres directamente; hoy es el default del compositor aislado."
+  },
+  {
+    "path": "game/scenes/vehicles/f1_94/f1_94.tscn",
+    "category": "dead-legacy",
+    "reason": "Vehículo GEVP legacy (RigidBody3D + Vehicle.gd + 4× RayCast wheel.gd + VehicleAssembler con f1_94_spec.tres). Pipeline canónico exige f1_94_rust.tscn (F194RustVehicle + 12 RayCasts + F90Core). Solo referenciado por tests no-canónicos: smoke_test_f1_94_audio.gd y f1_94_handling_test.tscn.",
+    "can_delete": false,
+    "note": "Seguro borrar si se migra smoke_test_f1_94_audio.gd a f1_94_rust.tscn (ya existe f1_94_rust_vehicle.gd). Bloqueado por esos 2 consumidores test-only."
+  },
+  {
+    "path": "game/scenes/tracks/test_field/la_chutana_track.tscn",
+    "category": "dead-legacy",
+    "reason": "Track procedural legacy (ProceduralSky + Environment + la_chutana_track.gd). Superseded por la_chutana_generated.tscn (GLB + vegetación + PanoramaSky). Sin referencias en runtime/tests canónicos.",
+    "can_delete": true
+  },
+  {
+    "path": "game/scenes/visuals/la_chutana_source_skybox.tscn",
+    "category": "duplicado",
+    "reason": "Rig legacy de 8× Sprite3D montaña + waterfalls. Embedido en la_chutana_generated.tscn (SourceSkyboxRig) pero RaceSession._hide_legacy_background() lo oculta y pone Environment.BG_CANVAS cuando encuentra assets/backgrounds/la_chutana_snes_day/mountains_3d/manifest.json. Es fallback legacy, no nodo canónico directo.",
+    "can_delete": false,
+    "note": "Borrable si se elimina el nodo SourceSkyboxRig de la_chutana_generated.tscn y se asume Mountains3D siempre disponible."
+  },
+  {
+    "path": "game/scenes/tests/vehicle_track_combinations/f1_94_handling_test.tscn",
+    "category": "test-only",
+    "reason": "Combinación manual Track+Vehicle para tuning: instancia la_chutana_generated + f1_94.tscn (legacy) + ArcadeChaseCamera + DrivingAids. No instanciado por vehicle_test_session / world_hud_compositor / race_session.",
+    "can_delete": true
+  },
+  {
+    "path": "game/scenes/runtime/sim_bridge_quick_test.tscn",
+    "category": "test-only",
+    "reason": "Fixture mínimo piso 2000×2000 + f1_94_rust + F90Core debug_throttle. Solo para smoke manual; run_f1_94.ps1 usa vehicle_test_session.tscn.",
+    "can_delete": true
+  },
+  {
+    "path": "game/scenes/bootstrap/bootstrap.tscn",
+    "category": "dead-legacy",
+    "reason": "Bootstrap scene vacía (GameBootstrap) marcada como run/main_scene en project.godot. run_f1_94.ps1 lanza --path $game $scene directamente (vehicle_test_session.tscn) sin pasar por bootstrap. No rota en pipeline headless.",
+    "can_delete": false,
+    "note": "Mantener si se lanza el juego desde editor (F5). Para pipeline headless es muerto; borrar exige cambiar project.godot main_scene a vehicle_test_session.tscn."
+  },
+  {
+    "path": "game/features/retro_hud/scenes/retro_hud_demo.tscn",
+    "category": "demo",
+    "reason": "Demo standalone de RetroHudDisplay con MockProvider (ColorRect backdrop). No referenciado por debug_hud.tscn / world_hud_compositor. Solo para preview visual.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/arcade_car.tscn",
+    "category": "demo",
+    "reason": "Ejemplo del addon GEVP (GEVP arcade_car). Addon no usado por pipeline Rust; ningún .tscn canónico lo instancia.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/drift_car.tscn",
+    "category": "demo",
+    "reason": "Ejemplo GEVP drift_car. Demo only.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/monster_truck.tscn",
+    "category": "demo",
+    "reason": "Ejemplo GEVP monster_truck. Demo only.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/simcade_car.tscn",
+    "category": "demo",
+    "reason": "Ejemplo GEVP simcade_car. Demo only.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/demo_arcade.tscn",
+    "category": "demo",
+    "reason": "Demo escena GEVP arcade. No en pipeline.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/demo_drift.tscn",
+    "category": "demo",
+    "reason": "Demo escena GEVP drift.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/demo_monster_truck.tscn",
+    "category": "demo",
+    "reason": "Demo escena GEVP monster_truck.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/demo_simcade.tscn",
+    "category": "demo",
+    "reason": "Demo escena GEVP simcade.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/track.tscn",
+    "category": "demo",
+    "reason": "Track demo plano GEVP. Reemplazado por la_chutana_generated.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/vehicle_controller.tscn",
+    "category": "demo",
+    "reason": "Controller template GEVP base. No usado; Rust usa f1_94_rust_vehicle.gd + F194RustVehicle GDExtension.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/engine_sound.tscn",
+    "category": "demo",
+    "reason": "Demo audio GEVP. Pipeline usa vehicle_audio_controller.gd nativo + bank v10_vehicle.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/gevp/scenes/smoke_effect.tscn",
+    "category": "demo",
+    "reason": "Partículas humo demo GEVP. No integrado en f1_94_rust.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scenes/formula_vehicle_controller.tscn",
+    "category": "dead-legacy",
+    "reason": "Template wrapper FormulaVehicleController legacy. Sin referencias en runtime canónico.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/vehicle_assembler.gd",
+    "category": "dead-legacy",
+    "reason": ".gd companion solo usado por f1_94.tscn (aplica VehicleSpec a Vehicle). Sin consumers en pipeline Rust.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/vehicle_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Definición VehicleSpec agregador GEVP. Huérfano si se borra f1_94_spec.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/chassis_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_chassis.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/engine_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_engine.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/gearbox_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_gearbox.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/suspension_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_suspension.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/tires_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_tires.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/aero_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_aero.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/addons/formula90s/scripts/specs/steering_brakes_spec.gd",
+    "category": "dead-legacy",
+    "reason": "Spec GEVP, solo vía f1_94_steering_brakes.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/data/engines/engine_config.gd",
+    "category": "dead-legacy",
+    "reason": "Clase EngineConfig para v10.tres. Huérfana con v10.tres.",
+    "can_delete": true
+  },
+  {
+    "path": "game/scenes/tracks/test_field/la_chutana_track.gd",
+    "category": "dead-legacy",
+    "reason": "Script companion de la_chutana_track.tscn legacy.",
+    "can_delete": true
+  }
+]

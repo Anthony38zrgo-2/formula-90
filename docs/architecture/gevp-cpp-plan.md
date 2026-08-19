@@ -65,7 +65,7 @@ F1_2026_Vehicle (RigidBody3D - script GEVP vehicle.gd)
 
 ## 5. Pasos de Ejecución
 
-1. **Actualizar documentación de arquitectura**: Reflejar el diseño híbrido en `docs/architecture.md`.
+1. **Actualizar documentación de arquitectura**: Reflejar el diseño híbrido en `docs/architecture/runtime-map.md`.
 2. **Reconfigurar escena del vehículo**: Adaptar `f1_2026_car.tscn` para integrar las ruedas raycast de GEVP con los sub-nodos C++ (`VehicleVisualRoot`, `CameraRig`, `AudioRoot`).
 3. **Mapeo de Entradas GEVP**: Mapear el `InputMap` de Godot para alimentar los nombres de acciones requeridos por GEVP sin romper la cámara o el audio C++.
 4. **Verificación de Compilación y Prueba**: Asegurar que SCons compila la extensión C++ limpia sin dependencias de `DirectionalVehicleSprite`.

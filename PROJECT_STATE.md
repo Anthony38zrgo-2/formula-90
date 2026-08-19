@@ -2,11 +2,11 @@
 
 > Canonical current-state handoff for humans and AI agents.
 >
-> This file is intentionally different from `game/docs/PROJECT_DIRECTION.md` and
-> `game/docs/COMMON_ERRORS_AND_FIXES.md`.
+> This file is intentionally different from `docs/architecture/project-direction.md` and
+> `docs/engineering/common-errors-and-fixes.md`.
 >
-> - `PROJECT_DIRECTION.md` defines where the project is going.
-> - `COMMON_ERRORS_AND_FIXES.md` records reusable failure patterns and fixes.
+> - `docs/architecture/project-direction.md` defines where the project is going.
+> - `docs/engineering/common-errors-and-fixes.md` records reusable failure patterns and fixes.
 > - `PROJECT_STATE.md` defines where the project is **right now**.
 >
 > Any agent that is about to modify vehicle physics, telemetry, track generation,
@@ -176,8 +176,8 @@ See §5.0 for the full F1-94 physical-state snapshot and §45 for next work.
 Before modifying the project:
 
 1. `PROJECT_STATE.md`
-2. `game/docs/PROJECT_DIRECTION.md`
-3. `game/docs/COMMON_ERRORS_AND_FIXES.md`
+2. `docs/architecture/project-direction.md`
+3. `docs/engineering/common-errors-and-fixes.md`
 4. Relevant local `AGENTS.md`
 5. Relevant subsystem source files
 6. Recent commits touching the same subsystem
@@ -2117,7 +2117,7 @@ Status: `[FORBIDDEN REGRESSIONS]`
 If one of these symptoms appears, consult:
 
 ```text
-game/docs/COMMON_ERRORS_AND_FIXES.md
+docs/engineering/common-errors-and-fixes.md
 ```
 
 before inventing a new fix.
@@ -2134,14 +2134,14 @@ When information becomes reusable general knowledge:
 
 ```text
 move it to:
-game/docs/COMMON_ERRORS_AND_FIXES.md
+docs/engineering/common-errors-and-fixes.md
 ```
 
 When information becomes durable product/design direction:
 
 ```text
 move it to:
-game/docs/PROJECT_DIRECTION.md
+docs/architecture/project-direction.md
 ```
 
 When information becomes obsolete:
@@ -2207,8 +2207,8 @@ At the beginning of a new agent/chat session, the recommended bootstrap instruct
 Read PROJECT_STATE.md first.
 
 Then read:
-- game/docs/PROJECT_DIRECTION.md
-- game/docs/COMMON_ERRORS_AND_FIXES.md
+- docs/architecture/project-direction.md
+- docs/engineering/common-errors-and-fixes.md
 - relevant AGENTS.md files
 
 Treat PROJECT_STATE.md as the current handoff snapshot.
@@ -2619,7 +2619,7 @@ After Phase C closes:
 1. replace candidate values with final validated values;
 2. mark Phase C `[VALIDATED]`;
 3. freeze those values for Phase D;
-4. record any reusable debugging lesson in `COMMON_ERRORS_AND_FIXES.md`.
+4. record any reusable debugging lesson in `docs/engineering/common-errors-and-fixes.md`.
 
 ---
 
@@ -2669,8 +2669,8 @@ The following principles should survive all future phases:
 11. Generated runtime publication is atomic.
 
 12. Current project state belongs in PROJECT_STATE.md,
-    durable direction belongs in PROJECT_DIRECTION.md,
-    reusable troubleshooting belongs in COMMON_ERRORS_AND_FIXES.md.
+    durable direction belongs in docs/architecture/project-direction.md,
+    reusable troubleshooting belongs in docs/engineering/common-errors-and-fixes.md.
 
 13. Candidate values must never be silently promoted to validated values.
 

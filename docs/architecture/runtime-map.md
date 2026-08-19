@@ -2,7 +2,7 @@
 
 > **Scope:** Estado real a fecha de `run_f1_94.ps1`. Cubre **todo** lo que se ejecuta cuando lanzas ese script: pipeline de arranque, escena de bootstrap, composición de pista+vehículo, nodos Godot, clases C++ (GDExtension), scripts GDScript y assets GBL/GLB.  
 > **Entrada única:** `.\scripts\run_f1_94.ps1` → `game/scenes/runtime/vehicle_test_session.tscn`  
-> **Complementos:** `docs/architecture.md` (histórico), `docs/architecture/overview.md`, `PROJECT_STATE.md` — este archivo es el mapa **canónico** del runtime vivo.
+> **Complementos:** `docs/architecture/runtime-map.md` (histórico), `docs/architecture/overview.md`, `PROJECT_STATE.md` — este archivo es el mapa **canónico** del runtime vivo.
 
 ---
 
@@ -914,7 +914,7 @@ sequenceDiagram
 - **Fachada vs 3 DLLs:** Consolidada en `formula90_core.dll` (ABI v2). `F90SimBridge` + `VehicleAudioControllerNative` siguen registrados pero ya no son el path canónico.
 - **Montañas 3D:** `BackgroundMountains3D` es el path preferido; `BackgroundController` queda como fallback legacy.
 - **Assets desacoplados:** Gate SHA256 en PS1 garantiza que el runtime nunca corre con GLB corruptos.
-- **Roadmap activo:** `docs/roadmap.md` + `docs/track-studio/*` + `docs/MANIFIESTO_ARQUITECTURA.md`. No duplicado aquí — se referencian.
+- **Roadmap activo:** `docs/roadmap.md` + `docs/track-studio/*` + `docs/architecture/manifesto.md`. No duplicado aquí — se referencian.
 
 ---
 

@@ -945,7 +945,7 @@ A new `*_LOD0_Historical.glb` appears as a single 70-object scene (931 component
 
 The complete `J197-VIS-001` root-cause analysis, rejected hypotheses, validation
 environment failures and permanent agent guardrails are documented in
-`docs/troubleshooting/retrospective-jordan-197-orientation-2026-08-13.md`.
+`docs/troubleshooting/jordan-197-orientation-retrospective.md`.
 
 ---
 

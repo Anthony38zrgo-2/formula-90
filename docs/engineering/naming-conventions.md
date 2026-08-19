@@ -105,7 +105,7 @@ Renaming is only valid when every reference moves with the file:
 ## 5. Anti-patterns (forbidden)
 
 - `instrucciones.txt`-style mixed-language roots at repo top level.
-- Accented filenames (`scan_pipeline_canónico_no_usados.json`).
+- Accented filenames (`docs/engineering/scan-pipeline-unused-inventory.json`).
 - Duplicate doc trees (`docs/` + `game/docs/`).
 - SCREAMING_SNAKE for docs that are not repo meta.
 - Crate dirs at inconsistent depth (`game/graphics/engine/skybox/...`).
