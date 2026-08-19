@@ -1,6 +1,6 @@
 [gd_resource type="Resource" load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://addons/formula90s/scripts/race_session_config.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/runtime/race_session_config.gd" id="1"]
 [ext_resource type="Resource" path="res://data/vehicles/f1_94.tres" id="2"]
 [ext_resource type="Resource" path="res://data/tracks/la_chutana.tres" id="3"]
 

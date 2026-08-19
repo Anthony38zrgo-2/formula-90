@@ -1,12 +1,12 @@
 [gd_scene load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_rust_vehicle.gd" id="1_rust_vehicle"]
+[ext_resource type="Script" path="res://scripts/vehicle/f1_94_rust_vehicle.gd" id="1_rust_vehicle"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_chassis_geometry.glb" id="2_chassis"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_front_geometry.glb" id="3_front"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_rear_geometry.glb" id="4_rear"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_external_albedo_binder.gd" id="5_binder"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/audio/vehicle_audio_controller.gd" id="6_audio"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_rust_input_controller.gd" id="7_controller"]
+[ext_resource type="Script" path="res://scripts/vehicle/f1_94_external_albedo_binder.gd" id="5_binder"]
+[ext_resource type="Script" path="res://scripts/audio/vehicle_audio_controller.gd" id="6_audio"]
+[ext_resource type="Script" path="res://scripts/input/f1_94_rust_input_controller.gd" id="7_controller"]
 
 [sub_resource type="BoxShape3D" id="Box_tub"]
 size = Vector3(1.35, 0.4, 2.8)

@@ -1,6 +1,6 @@
 extends GdUnitTestSuite
 
-const SURFACE_GROUPS_SCRIPT := preload("res://addons/formula90s/scripts/generated_track_surface_groups.gd")
+const SURFACE_GROUPS_SCRIPT := preload("res://scripts/track/generated_track_surface_groups.gd")
 
 
 func test_tags_generated_collision_bodies_recursively() -> void:

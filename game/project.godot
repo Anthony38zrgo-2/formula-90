@@ -16,9 +16,9 @@ config/features=PackedStringArray("4.7")
 
 [autoload]
 
-InputBindings="*res://addons/formula90s/scripts/input_bindings.gd"
-TelemetryManager="*res://addons/formula90s/scripts/telemetry_manager.gd"
-VehicleAudioBus="*res://addons/formula90s/scripts/audio/ensure_vehicle_bus.gd"
+InputBindings="*res://scripts/input/input_bindings.gd"
+TelemetryManager="*res://scripts/telemetry/telemetry_manager.gd"
+VehicleAudioBus="*res://scripts/audio/ensure_vehicle_bus.gd"
 
 [display]
 

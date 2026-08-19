@@ -6,10 +6,10 @@
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_chassis_geometry.glb" id="4_chassis"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_front_geometry.glb" id="5_front"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/decoupled/geometry/F1_94_wheel_rear_geometry.glb" id="6_rear"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_external_albedo_binder.gd" id="7_binder"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/audio/vehicle_audio_controller.gd" id="8_audio"]
+[ext_resource type="Script" path="res://scripts/vehicle/f1_94_external_albedo_binder.gd" id="7_binder"]
+[ext_resource type="Script" path="res://scripts/audio/vehicle_audio_controller.gd" id="8_audio"]
 [ext_resource type="Script" path="res://addons/formula90s/scripts/audio/audio_telemetry.gd" id="9_audiotel"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/vehicle_assembler.gd" id="10_assembler"]
+[ext_resource type="Script" path="res://scripts/vehicle/vehicle_assembler.gd" id="10_assembler"]
 [ext_resource type="Resource" path="res://data/vehicles/f1_94/f1_94_spec.tres" id="11_spec"]
 
 [sub_resource type="BoxShape3D" id="Box_tub"]

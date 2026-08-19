@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/tracks/test_field/la_chutana_generated.tscn" id="1_track"]
 [ext_resource type="PackedScene" path="res://scenes/vehicles/f1_94/f1_94.tscn" id="2_vehicle"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/driving_aids.gd" id="3_aids"]
+[ext_resource type="Script" path="res://scripts/vehicle/driving_aids.gd" id="3_aids"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="4_hud"]
 
 [node name="F194HandlingTest" type="Node3D"]

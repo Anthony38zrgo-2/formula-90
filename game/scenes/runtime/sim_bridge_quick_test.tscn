@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/vehicles/f1_94/f1_94_rust.tscn" id="1_veh"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/f1_94_rust_input_controller.gd" id="2_ctrl"]
+[ext_resource type="Script" path="res://scripts/input/f1_94_rust_input_controller.gd" id="2_ctrl"]
 
 [sub_resource type="BoxShape3D" id="Box_floor"]
 size = Vector3(2000.0, 1.0, 2000.0)

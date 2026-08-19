@@ -84,7 +84,7 @@ func _run_parity_test() -> void:
 		var rear_slip: float = maxf(absf(slips[2]), absf(slips[3])) if slips.size() >= 4 else 0.0
 
 		var phys_hz_i = Engine.physics_ticks_per_second
-		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.4f,%.4f,godot_parity_session,2026-08-15T00:00:00Z,%d,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://addons/formula90s/scripts/f1_94_rust_vehicle.gd,1,{}" % [
+		var row = "%d,%.2f,%.1f,%d,1.0,0.0,0.0,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.4f,%.4f,godot_parity_session,2026-08-15T00:00:00Z,%d,PHY-010,res://scenes/tracks/test_field/la_chutana_generated.tscn,VehicleRigidBody,res://scenes/vehicles/f1_94/f1_94.tscn,res://scripts/vehicle/f1_94_rust_vehicle.gd,1,{}" % [
 			sim_time_ms, spd, rpm, gear,
 			lat_g, long_g, vert_g,
 			fl_c, fr_c, rl_c, rr_c,

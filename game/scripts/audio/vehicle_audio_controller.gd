@@ -243,7 +243,7 @@ func update(_delta: float) -> void:
 		_play_loop(key, weights[i], engine_gain)
 
 	# Surface bed (asphalt none); silence any previous bed when it changes.
-	var bed := SURFACE_KEYS.get(surface)
+	var bed: Variant = SURFACE_KEYS.get(surface)
 	var slip := _aggregate_slip()
 	last_slip = slip
 	if bed != null:

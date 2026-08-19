@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://addons/formula90s/scripts/source_skybox_rig.gd" id="1_rig"]
+[ext_resource type="Script" path="res://scripts/background/source_skybox_rig.gd" id="1_rig"]
 [ext_resource type="Texture2D" path="res://assets/skybox/la_chutana/la_chutana_mountains_ring.png" id="2_mountains"]
 [ext_resource type="Texture2D" path="res://assets/skybox/la_chutana/la_chutana_waterfall_sheet.png" id="3_waterfalls"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/source_skybox_waterfalls.gd" id="4_animator"]
+[ext_resource type="Script" path="res://scripts/background/source_skybox_waterfalls.gd" id="4_animator"]
 
 [node name="SourceSkyboxRig" type="Node3D"]
 script = ExtResource("1_rig")

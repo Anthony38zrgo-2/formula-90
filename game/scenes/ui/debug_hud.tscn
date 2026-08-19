@@ -1,10 +1,10 @@
 [gd_scene load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_race_hud.gd" id="1"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/track_minimap_controller.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/hud/arcade_race_hud.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/track/track_minimap_controller.gd" id="2"]
 [ext_resource type="Resource" path="res://scenes/ui/la_chutana_hud_map.tres" id="3"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/arcade_speed_gauge.gd" id="4"]
-[ext_resource type="Script" path="res://addons/formula90s/scripts/handling_tuning_panel.gd" id="5_tuner"]
+[ext_resource type="Script" path="res://scripts/hud/arcade_speed_gauge.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/hud/handling_tuning_panel.gd" id="5_tuner"]
 [ext_resource type="PackedScene" path="res://features/retro_hud/scenes/retro_hud_display.tscn" id="6_retro_hud"]
 
 [node name="DebugHud" type="Control"]

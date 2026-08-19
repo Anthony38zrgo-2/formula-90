@@ -4,7 +4,7 @@ extends Node3D
 signal composition_ready(vehicle: Node, track: Node3D, aids: DrivingAidsController)
 
 const CAMERA_SCENE := preload("res://scenes/runtime/arcade_chase_camera_rig.tscn")
-const AIDS_SCRIPT := preload("res://addons/formula90s/scripts/driving_aids.gd")
+const AIDS_SCRIPT := preload("res://scripts/vehicle/driving_aids.gd")
 
 @export var config: RaceSessionConfig
 
