@@ -17,6 +17,7 @@
 namespace godot {
 
 class F90SimBridge;
+class F90Core;
 
 // C-ABI type aliases matching formula90_physics.h
 using FfiRaycastHit = F90RaycastHit;
@@ -138,7 +139,7 @@ private:
 	void unload_rust_dll();
 	void setup_raycasts();
 	void update_wheel_visuals(double delta);
-	uint32_t detect_surface_type(const RayCast3D *ray);
+	uint32_t detect_surface_type(const RayCast3D *ray) const;
 
 protected:
 	static void _bind_methods();
@@ -215,6 +216,7 @@ public:
 	PackedFloat64Array get_wheel_compressions() const;
 	PackedFloat64Array get_wheel_spins() const;
 	PackedFloat64Array get_wheel_slips() const;
+	PackedInt64Array get_wheel_surface_types() const;
 	PackedFloat64Array get_drive_torques() const;
 	PackedFloat64Array get_normal_forces() const;
 
@@ -341,6 +343,11 @@ public:
 	// can delegate its physics integration step to the bridge during _integrate_forces
 	// (the context where raycasts are reliably updated in Godot).
 	void set_sim_bridge(F90SimBridge *p) { sim_bridge_ = p; }
+	// Orchestrator facade (F90Core): when set, it takes precedence over sim_bridge_.
+	// Both mean "core-driven" (bridge_controlled_), but the facade owns sim + audio
+	// with a single handshake.
+	F90Core *core_driver_ = nullptr;
+	void set_core_driver(F90Core *p) { core_driver_ = p; }
 
 	// Sample this vehicle's 12 RayCast3D children into the core's sample layout.
 	void collect_core_samples(CSimTriRaycastSample p_samples[4]);

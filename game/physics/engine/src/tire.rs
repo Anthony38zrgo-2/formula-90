@@ -190,8 +190,8 @@ impl TireSystem {
         } else {
             1.0
         };
-        let longitudinal_grip_ratio = longitudinal_grip_ratio(surface);
-        let lateral_assist = lateral_grip_assist(surface);
+        let longitudinal_grip_ratio = config.surface_longitudinal_grip_ratio.get(&surface).copied().unwrap_or(0.5);
+        let lateral_assist = config.surface_lateral_grip_assist.get(&surface).copied().unwrap_or(0.05);
 
         let brush = (1.0 - friction * (1.0 - sy) * 0.25 * deflect) * deflect;
         let mut force_y_gevp = friction * longitudinal_grip_ratio * cornering_stiffness * sy * brush * braking_help * forward_sign;
@@ -284,13 +284,9 @@ fn tire_braking_grip(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
 fn tire_airborne_decay(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() { config.front_airborne_decay } else { config.rear_airborne_decay }
 }
-fn lateral_grip_assist(surface: SurfaceType) -> f64 {
-    match surface {
-        SurfaceType::Road | SurfaceType::Curb | SurfaceType::Metal => 0.05,
-        _ => 0.0,
-    }
-}
-fn longitudinal_grip_ratio(_surface: SurfaceType) -> f64 { 0.5 }
+// Lateral grip assist and longitudinal grip ratio are now read per-surface from
+// `config.surface_lateral_grip_assist` / `config.surface_longitudinal_grip_ratio`
+// (populated from f1_94_physics.json), replacing the previous hard-coded 0.05 / 0.5.
 fn rolling_resistance_force(v_forward: f64, normal_force: f64) -> f64 {
     let c = 0.005 + 0.5 * (0.01 + 0.0095 * (v_forward * 0.036).powi(2));
     c * normal_force

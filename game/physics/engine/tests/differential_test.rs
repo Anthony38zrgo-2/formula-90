@@ -15,6 +15,7 @@ fn test_salisbury_differential_symmetric_when_wheel_spins_are_equal() {
         60.0,  // Coast ramp
         4.0,   // Clutches
         0.25,  // Friction coeff
+        0.50,  // slip_transition_threshold_rad_s (formerly hard-coded inside the solver)
     );
 
     assert!((t_left - 500.0).abs() < 1e-6, "Left torque must be exactly 500.0 N·m");
@@ -37,6 +38,7 @@ fn test_salisbury_differential_power_lock_transfers_torque_to_slower_wheel() {
         60.0,
         4.0,
         0.25,
+        0.50,  // slip_transition_threshold_rad_s (formerly hard-coded inside the solver)
     );
 
     assert!(
@@ -63,6 +65,7 @@ fn test_salisbury_differential_coast_lock_transfers_torque_under_engine_braking(
         60.0, // 60° coast ramp
         4.0,
         0.25,
+        0.50,  // slip_transition_threshold_rad_s (formerly hard-coded inside the solver)
     );
 
     assert!((t_left + t_right - drive_torque).abs() < 1e-6, "Coast torque must be conserved");
@@ -90,6 +93,7 @@ fn test_salisbury_differential_preload_acts_at_zero_drive_torque() {
         60.0,
         4.0,
         0.25,
+        0.50,  // slip_transition_threshold_rad_s (formerly hard-coded inside the solver)
     );
 
     assert!((t_left + t_right).abs() < 1e-6, "Sum of torques at zero input must be zero");

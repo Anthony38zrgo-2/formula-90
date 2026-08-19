@@ -142,6 +142,10 @@ pub struct VehicleConfig {
     pub aero_yaw_decay_exponent: f64,
     #[serde(default = "default_aero_flex_coefficient")]
     pub aero_flex_coefficient: f64,
+
+    // Automatic transmission shift logic (from f1_94_physics.json `automatic_shift`)
+    pub automatic_shift: AutomaticShift,
+    pub gear_inertia: f64,
 }
 
 /// Canonical driving-aid model and policy for a vehicle profile.
@@ -210,6 +214,73 @@ pub struct AidsConfig {
     pub input_smoothing_steering_rate: f64,
     pub input_smoothing_throttle_rate: f64,
     pub input_smoothing_brake_rate: f64,
+}
+
+/// Automatic transmission shift logic parameters, sourced from `f1_94_physics.json`
+/// (`automatic_shift`). JSON is authoritative; `Default` reproduces the F1-94 tuned values so
+/// the canonical fallback behaves identically to the JSON-driven path. All 15 keys are consumed
+/// by the gear-selection logic in `powertrain.rs`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutomaticShift {
+    pub upshift_normalized_rpm_low_throttle: f64,
+    pub upshift_normalized_rpm_full_throttle: f64,
+    pub downshift_normalized_rpm_low_throttle: f64,
+    pub downshift_normalized_rpm_full_throttle: f64,
+    pub downshift_throttle_aggression_factor: f64,
+    pub upshift_coast_normalized_rpm: f64,
+    pub downshift_coast_normalized_rpm: f64,
+    pub reverse_max_speed_ms: f64,
+    pub parked_resume_speed_ms: f64,
+    pub kickdown_delay_factor: f64,
+    pub wheel_road_spin_blend_threshold_rads: f64,
+    pub wheel_spin_weight: f64,
+    pub road_spin_weight: f64,
+    pub upshift_target_rpm_margin_high: f64,
+    pub downshift_target_rpm_margin_high: f64,
+}
+
+impl Default for AutomaticShift {
+    fn default() -> Self {
+        Self {
+            upshift_normalized_rpm_low_throttle: 0.72,
+            upshift_normalized_rpm_full_throttle: 0.965,
+            downshift_normalized_rpm_low_throttle: 0.42,
+            downshift_normalized_rpm_full_throttle: 0.58,
+            downshift_throttle_aggression_factor: 0.35,
+            upshift_coast_normalized_rpm: 0.42,
+            downshift_coast_normalized_rpm: 0.30,
+            reverse_max_speed_ms: 6.0,
+            parked_resume_speed_ms: 1.0,
+            kickdown_delay_factor: 0.75,
+            wheel_road_spin_blend_threshold_rads: 10.0,
+            wheel_spin_weight: 0.60,
+            road_spin_weight: 0.40,
+            upshift_target_rpm_margin_high: 0.94,
+            downshift_target_rpm_margin_high: 0.82,
+        }
+    }
+}
+
+impl AutomaticShift {
+    fn from_json(j: &JsonAutomaticShift) -> Self {
+        Self {
+            upshift_normalized_rpm_low_throttle: j.upshift_normalized_rpm_low_throttle,
+            upshift_normalized_rpm_full_throttle: j.upshift_normalized_rpm_full_throttle,
+            downshift_normalized_rpm_low_throttle: j.downshift_normalized_rpm_low_throttle,
+            downshift_normalized_rpm_full_throttle: j.downshift_normalized_rpm_full_throttle,
+            downshift_throttle_aggression_factor: j.downshift_throttle_aggression_factor,
+            upshift_coast_normalized_rpm: j.upshift_coast_normalized_rpm,
+            downshift_coast_normalized_rpm: j.downshift_coast_normalized_rpm,
+            reverse_max_speed_ms: j.reverse_max_speed_ms,
+            parked_resume_speed_ms: j.parked_resume_speed_ms,
+            kickdown_delay_factor: j.kickdown_delay_factor,
+            wheel_road_spin_blend_threshold_rads: j.wheel_road_spin_blend_threshold_rads,
+            wheel_spin_weight: j.wheel_spin_weight,
+            road_spin_weight: j.road_spin_weight,
+            upshift_target_rpm_margin_high: j.upshift_target_rpm_margin_high,
+            downshift_target_rpm_margin_high: j.downshift_target_rpm_margin_high,
+        }
+    }
 }
 
 fn default_aids() -> AidsConfig {
@@ -311,8 +382,14 @@ impl VehicleConfig {
         surface_rolling_resistance.insert(SurfaceType::Gravel, 2.0);
 
         let mut surface_lateral_grip_assist = HashMap::new();
-        for st in [SurfaceType::Road, SurfaceType::Curb, SurfaceType::Dirt, SurfaceType::Grass, SurfaceType::Gravel] {
+        // Per-surface lateral grip assist matching the previous hard-coded mapping so the
+        // canonical fallback still differentiates surfaces (Road/Curb assisted, dirt/grass/gravel not).
+        // The JSON-driven path overrides this via build_surface_assist_map (e.g. Road 0.04).
+        for st in [SurfaceType::Road, SurfaceType::Curb] {
             surface_lateral_grip_assist.insert(st, 0.05);
+        }
+        for st in [SurfaceType::Dirt, SurfaceType::Grass, SurfaceType::Gravel] {
+            surface_lateral_grip_assist.insert(st, 0.0);
         }
         let mut surface_longitudinal_grip_ratio = HashMap::new();
         for st in [SurfaceType::Road, SurfaceType::Curb, SurfaceType::Dirt, SurfaceType::Grass, SurfaceType::Gravel] {
@@ -364,6 +441,8 @@ impl VehicleConfig {
             reverse_ratio: 3.00,
             shift_time: 0.12,
             automatic_transmission: false,
+            automatic_shift: AutomaticShift::default(),
+            gear_inertia: default_gear_inertia(),
             front_torque_split: 0.0,
 
             // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
@@ -523,6 +602,8 @@ impl VehicleConfig {
             reverse_ratio: 3.00,
             shift_time: 0.16,
             automatic_transmission: true,
+            automatic_shift: AutomaticShift::default(),
+            gear_inertia: default_gear_inertia(),
             front_torque_split: 0.0, // RWD
 
             // Differential (Salisbury Clutch-Pack LSD)
@@ -1496,6 +1577,8 @@ impl JsonVehicleSpec {
             reverse_ratio: self.powertrain.reverse_ratio,
             shift_time: self.powertrain.shift_time,
             automatic_transmission: self.powertrain.automatic_transmission,
+            automatic_shift: self.powertrain.automatic_shift.as_ref().map(AutomaticShift::from_json).unwrap_or_default(),
+            gear_inertia: self.powertrain.gear_inertia,
             front_torque_split: self.powertrain.front_torque_split,
             diff_preload: self.powertrain.differential.preload_nm,
             diff_power_ramp_angle_deg: self.powertrain.differential.power_ramp_angle_deg,

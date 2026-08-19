@@ -86,9 +86,20 @@ Rust core            game/physics/engine/                       (cargo, FFI ABI 
   └─ build → vehicle_physics_engine.*.dll  (Rust core loaded by the C++ wrapper)
 
 C++ GDExtension      native/                                   (scons → libformula90s.*.dll)
-  ├─ f1_94_rust_vehicle.cpp/.hpp   F194RustVehicle, solve_forces_for_state,
+  ├─ f1_94_rust_vehicle.cpp/.hpp   F194RustVehicle, core_driver_ (F90Core) takes
+  │                                 precedence over sim_bridge_ inside _integrate_forces;
   │                                 update_wheel_visuals, runtime-config sync
+  ├─ core/f90_core.cpp/.hpp        F90Core orchestrator facade (registers in
+  │                                 register_types.cpp); ABI v2; drive_integrate +
+  │                                 apply_runtime_config + reset_core_at + pump_audio
+  ├─ sim/f90_sim_bridge.cpp/.hpp   F90SimBridge (LEGACY secondary driver; only used
+  │                                 when core_driver_ is null)
   └─ include/.../formula90_physics.h  F90RuntimeConfig (ABI v7, inertia + suspension)
+
+Rust orchestrator   game/core/                                (cdylib formula90_core.dll, ABI v2)
+  └─ CoreFacade owns physics (game_sim + vehicle_physics_engine) + audio
+     (vehicle_audio_engine) + ModuleRegistry (SimModule); single handshake
+     f90_core_abi_version() == 2. Replaces the three separately-loaded modules.
 
 GDScript gameplay   game/addons/formula90s/scripts/
   ├─ f1_94_rust_vehicle.gd            F194RustVehicleGD wrapper (telemetry/HUD/audio)
@@ -130,6 +141,17 @@ explicitly instead of silently reverting to defaults.
 | 3 | RigidBody vs Rust inertia | FFI `inertia_multiplier_x/y/z` (JSON→Rust→C++); `configured_inertia` in `solve_forces_for_state` (replaces fixed 1.10) | `[VALIDATED]` |
 | 4 | Visual suspension vs forces | FFI `suspension_front/rear_spring_length` + `resting_ratio`; `update_wheel_visuals` uses them; fallback steer uses `max_steering_angle_` | `[VALIDATED]` |
 | 5 | Input modulation | `throttle_exponent = 1.0` (linear) in `f1_94_rust_input_controller.gd`; F1-94 scene uses this controller | `[VALIDATED]` |
+
+### 1.2.4b Runtime-config forwarding (F90Core orchestrator)
+
+`F194RustVehicle::apply_runtime_config()` now forwards the same `F90RuntimeConfig`
+to the orchestrator via `core_driver_->apply_runtime_config(cfg)` (when `core_driver_`
+is set) and to the legacy bridge otherwise. The Rust side shares one sanitized
+applier (`apply_runtime_config_to_sim` in `ffi.rs`, reused by both the legacy
+`f1_94_physics_apply_runtime_config` FFI and `formula90_core`), so every tunable
+JSON parameter (diff preload, aids mask, aero, suspension, steering…) keeps
+applying at runtime on BOTH integration paths. `[VALIDATED — build green; runtime
+pending in real env]`
 
 ### 1.2.5 Known divergences (runtime-authority vs `f1_94_canonical()` / scene)
 
@@ -461,6 +483,12 @@ input_smoothing:    ON (steering 6.00 / throttle 7.50 / brake 14.0)
 # Presets: f1_94_physics.json = TCS+ESP (stability_default_enabled true);
 #          f1_94_physics_esp.json = TCS+ESP variant (identical simcade values).
 # GOOD state — detail polish: ESP strength/engage per surface, §7.1 telemetry sign-off.
+# Aids routing (Rust path): driving_aids.gd now sets the aids_enabled_mask bits on
+#   F194RustVehicle instead of mutating unsupported VehicleTunableContract properties:
+#   ESTAB=bit2 (stability), FRENOS=bit7 (brake-assist), GRIP/TCS=bit1. GEVP Vehicle keeps
+#   the property-mutation path. The full mask is applied every step by CoreFacade::step
+#   (P0 fix), so ESP/TCS/stability are no longer frozen or drop on the first frame.
+#   [VALIDATED — build green; runtime pending in real env]
 ```
 
 ### Wheel visual architecture (F1-94)
@@ -721,6 +749,13 @@ steering  = OFF   (vehicle-level slip/countersteer assist still applied per JSON
 braking   = OFF
 grip      = OFF
 ```
+
+Aid toggles (DrivingAidsController, keys `aid_1`..`aid_5`): on the Rust `F194RustVehicle`
+route they flip the `aids_enabled_mask` bits (ESTAB=2, FRENOS=7, GRIP/TCS=1) via
+`driving_aids.gd` `_set_aids_mask_bit`, then `CoreFacade::step` applies the full mask
+each tick. AUTO (aid_1) still mutates `automatic_transmission`; DIRECC (aid_3) still
+mutates `steering_exponent` on both paths. Previously these toggles were silent no-ops
+on the Rust vehicle — that gap is closed. `[VALIDATED — build green; runtime pending]`
 
 See §5.0 for the full F1-94 aids policy and §1.2.4 for the handoff alignment.
 
@@ -2437,6 +2472,42 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
 
      10. **[HIGH PRIORITY] Stutter / frame-pacing analysis & refactor — Rust physics core vs 3D Godot presentation (2026-08-18) [NEW]:** User reports intermittent stutters during gameplay. Scope: profile the authoritative Rust `game_sim` / `game/physics/engine` core (per-tick step cost, snapshot bincode (de)serialization, allocation churn) AND the 3D Godot presentation path (`F194RustVehicle`, `VehicleVisual3DController`, `DirectionalVehicleSprite`/mesh updates, camera) to locate the jitter source. Hypotheses: (a) per-tick snapshot bincode (de)serialization cost; (b) physics-vs-render cadence/threading mismatch; (c) presentation lacks interpolation across the 120 Hz physics tick; (d) per-frame allocation/GC in presentation scripts. First reversible step: instrument frame-time + step-time (min/max/percentile) on both sides, reproduce headlessly via `game_cli` + a timing harness, then decide whether to optimize the Rust core or restructure the Godot 3D update/interpolation. This is a perf/architecture task — do NOT change physics tuning.
 
+     11. **Fachada-orquestador `formula90_core` + fix P0 de ayudas (2026-08-18) [VALIDATED P0 — P1/P2 pendientes]:** Se migró el runtime a UN solo orquestador Rust (`game/core` crate, cdylib `formula90_core.dll`) que posee física (`game_sim`+`vehicle_physics_engine`) + audio (`vehicle_audio_engine`) y un `ModuleRegistry` expandible (`SimModule`), expuesto a Godot por un único nodo C++ `F90Core` con un solo handshake (`f90_core_abi_version()`, hoy `2`). Reemplaza los 3 módulos cargados por separado. Detalles:
+        - **ABI v2**: `f90_core_step` lleva `aids_mask: u32` (los 8 bits) en vez del pulso `toggle_tc`; se añadió `f90_core_apply_runtime_config` (espejo de `F90RuntimeConfig`). Headers: `native/include/formula90s/core/f90_core.{h,hpp}`; `F90Core::drive_integrate` + `apply_runtime_config` + `reset_core_at` + `pump_audio` (push_buffer en lote) en `native/src/core/f90_core.cpp`.
+        - **FIX P0 (ayudas/ESP/TCS en la facada)**: el mask completo se aplica cada frame (`CoreFacade::step` -> `ent.sim.aids = AidsMask::from_bits(aids_mask)`), eliminado el toggle espurio de primer frame (`last_aids_mask_`), y el tuning del vehículo (diff_preload, bias, aero...) se enruta al core en modo bridge (`apply_runtime_config_to_sim`, extraído a `vehicle_physics_engine::ffi`). **Antes**: el ABI perdía el mask (ESP congelado, TCS apagado por el toggle del primer frame, tuning descartado) — por eso la sesión facade parecía "sin ESP/TCS".
+        - **Audio operativo** (confirmado por el usuario): `F90Core::_ready` crea los nodos de audio (bus `Vehicle`, generador 44.1kHz/60ms, `AudioStreamPlayer` no posicional) y `pump_audio()` hace un `push_buffer` en lote (eliminado el `push_frame` por muestra). Se quitó el `F90Core` duplicado del prefab `f1_94_rust.tscn` (había DOS fachadas alternando drivers -> "config de física rara").
+        - **Auditoría JSON (subagente, read-only)**: casi todo el `f1_94_physics.json` se usa; claves muertas/hardcodeadas pendientes (P1): `surfaces.*.lateral_grip_assist` (0.04 vs tire.rs 0.05), `surfaces.*.longitudinal_grip_ratio` (0.64 vs tire.rs 0.5 → más patinaje), `differential.slip_transition_threshold_rad_s` (0.90 vs powertrain.rs:505 0.50), `input_smoothing_*` (simulation.rs:501/506 hardcode 20/10), `automatic_shift`(15 claves)+`gear_inertia` (parseados, no usados), `launch_control_*`/bit `auto_clutch`/`stability_upright_*`/`handbrake_*`/`wheel_hubs` (no usados), `brakes.enable_abs` vs bit del mask (dos fuentes). Valores a decidir con el usuario: `diff_preload` 40 vs canónico 170, `contact_patch` 0.35 vs 0.21.
+        - **Validación**: tests Rust (physics + core, incl. `facade_applies_full_aids_mask_each_step`, `facade_apply_runtime_config_is_accepted`), build C++ debug OK, ambos cdylib (debug y template_release) a ABI v2, headless `sim_bridge_quick_test`/`vehicle_test_session` con `[F90Core] facade ready (ABI=2)` y vehículo conducido.
+        - **PENDIENTE — Próxima tarea en `instrucciones.txt §4`**: **P1** cablear/eliminar las claves muertas (empezando por grip ratios/slip_threshold/input_smoothing; decidir automatic_shift/gear_inertia y diff_preload/contact_patch) y **P2** telemetría para la ruta Rust (`telemetry_manager.gd` solo captura GEVP; columna `TC_Active` 26 vs 25) + rebuild de la extensión native release.
+
+---
+
+     12. **P2 — Telemetría para la ruta Rust (`telemetry_manager.gd`) (2026-08-18) [IMPLEMENTADO — pendiente validación runtime]:** `telemetry_manager.gd` es un autoload que solo encontraba la clase GEVP `Vehicle` (`find_children("*","Vehicle",...)`), así que la ruta Rust (`F194RustVehicle`, conducida por la fachada `F90Core`) nunca producía CSV. Cambios (archivo `game/addons/formula90s/scripts/telemetry_manager.gd`):
+        - `vehicle` ahora es `untyped` (acepta tanto `Vehicle` GEVP como `F194RustVehicle`); `_try_find_vehicle` busca primero `F194RustVehicle` y cae a `Vehicle`.
+        - `_format_line` ramifica por `_is_rust`: la ruta Rust lee `get_wheel_compressions()` / `get_wheel_slips()` (orden [FL,FR,RL,RR] en el C++) para `FL/FR/RL/RR_Comp` y `Front/Rear_Slip`; la ruta GEVP conserva `front_axle`/`rear_axle`.
+        - **Fix columna `TC_Active`**: `CSV_COLUMNS` declara 26 columnas pero el `format` solo tenía 25 placeholders → el valor `TC_Active` (bit 1 del `aids_enabled_mask`) se descartaba silenciosamente. Se añadió el 26º `%d`, así ahora se emiten las 26 columnas (26 placeholders ↔ 26 valores verificados).
+        - Nota: el `_setup_json` de la ruta Rust queda con nulls en props GEVP (aceptable; capturar el JSON de config del core es trabajo aparte, ver item 2 de §45.0).
+        - **Validación**: NO verificada end-to-end en este sandbox (Godot headless crashea con signal 11 al cargar la extensión native — limitación del entorno, no del cambio). Requiere rebuild de la extensión native release (P2 item 8 implícito) y correr en entorno real: headless `sim_bridge_quick_test` debe escribir `game/telemetry/*.csv` con 26 columnas y datos del `F194RustVehicle`. No se hizo commit (per instrucciones).
+         - **ESTADO 2026-08-19 (working tree):** el cambio sigue sin commit; la ruta Rust ahora es la ruta primaria bajo `F90Core`. El codigo esta en el arbol de trabajo y compila (debug+release DLL rebuild verde). La validacion runtime sigue pendiente en entorno real (headless bloqueado en sandbox).
+
+---
+
+     13. **P1 — Fidelidad del JSON: cablear parámetros muertos/hardcodeados (2026-08-18) [IMPLEMENTADO — tests verdes]:** Se sustituyeron hardcodes por los valores de `f1_94_physics.json` (vía `VehicleConfig`, ya disponibles):
+        - `tire.rs` `process_wheel_forces`: `lateral_grip_assist`/`longitudinal_grip_ratio` ahora se leen de `config.surface_lateral_grip_assist`/`surface_longitudinal_grip_ratio` (HashMap por superficie, poblado del JSON por `build_surface_assist_map`); se eliminaron las funciones hardcodeadas 0.05/0.5. Efecto: Road `longitudinal_grip_ratio` 0.5→0.64 (más agarre longitudinal → menos patinaje/“sensación sin TCS”) y `lateral_grip_assist` 0.05→0.04.
+        - `powertrain.rs` `solve_salisbury_differential`: `delta_omega_threshold` 0.50→`config.diff_slip_transition_threshold_rad_s` (0.90); se añadió el parámetro a la firma, al call site y al test unitario `differential_test.rs`.
+        - `simulation.rs` `filter_inputs`: throttle/brake smoothing 20.0/10.0→`cfg.aids.input_smoothing_throttle_rate`/`_brake_rate` (JSON 7.5/14.0).
+        - Fix de acompañamiento: `f1_94_canonical()` (fallback) tenía `surface_lateral_grip_assist` uniforme 0.05 (road==grass) → rompía `test_surface_interaction_parity`; se diferenció (Road/Curb 0.05, Dirt/Grass/Gravel 0.0) reproduciendo el mapeo hardcodeado previo. El path JSON (autoritativo) ya diferenciaba vía `build_surface_assist_map`.
+        - **Validación**: `cargo test` game/physics/engine (OK) y game/core (OK) → EXIT 0; rebuild debug+release de todos los DLL (item 14).
+        - **PENDIENTE (decisiones del usuario, NO cambiadas para no alterar el feel sin validación)**: (a) `diff_preload` JSON 40 vs canónico 170 y `contact_patch` 0.35 vs 0.21 — ya cableados desde config, solo diverge el valor canónico; (b) `automatic_shift` (15 claves)+`gear_inertia`: parseados pero NO usados (auto-shift hardcodeado en `powertrain.rs`); (c) P1-coherencia `brakes.enable_abs` vs bit del mask y `driving_aids.gd` toggles ESTAB/FRENOS/GRIP no-op (UNSUPPORTED) — requieren decisión/handing aparte.
+
+     14. **P2 item 8 — Rebuild RELEASE native + formula90_core template_release (2026-08-18) [DONE — EXIT 0]:** `scripts/build_windows.ps1 -Configuration debug` y `-Configuration release` → ambos EXIT 0. Recompila `libformula90s` (C++ GDExtension, ahora CON `F90Core`, target template_debug/template_release) vía SCons y los 4 crates Rust (vehicle_physics_engine, game_sim, vehicle_audio_engine, formula90_core) en debug+release, copiando todos a `game/addons/formula90s/bin` (incl. `formula90_core.windows.template_release.x86_64.dll` y `libformula90s.windows.template_release.x86_64.dll` actualizados a ABI v2). Tras P1 (Rust) las DLL template_release ya reflejan los parámetros del JSON. NOTA: headless no se pudo correr en este sandbox (Godot crashea signal 11 cargando la extensión native) — la validación runtime queda pendiente en entorno real.
+
+---
+
+     15. **P1 — Implementar `automatic_shift` (JSON autoritativo) (2026-08-18) [IMPLEMENTADO — tests verdes, DLLs rebuild]**: El `automatic_shift` (15 claves en `f1_94_physics.json`) estaba parseado (`JsonAutomaticShift`) pero NO usado. Se añadió `AutomaticShift` al runtime `VehicleConfig` (con `Default` = valores del JSON y `from_json`), poblado en `f1_94_canonical` / `jordan_197_canonical` / `to_config`. `powertrain.rs` reescribió la selección de marchas para usar las 15 claves (umbrales RPM normalizados por throttle/coast, blend wheel/road-spin por peso, redline margin, kickdown con agresividad+delay, reverse/park speeds) en lugar de las constantes hardcodeadas (0.92/0.98/0.40/0.45/6.0). `gear_inertia` (antes muerto) ahora escala `shift_timer`. **Validación**: `cargo test` game/physics/engine + game/core → EXIT 0; rebuild debug+release (item 14) ya incluye el cambio. NOTA: el JSON F1-94 tiene `automatic_transmission=false`, así que la lógica auto solo se ejerce si se habilita; requiere validación en-engine (headless bloqueado en este sandbox).
+
+     16. **P1-coherencia — Enrutar toggles de aids por `set_aids_enabled_mask` (2026-08-18) [IMPLEMENTADO]**: `driving_aids.gd` (ESTAB/FRENOS/GRIP, índices 1/3/4) tocaba propiedades UNSUPPORTED en el Rust `F194RustVehicle` (`vehicle_tunable_contract.gd` las bloquea → no-op). Ahora, cuando la propiedad no es soportada (Rust), enruta por la máscara de aids: ESTAB→bit2 (stability), FRENOS→bit7 (brake-assist), GRIP→bit1 (TC). El path GEVP (mutación de propiedades) queda intacto vía `VehicleTunableContract.is_property_supported`. GDScript puro, sin rebuild de DLL. Asimismo `.agents/AGENTS.md` ahora lleva la instrucción corta **JSON SOT**: `f1_94_physics.json` es la única fuente de verdad para el tuning F1-94 (siempre gana sobre defaults de código / fallback canónico / escena).
+
 ---
 
 ## 45.1 Legacy Jordan/GEVP Phase C work (DEFERRED — historical)
@@ -2765,25 +2836,25 @@ Recommended current values at the time this snapshot is created:
 
 ```text
 Last reviewed:
-2026-08-10
+2026-08-19
 
 Branch:
 refactor/gevp-clean-baseline
 
 Commit:
-e772e370efe32bf1636f683189ded2d513076520
+<refresh from Git — working tree has UNCOMMITTED F90Core orchestrator + JSON-SOT wiring changes; do not infer SHA from this snapshot>
 
 Current active phase:
-pre-Phase-C instrumentation
+F1-94 `F90Core` orchestrator (single facade, ABI v2) is the primary driver; `f1_94_physics.json` is single source of truth. F0-F5 done; P0 ayudas/ESP-TCS done; P1 JSON-wiring (grip ratios, diff slip threshold, automatic_shift, input smoothing, aids-mask routing) DONE + build green; P2 Rust telemetry IMPLEMENTED. Runtime validation pending in real env (headless blocked in sandbox).
 
 Next required gate:
-telemetry CSV + immutable _setup.json pairing
+In-engine runtime validation of `F90Core` driver + Rust telemetry (26-col CSV) + release DLL on a real Godot 4.7 build. Then decide pending JSON-coherence values (diff_preload 40 vs 170, contact_patch 0.35 vs 0.21, enable_abs vs mask bit) per §45.0 item 13 PENDIENTE.
 
 Next physics phase:
-Phase C — steering / countersteer
+Detail polish only — ESP strength/engage per surface, §7.1 telemetry sign-off. No architectural rework pending (JSON fidelity already wired).
 
 Reviewed by:
-Codex — world/HUD compositor validation
+Agent (DSH) — documentation-only sync to working-tree F90Core re-architecture; no tuning changes.
 ```
 
 The exact commit SHA must be refreshed from Git before this file is treated as a

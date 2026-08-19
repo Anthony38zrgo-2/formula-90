@@ -1,9 +1,0 @@
-[gd_resource type="Resource" script_class="ChassisSpec" load_steps=2 format=3]
-
-[ext_resource type="Script" path="res://addons/formula90s/scripts/specs/chassis_spec.gd" id="1_chassis"]
-
-[resource]
-script = ExtResource("1_chassis")
-vehicle_mass = 575.0
-front_weight_distribution = 0.45
-inertia_multiplier = 1.1

@@ -45,4 +45,15 @@ Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/a
 Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/addons/formula90s/bin' 'vehicle_audio_engine.dll') -Force
 Write-Host "vehicle_audio_engine DLL copiada a game/addons/formula90s/bin/$audioDest (+ vehicle_audio_engine.dll)" -ForegroundColor Green
 
+Write-Host "Compilando Crate Rust formula90_core (fachada-orquestador) ($Configuration)..." -ForegroundColor Cyan
+$coreArgs = @('build', '--manifest-path', 'game/core/Cargo.toml')
+if ($Configuration -eq 'release') { $coreArgs += '--release' }
+$coreOut = & cargo @coreArgs 2>&1
+if ($LASTEXITCODE -ne 0) { throw "Build de formula90_core fallo ($LASTEXITCODE).`n$coreOut" }
+$coreDllDir = if ($Configuration -eq 'release') { 'game/core/target/release' } else { 'game/core/target/debug' }
+$coreDest = "formula90_core.windows.$target.x86_64.dll"
+Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' $coreDest) -Force
+Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' 'formula90_core.dll') -Force
+Write-Host "formula90_core DLL copiada a game/addons/formula90s/bin/$coreDest (+ formula90_core.dll)" -ForegroundColor Green
+
 

@@ -1,5 +1,6 @@
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
 #include "formula90s/sim/f90_sim_bridge.hpp"
+#include "formula90s/core/f90_core.hpp"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -107,12 +108,14 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_wheel_compressions"), &F194RustVehicle::get_wheel_compressions);
 	ClassDB::bind_method(D_METHOD("get_wheel_spins"), &F194RustVehicle::get_wheel_spins);
 	ClassDB::bind_method(D_METHOD("get_wheel_slips"), &F194RustVehicle::get_wheel_slips);
+	ClassDB::bind_method(D_METHOD("get_wheel_surface_types"), &F194RustVehicle::get_wheel_surface_types);
 	ClassDB::bind_method(D_METHOD("get_drive_torques"), &F194RustVehicle::get_drive_torques);
 	ClassDB::bind_method(D_METHOD("get_normal_forces"), &F194RustVehicle::get_normal_forces);
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_compressions"), "", "get_wheel_compressions");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_spins"), "", "get_wheel_spins");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_slips"), "", "get_wheel_slips");
+	ADD_PROPERTY(PropertyInfo(Variant::PACKED_INT64_ARRAY, "wheel_surface_types"), "", "get_wheel_surface_types");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "drive_torques"), "", "get_drive_torques");
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "normal_forces"), "", "get_normal_forces");
 
@@ -455,7 +458,7 @@ void F194RustVehicle::_ready() {
 	UtilityFunctions::print("[F194RustVehicle] Black-box Rust Physics Core GDExtension ready!");
 }
 
-uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) {
+uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) const {
 	if (!ray || !ray->is_colliding()) {
 		return 0; // Road
 	}
@@ -489,11 +492,14 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) {
 
 void F194RustVehicle::_integrate_forces(PhysicsDirectBodyState3D *p_state) {
 	if (bridge_controlled_) {
-		// Snapshot-server wiring: the F90SimBridge owns the dynamics. It samples the
-		// raycasts and steps the authoritative core inside this integrate callback
-		// (the context where force_raycast_update() is guaranteed fresh) and applies
-		// the resulting body velocity via p_state.
-		if (sim_bridge_ != nullptr) {
+		// Snapshot-server wiring: the F90Core (orchestrator facade) or the legacy
+		// F90SimBridge owns the dynamics. It samples the raycasts and steps the
+		// authoritative core inside this integrate callback (the context where
+		// force_raycast_update() is guaranteed fresh) and applies the resulting body
+		// force/torque via p_state.
+		if (core_driver_ != nullptr) {
+			core_driver_->drive_integrate(this, p_state);
+		} else if (sim_bridge_ != nullptr) {
 			sim_bridge_->drive_integrate(this, p_state);
 		}
 		return;
@@ -734,6 +740,32 @@ PackedFloat64Array F194RustVehicle::get_wheel_slips() const {
 	return arr;
 }
 
+// Returns the dominant surface code per wheel (0=Road/asphalt, 1=Curb, 2=Dirt,
+// 3=Grass, 4=Gravel, 5=Sand, 6=Wall, 7=Metal) sampled from this wheel's 3
+// tri-raycasts. Used by VehicleAudioControllerNative::detect_surface so the Rust
+// vehicle reports real surface info instead of always falling back to "asphalt".
+PackedInt64Array F194RustVehicle::get_wheel_surface_types() const {
+	PackedInt64Array arr;
+	arr.resize(4);
+	for (int w = 0; w < 4; ++w) {
+		int center = 0;
+		int any_nonzero = 0;
+		for (int r = 0; r < 3; ++r) {
+			RayCast3D *ray = raycasts_[w][r];
+			const uint32_t code = detect_surface_type(ray);
+			if (r == 1) {
+				center = (int)code;
+			}
+			if (code != 0 && any_nonzero == 0) {
+				any_nonzero = (int)code;
+			}
+		}
+		// Prefer the center ray; otherwise any non-road ray detected by inner/outer.
+		arr[w] = (center != 0) ? center : any_nonzero;
+	}
+	return arr;
+}
+
 PackedFloat64Array F194RustVehicle::get_drive_torques() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
@@ -833,6 +865,12 @@ void F194RustVehicle::apply_runtime_config() {
 	cfg.suspension_front_resting_ratio = suspension_front_resting_ratio_;
 	cfg.suspension_rear_resting_ratio = suspension_rear_resting_ratio_;
 	fn_apply_runtime_config_(sim_ptr_, &cfg);
+	// In bridge_controlled mode the facade's core is the sim that actually runs:
+	// forward the SAME runtime config so every tunable JSON parameter keeps
+	// applying at runtime (diff preload, aids mask, aero, ...).
+	if (core_driver_ != nullptr) {
+		core_driver_->apply_runtime_config(cfg);
+	}
 }
 
 void F194RustVehicle::sync_runtime_config_from_rust() {
@@ -1038,6 +1076,12 @@ bool F194RustVehicle::get_automatic_transmission() const {
 void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 	if (sim_ptr_ && fn_reset_) {
 		fn_reset_(sim_ptr_, p_pos.x, p_pos.y, p_pos.z, p_yaw_rad);
+	}
+	// Orchestrator facade: when F90Core drives this vehicle, reset the core's
+	// entity (powertrain/suspension/aids/modules) to the same pose so a reset does
+	// not leave stale internal state behind.
+	if (core_driver_ != nullptr) {
+		core_driver_->reset_core_at(p_pos.x, p_pos.y, p_pos.z, p_yaw_rad);
 	}
 	Transform3D t(Basis(Vector3(0.0, 1.0, 0.0), p_yaw_rad), p_pos);
 	set_global_transform(t);

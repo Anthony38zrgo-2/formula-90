@@ -118,8 +118,8 @@ impl PowertrainState {
                 if ratio > 0.0 {
                     let wheel_spin = self.drivetrain_spin(config, wheel_spins).abs();
                     let road_spin = forward_speed_m_s.abs() / config.rear_tire_radius.max(1e-6);
-                    let target_spin = if (wheel_spin - road_spin).abs() > 10.0 {
-                        road_spin * 0.65 + wheel_spin * 0.35
+                    let target_spin = if (wheel_spin - road_spin).abs() > config.automatic_shift.wheel_road_spin_blend_threshold_rads {
+                        road_spin * config.automatic_shift.road_spin_weight + wheel_spin * config.automatic_shift.wheel_spin_weight
                     } else {
                         wheel_spin
                     };
@@ -135,6 +135,7 @@ impl PowertrainState {
         if let Some(req) = input.gear_request {
             if req >= -1 && req <= max_gear { desired = req; }
         } else if config.automatic_transmission {
+            let autoshift = &config.automatic_shift;
             if self.current_gear <= 0 && forward_speed_m_s >= -0.5 {
                 desired = 1;
             } else if self.current_gear > 0 {
@@ -142,29 +143,49 @@ impl PowertrainState {
                 let radius = config.rear_tire_radius;
                 let wheel_speed = self.drivetrain_spin(config, wheel_spins).abs() * radius;
                 let road_speed = forward_speed_m_s.abs();
+
+                // Per-throttle normalized-RPM shift thresholds (JSON authoritative).
+                let up_norm = if input.throttle > 0.6 {
+                    autoshift.upshift_normalized_rpm_full_throttle
+                } else if input.throttle < 0.1 {
+                    autoshift.upshift_coast_normalized_rpm
+                } else {
+                    autoshift.upshift_normalized_rpm_low_throttle
+                };
+                let down_norm = if input.throttle > 0.6 {
+                    autoshift.downshift_normalized_rpm_full_throttle
+                } else if input.throttle < 0.1 {
+                    autoshift.downshift_coast_normalized_rpm
+                } else {
+                    autoshift.downshift_normalized_rpm_low_throttle
+                };
+
+                // Traction-aware gate: don't upshift while the driven wheels are breaking loose.
+                let traction_ok = (wheel_speed - road_speed) < autoshift.wheel_road_spin_blend_threshold_rads;
+
+                let is_at_redline = self.rpm >= config.max_rpm * autoshift.upshift_target_rpm_margin_high;
+                let mut can_upshift = self.current_gear < max_gear
+                    && ((self.rpm > config.max_rpm * up_norm && traction_ok) || is_at_redline);
+
+                // Speed gate (retained from prior logic) prevents lugging / early upshifts in low gears.
                 let shift_speed_ratio = if self.current_gear == 1 { 0.45 } else { 0.65 };
                 let min_shift_speed = (config.max_rpm * shift_speed_ratio / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
-
-                // Traction-aware upshift: prevent wheelspin from triggering premature upshifts,
-                // while enforcing redline protection (>= 98% RPM) to prevent over-revving.
-                let is_at_redline = self.rpm >= config.max_rpm * 0.98;
-                let can_upshift = self.current_gear < max_gear
-                    && (
-                        (self.rpm > config.max_rpm * 0.92 && (road_speed >= min_shift_speed || (wheel_speed - road_speed) < 6.0))
-                        || is_at_redline
-                    );
+                can_upshift = can_upshift && (road_speed >= min_shift_speed || traction_ok);
 
                 let lower_ratio = if self.current_gear > 1 {
                     (config.gear_ratios[(self.current_gear - 2) as usize] * config.final_drive).abs()
-                } else {
-                    0.0
-                };
+                } else { 0.0 };
                 let lower_rpm_est = (road_speed / radius.max(1e-6)) * lower_ratio * RAD_S_TO_RPM;
 
-                // Intelligent downshift: off-throttle coasting OR kick-down under heavy throttle when genuinely bogged
+                // Kick-down engages under heavy throttle when bogged; the throttle window scales with
+                // aggression, and the engage RPM is relaxed by the (inverse) kick-down delay factor.
+                let kickdown_throttle = (0.60 + (1.0 - autoshift.downshift_throttle_aggression_factor) * 0.4).clamp(0.0, 1.0);
+                let kickdown_engage_rpm = config.max_rpm
+                    * autoshift.downshift_target_rpm_margin_high
+                    * (1.0 - (1.0 - autoshift.kickdown_delay_factor) * 0.15);
                 let can_downshift = self.current_gear > 1 && (
-                    (self.rpm < config.max_rpm * 0.40 && input.throttle < 0.35)
-                    || (self.rpm < config.max_rpm * 0.45 && input.throttle > 0.60 && lower_rpm_est < config.max_rpm * 0.88)
+                    (self.rpm < config.max_rpm * down_norm && input.throttle < 0.35)
+                    || (self.rpm < kickdown_engage_rpm && input.throttle > kickdown_throttle && lower_rpm_est < config.max_rpm * 0.88)
                 );
 
                 if can_upshift {
@@ -173,14 +194,17 @@ impl PowertrainState {
                     desired -= 1;
                 }
             }
-            if forward_speed_m_s.abs() < 1.0 && input.brake > 0.75 && self.current_gear == 1 {
+            // Reverse only below the max reverse-engage speed; auto-resume to 1st when crawling forward out of park.
+            if self.current_gear == 1 && input.brake > 0.75 && forward_speed_m_s.abs() < autoshift.reverse_max_speed_ms {
                 desired = -1;
+            } else if self.current_gear == -1 && input.throttle > 0.1 && forward_speed_m_s.abs() < autoshift.parked_resume_speed_ms {
+                desired = 1;
             }
         }
 
         if desired != self.current_gear {
             self.target_gear = desired;
-            self.shift_timer = config.shift_time.max(0.0);
+            self.shift_timer = (config.shift_time + config.gear_inertia).max(0.0);
             if self.shift_timer == 0.0 { self.current_gear = desired; }
         }
     }
@@ -302,6 +326,7 @@ impl PowertrainState {
                 config.diff_coast_ramp_angle_deg,
                 config.diff_clutches,
                 config.diff_clutch_friction_coeff,
+                config.diff_slip_transition_threshold_rad_s,
             );
             self.drive_torques[2] = t_rl;
             self.drive_torques[3] = t_rr;
@@ -479,6 +504,7 @@ pub fn solve_salisbury_differential(
     coast_ramp_angle_deg: f64,
     clutches: f64,
     clutch_friction_coeff: f64,
+    slip_transition_threshold_rad_s: f64,
 ) -> (f64, f64) {
     let half_torque = drive_torque * 0.5;
 
@@ -502,7 +528,7 @@ pub fn solve_salisbury_differential(
     let delta_omega = spin_left - spin_right;
 
     // Smooth anti-chatter slip transition factor around zero speed delta
-    let delta_omega_threshold = 0.50; // rad/s
+    let delta_omega_threshold = slip_transition_threshold_rad_s; // rad/s (from f1_94_physics.json)
     let slip_factor = (delta_omega / delta_omega_threshold).clamp(-1.0, 1.0);
 
     // Cross-transfer locking torque

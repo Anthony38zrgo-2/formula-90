@@ -1,0 +1,27 @@
+[package]
+name = "formula90_core"
+version = "0.1.0"
+edition = "2021"
+description = "Formula-90 orchestrator facade: single runtime controller owning the sim core (game_sim) + vehicle audio (vehicle_audio_engine) + an expandable module registry (climatology, AI, race director, ...). Pure Rust, no Godot deps."
+license = "proprietary"
+
+[lib]
+name = "formula90_core"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "core_cli"
+path = "src/bin/core_cli.rs"
+
+[dependencies]
+vehicle_physics_engine = { path = "../physics/engine" }
+game_sim = { path = "../sim" }
+vehicle_audio_engine = { path = "../audio/engine" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = "1"
+
+[profile.release]
+lto = true
+opt-level = 3

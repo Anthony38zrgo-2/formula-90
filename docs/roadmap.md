@@ -54,6 +54,13 @@ Documento de referencia (eliminado): la migración GEVP→Rust está completa; l
 
 Migración del núcleo físico del vehículo (GEVP GDScript `vehicle.gd` / `wheel.gd`) a un crate puro en Rust (`game/physics/engine`), siguiendo el patrón arquitectónico desacoplado de `vehicle_audio_engine` y `skybox_engine`.
 
+**NUEVO — Fachada-orquestador `formula90_core` (en curso):** consolidar los módulos
+Rust (física, audio y los futuros climatología/IA) bajo un único controlador
+`CoreFacade`/`F90Core` con un solo handshake ABI, telemetría audio↔física en el mismo
+paso y render de audio en lote. Ver `docs/ARCHITECTURE.md` (sección "Fachada-orquestador")
+y el plan F0-F5. Fase pendiente: F4 (render de audio en hilo de `AudioServer`) y los
+módulos reales de climatología e IA (stubs ya en `game/core/src/modules`).
+
 Objetivos clave:
 - **Modelo Tri-Raycast (3 Raycasts por rueda)**: Elimina la ceguera a pianos/bordillos y proporciona transiciones de carga suaves y contacto multicapa.
 - **Telemetría Paritaria**: Generación directa en Rust del esquema CSV de 25 columnas de `TelemetryManager` para validación cruzada.

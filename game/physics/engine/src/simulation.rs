@@ -498,12 +498,12 @@ impl VehicleSimulator {
         st.throttle_input_smoothed = move_toward(
             st.throttle_input_smoothed,
             input.throttle.clamp(0.0, 1.0),
-            20.0 * dt,
+            cfg.aids.input_smoothing_throttle_rate * dt,
         );
         st.brake_input_smoothed = move_toward(
             st.brake_input_smoothed,
             input.brake.clamp(0.0, 1.0),
-            10.0 * dt,
+            cfg.aids.input_smoothing_brake_rate * dt,
         );
     }
 

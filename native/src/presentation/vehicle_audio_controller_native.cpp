@@ -319,6 +319,26 @@ String VehicleAudioControllerNative::detect_surface(Node *vehicle) {
 	}
 	int cnt_grass = 0, cnt_sand = 0, cnt_rumble = 0;
 
+	// Rust F194RustVehicle path: it exposes per-wheel surface codes via
+	// get_wheel_surface_types() (0=Road, 1=Curb, 2=Dirt, 3=Grass, 4=Gravel,
+	// 5=Sand, 6=Wall, 7=Metal). This is the authoritative source for the Rust
+	// vehicle; the GEVP `axle`/`Wheel*` RayCast fallbacks below do not apply to it.
+	if (vehicle->has_method("get_wheel_surface_types")) {
+		Variant v = vehicle->call("get_wheel_surface_types");
+		if (v.get_type() == Variant::PACKED_INT64_ARRAY) {
+			PackedInt64Array codes = v;
+			for (int i = 0; i < codes.size(); ++i) {
+				switch ((int)codes[i]) {
+					case 1: cnt_rumble++; break;                              // Curb
+					case 2: case 4: case 5: cnt_sand++; break;                // Dirt / Gravel / Sand
+					case 3: cnt_grass++; break;                                // Grass
+					default: break;                                            // Road/asphalt and others
+				}
+			}
+		}
+		// Fall through to the shared token-resolution tail below.
+	}
+
 	// Primary source: GEVP axle wheels expose `surface_type`.
 	Variant axle = vehicle->get("axle");
 	if (axle.get_type() != Variant::NIL) {

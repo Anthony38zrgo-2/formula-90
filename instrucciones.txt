@@ -1,217 +1,198 @@
 ================================================================================
 FORMULA-90  —  HANDOFF INSTRUCTIONS (instrucciones.txt)
 ================================================================================
-Generated: 2026-08-17  |  Branch context: work after commit 8dd3d0f
-Mode: BUILD (was PLAN)  |  Repo: D:\Formula90s  |  Engine: Godot 4.7.1-stable
+Generated: 2026-08-18 (facade era)  |  Repo: D:\Formula90s  |  Engine: Godot 4.7.1
+Mode: BUILD  |  Do NOT commit unless the user explicitly asks.
 
-AUTHORITY / CONVENTIONS (from .agents/AGENTS.md)
-- ARCH-SCOPE-LOCK: gameplay architecture changes only if explicitly requested or
-  causally proven. Keep changes minimal and targeted.
-- COMMIT only when the user explicitly asks. Do NOT commit otherwise.
+AUTHORITY / CONVENTIONS (from .agents/AGENTS.md & PROJECT_STATE.md)
 - Fail Faster, Adapt Faster: cheapest falsification before mutation.
-- Use subagents as executors; 1 hypothesis per iteration.
+- Change ONE physics family at a time. JSON (f1_94_physics.json) is the single
+  runtime authority for F1-94 (§3.1 of PROJECT_STATE). runtime > scene > docs.
+- Use subagents for independent analysis; 1 hypothesis per iteration.
+- Update PROJECT_STATE.md after completing work.
 
 ================================================================================
-1. PROJECT OVERVIEW / ARCHITECTURE
+1. CONTEXT DUMP — CURRENT ARCHITECTURE (facade/orquestador)
 ================================================================================
-- Simulation core is Rust (`game/sim` crate `game_sim`, depends on
-  `vehicle_physics_engine` crate in `game/physics/engine`). It is the SINGLE
-  authoritative simulator (snapshot-server model): one simulator, no divergence
-  between headless and in-engine.
-- A minimal C++ Godot bridge (`native/src/sim/f90_sim_bridge.cpp`) loads
-  `game_sim.dll` and drives the real `F194RustVehicle` (GDExtension C++ node in
-  `native/src/vehicle/f1_94_rust_vehicle.cpp`, script wrapper
-  `game/addons/formula90s/scripts/f1_94_rust_vehicle.gd` + `f1_94_rust_input_controller.gd`).
-- gdext is NOT used (Godot 4.7.1 has no `extension_api-4-7.json`), so the bridge
-  is hand-written C++ talking to Rust via a C-ABI (`game/sim/src/c_abi.rs`,
-  mirrored in `native/include/formula90s/sim/f90_sim_bridge.h`).
-- Drive path (the stable one): bridge calls `sim_world_solve_external` (core
-  returns world-space force+torque via `solve_external`), then applies it with
-  Godot `apply_central_force`/`apply_torque`. Gravity is left to Godot
-  (`set_bridge_controlled` sets `gravity_scale=1.0`; core excludes gravity).
+Canonical runtime is a SINGLE Rust orchestrator (the "facade"), not three
+independent modules:
+
+    Godot (GDScript HUD/telemetry)  <-- getters del nodo F90Core
+        [ F90Core ]  (nodo GDExtension C++, native/src/core/f90_core.cpp)
+            |  _integrate_forces -> f90_core_step (1 llamada, 1 struct F90CoreFrameOut)
+            |  _process -> pump_audio -> 1 push_buffer (batch; no Variant por muestra)
+        [ game/core ]  formula90_core.dll  (la FACHADA)
+            CoreFacade owns: World (game_sim) + AudioModule (vehicle_audio_engine)
+                             + ModuleRegistry (SimModule: clima/IA/...)
+            .step = física -> módulos -> audio-input -> CoreFrame atómico
+        game/sim (World, snapshot) -> vehicle_physics_engine (solver)
+        game/audio/engine (mezclador sample-accurate)
+
+- Crates: game/physics/engine (vehicle_physics_engine, solver), game/sim
+  (game_sim, mundo autoritativo), game/audio/engine (vehicle_audio_engine),
+  game/core (formula90_core, la fachada) — NUEVO.
+- Nodo C++: F90Core (native/src/core/f90_core.{hpp,cpp},
+  native/include/formula90s/core/f90_core.h). Un solo LoadLibrary de
+  formula90_core.dll, un solo handshake f90_core_abi_version()==2.
+- F194RustVehicle (native/src/vehicle/f1_94_rust_vehicle.{hpp,cpp}) es el
+  RigidBody3D. Cuando F90Core lo conduce (bridge_controlled_ + core_driver_),
+  _integrate_forces delega en F90Core::drive_integrate (fuerzas + Godot integra
+  gravedad/colisiones, gravity_scale=1.0). Sin F90Core usa su dll legacy
+  (vehicle_physics_engine.dll) como fallback.
+- Escenas: f1_94_rust.tscn es solo el cuerpo físico (SIN F90Core ni nodo de
+  audio); el orquestador vive en vehicle_test_session.tscn y
+  sim_bridge_quick_test.tscn (raíz F90Core). f1_94.tscn = legacy GEVP intacto.
+- ABI v2 (F90_CORE_ABI_VERSION=2): f90_core_step lleva `aids_mask: u32` (los 8
+  bits) en vez del antiguo pulso `toggle_tc`, y existe f90_core_apply_runtime_config
+  (espejo de F90RuntimeConfig). Headers: f90_core.h + f90_core.hpp (EAC default
+  EXPECTED_ABI_VERSION=2) + formula90_physics.h (F90RuntimeConfig).
+- Audiencia de la fachada: docs/ARCHITECTURE.md (sección fachada + checklist de
+  módulos), reports/facade_baseline.md (baseline de rendimiento), reports/ (hay
+  informe de auditoría y de snap-oversteer producidos por subagentes).
 
 ================================================================================
-2. STATE / WHAT IS ALREADY DONE (recent history)
+2. WHAT JUST HAPPENED (validated, don't redo)
 ================================================================================
-A) LATERAL-DRIFT FIX (COMPLETED & validated this session):
-   - Bug: bridge rebuilt body orientation from `yaw` via
-     `Mat3::from_euler_yxz(yaw,0,0)`, but `yaw_from_transform` and
-     `from_euler_yxz` are not inverses -> forward-vector X sign flipped ->
-     thrust applied at a mirrored angle -> car drifted sideways under throttle.
-   - Fix: `sim_world_solve_external` now receives full orientation quaternion
-     `(qx,qy,qz,qw)` (`gt.basis.get_rotation_quaternion()`) and rebuilds basis
-     via `Quat::new(...).to_mat3()` (same as legacy DLL path).
-   - Validated headless (flat scene `game/scenes/runtime/sim_bridge_quick_test.tscn`):
-     with `debug_throttle=1.0` the car accelerates straight; posX stays EXACTLY
-     0.0 from 4 -> 67 km/h (posZ 0 -> -24.9, posY ~0.32 stable). No lateral drift.
-   - Files changed: c_abi.rs, f90_sim_bridge.h (typedef), f90_sim_bridge.cpp
-     (drive_integrate). Bridge telemetry print now includes posX/posY/posZ.
-   - NOT YET COMMITTED (user did not ask). PROJECT_STATE.md §45.0 updated.
-   - A dedicated validation scene was added:
-     `game/scenes/runtime/sim_bridge_quick_test.tscn` (flat floor + vehicle +
-     SimBridge with debug_throttle=1.0). Keep it for future validation.
+A) FACADE CONSTRUIDA (F0-F5): crate game/core (CoreFacade, SimModule trait,
+   audio module, ffi.rs f90_core_*), nodo C++ F90Core, escenas migradas,
+   build_windows.ps1/build_linux.sh integran game/core. 10+ tests Rust OK.
+   Validación: headless sim_bridge_quick_test y vehicle_test_session cargan la
+   fachada (`[F90Core] facade ready`, ABI=2) y conducen el vehículo; opcional
+   `core_cli --parity-sim` da Snapshot byte-idéntico a game_sim.
 
-B) EARLIER (commit 8dd3d0f) baseline fixes:
-   - Removed GDScript `_integrate_forces` override in `f1_94_rust_vehicle.gd`
-     that was bypassing the C++ bridge (the bridge drive was dead code running
-     the legacy DLL path).
-   - Bridge reads input from vehicle fields (correct steering sign) instead of
-     `Input::get_action_strength` (reversed sign).
-   - Switched from unstable velocity-drive/pose-mirror (core standalone
-     integrator exploded to ~79000 km/h) to the force-based `solve_external`
-     path (stable, mirrors legacy DLL).
+B) AUDIO ARREGLADO Y OPERATIVO (confirmado por el usuario):
+   - En F90Core::_ready se crean los nodos de audio: ensure_vehicle_bus() +
+     create_audio_nodes() (generador 44.1kHz/60ms + AudioStreamPlayer no
+     posicional + bus "Vehicle"). pump_audio() en _process hace UN push_buffer
+     en lote (se acabó el push_frame por muestra). audio_initialized=true en
+     sesión gráfica.
+   - Se quitó el F90Core duplicado del prefab f1_94_rust.tscn (había DOS -> dos
+     fachadas y dos drivers alternando cada frame: causaba "config de física
+     rara"). El orquestador vive SOLO en la escena de sesión.
 
-================================================================================
-3. CURRENT TASK (what the next agent must do)
-================================================================================
-USER REQUEST (verbatim intent):
-  "revisar el componente de keymap input binding, no funciona los cambios.
-   Analizar si el keymap esta completamente desacoplado para que no sea
-   afectado por modificaciones."
-   Clarified symptom: "gears are stuck on 1st, and I don't know if is by rust
-   module or if is by godot acopled thing."
-   Chosen scope: "Full keymap extraction (Recommended)".
-
-ROOT CAUSE (diagnosed, read-only confirmed):
-- The KEYMAP ITSELF IS FINE AND DECOUPLED ENOUGH. Actions live only in
-  `game/project.godot -> [input]` (Throttle, Brakes, Steer Left/Right, Handbrake,
-  Clutch, Shift Up/Down, aid_1..5, ui_back_to_menu, ShowDebug). The active
-  controller `F194RustInputController.gd` reads them BY NAME. There is NO runtime
-  re-registration of InputMap anywhere. The "gears stuck on 1st" is NOT a keymap
-  problem.
-- THE REAL BUG IS IN THE BRIDGE GLUE (the "godot acopled thing"):
-  `F90SimBridge::drive_integrate` calls `fn_solve_external_` with HARDCODED
-  `clutch = 0.0, gear_request = 0, toggle_tc = false`. So the vehicle's
-  `gear_request_` (set by the input controller) is NEVER forwarded to the core.
-- The core's powertrain only shifts when `input.gear_request` is `Some(req)`
-  (`game/physics/engine/src/powertrain.rs:135`). With `None` (because
-  `gear_request=0 -> None` in c_abi), `desired` stays at `current_gear` -> STUCK
-  IN GEAR 1.
-- Secondary sentinel bug: c_abi maps `gear_request == 0 -> None`, but core
-  contract `types.rs:539` says `Some(0)=Neutral`, `Some(-1)=Reverse`,
-  `None=no change`. So requesting NEUTRAL is currently impossible (collides with
-  no-change). The C++ vehicle uses `-2` as its "no request" sentinel
-  (`f1_94_rust_vehicle.cpp:110`).
-- Evidence the controller side works: `F194RustInputController.gd` reads
-  Shift Up/Down, computes next gear, calls `vehicle.set_gear_request(n)`.
-  The vehicle stores it (`gear_request_`, default -2) and syncs `current_gear_`
-  from core telemetry every frame (`f1_94_rust_vehicle.cpp:1218`). The break is
-  purely that the bridge path (`drive_integrate`) ignores it.
+C) FIX P0 — AYUDAS (ESP/TCS) EN LA FACHADA (2026-08-18, validado):
+   - El ABI de la fachada perdía el mask de ayudas (solo pulso toggle_tc) y el
+     primer frame generaba un toggle espurio que apagaba TCS y congelaba ESP.
+     FIX: f90_core_step ahora recibe aids_mask (8 bits) y CoreFacade::step
+     aplica AidsMask::from_bits(aids_mask) CADA frame (sim.aids completo +
+     sync AidsState). Se eliminó last_aids_mask_/toggle en F90Core.
+   - f90_core_apply_runtime_config añadido y enrutado: los setters del vehículo
+     (diff_preload, bias, aero, ...) ahora escriben en el core de la fachada en
+     modo bridge (F194RustVehicle::apply_runtime_config -> core_driver_ ->
+     F90Core::apply_runtime_config -> ffi). Reutiliza
+     vehicle_physics_engine::apply_runtime_config_to_sim (extracto público).
+   - Tests: facade_applies_full_aids_mask_each_step,
+     facade_apply_runtime_config_is_accepted + suite física OK.
+   - Ambas DLL (debug y template_release de formula90_core) reconstruidas a ABI v2.
 
 ================================================================================
-4. PLAN
+3. AUDITORÍA DEL JSON — HALLAZGOS (ya hechos, NO repetir; úsalos para P1)
 ================================================================================
-NOTE: Phase B (keymap extraction) ALONE WILL NOT FIX the gears bug. Phase A is
-required for the reported symptom. Implement both since user chose full extraction.
-
---- PHASE A: Fix gears (mandatory) ---
-4.A.1  native/src/sim/f90_sim_bridge.cpp  (function drive_integrate, ~line 246-275)
-   - After reading throttle/brake/steer/handbrake, also read:
-       int      gr     = veh->get_gear_request();
-       double   clutch = veh->get_clutch_amount();
-       uint32_t aids   = veh->get_aids_enabled_mask();
-   - Track TC toggle edge: add bridge member `uint32_t last_aids_mask_ = 0;`
-     (declare in f90_sim_bridge.hpp). If `aids != last_aids_mask_`, set
-     `bool toggle_tc = true;` for this frame and update `last_aids_mask_ = aids`.
-     Otherwise `toggle_tc = false`.
-   - Change the `fn_solve_external_` call to pass `clutch` and `(int8_t)gr`
-     instead of the literals `0.0` and `0`:
-       fn_solve_external_(world_, entity_id_, old_pos.x, old_pos.y, old_pos.z,
-           q.x, q.y, q.z, q.w,
-           old_lin.x, old_lin.y, old_lin.z, old_ang.x, old_ang.y, old_ang.z,
-           throttle, brake, steer, handbrake, clutch, (int8_t)gr, toggle_tc,
-           dt, samples, force_out, torque_out);
-   - All getters already exist on the vehicle (get_gear_request, get_clutch_amount,
-     get_aids_enabled_mask — confirmed bound in f1_94_rust_vehicle.cpp).
-   - The FnSimWorldSolveExternal C signature already has (clutch, gear_request,
-     toggle_tc) params, so NO change to f90_sim_bridge.h typedef needed for A.
-
-4.A.2  game/sim/src/c_abi.rs  (function sim_world_solve_external, builds DriverInput)
-   - Change:
-       gear_request: if gear_request == 0 { None } else { Some(gear_request) },
-     to:
-       gear_request: if gear_request < -1 { None } else { Some(gear_request as i8) },
-     so: -2 = no-request (None), -1 = Reverse, 0 = Neutral, 1..6 = gears.
-   - This matches `vehicle_physics_engine::VehicleInput.gear_request`
-     (`types.rs:539`).
-
---- PHASE B: Full keymap decoupling (user's chosen scope) ---
-4.B.1  Create authoritative keymap source:
-   - Option (recommended): `res://data/input/keymap.tres` — a `Resource` holding
-     `action_events: Dictionary` (action name -> Array of InputEvent), OR an
-     `InputBindings.gd` autoload that defines bindings in code and registers them
-     in `_init()` via `InputMap.add_action` + `InputMap.action_add_event`.
-   - Register the autoload in `game/project.godot [autoload]` BEFORE other scripts.
-   - The autoload registers actions at runtime, making the keymap AUTHORITATIVE
-     (overrides project.godot [input]) so stale/duplicate definitions can't win.
-4.B.2  `InputBindings` exposes canonical name constants
-   (THROTTLE="Throttle", STEER_LEFT="Steer Left", SHIFT_UP="Shift Up", ...).
-4.B.3  Refactor `game/addons/formula90s/scripts/f1_94_rust_input_controller.gd`:
-   default its `@export var action_*: String` to `InputBindings.XXX` instead of
-   inline literals (keep @export for per-instance override).
-4.B.4  Align the hardcoded action strings in `F90SimBridge::drive_self`
-   (legacy fallback path) to the same canonical names.
-4.B.5  Audit/fix gaps:
-   - `Reset` action is referenced in PROJECT_STATE.md but NOT defined in
-     project.godot [input] -> add it or remove the reference.
-   - Verify `automatic_transmission` default is `false` (manual). If it were
-     `true`, the core would auto-shift (powertrain.rs:137) and NOT be stuck on
-     1st, so default is almost certainly false; confirm.
-   - Decide whether to strip `project.godot [input]` after the autoload owns it
-     (recommended: autoload is single source; project.godot kept only as fallback
-     or removed to avoid drift).
+Auditoría read-only de game/.../vehicles/f1_94/f1_94_physics.json (subagente).
+CONCLUSIÓN: casi todo se usa, pero estas claves se IGNORAN hardcodeadas o muertas:
+- surfaces.*.lateral_grip_assist (JSON Road 0.04) -> tire.rs hardcodea 0.05.
+- surfaces.*.longitudinal_grip_ratio (JSON Road 0.64) -> tire.rs hardcodea 0.5
+  (menos agarre longitudinal -> más patinaje -> sensación "sin TCS"; TC ya OK tras P0).
+- differential.slip_transition_threshold_rad_s (JSON 0.90) -> powertrain.rs:505
+  hardcodea 0.50.
+- input_smoothing_* (JSON on: steering 6.0/throttle 7.5/brake 14.0) ->
+  simulation.rs:501,506 hardcodea 20.0/10.0 (filter_inputs).
+- automatic_shift (15 claves) y gear_inertia: parseados pero NO usados
+  (auto-shift hardcodeado powertrain.rs:137-179; GEVP_GEAR_INERTIA 0.02).
+- launch_control_* + bit launch_control, bit auto_clutch, stability_upright_*,
+  traction_control_actuator, handbrake_rear_only/abs_interlock/clutch_coupling,
+  wheel_hubs, metadatos (vehicle_id/profile_name/units/coordinate_contract):
+  no leídas o metadatos.
+- brakes.enable_abs solo gobierna la ruta compat; en ruta real el ABS lo manda
+  el bit del mask (simulation.rs:225) -> dos fuentes de verdad.
+Diferencial de valores vs canónico a decidir con el usuario:
+  diff_preload JSON 40 vs canónico 170; contact_patch JSON 0.35 vs 0.21.
+Candidatos a "movimientos parásitos": countersteer_assist activo (mask JSON) +
+  ESP torque + pitch torque aid + grips hardcodeados + TC off de primer frame ya
+  arreglado.
 
 ================================================================================
-5. VALIDATION
+4. NEXT TASK (what the next agent must do)
 ================================================================================
-- Build Rust core:   cd game/sim && cargo build
-  Copy artifact to addons (required; no auto-copy step exists):
-    game\sim\target\debug\game_sim.dll
-      -> game\addons\formula90s\bin\game_sim.windows.template_debug.x86_64.dll
-      -> game\addons\formula90s\bin\game_sim.dll
-- Build C++ bridge:  cd D:\Formula90s && scons  (godot-cpp compile is slow the
-  first time; subsequent builds are fast/incremental). Godot exe:
-  .tools/godot/Godot_v4.7.1-stable_win64.exe
-- Headless validation (NOTE: headless physics runs ~1 Hz in this repo due to
-  scene/load overhead; run with --quit-after 240 to accumulate sim time):
-  godot --headless --path game --quit-after 240
-        res://scenes/runtime/sim_bridge_quick_test.tscn
-  Then inspect game/headless_godot.log for "[F90SimBridge->Vehicle]" lines
-  (they include posX/posY/posZ + gear + speed).
-- Gears test: force/trip an upshift (set gear_request via a temp script, or
-  simulate Shift-Up) and confirm current_gear increments 1->2->...->6 and
-  reverse/neutral are reachable; speed should climb after shifting.
-- Regression: re-run straight-line launch (debug_throttle=1.0) and confirm
-  posX stays 0.0 (lateral-drift fix still good).
-- Keymap test: rebind a key in the keymap resource and confirm the action fires
-  under the new key with NO code change.
+USER REQUEST (intent): "verificar que todos los parámetros configurables del JSON
+  del F1-94 se usan de verdad; parece que no hay ESP/TCS (ya arreglado en P0), pero
+  puede haber otras cosas interfiriendo en movimientos parásitos."
++ Aprobado (P0) -> AHORA P1/P2.
+
+--- PHASE P1 — FIDELIDAD DEL JSON (parámetros muertos/hardcodeados) ---
+Orden sugerido por impacto en el patinaje/snap oversteer:
+1. tire.rs L287-293: cablear surface_lateral_grip_assist y
+   surface_longitudinal_grip_ratio DESDE sim.config (VehicleConfig ya los
+   almacena: surface_lateral_grip_assist, surface_longitudinal_grip_ratio;
+   ver vehicle_config.rs L1569-1570). Sustituir los hardcodes 0.05/0.5. Corrección
+   grande de "sensación sin TCS" porque el JSON pide 0.64 (más agarre).
+   CUIDADO: cambiar 0.5->0.64 cambia la sensación; validar con A/B headless.
+2. powertrain.rs:505: usar diff_slip_transition_threshold_rad_s del config en
+   solve_salisbury_differential (en vez de 0.50) o eliminar la clave.
+3. simulation.rs: filter_inputs: usar input_smoothing_* (vehicle_config los
+   almacena?) o eliminar las claves del JSON si no se quieren.
+4. Decidir (con usuario) diff_preload / contact_patch (JSON vs canónico) y
+   automatic_shift / gear_inertia (implementar o borrar del schema).
+5. P1 adicional de coherencia: brakes.enable_abs vs bit del mask (una fuente);
+   enrutar driving_aids.gd (toggles ESTAB/FRENOS/GRIP hoy no-op por
+   vehicle_tunable_contract.gd UNSUPPORTED_F1_94_PROPERTIES L19-26) por
+   set_aids_enabled_mask, no por propiedades bloqueadas.
+Regla Phase C (PROJECT_STATE §8.3): cambia UNA familia a la vez y valida.
+
+--- PHASE P2 — TELEMETRÍA PARA LA RUTA RUST (para poder validar con datos) ---
+6. telemetry_manager.gd SOLO captura clase "Vehicle" (GEVP) -> la ruta Rust
+   (F194RustVehicle) NO produce CSV. Añadir soporte para registrar el vehículo
+   Rust (o exponer la telemetría del core en la facada). Sin esto no hay CSV
+   de la sesión que conduces.
+7. Cabecera telemetry_manager.gd declara 26 columnas (TC_Active) pero emite 25:
+   reparar la columna TC_Active para poder verificar TC desde el CSV.
+8. Rebuild de la extensión native RELEASE (libformula90s.windows.template_release)
+   tras los cambios P0 (aún stale, sin F90Core). Y rebuild de formula90_core
+   template_release cuando se toque la fachada (ABI).
+
+--- VALIDACIÓN (cada fase) ---
+- cargo test  (game/physics/engine + game/core al menos) -> EXIT 0.
+- scripts/build_windows.ps1 -Configuration debug  -> EXIT 0.
+- Headless: .tools/godot/Godot_v4.7.1-stable_win64_console.exe --headless
+  --path game --quit-after 240 res://scenes/runtime/sim_bridge_quick_test.tscn
+  -> "[F90Core] facade ready (ABI=2)" + "[F90Core->Vehicle]" + sin mismatch.
+- Tras cambios en formula90_core: recopiar SIEMPRE debug Y release-named
+  (template_release) a game/addons/formula90s/bin (el headless carga primero
+  template_release; si queda stale con ABI viejo -> FATAL ABI mismatch).
 
 ================================================================================
-6. KEY FILES REFERENCE
+5. KEY FILES REFERENCE
 ================================================================================
-game/sim/src/c_abi.rs                     - C-ABI; sim_world_solve_external (gear sentinel here)
-game/sim/src/input.rs                     - DriverInput struct (throttle/brake/steer/clutch/gear_request/edges)
-native/include/formula90s/sim/f90_sim_bridge.h   - FnSimWorldSolveExternal typedef (mirror of c_abi)
-native/src/sim/f90_sim_bridge.cpp        - drive_integrate (FORWARD gear_request/clutch/toggle_tc here); drive_self (legacy)
-native/src/sim/f90_sim_bridge.hpp        - add last_aids_mask_ member here
-native/src/vehicle/f1_94_rust_vehicle.cpp - gear_request_/current_gear_/aids mask; apply_core_telemetry syncs current_gear
-game/addons/formula90s/scripts/f1_94_rust_vehicle.gd - wrapper; gear_request/current_gear props
-game/addons/formula90s/scripts/f1_94_rust_input_controller.gd - reads InputMap by name -> sets vehicle fields
-game/scenes/vehicles/f1_94/f1_94_rust.tscn - uses F194RustInputController (ACTIVE path)
-game/scenes/runtime/sim_bridge_quick_test.tscn - flat validation scene (debug_throttle=1.0)
-game/project.godot -> [input] and [autoload] - keymap defs + autoload registration
-game/physics/engine/src/powertrain.rs     - gear shift logic (line 135 Some(req), 137 auto)
-game/physics/engine/src/types.rs          - VehicleInput.gear_request contract (line 539)
-PROJECT_STATE.md §45.0                    - running notes; update after completion
+game/core/                         - la fachada: lib.rs (CoreFacade), ffi.rs
+                                     (f90_core_*, ABI v2, layout_tests),
+                                     audio.rs, module.rs (SimModule),
+                                     modules/{weather,ai}_stub.rs, tests/
+game/physics/engine/src/           - solver: vehicle_config.rs (JSON),
+                                     simulation.rs (AidsMask, filter_inputs,
+                                     filter_inputs L501/506, ESP),
+                                     powertrain.rs (TC L310-366, LSD L469-520),
+                                     tire.rs (L287-293 grips), ffi.rs
+                                     (apply_runtime_config_to_sim)
+game/sim/                          - game_sim: world.rs, snapshot.rs, c_abi.rs
+native/src/core/f90_core.cpp       - nodo F90Core (drive_integrate, pump_audio,
+                                     apply_runtime_config, reset_core_at)
+native/include/formula90s/core/f90_core.h / .hpp   - C ABI v2 + F90Core class
+native/include/formula90s/vehicle/formula90_physics.h - F90RuntimeConfig
+native/src/vehicle/f1_94_rust_vehicle.cpp - bridge_controlled, apply_runtime_config
+game/data/vehicles/f1_94/f1_94_physics.json  - fuente de verdad (schema v2)
+game/addons/formula90s/scripts/telemetry_manager.gd  - P2 (solo GEVP; 26 vs 25)
+game/addons/formula90s/scripts/vehicle_tunable_contract.gd - P1 toggles no-op
+game/scenes/runtime/{vehicle_test_session,sim_bridge_quick_test}.tscn - orquestador
+scripts/build_windows.ps1 / build_linux.sh - builds (game/core incluido)
+docs/ARCHITECTURE.md  reports/facade_baseline.md  PROJECT_STATE.md  (§45 item 11)
 
 ================================================================================
-7. OPEN DECISIONS FOR NEXT AGENT
+6. OPEN DECISIONS FOR NEXT AGENT (ask the user before mutating)
 ================================================================================
-- Confirm whether to KEEP `project.godot [input]` after the keymap autoload owns
-  bindings (recommend: autoload = single source; remove or keep as fallback).
-- Confirm automatic_transmission default (should be false for manual).
-- Whether to also handle `drive_self` (legacy) gear forwarding (lower priority;
-  not on the active path).
-- Do NOT commit unless the user explicitly asks. Update PROJECT_STATE.md §45.0
-  when done.
+- P1: ¿cablear longitudinal_grip_ratio 0.64 (más agarre) o mantener 0.5? (cambia
+  sensación). ¿implementar automatic_shift/gear_inertia o quitarlos del schema?
+  ¿reconciliar diff_preload (40 vs 170) y contact_patch (0.35 vs 0.21)?
+- P2: ¿dónde registrar la telemetría Rust (extender telemetry_manager vs exponer
+  del core)? Aprobarlo antes.
+- Do NOT commit unless asked. Update PROJECT_STATE.md (§45) when done.
 ================================================================================

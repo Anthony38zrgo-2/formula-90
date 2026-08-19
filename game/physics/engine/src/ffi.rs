@@ -108,17 +108,14 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
     true
 }
 
-#[no_mangle]
-pub extern "C" fn f1_94_physics_apply_runtime_config(
-    sim_ptr: *mut c_void,
-    config_ptr: *const FfiRuntimeConfig,
+/// Apply a runtime-tunable config to a simulator in place. Shared by the legacy
+/// FFI (`f1_94_physics_apply_runtime_config`) and the orchestrator facade
+/// (`formula90_core`), so every tunable JSON parameter stays usable at runtime on
+/// BOTH integration paths. Sanitizes each field like the original FFI.
+pub fn apply_runtime_config_to_sim(
+    sim: &mut VehicleSimulator,
+    cfg: &FfiRuntimeConfig,
 ) -> bool {
-    if sim_ptr.is_null() || config_ptr.is_null() {
-        return false;
-    }
-    let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
-    let cfg = unsafe { *config_ptr };
-
     if cfg.vehicle_mass.is_finite() && cfg.vehicle_mass > 0.0 {
         sim.config.vehicle_mass = cfg.vehicle_mass;
     }
@@ -189,6 +186,18 @@ pub extern "C" fn f1_94_physics_apply_runtime_config(
     }
     sim.aids = AidsMask::from_bits(cfg.aids_enabled_mask);
     true
+}
+
+#[no_mangle]
+pub extern "C" fn f1_94_physics_apply_runtime_config(
+    sim_ptr: *mut c_void,
+    config_ptr: *const FfiRuntimeConfig,
+) -> bool {
+    if sim_ptr.is_null() || config_ptr.is_null() {
+        return false;
+    }
+    let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
+    apply_runtime_config_to_sim(sim, unsafe { &*config_ptr })
 }
 
 #[repr(C)]

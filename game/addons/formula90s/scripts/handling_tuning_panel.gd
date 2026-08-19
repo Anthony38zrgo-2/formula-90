@@ -232,16 +232,18 @@ func _set_driving_enabled(enabled: bool) -> void:
 		_vehicle.clutch_input = 0.0
 
 
-func _find_vehicle_in_scene() -> Vehicle:
+func _find_vehicle_in_scene() -> Node:
 	var search_root: Node = self
 	while search_root.get_parent() != null and search_root.get_parent() != get_tree().root:
 		search_root = search_root.get_parent()
 	return _find_vehicle_recursive(search_root)
 
 
-func _find_vehicle_recursive(node: Node) -> Vehicle:
-	if node is Vehicle:
-		return node as Vehicle
+func _find_vehicle_recursive(node: Node) -> Node:
+	# Both the GEVP `Vehicle` and the Rust `F194RustVehicle` are RigidBody3D;
+	# matching on RigidBody3D avoids a hard dependency on the (archived) GEVP class.
+	if node is RigidBody3D:
+		return node
 	for child in node.get_children():
 		var found := _find_vehicle_recursive(child)
 		if found != null:
