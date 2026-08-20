@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param([ValidateSet('debug','release')][string]$Configuration='debug',[switch]$CompileCommands)
-$ErrorActionPreference='Continue'; $root=Split-Path -Parent $PSScriptRoot; Set-Location $root
+$ErrorActionPreference='Stop'; $root=Split-Path -Parent $PSScriptRoot; Set-Location $root
 if (-not (Test-Path 'third_party\godot-cpp\SConstruct')) { throw 'godot-cpp ausente. Ejecute scripts/bootstrap_windows.ps1.' }
 $python=(Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $python) { $python=Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' }
@@ -55,5 +55,4 @@ $coreDest = "formula90_core.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' $coreDest) -Force
 Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' 'formula90_core.dll') -Force
 Write-Host "formula90_core DLL copiada a game/addons/formula90s/bin/$coreDest (+ formula90_core.dll)" -ForegroundColor Green
-
 

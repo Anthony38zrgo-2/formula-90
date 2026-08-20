@@ -5,7 +5,7 @@ vcvars_bat = os.path.join(vs_path, "VC", "Auxiliary", "Build", "vcvars64.bat")
 
 root = r"d:\Formula90s"
 sources = glob.glob(os.path.join(root, "native", "src", "*.cpp"))
-for folder in ["core", "vehicle", "camera", "presentation", "ui", "audio"]:
+for folder in ["core", "vehicle", "camera", "presentation", "ui", "audio", "sim"]:
     sources += glob.glob(os.path.join(root, "native", "src", folder, "*.cpp"))
 
 includes = [

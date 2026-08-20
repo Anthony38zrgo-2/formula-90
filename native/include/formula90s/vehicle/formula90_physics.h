@@ -82,9 +82,32 @@ typedef struct F90TelemetryOutput {
     double fl_tread_outer_c, fr_tread_outer_c, rl_tread_outer_c, rr_tread_outer_c;
     double fl_carcass_c, fr_carcass_c, rl_carcass_c, rr_carcass_c;
     double fl_gas_c, fr_gas_c, rl_gas_c, rr_gas_c;
+
+    // Brake thermal + duct telemetry, ABI 12 append-only block.
+    double fl_brake_disc_c, fr_brake_disc_c, rl_brake_disc_c, rr_brake_disc_c;
+    double fl_brake_caliper_c, fr_brake_caliper_c, rl_brake_caliper_c, rr_brake_caliper_c;
+    double fl_brake_hub_c, fr_brake_hub_c, rl_brake_hub_c, rr_brake_hub_c;
+    double fl_brake_rim_c, fr_brake_rim_c, rl_brake_rim_c, rr_brake_rim_c;
+    double fl_brake_efficiency, fr_brake_efficiency, rl_brake_efficiency, rr_brake_efficiency;
+    double fl_duct_mass_flow_kg_s, fr_duct_mass_flow_kg_s, rl_duct_mass_flow_kg_s, rr_duct_mass_flow_kg_s;
+    double fl_duct_drag_n, fr_duct_drag_n, rl_duct_drag_n, rr_duct_drag_n;
+    double brake_optimal_min_c, brake_optimal_max_c, brake_fade_start_c, brake_critical_c;
+    // Brake energy diagnostics, ABI 10 append-only block.
+    double fl_brake_torque_nm, fr_brake_torque_nm, rl_brake_torque_nm, rr_brake_torque_nm;
+    double fl_brake_spin_pre_rad_s, fr_brake_spin_pre_rad_s, rl_brake_spin_pre_rad_s, rr_brake_spin_pre_rad_s;
+    double fl_brake_spin_post_rad_s, fr_brake_spin_post_rad_s, rl_brake_spin_post_rad_s, rr_brake_spin_post_rad_s;
+    double fl_brake_power_w, fr_brake_power_w, rl_brake_power_w, rr_brake_power_w;
+    double fl_brake_energy_j, fr_brake_energy_j, rl_brake_energy_j, rr_brake_energy_j;
+    double fl_brake_disc_bulk_c, fr_brake_disc_bulk_c, rl_brake_disc_bulk_c, rr_brake_disc_bulk_c;
+    double fl_brake_surface_capacity_j_k, fr_brake_surface_capacity_j_k, rl_brake_surface_capacity_j_k, rr_brake_surface_capacity_j_k;
+    double fl_brake_bulk_capacity_j_k, fr_brake_bulk_capacity_j_k, rl_brake_bulk_capacity_j_k, rr_brake_bulk_capacity_j_k;
+    double fl_brake_surface_bulk_w_k, fr_brake_surface_bulk_w_k, rl_brake_surface_bulk_w_k, rr_brake_surface_bulk_w_k;
+    double fl_brake_natural_cooling_w_k, fr_brake_natural_cooling_w_k, rl_brake_natural_cooling_w_k, rr_brake_natural_cooling_w_k;
+    double fl_brake_speed_cooling_w_k, fr_brake_speed_cooling_w_k, rl_brake_speed_cooling_w_k, rr_brake_speed_cooling_w_k;
+    double fl_brake_surface_to_bulk_heat_w, fr_brake_surface_to_bulk_heat_w, rl_brake_surface_to_bulk_heat_w, rr_brake_surface_to_bulk_heat_w;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 8
+#define F1_94_PHYSICS_ABI_VERSION 12
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;

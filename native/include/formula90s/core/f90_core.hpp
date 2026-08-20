@@ -51,7 +51,31 @@ static_assert(offsetof(F90CoreFrameOut, tire_tread_center_c) == 408);
 static_assert(offsetof(F90CoreFrameOut, tire_tread_outer_c) == 440);
 static_assert(offsetof(F90CoreFrameOut, tire_carcass_c) == 472);
 static_assert(offsetof(F90CoreFrameOut, tire_gas_c) == 504);
-static_assert(sizeof(F90CoreFrameOut) == 536);
+static_assert(offsetof(F90CoreFrameOut, brake_disc_c) == 536);
+static_assert(offsetof(F90CoreFrameOut, brake_caliper_c) == 568);
+static_assert(offsetof(F90CoreFrameOut, brake_hub_c) == 600);
+static_assert(offsetof(F90CoreFrameOut, brake_rim_c) == 632);
+static_assert(offsetof(F90CoreFrameOut, brake_efficiency) == 664);
+static_assert(offsetof(F90CoreFrameOut, duct_mass_flow_kg_s) == 696);
+static_assert(offsetof(F90CoreFrameOut, duct_drag_n) == 728);
+static_assert(offsetof(F90CoreFrameOut, total_brake_duct_drag_n) == 760);
+static_assert(offsetof(F90CoreFrameOut, brake_optimal_min_c) == 768);
+static_assert(offsetof(F90CoreFrameOut, brake_optimal_max_c) == 776);
+static_assert(offsetof(F90CoreFrameOut, brake_fade_start_c) == 784);
+static_assert(offsetof(F90CoreFrameOut, brake_critical_c) == 792);
+static_assert(offsetof(F90CoreFrameOut, brake_torque_nm) == 800);
+static_assert(offsetof(F90CoreFrameOut, brake_spin_pre_rad_s) == 832);
+static_assert(offsetof(F90CoreFrameOut, brake_spin_post_rad_s) == 864);
+static_assert(offsetof(F90CoreFrameOut, brake_power_w) == 896);
+static_assert(offsetof(F90CoreFrameOut, brake_energy_j) == 928);
+static_assert(offsetof(F90CoreFrameOut, brake_disc_bulk_c) == 960);
+static_assert(offsetof(F90CoreFrameOut, brake_surface_capacity_j_k) == 992);
+static_assert(offsetof(F90CoreFrameOut, brake_bulk_capacity_j_k) == 1024);
+static_assert(offsetof(F90CoreFrameOut, brake_surface_bulk_w_k) == 1056);
+static_assert(offsetof(F90CoreFrameOut, brake_natural_cooling_w_k) == 1088);
+static_assert(offsetof(F90CoreFrameOut, brake_speed_cooling_w_k) == 1120);
+static_assert(offsetof(F90CoreFrameOut, brake_surface_to_bulk_heat_w) == 1152);
+static_assert(sizeof(F90CoreFrameOut) == 1184);
 
 /// The orchestrator node. Loads the SINGLE `formula90_core.dll` facade (one
 /// handshake / one ABI version), owns the sim + audio, drives the vehicle inside
@@ -64,7 +88,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 3;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 7;
 
 	F90Core();
 	~F90Core() override;

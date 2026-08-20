@@ -1,9 +1,10 @@
 use crate::aero::AeroForces;
+use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
 use crate::suspension::SuspensionSystem;
-use crate::tire_thermals::{TireEnvironment, TireThermalInput, TireThermalSystem};
 use crate::telemetry::TelemetryFrame;
 use crate::tire::TireSystem;
+use crate::tire_thermals::{TireEnvironment, TireThermalInput, TireThermalSystem};
 use crate::types::{Mat3, Quat, Transform3D, TriRaycastSample, Vec3, VehicleInput, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
@@ -39,6 +40,7 @@ pub struct VehicleState {
     pub suspension: SuspensionSystem,
     pub tires: TireSystem,
     pub tire_thermal: TireThermalSystem,
+    pub brake_thermal: BrakeThermalSystem,
     pub aero: AeroForces,
     pub sim_time: f64,
     pub physics_hz: i32,
@@ -60,7 +62,11 @@ impl VehicleState {
             powertrain: PowertrainState::new(config),
             suspension: SuspensionSystem::new(config),
             tires: TireSystem::new(config),
-            tire_thermal: TireThermalSystem::new(&config.tire_pressure, &config.tire_thermal),
+            tire_thermal: TireThermalSystem::new_with_axles(
+                &config.tire_pressure,
+                &config.tire_thermal,
+            ),
+            brake_thermal: BrakeThermalSystem::new(&config.brake_thermal),
             aero: AeroForces::zero(),
             sim_time: 0.0,
             physics_hz: 120,
@@ -95,14 +101,30 @@ impl AidsMask {
     /// bit5=auto-clutch, bit6=launch, bit7=brake-assist.
     pub fn to_bits(&self) -> u32 {
         let mut b = 0u32;
-        if self.abs { b |= 1 << 0; }
-        if self.traction_control { b |= 1 << 1; }
-        if self.stability { b |= 1 << 2; }
-        if self.steering_slip_assist { b |= 1 << 3; }
-        if self.countersteer { b |= 1 << 4; }
-        if self.auto_clutch { b |= 1 << 5; }
-        if self.launch_control { b |= 1 << 6; }
-        if self.brake_assist { b |= 1 << 7; }
+        if self.abs {
+            b |= 1 << 0;
+        }
+        if self.traction_control {
+            b |= 1 << 1;
+        }
+        if self.stability {
+            b |= 1 << 2;
+        }
+        if self.steering_slip_assist {
+            b |= 1 << 3;
+        }
+        if self.countersteer {
+            b |= 1 << 4;
+        }
+        if self.auto_clutch {
+            b |= 1 << 5;
+        }
+        if self.launch_control {
+            b |= 1 << 6;
+        }
+        if self.brake_assist {
+            b |= 1 << 7;
+        }
         b
     }
 
@@ -147,13 +169,22 @@ impl VehicleSimulator {
     pub fn new(config: VehicleConfig, spawn_pos: Vec3, spawn_yaw: f64) -> Self {
         let state = VehicleState::new(&config, spawn_pos, spawn_yaw);
         let aids = AidsMask::from_config(&config);
-        Self { config, state, aids }
+        Self {
+            config,
+            state,
+            aids,
+        }
     }
 
     /// Legacy standalone step. It uses the same GEVP force solver as external mode,
     /// then integrates a full rigid body locally. Prefer solve_external() when Godot
     /// already owns a RigidBody3D.
-    pub fn step(&mut self, input: &VehicleInput, samples: &[TriRaycastSample; 4], dt: f64) -> TelemetryFrame {
+    pub fn step(
+        &mut self,
+        input: &VehicleInput,
+        samples: &[TriRaycastSample; 4],
+        dt: f64,
+    ) -> TelemetryFrame {
         let (forces, _) = self.solve_forces(input, samples, dt);
         self.integrate_standalone(forces, dt);
         self.build_telemetry_frame()
@@ -215,21 +246,40 @@ impl VehicleSimulator {
         };
 
         st.aero.step(cfg, local_velocity, dt);
+        let vehicle_speed_ms = st.linear_velocity.length();
+        let brake_duct_drag_n = st.brake_thermal.total_duct_drag_force_n(
+            &cfg.brake_thermal,
+            cfg.air_density,
+            vehicle_speed_ms,
+        );
 
         // Pressure/thermal mechanical modifiers from the CURRENT tick's tire
         // thermal state (pressure N drives mechanics/forces N; heat updates the
         // pressure for the next tick).
         let thermal_modifiers = [
-            st.tire_thermal
-                .mechanical_modifiers(WheelIndex::FrontLeft, &cfg.tire_pressure, &cfg.tire_thermal),
-            st.tire_thermal
-                .mechanical_modifiers(WheelIndex::FrontRight, &cfg.tire_pressure, &cfg.tire_thermal),
-            st.tire_thermal
-                .mechanical_modifiers(WheelIndex::RearLeft, &cfg.tire_pressure, &cfg.tire_thermal),
-            st.tire_thermal
-                .mechanical_modifiers(WheelIndex::RearRight, &cfg.tire_pressure, &cfg.tire_thermal),
+            st.tire_thermal.mechanical_modifiers(
+                WheelIndex::FrontLeft,
+                &cfg.tire_pressure,
+                &cfg.tire_thermal.front,
+            ),
+            st.tire_thermal.mechanical_modifiers(
+                WheelIndex::FrontRight,
+                &cfg.tire_pressure,
+                &cfg.tire_thermal.front,
+            ),
+            st.tire_thermal.mechanical_modifiers(
+                WheelIndex::RearLeft,
+                &cfg.tire_pressure,
+                &cfg.tire_thermal.rear,
+            ),
+            st.tire_thermal.mechanical_modifiers(
+                WheelIndex::RearRight,
+                &cfg.tire_pressure,
+                &cfg.tire_thermal.rear,
+            ),
         ];
-        st.suspension.step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
+        st.suspension
+            .step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
 
         let wheel_spins = [
             st.tires.wheels[0].spin,
@@ -241,6 +291,7 @@ impl VehicleSimulator {
         let tc_enabled = self.aids.traction_control;
         let abs_enabled = self.aids.abs;
         let brake_assist_enabled = self.aids.brake_assist;
+        let brake_efficiency = st.brake_thermal.efficiency_scales();
         st.powertrain.step_with_reaction(
             cfg,
             &effective_input,
@@ -253,6 +304,13 @@ impl VehicleSimulator {
             dt,
         );
 
+        // ABS remains the owner of pulsing/zeroing brake torque. Thermal fade
+        // scales only the final per-wheel torque for this mechanical solve.
+        for wheel in WheelIndex::ALL {
+            let i = wheel as usize;
+            st.powertrain.brake_torques[i] *= brake_efficiency[i];
+        }
+
         // GEVP applies wheel torque before calculating this frame's tire force.
         for wheel in WheelIndex::ALL {
             let i = wheel as usize;
@@ -260,7 +318,11 @@ impl VehicleSimulator {
                 cfg,
                 wheel,
                 st.powertrain.drive_torques[i],
-                if crate::tire::is_driven(cfg, wheel) { st.powertrain.drive_inertia } else { 0.0 },
+                if crate::tire::is_driven(cfg, wheel) {
+                    st.powertrain.drive_inertia
+                } else {
+                    0.0
+                },
                 st.powertrain.brake_torques[i],
                 dt,
             );
@@ -275,7 +337,7 @@ impl VehicleSimulator {
 
         // GEVP central aerodynamic drag.
         let drag_world = if st.linear_velocity.length() > 1e-6 {
-            st.linear_velocity.normalized() * -st.aero.drag_force.abs()
+            st.linear_velocity.normalized() * -(st.aero.drag_force.abs() + brake_duct_drag_n)
         } else {
             Vec3::ZERO
         };
@@ -287,7 +349,8 @@ impl VehicleSimulator {
         // Point 3: Rear Wing / Axle (20%)
         if st.aero.total_downforce > 0.0 {
             let front_force = basis.transform_vector(Vec3::new(0.0, -st.aero.front_downforce, 0.0));
-            let diffuser_force = basis.transform_vector(Vec3::new(0.0, -st.aero.diffuser_downforce, 0.0));
+            let diffuser_force =
+                basis.transform_vector(Vec3::new(0.0, -st.aero.diffuser_downforce, 0.0));
             let rear_force = basis.transform_vector(Vec3::new(0.0, -st.aero.rear_downforce, 0.0));
 
             let front_point = st.transform.transform_point(axle_center_local(cfg, true));
@@ -307,7 +370,8 @@ impl VehicleSimulator {
             st.tires.wheels[i].steer_angle_rad = steer_angle;
 
             let contact_point = st.suspension.wheels[i].effective_contact_point;
-            st.tires.set_mechanical_modifiers(wheel, thermal_modifiers[i]);
+            st.tires
+                .set_mechanical_modifiers(wheel, thermal_modifiers[i]);
             st.tires.set_mechanical_state(
                 cfg,
                 wheel,
@@ -340,11 +404,10 @@ impl VehicleSimulator {
             // curbs and uneven ground this prevents Fx/Fy from incorrectly remaining
             // in the chassis-horizontal plane.
             let contact_normal = st.suspension.wheels[i].effective_normal.normalized();
-            let nominal_forward_world = basis.transform_vector(
-                steer_basis.transform_vector(Vec3::FORWARD),
-            );
-            let projected_forward = nominal_forward_world
-                - contact_normal * nominal_forward_world.dot(contact_normal);
+            let nominal_forward_world =
+                basis.transform_vector(steer_basis.transform_vector(Vec3::FORWARD));
+            let projected_forward =
+                nominal_forward_world - contact_normal * nominal_forward_world.dot(contact_normal);
             let contact_forward = if projected_forward.length_squared() > 1e-10 {
                 projected_forward.normalized()
             } else {
@@ -372,10 +435,10 @@ impl VehicleSimulator {
             );
 
             let tire = &st.tires.wheels[i];
-            let tire_force_world = contact_right * tire.lateral_force
-                + contact_forward * tire.longitudinal_force;
-            let suspension_force_world = contact_normal
-                * st.suspension.wheels[i].total_normal_force;
+            let tire_force_world =
+                contact_right * tire.lateral_force + contact_forward * tire.longitudinal_force;
+            let suspension_force_world =
+                contact_normal * st.suspension.wheels[i].total_normal_force;
             let wheel_force = tire_force_world + suspension_force_world;
 
             total_force += wheel_force;
@@ -391,10 +454,31 @@ impl VehicleSimulator {
         // fallback (ambient/track); a session override can replace it later without
         // changing the tire architecture.
         {
-            let tire_environment = TireEnvironment::fallback(&cfg.tire_thermal);
-            let vehicle_speed_ms = st.linear_velocity.length();
+            let mut brake_to_tire_heat = [BrakeToTireHeat::default(); 4];
             for wheel in WheelIndex::ALL {
                 let i = wheel as usize;
+                let tire_thermal = cfg.tire_thermal.for_wheel(wheel);
+                let tire_state = st.tire_thermal.wheels[i];
+                brake_to_tire_heat[i] = st.brake_thermal.step_after_braking(
+                    wheel,
+                    &cfg.brake_thermal,
+                    BrakeThermalInput {
+                        applied_brake_torque_nm: st.powertrain.brake_torques[i],
+                        wheel_spin_pre_rad_s: wheel_spins[i],
+                        wheel_spin_post_rad_s: st.tires.wheels[i].spin,
+                        vehicle_speed_ms,
+                        air_density_kg_m3: cfg.air_density,
+                        ambient_temperature_c: tire_thermal.ambient_fallback_c,
+                        tire_carcass_temperature_c: tire_state.carcass_c,
+                        tire_gas_temperature_c: tire_state.gas_c,
+                    },
+                    dt,
+                );
+            }
+            for wheel in WheelIndex::ALL {
+                let i = wheel as usize;
+                let tire_thermal = cfg.tire_thermal.for_wheel(wheel);
+                let tire_environment = TireEnvironment::fallback(tire_thermal);
                 let sus = &st.suspension.wheels[i];
                 let tire = &st.tires.wheels[i];
                 let tuning = crate::wheel_mechanics::WheelMechanicalTuning::for_wheel(cfg, wheel);
@@ -415,12 +499,14 @@ impl VehicleSimulator {
                         * thermal_modifiers[i].max_deflection_scale.max(0.05),
                     dynamic_camber_rad: sus.dynamic_camber,
                     vehicle_speed_ms,
+                    external_carcass_heat_w: brake_to_tire_heat[i].carcass_heat_w,
+                    external_gas_heat_w: brake_to_tire_heat[i].gas_heat_w,
                     zone_contact_weights,
                 };
                 st.tire_thermal.step_after_forces(
                     wheel,
                     &cfg.tire_pressure,
-                    &cfg.tire_thermal,
+                    tire_thermal,
                     tire_environment,
                     thermal_input,
                     dt,
@@ -438,7 +524,8 @@ impl VehicleSimulator {
         if !total_force.x.is_finite() || !total_force.y.is_finite() || !total_force.z.is_finite() {
             total_force = Vec3::ZERO;
         }
-        if !total_torque.x.is_finite() || !total_torque.y.is_finite() || !total_torque.z.is_finite() {
+        if !total_torque.x.is_finite() || !total_torque.y.is_finite() || !total_torque.z.is_finite()
+        {
             total_torque = Vec3::ZERO;
         }
 
@@ -446,7 +533,13 @@ impl VehicleSimulator {
         // Godot will add gravity itself.
         st.linear_acceleration = total_force / cfg.vehicle_mass.max(1e-6);
         let telemetry = self.build_telemetry_frame();
-        (ForceTorqueOutput { force_world: total_force, torque_world: total_torque }, telemetry)
+        (
+            ForceTorqueOutput {
+                force_world: total_force,
+                torque_world: total_torque,
+            },
+            telemetry,
+        )
     }
 
     /// Yaw-stability (ESP) corrective torque in world space.
@@ -494,7 +587,8 @@ impl VehicleSimulator {
         let ground_factor = (grounded_fraction * (grounded_mult - 1.0)).clamp(0.0, 5.0) + 1.0;
 
         let inertia_y = principal_inertia(cfg).y;
-        let torque_y = -yaw_rate.signum() * over * cfg.aids.stability_yaw_strength * inertia_y * ground_factor;
+        let torque_y =
+            -yaw_rate.signum() * over * cfg.aids.stability_yaw_strength * inertia_y * ground_factor;
         basis.transform_vector(Vec3::new(0.0, torque_y, 0.0))
     }
 
@@ -514,7 +608,11 @@ impl VehicleSimulator {
         let inertia = principal_inertia(cfg);
         let torque_local = old_basis.inverse_transform_vector(forces.torque_world);
         let mut omega_local = old_basis.inverse_transform_vector(st.angular_velocity);
-        let i_omega = Vec3::new(inertia.x * omega_local.x, inertia.y * omega_local.y, inertia.z * omega_local.z);
+        let i_omega = Vec3::new(
+            inertia.x * omega_local.x,
+            inertia.y * omega_local.y,
+            inertia.z * omega_local.z,
+        );
         let gyro = omega_local.cross(i_omega);
         let alpha_local = Vec3::new(
             (torque_local.x - gyro.x) / inertia.x.max(1e-6),
@@ -522,7 +620,10 @@ impl VehicleSimulator {
             (torque_local.z - gyro.z) / inertia.z.max(1e-6),
         );
         omega_local += alpha_local * dt;
-        st.orientation = st.orientation.integrate_angular_velocity(omega_local, dt).normalized();
+        st.orientation = st
+            .orientation
+            .integrate_angular_velocity(omega_local, dt)
+            .normalized();
         let new_basis = st.orientation.to_mat3();
         st.transform.basis = new_basis;
         st.transform.origin = cg_world - new_basis.transform_vector(cg_local);
@@ -555,7 +656,9 @@ impl VehicleSimulator {
             st.tires.wheels[1].slip_angle_rad,
         );
         if slip_assist_on && front_slip.abs() > cfg.steering_slip_assist {
-            if target.signum() == front_slip.signum() && target.abs() > st.steer_input_smoothed.abs() {
+            if target.signum() == front_slip.signum()
+                && target.abs() > st.steer_input_smoothed.abs()
+            {
                 target = st.steer_input_smoothed;
             }
         }
@@ -572,10 +675,15 @@ impl VehicleSimulator {
         }
 
         let countersteering = target.signum() != st.steer_input_smoothed.signum();
-        let base_rate = if countersteering { cfg.countersteer_speed } else { cfg.steering_speed };
+        let base_rate = if countersteering {
+            cfg.countersteer_speed
+        } else {
+            cfg.steering_speed
+        };
         let speed_decay = 1.0 + forward_speed.abs() * cfg.steering_speed_decay;
         let max_delta = (base_rate / speed_decay.max(1.0)) * dt;
-        st.steer_input_smoothed = move_toward(st.steer_input_smoothed, target, max_delta).clamp(-1.0, 1.0);
+        st.steer_input_smoothed =
+            move_toward(st.steer_input_smoothed, target, max_delta).clamp(-1.0, 1.0);
 
         st.throttle_input_smoothed = move_toward(
             st.throttle_input_smoothed,
@@ -593,8 +701,10 @@ impl VehicleSimulator {
         let st = &self.state;
         let basis = st.transform.basis;
         let local_accel = basis.inverse_transform_vector(st.linear_acceleration);
-        let front_slip = (st.tires.wheels[0].slip_ratio.abs() + st.tires.wheels[1].slip_ratio.abs()) * 0.5;
-        let rear_slip = (st.tires.wheels[2].slip_ratio.abs() + st.tires.wheels[3].slip_ratio.abs()) * 0.5;
+        let front_slip =
+            (st.tires.wheels[0].slip_ratio.abs() + st.tires.wheels[1].slip_ratio.abs()) * 0.5;
+        let rear_slip =
+            (st.tires.wheels[2].slip_ratio.abs() + st.tires.wheels[3].slip_ratio.abs()) * 0.5;
         TelemetryFrame {
             time_ms: (st.sim_time * 1000.0) as i64,
             speed_kmh: st.linear_velocity.length() * 3.6,
@@ -624,6 +734,17 @@ impl VehicleSimulator {
             vehicle_script: "Rust GEVP-aligned force solver".to_string(),
             setup_schema_version: 2,
             setup_json: "{}".to_string(),
+            brake_torque_nm: std::array::from_fn(|i| {
+                st.brake_thermal.wheels[i].applied_brake_torque_nm
+            }),
+            brake_spin_pre_rad_s: std::array::from_fn(|i| {
+                st.brake_thermal.wheels[i].wheel_spin_pre_rad_s
+            }),
+            brake_spin_post_rad_s: std::array::from_fn(|i| {
+                st.brake_thermal.wheels[i].wheel_spin_post_rad_s
+            }),
+            brake_power_w: std::array::from_fn(|i| st.brake_thermal.wheels[i].brake_power_w),
+            brake_energy_j: std::array::from_fn(|i| st.brake_thermal.wheels[i].brake_energy_j),
         }
     }
 }
@@ -655,22 +776,39 @@ pub fn diffuser_center_local(config: &VehicleConfig) -> Vec3 {
 }
 
 pub fn steering_angle_for_wheel(config: &VehicleConfig, wheel: WheelIndex, steering: f64) -> f64 {
-    let ratio = if wheel.is_front() { config.front_steering_ratio } else { config.rear_steering_ratio };
+    let ratio = if wheel.is_front() {
+        config.front_steering_ratio
+    } else {
+        config.rear_steering_ratio
+    };
     let input = steering.signum() * steering.abs().powf(config.steering_exponent) * ratio;
 
     // GEVP derives the Ackermann coefficient from wheelbase, track and max steering
     // angle, then mirrors the sign on the right wheel. Keep `config.ackermann` as a
     // compatibility fallback only for degenerate geometry.
-    let track = if wheel.is_front() { config.front_track } else { config.rear_track };
+    let track = if wheel.is_front() {
+        config.front_track
+    } else {
+        config.rear_track
+    };
     let tan_max = config.max_steering_angle.tan();
     let denominator = config.wheelbase - track * 0.5 * tan_max;
-    let geometric_ackermann = if config.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6 {
+    let geometric_ackermann = if config.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
+    {
         ((config.wheelbase * tan_max) / denominator).atan() / config.max_steering_angle - 1.0
     } else {
         config.ackermann
     };
-    let ackermann = if wheel.is_left() { geometric_ackermann } else { -geometric_ackermann };
-    let toe = if wheel.is_front() { config.front_toe } else { config.rear_toe };
+    let ackermann = if wheel.is_left() {
+        geometric_ackermann
+    } else {
+        -geometric_ackermann
+    };
+    let toe = if wheel.is_front() {
+        config.front_toe
+    } else {
+        config.rear_toe
+    };
     let signed_toe = if wheel.is_left() { -toe } else { toe };
     config.max_steering_angle
         * (input + (1.0 - (input * 0.5 * std::f64::consts::PI).cos()) * ackermann)
@@ -689,10 +827,20 @@ fn principal_inertia(config: &VehicleConfig) -> Vec3 {
 }
 
 fn move_toward(current: f64, target: f64, max_delta: f64) -> f64 {
-    if (target - current).abs() <= max_delta { target } else { current + (target - current).signum() * max_delta }
+    if (target - current).abs() <= max_delta {
+        target
+    } else {
+        current + (target - current).signum() * max_delta
+    }
 }
 
-fn max_abs_signed(a: f64, b: f64) -> f64 { if a.abs() >= b.abs() { a } else { b } }
+fn max_abs_signed(a: f64, b: f64) -> f64 {
+    if a.abs() >= b.abs() {
+        a
+    } else {
+        b
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -734,7 +882,10 @@ mod tests {
 
         // Neutral (0) must now be reachable — this is the sentinel fix.
         let g0 = step_to_gear(&mut sim, 0, 2000);
-        assert_eq!(g0, 0, "gear_request=0 must select Neutral (was broken: 0 mapped to no-change)");
+        assert_eq!(
+            g0, 0,
+            "gear_request=0 must select Neutral (was broken: 0 mapped to no-change)"
+        );
 
         // Reverse (-1) must be reachable.
         let gR = step_to_gear(&mut sim, -1, 2000);
@@ -743,14 +894,21 @@ mod tests {
         // No-change sentinel: None must leave the gear untouched.
         let samples = [TriRaycastSample::default(); 4];
         let hold = VehicleInput {
-            steering: 0.0, throttle: 0.0, brake: 0.0, handbrake: 0.0, clutch: 0.0,
+            steering: 0.0,
+            throttle: 0.0,
+            brake: 0.0,
+            handbrake: 0.0,
+            clutch: 0.0,
             gear_request: None,
         };
         let before = sim.state.powertrain.current_gear;
         for _ in 0..50 {
             let _ = sim.step(&hold, &samples, 0.02);
         }
-        assert_eq!(sim.state.powertrain.current_gear, before, "None must not change gear");
+        assert_eq!(
+            sim.state.powertrain.current_gear, before,
+            "None must not change gear"
+        );
     }
 
     #[test]
@@ -775,8 +933,14 @@ mod tests {
         // Exceeds engage: 0.5 rad/s -> restoring torque opposes +Y (negative Y).
         sim.state.angular_velocity = Vec3::new(0.0, 0.5, 0.0);
         let t_excess = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
-        assert!(t_excess.y < 0.0, "excess yaw must be countered (negative Y torque)");
-        assert!(t_excess.x.abs() < 1e-9 && t_excess.z.abs() < 1e-9, "torque is pure yaw");
+        assert!(
+            t_excess.y < 0.0,
+            "excess yaw must be countered (negative Y torque)"
+        );
+        assert!(
+            t_excess.x.abs() < 1e-9 && t_excess.z.abs() < 1e-9,
+            "torque is pure yaw"
+        );
     }
 
     #[test]
@@ -796,6 +960,9 @@ mod tests {
         sim.state.angular_velocity = Vec3::ZERO;
 
         let t = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
-        assert!(t.length() < 1e-9, "must not force yaw on a straight with a small steer command");
+        assert!(
+            t.length() < 1e-9,
+            "must not force yaw on a straight with a small steer command"
+        );
     }
 }

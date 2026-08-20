@@ -83,6 +83,9 @@ func _position_tire_status_panel() -> void:
 	var panel_size := tire_status_panel.size
 	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
 		panel_size = tire_status_panel.custom_minimum_size
+	# The panel may be display-scaled (e.g. 50% to keep the HUD compact), so
+	# centre/clamp on its VISUAL size rather than the layout size.
+	panel_size *= tire_status_panel.scale
 
 	var target_global := Vector2(
 		ref_rect.position.x + (ref_rect.size.x - panel_size.x) * 0.5,

@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 8;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 12;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -112,14 +112,14 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
 /// FFI (`f1_94_physics_apply_runtime_config`) and the orchestrator facade
 /// (`formula90_core`), so every tunable JSON parameter stays usable at runtime on
 /// BOTH integration paths. Sanitizes each field like the original FFI.
-pub fn apply_runtime_config_to_sim(
-    sim: &mut VehicleSimulator,
-    cfg: &FfiRuntimeConfig,
-) -> bool {
+pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) -> bool {
     if cfg.vehicle_mass.is_finite() && cfg.vehicle_mass > 0.0 {
         sim.config.vehicle_mass = cfg.vehicle_mass;
     }
-    if cfg.front_brake_bias.is_finite() && cfg.front_brake_bias >= 0.0 && cfg.front_brake_bias <= 1.0 {
+    if cfg.front_brake_bias.is_finite()
+        && cfg.front_brake_bias >= 0.0
+        && cfg.front_brake_bias <= 1.0
+    {
         sim.config.front_brake_bias = cfg.front_brake_bias;
     }
     if cfg.max_steering_angle.is_finite() && cfg.max_steering_angle > 0.0 {
@@ -279,7 +279,11 @@ impl From<FfiVehicleInput> for VehicleInput {
             brake: f.brake,
             handbrake: f.handbrake,
             clutch: f.clutch,
-            gear_request: if f.gear_request >= -1 { Some(f.gear_request as i8) } else { None },
+            gear_request: if f.gear_request >= -1 {
+                Some(f.gear_request as i8)
+            } else {
+                None
+            },
         }
     }
 }
@@ -431,13 +435,101 @@ pub struct FfiTelemetryOutput {
     pub fr_gas_c: f64,
     pub rl_gas_c: f64,
     pub rr_gas_c: f64,
+
+    // Brake thermal + duct telemetry. Append-only ABI 9 block.
+    pub fl_brake_disc_c: f64,
+    pub fr_brake_disc_c: f64,
+    pub rl_brake_disc_c: f64,
+    pub rr_brake_disc_c: f64,
+    pub fl_brake_caliper_c: f64,
+    pub fr_brake_caliper_c: f64,
+    pub rl_brake_caliper_c: f64,
+    pub rr_brake_caliper_c: f64,
+    pub fl_brake_hub_c: f64,
+    pub fr_brake_hub_c: f64,
+    pub rl_brake_hub_c: f64,
+    pub rr_brake_hub_c: f64,
+    pub fl_brake_rim_c: f64,
+    pub fr_brake_rim_c: f64,
+    pub rl_brake_rim_c: f64,
+    pub rr_brake_rim_c: f64,
+    pub fl_brake_efficiency: f64,
+    pub fr_brake_efficiency: f64,
+    pub rl_brake_efficiency: f64,
+    pub rr_brake_efficiency: f64,
+    pub fl_duct_mass_flow_kg_s: f64,
+    pub fr_duct_mass_flow_kg_s: f64,
+    pub rl_duct_mass_flow_kg_s: f64,
+    pub rr_duct_mass_flow_kg_s: f64,
+    pub fl_duct_drag_n: f64,
+    pub fr_duct_drag_n: f64,
+    pub rl_duct_drag_n: f64,
+    pub rr_duct_drag_n: f64,
+    pub brake_optimal_min_c: f64,
+    pub brake_optimal_max_c: f64,
+    pub brake_fade_start_c: f64,
+    pub brake_critical_c: f64,
+
+    // Brake energy diagnostics. Append-only ABI 10 block.
+    pub fl_brake_torque_nm: f64,
+    pub fr_brake_torque_nm: f64,
+    pub rl_brake_torque_nm: f64,
+    pub rr_brake_torque_nm: f64,
+    pub fl_brake_spin_pre_rad_s: f64,
+    pub fr_brake_spin_pre_rad_s: f64,
+    pub rl_brake_spin_pre_rad_s: f64,
+    pub rr_brake_spin_pre_rad_s: f64,
+    pub fl_brake_spin_post_rad_s: f64,
+    pub fr_brake_spin_post_rad_s: f64,
+    pub rl_brake_spin_post_rad_s: f64,
+    pub rr_brake_spin_post_rad_s: f64,
+    pub fl_brake_power_w: f64,
+    pub fr_brake_power_w: f64,
+    pub rl_brake_power_w: f64,
+    pub rr_brake_power_w: f64,
+    pub fl_brake_energy_j: f64,
+    pub fr_brake_energy_j: f64,
+    pub rl_brake_energy_j: f64,
+    pub rr_brake_energy_j: f64,
+    pub fl_brake_disc_bulk_c: f64,
+    pub fr_brake_disc_bulk_c: f64,
+    pub rl_brake_disc_bulk_c: f64,
+    pub rr_brake_disc_bulk_c: f64,
+    pub fl_brake_surface_capacity_j_k: f64,
+    pub fr_brake_surface_capacity_j_k: f64,
+    pub rl_brake_surface_capacity_j_k: f64,
+    pub rr_brake_surface_capacity_j_k: f64,
+    pub fl_brake_bulk_capacity_j_k: f64,
+    pub fr_brake_bulk_capacity_j_k: f64,
+    pub rl_brake_bulk_capacity_j_k: f64,
+    pub rr_brake_bulk_capacity_j_k: f64,
+    pub fl_brake_surface_bulk_w_k: f64,
+    pub fr_brake_surface_bulk_w_k: f64,
+    pub rl_brake_surface_bulk_w_k: f64,
+    pub rr_brake_surface_bulk_w_k: f64,
+    pub fl_brake_natural_cooling_w_k: f64,
+    pub fr_brake_natural_cooling_w_k: f64,
+    pub rl_brake_natural_cooling_w_k: f64,
+    pub rr_brake_natural_cooling_w_k: f64,
+    pub fl_brake_speed_cooling_w_k: f64,
+    pub fr_brake_speed_cooling_w_k: f64,
+    pub rl_brake_speed_cooling_w_k: f64,
+    pub rr_brake_speed_cooling_w_k: f64,
+    pub fl_brake_surface_to_bulk_heat_w: f64,
+    pub fr_brake_surface_to_bulk_heat_w: f64,
+    pub rl_brake_surface_to_bulk_heat_w: f64,
+    pub rr_brake_surface_to_bulk_heat_w: f64,
 }
 
 #[no_mangle]
 pub extern "C" fn f1_94_physics_create_default() -> *mut c_void {
     let cfg = VehicleConfig::f1_94_canonical();
     let spawn_height = default_spawn_height(&cfg);
-    let sim = Box::new(VehicleSimulator::new(cfg, Vec3::new(0.0, spawn_height, 0.0), 0.0));
+    let sim = Box::new(VehicleSimulator::new(
+        cfg,
+        Vec3::new(0.0, spawn_height, 0.0),
+        0.0,
+    ));
     Box::into_raw(sim) as *mut c_void
 }
 
@@ -459,7 +551,11 @@ pub extern "C" fn f1_94_physics_create_from_json(
     let json_str = match std::str::from_utf8(json_bytes) {
         Ok(s) => s,
         Err(e) => {
-            write_error(error_buffer, error_buffer_len, &format!("invalid UTF-8: {e}"));
+            write_error(
+                error_buffer,
+                error_buffer_len,
+                &format!("invalid UTF-8: {e}"),
+            );
             return std::ptr::null_mut();
         }
     };
@@ -471,12 +567,18 @@ pub extern "C" fn f1_94_physics_create_from_json(
         }
     };
     let spawn_height = default_spawn_height(&cfg);
-    let sim = Box::new(VehicleSimulator::new(cfg, Vec3::new(0.0, spawn_height, 0.0), 0.0));
+    let sim = Box::new(VehicleSimulator::new(
+        cfg,
+        Vec3::new(0.0, spawn_height, 0.0),
+        0.0,
+    ));
     Box::into_raw(sim) as *mut c_void
 }
 
 fn write_error(buf: *mut u8, buf_len: u32, msg: &str) {
-    if buf.is_null() || buf_len == 0 { return; }
+    if buf.is_null() || buf_len == 0 {
+        return;
+    }
     let bytes = msg.as_bytes();
     let copy_len = bytes.len().min(buf_len as usize - 1);
     unsafe {
@@ -493,7 +595,11 @@ pub extern "C" fn f1_94_physics_create_with_pos(
     yaw_rad: f64,
 ) -> *mut c_void {
     let cfg = VehicleConfig::f1_94_canonical();
-    let sim = Box::new(VehicleSimulator::new(cfg, Vec3::new(pos_x, pos_y, pos_z), yaw_rad));
+    let sim = Box::new(VehicleSimulator::new(
+        cfg,
+        Vec3::new(pos_x, pos_y, pos_z),
+        yaw_rad,
+    ));
     Box::into_raw(sim) as *mut c_void
 }
 
@@ -505,7 +611,9 @@ pub extern "C" fn f1_94_physics_reset(
     pos_z: f64,
     yaw_rad: f64,
 ) {
-    if sim_ptr.is_null() { return; }
+    if sim_ptr.is_null() {
+        return;
+    }
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
     *sim = VehicleSimulator::new(sim.config.clone(), Vec3::new(pos_x, pos_y, pos_z), yaw_rad);
 }
@@ -533,7 +641,9 @@ pub extern "C" fn f1_94_physics_solve_forces(
     let (forces, telem) = sim.solve_external(body, &input, &samples, dt);
 
     if !out_forces.is_null() {
-        unsafe { *out_forces = forces.into(); }
+        unsafe {
+            *out_forces = forces.into();
+        }
     }
     write_telemetry(sim, &telem, out_telem);
 }
@@ -547,7 +657,9 @@ pub extern "C" fn f1_94_physics_step(
     dt: f64,
     out_telem: *mut FfiTelemetryOutput,
 ) {
-    if sim_ptr.is_null() || input_ptr.is_null() || samples_ptr.is_null() { return; }
+    if sim_ptr.is_null() || input_ptr.is_null() || samples_ptr.is_null() {
+        return;
+    }
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
     let input = VehicleInput::from(unsafe { *input_ptr });
     let samples = read_samples(samples_ptr);
@@ -563,7 +675,9 @@ pub extern "C" fn f1_94_physics_get_wheel_anchor_local(
     out_y: *mut f64,
     out_z: *mut f64,
 ) {
-    if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() { return; }
+    if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() {
+        return;
+    }
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     let anchor = sim.config.wheel_anchor_local(wheel);
@@ -577,10 +691,16 @@ pub extern "C" fn f1_94_physics_get_wheel_anchor_local(
 /// Offset from center ray to inner/outer ray. Total sampled width is 2*span.
 #[no_mangle]
 pub extern "C" fn f1_94_physics_get_tri_ray_span(sim_ptr: *const c_void, wheel_idx: u32) -> f64 {
-    if sim_ptr.is_null() { return 0.12; }
+    if sim_ptr.is_null() {
+        return 0.12;
+    }
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
-    let tire_w = if wheel.is_front() { sim.config.front_tire_width } else { sim.config.rear_tire_width };
+    let tire_w = if wheel.is_front() {
+        sim.config.front_tire_width
+    } else {
+        sim.config.rear_tire_width
+    };
     tire_w * sim.config.tri_ray_spacing_ratio
 }
 
@@ -600,7 +720,9 @@ pub extern "C" fn f1_94_physics_get_center_of_mass_local(
     out_y: *mut f64,
     out_z: *mut f64,
 ) {
-    if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() { return; }
+    if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() {
+        return;
+    }
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let cg = center_of_mass_local(&sim.config);
     unsafe {
@@ -612,7 +734,9 @@ pub extern "C" fn f1_94_physics_get_center_of_mass_local(
 
 #[no_mangle]
 pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx: u32) -> f64 {
-    if sim_ptr.is_null() { return 0.6; }
+    if sim_ptr.is_null() {
+        return 0.6;
+    }
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     if wheel.is_front() {
@@ -624,7 +748,9 @@ pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx
 
 #[no_mangle]
 pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 {
-    if sim_ptr.is_null() { return VehicleConfig::f1_94_canonical().vehicle_mass; }
+    if sim_ptr.is_null() {
+        return VehicleConfig::f1_94_canonical().vehicle_mass;
+    }
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     sim.config.vehicle_mass
 }
@@ -632,7 +758,9 @@ pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 
 #[no_mangle]
 pub extern "C" fn f1_94_physics_destroy(sim_ptr: *mut c_void) {
     if !sim_ptr.is_null() {
-        unsafe { drop(Box::from_raw(sim_ptr as *mut VehicleSimulator)); }
+        unsafe {
+            drop(Box::from_raw(sim_ptr as *mut VehicleSimulator));
+        }
     }
 }
 
@@ -646,8 +774,14 @@ fn read_samples(samples_ptr: *const FfiTriRaycastSample) -> [TriRaycastSample; 4
     ]
 }
 
-fn write_telemetry(sim: &VehicleSimulator, telem: &crate::telemetry::TelemetryFrame, out: *mut FfiTelemetryOutput) {
-    if out.is_null() { return; }
+fn write_telemetry(
+    sim: &VehicleSimulator,
+    telem: &crate::telemetry::TelemetryFrame,
+    out: *mut FfiTelemetryOutput,
+) {
+    if out.is_null() {
+        return;
+    }
     let q = sim.state.orientation;
     unsafe {
         *out = FfiTelemetryOutput {
@@ -726,6 +860,86 @@ fn write_telemetry(sim: &VehicleSimulator, telem: &crate::telemetry::TelemetryFr
             fr_gas_c: sim.state.tire_thermal.wheels[1].gas_c,
             rl_gas_c: sim.state.tire_thermal.wheels[2].gas_c,
             rr_gas_c: sim.state.tire_thermal.wheels[3].gas_c,
+            fl_brake_disc_c: sim.state.brake_thermal.wheels[0].disc_c,
+            fr_brake_disc_c: sim.state.brake_thermal.wheels[1].disc_c,
+            rl_brake_disc_c: sim.state.brake_thermal.wheels[2].disc_c,
+            rr_brake_disc_c: sim.state.brake_thermal.wheels[3].disc_c,
+            fl_brake_caliper_c: sim.state.brake_thermal.wheels[0].caliper_c,
+            fr_brake_caliper_c: sim.state.brake_thermal.wheels[1].caliper_c,
+            rl_brake_caliper_c: sim.state.brake_thermal.wheels[2].caliper_c,
+            rr_brake_caliper_c: sim.state.brake_thermal.wheels[3].caliper_c,
+            fl_brake_hub_c: sim.state.brake_thermal.wheels[0].hub_c,
+            fr_brake_hub_c: sim.state.brake_thermal.wheels[1].hub_c,
+            rl_brake_hub_c: sim.state.brake_thermal.wheels[2].hub_c,
+            rr_brake_hub_c: sim.state.brake_thermal.wheels[3].hub_c,
+            fl_brake_rim_c: sim.state.brake_thermal.wheels[0].rim_c,
+            fr_brake_rim_c: sim.state.brake_thermal.wheels[1].rim_c,
+            rl_brake_rim_c: sim.state.brake_thermal.wheels[2].rim_c,
+            rr_brake_rim_c: sim.state.brake_thermal.wheels[3].rim_c,
+            fl_brake_efficiency: sim.state.brake_thermal.wheels[0].efficiency,
+            fr_brake_efficiency: sim.state.brake_thermal.wheels[1].efficiency,
+            rl_brake_efficiency: sim.state.brake_thermal.wheels[2].efficiency,
+            rr_brake_efficiency: sim.state.brake_thermal.wheels[3].efficiency,
+            fl_duct_mass_flow_kg_s: sim.state.brake_thermal.wheels[0].duct.mass_flow_kg_s,
+            fr_duct_mass_flow_kg_s: sim.state.brake_thermal.wheels[1].duct.mass_flow_kg_s,
+            rl_duct_mass_flow_kg_s: sim.state.brake_thermal.wheels[2].duct.mass_flow_kg_s,
+            rr_duct_mass_flow_kg_s: sim.state.brake_thermal.wheels[3].duct.mass_flow_kg_s,
+            fl_duct_drag_n: sim.state.brake_thermal.wheels[0].duct.drag_force_n,
+            fr_duct_drag_n: sim.state.brake_thermal.wheels[1].duct.drag_force_n,
+            rl_duct_drag_n: sim.state.brake_thermal.wheels[2].duct.drag_force_n,
+            rr_duct_drag_n: sim.state.brake_thermal.wheels[3].duct.drag_force_n,
+            brake_optimal_min_c: sim.config.brake_thermal.optimal_min_temperature_c,
+            brake_optimal_max_c: sim.config.brake_thermal.optimal_max_temperature_c,
+            brake_fade_start_c: sim.config.brake_thermal.fade_start_temperature_c,
+            brake_critical_c: sim.config.brake_thermal.critical_temperature_c,
+            fl_brake_torque_nm: sim.state.brake_thermal.wheels[0].applied_brake_torque_nm,
+            fr_brake_torque_nm: sim.state.brake_thermal.wheels[1].applied_brake_torque_nm,
+            rl_brake_torque_nm: sim.state.brake_thermal.wheels[2].applied_brake_torque_nm,
+            rr_brake_torque_nm: sim.state.brake_thermal.wheels[3].applied_brake_torque_nm,
+            fl_brake_spin_pre_rad_s: sim.state.brake_thermal.wheels[0].wheel_spin_pre_rad_s,
+            fr_brake_spin_pre_rad_s: sim.state.brake_thermal.wheels[1].wheel_spin_pre_rad_s,
+            rl_brake_spin_pre_rad_s: sim.state.brake_thermal.wheels[2].wheel_spin_pre_rad_s,
+            rr_brake_spin_pre_rad_s: sim.state.brake_thermal.wheels[3].wheel_spin_pre_rad_s,
+            fl_brake_spin_post_rad_s: sim.state.brake_thermal.wheels[0].wheel_spin_post_rad_s,
+            fr_brake_spin_post_rad_s: sim.state.brake_thermal.wheels[1].wheel_spin_post_rad_s,
+            rl_brake_spin_post_rad_s: sim.state.brake_thermal.wheels[2].wheel_spin_post_rad_s,
+            rr_brake_spin_post_rad_s: sim.state.brake_thermal.wheels[3].wheel_spin_post_rad_s,
+            fl_brake_power_w: sim.state.brake_thermal.wheels[0].brake_power_w,
+            fr_brake_power_w: sim.state.brake_thermal.wheels[1].brake_power_w,
+            rl_brake_power_w: sim.state.brake_thermal.wheels[2].brake_power_w,
+            rr_brake_power_w: sim.state.brake_thermal.wheels[3].brake_power_w,
+            fl_brake_energy_j: sim.state.brake_thermal.wheels[0].brake_energy_j,
+            fr_brake_energy_j: sim.state.brake_thermal.wheels[1].brake_energy_j,
+            rl_brake_energy_j: sim.state.brake_thermal.wheels[2].brake_energy_j,
+            rr_brake_energy_j: sim.state.brake_thermal.wheels[3].brake_energy_j,
+            fl_brake_disc_bulk_c: sim.state.brake_thermal.wheels[0].disc_bulk_c,
+            fr_brake_disc_bulk_c: sim.state.brake_thermal.wheels[1].disc_bulk_c,
+            rl_brake_disc_bulk_c: sim.state.brake_thermal.wheels[2].disc_bulk_c,
+            rr_brake_disc_bulk_c: sim.state.brake_thermal.wheels[3].disc_bulk_c,
+            fl_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[0].resolved_surface_capacity_j_k,
+            fr_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[1].resolved_surface_capacity_j_k,
+            rl_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[2].resolved_surface_capacity_j_k,
+            rr_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[3].resolved_surface_capacity_j_k,
+            fl_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[0].resolved_bulk_capacity_j_k,
+            fr_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[1].resolved_bulk_capacity_j_k,
+            rl_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[2].resolved_bulk_capacity_j_k,
+            rr_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[3].resolved_bulk_capacity_j_k,
+            fl_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[0].resolved_surface_bulk_w_k,
+            fr_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[1].resolved_surface_bulk_w_k,
+            rl_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[2].resolved_surface_bulk_w_k,
+            rr_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[3].resolved_surface_bulk_w_k,
+            fl_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[0].natural_cooling_w_k,
+            fr_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[1].natural_cooling_w_k,
+            rl_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[2].natural_cooling_w_k,
+            rr_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[3].natural_cooling_w_k,
+            fl_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[0].speed_cooling_w_k,
+            fr_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[1].speed_cooling_w_k,
+            rl_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[2].speed_cooling_w_k,
+            rr_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[3].speed_cooling_w_k,
+            fl_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[0].surface_to_bulk_heat_w,
+            fr_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[1].surface_to_bulk_heat_w,
+            rl_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[2].surface_to_bulk_heat_w,
+            rr_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[3].surface_to_bulk_heat_w,
         };
     }
 }
@@ -749,6 +963,28 @@ mod layout_tests {
         // Tire pressure/thermal block is appended after the aids diagnostics.
         assert_eq!(offset_of!(FfiTelemetryOutput, fl_pressure_kpa), 400);
         assert_eq!(offset_of!(FfiTelemetryOutput, rr_gas_c), 584);
-        assert_eq!(size_of::<FfiTelemetryOutput>(), 592);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_disc_c), 592);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_caliper_c), 624);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_hub_c), 656);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_rim_c), 688);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_efficiency), 720);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_duct_mass_flow_kg_s), 752);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_duct_drag_n), 784);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_optimal_min_c), 816);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_optimal_max_c), 824);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_fade_start_c), 832);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_critical_c), 840);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_torque_nm), 848);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_spin_pre_rad_s), 880);
+        assert_eq!(
+            offset_of!(FfiTelemetryOutput, fl_brake_spin_post_rad_s),
+            912
+        );
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_power_w), 944);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_energy_j), 976);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_disc_bulk_c), 1008);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_surface_capacity_j_k), 1040);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_surface_to_bulk_heat_w), 1200);
+        assert_eq!(size_of::<FfiTelemetryOutput>(), 1232);
     }
 }

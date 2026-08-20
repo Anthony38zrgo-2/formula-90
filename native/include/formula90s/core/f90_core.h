@@ -4,8 +4,9 @@
 #include "formula90s/vehicle/formula90_physics.h" // F90RuntimeConfig (mirror of FfiRuntimeConfig)
 
 // C-API mirror of the orchestrator facade (game/crates/formula90-core/src/ffi.rs,
-// formula90_core.dll). ABI v3: F90CoreFrameOut gained the tire pressure + thermal
-// arrays (six [f64; 4], WheelIndex order FL/FR/RL/RR) appended after the audio tail.
+// formula90_core.dll). ABI v7: F90CoreFrameOut gained resolved brake thermal
+// diagnostics after the brake thermal + duct arrays
+// appended after the tire thermal tail.
 // Field order and types MUST match the Rust #[repr(C)] structs (they are locked by
 // ffi.rs::layout_tests and the static_asserts in f90_core.hpp). Reuses
 // CSimTriRaycastSample (mirrored in f90_sim_bridge.h) as the sample input, so the
@@ -51,6 +52,30 @@ typedef struct F90CoreFrameOut {
     double tire_tread_outer_c[4];
     double tire_carcass_c[4];
     double tire_gas_c[4];
+    double brake_disc_c[4];
+    double brake_caliper_c[4];
+    double brake_hub_c[4];
+    double brake_rim_c[4];
+    double brake_efficiency[4];
+    double duct_mass_flow_kg_s[4];
+    double duct_drag_n[4];
+    double total_brake_duct_drag_n;
+    double brake_optimal_min_c;
+    double brake_optimal_max_c;
+    double brake_fade_start_c;
+    double brake_critical_c;
+    double brake_torque_nm[4];
+    double brake_spin_pre_rad_s[4];
+    double brake_spin_post_rad_s[4];
+    double brake_power_w[4];
+    double brake_energy_j[4];
+    double brake_disc_bulk_c[4];
+    double brake_surface_capacity_j_k[4];
+    double brake_bulk_capacity_j_k[4];
+    double brake_surface_bulk_w_k[4];
+    double brake_natural_cooling_w_k[4];
+    double brake_speed_cooling_w_k[4];
+    double brake_surface_to_bulk_heat_w[4];
 } F90CoreFrameOut;
 
 typedef uint32_t (*FnCoreAbiVersion)(void);

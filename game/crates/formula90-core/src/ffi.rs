@@ -18,9 +18,8 @@ use vehicle_physics_engine::{
 use crate::frame::AudioReadouts;
 use crate::{CoreConfig, CoreFacade};
 
-/// ABI v3: F90CoreFrameOut gained the tire pressure + thermal arrays
-/// (six [f64; 4], WheelIndex order FL/FR/RL/RR) appended after the audio tail.
-pub const F90_CORE_ABI_VERSION: u32 = 3;
+/// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
+pub const F90_CORE_ABI_VERSION: u32 = 7;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -85,6 +84,30 @@ pub struct F90CoreFrameOut {
     pub tire_tread_outer_c: [f64; 4],
     pub tire_carcass_c: [f64; 4],
     pub tire_gas_c: [f64; 4],
+    pub brake_disc_c: [f64; 4],
+    pub brake_caliper_c: [f64; 4],
+    pub brake_hub_c: [f64; 4],
+    pub brake_rim_c: [f64; 4],
+    pub brake_efficiency: [f64; 4],
+    pub duct_mass_flow_kg_s: [f64; 4],
+    pub duct_drag_n: [f64; 4],
+    pub total_brake_duct_drag_n: f64,
+    pub brake_optimal_min_c: f64,
+    pub brake_optimal_max_c: f64,
+    pub brake_fade_start_c: f64,
+    pub brake_critical_c: f64,
+    pub brake_torque_nm: [f64; 4],
+    pub brake_spin_pre_rad_s: [f64; 4],
+    pub brake_spin_post_rad_s: [f64; 4],
+    pub brake_power_w: [f64; 4],
+    pub brake_energy_j: [f64; 4],
+    pub brake_disc_bulk_c: [f64; 4],
+    pub brake_surface_capacity_j_k: [f64; 4],
+    pub brake_bulk_capacity_j_k: [f64; 4],
+    pub brake_surface_bulk_w_k: [f64; 4],
+    pub brake_natural_cooling_w_k: [f64; 4],
+    pub brake_speed_cooling_w_k: [f64; 4],
+    pub brake_surface_to_bulk_heat_w: [f64; 4],
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -370,6 +393,30 @@ pub unsafe extern "C" fn f90_core_step(
                 tire_tread_outer_c: frame.tire_tread_outer_c,
                 tire_carcass_c: frame.tire_carcass_c,
                 tire_gas_c: frame.tire_gas_c,
+                brake_disc_c: frame.brake_disc_c,
+                brake_caliper_c: frame.brake_caliper_c,
+                brake_hub_c: frame.brake_hub_c,
+                brake_rim_c: frame.brake_rim_c,
+                brake_efficiency: frame.brake_efficiency,
+                duct_mass_flow_kg_s: frame.duct_mass_flow_kg_s,
+                duct_drag_n: frame.duct_drag_n,
+                total_brake_duct_drag_n: frame.total_brake_duct_drag_n,
+                brake_optimal_min_c: frame.brake_optimal_min_c,
+                brake_optimal_max_c: frame.brake_optimal_max_c,
+                brake_fade_start_c: frame.brake_fade_start_c,
+                brake_critical_c: frame.brake_critical_c,
+                brake_torque_nm: frame.brake_torque_nm,
+                brake_spin_pre_rad_s: frame.brake_spin_pre_rad_s,
+                brake_spin_post_rad_s: frame.brake_spin_post_rad_s,
+                brake_power_w: frame.brake_power_w,
+                brake_energy_j: frame.brake_energy_j,
+                brake_disc_bulk_c: frame.brake_disc_bulk_c,
+                brake_surface_capacity_j_k: frame.brake_surface_capacity_j_k,
+                brake_bulk_capacity_j_k: frame.brake_bulk_capacity_j_k,
+                brake_surface_bulk_w_k: frame.brake_surface_bulk_w_k,
+                brake_natural_cooling_w_k: frame.brake_natural_cooling_w_k,
+                brake_speed_cooling_w_k: frame.brake_speed_cooling_w_k,
+                brake_surface_to_bulk_heat_w: frame.brake_surface_to_bulk_heat_w,
             };
         }
     }
@@ -530,7 +577,27 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, tire_tread_outer_c), 440);
         assert_eq!(offset_of!(F90CoreFrameOut, tire_carcass_c), 472);
         assert_eq!(offset_of!(F90CoreFrameOut, tire_gas_c), 504);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 536);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_disc_c), 536);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_caliper_c), 568);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_hub_c), 600);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_rim_c), 632);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_efficiency), 664);
+        assert_eq!(offset_of!(F90CoreFrameOut, duct_mass_flow_kg_s), 696);
+        assert_eq!(offset_of!(F90CoreFrameOut, duct_drag_n), 728);
+        assert_eq!(offset_of!(F90CoreFrameOut, total_brake_duct_drag_n), 760);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_optimal_min_c), 768);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_optimal_max_c), 776);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_fade_start_c), 784);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_critical_c), 792);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_torque_nm), 800);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_spin_pre_rad_s), 832);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_spin_post_rad_s), 864);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_power_w), 896);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_energy_j), 928);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_disc_bulk_c), 960);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_surface_capacity_j_k), 992);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_surface_to_bulk_heat_w), 1152);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1184);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

@@ -164,7 +164,9 @@ impl CoreFacade {
             self.spawn(&cfg)
         } else {
             let json = self.config.config_json_path.as_ref().ok_or_else(|| {
-                CoreError::Config("config_json_path is required when use_canonical=false".to_string())
+                CoreError::Config(
+                    "config_json_path is required when use_canonical=false".to_string(),
+                )
             })?;
             let cfg = VehicleConfig::from_json_path(json)
                 .map_err(|e| CoreError::Spawn(format!("failed to parse config: {e}")))?;
@@ -256,7 +258,11 @@ impl CoreFacade {
             let (forces, telem) = ent.sim.solve_external(body, input, samples, dt);
             ent.last = Some(telem);
             Self::fill_frame_from_entity(&mut frame, ent, dt);
-            frame.force = [forces.force_world.x, forces.force_world.y, forces.force_world.z];
+            frame.force = [
+                forces.force_world.x,
+                forces.force_world.y,
+                forces.force_world.z,
+            ];
             frame.torque = [
                 forces.torque_world.x,
                 forces.torque_world.y,
@@ -341,6 +347,34 @@ impl CoreFacade {
             frame.tire_tread_outer_c[i] = w.tread_outer_c;
             frame.tire_carcass_c[i] = w.carcass_c;
             frame.tire_gas_c[i] = w.gas_c;
+        }
+        for (i, w) in ent.sim.state.brake_thermal.wheels.iter().enumerate() {
+            frame.brake_disc_c[i] = w.disc_c;
+            frame.brake_caliper_c[i] = w.caliper_c;
+            frame.brake_hub_c[i] = w.hub_c;
+            frame.brake_rim_c[i] = w.rim_c;
+            frame.brake_efficiency[i] = w.efficiency;
+            frame.duct_mass_flow_kg_s[i] = w.duct.mass_flow_kg_s;
+            frame.duct_drag_n[i] = w.duct.drag_force_n;
+            frame.total_brake_duct_drag_n += w.duct.drag_force_n;
+        }
+        frame.brake_optimal_min_c = ent.sim.config.brake_thermal.optimal_min_temperature_c;
+        frame.brake_optimal_max_c = ent.sim.config.brake_thermal.optimal_max_temperature_c;
+        frame.brake_fade_start_c = ent.sim.config.brake_thermal.fade_start_temperature_c;
+        frame.brake_critical_c = ent.sim.config.brake_thermal.critical_temperature_c;
+        for (i, w) in ent.sim.state.brake_thermal.wheels.iter().enumerate() {
+            frame.brake_torque_nm[i] = w.applied_brake_torque_nm;
+            frame.brake_spin_pre_rad_s[i] = w.wheel_spin_pre_rad_s;
+            frame.brake_spin_post_rad_s[i] = w.wheel_spin_post_rad_s;
+            frame.brake_power_w[i] = w.brake_power_w;
+            frame.brake_energy_j[i] = w.brake_energy_j;
+            frame.brake_disc_bulk_c[i] = w.disc_bulk_c;
+            frame.brake_surface_capacity_j_k[i] = w.resolved_surface_capacity_j_k;
+            frame.brake_bulk_capacity_j_k[i] = w.resolved_bulk_capacity_j_k;
+            frame.brake_surface_bulk_w_k[i] = w.resolved_surface_bulk_w_k;
+            frame.brake_natural_cooling_w_k[i] = w.natural_cooling_w_k;
+            frame.brake_speed_cooling_w_k[i] = w.speed_cooling_w_k;
+            frame.brake_surface_to_bulk_heat_w[i] = w.surface_to_bulk_heat_w;
         }
     }
 

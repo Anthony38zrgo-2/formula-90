@@ -38,6 +38,7 @@ func _run() -> void:
 
 	var world := compositor.get_node_or_null("WorldViewport/RaceSession")
 	var vehicle := compositor.get_node_or_null("WorldViewport/RaceSession/VehicleContainer/ActiveVehicle/VehicleRigidBody") as RigidBody3D
+	var core := compositor.get_node_or_null("F90Core")
 	var hud := compositor.get_node_or_null("HudLayer/DebugHud")
 	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap")
 	var speed_gauge := compositor.get_node_or_null("HudLayer/DebugHud/SpeedGauge")
@@ -46,6 +47,16 @@ func _run() -> void:
 
 	if world == null or vehicle == null or compositor.get_node_or_null("WorldViewport").get_camera_3d() == null:
 		_fail("3D world, F194 vehicle, or active camera is missing from the compositor.", failures)
+	if core == null or not core.has_method("is_engine_loaded") or not core.is_engine_loaded():
+		_fail("F90Core did not initialize. Check the GDExtension/Rust core ABI contract.", failures)
+	if vehicle != null and vehicle.has_method("get_brake_state_snapshot"):
+		var brake_snapshot: Dictionary = vehicle.get_brake_state_snapshot()
+		for wheel_name in ["FL", "FR", "RL", "RR"]:
+			var wheel: Dictionary = brake_snapshot.get(wheel_name, {})
+			if not wheel.has("disc_c") or not wheel.has("disc_bulk_c"):
+				_fail("Two-node brake telemetry missing for %s." % wheel_name, failures)
+			if not wheel.has("resolved_surface_capacity_j_k") or not wheel.has("resolved_surface_bulk_w_k"):
+				_fail("Resolved brake thermal telemetry missing for %s." % wheel_name, failures)
 	if hud == null or minimap == null or (speed_gauge == null and retro_hud == null):
 		_fail("HUD, minimap, or speed gauge/retro HUD was not extracted into HudLayer.", failures)
 	if hud != null and hud.get("_vehicle") != vehicle:
@@ -80,6 +91,9 @@ func _run() -> void:
 
 	for _frame in 180:
 		await physics_frame
+
+	if vehicle != null and (not vehicle.has_method("get_speed_kmh") or not vehicle.has_method("get_motor_rpm")):
+		_fail("VehicleRigidBody did not expose the F194 Rust physics API; its DLL did not initialize.", failures)
 
 	if vehicle != null:
 		var contacts := 0

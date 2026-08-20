@@ -11,12 +11,17 @@ extends PanelContainer
 
 const WHEELS := ["FL", "FR", "RL", "RR"]
 
+## Visual scale of the whole panel (1.0 = full size). Reduced to 50% so the
+## compact tyre readout does not crowd the tachometer/HUD.
+@export var display_scale: float = 0.5
+
 var _vehicle: Node
 var _cells: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	custom_minimum_size = Vector2(390.0, 170.0)
+	scale = Vector2(display_scale, display_scale)
 	_build_ui()
 
 func bind_vehicle(vehicle: Node) -> void:
@@ -27,23 +32,35 @@ func _process(_delta: float) -> void:
 		return
 
 	var data: Dictionary = {}
+	var brake_data: Dictionary = {}
+	var snapshot: Dictionary = {}
 	if _vehicle.has_method(&"get_tire_state_snapshot"):
 		var native_data: Variant = _vehicle.call(&"get_tire_state_snapshot")
 		if native_data is Dictionary:
 			data = native_data
 	elif _vehicle.has_method(&"get_telemetry_snapshot"):
-		var snapshot: Variant = _vehicle.call(&"get_telemetry_snapshot")
-		if snapshot is Dictionary:
+		var snapshot_value: Variant = _vehicle.call(&"get_telemetry_snapshot")
+		if snapshot_value is Dictionary:
+			snapshot = snapshot_value
 			var tire_data: Variant = snapshot.get("tires", {})
 			if tire_data is Dictionary:
 				data = tire_data
 
-	if not data.is_empty():
-		set_tire_data(data)
+	if _vehicle.has_method(&"get_brake_state_snapshot"):
+		var native_brake_data: Variant = _vehicle.call(&"get_brake_state_snapshot")
+		if native_brake_data is Dictionary:
+			brake_data = native_brake_data
+	elif not snapshot.is_empty():
+		var snapshot_brake_data: Variant = snapshot.get("brakes", {})
+		if snapshot_brake_data is Dictionary:
+			brake_data = snapshot_brake_data
 
-func set_tire_data(data: Dictionary) -> void:
+	if not data.is_empty() or not brake_data.is_empty():
+		set_tire_data(data, brake_data)
+
+func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 	for wheel: String in WHEELS:
-		if not _cells.has(wheel):
+		if not _cells.has(wheel) or not data.has(wheel):
 			continue
 		var wheel_data: Dictionary = data.get(wheel, {})
 		if wheel_data.is_empty():
@@ -60,10 +77,24 @@ func set_tire_data(data: Dictionary) -> void:
 		var pressure_label: Label = cell["pressure"]
 		var zones_label: Label = cell["zones"]
 		var carcass_label: Label = cell["carcass"]
+		var brake_label: Label = cell["brake"]
 
 		pressure_label.text = "P %.0f kPa" % pressure
 		zones_label.text = "I %.0f°  C %.0f°  O %.0f°" % [inner, center, outer]
 		carcass_label.text = "CAR %.0f°  GAS %.0f°" % [carcass, gas]
+
+		var brake_wheel: Dictionary = brake_data.get(wheel, {})
+		if not brake_wheel.is_empty():
+			var disc := float(brake_wheel.get("disc_c", 0.0))
+			var caliper := float(brake_wheel.get("caliper_c", 0.0))
+			var rim := float(brake_wheel.get("rim_c", 0.0))
+			brake_label.text = "BRK D%.0f° C%.0f° R%.0f°" % [disc, caliper, rim]
+			brake_label.add_theme_color_override("font_color", _brake_temperature_color(
+				disc,
+				float(brake_wheel.get("optimal_min_c", 400.0)),
+				float(brake_wheel.get("optimal_max_c", 800.0)),
+				float(brake_wheel.get("fade_start_c", 900.0)),
+				float(brake_wheel.get("critical_c", 1100.0))))
 
 		# Overall zone colour is based on the hottest tread reading so overheating
 		# remains visible without making the compact panel unreadable.
@@ -117,11 +148,17 @@ func _build_ui() -> void:
 		carcass_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(carcass_label)
 
+		var brake_label := Label.new()
+		brake_label.text = "BRK D---° C---° R---°"
+		brake_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(brake_label)
+
 		grid.add_child(box)
 		_cells[wheel] = {
 			"pressure": pressure_label,
 			"zones": zones_label,
 			"carcass": carcass_label,
+			"brake": brake_label,
 		}
 
 func _temperature_color(temp_c: float) -> Color:
@@ -132,3 +169,14 @@ func _temperature_color(temp_c: float) -> Color:
 	if temp_c <= 120.0:
 		return Color(1.0, 0.82, 0.42)
 	return Color(1.0, 0.42, 0.38)
+
+func _brake_temperature_color(temp_c: float, optimal_min_c: float, optimal_max_c: float, fade_start_c: float, critical_c: float) -> Color:
+	if temp_c < optimal_min_c:
+		return Color(0.45, 0.72, 1.0)
+	if temp_c <= optimal_max_c:
+		return Color(0.65, 1.0, 0.62)
+	if temp_c < fade_start_c:
+		return Color(1.0, 0.82, 0.42)
+	if temp_c < critical_c:
+		return Color(1.0, 0.42, 0.38)
+	return Color(0.85, 0.12, 0.12)

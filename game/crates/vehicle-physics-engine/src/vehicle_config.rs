@@ -1,4 +1,8 @@
-use crate::tire_thermals::{TirePressureConfig, TireThermalConfig};
+use crate::brake_thermals::{
+    BrakeAxleThermalConfig, BrakeCoolingProfile, BrakeDuctAxleConfig, BrakeRotorMaterial,
+    BrakeRotorVentilation, BrakeThermalConfig, BrakeThermalModelKind,
+};
+use crate::tire_thermals::{TirePressureConfig, TireThermalAxleConfig, TireThermalConfig};
 use crate::types::{SurfaceType, Vec3, WheelIndex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -32,15 +36,15 @@ pub struct VehicleConfig {
     pub ackermann: f64,
 
     // Powertrain & Gearing
-    pub max_torque: f64,       // N·m
-    pub max_rpm: f64,          // RPM
-    pub idle_rpm: f64,         // RPM
-    pub motor_moment: f64,     // kg·m²
+    pub max_torque: f64,               // N·m
+    pub max_rpm: f64,                  // RPM
+    pub idle_rpm: f64,                 // RPM
+    pub motor_moment: f64,             // kg·m²
     pub torque_curve: Vec<(f64, f64)>, // (normalized_rpm, normalized_torque)
     pub gear_ratios: Vec<f64>,
     pub final_drive: f64,
     pub reverse_ratio: f64,
-    pub shift_time: f64,       // seconds
+    pub shift_time: f64, // seconds
     pub automatic_transmission: bool,
     pub front_torque_split: f64, // 0.0 = pure RWD, 1.0 = pure FWD
 
@@ -95,10 +99,11 @@ pub struct VehicleConfig {
     pub rear_airborne_decay: f64,
     pub front_brake_bias: f64,
     pub max_brake_torque: f64,
+    pub brake_thermal: BrakeThermalConfig,
 
     // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
     pub tire_pressure: TirePressureConfig,
-    pub tire_thermal: TireThermalConfig,
+    pub tire_thermal: TireThermalAxleConfig,
 
     // ABS
     pub enable_abs: bool,
@@ -397,7 +402,13 @@ impl VehicleConfig {
             surface_lateral_grip_assist.insert(st, 0.0);
         }
         let mut surface_longitudinal_grip_ratio = HashMap::new();
-        for st in [SurfaceType::Road, SurfaceType::Curb, SurfaceType::Dirt, SurfaceType::Grass, SurfaceType::Gravel] {
+        for st in [
+            SurfaceType::Road,
+            SurfaceType::Curb,
+            SurfaceType::Dirt,
+            SurfaceType::Grass,
+            SurfaceType::Gravel,
+        ] {
             surface_longitudinal_grip_ratio.insert(st, 0.5);
         }
 
@@ -499,10 +510,11 @@ impl VehicleConfig {
             rear_airborne_decay: 2.0,
             front_brake_bias: 0.57,
             max_brake_torque: 2800.0,
+            brake_thermal: BrakeThermalConfig::default(),
 
             // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
             tire_pressure: TirePressureConfig::default(),
-            tire_thermal: TireThermalConfig::default(),
+            tire_thermal: TireThermalAxleConfig::default(),
 
             // ABS
             enable_abs: false,
@@ -664,10 +676,11 @@ impl VehicleConfig {
             rear_airborne_decay: 2.0,
             front_brake_bias: 0.58,
             max_brake_torque: 2800.0,
+            brake_thermal: BrakeThermalConfig::default(),
 
             // Tire pressure + thermal (legacy Jordan uses canonical defaults)
             tire_pressure: TirePressureConfig::default(),
-            tire_thermal: TireThermalConfig::default(),
+            tire_thermal: TireThermalAxleConfig::default(),
 
             // ABS
             enable_abs: false,
@@ -778,7 +791,11 @@ impl VehicleConfig {
             self.wheelbase * 0.5
         };
         let x = if wheel.is_front() {
-            if wheel.is_right() { self.front_track * 0.5 } else { -self.front_track * 0.5 }
+            if wheel.is_right() {
+                self.front_track * 0.5
+            } else {
+                -self.front_track * 0.5
+            }
         } else if wheel.is_right() {
             self.rear_track * 0.5
         } else {
@@ -791,8 +808,16 @@ impl VehicleConfig {
         } else {
             self.rear_tire_radius - mean_radius
         };
-        let spring_length = if wheel.is_front() { self.front_spring_length } else { self.rear_spring_length };
-        let resting_ratio = if wheel.is_front() { self.front_resting_ratio } else { self.rear_resting_ratio };
+        let spring_length = if wheel.is_front() {
+            self.front_spring_length
+        } else {
+            self.rear_spring_length
+        };
+        let resting_ratio = if wheel.is_front() {
+            self.front_resting_ratio
+        } else {
+            self.rear_resting_ratio
+        };
         let anchor_y = hub_y + spring_length * (1.0 - resting_ratio);
 
         Vec3::new(x, anchor_y, z)
@@ -800,8 +825,8 @@ impl VehicleConfig {
 
     /// Load vehicle configuration from a JSON string.
     pub fn from_json_str(json: &str) -> Result<Self, String> {
-        let spec: JsonVehicleSpec = serde_json::from_str(json)
-            .map_err(|e| format!("JSON parse error: {e}"))?;
+        let spec: JsonVehicleSpec =
+            serde_json::from_str(json).map_err(|e| format!("JSON parse error: {e}"))?;
         Self::from_json_spec(spec)
     }
 
@@ -859,7 +884,9 @@ struct JsonVehicleSpec {
     coordinate_contract: Option<HashMap<String, String>>,
 }
 
-fn default_schema_version() -> u32 { 1 }
+fn default_schema_version() -> u32 {
+    1
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -886,16 +913,34 @@ impl Default for JsonChassis {
         }
     }
 }
-fn default_vehicle_name() -> String { "F1 1994 (V10)".to_string() }
-fn default_mass() -> f64 { 575.0 }
-fn default_front_weight_dist() -> f64 { 0.45 }
-fn default_cog_height() -> f64 { -0.12 }
+fn default_vehicle_name() -> String {
+    "F1 1994 (V10)".to_string()
+}
+fn default_mass() -> f64 {
+    575.0
+}
+fn default_front_weight_dist() -> f64 {
+    0.45
+}
+fn default_cog_height() -> f64 {
+    -0.12
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
-struct JsonVec3 { x: f64, y: f64, z: f64 }
+struct JsonVec3 {
+    x: f64,
+    y: f64,
+    z: f64,
+}
 impl Default for JsonVec3 {
-    fn default() -> Self { Self { x: 1.0, y: 1.0, z: 1.0 } }
+    fn default() -> Self {
+        Self {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -920,9 +965,15 @@ impl Default for JsonGeometry {
         }
     }
 }
-fn default_wheelbase() -> f64 { 2.92065 }
-fn default_front_track() -> f64 { 1.5925 }
-fn default_rear_track() -> f64 { 1.5246 }
+fn default_wheelbase() -> f64 {
+    2.92065
+}
+fn default_front_track() -> f64 {
+    1.5925
+}
+fn default_rear_track() -> f64 {
+    1.5246
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -951,22 +1002,43 @@ struct JsonSteering {
 impl Default for JsonSteering {
     fn default() -> Self {
         Self {
-            max_steering_angle: default_max_steer(), front_steering_ratio: 1.0,
-            rear_steering_ratio: 0.0, steering_speed: default_steer_speed(),
-            countersteer_speed: default_counter_speed(), steering_speed_decay: default_steer_decay(),
-            steering_slip_assist: default_slip_assist(), countersteer_assist: default_counter_assist(),
-            steering_exponent: default_steer_exp(), ackermann: default_ackermann(),
+            max_steering_angle: default_max_steer(),
+            front_steering_ratio: 1.0,
+            rear_steering_ratio: 0.0,
+            steering_speed: default_steer_speed(),
+            countersteer_speed: default_counter_speed(),
+            steering_speed_decay: default_steer_decay(),
+            steering_slip_assist: default_slip_assist(),
+            countersteer_assist: default_counter_assist(),
+            steering_exponent: default_steer_exp(),
+            ackermann: default_ackermann(),
         }
     }
 }
-fn default_max_steer() -> f64 { 0.436332 }
-fn default_steer_speed() -> f64 { 4.25 }
-fn default_counter_speed() -> f64 { 11.0 }
-fn default_steer_decay() -> f64 { 0.20 }
-fn default_slip_assist() -> f64 { 0.54 }
-fn default_counter_assist() -> f64 { 0.89 }
-fn default_steer_exp() -> f64 { 1.50 }
-fn default_ackermann() -> f64 { 0.15 }
+fn default_max_steer() -> f64 {
+    0.436332
+}
+fn default_steer_speed() -> f64 {
+    4.25
+}
+fn default_counter_speed() -> f64 {
+    11.0
+}
+fn default_steer_decay() -> f64 {
+    0.20
+}
+fn default_slip_assist() -> f64 {
+    0.54
+}
+fn default_counter_assist() -> f64 {
+    0.89
+}
+fn default_steer_exp() -> f64 {
+    1.50
+}
+fn default_ackermann() -> f64 {
+    0.15
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1015,41 +1087,89 @@ struct JsonPowertrain {
 impl Default for JsonPowertrain {
     fn default() -> Self {
         Self {
-            max_torque: default_max_torque(), max_rpm: default_max_rpm(),
-            idle_rpm: default_idle_rpm(), motor_moment: default_motor_moment(),
-            torque_curve: default_torque_curve(), gear_ratios: default_gear_ratios(),
-            final_drive: default_final_drive(), reverse_ratio: default_reverse_ratio(),
-            shift_time: default_shift_time(), automatic_transmission: default_auto_trans(),
-            front_torque_split: 0.0, gear_inertia: default_gear_inertia(),
+            max_torque: default_max_torque(),
+            max_rpm: default_max_rpm(),
+            idle_rpm: default_idle_rpm(),
+            motor_moment: default_motor_moment(),
+            torque_curve: default_torque_curve(),
+            gear_ratios: default_gear_ratios(),
+            final_drive: default_final_drive(),
+            reverse_ratio: default_reverse_ratio(),
+            shift_time: default_shift_time(),
+            automatic_transmission: default_auto_trans(),
+            front_torque_split: 0.0,
+            gear_inertia: default_gear_inertia(),
             max_clutch_torque_ratio: default_max_clutch_ratio(),
             clutch_out_rpm_offset: default_clutch_out_offset(),
             idle_disengagement_hysteresis_rpm: default_idle_hysteresis(),
-            variable_drag_ratio: default_var_drag(), constant_brake_ratio: default_const_brake(),
+            variable_drag_ratio: default_var_drag(),
+            constant_brake_ratio: default_const_brake(),
             handbrake_torque_fraction: default_handbrake_frac(),
             automatic_shift: None,
             differential: JsonDifferential::default(),
         }
     }
 }
-fn default_max_torque() -> f64 { 455.0 }
-fn default_max_rpm() -> f64 { 15000.0 }
-fn default_idle_rpm() -> f64 { 4500.0 }
-fn default_motor_moment() -> f64 { 0.12 }
-fn default_torque_curve() -> Vec<(f64, f64)> {
-    vec![(0.00,0.20),(0.265,0.28),(0.44,0.58),(0.62,0.85),(0.79,0.98),(0.88,1.00),(0.97,0.95),(1.00,0.88)]
+fn default_max_torque() -> f64 {
+    455.0
 }
-fn default_gear_ratios() -> Vec<f64> { vec![2.65, 2.10, 1.75, 1.50, 1.32, 1.18] }
-fn default_final_drive() -> f64 { 6.30 }
-fn default_reverse_ratio() -> f64 { 3.00 }
-fn default_shift_time() -> f64 { 0.12 }
-fn default_auto_trans() -> bool { false }
-fn default_gear_inertia() -> f64 { 0.02 }
-fn default_max_clutch_ratio() -> f64 { 1.6 }
-fn default_clutch_out_offset() -> f64 { 1000.0 }
-fn default_idle_hysteresis() -> f64 { 50.0 }
-fn default_var_drag() -> f64 { 0.10 }
-fn default_const_brake() -> f64 { 0.02 }
-fn default_handbrake_frac() -> f64 { 0.4 }
+fn default_max_rpm() -> f64 {
+    15000.0
+}
+fn default_idle_rpm() -> f64 {
+    4500.0
+}
+fn default_motor_moment() -> f64 {
+    0.12
+}
+fn default_torque_curve() -> Vec<(f64, f64)> {
+    vec![
+        (0.00, 0.20),
+        (0.265, 0.28),
+        (0.44, 0.58),
+        (0.62, 0.85),
+        (0.79, 0.98),
+        (0.88, 1.00),
+        (0.97, 0.95),
+        (1.00, 0.88),
+    ]
+}
+fn default_gear_ratios() -> Vec<f64> {
+    vec![2.65, 2.10, 1.75, 1.50, 1.32, 1.18]
+}
+fn default_final_drive() -> f64 {
+    6.30
+}
+fn default_reverse_ratio() -> f64 {
+    3.00
+}
+fn default_shift_time() -> f64 {
+    0.12
+}
+fn default_auto_trans() -> bool {
+    false
+}
+fn default_gear_inertia() -> f64 {
+    0.02
+}
+fn default_max_clutch_ratio() -> f64 {
+    1.6
+}
+fn default_clutch_out_offset() -> f64 {
+    1000.0
+}
+fn default_idle_hysteresis() -> f64 {
+    50.0
+}
+fn default_var_drag() -> f64 {
+    0.10
+}
+fn default_const_brake() -> f64 {
+    0.02
+}
+fn default_handbrake_frac() -> f64 {
+    0.4
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1105,16 +1225,30 @@ struct JsonDifferential {
 impl Default for JsonDifferential {
     fn default() -> Self {
         Self {
-            preload_nm: 170.0, power_ramp_angle_deg: 65.0, coast_ramp_angle_deg: 75.0,
-            clutches: 4.0, clutch_friction_coefficient: 0.0, slip_transition_threshold_rad_s: 0.5,
+            preload_nm: 170.0,
+            power_ramp_angle_deg: 65.0,
+            coast_ramp_angle_deg: 75.0,
+            clutches: 4.0,
+            clutch_friction_coefficient: 0.0,
+            slip_transition_threshold_rad_s: 0.5,
         }
     }
 }
-fn default_preload() -> f64 { 170.0 }
-fn default_power_ramp() -> f64 { 65.0 }
-fn default_coast_ramp() -> f64 { 75.0 }
-fn default_clutches() -> f64 { 4.0 }
-fn default_slip_threshold() -> f64 { 0.5 }
+fn default_preload() -> f64 {
+    170.0
+}
+fn default_power_ramp() -> f64 {
+    65.0
+}
+fn default_coast_ramp() -> f64 {
+    75.0
+}
+fn default_clutches() -> f64 {
+    4.0
+}
+fn default_slip_threshold() -> f64 {
+    0.5
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1126,7 +1260,9 @@ struct JsonSuspension {
     #[serde(default = "default_tri_ray")]
     tri_ray_spacing_ratio: f64,
 }
-fn default_tri_ray() -> f64 { 0.40 }
+fn default_tri_ray() -> f64 {
+    0.40
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1153,16 +1289,30 @@ struct JsonSuspensionAxle {
 impl Default for JsonSuspensionAxle {
     fn default() -> Self {
         Self {
-            spring_length: 0.25, resting_ratio: 0.28, damping_ratio: 0.80,
-            bump_damp_multiplier: 1.3, rebound_damp_multiplier: 1.1, arb_ratio: 0.20,
-            toe: 0.0017453, camber: -0.0174533, bump_stop_multiplier: 2.2,
+            spring_length: 0.25,
+            resting_ratio: 0.28,
+            damping_ratio: 0.80,
+            bump_damp_multiplier: 1.3,
+            rebound_damp_multiplier: 1.1,
+            arb_ratio: 0.20,
+            toe: 0.0017453,
+            camber: -0.0174533,
+            bump_stop_multiplier: 2.2,
         }
     }
 }
-fn default_damping() -> f64 { 0.80 }
-fn default_bump_mult() -> f64 { 1.3 }
-fn default_rebound_mult() -> f64 { 1.1 }
-fn default_bump_stop() -> f64 { 2.2 }
+fn default_damping() -> f64 {
+    0.80
+}
+fn default_bump_mult() -> f64 {
+    1.3
+}
+fn default_rebound_mult() -> f64 {
+    1.1
+}
+fn default_bump_stop() -> f64 {
+    2.2
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1189,16 +1339,26 @@ struct JsonTires {
 impl Default for JsonTires {
     fn default() -> Self {
         Self {
-            front: JsonTireAxle::default(), rear: JsonTireAxle::default(),
-            contact_patch: default_contact_patch(), braking_grip_multiplier: default_braking_grip(),
-            airborne_spin_decay_torque: default_airborne_decay(), surfaces: HashMap::new(),
-            pressure: None, thermal: None,
+            front: JsonTireAxle::default(),
+            rear: JsonTireAxle::default(),
+            contact_patch: default_contact_patch(),
+            braking_grip_multiplier: default_braking_grip(),
+            airborne_spin_decay_torque: default_airborne_decay(),
+            surfaces: HashMap::new(),
+            pressure: None,
+            thermal: None,
         }
     }
 }
-fn default_contact_patch() -> f64 { 0.21 }
-fn default_braking_grip() -> f64 { 1.08 }
-fn default_airborne_decay() -> f64 { 2.0 }
+fn default_contact_patch() -> f64 {
+    0.21
+}
+fn default_braking_grip() -> f64 {
+    1.08
+}
+fn default_airborne_decay() -> f64 {
+    2.0
+}
 
 // ── Tire pressure + thermal (schema extension) ─────────────────────────────────
 // These JSON sections are parsed explicitly (deny_unknown_fields stays active on
@@ -1225,39 +1385,81 @@ struct JsonTirePressure {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct JsonTireThermal {
-    #[serde(default)] initial_temperature_c: Option<f64>,
-    #[serde(default)] ambient_fallback_c: Option<f64>,
-    #[serde(default)] track_fallback_c: Option<f64>,
-    #[serde(default)] optimal_tread_temperature_c: Option<f64>,
-    #[serde(default)] optimal_tread_window_c: Option<f64>,
-    #[serde(default)] overheat_tread_temperature_c: Option<f64>,
-    #[serde(default)] optimal_carcass_temperature_c: Option<f64>,
-    #[serde(default)] tread_zone_heat_capacity_j_k: Option<f64>,
-    #[serde(default)] carcass_heat_capacity_j_k: Option<f64>,
-    #[serde(default)] gas_heat_capacity_j_k: Option<f64>,
-    #[serde(default)] tread_to_carcass_w_k: Option<f64>,
-    #[serde(default)] carcass_to_gas_w_k: Option<f64>,
-    #[serde(default)] tread_to_air_w_k: Option<f64>,
-    #[serde(default)] carcass_to_air_w_k: Option<f64>,
-    #[serde(default)] road_conductance_w_k: Option<f64>,
-    #[serde(default)] lateral_tread_conductance_w_k: Option<f64>,
-    #[serde(default)] slip_heat_efficiency: Option<f64>,
-    #[serde(default)] carcass_hysteresis_efficiency: Option<f64>,
-    #[serde(default)] pressure_stiffness_exponent: Option<f64>,
-    #[serde(default)] pressure_damping_exponent: Option<f64>,
-    #[serde(default)] pressure_max_deflection_exponent: Option<f64>,
-    #[serde(default)] pressure_patch_exponent: Option<f64>,
-    #[serde(default)] pressure_relaxation_exponent: Option<f64>,
-    #[serde(default)] pressure_rr_exponent: Option<f64>,
-    #[serde(default)] pressure_force_stiffness_exponent: Option<f64>,
-    #[serde(default)] pressure_trail_exponent: Option<f64>,
-    #[serde(default)] volume_deflection_gain: Option<f64>,
-    #[serde(default)] minimum_pressure_kpa_gauge: Option<f64>,
-    #[serde(default)] maximum_pressure_kpa_gauge: Option<f64>,
+    #[serde(default)]
+    initial_temperature_c: Option<f64>,
+    #[serde(default)]
+    ambient_fallback_c: Option<f64>,
+    #[serde(default)]
+    track_fallback_c: Option<f64>,
+    #[serde(default)]
+    optimal_tread_temperature_c: Option<f64>,
+    #[serde(default)]
+    optimal_tread_window_c: Option<f64>,
+    #[serde(default)]
+    overheat_tread_temperature_c: Option<f64>,
+    #[serde(default)]
+    optimal_carcass_temperature_c: Option<f64>,
+    #[serde(default)]
+    tread_zone_heat_capacity_j_k: Option<f64>,
+    #[serde(default)]
+    carcass_heat_capacity_j_k: Option<f64>,
+    #[serde(default)]
+    gas_heat_capacity_j_k: Option<f64>,
+    #[serde(default)]
+    tread_to_carcass_w_k: Option<f64>,
+    #[serde(default)]
+    carcass_to_gas_w_k: Option<f64>,
+    #[serde(default)]
+    tread_to_air_w_k: Option<f64>,
+    #[serde(default)]
+    carcass_to_air_w_k: Option<f64>,
+    #[serde(default)]
+    road_conductance_w_k: Option<f64>,
+    #[serde(default)]
+    lateral_tread_conductance_w_k: Option<f64>,
+    #[serde(default)]
+    slip_heat_efficiency: Option<f64>,
+    #[serde(default)]
+    carcass_hysteresis_efficiency: Option<f64>,
+    #[serde(default)]
+    pressure_stiffness_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_damping_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_max_deflection_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_patch_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_relaxation_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_rr_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_force_stiffness_exponent: Option<f64>,
+    #[serde(default)]
+    pressure_trail_exponent: Option<f64>,
+    #[serde(default)]
+    volume_deflection_gain: Option<f64>,
+    #[serde(default)]
+    minimum_pressure_kpa_gauge: Option<f64>,
+    #[serde(default)]
+    maximum_pressure_kpa_gauge: Option<f64>,
+    /// New schema: independent front/rear thermal profiles. The legacy scalar
+    /// fields above remain a shared fallback for older vehicle JSON files.
+    #[serde(default)]
+    front: Option<Box<JsonTireThermal>>,
+    #[serde(default)]
+    rear: Option<Box<JsonTireThermal>>,
 }
 
 impl JsonTireThermal {
-    fn from_config(c: &TireThermalConfig) -> Self {
+    fn from_config(c: &TireThermalAxleConfig) -> Self {
+        let mut out = Self::from_single_config(&c.front);
+        out.front = Some(Box::new(Self::from_single_config(&c.front)));
+        out.rear = Some(Box::new(Self::from_single_config(&c.rear)));
+        out
+    }
+
+    fn from_single_config(c: &TireThermalConfig) -> Self {
         Self {
             initial_temperature_c: Some(c.initial_temperature_c),
             ambient_fallback_c: Some(c.ambient_fallback_c),
@@ -1288,6 +1490,8 @@ impl JsonTireThermal {
             volume_deflection_gain: Some(c.volume_deflection_gain),
             minimum_pressure_kpa_gauge: Some(c.minimum_pressure_kpa_gauge),
             maximum_pressure_kpa_gauge: Some(c.maximum_pressure_kpa_gauge),
+            front: None,
+            rear: None,
         }
     }
 }
@@ -1319,40 +1523,114 @@ fn tire_pressure_from_json(j: &Option<JsonTirePressure>) -> TirePressureConfig {
     cfg
 }
 
-fn tire_thermal_from_json(j: &Option<JsonTireThermal>) -> TireThermalConfig {
-    let mut c = TireThermalConfig::default();
+fn tire_thermal_from_json(j: &Option<JsonTireThermal>) -> TireThermalAxleConfig {
+    let mut shared = TireThermalConfig::default();
     if let Some(t) = j {
-        if let Some(v) = t.initial_temperature_c { c.initial_temperature_c = v; }
-        if let Some(v) = t.ambient_fallback_c { c.ambient_fallback_c = v; }
-        if let Some(v) = t.track_fallback_c { c.track_fallback_c = v; }
-        if let Some(v) = t.optimal_tread_temperature_c { c.optimal_tread_temperature_c = v; }
-        if let Some(v) = t.optimal_tread_window_c { c.optimal_tread_window_c = v; }
-        if let Some(v) = t.overheat_tread_temperature_c { c.overheat_tread_temperature_c = v; }
-        if let Some(v) = t.optimal_carcass_temperature_c { c.optimal_carcass_temperature_c = v; }
-        if let Some(v) = t.tread_zone_heat_capacity_j_k { c.tread_zone_heat_capacity_j_k = v; }
-        if let Some(v) = t.carcass_heat_capacity_j_k { c.carcass_heat_capacity_j_k = v; }
-        if let Some(v) = t.gas_heat_capacity_j_k { c.gas_heat_capacity_j_k = v; }
-        if let Some(v) = t.tread_to_carcass_w_k { c.tread_to_carcass_w_k = v; }
-        if let Some(v) = t.carcass_to_gas_w_k { c.carcass_to_gas_w_k = v; }
-        if let Some(v) = t.tread_to_air_w_k { c.tread_to_air_w_k = v; }
-        if let Some(v) = t.carcass_to_air_w_k { c.carcass_to_air_w_k = v; }
-        if let Some(v) = t.road_conductance_w_k { c.road_conductance_w_k = v; }
-        if let Some(v) = t.lateral_tread_conductance_w_k { c.lateral_tread_conductance_w_k = v; }
-        if let Some(v) = t.slip_heat_efficiency { c.slip_heat_efficiency = v; }
-        if let Some(v) = t.carcass_hysteresis_efficiency { c.carcass_hysteresis_efficiency = v; }
-        if let Some(v) = t.pressure_stiffness_exponent { c.pressure_stiffness_exponent = v; }
-        if let Some(v) = t.pressure_damping_exponent { c.pressure_damping_exponent = v; }
-        if let Some(v) = t.pressure_max_deflection_exponent { c.pressure_max_deflection_exponent = v; }
-        if let Some(v) = t.pressure_patch_exponent { c.pressure_patch_exponent = v; }
-        if let Some(v) = t.pressure_relaxation_exponent { c.pressure_relaxation_exponent = v; }
-        if let Some(v) = t.pressure_rr_exponent { c.pressure_rr_exponent = v; }
-        if let Some(v) = t.pressure_force_stiffness_exponent { c.pressure_force_stiffness_exponent = v; }
-        if let Some(v) = t.pressure_trail_exponent { c.pressure_trail_exponent = v; }
-        if let Some(v) = t.volume_deflection_gain { c.volume_deflection_gain = v; }
-        if let Some(v) = t.minimum_pressure_kpa_gauge { c.minimum_pressure_kpa_gauge = v; }
-        if let Some(v) = t.maximum_pressure_kpa_gauge { c.maximum_pressure_kpa_gauge = v; }
+        overlay_tire_thermal(&mut shared, t);
+        let mut front = shared;
+        let mut rear = shared;
+        if let Some(front_json) = &t.front {
+            overlay_tire_thermal(&mut front, front_json);
+        }
+        if let Some(rear_json) = &t.rear {
+            overlay_tire_thermal(&mut rear, rear_json);
+        }
+        return TireThermalAxleConfig { front, rear };
     }
-    c
+    TireThermalAxleConfig {
+        front: shared,
+        rear: shared,
+    }
+}
+
+fn overlay_tire_thermal(c: &mut TireThermalConfig, t: &JsonTireThermal) {
+    if let Some(v) = t.initial_temperature_c {
+        c.initial_temperature_c = v;
+    }
+    if let Some(v) = t.ambient_fallback_c {
+        c.ambient_fallback_c = v;
+    }
+    if let Some(v) = t.track_fallback_c {
+        c.track_fallback_c = v;
+    }
+    if let Some(v) = t.optimal_tread_temperature_c {
+        c.optimal_tread_temperature_c = v;
+    }
+    if let Some(v) = t.optimal_tread_window_c {
+        c.optimal_tread_window_c = v;
+    }
+    if let Some(v) = t.overheat_tread_temperature_c {
+        c.overheat_tread_temperature_c = v;
+    }
+    if let Some(v) = t.optimal_carcass_temperature_c {
+        c.optimal_carcass_temperature_c = v;
+    }
+    if let Some(v) = t.tread_zone_heat_capacity_j_k {
+        c.tread_zone_heat_capacity_j_k = v;
+    }
+    if let Some(v) = t.carcass_heat_capacity_j_k {
+        c.carcass_heat_capacity_j_k = v;
+    }
+    if let Some(v) = t.gas_heat_capacity_j_k {
+        c.gas_heat_capacity_j_k = v;
+    }
+    if let Some(v) = t.tread_to_carcass_w_k {
+        c.tread_to_carcass_w_k = v;
+    }
+    if let Some(v) = t.carcass_to_gas_w_k {
+        c.carcass_to_gas_w_k = v;
+    }
+    if let Some(v) = t.tread_to_air_w_k {
+        c.tread_to_air_w_k = v;
+    }
+    if let Some(v) = t.carcass_to_air_w_k {
+        c.carcass_to_air_w_k = v;
+    }
+    if let Some(v) = t.road_conductance_w_k {
+        c.road_conductance_w_k = v;
+    }
+    if let Some(v) = t.lateral_tread_conductance_w_k {
+        c.lateral_tread_conductance_w_k = v;
+    }
+    if let Some(v) = t.slip_heat_efficiency {
+        c.slip_heat_efficiency = v;
+    }
+    if let Some(v) = t.carcass_hysteresis_efficiency {
+        c.carcass_hysteresis_efficiency = v;
+    }
+    if let Some(v) = t.pressure_stiffness_exponent {
+        c.pressure_stiffness_exponent = v;
+    }
+    if let Some(v) = t.pressure_damping_exponent {
+        c.pressure_damping_exponent = v;
+    }
+    if let Some(v) = t.pressure_max_deflection_exponent {
+        c.pressure_max_deflection_exponent = v;
+    }
+    if let Some(v) = t.pressure_patch_exponent {
+        c.pressure_patch_exponent = v;
+    }
+    if let Some(v) = t.pressure_relaxation_exponent {
+        c.pressure_relaxation_exponent = v;
+    }
+    if let Some(v) = t.pressure_rr_exponent {
+        c.pressure_rr_exponent = v;
+    }
+    if let Some(v) = t.pressure_force_stiffness_exponent {
+        c.pressure_force_stiffness_exponent = v;
+    }
+    if let Some(v) = t.pressure_trail_exponent {
+        c.pressure_trail_exponent = v;
+    }
+    if let Some(v) = t.volume_deflection_gain {
+        c.volume_deflection_gain = v;
+    }
+    if let Some(v) = t.minimum_pressure_kpa_gauge {
+        c.minimum_pressure_kpa_gauge = v;
+    }
+    if let Some(v) = t.maximum_pressure_kpa_gauge {
+        c.maximum_pressure_kpa_gauge = v;
+    }
 }
 
 fn wheel_index_from_name(name: &str) -> Option<WheelIndex> {
@@ -1410,9 +1688,15 @@ impl Default for JsonTireAxle {
         }
     }
 }
-fn default_tire_radius_front() -> f64 { 0.31695 }
-fn default_tire_width_front() -> f64 { 0.30030 }
-fn default_wheel_mass_front() -> f64 { 12.0 }
+fn default_tire_radius_front() -> f64 {
+    0.31695
+}
+fn default_tire_width_front() -> f64 {
+    0.30030
+}
+fn default_wheel_mass_front() -> f64 {
+    12.0
+}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1425,8 +1709,12 @@ struct JsonSurfaceEntry {
     #[serde(default = "default_long_ratio")]
     longitudinal_grip_ratio: f64,
 }
-fn default_lat_assist() -> f64 { 0.05 }
-fn default_long_ratio() -> f64 { 0.5 }
+fn default_lat_assist() -> f64 {
+    0.05
+}
+fn default_long_ratio() -> f64 {
+    0.5
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1441,20 +1729,352 @@ struct JsonBrakes {
     abs_pulse_time: f64,
     #[serde(default = "default_abs_thresh")]
     abs_spin_diff_threshold: f64,
+    #[serde(default)]
+    thermal: Option<JsonBrakeThermal>,
 }
 impl Default for JsonBrakes {
     fn default() -> Self {
         Self {
-            front_brake_bias: default_brake_bias(), max_brake_torque: default_max_brake(),
-            enable_abs: false, abs_pulse_time: default_abs_pulse(),
+            front_brake_bias: default_brake_bias(),
+            max_brake_torque: default_max_brake(),
+            enable_abs: false,
+            abs_pulse_time: default_abs_pulse(),
             abs_spin_diff_threshold: default_abs_thresh(),
+            thermal: None,
         }
     }
 }
-fn default_brake_bias() -> f64 { 0.57 }
-fn default_max_brake() -> f64 { 2800.0 }
-fn default_abs_pulse() -> f64 { 0.03 }
-fn default_abs_thresh() -> f64 { 12.0 }
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonBrakeThermal {
+    initial_temperature_c: Option<f64>,
+    optimal_min_temperature_c: Option<f64>,
+    optimal_max_temperature_c: Option<f64>,
+    fade_start_temperature_c: Option<f64>,
+    critical_temperature_c: Option<f64>,
+    cold_efficiency: Option<f64>,
+    minimum_fade_efficiency: Option<f64>,
+    braking_heat_fraction: Option<f64>,
+    direct_caliper_heat_fraction: Option<f64>,
+    front: Option<JsonBrakeAxleThermal>,
+    rear: Option<JsonBrakeAxleThermal>,
+    front_duct: Option<JsonBrakeDuctAxle>,
+    rear_duct: Option<JsonBrakeDuctAxle>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonBrakeAxleThermal {
+    model: Option<BrakeThermalModelKind>,
+    rotor_material: Option<BrakeRotorMaterial>,
+    rotor_mass_kg: Option<f64>,
+    rotor_outer_diameter_m: Option<f64>,
+    rotor_inner_diameter_m: Option<f64>,
+    rotor_ventilation: Option<BrakeRotorVentilation>,
+    cooling_profile: Option<BrakeCoolingProfile>,
+    installation_airflow_scale: Option<f64>,
+    surface_bulk_response_scale: Option<f64>,
+    thermal_mass_scale: Option<f64>,
+    disc_heat_capacity_j_k: Option<f64>,
+    disc_surface_heat_capacity_j_k: Option<f64>,
+    disc_bulk_heat_capacity_j_k: Option<f64>,
+    disc_surface_to_bulk_w_k: Option<f64>,
+    disc_surface_base_air_w_k: Option<f64>,
+    caliper_heat_capacity_j_k: Option<f64>,
+    hub_heat_capacity_j_k: Option<f64>,
+    rim_heat_capacity_j_k: Option<f64>,
+    disc_to_caliper_w_k: Option<f64>,
+    disc_to_hub_w_k: Option<f64>,
+    disc_to_rim_radiation_w_k: Option<f64>,
+    hub_to_rim_w_k: Option<f64>,
+    rim_to_tire_carcass_w_k: Option<f64>,
+    rim_to_tire_gas_w_k: Option<f64>,
+    disc_base_air_w_k: Option<f64>,
+    caliper_base_air_w_k: Option<f64>,
+    hub_base_air_w_k: Option<f64>,
+    rim_base_air_w_k: Option<f64>,
+    disc_flow_cooling_gain_w_k: Option<f64>,
+    caliper_flow_cooling_gain_w_k: Option<f64>,
+    hub_flow_cooling_gain_w_k: Option<f64>,
+    rim_flow_cooling_gain_w_k: Option<f64>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonBrakeDuctAxle {
+    opening: Option<f64>,
+    max_inlet_area_m2_per_wheel: Option<f64>,
+    discharge_coefficient: Option<f64>,
+    pressure_recovery: Option<f64>,
+    cooling_reference_speed_ms: Option<f64>,
+    drag_coefficient: Option<f64>,
+    area_response_exponent: Option<f64>,
+    cooling_flow_exponent: Option<f64>,
+    minimum_cooling_flow_ratio: Option<f64>,
+    air_specific_heat_j_kg_k: Option<f64>,
+    heat_exchanger_ua_w_k: Option<f64>,
+    disc_cooling_weight: Option<f64>,
+    caliper_cooling_weight: Option<f64>,
+    hub_cooling_weight: Option<f64>,
+    rim_cooling_weight: Option<f64>,
+}
+
+impl JsonBrakeThermal {
+    fn to_config(&self) -> BrakeThermalConfig {
+        let mut c = BrakeThermalConfig::default();
+        if let Some(v) = self.initial_temperature_c {
+            c.initial_temperature_c = v;
+        }
+        if let Some(v) = self.optimal_min_temperature_c {
+            c.optimal_min_temperature_c = v;
+        }
+        if let Some(v) = self.optimal_max_temperature_c {
+            c.optimal_max_temperature_c = v;
+        }
+        if let Some(v) = self.fade_start_temperature_c {
+            c.fade_start_temperature_c = v;
+        }
+        if let Some(v) = self.critical_temperature_c {
+            c.critical_temperature_c = v;
+        }
+        if let Some(v) = self.cold_efficiency {
+            c.cold_efficiency = v;
+        }
+        if let Some(v) = self.minimum_fade_efficiency {
+            c.minimum_fade_efficiency = v;
+        }
+        if let Some(v) = self.braking_heat_fraction {
+            c.braking_heat_fraction = v;
+        }
+        if let Some(v) = self.direct_caliper_heat_fraction {
+            c.direct_caliper_heat_fraction = v;
+        }
+        if let Some(v) = &self.front {
+            overlay_brake_axle(&mut c.front, v);
+        }
+        if let Some(v) = &self.rear {
+            overlay_brake_axle(&mut c.rear, v);
+        }
+        if let Some(v) = &self.front_duct {
+            overlay_brake_duct(&mut c.front_duct, v);
+        }
+        if let Some(v) = &self.rear_duct {
+            overlay_brake_duct(&mut c.rear_duct, v);
+        }
+        c
+    }
+
+    fn from_config(c: &BrakeThermalConfig) -> Self {
+        Self {
+            initial_temperature_c: Some(c.initial_temperature_c),
+            optimal_min_temperature_c: Some(c.optimal_min_temperature_c),
+            optimal_max_temperature_c: Some(c.optimal_max_temperature_c),
+            fade_start_temperature_c: Some(c.fade_start_temperature_c),
+            critical_temperature_c: Some(c.critical_temperature_c),
+            cold_efficiency: Some(c.cold_efficiency),
+            minimum_fade_efficiency: Some(c.minimum_fade_efficiency),
+            braking_heat_fraction: Some(c.braking_heat_fraction),
+            direct_caliper_heat_fraction: Some(c.direct_caliper_heat_fraction),
+            front: Some(JsonBrakeAxleThermal::from_config(&c.front)),
+            rear: Some(JsonBrakeAxleThermal::from_config(&c.rear)),
+            front_duct: Some(JsonBrakeDuctAxle::from_config(&c.front_duct)),
+            rear_duct: Some(JsonBrakeDuctAxle::from_config(&c.rear_duct)),
+        }
+    }
+}
+
+impl JsonBrakeAxleThermal {
+    fn from_config(c: &BrakeAxleThermalConfig) -> Self {
+        Self {
+            model: Some(c.model),
+            rotor_material: Some(c.rotor_material),
+            rotor_mass_kg: Some(c.rotor_mass_kg),
+            rotor_outer_diameter_m: Some(c.rotor_outer_diameter_m),
+            rotor_inner_diameter_m: Some(c.rotor_inner_diameter_m),
+            rotor_ventilation: Some(c.rotor_ventilation),
+            cooling_profile: Some(c.cooling_profile),
+            installation_airflow_scale: Some(c.installation_airflow_scale),
+            surface_bulk_response_scale: Some(c.surface_bulk_response_scale),
+            thermal_mass_scale: Some(c.thermal_mass_scale),
+            disc_heat_capacity_j_k: Some(c.disc_heat_capacity_j_k),
+            disc_surface_heat_capacity_j_k: Some(c.disc_surface_heat_capacity_j_k),
+            disc_bulk_heat_capacity_j_k: Some(c.disc_bulk_heat_capacity_j_k),
+            disc_surface_to_bulk_w_k: Some(c.disc_surface_to_bulk_w_k),
+            disc_surface_base_air_w_k: Some(c.disc_surface_base_air_w_k),
+            caliper_heat_capacity_j_k: Some(c.caliper_heat_capacity_j_k),
+            hub_heat_capacity_j_k: Some(c.hub_heat_capacity_j_k),
+            rim_heat_capacity_j_k: Some(c.rim_heat_capacity_j_k),
+            disc_to_caliper_w_k: Some(c.disc_to_caliper_w_k),
+            disc_to_hub_w_k: Some(c.disc_to_hub_w_k),
+            disc_to_rim_radiation_w_k: Some(c.disc_to_rim_radiation_w_k),
+            hub_to_rim_w_k: Some(c.hub_to_rim_w_k),
+            rim_to_tire_carcass_w_k: Some(c.rim_to_tire_carcass_w_k),
+            rim_to_tire_gas_w_k: Some(c.rim_to_tire_gas_w_k),
+            disc_base_air_w_k: Some(c.disc_base_air_w_k),
+            caliper_base_air_w_k: Some(c.caliper_base_air_w_k),
+            hub_base_air_w_k: Some(c.hub_base_air_w_k),
+            rim_base_air_w_k: Some(c.rim_base_air_w_k),
+            disc_flow_cooling_gain_w_k: Some(c.disc_flow_cooling_gain_w_k),
+            caliper_flow_cooling_gain_w_k: Some(c.caliper_flow_cooling_gain_w_k),
+            hub_flow_cooling_gain_w_k: Some(c.hub_flow_cooling_gain_w_k),
+            rim_flow_cooling_gain_w_k: Some(c.rim_flow_cooling_gain_w_k),
+        }
+    }
+}
+
+impl JsonBrakeDuctAxle {
+    fn from_config(c: &BrakeDuctAxleConfig) -> Self {
+        Self {
+            opening: Some(c.opening),
+            max_inlet_area_m2_per_wheel: Some(c.max_inlet_area_m2_per_wheel),
+            discharge_coefficient: Some(c.discharge_coefficient),
+            pressure_recovery: Some(c.pressure_recovery),
+            cooling_reference_speed_ms: Some(c.cooling_reference_speed_ms),
+            drag_coefficient: Some(c.drag_coefficient),
+            area_response_exponent: Some(c.area_response_exponent),
+            cooling_flow_exponent: Some(c.cooling_flow_exponent),
+            minimum_cooling_flow_ratio: Some(c.minimum_cooling_flow_ratio),
+            air_specific_heat_j_kg_k: Some(c.air_specific_heat_j_kg_k),
+            heat_exchanger_ua_w_k: Some(c.heat_exchanger_ua_w_k),
+            disc_cooling_weight: Some(c.disc_cooling_weight),
+            caliper_cooling_weight: Some(c.caliper_cooling_weight),
+            hub_cooling_weight: Some(c.hub_cooling_weight),
+            rim_cooling_weight: Some(c.rim_cooling_weight),
+        }
+    }
+}
+
+fn overlay_brake_axle(c: &mut BrakeAxleThermalConfig, j: &JsonBrakeAxleThermal) {
+    if let Some(v) = j.model { c.model = v; }
+    if let Some(v) = j.rotor_material { c.rotor_material = v; }
+    if let Some(v) = j.rotor_mass_kg { c.rotor_mass_kg = v; }
+    if let Some(v) = j.rotor_outer_diameter_m { c.rotor_outer_diameter_m = v; }
+    if let Some(v) = j.rotor_inner_diameter_m { c.rotor_inner_diameter_m = v; }
+    if let Some(v) = j.rotor_ventilation { c.rotor_ventilation = v; }
+    if let Some(v) = j.cooling_profile { c.cooling_profile = v; }
+    if let Some(v) = j.installation_airflow_scale { c.installation_airflow_scale = v; }
+    if let Some(v) = j.surface_bulk_response_scale { c.surface_bulk_response_scale = v; }
+    if let Some(v) = j.thermal_mass_scale { c.thermal_mass_scale = v; }
+    if let Some(v) = j.disc_heat_capacity_j_k {
+        c.disc_heat_capacity_j_k = v;
+    }
+    if let Some(v) = j.disc_surface_heat_capacity_j_k { c.disc_surface_heat_capacity_j_k = v; }
+    if let Some(v) = j.disc_bulk_heat_capacity_j_k { c.disc_bulk_heat_capacity_j_k = v; }
+    if let Some(v) = j.disc_surface_to_bulk_w_k { c.disc_surface_to_bulk_w_k = v; }
+    if let Some(v) = j.disc_surface_base_air_w_k { c.disc_surface_base_air_w_k = v; }
+    if let Some(v) = j.caliper_heat_capacity_j_k {
+        c.caliper_heat_capacity_j_k = v;
+    }
+    if let Some(v) = j.hub_heat_capacity_j_k {
+        c.hub_heat_capacity_j_k = v;
+    }
+    if let Some(v) = j.rim_heat_capacity_j_k {
+        c.rim_heat_capacity_j_k = v;
+    }
+    if let Some(v) = j.disc_to_caliper_w_k {
+        c.disc_to_caliper_w_k = v;
+    }
+    if let Some(v) = j.disc_to_hub_w_k {
+        c.disc_to_hub_w_k = v;
+    }
+    if let Some(v) = j.disc_to_rim_radiation_w_k {
+        c.disc_to_rim_radiation_w_k = v;
+    }
+    if let Some(v) = j.hub_to_rim_w_k {
+        c.hub_to_rim_w_k = v;
+    }
+    if let Some(v) = j.rim_to_tire_carcass_w_k {
+        c.rim_to_tire_carcass_w_k = v;
+    }
+    if let Some(v) = j.rim_to_tire_gas_w_k {
+        c.rim_to_tire_gas_w_k = v;
+    }
+    if let Some(v) = j.disc_base_air_w_k {
+        c.disc_base_air_w_k = v;
+    }
+    if let Some(v) = j.caliper_base_air_w_k {
+        c.caliper_base_air_w_k = v;
+    }
+    if let Some(v) = j.hub_base_air_w_k {
+        c.hub_base_air_w_k = v;
+    }
+    if let Some(v) = j.rim_base_air_w_k {
+        c.rim_base_air_w_k = v;
+    }
+    if let Some(v) = j.disc_flow_cooling_gain_w_k {
+        c.disc_flow_cooling_gain_w_k = v;
+    }
+    if let Some(v) = j.caliper_flow_cooling_gain_w_k {
+        c.caliper_flow_cooling_gain_w_k = v;
+    }
+    if let Some(v) = j.hub_flow_cooling_gain_w_k {
+        c.hub_flow_cooling_gain_w_k = v;
+    }
+    if let Some(v) = j.rim_flow_cooling_gain_w_k {
+        c.rim_flow_cooling_gain_w_k = v;
+    }
+}
+
+fn overlay_brake_duct(c: &mut BrakeDuctAxleConfig, j: &JsonBrakeDuctAxle) {
+    if let Some(v) = j.opening {
+        c.opening = v;
+    }
+    if let Some(v) = j.max_inlet_area_m2_per_wheel {
+        c.max_inlet_area_m2_per_wheel = v;
+    }
+    if let Some(v) = j.discharge_coefficient {
+        c.discharge_coefficient = v;
+    }
+    if let Some(v) = j.pressure_recovery {
+        c.pressure_recovery = v;
+    }
+    if let Some(v) = j.cooling_reference_speed_ms {
+        c.cooling_reference_speed_ms = v;
+    }
+    if let Some(v) = j.drag_coefficient {
+        c.drag_coefficient = v;
+    }
+    if let Some(v) = j.area_response_exponent {
+        c.area_response_exponent = v;
+    }
+    if let Some(v) = j.cooling_flow_exponent {
+        c.cooling_flow_exponent = v;
+    }
+    if let Some(v) = j.minimum_cooling_flow_ratio {
+        c.minimum_cooling_flow_ratio = v;
+    }
+    if let Some(v) = j.air_specific_heat_j_kg_k {
+        c.air_specific_heat_j_kg_k = v;
+    }
+    if let Some(v) = j.heat_exchanger_ua_w_k {
+        c.heat_exchanger_ua_w_k = v;
+    }
+    if let Some(v) = j.disc_cooling_weight {
+        c.disc_cooling_weight = v;
+    }
+    if let Some(v) = j.caliper_cooling_weight {
+        c.caliper_cooling_weight = v;
+    }
+    if let Some(v) = j.hub_cooling_weight {
+        c.hub_cooling_weight = v;
+    }
+    if let Some(v) = j.rim_cooling_weight {
+        c.rim_cooling_weight = v;
+    }
+}
+fn default_brake_bias() -> f64 {
+    0.57
+}
+fn default_max_brake() -> f64 {
+    2800.0
+}
+fn default_abs_pulse() -> f64 {
+    0.03
+}
+fn default_abs_thresh() -> f64 {
+    12.0
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1483,22 +2103,46 @@ struct JsonAero {
 impl Default for JsonAero {
     fn default() -> Self {
         Self {
-            drag_coefficient: 0.78, frontal_area: 1.25, downforce_coefficient: 1.995,
-            split: JsonAeroSplit::default(), air_density: 1.225, lag_tau_s: 0.048,
-            blend_min_speed_mps: 4.167, blend_full_speed_mps: 27.778,
-            yaw_decay_exponent: 1.30, flex_coefficient: 0.0012,
+            drag_coefficient: 0.78,
+            frontal_area: 1.25,
+            downforce_coefficient: 1.995,
+            split: JsonAeroSplit::default(),
+            air_density: 1.225,
+            lag_tau_s: 0.048,
+            blend_min_speed_mps: 4.167,
+            blend_full_speed_mps: 27.778,
+            yaw_decay_exponent: 1.30,
+            flex_coefficient: 0.0012,
         }
     }
 }
-fn default_cd() -> f64 { 0.78 }
-fn default_area() -> f64 { 1.25 }
-fn default_cl() -> f64 { 1.995 }
-fn default_air_density() -> f64 { 1.225 }
-fn default_lag_tau() -> f64 { 0.048 }
-fn default_blend_min() -> f64 { 4.167 }
-fn default_blend_full() -> f64 { 27.778 }
-fn default_yaw_exp() -> f64 { 1.30 }
-fn default_flex() -> f64 { 0.0012 }
+fn default_cd() -> f64 {
+    0.78
+}
+fn default_area() -> f64 {
+    1.25
+}
+fn default_cl() -> f64 {
+    1.995
+}
+fn default_air_density() -> f64 {
+    1.225
+}
+fn default_lag_tau() -> f64 {
+    0.048
+}
+fn default_blend_min() -> f64 {
+    4.167
+}
+fn default_blend_full() -> f64 {
+    27.778
+}
+fn default_yaw_exp() -> f64 {
+    1.30
+}
+fn default_flex() -> f64 {
+    0.0012
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1511,11 +2155,23 @@ struct JsonAeroSplit {
     rear: f64,
 }
 impl Default for JsonAeroSplit {
-    fn default() -> Self { Self { front: 0.15, diffuser: 0.60, rear: 0.25 } }
+    fn default() -> Self {
+        Self {
+            front: 0.15,
+            diffuser: 0.60,
+            rear: 0.25,
+        }
+    }
 }
-fn default_split_front() -> f64 { 0.15 }
-fn default_split_diff() -> f64 { 0.60 }
-fn default_split_rear() -> f64 { 0.25 }
+fn default_split_front() -> f64 {
+    0.15
+}
+fn default_split_diff() -> f64 {
+    0.60
+}
+fn default_split_rear() -> f64 {
+    0.25
+}
 
 // ── Driving aids (schema v2) ────────────────────────────────────────────────────
 
@@ -1663,49 +2319,309 @@ impl Default for JsonAids {
         }
     }
 }
-fn default_tc_available() -> bool { true }
-fn default_tc_default() -> bool { false }
-fn default_tc_selectable() -> bool { true }
-fn default_tc_slip() -> f64 { 0.08 }
-fn default_tc_cut_gain() -> f64 { 1.0 }
-fn default_tc_actuator() -> String { "engine_torque".to_string() }
-fn default_abs_available() -> bool { true }
-fn default_abs_default() -> bool { false }
-fn default_abs_selectable() -> bool { true }
-fn default_stab_available() -> bool { false }
-fn default_stab_default() -> bool { false }
-fn default_stab_selectable() -> bool { true }
-fn default_stab_engage() -> f64 { 0.01 }
-fn default_stab_yaw_strength() -> f64 { 5.25 }
-fn default_stab_ground_mult() -> f64 { 2.0 }
-fn default_stab_upright_spring() -> f64 { 1.0 }
-fn default_stab_upright_damping() -> f64 { 1000.0 }
-fn default_steer_slip_on() -> bool { true }
-fn default_counter_on() -> bool { true }
-fn default_steer_selectable() -> bool { true }
-fn default_auto_clutch_on() -> bool { true }
-fn default_auto_clutch_selectable() -> bool { false }
-fn default_launch_available() -> bool { false }
-fn default_launch_default() -> bool { false }
-fn default_launch_selectable() -> bool { true }
-fn default_launch_target_rpm() -> f64 { 9000.0 }
-fn default_launch_throttle_limit() -> f64 { 1.0 }
-fn default_launch_release_rate() -> f64 { 2.0 }
-fn default_brake_assist_available() -> bool { false }
-fn default_brake_assist_default() -> bool { false }
-fn default_brake_assist_selectable() -> bool { true }
-fn default_brake_assist_mult() -> f64 { 1.0 }
-fn default_steer_rate() -> f64 { 4.25 }
-fn default_throttle_rate() -> f64 { 20.0 }
-fn default_brake_rate() -> f64 { 10.0 }
-fn default_true() -> bool { true }
+fn default_tc_available() -> bool {
+    true
+}
+fn default_tc_default() -> bool {
+    false
+}
+fn default_tc_selectable() -> bool {
+    true
+}
+fn default_tc_slip() -> f64 {
+    0.08
+}
+fn default_tc_cut_gain() -> f64 {
+    1.0
+}
+fn default_tc_actuator() -> String {
+    "engine_torque".to_string()
+}
+fn default_abs_available() -> bool {
+    true
+}
+fn default_abs_default() -> bool {
+    false
+}
+fn default_abs_selectable() -> bool {
+    true
+}
+fn default_stab_available() -> bool {
+    false
+}
+fn default_stab_default() -> bool {
+    false
+}
+fn default_stab_selectable() -> bool {
+    true
+}
+fn default_stab_engage() -> f64 {
+    0.01
+}
+fn default_stab_yaw_strength() -> f64 {
+    5.25
+}
+fn default_stab_ground_mult() -> f64 {
+    2.0
+}
+fn default_stab_upright_spring() -> f64 {
+    1.0
+}
+fn default_stab_upright_damping() -> f64 {
+    1000.0
+}
+fn default_steer_slip_on() -> bool {
+    true
+}
+fn default_counter_on() -> bool {
+    true
+}
+fn default_steer_selectable() -> bool {
+    true
+}
+fn default_auto_clutch_on() -> bool {
+    true
+}
+fn default_auto_clutch_selectable() -> bool {
+    false
+}
+fn default_launch_available() -> bool {
+    false
+}
+fn default_launch_default() -> bool {
+    false
+}
+fn default_launch_selectable() -> bool {
+    true
+}
+fn default_launch_target_rpm() -> f64 {
+    9000.0
+}
+fn default_launch_throttle_limit() -> f64 {
+    1.0
+}
+fn default_launch_release_rate() -> f64 {
+    2.0
+}
+fn default_brake_assist_available() -> bool {
+    false
+}
+fn default_brake_assist_default() -> bool {
+    false
+}
+fn default_brake_assist_selectable() -> bool {
+    true
+}
+fn default_brake_assist_mult() -> f64 {
+    1.0
+}
+fn default_steer_rate() -> f64 {
+    4.25
+}
+fn default_throttle_rate() -> f64 {
+    20.0
+}
+fn default_brake_rate() -> f64 {
+    10.0
+}
+fn default_true() -> bool {
+    true
+}
 
 // ── Conversion: JSON spec → VehicleConfig ────────────────────────────────────────
+
+fn validate_brake_thermal(c: &BrakeThermalConfig) -> Result<(), String> {
+    for (name, value) in [
+        ("initial_temperature_c", c.initial_temperature_c),
+        ("optimal_min_temperature_c", c.optimal_min_temperature_c),
+        ("optimal_max_temperature_c", c.optimal_max_temperature_c),
+        ("fade_start_temperature_c", c.fade_start_temperature_c),
+        ("critical_temperature_c", c.critical_temperature_c),
+    ] {
+        if !value.is_finite() {
+            return Err(format!("brakes.thermal.{name} must be finite"));
+        }
+    }
+    if c.optimal_min_temperature_c >= c.optimal_max_temperature_c {
+        return Err("brakes.thermal optimal_min must be below optimal_max".to_string());
+    }
+    if c.optimal_max_temperature_c > c.fade_start_temperature_c {
+        return Err("brakes.thermal optimal_max must not exceed fade_start".to_string());
+    }
+    if c.fade_start_temperature_c >= c.critical_temperature_c {
+        return Err("brakes.thermal fade_start must be below critical".to_string());
+    }
+    for (name, value) in [
+        ("cold_efficiency", c.cold_efficiency),
+        ("minimum_fade_efficiency", c.minimum_fade_efficiency),
+        ("braking_heat_fraction", c.braking_heat_fraction),
+        (
+            "direct_caliper_heat_fraction",
+            c.direct_caliper_heat_fraction,
+        ),
+    ] {
+        if !value.is_finite() || !(0.0..=1.0).contains(&value) {
+            return Err(format!("brakes.thermal.{name} must be in [0,1]"));
+        }
+    }
+    validate_brake_axle("front", &c.front)?;
+    validate_brake_axle("rear", &c.rear)?;
+    validate_brake_duct("front_duct", &c.front_duct)?;
+    validate_brake_duct("rear_duct", &c.rear_duct)?;
+    Ok(())
+}
+
+fn validate_brake_axle(name: &str, c: &BrakeAxleThermalConfig) -> Result<(), String> {
+    if c.model == BrakeThermalModelKind::ScaledTwoNodeV1 {
+        for (field, value) in [
+            ("rotor_mass_kg", c.rotor_mass_kg),
+            ("rotor_outer_diameter_m", c.rotor_outer_diameter_m),
+            ("rotor_inner_diameter_m", c.rotor_inner_diameter_m),
+            ("installation_airflow_scale", c.installation_airflow_scale),
+            ("surface_bulk_response_scale", c.surface_bulk_response_scale),
+            ("thermal_mass_scale", c.thermal_mass_scale),
+        ] {
+            if !value.is_finite() || value <= 0.0 {
+                return Err(format!("brakes.thermal.{name}.{field} must be positive in scaled_two_node_v1"));
+            }
+        }
+        if c.rotor_inner_diameter_m >= c.rotor_outer_diameter_m {
+            return Err(format!("brakes.thermal.{name} inner rotor diameter must be smaller than outer diameter"));
+        }
+    }
+    for (field, value) in [
+        ("disc_heat_capacity_j_k", c.disc_heat_capacity_j_k),
+        ("caliper_heat_capacity_j_k", c.caliper_heat_capacity_j_k),
+        ("hub_heat_capacity_j_k", c.hub_heat_capacity_j_k),
+        ("rim_heat_capacity_j_k", c.rim_heat_capacity_j_k),
+    ] {
+        if !value.is_finite() || value <= 0.0 {
+            return Err(format!("brakes.thermal.{name}.{field} must be positive"));
+        }
+    }
+    let two_node_values = [
+        c.disc_surface_heat_capacity_j_k,
+        c.disc_bulk_heat_capacity_j_k,
+        c.disc_surface_to_bulk_w_k,
+    ];
+    let two_node_enabled = two_node_values.iter().any(|v| *v > 0.0);
+    if two_node_enabled && two_node_values.iter().any(|v| !v.is_finite() || *v <= 0.0) {
+        return Err(format!("brakes.thermal.{name} two-node disc fields must all be positive"));
+    }
+    if !c.disc_surface_base_air_w_k.is_finite() || c.disc_surface_base_air_w_k < 0.0 {
+        return Err(format!("brakes.thermal.{name}.disc_surface_base_air_w_k must be non-negative"));
+    }
+    for (field, value) in [
+        ("disc_to_caliper_w_k", c.disc_to_caliper_w_k),
+        ("disc_to_hub_w_k", c.disc_to_hub_w_k),
+        ("disc_to_rim_radiation_w_k", c.disc_to_rim_radiation_w_k),
+        ("hub_to_rim_w_k", c.hub_to_rim_w_k),
+        ("rim_to_tire_carcass_w_k", c.rim_to_tire_carcass_w_k),
+        ("rim_to_tire_gas_w_k", c.rim_to_tire_gas_w_k),
+        ("disc_base_air_w_k", c.disc_base_air_w_k),
+        ("caliper_base_air_w_k", c.caliper_base_air_w_k),
+        ("hub_base_air_w_k", c.hub_base_air_w_k),
+        ("rim_base_air_w_k", c.rim_base_air_w_k),
+        ("disc_flow_cooling_gain_w_k", c.disc_flow_cooling_gain_w_k),
+        (
+            "caliper_flow_cooling_gain_w_k",
+            c.caliper_flow_cooling_gain_w_k,
+        ),
+        ("hub_flow_cooling_gain_w_k", c.hub_flow_cooling_gain_w_k),
+        ("rim_flow_cooling_gain_w_k", c.rim_flow_cooling_gain_w_k),
+    ] {
+        if !value.is_finite() || value < 0.0 {
+            return Err(format!(
+                "brakes.thermal.{name}.{field} must be non-negative"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_brake_duct(name: &str, c: &BrakeDuctAxleConfig) -> Result<(), String> {
+    if !c.opening.is_finite() || !(0.0..=1.0).contains(&c.opening) {
+        return Err(format!("brakes.thermal.{name}.opening must be in [0,1]"));
+    }
+    if !c.max_inlet_area_m2_per_wheel.is_finite() || c.max_inlet_area_m2_per_wheel <= 0.0 {
+        return Err(format!(
+            "brakes.thermal.{name}.max_inlet_area_m2_per_wheel must be positive"
+        ));
+    }
+    if !c.discharge_coefficient.is_finite() || !(0.0..=1.5).contains(&c.discharge_coefficient) {
+        return Err(format!(
+            "brakes.thermal.{name}.discharge_coefficient is invalid"
+        ));
+    }
+    if !c.pressure_recovery.is_finite() || !(0.0..=1.2).contains(&c.pressure_recovery) {
+        return Err(format!(
+            "brakes.thermal.{name}.pressure_recovery is invalid"
+        ));
+    }
+    if !c.cooling_reference_speed_ms.is_finite() || c.cooling_reference_speed_ms <= 0.0 {
+        return Err(format!(
+            "brakes.thermal.{name}.cooling_reference_speed_ms must be positive"
+        ));
+    }
+    if !c.drag_coefficient.is_finite() || c.drag_coefficient < 0.0 {
+        return Err(format!("brakes.thermal.{name}.drag_coefficient is invalid"));
+    }
+    if !c.area_response_exponent.is_finite() || c.area_response_exponent <= 0.0 {
+        return Err(format!(
+            "brakes.thermal.{name}.area_response_exponent must be positive"
+        ));
+    }
+    if !c.cooling_flow_exponent.is_finite() || c.cooling_flow_exponent <= 0.0 {
+        return Err(format!(
+            "brakes.thermal.{name}.cooling_flow_exponent must be positive"
+        ));
+    }
+    if !c.minimum_cooling_flow_ratio.is_finite()
+        || !(0.0..=0.5).contains(&c.minimum_cooling_flow_ratio)
+    {
+        return Err(format!(
+            "brakes.thermal.{name}.minimum_cooling_flow_ratio is invalid"
+        ));
+    }
+    if !c.air_specific_heat_j_kg_k.is_finite() || c.air_specific_heat_j_kg_k <= 0.0 {
+        return Err(format!(
+            "brakes.thermal.{name}.air_specific_heat_j_kg_k must be positive"
+        ));
+    }
+    if !c.heat_exchanger_ua_w_k.is_finite() || c.heat_exchanger_ua_w_k < 0.0 {
+        return Err(format!(
+            "brakes.thermal.{name}.heat_exchanger_ua_w_k must be non-negative"
+        ));
+    }
+    let cooling_weight_sum = c.disc_cooling_weight
+        + c.caliper_cooling_weight
+        + c.hub_cooling_weight
+        + c.rim_cooling_weight;
+    if [
+        ("disc_cooling_weight", c.disc_cooling_weight),
+        ("caliper_cooling_weight", c.caliper_cooling_weight),
+        ("hub_cooling_weight", c.hub_cooling_weight),
+        ("rim_cooling_weight", c.rim_cooling_weight),
+    ]
+    .iter()
+    .any(|(_, value)| !value.is_finite() || *value < 0.0)
+        || !cooling_weight_sum.is_finite()
+        || cooling_weight_sum <= 0.0
+    {
+        return Err(format!(
+            "brakes.thermal.{name} cooling weights must be finite, non-negative, and non-zero as a group"
+        ));
+    }
+    Ok(())
+}
 
 impl JsonVehicleSpec {
     fn validate(&self) -> Result<(), String> {
         if self.schema_version != 1 && self.schema_version != 2 {
-            return Err(format!("Unsupported schema_version: {}", self.schema_version));
+            return Err(format!(
+                "Unsupported schema_version: {}",
+                self.schema_version
+            ));
         }
         if self.chassis.vehicle_mass <= 0.0 {
             return Err("vehicle_mass must be positive".to_string());
@@ -1749,12 +2665,27 @@ impl JsonVehicleSpec {
             }
         }
         if let Some(t) = &self.tires.thermal {
-            let min_p = t.minimum_pressure_kpa_gauge.unwrap_or(55.0);
-            let max_p = t.maximum_pressure_kpa_gauge.unwrap_or(260.0);
-            if min_p >= max_p {
-                return Err("minimum_pressure_kpa_gauge must be below maximum_pressure_kpa_gauge".to_string());
+            for (name, profile) in [
+                ("shared", t),
+                ("front", t.front.as_deref().unwrap_or(t)),
+                ("rear", t.rear.as_deref().unwrap_or(t)),
+            ] {
+                let min_p = profile.minimum_pressure_kpa_gauge.unwrap_or(55.0);
+                let max_p = profile.maximum_pressure_kpa_gauge.unwrap_or(260.0);
+                if min_p >= max_p {
+                    return Err(format!(
+                        "tires.thermal.{name}.minimum_pressure_kpa_gauge must be below maximum_pressure_kpa_gauge"
+                    ));
+                }
             }
         }
+        let brake_thermal = self
+            .brakes
+            .thermal
+            .as_ref()
+            .map(JsonBrakeThermal::to_config)
+            .unwrap_or_default();
+        validate_brake_thermal(&brake_thermal)?;
         if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
             return Err("Spring lengths must be positive".to_string());
         }
@@ -1808,7 +2739,12 @@ impl JsonVehicleSpec {
             reverse_ratio: self.powertrain.reverse_ratio,
             shift_time: self.powertrain.shift_time,
             automatic_transmission: self.powertrain.automatic_transmission,
-            automatic_shift: self.powertrain.automatic_shift.as_ref().map(AutomaticShift::from_json).unwrap_or_default(),
+            automatic_shift: self
+                .powertrain
+                .automatic_shift
+                .as_ref()
+                .map(AutomaticShift::from_json)
+                .unwrap_or_default(),
             gear_inertia: self.powertrain.gear_inertia,
             front_torque_split: self.powertrain.front_torque_split,
             diff_preload: self.powertrain.differential.preload_nm,
@@ -1843,16 +2779,46 @@ impl JsonVehicleSpec {
             rear_wheel_mass: self.tires.rear.wheel_mass,
             contact_patch: self.tires.contact_patch,
             braking_grip_multiplier: self.tires.braking_grip_multiplier,
-            front_contact_patch: self.tires.front.contact_patch.unwrap_or(self.tires.contact_patch),
-            rear_contact_patch: self.tires.rear.contact_patch.unwrap_or(self.tires.contact_patch),
-            front_braking_grip: self.tires.front.braking_grip_multiplier.unwrap_or(self.tires.braking_grip_multiplier),
-            rear_braking_grip: self.tires.rear.braking_grip_multiplier.unwrap_or(self.tires.braking_grip_multiplier),
-            front_airborne_decay: self.tires.front.airborne_spin_decay_torque.unwrap_or(self.tires.airborne_spin_decay_torque),
-            rear_airborne_decay: self.tires.rear.airborne_spin_decay_torque.unwrap_or(self.tires.airborne_spin_decay_torque),
+            front_contact_patch: self
+                .tires
+                .front
+                .contact_patch
+                .unwrap_or(self.tires.contact_patch),
+            rear_contact_patch: self
+                .tires
+                .rear
+                .contact_patch
+                .unwrap_or(self.tires.contact_patch),
+            front_braking_grip: self
+                .tires
+                .front
+                .braking_grip_multiplier
+                .unwrap_or(self.tires.braking_grip_multiplier),
+            rear_braking_grip: self
+                .tires
+                .rear
+                .braking_grip_multiplier
+                .unwrap_or(self.tires.braking_grip_multiplier),
+            front_airborne_decay: self
+                .tires
+                .front
+                .airborne_spin_decay_torque
+                .unwrap_or(self.tires.airborne_spin_decay_torque),
+            rear_airborne_decay: self
+                .tires
+                .rear
+                .airborne_spin_decay_torque
+                .unwrap_or(self.tires.airborne_spin_decay_torque),
             tire_pressure: tire_pressure_from_json(&self.tires.pressure),
             tire_thermal: tire_thermal_from_json(&self.tires.thermal),
             front_brake_bias: self.brakes.front_brake_bias,
             max_brake_torque: self.brakes.max_brake_torque,
+            brake_thermal: self
+                .brakes
+                .thermal
+                .as_ref()
+                .map(JsonBrakeThermal::to_config)
+                .unwrap_or_default(),
             enable_abs: self.brakes.enable_abs,
             abs_pulse_time: self.brakes.abs_pulse_time,
             abs_spin_diff_threshold: self.brakes.abs_spin_diff_threshold,
@@ -1879,11 +2845,18 @@ impl JsonVehicleSpec {
             variable_drag_ratio: self.powertrain.variable_drag_ratio,
             constant_brake_ratio: self.powertrain.constant_brake_ratio,
             handbrake_torque_fraction: self.powertrain.handbrake_torque_fraction,
-            diff_slip_transition_threshold_rad_s: self.powertrain.differential.slip_transition_threshold_rad_s,
+            diff_slip_transition_threshold_rad_s: self
+                .powertrain
+                .differential
+                .slip_transition_threshold_rad_s,
 
             // Surface grip assists
-            surface_lateral_grip_assist: build_surface_assist_map(&self.tires.surfaces, |e| e.lateral_grip_assist),
-            surface_longitudinal_grip_ratio: build_surface_assist_map(&self.tires.surfaces, |e| e.longitudinal_grip_ratio),
+            surface_lateral_grip_assist: build_surface_assist_map(&self.tires.surfaces, |e| {
+                e.lateral_grip_assist
+            }),
+            surface_longitudinal_grip_ratio: build_surface_assist_map(&self.tires.surfaces, |e| {
+                e.longitudinal_grip_ratio
+            }),
 
             // Driving aids
             aids: AidsConfig {
@@ -1904,7 +2877,9 @@ impl JsonVehicleSpec {
                 stability_grounded_multiplier: self.aids.stability_grounded_multiplier,
                 stability_upright_spring: self.aids.stability_upright_spring,
                 stability_upright_damping: self.aids.stability_upright_damping,
-                steering_slip_assist_default_enabled: self.aids.steering_slip_assist_default_enabled,
+                steering_slip_assist_default_enabled: self
+                    .aids
+                    .steering_slip_assist_default_enabled,
                 countersteer_default_enabled: self.aids.countersteer_default_enabled,
                 steering_assist_player_selectable: self.aids.steering_assist_player_selectable,
                 auto_clutch_default_enabled: self.aids.auto_clutch_default_enabled,
@@ -1914,7 +2889,9 @@ impl JsonVehicleSpec {
                 launch_control_player_selectable: self.aids.launch_control_player_selectable,
                 launch_control_target_rpm: self.aids.launch_control_target_rpm,
                 launch_control_throttle_limit: self.aids.launch_control_throttle_limit,
-                launch_control_clutch_release_rate_per_s: self.aids.launch_control_clutch_release_rate_per_s,
+                launch_control_clutch_release_rate_per_s: self
+                    .aids
+                    .launch_control_clutch_release_rate_per_s,
                 brake_assist_available: self.aids.brake_assist_available,
                 brake_assist_default_enabled: self.aids.brake_assist_default_enabled,
                 brake_assist_player_selectable: self.aids.brake_assist_player_selectable,
@@ -1935,13 +2912,31 @@ impl JsonVehicleSpec {
         for (st, friction) in &cfg.surface_friction {
             let name = surface_type_name(*st);
             let stiffness = cfg.surface_stiffness.get(st).copied().unwrap_or(1.0);
-            let rolling = cfg.surface_rolling_resistance.get(st).copied().unwrap_or(1.0);
-            let lateral = cfg.surface_lateral_grip_assist.get(st).copied().unwrap_or(0.05);
-            let long = cfg.surface_longitudinal_grip_ratio.get(st).copied().unwrap_or(0.5);
-            surfaces.insert(name, JsonSurfaceEntry {
-                friction: *friction, stiffness, rolling_resistance: rolling,
-                lateral_grip_assist: lateral, longitudinal_grip_ratio: long,
-            });
+            let rolling = cfg
+                .surface_rolling_resistance
+                .get(st)
+                .copied()
+                .unwrap_or(1.0);
+            let lateral = cfg
+                .surface_lateral_grip_assist
+                .get(st)
+                .copied()
+                .unwrap_or(0.05);
+            let long = cfg
+                .surface_longitudinal_grip_ratio
+                .get(st)
+                .copied()
+                .unwrap_or(0.5);
+            surfaces.insert(
+                name,
+                JsonSurfaceEntry {
+                    friction: *friction,
+                    stiffness,
+                    rolling_resistance: rolling,
+                    lateral_grip_assist: lateral,
+                    longitudinal_grip_ratio: long,
+                },
+            );
         }
         Self {
             schema_version: 2,
@@ -1954,7 +2949,9 @@ impl JsonVehicleSpec {
                 front_weight_distribution: cfg.front_weight_distribution,
                 center_of_gravity_height_offset: cfg.center_of_gravity_height_offset,
                 inertia_multipliers: JsonVec3 {
-                    x: cfg.inertia_multipliers.x, y: cfg.inertia_multipliers.y, z: cfg.inertia_multipliers.z,
+                    x: cfg.inertia_multipliers.x,
+                    y: cfg.inertia_multipliers.y,
+                    z: cfg.inertia_multipliers.z,
                 },
             },
             geometry: JsonGeometry {
@@ -2053,7 +3050,9 @@ impl JsonVehicleSpec {
                 pressure: Some(JsonTirePressure {
                     units: Some("kPa_gauge".to_string()),
                     cold_kpa_gauge: Some(wheel_name_map(cfg.tire_pressure.cold_kpa_gauge)),
-                    reference_hot_kpa_gauge: Some(wheel_name_map(cfg.tire_pressure.reference_hot_kpa_gauge)),
+                    reference_hot_kpa_gauge: Some(wheel_name_map(
+                        cfg.tire_pressure.reference_hot_kpa_gauge,
+                    )),
                     reference_temperature_c: Some(cfg.tire_pressure.reference_temperature_c),
                     atmospheric_pressure_kpa: Some(cfg.tire_pressure.atmospheric_pressure_kpa),
                 }),
@@ -2065,13 +3064,16 @@ impl JsonVehicleSpec {
                 enable_abs: cfg.enable_abs,
                 abs_pulse_time: cfg.abs_pulse_time,
                 abs_spin_diff_threshold: cfg.abs_spin_diff_threshold,
+                thermal: Some(JsonBrakeThermal::from_config(&cfg.brake_thermal)),
             },
             aero: JsonAero {
                 drag_coefficient: cfg.coefficient_of_drag,
                 frontal_area: cfg.frontal_area,
                 downforce_coefficient: cfg.coefficient_of_downforce,
                 split: JsonAeroSplit {
-                    front: cfg.aero_split_front, diffuser: cfg.aero_split_diffuser, rear: cfg.aero_split_rear,
+                    front: cfg.aero_split_front,
+                    diffuser: cfg.aero_split_diffuser,
+                    rear: cfg.aero_split_rear,
                 },
                 air_density: cfg.air_density,
                 lag_tau_s: cfg.aero_lag_tau,
@@ -2115,7 +3117,9 @@ impl JsonVehicleSpec {
                 launch_control_player_selectable: cfg.aids.launch_control_player_selectable,
                 launch_control_target_rpm: cfg.aids.launch_control_target_rpm,
                 launch_control_throttle_limit: cfg.aids.launch_control_throttle_limit,
-                launch_control_clutch_release_rate_per_s: cfg.aids.launch_control_clutch_release_rate_per_s,
+                launch_control_clutch_release_rate_per_s: cfg
+                    .aids
+                    .launch_control_clutch_release_rate_per_s,
                 brake_assist_available: cfg.aids.brake_assist_available,
                 brake_assist_default_enabled: cfg.aids.brake_assist_default_enabled,
                 brake_assist_player_selectable: cfg.aids.brake_assist_player_selectable,
@@ -2132,7 +3136,10 @@ impl JsonVehicleSpec {
     }
 }
 
-fn build_surface_assist_map<F>(surfaces: &HashMap<String, JsonSurfaceEntry>, f: F) -> HashMap<SurfaceType, f64>
+fn build_surface_assist_map<F>(
+    surfaces: &HashMap<String, JsonSurfaceEntry>,
+    f: F,
+) -> HashMap<SurfaceType, f64>
 where
     F: Fn(&JsonSurfaceEntry) -> f64,
 {
@@ -2186,20 +3193,36 @@ mod json_tests {
         assert_eq!(loaded.vehicle_mass, original.vehicle_mass);
         assert_eq!(loaded.wheelbase, original.wheelbase);
         assert_eq!(loaded.diff_preload, original.diff_preload);
-        assert_eq!(loaded.diff_clutch_friction_coeff, original.diff_clutch_friction_coeff);
+        assert_eq!(
+            loaded.diff_clutch_friction_coeff,
+            original.diff_clutch_friction_coeff
+        );
         assert_eq!(loaded.gear_ratios, original.gear_ratios);
         assert_eq!(loaded.torque_curve, original.torque_curve);
         assert_eq!(loaded.coefficient_of_drag, original.coefficient_of_drag);
-        assert_eq!(loaded.coefficient_of_downforce, original.coefficient_of_downforce);
-        assert_eq!(loaded.aero_yaw_decay_exponent, original.aero_yaw_decay_exponent);
-        assert!((loaded.front_weight_distribution - original.front_weight_distribution).abs() < 1e-10);
-        assert_eq!(loaded.surface_friction.len(), original.surface_friction.len());
+        assert_eq!(
+            loaded.coefficient_of_downforce,
+            original.coefficient_of_downforce
+        );
+        assert_eq!(
+            loaded.aero_yaw_decay_exponent,
+            original.aero_yaw_decay_exponent
+        );
+        assert!(
+            (loaded.front_weight_distribution - original.front_weight_distribution).abs() < 1e-10
+        );
+        assert_eq!(
+            loaded.surface_friction.len(),
+            original.surface_friction.len()
+        );
     }
 
     #[test]
     fn golden_json_matches_canonical() {
         let path = Path::new("data/vehicles/f1_94/f1_94_physics.json");
-        if !path.exists() { return; }
+        if !path.exists() {
+            return;
+        }
         let loaded = VehicleConfig::from_json_path(path).unwrap();
         let canonical = VehicleConfig::f1_94_canonical();
         assert_eq!(loaded.vehicle_mass, canonical.vehicle_mass);
@@ -2263,14 +3286,17 @@ mod json_tests {
         let json_powertrain = r#"{"schema_version": 2, "powertrain": {"maximum_torque": 450.0}}"#;
         assert!(VehicleConfig::from_json_str(json_powertrain).is_err());
 
-        let json_suspension = r#"{"schema_version": 2, "suspension": {"front": {"spring_len": 0.25}}}"#;
+        let json_suspension =
+            r#"{"schema_version": 2, "suspension": {"front": {"spring_len": 0.25}}}"#;
         assert!(VehicleConfig::from_json_str(json_suspension).is_err());
     }
 
     #[test]
     fn golden_json_schema_2_aids_present() {
         let path = Path::new("data/vehicles/f1_94/f1_94_physics.json");
-        if !path.exists() { return; }
+        if !path.exists() {
+            return;
+        }
         let loaded = VehicleConfig::from_json_path(path).unwrap();
         assert!(loaded.aids.traction_control_available);
         assert!(loaded.aids.abs_available);
@@ -2280,7 +3306,9 @@ mod json_tests {
     #[test]
     fn fidelity_fields_consumed_from_json() {
         let path = Path::new("data/vehicles/f1_94/f1_94_physics.json");
-        if !path.exists() { return; }
+        if !path.exists() {
+            return;
+        }
         let loaded = VehicleConfig::from_json_path(path).unwrap();
         assert!((loaded.max_clutch_torque_ratio - 1.6).abs() < 1e-9);
         assert!((loaded.clutch_out_rpm_offset - 1000.0).abs() < 1e-9);
@@ -2315,16 +3343,60 @@ mod json_tests {
         assert!((cfg.tire_pressure.cold_kpa_gauge[3] - 107.0).abs() < 1e-9);
         assert!((cfg.tire_pressure.reference_temperature_c - 26.0).abs() < 1e-9);
         assert!((cfg.tire_pressure.atmospheric_pressure_kpa - 102.0).abs() < 1e-9);
-        assert!((cfg.tire_thermal.optimal_tread_temperature_c - 96.0).abs() < 1e-9);
-        assert!((cfg.tire_thermal.overheat_tread_temperature_c - 122.0).abs() < 1e-9);
-        assert!((cfg.tire_thermal.pressure_stiffness_exponent - 0.75).abs() < 1e-9);
+        assert!((cfg.tire_thermal.front.optimal_tread_temperature_c - 96.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.front.overheat_tread_temperature_c - 122.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.front.pressure_stiffness_exponent - 0.75).abs() < 1e-9);
         // Fields not present keep module defaults.
-        assert!((cfg.tire_thermal.initial_temperature_c - 25.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.front.initial_temperature_c - 25.0).abs() < 1e-9);
         // Round trip through JSON preserves the parsed values.
         let json_val = cfg.to_json_value();
-        let loaded = VehicleConfig::from_json_str(&serde_json::to_string(&json_val).unwrap()).unwrap();
+        let loaded =
+            VehicleConfig::from_json_str(&serde_json::to_string(&json_val).unwrap()).unwrap();
         assert!((loaded.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
-        assert!((loaded.tire_thermal.pressure_stiffness_exponent - 0.75).abs() < 1e-9);
+        assert!((loaded.tire_thermal.front.pressure_stiffness_exponent - 0.75).abs() < 1e-9);
+    }
+
+    #[test]
+    fn tire_thermal_front_and_rear_profiles_are_independent() {
+        let json = r#"{
+            "schema_version": 2,
+            "tires": {
+                "thermal": {
+                    "front": {
+                        "tread_zone_heat_capacity_j_k": 3000.0,
+                        "slip_heat_efficiency": 0.95
+                    },
+                    "rear": {
+                        "tread_zone_heat_capacity_j_k": 6000.0,
+                        "slip_heat_efficiency": 0.75
+                    }
+                }
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).unwrap();
+        assert_eq!(
+            cfg.tire_thermal.front.tread_zone_heat_capacity_j_k,
+            3000.0
+        );
+        assert_eq!(
+            cfg.tire_thermal.rear.tread_zone_heat_capacity_j_k,
+            6000.0
+        );
+        assert_eq!(cfg.tire_thermal.front.slip_heat_efficiency, 0.95);
+        assert_eq!(cfg.tire_thermal.rear.slip_heat_efficiency, 0.75);
+
+        let round_trip = VehicleConfig::from_json_str(
+            &serde_json::to_string(&cfg.to_json_value()).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            round_trip.tire_thermal.front.tread_zone_heat_capacity_j_k,
+            3000.0
+        );
+        assert_eq!(
+            round_trip.tire_thermal.rear.tread_zone_heat_capacity_j_k,
+            6000.0
+        );
     }
 
     #[test]
@@ -2352,9 +3424,12 @@ mod json_tests {
     fn missing_thermal_section_uses_stable_defaults() {
         let json = r#"{"schema_version": 2}"#;
         let cfg = VehicleConfig::from_json_str(json).unwrap();
-        assert_eq!(cfg.tire_pressure.cold_kpa_gauge, [110.0, 110.0, 105.0, 105.0]);
-        assert!((cfg.tire_thermal.optimal_tread_temperature_c - 95.0).abs() < 1e-9);
-        assert!((cfg.tire_thermal.pressure_stiffness_exponent - 0.72).abs() < 1e-9);
+        assert_eq!(
+            cfg.tire_pressure.cold_kpa_gauge,
+            [110.0, 110.0, 105.0, 105.0]
+        );
+        assert!((cfg.tire_thermal.front.optimal_tread_temperature_c - 95.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.front.pressure_stiffness_exponent - 0.72).abs() < 1e-9);
     }
 
     #[test]
@@ -2396,9 +3471,60 @@ mod json_tests {
     #[test]
     fn canonical_uses_f1_94_pressure_and_thermal_defaults() {
         let cfg = VehicleConfig::f1_94_canonical();
-        assert_eq!(cfg.tire_pressure.cold_kpa_gauge, [110.0, 110.0, 105.0, 105.0]);
-        assert_eq!(cfg.tire_pressure.reference_hot_kpa_gauge, [145.0, 145.0, 140.0, 140.0]);
+        assert_eq!(
+            cfg.tire_pressure.cold_kpa_gauge,
+            [110.0, 110.0, 105.0, 105.0]
+        );
+        assert_eq!(
+            cfg.tire_pressure.reference_hot_kpa_gauge,
+            [145.0, 145.0, 140.0, 140.0]
+        );
         assert!((cfg.tire_pressure.reference_temperature_c - 25.0).abs() < 1e-9);
-        assert!((cfg.tire_thermal.initial_temperature_c - 25.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.front.initial_temperature_c - 25.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn brake_thermal_partial_json_keeps_omitted_defaults() {
+        let json = r#"{
+            "schema_version": 2,
+            "brakes": {
+                "thermal": {
+                    "front_duct": {"opening": 0.72}
+                }
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).unwrap();
+        assert!((cfg.brake_thermal.front_duct.opening - 0.72).abs() < 1e-9);
+        assert!((cfg.brake_thermal.rear_duct.opening - 0.40).abs() < 1e-9);
+        assert!((cfg.brake_thermal.front.disc_heat_capacity_j_k - 2_400.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn brake_thermal_nested_typos_are_rejected() {
+        let json = r#"{
+            "schema_version": 2,
+            "brakes": {"thermal": {"front_duct": {"openning": 0.5}}}
+        }"#;
+        assert!(VehicleConfig::from_json_str(json).is_err());
+    }
+
+    #[test]
+    fn brake_thermal_opening_is_validated() {
+        let json = r#"{
+            "schema_version": 2,
+            "brakes": {"thermal": {"front_duct": {"opening": 1.1}}}
+        }"#;
+        assert!(VehicleConfig::from_json_str(json).is_err());
+    }
+
+    #[test]
+    fn brake_thermal_round_trip_preserves_axle_openings() {
+        let mut original = VehicleConfig::f1_94_canonical();
+        original.brake_thermal.front_duct.opening = 0.63;
+        original.brake_thermal.rear_duct.opening = 0.21;
+        let json = serde_json::to_string(&original.to_json_value()).unwrap();
+        let loaded = VehicleConfig::from_json_str(&json).unwrap();
+        assert!((loaded.brake_thermal.front_duct.opening - 0.63).abs() < 1e-9);
+        assert!((loaded.brake_thermal.rear_duct.opening - 0.21).abs() < 1e-9);
     }
 }

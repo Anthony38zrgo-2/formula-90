@@ -126,6 +126,37 @@ impl Default for TireThermalConfig {
     }
 }
 
+/// Independent thermal tuning for the front and rear tire axles.
+///
+/// The thermal state is still stored per wheel, but the material capacities,
+/// conductances and heat efficiencies can now reflect the different front and
+/// rear tire constructions instead of being shared by all four wheels.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct TireThermalAxleConfig {
+    pub front: TireThermalConfig,
+    pub rear: TireThermalConfig,
+}
+
+impl Default for TireThermalAxleConfig {
+    fn default() -> Self {
+        let default = TireThermalConfig::default();
+        Self {
+            front: default,
+            rear: default,
+        }
+    }
+}
+
+impl TireThermalAxleConfig {
+    pub fn for_wheel(&self, wheel: WheelIndex) -> &TireThermalConfig {
+        if wheel.is_front() {
+            &self.front
+        } else {
+            &self.rear
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TireEnvironment {
     pub ambient_temperature_c: f64,
@@ -233,6 +264,11 @@ pub struct TireThermalInput {
     pub dynamic_camber_rad: f64,
     pub vehicle_speed_ms: f64,
 
+    /// External heat entering the lumped carcass and gas nodes. Brake heat is
+    /// routed here from the rim; positive values mean heat entering the node.
+    pub external_carcass_heat_w: f64,
+    pub external_gas_heat_w: f64,
+
     /// Raw supported zones in Inner / Center / Outer order.
     /// Recommended input from tricast: [1 or 0, 2 or 0, 1 or 0].
     pub zone_contact_weights: [f64; 3],
@@ -255,8 +291,30 @@ impl TireThermalSystem {
         }
     }
 
+    pub fn new_with_axles(
+        pressure: &TirePressureConfig,
+        thermal: &TireThermalAxleConfig,
+    ) -> Self {
+        Self {
+            wheels: [
+                WheelThermalState::new(WheelIndex::FrontLeft, pressure, &thermal.front),
+                WheelThermalState::new(WheelIndex::FrontRight, pressure, &thermal.front),
+                WheelThermalState::new(WheelIndex::RearLeft, pressure, &thermal.rear),
+                WheelThermalState::new(WheelIndex::RearRight, pressure, &thermal.rear),
+            ],
+        }
+    }
+
     pub fn reset(&mut self, pressure: &TirePressureConfig, thermal: &TireThermalConfig) {
         *self = Self::new(pressure, thermal);
+    }
+
+    pub fn reset_with_axles(
+        &mut self,
+        pressure: &TirePressureConfig,
+        thermal: &TireThermalAxleConfig,
+    ) {
+        *self = Self::new_with_axles(pressure, thermal);
     }
 
     pub fn mechanical_modifiers(
@@ -402,7 +460,11 @@ impl TireThermalSystem {
             * (st.carcass_c - environment.ambient_temperature_c);
 
         let carcass_net_w =
-            tread_to_carcass_w + flex_power_w - carcass_to_gas_w - carcass_to_air_w;
+            tread_to_carcass_w
+                + flex_power_w
+                + input.external_carcass_heat_w
+                - carcass_to_gas_w
+                - carcass_to_air_w;
 
         st.carcass_c = finite_temp(
             st.carcass_c
@@ -410,7 +472,8 @@ impl TireThermalSystem {
         );
 
         // Gas changes much more slowly and is heated primarily through carcass conduction.
-        let gas_net_w = thermal.carcass_to_gas_w_k * (st.carcass_c - st.gas_c);
+        let gas_net_w = thermal.carcass_to_gas_w_k * (st.carcass_c - st.gas_c)
+            + input.external_gas_heat_w;
         st.gas_c = finite_temp(
             st.gas_c + gas_net_w / thermal.gas_heat_capacity_j_k.max(100.0) * dt,
         );
@@ -544,6 +607,20 @@ mod tests {
         let hot = pressure_from_gas(110.0, 25.0, 101.325, 80.0, 0.0, 0.04);
         assert!((cold - 110.0).abs() < 1e-6);
         assert!(hot > cold);
+    }
+
+    #[test]
+    fn axle_profiles_are_applied_to_the_correct_wheels() {
+        let pressure = TirePressureConfig::default();
+        let mut thermal = TireThermalAxleConfig::default();
+        thermal.front.initial_temperature_c = 40.0;
+        thermal.rear.initial_temperature_c = 70.0;
+        let system = TireThermalSystem::new_with_axles(&pressure, &thermal);
+
+        assert_eq!(system.wheels[WheelIndex::FrontLeft as usize].carcass_c, 40.0);
+        assert_eq!(system.wheels[WheelIndex::FrontRight as usize].carcass_c, 40.0);
+        assert_eq!(system.wheels[WheelIndex::RearLeft as usize].carcass_c, 70.0);
+        assert_eq!(system.wheels[WheelIndex::RearRight as usize].carcass_c, 70.0);
     }
 
     #[test]

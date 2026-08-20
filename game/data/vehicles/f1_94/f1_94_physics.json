@@ -18,7 +18,7 @@
   "chassis": {
     "vehicle_name": "F1 1994 (3.5L V10 NA)",
     "vehicle_mass": 575.0,
-    "front_weight_distribution": 0.40,
+    "front_weight_distribution": 0.42,
     "center_of_gravity_height_offset": -0.12,
 
     "inertia_multipliers": {
@@ -145,10 +145,10 @@
 
     "differential": {
       "preload_nm": 40.0,
-      "power_ramp_angle_deg": 48.0,
+      "power_ramp_angle_deg": 58.0,
       "coast_ramp_angle_deg": 78.0,
-      "clutches": 8.0,
-      "clutch_friction_coefficient": 0.10,
+      "clutches": 6.0,
+      "clutch_friction_coefficient": 0.08,
       "slip_transition_threshold_rad_s": 0.90
     }
   },
@@ -178,7 +178,7 @@
       "bump_damp_multiplier": 0.96,
       "rebound_damp_multiplier": 1.22,
 
-      "arb_ratio": 0.15,
+      "arb_ratio": 0.10,
 
       "toe": 0.0020944,
       "camber": -0.0314159,
@@ -257,8 +257,8 @@
     "pressure": {
       "units": "kPa_gauge",
       "cold_kpa_gauge": {
-        "FL": 105.0,
-        "FR": 105.0,
+        "FL": 110.0,
+        "FR": 110.0,
         "RL": 105.0,
         "RR": 105.0
       },
@@ -273,46 +273,166 @@
     },
 
     "thermal": {
-      "initial_temperature_c": 25.0,
-      "ambient_fallback_c": 25.0,
-      "track_fallback_c": 35.0,
-      "optimal_tread_temperature_c": 95.0,
-      "optimal_tread_window_c": 12.0,
-      "overheat_tread_temperature_c": 120.0,
-      "optimal_carcass_temperature_c": 80.0,
-      "tread_zone_heat_capacity_j_k": 4200.0,
-      "carcass_heat_capacity_j_k": 11000.0,
-      "gas_heat_capacity_j_k": 1600.0,
-      "tread_to_carcass_w_k": 45.0,
-      "carcass_to_gas_w_k": 20.0,
-      "tread_to_air_w_k": 25.0,
-      "carcass_to_air_w_k": 12.0,
-      "road_conductance_w_k": 55.0,
-      "lateral_tread_conductance_w_k": 18.0,
-      "slip_heat_efficiency": 0.88,
-      "carcass_hysteresis_efficiency": 0.75,
-      "pressure_stiffness_exponent": 0.72,
-      "pressure_damping_exponent": -0.22,
-      "pressure_max_deflection_exponent": -0.55,
-      "pressure_patch_exponent": -0.32,
-      "pressure_relaxation_exponent": -0.18,
-      "pressure_rr_exponent": -0.35,
-      "pressure_force_stiffness_exponent": 0.12,
-      "pressure_trail_exponent": -0.16,
-      "volume_deflection_gain": 0.04,
-      "minimum_pressure_kpa_gauge": 55.0,
-      "maximum_pressure_kpa_gauge": 260.0
+      "front": {
+        "initial_temperature_c": 25.0,
+        "ambient_fallback_c": 25.0,
+        "track_fallback_c": 35.0,
+        "optimal_tread_temperature_c": 95.0,
+        "optimal_tread_window_c": 12.0,
+        "overheat_tread_temperature_c": 120.0,
+        "optimal_carcass_temperature_c": 80.0,
+
+        "tread_zone_heat_capacity_j_k": 2100.0,
+        "carcass_heat_capacity_j_k": 5300.0,
+        "gas_heat_capacity_j_k": 750.0,
+
+        "tread_to_carcass_w_k": 75.0,
+        "carcass_to_gas_w_k": 50.0,
+
+        "tread_to_air_w_k": 4.5,
+        "carcass_to_air_w_k": 3.5,
+        "road_conductance_w_k": 60.0,
+        "lateral_tread_conductance_w_k": 24.0,
+
+        "slip_heat_efficiency": 1.0,
+        "carcass_hysteresis_efficiency": 1.0,
+
+        "pressure_stiffness_exponent": 0.72,
+        "pressure_damping_exponent": -0.22,
+        "pressure_max_deflection_exponent": -0.55,
+        "pressure_patch_exponent": -0.32,
+        "pressure_relaxation_exponent": -0.18,
+        "pressure_rr_exponent": -0.35,
+        "pressure_force_stiffness_exponent": 0.12,
+        "pressure_trail_exponent": -0.16,
+        "volume_deflection_gain": 0.04,
+        "minimum_pressure_kpa_gauge": 55.0,
+        "maximum_pressure_kpa_gauge": 260.0
+      },
+      "rear": {
+        "initial_temperature_c": 25.0,
+        "ambient_fallback_c": 25.0,
+        "track_fallback_c": 35.0,
+        "optimal_tread_temperature_c": 95.0,
+        "optimal_tread_window_c": 12.0,
+        "overheat_tread_temperature_c": 120.0,
+        "optimal_carcass_temperature_c": 80.0,
+        "tread_zone_heat_capacity_j_k": 4800.0,
+        "carcass_heat_capacity_j_k": 12000.0,
+        "gas_heat_capacity_j_k": 1800.0,
+        "tread_to_carcass_w_k": 45.0,
+        "carcass_to_gas_w_k": 22.0,
+        "tread_to_air_w_k": 20.0,
+        "carcass_to_air_w_k": 10.0,
+        "road_conductance_w_k": 55.0,
+        "lateral_tread_conductance_w_k": 18.0,
+        "slip_heat_efficiency": 0.90,
+        "carcass_hysteresis_efficiency": 0.80,
+        "pressure_stiffness_exponent": 0.72,
+        "pressure_damping_exponent": -0.22,
+        "pressure_max_deflection_exponent": -0.55,
+        "pressure_patch_exponent": -0.32,
+        "pressure_relaxation_exponent": -0.18,
+        "pressure_rr_exponent": -0.35,
+        "pressure_force_stiffness_exponent": 0.12,
+        "pressure_trail_exponent": -0.16,
+        "volume_deflection_gain": 0.04,
+        "minimum_pressure_kpa_gauge": 55.0,
+        "maximum_pressure_kpa_gauge": 260.0
+      }
     }
   },
 
   "brakes": {
-    "front_brake_bias": 0.58,
-    "max_brake_torque": 2800.0,
+    "front_brake_bias": 0.56,
+    "max_brake_torque": 2900.0,
 
     "enable_abs": false,
 
     "abs_pulse_time": 0.03,
-    "abs_spin_diff_threshold": 12.0
+    "abs_spin_diff_threshold": 12.0,
+
+    "thermal": {
+      "initial_temperature_c": 25.0,
+      "optimal_min_temperature_c": 400.0,
+      "optimal_max_temperature_c": 800.0,
+      "fade_start_temperature_c": 900.0,
+      "critical_temperature_c": 1100.0,
+      "cold_efficiency": 0.78,
+      "minimum_fade_efficiency": 0.58,
+      "braking_heat_fraction": 0.97,
+      "direct_caliper_heat_fraction": 0.04,
+      "front": {
+        "model": "scaled_two_node_v1",
+        "rotor_material": "carbon_carbon",
+        "rotor_mass_kg": 1.35,
+        "rotor_outer_diameter_m": 0.278,
+        "rotor_inner_diameter_m": 0.105,
+        "rotor_ventilation": "vented",
+        "cooling_profile": "open_wheel_ducted",
+        "installation_airflow_scale": 0.70,
+        "surface_bulk_response_scale": 1.0,
+        "thermal_mass_scale": 1.0,
+        "disc_heat_capacity_j_k": 1500.0,
+        "disc_surface_heat_capacity_j_k": 240.0,
+        "disc_bulk_heat_capacity_j_k": 1260.0,
+        "disc_surface_to_bulk_w_k": 75.0,
+        "disc_surface_base_air_w_k": 2.5,
+        "caliper_heat_capacity_j_k": 2000.0,
+        "hub_heat_capacity_j_k": 2100.0,
+        "rim_heat_capacity_j_k": 4200.0,
+        "hub_to_rim_w_k": 170.0,
+        "rim_to_tire_carcass_w_k": 55.0,
+        "rim_to_tire_gas_w_k": 38.0,
+        "disc_base_air_w_k": 12.0,
+        "caliper_base_air_w_k": 6.0,
+        "hub_base_air_w_k": 4.0,
+        "rim_base_air_w_k": 7.0
+      },
+      "rear": {
+        "model": "scaled_two_node_v1",
+        "rotor_material": "carbon_carbon",
+        "rotor_mass_kg": 1.80,
+        "rotor_outer_diameter_m": 0.250,
+        "rotor_inner_diameter_m": 0.100,
+        "rotor_ventilation": "vented",
+        "cooling_profile": "open_wheel_ducted",
+        "installation_airflow_scale": 0.85,
+        "surface_bulk_response_scale": 1.0,
+        "thermal_mass_scale": 1.0,
+        "disc_heat_capacity_j_k": 2000.0,
+        "disc_surface_heat_capacity_j_k": 400.0,
+        "disc_bulk_heat_capacity_j_k": 1600.0,
+        "disc_surface_to_bulk_w_k": 110.0,
+        "disc_surface_base_air_w_k": 4.0,
+        "caliper_heat_capacity_j_k": 2600.0,
+        "hub_heat_capacity_j_k": 2800.0,
+        "rim_heat_capacity_j_k": 6000.0,
+        "hub_to_rim_w_k": 70.0,
+        "rim_to_tire_carcass_w_k": 18.0,
+        "rim_to_tire_gas_w_k": 12.0
+      },
+      "front_duct": {
+        "opening": 0.02,
+        "cooling_reference_speed_ms": 50.0,
+        "air_specific_heat_j_kg_k": 1005.0,
+        "heat_exchanger_ua_w_k": 400.0,
+        "disc_cooling_weight": 0.556,
+        "caliper_cooling_weight": 0.222,
+        "hub_cooling_weight": 0.095,
+        "rim_cooling_weight": 0.127
+      },
+      "rear_duct": {
+        "opening": 0.30,
+        "cooling_reference_speed_ms": 50.0,
+        "air_specific_heat_j_kg_k": 1005.0,
+        "heat_exchanger_ua_w_k": 400.0,
+        "disc_cooling_weight": 0.556,
+        "caliper_cooling_weight": 0.222,
+        "hub_cooling_weight": 0.095,
+        "rim_cooling_weight": 0.127
+      }
+    }
   },
 
   "aero": {
@@ -322,9 +442,9 @@
     "downforce_coefficient": 1.90,
 
     "split": {
-      "front": 0.24,
+      "front": 0.28,
       "diffuser": 0.36,
-      "rear": 0.40
+      "rear": 0.36
     },
 
     "air_density": 1.225,

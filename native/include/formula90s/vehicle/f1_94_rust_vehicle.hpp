@@ -144,6 +144,31 @@ private:
 	double tire_carcass_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double tire_gas_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 
+	// Brake thermal + duct telemetry (WheelIndex order FL/FR/RL/RR).
+	double brake_disc_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_disc_bulk_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_surface_capacity_j_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_bulk_capacity_j_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_surface_bulk_w_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_natural_cooling_w_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_speed_cooling_w_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_surface_to_bulk_heat_w_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_caliper_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_hub_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_rim_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_efficiency_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double duct_mass_flow_kg_s_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double duct_drag_n_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_optimal_min_c_ = 400.0;
+	double brake_optimal_max_c_ = 800.0;
+	double brake_fade_start_c_ = 900.0;
+	double brake_critical_c_ = 1100.0;
+	double brake_torque_nm_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_spin_pre_rad_s_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_spin_post_rad_s_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_power_w_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double brake_energy_j_[4] = { 0.0, 0.0, 0.0, 0.0 };
+
 	bool load_rust_dll();
 	void unload_rust_dll();
 	void setup_raycasts();
@@ -373,8 +398,35 @@ public:
 		const double tread_outer_c[4],
 		const double carcass_c[4],
 		const double gas_c[4]);
+	void set_core_brake_telemetry(
+		const double disc_c[4],
+		const double caliper_c[4],
+		const double hub_c[4],
+		const double rim_c[4],
+		const double efficiency[4],
+		const double duct_mass_flow_kg_s[4],
+		const double duct_drag_n[4],
+		double optimal_min_c,
+		double optimal_max_c,
+		double fade_start_c,
+		double critical_c);
+	void set_core_brake_energy_telemetry(
+		const double torque_nm[4],
+		const double spin_pre_rad_s[4],
+		const double spin_post_rad_s[4],
+		const double power_w[4],
+		const double energy_j[4]);
+	void set_core_brake_disc_bulk_telemetry(const double disc_bulk_c[4]);
+	void set_core_brake_resolved_thermal_telemetry(
+		const double surface_capacity_j_k[4],
+		const double bulk_capacity_j_k[4],
+		const double surface_bulk_w_k[4],
+		const double natural_cooling_w_k[4],
+		const double speed_cooling_w_k[4],
+		const double surface_to_bulk_heat_w[4]);
 	// Tire pressure + thermal snapshot for the HUD (no raw C structs leak out).
 	godot::Dictionary get_tire_state_snapshot() const;
+	godot::Dictionary get_brake_state_snapshot() const;
 };
 
 } // namespace godot

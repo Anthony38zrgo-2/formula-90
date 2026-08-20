@@ -26,7 +26,22 @@ const CSV_COLUMNS := [
     "Front_Slip", "Rear_Slip",
     "Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
     "Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
-    "Vehicle_Script", "Setup_Schema_Version", "Setup_JSON", "TC_Active"
+    "Vehicle_Script", "Setup_Schema_Version", "Setup_JSON", "TC_Active",
+    "FL_BrakeTorque_Nm", "FL_SpinPre_RadS", "FL_SpinPost_RadS", "FL_BrakePower_W", "FL_BrakeEnergy_J",
+    "FR_BrakeTorque_Nm", "FR_SpinPre_RadS", "FR_SpinPost_RadS", "FR_BrakePower_W", "FR_BrakeEnergy_J",
+    "RL_BrakeTorque_Nm", "RL_SpinPre_RadS", "RL_SpinPost_RadS", "RL_BrakePower_W", "RL_BrakeEnergy_J",
+    "RR_BrakeTorque_Nm", "RR_SpinPre_RadS", "RR_SpinPost_RadS", "RR_BrakePower_W", "RR_BrakeEnergy_J",
+    "FL_TreadInner_C", "FL_TreadCenter_C", "FL_TreadOuter_C", "FL_Carcass_C", "FL_Gas_C", "FL_Disc_C", "FL_Caliper_C", "FL_Hub_C", "FL_Rim_C", "FL_BrakeEfficiency", "FL_DuctMassFlow_kg_s", "FL_DuctDrag_N",
+    "FR_TreadInner_C", "FR_TreadCenter_C", "FR_TreadOuter_C", "FR_Carcass_C", "FR_Gas_C", "FR_Disc_C", "FR_Caliper_C", "FR_Hub_C", "FR_Rim_C", "FR_BrakeEfficiency", "FR_DuctMassFlow_kg_s", "FR_DuctDrag_N",
+    "RL_TreadInner_C", "RL_TreadCenter_C", "RL_TreadOuter_C", "RL_Carcass_C", "RL_Gas_C", "RL_Disc_C", "RL_Caliper_C", "RL_Hub_C", "RL_Rim_C", "RL_BrakeEfficiency", "RL_DuctMassFlow_kg_s", "RL_DuctDrag_N",
+    "RR_TreadInner_C", "RR_TreadCenter_C", "RR_TreadOuter_C", "RR_Carcass_C", "RR_Gas_C", "RR_Disc_C", "RR_Caliper_C", "RR_Hub_C", "RR_Rim_C", "RR_BrakeEfficiency", "RR_DuctMassFlow_kg_s", "RR_DuctDrag_N",
+    "FL_DiscBulk_C", "FR_DiscBulk_C", "RL_DiscBulk_C", "RR_DiscBulk_C",
+    "FL_ResolvedSurfaceCapacity_JK", "FR_ResolvedSurfaceCapacity_JK", "RL_ResolvedSurfaceCapacity_JK", "RR_ResolvedSurfaceCapacity_JK",
+    "FL_ResolvedBulkCapacity_JK", "FR_ResolvedBulkCapacity_JK", "RL_ResolvedBulkCapacity_JK", "RR_ResolvedBulkCapacity_JK",
+    "FL_ResolvedSurfaceBulk_WK", "FR_ResolvedSurfaceBulk_WK", "RL_ResolvedSurfaceBulk_WK", "RR_ResolvedSurfaceBulk_WK",
+    "FL_NaturalCooling_WK", "FR_NaturalCooling_WK", "RL_NaturalCooling_WK", "RR_NaturalCooling_WK",
+    "FL_SpeedCooling_WK", "FR_SpeedCooling_WK", "RL_SpeedCooling_WK", "RR_SpeedCooling_WK",
+    "FL_SurfaceToBulkHeat_W", "FR_SurfaceToBulkHeat_W", "RL_SurfaceToBulkHeat_W", "RR_SurfaceToBulkHeat_W"
 ]
 
 func _ready():
@@ -147,7 +162,63 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         front_slip = vehicle.front_axle.get_max_wheel_slip_y() if vehicle.front_axle else 0.0
         rear_slip = vehicle.rear_axle.get_max_wheel_slip_y() if vehicle.rear_axle else 0.0
 
-    return "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s,%d" % [
+    var brake_torque: Array = [0.0, 0.0, 0.0, 0.0]
+    var spin_pre: Array = [0.0, 0.0, 0.0, 0.0]
+    var spin_post: Array = [0.0, 0.0, 0.0, 0.0]
+    var brake_power: Array = [0.0, 0.0, 0.0, 0.0]
+    var brake_energy: Array = [0.0, 0.0, 0.0, 0.0]
+    var disc_bulk: Array = [0.0, 0.0, 0.0, 0.0]
+    var resolved: Array = []
+    for _field in range(24):
+        resolved.append(0.0)
+    # Per wheel: tread I/C/O, carcass, gas, disc, caliper, hub, rim,
+    # brake efficiency, duct mass flow, duct drag.
+    var thermal: Array = []
+    for _field in range(48):
+        thermal.append(0.0)
+    if _is_rust:
+        var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
+        if snapshot_value is Dictionary:
+            var tire_state: Dictionary = snapshot_value.get("tires", {})
+            var brakes_value: Variant = snapshot_value.get("brakes", {})
+            for i in range(4):
+                var wheel_name: String = ["FL", "FR", "RL", "RR"][i]
+                var offset := i * 12
+                if tire_state.has(wheel_name):
+                    var tire_value: Variant = tire_state.get(wheel_name, {})
+                    if tire_value is Dictionary:
+                        var tire: Dictionary = tire_value
+                        thermal[offset] = float(tire.get("tread_inner_c", 0.0))
+                        thermal[offset + 1] = float(tire.get("tread_center_c", 0.0))
+                        thermal[offset + 2] = float(tire.get("tread_outer_c", 0.0))
+                        thermal[offset + 3] = float(tire.get("carcass_c", 0.0))
+                        thermal[offset + 4] = float(tire.get("gas_c", 0.0))
+                if brakes_value is Dictionary:
+                    var brake_state: Dictionary = brakes_value
+                    var wheel_value: Variant = brake_state.get(wheel_name, {})
+                    if wheel_value is Dictionary:
+                        var wheel_state: Dictionary = wheel_value
+                        brake_torque[i] = float(wheel_state.get("brake_torque_nm", 0.0))
+                        spin_pre[i] = float(wheel_state.get("spin_pre_rad_s", 0.0))
+                        spin_post[i] = float(wheel_state.get("spin_post_rad_s", 0.0))
+                        brake_power[i] = float(wheel_state.get("brake_power_w", 0.0))
+                        brake_energy[i] = float(wheel_state.get("brake_energy_j", 0.0))
+                        disc_bulk[i] = float(wheel_state.get("disc_bulk_c", wheel_state.get("disc_c", 0.0)))
+                        resolved[i] = float(wheel_state.get("resolved_surface_capacity_j_k", 0.0))
+                        resolved[4 + i] = float(wheel_state.get("resolved_bulk_capacity_j_k", 0.0))
+                        resolved[8 + i] = float(wheel_state.get("resolved_surface_bulk_w_k", 0.0))
+                        resolved[12 + i] = float(wheel_state.get("natural_cooling_w_k", 0.0))
+                        resolved[16 + i] = float(wheel_state.get("speed_cooling_w_k", 0.0))
+                        resolved[20 + i] = float(wheel_state.get("surface_to_bulk_heat_w", 0.0))
+                        thermal[offset + 5] = float(wheel_state.get("disc_c", 0.0))
+                        thermal[offset + 6] = float(wheel_state.get("caliper_c", 0.0))
+                        thermal[offset + 7] = float(wheel_state.get("hub_c", 0.0))
+                        thermal[offset + 8] = float(wheel_state.get("rim_c", 0.0))
+                        thermal[offset + 9] = float(wheel_state.get("efficiency", 0.0))
+                        thermal[offset + 10] = float(wheel_state.get("duct_mass_flow_kg_s", 0.0))
+                        thermal[offset + 11] = float(wheel_state.get("duct_drag_n", 0.0))
+
+    var base_line := "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f" % [
         now_msec, speed_kmh, rpm, gear,
         throttle, brake_amt, steering,
         lat_g, long_g,
@@ -156,8 +227,19 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         _csv_escape(_session_id), _csv_escape(_session_timestamp_utc), Engine.physics_ticks_per_second,
         _csv_escape(_test_id()), _csv_escape(_current_scene_path()), _csv_escape(str(vehicle.get_path())), _csv_escape(_vehicle_scene_path()),
         _csv_escape(_vehicle_script_path()), 1, _csv_escape(_setup_json),
-        int((int(vehicle.aids_enabled_mask) & 2) != 0)
+        int((int(vehicle.aids_enabled_mask) & 2) != 0),
+        brake_torque[0], spin_pre[0], spin_post[0], brake_power[0], brake_energy[0],
+        brake_torque[1], spin_pre[1], spin_post[1], brake_power[1], brake_energy[1],
+        brake_torque[2], spin_pre[2], spin_post[2], brake_power[2], brake_energy[2],
+        brake_torque[3], spin_pre[3], spin_post[3], brake_power[3], brake_energy[3]
     ]
+    return base_line + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved))
+
+func _thermal_csv_fields(values: Array) -> PackedStringArray:
+    var fields := PackedStringArray()
+    for value in values:
+        fields.append("%.4f" % float(value))
+    return fields
 
 func _csv_escape(value: String) -> String:
     return "\"%s\"" % value.replace("\"", "\"\"")
@@ -188,6 +270,7 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
         },
         "chassis": _build_chassis_snapshot(),
         "tires": _snapshot_properties(["front_tire_radius", "front_tire_width", "front_wheel_mass", "rear_tire_radius", "rear_tire_width", "rear_wheel_mass", "contact_patch", "braking_grip_multiplier", "wheel_to_body_torque_multiplier", "tire_stiffnesses", "coefficient_of_friction", "rolling_resistance", "lateral_grip_assist", "longitudinal_grip_ratio"]),
+        "thermal": _build_brake_thermal_snapshot(),
         "steering": _snapshot_properties(["steering_speed", "countersteer_speed", "steering_speed_decay", "steering_slip_assist", "countersteer_assist", "steering_exponent", "max_steering_angle", "front_steering_ratio", "rear_steering_ratio"]),
         "brakes": _snapshot_properties(["braking_speed", "brake_force_multiplier", "front_brake_bias", "traction_control_max_slip", "front_abs_pulse_time", "front_abs_spin_difference_threshold", "rear_abs_pulse_time", "rear_abs_spin_difference_threshold"]),
         "differential": _snapshot_properties(["front_torque_split", "variable_torque_split", "front_variable_split", "variable_split_speed", "front_locking_differential_engage_torque", "rear_locking_differential_engage_torque", "front_torque_vectoring", "rear_torque_vectoring"]),
@@ -197,6 +280,18 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
         "aerodynamics": _snapshot_properties(["coefficient_of_drag", "air_density", "frontal_area"]),
         "assists": _snapshot_properties(["enable_stability", "stability_yaw_engage_angle", "stability_yaw_strength", "stability_yaw_ground_multiplier", "stability_upright_spring", "stability_upright_damping", "automatic_transmission", "steering_slip_assist", "countersteer_assist"])
     }
+
+func _build_brake_thermal_snapshot() -> Dictionary:
+    var snapshot := {
+        "model": "runtime_resolved",
+        "model_source": "vehicle_physics_engine brake thermal resolver",
+        "resolved_wheels": {}
+    }
+    if vehicle.has_method(&"get_brake_state_snapshot"):
+        var value: Variant = vehicle.call(&"get_brake_state_snapshot")
+        if value is Dictionary:
+            snapshot["resolved_wheels"] = value
+    return snapshot
 
 func _snapshot_properties(property_names: Array[String]) -> Dictionary:
     var snapshot := {}

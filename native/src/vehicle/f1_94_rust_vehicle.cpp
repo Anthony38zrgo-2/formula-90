@@ -197,6 +197,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("reset_vehicle", "pos", "yaw_rad"), &F194RustVehicle::reset_vehicle);
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
+	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
 }
 
 F194RustVehicle::F194RustVehicle() {
@@ -706,6 +707,87 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	tire_gas_c_[1] = telem.fr_gas_c;
 	tire_gas_c_[2] = telem.rl_gas_c;
 	tire_gas_c_[3] = telem.rr_gas_c;
+
+	brake_disc_c_[0] = telem.fl_brake_disc_c;
+	brake_disc_c_[1] = telem.fr_brake_disc_c;
+	brake_disc_c_[2] = telem.rl_brake_disc_c;
+	brake_disc_c_[3] = telem.rr_brake_disc_c;
+	brake_caliper_c_[0] = telem.fl_brake_caliper_c;
+	brake_caliper_c_[1] = telem.fr_brake_caliper_c;
+	brake_caliper_c_[2] = telem.rl_brake_caliper_c;
+	brake_caliper_c_[3] = telem.rr_brake_caliper_c;
+	brake_hub_c_[0] = telem.fl_brake_hub_c;
+	brake_hub_c_[1] = telem.fr_brake_hub_c;
+	brake_hub_c_[2] = telem.rl_brake_hub_c;
+	brake_hub_c_[3] = telem.rr_brake_hub_c;
+	brake_rim_c_[0] = telem.fl_brake_rim_c;
+	brake_rim_c_[1] = telem.fr_brake_rim_c;
+	brake_rim_c_[2] = telem.rl_brake_rim_c;
+	brake_rim_c_[3] = telem.rr_brake_rim_c;
+	brake_efficiency_[0] = telem.fl_brake_efficiency;
+	brake_efficiency_[1] = telem.fr_brake_efficiency;
+	brake_efficiency_[2] = telem.rl_brake_efficiency;
+	brake_efficiency_[3] = telem.rr_brake_efficiency;
+	duct_mass_flow_kg_s_[0] = telem.fl_duct_mass_flow_kg_s;
+	duct_mass_flow_kg_s_[1] = telem.fr_duct_mass_flow_kg_s;
+	duct_mass_flow_kg_s_[2] = telem.rl_duct_mass_flow_kg_s;
+	duct_mass_flow_kg_s_[3] = telem.rr_duct_mass_flow_kg_s;
+	duct_drag_n_[0] = telem.fl_duct_drag_n;
+	duct_drag_n_[1] = telem.fr_duct_drag_n;
+	duct_drag_n_[2] = telem.rl_duct_drag_n;
+	duct_drag_n_[3] = telem.rr_duct_drag_n;
+	brake_optimal_min_c_ = telem.brake_optimal_min_c;
+	brake_optimal_max_c_ = telem.brake_optimal_max_c;
+	brake_fade_start_c_ = telem.brake_fade_start_c;
+	brake_critical_c_ = telem.brake_critical_c;
+	brake_torque_nm_[0] = telem.fl_brake_torque_nm;
+	brake_torque_nm_[1] = telem.fr_brake_torque_nm;
+	brake_torque_nm_[2] = telem.rl_brake_torque_nm;
+	brake_torque_nm_[3] = telem.rr_brake_torque_nm;
+	brake_spin_pre_rad_s_[0] = telem.fl_brake_spin_pre_rad_s;
+	brake_spin_pre_rad_s_[1] = telem.fr_brake_spin_pre_rad_s;
+	brake_spin_pre_rad_s_[2] = telem.rl_brake_spin_pre_rad_s;
+	brake_spin_pre_rad_s_[3] = telem.rr_brake_spin_pre_rad_s;
+	brake_spin_post_rad_s_[0] = telem.fl_brake_spin_post_rad_s;
+	brake_spin_post_rad_s_[1] = telem.fr_brake_spin_post_rad_s;
+	brake_spin_post_rad_s_[2] = telem.rl_brake_spin_post_rad_s;
+	brake_spin_post_rad_s_[3] = telem.rr_brake_spin_post_rad_s;
+	brake_power_w_[0] = telem.fl_brake_power_w;
+	brake_power_w_[1] = telem.fr_brake_power_w;
+	brake_power_w_[2] = telem.rl_brake_power_w;
+	brake_power_w_[3] = telem.rr_brake_power_w;
+	brake_energy_j_[0] = telem.fl_brake_energy_j;
+	brake_energy_j_[1] = telem.fr_brake_energy_j;
+	brake_energy_j_[2] = telem.rl_brake_energy_j;
+	brake_energy_j_[3] = telem.rr_brake_energy_j;
+	brake_disc_bulk_c_[0] = telem.fl_brake_disc_bulk_c;
+	brake_disc_bulk_c_[1] = telem.fr_brake_disc_bulk_c;
+	brake_disc_bulk_c_[2] = telem.rl_brake_disc_bulk_c;
+	brake_disc_bulk_c_[3] = telem.rr_brake_disc_bulk_c;
+	brake_surface_capacity_j_k_[0] = telem.fl_brake_surface_capacity_j_k;
+	brake_surface_capacity_j_k_[1] = telem.fr_brake_surface_capacity_j_k;
+	brake_surface_capacity_j_k_[2] = telem.rl_brake_surface_capacity_j_k;
+	brake_surface_capacity_j_k_[3] = telem.rr_brake_surface_capacity_j_k;
+	brake_bulk_capacity_j_k_[0] = telem.fl_brake_bulk_capacity_j_k;
+	brake_bulk_capacity_j_k_[1] = telem.fr_brake_bulk_capacity_j_k;
+	brake_bulk_capacity_j_k_[2] = telem.rl_brake_bulk_capacity_j_k;
+	brake_bulk_capacity_j_k_[3] = telem.rr_brake_bulk_capacity_j_k;
+	brake_surface_bulk_w_k_[0] = telem.fl_brake_surface_bulk_w_k;
+	brake_surface_bulk_w_k_[1] = telem.fr_brake_surface_bulk_w_k;
+	brake_surface_bulk_w_k_[2] = telem.rl_brake_surface_bulk_w_k;
+	brake_surface_bulk_w_k_[3] = telem.rr_brake_surface_bulk_w_k;
+	brake_natural_cooling_w_k_[0] = telem.fl_brake_natural_cooling_w_k;
+	brake_natural_cooling_w_k_[1] = telem.fr_brake_natural_cooling_w_k;
+	brake_natural_cooling_w_k_[2] = telem.rl_brake_natural_cooling_w_k;
+	brake_natural_cooling_w_k_[3] = telem.rr_brake_natural_cooling_w_k;
+	brake_speed_cooling_w_k_[0] = telem.fl_brake_speed_cooling_w_k;
+	brake_speed_cooling_w_k_[1] = telem.fr_brake_speed_cooling_w_k;
+	brake_speed_cooling_w_k_[2] = telem.rl_brake_speed_cooling_w_k;
+	brake_speed_cooling_w_k_[3] = telem.rr_brake_speed_cooling_w_k;
+	brake_surface_to_bulk_heat_w_[0] = telem.fl_brake_surface_to_bulk_heat_w;
+	brake_surface_to_bulk_heat_w_[1] = telem.fr_brake_surface_to_bulk_heat_w;
+	brake_surface_to_bulk_heat_w_[2] = telem.rl_brake_surface_to_bulk_heat_w;
+	brake_surface_to_bulk_heat_w_[3] = telem.rr_brake_surface_to_bulk_heat_w;
 
 	// 7. Visual Animation of Wheel Meshes
 	update_wheel_visuals(dt);
@@ -1299,6 +1381,33 @@ void F194RustVehicle::set_core_tire_telemetry(
 	}
 }
 
+void F194RustVehicle::set_core_brake_telemetry(
+	const double disc_c[4],
+	const double caliper_c[4],
+	const double hub_c[4],
+	const double rim_c[4],
+	const double efficiency[4],
+	const double duct_mass_flow_kg_s[4],
+	const double duct_drag_n[4],
+	double optimal_min_c,
+	double optimal_max_c,
+	double fade_start_c,
+	double critical_c) {
+	brake_optimal_min_c_ = optimal_min_c;
+	brake_optimal_max_c_ = optimal_max_c;
+	brake_fade_start_c_ = fade_start_c;
+	brake_critical_c_ = critical_c;
+	for (int i = 0; i < 4; ++i) {
+		brake_disc_c_[i] = disc_c[i];
+		brake_caliper_c_[i] = caliper_c[i];
+		brake_hub_c_[i] = hub_c[i];
+		brake_rim_c_[i] = rim_c[i];
+		brake_efficiency_[i] = efficiency[i];
+		duct_mass_flow_kg_s_[i] = duct_mass_flow_kg_s[i];
+		duct_drag_n_[i] = duct_drag_n[i];
+	}
+}
+
 Dictionary F194RustVehicle::get_tire_state_snapshot() const {
 	static const char *WHEELS[4] = { "FL", "FR", "RL", "RR" };
 	Dictionary out;
@@ -1313,6 +1422,77 @@ Dictionary F194RustVehicle::get_tire_state_snapshot() const {
 		out[String(WHEELS[i])] = wheel;
 	}
 	return out;
+}
+
+Dictionary F194RustVehicle::get_brake_state_snapshot() const {
+	static const char *WHEELS[4] = { "FL", "FR", "RL", "RR" };
+	Dictionary out;
+	for (int i = 0; i < 4; ++i) {
+		Dictionary wheel;
+		wheel["disc_c"] = brake_disc_c_[i];
+		wheel["disc_bulk_c"] = brake_disc_bulk_c_[i];
+		wheel["resolved_surface_capacity_j_k"] = brake_surface_capacity_j_k_[i];
+		wheel["resolved_bulk_capacity_j_k"] = brake_bulk_capacity_j_k_[i];
+		wheel["resolved_surface_bulk_w_k"] = brake_surface_bulk_w_k_[i];
+		wheel["natural_cooling_w_k"] = brake_natural_cooling_w_k_[i];
+		wheel["speed_cooling_w_k"] = brake_speed_cooling_w_k_[i];
+		wheel["surface_to_bulk_heat_w"] = brake_surface_to_bulk_heat_w_[i];
+		wheel["caliper_c"] = brake_caliper_c_[i];
+		wheel["hub_c"] = brake_hub_c_[i];
+		wheel["rim_c"] = brake_rim_c_[i];
+		wheel["efficiency"] = brake_efficiency_[i];
+		wheel["duct_mass_flow_kg_s"] = duct_mass_flow_kg_s_[i];
+		wheel["duct_drag_n"] = duct_drag_n_[i];
+		wheel["brake_torque_nm"] = brake_torque_nm_[i];
+		wheel["spin_pre_rad_s"] = brake_spin_pre_rad_s_[i];
+		wheel["spin_post_rad_s"] = brake_spin_post_rad_s_[i];
+		wheel["brake_power_w"] = brake_power_w_[i];
+		wheel["brake_energy_j"] = brake_energy_j_[i];
+		wheel["optimal_min_c"] = brake_optimal_min_c_;
+		wheel["optimal_max_c"] = brake_optimal_max_c_;
+		wheel["fade_start_c"] = brake_fade_start_c_;
+		wheel["critical_c"] = brake_critical_c_;
+		out[String(WHEELS[i])] = wheel;
+	}
+	return out;
+}
+
+void F194RustVehicle::set_core_brake_energy_telemetry(
+	const double torque_nm[4],
+	const double spin_pre_rad_s[4],
+	const double spin_post_rad_s[4],
+	const double power_w[4],
+	const double energy_j[4]) {
+	for (int i = 0; i < 4; ++i) {
+		brake_torque_nm_[i] = torque_nm[i];
+		brake_spin_pre_rad_s_[i] = spin_pre_rad_s[i];
+		brake_spin_post_rad_s_[i] = spin_post_rad_s[i];
+		brake_power_w_[i] = power_w[i];
+		brake_energy_j_[i] = energy_j[i];
+	}
+}
+
+void F194RustVehicle::set_core_brake_disc_bulk_telemetry(const double disc_bulk_c[4]) {
+	for (int i = 0; i < 4; ++i) {
+		brake_disc_bulk_c_[i] = disc_bulk_c[i];
+	}
+}
+
+void F194RustVehicle::set_core_brake_resolved_thermal_telemetry(
+	const double surface_capacity_j_k[4],
+	const double bulk_capacity_j_k[4],
+	const double surface_bulk_w_k[4],
+	const double natural_cooling_w_k[4],
+	const double speed_cooling_w_k[4],
+	const double surface_to_bulk_heat_w[4]) {
+	for (int i = 0; i < 4; ++i) {
+		brake_surface_capacity_j_k_[i] = surface_capacity_j_k[i];
+		brake_bulk_capacity_j_k_[i] = bulk_capacity_j_k[i];
+		brake_surface_bulk_w_k_[i] = surface_bulk_w_k[i];
+		brake_natural_cooling_w_k_[i] = natural_cooling_w_k[i];
+		brake_speed_cooling_w_k_[i] = speed_cooling_w_k[i];
+		brake_surface_to_bulk_heat_w_[i] = surface_to_bulk_heat_w[i];
+	}
 }
 
 void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt) {

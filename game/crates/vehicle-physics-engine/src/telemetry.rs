@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-/// Canonical 26-column telemetry snapshot matching TelemetryManager.gd.
+/// Canonical Rust telemetry snapshot. The CSV form appends per-wheel brake
+/// energy diagnostics after the existing vehicle/setup fields.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TelemetryFrame {
     pub time_ms: i64,
@@ -31,24 +32,69 @@ pub struct TelemetryFrame {
     pub vehicle_script: String,
     pub setup_schema_version: i32,
     pub setup_json: String,
+    pub brake_torque_nm: [f64; 4],
+    pub brake_spin_pre_rad_s: [f64; 4],
+    pub brake_spin_post_rad_s: [f64; 4],
+    pub brake_power_w: [f64; 4],
+    pub brake_energy_j: [f64; 4],
 }
 
 impl TelemetryFrame {
     pub const CSV_HEADER: &'static [&'static str] = &[
-        "Time_ms", "Speed_kmh", "RPM", "Gear",
-        "Throttle", "Brake", "Steering",
-        "Lat_G", "Long_G", "Vert_G",
-        "FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
-        "Front_Slip", "Rear_Slip", "TC_Active", "DriveTorque",
-        "Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
-        "Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
-        "Vehicle_Script", "Setup_Schema_Version", "Setup_JSON",
+        "Time_ms",
+        "Speed_kmh",
+        "RPM",
+        "Gear",
+        "Throttle",
+        "Brake",
+        "Steering",
+        "Lat_G",
+        "Long_G",
+        "Vert_G",
+        "FL_Comp",
+        "FR_Comp",
+        "RL_Comp",
+        "RR_Comp",
+        "Front_Slip",
+        "Rear_Slip",
+        "TC_Active",
+        "DriveTorque",
+        "Session_Id",
+        "Session_Timestamp_UTC",
+        "Physics_Hz",
+        "Test_Id",
+        "Track_Scene",
+        "Vehicle_Node_Path",
+        "Vehicle_Scene",
+        "Vehicle_Script",
+        "Setup_Schema_Version",
+        "Setup_JSON",
+        "FL_BrakeTorque_Nm",
+        "FL_SpinPre_RadS",
+        "FL_SpinPost_RadS",
+        "FL_BrakePower_W",
+        "FL_BrakeEnergy_J",
+        "FR_BrakeTorque_Nm",
+        "FR_SpinPre_RadS",
+        "FR_SpinPost_RadS",
+        "FR_BrakePower_W",
+        "FR_BrakeEnergy_J",
+        "RL_BrakeTorque_Nm",
+        "RL_SpinPre_RadS",
+        "RL_SpinPost_RadS",
+        "RL_BrakePower_W",
+        "RL_BrakeEnergy_J",
+        "RR_BrakeTorque_Nm",
+        "RR_SpinPre_RadS",
+        "RR_SpinPost_RadS",
+        "RR_BrakePower_W",
+        "RR_BrakeEnergy_J",
     ];
 
     /// Formats the telemetry frame into a single comma-separated CSV line.
     pub fn to_csv_line(&self) -> String {
         format!(
-            "{},{:.2},{:.1},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.2},{:.2},{:.2},{:.2},{:.4},{:.4},{},{:.1},\"{}\",\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",{},\"{}\"",
+            "{},{:.2},{:.1},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.2},{:.2},{:.2},{:.2},{:.4},{:.4},{},{:.1},\"{}\",\"{}\",{},\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",{},\"{}\",{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3},{:.3}",
             self.time_ms,
             self.speed_kmh,
             self.rpm,
@@ -77,6 +123,27 @@ impl TelemetryFrame {
             self.vehicle_script,
             self.setup_schema_version,
             self.setup_json.replace('"', "\"\"") // Escape CSV quotes in JSON
+            ,
+            self.brake_torque_nm[0],
+            self.brake_spin_pre_rad_s[0],
+            self.brake_spin_post_rad_s[0],
+            self.brake_power_w[0],
+            self.brake_energy_j[0],
+            self.brake_torque_nm[1],
+            self.brake_spin_pre_rad_s[1],
+            self.brake_spin_post_rad_s[1],
+            self.brake_power_w[1],
+            self.brake_energy_j[1],
+            self.brake_torque_nm[2],
+            self.brake_spin_pre_rad_s[2],
+            self.brake_spin_post_rad_s[2],
+            self.brake_power_w[2],
+            self.brake_energy_j[2],
+            self.brake_torque_nm[3],
+            self.brake_spin_pre_rad_s[3],
+            self.brake_spin_post_rad_s[3],
+            self.brake_power_w[3],
+            self.brake_energy_j[3],
         )
     }
 }

@@ -39,6 +39,8 @@ fn braking_thermal_input() -> TireThermalInput {
         max_tire_deflection_m: 0.04,
         dynamic_camber_rad: -0.02,
         vehicle_speed_ms: 40.0,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [1.0, 2.0, 1.0],
     }
 }
@@ -108,9 +110,9 @@ fn pressure_sweep_vertical_deflection_decreases() {
     for &pr in &[90.0, 110.0, 145.0, 170.0] {
         let mut pcfg = TirePressureConfig::default();
         pcfg.cold_kpa_gauge = [pr; 4];
-        let sys = TireThermalSystem::new(&pcfg, &cfg.tire_thermal);
+        let sys = TireThermalSystem::new(&pcfg, &cfg.tire_thermal.front);
         let mods: [TireMechanicalModifiers; 4] = [0, 1, 2, 3]
-            .map(|i| sys.mechanical_modifiers(WheelIndex::ALL[i], &pcfg, &cfg.tire_thermal));
+            .map(|i| sys.mechanical_modifiers(WheelIndex::ALL[i], &pcfg, &cfg.tire_thermal.front));
         let mut suspension = SuspensionSystem::new(&cfg);
         for _ in 0..240 {
             suspension.step_with_modifiers(&cfg, &mods, &samples, dt);
@@ -185,6 +187,8 @@ fn heat_soak_tread_fastest_carcass_slower_gas_slowest() {
         max_tire_deflection_m: 0.04,
         dynamic_camber_rad: 0.0,
         vehicle_speed_ms: 40.0,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [1.0, 2.0, 1.0],
     };
     for _ in 0..600 {
@@ -237,7 +241,7 @@ fn straight_line_symmetry_fl_equals_fr_rl_equals_rr() {
 fn wheelspin_heats_driven_rear_but_not_unloaded_front() {
     let cfg = VehicleConfig::f1_94_canonical();
     let p = &cfg.tire_pressure;
-    let t = &cfg.tire_thermal;
+    let t = &cfg.tire_thermal.front;
     let env = TireEnvironment::fallback(t);
     let dt = 1.0 / 120.0;
     let mut sys = TireThermalSystem::new(p, t);
@@ -254,6 +258,8 @@ fn wheelspin_heats_driven_rear_but_not_unloaded_front() {
         max_tire_deflection_m: 0.04,
         dynamic_camber_rad: 0.0,
         vehicle_speed_ms: 30.0,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [1.0, 2.0, 1.0],
     };
     for _ in 0..1800 {
@@ -272,6 +278,8 @@ fn wheelspin_heats_driven_rear_but_not_unloaded_front() {
         max_tire_deflection_m: 0.04,
         dynamic_camber_rad: 0.0,
         vehicle_speed_ms: 30.0,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [0.0, 0.0, 0.0],
     };
     for _ in 0..600 {
@@ -290,7 +298,7 @@ fn wheelspin_heats_driven_rear_but_not_unloaded_front() {
 fn partial_tricast_outer_only_heats_outer_zone() {
     let cfg = VehicleConfig::f1_94_canonical();
     let p = &cfg.tire_pressure;
-    let t = &cfg.tire_thermal;
+    let t = &cfg.tire_thermal.front;
     let env = TireEnvironment::fallback(t);
     let dt = 1.0 / 120.0;
     let mut sys = TireThermalSystem::new(p, t);
@@ -306,6 +314,8 @@ fn partial_tricast_outer_only_heats_outer_zone() {
         max_tire_deflection_m: 0.04,
         dynamic_camber_rad: 0.0,
         vehicle_speed_ms: 30.0,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [0.0, 0.0, 1.0],
     };
     for _ in 0..600 {
@@ -328,7 +338,7 @@ fn partial_tricast_outer_only_heats_outer_zone() {
 fn airborne_no_road_heat_but_state_stays_finite() {
     let cfg = VehicleConfig::f1_94_canonical();
     let p = &cfg.tire_pressure;
-    let t = &cfg.tire_thermal;
+    let t = &cfg.tire_thermal.front;
     let env = TireEnvironment::fallback(t);
     let dt = 1.0 / 120.0;
     let mut sys = TireThermalSystem::new(p, t);
@@ -344,6 +354,8 @@ fn airborne_no_road_heat_but_state_stays_finite() {
         max_tire_deflection_m: 0.04,
         dynamic_camber_rad: 0.0,
         vehicle_speed_ms: 50.0,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [0.0, 0.0, 0.0],
     };
     for _ in 0..600 {
@@ -360,7 +372,7 @@ fn airborne_no_road_heat_but_state_stays_finite() {
 fn thermal_grip_cold_below_window_overheated_below_window() {
     let cfg = VehicleConfig::f1_94_canonical();
     let p = &cfg.tire_pressure;
-    let t = &cfg.tire_thermal;
+    let t = &cfg.tire_thermal.front;
     let mut sys = TireThermalSystem::new(p, t);
     for i in 0..3 {
         sys.wheels[i].tread_inner_c = 20.0;
@@ -567,7 +579,7 @@ fn ffi_telemetry_carries_tire_state() {
 fn thermal_step_is_nan_safe_under_extreme_inputs() {
     let cfg = VehicleConfig::f1_94_canonical();
     let p = &cfg.tire_pressure;
-    let t = &cfg.tire_thermal;
+    let t = &cfg.tire_thermal.front;
     let env = TireEnvironment::fallback(t);
     let mut sys = TireThermalSystem::new(p, t);
     let brutal = TireThermalInput {
@@ -581,6 +593,8 @@ fn thermal_step_is_nan_safe_under_extreme_inputs() {
         max_tire_deflection_m: 0.0,
         dynamic_camber_rad: 10.0,
         vehicle_speed_ms: 1e9,
+        external_carcass_heat_w: 0.0,
+        external_gas_heat_w: 0.0,
         zone_contact_weights: [1.0, 2.0, 1.0],
     };
     for _ in 0..120 {
