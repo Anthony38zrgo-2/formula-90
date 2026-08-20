@@ -1,6 +1,7 @@
 use crate::aero::AeroForces;
 use crate::powertrain::PowertrainState;
 use crate::suspension::SuspensionSystem;
+use crate::tire_thermals::{TireEnvironment, TireThermalInput, TireThermalSystem};
 use crate::telemetry::TelemetryFrame;
 use crate::tire::TireSystem;
 use crate::types::{Mat3, Quat, Transform3D, TriRaycastSample, Vec3, VehicleInput, WheelIndex};
@@ -37,6 +38,7 @@ pub struct VehicleState {
     pub powertrain: PowertrainState,
     pub suspension: SuspensionSystem,
     pub tires: TireSystem,
+    pub tire_thermal: TireThermalSystem,
     pub aero: AeroForces,
     pub sim_time: f64,
     pub physics_hz: i32,
@@ -58,6 +60,7 @@ impl VehicleState {
             powertrain: PowertrainState::new(config),
             suspension: SuspensionSystem::new(config),
             tires: TireSystem::new(config),
+            tire_thermal: TireThermalSystem::new(&config.tire_pressure, &config.tire_thermal),
             aero: AeroForces::zero(),
             sim_time: 0.0,
             physics_hz: 120,
@@ -212,7 +215,21 @@ impl VehicleSimulator {
         };
 
         st.aero.step(cfg, local_velocity, dt);
-        st.suspension.step(cfg, samples, dt);
+
+        // Pressure/thermal mechanical modifiers from the CURRENT tick's tire
+        // thermal state (pressure N drives mechanics/forces N; heat updates the
+        // pressure for the next tick).
+        let thermal_modifiers = [
+            st.tire_thermal
+                .mechanical_modifiers(WheelIndex::FrontLeft, &cfg.tire_pressure, &cfg.tire_thermal),
+            st.tire_thermal
+                .mechanical_modifiers(WheelIndex::FrontRight, &cfg.tire_pressure, &cfg.tire_thermal),
+            st.tire_thermal
+                .mechanical_modifiers(WheelIndex::RearLeft, &cfg.tire_pressure, &cfg.tire_thermal),
+            st.tire_thermal
+                .mechanical_modifiers(WheelIndex::RearRight, &cfg.tire_pressure, &cfg.tire_thermal),
+        ];
+        st.suspension.step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
 
         let wheel_spins = [
             st.tires.wheels[0].spin,
@@ -252,6 +269,9 @@ impl VehicleSimulator {
         let mut total_force = Vec3::ZERO;
         let mut total_torque = Vec3::ZERO;
         let cg_world = center_of_mass_world(cfg, &st.transform);
+        // Lateral slip velocity per wheel (wheel frame) captured during the force
+        // loop and consumed by the thermal update.
+        let mut wheel_lateral_slip_ms = [0.0f64; 4];
 
         // GEVP central aerodynamic drag.
         let drag_world = if st.linear_velocity.length() > 1e-6 {
@@ -287,6 +307,7 @@ impl VehicleSimulator {
             st.tires.wheels[i].steer_angle_rad = steer_angle;
 
             let contact_point = st.suspension.wheels[i].effective_contact_point;
+            st.tires.set_mechanical_modifiers(wheel, thermal_modifiers[i]);
             st.tires.set_mechanical_state(
                 cfg,
                 wheel,
@@ -335,6 +356,7 @@ impl VehicleSimulator {
                 point_velocity_world.dot(contact_normal),
                 -point_velocity_world.dot(contact_forward),
             );
+            wheel_lateral_slip_ms[i] = point_velocity_wheel.x.abs();
 
             st.tires.process_wheel_forces(
                 cfg,
@@ -362,6 +384,48 @@ impl VehicleSimulator {
             // contact normal. Longitudinal pitch is already produced naturally by
             // arm.cross(wheel_force); the old hidden GEVP pitch-torque aid was removed.
             total_torque += contact_normal * tire.aligning_torque;
+        }
+
+        // Thermal update AFTER all wheel forces (same-tick ordering: pressure N ->
+        // mechanics/forces N -> heat N -> pressure N+1). Environment uses the
+        // fallback (ambient/track); a session override can replace it later without
+        // changing the tire architecture.
+        {
+            let tire_environment = TireEnvironment::fallback(&cfg.tire_thermal);
+            let vehicle_speed_ms = st.linear_velocity.length();
+            for wheel in WheelIndex::ALL {
+                let i = wheel as usize;
+                let sus = &st.suspension.wheels[i];
+                let tire = &st.tires.wheels[i];
+                let tuning = crate::wheel_mechanics::WheelMechanicalTuning::for_wheel(cfg, wheel);
+                let zone_contact_weights = [
+                    if sus.ray_grounded[0] { 1.0 } else { 0.0 },
+                    if sus.ray_grounded[1] { 2.0 } else { 0.0 },
+                    if sus.ray_grounded[2] { 1.0 } else { 0.0 },
+                ];
+                let thermal_input = TireThermalInput {
+                    normal_force_n: sus.total_normal_force.max(0.0),
+                    longitudinal_force_n: tire.longitudinal_force,
+                    lateral_force_n: tire.lateral_force,
+                    slip_velocity_long_ms: tire.spin_velocity_diff.abs(),
+                    slip_velocity_lat_ms: wheel_lateral_slip_ms[i],
+                    tire_deflection_m: sus.tire_deflection_m,
+                    tire_deflection_velocity_m_s: sus.tire_deflection_velocity_m_s,
+                    max_tire_deflection_m: tuning.max_tire_deflection_m
+                        * thermal_modifiers[i].max_deflection_scale.max(0.05),
+                    dynamic_camber_rad: sus.dynamic_camber,
+                    vehicle_speed_ms,
+                    zone_contact_weights,
+                };
+                st.tire_thermal.step_after_forces(
+                    wheel,
+                    &cfg.tire_pressure,
+                    &cfg.tire_thermal,
+                    tire_environment,
+                    thermal_input,
+                    dt,
+                );
+            }
         }
 
         // ESP / yaw-stability aid: counter only the excess yaw beyond the engage

@@ -332,6 +332,16 @@ impl CoreFacade {
         frame.avx = av.x;
         frame.avy = av.y;
         frame.avz = av.z;
+
+        // Tire pressure + thermal state (WheelIndex order FL/FR/RL/RR).
+        for (i, w) in ent.sim.state.tire_thermal.wheels.iter().enumerate() {
+            frame.tire_pressure_kpa[i] = w.pressure_kpa_gauge;
+            frame.tire_tread_inner_c[i] = w.tread_inner_c;
+            frame.tire_tread_center_c[i] = w.tread_center_c;
+            frame.tire_tread_outer_c[i] = w.tread_outer_c;
+            frame.tire_carcass_c[i] = w.carcass_c;
+            frame.tire_gas_c[i] = w.gas_c;
+        }
     }
 
     /// Shared tail of every step: drive the audio from the frame telemetry, tick the

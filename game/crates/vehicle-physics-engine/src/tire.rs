@@ -4,6 +4,7 @@
 // consumes the new mechanical wheel state: dynamic Fz, carcass deflection, effective
 // rolling radius, contact coverage and camber.  It intentionally remains tuneable and
 // stable for a game solver rather than attempting a full Pacejka parameter set.
+use crate::tire_thermals::TireMechanicalModifiers;
 use crate::types::{SurfaceType, Vec3, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
 use crate::wheel_mechanics::{
@@ -48,6 +49,10 @@ pub struct WheelTireState {
     pub dynamic_contact_patch: f64,
     #[serde(default)]
     pub load_sensitivity_scale: f64,
+    /// Pressure/thermal mechanical modifiers applied at force time. Identity by
+    /// default so legacy callers that never feed thermal state behave unchanged.
+    #[serde(default)]
+    pub mechanical_modifiers: TireMechanicalModifiers,
 }
 
 impl WheelTireState {
@@ -77,6 +82,7 @@ impl WheelTireState {
             effective_rolling_radius: radius,
             dynamic_contact_patch: base_contact_patch(config, wheel),
             load_sensitivity_scale: 1.0,
+            mechanical_modifiers: TireMechanicalModifiers::identity(),
         }
     }
 }
@@ -143,6 +149,16 @@ impl TireSystem {
         state.load_sensitivity_scale = load_ratio
             .powf(tuning.load_sensitivity_exponent - 1.0)
             .clamp(0.75, 1.20);
+    }
+
+    /// Apply the pressure/thermal mechanical modifiers computed this tick. Called
+    /// BEFORE force generation so the combined-slip solver sees the current pressure.
+    pub fn set_mechanical_modifiers(
+        &mut self,
+        wheel: WheelIndex,
+        modifiers: TireMechanicalModifiers,
+    ) {
+        self.wheels[wheel as usize].mechanical_modifiers = modifiers;
     }
 
     /// Update wheel angular speed from applied torque and the previous tire reaction torque.
@@ -251,9 +267,13 @@ impl TireSystem {
 
         // Relaxation length makes force build over distance instead of appearing in one frame.
         let planar_speed = (v_forward * v_forward + v_lateral * v_lateral).sqrt();
+        let modifiers = state.mechanical_modifiers;
         let base_patch = base_contact_patch(config, wheel).max(0.03);
-        let patch_ratio = (state.dynamic_contact_patch / base_patch).clamp(0.7, 1.5);
-        let relaxation_length = tuning.relaxation_length_m * patch_ratio.sqrt();
+        let patch_ratio =
+            (state.dynamic_contact_patch / base_patch).clamp(0.7, 1.5) * modifiers.contact_patch_scale;
+        let relaxation_length = tuning.relaxation_length_m
+            * patch_ratio.sqrt()
+            * modifiers.relaxation_length_scale;
         let relaxation_tau = relaxation_length / planar_speed.max(4.0);
         let relax = 1.0 - (-dt / relaxation_tau.max(1e-4)).exp();
         state.effective_slip_angle_rad +=
@@ -274,6 +294,9 @@ impl TireSystem {
             };
             mu *= grip.max(0.0);
         }
+        // Secondary thermal/pressure peak-friction correction. Pressure mechanics
+        // remain the dominant effect; this only nudges mu near cold/overheat windows.
+        mu *= modifiers.grip_scale.clamp(0.05, 2.0);
         let longitudinal_ratio = config
             .surface_longitudinal_grip_ratio
             .get(&surface)
@@ -293,11 +316,13 @@ impl TireSystem {
             .clamp(0.15, 2.5)
             .sqrt();
         let patch_stiffness_scale = patch_ratio.sqrt();
-        let longitudinal_shape = 9.5 * stiffness_scale * patch_stiffness_scale;
+        let longitudinal_shape =
+            9.5 * stiffness_scale * patch_stiffness_scale * modifiers.force_stiffness_scale;
         let lateral_shape = 7.5
             * stiffness_scale
             * patch_stiffness_scale
-            * (1.0 + 0.25 * lateral_assist);
+            * (1.0 + 0.25 * lateral_assist)
+            * modifiers.force_stiffness_scale;
 
         // Config camber is expressed with the same sign on both sides. Mirror the right
         // side so static camber thrust is symmetric and cancels on a straight, flat road.
@@ -320,8 +345,9 @@ impl TireSystem {
         }
         state.limit_spin = utilization >= 0.995 || state.effective_slip_ratio.abs() > 0.20;
 
-        state.rolling_resistance =
-            rolling_resistance_force(v_forward, fz) * effective_rolling_resistance.max(0.0);
+        state.rolling_resistance = rolling_resistance_force(v_forward, fz)
+            * effective_rolling_resistance.max(0.0)
+            * modifiers.rolling_resistance_scale;
         if v_forward.abs() > 0.05 {
             fx -= state.rolling_resistance * v_forward.signum();
         }
@@ -338,7 +364,8 @@ impl TireSystem {
         let trail = tuning.pneumatic_trail_m
             * alpha_decay
             * kappa_decay
-            * state.contact_fraction.sqrt();
+            * state.contact_fraction.sqrt()
+            * modifiers.pneumatic_trail_scale;
         state.aligning_torque = finite_or_zero(-state.lateral_force * trail);
 
         // Torque exerted BY THE ROAD ON THE WHEEL; positive traction opposes positive spin.

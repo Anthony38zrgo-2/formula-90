@@ -3,12 +3,12 @@
 #include "formula90s/sim/f90_sim_bridge.h"
 #include "formula90s/vehicle/formula90_physics.h" // F90RuntimeConfig (mirror of FfiRuntimeConfig)
 
-// C-API mirror of the orchestrator facade (`game/core/src/ffi.rs`, `formula90_core.dll`).
-// ABI v2: `f90_core_step` carries the FULL aids mask (`aids_mask`, 8 bits) instead of
-// a `toggle_tc` pulse, and `f90_core_apply_runtime_config` was added.
-// Field order and types MUST match the Rust `#[repr(C)]` structs (they are locked by
-// `ffi.rs::layout_tests` and the static_asserts in `f90_core.hpp`). Reuses
-// `CSimTriRaycastSample` (mirrored in f90_sim_bridge.h) as the sample input, so the
+// C-API mirror of the orchestrator facade (game/crates/formula90-core/src/ffi.rs,
+// formula90_core.dll). ABI v3: F90CoreFrameOut gained the tire pressure + thermal
+// arrays (six [f64; 4], WheelIndex order FL/FR/RL/RR) appended after the audio tail.
+// Field order and types MUST match the Rust #[repr(C)] structs (they are locked by
+// ffi.rs::layout_tests and the static_asserts in f90_core.hpp). Reuses
+// CSimTriRaycastSample (mirrored in f90_sim_bridge.h) as the sample input, so the
 // whole facade uses ONE family of structs.
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +44,13 @@ typedef struct F90CoreFrameOut {
     float last_engine_gain;
     float weights[5];
     float pitches[5];
+    // tire pressure + thermal (per wheel, WheelIndex order FL/FR/RL/RR)
+    double tire_pressure_kpa[4];
+    double tire_tread_inner_c[4];
+    double tire_tread_center_c[4];
+    double tire_tread_outer_c[4];
+    double tire_carcass_c[4];
+    double tire_gas_c[4];
 } F90CoreFrameOut;
 
 typedef uint32_t (*FnCoreAbiVersion)(void);

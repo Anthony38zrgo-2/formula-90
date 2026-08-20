@@ -3,6 +3,8 @@ extends Control
 
 const AID_NOTIFICATION_SECONDS := 2.4
 const AID_FADE_SECONDS := 0.35
+const TireStatusPanelScript := preload("res://scripts/hud/tire_status_panel.gd")
+const TIRE_PANEL_GAP := 10.0
 
 @export var vehicle_path: NodePath
 @export var aids_path: NodePath
@@ -14,10 +16,13 @@ const AID_FADE_SECONDS := 0.35
 var _vehicle: Node
 var _aids: Node
 var _notification_remaining := 0.0
+var tire_status_panel: TireStatusPanel
 
 func bind_runtime(vehicle: Node, aids: Node) -> void:
 	_vehicle = vehicle
 	_aids = aids
+	if tire_status_panel != null:
+		tire_status_panel.bind_vehicle(_vehicle)
 	_connect_aid_notifications()
 
 
@@ -25,10 +30,12 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	aid_message.visible = false
 	_resolve_runtime_nodes()
+	_ensure_tire_status_panel()
 
 
 func _process(delta: float) -> void:
 	_resolve_runtime_nodes()
+	_position_tire_status_panel()
 	_update_speed_gauge()
 	_update_aid_notification(delta)
 
@@ -49,6 +56,47 @@ func _connect_aid_notifications() -> void:
 	var callback := Callable(self, "_on_aid_toggled")
 	if not _aids.is_connected(&"aid_toggled", callback):
 		_aids.connect(&"aid_toggled", callback)
+
+
+func _ensure_tire_status_panel() -> void:
+	if tire_status_panel != null:
+		return
+	tire_status_panel = TireStatusPanelScript.new()
+	tire_status_panel.name = "TireStatusPanel"
+	add_child(tire_status_panel)
+	tire_status_panel.bind_vehicle(_vehicle)
+	_position_tire_status_panel()
+
+
+func _position_tire_status_panel() -> void:
+	if tire_status_panel == null:
+		return
+
+	# RetroHud is the primary reference because it owns the tachometer/readout region.
+	var reference: Control = retro_hud as Control
+	if reference == null:
+		reference = speed_gauge as Control
+	if reference == null:
+		return
+
+	var ref_rect := reference.get_global_rect()
+	var panel_size := tire_status_panel.size
+	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
+		panel_size = tire_status_panel.custom_minimum_size
+
+	var target_global := Vector2(
+		ref_rect.position.x + (ref_rect.size.x - panel_size.x) * 0.5,
+		ref_rect.position.y - panel_size.y - TIRE_PANEL_GAP
+	)
+
+	tire_status_panel.global_position = target_global
+
+	# Keep within viewport.
+	var viewport_size := get_viewport_rect().size
+	var clamped := tire_status_panel.global_position
+	clamped.x = clampf(clamped.x, 6.0, maxf(6.0, viewport_size.x - panel_size.x - 6.0))
+	clamped.y = clampf(clamped.y, 6.0, maxf(6.0, viewport_size.y - panel_size.y - 6.0))
+	tire_status_panel.global_position = clamped
 
 
 func _update_speed_gauge() -> void:

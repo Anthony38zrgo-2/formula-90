@@ -71,9 +71,20 @@ typedef struct F90TelemetryOutput {
     bool tc_active;
     double tc_cut_ratio;
     uint32_t aids_enabled_mask;
+
+    // Tire pressure + thermal telemetry (per wheel, WheelIndex order FL/FR/RL/RR).
+    // Gauge kPa and 5-node temperatures in degrees C. MUST mirror
+    // vehicle_physics_engine::FfiTelemetryOutput exactly (locked by
+    // ffi.rs::layout_tests::ffi_telemetry_output_layout_locked).
+    double fl_pressure_kpa, fr_pressure_kpa, rl_pressure_kpa, rr_pressure_kpa;
+    double fl_tread_inner_c, fr_tread_inner_c, rl_tread_inner_c, rr_tread_inner_c;
+    double fl_tread_center_c, fr_tread_center_c, rl_tread_center_c, rr_tread_center_c;
+    double fl_tread_outer_c, fr_tread_outer_c, rl_tread_outer_c, rr_tread_outer_c;
+    double fl_carcass_c, fr_carcass_c, rl_carcass_c, rr_carcass_c;
+    double fl_gas_c, fr_gas_c, rl_gas_c, rr_gas_c;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 7
+#define F1_94_PHYSICS_ABI_VERSION 8
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;

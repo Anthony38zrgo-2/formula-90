@@ -252,6 +252,56 @@
         "lateral_grip_assist": 0.0,
         "longitudinal_grip_ratio": 0.40
       }
+    },
+
+    "pressure": {
+      "units": "kPa_gauge",
+      "cold_kpa_gauge": {
+        "FL": 105.0,
+        "FR": 105.0,
+        "RL": 105.0,
+        "RR": 105.0
+      },
+      "reference_hot_kpa_gauge": {
+        "FL": 145.0,
+        "FR": 145.0,
+        "RL": 140.0,
+        "RR": 140.0
+      },
+      "reference_temperature_c": 25.0,
+      "atmospheric_pressure_kpa": 101.325
+    },
+
+    "thermal": {
+      "initial_temperature_c": 25.0,
+      "ambient_fallback_c": 25.0,
+      "track_fallback_c": 35.0,
+      "optimal_tread_temperature_c": 95.0,
+      "optimal_tread_window_c": 12.0,
+      "overheat_tread_temperature_c": 120.0,
+      "optimal_carcass_temperature_c": 80.0,
+      "tread_zone_heat_capacity_j_k": 4200.0,
+      "carcass_heat_capacity_j_k": 11000.0,
+      "gas_heat_capacity_j_k": 1600.0,
+      "tread_to_carcass_w_k": 45.0,
+      "carcass_to_gas_w_k": 20.0,
+      "tread_to_air_w_k": 25.0,
+      "carcass_to_air_w_k": 12.0,
+      "road_conductance_w_k": 55.0,
+      "lateral_tread_conductance_w_k": 18.0,
+      "slip_heat_efficiency": 0.88,
+      "carcass_hysteresis_efficiency": 0.75,
+      "pressure_stiffness_exponent": 0.72,
+      "pressure_damping_exponent": -0.22,
+      "pressure_max_deflection_exponent": -0.55,
+      "pressure_patch_exponent": -0.32,
+      "pressure_relaxation_exponent": -0.18,
+      "pressure_rr_exponent": -0.35,
+      "pressure_force_stiffness_exponent": 0.12,
+      "pressure_trail_exponent": -0.16,
+      "volume_deflection_gain": 0.04,
+      "minimum_pressure_kpa_gauge": 55.0,
+      "maximum_pressure_kpa_gauge": 260.0
     }
   },
 

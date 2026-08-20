@@ -1,3 +1,4 @@
+use crate::tire_thermals::{TirePressureConfig, TireThermalConfig};
 use crate::types::{SurfaceType, Vec3, WheelIndex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -94,6 +95,10 @@ pub struct VehicleConfig {
     pub rear_airborne_decay: f64,
     pub front_brake_bias: f64,
     pub max_brake_torque: f64,
+
+    // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
+    pub tire_pressure: TirePressureConfig,
+    pub tire_thermal: TireThermalConfig,
 
     // ABS
     pub enable_abs: bool,
@@ -495,6 +500,10 @@ impl VehicleConfig {
             front_brake_bias: 0.57,
             max_brake_torque: 2800.0,
 
+            // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
+            tire_pressure: TirePressureConfig::default(),
+            tire_thermal: TireThermalConfig::default(),
+
             // ABS
             enable_abs: false,
             abs_pulse_time: 0.03,
@@ -655,6 +664,10 @@ impl VehicleConfig {
             rear_airborne_decay: 2.0,
             front_brake_bias: 0.58,
             max_brake_torque: 2800.0,
+
+            // Tire pressure + thermal (legacy Jordan uses canonical defaults)
+            tire_pressure: TirePressureConfig::default(),
+            tire_thermal: TireThermalConfig::default(),
 
             // ABS
             enable_abs: false,
@@ -1166,6 +1179,12 @@ struct JsonTires {
     airborne_spin_decay_torque: f64,
     #[serde(default)]
     surfaces: HashMap<String, JsonSurfaceEntry>,
+    /// Optional pressure section (gauge kPa per wheel). Absent -> canonical defaults.
+    #[serde(default)]
+    pressure: Option<JsonTirePressure>,
+    /// Optional thermal section (5-node thermal model tuning). Absent -> canonical defaults.
+    #[serde(default)]
+    thermal: Option<JsonTireThermal>,
 }
 impl Default for JsonTires {
     fn default() -> Self {
@@ -1173,12 +1192,195 @@ impl Default for JsonTires {
             front: JsonTireAxle::default(), rear: JsonTireAxle::default(),
             contact_patch: default_contact_patch(), braking_grip_multiplier: default_braking_grip(),
             airborne_spin_decay_torque: default_airborne_decay(), surfaces: HashMap::new(),
+            pressure: None, thermal: None,
         }
     }
 }
 fn default_contact_patch() -> f64 { 0.21 }
 fn default_braking_grip() -> f64 { 1.08 }
 fn default_airborne_decay() -> f64 { 2.0 }
+
+// ── Tire pressure + thermal (schema extension) ─────────────────────────────────
+// These JSON sections are parsed explicitly (deny_unknown_fields stays active on
+// JsonTires and every nested struct). Optional fields mean "keep the canonical
+// module default"; per-wheel maps FL/FR/RL/RR override only the listed wheels.
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonTirePressure {
+    #[serde(default)]
+    units: Option<String>,
+    /// Gauge kPa at the cold setup temperature, keys FL/FR/RL/RR.
+    #[serde(default)]
+    cold_kpa_gauge: Option<HashMap<String, f64>>,
+    /// Mechanical reference pressure near normal hot running, keys FL/FR/RL/RR.
+    #[serde(default)]
+    reference_hot_kpa_gauge: Option<HashMap<String, f64>>,
+    #[serde(default)]
+    reference_temperature_c: Option<f64>,
+    #[serde(default)]
+    atmospheric_pressure_kpa: Option<f64>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonTireThermal {
+    #[serde(default)] initial_temperature_c: Option<f64>,
+    #[serde(default)] ambient_fallback_c: Option<f64>,
+    #[serde(default)] track_fallback_c: Option<f64>,
+    #[serde(default)] optimal_tread_temperature_c: Option<f64>,
+    #[serde(default)] optimal_tread_window_c: Option<f64>,
+    #[serde(default)] overheat_tread_temperature_c: Option<f64>,
+    #[serde(default)] optimal_carcass_temperature_c: Option<f64>,
+    #[serde(default)] tread_zone_heat_capacity_j_k: Option<f64>,
+    #[serde(default)] carcass_heat_capacity_j_k: Option<f64>,
+    #[serde(default)] gas_heat_capacity_j_k: Option<f64>,
+    #[serde(default)] tread_to_carcass_w_k: Option<f64>,
+    #[serde(default)] carcass_to_gas_w_k: Option<f64>,
+    #[serde(default)] tread_to_air_w_k: Option<f64>,
+    #[serde(default)] carcass_to_air_w_k: Option<f64>,
+    #[serde(default)] road_conductance_w_k: Option<f64>,
+    #[serde(default)] lateral_tread_conductance_w_k: Option<f64>,
+    #[serde(default)] slip_heat_efficiency: Option<f64>,
+    #[serde(default)] carcass_hysteresis_efficiency: Option<f64>,
+    #[serde(default)] pressure_stiffness_exponent: Option<f64>,
+    #[serde(default)] pressure_damping_exponent: Option<f64>,
+    #[serde(default)] pressure_max_deflection_exponent: Option<f64>,
+    #[serde(default)] pressure_patch_exponent: Option<f64>,
+    #[serde(default)] pressure_relaxation_exponent: Option<f64>,
+    #[serde(default)] pressure_rr_exponent: Option<f64>,
+    #[serde(default)] pressure_force_stiffness_exponent: Option<f64>,
+    #[serde(default)] pressure_trail_exponent: Option<f64>,
+    #[serde(default)] volume_deflection_gain: Option<f64>,
+    #[serde(default)] minimum_pressure_kpa_gauge: Option<f64>,
+    #[serde(default)] maximum_pressure_kpa_gauge: Option<f64>,
+}
+
+impl JsonTireThermal {
+    fn from_config(c: &TireThermalConfig) -> Self {
+        Self {
+            initial_temperature_c: Some(c.initial_temperature_c),
+            ambient_fallback_c: Some(c.ambient_fallback_c),
+            track_fallback_c: Some(c.track_fallback_c),
+            optimal_tread_temperature_c: Some(c.optimal_tread_temperature_c),
+            optimal_tread_window_c: Some(c.optimal_tread_window_c),
+            overheat_tread_temperature_c: Some(c.overheat_tread_temperature_c),
+            optimal_carcass_temperature_c: Some(c.optimal_carcass_temperature_c),
+            tread_zone_heat_capacity_j_k: Some(c.tread_zone_heat_capacity_j_k),
+            carcass_heat_capacity_j_k: Some(c.carcass_heat_capacity_j_k),
+            gas_heat_capacity_j_k: Some(c.gas_heat_capacity_j_k),
+            tread_to_carcass_w_k: Some(c.tread_to_carcass_w_k),
+            carcass_to_gas_w_k: Some(c.carcass_to_gas_w_k),
+            tread_to_air_w_k: Some(c.tread_to_air_w_k),
+            carcass_to_air_w_k: Some(c.carcass_to_air_w_k),
+            road_conductance_w_k: Some(c.road_conductance_w_k),
+            lateral_tread_conductance_w_k: Some(c.lateral_tread_conductance_w_k),
+            slip_heat_efficiency: Some(c.slip_heat_efficiency),
+            carcass_hysteresis_efficiency: Some(c.carcass_hysteresis_efficiency),
+            pressure_stiffness_exponent: Some(c.pressure_stiffness_exponent),
+            pressure_damping_exponent: Some(c.pressure_damping_exponent),
+            pressure_max_deflection_exponent: Some(c.pressure_max_deflection_exponent),
+            pressure_patch_exponent: Some(c.pressure_patch_exponent),
+            pressure_relaxation_exponent: Some(c.pressure_relaxation_exponent),
+            pressure_rr_exponent: Some(c.pressure_rr_exponent),
+            pressure_force_stiffness_exponent: Some(c.pressure_force_stiffness_exponent),
+            pressure_trail_exponent: Some(c.pressure_trail_exponent),
+            volume_deflection_gain: Some(c.volume_deflection_gain),
+            minimum_pressure_kpa_gauge: Some(c.minimum_pressure_kpa_gauge),
+            maximum_pressure_kpa_gauge: Some(c.maximum_pressure_kpa_gauge),
+        }
+    }
+}
+
+fn tire_pressure_from_json(j: &Option<JsonTirePressure>) -> TirePressureConfig {
+    let mut cfg = TirePressureConfig::default();
+    if let Some(p) = j {
+        if let Some(map) = &p.cold_kpa_gauge {
+            for (name, v) in map {
+                if let Some(w) = wheel_index_from_name(name) {
+                    cfg.cold_kpa_gauge[w as usize] = *v;
+                }
+            }
+        }
+        if let Some(map) = &p.reference_hot_kpa_gauge {
+            for (name, v) in map {
+                if let Some(w) = wheel_index_from_name(name) {
+                    cfg.reference_hot_kpa_gauge[w as usize] = *v;
+                }
+            }
+        }
+        if let Some(v) = p.reference_temperature_c {
+            cfg.reference_temperature_c = v;
+        }
+        if let Some(v) = p.atmospheric_pressure_kpa {
+            cfg.atmospheric_pressure_kpa = v;
+        }
+    }
+    cfg
+}
+
+fn tire_thermal_from_json(j: &Option<JsonTireThermal>) -> TireThermalConfig {
+    let mut c = TireThermalConfig::default();
+    if let Some(t) = j {
+        if let Some(v) = t.initial_temperature_c { c.initial_temperature_c = v; }
+        if let Some(v) = t.ambient_fallback_c { c.ambient_fallback_c = v; }
+        if let Some(v) = t.track_fallback_c { c.track_fallback_c = v; }
+        if let Some(v) = t.optimal_tread_temperature_c { c.optimal_tread_temperature_c = v; }
+        if let Some(v) = t.optimal_tread_window_c { c.optimal_tread_window_c = v; }
+        if let Some(v) = t.overheat_tread_temperature_c { c.overheat_tread_temperature_c = v; }
+        if let Some(v) = t.optimal_carcass_temperature_c { c.optimal_carcass_temperature_c = v; }
+        if let Some(v) = t.tread_zone_heat_capacity_j_k { c.tread_zone_heat_capacity_j_k = v; }
+        if let Some(v) = t.carcass_heat_capacity_j_k { c.carcass_heat_capacity_j_k = v; }
+        if let Some(v) = t.gas_heat_capacity_j_k { c.gas_heat_capacity_j_k = v; }
+        if let Some(v) = t.tread_to_carcass_w_k { c.tread_to_carcass_w_k = v; }
+        if let Some(v) = t.carcass_to_gas_w_k { c.carcass_to_gas_w_k = v; }
+        if let Some(v) = t.tread_to_air_w_k { c.tread_to_air_w_k = v; }
+        if let Some(v) = t.carcass_to_air_w_k { c.carcass_to_air_w_k = v; }
+        if let Some(v) = t.road_conductance_w_k { c.road_conductance_w_k = v; }
+        if let Some(v) = t.lateral_tread_conductance_w_k { c.lateral_tread_conductance_w_k = v; }
+        if let Some(v) = t.slip_heat_efficiency { c.slip_heat_efficiency = v; }
+        if let Some(v) = t.carcass_hysteresis_efficiency { c.carcass_hysteresis_efficiency = v; }
+        if let Some(v) = t.pressure_stiffness_exponent { c.pressure_stiffness_exponent = v; }
+        if let Some(v) = t.pressure_damping_exponent { c.pressure_damping_exponent = v; }
+        if let Some(v) = t.pressure_max_deflection_exponent { c.pressure_max_deflection_exponent = v; }
+        if let Some(v) = t.pressure_patch_exponent { c.pressure_patch_exponent = v; }
+        if let Some(v) = t.pressure_relaxation_exponent { c.pressure_relaxation_exponent = v; }
+        if let Some(v) = t.pressure_rr_exponent { c.pressure_rr_exponent = v; }
+        if let Some(v) = t.pressure_force_stiffness_exponent { c.pressure_force_stiffness_exponent = v; }
+        if let Some(v) = t.pressure_trail_exponent { c.pressure_trail_exponent = v; }
+        if let Some(v) = t.volume_deflection_gain { c.volume_deflection_gain = v; }
+        if let Some(v) = t.minimum_pressure_kpa_gauge { c.minimum_pressure_kpa_gauge = v; }
+        if let Some(v) = t.maximum_pressure_kpa_gauge { c.maximum_pressure_kpa_gauge = v; }
+    }
+    c
+}
+
+fn wheel_index_from_name(name: &str) -> Option<WheelIndex> {
+    match name {
+        "FL" => Some(WheelIndex::FrontLeft),
+        "FR" => Some(WheelIndex::FrontRight),
+        "RL" => Some(WheelIndex::RearLeft),
+        "RR" => Some(WheelIndex::RearRight),
+        _ => None,
+    }
+}
+
+fn wheel_name(w: WheelIndex) -> &'static str {
+    match w {
+        WheelIndex::FrontLeft => "FL",
+        WheelIndex::FrontRight => "FR",
+        WheelIndex::RearLeft => "RL",
+        WheelIndex::RearRight => "RR",
+    }
+}
+
+fn wheel_name_map(values: [f64; 4]) -> HashMap<String, f64> {
+    let mut m = HashMap::new();
+    for w in WheelIndex::ALL {
+        m.insert(wheel_name(w).to_string(), values[w as usize]);
+    }
+    m
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -1524,6 +1726,35 @@ impl JsonVehicleSpec {
         if self.tires.front.radius <= 0.0 || self.tires.rear.radius <= 0.0 {
             return Err("Tire radii must be positive".to_string());
         }
+        if let Some(p) = &self.tires.pressure {
+            for (name, v) in p
+                .cold_kpa_gauge
+                .iter()
+                .flatten()
+                .chain(p.reference_hot_kpa_gauge.iter().flatten())
+            {
+                if !v.is_finite() || *v <= 0.0 {
+                    return Err(format!("Tire pressure {name} must be positive and finite"));
+                }
+            }
+            if let Some(t) = p.reference_temperature_c {
+                if !t.is_finite() || !(-50.0..150.0).contains(&t) {
+                    return Err("reference_temperature_c out of range".to_string());
+                }
+            }
+            if let Some(v) = p.atmospheric_pressure_kpa {
+                if !v.is_finite() || v <= 0.0 {
+                    return Err("atmospheric_pressure_kpa must be positive and finite".to_string());
+                }
+            }
+        }
+        if let Some(t) = &self.tires.thermal {
+            let min_p = t.minimum_pressure_kpa_gauge.unwrap_or(55.0);
+            let max_p = t.maximum_pressure_kpa_gauge.unwrap_or(260.0);
+            if min_p >= max_p {
+                return Err("minimum_pressure_kpa_gauge must be below maximum_pressure_kpa_gauge".to_string());
+            }
+        }
         if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
             return Err("Spring lengths must be positive".to_string());
         }
@@ -1618,6 +1849,8 @@ impl JsonVehicleSpec {
             rear_braking_grip: self.tires.rear.braking_grip_multiplier.unwrap_or(self.tires.braking_grip_multiplier),
             front_airborne_decay: self.tires.front.airborne_spin_decay_torque.unwrap_or(self.tires.airborne_spin_decay_torque),
             rear_airborne_decay: self.tires.rear.airborne_spin_decay_torque.unwrap_or(self.tires.airborne_spin_decay_torque),
+            tire_pressure: tire_pressure_from_json(&self.tires.pressure),
+            tire_thermal: tire_thermal_from_json(&self.tires.thermal),
             front_brake_bias: self.brakes.front_brake_bias,
             max_brake_torque: self.brakes.max_brake_torque,
             enable_abs: self.brakes.enable_abs,
@@ -1817,6 +2050,14 @@ impl JsonVehicleSpec {
                 braking_grip_multiplier: cfg.braking_grip_multiplier,
                 airborne_spin_decay_torque: cfg.front_airborne_decay,
                 surfaces,
+                pressure: Some(JsonTirePressure {
+                    units: Some("kPa_gauge".to_string()),
+                    cold_kpa_gauge: Some(wheel_name_map(cfg.tire_pressure.cold_kpa_gauge)),
+                    reference_hot_kpa_gauge: Some(wheel_name_map(cfg.tire_pressure.reference_hot_kpa_gauge)),
+                    reference_temperature_c: Some(cfg.tire_pressure.reference_temperature_c),
+                    atmospheric_pressure_kpa: Some(cfg.tire_pressure.atmospheric_pressure_kpa),
+                }),
+                thermal: Some(JsonTireThermal::from_config(&cfg.tire_thermal)),
             },
             brakes: JsonBrakes {
                 front_brake_bias: cfg.front_brake_bias,
@@ -2046,5 +2287,118 @@ mod json_tests {
         assert!((loaded.handbrake_torque_fraction - 0.4).abs() < 1e-9);
         assert!((loaded.diff_slip_transition_threshold_rad_s - 0.5).abs() < 1e-9);
         assert!((loaded.variable_drag_ratio - 0.10).abs() < 1e-9);
+    }
+
+    #[test]
+    fn tire_pressure_thermal_json_round_trip() {
+        let json = r#"{
+            "schema_version": 2,
+            "tires": {
+                "pressure": {
+                    "units": "kPa_gauge",
+                    "cold_kpa_gauge": {"FL": 111.0, "FR": 112.0, "RL": 106.0, "RR": 107.0},
+                    "reference_hot_kpa_gauge": {"FL": 146.0, "FR": 146.0, "RL": 141.0, "RR": 141.0},
+                    "reference_temperature_c": 26.0,
+                    "atmospheric_pressure_kpa": 102.0
+                },
+                "thermal": {
+                    "optimal_tread_temperature_c": 96.0,
+                    "overheat_tread_temperature_c": 122.0,
+                    "pressure_stiffness_exponent": 0.75
+                }
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).unwrap();
+        assert!((cfg.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.cold_kpa_gauge[1] - 112.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.cold_kpa_gauge[2] - 106.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.cold_kpa_gauge[3] - 107.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.reference_temperature_c - 26.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.atmospheric_pressure_kpa - 102.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.optimal_tread_temperature_c - 96.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.overheat_tread_temperature_c - 122.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.pressure_stiffness_exponent - 0.75).abs() < 1e-9);
+        // Fields not present keep module defaults.
+        assert!((cfg.tire_thermal.initial_temperature_c - 25.0).abs() < 1e-9);
+        // Round trip through JSON preserves the parsed values.
+        let json_val = cfg.to_json_value();
+        let loaded = VehicleConfig::from_json_str(&serde_json::to_string(&json_val).unwrap()).unwrap();
+        assert!((loaded.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
+        assert!((loaded.tire_thermal.pressure_stiffness_exponent - 0.75).abs() < 1e-9);
+    }
+
+    #[test]
+    fn fl_only_pressure_change_does_not_alter_other_wheels() {
+        let json = r#"{
+            "schema_version": 2,
+            "tires": {
+                "pressure": {
+                    "units": "kPa_gauge",
+                    "cold_kpa_gauge": {"FL": 120.0},
+                    "reference_hot_kpa_gauge": {"FL": 150.0}
+                }
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).unwrap();
+        assert!((cfg.tire_pressure.cold_kpa_gauge[0] - 120.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.cold_kpa_gauge[1] - 110.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.cold_kpa_gauge[2] - 105.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.cold_kpa_gauge[3] - 105.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.reference_hot_kpa_gauge[0] - 150.0).abs() < 1e-9);
+        assert!((cfg.tire_pressure.reference_hot_kpa_gauge[1] - 145.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn missing_thermal_section_uses_stable_defaults() {
+        let json = r#"{"schema_version": 2}"#;
+        let cfg = VehicleConfig::from_json_str(json).unwrap();
+        assert_eq!(cfg.tire_pressure.cold_kpa_gauge, [110.0, 110.0, 105.0, 105.0]);
+        assert!((cfg.tire_thermal.optimal_tread_temperature_c - 95.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.pressure_stiffness_exponent - 0.72).abs() < 1e-9);
+    }
+
+    #[test]
+    fn deny_unknown_fields_rejects_tire_pressure_typo() {
+        let json_typo = r#"{
+            "schema_version": 2,
+            "tires": {
+                "pressure": {
+                    "cold_kpa_gaugee": {"FL": 110.0}
+                }
+            }
+        }"#;
+        assert!(VehicleConfig::from_json_str(json_typo).is_err());
+
+        let json_thermal_typo = r#"{
+            "schema_version": 2,
+            "tires": {
+                "thermal": {
+                    "optimal_tread_temperaturec": 95.0
+                }
+            }
+        }"#;
+        assert!(VehicleConfig::from_json_str(json_thermal_typo).is_err());
+    }
+
+    #[test]
+    fn tire_pressure_validation_rejects_invalid_values() {
+        let json_bad = r#"{
+            "schema_version": 2,
+            "tires": {
+                "pressure": {
+                    "cold_kpa_gauge": {"FL": -5.0}
+                }
+            }
+        }"#;
+        assert!(VehicleConfig::from_json_str(json_bad).is_err());
+    }
+
+    #[test]
+    fn canonical_uses_f1_94_pressure_and_thermal_defaults() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        assert_eq!(cfg.tire_pressure.cold_kpa_gauge, [110.0, 110.0, 105.0, 105.0]);
+        assert_eq!(cfg.tire_pressure.reference_hot_kpa_gauge, [145.0, 145.0, 140.0, 140.0]);
+        assert!((cfg.tire_pressure.reference_temperature_c - 25.0).abs() < 1e-9);
+        assert!((cfg.tire_thermal.initial_temperature_c - 25.0).abs() < 1e-9);
     }
 }

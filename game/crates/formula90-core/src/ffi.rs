@@ -18,9 +18,9 @@ use vehicle_physics_engine::{
 use crate::frame::AudioReadouts;
 use crate::{CoreConfig, CoreFacade};
 
-/// ABI v2: `f90_core_step` now carries the FULL aids mask (`aids_mask: u32`) instead
-/// of a single `toggle_tc` pulse, and `f90_core_apply_runtime_config` was added.
-pub const F90_CORE_ABI_VERSION: u32 = 2;
+/// ABI v3: F90CoreFrameOut gained the tire pressure + thermal arrays
+/// (six [f64; 4], WheelIndex order FL/FR/RL/RR) appended after the audio tail.
+pub const F90_CORE_ABI_VERSION: u32 = 3;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -78,6 +78,13 @@ pub struct F90CoreFrameOut {
     pub last_engine_gain: f32,
     pub weights: [f32; 5],
     pub pitches: [f32; 5],
+    // tire pressure + thermal (per wheel, WheelIndex order FL/FR/RL/RR)
+    pub tire_pressure_kpa: [f64; 4],
+    pub tire_tread_inner_c: [f64; 4],
+    pub tire_tread_center_c: [f64; 4],
+    pub tire_tread_outer_c: [f64; 4],
+    pub tire_carcass_c: [f64; 4],
+    pub tire_gas_c: [f64; 4],
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -357,6 +364,12 @@ pub unsafe extern "C" fn f90_core_step(
                 last_engine_gain: a.last_engine_gain,
                 weights: a.weights,
                 pitches: a.pitches,
+                tire_pressure_kpa: frame.tire_pressure_kpa,
+                tire_tread_inner_c: frame.tire_tread_inner_c,
+                tire_tread_center_c: frame.tire_tread_center_c,
+                tire_tread_outer_c: frame.tire_tread_outer_c,
+                tire_carcass_c: frame.tire_carcass_c,
+                tire_gas_c: frame.tire_gas_c,
             };
         }
     }
@@ -510,7 +523,14 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, last_speed_kph), 288);
         assert_eq!(offset_of!(F90CoreFrameOut, weights), 304);
         assert_eq!(offset_of!(F90CoreFrameOut, pitches), 324);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 344);
+        // Tire pressure/thermal block appended after the audio tail (six [f64; 4]).
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_pressure_kpa), 344);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_tread_inner_c), 376);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_tread_center_c), 408);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_tread_outer_c), 440);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_carcass_c), 472);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_gas_c), 504);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 536);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

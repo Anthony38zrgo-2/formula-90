@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/ray_cast3d.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 #include <godot_cpp/variant/quaternion.hpp>
 #include <godot_cpp/variant/transform3d.hpp>
@@ -134,6 +135,14 @@ private:
 	double wheel_drive_torques_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_normal_forces_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_angles_[4] = { 0.0, 0.0, 0.0, 0.0 };
+
+	// Tire pressure + thermal telemetry (WheelIndex order FL/FR/RL/RR).
+	double tire_pressure_kpa_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_tread_inner_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_tread_center_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_tread_outer_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_carcass_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_gas_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 
 	bool load_rust_dll();
 	void unload_rust_dll();
@@ -355,6 +364,17 @@ public:
 	void apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel);
 	// Forward core telemetry into the vehicle's mirrors + wheel visuals.
 	void apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt);
+	// Copy the six per-wheel tire arrays from the facade frame or the legacy
+	// physics telemetry block (WheelIndex order FL/FR/RL/RR).
+	void set_core_tire_telemetry(
+		const double pressure_kpa[4],
+		const double tread_inner_c[4],
+		const double tread_center_c[4],
+		const double tread_outer_c[4],
+		const double carcass_c[4],
+		const double gas_c[4]);
+	// Tire pressure + thermal snapshot for the HUD (no raw C structs leak out).
+	godot::Dictionary get_tire_state_snapshot() const;
 };
 
 } // namespace godot

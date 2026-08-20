@@ -196,6 +196,7 @@ void F194RustVehicle::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("reset_vehicle", "pos", "yaw_rad"), &F194RustVehicle::reset_vehicle);
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
+	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 }
 
 F194RustVehicle::F194RustVehicle() {
@@ -680,6 +681,31 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	wheel_normal_forces_[1] = telem.fr_normal_force;
 	wheel_normal_forces_[2] = telem.rl_normal_force;
 	wheel_normal_forces_[3] = telem.rr_normal_force;
+
+	tire_pressure_kpa_[0] = telem.fl_pressure_kpa;
+	tire_pressure_kpa_[1] = telem.fr_pressure_kpa;
+	tire_pressure_kpa_[2] = telem.rl_pressure_kpa;
+	tire_pressure_kpa_[3] = telem.rr_pressure_kpa;
+	tire_tread_inner_c_[0] = telem.fl_tread_inner_c;
+	tire_tread_inner_c_[1] = telem.fr_tread_inner_c;
+	tire_tread_inner_c_[2] = telem.rl_tread_inner_c;
+	tire_tread_inner_c_[3] = telem.rr_tread_inner_c;
+	tire_tread_center_c_[0] = telem.fl_tread_center_c;
+	tire_tread_center_c_[1] = telem.fr_tread_center_c;
+	tire_tread_center_c_[2] = telem.rl_tread_center_c;
+	tire_tread_center_c_[3] = telem.rr_tread_center_c;
+	tire_tread_outer_c_[0] = telem.fl_tread_outer_c;
+	tire_tread_outer_c_[1] = telem.fr_tread_outer_c;
+	tire_tread_outer_c_[2] = telem.rl_tread_outer_c;
+	tire_tread_outer_c_[3] = telem.rr_tread_outer_c;
+	tire_carcass_c_[0] = telem.fl_carcass_c;
+	tire_carcass_c_[1] = telem.fr_carcass_c;
+	tire_carcass_c_[2] = telem.rl_carcass_c;
+	tire_carcass_c_[3] = telem.rr_carcass_c;
+	tire_gas_c_[0] = telem.fl_gas_c;
+	tire_gas_c_[1] = telem.fr_gas_c;
+	tire_gas_c_[2] = telem.rl_gas_c;
+	tire_gas_c_[3] = telem.rr_gas_c;
 
 	// 7. Visual Animation of Wheel Meshes
 	update_wheel_visuals(dt);
@@ -1254,6 +1280,39 @@ void F194RustVehicle::collect_core_samples(CSimTriRaycastSample p_samples[4]) {
 void F194RustVehicle::apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel) {
 	set_linear_velocity(p_lin_vel);
 	set_angular_velocity(p_ang_vel);
+}
+
+void F194RustVehicle::set_core_tire_telemetry(
+	const double pressure_kpa[4],
+	const double tread_inner_c[4],
+	const double tread_center_c[4],
+	const double tread_outer_c[4],
+	const double carcass_c[4],
+	const double gas_c[4]) {
+	for (int i = 0; i < 4; ++i) {
+		tire_pressure_kpa_[i] = pressure_kpa[i];
+		tire_tread_inner_c_[i] = tread_inner_c[i];
+		tire_tread_center_c_[i] = tread_center_c[i];
+		tire_tread_outer_c_[i] = tread_outer_c[i];
+		tire_carcass_c_[i] = carcass_c[i];
+		tire_gas_c_[i] = gas_c[i];
+	}
+}
+
+Dictionary F194RustVehicle::get_tire_state_snapshot() const {
+	static const char *WHEELS[4] = { "FL", "FR", "RL", "RR" };
+	Dictionary out;
+	for (int i = 0; i < 4; ++i) {
+		Dictionary wheel;
+		wheel["pressure_kpa"] = tire_pressure_kpa_[i];
+		wheel["tread_inner_c"] = tire_tread_inner_c_[i];
+		wheel["tread_center_c"] = tire_tread_center_c_[i];
+		wheel["tread_outer_c"] = tire_tread_outer_c_[i];
+		wheel["carcass_c"] = tire_carcass_c_[i];
+		wheel["gas_c"] = tire_gas_c_[i];
+		out[String(WHEELS[i])] = wheel;
+	}
+	return out;
 }
 
 void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt) {

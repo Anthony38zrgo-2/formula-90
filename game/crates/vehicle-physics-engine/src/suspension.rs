@@ -4,6 +4,7 @@
 // virtual contact patch and integrates a 1-DOF unsprung wheel between the road/tire
 // carcass and the chassis suspension. This removes the old direct raycast->damper
 // impulse path while preserving the existing FFI shape.
+use crate::tire_thermals::TireMechanicalModifiers;
 use crate::types::{RaycastHit, SurfaceType, TriRaycastSample, Vec3, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
 use crate::wheel_mechanics::{
@@ -45,6 +46,9 @@ pub struct WheelSuspensionState {
     /// Fraction of the 1:2:1 tricast footprint currently touching [0, 1].
     #[serde(default)]
     pub contact_fraction: f64,
+    /// Per-ray support state in Inner / Center / Outer order (tricast thermal zones).
+    #[serde(default)]
+    pub ray_grounded: [bool; 3],
     /// Individual geometric compression targets from Inner/Center/Outer rays.
     #[serde(default)]
     pub ray_compressions_m: [f64; 3],
@@ -106,6 +110,7 @@ impl WheelSuspensionState {
             ),
             dynamic_camber: camber(config, wheel),
             contact_fraction: 0.0,
+            ray_grounded: [false; 3],
             ray_compressions_m: [0.0; 3],
             road_compression_m: compression,
             previous_road_compression_m: compression,
@@ -140,7 +145,23 @@ impl SuspensionSystem {
 
     /// Convert the three transverse raycasts into a contact-patch target, then integrate
     /// the virtual unsprung wheel/tire against the chassis suspension.
+    ///
+    /// Compatibility entry point: uses neutral (identity) pressure/thermal modifiers.
     pub fn step(&mut self, config: &VehicleConfig, samples: &[TriRaycastSample; 4], dt: f64) {
+        self.step_with_modifiers(config, &[TireMechanicalModifiers::identity(); 4], samples, dt);
+    }
+
+    /// Same as Self::step but applies pressure/thermal mechanical modifiers to the
+    /// radial tire carcass (stiffness, damping, max deflection). Modifiers are computed
+    /// BEFORE forces (current tick pressure); thermal state updates afterwards so the
+    /// new pressure only affects the next tick.
+    pub fn step_with_modifiers(
+        &mut self,
+        config: &VehicleConfig,
+        modifiers: &[TireMechanicalModifiers; 4],
+        samples: &[TriRaycastSample; 4],
+        dt: f64,
+    ) {
         let dt = dt.max(1e-5);
         for i in 0..4 {
             self.sample_contact(config, WheelIndex::ALL[i], &samples[i], dt);
@@ -153,10 +174,10 @@ impl SuspensionSystem {
             self.wheels[2].suspension_compression_m,
             self.wheels[3].suspension_compression_m,
         ];
-        self.solve_force(config, WheelIndex::FrontLeft, compressions_m[1], dt);
-        self.solve_force(config, WheelIndex::FrontRight, compressions_m[0], dt);
-        self.solve_force(config, WheelIndex::RearLeft, compressions_m[3], dt);
-        self.solve_force(config, WheelIndex::RearRight, compressions_m[2], dt);
+        self.solve_force(config, WheelIndex::FrontLeft, modifiers[0], compressions_m[1], dt);
+        self.solve_force(config, WheelIndex::FrontRight, modifiers[1], compressions_m[0], dt);
+        self.solve_force(config, WheelIndex::RearLeft, modifiers[2], compressions_m[3], dt);
+        self.solve_force(config, WheelIndex::RearRight, modifiers[3], compressions_m[2], dt);
     }
 
     fn sample_contact(
@@ -176,6 +197,11 @@ impl SuspensionSystem {
             ray_compression(&sample.inner, max_ray_length),
             ray_compression(&sample.center, max_ray_length),
             ray_compression(&sample.outer, max_ray_length),
+        ];
+        state.ray_grounded = [
+            sample.inner.is_colliding,
+            sample.center.is_colliding,
+            sample.outer.is_colliding,
         ];
         state.contact_fraction = tricast_contact_fraction(sample);
 
@@ -255,6 +281,7 @@ impl SuspensionSystem {
         &mut self,
         config: &VehicleConfig,
         wheel: WheelIndex,
+        modifiers: TireMechanicalModifiers,
         opposite_compression_m: f64,
         dt: f64,
     ) {
@@ -308,8 +335,18 @@ impl SuspensionSystem {
             }
             let suspension_force = spring_force + damping_force + arb_force + bottom_force;
 
+            // Pressure-aware carcass: inflation pressure scales the radial
+            // stiffness/damping and the compliant deflection envelope. The hard
+            // carcass engages at the EFFECTIVE (scaled) max deflection, so low
+            // pressure reaches the hard stop sooner and high pressure sharpens the
+            // vertical response. Ray geometry itself is never changed by pressure.
+            let stiffness_scale = modifiers.vertical_stiffness_scale.max(0.05);
+            let damping_scale = modifiers.vertical_damping_scale.max(0.05);
+            let effective_max_deflection =
+                tuning.max_tire_deflection_m * modifiers.max_deflection_scale.max(0.05);
+
             let raw_deflection = (state.road_compression_m - x).max(0.0);
-            tire_deflection = raw_deflection.min(tuning.max_tire_deflection_m);
+            tire_deflection = raw_deflection.min(effective_max_deflection);
             tire_deflection_velocity = if raw_deflection > 0.0 {
                 state.road_velocity_m_s - v
             } else {
@@ -323,12 +360,12 @@ impl SuspensionSystem {
             } else {
                 0.0
             };
-            let kt = tuning.tire_vertical_stiffness_n_m * coverage;
-            let ct = tuning.tire_vertical_damping_n_s_m * coverage;
+            let kt = tuning.tire_vertical_stiffness_n_m * stiffness_scale * coverage;
+            let ct = tuning.tire_vertical_damping_n_s_m * damping_scale * coverage;
             tire_force = if coverage > 0.0 && raw_deflection > 0.0 {
                 let compliant = kt * tire_deflection + ct * tire_deflection_velocity;
-                let hard_carcass = if raw_deflection > tuning.max_tire_deflection_m {
-                    let over = raw_deflection - tuning.max_tire_deflection_m;
+                let hard_carcass = if raw_deflection > effective_max_deflection {
+                    let over = raw_deflection - effective_max_deflection;
                     kt * over * 8.0
                 } else {
                     0.0
@@ -617,8 +654,8 @@ mod tests {
         let mut sus = SuspensionSystem::new(&cfg);
         sus.wheels[WheelIndex::FrontLeft as usize].suspension_compression_m = 0.050;
         sus.wheels[WheelIndex::FrontRight as usize].suspension_compression_m = 0.090;
-        sus.solve_force(&cfg, WheelIndex::FrontRight, 0.050, 1.0 / 120.0);
-        sus.solve_force(&cfg, WheelIndex::FrontLeft, 0.090, 1.0 / 120.0);
+        sus.solve_force(&cfg, WheelIndex::FrontRight, TireMechanicalModifiers::identity(), 0.050, 1.0 / 120.0);
+        sus.solve_force(&cfg, WheelIndex::FrontLeft, TireMechanicalModifiers::identity(), 0.090, 1.0 / 120.0);
         let right = sus.wheels[WheelIndex::FrontRight as usize].antiroll_force;
         let left = sus.wheels[WheelIndex::FrontLeft as usize].antiroll_force;
         assert!(right > 0.0, "outer/more-compressed wheel must gain ARB load: {right}");

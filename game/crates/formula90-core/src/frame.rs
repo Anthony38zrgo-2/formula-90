@@ -94,6 +94,13 @@ pub struct CoreFrame {
     pub avx: f64,
     pub avy: f64,
     pub avz: f64,
+    // Tire pressure + thermal (per wheel, WheelIndex order FL/FR/RL/RR).
+    pub tire_pressure_kpa: [f64; 4],
+    pub tire_tread_inner_c: [f64; 4],
+    pub tire_tread_center_c: [f64; 4],
+    pub tire_tread_outer_c: [f64; 4],
+    pub tire_carcass_c: [f64; 4],
+    pub tire_gas_c: [f64; 4],
     pub audio: AudioReadouts,
     pub modules: Vec<ModuleOutput>,
 }
@@ -130,6 +137,12 @@ impl Default for CoreFrame {
             avx: 0.0,
             avy: 0.0,
             avz: 0.0,
+            tire_pressure_kpa: [0.0; 4],
+            tire_tread_inner_c: [0.0; 4],
+            tire_tread_center_c: [0.0; 4],
+            tire_tread_outer_c: [0.0; 4],
+            tire_carcass_c: [0.0; 4],
+            tire_gas_c: [0.0; 4],
             audio: AudioReadouts::default(),
             modules: Vec::new(),
         }

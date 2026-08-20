@@ -57,10 +57,14 @@ fn test_straight_acceleration_from_rest() {
 
     assert!(time_to_100.is_some(), "Vehicle must reach 100 km/h");
     let t100 = time_to_100.unwrap();
-    // F1-94 0-100 km/h reference is ~2.8s, within 5% is ~2.2 - 3.8s range
+    // F1-94 0-100 km/h reference is ~2.8s. With the pressure/thermal model active
+    // the tires START COLD (25 C, below the ~89 C operating window), so peak grip
+    // ramps in during the run and the cold-start time extends (ACCEPTANCE #10:
+    // cold tire = less grip than operating window). Pre-heated tires return to the
+    // canonical window (see preheated_tires_reach_canonical_acceleration).
     assert!(
-        t100 >= 2.0 && t100 <= 3.8,
-        "0-100 km/h time was {}s, expected within canonical range",
+        t100 >= 2.0 && t100 <= 6.5,
+        "0-100 km/h time was {}s, expected within canonical range (cold-start thermal grip)",
         t100
     );
     assert!(
@@ -69,6 +73,38 @@ fn test_straight_acceleration_from_rest() {
         max_lateral_dev
     );
     assert!(reached_400m, "Vehicle must reach 400m");
+}
+
+#[test]
+fn preheated_tires_reach_canonical_acceleration() {
+    // With all four tires already inside the operating window, the pressure/thermal
+    // grip correction is ~1.0 and the car returns to the pre-thermal 0-100 range.
+    let cfg = VehicleConfig::f1_94_canonical();
+    let spawn = default_spawn_height(&cfg);
+    let mut sim = VehicleSimulator::new(cfg.clone(), Vec3::new(0.0, spawn, 0.0), 0.0);
+    for w in WheelIndex::ALL {
+        let i = w as usize;
+        sim.state.tire_thermal.wheels[i].tread_inner_c = 95.0;
+        sim.state.tire_thermal.wheels[i].tread_center_c = 95.0;
+        sim.state.tire_thermal.wheels[i].tread_outer_c = 95.0;
+        sim.state.tire_thermal.wheels[i].carcass_c = 80.0;
+    }
+    let dt = 1.0 / 120.0;
+    let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+    let mut time_to_100: Option<f64> = None;
+    for tick in 0..1800 {
+        let samples = make_flat_samples(&sim);
+        let telem = sim.step(&input, &samples, dt);
+        if telem.speed_kmh >= 100.0 && time_to_100.is_none() {
+            time_to_100 = Some(tick as f64 * dt);
+        }
+    }
+    let t100 = time_to_100.expect("preheated vehicle must reach 100 km/h");
+    assert!(
+        t100 >= 2.0 && t100 <= 3.8,
+        "preheated 0-100 km/h time was {}s, expected canonical window",
+        t100
+    );
 }
 
 #[test]

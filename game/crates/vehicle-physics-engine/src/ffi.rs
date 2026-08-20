@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 7;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 8;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -404,6 +404,33 @@ pub struct FfiTelemetryOutput {
     pub tc_active: bool,
     pub tc_cut_ratio: f64,
     pub aids_enabled_mask: u32,
+
+    // Tire pressure + thermal telemetry (per wheel, WheelIndex order FL/FR/RL/RR).
+    // Gauge kPa and 5-node temperatures in degrees C.
+    pub fl_pressure_kpa: f64,
+    pub fr_pressure_kpa: f64,
+    pub rl_pressure_kpa: f64,
+    pub rr_pressure_kpa: f64,
+    pub fl_tread_inner_c: f64,
+    pub fr_tread_inner_c: f64,
+    pub rl_tread_inner_c: f64,
+    pub rr_tread_inner_c: f64,
+    pub fl_tread_center_c: f64,
+    pub fr_tread_center_c: f64,
+    pub rl_tread_center_c: f64,
+    pub rr_tread_center_c: f64,
+    pub fl_tread_outer_c: f64,
+    pub fr_tread_outer_c: f64,
+    pub rl_tread_outer_c: f64,
+    pub rr_tread_outer_c: f64,
+    pub fl_carcass_c: f64,
+    pub fr_carcass_c: f64,
+    pub rl_carcass_c: f64,
+    pub rr_carcass_c: f64,
+    pub fl_gas_c: f64,
+    pub fr_gas_c: f64,
+    pub rl_gas_c: f64,
+    pub rr_gas_c: f64,
 }
 
 #[no_mangle]
@@ -675,6 +702,53 @@ fn write_telemetry(sim: &VehicleSimulator, telem: &crate::telemetry::TelemetryFr
             tc_active: sim.state.powertrain.tc_active,
             tc_cut_ratio: sim.state.powertrain.tc_cut_ratio,
             aids_enabled_mask: sim.aids.to_bits(),
+            fl_pressure_kpa: sim.state.tire_thermal.wheels[0].pressure_kpa_gauge,
+            fr_pressure_kpa: sim.state.tire_thermal.wheels[1].pressure_kpa_gauge,
+            rl_pressure_kpa: sim.state.tire_thermal.wheels[2].pressure_kpa_gauge,
+            rr_pressure_kpa: sim.state.tire_thermal.wheels[3].pressure_kpa_gauge,
+            fl_tread_inner_c: sim.state.tire_thermal.wheels[0].tread_inner_c,
+            fr_tread_inner_c: sim.state.tire_thermal.wheels[1].tread_inner_c,
+            rl_tread_inner_c: sim.state.tire_thermal.wheels[2].tread_inner_c,
+            rr_tread_inner_c: sim.state.tire_thermal.wheels[3].tread_inner_c,
+            fl_tread_center_c: sim.state.tire_thermal.wheels[0].tread_center_c,
+            fr_tread_center_c: sim.state.tire_thermal.wheels[1].tread_center_c,
+            rl_tread_center_c: sim.state.tire_thermal.wheels[2].tread_center_c,
+            rr_tread_center_c: sim.state.tire_thermal.wheels[3].tread_center_c,
+            fl_tread_outer_c: sim.state.tire_thermal.wheels[0].tread_outer_c,
+            fr_tread_outer_c: sim.state.tire_thermal.wheels[1].tread_outer_c,
+            rl_tread_outer_c: sim.state.tire_thermal.wheels[2].tread_outer_c,
+            rr_tread_outer_c: sim.state.tire_thermal.wheels[3].tread_outer_c,
+            fl_carcass_c: sim.state.tire_thermal.wheels[0].carcass_c,
+            fr_carcass_c: sim.state.tire_thermal.wheels[1].carcass_c,
+            rl_carcass_c: sim.state.tire_thermal.wheels[2].carcass_c,
+            rr_carcass_c: sim.state.tire_thermal.wheels[3].carcass_c,
+            fl_gas_c: sim.state.tire_thermal.wheels[0].gas_c,
+            fr_gas_c: sim.state.tire_thermal.wheels[1].gas_c,
+            rl_gas_c: sim.state.tire_thermal.wheels[2].gas_c,
+            rr_gas_c: sim.state.tire_thermal.wheels[3].gas_c,
         };
+    }
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::*;
+    use std::mem::{offset_of, size_of};
+
+    /// Locks the FfiTelemetryOutput padding so the C mirror in
+    /// native/include/formula90s/vehicle/formula90_physics.h can never drift
+    /// silently. If you change the struct, update BOTH this test and the C header.
+    #[test]
+    fn ffi_telemetry_output_layout_locked() {
+        assert_eq!(offset_of!(FfiTelemetryOutput, sim_time), 0);
+        assert_eq!(offset_of!(FfiTelemetryOutput, gear), 24);
+        assert_eq!(offset_of!(FfiTelemetryOutput, vert_g), 192);
+        assert_eq!(offset_of!(FfiTelemetryOutput, steer_angle_rad), 296);
+        assert_eq!(offset_of!(FfiTelemetryOutput, rr_normal_force), 368);
+        assert_eq!(offset_of!(FfiTelemetryOutput, aids_enabled_mask), 392);
+        // Tire pressure/thermal block is appended after the aids diagnostics.
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_pressure_kpa), 400);
+        assert_eq!(offset_of!(FfiTelemetryOutput, rr_gas_c), 584);
+        assert_eq!(size_of::<FfiTelemetryOutput>(), 592);
     }
 }

@@ -190,6 +190,13 @@ func get_telemetry_snapshot() -> Dictionary:
 	var comp = get_wheel_compressions()
 	var spins = get_wheel_spins()
 	var slips = get_wheel_slips()
+	var tire_state: Dictionary = {}
+
+	if has_method(&"get_tire_state_snapshot"):
+		var value: Variant = call(&"get_tire_state_snapshot")
+		if value is Dictionary:
+			tire_state = value
+
 	return {
 		"speed_ms": speed,
 		"speed_kmh": speed_kmh,
@@ -204,6 +211,7 @@ func get_telemetry_snapshot() -> Dictionary:
 		"wheel_compressions": comp,
 		"wheel_spins": spins,
 		"wheel_slips": slips,
+		"tires": tire_state,
 		"position": global_position,
 		"linear_velocity": linear_velocity,
 		"angular_velocity": angular_velocity

@@ -45,7 +45,13 @@ static_assert(offsetof(F90CoreFrameOut, last_slip) == 296);
 static_assert(offsetof(F90CoreFrameOut, last_engine_gain) == 300);
 static_assert(offsetof(F90CoreFrameOut, weights) == 304);
 static_assert(offsetof(F90CoreFrameOut, pitches) == 324);
-static_assert(sizeof(F90CoreFrameOut) == 344);
+static_assert(offsetof(F90CoreFrameOut, tire_pressure_kpa) == 344);
+static_assert(offsetof(F90CoreFrameOut, tire_tread_inner_c) == 376);
+static_assert(offsetof(F90CoreFrameOut, tire_tread_center_c) == 408);
+static_assert(offsetof(F90CoreFrameOut, tire_tread_outer_c) == 440);
+static_assert(offsetof(F90CoreFrameOut, tire_carcass_c) == 472);
+static_assert(offsetof(F90CoreFrameOut, tire_gas_c) == 504);
+static_assert(sizeof(F90CoreFrameOut) == 536);
 
 /// The orchestrator node. Loads the SINGLE `formula90_core.dll` facade (one
 /// handshake / one ABI version), owns the sim + audio, drives the vehicle inside
@@ -58,7 +64,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 2;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 3;
 
 	F90Core();
 	~F90Core() override;
