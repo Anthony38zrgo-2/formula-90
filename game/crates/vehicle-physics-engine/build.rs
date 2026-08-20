@@ -15,5 +15,8 @@ fn main() {
         .unwrap_or_else(|| "unknown".to_string());
 
     println!("cargo:rustc-env=GIT_HASH={}", git_hash);
+    // Re-run the build script whenever crate sources change so the embedded
+    // GIT_HASH reflects the commit the DLL was actually built from.
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src");
 }

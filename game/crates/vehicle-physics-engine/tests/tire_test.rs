@@ -92,7 +92,10 @@ fn airborne_spin_decay_uses_configured_per_axle_torque() {
 }
 
 #[test]
-fn contact_patch_is_per_axle() {
+fn contact_patch_scales_relaxation_and_converges_in_steady_state() {
+    // New transient model: a longer contact patch increases the relaxation length,
+    // so force builds more slowly (first tick), while both patches converge to the
+    // same saturated force in steady state. The patch no longer multiplies peak grip.
     let fr = SurfaceType::Road;
     let base = VehicleConfig::f1_94_canonical();
     let ef = *base.surface_friction.get(&fr).unwrap();
@@ -108,16 +111,39 @@ fn contact_patch_is_per_axle() {
     let mut t_low = TireSystem::new(&low);
     let vel = Vec3::new(2.0, 0.0, -20.0);
     let dt = 1.0 / 120.0;
+    let wheel = WheelIndex::FrontLeft;
 
-    t_high.process_wheel_forces(&high, WheelIndex::FrontLeft, 1500.0, fr, ef, es, er, false, vel, dt);
-    t_low.process_wheel_forces(&low, WheelIndex::FrontLeft, 1500.0, fr, ef, es, er, false, vel, dt);
+    let mut first_high = 0.0;
+    let mut first_low = 0.0;
+    for tick in 0..60 {
+        t_high.process_wheel_forces(&high, wheel, 1500.0, fr, ef, es, er, false, vel, dt);
+        t_low.process_wheel_forces(&low, wheel, 1500.0, fr, ef, es, er, false, vel, dt);
+        if tick == 0 {
+            first_high = t_high.wheels[wheel as usize].lateral_force.abs()
+                + t_high.wheels[wheel as usize].longitudinal_force.abs();
+            first_low = t_low.wheels[wheel as usize].lateral_force.abs()
+                + t_low.wheels[wheel as usize].longitudinal_force.abs();
+        }
+    }
+    let h = t_high.wheels[wheel as usize].lateral_force.abs()
+        + t_high.wheels[wheel as usize].longitudinal_force.abs();
+    let l = t_low.wheels[wheel as usize].lateral_force.abs()
+        + t_low.wheels[wheel as usize].longitudinal_force.abs();
 
-    let h = t_high.wheels[WheelIndex::FrontLeft as usize].lateral_force.abs()
-        + t_high.wheels[WheelIndex::FrontLeft as usize].longitudinal_force.abs();
-    let l = t_low.wheels[WheelIndex::FrontLeft as usize].lateral_force.abs()
-        + t_low.wheels[WheelIndex::FrontLeft as usize].longitudinal_force.abs();
+    assert!(
+        first_low > first_high,
+        "Smaller patch must build force faster on the first tick (low={}, high={})",
+        first_low,
+        first_high
+    );
     assert!(h.is_finite() && l.is_finite());
-    assert!(h > l && (h - l) > 1.0, "front contact_patch=0.60 must produce more grip than 0.10 ({} vs {})", h, l);
+    assert!(h > 500.0, "Steady-state grip must remain substantial (h={})", h);
+    assert!(
+        (h - l).abs() < h * 0.05,
+        "Both patches must converge to the same steady-state force (high={}, low={})",
+        h,
+        l
+    );
 }
 
 #[test]

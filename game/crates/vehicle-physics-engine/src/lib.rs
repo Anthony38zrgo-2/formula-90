@@ -5,6 +5,7 @@ pub mod simulation;
 pub mod suspension;
 pub mod telemetry;
 pub mod tire;
+pub mod wheel_mechanics;
 pub mod types;
 pub mod vehicle_config;
 
@@ -15,5 +16,6 @@ pub use simulation::*;
 pub use suspension::*;
 pub use telemetry::*;
 pub use tire::*;
+pub use wheel_mechanics::*;
 pub use types::*;
 pub use vehicle_config::*;

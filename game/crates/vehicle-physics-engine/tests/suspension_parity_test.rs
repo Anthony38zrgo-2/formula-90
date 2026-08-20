@@ -58,7 +58,11 @@ fn flat_static_surface_600_ticks_stability() {
 }
 
 #[test]
-fn upward_step_increases_compression_continuously() {
+fn upward_step_increases_compression_and_settles_at_geometric_target() {
+    // New mechanical semantics: compression_mm is the integrated wheel-center DOF,
+    // no longer raw ray penetration. A 10 mm upward step raises the filtered road
+    // target; the suspension converges to it within a short settling window instead
+    // of jumping in one tick (a small part of the step is absorbed by the carcass).
     let cfg = VehicleConfig::f1_94_canonical();
     let mut suspension = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
@@ -66,24 +70,48 @@ fn upward_step_increases_compression_continuously() {
     let base_dist = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
     let initial_samples = [make_sample(base_dist); 4];
 
-    // Settle for 20 frames
-    for _ in 0..20 {
+    // Settle for 120 frames
+    for _ in 0..120 {
         suspension.step(&cfg, &initial_samples, dt);
     }
     let comp_before = suspension.wheels[0].compression_mm;
 
     // Small upward bump of 10mm (distance reduces by 0.010m)
     let bump_samples = [make_sample(base_dist - 0.010); 4];
-    suspension.step(&cfg, &bump_samples, dt);
-    let comp_after = suspension.wheels[0].compression_mm;
-
+    let mut comp_first = 0.0;
+    let mut comp_last = 0.0;
+    for tick in 0..60 {
+        suspension.step(&cfg, &bump_samples, dt);
+        let c = suspension.wheels[0].compression_mm;
+        if tick == 0 {
+            comp_first = c;
+        }
+        comp_last = c;
+        assert!(
+            c > comp_before,
+            "Compression must increase on upward step: tick={}, c={}, before={}",
+            tick,
+            c,
+            comp_before
+        );
+    }
+    // The response is integrated: the first tick moves only a fraction of the step.
     assert!(
-        comp_after > comp_before,
-        "Compression must increase on upward step: before={}, after={}",
-        comp_before,
-        comp_after
+        comp_first - comp_before < 10.0,
+        "First-tick response must be a fraction of the geometric step (delta={})",
+        comp_first - comp_before
     );
-    assert!((comp_after - comp_before - 10.0).abs() < 1e-3);
+    // ...and it converges to the geometric target minus the carcass share (the tire
+    // spring is much stiffer than the suspension, so 8-10 mm of the 10 mm lands in
+    // suspension travel).
+    let settled = comp_last - comp_before;
+    assert!(
+        settled > 8.0 && settled < 10.0,
+        "Compression must settle near the geometric target: before={}, after={}, delta={}",
+        comp_before,
+        comp_last,
+        settled
+    );
 }
 
 #[test]

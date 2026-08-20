@@ -17,12 +17,15 @@ func _wait_for_settle(vehicle) -> bool:
 	var yaw_rate: float = vehicle.angular_velocity.y
 	var comp = vehicle.get_wheel_compressions()
 	var failures: Array[String] = []
+	# Mechanical suspension upgrade: compression_mm is the wheel-center suspension
+	# travel, which settles at spring_length*resting_ratio (70 mm front, 70 mm rear).
+	# The ~8 mm static deflection now lives in the tire carcass (tire_deflection_m).
 	for index in [0, 1]:
 		if absf(float(comp[index]) - 70.0) > 2.0:
 			failures.append("front compression[%d]=%.3fmm, expected 70+-2mm" % [index, comp[index]])
 	for index in [2, 3]:
-		if absf(float(comp[index]) - 63.0) > 2.0:
-			failures.append("rear compression[%d]=%.3fmm, expected 63+-2mm" % [index, comp[index]])
+		if absf(float(comp[index]) - 70.0) > 2.0:
+			failures.append("rear compression[%d]=%.3fmm, expected 70+-2mm" % [index, comp[index]])
 	if absf(lateral_velocity) >= 0.02:
 		failures.append("lateral velocity=%.6fm/s, expected <0.02m/s" % lateral_velocity)
 	if absf(yaw_rate) >= 0.01:
