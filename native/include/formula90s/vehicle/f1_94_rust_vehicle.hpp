@@ -194,6 +194,7 @@ private:
 	double underfloor_bottoming_torque_[3] = {};
 	double underfloor_dissipated_energy_j_ = 0.0;
 	double underfloor_rigid_contact_blend_ = 0.0;
+	double aero_telemetry_[18] = {};
 
 	bool load_rust_dll();
 	void unload_rust_dll();

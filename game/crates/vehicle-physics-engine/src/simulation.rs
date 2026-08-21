@@ -1,4 +1,4 @@
-use crate::aero::AeroForces;
+use crate::aero::{AeroEnvironment, AeroForces};
 use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
 use crate::suspension::SuspensionSystem;
@@ -185,7 +185,7 @@ impl VehicleSimulator {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> TelemetryFrame {
-        let (forces, _) = self.solve_forces(input, samples, dt);
+        let (forces, _) = self.solve_forces(input, samples, &AeroEnvironment::default(), dt);
         self.integrate_standalone(forces, dt);
         self.build_telemetry_frame()
     }
@@ -199,12 +199,25 @@ impl VehicleSimulator {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> (ForceTorqueOutput, TelemetryFrame) {
+        self.solve_external_with_aero(body, input, samples, &AeroEnvironment::default(), dt)
+    }
+
+    /// External solve with the five-point underfloor environment supplied by the
+    /// host. Keeping this separate preserves the legacy ABI and standalone tools.
+    pub fn solve_external_with_aero(
+        &mut self,
+        body: BodyKinematics,
+        input: &VehicleInput,
+        samples: &[TriRaycastSample; 4],
+        aero_environment: &AeroEnvironment,
+        dt: f64,
+    ) -> (ForceTorqueOutput, TelemetryFrame) {
         self.state.transform = body.transform;
         self.state.orientation = body.orientation.normalized();
         self.state.transform.basis = self.state.orientation.to_mat3();
         self.state.linear_velocity = body.linear_velocity;
         self.state.angular_velocity = body.angular_velocity;
-        let (forces, telemetry) = self.solve_forces(input, samples, dt);
+        let (forces, telemetry) = self.solve_forces(input, samples, aero_environment, dt);
         (forces, telemetry)
     }
 
@@ -212,6 +225,7 @@ impl VehicleSimulator {
         &mut self,
         input: &VehicleInput,
         samples: &[TriRaycastSample; 4],
+        aero_environment: &AeroEnvironment,
         dt: f64,
     ) -> (ForceTorqueOutput, TelemetryFrame) {
         let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
@@ -245,7 +259,9 @@ impl VehicleSimulator {
             gear_request: input.gear_request,
         };
 
-        st.aero.step(cfg, local_velocity, dt);
+        let pitch_rad = (-basis.z.y).clamp(-1.0, 1.0).asin();
+        st.aero
+            .step_with_environment(cfg, local_velocity, aero_environment, pitch_rad, dt);
         let vehicle_speed_ms = st.linear_velocity.length();
         let brake_duct_drag_n = st.brake_thermal.total_duct_drag_force_n(
             &cfg.brake_thermal,

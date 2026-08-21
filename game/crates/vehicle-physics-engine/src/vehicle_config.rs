@@ -1,3 +1,4 @@
+use crate::aero::AeroModelConfig;
 use crate::brake_thermals::{
     BrakeAxleThermalConfig, BrakeCoolingProfile, BrakeDuctAxleConfig, BrakeRotorMaterial,
     BrakeRotorVentilation, BrakeThermalConfig, BrakeThermalModelKind,
@@ -136,6 +137,10 @@ pub struct VehicleConfig {
     pub coefficient_of_drag: f64,
     pub frontal_area: f64,
     pub coefficient_of_downforce: f64,
+    /// Element-based aerodynamic model. Legacy total/split fields above and below
+    /// remain serialized for backward compatibility, but no longer drive forces.
+    #[serde(default)]
+    pub aero_model: AeroModelConfig,
     pub aero_split_front: f64,
     pub aero_split_diffuser: f64,
     pub aero_split_rear: f64,
@@ -546,6 +551,7 @@ impl VehicleConfig {
             coefficient_of_drag: 0.78,
             frontal_area: 1.25,
             coefficient_of_downforce: 1.995,
+            aero_model: AeroModelConfig::default(),
             aero_split_front: 0.15,
             aero_split_diffuser: 0.60,
             aero_split_rear: 0.25,
@@ -712,6 +718,7 @@ impl VehicleConfig {
             coefficient_of_drag: 0.75,
             frontal_area: 1.20,
             coefficient_of_downforce: 1.995,
+            aero_model: AeroModelConfig::default(),
             aero_split_front: 0.20,
             aero_split_diffuser: 0.60,
             aero_split_rear: 0.20,
@@ -1946,23 +1953,51 @@ impl JsonBrakeDuctAxle {
 }
 
 fn overlay_brake_axle(c: &mut BrakeAxleThermalConfig, j: &JsonBrakeAxleThermal) {
-    if let Some(v) = j.model { c.model = v; }
-    if let Some(v) = j.rotor_material { c.rotor_material = v; }
-    if let Some(v) = j.rotor_mass_kg { c.rotor_mass_kg = v; }
-    if let Some(v) = j.rotor_outer_diameter_m { c.rotor_outer_diameter_m = v; }
-    if let Some(v) = j.rotor_inner_diameter_m { c.rotor_inner_diameter_m = v; }
-    if let Some(v) = j.rotor_ventilation { c.rotor_ventilation = v; }
-    if let Some(v) = j.cooling_profile { c.cooling_profile = v; }
-    if let Some(v) = j.installation_airflow_scale { c.installation_airflow_scale = v; }
-    if let Some(v) = j.surface_bulk_response_scale { c.surface_bulk_response_scale = v; }
-    if let Some(v) = j.thermal_mass_scale { c.thermal_mass_scale = v; }
+    if let Some(v) = j.model {
+        c.model = v;
+    }
+    if let Some(v) = j.rotor_material {
+        c.rotor_material = v;
+    }
+    if let Some(v) = j.rotor_mass_kg {
+        c.rotor_mass_kg = v;
+    }
+    if let Some(v) = j.rotor_outer_diameter_m {
+        c.rotor_outer_diameter_m = v;
+    }
+    if let Some(v) = j.rotor_inner_diameter_m {
+        c.rotor_inner_diameter_m = v;
+    }
+    if let Some(v) = j.rotor_ventilation {
+        c.rotor_ventilation = v;
+    }
+    if let Some(v) = j.cooling_profile {
+        c.cooling_profile = v;
+    }
+    if let Some(v) = j.installation_airflow_scale {
+        c.installation_airflow_scale = v;
+    }
+    if let Some(v) = j.surface_bulk_response_scale {
+        c.surface_bulk_response_scale = v;
+    }
+    if let Some(v) = j.thermal_mass_scale {
+        c.thermal_mass_scale = v;
+    }
     if let Some(v) = j.disc_heat_capacity_j_k {
         c.disc_heat_capacity_j_k = v;
     }
-    if let Some(v) = j.disc_surface_heat_capacity_j_k { c.disc_surface_heat_capacity_j_k = v; }
-    if let Some(v) = j.disc_bulk_heat_capacity_j_k { c.disc_bulk_heat_capacity_j_k = v; }
-    if let Some(v) = j.disc_surface_to_bulk_w_k { c.disc_surface_to_bulk_w_k = v; }
-    if let Some(v) = j.disc_surface_base_air_w_k { c.disc_surface_base_air_w_k = v; }
+    if let Some(v) = j.disc_surface_heat_capacity_j_k {
+        c.disc_surface_heat_capacity_j_k = v;
+    }
+    if let Some(v) = j.disc_bulk_heat_capacity_j_k {
+        c.disc_bulk_heat_capacity_j_k = v;
+    }
+    if let Some(v) = j.disc_surface_to_bulk_w_k {
+        c.disc_surface_to_bulk_w_k = v;
+    }
+    if let Some(v) = j.disc_surface_base_air_w_k {
+        c.disc_surface_base_air_w_k = v;
+    }
     if let Some(v) = j.caliper_heat_capacity_j_k {
         c.caliper_heat_capacity_j_k = v;
     }
@@ -2079,6 +2114,8 @@ fn default_abs_thresh() -> f64 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct JsonAero {
+    #[serde(default)]
+    model: AeroModelConfig,
     #[serde(default = "default_cd")]
     drag_coefficient: f64,
     #[serde(default = "default_area")]
@@ -2103,6 +2140,7 @@ struct JsonAero {
 impl Default for JsonAero {
     fn default() -> Self {
         Self {
+            model: AeroModelConfig::default(),
             drag_coefficient: 0.78,
             frontal_area: 1.25,
             downforce_coefficient: 1.995,
@@ -2482,11 +2520,15 @@ fn validate_brake_axle(name: &str, c: &BrakeAxleThermalConfig) -> Result<(), Str
             ("thermal_mass_scale", c.thermal_mass_scale),
         ] {
             if !value.is_finite() || value <= 0.0 {
-                return Err(format!("brakes.thermal.{name}.{field} must be positive in scaled_two_node_v1"));
+                return Err(format!(
+                    "brakes.thermal.{name}.{field} must be positive in scaled_two_node_v1"
+                ));
             }
         }
         if c.rotor_inner_diameter_m >= c.rotor_outer_diameter_m {
-            return Err(format!("brakes.thermal.{name} inner rotor diameter must be smaller than outer diameter"));
+            return Err(format!(
+                "brakes.thermal.{name} inner rotor diameter must be smaller than outer diameter"
+            ));
         }
     }
     for (field, value) in [
@@ -2506,10 +2548,14 @@ fn validate_brake_axle(name: &str, c: &BrakeAxleThermalConfig) -> Result<(), Str
     ];
     let two_node_enabled = two_node_values.iter().any(|v| *v > 0.0);
     if two_node_enabled && two_node_values.iter().any(|v| !v.is_finite() || *v <= 0.0) {
-        return Err(format!("brakes.thermal.{name} two-node disc fields must all be positive"));
+        return Err(format!(
+            "brakes.thermal.{name} two-node disc fields must all be positive"
+        ));
     }
     if !c.disc_surface_base_air_w_k.is_finite() || c.disc_surface_base_air_w_k < 0.0 {
-        return Err(format!("brakes.thermal.{name}.disc_surface_base_air_w_k must be non-negative"));
+        return Err(format!(
+            "brakes.thermal.{name}.disc_surface_base_air_w_k must be non-negative"
+        ));
     }
     for (field, value) in [
         ("disc_to_caliper_w_k", c.disc_to_caliper_w_k),
@@ -2828,6 +2874,7 @@ impl JsonVehicleSpec {
             coefficient_of_drag: self.aero.drag_coefficient,
             frontal_area: self.aero.frontal_area,
             coefficient_of_downforce: self.aero.downforce_coefficient,
+            aero_model: self.aero.model,
             aero_split_front: self.aero.split.front,
             aero_split_diffuser: self.aero.split.diffuser,
             aero_split_rear: self.aero.split.rear,
@@ -3067,6 +3114,7 @@ impl JsonVehicleSpec {
                 thermal: Some(JsonBrakeThermal::from_config(&cfg.brake_thermal)),
             },
             aero: JsonAero {
+                model: cfg.aero_model.clone(),
                 drag_coefficient: cfg.coefficient_of_drag,
                 frontal_area: cfg.frontal_area,
                 downforce_coefficient: cfg.coefficient_of_downforce,
@@ -3374,21 +3422,14 @@ mod json_tests {
             }
         }"#;
         let cfg = VehicleConfig::from_json_str(json).unwrap();
-        assert_eq!(
-            cfg.tire_thermal.front.tread_zone_heat_capacity_j_k,
-            3000.0
-        );
-        assert_eq!(
-            cfg.tire_thermal.rear.tread_zone_heat_capacity_j_k,
-            6000.0
-        );
+        assert_eq!(cfg.tire_thermal.front.tread_zone_heat_capacity_j_k, 3000.0);
+        assert_eq!(cfg.tire_thermal.rear.tread_zone_heat_capacity_j_k, 6000.0);
         assert_eq!(cfg.tire_thermal.front.slip_heat_efficiency, 0.95);
         assert_eq!(cfg.tire_thermal.rear.slip_heat_efficiency, 0.75);
 
-        let round_trip = VehicleConfig::from_json_str(
-            &serde_json::to_string(&cfg.to_json_value()).unwrap(),
-        )
-        .unwrap();
+        let round_trip =
+            VehicleConfig::from_json_str(&serde_json::to_string(&cfg.to_json_value()).unwrap())
+                .unwrap();
         assert_eq!(
             round_trip.tire_thermal.front.tread_zone_heat_capacity_j_k,
             3000.0

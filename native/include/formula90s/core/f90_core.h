@@ -97,6 +97,24 @@ typedef struct F90CoreFrameOut {
     double underfloor_bottoming_torque[3];
     double underfloor_dissipated_energy_j;
     double underfloor_rigid_contact_blend;
+    double aero_total_downforce_n;
+    double aero_raw_downforce_n;
+    double aero_front_downforce_n;
+    double aero_floor_downforce_n;
+    double aero_rear_downforce_n;
+    double aero_drag_n;
+    double aero_front_wing_angle_deg;
+    double aero_rear_wing_angle_deg;
+    double aero_front_wing_cl;
+    double aero_rear_wing_cl;
+    double aero_floor_height_factor;
+    double aero_floor_rake_factor;
+    double aero_floor_seal_factor;
+    double aero_diffuser_expansion_deg;
+    double aero_diffuser_stall_factor;
+    double aero_global_limit_factor;
+    double aero_load_ratio;
+    double aero_balance_front;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

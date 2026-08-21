@@ -436,6 +436,58 @@
   },
 
   "aero": {
+    "model": {
+      "front_wing": {
+        "area_m2": 0.72,
+        "incidence_deg": 12.0,
+        "min_angle_deg": 4.0,
+        "max_angle_deg": 20.0,
+        "yaw_decay_exponent": 1.15,
+        "flex_coefficient": 0.0008,
+        "polar": [
+          { "angle_deg": 4.0, "cl": 0.45, "cd": 0.075 },
+          { "angle_deg": 8.0, "cl": 0.82, "cd": 0.105 },
+          { "angle_deg": 12.0, "cl": 1.12, "cd": 0.155 },
+          { "angle_deg": 16.0, "cl": 1.30, "cd": 0.230 },
+          { "angle_deg": 20.0, "cl": 1.20, "cd": 0.340 }
+        ]
+      },
+      "rear_wing": {
+        "area_m2": 0.84,
+        "incidence_deg": 16.0,
+        "min_angle_deg": 6.0,
+        "max_angle_deg": 26.0,
+        "yaw_decay_exponent": 1.05,
+        "flex_coefficient": 0.0010,
+        "polar": [
+          { "angle_deg": 6.0, "cl": 0.55, "cd": 0.090 },
+          { "angle_deg": 10.0, "cl": 0.90, "cd": 0.130 },
+          { "angle_deg": 16.0, "cl": 1.35, "cd": 0.220 },
+          { "angle_deg": 21.0, "cl": 1.52, "cd": 0.320 },
+          { "angle_deg": 26.0, "cl": 1.38, "cd": 0.470 }
+        ]
+      },
+      "underfloor": {
+        "lift_area_m2": 0.90,
+        "optimal_height_m": 0.045,
+        "choke_height_m": 0.012,
+        "high_height_m": 0.160,
+        "optimal_rake_deg": 0.5,
+        "rake_window_deg": 2.5,
+        "optimal_expansion_deg": 3.0,
+        "expansion_window_deg": 5.0,
+        "yaw_decay_exponent": 1.8,
+        "stall_attack_tau_s": 0.030,
+        "stall_recovery_tau_s": 0.160,
+        "induced_drag_ratio": 0.16
+      },
+      "limits": {
+        "profile": "f1_1994_post_safety",
+        "soft_max_load_ratio": 1.65,
+        "hard_max_load_ratio": 1.85,
+        "hard_max_downforce_n": 10800.0
+      }
+    },
     "drag_coefficient": 0.78,
     "frontal_area": 1.25,
 

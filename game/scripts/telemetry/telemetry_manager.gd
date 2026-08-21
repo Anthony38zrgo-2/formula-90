@@ -49,7 +49,11 @@ const CSV_COLUMNS := [
     "UF_FL_ClosingSpeed_mps", "UF_FR_ClosingSpeed_mps", "UF_Center_ClosingSpeed_mps", "UF_DiffuserThroat_ClosingSpeed_mps", "UF_DiffuserExit_ClosingSpeed_mps",
     "UF_FL_Force_N", "UF_FR_Force_N", "UF_Center_Force_N", "UF_DiffuserThroat_Force_N", "UF_DiffuserExit_Force_N",
     "UF_FL_BottomingPhase", "UF_FR_BottomingPhase", "UF_Center_BottomingPhase", "UF_DiffuserThroat_BottomingPhase", "UF_DiffuserExit_BottomingPhase",
-    "UF_ActiveProbeMask", "UF_TotalNormalForce_N", "UF_MaxProbeForce_N", "UF_DissipatedEnergy_J", "UF_RigidContactBlend"
+    "UF_ActiveProbeMask", "UF_TotalNormalForce_N", "UF_MaxProbeForce_N", "UF_DissipatedEnergy_J", "UF_RigidContactBlend",
+    "Aero_TotalDownforce_N", "Aero_RawDownforce_N", "Aero_FrontDownforce_N", "Aero_FloorDownforce_N", "Aero_RearDownforce_N", "Aero_Drag_N",
+    "Aero_FrontWingAngle_deg", "Aero_RearWingAngle_deg", "Aero_FrontWing_CL", "Aero_RearWing_CL",
+    "Aero_FloorHeightFactor", "Aero_FloorRakeFactor", "Aero_FloorSealFactor", "Aero_DiffuserExpansion_deg", "Aero_DiffuserStallFactor",
+    "Aero_GlobalLimitFactor", "Aero_LoadRatio", "Aero_BalanceFront"
 ]
 
 func _ready():
@@ -185,6 +189,9 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     for _field in range(48):
         thermal.append(0.0)
     var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0]
+    var aero_fields: Array = []
+    aero_fields.resize(18)
+    aero_fields.fill(0.0)
     if _is_rust:
         var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
         if snapshot_value is Dictionary:
@@ -263,6 +270,12 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                 underfloor_fields[37] = float(underfloor.get("max_probe_force_n", 0.0))
                 underfloor_fields[38] = float(underfloor.get("dissipated_energy_j", 0.0))
                 underfloor_fields[39] = float(underfloor.get("rigid_contact_blend", 0.0))
+                var aero_value: Variant = underfloor.get("aero", {})
+                if aero_value is Dictionary:
+                    var aero: Dictionary = aero_value
+                    var aero_names := ["total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n", "rear_downforce_n", "drag_n", "front_wing_angle_deg", "rear_wing_angle_deg", "front_wing_cl", "rear_wing_cl", "floor_height_factor", "floor_rake_factor", "floor_seal_factor", "diffuser_expansion_deg", "diffuser_stall_factor", "global_limit_factor", "load_ratio", "balance_front"]
+                    for i in range(aero_names.size()):
+                        aero_fields[i] = float(aero.get(aero_names[i], 0.0))
 
     var base_line := "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f" % [
         now_msec, speed_kmh, rpm, gear,
@@ -279,7 +292,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         brake_torque[2], spin_pre[2], spin_post[2], brake_power[2], brake_energy[2],
         brake_torque[3], spin_pre[3], spin_post[3], brake_power[3], brake_energy[3]
     ]
-    return base_line + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields))
+    return base_line + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
 
 func _thermal_csv_fields(values: Array) -> PackedStringArray:
     var fields := PackedStringArray()

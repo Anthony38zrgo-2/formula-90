@@ -31,8 +31,8 @@ use game_sim::snapshot::{EntityTelemetry, Snapshot};
 use game_sim::world::{yaw_from_transform, World};
 use serde::{Deserialize, Serialize};
 use vehicle_physics_engine::{
-    AidsMask, BodyKinematics, Mat3, SurfaceType, Transform3D, TriRaycastSample, Vec3,
-    VehicleConfig, VehicleInput,
+    AeroEnvironment, AidsMask, BodyKinematics, Mat3, SurfaceType, Transform3D, TriRaycastSample,
+    Vec3, VehicleConfig, VehicleInput,
 };
 
 use crate::audio::AudioModule;
@@ -276,6 +276,14 @@ impl CoreFacade {
             &self.config.underfloor_contact,
             dt,
         );
+        let aero_environment = AeroEnvironment {
+            clearance_m: self.underfloor.filtered_clearance_m,
+            valid_mask: self.underfloor.valid_mask,
+            rake_rad: self.underfloor.rake_rad,
+            roll_rad: self.underfloor.roll_rad,
+            bottoming_mask: self.underfloor.active_probe_mask,
+            contact_confidence: self.underfloor.contact_confidence,
+        };
 
         if let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) {
             // The CPU side (Godot / driving_aids) is the authority on the aids mask.
@@ -287,7 +295,9 @@ impl CoreFacade {
             ent.aids.steering_slip_assist = ent.sim.aids.steering_slip_assist;
             ent.aids.abs = ent.sim.aids.abs;
             ent.aids.stability = ent.sim.aids.stability;
-            let (forces, telem) = ent.sim.solve_external(body, input, samples, dt);
+            let (forces, telem) =
+                ent.sim
+                    .solve_external_with_aero(body, input, samples, &aero_environment, dt);
             ent.last = Some(telem);
             Self::fill_frame_from_entity(&mut frame, ent, dt);
             frame.force = [
@@ -402,6 +412,25 @@ impl CoreFacade {
         frame.avx = av.x;
         frame.avy = av.y;
         frame.avz = av.z;
+        let aero = ent.sim.state.aero;
+        frame.aero_total_downforce_n = aero.total_downforce;
+        frame.aero_raw_downforce_n = aero.raw_downforce;
+        frame.aero_front_downforce_n = aero.front_downforce;
+        frame.aero_floor_downforce_n = aero.diffuser_downforce;
+        frame.aero_rear_downforce_n = aero.rear_downforce;
+        frame.aero_drag_n = aero.drag_force;
+        frame.aero_front_wing_angle_deg = aero.front_wing_angle_deg;
+        frame.aero_rear_wing_angle_deg = aero.rear_wing_angle_deg;
+        frame.aero_front_wing_cl = aero.front_wing_cl;
+        frame.aero_rear_wing_cl = aero.rear_wing_cl;
+        frame.aero_floor_height_factor = aero.floor_height_factor;
+        frame.aero_floor_rake_factor = aero.floor_rake_factor;
+        frame.aero_floor_seal_factor = aero.floor_seal_factor;
+        frame.aero_diffuser_expansion_deg = aero.diffuser_expansion_deg;
+        frame.aero_diffuser_stall_factor = aero.diffuser_stall_factor;
+        frame.aero_global_limit_factor = aero.global_limit_factor;
+        frame.aero_load_ratio = aero.load_ratio;
+        frame.aero_balance_front = aero.balance_front;
 
         // Tire pressure + thermal state (WheelIndex order FL/FR/RL/RR).
         for (i, w) in ent.sim.state.tire_thermal.wheels.iter().enumerate() {

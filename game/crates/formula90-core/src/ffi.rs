@@ -20,7 +20,7 @@ use crate::underfloor::{UnderfloorRayHit, UnderfloorRigidContact, UnderfloorSamp
 use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
-pub const F90_CORE_ABI_VERSION: u32 = 9;
+pub const F90_CORE_ABI_VERSION: u32 = 10;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -157,6 +157,24 @@ pub struct F90CoreFrameOut {
     pub underfloor_bottoming_torque: [f64; 3],
     pub underfloor_dissipated_energy_j: f64,
     pub underfloor_rigid_contact_blend: f64,
+    pub aero_total_downforce_n: f64,
+    pub aero_raw_downforce_n: f64,
+    pub aero_front_downforce_n: f64,
+    pub aero_floor_downforce_n: f64,
+    pub aero_rear_downforce_n: f64,
+    pub aero_drag_n: f64,
+    pub aero_front_wing_angle_deg: f64,
+    pub aero_rear_wing_angle_deg: f64,
+    pub aero_front_wing_cl: f64,
+    pub aero_rear_wing_cl: f64,
+    pub aero_floor_height_factor: f64,
+    pub aero_floor_rake_factor: f64,
+    pub aero_floor_seal_factor: f64,
+    pub aero_diffuser_expansion_deg: f64,
+    pub aero_diffuser_stall_factor: f64,
+    pub aero_global_limit_factor: f64,
+    pub aero_load_ratio: f64,
+    pub aero_balance_front: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -523,6 +541,24 @@ pub unsafe extern "C" fn f90_core_step(
                 underfloor_bottoming_torque: frame.underfloor_bottoming_torque,
                 underfloor_dissipated_energy_j: frame.underfloor_dissipated_energy_j,
                 underfloor_rigid_contact_blend: frame.underfloor_rigid_contact_blend,
+                aero_total_downforce_n: frame.aero_total_downforce_n,
+                aero_raw_downforce_n: frame.aero_raw_downforce_n,
+                aero_front_downforce_n: frame.aero_front_downforce_n,
+                aero_floor_downforce_n: frame.aero_floor_downforce_n,
+                aero_rear_downforce_n: frame.aero_rear_downforce_n,
+                aero_drag_n: frame.aero_drag_n,
+                aero_front_wing_angle_deg: frame.aero_front_wing_angle_deg,
+                aero_rear_wing_angle_deg: frame.aero_rear_wing_angle_deg,
+                aero_front_wing_cl: frame.aero_front_wing_cl,
+                aero_rear_wing_cl: frame.aero_rear_wing_cl,
+                aero_floor_height_factor: frame.aero_floor_height_factor,
+                aero_floor_rake_factor: frame.aero_floor_rake_factor,
+                aero_floor_seal_factor: frame.aero_floor_seal_factor,
+                aero_diffuser_expansion_deg: frame.aero_diffuser_expansion_deg,
+                aero_diffuser_stall_factor: frame.aero_diffuser_stall_factor,
+                aero_global_limit_factor: frame.aero_global_limit_factor,
+                aero_load_ratio: frame.aero_load_ratio,
+                aero_balance_front: frame.aero_balance_front,
             };
         }
     }
@@ -731,7 +767,9 @@ mod layout_tests {
             offset_of!(F90CoreFrameOut, underfloor_rigid_contact_blend),
             1504
         );
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1512);
+        assert_eq!(offset_of!(F90CoreFrameOut, aero_total_downforce_n), 1512);
+        assert_eq!(offset_of!(F90CoreFrameOut, aero_balance_front), 1648);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1656);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

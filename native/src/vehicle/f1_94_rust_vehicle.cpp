@@ -1568,6 +1568,16 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	out["bottoming_torque_nm"] = Vector3(underfloor_bottoming_torque_[0], underfloor_bottoming_torque_[1], underfloor_bottoming_torque_[2]);
 	out["dissipated_energy_j"] = underfloor_dissipated_energy_j_;
 	out["rigid_contact_blend"] = underfloor_rigid_contact_blend_;
+	Dictionary aero;
+	static const char *AERO_NAMES[18] = {
+		"total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n",
+		"rear_downforce_n", "drag_n", "front_wing_angle_deg", "rear_wing_angle_deg",
+		"front_wing_cl", "rear_wing_cl", "floor_height_factor", "floor_rake_factor",
+		"floor_seal_factor", "diffuser_expansion_deg", "diffuser_stall_factor",
+		"global_limit_factor", "load_ratio", "balance_front"
+	};
+	for (int i = 0; i < 18; ++i) aero[String(AERO_NAMES[i])] = aero_telemetry_[i];
+	out["aero"] = aero;
 	return out;
 }
 
@@ -1598,6 +1608,18 @@ void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_fra
 	}
 	underfloor_dissipated_energy_j_ = p_frame.underfloor_dissipated_energy_j;
 	underfloor_rigid_contact_blend_ = p_frame.underfloor_rigid_contact_blend;
+	const double aero_values[18] = {
+		p_frame.aero_total_downforce_n, p_frame.aero_raw_downforce_n,
+		p_frame.aero_front_downforce_n, p_frame.aero_floor_downforce_n,
+		p_frame.aero_rear_downforce_n, p_frame.aero_drag_n,
+		p_frame.aero_front_wing_angle_deg, p_frame.aero_rear_wing_angle_deg,
+		p_frame.aero_front_wing_cl, p_frame.aero_rear_wing_cl,
+		p_frame.aero_floor_height_factor, p_frame.aero_floor_rake_factor,
+		p_frame.aero_floor_seal_factor, p_frame.aero_diffuser_expansion_deg,
+		p_frame.aero_diffuser_stall_factor, p_frame.aero_global_limit_factor,
+		p_frame.aero_load_ratio, p_frame.aero_balance_front
+	};
+	for (int i = 0; i < 18; ++i) aero_telemetry_[i] = aero_values[i];
 }
 
 void F194RustVehicle::set_core_brake_energy_telemetry(
