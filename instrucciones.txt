@@ -87,7 +87,11 @@ C) BUILD SCRIPT FIX & VALIDACIÓN DE COMPILACIÓN:
      * `vehicle_audio_engine.windows.template_debug.x86_64.dll` (+ `vehicle_audio_engine.dll`)
      * `game_sim.windows.template_debug.x86_64.dll` (+ `game_sim.dll`)
      * `vehicle_physics_engine.windows.template_debug.x86_64.dll`
-   - Tests: `cargo test --workspace` (53 tests de física + 39 de audio + 14 de facade) -> 100% PASS.
+   - Tests: `cargo test --workspace` (53 tests de física + 38 de audio + 14 de facade) -> 100% PASS.
+
+D) AJUSTE DE ALTURA DE SUSPENSIÓN (f1_94_physics.json - Punto Intermedio):
+   - Delantero: `spring_length` $0.285\text{ m}$, `resting_ratio` $0.175$ (+40 mm despeje total sobre buje), `bump_stop_multiplier` $2.6$.
+   - Trasero: `spring_length` $0.235\text{ m}$, `resting_ratio` $0.220$ (+30 mm despeje total sobre buje).
 
 ================================================================================
 3. ESTADO DEL BANCO DE AUDIO (v10_vehicle) TRAS FASE 1
@@ -95,13 +99,8 @@ C) BUILD SCRIPT FIX & VALIDACIÓN DE COMPILACIÓN:
 Samples en uso activo en tiempo real:
 - Motor continuo: `engine_idle.wav`, `engine_low.wav`, `engine_mid.wav`, `engine_high.wav`, `engine_redline.wav`
 - Cambios de marcha: `shift_up.wav`, `shift_down.wav`
-- Camas de suelo: `surf_grass.wav`, `surf_rumble.wav`, `surf_sand.wav`
-- Backfire: `int_backfire.wav` / `int_backfire_2.wav` (una variante pseudoaleatoria por lift-off > 12k RPM).
-- Fondo plano: `impact_scrape.wav` (síntesis determinista sutil, 0.22 s, pico 0.32).
-- Colisiones / Impactos: `impact_barrier.wav`, `impact_hit_1.wav`, `impact_hit_2.wav`, `impact_hit_3.wav`, `impact_hit_4.wav`.
-- Reservado, no usado: `impact_cone.wav`.
-
-- `engine_start_backfire.wav` (sample de backfire durante arranque; no conectar al over-run)
+- Backfire: `int_backfire.wav` / `int_backfire_2.wav` / `engine_backfire.wav` (activo en lift-off > 12k RPM; NUEVA remasterización aditiva: snap de detonación 0-25ms + resonadores metálicos de escape Inconel 650-2650Hz + micro-pops estocásticos 25-160ms + sheen de combustión 5.5-11.5kHz).
+- Colisiones / Impactos: `impact_barrier.wav`, `impact_cone.wav`, `impact_hit_1.wav`, `impact_hit_2.wav`, `impact_hit_3.wav`, `impact_hit_4.wav`.
 Samples pendientes de siguientes fases:
 - `engine_starter.wav` (arranque del coche)
 - `engine_limiter.wav` (limitador de pitlane)

@@ -39,7 +39,7 @@ def test_manifest_contains_required_fields():
     assert {"impact_barrier", "impact_cone", "impact_hit"} <= roles
     for e in manifest.files:
         if e.synthesis.get("recipe"):
-            assert e.synthesis["recipe"] == "flat_floor_scrape_v1"
+            assert e.synthesis["recipe"] in ("flat_floor_scrape_v1", "flat_floor_scrape_v2")
             assert "procedural synthesis" in e.provenance.lower()
         else:
             assert e.synthesis.get("source_file"), f"{e.file} missing source_file"

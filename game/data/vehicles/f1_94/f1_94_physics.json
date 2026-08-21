@@ -155,8 +155,8 @@
 
   "suspension": {
     "front": {
-      "spring_length": 0.250,
-      "resting_ratio": 0.280,
+      "spring_length": 0.285,
+      "resting_ratio": 0.175,
 
       "damping_ratio": 0.74,
       "bump_damp_multiplier": 0.92,
@@ -167,12 +167,12 @@
       "toe": -0.0037453,
       "camber": -0.0383972,
 
-      "bump_stop_multiplier": 2.1
+      "bump_stop_multiplier": 2.6
     },
 
     "rear": {
-      "spring_length": 0.200,
-      "resting_ratio": 0.350,
+      "spring_length": 0.235,
+      "resting_ratio": 0.220,
 
       "damping_ratio": 0.76,
       "bump_damp_multiplier": 0.96,

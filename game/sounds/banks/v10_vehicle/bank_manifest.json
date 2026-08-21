@@ -312,28 +312,32 @@
       }
     },
     {
-      "dc_offset": -0.0,
-      "duration_s": 0.22,
+      "dc_offset": 0.0,
+      "duration_s": 0.36,
       "file": "impact_scrape.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -25.57,
-      "peak": 0.32,
+      "loudness_dbfs": -29.59,
+      "peak": 0.28,
       "provenance": "deterministic procedural synthesis",
       "role": "impact_scrape",
-      "sha256": "700d200499a6c4d523d598c9427fc3bede602449c98cddf9c00d24fc9863ffb2",
+      "sha256": "7ca752c59fedbc626702e8a636484298b340bfa0ba71de192aa6bb2f6f33c2c7",
       "synthesis": {
+        "attack_ms": 16.0,
         "category": "impact",
         "components": [
-          "differentiated_filtered_noise",
-          "185hz_resonance",
-          "430hz_resonance"
+          "16ms_s_curve_attack",
+          "global_hpf_280hz",
+          "midhigh_1400_4800hz_friction",
+          "poisson_titanium_sparks_4500_9000hz",
+          "parametric_3600hz_softening",
+          "tanh_warmth"
         ],
-        "duration_s": 0.22,
-        "recipe": "flat_floor_scrape_v1",
-        "seed": 9001,
-        "target_peak": 0.32
+        "duration_s": 0.36,
+        "recipe": "flat_floor_scrape_v2",
+        "seed": 9002,
+        "target_peak": 0.28
       }
     },
     {
@@ -343,12 +347,18 @@
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -11.91,
+      "loudness_dbfs": -9.21,
       "peak": 0.89,
       "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
       "role": "engine_backfire",
-      "sha256": "bf740d5c6ad9196768152d2ff7970fb2b3044b212b05e8ebff8b0bd4232df6d4",
+      "sha256": "d9d686181b24d928853c613c9193188bc4c3b8bdd0fce87c1d9d8023556c724b",
       "synthesis": {
+        "additive_enhancement": [
+          "detonation_shockwave_snap",
+          "inconel_exhaust_modal_resonance",
+          "afterfire_sputter_micro_pops",
+          "combustion_sheen_air"
+        ],
         "category": "engine",
         "source_file": "ALT_int_backfire.wav",
         "source_rate": 22050,
@@ -362,12 +372,18 @@
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -14.6,
+      "loudness_dbfs": -12.26,
       "peak": 0.89,
       "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
       "role": "engine_backfire",
-      "sha256": "2dadfff327f604808b19ef0229d816e605bb412741bb5db09d4bd2d70ee8e56a",
+      "sha256": "ae4fc37179e184000d2af05a4ad2458d3fa6a0e65b37c027ba025b8bea269630",
       "synthesis": {
+        "additive_enhancement": [
+          "detonation_shockwave_snap",
+          "inconel_exhaust_modal_resonance",
+          "afterfire_sputter_micro_pops",
+          "combustion_sheen_air"
+        ],
         "category": "engine",
         "source_file": "ALT_int_backfire_2.wav",
         "source_rate": 22050,

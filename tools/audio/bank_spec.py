@@ -69,7 +69,7 @@ BANK_SPEC: tuple[SpecEntry, ...] = (
     SpecEntry("impact_barrier", "GP_barrier.wav", "impact_barrier", False, "impact"),
     SpecEntry("impact_cone", "GP_conehit.wav", "impact_cone", False, "impact"),
     SpecEntry("impact_fire", "GP_fire.WAV", "impact_fire", False, "impact"),
-    SpecEntry("impact_scrape", None, "impact_scrape", False, "impact", synthesis="flat_floor_scrape_v1"),
+    SpecEntry("impact_scrape", None, "impact_scrape", False, "impact", synthesis="flat_floor_scrape_v2"),
 )
 
 SPEC_BY_KEY: dict[str, SpecEntry] = {e.key: e for e in BANK_SPEC}

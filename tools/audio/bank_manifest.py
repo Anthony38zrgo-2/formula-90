@@ -45,8 +45,20 @@ class BankManifest:
         return (json.dumps(self.to_dict(), indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
 
     def write(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(self.to_json_bytes())
+        import time
+
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        data = self.to_json_bytes()
+        for attempt in range(5):
+            try:
+                with open(str(p), "wb") as f:
+                    f.write(data)
+                return
+            except OSError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.05)
 
     @staticmethod
     def load(path: Path) -> BankManifest:
