@@ -3,18 +3,27 @@
   "channels": 1,
   "files": [
     {
-      "dc_offset": 0.0,
+      "dc_offset": -0.0,
       "duration_s": 2.5,
       "file": "engine_high.wav",
       "loop": true,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -8.24,
+      "loudness_dbfs": -8.9,
       "peak": 0.89,
       "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
       "role": "engine_high",
-      "sha256": "1089df9b2235f1fcf96c9cb1e8709dc42d06f86cfca99668c42d9623b2665861",
+      "sha256": "2bc17418d690d8ff4b65f3166963c4f5cca99006b123f0ea590711d6e10b809d",
       "synthesis": {
+        "additive_enhancement": [
+          "hpf_140hz_chest_punch_retained",
+          "pure_sine_warm_saturation_465hz_232hz_weight_28pct",
+          "airbox_intake_linear_bypass_0pct_saturation",
+          "midrange_modal_decay_sustain_600_1600hz",
+          "rest_sound_minimal_saturation_1.02_lpf_5000hz",
+          "complete_v10_harmonics_930_1395_1860_2325_2790hz",
+          "anti_fatigue_notch_3400hz"
+        ],
         "category": "engine",
         "native_rpm": 5580.0,
         "source_file": "98_int_high_1.wav",
@@ -68,12 +77,16 @@
       "loop": true,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -12.75,
+      "loudness_dbfs": -10.58,
       "peak": 0.89,
       "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
       "role": "engine_low",
-      "sha256": "97745bcf4e85e5e55bb98eda6bbf3d72623dfea5072a610ea14627b09c54815c",
+      "sha256": "5d55124cf9553f615b8ca5d133eb319dbae4c1c4fe6e7daad44f29d063a5a4f2",
       "synthesis": {
+        "additive_enhancement": [
+          "straight_cut_gear_whine_1.2_3.2khz",
+          "tanh_warmth"
+        ],
         "category": "engine",
         "native_rpm": 7429.0,
         "source_file": "98_int_low.wav",
@@ -88,12 +101,19 @@
       "loop": true,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -11.33,
+      "loudness_dbfs": -9.57,
       "peak": 0.89,
       "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
       "role": "engine_mid",
-      "sha256": "439a41c016ff1e72d3e797823157b712058ea376adad9cef9bd99f4e2664221a",
+      "sha256": "47471b17ae2589c331f77c2510a1a908f25b3d4c49d1490cfd082c1d28448263",
       "synthesis": {
+        "additive_enhancement": [
+          "airbox_throat_growl_750_1800hz",
+          "harmonic_overtone_2x_1366hz",
+          "midrange_modal_decay_sustain_650_1800hz",
+          "smooth_lpf_3600hz",
+          "tanh_warmth"
+        ],
         "category": "engine",
         "native_rpm": 8196.0,
         "source_file": "98_int_med.wav",

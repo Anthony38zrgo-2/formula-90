@@ -45,20 +45,23 @@ class BankManifest:
         return (json.dumps(self.to_dict(), indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
 
     def write(self, path: Path) -> None:
+        import os
         import time
 
-        p = Path(path)
+        p = Path(path).resolve()
         p.parent.mkdir(parents=True, exist_ok=True)
         data = self.to_json_bytes()
-        for attempt in range(5):
+        tmp_path = p.with_suffix(".tmp")
+        for attempt in range(8):
             try:
-                with open(str(p), "wb") as f:
+                with open(str(tmp_path), "wb") as f:
                     f.write(data)
+                os.replace(str(tmp_path), str(p))
                 return
             except OSError:
-                if attempt == 4:
+                if attempt == 7:
                     raise
-                time.sleep(0.05)
+                time.sleep(0.1)
 
     @staticmethod
     def load(path: Path) -> BankManifest:

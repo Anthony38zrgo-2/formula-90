@@ -97,7 +97,9 @@ D) AJUSTE DE ALTURA DE SUSPENSIÓN (f1_94_physics.json - Punto Intermedio):
 3. ESTADO DEL BANCO DE AUDIO (v10_vehicle) TRAS FASE 1
 ================================================================================
 Samples en uso activo en tiempo real:
-- Motor continuo: `engine_idle.wav`, `engine_low.wav`, `engine_mid.wav`, `engine_high.wav`, `engine_redline.wav`
+- Motor continuo: `engine_idle.wav`, `engine_low.wav` (+ silbido engranajes rectos distribución 1.2-3.2kHz), `engine_mid.wav` (dominio medios 750-1800Hz + armónico 2x 1366Hz + decay/sustain modal colector + LPF 3.6kHz), `engine_high.wav` (saturación en 3 ramas: Airbox intake 100% lineal + decay/sustain modal en medios + resto con sat mínima 1.02 y LPF 5.0kHz + onda senoidal con sat cálida dedicada 1.25 y 28% peso 465.2/232.4Hz), `engine_redline.wav` (loops 100% seamless sin clics).
+- Camas de suelo: `surf_grass.wav`, `surf_rumble.wav`, `surf_sand.wav`
+- Fondo plano: `impact_scrape.wav` (NUEVA síntesis procedural v2 con dominio medio-agudo: HPF 280 Hz + fricción 1400-4800 Hz + chispas de titanio 4.5-9 kHz + ataque Hann 16 ms; 0.36 s, pico sutil 0.28).
 - Cambios de marcha: `shift_up.wav`, `shift_down.wav`
 - Backfire: `int_backfire.wav` / `int_backfire_2.wav` / `engine_backfire.wav` (activo en lift-off > 12k RPM; NUEVA remasterización aditiva: snap de detonación 0-25ms + resonadores metálicos de escape Inconel 650-2650Hz + micro-pops estocásticos 25-160ms + sheen de combustión 5.5-11.5kHz).
 - Colisiones / Impactos: `impact_barrier.wav`, `impact_cone.wav`, `impact_hit_1.wav`, `impact_hit_2.wav`, `impact_hit_3.wav`, `impact_hit_4.wav`.

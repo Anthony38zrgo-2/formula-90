@@ -162,13 +162,26 @@ def loop_discontinuity(samples: list[float]) -> float:
 
 
 def write_wav_mono16(path: Path, samples: list[float], sample_rate: int = SAMPLE_RATE) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+    import os
+    import time
+
+    p = Path(path).resolve()
+    p.parent.mkdir(parents=True, exist_ok=True)
     payload = b"".join(struct.pack("<h", round(max(-1.0, min(1.0, v)) * 32767)) for v in samples)
-    with wave.open(str(path), "wb") as w:
-        w.setnchannels(CHANNELS)
-        w.setsampwidth(PCM_BITS // 8)
-        w.setframerate(sample_rate)
-        w.writeframes(payload)
+    tmp_path = p.with_suffix(".tmp.wav")
+    for attempt in range(8):
+        try:
+            with wave.open(str(tmp_path), "wb") as w:
+                w.setnchannels(CHANNELS)
+                w.setsampwidth(PCM_BITS // 8)
+                w.setframerate(sample_rate)
+                w.writeframes(payload)
+            os.replace(str(tmp_path), str(p))
+            return
+        except OSError:
+            if attempt == 7:
+                raise
+            time.sleep(0.1)
 
 
 def read_wav_mono16(path: Path) -> tuple[wave._wave_params, list[float]]:

@@ -181,6 +181,149 @@ def _enhance_backfire(arr: np.ndarray, sample_rate: int, seed: int) -> np.ndarra
     return saturated
 
 
+def _enhance_engine_low(arr: np.ndarray, sample_rate: int, seed: int = 9011) -> np.ndarray:
+    """Additive enhancement for engine_low: gear whine mechanical detail and sub-bass de-mud."""
+    frame_count = len(arr)
+    t = np.arange(frame_count, dtype=np.float64) / sample_rate
+
+    f_whine = 1238.0  # 2x fundamental
+    gear_whine = (
+        0.50 * np.sin(2.0 * np.pi * f_whine * t)
+        + 0.35 * np.sin(2.0 * np.pi * (f_whine * 1.5) * t + 0.4)
+        + 0.25 * np.sin(2.0 * np.pi * (f_whine * 2.0) * t + 1.1)
+    ) * (0.85 + 0.15 * np.sin(2.0 * np.pi * 25.0 * t))
+    sos_whine = signal.butter(4, [1100.0, 3200.0], btype="bandpass", fs=sample_rate, output="sos")
+    gear_whine = signal.sosfilt(sos_whine, gear_whine)
+    gear_whine /= max(float(np.max(np.abs(gear_whine))), 1e-9)
+
+    enhanced = arr + 0.10 * gear_whine
+    saturated = np.tanh(enhanced * 1.2)
+    return saturated
+
+
+def _apply_midrange_sustain(
+    arr: np.ndarray,
+    sample_rate: int,
+    low_f: float = 600.0,
+    high_f: float = 1800.0,
+    sustain_gain: float = 0.20,
+    decay_ms: float = 65.0,
+) -> np.ndarray:
+    """Extend acoustic decay and sustain in the mid-range via modal reflection comb filters."""
+    sos_band = signal.butter(4, [low_f, high_f], btype="bandpass", fs=sample_rate, output="sos")
+    mid_isolated = signal.sosfilt(sos_band, arr)
+
+    delay_times = [int(sample_rate * d) for d in (0.011, 0.017, 0.023)]
+    decay_factor = np.exp(-1.0 / (sample_rate * (decay_ms / 1000.0)))
+
+    sustain_tail = np.zeros_like(mid_isolated)
+    for dt in delay_times:
+        g = 0.55 * (decay_factor**dt)
+        a_denom = np.zeros(dt + 1)
+        a_denom[0] = 1.0
+        a_denom[-1] = -g
+        sustain_tail += signal.lfilter([1.0], a_denom, mid_isolated)
+
+    sustain_tail /= len(delay_times)
+    max_val = float(np.max(np.abs(sustain_tail)))
+    if max_val > 1e-9:
+        sustain_tail /= max_val
+
+    return arr + sustain_gain * sustain_tail
+
+
+def _enhance_engine_mid(arr: np.ndarray, sample_rate: int, seed: int = 9012) -> np.ndarray:
+    """Additive enhancement for engine_mid: airbox throat growl (750-1800 Hz), 2x harmonic, modal sustain & 3.6kHz LPF."""
+    frame_count = len(arr)
+    t = np.arange(frame_count, dtype=np.float64) / sample_rate
+    rng = np.random.default_rng(seed)
+
+    f_mid0 = 683.0
+    mid_harm = 0.50 * np.sin(2.0 * np.pi * (f_mid0 * 2.0) * t) * (0.88 + 0.12 * np.sin(2.0 * np.pi * 30.0 * t))
+
+    sos_growl = signal.butter(4, [750.0, 1800.0], btype="bandpass", fs=sample_rate, output="sos")
+    intake_noise = signal.sosfilt(sos_growl, rng.standard_normal(frame_count))
+    intake_noise /= max(float(np.max(np.abs(intake_noise))), 1e-9)
+
+    enhanced = arr + 0.12 * mid_harm + 0.10 * intake_noise
+
+    # Modal sustain and decay extension in the mid-range (650-1800 Hz) for strong punch in transitions
+    enhanced = _apply_midrange_sustain(enhanced, sample_rate, 650.0, 1800.0, sustain_gain=0.20, decay_ms=65.0)
+
+    # Smooth 3.6 kHz Low-Pass Filter: yields high register (>3.6 kHz) exclusively to engine_high
+    sos_mid_lpf = signal.butter(2, 3600.0, btype="lowpass", fs=sample_rate, output="sos")
+    enhanced = signal.sosfilt(sos_mid_lpf, enhanced)
+    saturated = np.tanh(enhanced * 1.20)
+    return saturated
+
+
+def _enhance_engine_high(arr: np.ndarray, sample_rate: int, seed: int = 9013) -> np.ndarray:
+    """Additive enhancement for engine_high with 3-branch decoupled saturation and mid-range modal sustain:
+
+    1. Airbox Intake Growl: 100% linear bypass (0% saturation) for clean airflow.
+    2. Rest of Sound (Base + Harmonics + Sheen): Mid-range modal sustain + Notch 3.4kHz + LPF 5.0kHz + minimal saturation (1.02).
+    3. Pure Sinusoidal Body Core (465.2/232.4 Hz): Dedicated warm analog saturation (1.25, 28% weight).
+    """
+    frame_count = len(arr)
+    t = np.arange(frame_count, dtype=np.float64) / sample_rate
+    rng = np.random.default_rng(seed)
+
+    # Base high-pass at 140 Hz (retains 150-450 Hz chest punch)
+    sos_hpf = signal.butter(2, 140.0, btype="highpass", fs=sample_rate, output="sos")
+    arr_clean = signal.sosfilt(sos_hpf, arr)
+
+    # --- Rama 1: Airbox Intake Growl (100% Lineal, CERO saturación) ---
+    white_turb = rng.standard_normal(frame_count)
+    b_helm1, a_helm1 = signal.iirpeak(850.0, 3.0, fs=sample_rate)
+    helm1 = signal.lfilter(b_helm1, a_helm1, white_turb)
+    b_helm2, a_helm2 = signal.iirpeak(1350.0, 3.5, fs=sample_rate)
+    helm2 = signal.lfilter(b_helm2, a_helm2, white_turb)
+    intake_air = (0.55 * helm1 + 0.45 * helm2) * (0.85 + 0.15 * np.sin(2.0 * np.pi * 38.0 * t))
+    sos_airbox = signal.butter(4, [650.0, 1600.0], btype="bandpass", fs=sample_rate, output="sos")
+    intake_growl = signal.sosfilt(sos_airbox, intake_air)
+    intake_growl /= max(float(np.max(np.abs(intake_growl))), 1e-9)
+    intake_branch = 0.15 * intake_growl
+
+    # --- Rama 2: Onda Sinusoidal Pura (Saturación Cálida Dedicada 1.25, peso 28%) ---
+    f_sine1 = 465.2
+    f_sine2 = 232.4
+    pure_sine_core = 0.65 * np.sin(2.0 * np.pi * f_sine1 * t) + 0.35 * np.sin(2.0 * np.pi * f_sine2 * t)
+    sine_branch = np.tanh(pure_sine_core * 1.25) * 0.28
+
+    # --- Rama 3: Resto del Sonido (Saturación Mínima 1.02 con LPF 5.0kHz y Notch 3.4kHz) ---
+    f3 = 1395.0 * 1.002
+    f4 = 1860.0 * 0.998
+    f5 = 2325.0 * 1.003
+    f6 = 2790.0 * 0.997
+    phase_drift = 0.25 * np.sin(2.0 * np.pi * 2.8 * t)
+
+    hi_harm = (
+        0.35 * np.sin(2.0 * np.pi * 930.0 * t + 0.4)
+        + 0.28 * np.sin(2.0 * np.pi * f3 * t + phase_drift)
+        + 0.20 * np.sin(2.0 * np.pi * f4 * t + phase_drift * 1.3 + 0.5)
+        + 0.12 * np.sin(2.0 * np.pi * f5 * t + phase_drift * 0.8 + 1.1)
+        + 0.05 * np.sin(2.0 * np.pi * f6 * t + phase_drift * 1.5 + 1.7)
+    ) * (0.88 + 0.12 * np.sin(2.0 * np.pi * 38.0 * t))
+
+    sos_sheen = signal.butter(4, [4200.0, 7000.0], btype="bandpass", fs=sample_rate, output="sos")
+    sheen_noise = signal.sosfilt(sos_sheen, rng.standard_normal(frame_count))
+    sheen_noise /= max(float(np.max(np.abs(sheen_noise))), 1e-9)
+
+    rest_raw = arr_clean + 0.16 * hi_harm + 0.03 * sheen_noise
+    # Modal decay and sustain in the mid-range (600-1600 Hz) for persistent transition body
+    rest_sustained = _apply_midrange_sustain(rest_raw, sample_rate, 600.0, 1600.0, sustain_gain=0.18, decay_ms=65.0)
+
+    b_notch, a_notch = signal.iirnotch(3400.0, 2.2, fs=sample_rate)
+    rest_filtered = signal.lfilter(b_notch, a_notch, rest_sustained)
+    sos_lpf_rest = signal.butter(2, 5000.0, btype="lowpass", fs=sample_rate, output="sos")
+    rest_filtered = signal.sosfilt(sos_lpf_rest, rest_filtered)
+    rest_branch = np.tanh(rest_filtered * 1.02)
+
+    # --- Suma Composite Lineal ---
+    composite = rest_branch + sine_branch + intake_branch
+    return composite
+
+
 def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[list[float], dict]:
     if spec.synthesis in ("flat_floor_scrape_v1", "flat_floor_scrape_v2"):
         samples, params = _synthesize_flat_floor_scrape(sample_rate)
@@ -197,7 +340,7 @@ def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[l
     arr = resample_mono(arr, rate, sample_rate)
     arr = np.nan_to_num(arr, nan=0.0, posinf=1.0, neginf=-1.0)
 
-    # Apply additive synthesis enhancement to backfire samples
+    # Apply additive synthesis enhancement to backfire and engine bands
     enhancement_info = None
     if spec.key in ("int_backfire", "int_backfire_2"):
         seed = 9005 if spec.key == "int_backfire" else 9006
@@ -207,6 +350,29 @@ def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[l
             "inconel_exhaust_modal_resonance",
             "afterfire_sputter_micro_pops",
             "combustion_sheen_air",
+        ]
+    elif spec.key == "engine_low":
+        arr = _enhance_engine_low(arr, sample_rate, 9011)
+        enhancement_info = ["straight_cut_gear_whine_1.2_3.2khz", "tanh_warmth"]
+    elif spec.key == "engine_mid":
+        arr = _enhance_engine_mid(arr, sample_rate, 9012)
+        enhancement_info = [
+            "airbox_throat_growl_750_1800hz",
+            "harmonic_overtone_2x_1366hz",
+            "midrange_modal_decay_sustain_650_1800hz",
+            "smooth_lpf_3600hz",
+            "tanh_warmth",
+        ]
+    elif spec.key == "engine_high":
+        arr = _enhance_engine_high(arr, sample_rate, 9013)
+        enhancement_info = [
+            "hpf_140hz_chest_punch_retained",
+            "pure_sine_warm_saturation_465hz_232hz_weight_28pct",
+            "airbox_intake_linear_bypass_0pct_saturation",
+            "midrange_modal_decay_sustain_600_1600hz",
+            "rest_sound_minimal_saturation_1.02_lpf_5000hz",
+            "complete_v10_harmonics_930_1395_1860_2325_2790hz",
+            "anti_fatigue_notch_3400hz",
         ]
 
     samples = arr.astype(float).tolist()
