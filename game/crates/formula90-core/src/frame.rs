@@ -35,6 +35,9 @@ pub struct AudioReadouts {
     pub last_engine_gain: f32,
     pub weights: [f32; 5],
     pub pitches: [f32; 5],
+    pub scrape_gain: f32,
+    pub scrape_pitch: f32,
+    pub scrape_cursor: f64,
 }
 
 impl Default for AudioReadouts {
@@ -51,6 +54,9 @@ impl Default for AudioReadouts {
             last_engine_gain: 0.0,
             weights: [0.0; 5],
             pitches: [1.0; 5],
+            scrape_gain: 0.0,
+            scrape_pitch: 1.0,
+            scrape_cursor: 0.0,
         }
     }
 }
@@ -125,6 +131,14 @@ pub struct CoreFrame {
     pub brake_natural_cooling_w_k: [f64; 4],
     pub brake_speed_cooling_w_k: [f64; 4],
     pub brake_surface_to_bulk_heat_w: [f64; 4],
+    pub underfloor_clearance_m: [f64; 5],
+    pub underfloor_valid_mask: u32,
+    pub underfloor_scrape_phase: i32,
+    pub underfloor_min_clearance_m: f64,
+    pub underfloor_rake_rad: f64,
+    pub underfloor_roll_rad: f64,
+    pub underfloor_contact_confidence: f64,
+    pub underfloor_scrape_intensity: f64,
     pub audio: AudioReadouts,
     pub modules: Vec<ModuleOutput>,
 }
@@ -191,6 +205,14 @@ impl Default for CoreFrame {
             brake_natural_cooling_w_k: [0.0; 4],
             brake_speed_cooling_w_k: [0.0; 4],
             brake_surface_to_bulk_heat_w: [0.0; 4],
+            underfloor_clearance_m: [0.35; 5],
+            underfloor_valid_mask: 0,
+            underfloor_scrape_phase: 0,
+            underfloor_min_clearance_m: 0.35,
+            underfloor_rake_rad: 0.0,
+            underfloor_roll_rad: 0.0,
+            underfloor_contact_confidence: 0.0,
+            underfloor_scrape_intensity: 0.0,
             audio: AudioReadouts::default(),
             modules: Vec::new(),
         }

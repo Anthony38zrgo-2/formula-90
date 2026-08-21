@@ -438,6 +438,8 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 	// 2. Real raycasts in the integrate context (guaranteed fresh).
 	CSimTriRaycastSample samples[4];
 	veh->collect_core_samples(samples);
+	F90UnderfloorSample underfloor = {};
+	veh->collect_underfloor_sample(&underfloor, state);
 
 	// 3. Body kinematics from the collision-resolved Godot body.
 	const Transform3D gt = state->get_transform();
@@ -456,7 +458,7 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		old_lin.x, old_lin.y, old_lin.z,
 		old_ang.x, old_ang.y, old_ang.z,
 		throttle, brake, steer, handbrake, clutch, (int8_t)gear_req, aids_mask, dt,
-		samples, &frame_);
+		samples, &underfloor, &frame_);
 
 	const Vector3 force(frame_.force_x, frame_.force_y, frame_.force_z);
 	const Vector3 torque(frame_.torque_x, frame_.torque_y, frame_.torque_z);
@@ -521,6 +523,7 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		frame_.brake_natural_cooling_w_k,
 		frame_.brake_speed_cooling_w_k,
 		frame_.brake_surface_to_bulk_heat_w);
+	veh->set_core_underfloor_telemetry(frame_);
 
 	process_collision_audio(veh, state, dt);
 
@@ -594,22 +597,8 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 					}
 					collision_cooldown_ = 0.20;
 					break;
-				} else if (tang_speed > 8.0f && normal.y > 0.7f) {
-					// Shallow floor scrape
-					trigger("scrape");
-					collision_cooldown_ = 0.15;
-					break;
 				}
 			}
-		}
-	}
-
-	// Bottoming out / chassis scraping when suspension travel reaches limit under high speed/compression
-	if (collision_cooldown_ <= 0.0 && veh != nullptr) {
-		if ((frame_.fl_comp_mm >= 75.0 || frame_.fr_comp_mm >= 75.0 ||
-			 frame_.rl_comp_mm >= 75.0 || frame_.rr_comp_mm >= 75.0) && frame_.speed_kmh > 50.0) {
-			trigger("scrape");
-			collision_cooldown_ = 0.25;
 		}
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "formula90s/vehicle/formula90_physics.h"
+#include "formula90s/core/f90_core.h"
 #include "formula90s/sim/f90_sim_bridge.h"
 
 #include <godot_cpp/classes/rigid_body3d.hpp>
@@ -101,6 +102,9 @@ private:
 
 	// 12 RayCast3D children (3 per wheel: Inner, Center, Outer)
 	RayCast3D *raycasts_[4][3] = {}; // [wheel 0..3][inner=0, center=1, outer=2]
+	// Five synchronized underfloor probes: front-left, front-right, floor center,
+	// diffuser throat and diffuser exit.
+	RayCast3D *underfloor_raycasts_[5] = {};
 
 	// Player Inputs / Overrides
 	bool enable_player_input_ = true;
@@ -168,6 +172,17 @@ private:
 	double brake_spin_post_rad_s_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_power_w_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_energy_j_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double underfloor_clearance_m_[5] = { 0.35, 0.35, 0.35, 0.35, 0.35 };
+	uint32_t underfloor_valid_mask_ = 0;
+	int underfloor_scrape_phase_ = 0;
+	double underfloor_min_clearance_m_ = 0.35;
+	double underfloor_rake_rad_ = 0.0;
+	double underfloor_roll_rad_ = 0.0;
+	double underfloor_contact_confidence_ = 0.0;
+	double underfloor_scrape_intensity_ = 0.0;
+	double audio_scrape_gain_ = 0.0;
+	double audio_scrape_pitch_ = 1.0;
+	double audio_scrape_cursor_ = 0.0;
 
 	bool load_rust_dll();
 	void unload_rust_dll();
@@ -385,6 +400,7 @@ public:
 
 	// Sample this vehicle's 12 RayCast3D children into the core's sample layout.
 	void collect_core_samples(CSimTriRaycastSample p_samples[4]);
+	void collect_underfloor_sample(F90UnderfloorSample *p_sample, PhysicsDirectBodyState3D *p_state);
 	// Drive the body by velocity (Godot integrates + collides); core owns dynamics.
 	void apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel);
 	// Forward core telemetry into the vehicle's mirrors + wheel visuals.
@@ -427,6 +443,8 @@ public:
 	// Tire pressure + thermal snapshot for the HUD (no raw C structs leak out).
 	godot::Dictionary get_tire_state_snapshot() const;
 	godot::Dictionary get_brake_state_snapshot() const;
+	godot::Dictionary get_underfloor_state_snapshot() const;
+	void set_core_underfloor_telemetry(const F90CoreFrameOut &p_frame);
 };
 
 } // namespace godot

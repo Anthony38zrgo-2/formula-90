@@ -16,15 +16,42 @@ use vehicle_physics_engine::{
 };
 
 use crate::frame::AudioReadouts;
+use crate::underfloor::{UnderfloorRayHit, UnderfloorRigidContact, UnderfloorSample};
 use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
-pub const F90_CORE_ABI_VERSION: u32 = 7;
+pub const F90_CORE_ABI_VERSION: u32 = 8;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
 /// in `f90_core.h`. One family of structs for the whole facade.
 pub use game_sim::c_abi::CSimTriRaycastSample as F90TriRaycastSample;
+
+#[repr(C)]
+#[derive(Default, Clone, Copy)]
+pub struct F90UnderfloorRayHit {
+    pub valid: f64,
+    pub clearance_m: f64,
+    pub point_x: f64,
+    pub point_y: f64,
+    pub point_z: f64,
+    pub normal_x: f64,
+    pub normal_y: f64,
+    pub normal_z: f64,
+    pub surface_code: f64,
+}
+
+#[repr(C)]
+#[derive(Default, Clone, Copy)]
+pub struct F90UnderfloorSample {
+    pub rays: [F90UnderfloorRayHit; 5],
+    pub rigid_confirmed: f64,
+    pub rigid_local_x: f64,
+    pub rigid_local_y: f64,
+    pub rigid_local_z: f64,
+    pub rigid_normal_impulse_ns: f64,
+    pub rigid_tangential_speed_m_s: f64,
+}
 
 /// Single output block of `f90_core_step`. Mirrored in `f90_core.h`.
 #[repr(C)]
@@ -108,6 +135,17 @@ pub struct F90CoreFrameOut {
     pub brake_natural_cooling_w_k: [f64; 4],
     pub brake_speed_cooling_w_k: [f64; 4],
     pub brake_surface_to_bulk_heat_w: [f64; 4],
+    pub underfloor_clearance_m: [f64; 5],
+    pub underfloor_valid_mask: u32,
+    pub underfloor_scrape_phase: i32,
+    pub underfloor_min_clearance_m: f64,
+    pub underfloor_rake_rad: f64,
+    pub underfloor_roll_rad: f64,
+    pub underfloor_contact_confidence: f64,
+    pub underfloor_scrape_intensity: f64,
+    pub audio_scrape_gain: f32,
+    pub audio_scrape_pitch: f32,
+    pub audio_scrape_cursor: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -304,6 +342,7 @@ pub unsafe extern "C" fn f90_core_step(
     aids_mask: u32,
     dt: f64,
     samples: *const F90TriRaycastSample,
+    underfloor: *const F90UnderfloorSample,
     out: *mut F90CoreFrameOut,
 ) {
     if samples.is_null() {
@@ -339,7 +378,37 @@ pub unsafe extern "C" fn f90_core_step(
             Some(gear_request)
         },
     };
-    let frame = facade_mut(h).step(id, body, &input, aids_mask, &rust_samples, dt);
+    let rust_underfloor = if underfloor.is_null() {
+        UnderfloorSample::default()
+    } else {
+        let src = unsafe { &*underfloor };
+        let mut result = UnderfloorSample::default();
+        for (i, ray) in src.rays.iter().enumerate() {
+            result.rays[i] = UnderfloorRayHit {
+                valid: ray.valid > 0.5,
+                clearance_m: ray.clearance_m,
+                point_world: [ray.point_x, ray.point_y, ray.point_z],
+                normal_world: [ray.normal_x, ray.normal_y, ray.normal_z],
+                surface_code: ray.surface_code.clamp(0.0, 255.0) as u8,
+            };
+        }
+        result.rigid_contact = UnderfloorRigidContact {
+            confirmed: src.rigid_confirmed > 0.5,
+            local_position: [src.rigid_local_x, src.rigid_local_y, src.rigid_local_z],
+            normal_impulse_ns: src.rigid_normal_impulse_ns,
+            tangential_speed_m_s: src.rigid_tangential_speed_m_s,
+        };
+        result
+    };
+    let frame = facade_mut(h).step_with_underfloor(
+        id,
+        body,
+        &input,
+        aids_mask,
+        &rust_samples,
+        &rust_underfloor,
+        dt,
+    );
     if !out.is_null() {
         let a = frame.audio;
         unsafe {
@@ -417,6 +486,17 @@ pub unsafe extern "C" fn f90_core_step(
                 brake_natural_cooling_w_k: frame.brake_natural_cooling_w_k,
                 brake_speed_cooling_w_k: frame.brake_speed_cooling_w_k,
                 brake_surface_to_bulk_heat_w: frame.brake_surface_to_bulk_heat_w,
+                underfloor_clearance_m: frame.underfloor_clearance_m,
+                underfloor_valid_mask: frame.underfloor_valid_mask,
+                underfloor_scrape_phase: frame.underfloor_scrape_phase,
+                underfloor_min_clearance_m: frame.underfloor_min_clearance_m,
+                underfloor_rake_rad: frame.underfloor_rake_rad,
+                underfloor_roll_rad: frame.underfloor_roll_rad,
+                underfloor_contact_confidence: frame.underfloor_contact_confidence,
+                underfloor_scrape_intensity: frame.underfloor_scrape_intensity,
+                audio_scrape_gain: a.scrape_gain,
+                audio_scrape_pitch: a.scrape_pitch,
+                audio_scrape_cursor: a.scrape_cursor,
             };
         }
     }
@@ -596,8 +676,15 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, brake_energy_j), 928);
         assert_eq!(offset_of!(F90CoreFrameOut, brake_disc_bulk_c), 960);
         assert_eq!(offset_of!(F90CoreFrameOut, brake_surface_capacity_j_k), 992);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_surface_to_bulk_heat_w), 1152);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1184);
+        assert_eq!(
+            offset_of!(F90CoreFrameOut, brake_surface_to_bulk_heat_w),
+            1152
+        );
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_clearance_m), 1184);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_valid_mask), 1224);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_scrape_phase), 1228);
+        assert_eq!(offset_of!(F90CoreFrameOut, audio_scrape_cursor), 1280);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1288);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

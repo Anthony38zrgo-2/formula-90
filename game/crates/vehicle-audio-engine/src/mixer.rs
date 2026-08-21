@@ -36,6 +36,8 @@ pub struct AudioConfig {
     pub bed_base: f32,
     pub bed_slip: f32,
     pub bed_speed: f32,
+    /// Continuous underfloor scrape voice gain.
+    pub scrape_gain: f32,
 }
 
 impl Default for AudioConfig {
@@ -54,6 +56,7 @@ impl Default for AudioConfig {
             bed_base: 0.25,
             bed_slip: 0.55,
             bed_speed: 0.12,
+            scrape_gain: 0.62,
         }
     }
 }
@@ -88,6 +91,10 @@ pub struct VehicleAudioEngine {
     target_engine_gain: f32,
     smoothed_bed_gain: f32,
     target_bed_gain: f32,
+    smoothed_scrape_gain: f32,
+    target_scrape_gain: f32,
+    scrape_pitch: f64,
+    scrape_cursor: f64,
 
     // Smoothed RPM (one-pole glide) so pitch + band weights move continuously
     // instead of stepping each frame (which caused zipper/click at RPM changes).
@@ -179,6 +186,10 @@ impl VehicleAudioEngine {
             target_engine_gain: 0.0,
             smoothed_bed_gain: 0.0,
             target_bed_gain: 0.0,
+            smoothed_scrape_gain: 0.0,
+            target_scrape_gain: 0.0,
+            scrape_pitch: 1.0,
+            scrape_cursor: 0.0,
             cur_weights: [0.0; 5],
             cur_pitches: [1.0; 5],
             cur_engine_gain: 0.0,
@@ -207,6 +218,30 @@ impl VehicleAudioEngine {
 
     pub fn set_config(&mut self, cfg: AudioConfig) {
         self.cfg = cfg;
+    }
+
+    /// Drive the sustained underfloor scrape voice. `onset_strength > 0` fires the
+    /// transient once; the continuous voice keeps its cursor until a new contact.
+    pub fn set_scrape_state(
+        &mut self,
+        active: bool,
+        intensity: f32,
+        speed_m_s: f32,
+        onset_strength: f32,
+    ) {
+        let was_inactive = self.target_scrape_gain <= 1e-4 && self.smoothed_scrape_gain <= 1e-3;
+        self.target_scrape_gain = if active {
+            intensity.clamp(0.0, 1.0) * self.cfg.scrape_gain
+        } else {
+            0.0
+        };
+        self.scrape_pitch = (0.85 + (speed_m_s.abs() / 70.0) as f64 * 0.30).clamp(0.85, 1.15);
+        if active && onset_strength > 0.0 {
+            self.trigger(Trigger::Scrape);
+        }
+        if active && was_inactive {
+            self.scrape_cursor = 0.0;
+        }
     }
 
     /// Feed the current vehicle telemetry. Computes the mix targets and fires
@@ -335,6 +370,15 @@ impl VehicleAudioEngine {
             let bg = bg_cur + (bg_tgt - bg_cur) * bg_alpha as f32;
             self.smoothed_bed_gain = bg;
 
+            let scrape_tau = if self.target_scrape_gain > self.smoothed_scrape_gain {
+                0.020
+            } else {
+                0.150
+            };
+            let scrape_alpha = 1.0 - (-1.0 / (sr * scrape_tau)).exp();
+            self.smoothed_scrape_gain +=
+                (self.target_scrape_gain - self.smoothed_scrape_gain) * scrape_alpha as f32;
+
             // Engine bands: weights + pitch derived continuously from smoothed_rpm.
             let norm = if self.max_rpm > self.idle_rpm {
                 (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
@@ -368,6 +412,23 @@ impl VehicleAudioEngine {
                 }
             }
 
+            // Sustained underfloor voice. The middle 50% of the existing scrape
+            // sample is used as its stable body; a short seam crossfade prevents
+            // the procedural attack/tail from repeating at every wrap.
+            let mut scrape = 0.0f32;
+            if self.smoothed_scrape_gain > 1e-5 {
+                if let Some(sample) = self.bank.get("impact_scrape") {
+                    scrape = read_region_looped(
+                        &sample.pcm,
+                        &mut self.scrape_cursor,
+                        self.scrape_pitch,
+                        0.25,
+                        0.75,
+                        0.035,
+                    ) * self.smoothed_scrape_gain;
+                }
+            }
+
             // One-shots (non-looping, short envelope).
             let mut os = 0.0f32;
             for o in self.one_shots.iter_mut() {
@@ -392,7 +453,7 @@ impl VehicleAudioEngine {
                 }
             }
 
-            let mixed = engine + bed + os;
+            let mixed = engine + bed + scrape + os;
             let out = self.limiter(mixed);
             if i < out_l.len() {
                 out_l[i] = out;
@@ -441,6 +502,15 @@ impl VehicleAudioEngine {
     pub fn last_trigger(&self) -> &str {
         &self.last_trigger
     }
+    pub fn scrape_gain(&self) -> f32 {
+        self.smoothed_scrape_gain
+    }
+    pub fn scrape_pitch(&self) -> f32 {
+        self.scrape_pitch as f32
+    }
+    pub fn scrape_cursor(&self) -> f64 {
+        self.scrape_cursor
+    }
 }
 
 /// Fractional-cursor looped read with linear interpolation (no resampler). The
@@ -462,6 +532,46 @@ fn read_looped(pcm: &[i16], cursor: &mut f64, ratio: f64) -> f32 {
         *cursor = cursor.rem_euclid(n);
     }
     s
+}
+
+fn read_region_looped(
+    pcm: &[i16],
+    cursor: &mut f64,
+    ratio: f64,
+    start_ratio: f64,
+    end_ratio: f64,
+    crossfade_s: f64,
+) -> f32 {
+    if pcm.len() < 4 {
+        return 0.0;
+    }
+    let start = (pcm.len() as f64 * start_ratio)
+        .floor()
+        .clamp(0.0, (pcm.len() - 2) as f64);
+    let end = (pcm.len() as f64 * end_ratio)
+        .ceil()
+        .clamp(start + 2.0, pcm.len() as f64);
+    if *cursor < start || *cursor >= end {
+        *cursor = start;
+    }
+    let read = |pos: f64| {
+        let p = pos.clamp(0.0, (pcm.len() - 1) as f64);
+        let i0 = p.floor() as usize;
+        let i1 = (i0 + 1).min(pcm.len() - 1);
+        let f = (p - i0 as f64) as f32;
+        ((pcm[i0] as f32) * (1.0 - f) + (pcm[i1] as f32) * f) / 32768.0
+    };
+    let fade = (crossfade_s * 44_100.0).clamp(1.0, (end - start) * 0.25);
+    let mut value = read(*cursor);
+    if *cursor > end - fade {
+        let t = ((*cursor - (end - fade)) / fade).clamp(0.0, 1.0) as f32;
+        value = value * (1.0 - t) + read(start + (*cursor - (end - fade))) * t;
+    }
+    *cursor += ratio.max(0.01);
+    if *cursor >= end {
+        *cursor = start + (*cursor - end);
+    }
+    value
 }
 
 /// Linear fade-in/out envelope (0..1) for one-shots.
@@ -499,16 +609,18 @@ mod tests {
             "shift_up",
             "int_backfire",
             "int_backfire_2",
+            "impact_scrape",
         ] {
-            let (data, is_loop) = if key == "shift_up" || key.starts_with("int_backfire") {
-                (pcm.clone(), false)
-            } else if key == "surf_grass" {
-                (pcm.clone(), true)
-            } else if key.starts_with("engine") {
-                (engine_pcm.clone(), true)
-            } else {
-                (silent.clone(), false)
-            };
+            let (data, is_loop) =
+                if key == "shift_up" || key.starts_with("int_backfire") || key == "impact_scrape" {
+                    (pcm.clone(), false)
+                } else if key == "surf_grass" {
+                    (pcm.clone(), true)
+                } else if key.starts_with("engine") {
+                    (engine_pcm.clone(), true)
+                } else {
+                    (silent.clone(), false)
+                };
             samples.insert(
                 key.to_string(),
                 Sample {
@@ -579,6 +691,10 @@ mod tests {
             target_engine_gain: 0.0,
             smoothed_bed_gain: 0.0,
             target_bed_gain: 0.0,
+            smoothed_scrape_gain: 0.0,
+            target_scrape_gain: 0.0,
+            scrape_pitch: 1.0,
+            scrape_cursor: 0.0,
             cur_weights: [0.0; 5],
             cur_pitches: [1.0; 5],
             cur_engine_gain: 0.0,
@@ -622,7 +738,7 @@ mod tests {
 
     #[test]
     fn render_is_finite_and_limited() {
-        let mut e = engine_with_bank(dummy_bank());
+        let e = engine_with_bank(dummy_bank());
         e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
         let mut l = vec![0.0f32; 4096];
         let mut r = vec![0.0f32; 4096];
@@ -632,6 +748,33 @@ mod tests {
             assert!(*a <= e.config().limiter_threshold + 1e-3);
             assert!(*a >= -e.config().limiter_threshold - 1e-3);
         }
+    }
+
+    #[test]
+    fn sustained_scrape_keeps_cursor_and_releases_smoothly() {
+        let mut e = engine_with_bank(dummy_bank());
+        e.set_scrape_state(true, 0.8, 30.0, 0.0);
+        let mut l = vec![0.0f32; 512];
+        let mut r = vec![0.0f32; 512];
+        e.render(&mut l, &mut r, 512);
+        let first_cursor = e.scrape_cursor();
+        let first_gain = e.scrape_gain();
+        assert!(first_cursor > 0.0);
+        assert!(first_gain > 0.0);
+
+        e.set_scrape_state(true, 0.8, 30.0, 0.0);
+        e.render(&mut l, &mut r, 512);
+        assert_ne!(
+            e.scrape_cursor(),
+            first_cursor,
+            "sustained state must not restart the cursor"
+        );
+        let sustained_gain = e.scrape_gain();
+
+        e.set_scrape_state(false, 0.0, 0.0, 0.0);
+        e.render(&mut l, &mut r, 512);
+        assert!(e.scrape_gain() < sustained_gain);
+        assert!(l.iter().all(|v| v.is_finite()));
     }
 
     #[test]

@@ -75,7 +75,11 @@ static_assert(offsetof(F90CoreFrameOut, brake_surface_bulk_w_k) == 1056);
 static_assert(offsetof(F90CoreFrameOut, brake_natural_cooling_w_k) == 1088);
 static_assert(offsetof(F90CoreFrameOut, brake_speed_cooling_w_k) == 1120);
 static_assert(offsetof(F90CoreFrameOut, brake_surface_to_bulk_heat_w) == 1152);
-static_assert(sizeof(F90CoreFrameOut) == 1184);
+static_assert(offsetof(F90CoreFrameOut, underfloor_clearance_m) == 1184);
+static_assert(offsetof(F90CoreFrameOut, underfloor_valid_mask) == 1224);
+static_assert(offsetof(F90CoreFrameOut, underfloor_scrape_phase) == 1228);
+static_assert(offsetof(F90CoreFrameOut, audio_scrape_cursor) == 1280);
+static_assert(sizeof(F90CoreFrameOut) == 1288);
 
 /// The orchestrator node. Loads the SINGLE `formula90_core.dll` facade (one
 /// handshake / one ABI version), owns the sim + audio, drives the vehicle inside
@@ -88,7 +92,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 7;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 8;
 
 	F90Core();
 	~F90Core() override;

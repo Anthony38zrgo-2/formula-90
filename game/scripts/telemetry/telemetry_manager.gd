@@ -41,7 +41,10 @@ const CSV_COLUMNS := [
     "FL_ResolvedSurfaceBulk_WK", "FR_ResolvedSurfaceBulk_WK", "RL_ResolvedSurfaceBulk_WK", "RR_ResolvedSurfaceBulk_WK",
     "FL_NaturalCooling_WK", "FR_NaturalCooling_WK", "RL_NaturalCooling_WK", "RR_NaturalCooling_WK",
     "FL_SpeedCooling_WK", "FR_SpeedCooling_WK", "RL_SpeedCooling_WK", "RR_SpeedCooling_WK",
-    "FL_SurfaceToBulkHeat_W", "FR_SurfaceToBulkHeat_W", "RL_SurfaceToBulkHeat_W", "RR_SurfaceToBulkHeat_W"
+    "FL_SurfaceToBulkHeat_W", "FR_SurfaceToBulkHeat_W", "RL_SurfaceToBulkHeat_W", "RR_SurfaceToBulkHeat_W",
+    "UF_FL_Clearance_m", "UF_FR_Clearance_m", "UF_Center_Clearance_m", "UF_DiffuserThroat_Clearance_m", "UF_DiffuserExit_Clearance_m",
+    "UF_ValidMask", "UF_ScrapePhase", "UF_MinClearance_m", "UF_Rake_rad", "UF_Roll_rad",
+    "UF_ContactConfidence", "UF_ScrapeIntensity", "UF_AudioGain", "UF_AudioPitch", "UF_AudioCursor"
 ]
 
 func _ready():
@@ -176,6 +179,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var thermal: Array = []
     for _field in range(48):
         thermal.append(0.0)
+    var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0]
     if _is_rust:
         var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
         if snapshot_value is Dictionary:
@@ -217,6 +221,28 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                         thermal[offset + 9] = float(wheel_state.get("efficiency", 0.0))
                         thermal[offset + 10] = float(wheel_state.get("duct_mass_flow_kg_s", 0.0))
                         thermal[offset + 11] = float(wheel_state.get("duct_drag_n", 0.0))
+        if vehicle.has_method(&"get_underfloor_state_snapshot"):
+            var underfloor_value: Variant = vehicle.call(&"get_underfloor_state_snapshot")
+            if underfloor_value is Dictionary:
+                var underfloor: Dictionary = underfloor_value
+                var clearances_value: Variant = underfloor.get("clearance_m", {})
+                if clearances_value is Dictionary:
+                    var clearances: Dictionary = clearances_value
+                    underfloor_fields[0] = float(clearances.get("front_left", 0.35))
+                    underfloor_fields[1] = float(clearances.get("front_right", 0.35))
+                    underfloor_fields[2] = float(clearances.get("center", 0.35))
+                    underfloor_fields[3] = float(clearances.get("diffuser_throat", 0.35))
+                    underfloor_fields[4] = float(clearances.get("diffuser_exit", 0.35))
+                underfloor_fields[5] = int(underfloor.get("valid_mask", 0))
+                underfloor_fields[6] = int(underfloor.get("scrape_phase", 0))
+                underfloor_fields[7] = float(underfloor.get("minimum_clearance_m", 0.35))
+                underfloor_fields[8] = float(underfloor.get("rake_rad", 0.0))
+                underfloor_fields[9] = float(underfloor.get("roll_rad", 0.0))
+                underfloor_fields[10] = float(underfloor.get("contact_confidence", 0.0))
+                underfloor_fields[11] = float(underfloor.get("scrape_intensity", 0.0))
+                underfloor_fields[12] = float(underfloor.get("audio_scrape_gain", 0.0))
+                underfloor_fields[13] = float(underfloor.get("audio_scrape_pitch", 1.0))
+                underfloor_fields[14] = int(underfloor.get("audio_scrape_cursor", 0))
 
     var base_line := "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f" % [
         now_msec, speed_kmh, rpm, gear,
@@ -233,12 +259,21 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         brake_torque[2], spin_pre[2], spin_post[2], brake_power[2], brake_energy[2],
         brake_torque[3], spin_pre[3], spin_post[3], brake_power[3], brake_energy[3]
     ]
-    return base_line + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved))
+    return base_line + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields))
 
 func _thermal_csv_fields(values: Array) -> PackedStringArray:
     var fields := PackedStringArray()
     for value in values:
         fields.append("%.4f" % float(value))
+    return fields
+
+func _underfloor_csv_fields(values: Array) -> PackedStringArray:
+    var fields := PackedStringArray()
+    for i in range(values.size()):
+        if i == 5 or i == 6 or i == 14:
+            fields.append("%d" % int(values[i]))
+        else:
+            fields.append("%.6f" % float(values[i]))
     return fields
 
 func _csv_escape(value: String) -> String:
@@ -269,6 +304,7 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
             "configuration": ""
         },
         "chassis": _build_chassis_snapshot(),
+        "underfloor": _build_underfloor_snapshot(),
         "tires": _snapshot_properties(["front_tire_radius", "front_tire_width", "front_wheel_mass", "rear_tire_radius", "rear_tire_width", "rear_wheel_mass", "contact_patch", "braking_grip_multiplier", "wheel_to_body_torque_multiplier", "tire_stiffnesses", "coefficient_of_friction", "rolling_resistance", "lateral_grip_assist", "longitudinal_grip_ratio"]),
         "thermal": _build_brake_thermal_snapshot(),
         "steering": _snapshot_properties(["steering_speed", "countersteer_speed", "steering_speed_decay", "steering_slip_assist", "countersteer_assist", "steering_exponent", "max_steering_angle", "front_steering_ratio", "rear_steering_ratio"]),
@@ -292,6 +328,13 @@ func _build_brake_thermal_snapshot() -> Dictionary:
         if value is Dictionary:
             snapshot["resolved_wheels"] = value
     return snapshot
+
+func _build_underfloor_snapshot() -> Dictionary:
+    if vehicle.has_method(&"get_underfloor_state_snapshot"):
+        var value: Variant = vehicle.call(&"get_underfloor_state_snapshot")
+        if value is Dictionary:
+            return value
+    return {}
 
 func _snapshot_properties(property_names: Array[String]) -> Dictionary:
     var snapshot := {}

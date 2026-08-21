@@ -22,6 +22,7 @@ pub mod ffi;
 pub mod frame;
 pub mod module;
 pub mod modules;
+pub mod underfloor;
 
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -122,6 +123,7 @@ pub struct CoreFacade {
     frame: CoreFrame,
     latest: RwLock<Arc<CoreFrame>>,
     spawned: bool,
+    underfloor: underfloor::UnderfloorState,
 }
 
 impl CoreFacade {
@@ -146,6 +148,7 @@ impl CoreFacade {
             frame: CoreFrame::default(),
             latest: RwLock::new(Arc::new(CoreFrame::default())),
             spawned: false,
+            underfloor: underfloor::UnderfloorState::default(),
         })
     }
 
@@ -238,6 +241,27 @@ impl CoreFacade {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> &CoreFrame {
+        self.step_with_underfloor(
+            id,
+            body,
+            input,
+            aids_mask,
+            samples,
+            &underfloor::UnderfloorSample::default(),
+            dt,
+        )
+    }
+
+    pub fn step_with_underfloor(
+        &mut self,
+        id: u32,
+        body: BodyKinematics,
+        input: &VehicleInput,
+        aids_mask: u32,
+        samples: &[TriRaycastSample; 4],
+        underfloor_sample: &underfloor::UnderfloorSample,
+        dt: f64,
+    ) -> &CoreFrame {
         let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
         self.world.time += dt;
         let mut frame = CoreFrame {
@@ -272,6 +296,25 @@ impl CoreFacade {
         }
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
+        self.underfloor.step(underfloor_sample, dt);
+        frame.underfloor_clearance_m = self.underfloor.filtered_clearance_m;
+        frame.underfloor_valid_mask = self.underfloor.valid_mask;
+        frame.underfloor_scrape_phase = self.underfloor.scrape_phase as i32;
+        frame.underfloor_min_clearance_m = self.underfloor.minimum_clearance_m;
+        frame.underfloor_rake_rad = self.underfloor.rake_rad;
+        frame.underfloor_roll_rad = self.underfloor.roll_rad;
+        frame.underfloor_contact_confidence = self.underfloor.contact_confidence;
+        frame.underfloor_scrape_intensity = self.underfloor.scrape_intensity;
+        let scrape_active = matches!(
+            self.underfloor.scrape_phase,
+            underfloor::ScrapePhase::Impact | underfloor::ScrapePhase::Scraping
+        );
+        self.audio.set_scrape_state(
+            scrape_active,
+            self.underfloor.scrape_intensity as f32,
+            underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
+            self.underfloor.onset_strength as f32,
+        );
         self.finish_frame(dt, frame, surface, slip)
     }
 
@@ -466,6 +509,8 @@ impl CoreFacade {
             );
         }
         self.registry.reset_all();
+        self.underfloor.reset();
+        self.audio.set_scrape_state(false, 0.0, 0.0, 0.0);
     }
 
     /// Apply a runtime-tunable config (mirror of the legacy `FfiRuntimeConfig`) to

@@ -1,4 +1,5 @@
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
+#include "formula90s/core/f90_core.h"
 #include "formula90s/sim/f90_sim_bridge.hpp"
 #include "formula90s/core/f90_core.hpp"
 
@@ -198,6 +199,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
+	ClassDB::bind_method(D_METHOD("get_underfloor_state_snapshot"), &F194RustVehicle::get_underfloor_state_snapshot);
 }
 
 F194RustVehicle::F194RustVehicle() {
@@ -363,6 +365,32 @@ void F194RustVehicle::setup_raycasts() {
 
 			raycasts_[w][r] = ray;
 		}
+	}
+
+	const char *uf_names[5] = {
+		"UnderfloorFrontLeft", "UnderfloorFrontRight", "UnderfloorCenter",
+		"DiffuserThroat", "DiffuserExit"
+	};
+	const Vector3 uf_positions[5] = {
+		Vector3(-0.45, -0.205, -0.90), Vector3(0.45, -0.205, -0.90),
+		Vector3(0.0, -0.205, 0.0), Vector3(0.0, -0.165, 0.85),
+		Vector3(0.0, -0.165, 1.65)
+	};
+	for (int i = 0; i < 5; ++i) {
+		RayCast3D *ray = Object::cast_to<RayCast3D>(find_child(uf_names[i], true, false));
+		if (!ray) {
+			ray = memnew(RayCast3D);
+			ray->set_name(uf_names[i]);
+			add_child(ray);
+		}
+		ray->set_position(uf_positions[i]);
+		ray->set_target_position(Vector3(0.0, -0.35, 0.0));
+		ray->set_collision_mask(1);
+		ray->set_enabled(true);
+		ray->set_collide_with_areas(false);
+		ray->set_collide_with_bodies(true);
+		ray->add_exception(this);
+		underfloor_raycasts_[i] = ray;
 	}
 }
 
@@ -1361,6 +1389,52 @@ void F194RustVehicle::collect_core_samples(CSimTriRaycastSample p_samples[4]) {
 	}
 }
 
+void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, PhysicsDirectBodyState3D *p_state) {
+	if (!p_sample) return;
+	*p_sample = {};
+	for (int i = 0; i < 5; ++i) {
+		RayCast3D *ray = underfloor_raycasts_[i];
+		F90UnderfloorRayHit &hit = p_sample->rays[i];
+		hit.clearance_m = 0.35;
+		hit.normal_y = 1.0;
+		if (!ray) continue;
+		ray->force_raycast_update();
+		if (!ray->is_colliding()) continue;
+		const Vector3 point = ray->get_collision_point();
+		Vector3 normal = ray->get_collision_normal();
+		if (normal.is_finite() && normal.length_squared() > 1e-6) normal.normalize();
+		hit.valid = 1.0;
+		hit.clearance_m = (point - ray->get_global_position()).length();
+		hit.point_x = point.x; hit.point_y = point.y; hit.point_z = point.z;
+		hit.normal_x = normal.x; hit.normal_y = normal.y; hit.normal_z = normal.z;
+		hit.surface_code = (double)detect_surface_type(ray);
+	}
+
+	if (!p_state) return;
+	const Vector3 body_velocity = p_state->get_linear_velocity();
+	double strongest_impulse = 0.0;
+	for (int i = 0; i < p_state->get_contact_count(); ++i) {
+		const Vector3 local_position = p_state->get_contact_local_position(i);
+		const Vector3 local_normal = p_state->get_contact_local_normal(i);
+		// Collision proxies bottom at roughly -0.16..-0.20 m. Reject side/nose hits.
+		if (local_position.y > -0.12 || local_normal.y < 0.55) continue;
+		const Vector3 impulse = p_state->get_contact_impulse(i);
+		const double impulse_magnitude = impulse.length();
+		if (p_sample->rigid_confirmed > 0.5 && impulse_magnitude <= strongest_impulse) continue;
+		strongest_impulse = impulse_magnitude;
+		const Vector3 collider_velocity = p_state->get_contact_collider_velocity_at_position(i);
+		const Vector3 relative_velocity = body_velocity - collider_velocity;
+		const Vector3 world_normal = p_state->get_transform().basis.xform(local_normal);
+		const Vector3 tangent = relative_velocity - world_normal * relative_velocity.dot(world_normal);
+		p_sample->rigid_confirmed = 1.0;
+		p_sample->rigid_local_x = local_position.x;
+		p_sample->rigid_local_y = local_position.y;
+		p_sample->rigid_local_z = local_position.z;
+		p_sample->rigid_normal_impulse_ns = impulse_magnitude;
+		p_sample->rigid_tangential_speed_m_s = tangent.length();
+	}
+}
+
 void F194RustVehicle::apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel) {
 	set_linear_velocity(p_lin_vel);
 	set_angular_velocity(p_ang_vel);
@@ -1457,6 +1531,39 @@ Dictionary F194RustVehicle::get_brake_state_snapshot() const {
 		out[String(WHEELS[i])] = wheel;
 	}
 	return out;
+}
+
+Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
+	static const char *NAMES[5] = { "front_left", "front_right", "center", "diffuser_throat", "diffuser_exit" };
+	Dictionary out;
+	Dictionary clearances;
+	for (int i = 0; i < 5; ++i) clearances[String(NAMES[i])] = underfloor_clearance_m_[i];
+	out["clearance_m"] = clearances;
+	out["valid_mask"] = (int64_t)underfloor_valid_mask_;
+	out["scrape_phase"] = underfloor_scrape_phase_;
+	out["minimum_clearance_m"] = underfloor_min_clearance_m_;
+	out["rake_rad"] = underfloor_rake_rad_;
+	out["roll_rad"] = underfloor_roll_rad_;
+	out["contact_confidence"] = underfloor_contact_confidence_;
+	out["scrape_intensity"] = underfloor_scrape_intensity_;
+	out["audio_scrape_gain"] = audio_scrape_gain_;
+	out["audio_scrape_pitch"] = audio_scrape_pitch_;
+	out["audio_scrape_cursor"] = audio_scrape_cursor_;
+	return out;
+}
+
+void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_frame) {
+	for (int i = 0; i < 5; ++i) underfloor_clearance_m_[i] = p_frame.underfloor_clearance_m[i];
+	underfloor_valid_mask_ = p_frame.underfloor_valid_mask;
+	underfloor_scrape_phase_ = p_frame.underfloor_scrape_phase;
+	underfloor_min_clearance_m_ = p_frame.underfloor_min_clearance_m;
+	underfloor_rake_rad_ = p_frame.underfloor_rake_rad;
+	underfloor_roll_rad_ = p_frame.underfloor_roll_rad;
+	underfloor_contact_confidence_ = p_frame.underfloor_contact_confidence;
+	underfloor_scrape_intensity_ = p_frame.underfloor_scrape_intensity;
+	audio_scrape_gain_ = p_frame.audio_scrape_gain;
+	audio_scrape_pitch_ = p_frame.audio_scrape_pitch;
+	audio_scrape_cursor_ = p_frame.audio_scrape_cursor;
 }
 
 void F194RustVehicle::set_core_brake_energy_telemetry(

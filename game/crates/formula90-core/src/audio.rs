@@ -206,8 +206,23 @@ impl AudioModule {
                 last_engine_gain: eng.last_engine_gain(),
                 weights: eng.last_weights(),
                 pitches: eng.last_pitches(),
+                scrape_gain: eng.scrape_gain(),
+                scrape_pitch: eng.scrape_pitch(),
+                scrape_cursor: eng.scrape_cursor(),
             },
             None => base,
+        }
+    }
+
+    pub fn set_scrape_state(
+        &mut self,
+        active: bool,
+        intensity: f32,
+        speed_m_s: f32,
+        onset_strength: f32,
+    ) {
+        if let Some(eng) = self.engine.as_mut() {
+            eng.set_scrape_state(active, intensity, speed_m_s, onset_strength);
         }
     }
 }

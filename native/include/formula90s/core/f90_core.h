@@ -4,9 +4,8 @@
 #include "formula90s/vehicle/formula90_physics.h" // F90RuntimeConfig (mirror of FfiRuntimeConfig)
 
 // C-API mirror of the orchestrator facade (game/crates/formula90-core/src/ffi.rs,
-// formula90_core.dll). ABI v7: F90CoreFrameOut gained resolved brake thermal
-// diagnostics after the brake thermal + duct arrays
-// appended after the tire thermal tail.
+// formula90_core.dll). ABI v8 adds five underfloor probes, fused scrape state
+// and continuous scrape mixer telemetry.
 // Field order and types MUST match the Rust #[repr(C)] structs (they are locked by
 // ffi.rs::layout_tests and the static_asserts in f90_core.hpp). Reuses
 // CSimTriRaycastSample (mirrored in f90_sim_bridge.h) as the sample input, so the
@@ -76,7 +75,33 @@ typedef struct F90CoreFrameOut {
     double brake_natural_cooling_w_k[4];
     double brake_speed_cooling_w_k[4];
     double brake_surface_to_bulk_heat_w[4];
+    double underfloor_clearance_m[5];
+    uint32_t underfloor_valid_mask;
+    int32_t underfloor_scrape_phase;
+    double underfloor_min_clearance_m;
+    double underfloor_rake_rad;
+    double underfloor_roll_rad;
+    double underfloor_contact_confidence;
+    double underfloor_scrape_intensity;
+    float audio_scrape_gain;
+    float audio_scrape_pitch;
+    double audio_scrape_cursor;
 } F90CoreFrameOut;
+
+typedef struct F90UnderfloorRayHit {
+    double valid, clearance_m;
+    double point_x, point_y, point_z;
+    double normal_x, normal_y, normal_z;
+    double surface_code;
+} F90UnderfloorRayHit;
+
+typedef struct F90UnderfloorSample {
+    F90UnderfloorRayHit rays[5];
+    double rigid_confirmed;
+    double rigid_local_x, rigid_local_y, rigid_local_z;
+    double rigid_normal_impulse_ns;
+    double rigid_tangential_speed_m_s;
+} F90UnderfloorSample;
 
 typedef uint32_t (*FnCoreAbiVersion)(void);
 typedef const char *(*FnCoreBuildSha)(void);
@@ -90,7 +115,8 @@ typedef void (*FnCoreStep)(void *core, uint32_t id,
     double lx, double ly, double lz, double ax, double ay, double az,
     double throttle, double brake, double steer, double handbrake, double clutch,
     int8_t gear_request, uint32_t aids_mask, double dt,
-    const CSimTriRaycastSample *samples, F90CoreFrameOut *out);
+    const CSimTriRaycastSample *samples, const F90UnderfloorSample *underfloor,
+    F90CoreFrameOut *out);
 typedef uint32_t (*FnCoreAudioRender)(void *core, float *out_l, float *out_r, uint32_t n);
 typedef bool (*FnCoreAudioTrigger)(void *core, int32_t code);
 typedef void (*FnCoreAudioReadouts)(void *core, F90CoreFrameOut *out);
