@@ -61,10 +61,12 @@ func _run():
 	else:
 		print("[OK] NearMountains ring cargado.")
 
-	if info.waterfalls < 3:
-		_fail("Se esperaban 3 cascadas, encontradas: %d" % info.waterfalls)
+	if info.get("has_texture", false):
+		print("[OK] Textura de montañas de desierto costero aplicada correctamente.")
+	elif info.waterfalls < 3:
+		_fail("Se esperaban 3 cascadas legacy, encontradas: %d" % info.waterfalls)
 	else:
-		print("[OK] %d cascadas instanciadas." % info.waterfalls)
+		print("[OK] %d cascadas legacy instanciadas." % info.waterfalls)
 
 	# Check legacy is hidden
 	var legacy := rs.active_track.get_node_or_null("SourceSkyboxRig") as Node3D if rs.active_track != null else null

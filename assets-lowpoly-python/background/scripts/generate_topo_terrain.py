@@ -17,6 +17,7 @@ import re
 import shutil
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from PIL import Image
 
 import matplotlib
 matplotlib.use("Agg")
@@ -81,8 +82,8 @@ SKY_DOME_RADIUS = 1800.0
 SKY_DOME_RINGS = 16
 SKY_DOME_SEGMENTS = 64
 ZENITH_COLOR = [0.18, 0.42, 0.82]
-HORIZON_COLOR = [0.95, 0.92, 0.82]
-GROUND_COLOR = [0.72, 0.68, 0.55]
+HORIZON_COLOR = [0.55, 0.68, 0.80]
+GROUND_COLOR = [0.82, 0.70, 0.48]
 
 
 # --- SVG Parsing ---
@@ -544,31 +545,73 @@ def generate_terrain_ring(heightmap, colormap, radius, segments, depth, rows=4):
 
 def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, segments: int,
                                         depth: float, svg_size: float, height_scale: float,
-                                        distance: float, rows: int = 6):
-    """Generate terrain ring with continuous organic profile and baked arcade facet lighting.
+                                        distance: float, is_near: bool = False,
+                                        u_repeats: float = 36.0):
+    """Generate terrain ring with continuous organic profile, apron skirt, UVs and baked lighting.
 
     Profile multipliers per row:
-        inner_apron=0.0, lower_talus=0.25, mid_cliff=0.65, summit_ridge=1.0, rear_crest=0.65, outer_skirt=0.15
-    Vertices are shaded with directional sun lighting baked into vertex colors,
-    giving crisp 3D facet definition to rock faces and ridges.
+        Near: inner_apron_ext (R=300), inner_base, lower_talus, mid_cliff, summit_ridge, rear_crest, outer_skirt, inter_apron (R=1488)
+        Far: inner_base (R=1488), lower_talus, mid_cliff, summit_ridge, rear_crest, outer_skirt, horizon_base (R=1800)
     """
     peak_heightmap, peak_colormap = sample_contours_radial(
         contours_by_elev, radius, segments, svg_size, height_scale, distance
     )
 
-    r_offsets = [-depth * 0.50, -depth * 0.30, -depth * 0.10, 0.0, depth * 0.15, depth * 0.35]
-    h_multipliers = [0.0, 0.25, 0.65, 1.0, 0.65, 0.15]
-    row_tints = [
-        [0.60, 0.55, 0.50],  # inner apron (sandy base)
-        [0.80, 0.75, 0.70],  # lower talus
-        [0.95, 0.90, 0.85],  # mid cliff
-        [1.10, 1.05, 1.00],  # summit ridge (sunlit crest)
-        [0.85, 0.80, 0.75],  # rear crest
-        [0.55, 0.50, 0.45],  # outer skirt
-    ]
+    if is_near:
+        rows = 9
+        r_offsets = [
+            660.0 - radius,      # Row 0: Extended Apron outer edge (R = 660m, slips safely under grass runoff)
+            860.0 - radius,      # Row 1: Extended Apron mid plane (R = 860m)
+            -depth * 0.50,       # Row 2: Inner base (R = 1073m)
+            -depth * 0.30,       # Row 3: Lower talus (R = 1103.8m)
+            -depth * 0.10,       # Row 4: Mid cliff (R = 1134.6m)
+            0.0,                 # Row 5: Summit ridge (R = 1150m)
+            depth * 0.15,        # Row 6: Rear crest (R = 1173.1m)
+            depth * 0.35,        # Row 7: Outer skirt (R = 1203.9m)
+            1488.0 - radius,     # Row 8: Inter-mountain connector (R = 1488m, meets Far ring)
+        ]
+        h_multipliers = [0.0, 0.0, 0.0, 0.25, 0.65, 1.0, 0.65, 0.15, 0.0]
+        v_coords = [0.0, 0.06, 0.15, 0.35, 0.60, 0.95, 0.60, 0.20, 0.05]
+        row_y_offsets = [-0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        row_tints = [
+            [0.65, 0.60, 0.55],  # Extended apron edge (sand)
+            [0.65, 0.60, 0.55],  # Extended apron mid (sand)
+            [0.60, 0.55, 0.50],  # Inner apron base
+            [0.80, 0.75, 0.70],  # Lower talus
+            [0.95, 0.90, 0.85],  # Mid cliff
+            [1.10, 1.05, 1.00],  # Summit ridge
+            [0.85, 0.80, 0.75],  # Rear crest
+            [0.55, 0.50, 0.45],  # Outer skirt
+            [0.60, 0.55, 0.50],  # Inter-mountain connector (sand)
+        ]
+    else:
+        rows = 7
+        r_offsets = [
+            -depth * 0.50,       # Row 0: Inner base (R = 1488m)
+            -depth * 0.30,       # Row 1: Lower talus (R = 1532.8m)
+            -depth * 0.10,       # Row 2: Mid cliff (R = 1577.6m)
+            0.0,                 # Row 3: Summit ridge (R = 1600m)
+            depth * 0.15,        # Row 4: Rear crest (R = 1633.6m)
+            depth * 0.35,        # Row 5: Outer skirt (R = 1678.4m)
+            1800.0 - radius,     # Row 6: Outer horizon connector (R = 1800m, meets Sky Dome)
+        ]
+        h_multipliers = [0.0, 0.25, 0.65, 1.0, 0.65, 0.15, 0.0]
+        v_coords = [0.05, 0.35, 0.60, 0.95, 0.60, 0.20, 0.0]
+        row_y_offsets = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        row_tints = [
+            [0.60, 0.55, 0.50],  # Inner base
+            [0.80, 0.75, 0.70],  # Lower talus
+            [0.95, 0.90, 0.85],  # Mid cliff
+            [1.10, 1.05, 1.00],  # Summit ridge
+            [0.85, 0.80, 0.75],  # Rear crest
+            [0.55, 0.50, 0.45],  # Outer skirt
+            [0.55, 0.50, 0.45],  # Outer horizon base
+        ]
+
     vertices = []
     faces = []
     base_vertex_colors = []
+    uvs = []
 
     for i in range(segments):
         angle = (i / segments) * 2 * np.pi
@@ -576,12 +619,15 @@ def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, s
         sin_a = np.sin(angle)
         h_peak = peak_heightmap[i]
         base_color = peak_colormap[i]
+        u = (i / segments) * u_repeats
         for row in range(rows):
             r = radius + r_offsets[row]
             x = r * cos_a
             z = r * sin_a
-            y = h_peak * h_multipliers[row]
+            y = h_peak * h_multipliers[row] + row_y_offsets[row]
             vertices.append([x, y, z])
+            v = v_coords[row]
+            uvs.append([u, v])
             tint = row_tints[row]
             r_c = base_color[0] * tint[0]
             g_c = base_color[1] * tint[1]
@@ -635,6 +681,7 @@ def generate_terrain_ring_from_contours(contours_by_elev: dict, radius: float, s
         vertex_colors=np.array(vertex_colors, dtype=np.uint8),
         process=False,
     )
+    mesh.visual = trimesh.visual.TextureVisuals(uv=np.array(uvs, dtype=np.float64))
     return mesh
 
 
@@ -679,7 +726,7 @@ def detect_waterfalls(heightmap, segments, count=3, min_distance=80):
 # --- Sky Dome ---
 
 def generate_sky_dome():
-    """Generate hemisphere with gradient vertex colors."""
+    """Generate hemisphere with gradient vertex colors and subterranean ground bowl."""
     vertices = []
     faces = []
     vertex_colors = []
@@ -688,21 +735,28 @@ def generate_sky_dome():
     horizon = np.array(HORIZON_COLOR)
     ground = np.array(GROUND_COLOR)
 
+    # Top vertex (zenith)
     vertices.append([0.0, SKY_DOME_RADIUS, 0.0])
     vertex_colors.append([int(zenith[0]*255), int(zenith[1]*255), int(zenith[2]*255), 255])
 
-    for ring in range(1, SKY_DOME_RINGS + 1):
-        t = ring / SKY_DOME_RINGS
-        phi = t * (np.pi / 2)
-        y = SKY_DOME_RADIUS * np.cos(phi)
-        r = SKY_DOME_RADIUS * np.sin(phi)
-        # Blue-dominant gradient (fix: chase camera only sees 0-30 deg elevation).
-        # Saturated blue persists down to t=0.85 (~13.5 deg elevation); cream fades
-        # in only near the horizon, matching the reference panorama.
-        if t < 0.85:
-            col = zenith
+    total_rings = SKY_DOME_RINGS + 4
+    for ring in range(1, total_rings + 1):
+        if ring <= SKY_DOME_RINGS:
+            t = ring / SKY_DOME_RINGS
+            phi = t * (np.pi / 2)
+            y = SKY_DOME_RADIUS * np.cos(phi)
+            r = SKY_DOME_RADIUS * np.sin(phi)
+            if t < 0.70:
+                col = zenith
+            else:
+                col = zenith + (horizon - zenith) * ((t - 0.70) / 0.30)
         else:
-            col = zenith + (horizon - zenith) * ((t - 0.85) / 0.15)
+            sub_t = (ring - SKY_DOME_RINGS) / 4.0
+            phi = (np.pi / 2) + sub_t * (0.15 * np.pi)
+            y = SKY_DOME_RADIUS * np.cos(phi)
+            r = SKY_DOME_RADIUS * np.sin(phi)
+            col = ground * (1.0 - sub_t * 0.25)
+
         col_u8 = [int(np.clip(c * 255, 0, 255)) for c in col]
         for seg in range(SKY_DOME_SEGMENTS):
             theta = (seg / SKY_DOME_SEGMENTS) * 2 * np.pi
@@ -715,7 +769,7 @@ def generate_sky_dome():
         next_seg = (seg + 1) % SKY_DOME_SEGMENTS
         faces.append([0, 1 + seg, 1 + next_seg])
 
-    for ring in range(SKY_DOME_RINGS - 1):
+    for ring in range(total_rings - 1):
         base_curr = 1 + ring * SKY_DOME_SEGMENTS
         base_next = 1 + (ring + 1) * SKY_DOME_SEGMENTS
         for seg in range(SKY_DOME_SEGMENTS):
@@ -924,26 +978,27 @@ def main():
 
     print("Generating far mountains terrain ring (radius=%.0f, depth=%.0f, height_scale=%.1f)..." % (radius_far, depth_far, height_scale_far))
     far_ring = generate_terrain_ring_from_contours(
-        contours_by_elev, radius_far, SEGMENTS_ANGULAR, depth_far, svg_size, height_scale_far, distance, rows=6
+        contours_by_elev, radius_far, SEGMENTS_ANGULAR, depth_far, svg_size, height_scale_far, distance, is_near=False, u_repeats=48.0
     )
     far_path = str(output_dir / "far_mountains_ring.glb")
     scene = trimesh.Scene()
     scene.add_geometry(far_ring)
     scene.export(far_path)
     print(f"  -> {far_path} ({far_ring.vertices.shape[0]} verts, {far_ring.faces.shape[0]} faces)")
-    # Derive heightmap for waterfall detection from far ring peak row (row index 3 in 6-row profile)
-    far_heightmap = np.array([far_ring.vertices[i*6+3][1] for i in range(SEGMENTS_ANGULAR)])
+    # Derive heightmap for waterfall detection from far ring peak row (row index 3 in 7-row profile)
+    far_heightmap = np.array([far_ring.vertices[i*7+3][1] for i in range(SEGMENTS_ANGULAR)])
 
-    print("Generating near mountains terrain ring (radius=%.0f, depth=%.0f, height_scale=%.1f)..." % (radius_near, depth_near, height_scale_near))
+    print("Generating near mountains terrain ring with Apron (radius=%.0f, depth=%.0f, height_scale=%.1f)..." % (radius_near, depth_near, height_scale_near))
     near_ring = generate_terrain_ring_from_contours(
-        contours_by_elev, radius_near, SEGMENTS_ANGULAR, depth_near, svg_size, height_scale_near, distance, rows=6
+        contours_by_elev, radius_near, SEGMENTS_ANGULAR, depth_near, svg_size, height_scale_near, distance, is_near=True, u_repeats=36.0
     )
     near_path = str(output_dir / "near_mountains_ring.glb")
     scene = trimesh.Scene()
     scene.add_geometry(near_ring)
     scene.export(near_path)
     print(f"  -> {near_path} ({near_ring.vertices.shape[0]} verts, {near_ring.faces.shape[0]} faces)")
-    near_heightmap = np.array([near_ring.vertices[i*6+3][1] for i in range(SEGMENTS_ANGULAR)])
+    # Peak row index 5 in 9-row near ring profile
+    near_heightmap = np.array([near_ring.vertices[i*9+5][1] for i in range(SEGMENTS_ANGULAR)])
     print(f"  Far height range: {far_heightmap.min():.1f}m to {far_heightmap.max():.1f}m")
     print(f"  Near height range: {near_heightmap.min():.1f}m to {near_heightmap.max():.1f}m")
 
@@ -973,17 +1028,27 @@ def main():
     scene.export(sky_path)
     print(f"  -> {sky_path} ({sky_dome.vertices.shape[0]} verts, {sky_dome.faces.shape[0]} faces)")
 
-    # 7. Copy source SVG
+    # 7. Generate procedural mountain texture
+    print("Generating procedural mountain texture...")
+    from generate_mountain_texture import build_mountain_texture
+    tex_path = str(output_dir / "mountain_texture.png")
+    tex_data = build_mountain_texture(1024, 512, seed=42)
+    tex_img = Image.fromarray(tex_data, mode="RGB")
+    tex_img.save(tex_path, format="PNG")
+    print(f"  -> {tex_path}")
+
+    # 8. Copy source SVG
     svg_copy = str(output_dir / "la_chutana_topo.svg")
     shutil.copy2(svg_path, svg_copy)
     print(f"  SVG copy: {svg_copy}")
 
-    # 8. Compute hashes
+    # 9. Compute hashes
     far_hash = compute_sha256(far_path)
     near_hash = compute_sha256(near_path)
     sky_hash = compute_sha256(sky_path)
+    tex_hash = compute_sha256(tex_path)
 
-    # 9. Write manifest (relative paths, no absolute Windows paths)
+    # 10. Write manifest (relative paths, no absolute Windows paths)
     try:
         rel_svg = str(Path(svg_path).relative_to(Path("D:/Formula90s"))).replace("\\", "/")
     except ValueError:
@@ -999,6 +1064,9 @@ def main():
             "far_mountains": "far_mountains_ring.glb",
             "near_mountains": "near_mountains_ring.glb",
             "sky_dome": "sky_dome.glb"
+        },
+        "textures": {
+            "mountain_texture": "mountain_texture.png"
         },
         "generation": {
             "method": "svg_topographic_extrusion",
@@ -1024,6 +1092,8 @@ def main():
                 "height_min": float(near_heightmap.min()),
                 "height_max": float(near_heightmap.max()),
                 "target_height_range": [50, 110],
+                "terrain_rows": 9,
+                "apron_inner_radius": 660.0,
             },
             "far": {
                 "layer": "far",
@@ -1033,13 +1103,13 @@ def main():
                 "height_min": float(far_heightmap.min()),
                 "height_max": float(far_heightmap.max()),
                 "target_height_range": [90, 240],
+                "terrain_rows": 7,
             },
             "sky": {
                 "radius": SKY_DOME_RADIUS,
                 "rings": SKY_DOME_RINGS,
                 "segments": SKY_DOME_SEGMENTS,
             },
-            "terrain_rows": 6,
             "segments": SEGMENTS_ANGULAR,
         },
         "waterfalls": waterfalls,
@@ -1047,7 +1117,8 @@ def main():
             "source_sha256": {
                 "far_mountains_ring.glb": far_hash,
                 "near_mountains_ring.glb": near_hash,
-                "sky_dome.glb": sky_hash
+                "sky_dome.glb": sky_hash,
+                "mountain_texture.png": tex_hash
             }
         }
     }

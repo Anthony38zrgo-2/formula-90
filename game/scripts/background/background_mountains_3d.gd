@@ -37,32 +37,41 @@ func setup(manifest_path: String) -> bool:
 	_manifest = json.data
 	var base_dir: String = manifest_path.get_base_dir()
 
+	# Load mountain texture if available
+	var mountain_tex: Texture2D = null
+	if _manifest.has("textures") and _manifest.textures.has("mountain_texture"):
+		var tex_path: String = base_dir + "/" + String(_manifest.textures.mountain_texture)
+		mountain_tex = _load_texture(tex_path)
+	if mountain_tex == null:
+		mountain_tex = _load_texture(base_dir + "/mountain_texture.png")
+
 	# Load sky dome (background sky only)
 	var sky_path: String = base_dir + "/" + String(_manifest.geometry_assets.sky_dome)
-	_sky_dome = _load_mesh(sky_path, "SkyDome", true)
+	_sky_dome = _load_mesh(sky_path, "SkyDome", true, null)
 	if _sky_dome == null:
 		return false
 
 	# Load far mountains ring (real 3D geometry at R=1600m)
 	var far_path: String = base_dir + "/" + String(_manifest.geometry_assets.far_mountains)
-	_far_ring = _load_mesh(far_path, "FarMountains", false)
+	_far_ring = _load_mesh(far_path, "FarMountains", false, mountain_tex)
 	if _far_ring == null:
 		return false
 
 	# Load near mountains ring (real 3D geometry at R=1150m)
 	var near_path: String = base_dir + "/" + String(_manifest.geometry_assets.near_mountains)
-	_near_ring = _load_mesh(near_path, "NearMountains", false)
+	_near_ring = _load_mesh(near_path, "NearMountains", false, mountain_tex)
 	if _near_ring == null:
 		return false
 
-	# Create waterfalls
-	_create_waterfalls()
+	# Create legacy sprite waterfalls only if no painted mountain texture is used
+	if mountain_tex == null:
+		_create_waterfalls()
 
 	_is_active = true
 	return true
 
 
-func _load_mesh(glb_path: String, node_name: String, is_sky: bool = false) -> MeshInstance3D:
+func _load_mesh(glb_path: String, node_name: String, is_sky: bool = false, tex: Texture2D = null) -> MeshInstance3D:
 	var loaded = load(glb_path)
 	if loaded == null:
 		push_error("BackgroundMountains3D: No se pudo cargar '%s'." % glb_path)
@@ -88,7 +97,6 @@ func _load_mesh(glb_path: String, node_name: String, is_sky: bool = false) -> Me
 
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.vertex_color_use_as_albedo = true
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
@@ -96,17 +104,38 @@ func _load_mesh(glb_path: String, node_name: String, is_sky: bool = false) -> Me
 		# Sky dome is background only: does not write depth and draws first
 		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
 		mat.render_priority = -10
+		mat.vertex_color_use_as_albedo = true
 	else:
 		# Mountains are real 3D geometry at distance (1150m / 1600m):
 		# must write depth so foreground track, trees, fences and vehicles
 		# at Z < 600m correctly occlude the background.
 		mat.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_OPAQUE_ONLY
 		mat.render_priority = 0
+		if tex != null:
+			mat.albedo_texture = tex
+			mat.texture_repeat = true
+			mat.vertex_color_use_as_albedo = false
+		else:
+			mat.vertex_color_use_as_albedo = true
 
 	mi.material_override = mat
 
 	add_child(mi)
 	return mi
+
+
+func _load_texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		var loaded = load(path)
+		if loaded is Texture2D:
+			return loaded as Texture2D
+	# Fallback: direct load image from file if not imported yet
+	var global_path := ProjectSettings.globalize_path(path)
+	if FileAccess.file_exists(global_path):
+		var img := Image.load_from_file(global_path)
+		if img != null:
+			return ImageTexture.create_from_image(img)
+	return null
 
 
 func _find_first_mesh_instance(node: Node) -> MeshInstance3D:
@@ -205,6 +234,10 @@ func is_active() -> bool:
 
 
 func get_debug_info() -> Dictionary:
+	var has_tex: bool = false
+	if _near_ring != null and _near_ring.material_override is StandardMaterial3D:
+		has_tex = (_near_ring.material_override as StandardMaterial3D).albedo_texture != null
+
 	return {
 		"is_active": _is_active,
 		"camera_valid": is_instance_valid(_camera),
@@ -212,5 +245,6 @@ func get_debug_info() -> Dictionary:
 		"far_ring": _far_ring != null,
 		"near_ring": _near_ring != null,
 		"waterfalls": _waterfalls.size(),
+		"has_texture": has_tex,
 		"manifest": _manifest.get("asset", "none"),
 	}
