@@ -1,9 +1,7 @@
-"""Bank generator — single responsibility: build the runtime bank from original samples.
+"""Bank generator — build the runtime bank from sources and deterministic synthesis.
 
-Reads each source sample per `bank_spec.BANK_SPEC`, deterministically resamples
-to 44.1 kHz mono PCM16, applies DC removal / peak normalization (and seam
-crossfade for loops), writes the organized WAVs plus `bank_manifest.json`.
-No synthesis. Same sources + same code => same bytes.
+Reads or synthesizes each entry in `bank_spec.BANK_SPEC`, writes 44.1 kHz mono
+PCM16 WAVs plus `bank_manifest.json`. Same sources + same code => same bytes.
 """
 
 from __future__ import annotations
@@ -35,7 +33,50 @@ DEFAULT_OUTPUT = Path("game/sounds/banks/v10_vehicle")
 LOOP_XFADE_FRAMES = 2048
 
 
+
+def _synthesize_flat_floor_scrape(sample_rate: int) -> tuple[list[float], dict]:
+    """Subtle, short floor-plank brush: filtered grit plus a muted body resonance."""
+    seed = 9001
+    duration_s = 0.22
+    frame_count = int(round(duration_s * sample_rate))
+    t = np.arange(frame_count, dtype=np.float64) / sample_rate
+    rng = np.random.default_rng(seed)
+
+    # Restrained metallic/asphalt texture without the harsh full-band crack of
+    # the legacy GP_scrape sample.
+    white = rng.standard_normal(frame_count)
+    grit = np.concatenate(([0.0], np.diff(white)))
+    kernel = np.ones(9, dtype=np.float64) / 9.0
+    grit = np.convolve(grit, kernel, mode="same")
+    grit /= max(float(np.max(np.abs(grit))), 1e-9)
+
+    attack = np.minimum(t / 0.006, 1.0)
+    decay = np.exp(-t / 0.075)
+    envelope = attack * decay
+    resonance = (
+        0.26 * np.sin(2.0 * np.pi * 185.0 * t)
+        + 0.10 * np.sin(2.0 * np.pi * 430.0 * t + 0.7)
+    ) * np.exp(-t / 0.055)
+    samples = (0.52 * grit * envelope + resonance * attack).tolist()
+    samples = remove_dc(samples)
+    samples = normalize_peak(samples, 0.32)
+    return samples, {
+        "recipe": "flat_floor_scrape_v1",
+        "seed": seed,
+        "duration_s": duration_s,
+        "target_peak": 0.32,
+        "components": ["differentiated_filtered_noise", "185hz_resonance", "430hz_resonance"],
+    }
+
 def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[list[float], dict]:
+    if spec.synthesis == "flat_floor_scrape_v1":
+        samples, params = _synthesize_flat_floor_scrape(sample_rate)
+        params["category"] = spec.category
+        return samples, params
+    if spec.synthesis is not None:
+        raise ValueError(f"unknown synthesis recipe: {spec.synthesis}")
+    if spec.source is None:
+        raise ValueError(f"{spec.key} has neither source nor synthesis recipe")
     src = source_dir / spec.source
     if not src.is_file():
         raise FileNotFoundError(f"source sample missing: {src}")
@@ -79,7 +120,11 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
                 peak=round(peak_abs(samples), 6),
                 dc_offset=round(dc_offset(samples), 6),
                 synthesis=params,
-                provenance="derived from original samples (assets-lowpoly-python/sounds)",
+                provenance=(
+                    "deterministic procedural synthesis"
+                    if spec.synthesis is not None
+                    else "derived from original samples (assets-lowpoly-python/sounds)"
+                ),
                 sha256="",
             )
         )
@@ -94,7 +139,7 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
         channels=1,
         pcm_bits=16,
         seed=0,
-        generator="formula90s sample-based bank builder 1.0",
+        generator="formula90s hybrid sample/synthesis bank builder 1.1",
         files=entries,
     )
     manifest.write(output_dir / "bank_manifest.json")
@@ -102,7 +147,7 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Build v10_vehicle bank from original samples")
+    ap = argparse.ArgumentParser(description="Build v10_vehicle bank from sources and deterministic synthesis")
     ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE_DIR)
     ap.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     ap.add_argument("--sample-rate", type=int, default=SAMPLE_RATE)

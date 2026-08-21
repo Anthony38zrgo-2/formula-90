@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param([ValidateSet('debug','release')][string]$Configuration='debug',[switch]$CompileCommands)
 $ErrorActionPreference='Stop'; $root=Split-Path -Parent $PSScriptRoot; Set-Location $root
+$PSNativeCommandUseErrorActionPreference = $false
 if (-not (Test-Path 'third_party\godot-cpp\SConstruct')) { throw 'godot-cpp ausente. Ejecute scripts/bootstrap_windows.ps1.' }
 $python=(Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $python) { $python=Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' }
@@ -16,8 +17,8 @@ if($LASTEXITCODE -ne 0){throw "Build fallÃ³ ($LASTEXITCODE).`n$pyOut"}
 Write-Host "Compilando Crate Rust Vehicle Physics Engine ($Configuration)..." -ForegroundColor Cyan
 $cargoArgs = @('build', '--manifest-path', 'game/crates/vehicle-physics-engine/Cargo.toml')
 if ($Configuration -eq 'release') { $cargoArgs += '--release' }
-$cargoOut = & cargo @cargoArgs 2>&1
-if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_physics_engine fallÃ³ ($LASTEXITCODE).`n$cargoOut" }
+& cargo @cargoArgs
+if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_physics_engine fallo ($LASTEXITCODE)." }
 $rustDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $destDllName = "vehicle_physics_engine.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $rustDllDir 'vehicle_physics_engine.dll') (Join-Path 'game/addons/formula90s/bin' $destDllName) -Force
@@ -26,8 +27,8 @@ Write-Host "Vehicle physics DLL copiada a game/addons/formula90s/bin/$destDllNam
 Write-Host "Compilando Crate Rust game_sim (core autoritativo) ($Configuration)..." -ForegroundColor Cyan
 $simArgs = @('build', '--manifest-path', 'game/crates/game-sim/Cargo.toml')
 if ($Configuration -eq 'release') { $simArgs += '--release' }
-$simOut = & cargo @simArgs 2>&1
-if ($LASTEXITCODE -ne 0) { throw "Build de game_sim fallo ($LASTEXITCODE).`n$simOut" }
+& cargo @simArgs
+if ($LASTEXITCODE -ne 0) { throw "Build de game_sim fallo ($LASTEXITCODE)." }
 $simDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $simDest = "game_sim.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $simDllDir 'game_sim.dll') (Join-Path 'game/addons/formula90s/bin' $simDest) -Force
@@ -37,8 +38,8 @@ Write-Host "game_sim DLL copiada a game/addons/formula90s/bin/$simDest (+ game_s
 Write-Host "Compilando Crate Rust Vehicle Audio Engine ($Configuration)..." -ForegroundColor Cyan
 $audioArgs = @('build', '--lib', '--manifest-path', 'game/crates/vehicle-audio-engine/Cargo.toml')
 if ($Configuration -eq 'release') { $audioArgs += '--release' }
-$audioOut = & cargo @audioArgs 2>&1
-if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_audio_engine fallo ($LASTEXITCODE).`n$audioOut" }
+& cargo @audioArgs
+if ($LASTEXITCODE -ne 0) { throw "Build de vehicle_audio_engine fallo ($LASTEXITCODE)." }
 $audioDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $audioDest = "vehicle_audio_engine.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $audioDllDir 'vehicle_audio_engine.dll') (Join-Path 'game/addons/formula90s/bin' $audioDest) -Force
@@ -48,8 +49,8 @@ Write-Host "vehicle_audio_engine DLL copiada a game/addons/formula90s/bin/$audio
 Write-Host "Compilando Crate Rust formula90_core (fachada-orquestador) ($Configuration)..." -ForegroundColor Cyan
 $coreArgs = @('build', '--manifest-path', 'game/crates/formula90-core/Cargo.toml')
 if ($Configuration -eq 'release') { $coreArgs += '--release' }
-$coreOut = & cargo @coreArgs 2>&1
-if ($LASTEXITCODE -ne 0) { throw "Build de formula90_core fallo ($LASTEXITCODE).`n$coreOut" }
+& cargo @coreArgs
+if ($LASTEXITCODE -ne 0) { throw "Build de formula90_core fallo ($LASTEXITCODE)." }
 $coreDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
 $coreDest = "formula90_core.windows.$target.x86_64.dll"
 Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' $coreDest) -Force

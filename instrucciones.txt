@@ -1,7 +1,7 @@
 ================================================================================
 FORMULA-90  —  HANDOFF INSTRUCTIONS (instrucciones.txt)
 ================================================================================
-Generated: 2026-08-18 (facade era)  |  Repo: D:\Formula90s  |  Engine: Godot 4.7.1
+Generated: 2026-08-21  |  Repo: D:\Formula90s  |  Engine: Godot 4.7.1
 Mode: BUILD  |  Do NOT commit unless the user explicitly asks.
 
 AUTHORITY / CONVENTIONS (from .agents/AGENTS.md & PROJECT_STATE.md)
@@ -21,178 +21,122 @@ independent modules:
         [ F90Core ]  (nodo GDExtension C++, native/src/core/f90_core.cpp)
             |  _integrate_forces -> f90_core_step (1 llamada, 1 struct F90CoreFrameOut)
             |  _process -> pump_audio -> 1 push_buffer (batch; no Variant por muestra)
-        [ game/core ]  formula90_core.dll  (la FACHADA)
+            |  drive_integrate -> process_collision_audio -> disparadores de impactos/scrape
+        [ game/crates/formula90-core ]  formula90_core.dll  (la FACHADA)
             CoreFacade owns: World (game_sim) + AudioModule (vehicle_audio_engine)
                              + ModuleRegistry (SimModule: clima/IA/...)
             .step = física -> módulos -> audio-input -> CoreFrame atómico
-        game/sim (World, snapshot) -> vehicle_physics_engine (solver)
-        game/audio/engine (mezclador sample-accurate)
+        game/crates/game-sim (World, snapshot) -> vehicle_physics_engine (solver)
+        game/crates/vehicle-audio-engine (mezclador sample-accurate en Rust)
 
-- Crates: game/physics/engine (vehicle_physics_engine, solver), game/sim
-  (game_sim, mundo autoritativo), game/audio/engine (vehicle_audio_engine),
-  game/core (formula90_core, la fachada) — NUEVO.
-- Nodo C++: F90Core (native/src/core/f90_core.{hpp,cpp},
-  native/include/formula90s/core/f90_core.h). Un solo LoadLibrary de
-  formula90_core.dll, un solo handshake f90_core_abi_version()==2.
-- F194RustVehicle (native/src/vehicle/f1_94_rust_vehicle.{hpp,cpp}) es el
-  RigidBody3D. Cuando F90Core lo conduce (bridge_controlled_ + core_driver_),
-  _integrate_forces delega en F90Core::drive_integrate (fuerzas + Godot integra
-  gravedad/colisiones, gravity_scale=1.0). Sin F90Core usa su dll legacy
-  (vehicle_physics_engine.dll) como fallback.
-- Escenas: f1_94_rust.tscn es solo el cuerpo físico (SIN F90Core ni nodo de
-  audio); el orquestador vive en vehicle_test_session.tscn y
-  sim_bridge_quick_test.tscn (raíz F90Core). f1_94.tscn = legacy GEVP intacto.
-- ABI v2 (F90_CORE_ABI_VERSION=2): f90_core_step lleva `aids_mask: u32` (los 8
-  bits) en vez del antiguo pulso `toggle_tc`, y existe f90_core_apply_runtime_config
-  (espejo de F90RuntimeConfig). Headers: f90_core.h + f90_core.hpp (EAC default
-  EXPECTED_ABI_VERSION=2) + formula90_physics.h (F90RuntimeConfig).
-- Audiencia de la fachada: docs/ARCHITECTURE.md (sección fachada + checklist de
-  módulos), reports/facade_baseline.md (baseline de rendimiento), reports/ (hay
-  informe de auditoría y de snap-oversteer producidos por subagentes).
+- Crates:
+  * `game/crates/vehicle-physics-engine` (solver físico determinista)
+  * `game/crates/game-sim` (mundo y snapshot)
+  * `game/crates/vehicle-audio-engine` (motor de audio sample-accurate, crossfade 5 bandas, camas de suelo y one-shots)
+  * `game/crates/formula90-core` (fachada orquestadora unificada)
+- Nodo C++: `F90Core` (`native/src/core/f90_core.{hpp,cpp}`). Carga `formula90_core.dll` con ABI v7.
+- `F194RustVehicle` (`native/src/vehicle/f1_94_rust_vehicle.{hpp,cpp}`) es el `RigidBody3D`. En `_ready()` tiene activo `set_contact_monitor(true)` y `set_max_contacts_reported(4)`.
+- Bank de Audio: `game/sounds/banks/v10_vehicle/` (pipeline híbrido reproducible: samples fuente + síntesis determinista).
 
 ================================================================================
-2. WHAT JUST HAPPENED (validated, don't redo)
+2. WHAT WAS JUST IMPLEMENTED AND VALIDATED (2026-08-21)
 ================================================================================
-A) FACADE CONSTRUIDA (F0-F5): crate game/core (CoreFacade, SimModule trait,
-   audio module, ffi.rs f90_core_*), nodo C++ F90Core, escenas migradas,
-   build_windows.ps1/build_linux.sh integran game/core. 10+ tests Rust OK.
-   Validación: headless sim_bridge_quick_test y vehicle_test_session cargan la
-   fachada (`[F90Core] facade ready`, ABI=2) y conducen el vehículo; opcional
-   `core_cli --parity-sim` da Snapshot byte-idéntico a game_sim.
+FASE 1 DE AUDIO — CONEXIÓN DE DISPARADORES HUÉRFANOS Y OVER-RUN BACKFIRE:
 
-B) AUDIO ARREGLADO Y OPERATIVO (confirmado por el usuario):
-   - En F90Core::_ready se crean los nodos de audio: ensure_vehicle_bus() +
-     create_audio_nodes() (generador 44.1kHz/60ms + AudioStreamPlayer no
-     posicional + bus "Vehicle"). pump_audio() en _process hace UN push_buffer
-     en lote (se acabó el push_frame por muestra). audio_initialized=true en
-     sesión gráfica.
-   - Se quitó el F90Core duplicado del prefab f1_94_rust.tscn (había DOS -> dos
-     fachadas y dos drivers alternando cada frame: causaba "config de física
-     rara"). El orquestador vive SOLO en la escena de sesión.
+A) ENGINE OVER-RUN BACKFIRE (Rust Core):
+   - En `game/crates/vehicle-audio-engine/src/mixer.rs`:
+     * Agregado `backfire_cooldown_samples: usize` al estado del mezclador.
+     * En `VehicleAudioEngine::set_state()`: detecta desaceleración súbita de acelerador
+       (`last_throttle >= 0.80 && throttle <= 0.15`) con motor a altas RPM (`rpm >= 12000.0`).
+     * Dispara automáticamente `Trigger::Backfire` y selecciona pseudoaleatoriamente
+       una sola variante entre `int_backfire.wav` e `int_backfire_2.wav`, manteniendo
+       replays deterministas. Aplica cooldown de 350 ms (~15,435 samples a 44.1 kHz).
+     * En `VehicleAudioEngine::render()`: decrementa `backfire_cooldown_samples` en cada frame.
+     * `engine_start_backfire.wav` conserva el sample de arranque y NO se usa en over-run.
+     * Tests cubren umbrales, cooldown real y selección determinista de una sola variante.
 
-C) FIX P0 — AYUDAS (ESP/TCS) EN LA FACHADA (2026-08-18, validado):
-   - El ABI de la fachada perdía el mask de ayudas (solo pulso toggle_tc) y el
-     primer frame generaba un toggle espurio que apagaba TCS y congelaba ESP.
-     FIX: f90_core_step ahora recibe aids_mask (8 bits) y CoreFacade::step
-     aplica AidsMask::from_bits(aids_mask) CADA frame (sim.aids completo +
-     sync AidsState). Se eliminó last_aids_mask_/toggle en F90Core.
-   - f90_core_apply_runtime_config añadido y enrutado: los setters del vehículo
-     (diff_preload, bias, aero, ...) ahora escriben en el core de la fachada en
-     modo bridge (F194RustVehicle::apply_runtime_config -> core_driver_ ->
-     F90Core::apply_runtime_config -> ffi). Reutiliza
-     vehicle_physics_engine::apply_runtime_config_to_sim (extracto público).
-   - Tests: facade_applies_full_aids_mask_each_step,
-     facade_apply_runtime_config_is_accepted + suite física OK.
-   - Ambas DLL (debug y template_release de formula90_core) reconstruidas a ABI v2.
+B) COLISIONES FÍSICAS Y RASPADO (C++ / Godot RigidBody3D):
+   - En `native/src/vehicle/f1_94_rust_vehicle.cpp`:
+     * `_ready()` activa `set_contact_monitor(true)` y `set_max_contacts_reported(4)`.
+   - En `native/src/core/f90_core.cpp` y `f90_core.hpp`:
+     * Implementado `F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt)`:
+       - Evalúa `state->get_contact_count()`.
+       - Calcula impulso normal y velocidad tangencial contra el plano de colisión.
+       - Discrimina grupos del colisionador:
+         * `Barrier` / `Wall` / `Armco` / `TireBarrier` / `Guardrail`:
+           -> `impact_barrier` si `normal_impact > 3.0f`
+           -> `scrape` si `tang_speed > 4.0f` (roce lateral)
+         * `Cone` / `Prop` / `DynamicObstacle`: código reservado; fuera de uso actual.
+         * Colisiones generales (carrocería / coche a coche):
+           -> `impact_hit_1` (impacto suave < 8)
+           -> `impact_hit_2` (impacto medio 8-15)
+           -> `impact_hit_3` (impacto fuerte 15-25)
+           -> `impact_hit_4` (impacto muy fuerte > 25)
+           -> `scrape` (roce plano contra suelo con `normal.y > 0.7f`), reproducido con
+              `impact_scrape.wav` sintético, corto y de baja intensidad.
+       - Detección de fondo plano (*chassis bottoming*): si la compresión de suspensión llega
+         al tope ($\ge 75\text{ mm}$) a más de $50\text{ km/h}$, dispara `scrape`.
+       - Cooldown de colisión (`collision_cooldown_`) para evitar saturación de audio.
 
-================================================================================
-3. AUDITORÍA DEL JSON — HALLAZGOS (ya hechos, NO repetir; úsalos para P1)
-================================================================================
-Auditoría read-only de game/.../vehicles/f1_94/f1_94_physics.json (subagente).
-CONCLUSIÓN: casi todo se usa, pero estas claves se IGNORAN hardcodeadas o muertas:
-- surfaces.*.lateral_grip_assist (JSON Road 0.04) -> tire.rs hardcodea 0.05.
-- surfaces.*.longitudinal_grip_ratio (JSON Road 0.64) -> tire.rs hardcodea 0.5
-  (menos agarre longitudinal -> más patinaje -> sensación "sin TCS"; TC ya OK tras P0).
-- differential.slip_transition_threshold_rad_s (JSON 0.90) -> powertrain.rs:505
-  hardcodea 0.50.
-- input_smoothing_* (JSON on: steering 6.0/throttle 7.5/brake 14.0) ->
-  simulation.rs:501,506 hardcodea 20.0/10.0 (filter_inputs).
-- automatic_shift (15 claves) y gear_inertia: parseados pero NO usados
-  (auto-shift hardcodeado powertrain.rs:137-179; GEVP_GEAR_INERTIA 0.02).
-- launch_control_* + bit launch_control, bit auto_clutch, stability_upright_*,
-  traction_control_actuator, handbrake_rear_only/abs_interlock/clutch_coupling,
-  wheel_hubs, metadatos (vehicle_id/profile_name/units/coordinate_contract):
-  no leídas o metadatos.
-- brakes.enable_abs solo gobierna la ruta compat; en ruta real el ABS lo manda
-  el bit del mask (simulation.rs:225) -> dos fuentes de verdad.
-Diferencial de valores vs canónico a decidir con el usuario:
-  diff_preload JSON 40 vs canónico 170; contact_patch JSON 0.35 vs 0.21.
-Candidatos a "movimientos parásitos": countersteer_assist activo (mask JSON) +
-  ESP torque + pitch torque aid + grips hardcodeados + TC off de primer frame ya
-  arreglado.
+C) BUILD SCRIPT FIX & VALIDACIÓN DE COMPILACIÓN:
+   - `scripts/build_windows.ps1` ajustado para evitar que warnings de `cargo` en stderr detengan
+     la ejecución por `$ErrorActionPreference='Stop'`.
+   - Compilación exitosa de C++ GDExtension (`libformula90s`) y todos los crates de Rust.
+   - DLLs actualizadas en `game/addons/formula90s/bin/`:
+     * `formula90_core.windows.template_debug.x86_64.dll` (+ `formula90_core.dll`)
+     * `vehicle_audio_engine.windows.template_debug.x86_64.dll` (+ `vehicle_audio_engine.dll`)
+     * `game_sim.windows.template_debug.x86_64.dll` (+ `game_sim.dll`)
+     * `vehicle_physics_engine.windows.template_debug.x86_64.dll`
+   - Tests: `cargo test --workspace` (53 tests de física + 39 de audio + 14 de facade) -> 100% PASS.
 
 ================================================================================
-4. NEXT TASK (what the next agent must do)
+3. ESTADO DEL BANCO DE AUDIO (v10_vehicle) TRAS FASE 1
 ================================================================================
-USER REQUEST (intent): "verificar que todos los parámetros configurables del JSON
-  del F1-94 se usan de verdad; parece que no hay ESP/TCS (ya arreglado en P0), pero
-  puede haber otras cosas interfiriendo en movimientos parásitos."
-+ Aprobado (P0) -> AHORA P1/P2.
+Samples en uso activo en tiempo real:
+- Motor continuo: `engine_idle.wav`, `engine_low.wav`, `engine_mid.wav`, `engine_high.wav`, `engine_redline.wav`
+- Cambios de marcha: `shift_up.wav`, `shift_down.wav`
+- Camas de suelo: `surf_grass.wav`, `surf_rumble.wav`, `surf_sand.wav`
+- Backfire: `int_backfire.wav` / `int_backfire_2.wav` (una variante pseudoaleatoria por lift-off > 12k RPM).
+- Fondo plano: `impact_scrape.wav` (síntesis determinista sutil, 0.22 s, pico 0.32).
+- Colisiones / Impactos: `impact_barrier.wav`, `impact_hit_1.wav`, `impact_hit_2.wav`, `impact_hit_3.wav`, `impact_hit_4.wav`.
+- Reservado, no usado: `impact_cone.wav`.
 
---- PHASE P1 — FIDELIDAD DEL JSON (parámetros muertos/hardcodeados) ---
-Orden sugerido por impacto en el patinaje/snap oversteer:
-1. tire.rs L287-293: cablear surface_lateral_grip_assist y
-   surface_longitudinal_grip_ratio DESDE sim.config (VehicleConfig ya los
-   almacena: surface_lateral_grip_assist, surface_longitudinal_grip_ratio;
-   ver vehicle_config.rs L1569-1570). Sustituir los hardcodes 0.05/0.5. Corrección
-   grande de "sensación sin TCS" porque el JSON pide 0.64 (más agarre).
-   CUIDADO: cambiar 0.5->0.64 cambia la sensación; validar con A/B headless.
-2. powertrain.rs:505: usar diff_slip_transition_threshold_rad_s del config en
-   solve_salisbury_differential (en vez de 0.50) o eliminar la clave.
-3. simulation.rs: filter_inputs: usar input_smoothing_* (vehicle_config los
-   almacena?) o eliminar las claves del JSON si no se quieren.
-4. Decidir (con usuario) diff_preload / contact_patch (JSON vs canónico) y
-   automatic_shift / gear_inertia (implementar o borrar del schema).
-5. P1 adicional de coherencia: brakes.enable_abs vs bit del mask (una fuente);
-   enrutar driving_aids.gd (toggles ESTAB/FRENOS/GRIP hoy no-op por
-   vehicle_tunable_contract.gd UNSUPPORTED_F1_94_PROPERTIES L19-26) por
-   set_aids_enabled_mask, no por propiedades bloqueadas.
-Regla Phase C (PROJECT_STATE §8.3): cambia UNA familia a la vez y valida.
-
---- PHASE P2 — TELEMETRÍA PARA LA RUTA RUST (para poder validar con datos) ---
-6. telemetry_manager.gd SOLO captura clase "Vehicle" (GEVP) -> la ruta Rust
-   (F194RustVehicle) NO produce CSV. Añadir soporte para registrar el vehículo
-   Rust (o exponer la telemetría del core en la facada). Sin esto no hay CSV
-   de la sesión que conduces.
-7. Cabecera telemetry_manager.gd declara 26 columnas (TC_Active) pero emite 25:
-   reparar la columna TC_Active para poder verificar TC desde el CSV.
-8. Rebuild de la extensión native RELEASE (libformula90s.windows.template_release)
-   tras los cambios P0 (aún stale, sin F90Core). Y rebuild de formula90_core
-   template_release cuando se toque la fachada (ABI).
-
---- VALIDACIÓN (cada fase) ---
-- cargo test  (game/physics/engine + game/core al menos) -> EXIT 0.
-- scripts/build_windows.ps1 -Configuration debug  -> EXIT 0.
-- Headless: .tools/godot/Godot_v4.7.1-stable_win64_console.exe --headless
-  --path game --quit-after 240 res://scenes/runtime/sim_bridge_quick_test.tscn
-  -> "[F90Core] facade ready (ABI=2)" + "[F90Core->Vehicle]" + sin mismatch.
-- Tras cambios en formula90_core: recopiar SIEMPRE debug Y release-named
-  (template_release) a game/addons/formula90s/bin (el headless carga primero
-  template_release; si queda stale con ABI viejo -> FATAL ABI mismatch).
+- `engine_start_backfire.wav` (sample de backfire durante arranque; no conectar al over-run)
+Samples pendientes de siguientes fases:
+- `engine_starter.wav` (arranque del coche)
+- `engine_limiter.wav` (limitador de pitlane)
+- `engine_tc.wav` (modulación acústica de control de tracción)
+- `shift_3.wav` (variante alternativa de cambio)
+- `impact_fire.wav` (combustión / fuego de escape)
+- Ambiente y carrera fuera del banco de vehículo:
+  * `Ambient/ambient.mp3` (fondo de circuito)
+  * `Ambient/Crowd/fans_national_event_normal.wav` / `fans_national_event_positive.wav` (público)
+  * `Ambient/startlight_red.wav` / `Ambient/startlight_greenGO.wav` (semáforo de salida)
+  * `GP_toggle.wav` (UI) / `screenshot.wav` (modo foto)
 
 ================================================================================
-5. KEY FILES REFERENCE
+4. PRÓXIMAS FASES RECOMENDADAS
 ================================================================================
-game/core/                         - la fachada: lib.rs (CoreFacade), ffi.rs
-                                     (f90_core_*, ABI v2, layout_tests),
-                                     audio.rs, module.rs (SimModule),
-                                     modules/{weather,ai}_stub.rs, tests/
-game/physics/engine/src/           - solver: vehicle_config.rs (JSON),
-                                     simulation.rs (AidsMask, filter_inputs,
-                                     filter_inputs L501/506, ESP),
-                                     powertrain.rs (TC L310-366, LSD L469-520),
-                                     tire.rs (L287-293 grips), ffi.rs
-                                     (apply_runtime_config_to_sim)
-game/sim/                          - game_sim: world.rs, snapshot.rs, c_abi.rs
-native/src/core/f90_core.cpp       - nodo F90Core (drive_integrate, pump_audio,
-                                     apply_runtime_config, reset_core_at)
-native/include/formula90s/core/f90_core.h / .hpp   - C ABI v2 + F90Core class
-native/include/formula90s/vehicle/formula90_physics.h - F90RuntimeConfig
-native/src/vehicle/f1_94_rust_vehicle.cpp - bridge_controlled, apply_runtime_config
-game/data/vehicles/f1_94/f1_94_physics.json  - fuente de verdad (schema v2)
-game/addons/formula90s/scripts/telemetry_manager.gd  - P2 (solo GEVP; 26 vs 25)
-game/addons/formula90s/scripts/vehicle_tunable_contract.gd - P1 toggles no-op
-game/scenes/runtime/{vehicle_test_session,sim_bridge_quick_test}.tscn - orquestador
-scripts/build_windows.ps1 / build_linux.sh - builds (game/core incluido)
-docs/ARCHITECTURE.md  reports/facade_baseline.md  PROJECT_STATE.md  (§45 item 11)
+A) FASE 2 DE AUDIO — SECUENCIA DE CARRERA, SEMÁFORO Y AMBIENTE:
+   - Conectar sonidos de semáforo `startlight_red.wav` y `startlight_greenGO.wav` en `race_session.gd`.
+   - Colocar `AudioStreamPlayer3D` para sonido ambiente `ambient.mp3` y público en tribunas.
+   - Conectar sonido de UI `GP_toggle.wav` a la navegación de menús.
+
+B) FASE 3 DE AUDIO — ENRIQUECIMIENTO TÉCNICO:
+   - Crear sample / cama de chirrido de neumático sobre asfalto (*tire skid*) activado cuando `slip > 0.15`.
+   - Conectar `engine_starter.wav` a la secuencia de encendido.
+   - Conectar `engine_limiter.wav` al activar el limitador de pitlane.
+
+C) RECORDATORIO DE TAREAS DE FÍSICA PENDIENTES (P1 / P2):
+   - P1: Fidelidad del JSON `f1_94_physics.json` (superficies lateral/longitudinal grip assist, diff threshold).
+   - P2: Telemetría CSV de la ruta Rust (`telemetry_manager.gd` soporte `F194RustVehicle` y columna `TC_Active`).
 
 ================================================================================
-6. OPEN DECISIONS FOR NEXT AGENT (ask the user before mutating)
+5. COMANDOS ÚTILES DE VERIFICACIÓN Y BUILD
 ================================================================================
-- P1: ¿cablear longitudinal_grip_ratio 0.64 (más agarre) o mantener 0.5? (cambia
-  sensación). ¿implementar automatic_shift/gear_inertia o quitarlos del schema?
-  ¿reconciliar diff_preload (40 vs 170) y contact_patch (0.35 vs 0.21)?
-- P2: ¿dónde registrar la telemetría Rust (extender telemetry_manager vs exponer
-  del core)? Aprobarlo antes.
-- Do NOT commit unless asked. Update PROJECT_STATE.md (§45) when done.
-================================================================================
+- Compilar todo en Windows:
+  `powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -Configuration debug`
+- Ejecutar tests de Rust:
+  `cd game/crates ; cargo test --workspace`
+- Ejecutar test headless de Godot:
+  `.tools\godot\Godot_v4.7.1-stable_win64_console.exe --headless --path game --quit-after 240 res://scenes/runtime/sim_bridge_quick_test.tscn`

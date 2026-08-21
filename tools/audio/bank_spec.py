@@ -1,9 +1,9 @@
-"""Bank spec — single responsibility: declarative mapping of original samples to bank roles.
+"""Bank spec — declarative mapping of source and synthesized samples to bank roles.
 
 The bank is derived from the original F1-1998 engine internal + Grand Prix sample
-set in `assets-lowpoly-python/sounds/`. No synthesis. Each entry maps a source
-filename to a stable bank key with role, loop flag and category. This is the
-single place to change what the bank contains.
+set in `assets-lowpoly-python/sounds/`. Entries either map a source filename to
+a stable bank key or name a deterministic synthesis recipe. This is the single
+place to change what the bank contains.
 """
 
 from __future__ import annotations
@@ -17,11 +17,12 @@ DEFAULT_SOURCE_DIR = Path("assets-lowpoly-python/sounds")
 @dataclass(frozen=True)
 class SpecEntry:
     key: str            # stable bank key / output filename stem
-    source: str         # filename relative to SOURCE_DIR
+    source: str | None  # filename relative to SOURCE_DIR; None for synthesis
     role: str           # semantic role, e.g. engine_idle, surf_grass, impact_hit
     loop: bool
     category: str       # engine | shift | surface | impact | start
     native_rpm: float | None = None  # for engine bands: RPM at which sample was recorded
+    synthesis: str | None = None     # deterministic synthesis recipe
 
 
 # Native RPM per engine band (measured via full-loop dominant spectral peak as
@@ -52,7 +53,9 @@ BANK_SPEC: tuple[SpecEntry, ...] = (
     SpecEntry("shift_down", "98_int_shift_2.wav", "shift_down", False, "shift"),
     SpecEntry("shift_3", "98_int_shift_3.wav", "shift_3", False, "shift"),
     SpecEntry("engine_limiter", "98_INT_limiter_engage_disengage.wav", "engine_limiter", False, "engine"),
-    SpecEntry("engine_backfire", "98_start_backfire.wav", "engine_backfire", False, "start"),
+    SpecEntry("engine_start_backfire", "98_start_backfire.wav", "engine_start_backfire", False, "start"),
+    SpecEntry("int_backfire", "ALT_int_backfire.wav", "engine_backfire", False, "engine"),
+    SpecEntry("int_backfire_2", "ALT_int_backfire_2.wav", "engine_backfire", False, "engine"),
     SpecEntry("engine_starter", "98_starter.wav", "engine_starter", False, "start"),
     # --- Surfaces (loops) ---
     SpecEntry("surf_grass", "GP_grass_2.wav", "surf_grass", True, "surface"),
@@ -66,7 +69,7 @@ BANK_SPEC: tuple[SpecEntry, ...] = (
     SpecEntry("impact_barrier", "GP_barrier.wav", "impact_barrier", False, "impact"),
     SpecEntry("impact_cone", "GP_conehit.wav", "impact_cone", False, "impact"),
     SpecEntry("impact_fire", "GP_fire.WAV", "impact_fire", False, "impact"),
-    SpecEntry("impact_scrape", "GP_scrape.WAV", "impact_scrape", False, "impact"),
+    SpecEntry("impact_scrape", None, "impact_scrape", False, "impact", synthesis="flat_floor_scrape_v1"),
 )
 
 SPEC_BY_KEY: dict[str, SpecEntry] = {e.key: e for e in BANK_SPEC}

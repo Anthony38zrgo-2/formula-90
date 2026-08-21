@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://y6vgiqyljktp"
-path="res://.godot/imported/engine_backfire.wav-a936445926d1f438244e21d0994e944b.sample"
+path="res://.godot/imported/engine_start_backfire.wav-953d40efca4bf278dd5464bdabb3c676.sample"
 
 [deps]
 
-source_file="res://sounds/banks/v10_vehicle/engine_backfire.wav"
-dest_files=["res://.godot/imported/engine_backfire.wav-a936445926d1f438244e21d0994e944b.sample"]
+source_file="res://sounds/banks/v10_vehicle/engine_start_backfire.wav"
+dest_files=["res://.godot/imported/engine_start_backfire.wav-953d40efca4bf278dd5464bdabb3c676.sample"]
 
 [params]
 

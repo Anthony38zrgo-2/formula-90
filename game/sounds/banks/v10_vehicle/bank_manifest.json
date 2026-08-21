@@ -3,25 +3,6 @@
   "channels": 1,
   "files": [
     {
-      "dc_offset": -0.0,
-      "duration_s": 3.285624,
-      "file": "engine_backfire.wav",
-      "loop": false,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -10.31,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
-      "role": "engine_backfire",
-      "sha256": "8174637993898bf59c07dca62f41c1ac607b91634c43e890033006de30ebf022",
-      "synthesis": {
-        "category": "start",
-        "source_file": "98_start_backfire.wav",
-        "source_rate": 22050,
-        "source_sha256": "10501a48937a1df99353bace8d17e789be84bb7b0be66d93d282da5a226be119"
-      }
-    },
-    {
       "dc_offset": 0.0,
       "duration_s": 2.5,
       "file": "engine_high.wav",
@@ -138,6 +119,25 @@
         "source_file": "98_int_max_5.wav",
         "source_rate": 44100,
         "source_sha256": "f6b6cd4389fee32cb5f4b41a550e7aa146d4a5d0912fda86551dabfd598aa50b"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 3.285624,
+      "file": "engine_start_backfire.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -10.31,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_start_backfire",
+      "sha256": "8174637993898bf59c07dca62f41c1ac607b91634c43e890033006de30ebf022",
+      "synthesis": {
+        "category": "start",
+        "source_file": "98_start_backfire.wav",
+        "source_rate": 22050,
+        "source_sha256": "10501a48937a1df99353bace8d17e789be84bb7b0be66d93d282da5a226be119"
       }
     },
     {
@@ -312,22 +312,66 @@
       }
     },
     {
-      "dc_offset": 0.0,
-      "duration_s": 0.276463,
+      "dc_offset": -0.0,
+      "duration_s": 0.22,
       "file": "impact_scrape.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -13.07,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -25.57,
+      "peak": 0.32,
+      "provenance": "deterministic procedural synthesis",
       "role": "impact_scrape",
-      "sha256": "0898114bdaa1aaec640ff2ebb5be3ffc9bbaeb7312b75996080b0a591b5a7a13",
+      "sha256": "700d200499a6c4d523d598c9427fc3bede602449c98cddf9c00d24fc9863ffb2",
       "synthesis": {
         "category": "impact",
-        "source_file": "GP_scrape.WAV",
-        "source_rate": 11025,
-        "source_sha256": "422cef1ff81897bbdd1097bd2d76b8a40ea7a01af8c926590c41db2c8fbb8885"
+        "components": [
+          "differentiated_filtered_noise",
+          "185hz_resonance",
+          "430hz_resonance"
+        ],
+        "duration_s": 0.22,
+        "recipe": "flat_floor_scrape_v1",
+        "seed": 9001,
+        "target_peak": 0.32
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 1.494739,
+      "file": "int_backfire.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -11.91,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_backfire",
+      "sha256": "bf740d5c6ad9196768152d2ff7970fb2b3044b212b05e8ebff8b0bd4232df6d4",
+      "synthesis": {
+        "category": "engine",
+        "source_file": "ALT_int_backfire.wav",
+        "source_rate": 22050,
+        "source_sha256": "cb53eb15180f6da31eddf68aecb3478f0daa4e9fb2e3a779de3397805034d8ea"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 2.0,
+      "file": "int_backfire_2.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -14.6,
+      "peak": 0.89,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "role": "engine_backfire",
+      "sha256": "2dadfff327f604808b19ef0229d816e605bb412741bb5db09d4bd2d70ee8e56a",
+      "synthesis": {
+        "category": "engine",
+        "source_file": "ALT_int_backfire_2.wav",
+        "source_rate": 22050,
+        "source_sha256": "4f83c9a121e185b1fd87c0ddeab15b3177abb4621748ddaaeb5e93fe97efb434"
       }
     },
     {
@@ -445,7 +489,7 @@
       }
     }
   ],
-  "generator": "formula90s sample-based bank builder 1.0",
+  "generator": "formula90s hybrid sample/synthesis bank builder 1.1",
   "pcm_bits": 16,
   "sample_rate": 44100,
   "schema_version": 1,

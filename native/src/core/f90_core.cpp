@@ -522,6 +522,8 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		frame_.brake_speed_cooling_w_k,
 		frame_.brake_surface_to_bulk_heat_w);
 
+	process_collision_audio(veh, state, dt);
+
 	telemetry_print_accum_ += dt;
 	if (telemetry_print_accum_ >= 0.5) {
 		telemetry_print_accum_ = 0.0;
@@ -529,6 +531,86 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 			" km/h rpm=" + String::num(tel.rpm, 0) + " gear=" + String::num(tel.gear, 0) +
 			" fz=" + String::num(force.z, 1) + " surf=" + String::num(frame_.surface_code, 0) +
 			" posZ=" + String::num(old_pos.z, 2));
+	}
+}
+
+void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt) {
+	if (!enable_audio_ || !state) {
+		return;
+	}
+	if (collision_cooldown_ > 0.0) {
+		collision_cooldown_ -= dt;
+	}
+
+	const int contact_count = state->get_contact_count();
+	if (contact_count > 0 && collision_cooldown_ <= 0.0) {
+		const Vector3 body_lin_vel = state->get_linear_velocity();
+
+		for (int i = 0; i < contact_count; ++i) {
+			Vector3 normal = state->get_contact_local_normal(i);
+			Vector3 collider_vel = state->get_contact_collider_velocity_at_position(i);
+			Vector3 rel_vel = body_lin_vel - collider_vel;
+			Vector3 impulse = state->get_contact_impulse(i);
+
+			float normal_impact = (float)std::abs(rel_vel.dot(normal));
+			if (impulse.length_squared() > 0.0f) {
+				normal_impact = std::max(normal_impact, (float)impulse.length() * 0.1f);
+			}
+			float tang_speed = (rel_vel - normal * rel_vel.dot(normal)).length();
+
+			Object *col_obj = state->get_contact_collider_object(i);
+			Node *col_node = Object::cast_to<Node>(col_obj);
+
+			bool is_barrier = col_node && (col_node->is_in_group("Barrier") || col_node->is_in_group("Wall") ||
+				col_node->is_in_group("Armco") || col_node->is_in_group("TireBarrier") || col_node->is_in_group("Guardrail"));
+			bool is_cone = col_node && (col_node->is_in_group("Cone") || col_node->is_in_group("Prop") ||
+				col_node->is_in_group("DynamicObstacle") || col_node->is_in_group("Obstacle"));
+
+			if (is_barrier) {
+				if (normal_impact > 3.0f) {
+					trigger("impact_barrier");
+					collision_cooldown_ = 0.20;
+					break;
+				} else if (tang_speed > 4.0f) {
+					trigger("scrape");
+					collision_cooldown_ = 0.15;
+					break;
+				}
+			} else if (is_cone) {
+				trigger("impact_cone");
+				collision_cooldown_ = 0.15;
+				break;
+			} else {
+				// General collision (body hit or obstacle)
+				if (normal_impact > 3.0f) {
+					if (normal_impact < 8.0f) {
+						trigger("impact_hit_1");
+					} else if (normal_impact < 15.0f) {
+						trigger("impact_hit_2");
+					} else if (normal_impact < 25.0f) {
+						trigger("impact_hit_3");
+					} else {
+						trigger("impact_hit_4");
+					}
+					collision_cooldown_ = 0.20;
+					break;
+				} else if (tang_speed > 8.0f && normal.y > 0.7f) {
+					// Shallow floor scrape
+					trigger("scrape");
+					collision_cooldown_ = 0.15;
+					break;
+				}
+			}
+		}
+	}
+
+	// Bottoming out / chassis scraping when suspension travel reaches limit under high speed/compression
+	if (collision_cooldown_ <= 0.0 && veh != nullptr) {
+		if ((frame_.fl_comp_mm >= 75.0 || frame_.fr_comp_mm >= 75.0 ||
+			 frame_.rl_comp_mm >= 75.0 || frame_.rr_comp_mm >= 75.0) && frame_.speed_kmh > 50.0) {
+			trigger("scrape");
+			collision_cooldown_ = 0.25;
+		}
 	}
 }
 

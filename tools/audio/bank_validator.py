@@ -85,10 +85,14 @@ def validate_bank(bank_dir: Path, manifest_name: str = "bank_manifest.json") -> 
         findings.append(Finding(missing, "file.manifest_only", "error", "manifest entry has no file on disk"))
     for entry in files:
         prov = entry.get("provenance", "")
+        synth = entry.get("synthesis", {})
+        if synth.get("recipe"):
+            if not isinstance(synth.get("seed"), int):
+                findings.append(Finding(entry.get("file", ""), "manifest.synthesis_seed_missing", "error", "procedural entry has no integer seed"))
+            continue
         if prov and "derived from original" not in prov.lower():
             findings.append(Finding(entry.get("file", ""), "provenance", "warning", f"provenance '{prov}' does not declare derived-from-original"))
-        # Each entry must reference its source sample (provenance of the bank).
-        synth = entry.get("synthesis", {})
+        # Sample-derived entries must reference their source and its content hash.
         if not synth.get("source_file"):
             findings.append(Finding(entry.get("file", ""), "manifest.source_missing", "error", "entry has no source_file in synthesis metadata"))
         if not synth.get("source_sha256"):

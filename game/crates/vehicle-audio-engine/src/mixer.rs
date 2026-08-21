@@ -113,6 +113,8 @@ pub struct VehicleAudioEngine {
     last_slip: f32,
     last_gear: i32,
     last_trigger: String,
+    backfire_cooldown_samples: usize,
+    variant_rng_state: u64,
 }
 
 impl VehicleAudioEngine {
@@ -126,7 +128,6 @@ impl VehicleAudioEngine {
         for t in [
             Trigger::ShiftUp,
             Trigger::ShiftDown,
-            Trigger::Backfire,
             Trigger::Hit1,
             Trigger::Hit2,
             Trigger::Hit3,
@@ -138,8 +139,27 @@ impl VehicleAudioEngine {
         ] {
             let key = t.bank_key().to_string();
             if bank.get(&key).is_some() {
-                one_shots.push(OneShot { trigger: t, key, cursor: 0, active: false });
+                one_shots.push(OneShot {
+                    trigger: t,
+                    key,
+                    cursor: 0,
+                    active: false,
+                });
             }
+        }
+        // A role may expose multiple samples. Backfire currently has two internal
+        // variants; keep their BTreeMap order stable for deterministic replays.
+        for sample in bank
+            .samples
+            .values()
+            .filter(|s| s.role == "engine_backfire")
+        {
+            one_shots.push(OneShot {
+                trigger: Trigger::Backfire,
+                key: sample.key.clone(),
+                cursor: 0,
+                active: false,
+            });
         }
 
         let sample_rate = bank
@@ -176,6 +196,8 @@ impl VehicleAudioEngine {
             target_rpm: 0.0,
             idle_rpm: 0.0,
             max_rpm: 0.0,
+            backfire_cooldown_samples: 0,
+            variant_rng_state: 0xF090_1994_D15C_A11D,
         })
     }
 
@@ -229,10 +251,24 @@ impl VehicleAudioEngine {
 
         if gear != self.last_gear {
             if self.last_gear != 0 {
-                let t = if gear > self.last_gear { Trigger::ShiftUp } else { Trigger::ShiftDown };
+                let t = if gear > self.last_gear {
+                    Trigger::ShiftUp
+                } else {
+                    Trigger::ShiftDown
+                };
                 self.trigger(t);
             }
             self.last_gear = gear;
+        }
+
+        // Over-run backfire: sudden lift-off from high throttle at high RPM (> 12,000 RPM).
+        if self.last_throttle >= 0.80
+            && throttle <= 0.15
+            && rpm >= 12000.0
+            && self.backfire_cooldown_samples == 0
+        {
+            self.trigger(Trigger::Backfire);
+            self.backfire_cooldown_samples = (self.sample_rate as f64 * 0.35) as usize;
         }
 
         self.last_norm = norm;
@@ -242,13 +278,26 @@ impl VehicleAudioEngine {
         self.last_slip = slip;
     }
 
-    /// Fire a one-shot (restart if already playing).
+    /// Fire one deterministic pseudo-random variant for the requested one-shot.
     pub fn trigger(&mut self, t: Trigger) {
         self.last_trigger = t.bank_key().to_string();
+        let variant_count = self.one_shots.iter().filter(|o| o.trigger == t).count();
+        if variant_count == 0 {
+            return;
+        }
+        self.variant_rng_state = self
+            .variant_rng_state
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1);
+        let selected = ((self.variant_rng_state >> 32) as usize) % variant_count;
+        let mut ordinal = 0usize;
         for o in self.one_shots.iter_mut() {
             if o.trigger == t {
-                o.cursor = 0;
-                o.active = true;
+                o.active = ordinal == selected;
+                if o.active {
+                    o.cursor = 0;
+                }
+                ordinal += 1;
             }
         }
     }
@@ -257,6 +306,7 @@ impl VehicleAudioEngine {
     /// layers and bed are read with a fractional cursor (no Godot resampler),
     /// gains are smoothed per-sample, and a tanh soft-clip limiter catches peaks.
     pub fn render(&mut self, out_l: &mut [f32], out_r: &mut [f32], n: usize) {
+        self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
         let sr = self.sample_rate as f64;
         let rpm_alpha = 1.0 - (-1.0 / (sr * RPM_SMOOTH_TAU)).exp();
         for i in 0..n {
@@ -287,7 +337,8 @@ impl VehicleAudioEngine {
 
             // Engine bands: weights + pitch derived continuously from smoothed_rpm.
             let norm = if self.max_rpm > self.idle_rpm {
-                (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32).clamp(0.0, 1.0)
+                (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
+                    .clamp(0.0, 1.0)
             } else {
                 0.0
             };
@@ -430,7 +481,9 @@ mod tests {
         // Engine layers use a full-scale seamless sine so crossfade overlap peaks
         // are exercised (and the loop wrap is click-free) in headroom/click tests.
         let engine_pcm: Vec<i16> = (0..2048)
-            .map(|i| (30000.0 * (2.0 * std::f32::consts::PI * 8.0 * i as f32 / 2048.0).sin()) as i16)
+            .map(|i| {
+                (30000.0 * (2.0 * std::f32::consts::PI * 8.0 * i as f32 / 2048.0).sin()) as i16
+            })
             .collect();
         let silent: Vec<i16> = vec![0i16; 2048];
         let pcm: Vec<i16> = (0..2048)
@@ -444,8 +497,10 @@ mod tests {
             "engine_redline",
             "surf_grass",
             "shift_up",
+            "int_backfire",
+            "int_backfire_2",
         ] {
-            let (data, is_loop) = if key == "shift_up" {
+            let (data, is_loop) = if key == "shift_up" || key.starts_with("int_backfire") {
                 (pcm.clone(), false)
             } else if key == "surf_grass" {
                 (pcm.clone(), true)
@@ -541,10 +596,24 @@ mod tests {
             target_rpm: 0.0,
             idle_rpm: 0.0,
             max_rpm: 0.0,
+            backfire_cooldown_samples: 0,
+            variant_rng_state: 0xF090_1994_D15C_A11D,
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::ShiftUp,
             key: "shift_up".to_string(),
+            cursor: 0,
+            active: false,
+        });
+        e.one_shots.push(OneShot {
+            trigger: Trigger::Backfire,
+            key: "int_backfire".to_string(),
+            cursor: 0,
+            active: false,
+        });
+        e.one_shots.push(OneShot {
+            trigger: Trigger::Backfire,
+            key: "int_backfire_2".to_string(),
             cursor: 0,
             active: false,
         });
@@ -591,7 +660,10 @@ mod tests {
         //    gain (not squashed), proving the limiter only acts on peaks.
         let quiet = e.limiter(0.05);
         let expected = (0.05 * drive).tanh() * ceiling;
-        assert!((quiet - expected).abs() < 1e-4, "quiet signal not transparent: {quiet} vs {expected}");
+        assert!(
+            (quiet - expected).abs() < 1e-4,
+            "quiet signal not transparent: {quiet} vs {expected}"
+        );
         assert!(quiet.abs() > 0.04, "quiet signal over-attenuated: {quiet}");
     }
 
@@ -603,7 +675,10 @@ mod tests {
         let mut l = vec![0.0f32; 4096];
         let mut r = vec![0.0f32; 4096];
         e.render(&mut l, &mut r, 4096);
-        let tail = l[3000..].iter().copied().fold(0.0f32, |m, v| m.max(v.abs()));
+        let tail = l[3000..]
+            .iter()
+            .copied()
+            .fold(0.0f32, |m, v| m.max(v.abs()));
         assert!(tail < 1e-3, "one-shot should have ended, tail={tail}");
     }
 
@@ -642,8 +717,14 @@ mod tests {
         // the limiter ceiling; without it the crossfade would slam to ~0.76, which
         // is the clipping-at-RPM-change regression. Use 0.70 as a tight guard.
         let ceiling = e.config().limiter_threshold;
-        assert!(peak_post <= ceiling + 1e-3, "exceeded limiter ceiling: {peak_post}");
-        assert!(peak_post < 0.70, "engine headroom lost: peak_post={peak_post} (expected < 0.70)");
+        assert!(
+            peak_post <= ceiling + 1e-3,
+            "exceeded limiter ceiling: {peak_post}"
+        );
+        assert!(
+            peak_post < 0.70,
+            "engine headroom lost: peak_post={peak_post} (expected < 0.70)"
+        );
     }
 
     #[test]
@@ -663,5 +744,88 @@ mod tests {
             (p1 - p0).abs() < (target - p0).abs() * 0.5,
             "pitch snapped instead of gliding: p0={p0} p1={p1} target={target}"
         );
+    }
+
+    #[test]
+    fn backfire_fires_on_overrun_above_12k_rpm() {
+        let mut e = engine_with_bank(dummy_bank());
+        // High throttle at high RPM (>12000)
+        e.set_state(13500.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
+        assert_eq!(e.last_trigger(), "");
+
+        // Sudden lift-off
+        e.set_state(13200.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        assert_eq!(e.last_trigger(), "engine_backfire");
+
+        // Cooldown prevents a second lift-off from restarting another variant.
+        let active_before = e
+            .one_shots
+            .iter()
+            .position(|o| o.trigger == Trigger::Backfire && o.active);
+        e.render(&mut vec![0.0; 256], &mut vec![0.0; 256], 256);
+        let cooldown_before = e.backfire_cooldown_samples;
+        e.set_state(13000.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(12800.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        let active_after = e
+            .one_shots
+            .iter()
+            .position(|o| o.trigger == Trigger::Backfire && o.active);
+        assert_eq!(e.backfire_cooldown_samples, cooldown_before);
+        assert_eq!(active_after, active_before);
+
+        // Advance render past the remaining cooldown.
+        let mut l = vec![0.0f32; 15200];
+        let mut r = vec![0.0f32; 15200];
+        e.render(&mut l, &mut r, 15200);
+        assert_eq!(e.backfire_cooldown_samples, 0);
+
+        // Now next lift-off triggers backfire again
+        e.set_state(13000.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(12700.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        assert_eq!(e.last_trigger(), "engine_backfire");
+    }
+
+    #[test]
+    fn backfire_does_not_fire_at_low_rpm() {
+        let mut e = engine_with_bank(dummy_bank());
+        // High throttle at low RPM (<12000)
+        e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        // Sudden lift-off
+        e.set_state(7800.0, 1000.0, 15000.0, 0.0, 100.0, 3, 0.0, "asphalt");
+        assert_eq!(e.last_trigger(), "");
+    }
+
+    #[test]
+    fn backfire_selects_one_of_two_variants_deterministically() {
+        let mut e = engine_with_bank(dummy_bank());
+        let mut sequence = Vec::new();
+        for _ in 0..8 {
+            e.trigger(Trigger::Backfire);
+            let active: Vec<&str> = e
+                .one_shots
+                .iter()
+                .filter(|o| o.trigger == Trigger::Backfire && o.active)
+                .map(|o| o.key.as_str())
+                .collect();
+            assert_eq!(active.len(), 1);
+            sequence.push(active[0].to_string());
+        }
+        assert!(sequence.iter().any(|k| k == "int_backfire"));
+        assert!(sequence.iter().any(|k| k == "int_backfire_2"));
+
+        let mut replay = engine_with_bank(dummy_bank());
+        let replay_sequence: Vec<String> = (0..8)
+            .map(|_| {
+                replay.trigger(Trigger::Backfire);
+                replay
+                    .one_shots
+                    .iter()
+                    .find(|o| o.trigger == Trigger::Backfire && o.active)
+                    .unwrap()
+                    .key
+                    .clone()
+            })
+            .collect();
+        assert_eq!(sequence, replay_sequence);
     }
 }

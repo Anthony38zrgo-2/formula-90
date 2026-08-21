@@ -202,6 +202,8 @@ private:
 	Object *audio_playback_ = nullptr;
 	bool audio_initialized_ = false;
 	std::vector<float> mix_l_, mix_r_;
+	double collision_cooldown_ = 0.0;
+	void process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt);
 
 	double telemetry_print_accum_ = 0.0;
 };

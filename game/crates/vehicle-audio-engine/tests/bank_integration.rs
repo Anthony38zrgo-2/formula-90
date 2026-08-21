@@ -59,6 +59,10 @@ fn bank_loads_and_has_expected_entries() {
         "impact_barrier",
         "impact_cone",
         "shift_up",
+        "engine_start_backfire",
+        "int_backfire",
+        "int_backfire_2",
+        "impact_scrape",
     ] {
         assert!(bank.get(key).is_some(), "missing bank key {key}");
     }

@@ -425,6 +425,8 @@ void F194RustVehicle::_ready() {
 	// 1. Dynamic RigidBody3D setup
 	set_freeze_enabled(false);
 	set_gravity_scale(1.0);
+	set_contact_monitor(true);
+	set_max_contacts_reported(4);
 
 	// 2. Synchronize config from authoritative Rust backend
 	sync_runtime_config_from_rust();

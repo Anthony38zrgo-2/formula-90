@@ -1,4 +1,4 @@
-"""Determinism & metadata tests for the v10_vehicle bank (derived from original samples)."""
+"""Determinism & metadata tests for the hybrid v10_vehicle bank."""
 
 from __future__ import annotations
 
@@ -31,17 +31,21 @@ def test_manifest_contains_required_fields():
     assert manifest.sample_rate == 44100
     assert manifest.channels == 1
     assert manifest.pcm_bits == 16
-    assert len(manifest.files) == 23
+    assert len(manifest.files) == 25
     roles = {e.role for e in manifest.files}
     assert {"engine_idle", "engine_low", "engine_mid", "engine_high", "engine_redline"} <= roles
     assert {"shift_up", "shift_down"} <= roles
     assert {"surf_grass", "surf_sand", "surf_rumble"} <= roles
     assert {"impact_barrier", "impact_cone", "impact_hit"} <= roles
     for e in manifest.files:
-        assert e.synthesis.get("source_file"), f"{e.file} missing source_file"
-        assert e.synthesis.get("source_sha256"), f"{e.file} missing source_sha256"
-        assert len(e.synthesis["source_sha256"]) == 64
-        assert "derived from original" in e.provenance.lower()
+        if e.synthesis.get("recipe"):
+            assert e.synthesis["recipe"] == "flat_floor_scrape_v1"
+            assert "procedural synthesis" in e.provenance.lower()
+        else:
+            assert e.synthesis.get("source_file"), f"{e.file} missing source_file"
+            assert e.synthesis.get("source_sha256"), f"{e.file} missing source_sha256"
+            assert len(e.synthesis["source_sha256"]) == 64
+            assert "derived from original" in e.provenance.lower()
         assert e.sha256 and len(e.sha256) == 64
         assert e.duration_s > 0
         assert e.peak < 0.99
@@ -57,7 +61,7 @@ def test_manifest_hashes_match_files_on_disk():
 
 
 def test_bank_matches_declared_source_spec():
-    """Every manifest entry maps to the bank_spec source file (no drift)."""
+    """Every manifest entry maps to its declared source or synthesis recipe."""
     from tools.audio.bank_manifest import BankManifest
     from tools.audio.bank_spec import BANK_SPEC
 
@@ -68,9 +72,13 @@ def test_bank_matches_declared_source_spec():
     for entry in manifest.files:
         key = entry.file[:-4]
         spec = by_key[key]
-        assert entry.synthesis["source_file"] == spec.source, f"{key} source drift"
         assert entry.role == spec.role
         assert entry.loop == spec.loop
+        if spec.synthesis is not None:
+            assert entry.synthesis["recipe"] == spec.synthesis
+            continue
+        assert entry.synthesis["source_file"] == spec.source, f"{key} source drift"
+        assert spec.source is not None
         src = SOURCE / spec.source
         assert src.is_file(), f"source missing {src}"
         assert hashlib.sha256(src.read_bytes()).hexdigest() == entry.synthesis["source_sha256"], f"{key} source hash"

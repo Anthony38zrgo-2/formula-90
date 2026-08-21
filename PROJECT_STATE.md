@@ -2888,6 +2888,24 @@ Known unrelated validation output:
 
 ---
 
+## 49.1 Audio bank semantic correction (2026-08-21) `[IMPLEMENTED — TESTS GREEN]`
+
+- The former `engine_backfire.wav` was correctly identified as a start-event sample and
+  renamed to `engine_start_backfire.wav`; it is not used by over-run logic.
+- Runtime over-run backfire now selects exactly one deterministic pseudo-random variant
+  from `int_backfire.wav` and `int_backfire_2.wav` (role `engine_backfire`). The fixed seed
+  preserves byte/replay determinism while avoiding a repetitive single sample.
+- `impact_scrape.wav` was replaced with deterministic procedural synthesis intended for
+  subtle flat-floor contact: 0.22 s, peak 0.32, filtered grit with muted 185/430 Hz body
+  resonances. The recipe and seed are stored in `bank_manifest.json`.
+- `impact_cone.wav` remains reserved and is not part of the current runtime acceptance gate.
+- Bank pipeline upgraded to hybrid sample/synthesis builder 1.1. Manifest contains 25 files;
+  all are mono PCM16 44.1 kHz and hash-validated.
+- Validation accepted: 8 Python bank tests; full Rust workspace green (including 33 audio unit
+  tests + 6 real-bank integrations); release build completed; Godot reimport and canonical
+  F90Core audio smoke passed with Core ABI 7 / Physics ABI 12.
+
+---
 # 50. Maintenance footer
 
 When updating this document, update this footer.
