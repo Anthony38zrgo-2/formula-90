@@ -1549,6 +1549,25 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	out["audio_scrape_gain"] = audio_scrape_gain_;
 	out["audio_scrape_pitch"] = audio_scrape_pitch_;
 	out["audio_scrape_cursor"] = audio_scrape_cursor_;
+	Dictionary compression, closing_speed, force, bottoming_phase;
+	for (int i = 0; i < 5; ++i) {
+		const String name(NAMES[i]);
+		compression[name] = underfloor_compression_m_[i];
+		closing_speed[name] = underfloor_closing_speed_m_s_[i];
+		force[name] = underfloor_normal_force_n_[i];
+		bottoming_phase[name] = underfloor_bottoming_phase_[i];
+	}
+	out["compression_m"] = compression;
+	out["closing_speed_m_s"] = closing_speed;
+	out["normal_force_n"] = force;
+	out["bottoming_phase"] = bottoming_phase;
+	out["active_probe_mask"] = (int64_t)underfloor_active_probe_mask_;
+	out["total_normal_force_n"] = underfloor_total_normal_force_n_;
+	out["max_probe_force_n"] = underfloor_max_probe_force_n_;
+	out["force_center_local"] = Vector3(underfloor_force_center_local_[0], underfloor_force_center_local_[1], underfloor_force_center_local_[2]);
+	out["bottoming_torque_nm"] = Vector3(underfloor_bottoming_torque_[0], underfloor_bottoming_torque_[1], underfloor_bottoming_torque_[2]);
+	out["dissipated_energy_j"] = underfloor_dissipated_energy_j_;
+	out["rigid_contact_blend"] = underfloor_rigid_contact_blend_;
 	return out;
 }
 
@@ -1564,6 +1583,21 @@ void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_fra
 	audio_scrape_gain_ = p_frame.audio_scrape_gain;
 	audio_scrape_pitch_ = p_frame.audio_scrape_pitch;
 	audio_scrape_cursor_ = p_frame.audio_scrape_cursor;
+	for (int i = 0; i < 5; ++i) {
+		underfloor_compression_m_[i] = p_frame.underfloor_compression_m[i];
+		underfloor_closing_speed_m_s_[i] = p_frame.underfloor_closing_speed_m_s[i];
+		underfloor_normal_force_n_[i] = p_frame.underfloor_normal_force_n[i];
+		underfloor_bottoming_phase_[i] = p_frame.underfloor_bottoming_phase[i];
+	}
+	underfloor_active_probe_mask_ = p_frame.underfloor_active_probe_mask;
+	underfloor_total_normal_force_n_ = p_frame.underfloor_total_normal_force_n;
+	underfloor_max_probe_force_n_ = p_frame.underfloor_max_probe_force_n;
+	for (int i = 0; i < 3; ++i) {
+		underfloor_force_center_local_[i] = p_frame.underfloor_force_center_local[i];
+		underfloor_bottoming_torque_[i] = p_frame.underfloor_bottoming_torque[i];
+	}
+	underfloor_dissipated_energy_j_ = p_frame.underfloor_dissipated_energy_j;
+	underfloor_rigid_contact_blend_ = p_frame.underfloor_rigid_contact_blend;
 }
 
 void F194RustVehicle::set_core_brake_energy_telemetry(

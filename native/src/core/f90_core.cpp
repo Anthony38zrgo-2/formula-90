@@ -351,7 +351,8 @@ void F90Core::_ready() {
 		json_escape(cfg_global) + "\",\"use_canonical\":" + String(use_canonical ? "true" : "false") +
 		",\"fixed_dt\":" + String::num(fixed_dt_, 10) + ",\"enable_audio\":" + String(enable_audio_ ? "true" : "false") +
 		",\"idle_rpm\":" + String::num(idle_rpm_, 1) + ",\"max_rpm\":" + String::num(max_rpm_, 1) +
-		",\"modules\":" + modules_json + "}";
+		",\"modules\":" + modules_json +
+		",\"underfloor_contact\":{\"enabled\":true,\"approach_clearance_m\":0.020,\"activation_clearance_m\":0.008,\"release_clearance_m\":0.016,\"linear_rate_n_m\":450000.0,\"progressive_rate_n_m2\":40000000.0,\"damping_n_s_m\":12000.0,\"max_force_per_probe_n\":12000.0,\"rigid_contact_spring_scale\":0.25,\"normal_min_y\":0.55}}";
 
 	CharString cs = opts.utf8();
 	uint8_t err_buf[256] = { 0 };

@@ -44,7 +44,12 @@ const CSV_COLUMNS := [
     "FL_SurfaceToBulkHeat_W", "FR_SurfaceToBulkHeat_W", "RL_SurfaceToBulkHeat_W", "RR_SurfaceToBulkHeat_W",
     "UF_FL_Clearance_m", "UF_FR_Clearance_m", "UF_Center_Clearance_m", "UF_DiffuserThroat_Clearance_m", "UF_DiffuserExit_Clearance_m",
     "UF_ValidMask", "UF_ScrapePhase", "UF_MinClearance_m", "UF_Rake_rad", "UF_Roll_rad",
-    "UF_ContactConfidence", "UF_ScrapeIntensity", "UF_AudioGain", "UF_AudioPitch", "UF_AudioCursor"
+    "UF_ContactConfidence", "UF_ScrapeIntensity", "UF_AudioGain", "UF_AudioPitch", "UF_AudioCursor",
+    "UF_FL_Compression_m", "UF_FR_Compression_m", "UF_Center_Compression_m", "UF_DiffuserThroat_Compression_m", "UF_DiffuserExit_Compression_m",
+    "UF_FL_ClosingSpeed_mps", "UF_FR_ClosingSpeed_mps", "UF_Center_ClosingSpeed_mps", "UF_DiffuserThroat_ClosingSpeed_mps", "UF_DiffuserExit_ClosingSpeed_mps",
+    "UF_FL_Force_N", "UF_FR_Force_N", "UF_Center_Force_N", "UF_DiffuserThroat_Force_N", "UF_DiffuserExit_Force_N",
+    "UF_FL_BottomingPhase", "UF_FR_BottomingPhase", "UF_Center_BottomingPhase", "UF_DiffuserThroat_BottomingPhase", "UF_DiffuserExit_BottomingPhase",
+    "UF_ActiveProbeMask", "UF_TotalNormalForce_N", "UF_MaxProbeForce_N", "UF_DissipatedEnergy_J", "UF_RigidContactBlend"
 ]
 
 func _ready():
@@ -179,7 +184,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var thermal: Array = []
     for _field in range(48):
         thermal.append(0.0)
-    var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0]
+    var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0]
     if _is_rust:
         var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
         if snapshot_value is Dictionary:
@@ -243,6 +248,21 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                 underfloor_fields[12] = float(underfloor.get("audio_scrape_gain", 0.0))
                 underfloor_fields[13] = float(underfloor.get("audio_scrape_pitch", 1.0))
                 underfloor_fields[14] = int(underfloor.get("audio_scrape_cursor", 0))
+                var probe_names := ["front_left", "front_right", "center", "diffuser_throat", "diffuser_exit"]
+                var compression: Dictionary = underfloor.get("compression_m", {})
+                var closing_speed: Dictionary = underfloor.get("closing_speed_m_s", {})
+                var normal_force: Dictionary = underfloor.get("normal_force_n", {})
+                var bottoming_phase: Dictionary = underfloor.get("bottoming_phase", {})
+                for i in range(5):
+                    underfloor_fields[15 + i] = float(compression.get(probe_names[i], 0.0))
+                    underfloor_fields[20 + i] = float(closing_speed.get(probe_names[i], 0.0))
+                    underfloor_fields[25 + i] = float(normal_force.get(probe_names[i], 0.0))
+                    underfloor_fields[30 + i] = int(bottoming_phase.get(probe_names[i], 0))
+                underfloor_fields[35] = int(underfloor.get("active_probe_mask", 0))
+                underfloor_fields[36] = float(underfloor.get("total_normal_force_n", 0.0))
+                underfloor_fields[37] = float(underfloor.get("max_probe_force_n", 0.0))
+                underfloor_fields[38] = float(underfloor.get("dissipated_energy_j", 0.0))
+                underfloor_fields[39] = float(underfloor.get("rigid_contact_blend", 0.0))
 
     var base_line := "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f" % [
         now_msec, speed_kmh, rpm, gear,
@@ -270,7 +290,7 @@ func _thermal_csv_fields(values: Array) -> PackedStringArray:
 func _underfloor_csv_fields(values: Array) -> PackedStringArray:
     var fields := PackedStringArray()
     for i in range(values.size()):
-        if i == 5 or i == 6 or i == 14:
+        if i == 5 or i == 6 or i == 14 or (i >= 30 and i <= 35):
             fields.append("%d" % int(values[i]))
         else:
             fields.append("%.6f" % float(values[i]))

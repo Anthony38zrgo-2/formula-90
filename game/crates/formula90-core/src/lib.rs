@@ -60,6 +60,7 @@ pub struct CoreConfig {
     /// Module names to instantiate at startup. Unknown names are silently ignored
     /// (forward compatible: an older core ignores a newer module request).
     pub modules: Vec<String>,
+    pub underfloor_contact: underfloor::UnderfloorContactConfig,
 }
 
 impl Default for CoreConfig {
@@ -75,6 +76,7 @@ impl Default for CoreConfig {
             vehicle_scene: "res://scenes/vehicles/f1_94/f1_94_rust.tscn".to_string(),
             track_scene: "res://scenes/tracks/test_field/la_chutana_track.tscn".to_string(),
             modules: Vec::new(),
+            underfloor_contact: underfloor::UnderfloorContactConfig::default(),
         }
     }
 }
@@ -268,6 +270,12 @@ impl CoreFacade {
             time_ms: (self.world.time * 1000.0).round() as i64,
             ..CoreFrame::default()
         };
+        self.underfloor.step(
+            underfloor_sample,
+            Some(&body),
+            &self.config.underfloor_contact,
+            dt,
+        );
 
         if let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) {
             // The CPU side (Godot / driving_aids) is the authority on the aids mask.
@@ -288,15 +296,17 @@ impl CoreFacade {
                 forces.force_world.z,
             ];
             frame.torque = [
-                forces.torque_world.x,
-                forces.torque_world.y,
-                forces.torque_world.z,
+                forces.torque_world.x + self.underfloor.torque_world[0],
+                forces.torque_world.y + self.underfloor.torque_world[1],
+                forces.torque_world.z + self.underfloor.torque_world[2],
             ];
+            frame.force[0] += self.underfloor.force_world[0];
+            frame.force[1] += self.underfloor.force_world[1];
+            frame.force[2] += self.underfloor.force_world[2];
             frame.throttle = input.throttle;
         }
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
-        self.underfloor.step(underfloor_sample, dt);
         frame.underfloor_clearance_m = self.underfloor.filtered_clearance_m;
         frame.underfloor_valid_mask = self.underfloor.valid_mask;
         frame.underfloor_scrape_phase = self.underfloor.scrape_phase as i32;
@@ -305,6 +315,17 @@ impl CoreFacade {
         frame.underfloor_roll_rad = self.underfloor.roll_rad;
         frame.underfloor_contact_confidence = self.underfloor.contact_confidence;
         frame.underfloor_scrape_intensity = self.underfloor.scrape_intensity;
+        frame.underfloor_compression_m = self.underfloor.compression_m;
+        frame.underfloor_closing_speed_m_s = self.underfloor.closing_speed_m_s;
+        frame.underfloor_normal_force_n = self.underfloor.normal_force_n;
+        frame.underfloor_bottoming_phase = self.underfloor.bottoming_phase.map(|v| v as i32);
+        frame.underfloor_active_probe_mask = self.underfloor.active_probe_mask;
+        frame.underfloor_total_normal_force_n = self.underfloor.total_normal_force_n;
+        frame.underfloor_max_probe_force_n = self.underfloor.max_probe_force_n;
+        frame.underfloor_force_center_local = self.underfloor.force_center_local;
+        frame.underfloor_bottoming_torque = self.underfloor.torque_world;
+        frame.underfloor_dissipated_energy_j = self.underfloor.dissipated_energy_j;
+        frame.underfloor_rigid_contact_blend = self.underfloor.rigid_contact_blend;
         let scrape_active = matches!(
             self.underfloor.scrape_phase,
             underfloor::ScrapePhase::Impact | underfloor::ScrapePhase::Scraping

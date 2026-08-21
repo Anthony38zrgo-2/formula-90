@@ -738,7 +738,7 @@ mod tests {
 
     #[test]
     fn render_is_finite_and_limited() {
-        let e = engine_with_bank(dummy_bank());
+        let mut e = engine_with_bank(dummy_bank());
         e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
         let mut l = vec![0.0f32; 4096];
         let mut r = vec![0.0f32; 4096];
@@ -779,7 +779,7 @@ mod tests {
 
     #[test]
     fn limiter_soft_clips_without_harsh_clip() {
-        let mut e = engine_with_bank(dummy_bank());
+        let e = engine_with_bank(dummy_bank());
         let ceiling = e.config().limiter_threshold;
         let drive = 1.0 + e.config().saturation * 3.0;
 

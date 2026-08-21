@@ -4,7 +4,7 @@
 #include "formula90s/vehicle/formula90_physics.h" // F90RuntimeConfig (mirror of FfiRuntimeConfig)
 
 // C-API mirror of the orchestrator facade (game/crates/formula90-core/src/ffi.rs,
-// formula90_core.dll). ABI v8 adds five underfloor probes, fused scrape state
+// formula90_core.dll). ABI v9 adds localized underfloor bottoming forces and telemetry
 // and continuous scrape mixer telemetry.
 // Field order and types MUST match the Rust #[repr(C)] structs (they are locked by
 // ffi.rs::layout_tests and the static_asserts in f90_core.hpp). Reuses
@@ -86,6 +86,17 @@ typedef struct F90CoreFrameOut {
     float audio_scrape_gain;
     float audio_scrape_pitch;
     double audio_scrape_cursor;
+    double underfloor_compression_m[5];
+    double underfloor_closing_speed_m_s[5];
+    double underfloor_normal_force_n[5];
+    int32_t underfloor_bottoming_phase[5];
+    uint32_t underfloor_active_probe_mask;
+    double underfloor_total_normal_force_n;
+    double underfloor_max_probe_force_n;
+    double underfloor_force_center_local[3];
+    double underfloor_bottoming_torque[3];
+    double underfloor_dissipated_energy_j;
+    double underfloor_rigid_contact_blend;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

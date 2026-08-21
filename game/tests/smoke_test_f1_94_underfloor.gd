@@ -49,9 +49,15 @@ func _run() -> void:
 						_fail("Invalid clearance for %s: %s" % [probe_name, clearance], failures)
 			if int(snapshot.get("valid_mask", 0)) == 0:
 				_fail("No underfloor ray detected the settled road surface.", failures)
-			for key in ["minimum_clearance_m", "rake_rad", "roll_rad", "contact_confidence", "scrape_intensity", "audio_scrape_gain", "audio_scrape_pitch"]:
+			for key in ["minimum_clearance_m", "rake_rad", "roll_rad", "contact_confidence", "scrape_intensity", "audio_scrape_gain", "audio_scrape_pitch", "total_normal_force_n", "max_probe_force_n", "dissipated_energy_j", "rigid_contact_blend"]:
 				if not is_finite(float(snapshot.get(key, NAN))):
 					_fail("Underfloor telemetry field %s is not finite." % key, failures)
+			for channel in ["compression_m", "closing_speed_m_s", "normal_force_n", "bottoming_phase"]:
+				var channel_value: Variant = snapshot.get(channel, {})
+				if not channel_value is Dictionary or channel_value.size() != 5:
+					_fail("Bottoming telemetry channel %s does not contain five probes." % channel, failures)
+			if float(snapshot.get("total_normal_force_n", NAN)) > 1.0:
+				_fail("Settled vehicle has a false bottoming load: %.2f N." % float(snapshot.get("total_normal_force_n", 0.0)), failures)
 
 	runtime.queue_free()
 	if failures.is_empty():

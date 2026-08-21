@@ -183,6 +183,17 @@ private:
 	double audio_scrape_gain_ = 0.0;
 	double audio_scrape_pitch_ = 1.0;
 	double audio_scrape_cursor_ = 0.0;
+	double underfloor_compression_m_[5] = {};
+	double underfloor_closing_speed_m_s_[5] = {};
+	double underfloor_normal_force_n_[5] = {};
+	int32_t underfloor_bottoming_phase_[5] = {};
+	uint32_t underfloor_active_probe_mask_ = 0;
+	double underfloor_total_normal_force_n_ = 0.0;
+	double underfloor_max_probe_force_n_ = 0.0;
+	double underfloor_force_center_local_[3] = {};
+	double underfloor_bottoming_torque_[3] = {};
+	double underfloor_dissipated_energy_j_ = 0.0;
+	double underfloor_rigid_contact_blend_ = 0.0;
 
 	bool load_rust_dll();
 	void unload_rust_dll();
