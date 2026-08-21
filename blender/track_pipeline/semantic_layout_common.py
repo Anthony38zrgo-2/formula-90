@@ -175,9 +175,9 @@ def _sample_zone_pixels(mask: np.ndarray, transform: WorldRasterTransform, spaci
 
 def _asset_repo_path(raw_path: str) -> str:
     normalized = str(raw_path).replace("\\", "/")
-    if normalized.startswith("blender/"):
+    if normalized.startswith("blender/") or normalized.startswith("assets-lowpoly-python/"):
         return normalized
-    return f"blender/assets/vegetation/{normalized}"
+    return f"assets-lowpoly-python/{normalized}"
 
 
 def _nearest_barrier_distance(world: tuple[float, float], barrier_world: np.ndarray) -> float:
@@ -189,12 +189,17 @@ def load_asset_dimensions(manifest_csv: Path) -> dict[str, dict]:
     dimensions = {}
     with manifest_csv.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
-            dimensions[row["file"].replace("\\", "/")] = {
+            norm = row["file"].replace("\\", "/")
+            data = {
                 "width_m": float(row["width_x"]),
                 "height_m": float(row["height_y"]),
                 "depth_m": float(row["depth_z"]),
                 "category": row["category"],
             }
+            dimensions[norm] = data
+            stem_name = Path(norm).name
+            dimensions[f"assets-lowpoly-python/nature/{row['category']}/glb/{stem_name}"] = data
+            dimensions[stem_name] = data
     return dimensions
 
 
@@ -220,8 +225,11 @@ def compile_layout(layout_config_path: Path) -> dict:
     points = centerline["points_xz"]
     dimensions = load_asset_dimensions(asset_manifest_path)
 
-    barrier_rgb = np.array(config["semantic_palette"]["barrier"], dtype=np.uint8)
-    by, bx = np.nonzero(np.all(semantic == barrier_rgb, axis=-1))
+    barrier_mask = np.zeros(semantic.shape[:2], dtype=bool)
+    for name, col in config["semantic_palette"].items():
+        if name == "barrier" or name.startswith("barrier_"):
+            barrier_mask |= np.all(semantic == np.array(col, dtype=np.uint8), axis=-1)
+    by, bx = np.nonzero(barrier_mask)
     if len(bx) < 8:
         raise RuntimeError("Semantic barrier contains fewer than eight pixels")
     barrier_pixels = np.asarray([(x, y) for x, y in zip(bx, by)], dtype=np.float64)

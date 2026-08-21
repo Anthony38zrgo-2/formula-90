@@ -42,13 +42,14 @@ class EnvironmentPerimeterTests(unittest.TestCase):
         self.assertTrue(config["tire_barriers"]["both_sides"])
         self.assertTrue(config["tire_barriers"]["continuous_visual"])
         self.assertEqual(config["tire_barriers"]["visual_mode"], "rectangular_prism")
-        self.assertEqual(int(config["tire_barriers"]["side_repeats"]), 5)
-        self.assertAlmostEqual(float(config["tire_barriers"]["module_length_m"]), float(config["tire_barriers"]["visual_depth_m"]))
+        self.assertEqual(int(config["tire_barriers"]["side_repeats"]), 1)
+        self.assertAlmostEqual(float(config["tire_barriers"]["module_length_m"]), 2.0)
+        self.assertAlmostEqual(float(config["tire_barriers"]["visual_depth_m"]), 0.45)
         repo = Path(__file__).resolve().parents[3]
         source_manifest = repo / "blender/assets/texture_sources/la_chutana/trackside/tire_barrier/source_manifest.json"
         self.assertTrue(source_manifest.exists(), f"tire barrier source manifest missing: {source_manifest}")
-        self.assertEqual(float(config["tire_barriers"]["collision_height_m"]), 1.45)
-        self.assertEqual(float(config["tire_barriers"]["collision_thickness_m"]), 0.28)
+        self.assertEqual(float(config["tire_barriers"]["collision_height_m"]), 1.25)
+        self.assertEqual(float(config["tire_barriers"]["collision_thickness_m"]), 0.45)
 
     def test_trackside_cards_are_deterministic_and_outside_collision_perimeter(self):
         points = np.asarray([

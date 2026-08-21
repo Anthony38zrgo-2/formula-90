@@ -99,6 +99,11 @@ def main() -> None:
         texture = Path(source["texture"]).resolve()
         target = glb_dir / f"{variant['id']}.glb"
         export_variant(target, variant, texture, mirror_uv=bool(index % 2))
+        canonical_dir = repo / "assets-lowpoly-python" / "nature" / variant["category"] / "glb"
+        canonical_dir.mkdir(parents=True, exist_ok=True)
+        canonical_target = canonical_dir / f"{variant['id']}.glb"
+        import shutil
+        shutil.copyfile(target, canonical_target)
         relative = target.relative_to(repo).as_posix()
         width = float(variant["width_m"])
         height = float(variant["height_m"])
@@ -130,6 +135,7 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
     os.replace(csv_temp, csv_path)
+    shutil.copyfile(csv_path, repo / "assets-lowpoly-python" / "nature" / "manifest.csv")
 
     report_path = output_dir / "asset_manifest.json"
     report_temp = report_path.with_suffix(".new.json")

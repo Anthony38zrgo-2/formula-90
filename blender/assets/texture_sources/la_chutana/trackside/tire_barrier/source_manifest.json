@@ -1,24 +1,22 @@
 {
   "schema_version": 1,
   "track_id": "la_chutana",
-  "source_contract": "mixed_rgba_cards_and_opaque_tiles",
+  "source_contract": "opaque_continuous_ribbon_textures",
   "sources": {
     "stack_front": {
       "file": "tire_stack_source.png",
-      "sha256": "a1749796317e6e4c3f6b6af198f3587d3da097b889d951876bcc9c25b633160d",
-      "kind": "precut_card"
+      "sha256": "0c01be917224b2342576dbf9484d50f0e64408c4b7c70cfdd11e8edfc9233dc3",
+      "kind": "opaque_tile"
     },
     "single_side": {
       "file": "tire_side_source.png",
-      "sha256": "5c800e304594881eb56429ddcfec81442f18e0d8365713e7d0f293f855e03d1a",
-      "kind": "precut_card"
+      "sha256": "e447d7d295dbf4c0b4c8e10281e4344b37fe6bb92c34fd6abb2ac92ca625ee04",
+      "kind": "opaque_tile"
     },
     "top_tread": {
       "file": "tire_top_tread_source.png",
-      "sha256": "b1667f81f2d239371827f001e315dc389237359f637b8b9f2aa726f1db17f220",
-      "kind": "opaque_tile",
-      "generator": "image_gen",
-      "generator_prompt": "Seamless square orthographic navy-blue racing tire tread, filled edge-to-edge, matte and non-metallic; no sidewall, wheel hole, background, text or shadow."
+      "sha256": "bd2f91313c0de14c6837e0a085130d0a49bedada65f5c51984ee6c48a58eee0f",
+      "kind": "opaque_tile"
     }
   },
   "module": {

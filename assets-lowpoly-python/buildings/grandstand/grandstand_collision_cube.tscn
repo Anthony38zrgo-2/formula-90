@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://assets-lowpoly-python/buildings/grandstand/grandstand_lowpoly.glb" id="1_visual"]
+[sub_resource type="BoxShape3D" id="Box_collision_cube"]
+size = Vector3(20.000000, 20.000000, 20.000000)
+
+[node name="Grandstand" type="Node3D"]
+
+[node name="Visual" type="Node3D" parent="."]
+[node name="GrandstandMesh" parent="Visual" instance=ExtResource("1_visual")]
+
+[node name="Collision" type="StaticBody3D" parent="."]
+
+[node name="CollisionShapeCube" type="CollisionShape3D" parent="Collision"]
+shape = SubResource("Box_collision_cube")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000000, 5.605000, 5.990000)

@@ -1,0 +1,27 @@
+{
+  "size": [
+    256,
+    256
+  ],
+  "regions_px_top_left_origin": {
+    "front": [
+      0,
+      0,
+      128,
+      256
+    ],
+    "end": [
+      128,
+      0,
+      64,
+      256
+    ],
+    "top_rotated_90deg": [
+      192,
+      0,
+      64,
+      128
+    ]
+  },
+  "notes": "Separate albedo files are the reference versions. Atlas is optional for a single-material implementation."
+}

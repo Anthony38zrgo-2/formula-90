@@ -2,14 +2,14 @@
   "schema_version": 1,
   "marker_encoding": "RGB [224, high_byte, low_byte] plus human-readable label",
   "objects": {
-    "001": {"asset_id": "spectator_wave", "kind": "card", "category": "spectator", "source": "blender/assets/texture_sources/la_chutana/trackside/people/spectator_wave_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 5.0, "max_snap_distance_m": 20.0, "target_height_m": 1.75, "collision": false},
-    "002": {"asset_id": "spectator_cap", "kind": "card", "category": "spectator", "source": "blender/assets/texture_sources/la_chutana/trackside/people/spectator_cap_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 5.0, "max_snap_distance_m": 20.0, "target_height_m": 1.75, "collision": false},
-    "003": {"asset_id": "marshal_flag", "kind": "card", "category": "marshal", "source": "blender/assets/texture_sources/la_chutana/trackside/people/marshal_flag_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 5.0, "max_snap_distance_m": 20.0, "target_height_m": 1.8, "collision": false},
-    "004": {"asset_id": "photographer", "kind": "card", "category": "photographer", "source": "blender/assets/texture_sources/la_chutana/trackside/people/photographer_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 4.0, "max_snap_distance_m": 20.0, "target_height_m": 1.25, "collision": false},
-    "005": {"asset_id": "f90_racing", "kind": "card", "category": "sign", "source": "blender/assets/texture_sources/la_chutana/trackside/signs/f90_racing_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 2.4, "collision": false},
-    "006": {"asset_id": "la_chutana", "kind": "card", "category": "sign", "source": "blender/assets/texture_sources/la_chutana/trackside/signs/la_chutana_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 2.4, "collision": false},
-    "007": {"asset_id": "pit_service", "kind": "card", "category": "sign", "source": "blender/assets/texture_sources/la_chutana/trackside/signs/pit_service_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 2.4, "collision": false},
-    "008": {"asset_id": "nitro_95", "kind": "card", "category": "sign", "source": "blender/assets/texture_sources/la_chutana/trackside/signs/nitro_95_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 2.4, "collision": false},
+    "001": {"asset_id": "spectator_wave", "kind": "card", "category": "spectator", "source": "assets-lowpoly-python/track_props/people/sources/spectator_wave_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 5.0, "max_snap_distance_m": 20.0, "target_height_m": 1.75, "collision": false},
+    "002": {"asset_id": "spectator_cap", "kind": "card", "category": "spectator", "source": "assets-lowpoly-python/track_props/people/sources/spectator_cap_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 5.0, "max_snap_distance_m": 20.0, "target_height_m": 1.75, "collision": false},
+    "003": {"asset_id": "marshal_flag", "kind": "card", "category": "marshal", "source": "assets-lowpoly-python/track_props/people/sources/marshal_flag_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 5.0, "max_snap_distance_m": 20.0, "target_height_m": 1.8, "collision": false},
+    "004": {"asset_id": "photographer", "kind": "card", "category": "photographer", "source": "assets-lowpoly-python/track_props/people/sources/photographer_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 4.0, "max_snap_distance_m": 20.0, "target_height_m": 1.25, "collision": false},
+    "005": {"asset_id": "f90_racing", "kind": "card", "category": "sign", "source": "assets-lowpoly-python/track_props/signs/sources/f90_racing_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 7.2, "collision": false},
+    "006": {"asset_id": "la_chutana", "kind": "card", "category": "sign", "source": "assets-lowpoly-python/track_props/signs/sources/la_chutana_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 7.2, "collision": false},
+    "007": {"asset_id": "pit_service", "kind": "card", "category": "sign", "source": "assets-lowpoly-python/track_props/signs/sources/pit_service_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 7.2, "collision": false},
+    "008": {"asset_id": "nitro_95", "kind": "card", "category": "sign", "source": "assets-lowpoly-python/track_props/signs/sources/nitro_95_source.png", "placement_mode": "barrier_relative", "guardrail_offset_m": 2.0, "max_snap_distance_m": 20.0, "target_width_m": 7.2, "collision": false},
     "009": {"asset_id": "track_flag", "kind": "procedural_flag", "category": "flag", "placement_mode": "barrier_relative", "guardrail_offset_m": 3.0, "max_snap_distance_m": 20.0, "target_height_m": 1.8, "collision": false}
   },
   "zones": {
@@ -22,10 +22,10 @@
       "near_track_density": {"max_distance_from_asphalt_m": 10.0, "multiplier": 3.0, "baseline_count": 2260, "min_count": 6780, "max_count": 6780, "far_max_count": 2540},
       "target_height_m": [0.28, 0.62],
       "asset_pool": [
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_01.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_02.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_03.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_04.glb"
+        "assets-lowpoly-python/nature/grass/glb/grass_v2_01.glb",
+        "assets-lowpoly-python/nature/grass/glb/grass_v2_02.glb",
+        "assets-lowpoly-python/nature/grass/glb/grass_v2_03.glb",
+        "assets-lowpoly-python/nature/grass/glb/grass_v2_04.glb"
       ]
     },
     "bushes": {
@@ -37,10 +37,10 @@
       "barrier_clearance_m": 0.5,
       "target_height_m": [0.65, 1.45],
       "asset_pool": [
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_01.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_02.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_03.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_04.glb"
+        "assets-lowpoly-python/nature/bushes/glb/bush_v2_01.glb",
+        "assets-lowpoly-python/nature/bushes/glb/bush_v2_02.glb",
+        "assets-lowpoly-python/nature/bushes/glb/bush_v2_03.glb",
+        "assets-lowpoly-python/nature/bushes/glb/bush_v2_04.glb"
       ]
     },
     "trees": {
@@ -52,9 +52,9 @@
       "barrier_clearance_m": 1.0,
       "target_height_m": [6.0, 11.5],
       "asset_pool": [
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_01.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_02.glb",
-        "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_03.glb"
+        "assets-lowpoly-python/nature/trees/glb/tree_v2_01.glb",
+        "assets-lowpoly-python/nature/trees/glb/tree_v2_02.glb",
+        "assets-lowpoly-python/nature/trees/glb/tree_v2_03.glb"
       ]
     }
   }

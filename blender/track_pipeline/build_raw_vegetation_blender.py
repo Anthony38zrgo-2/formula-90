@@ -146,6 +146,33 @@ def create_barrier_base(name, points, side, config, track_config, white, navy, c
     return obj
 
 
+def import_mesh_prop(name: str, path: Path, position_xz: tuple[float, float], tangent_xz: tuple[float, float], ground_m: float, collection_target, side: int = 1, yaw_offset: float = 0.0):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(path))
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    if not imported:
+        return None
+    yaw = math.atan2(-tangent_xz[1], tangent_xz[0]) + (math.pi * 0.5 if side > 0 else -math.pi * 0.5) + yaw_offset
+    center_b = godot_xz_to_blender(position_xz[0], position_xz[1], ground_m)
+    root = None
+    for obj in imported:
+        if obj.parent is None:
+            root = obj
+            break
+    if root is None and imported:
+        root = imported[0]
+
+    if root:
+        root.name = name
+        root.location = center_b
+        root.rotation_euler = (0, 0, yaw)
+    
+    for obj in imported:
+        move_to_collection(obj, collection_target)
+        obj["formula90s_collision"] = False
+    return root
+
+
 def build_indexed_objects(config, track_config, center, compiled, collection_target, repo: Path):
     created = 0
     points = center["points_xz"]
@@ -169,6 +196,12 @@ def build_indexed_objects(config, track_config, center, compiled, collection_tar
                 int(item["side"]), ground, "flag", flag_material,
             )
             move_to_collection(flag, collection_target)
+        elif item["kind"] in ("glb", "mesh"):
+            path = repo / item["source"]
+            import_mesh_prop(
+                f"Indexed_{item['instance_id']}_{item['asset_id']}", path, position, tangent, ground,
+                collection_target, side=int(item["side"]),
+            )
         else:
             raise RuntimeError(f"Unsupported indexed object kind: {item['kind']}")
         created += 1
@@ -259,15 +292,39 @@ def main():
     front_texture = Path(front_entry["texture"])
     side_texture = Path(prepared_barrier["sources"][prepared_barrier["module"]["side_source"]]["texture"])
     top_texture = Path(prepared_barrier["sources"][prepared_barrier["module"]["top_source"]]["texture"])
-    front_material = texture_material("F90_RawBarrierCardFront", front_texture, roughness=1.0, metallic=0.0, alpha=True)
-    side_material = texture_material("F90_RawBarrierCardSide", side_texture, roughness=1.0, metallic=0.0, alpha=True)
+    front_material = texture_material("F90_RawBarrierCardFront", front_texture, roughness=1.0, metallic=0.0, alpha=False)
+    side_material = texture_material("F90_RawBarrierCardSide", side_texture, roughness=1.0, metallic=0.0, alpha=False)
     top_material = texture_material("F90_RawBarrierCardTop", top_texture, roughness=1.0, metallic=0.0, alpha=False)
     x0, y0, x1, y1 = front_entry["metrics"]["output_bbox"]
     width, height = front_entry["metrics"]["output_size"]
     front_uv_bounds = (x0 / width, 1.0 - y1 / height, x1 / width, 1.0 - y0 / height)
+
+    barriers_manifest_path = repo / "assets-lowpoly-python" / "track_props" / "barriers" / "source_manifest.json"
+    multi_materials = {}
+    if barriers_manifest_path.exists():
+        bm = read_json(barriers_manifest_path)
+        bdir = barriers_manifest_path.parent
+        for b_type, b_info in bm.get("types", {}).items():
+            f_tex = bdir / b_info["front"]
+            t_tex = bdir / b_info["top"]
+            e_tex = bdir / b_info["end"]
+            r_val = 0.6 if b_type == "guardrail_armco" else 1.0
+            m_val = 0.7 if b_type == "guardrail_armco" else 0.0
+            f_mat = texture_material(f"F90_Barrier_{b_type}_Front", f_tex, roughness=r_val, metallic=m_val, alpha=False)
+            s_mat = texture_material(f"F90_Barrier_{b_type}_Side", e_tex, roughness=r_val, metallic=m_val, alpha=False)
+            t_mat = texture_material(f"F90_Barrier_{b_type}_Top", t_tex, roughness=r_val, metallic=m_val, alpha=False)
+            multi_materials[b_type] = (f_mat, s_mat, t_mat)
+    layout_cfg_path = repo / config.get("semantic_layout_config", "blender/track_pipeline/layouts/la_chutana/layout_config.json")
+    barrier_sectors = None
+    if layout_cfg_path.exists():
+        lcfg = read_json(layout_cfg_path)
+        barrier_sectors = lcfg.get("barrier_sectors")
+
     visual, visual_count = create_tire_barrier_card_visual(
         "Raw_Outer_TireBarrier", points, side, barrier_cfg, front_material, side_material, top_material,
         front_uv_bounds=front_uv_bounds,
+        multi_materials=multi_materials if multi_materials else None,
+        barrier_sectors=barrier_sectors,
     )
     move_to_collection(visual, env)
     collision, collision_count = create_tire_barrier_collision("Raw_Outer_TireBarrier", points, side, barrier_cfg)

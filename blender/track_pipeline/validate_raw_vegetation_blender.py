@@ -33,7 +33,11 @@ def main() -> None:
     failures = []
     if counts != expected:
         failures.append(f"root counts mismatch expected={dict(expected)} actual={dict(counts)}")
-    legacy = [obj.name for obj in roots if "/assets_v2/glb/" not in str(obj.get("formula90s_raw_asset", "")).replace("\\", "/")]
+    legacy = [
+        obj.name for obj in roots
+        if "assets-lowpoly-python/nature/" not in str(obj.get("formula90s_raw_asset", "")).replace("\\", "/")
+        and "/assets_v2/glb/" not in str(obj.get("formula90s_raw_asset", "")).replace("\\", "/")
+    ]
     if legacy:
         failures.append(f"legacy raw assets active={len(legacy)}")
     collidable = [obj.name for obj in roots if bool(obj.get("formula90s_collision", False))]

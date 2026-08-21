@@ -3,7 +3,7 @@
   "track_id": "la_chutana",
   "source_contract": "precut_rgba_transparent",
   "source_key_policy": "not_applied_to_new_pre-cut_sources; legacy assets remain outside this source-backed path",
-  "manifest_count": 29,
+  "manifest_count": 30,
   "propagated_manifest_count": 0,
   "asset_count": 108,
   "assets": [

@@ -86,9 +86,7 @@ impl AudioModule {
             None
         };
         if enabled && engine.is_none() {
-            eprintln!(
-                "[formula90_core] audio bank load failed (or no bank_dir): telemetry-only"
-            );
+            eprintln!("[formula90_core] audio bank load failed (or no bank_dir): telemetry-only");
         }
         Self {
             engine,

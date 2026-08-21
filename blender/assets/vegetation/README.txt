@@ -1,3 +1,8 @@
+# [DEPRECATED] LOW-POLY VEGETATION PACK
+NOTE: This 85-asset LOD pack is DEPRECATED and inactive.
+The authoritative and canonical track vegetation is located at:
+  D:\Formula90s\assets-lowpoly-python\nature\
+
 LOW-POLY VEGETATION COMPLETE PACK
 
 Generated from the supplied autumn forest GLB plus procedural low-poly additions.

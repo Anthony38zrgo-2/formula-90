@@ -1,0 +1,59 @@
+{
+  "source": "D:\\Formula90s\\assets-lowpoly-python\\buildings\\grandstand\\grandstand_lowpoly.glb",
+  "collision_type": "AABB BoxShape3D",
+  "bbox_min": [
+    -10.0,
+    0.0,
+    -0.02
+  ],
+  "bbox_max": [
+    10.0,
+    11.21,
+    12.0
+  ],
+  "dims": [
+    20.0,
+    11.21,
+    12.02
+  ],
+  "center": [
+    0.0,
+    5.605,
+    5.99
+  ],
+  "box_shape_size": [
+    20.0,
+    11.21,
+    12.02
+  ],
+  "box_shape_position": [
+    0.0,
+    5.605,
+    5.99
+  ],
+  "cube_variant": {
+    "size": [
+      20.0,
+      20.0,
+      20.0
+    ],
+    "position": [
+      0.0,
+      5.605,
+      5.99
+    ],
+    "note": "caja cuadrada perfecta (cubo) que cubre todo el modelo - lado = max(dims)=20m"
+  },
+  "outputs": [
+    "grandstand_collision.glb",
+    "grandstand_collision_cube.glb",
+    "grandstand_collision.tscn",
+    "grandstand_collision_cube.tscn"
+  ],
+  "validation": {
+    "aabb_verts": 8,
+    "aabb_faces": 12,
+    "aabb_is_watertight": true,
+    "aabb_volume": 2694.884
+  }
+}

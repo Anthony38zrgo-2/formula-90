@@ -27,8 +27,8 @@ def main() -> int:
     manifest_path = Path(args.manifest).resolve()
     output_dir = Path(args.output_dir).resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("source_contract") != "mixed_rgba_cards_and_opaque_tiles":
-        raise RuntimeError("Tire barrier manifest must declare mixed_rgba_cards_and_opaque_tiles")
+    if manifest.get("source_contract") not in ("mixed_rgba_cards_and_opaque_tiles", "opaque_continuous_ribbon_textures"):
+        raise RuntimeError("Tire barrier manifest must declare mixed_rgba_cards_and_opaque_tiles or opaque_continuous_ribbon_textures")
     if manifest.get("module", {}).get("geometry") != "rectangular_prism":
         raise RuntimeError("Tire barrier module must declare rectangular_prism")
 

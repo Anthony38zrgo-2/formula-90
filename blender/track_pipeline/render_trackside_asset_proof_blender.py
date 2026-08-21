@@ -58,18 +58,18 @@ def render_barrier(repo: Path, output: Path):
     prepared = json.loads((repo / "blender/generated/la_chutana/tire_barrier_cards/prepared_manifest.json").read_text(encoding="utf-8"))
     front_entry = prepared["sources"][prepared["module"]["front_source"]]
     side_entry = prepared["sources"][prepared["module"]["side_source"]]
-    front = texture_material("ProofBarrierFront", Path(front_entry["texture"]), 1.0, 0.0, True)
-    side = texture_material("ProofBarrierSide", Path(side_entry["texture"]), 1.0, 0.0, True)
+    front = texture_material("ProofBarrierFront", Path(front_entry["texture"]), 1.0, 0.0, False)
+    side = texture_material("ProofBarrierSide", Path(side_entry["texture"]), 1.0, 0.0, False)
     top = texture_material("ProofBarrierTop", Path(prepared["sources"][prepared["module"]["top_source"]]["texture"]), 1.0, 0.0, False)
     x0, y0, x1, y1 = front_entry["metrics"]["output_bbox"]
     tw, th = front_entry["metrics"]["output_size"]
     front_uv = [(x0 / tw, 1 - y1 / th), (x1 / tw, 1 - y1 / th), (x1 / tw, 1 - y0 / th), (x0 / tw, 1 - y0 / th)]
-    width, depth, height = 0.68, 0.68, 1.45
+    width, depth, height = 2.0, 0.45, 1.25
     verts, faces, mats, uvs = [], [], [], []
-    for module in range(9):
-        cx = (module - 4) * width
+    for module in range(5):
+        cx = (module - 2) * width
         corners = [(cx-width/2,-depth/2,0),(cx+width/2,-depth/2,0),(cx+width/2,depth/2,0),(cx-width/2,depth/2,0)]
-        for indices, mat, uv in (((0,1,1,0),0,front_uv),((3,2,2,3),0,front_uv),((0,3,3,0),1,[(0,0),(1,0),(1,5),(0,5)]),((2,1,1,2),1,[(0,0),(1,0),(1,5),(0,5)])):
+        for indices, mat, uv in (((0,1,1,0),0,front_uv),((3,2,2,3),0,front_uv),((0,3,3,0),1,[(0,0),(1,0),(1,1),(0,1)]),((2,1,1,2),1,[(0,0),(1,0),(1,1),(0,1)])):
             start = len(verts)
             a,b,c,d = indices
             verts += [corners[a],corners[b],(corners[c][0],corners[c][1],height),(corners[d][0],corners[d][1],height)]
@@ -79,17 +79,17 @@ def render_barrier(repo: Path, output: Path):
         start = len(verts); verts += list(reversed(corners))
         faces.append((start,start+1,start+2,start+3)); mats.append(2); uvs.append([(0,0),(1,0),(1,1),(0,1)])
     _mesh_object("ProofBarrier", verts, faces, [front, side, top], mats, uvs)
-    camera = setup(output, (4.7, -6.5, 2.8), (0, 0, 0.72))
+    camera = setup(output, (5.5, -7.5, 3.2), (0, 0, 0.62))
     bpy.ops.render.render(write_still=True)
     front_output = output.with_name("tire_barrier_rectangular_front_proof.png")
     bpy.context.scene.render.filepath = str(front_output)
-    camera.location = (0, -8.5, 1.3)
-    aim(camera, (0, 0, 0.72))
+    camera.location = (0, -9.5, 1.3)
+    aim(camera, (0, 0, 0.62))
     bpy.ops.render.render(write_still=True)
     end_output = output.with_name("tire_barrier_rectangular_end_proof.png")
     bpy.context.scene.render.filepath = str(end_output)
-    camera.location = (-5.0, -4.7, 2.35)
-    aim(camera, (-2.72, 0, 0.72))
+    camera.location = (-6.0, -5.5, 2.6)
+    aim(camera, (-2.0, 0, 0.62))
     bpy.ops.render.render(write_still=True)
 
 

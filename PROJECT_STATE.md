@@ -32,13 +32,47 @@ Do not silently convert `[PLANNED]` values into `[VALIDATED]` values.
 
 Do not silently reopen `[FROZEN]` work.
 
+## 0.1 Current F1-94 handoff — 2026-08-20
+
+Current canonical branch/commit:
+
+```text
+branch: f1-94
+commit: dc33d8d feat(f1-94): integrate scalable brake thermal pipeline
+```
+
+The accepted F1-94 brake-thermal feature is `[VALIDATED]`. It includes the
+per-axle `scaled_two_node_v1` model, material/mass/geometry-based thermal
+resolution, speed- and area-dependent cooling, implicit surface-to-bulk disc
+integration, resolved brake telemetry, ABI synchronization, HUD/smoke coverage,
+and the canonical debug/release build path. Validation accepted:
+
+- `cargo test --workspace`;
+- `scripts/run_f1_94.ps1 -Smoke`;
+- `scripts/run_f1_94.ps1 -SmokeAudio`;
+- debug and release builds through `scripts/build_windows.ps1`.
+
+The next work sequence is intentionally ordered as follows:
+
+1. `[PLANNED]` Add tyre/tire degradation on top of the existing per-wheel tire
+   force, slip, pressure, and thermal state without replacing those models.
+2. `[PLANNED]` Run the mechanical validation matrix and close the mechanical
+   phase: straight-line load/traction, braking, cornering, transient weight
+   transfer, thermal soak, repeatability, and telemetry/setup provenance.
+3. `[PLANNED]` Only after mechanical sign-off, move to the V10 powertrain
+   phase: torque delivery, engine braking, gears, clutch, and differential
+   interaction.
+
+Powertrain tuning must not be used to hide an unresolved tire, suspension,
+brake, or mechanical-balance issue.
+
 ---
 
 # 1. Repository identity
 
 - Project: **Formula90s**
 - Repository: `Anthony38zrgo-2/formula-90`
-- Active development branch: `refactor/gevp-clean-baseline`
+- Active development branch: `f1-94`
 - Current project goal: compact 1990s-inspired formula racing game with convincing,
   readable, mechanically expressive handling and a late-1990s console visual identity.
 - Current development car: **F1-94 (3.5L V10 NA)** `[CANONICAL per handoff 2026-08-17; Rust GEVP 3-raycast physics]`
@@ -48,7 +82,7 @@ Do not silently reopen `[FROZEN]` work.
   and **Jordan 1995** (`game/scenes/vehicles/jordan_1995/` historical)
 - Current handling-development circuit: **La Chutana** `[VALIDATED ENOUGH]`
 - Physics architecture: **3-layer Rust GEVP migration** — deterministic 6-DOF Rust core
-  (`game/physics/engine/`, FFI `ABI v7`) → C++ GDExtension (`native/`,
+  (`game/crates/vehicle-physics-engine/`, Physics FFI `ABI v12`) → C++ GDExtension (`native/`,
   `libformula90s.windows.template_*.x86_64.dll`) → GDScript gameplay/controllers
   (`game/addons/formula90s/scripts/`). See §1.2.
 
@@ -56,15 +90,14 @@ Do not silently reopen `[FROZEN]` work.
 
 ```text
 Phase A — physical geometry/layout                COMPLETE
-Phase B — mechanical grip/brakes/differential    COMPLETE
-Track validation / environment gate              COMPLETE ENOUGH FOR HANDLING WORK
-Telemetry setup snapshot                         NEXT REQUIRED INFRASTRUCTURE
-Phase C — steering / countersteer                 NEXT PHYSICS PHASE
-Phase D — suspension
-Phase E — V10 powertrain / transmission
+Phase B/C — mechanical integration and validation ACTIVE — close-out pending
+Brake thermal pipeline                            COMPLETE / VALIDATED
+Tyre/tire degradation                             NEXT IMPLEMENTATION
+Mechanical validation and freeze                  NEXT GATE
+Phase E — V10 powertrain / transmission           PLANNED AFTER MECHANICAL SIGN-OFF
 Phase F — aerodynamics
 Phase G — assists / true no-assists behavior
-Phase RUST — GEVP Physics Rust Migration (3-Raycast, deterministic core, telemetry parity) [ACTIVE — F1-94 canonical as of 2026-08-17]
+Phase RUST — GEVP Physics Rust Migration (3-Raycast, deterministic core, telemetry parity) [VALIDATED BASELINE — F1-94 canonical]
 ```
 
 ---
@@ -79,9 +112,9 @@ physics core. All F1-94 handling now flows through this 3-layer stack.
 ### 1.2.1 Layer map
 
 ```text
-Rust core            game/physics/engine/                       (cargo, FFI ABI v7)
+Rust core            game/crates/vehicle-physics-engine/        (cargo, Physics FFI ABI v12)
   ├─ vehicle_config.rs   JSON schema (deny_unknown_fields) + f1_94_canonical()
-  ├─ ffi.rs              F1_94_PHYSICS_ABI_VERSION = 7, get/apply_runtime_config
+  ├─ ffi.rs              F1_94_PHYSICS_ABI_VERSION = 12, get/apply_runtime_config
   ├─ simulation.rs       6-DOF solver, inertia from inertia_multipliers
   └─ build → vehicle_physics_engine.*.dll  (Rust core loaded by the C++ wrapper)
 
@@ -90,16 +123,16 @@ C++ GDExtension      native/                                   (scons → libfor
   │                                 precedence over sim_bridge_ inside _integrate_forces;
   │                                 update_wheel_visuals, runtime-config sync
   ├─ core/f90_core.cpp/.hpp        F90Core orchestrator facade (registers in
-  │                                 register_types.cpp); ABI v2; drive_integrate +
+  │                                 register_types.cpp); Core ABI v7; drive_integrate +
   │                                 apply_runtime_config + reset_core_at + pump_audio
   ├─ sim/f90_sim_bridge.cpp/.hpp   F90SimBridge (LEGACY secondary driver; only used
   │                                 when core_driver_ is null)
-  └─ include/.../formula90_physics.h  F90RuntimeConfig (ABI v7, inertia + suspension)
+  └─ include/.../formula90_physics.h  F90RuntimeConfig (Physics ABI v12, inertia + suspension)
 
-Rust orchestrator   game/core/                                (cdylib formula90_core.dll, ABI v2)
+Rust orchestrator   game/crates/formula90-core/                (cdylib formula90_core.dll, Core ABI v7)
   └─ CoreFacade owns physics (game_sim + vehicle_physics_engine) + audio
      (vehicle_audio_engine) + ModuleRegistry (SimModule); single handshake
-     f90_core_abi_version() == 2. Replaces the three separately-loaded modules.
+     f90_core_abi_version() == 7. Replaces the three separately-loaded modules.
 
 GDScript gameplay   game/addons/formula90s/scripts/
   ├─ f1_94_rust_vehicle.gd            F194RustVehicleGD wrapper (telemetry/HUD/audio)
@@ -111,7 +144,7 @@ GDScript gameplay   game/addons/formula90s/scripts/
 ### 1.2.2 Canonical entry path
 
 ```text
-scripts/run_f1-94.ps1
+scripts/run_f1_94.ps1
   → scenes/runtime/vehicle_test_session.tscn
     → scenes/runtime/world_hud_compositor.tscn
     → data/race_sessions/f1_94_la_chutana.tres
@@ -153,7 +186,22 @@ JSON parameter (diff preload, aids mask, aero, suspension, steering…) keeps
 applying at runtime on BOTH integration paths. `[VALIDATED — build green; runtime
 pending in real env]`
 
-### 1.2.5 Known divergences (runtime-authority vs `f1_94_canonical()` / scene)
+### 1.2.5 Accepted brake-thermal handoff (2026-08-20)
+
+Status: `[VALIDATED]`
+
+The canonical F1-94 JSON now resolves front and rear brake thermal behavior from
+per-axle material, rotor mass/geometry, ventilation, installation airflow, and
+cooling profile fields. Resolved capacity, surface-to-bulk conductance, natural
+cooling, speed cooling, and surface-to-bulk heat flow are available in the
+runtime snapshot and CSV telemetry. The legacy two-node path remains available
+for compatibility with future vehicle profiles.
+
+The next thermal-related work is tyre/tire degradation. It must consume the
+existing force/slip/load/temperature state and remain a separate, testable wear
+family; do not retune the accepted brake thermal model as a substitute for wear.
+
+### 1.2.6 Known divergences (runtime-authority vs `f1_94_canonical()` / scene)
 
 Reconciled to the JSON on 2026-08-17 where the Rust default diverged (`vehicle_mass`,
 `automatic_transmission`). Remaining rows are either runtime-overridden (JSON wins) or
@@ -342,7 +390,7 @@ Status: `[VALIDATED GOOD — runtime authority = game/data/vehicles/f1_94/f1_94_
 
 All values below are read by the Rust core at `VehicleRigidBody._ready()` and override
 the Rust `f1_94_canonical()` defaults. Numbers are transcribed from the JSON (authority
-per §3.1). Divergences flagged `[VERIFY]` in §1.2.5 are NOT re-litigated here.
+per §3.1). Divergences flagged `[VERIFY]` in §1.2.6 are NOT re-litigated here.
 
 ### Chassis
 
@@ -947,7 +995,7 @@ vs baseline `front_damping 0.75/arb 0.35` `rear_damping 0.70/arb 0.30` (GT3-like
 
 # 10. Phase E — V10 powertrain and transmission
 
-Status: `[PLANNED]`
+Status: `[PLANNED — gated by mechanical sign-off]`
 
 Target family:
 
@@ -958,7 +1006,9 @@ Target family:
 - gear ratios;
 - differential interaction.
 
-Powertrain tuning must not begin until mechanical handling and steering are understood.
+Powertrain tuning must not begin until tyre degradation is implemented and the
+mechanical validation matrix is accepted. Mechanical handling, braking, thermal
+behavior, and tire wear must be understood before powertrain values are changed.
 
 ---
 
@@ -2224,13 +2274,32 @@ This minimizes dependence on previous chat history.
 
 Status: `[ACTIVE PRIORITY]`
 
+## 45.0 Current F1-94 priority (2026-08-20)
+
+The previous Rust handoff items below are retained for historical traceability;
+the accepted baseline is now commit `dc33d8d` on branch `f1-94`. The active
+sequence is:
+
+1. **Tyre/tire degradation `[PLANNED]`** — add a deterministic per-wheel wear
+   state driven by measured slip/load/temperature history and expose its effect
+   through telemetry. Preserve the existing thermal, pressure, and force nodes.
+2. **Mechanical closure tests `[PLANNED]`** — repeatable straight-line,
+   braking, cornering, transient load-transfer, thermal, and regression tests;
+   compare CSV data with the paired `Setup_JSON` and record accepted limits.
+3. **Powertrain transition `[PLANNED]`** — begin only after the mechanical
+   matrix is accepted and the tire/suspension/brake behavior is frozen for the
+   test baseline.
+
+Do not combine tyre-degradation tuning with powertrain tuning in the same test
+family. One major physics family remains the unit of change.
+
 ## 45.0 F1-94 Rust handoff follow-up (2026-08-17)
 
 The physics-alignment handoff (`instrucciones.txt`) is applied and validated end-to-end:
 Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on La Chutana
 (headless smoke PASS, inertia multipliers confirmed live). Open items before deeper tuning:
 
-1. **Reconcile `[VERIFY]` divergences (§1.2.5 / §5.0)** — especially `vehicle_mass`
+1. **Reconcile `[VERIFY]` divergences (§1.2.6 / §5.0)** — especially `vehicle_mass`
    505 (scene RigidBody) vs 575 (JSON) and `automatic_transmission` false vs AUTO=ON intent.
    Decide the single authoritative value per family.
 2. Extend telemetry setup-snapshot (`<session>.csv` + `_setup.json`) to capture the F1-94
@@ -2341,7 +2410,7 @@ Rust unit tests pass, both GDExtension DLLs build, and the F1-94 scene loads on 
        **VALIDACIÓN HEADLESS:** estable en reposo (v=0, posY≈-0.06) y ACELERA con `debug_throttle=1`
        (17→146 km/h, rpm sube, altura estable, sin explosión). Sigue sin validar headless el giro
        fino ni colisión de muros (el core solo muestrea suspensión, no muros). PENDIENTE:
-       validación visual in-engine (correr `run_f1-94.ps1`: throttle acelera, steer gira en
+       validación visual in-engine (correr `run_f1_94.ps1`: throttle acelera, steer gira en
        dirección correcta; muros pueden atravesarse en esta 1ª integración).
        **DRIFT LATERAL CORREGIDO (2026-08-17):** el bridge reconstruía la orientación del cuerpo
        desde `yaw` vía `Mat3::from_euler_yxz(yaw,0,0)`, pero `yaw_from_transform` y `from_euler_yxz`
@@ -2836,25 +2905,25 @@ Recommended current values at the time this snapshot is created:
 
 ```text
 Last reviewed:
-2026-08-19
+2026-08-20
 
 Branch:
 f1-94
 
 Commit:
-75a5427 (branch f1-94; see git log for the full lineage — naming/structure re-architecture Phases 0-4 + build fix are all committed and pushed)
+dc33d8d (branch f1-94; scalable brake thermal pipeline accepted and pushed)
 
 Current active phase:
-F1-94 `F90Core` orchestrator (single facade, ABI v2) is the primary driver; `f1_94_physics.json` is single source of truth. F0-F5 done; P0 ayudas/ESP-TCS done; P1 JSON-wiring (grip ratios, diff slip threshold, automatic_shift, input smoothing, aids-mask routing) DONE + build green; P2 Rust telemetry IMPLEMENTED. Project-wide naming/structure re-architecture applied (2026-08-19): GDScript in `game/scripts/`, Rust workspace in `game/crates/`, single `docs/` root (see `docs/engineering/naming-conventions.md`).
+F1-94 `F90Core` is the primary driver; `f1_94_physics.json` is the single source of truth. The scalable per-axle brake thermal pipeline and resolved telemetry are `[VALIDATED]` with Physics ABI 12, Core ABI 7, debug/release builds, workspace tests, and canonical Godot smoke/audio smokes accepted.
 
 Next required gate:
-None pending — full `run_f1_94.ps1 -Smoke` + `-ValidateRuntimeOnly` + `-TestPhysics` green after the relocate phases. Runtime telemetry capture in a real Godot 4.7 build; then decide pending JSON-coherence values (diff_preload 40 vs 170, contact_patch 0.35 vs 0.21, enable_abs vs mask bit) per §45.0 item 13 PENDIENTE.
+Implement tyre/tire degradation, then run the mechanical validation matrix and accept the mechanical freeze. Only after that gate should the V10 powertrain phase begin.
 
 Next physics phase:
-Detail polish only — ESP strength/engage per surface, §7.1 telemetry sign-off. No architectural rework pending (JSON fidelity already wired).
+Tyre/tire degradation `[PLANNED]`, followed by repeatable mechanical tests and sign-off; powertrain remains gated until those tests pass.
 
 Reviewed by:
-Agent (DSH) — F90Core/JSON-SOT sync + project-wide naming/structure relocation (Phase 0-4); no physics tuning changes.
+Codex + user acceptance — F1-94 scalable brake thermal pipeline, telemetry, ABI synchronization, and smoke/build validation.
 ```
 
 The exact commit SHA must be refreshed from Git before this file is treated as a

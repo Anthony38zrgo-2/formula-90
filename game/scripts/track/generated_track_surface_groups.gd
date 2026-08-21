@@ -30,12 +30,14 @@ func _tag_recursive(node: Node) -> void:
 
 
 func _apply_psx_native_shadow_budget(root: Node) -> void:
-	# Preserve the strong, readable shadows from the car, road and containment
-	# barrier. Small cards and distant scenery do not cast shadows on PSX-era
-	# hardware, and disabling them avoids soft/expensive visual noise.
+	# In PSX/90s racing arcade style, the track environment (terrain, track meshes, barriers,
+	# vegetation, props, buildings, sky) does not cast dynamic shadow cascades.
+	# Only the car casts dynamic shadow onto the track surfaces.
+	_disable_shadow_recursive(root.get_node_or_null("GeneratedTrack"))
 	_disable_shadow_recursive(root.get_node_or_null("GeneratedVegetation"))
 	_disable_shadow_recursive(root.get_node_or_null("SourceSkyboxRig"))
-	_disable_shadow_by_name(root, ["indexed_", "spectator", "marshal", "photographer", "flag", "sign"])
+	_disable_shadow_recursive(root.get_node_or_null("BackgroundMountains3D"))
+	_disable_shadow_by_name(root, ["indexed_", "spectator", "marshal", "photographer", "flag", "sign", "barrier", "terrain", "road", "curb", "shoulder", "guardrail"])
 
 
 func _disable_shadow_recursive(node: Node) -> void:

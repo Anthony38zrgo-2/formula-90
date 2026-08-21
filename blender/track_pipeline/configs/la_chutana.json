@@ -75,12 +75,12 @@
     "separation_from_edge_m": 5.0,
     "visual_mode": "rectangular_prism",
     "prepared_manifest": "blender/generated/la_chutana/tire_barrier_cards/prepared_manifest.json",
-    "module_length_m": 0.68,
-    "visual_height_m": 1.45,
-    "visual_depth_m": 0.68,
-    "side_repeats": 5,
-    "collision_height_m": 1.45,
-    "collision_thickness_m": 0.28
+    "module_length_m": 2.0,
+    "visual_height_m": 1.25,
+    "visual_depth_m": 0.45,
+    "side_repeats": 1,
+    "collision_height_m": 1.25,
+    "collision_thickness_m": 0.45
   },
   "vegetation_barrier_clearance_m": {
     "trees": 1.0,

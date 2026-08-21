@@ -12,9 +12,9 @@ from semantic_layout_common import WorldRasterTransform, _asset_repo_path, extra
 
 class SemanticLayoutTests(unittest.TestCase):
     def test_asset_paths_accept_v2_repo_paths_without_legacy_prefix(self):
-        path = "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_01.glb"
+        path = "assets-lowpoly-python/nature/trees/glb/tree_v2_01.glb"
         self.assertEqual(_asset_repo_path(path), path)
-        self.assertEqual(_asset_repo_path("trees/example.glb"), "blender/assets/vegetation/trees/example.glb")
+        self.assertEqual(_asset_repo_path("trees/example.glb"), "assets-lowpoly-python/trees/example.glb")
 
     def test_world_pixel_round_trip(self):
         transform = WorldRasterTransform(101, 201, -10.0, -20.0, 40.0, 80.0)

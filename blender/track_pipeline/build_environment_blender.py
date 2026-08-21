@@ -100,16 +100,40 @@ def build_tire_barriers(config, points, materials):
         front_uv_bounds = (x0 / width, 1.0 - y1 / height, x1 / width, 1.0 - y0 / height)
         from procedural_materials_blender import texture_material
         card_materials = (
-            texture_material("F90_TireBarrierCardFront", front, roughness=1.0, metallic=0.0, alpha=True),
-            texture_material("F90_TireBarrierCardSide", side_texture, roughness=1.0, metallic=0.0, alpha=True),
+            texture_material("F90_TireBarrierCardFront", front, roughness=1.0, metallic=0.0, alpha=False),
+            texture_material("F90_TireBarrierCardSide", side_texture, roughness=1.0, metallic=0.0, alpha=False),
             texture_material("F90_TireBarrierCardTop", top_texture, roughness=1.0, metallic=0.0, alpha=False),
         )
+        # Check for multi-barrier materials and layout sectors
+        repo = Path(config["_repo_root"])
+        barriers_manifest_path = repo / "assets-lowpoly-python" / "track_props" / "barriers" / "source_manifest.json"
+        multi_materials = {}
+        if barriers_manifest_path.exists():
+            bm = read_json(barriers_manifest_path)
+            bdir = barriers_manifest_path.parent
+            for b_type, b_info in bm.get("types", {}).items():
+                f_tex = bdir / b_info["front"]
+                t_tex = bdir / b_info["top"]
+                e_tex = bdir / b_info["end"]
+                r_val = 0.6 if b_type == "guardrail_armco" else 1.0
+                m_val = 0.7 if b_type == "guardrail_armco" else 0.0
+                f_mat = texture_material(f"F90_Barrier_{b_type}_Front", f_tex, roughness=r_val, metallic=m_val, alpha=False)
+                s_mat = texture_material(f"F90_Barrier_{b_type}_Side", e_tex, roughness=r_val, metallic=m_val, alpha=False)
+                t_mat = texture_material(f"F90_Barrier_{b_type}_Top", t_tex, roughness=r_val, metallic=m_val, alpha=False)
+                multi_materials[b_type] = (f_mat, s_mat, t_mat)
+        layout_cfg_path = repo / "blender" / "track_pipeline" / "layouts" / config.get("track_id", "la_chutana") / "layout_config.json"
+        barrier_sectors = None
+        if layout_cfg_path.exists():
+            lcfg = read_json(layout_cfg_path)
+            barrier_sectors = lcfg.get("barrier_sectors")
     for side in sides:
         side_name = "Right" if side > 0 else "Left"
         if card_materials:
             visual, modules = create_tire_barrier_card_visual(
                 f"TireBarrierVisual{side_name}", points, side, config, *card_materials,
                 front_uv_bounds=front_uv_bounds,
+                multi_materials=multi_materials if multi_materials else None,
+                barrier_sectors=barrier_sectors,
             )
         else:
             visual, modules = create_tire_barrier_visual(

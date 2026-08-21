@@ -14,8 +14,13 @@ sky_material = SubResource("ProceduralSkyMaterial_la_chutana")
 [sub_resource type="Environment" id="Environment_la_chutana"]
 background_mode = 2
 sky = SubResource("Sky_la_chutana")
-tonemap_mode = 2
-glow_enabled = true
+ambient_light_source = 2
+ambient_light_color = Color(0.68, 0.66, 0.62, 1)
+ambient_light_energy = 0.72
+reflected_light_source = 0
+tonemap_mode = 1
+tonemap_exposure = 0.95
+glow_enabled = false
 
 [node name="LaChutanaTrack" type="Node3D"]
 script = ExtResource("1_script")
@@ -25,5 +30,12 @@ environment = SubResource("Environment_la_chutana")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.642788, -0.422618, 0.638968, 0, 0.834848, 0.550482, -0.766044, -0.353553, 0.5373, 0, 2, 0)
-light_energy = 1.2
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 0.80
+light_specular = 0.0
 shadow_enabled = true
+shadow_opacity = 0.55
+shadow_blur = 1.5
+shadow_bias = 0.02
+directional_shadow_max_distance = 40.0
+directional_shadow_blend_splits = true

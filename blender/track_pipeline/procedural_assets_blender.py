@@ -312,16 +312,29 @@ def create_tire_barrier_visual(name, points, side, config, material, asset_glb=N
     return obj, count
 
 
-def create_tire_barrier_card_visual(name, points, side, config, front_material, side_material, top_material, front_uv_bounds=(0.0, 0.0, 1.0, 1.0)):
-    """Build a closed, continuous rectangular tire-stack ribbon.
+def _sector_barrier_type(fraction, sectors):
+    if not sectors:
+        return "tire_black"
+    f = float(fraction) % 1.0
+    for sector in sectors:
+        start_f = float(sector["start_fraction"])
+        end_f = float(sector["end_fraction"])
+        if start_f <= end_f:
+            if start_f <= f < end_f:
+                return sector.get("barrier_type", "tire_black")
+        else:
+            if f >= start_f or f < end_f:
+                return sector.get("barrier_type", "tire_black")
+    return "tire_black"
 
-    The old implementation generated a closed prism for every 0.68 m sample.
-    Although the objects were exported together, its repeated end caps created
-    visible steps and dark seams.  This version shares each cross-section with
-    its neighbours and only emits the four continuous surfaces of the ribbon.
-    The front card still repeats once per nominal tire-stack length, while the
-    top tread uses its authored seamless tiling.
-    """
+
+def create_tire_barrier_card_visual(
+    name, points, side, config, front_material, side_material, top_material,
+    front_uv_bounds=(0.0, 0.0, 1.0, 1.0),
+    multi_materials=None,
+    barrier_sectors=None,
+):
+    """Build a closed, continuous rectangular barrier ribbon supporting multiple barrier styles."""
     tire_cfg = config["tire_barriers"]
     road_half = float(config["road"]["width_m"]) * 0.5
     distance = road_half + float(tire_cfg.get("separation_from_edge_m", 5.0))
@@ -336,9 +349,17 @@ def create_tire_barrier_card_visual(name, points, side, config, front_material, 
     uv_by_face = []
     up = Vector((0.0, 0.0, visual_height))
     u0, v0, u1, v1 = front_uv_bounds
+
+    all_materials = [front_material, side_material, top_material]
+    type_to_offset = {}
+    if multi_materials:
+        all_materials = []
+        registered_types = list(multi_materials.keys())
+        for b_type in registered_types:
+            type_to_offset[b_type] = len(all_materials)
+            all_materials.extend(multi_materials[b_type])
+
     for index in range(count):
-        # Cross-sections lie on the sample boundaries, allowing adjacent faces
-        # to share their vertices instead of behaving as separate prisms.
         fraction = index / count
         pos, tangent, normal = sample_centerline(points, fraction)
         ground = terrain_height(config, fraction, side, distance)
@@ -359,11 +380,14 @@ def create_tire_barrier_card_visual(name, points, side, config, front_material, 
         next_index = (index + 1) % count
         i = index * 4
         j = next_index * 4
-        # The external facade carries the stack-front card.  The inner facade
-        # uses the side card; it remains available from close/camera-free views
-        # without adding the old terminal planes to every module.
+        fraction = index / count
+        mat_offset = 0
+        if multi_materials and barrier_sectors:
+            b_type = _sector_barrier_type(fraction, barrier_sectors)
+            mat_offset = type_to_offset.get(b_type, 0)
+
         faces.extend(((i + 1, j + 1, j + 3, i + 3), (j, i, i + 2, j + 2), (i + 2, i + 3, j + 3, j + 2), (j, j + 1, i + 1, i)))
-        face_materials.extend((0, 1, 2, 2))
+        face_materials.extend((mat_offset + 0, mat_offset + 1, mat_offset + 2, mat_offset + 2))
         front_u0 = u0 + (u1 - u0) * index
         front_u1 = u0 + (u1 - u0) * (index + 1)
         uv_by_face.extend((
@@ -373,7 +397,7 @@ def create_tire_barrier_card_visual(name, points, side, config, front_material, 
             [(index, 0), (index + 1, 0), (index + 1, 1), (index, 1)],
         ))
 
-    obj = _mesh_object(name, vertices, faces, [front_material, side_material, top_material], face_materials, uv_by_face)
+    obj = _mesh_object(name, vertices, faces, all_materials, face_materials, uv_by_face)
     obj["formula90s_continuous_tire_barrier"] = True
     obj["formula90s_collision"] = False
     obj["formula90s_barrier_geometry"] = "continuous_rectangular_ribbon"

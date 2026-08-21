@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": 1,
+  "standard_name": "Formula-90 Scene Environment & Lighting Standard",
+  "target_aesthetic": "90s Arcade Racing (Daytona USA, Sega Rally, F1 97)",
+  "world_environment": {
+    "background_mode": 2,
+    "ambient_light": {
+      "source": 2,
+      "color_rgb": [0.68, 0.66, 0.62],
+      "energy": 0.72
+    },
+    "reflected_light": {
+      "source": 0,
+      "comment": "Must remain 0 (DISABLED) to eliminate false sky bloom/specular sheen on matte surfaces"
+    },
+    "tonemap": {
+      "mode": 1,
+      "mode_name": "Reinhard",
+      "exposure": 0.95,
+      "white": 1.0
+    },
+    "glow": {
+      "enabled": false
+    },
+    "fog": {
+      "enabled": false
+    }
+  },
+  "directional_light": {
+    "color_rgb": [1.0, 0.98, 0.94],
+    "energy": 0.80,
+    "specular": 0.0,
+    "shadow": {
+      "enabled": true,
+      "opacity": 0.55,
+      "blur": 1.5,
+      "bias": 0.02,
+      "max_distance_m": 40.0,
+      "blend_splits": true
+    }
+  },
+  "shadow_casting_budget": {
+    "vehicle": "ON (1)",
+    "track_geometry": "OFF (0)",
+    "containment_barriers": "OFF (0)",
+    "vegetation": "OFF (0)",
+    "props_and_signs": "OFF (0)",
+    "mountains_and_sky": "OFF (0)"
+  },
+  "material_roughness_baseline": {
+    "asphalt": 0.95,
+    "ground": 1.0,
+    "shoulder": 1.0,
+    "curbs": 0.82,
+    "edge_lines": 0.86,
+    "tire_barriers": 0.98,
+    "concrete_barriers": 1.0,
+    "guardrail_armco": {
+      "roughness": 0.60,
+      "metallic": 0.70
+    },
+    "vegetation_cards": 0.98
+  }
+}

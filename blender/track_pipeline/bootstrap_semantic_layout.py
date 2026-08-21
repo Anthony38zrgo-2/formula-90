@@ -78,8 +78,25 @@ def main() -> int:
 
     draw_world_polyline(semantic, transform, points, palette["runoff"], bootstrap["runoff_width_m"])
     draw_world_polyline(semantic, transform, points, palette["asphalt"], bootstrap["road_width_m"])
-    barrier_points = [offset_position(points, index / len(points), exterior, bootstrap["barrier_distance_from_center_m"]) for index in range(len(points))]
-    draw_world_polyline(semantic, transform, barrier_points, palette["barrier"], 1.2)
+    barrier_sectors = config.get("barrier_sectors", [])
+    if barrier_sectors:
+        n_samples = max(200, len(points) * 4)
+        for sector in barrier_sectors:
+            start_f = float(sector["start_fraction"])
+            end_f = float(sector["end_fraction"])
+            color_rgb = sector.get("color", palette.get("barrier", [32, 56, 100]))
+            if start_f <= end_f:
+                count_s = max(2, int((end_f - start_f) * n_samples) + 2)
+                fractions = [start_f + (end_f - start_f) * i / (count_s - 1) for i in range(count_s)]
+            else:
+                len_wrapped = (1.0 - start_f) + end_f
+                count_s = max(2, int(len_wrapped * n_samples) + 2)
+                fractions = [(start_f + len_wrapped * i / (count_s - 1)) % 1.0 for i in range(count_s)]
+            sector_points = [offset_position(points, f, exterior, float(bootstrap["barrier_distance_from_center_m"])) for f in fractions]
+            draw_world_polyline(semantic, transform, sector_points, color_rgb, 1.2)
+    else:
+        barrier_points = [offset_position(points, index / len(points), exterior, bootstrap["barrier_distance_from_center_m"]) for index in range(len(points))]
+        draw_world_polyline(semantic, transform, barrier_points, palette["barrier"], 1.2)
 
     marker_bgra = np.zeros((transform.height, transform.width, 4), dtype=np.uint8)
     occupied = np.zeros((transform.height, transform.width), dtype=bool)

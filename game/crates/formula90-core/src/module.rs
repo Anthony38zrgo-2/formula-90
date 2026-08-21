@@ -67,7 +67,9 @@ impl Default for ModuleRegistry {
 
 impl ModuleRegistry {
     pub fn new() -> Self {
-        Self { modules: Vec::new() }
+        Self {
+            modules: Vec::new(),
+        }
     }
 
     pub fn register(&mut self, module: Box<dyn SimModule>) {
