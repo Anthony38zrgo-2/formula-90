@@ -52,8 +52,8 @@ def main() -> int:
             failures.append(f"tree must use exactly two crossed cards: {item['id']}")
         category_counts[item["category"]] += 1
 
-    if category_counts != {"trees": 3, "bushes": 4, "grass": 4}:
-        failures.append(f"expected reusable variants trees=3 bushes=4 grass=4, got {category_counts}")
+    if category_counts != {"trees": 7, "bushes": 7, "grass": 4}:
+        failures.append(f"expected reusable variants trees=7 bushes=7 grass=4, got {category_counts}")
     if failures:
         for failure in failures:
             print(f"FAIL {failure}")

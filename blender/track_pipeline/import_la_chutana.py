@@ -79,7 +79,7 @@ OBJECT_CATEGORY_TARGET = {
     "sign": 19,
     "flag": 33,
 }
-VEGETATION_CATEGORY_TARGET = {"bushes": 110, "grass": 9320, "trees": 130}
+VEGETATION_CATEGORY_TARGET = {"bushes": 110, "grass": 4660, "trees": 130}
 
 _KIND_MAP = {"card": "card", "procedural_flag": "flag"}
 

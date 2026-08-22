@@ -80,6 +80,8 @@ if ($TextureSource -eq "Procedural") {
     if ($LASTEXITCODE -ne 0) { throw "Vegetation analysis failed" }
     Write-Host "Vegetation gate: pre-cut RGBA source rebuild + read-only bottom-anchor validation + per-asset alpha validation pass $VegetationPass" -ForegroundColor DarkGray
 }
+& $python (Join-Path $pipeline "apply_ground_cover_to_terrain.py") --config $config
+if ($LASTEXITCODE -ne 0) { throw "Hybrid ground-cover terrain generation failed" }
 & $python (Join-Path $pipeline "validate_texture_forge.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Texture Forge validation failed" }
 

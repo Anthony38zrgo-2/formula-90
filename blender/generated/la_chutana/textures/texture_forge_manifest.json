@@ -55,7 +55,32 @@
       "source": "reference_image_generation",
       "refinement_round": "R3",
       "forge_recipe": "ps1_rally_clean",
-      "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
+      "sha256": "42d98326922482ac95c94e78270e88ce98a0dc6236c6164dfff234c378a9f3d4",
+      "ground_cover": {
+        "mode": "hybrid_cards_texture",
+        "card_share": 0.5,
+        "texture_share": 0.5,
+        "texture_coverage": 0.5,
+        "texture_opacity": 0.35,
+        "base_source": {
+          "path": "blender/assets/texture_sources/la_chutana/terrain/south_america_west_low_terrain_source.png",
+          "sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022"
+        },
+        "sources": [
+          {
+            "path": "assets-lowpoly-python/circuit_assets_final/texture_library/grassg1.png",
+            "sha256": "fdd76c1d4bd1cabf1231ec4d6d02c20d01489e425f65463cd51630468b80c598"
+          },
+          {
+            "path": "assets-lowpoly-python/circuit_assets_final/texture_library/grassg2.png",
+            "sha256": "8e082e5169313aadc4487bc945d25788faa9ec3cba52dbc787009dd1bc72cc48"
+          },
+          {
+            "path": "assets-lowpoly-python/circuit_assets_final/texture_library/grassg3.png",
+            "sha256": "727d546a60f1c1eed0f2ad139cedae4b683bf63fcdf65e819de1846e9aadb064"
+          }
+        ]
+      }
     },
     "biomes/south_america/west/low/shoulder.png": {
       "category": "roadside_shoulder",

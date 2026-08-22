@@ -148,16 +148,16 @@ func _report_environment(report: Array[String], env_root: Node) -> void:
 	var barrier_collisions := 0
 	for node in nodes:
 		var lower := node.name.to_lower()
-		if lower.begins_with("barrier_"):
+		if "barrier" in lower:
 			if lower.ends_with(COLLISION_SUFFIX):
 				barrier_collisions += 1
 			else:
 				barrier_visuals += 1
 	if barrier_collisions < 1:
-		report.append("[FAIL] environment GLB contains no Barrier_*-colonly collision proxy")
+		report.append("[FAIL] environment GLB contains no barrier collision proxy")
 		_failures += 1
 	else:
-		report.append("[PASS] environment GLB contains %d Barrier_*-colonly collision proxy(ies)" % barrier_collisions)
+		report.append("[PASS] environment GLB contains %d barrier collision proxy(ies)" % barrier_collisions)
 	if barrier_visuals < 1:
 		report.append("[WARN] environment GLB contains no barrier visuals (track has no guardrails)")
 
@@ -197,7 +197,7 @@ func _report_vegetation(report: Array[String], veg_root: Node) -> void:
 		var lower := node.name.to_lower()
 		if "colonly" in lower or "collision" in lower or node is CollisionObject3D:
 			leaks.append(node.name)
-		if node.name.begins_with("Asset_") and _is_mesh(node):
+		if (node.name.begins_with("Asset_") or node.name.begins_with("Raw_")) and _is_mesh(node):
 			asset_count += 1
 	report.append("[INFO] vegetation scene nodes: %d, meshes: %d" % [nodes.size(), mesh_count])
 	if veg_root.get_child_count() < 1:

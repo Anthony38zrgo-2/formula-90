@@ -1,5 +1,5 @@
 {
-  "asset_count": 20,
+  "asset_count": 27,
   "assets": [
     {
       "budget": {
@@ -95,7 +95,7 @@
       "dimensions_m": {
         "depth": 0.05,
         "height": 1.6,
-        "width": 2.4
+        "width": 7.2
       },
       "id": "f90_racing",
       "kind": "card",
@@ -104,12 +104,75 @@
         "origin": "object_catalog marker 005"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/signs/f90_racing_source.png",
+      "source": "assets-lowpoly-python/track_props/signs/sources/f90_racing_source.png",
       "source_sha256": "fd07c49584653bab12506dc3eedb6cc18550fc4187df49097450d346b00ff0c9"
     },
     {
       "budget": {
-        "max_instances": 9320,
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 1.283682,
+        "height": 1.283682,
+        "width": 1.283682
+      },
+      "id": "forest1",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/forest1.glb",
+      "source_sha256": "51cb5a46cdc4a11b1e798fa56a14ca84e0b0780b58adddd562199742f468d8f5"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 1.280582,
+        "height": 1.286784,
+        "width": 1.280582
+      },
+      "id": "forest2",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/forest2.glb",
+      "source_sha256": "5559ae78db61636ac6e03e631fbe8b85212e7bd6d43cb5fd817e0ba8873735d2"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 0.642944,
+        "height": 0.642944,
+        "width": 0.642944
+      },
+      "id": "forest3",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/forest3.glb",
+      "source_sha256": "23efda1d63dcf15d15b171922d7206919e56414bcfc35fc8752e93487c70300d"
+    },
+    {
+      "budget": {
+        "max_instances": 4660,
         "min_instances": 0
       },
       "category": "grass",
@@ -130,7 +193,7 @@
     },
     {
       "budget": {
-        "max_instances": 9320,
+        "max_instances": 4660,
         "min_instances": 0
       },
       "category": "grass",
@@ -151,7 +214,7 @@
     },
     {
       "budget": {
-        "max_instances": 9320,
+        "max_instances": 4660,
         "min_instances": 0
       },
       "category": "grass",
@@ -172,7 +235,7 @@
     },
     {
       "budget": {
-        "max_instances": 9320,
+        "max_instances": 4660,
         "min_instances": 0
       },
       "category": "grass",
@@ -201,7 +264,7 @@
       "dimensions_m": {
         "depth": 0.05,
         "height": 1.6,
-        "width": 2.4
+        "width": 7.2
       },
       "id": "la_chutana",
       "kind": "card",
@@ -210,7 +273,7 @@
         "origin": "object_catalog marker 006"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/signs/la_chutana_source.png",
+      "source": "assets-lowpoly-python/track_props/signs/sources/la_chutana_source.png",
       "source_sha256": "539629a7e6e960a8129fa9ef37f743eb7f07fe5fab373dd4d906b69fdf7e4869"
     },
     {
@@ -232,7 +295,7 @@
         "origin": "object_catalog marker 003"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/people/marshal_flag_source.png",
+      "source": "assets-lowpoly-python/track_props/people/sources/marshal_flag_source.png",
       "source_sha256": "de47601eb9979c15d5af82d18086b7a1867d10f28831475ba920d8a461bc0a7e"
     },
     {
@@ -245,7 +308,7 @@
       "dimensions_m": {
         "depth": 0.05,
         "height": 1.6,
-        "width": 2.4
+        "width": 7.2
       },
       "id": "nitro_95",
       "kind": "card",
@@ -254,7 +317,7 @@
         "origin": "object_catalog marker 008"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/signs/nitro_95_source.png",
+      "source": "assets-lowpoly-python/track_props/signs/sources/nitro_95_source.png",
       "source_sha256": "bb24fb1951dc4b06b4fd38f9d562faceb3b6a9ea0ad3fc9c7fc827fb0ffd9256"
     },
     {
@@ -276,7 +339,7 @@
         "origin": "object_catalog marker 004"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/people/photographer_source.png",
+      "source": "assets-lowpoly-python/track_props/people/sources/photographer_source.png",
       "source_sha256": "9ffb9e59f20b3d9f57c0bd90665522e933d4cf6c56b71948c3596bbe7e20efa3"
     },
     {
@@ -289,7 +352,7 @@
       "dimensions_m": {
         "depth": 0.05,
         "height": 1.6,
-        "width": 2.4
+        "width": 7.2
       },
       "id": "pit_service",
       "kind": "card",
@@ -298,7 +361,7 @@
         "origin": "object_catalog marker 007"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/signs/pit_service_source.png",
+      "source": "assets-lowpoly-python/track_props/signs/sources/pit_service_source.png",
       "source_sha256": "c4ff3c0dd8f67a0ac0dbc2ca115c76bd6e941ea11ff4feaba7cd99945878a787"
     },
     {
@@ -320,7 +383,7 @@
         "origin": "object_catalog marker 002"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/people/spectator_cap_source.png",
+      "source": "assets-lowpoly-python/track_props/people/sources/spectator_cap_source.png",
       "source_sha256": "3c6062dcf8169d31aa5d02dfb13a5f686065dacf8d1b7b51453d76171f2d36e8"
     },
     {
@@ -342,7 +405,7 @@
         "origin": "object_catalog marker 001"
       },
       "preview": null,
-      "source": "blender/assets/texture_sources/la_chutana/trackside/people/spectator_wave_source.png",
+      "source": "assets-lowpoly-python/track_props/people/sources/spectator_wave_source.png",
       "source_sha256": "1d2ffe48b3987d9fa27441fe0b9369696f7a3aa339d30edd06173cb8ab0b521f"
     },
     {
@@ -366,6 +429,90 @@
       "preview": null,
       "source": null,
       "source_sha256": null
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 17.0,
+        "height": 21.0,
+        "width": 17.0
+      },
+      "id": "tree3",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree3.glb",
+      "source_sha256": "85fa584fd64b4d36ff9b8efb592528c8e22d5ae6a6d405f93fb6ccc47a083e5d"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 10.0,
+        "height": 14.0,
+        "width": 10.0
+      },
+      "id": "tree4",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree4.glb",
+      "source_sha256": "620750c4bdb505c9a02f60b9be97c7e914ee7ff24cc1f0691b6949f714c94abd"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 14.0,
+        "height": 15.5,
+        "width": 14.0
+      },
+      "id": "tree7",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree7.glb",
+      "source_sha256": "b7805ff5633ada73b01c23f6755c680fe82f50121e8044e75cb533566b53f630"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 9.0,
+        "height": 12.5,
+        "width": 9.0
+      },
+      "id": "tree8",
+      "kind": "vegetation",
+      "metadata": {
+        "origin": "assets_v2/manifest.csv"
+      },
+      "preview": null,
+      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree8.glb",
+      "source_sha256": "fc0284b721984bda803cfa09e78e5c3a5360ec7d99329bb7922fbb4dde9a174a"
     },
     {
       "budget": {

@@ -50,18 +50,18 @@ def main() -> int:
     expected_counts = {"spectator": 42, "marshal": 17, "photographer": 13, "sign": 19, "flag": 33}
     if stored["counts"]["by_object_category"] != expected_counts:
         failures.append(f"indexed object counts changed: {stored['counts']['by_object_category']}")
-    expected_vegetation = {"bushes": 110, "grass": 9320, "trees": 130}
+    expected_vegetation = {"bushes": 110, "grass": 4660, "trees": 130}
     if stored["counts"]["by_vegetation_category"] != expected_vegetation:
         failures.append(f"vegetation counts changed: {stored['counts']['by_vegetation_category']}")
     near_grass = sum(1 for item in stored["vegetation"] if item["category"] == "grass" and item.get("density_band") == "near")
-    if near_grass < 6780:
-        failures.append(f"near-track grass is below 10x baseline: {near_grass}/6780")
+    if near_grass < 3390:
+        failures.append(f"near-track grass is below the 50% hybrid target: {near_grass}/3390")
     if failures:
         for failure in failures:
             print(f"FAIL {failure}")
         return 2
     print(f"PASS semantic layout objects={len(stored['objects'])} vegetation={len(stored['vegetation'])}")
-    print(f"PASS vegetation v2 bushes=110 grass=9320 near_grass={near_grass} trees=130")
+    print(f"PASS hybrid vegetation bushes=110 grass=4660 near_grass={near_grass} trees=130")
     print(f"PASS provenance semantic={stored['provenance']['semantic_sha256']} markers={stored['provenance']['marker_sha256']}")
     print("PASS collision contract: indexed objects and vegetation are visual-only")
     return 0

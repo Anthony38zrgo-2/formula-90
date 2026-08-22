@@ -65,13 +65,13 @@ balanced dry + green palette
 mixed simple residential + industrial medium/far structures
 ```
 
-Texture Forge generates asymmetric terrain zones containing greener vegetation pigment, dry grass pigment and smaller soil-exposure patches. Vegetation cards receive deterministic fake lighting, AO, posterization and subtle Bayer dithering.
+Texture Forge generates asymmetric terrain zones containing greener vegetation pigment, dry grass pigment and smaller soil-exposure patches. La Chutana uses a hybrid 50/50 ground-cover contract: 4,660 collision-free grass cards remain concentrated near the asphalt while `grassg1`-`grassg3` detail covers deterministic regions of the terrain texture. Vegetation cards receive deterministic fake lighting, AO, posterization and subtle Bayer dithering.
 
 Geometry:
 
-- trees: 2 crossed planes;
-- bushes: 2 crossed planes and wider silhouettes;
-- grass: 1 plane with much higher density than the original pass;
+- trees: 2 crossed planes, with the three canonical variants plus `tree3`, `tree4`, `tree7` and `tree8`;
+- bushes: 2 crossed planes, with the four canonical variants plus `forest1`-`forest3`;
+- grass: 1 plane, reduced from 9,320 to 4,660 instances and complemented by terrain detail;
 - buildings: simple 3D boxes with a basic top face;
 - guardrails: modular visual geometry with separate simplified collision.
 

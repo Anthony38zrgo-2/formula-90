@@ -100,6 +100,45 @@ def make_terrain(size: int, seed: int, palette: dict, label: str) -> Image.Image
     return Image.fromarray((rgb * 255).astype(np.uint8), "RGB")
 
 
+def apply_ground_cover_detail(
+    terrain: Image.Image,
+    source_paths: list[Path],
+    seed: int,
+    label: str,
+    coverage: float,
+    opacity: float,
+) -> Image.Image:
+    """Blend unmodified ground-cover source pixels into deterministic terrain regions."""
+    if not source_paths:
+        return terrain.convert("RGB")
+    coverage = float(np.clip(coverage, 0.0, 1.0))
+    opacity = float(np.clip(opacity, 0.0, 1.0))
+    size = terrain.size[0]
+    if terrain.size != (size, size):
+        raise ValueError("Ground-cover terrain must be square")
+    rng = rng_for(seed, f"ground-cover:{label}")
+    sources = [np.asarray(Image.open(path).convert("RGB"), dtype=np.float32) / 255.0 for path in source_paths]
+    detail = np.zeros((size, size, 3), dtype=np.float32)
+    tile = max(32, size // 4)
+    for y in range(0, size, tile):
+        for x in range(0, size, tile):
+            source = sources[int(rng.integers(0, len(sources)))]
+            patch = Image.fromarray((source * 255).astype(np.uint8)).resize((tile, tile), Image.Resampling.BILINEAR)
+            if bool(rng.integers(0, 2)):
+                patch = patch.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            if bool(rng.integers(0, 2)):
+                patch = patch.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            h = min(tile, size - y)
+            w = min(tile, size - x)
+            detail[y:y + h, x:x + w] = np.asarray(patch, dtype=np.float32)[:h, :w] / 255.0
+    field = low_frequency_field(rng, size, coarse=9, blur=max(1.0, size / 96.0))
+    threshold = float(np.quantile(field, 1.0 - coverage)) if 0.0 < coverage < 1.0 else (1.0 if coverage <= 0.0 else 0.0)
+    mask = (field >= threshold).astype(np.float32) * opacity
+    base = np.asarray(terrain.convert("RGB"), dtype=np.float32) / 255.0
+    mixed = base * (1.0 - mask[..., None]) + detail * mask[..., None]
+    return Image.fromarray(np.clip(mixed * 255.0, 0, 255).astype(np.uint8))
+
+
 def make_shoulder(size: int, seed: int, palette: dict, label: str) -> Image.Image:
     rng = rng_for(seed, f"shoulder:{label}")
     dry = np.asarray(palette["terrain"]["dry"], np.float32)
@@ -240,14 +279,33 @@ def make_checker(size: int) -> Image.Image:
     return image
 
 
-def generate_biome_bank(root: Path, biome, card_size: int, terrain_size: int, seed: int, recipes: dict):
+def generate_biome_bank(root: Path, biome, card_size: int, terrain_size: int, seed: int, recipes: dict, ground_cover: dict | None = None):
     palette = palette_for(biome)
     d = root / "biomes" / biome.continent / biome.longitude / biome.altitude
     d.mkdir(parents=True, exist_ok=True)
 
     surface_recipe = SurfaceRecipe(posterize_levels=28, dither_strength=.010, contrast=1.035)
     terrain_path = d / "terrain.png"
-    _save_surface(make_terrain(terrain_size, seed, palette, biome.id), terrain_path, surface_recipe, recipes, {"biome":biome.id,"role":"terrain"})
+    terrain_image = make_terrain(terrain_size, seed, palette, biome.id)
+    terrain_metadata = {"biome": biome.id, "role": "terrain"}
+    if ground_cover and ground_cover.get("biome") == biome.id:
+        source_paths = [Path(path) for path in ground_cover["source_paths"]]
+        terrain_image = apply_ground_cover_detail(
+            terrain_image,
+            source_paths,
+            seed,
+            biome.id,
+            float(ground_cover.get("texture_coverage", 0.5)),
+            float(ground_cover.get("texture_opacity", 0.35)),
+        )
+        terrain_metadata["ground_cover"] = {
+            "card_share": float(ground_cover.get("card_share", 0.5)),
+            "texture_share": float(ground_cover.get("texture_share", 0.5)),
+            "texture_coverage": float(ground_cover.get("texture_coverage", 0.5)),
+            "texture_opacity": float(ground_cover.get("texture_opacity", 0.35)),
+            "sources": [{"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in source_paths],
+        }
+    _save_surface(terrain_image, terrain_path, surface_recipe, recipes, terrain_metadata)
     shoulder_path = d / "shoulder.png"
     _save_surface(make_shoulder(max(256,terrain_size//2), seed, palette, biome.id), shoulder_path, SurfaceRecipe(24,.012,1.045), recipes, {"biome":biome.id,"role":"roadside_shoulder"})
     bark_path = d / "bark.png"
@@ -308,8 +366,27 @@ def main() -> int:
     _save_surface(make_simple_noise(card_size,ns.seed,"guardrail",(.50,.52,.52),.026),shared/"guardrail.png",SurfaceRecipe(18,.012,1.05),recipes,{"role":"guardrail"})
     _save_surface(make_checker(card_size),shared/"start_finish.png",SurfaceRecipe(8,0.0,1.0),recipes,{"role":"start_finish"})
 
-    manifests = {b.id: generate_biome_bank(out,b,card_size,terrain_size,ns.seed,recipes) for b in supported_biomes()}
     active = biome_from_config(config)
+    ground_cover_cfg = config.get("terrain_ground_cover")
+    ground_cover = None
+    if ground_cover_cfg:
+        source_paths = [repo / path for path in ground_cover_cfg.get("texture_sources", [])]
+        expected_hashes = ground_cover_cfg.get("source_sha256", {})
+        for path in source_paths:
+            if not path.exists():
+                raise RuntimeError(f"Ground-cover source missing: {path}")
+            expected = expected_hashes.get(path.name)
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+            if expected and actual != expected:
+                raise RuntimeError(f"Ground-cover source hash mismatch: {path.name} {actual}")
+        ground_cover = {**ground_cover_cfg, "biome": active.id, "source_paths": [str(path) for path in source_paths]}
+    manifests = {
+        b.id: generate_biome_bank(
+            out, b, card_size, terrain_size, ns.seed, recipes,
+            ground_cover if b.id == active.id else None,
+        )
+        for b in supported_biomes()
+    }
     active_manifest = {
         "forge": {"version":FORGE_VERSION,"style":STYLE_ID,"seed":ns.seed},
         "active_biome": active.id,

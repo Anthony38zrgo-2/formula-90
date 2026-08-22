@@ -17,9 +17,9 @@
       "category": "grass",
       "seed_offset": 101,
       "spacing_m": 4.0,
-      "max_count": 9320,
-      "min_count": 9320,
-      "near_track_density": {"max_distance_from_asphalt_m": 10.0, "multiplier": 3.0, "baseline_count": 2260, "min_count": 6780, "max_count": 6780, "far_max_count": 2540},
+      "max_count": 4660,
+      "min_count": 4660,
+      "near_track_density": {"max_distance_from_asphalt_m": 10.0, "multiplier": 3.0, "baseline_count": 1130, "min_count": 3390, "max_count": 3390, "far_max_count": 1270},
       "target_height_m": [0.28, 0.62],
       "asset_pool": [
         "assets-lowpoly-python/nature/grass/glb/grass_v2_01.glb",
@@ -40,7 +40,10 @@
         "assets-lowpoly-python/nature/bushes/glb/bush_v2_01.glb",
         "assets-lowpoly-python/nature/bushes/glb/bush_v2_02.glb",
         "assets-lowpoly-python/nature/bushes/glb/bush_v2_03.glb",
-        "assets-lowpoly-python/nature/bushes/glb/bush_v2_04.glb"
+        "assets-lowpoly-python/nature/bushes/glb/bush_v2_04.glb",
+        "assets-lowpoly-python/nature/bushes/glb/forest1.glb",
+        "assets-lowpoly-python/nature/bushes/glb/forest2.glb",
+        "assets-lowpoly-python/nature/bushes/glb/forest3.glb"
       ]
     },
     "trees": {
@@ -54,7 +57,11 @@
       "asset_pool": [
         "assets-lowpoly-python/nature/trees/glb/tree_v2_01.glb",
         "assets-lowpoly-python/nature/trees/glb/tree_v2_02.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree_v2_03.glb"
+        "assets-lowpoly-python/nature/trees/glb/tree_v2_03.glb",
+        "assets-lowpoly-python/nature/trees/glb/tree3.glb",
+        "assets-lowpoly-python/nature/trees/glb/tree4.glb",
+        "assets-lowpoly-python/nature/trees/glb/tree7.glb",
+        "assets-lowpoly-python/nature/trees/glb/tree8.glb"
       ]
     }
   }

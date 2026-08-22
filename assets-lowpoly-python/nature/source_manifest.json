@@ -19,10 +19,45 @@
       "category": "trees",
       "sha256": "08e5128399896d90ea7e9aee7cbd14d801be54f1924702d98795d1fc8e4e34a5"
     },
+    "circuit_tree3": {
+      "file": "../circuit_assets_final/assets/tree3/tree3.png",
+      "category": "trees",
+      "sha256": "796c5d535df8f06ba0dbda65faef8fe506b4ae108e4b2fdb57ef42e62c6be3b4"
+    },
+    "circuit_tree4": {
+      "file": "../circuit_assets_final/assets/tree4/tree4.png",
+      "category": "trees",
+      "sha256": "e870500700a1d18dfc03188b41a005298ab3ce0697911713aa9a1705a517cffb"
+    },
+    "circuit_tree7": {
+      "file": "../circuit_assets_final/assets/tree7/tree7.png",
+      "category": "trees",
+      "sha256": "4e03de08f6485acd9dfd4dd168d4a108d56434916db056161e643ce10c8cbdf7"
+    },
+    "circuit_tree8": {
+      "file": "../circuit_assets_final/assets/tree8/tree8.png",
+      "category": "trees",
+      "sha256": "1207d6bd043cb08694bac34b241773c5d85c417c6a7af017ecd5ead72c6d05af"
+    },
     "bush": {
       "file": "bushes/sources/bush_v2_01_source.png",
       "category": "bushes",
       "sha256": "4acea6b91490c6c54af24c89835fa0632f51340dd876a05ae71c155a1ae958c0"
+    },
+    "circuit_forest1": {
+      "file": "../circuit_assets_final/assets/forest1/forest1.png",
+      "category": "bushes",
+      "sha256": "e7c50f924fd00c5e86bfbc91b45e8f1cdd8def7b0369be2dc8668f7e3338b04f"
+    },
+    "circuit_forest2": {
+      "file": "../circuit_assets_final/assets/forest2/forest2.png",
+      "category": "bushes",
+      "sha256": "e9d0e11475475f43cb9db0b182f580033623b96c82399f5c878a818daf50e6a0"
+    },
+    "circuit_forest3": {
+      "file": "../circuit_assets_final/assets/forest3/forest3.png",
+      "category": "bushes",
+      "sha256": "dd20fdbc9ed57a19f32302a6c6940e5133e9f47dd0baf9912cece15550422c83"
     },
     "grass": {
       "file": "grass/sources/grass_v2_01_source.png",
@@ -41,6 +76,13 @@
     {"id": "grass_v2_01", "category": "grass", "source": "grass", "planes": 1, "width_m": 0.9, "height_m": 0.62, "glb": "grass/glb/grass_v2_01.glb"},
     {"id": "grass_v2_02", "category": "grass", "source": "grass", "planes": 1, "width_m": 1.08, "height_m": 0.78, "glb": "grass/glb/grass_v2_02.glb"},
     {"id": "grass_v2_03", "category": "grass", "source": "grass", "planes": 1, "width_m": 0.82, "height_m": 0.56, "glb": "grass/glb/grass_v2_03.glb"},
-    {"id": "grass_v2_04", "category": "grass", "source": "grass", "planes": 1, "width_m": 1.0, "height_m": 0.72, "glb": "grass/glb/grass_v2_04.glb"}
+    {"id": "grass_v2_04", "category": "grass", "source": "grass", "planes": 1, "width_m": 1.0, "height_m": 0.72, "glb": "grass/glb/grass_v2_04.glb"},
+    {"id": "tree3", "category": "trees", "source": "circuit_tree3", "planes": 2, "width_m": 17.0, "height_m": 21.0, "glb": "trees/glb/tree3.glb"},
+    {"id": "tree4", "category": "trees", "source": "circuit_tree4", "planes": 2, "width_m": 10.0, "height_m": 14.0, "glb": "trees/glb/tree4.glb"},
+    {"id": "tree7", "category": "trees", "source": "circuit_tree7", "planes": 2, "width_m": 14.0, "height_m": 15.5, "glb": "trees/glb/tree7.glb"},
+    {"id": "tree8", "category": "trees", "source": "circuit_tree8", "planes": 2, "width_m": 9.0, "height_m": 12.5, "glb": "trees/glb/tree8.glb"},
+    {"id": "forest1", "category": "bushes", "source": "circuit_forest1", "planes": 2, "width_m": 1.283682, "height_m": 1.283682, "glb": "bushes/glb/forest1.glb"},
+    {"id": "forest2", "category": "bushes", "source": "circuit_forest2", "planes": 2, "width_m": 1.280582, "height_m": 1.286784, "glb": "bushes/glb/forest2.glb"},
+    {"id": "forest3", "category": "bushes", "source": "circuit_forest3", "planes": 2, "width_m": 0.642944, "height_m": 0.642944, "glb": "bushes/glb/forest3.glb"}
   ]
 }
