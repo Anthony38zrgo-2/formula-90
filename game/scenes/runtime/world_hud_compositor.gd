@@ -9,6 +9,7 @@ const SESSION_SCENE := preload("res://scenes/runtime/race_session.tscn")
 @onready var world_viewport: SubViewport = $WorldViewport
 @onready var world_presenter: TextureRect = $WorldPresenter
 @onready var debug_hud: ArcadeRaceHud = $HudLayer/DebugHud
+@onready var psx_art: PsxArtController = get_node_or_null("PsxArtController") as PsxArtController
 
 
 func _ready() -> void:
@@ -18,6 +19,11 @@ func _ready() -> void:
 	session.config = session_config
 	session.composition_ready.connect(_on_composition_ready)
 	world_viewport.add_child(session)
+
+func set_visual_preset(preset_path: String) -> bool:
+	if psx_art != null:
+		return psx_art.load_preset(preset_path)
+	return false
 
 func _on_composition_ready(vehicle: Node, _track: Node3D, aids: DrivingAidsController) -> void:
 	debug_hud.bind_runtime(vehicle, aids)

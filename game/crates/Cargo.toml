@@ -6,6 +6,7 @@ members = [
     "game-sim",
     "formula90-core",
     "skybox-engine",
+    "psx-art-pluggin",
 ]
 
 [workspace.package]

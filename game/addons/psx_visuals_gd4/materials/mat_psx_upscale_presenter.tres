@@ -1,0 +1,10 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://addons/psx_visuals_gd4/shaders/psx_upscale_presenter.gdshader" id="1_upscale"]
+
+[resource]
+shader = ExtResource("1_upscale")
+shader_parameter/use_sharp_bilinear = true
+shader_parameter/use_crt_scanlines = false
+shader_parameter/scanline_opacity = 0.15
+shader_parameter/composite_bleed = 0.02

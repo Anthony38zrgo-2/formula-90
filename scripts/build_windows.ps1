@@ -57,3 +57,15 @@ Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/f
 Copy-Item (Join-Path $coreDllDir 'formula90_core.dll') (Join-Path 'game/addons/formula90s/bin' 'formula90_core.dll') -Force
 Write-Host "formula90_core DLL copiada a game/addons/formula90s/bin/$coreDest (+ formula90_core.dll)" -ForegroundColor Green
 
+Write-Host "Compilando Crate Rust psx_art_plugin ($Configuration)..." -ForegroundColor Cyan
+$psxArgs = @('build', '--manifest-path', 'game/crates/psx-art-pluggin/Cargo.toml')
+if ($Configuration -eq 'release') { $psxArgs += '--release' }
+& cargo @psxArgs
+if ($LASTEXITCODE -ne 0) { throw "Build de psx_art_plugin fallo ($LASTEXITCODE)." }
+$psxDllDir = if ($Configuration -eq 'release') { 'game/crates/target/release' } else { 'game/crates/target/debug' }
+$psxDest = "psx_art_plugin.windows.$target.x86_64.dll"
+Copy-Item (Join-Path $psxDllDir 'psx_art_plugin.dll') (Join-Path 'game/addons/formula90s/bin' $psxDest) -Force
+Copy-Item (Join-Path $psxDllDir 'psx_art_plugin.dll') (Join-Path 'game/addons/formula90s/bin' 'psx_art_plugin.dll') -Force
+Write-Host "psx_art_plugin DLL copiada a game/addons/formula90s/bin/$psxDest (+ psx_art_plugin.dll)" -ForegroundColor Green
+
+

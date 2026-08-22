@@ -137,7 +137,7 @@
 
     "differential": {
       "preload_nm": 40.0,
-      "power_ramp_angle_deg": 58.0,
+      "power_ramp_angle_deg": 68.0,
       "coast_ramp_angle_deg": 78.0,
       "clutches": 6.0,
       "clutch_friction_coefficient": 0.08,
@@ -157,23 +157,23 @@
       "arb_ratio": 0.15,
 
       "toe": -0.0037453,
-      "camber": -0.0383972,
+      "camber": -0.0483972,
 
       "bump_stop_multiplier": 2.6
     },
 
     "rear": {
       "spring_length": 0.235,
-      "resting_ratio": 0.220,
+      "resting_ratio": 0.225,
 
       "damping_ratio": 0.76,
       "bump_damp_multiplier": 0.96,
       "rebound_damp_multiplier": 1.22,
 
-      "arb_ratio": 0.10,
+      "arb_ratio": 0.05,
 
       "toe": 0.0020944,
-      "camber": -0.0314159,
+      "camber": -0.0214159,
 
       "bump_stop_multiplier": 3.0
     },
@@ -337,7 +337,7 @@
 
   "brakes": {
     "front_brake_bias": 0.56,
-    "max_brake_torque": 2900.0,
+    "max_brake_torque": 3000.0,
 
     "enable_abs": false,
 

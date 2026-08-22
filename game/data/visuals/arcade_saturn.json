@@ -1,0 +1,29 @@
+{
+  "profile_name": "Arcade Saturn 90s",
+  "display": {
+    "internal_width": 352,
+    "internal_height": 240,
+    "upscale_mode": "sharp_bilinear",
+    "fps_cap": 60
+  },
+  "geometry": {
+    "vertex_snap_distance": 0.05,
+    "affine_texture_strength": 0.0
+  },
+  "color": {
+    "bit_depth": 5,
+    "dither_matrix_type": "none",
+    "dither_strength": 0.0
+  },
+  "fog": {
+    "enabled": true,
+    "color": [0.2, 0.25, 0.35, 1.0],
+    "near": 30.0,
+    "far": 180.0
+  },
+  "crt_effects": {
+    "scanlines_enabled": false,
+    "scanline_opacity": 0.0,
+    "composite_bleed": 0.0
+  }
+}

@@ -6,18 +6,20 @@ const float PSX_DITHER_MATRIX[16] = float[](
 );
 
 vec4 dither(vec4 color, vec2 uv, int depth) {
+	if (depth <= 0) return color;
+	int clamped_depth = clamp(depth, 1, 8);
 	ivec2 p = ivec2(floor(uv));
 	int xi = int(p.x & 3);
 	// mod 4
 	int yi = int(p.y & 3); // mod 4
 	int index = xi + yi * 4;
 	float norm = PSX_DITHER_MATRIX[index] / 16.0;
-	float bit_levels = float((1 << depth) - 1);
+	float bit_levels = float((1 << clamped_depth) - 1);
 	return floor((color + norm / bit_levels) * bit_levels) / bit_levels;
 }
 
 vec3 snap(vec3 vertex, mat4 matrix, float scale) {
-	if (scale == 0.0) return vertex;
+	if (scale <= 0.0001) return vertex;
 
 	vec3 v = (matrix * vec4(vertex, 1.0)).xyz;
 	v = round(v / scale) * scale;
@@ -52,14 +54,16 @@ void psx_compute_vertex(inout vec3 vertex, vec3 color, vec2 uv, out vec3 out_col
 	out_color = color;
 	// GODOT 4 FIX: VERTEX is already in View Space.
 	// We snap it directly without multiplying by MODELVIEW_MATRIX.
-	vertex = round(vertex / psx_snap_distance) * psx_snap_distance;
+	if (psx_snap_distance > 0.0001) {
+		vertex = round(vertex / psx_snap_distance) * psx_snap_distance;
+	}
 
 	// GODOT 4 FIX: Calculate depth directly from View Space coordinates.
 	// Since the camera is at (0,0,0) in View Space, length(VERTEX) is the distance.
-	out_depth = length(vertex);
+	out_depth = max(length(vertex), 0.0001);
 	out_affine_uv = uv * out_depth;
 
-	out_fog = (use_global_fog && psx_fog_near != psx_fog_far) ?
+	out_fog = (use_global_fog && abs(psx_fog_far - psx_fog_near) > 0.001) ?
 		clamp(psx_fog_color.a * (out_depth - psx_fog_near) / (psx_fog_far - psx_fog_near), 0.0, 1.0) :
 		0.0;
 }

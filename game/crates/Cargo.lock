@@ -114,6 +114,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "psx_art_plugin"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"

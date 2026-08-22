@@ -1,0 +1,26 @@
+[package]
+name = "psx_art_plugin"
+version = "0.1.0"
+edition = "2021"
+description = "Formula-90 PSX/Retro Art Engine: JSON-driven visual presets, dither generation, and C-ABI bridge (pure Rust)."
+license = "proprietary"
+
+[lib]
+name = "psx_art_plugin"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "psx_validate"
+path = "src/bin/psx_validate.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+
+[dev-dependencies]
+
+[profile.release]
+lto = true
+opt-level = 3
