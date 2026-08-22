@@ -96,6 +96,7 @@ func _apply_ps1_shader(node: GeometryInstance3D):
 
 			# 2. Copy the Albedo Tint/Color
 			new_mat.set_shader_parameter("albedo_tint", original_mat.albedo_color)
+			new_mat.set_shader_parameter("use_vertex_colors_in_albedo", original_mat.vertex_color_use_as_albedo)
 
 			# 3. Handle Emission
 			if original_mat.emission_enabled:

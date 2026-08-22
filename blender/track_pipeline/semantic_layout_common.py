@@ -175,7 +175,7 @@ def _sample_zone_pixels(mask: np.ndarray, transform: WorldRasterTransform, spaci
 
 def _asset_repo_path(raw_path: str) -> str:
     normalized = str(raw_path).replace("\\", "/")
-    if normalized.startswith("blender/") or normalized.startswith("assets-lowpoly-python/"):
+    if normalized.startswith(("blender/", "assets-lowpoly-python/", "game/")):
         return normalized
     return f"assets-lowpoly-python/{normalized}"
 
@@ -187,6 +187,20 @@ def _nearest_barrier_distance(world: tuple[float, float], barrier_world: np.ndar
 
 def load_asset_dimensions(manifest_csv: Path) -> dict[str, dict]:
     dimensions = {}
+    if manifest_csv.suffix.lower() == ".json":
+        payload = json.loads(manifest_csv.read_text(encoding="utf-8"))
+        for item in payload.get("assets", []):
+            norm = str(item["glb"]).replace("\\", "/")
+            source = item["dimensions_m"]
+            data = {
+                "width_m": float(source["width"]),
+                "height_m": float(source["height"]),
+                "depth_m": float(source["depth"]),
+                "category": item["category"],
+            }
+            dimensions[norm] = data
+            dimensions[Path(norm).name] = data
+        return dimensions
     with manifest_csv.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
             norm = row["file"].replace("\\", "/")
@@ -224,6 +238,8 @@ def compile_layout(layout_config_path: Path) -> dict:
     centerline = json.loads(centerline_path.read_text(encoding="utf-8"))
     points = centerline["points_xz"]
     dimensions = load_asset_dimensions(asset_manifest_path)
+    for additional in config.get("additional_asset_dimensions_manifests", []):
+        dimensions.update(load_asset_dimensions(root / additional))
 
     barrier_mask = np.zeros(semantic.shape[:2], dtype=bool)
     for name, col in config["semantic_palette"].items():
@@ -309,7 +325,7 @@ def compile_layout(layout_config_path: Path) -> dict:
                 int(near_spec["far_max_count"]),
             ))
         else:
-            candidate_multiplier = 4 if zone_spec["category"] in {"trees", "bushes"} else 1
+            candidate_multiplier = 8 if zone_spec["category"] in {"trees", "bushes"} else 1
             density_bands.extend((pixel, "default") for pixel in _sample_zone_pixels(
                 mask, transform, float(zone_spec["spacing_m"]),
                 int(config["seed"]) + int(zone_spec["seed_offset"]),
@@ -362,8 +378,10 @@ def compile_layout(layout_config_path: Path) -> dict:
                 if inner_edge_m < guardrail_center_m - 0.01:
                     continue
             if zone_spec["category"] == "trees":
+                overlap_factor = float(config.get("tree_overlap_factor", 1.0))
                 overlap = any(
-                    math.hypot(world[0] - other[0], world[1] - other[1]) < footprint_radius + other[2] - 1e-3
+                    math.hypot(world[0] - other[0], world[1] - other[1])
+                    < (footprint_radius + other[2]) * overlap_factor - 1e-3
                     for other in accepted_trees
                 )
                 if overlap:

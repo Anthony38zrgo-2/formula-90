@@ -44,8 +44,8 @@ func _run_captures() -> void:
 	var camera_rig := race_session.get_node_or_null("CameraRig") as Node3D
 	var camera3d := camera_rig.get_node_or_null("Camera3D") as Camera3D if camera_rig != null else null
 
-	if bg_controller == null or camera3d == null:
-		printerr("[FAIL] BackgroundController o Camera3D no disponibles para capturas.")
+	if camera3d == null:
+		printerr("[FAIL] Camera3D no disponible para capturas.")
 		compositor.queue_free()
 		quit(1)
 		return
@@ -63,7 +63,10 @@ func _run_captures() -> void:
 		var cap_name: String = cap["name"]
 
 		camera3d.rotation = Vector3(0.0, deg_to_rad(deg), 0.0)
-		bg_controller._update_layers_parallax()
+		# La Chutana puede usar BackgroundMountains3D en lugar del controlador
+		# 3-layer legacy. La captura del circuito no depende de ese controlador.
+		if bg_controller != null:
+			bg_controller._update_layers_parallax()
 
 		for _frame in 4:
 			await process_frame

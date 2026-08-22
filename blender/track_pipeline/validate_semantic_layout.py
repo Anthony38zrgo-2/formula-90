@@ -7,6 +7,18 @@ from pathlib import Path
 from semantic_layout_common import compile_layout
 
 
+SUPPORTED_VEGETATION_PREFIXES = (
+    "assets-lowpoly-python/nature/",
+    "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/",
+    "game/resources/environment/assets/",
+)
+
+
+def is_supported_vegetation_path(raw_path: str) -> bool:
+    normalized = str(raw_path).replace("\\", "/")
+    return normalized.startswith(SUPPORTED_VEGETATION_PREFIXES)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate compiled semantic layout provenance and placement contracts.")
     parser.add_argument("--layout-config", required=True)
@@ -32,7 +44,7 @@ def main() -> int:
         failures.append("visual object or vegetation has collision enabled")
     outer_side = int(raw_config["outer_side"])
     for item in stored["vegetation"]:
-        if "assets-lowpoly-python/nature/" not in item["asset_path"] and "/assets_v2/glb/" not in item["asset_path"]:
+        if not is_supported_vegetation_path(item["asset_path"]):
             failures.append(f"legacy vegetation asset is still active: {item['instance_id']}")
         if item["category"] == "grass" and float(item["distance_from_center_m"]) > float(raw_config["zones"]["grass_max_distance_to_track_m"]) + 0.75:
             failures.append(f"grass outside playable perimeter: {item['instance_id']}")

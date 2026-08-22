@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" data-schema-version="1" data-asset-id="bush_coastal_03" data-asset-kind="bush">
+  <desc>Compact wind-swept shrub.</desc>
+  <g data-role="branch" data-tone="shadow" fill="currentColor"><path d="M245 456 L198 303 L211 299 L256 427 L295 287 L308 292 L269 456 Z"/></g>
+  <g data-role="foliage" data-tone="deep-shadow" fill="currentColor"><path d="M79 379 C57 343 79 307 117 304 C124 263 166 243 201 263 C230 224 282 229 305 260 C341 233 393 251 400 290 C443 292 463 329 445 361 C461 394 427 427 389 416 C362 449 311 449 278 428 C239 458 183 446 165 416 C126 433 88 414 91 388 Z"/></g>
+  <g data-role="foliage" data-tone="base" fill="currentColor"><path d="M103 356 C99 329 126 311 153 318 C157 285 192 274 216 293 C238 261 278 268 291 296 C320 272 359 286 364 316 C397 312 424 333 415 360 C432 382 410 405 380 398 C356 421 320 417 296 400 C261 424 219 416 204 393 C171 411 132 395 132 371 C117 372 107 365 103 356 Z"/></g>
+  <g data-role="leaf" data-tone="light" fill="currentColor"><ellipse cx="169" cy="307" rx="29" ry="17"/><ellipse cx="257" cy="284" rx="30" ry="17"/><ellipse cx="348" cy="308" rx="30" ry="17"/><ellipse cx="247" cy="364" rx="38" ry="20"/></g>
+</svg>

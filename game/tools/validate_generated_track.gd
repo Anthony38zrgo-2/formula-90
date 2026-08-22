@@ -193,13 +193,35 @@ func _report_vegetation(report: Array[String], veg_root: Node) -> void:
 	var mesh_count := _count_meshes(nodes)
 	var asset_count := 0
 	var leaks: Array[String] = []
+	var colored_surfaces := 0
+	var nonwhite_colors := 0
+	var vertex_color_materials := 0
 	for node in nodes:
 		var lower := node.name.to_lower()
 		if "colonly" in lower or "collision" in lower or node is CollisionObject3D:
 			leaks.append(node.name)
 		if (node.name.begins_with("Asset_") or node.name.begins_with("Raw_")) and _is_mesh(node):
 			asset_count += 1
+			var mesh_instance := node as MeshInstance3D
+			for surface in range(mesh_instance.mesh.get_surface_count()):
+				var arrays := mesh_instance.mesh.surface_get_arrays(surface)
+				var colors = arrays[Mesh.ARRAY_COLOR]
+				if colors is PackedColorArray and not colors.is_empty():
+					colored_surfaces += 1
+					for color in colors:
+						if color.r < 0.95 or color.g < 0.95 or color.b < 0.95:
+							nonwhite_colors += 1
+							break
+				var material := mesh_instance.mesh.surface_get_material(surface)
+				if material is StandardMaterial3D and (material as StandardMaterial3D).vertex_color_use_as_albedo:
+					vertex_color_materials += 1
 	report.append("[INFO] vegetation scene nodes: %d, meshes: %d" % [nodes.size(), mesh_count])
+	report.append("[INFO] vegetation colored surfaces: %d, non-white: %d, color-enabled materials: %d" % [colored_surfaces, nonwhite_colors, vertex_color_materials])
+	if colored_surfaces > 0 and vertex_color_materials == 0:
+		report.append("[WARN] raw glTF materials require the canonical vertex-color binder")
+	if colored_surfaces > 0 and nonwhite_colors == 0:
+		report.append("[FAIL] vegetation COLOR_0 data is uniformly white")
+		_failures += 1
 	if veg_root.get_child_count() < 1:
 		report.append("[FAIL] vegetation scene has no child nodes (empty/orphan root)")
 		_failures += 1

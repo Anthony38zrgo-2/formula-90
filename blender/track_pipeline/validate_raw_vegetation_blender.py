@@ -28,7 +28,11 @@ def main() -> None:
         raise RuntimeError("F90_RAW_ENVIRONMENT collection is missing")
 
     roots = [obj for obj in env.all_objects if obj.get("formula90s_raw_asset")]
-    counts = Counter(str(obj.get("formula90s_category")) for obj in roots)
+    grouped = {}
+    for obj in roots:
+        key = (str(obj.get("formula90s_category")), str(obj.get("formula90s_instance_id")))
+        grouped.setdefault(key, []).append(obj)
+    counts = Counter(category for category, _ in grouped)
     expected = Counter(item["category"] for item in compiled["vegetation"])
     failures = []
     if counts != expected:
@@ -36,6 +40,7 @@ def main() -> None:
     legacy = [
         obj.name for obj in roots
         if "assets-lowpoly-python/nature/" not in str(obj.get("formula90s_raw_asset", "")).replace("\\", "/")
+        and "game/resources/environment/assets/" not in str(obj.get("formula90s_raw_asset", "")).replace("\\", "/")
         and "/assets_v2/glb/" not in str(obj.get("formula90s_raw_asset", "")).replace("\\", "/")
     ]
     if legacy:
@@ -46,6 +51,7 @@ def main() -> None:
     tree_plane_errors = [
         root.name for root in roots
         if root.get("formula90s_category") == "trees"
+        and "assets-lowpoly-python/nature/" in str(root.get("formula90s_raw_asset", "")).replace("\\", "/")
         # glTF triangulates each authored quad, so two crossed cards arrive as four triangles.
         and sum(len(mesh.data.polygons) for mesh in ([root] if root.type == "MESH" else root.children) if mesh.type == "MESH") != 4
     ]
@@ -54,17 +60,18 @@ def main() -> None:
 
     bottom_errors = []
     heights = {"trees": [], "bushes": [], "grass": []}
-    for root in roots:
-        root_meshes = [root] if root.type == "MESH" else [child for child in root.children if child.type == "MESH"]
+    for (category, _), parts in grouped.items():
+        root = parts[0]
+        root_meshes = [mesh for part in parts for mesh in ([part] if part.type == "MESH" else part.children) if mesh.type == "MESH"]
         corners = [mesh.matrix_world @ Vector(corner) for mesh in root_meshes for corner in mesh.bound_box]
         if not corners:
             bottom_errors.append(root.name)
             continue
         minimum = min(point.z for point in corners)
         maximum = max(point.z for point in corners)
-        if abs(minimum - root.location.z) > 1e-3:
+        if abs(minimum - float(root.get("formula90s_ground_m", root.location.z))) > 1e-3:
             bottom_errors.append(root.name)
-        heights[str(root.get("formula90s_category"))].append(maximum - minimum)
+        heights[category].append(maximum - minimum)
     if bottom_errors:
         failures.append(f"bottom anchor failures={len(bottom_errors)}")
 
@@ -101,7 +108,7 @@ def main() -> None:
         raise SystemExit(2)
     summary = {
         "blend": str(blend),
-        "vegetation_roots": len(roots),
+        "vegetation_roots": len(grouped),
         "counts": dict(counts),
         "height_ranges_m": {key: [round(min(values), 4), round(max(values), 4)] for key, values in heights.items() if values},
         "minimum_barrier_footprint_margin_m": round(min(margins), 4) if margins else None,

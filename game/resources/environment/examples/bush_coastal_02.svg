@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" data-schema-version="1" data-asset-id="bush_coastal_02" data-asset-kind="bush">
+  <desc>Irregular airy shrub with separated crown clusters.</desc>
+  <g data-role="branch" data-tone="base" fill="currentColor"><path d="M246 458 L155 302 L166 294 L254 424 L245 262 L258 261 L263 420 L356 285 L367 295 L274 458 Z"/></g>
+  <g data-role="foliage" data-tone="shadow" fill="currentColor"><ellipse cx="133" cy="306" rx="75" ry="60"/><ellipse cx="239" cy="265" rx="78" ry="67"/><ellipse cx="356" cy="302" rx="83" ry="64"/><ellipse cx="207" cy="377" rx="92" ry="64"/><ellipse cx="329" cy="387" rx="88" ry="59"/></g>
+  <g data-role="foliage" data-tone="base" fill="currentColor"><ellipse cx="129" cy="289" rx="51" ry="38"/><ellipse cx="232" cy="244" rx="54" ry="41"/><ellipse cx="361" cy="283" rx="57" ry="40"/><ellipse cx="196" cy="358" rx="60" ry="40"/><ellipse cx="337" cy="366" rx="59" ry="38"/></g>
+  <g data-role="leaf" data-tone="highlight" fill="currentColor"><ellipse cx="107" cy="276" rx="22" ry="13"/><ellipse cx="224" cy="227" rx="24" ry="14"/><ellipse cx="369" cy="265" rx="25" ry="14"/><ellipse cx="174" cy="342" rx="23" ry="13"/></g>
+  <g data-role="detail" data-tone="accent" fill="currentColor"><circle cx="154" cy="311" r="5"/><circle cx="270" cy="275" r="5"/><circle cx="387" cy="308" r="5"/></g>
+</svg>

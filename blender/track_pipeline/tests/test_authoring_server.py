@@ -132,7 +132,7 @@ class AssetsPayloadTests(unittest.TestCase):
         registry = load_registry(DEFAULT_REGISTRY, repo_root=ROOT)
         payload = assets_payload(registry, DEFAULT_REGISTRY)
         self.assertTrue(payload["ok"])
-        self.assertEqual(payload["count"], 27)
+        self.assertEqual(payload["count"], 39)
         self.assertEqual(len(payload["registry_sha256"]), 64)
         for asset in payload["assets"]:
             for key in ("id", "kind", "category", "dimensions_m", "preview", "budget", "collision_class"):
@@ -197,7 +197,7 @@ class AuthoringHttpTests(unittest.TestCase):
         self.assertEqual(status, 200)
         data = json.loads(body)
         self.assertTrue(data["ok"])
-        self.assertEqual(data["count"], 27)
+        self.assertEqual(data["count"], 39)
 
     def test_import_valid_returns_200(self):
         status, _, body = self._request("POST", "/api/import", {"svg": VALID_SVG})

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" data-schema-version="1" data-asset-id="grass_coastal_03" data-asset-kind="grass">
+  <desc>Flowering grass clump with seed-head accents.</desc>
+  <g data-role="grass" data-tone="shadow" fill="currentColor"><path d="M177 472 C161 387 151 309 167 226 C180 324 195 402 210 458 C207 342 220 247 252 155 C238 270 237 370 240 459 C270 346 308 270 363 205 C321 287 289 382 267 472 Z"/></g>
+  <g data-role="grass" data-tone="base" fill="currentColor"><path d="M204 472 C183 403 154 354 111 319 C166 345 206 389 230 464 Z"/><path d="M240 470 C258 366 282 294 322 235 C296 313 278 391 264 470 Z"/><path d="M258 470 C307 398 352 360 410 344 C353 377 316 419 286 470 Z"/></g>
+  <g data-role="grass" data-tone="light" fill="currentColor"><path d="M231 459 C220 346 225 262 245 190 C242 286 249 383 253 463 Z"/></g>
+  <g data-role="flower" data-tone="accent" fill="currentColor"><ellipse cx="167" cy="218" rx="10" ry="22" transform="rotate(-9 167 218)"/><ellipse cx="252" cy="148" rx="10" ry="23" transform="rotate(8 252 148)"/><ellipse cx="365" cy="199" rx="10" ry="22" transform="rotate(28 365 199)"/></g>
+</svg>

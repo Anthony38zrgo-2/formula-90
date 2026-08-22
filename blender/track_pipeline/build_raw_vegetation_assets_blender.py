@@ -6,7 +6,9 @@ import hashlib
 import json
 import math
 import os
+import shutil
 import sys
+import time
 from pathlib import Path
 
 import bpy
@@ -25,6 +27,28 @@ def args_after_double_dash():
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def copy_canonical_asset(source: Path, destination: Path, attempts: int = 8) -> None:
+    """Replace a canonical GLB without exposing a partially written destination.
+
+    Windows indexers/importers can briefly hold generated GLBs immediately after export.
+    Copy to a sibling first and retry only the atomic replacement on transient OSErrors.
+    """
+    temporary = destination.with_name(f".{destination.name}.{os.getpid()}.tmp")
+    try:
+        shutil.copyfile(source, temporary)
+        for attempt in range(attempts):
+            try:
+                os.replace(temporary, destination)
+                return
+            except OSError:
+                if attempt + 1 == attempts:
+                    raise
+                time.sleep(0.15 * (attempt + 1))
+    finally:
+        if temporary.exists():
+            temporary.unlink()
 
 
 def card_mesh(name: str, width: float, height: float, planes: int, material, mirror_uv: bool):
@@ -102,8 +126,7 @@ def main() -> None:
         canonical_dir = repo / "assets-lowpoly-python" / "nature" / variant["category"] / "glb"
         canonical_dir.mkdir(parents=True, exist_ok=True)
         canonical_target = canonical_dir / f"{variant['id']}.glb"
-        import shutil
-        shutil.copyfile(target, canonical_target)
+        copy_canonical_asset(target, canonical_target)
         relative = target.relative_to(repo).as_posix()
         width = float(variant["width_m"])
         height = float(variant["height_m"])

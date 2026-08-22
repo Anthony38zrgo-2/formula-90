@@ -20,6 +20,7 @@ REPO = Path(__file__).resolve().parents[2]
 MANIFEST = REPO / "blender" / "generated" / "la_chutana" / "raw_vegetation" / "assets_v2" / "manifest.csv"
 CATALOG = REPO / "blender" / "track_pipeline" / "layouts" / "la_chutana" / "object_catalog.json"
 OUTPUT = REPO / "blender" / "track_pipeline" / "configs" / "asset_registry.json"
+HYBRID_VEGETATION = REPO / "game" / "resources" / "environment" / "assets" / "manifest.json"
 
 
 def sha256_file(path: Path) -> str:
@@ -65,6 +66,30 @@ def main() -> int:
                 "collision_class": "none",
                 "budget": {"min_instances": 0, "max_instances": 0},
                 "metadata": {"origin": "assets_v2/manifest.csv"},
+            })
+
+    if HYBRID_VEGETATION.exists():
+        library = json.loads(HYBRID_VEGETATION.read_text(encoding="utf-8"))
+        for item in library.get("assets", []):
+            source = item["glb"]
+            path = REPO / source
+            assets.append({
+                "id": item["id"],
+                "kind": "vegetation",
+                "category": item["category"],
+                "source": source,
+                "source_sha256": sha256_file(path),
+                "dimensions_m": item["dimensions_m"],
+                "preview": item.get("preview"),
+                "collision_class": "none",
+                "budget": {"min_instances": 0, "max_instances": 0},
+                "metadata": {
+                    "origin": "game/resources/environment/assets/manifest.json",
+                    "generator": library.get("generator"),
+                    "lod": False,
+                    "leaf_cards": item.get("leaf_cards"),
+                    "triangles": item.get("wood_triangles", 0) + item.get("foliage_triangles", 0),
+                },
             })
 
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))

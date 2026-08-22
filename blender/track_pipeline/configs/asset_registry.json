@@ -1,6 +1,156 @@
 {
-  "asset_count": 27,
+  "asset_count": 39,
   "assets": [
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 2.0,
+        "height": 1.25,
+        "width": 2.2
+      },
+      "id": "bush_3d_01",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 240,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 3096
+      },
+      "preview": "game/resources/environment/generated/library_audit/bush_3d_01.png",
+      "source": "game/resources/environment/assets/bushes/bush_3d_01.glb",
+      "source_sha256": "e641a34b676ceb67bbc84953d2e15b4772b2aa0bf181dd825c08bb5918726671"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 2.1,
+        "height": 1.45,
+        "width": 3.4
+      },
+      "id": "bush_3d_02",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 288,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 3708
+      },
+      "preview": "game/resources/environment/generated/library_audit/bush_3d_02.png",
+      "source": "game/resources/environment/assets/bushes/bush_3d_02.glb",
+      "source_sha256": "3995c8dcaa8e60d5b984b80d5afb496777900e96d64c068af7530763a6ab6b81"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 2.2,
+        "height": 2.0,
+        "width": 2.6
+      },
+      "id": "bush_3d_03",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 304,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 3864
+      },
+      "preview": "game/resources/environment/generated/library_audit/bush_3d_03.png",
+      "source": "game/resources/environment/assets/bushes/bush_3d_03.glb",
+      "source_sha256": "71488b371f439912cad14dc192f20a10cdcfa88e266e7af59fec8412d17857ae"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 2.6,
+        "height": 0.75,
+        "width": 3.8
+      },
+      "id": "bush_3d_04",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 238,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 3144
+      },
+      "preview": "game/resources/environment/generated/library_audit/bush_3d_04.png",
+      "source": "game/resources/environment/assets/bushes/bush_3d_04.glb",
+      "source_sha256": "70079315344bf51e824a3c26d5de0c25f537d5823980585495069224d21b8aac"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 2.3,
+        "height": 1.65,
+        "width": 3.0
+      },
+      "id": "bush_3d_05",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 320,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 4092
+      },
+      "preview": "game/resources/environment/generated/library_audit/bush_3d_05.png",
+      "source": "game/resources/environment/assets/bushes/bush_3d_05.glb",
+      "source_sha256": "f54b1cdf942e093bca5c64bb3c4d8c2ce93f3c8d7fcfd8a3ea497ed13e9e6e10"
+    },
+    {
+      "budget": {
+        "max_instances": 110,
+        "min_instances": 0
+      },
+      "category": "bushes",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 2.7,
+        "height": 1.9,
+        "width": 3.5
+      },
+      "id": "bush_3d_06",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 196,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 2640
+      },
+      "preview": "game/resources/environment/generated/library_audit/bush_3d_06.png",
+      "source": "game/resources/environment/assets/bushes/bush_3d_06.glb",
+      "source_sha256": "b281853f6405e4330bc5fb6887d80153c82546066d614932d731507c68a5688e"
+    },
     {
       "budget": {
         "max_instances": 110,
@@ -513,6 +663,156 @@
       "preview": null,
       "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree8.glb",
       "source_sha256": "fc0284b721984bda803cfa09e78e5c3a5360ec7d99329bb7922fbb4dde9a174a"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 6.8,
+        "height": 9.0,
+        "width": 7.5
+      },
+      "id": "tree_3d_01",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 480,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 6192
+      },
+      "preview": "game/resources/environment/generated/library_audit/tree_3d_01.png",
+      "source": "game/resources/environment/assets/trees/tree_3d_01.glb",
+      "source_sha256": "3f120bef0015f3c76c4128e7632d7959f17976c6c8ceb1c4de8ac5e848473703"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 4.8,
+        "height": 12.5,
+        "width": 5.4
+      },
+      "id": "tree_3d_02",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 500,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 6480
+      },
+      "preview": "game/resources/environment/generated/library_audit/tree_3d_02.png",
+      "source": "game/resources/environment/assets/trees/tree_3d_02.glb",
+      "source_sha256": "619bfc73098020482f6ae5bc0819e3399faf9f64b7e708ed547c8d7dc48fefd0"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 7.4,
+        "height": 10.5,
+        "width": 10.0
+      },
+      "id": "tree_3d_03",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 540,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 6960
+      },
+      "preview": "game/resources/environment/generated/library_audit/tree_3d_03.png",
+      "source": "game/resources/environment/assets/trees/tree_3d_03.glb",
+      "source_sha256": "a5ef939991a3a514b6dd16ce0d9bf0b0f98bcdb6b9f40161755e36ca9d337648"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 6.8,
+        "height": 11.5,
+        "width": 9.4
+      },
+      "id": "tree_3d_04",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 468,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 6048
+      },
+      "preview": "game/resources/environment/generated/library_audit/tree_3d_04.png",
+      "source": "game/resources/environment/assets/trees/tree_3d_04.glb",
+      "source_sha256": "513a97328a1b4eafb3a91f23e83b2b5b8be5886d8213f4fc7af1a26e223c61df"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 9.2,
+        "height": 14.5,
+        "width": 12.5
+      },
+      "id": "tree_3d_05",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 660,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 8448
+      },
+      "preview": "game/resources/environment/generated/library_audit/tree_3d_05.png",
+      "source": "game/resources/environment/assets/trees/tree_3d_05.glb",
+      "source_sha256": "82923b1c0b0e0328e4e5d21e5f76a7724fe30479fbd5dfe7b603496cbf652c46"
+    },
+    {
+      "budget": {
+        "max_instances": 130,
+        "min_instances": 0
+      },
+      "category": "trees",
+      "collision_class": "none",
+      "dimensions_m": {
+        "depth": 5.2,
+        "height": 8.0,
+        "width": 5.8
+      },
+      "id": "tree_3d_06",
+      "kind": "vegetation",
+      "metadata": {
+        "generator": "procedural_lanceolate_vegetation_v3",
+        "leaf_cards": 378,
+        "lod": false,
+        "origin": "game/resources/environment/assets/manifest.json",
+        "triangles": 4920
+      },
+      "preview": "game/resources/environment/generated/library_audit/tree_3d_06.png",
+      "source": "game/resources/environment/assets/trees/tree_3d_06.glb",
+      "source_sha256": "ca18404d86c839385de3f9b9ae842481530525b622b3adfb6e6b9e11631adaa6"
     },
     {
       "budget": {

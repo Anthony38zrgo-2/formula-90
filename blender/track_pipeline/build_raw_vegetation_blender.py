@@ -58,32 +58,33 @@ def import_asset_instances(path: Path, placements, target_collection, asset_key:
     bpy.ops.import_scene.gltf(filepath=str(path))
     imported = [obj for obj in bpy.data.objects if obj not in before]
     meshes = [obj for obj in imported if obj.type == "MESH"]
-    if len(meshes) != 1:
+    if not meshes:
         for obj in imported:
             bpy.data.objects.remove(obj, do_unlink=True)
-        raise RuntimeError(f"Raw vegetation asset must contain exactly one mesh: {path} meshes={len(meshes)}")
+        raise RuntimeError(f"Raw vegetation asset contains no meshes: {path}")
     corners = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
     min_z = min(v.z for v in corners)
     center_x = (min(v.x for v in corners) + max(v.x for v in corners)) * 0.5
     center_y = (min(v.y for v in corners) + max(v.y for v in corners)) * 0.5
-    source = meshes[0]
-    normalized = Matrix.Translation((-center_x, -center_y, -min_z)) @ source.matrix_world.copy()
+    normalize = Matrix.Translation((-center_x, -center_y, -min_z))
     for number, item in enumerate(placements):
         instance_id = item.get("instance_id", f"{number:04d}")
-        root = source.copy()
-        root.data = source.data
-        root.name = f"Raw_{item['category']}_{instance_id}_{asset_key}"
-        target_collection.objects.link(root)
         x, z = item["position_xz"]
         position = godot_xz_to_blender(float(x), float(z), float(item.get("ground_m", 0.0)))
         transform = Matrix.Translation(position) @ Matrix.Rotation(-float(item.get("yaw_rad", 0.0)), 4, "Z")
         scale = float(item.get("scale", 1.0))
         transform @= Matrix.Diagonal((scale, scale, scale, 1.0))
-        root.matrix_world = transform @ normalized
-        root["formula90s_raw_asset"] = str(path.as_posix())
-        root["formula90s_category"] = item["category"]
-        root["formula90s_instance_id"] = instance_id
-        root["formula90s_collision"] = False
+        for part_index, source in enumerate(meshes):
+            root = source.copy()
+            root.data = source.data
+            root.name = f"Raw_{item['category']}_{instance_id}_{asset_key}_{part_index:02d}"
+            target_collection.objects.link(root)
+            root.matrix_world = transform @ normalize @ source.matrix_world
+            root["formula90s_raw_asset"] = str(path.as_posix())
+            root["formula90s_category"] = item["category"]
+            root["formula90s_instance_id"] = instance_id
+            root["formula90s_ground_m"] = float(item.get("ground_m", 0.0))
+            root["formula90s_collision"] = False
     for obj in imported:
         bpy.data.objects.remove(obj, do_unlink=True)
 

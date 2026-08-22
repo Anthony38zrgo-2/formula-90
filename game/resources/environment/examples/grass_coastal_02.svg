@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" data-schema-version="1" data-asset-id="grass_coastal_02" data-asset-kind="grass">
+  <desc>Low roadside grass tuft with bent blades.</desc>
+  <g data-role="grass" data-tone="deep-shadow" fill="currentColor"><path d="M148 468 C130 411 103 369 62 337 C116 354 163 393 191 449 C181 365 181 293 198 221 C204 310 210 389 220 452 C240 335 268 257 315 183 C285 277 258 375 245 457 C293 366 348 307 420 269 C354 328 303 397 274 468 Z"/></g>
+  <g data-role="grass" data-tone="base" fill="currentColor"><path d="M174 468 C158 408 148 350 156 292 C176 352 193 407 204 462 Z"/><path d="M221 467 C218 357 230 270 257 201 C248 294 245 384 244 467 Z"/><path d="M253 467 C294 373 337 324 397 300 C342 344 304 401 280 467 Z"/></g>
+  <g data-role="grass" data-tone="highlight" fill="currentColor"><path d="M237 458 C256 351 291 278 338 225 C305 297 278 380 258 462 Z"/></g>
+</svg>

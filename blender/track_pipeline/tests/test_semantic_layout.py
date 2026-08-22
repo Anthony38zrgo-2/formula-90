@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "blender" / "track_pipeline"))
 
 from semantic_layout_common import WorldRasterTransform, _asset_repo_path, extract_markers, marker_rgb, nearest_centerline
+from validate_semantic_layout import is_supported_vegetation_path
 
 
 class SemanticLayoutTests(unittest.TestCase):
@@ -15,6 +16,12 @@ class SemanticLayoutTests(unittest.TestCase):
         path = "assets-lowpoly-python/nature/trees/glb/tree_v2_01.glb"
         self.assertEqual(_asset_repo_path(path), path)
         self.assertEqual(_asset_repo_path("trees/example.glb"), "assets-lowpoly-python/trees/example.glb")
+
+    def test_validator_accepts_canonical_procedural_vegetation_paths(self):
+        self.assertTrue(is_supported_vegetation_path("game/resources/environment/assets/trees/tree_3d_01.glb"))
+        self.assertTrue(is_supported_vegetation_path("assets-lowpoly-python/nature/grass/glb/grass_v2_01.glb"))
+        self.assertTrue(is_supported_vegetation_path("blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_01.glb"))
+        self.assertFalse(is_supported_vegetation_path("game/resources/unknown/legacy_tree.glb"))
 
     def test_world_pixel_round_trip(self):
         transform = WorldRasterTransform(101, 201, -10.0, -20.0, 40.0, 80.0)

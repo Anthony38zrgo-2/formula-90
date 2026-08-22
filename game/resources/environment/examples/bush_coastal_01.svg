@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" data-schema-version="1" data-asset-id="bush_coastal_01" data-asset-kind="bush">
+  <desc>Wide dense roadside shrub.</desc>
+  <g data-role="branch" data-tone="shadow" fill="currentColor"><path d="M247 452 L183 293 L194 287 L257 421 L315 278 L327 284 L270 452 Z"/></g>
+  <g data-role="foliage" data-tone="deep-shadow" fill="currentColor"><path d="M55 392 C34 360 53 326 87 320 C80 279 115 252 151 266 C165 223 215 213 244 244 C275 204 332 216 345 256 C386 235 430 260 429 300 C467 314 477 355 449 380 C459 414 424 439 389 428 C365 459 319 459 291 437 C254 466 204 456 183 429 C140 449 96 432 94 403 C78 406 63 400 55 392 Z"/></g>
+  <g data-role="foliage" data-tone="base" fill="currentColor"><ellipse cx="117" cy="340" rx="63" ry="48"/><ellipse cx="205" cy="298" rx="68" ry="52"/><ellipse cx="305" cy="295" rx="69" ry="52"/><ellipse cx="397" cy="342" rx="61" ry="47"/><ellipse cx="256" cy="375" rx="112" ry="61"/></g>
+  <g data-role="leaf" data-tone="light" fill="currentColor"><ellipse cx="151" cy="307" rx="34" ry="20"/><ellipse cx="239" cy="275" rx="36" ry="21"/><ellipse cx="342" cy="290" rx="34" ry="20"/><ellipse cx="303" cy="354" rx="38" ry="21"/></g>
+</svg>

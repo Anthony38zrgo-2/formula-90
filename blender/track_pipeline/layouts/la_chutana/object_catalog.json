@@ -35,15 +35,14 @@
       "max_count": 110,
       "min_count": 110,
       "barrier_clearance_m": 0.5,
-      "target_height_m": [0.65, 1.45],
+      "target_height_m": [0.7, 2.2],
       "asset_pool": [
-        "assets-lowpoly-python/nature/bushes/glb/bush_v2_01.glb",
-        "assets-lowpoly-python/nature/bushes/glb/bush_v2_02.glb",
-        "assets-lowpoly-python/nature/bushes/glb/bush_v2_03.glb",
-        "assets-lowpoly-python/nature/bushes/glb/bush_v2_04.glb",
-        "assets-lowpoly-python/nature/bushes/glb/forest1.glb",
-        "assets-lowpoly-python/nature/bushes/glb/forest2.glb",
-        "assets-lowpoly-python/nature/bushes/glb/forest3.glb"
+        "game/resources/environment/assets/bushes/bush_3d_01.glb",
+        "game/resources/environment/assets/bushes/bush_3d_02.glb",
+        "game/resources/environment/assets/bushes/bush_3d_03.glb",
+        "game/resources/environment/assets/bushes/bush_3d_04.glb",
+        "game/resources/environment/assets/bushes/bush_3d_05.glb",
+        "game/resources/environment/assets/bushes/bush_3d_06.glb"
       ]
     },
     "trees": {
@@ -53,15 +52,14 @@
       "max_count": 130,
       "min_count": 130,
       "barrier_clearance_m": 1.0,
-      "target_height_m": [6.0, 11.5],
+      "target_height_m": [8.0, 16.0],
       "asset_pool": [
-        "assets-lowpoly-python/nature/trees/glb/tree_v2_01.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree_v2_02.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree_v2_03.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree3.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree4.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree7.glb",
-        "assets-lowpoly-python/nature/trees/glb/tree8.glb"
+        "game/resources/environment/assets/trees/tree_3d_01.glb",
+        "game/resources/environment/assets/trees/tree_3d_02.glb",
+        "game/resources/environment/assets/trees/tree_3d_03.glb",
+        "game/resources/environment/assets/trees/tree_3d_04.glb",
+        "game/resources/environment/assets/trees/tree_3d_05.glb",
+        "game/resources/environment/assets/trees/tree_3d_06.glb"
       ]
     }
   }

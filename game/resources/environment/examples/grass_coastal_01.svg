@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" data-schema-version="1" data-asset-id="grass_coastal_01" data-asset-kind="grass">
+  <desc>Dense fan of long dry grass blades.</desc>
+  <g data-role="grass" data-tone="shadow" fill="currentColor"><path d="M244 474 C210 389 169 317 105 250 C176 300 222 355 256 430 C249 340 254 235 281 120 C282 247 274 355 267 438 C310 342 356 276 421 223 C365 292 320 375 280 474 Z"/></g>
+  <g data-role="grass" data-tone="base" fill="currentColor"><path d="M250 474 C231 378 225 276 236 167 C255 281 260 376 262 452 C282 366 318 278 367 200 C330 298 298 393 276 474 Z"/><path d="M239 474 C207 399 164 350 110 319 C175 338 222 381 257 454 Z"/></g>
+  <g data-role="grass" data-tone="light" fill="currentColor"><path d="M258 467 C270 350 303 247 350 164 C320 270 293 372 272 469 Z"/><path d="M242 465 C211 370 184 286 176 210 C208 296 235 387 255 466 Z"/></g>
+</svg>
