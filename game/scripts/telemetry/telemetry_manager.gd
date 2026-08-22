@@ -18,6 +18,7 @@ var _setup_json := ""
 const LOG_MS := 50
 const BUFFER_SIZE := 100
 const VEHICLE_SEARCH_INTERVAL := 1.0
+const F1_94_PHYSICS_CONFIG := "res://data/vehicles/f1_94/f1_94_physics.json"
 const CSV_COLUMNS := [
     "Time_ms", "Speed_kmh", "RPM", "Gear",
     "Throttle", "Brake", "Steering",
@@ -26,7 +27,11 @@ const CSV_COLUMNS := [
     "Front_Slip", "Rear_Slip",
     "Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
     "Test_Id", "Track_Scene", "Vehicle_Node_Path", "Vehicle_Scene",
-    "Vehicle_Script", "Setup_Schema_Version", "Setup_JSON", "TC_Active",
+    "Vehicle_Script", "Setup_Schema_Version", "Setup_JSON",
+    "TC_Enabled", "TC_Eligible", "TC_Active", "TC_GearAuthority", "TC_SlipTarget", "TC_RawCutRatio", "TC_CutRatio", "TC_AppliedCutRatio",
+    "RL_TCSlip", "RR_TCSlip",
+    "FL_DriveTorquePreTC_Nm", "FR_DriveTorquePreTC_Nm", "RL_DriveTorquePreTC_Nm", "RR_DriveTorquePreTC_Nm",
+    "FL_DriveTorque_Nm", "FR_DriveTorque_Nm", "RL_DriveTorque_Nm", "RR_DriveTorque_Nm", "DriveTorque_Nm", "PreTCDrivePower_W", "NetDrivePower_W",
     "FL_BrakeTorque_Nm", "FL_SpinPre_RadS", "FL_SpinPost_RadS", "FL_BrakePower_W", "FL_BrakeEnergy_J",
     "FR_BrakeTorque_Nm", "FR_SpinPre_RadS", "FR_SpinPost_RadS", "FR_BrakePower_W", "FR_BrakeEnergy_J",
     "RL_BrakeTorque_Nm", "RL_SpinPre_RadS", "RL_SpinPost_RadS", "RL_BrakePower_W", "RL_BrakeEnergy_J",
@@ -157,6 +162,18 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var rr_comp := 0.0
     var front_slip := 0.0
     var rear_slip := 0.0
+    var tc_enabled := false
+    var tc_eligible := false
+    var tc_intervening := false
+    var tc_gear_authority := 0.0
+    var tc_slip_target := 0.0
+    var tc_raw_cut_ratio := 0.0
+    var tc_cut_ratio := 0.0
+    var tc_slip: Array = [0.0, 0.0, 0.0, 0.0]
+    var drive_torque_pre_tc: Array = [0.0, 0.0, 0.0, 0.0]
+    var drive_torque: Array = [0.0, 0.0, 0.0, 0.0]
+    var pre_tc_drive_power_w := 0.0
+    var net_drive_power_w := 0.0
 
     if _is_rust:
         var comp = vehicle.get_wheel_compressions()
@@ -166,6 +183,31 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         if slips.size() >= 4:
             front_slip = maxf(absf(slips[0]), absf(slips[1]))
             rear_slip = maxf(absf(slips[2]), absf(slips[3]))
+        if vehicle.has_method(&"get_powertrain_state_snapshot"):
+            var powertrain_value: Variant = vehicle.call(&"get_powertrain_state_snapshot")
+            if powertrain_value is Dictionary:
+                var powertrain: Dictionary = powertrain_value
+                tc_enabled = bool(powertrain.get("tc_enabled", false))
+                tc_eligible = bool(powertrain.get("tc_eligible", false))
+                tc_intervening = bool(powertrain.get("tc_intervening", false))
+                tc_gear_authority = float(powertrain.get("tc_gear_authority", 0.0))
+                tc_slip_target = float(powertrain.get("tc_slip_target", 0.0))
+                tc_raw_cut_ratio = float(powertrain.get("tc_raw_cut_ratio", 0.0))
+                tc_cut_ratio = float(powertrain.get("tc_cut_ratio", 0.0))
+                pre_tc_drive_power_w = float(powertrain.get("pre_tc_drive_power_w", 0.0))
+                net_drive_power_w = float(powertrain.get("net_drive_power_w", 0.0))
+                var tc_slip_value: Variant = powertrain.get("tc_slip_ratio", PackedFloat64Array())
+                var pre_tc_torque_value: Variant = powertrain.get("wheel_drive_torque_pre_tc_nm", PackedFloat64Array())
+                var torque_value: Variant = powertrain.get("wheel_drive_torque_nm", PackedFloat64Array())
+                if tc_slip_value is PackedFloat64Array and tc_slip_value.size() >= 4:
+                    for i in range(4):
+                        tc_slip[i] = float(tc_slip_value[i])
+                if pre_tc_torque_value is PackedFloat64Array and pre_tc_torque_value.size() >= 4:
+                    for i in range(4):
+                        drive_torque_pre_tc[i] = float(pre_tc_torque_value[i])
+                if torque_value is PackedFloat64Array and torque_value.size() >= 4:
+                    for i in range(4):
+                        drive_torque[i] = float(torque_value[i])
     else:
         fl_comp = vehicle.front_axle.suspension_compression_left if vehicle.front_axle else 0.0
         fr_comp = vehicle.front_axle.suspension_compression_right if vehicle.front_axle else 0.0
@@ -277,22 +319,33 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                     for i in range(aero_names.size()):
                         aero_fields[i] = float(aero.get(aero_names[i], 0.0))
 
-    var base_line := "%d,%.1f,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%s,%s,%d,%s,%s,%s,%s,%s,%d,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f" % [
-        now_msec, speed_kmh, rpm, gear,
-        throttle, brake_amt, steering,
-        lat_g, long_g,
-        fl_comp, fr_comp, rl_comp, rr_comp,
-        front_slip, rear_slip,
-        _csv_escape(_session_id), _csv_escape(_session_timestamp_utc), Engine.physics_ticks_per_second,
+    var base_fields := PackedStringArray([
+        "%d" % now_msec, "%.1f" % speed_kmh, "%d" % rpm, "%d" % gear,
+        "%.3f" % throttle, "%.3f" % brake_amt, "%.3f" % steering,
+        "%.3f" % lat_g, "%.3f" % long_g,
+        "%.1f" % fl_comp, "%.1f" % fr_comp, "%.1f" % rl_comp, "%.1f" % rr_comp,
+        "%.3f" % front_slip, "%.3f" % rear_slip,
+        _csv_escape(_session_id), _csv_escape(_session_timestamp_utc), "%d" % Engine.physics_ticks_per_second,
         _csv_escape(_test_id()), _csv_escape(_current_scene_path()), _csv_escape(str(vehicle.get_path())), _csv_escape(_vehicle_scene_path()),
-        _csv_escape(_vehicle_script_path()), 1, _csv_escape(_setup_json),
-        int((int(vehicle.aids_enabled_mask) & 2) != 0),
-        brake_torque[0], spin_pre[0], spin_post[0], brake_power[0], brake_energy[0],
-        brake_torque[1], spin_pre[1], spin_post[1], brake_power[1], brake_energy[1],
-        brake_torque[2], spin_pre[2], spin_post[2], brake_power[2], brake_energy[2],
-        brake_torque[3], spin_pre[3], spin_post[3], brake_power[3], brake_energy[3]
-    ]
-    return base_line + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
+        _csv_escape(_vehicle_script_path()), "1", _csv_escape(_setup_json),
+        "%d" % int(tc_enabled), "%d" % int(tc_eligible), "%d" % int(tc_intervening),
+        "%.4f" % tc_gear_authority, "%.4f" % tc_slip_target, "%.4f" % tc_raw_cut_ratio,
+        "%.4f" % tc_cut_ratio, "%.4f" % tc_cut_ratio, "%.4f" % tc_slip[2], "%.4f" % tc_slip[3]
+    ])
+    for value in drive_torque_pre_tc:
+        base_fields.append("%.3f" % float(value))
+    for value in drive_torque:
+        base_fields.append("%.3f" % float(value))
+    base_fields.append("%.3f" % (float(drive_torque[0]) + float(drive_torque[1]) + float(drive_torque[2]) + float(drive_torque[3])))
+    base_fields.append("%.3f" % pre_tc_drive_power_w)
+    base_fields.append("%.3f" % net_drive_power_w)
+    for i in range(4):
+        base_fields.append("%.3f" % float(brake_torque[i]))
+        base_fields.append("%.3f" % float(spin_pre[i]))
+        base_fields.append("%.3f" % float(spin_post[i]))
+        base_fields.append("%.3f" % float(brake_power[i]))
+        base_fields.append("%.3f" % float(brake_energy[i]))
+    return ",".join(base_fields) + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
 
 func _thermal_csv_fields(values: Array) -> PackedStringArray:
     var fields := PackedStringArray()
@@ -345,7 +398,7 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
         "differential": _snapshot_properties(["front_torque_split", "variable_torque_split", "front_variable_split", "variable_split_speed", "front_locking_differential_engage_torque", "rear_locking_differential_engage_torque", "front_torque_vectoring", "rear_torque_vectoring"]),
         "suspension": _snapshot_properties(["front_spring_length", "front_resting_ratio", "front_damping_ratio", "front_bump_damp_multiplier", "front_rebound_damp_multiplier", "front_arb_ratio", "front_camber", "front_toe", "front_bump_stop_multiplier", "front_beam_axle", "rear_spring_length", "rear_resting_ratio", "rear_damping_ratio", "rear_bump_damp_multiplier", "rear_rebound_damp_multiplier", "rear_arb_ratio", "rear_camber", "rear_toe", "rear_bump_stop_multiplier", "rear_beam_axle"]),
         "engine": _snapshot_properties(["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]),
-        "transmission": _snapshot_properties(["gear_ratios", "final_drive", "reverse_ratio", "shift_time", "automatic_transmission", "automatic_time_between_shifts", "gear_inertia"]),
+        "transmission": _build_transmission_snapshot(),
         "aerodynamics": _snapshot_properties(["coefficient_of_drag", "air_density", "frontal_area"]),
         "assists": _snapshot_properties(["enable_stability", "stability_yaw_engage_angle", "stability_yaw_strength", "stability_yaw_ground_multiplier", "stability_upright_spring", "stability_upright_damping", "automatic_transmission", "steering_slip_assist", "countersteer_assist"])
     }
@@ -373,6 +426,26 @@ func _snapshot_properties(property_names: Array[String]) -> Dictionary:
     var snapshot := {}
     for property_name in property_names:
         snapshot[property_name] = vehicle.get(property_name)
+    return snapshot
+
+func _build_transmission_snapshot() -> Dictionary:
+    var fields: Array[String] = ["gear_ratios", "final_drive", "reverse_ratio", "shift_time", "automatic_transmission", "automatic_time_between_shifts", "gear_inertia"]
+    var snapshot := _snapshot_properties(fields)
+    if not _is_rust or not FileAccess.file_exists(F1_94_PHYSICS_CONFIG):
+        return snapshot
+
+    var file := FileAccess.open(F1_94_PHYSICS_CONFIG, FileAccess.READ)
+    if file == null:
+        return snapshot
+    var parsed: Variant = JSON.parse_string(file.get_as_text())
+    if not (parsed is Dictionary):
+        return snapshot
+    var powertrain: Variant = parsed.get("powertrain", {})
+    if not (powertrain is Dictionary):
+        return snapshot
+    for field in fields:
+        if snapshot[field] == null and powertrain.has(field):
+            snapshot[field] = powertrain[field]
     return snapshot
 
 func _build_chassis_snapshot() -> Dictionary:

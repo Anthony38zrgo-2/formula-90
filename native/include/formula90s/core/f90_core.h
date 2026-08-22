@@ -4,8 +4,7 @@
 #include "formula90s/vehicle/formula90_physics.h" // F90RuntimeConfig (mirror of FfiRuntimeConfig)
 
 // C-API mirror of the orchestrator facade (game/crates/formula90-core/src/ffi.rs,
-// formula90_core.dll). ABI v9 adds localized underfloor bottoming forces and telemetry
-// and continuous scrape mixer telemetry.
+// formula90_core.dll). ABI v11 appends powertrain diagnostics used by CSV telemetry.
 // Field order and types MUST match the Rust #[repr(C)] structs (they are locked by
 // ffi.rs::layout_tests and the static_asserts in f90_core.hpp). Reuses
 // CSimTriRaycastSample (mirrored in f90_sim_bridge.h) as the sample input, so the
@@ -115,6 +114,19 @@ typedef struct F90CoreFrameOut {
     double aero_global_limit_factor;
     double aero_load_ratio;
     double aero_balance_front;
+    // Append-only ABI 11 powertrain diagnostics.
+    double wheel_drive_torque_nm[4];
+    double tc_cut_ratio;
+    double net_drive_power_w;
+    // Append-only ABI 12 expanded traction-control diagnostics.
+    double tc_enabled;
+    double tc_eligible;
+    double tc_gear_authority;
+    double tc_slip_target;
+    double tc_raw_cut_ratio;
+    double tc_slip_ratio[4];
+    double wheel_drive_torque_pre_tc_nm[4];
+    double pre_tc_drive_power_w;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

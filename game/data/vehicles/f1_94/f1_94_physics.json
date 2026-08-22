@@ -91,16 +91,8 @@
       [1.00, 0.75]
     ],
 
-    "gear_ratios": [
-      2.45,
-      1.95,
-      1.72,
-      1.50,
-      1.32,
-      1.18
-    ],
-
-    "final_drive": 5.00,
+    "gear_ratios": [3.15, 2.35, 1.85, 1.51, 1.28, 1.10],
+    "final_drive": 5.15,
     "reverse_ratio": 3.00,
 
     "shift_time": 0.10,
@@ -317,17 +309,17 @@
         "optimal_tread_window_c": 12.0,
         "overheat_tread_temperature_c": 120.0,
         "optimal_carcass_temperature_c": 80.0,
-        "tread_zone_heat_capacity_j_k": 4800.0,
-        "carcass_heat_capacity_j_k": 12000.0,
+        "tread_zone_heat_capacity_j_k": 5200.0,
+        "carcass_heat_capacity_j_k": 12500.0,
         "gas_heat_capacity_j_k": 1800.0,
-        "tread_to_carcass_w_k": 45.0,
+        "tread_to_carcass_w_k": 58.0,
         "carcass_to_gas_w_k": 22.0,
-        "tread_to_air_w_k": 20.0,
-        "carcass_to_air_w_k": 10.0,
-        "road_conductance_w_k": 55.0,
-        "lateral_tread_conductance_w_k": 18.0,
-        "slip_heat_efficiency": 0.90,
-        "carcass_hysteresis_efficiency": 0.80,
+        "tread_to_air_w_k": 24.0,
+        "carcass_to_air_w_k": 12.0,
+        "road_conductance_w_k": 62.0,
+        "lateral_tread_conductance_w_k": 22.0,
+        "slip_heat_efficiency": 0.72,
+        "carcass_hysteresis_efficiency": 0.72,
         "pressure_stiffness_exponent": 0.72,
         "pressure_damping_exponent": -0.22,
         "pressure_max_deflection_exponent": -0.55,
@@ -439,7 +431,7 @@
     "model": {
       "front_wing": {
         "area_m2": 0.72,
-        "incidence_deg": 12.0,
+        "incidence_deg": 7.0,
         "min_angle_deg": 4.0,
         "max_angle_deg": 20.0,
         "yaw_decay_exponent": 1.15,
@@ -454,7 +446,7 @@
       },
       "rear_wing": {
         "area_m2": 0.84,
-        "incidence_deg": 16.0,
+        "incidence_deg": 11.0,
         "min_angle_deg": 6.0,
         "max_angle_deg": 26.0,
         "yaw_decay_exponent": 1.05,
@@ -518,6 +510,11 @@
     "traction_control_slip_threshold": 0.08,
     "traction_control_cut_gain": 1.2,
     "traction_control_actuator": "engine_torque",
+    "traction_control_gear_authority": [1.00, 0.90, 0.65, 0.45, 0.20, 0.10],
+    "traction_control_gear_slip_target": [0.055, 0.065, 0.085, 0.105, 0.140, 0.180],
+    "traction_control_gear_max_cut": [0.78, 0.65, 0.45, 0.30, 0.14, 0.07],
+    "traction_control_attack_rate": 34.0,
+    "traction_control_release_rate": 18.0,
 
     "abs_available": true,
     "abs_default_enabled": false,

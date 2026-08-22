@@ -111,6 +111,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_wheel_slips"), &F194RustVehicle::get_wheel_slips);
 	ClassDB::bind_method(D_METHOD("get_wheel_surface_types"), &F194RustVehicle::get_wheel_surface_types);
 	ClassDB::bind_method(D_METHOD("get_drive_torques"), &F194RustVehicle::get_drive_torques);
+	ClassDB::bind_method(D_METHOD("get_powertrain_state_snapshot"), &F194RustVehicle::get_powertrain_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_normal_forces"), &F194RustVehicle::get_normal_forces);
 
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "wheel_compressions"), "", "get_wheel_compressions");
@@ -708,6 +709,19 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	wheel_drive_torques_[1] = telem.fr_drive_torque;
 	wheel_drive_torques_[2] = telem.rl_drive_torque;
 	wheel_drive_torques_[3] = telem.rr_drive_torque;
+	for (int i = 0; i < 4; ++i) {
+		wheel_drive_torques_pre_tc_[i] = telem.drive_torque_pre_tc_nm[i];
+		tc_slip_ratio_[i] = telem.tc_slip_ratio[i];
+	}
+	tc_enabled_ = (telem.aids_enabled_mask & 2u) != 0;
+	tc_eligible_ = telem.tc_eligible;
+	tc_intervening_ = telem.tc_active;
+	tc_gear_authority_ = telem.tc_gear_authority;
+	tc_slip_target_ = telem.tc_slip_target;
+	tc_raw_cut_ratio_ = telem.tc_raw_cut_ratio;
+	tc_cut_ratio_ = telem.tc_cut_ratio;
+	pre_tc_drive_power_w_ = telem.pre_tc_drive_power_w;
+	net_drive_power_w_ = telem.net_drive_power_w;
 	wheel_normal_forces_[0] = telem.fl_normal_force;
 	wheel_normal_forces_[1] = telem.fr_normal_force;
 	wheel_normal_forces_[2] = telem.rl_normal_force;
@@ -909,6 +923,34 @@ PackedFloat64Array F194RustVehicle::get_drive_torques() const {
 	arr.resize(4);
 	for (int i = 0; i < 4; ++i) arr[i] = wheel_drive_torques_[i];
 	return arr;
+}
+
+Dictionary F194RustVehicle::get_powertrain_state_snapshot() const {
+	Dictionary out;
+	PackedFloat64Array torques;
+	torques.resize(4);
+	for (int i = 0; i < 4; ++i) torques[i] = wheel_drive_torques_[i];
+	out["wheel_drive_torque_nm"] = torques;
+	PackedFloat64Array pre_tc_torques;
+	PackedFloat64Array tc_slips;
+	pre_tc_torques.resize(4);
+	tc_slips.resize(4);
+	for (int i = 0; i < 4; ++i) {
+		pre_tc_torques[i] = wheel_drive_torques_pre_tc_[i];
+		tc_slips[i] = tc_slip_ratio_[i];
+	}
+	out["wheel_drive_torque_pre_tc_nm"] = pre_tc_torques;
+	out["tc_slip_ratio"] = tc_slips;
+	out["tc_enabled"] = tc_enabled_;
+	out["tc_eligible"] = tc_eligible_;
+	out["tc_intervening"] = tc_intervening_;
+	out["tc_gear_authority"] = tc_gear_authority_;
+	out["tc_slip_target"] = tc_slip_target_;
+	out["tc_raw_cut_ratio"] = tc_raw_cut_ratio_;
+	out["tc_cut_ratio"] = tc_cut_ratio_;
+	out["pre_tc_drive_power_w"] = pre_tc_drive_power_w_;
+	out["net_drive_power_w"] = net_drive_power_w_;
+	return out;
 }
 
 PackedFloat64Array F194RustVehicle::get_normal_forces() const {
@@ -1692,6 +1734,23 @@ void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, dou
 	wheel_drive_torques_[3] = p_telemetry.drive_torque;
 
 	update_wheel_visuals(p_dt);
+}
+
+void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_frame) {
+	for (int i = 0; i < 4; ++i) wheel_drive_torques_[i] = p_frame.wheel_drive_torque_nm[i];
+	for (int i = 0; i < 4; ++i) {
+		wheel_drive_torques_pre_tc_[i] = p_frame.wheel_drive_torque_pre_tc_nm[i];
+		tc_slip_ratio_[i] = p_frame.tc_slip_ratio[i];
+	}
+	tc_enabled_ = p_frame.tc_enabled > 0.5;
+	tc_eligible_ = p_frame.tc_eligible > 0.5;
+	tc_intervening_ = p_frame.tc_active > 0.5;
+	tc_gear_authority_ = p_frame.tc_gear_authority;
+	tc_slip_target_ = p_frame.tc_slip_target;
+	tc_raw_cut_ratio_ = p_frame.tc_raw_cut_ratio;
+	tc_cut_ratio_ = p_frame.tc_cut_ratio;
+	pre_tc_drive_power_w_ = p_frame.pre_tc_drive_power_w;
+	net_drive_power_w_ = p_frame.net_drive_power_w;
 }
 
 } // namespace godot

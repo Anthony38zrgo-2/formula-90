@@ -87,7 +87,16 @@ static_assert(offsetof(F90CoreFrameOut, underfloor_bottoming_torque) == 1472);
 static_assert(offsetof(F90CoreFrameOut, underfloor_rigid_contact_blend) == 1504);
 static_assert(offsetof(F90CoreFrameOut, aero_total_downforce_n) == 1512);
 static_assert(offsetof(F90CoreFrameOut, aero_balance_front) == 1648);
-static_assert(sizeof(F90CoreFrameOut) == 1656);
+static_assert(offsetof(F90CoreFrameOut, wheel_drive_torque_nm) == 1656);
+static_assert(offsetof(F90CoreFrameOut, tc_cut_ratio) == 1688);
+static_assert(offsetof(F90CoreFrameOut, net_drive_power_w) == 1696);
+static_assert(offsetof(F90CoreFrameOut, tc_enabled) == 1704);
+static_assert(offsetof(F90CoreFrameOut, tc_eligible) == 1712);
+static_assert(offsetof(F90CoreFrameOut, tc_gear_authority) == 1720);
+static_assert(offsetof(F90CoreFrameOut, tc_slip_ratio) == 1744);
+static_assert(offsetof(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm) == 1776);
+static_assert(offsetof(F90CoreFrameOut, pre_tc_drive_power_w) == 1808);
+static_assert(sizeof(F90CoreFrameOut) == 1816);
 
 /// The orchestrator node. Loads the SINGLE `formula90_core.dll` facade (one
 /// handshake / one ABI version), owns the sim + audio, drives the vehicle inside
@@ -100,7 +109,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 10;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 12;
 
 	F90Core();
 	~F90Core() override;

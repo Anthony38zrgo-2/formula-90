@@ -180,6 +180,11 @@ pub struct AidsConfig {
     pub traction_control_slip_threshold: f64,
     pub traction_control_cut_gain: f64,
     pub traction_control_actuator: String,
+    pub traction_control_gear_authority: [f64; 6],
+    pub traction_control_gear_slip_target: [f64; 6],
+    pub traction_control_gear_max_cut: [f64; 6],
+    pub traction_control_attack_rate: f64,
+    pub traction_control_release_rate: f64,
 
     // ABS policy
     pub abs_available: bool,
@@ -306,6 +311,11 @@ fn default_aids() -> AidsConfig {
         traction_control_slip_threshold: 0.08,
         traction_control_cut_gain: 1.0,
         traction_control_actuator: "engine_torque".to_string(),
+        traction_control_gear_authority: default_tc_gear_authority(),
+        traction_control_gear_slip_target: default_tc_gear_slip_target(),
+        traction_control_gear_max_cut: default_tc_gear_max_cut(),
+        traction_control_attack_rate: default_tc_attack_rate(),
+        traction_control_release_rate: default_tc_release_rate(),
 
         abs_available: true,
         abs_default_enabled: false,
@@ -2229,6 +2239,16 @@ struct JsonAids {
     traction_control_cut_gain: f64,
     #[serde(default = "default_tc_actuator")]
     traction_control_actuator: String,
+    #[serde(default = "default_tc_gear_authority")]
+    traction_control_gear_authority: [f64; 6],
+    #[serde(default = "default_tc_gear_slip_target")]
+    traction_control_gear_slip_target: [f64; 6],
+    #[serde(default = "default_tc_gear_max_cut")]
+    traction_control_gear_max_cut: [f64; 6],
+    #[serde(default = "default_tc_attack_rate")]
+    traction_control_attack_rate: f64,
+    #[serde(default = "default_tc_release_rate")]
+    traction_control_release_rate: f64,
 
     // ABS policy
     #[serde(default = "default_abs_available")]
@@ -2321,6 +2341,11 @@ impl Default for JsonAids {
             traction_control_slip_threshold: default_tc_slip(),
             traction_control_cut_gain: default_tc_cut_gain(),
             traction_control_actuator: default_tc_actuator(),
+            traction_control_gear_authority: default_tc_gear_authority(),
+            traction_control_gear_slip_target: default_tc_gear_slip_target(),
+            traction_control_gear_max_cut: default_tc_gear_max_cut(),
+            traction_control_attack_rate: default_tc_attack_rate(),
+            traction_control_release_rate: default_tc_release_rate(),
             abs_available: default_abs_available(),
             abs_default_enabled: default_abs_default(),
             abs_player_selectable: default_abs_selectable(),
@@ -2374,6 +2399,21 @@ fn default_tc_cut_gain() -> f64 {
 }
 fn default_tc_actuator() -> String {
     "engine_torque".to_string()
+}
+fn default_tc_gear_authority() -> [f64; 6] {
+    [1.0, 0.90, 0.65, 0.45, 0.20, 0.10]
+}
+fn default_tc_gear_slip_target() -> [f64; 6] {
+    [0.055, 0.065, 0.085, 0.105, 0.140, 0.180]
+}
+fn default_tc_gear_max_cut() -> [f64; 6] {
+    [0.78, 0.65, 0.45, 0.30, 0.14, 0.07]
+}
+fn default_tc_attack_rate() -> f64 {
+    34.0
+}
+fn default_tc_release_rate() -> f64 {
+    18.0
 }
 fn default_abs_available() -> bool {
     true
@@ -2732,6 +2772,33 @@ impl JsonVehicleSpec {
             .map(JsonBrakeThermal::to_config)
             .unwrap_or_default();
         validate_brake_thermal(&brake_thermal)?;
+        for gear in 0..6 {
+            let authority = self.aids.traction_control_gear_authority[gear];
+            let slip_target = self.aids.traction_control_gear_slip_target[gear];
+            let max_cut = self.aids.traction_control_gear_max_cut[gear];
+            if !authority.is_finite() || !(0.0..=1.0).contains(&authority) {
+                return Err(format!(
+                    "aids.traction_control_gear_authority[{gear}] must be in [0,1]"
+                ));
+            }
+            if !max_cut.is_finite() || !(0.0..=1.0).contains(&max_cut) {
+                return Err(format!(
+                    "aids.traction_control_gear_max_cut[{gear}] must be in [0,1]"
+                ));
+            }
+            if authority > 0.0 && (!slip_target.is_finite() || slip_target <= 0.0) {
+                return Err(format!(
+                    "aids.traction_control_gear_slip_target[{gear}] must be positive when TC authority is non-zero"
+                ));
+            }
+        }
+        if !self.aids.traction_control_attack_rate.is_finite()
+            || self.aids.traction_control_attack_rate <= 0.0
+            || !self.aids.traction_control_release_rate.is_finite()
+            || self.aids.traction_control_release_rate <= 0.0
+        {
+            return Err("aids TC attack/release rates must be positive and finite".to_string());
+        }
         if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
             return Err("Spring lengths must be positive".to_string());
         }
@@ -2913,6 +2980,11 @@ impl JsonVehicleSpec {
                 traction_control_slip_threshold: self.aids.traction_control_slip_threshold,
                 traction_control_cut_gain: self.aids.traction_control_cut_gain,
                 traction_control_actuator: self.aids.traction_control_actuator.clone(),
+                traction_control_gear_authority: self.aids.traction_control_gear_authority,
+                traction_control_gear_slip_target: self.aids.traction_control_gear_slip_target,
+                traction_control_gear_max_cut: self.aids.traction_control_gear_max_cut,
+                traction_control_attack_rate: self.aids.traction_control_attack_rate,
+                traction_control_release_rate: self.aids.traction_control_release_rate,
                 abs_available: self.aids.abs_available,
                 abs_default_enabled: self.aids.abs_default_enabled,
                 abs_player_selectable: self.aids.abs_player_selectable,
@@ -3144,6 +3216,11 @@ impl JsonVehicleSpec {
                 traction_control_slip_threshold: cfg.aids.traction_control_slip_threshold,
                 traction_control_cut_gain: cfg.aids.traction_control_cut_gain,
                 traction_control_actuator: cfg.aids.traction_control_actuator.clone(),
+                traction_control_gear_authority: cfg.aids.traction_control_gear_authority,
+                traction_control_gear_slip_target: cfg.aids.traction_control_gear_slip_target,
+                traction_control_gear_max_cut: cfg.aids.traction_control_gear_max_cut,
+                traction_control_attack_rate: cfg.aids.traction_control_attack_rate,
+                traction_control_release_rate: cfg.aids.traction_control_release_rate,
                 abs_available: cfg.aids.abs_available,
                 abs_default_enabled: cfg.aids.abs_default_enabled,
                 abs_player_selectable: cfg.aids.abs_player_selectable,
@@ -3567,5 +3644,26 @@ mod json_tests {
         let loaded = VehicleConfig::from_json_str(&json).unwrap();
         assert!((loaded.brake_thermal.front_duct.opening - 0.63).abs() < 1e-9);
         assert!((loaded.brake_thermal.rear_duct.opening - 0.21).abs() < 1e-9);
+    }
+
+    #[test]
+    fn tc_gear_curve_defaults_are_progressive_through_sixth() {
+        let cfg = VehicleConfig::from_json_str(r#"{"schema_version":2}"#).unwrap();
+        assert_eq!(cfg.aids.traction_control_gear_authority, [1.0, 0.90, 0.65, 0.45, 0.20, 0.10]);
+        assert_eq!(cfg.aids.traction_control_gear_max_cut, [0.78, 0.65, 0.45, 0.30, 0.14, 0.07]);
+        assert_eq!(cfg.aids.traction_control_gear_slip_target, [0.055, 0.065, 0.085, 0.105, 0.140, 0.180]);
+    }
+
+    #[test]
+    fn tc_gear_curve_accepts_mild_authority_in_fifth_and_sixth() {
+        let json = r#"{
+            "schema_version": 2,
+            "aids": {
+                "traction_control_gear_authority": [1.0, 0.9, 0.65, 0.45, 0.2, 0.1],
+                "traction_control_gear_slip_target": [0.055, 0.065, 0.085, 0.105, 0.14, 0.18],
+                "traction_control_gear_max_cut": [0.78, 0.65, 0.45, 0.30, 0.14, 0.07]
+            }
+        }"#;
+        assert!(VehicleConfig::from_json_str(json).is_ok());
     }
 }

@@ -137,6 +137,17 @@ private:
 	double wheel_spins_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_slips_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_drive_torques_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double wheel_drive_torques_pre_tc_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tc_slip_ratio_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	bool tc_enabled_ = false;
+	bool tc_eligible_ = false;
+	bool tc_intervening_ = false;
+	double tc_gear_authority_ = 0.0;
+	double tc_slip_target_ = 0.0;
+	double tc_raw_cut_ratio_ = 0.0;
+	double tc_cut_ratio_ = 0.0;
+	double pre_tc_drive_power_w_ = 0.0;
+	double net_drive_power_w_ = 0.0;
 	double wheel_normal_forces_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double wheel_angles_[4] = { 0.0, 0.0, 0.0, 0.0 };
 
@@ -279,6 +290,7 @@ public:
 	PackedFloat64Array get_wheel_slips() const;
 	PackedInt64Array get_wheel_surface_types() const;
 	PackedFloat64Array get_drive_torques() const;
+	Dictionary get_powertrain_state_snapshot() const;
 	PackedFloat64Array get_normal_forces() const;
 
 	// Dimension & Anchor Queries
@@ -417,6 +429,7 @@ public:
 	void apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel);
 	// Forward core telemetry into the vehicle's mirrors + wheel visuals.
 	void apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt);
+	void set_core_powertrain_telemetry(const F90CoreFrameOut &p_frame);
 	// Copy the six per-wheel tire arrays from the facade frame or the legacy
 	// physics telemetry block (WheelIndex order FL/FR/RL/RR).
 	void set_core_tire_telemetry(

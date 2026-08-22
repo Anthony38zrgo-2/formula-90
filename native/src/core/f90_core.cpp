@@ -488,6 +488,7 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 	tel.tc_active = frame_.tc_active;
 	tel.drive_torque = frame_.drive_torque;
 	veh->apply_core_telemetry(tel, dt);
+	veh->set_core_powertrain_telemetry(frame_);
 
 	// Tire pressure + thermal telemetry rides the same frame (WheelIndex order
 	// FL/FR/RL/RR); the vehicle mirrors it into the HUD snapshot Dictionary.

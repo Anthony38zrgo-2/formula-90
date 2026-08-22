@@ -29,8 +29,14 @@ pub struct PowertrainState {
 
     // Traction control (CT / TCS) state
     pub tc_active: bool,
+    pub tc_eligible: bool,
+    pub tc_slip_ratio: [f64; 4],
+    pub tc_gear_authority: f64,
+    pub tc_slip_target: f64,
+    pub tc_raw_cut_ratio: f64,
     pub tc_cut_ratio: f64,
     pub tc_cut_ratio_smoothed: f64,
+    pub drive_torques_pre_tc: [f64; 4],
 }
 
 impl PowertrainState {
@@ -50,8 +56,14 @@ impl PowertrainState {
             abs_active: [false; 4],
             abs_timers: [0.0; 4],
             tc_active: false,
+            tc_eligible: false,
+            tc_slip_ratio: [0.0; 4],
+            tc_gear_authority: 0.0,
+            tc_slip_target: 0.0,
+            tc_raw_cut_ratio: 0.0,
             tc_cut_ratio: 0.0,
             tc_cut_ratio_smoothed: 0.0,
+            drive_torques_pre_tc: [0.0; 4],
         }
     }
 
@@ -332,62 +344,90 @@ impl PowertrainState {
             self.drive_torques[3] = t_rr;
         }
 
-        // Traction control (CT / TCS): progressively cut drive torque on driven
-        // wheels whose longitudinal slip exceeds the profile threshold. This is a
-        // pure torque reduction (no braking intervention), matching GEVP's
-        // `tcs_active` behavior. Always computed for telemetry, but only applied
-        // when tc_enabled is true.
+        // Preserve the differential output so telemetry can distinguish requested
+        // wheel torque from torque remaining after traction control.
+        self.drive_torques_pre_tc = self.drive_torques;
         self.tc_active = false;
-        self.tc_cut_ratio = 0.0;
-        if config.aids.traction_control_slip_threshold > 0.0
-            && self.throttle_input() > 0.01
-        {
-            let road_speed = forward_speed_m_s.abs();
-            let threshold = config.aids.traction_control_slip_threshold;
-            let mut max_cut: f64 = 0.0;
-            for wheel in WheelIndex::ALL {
-                if !wheel_is_driven(config, wheel) { continue; }
-                let i = wheel as usize;
-                let radius = if wheel.is_front() { config.front_tire_radius } else { config.rear_tire_radius };
-                if radius <= 1e-6 { continue; }
-                let wheel_road_speed = wheel_spins[i].abs() * radius;
-                // Longitudinal slip ratio: (wheel surface speed - vehicle speed) / vehicle speed.
-                let denom = road_speed.max(1.0);
-                let slip = if forward_speed_m_s >= 0.0 {
-                    (wheel_road_speed - road_speed) / denom
-                } else {
-                    (road_speed - wheel_road_speed) / denom
-                };
-                if slip > threshold {
-                    // Proportional slip limiter: reduce demanded torque so the wheel
-                    // slip returns to the threshold. Scale = threshold/slip keeps a
-                    // smooth, oscillation-free reduction instead of a bang-bang cut
-                    // that fully stalls the launch at low speed.
-                    let scale = (threshold / slip).clamp(MIN_TC_TORQUE_SCALE, 1.0);
-                    let cut = (1.0 - scale).max(0.0);
-                    max_cut = max_cut.max(cut);
-                }
+        self.tc_eligible = false;
+        self.tc_slip_ratio = [0.0; 4];
+        self.tc_gear_authority = 0.0;
+        self.tc_slip_target = 0.0;
+        self.tc_raw_cut_ratio = 0.0;
+
+        let gear_index = (self.current_gear - 1) as usize;
+        if self.current_gear > 0 && gear_index < config.gear_ratios.len().min(6) {
+            self.tc_gear_authority = config.aids.traction_control_gear_authority[gear_index];
+            self.tc_slip_target = config.aids.traction_control_gear_slip_target[gear_index];
+            self.tc_eligible = tc_enabled
+                && self.tc_gear_authority > 0.0
+                && self.tc_slip_target > 0.0;
+        }
+
+        let road_speed = forward_speed_m_s.abs();
+        for wheel in WheelIndex::ALL {
+            if !wheel_is_driven(config, wheel) {
+                continue;
             }
-        // Smooth the traction-control cut so the limiter does not hunt. The
-        // proportional scale is stable per-step, but applying it instantly across
-        // the 120 Hz step with a hard threshold created a ~15 Hz torque/slip
-        // limit-cycle (DriveTorque swinging ~400<->2100 N·m). `cut_gain` controls
-        // responsiveness of the smoothing.
-        let smoothing_rate = (config.aids.traction_control_cut_gain * 20.0).clamp(5.0, 50.0);
-        let smooth_alpha = (1.0 - (-smoothing_rate * dt).max(-50.0).min(50.0).exp()).clamp(0.0, 1.0);
-        let target_cut = if tc_enabled && max_cut > 0.0 { max_cut } else { 0.0 };
-        self.tc_cut_ratio_smoothed += (target_cut - self.tc_cut_ratio_smoothed) * smooth_alpha;
-        self.tc_cut_ratio = self.tc_cut_ratio_smoothed;
-        self.tc_active = tc_enabled && max_cut > 0.0;
-        if self.tc_active {
-            let scale = (1.0 - self.tc_cut_ratio_smoothed).max(MIN_TC_TORQUE_SCALE);
-            for wheel in WheelIndex::ALL {
-                if wheel_is_driven(config, wheel) {
-                    let i = wheel as usize;
-                    self.drive_torques[i] *= scale;
-                }
+            let i = wheel as usize;
+            let radius = if wheel.is_front() {
+                config.front_tire_radius
+            } else {
+                config.rear_tire_radius
+            };
+            if radius <= 1e-6 {
+                continue;
+            }
+            let wheel_road_speed = wheel_spins[i].abs() * radius;
+            let denom = road_speed.max(1.0);
+            let slip = if forward_speed_m_s >= 0.0 {
+                (wheel_road_speed - road_speed) / denom
+            } else {
+                (road_speed - wheel_road_speed) / denom
+            };
+            self.tc_slip_ratio[i] = slip;
+            if self.tc_eligible
+                && self.throttle_input() > 0.01
+                && slip > self.tc_slip_target
+            {
+                let scale = (self.tc_slip_target / slip).clamp(MIN_TC_TORQUE_SCALE, 1.0);
+                self.tc_raw_cut_ratio = self.tc_raw_cut_ratio.max(1.0 - scale);
             }
         }
+
+        let max_cut = if gear_index < 6 {
+            config.aids.traction_control_gear_max_cut[gear_index]
+        } else {
+            0.0
+        };
+        let target_cut = (self.tc_raw_cut_ratio * self.tc_gear_authority)
+            .min(max_cut)
+            .clamp(0.0, 1.0 - MIN_TC_TORQUE_SCALE);
+
+        // Each gear owns its authority, target and maximum cut. A zeroed profile
+        // remains a hard opt-out; otherwise attack/release filtering keeps the
+        // intervention progressive while the per-gear cap protects acceleration.
+        if !self.tc_eligible {
+            self.tc_cut_ratio_smoothed = 0.0;
+        } else {
+            let rate = if target_cut > self.tc_cut_ratio_smoothed {
+                config.aids.traction_control_attack_rate
+            } else {
+                config.aids.traction_control_release_rate
+            }
+            .max(0.0);
+            let alpha = (1.0 - (-rate * dt).clamp(-50.0, 50.0).exp()).clamp(0.0, 1.0);
+            self.tc_cut_ratio_smoothed +=
+                (target_cut - self.tc_cut_ratio_smoothed) * alpha;
+        }
+        self.tc_cut_ratio = self.tc_cut_ratio_smoothed.clamp(0.0, max_cut);
+        self.tc_active = self.tc_eligible && self.tc_cut_ratio > 1e-4;
+        if self.tc_active {
+            let scale = (1.0 - self.tc_cut_ratio).max(MIN_TC_TORQUE_SCALE);
+            for wheel in WheelIndex::ALL {
+                if wheel_is_driven(config, wheel) {
+                    self.drive_torques[wheel as usize] *= scale;
+                }
+            }
         }
     }
 
@@ -545,3 +585,73 @@ pub fn solve_salisbury_differential(
     (torque_left, torque_right)
 }
 
+#[cfg(test)]
+mod tc_tests {
+    use super::*;
+
+    fn settled_cut_in_gear(gear: i8) -> PowertrainState {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let mut state = PowertrainState::new(&cfg);
+        state.current_gear = gear;
+        state.clutch_torque = 100.0;
+        state.engine_torque = 100.0;
+        let road_speed = 20.0;
+        let driven_spin = 30.0 / cfg.rear_tire_radius;
+        let wheel_spins = [0.0, 0.0, driven_spin, driven_spin];
+        for _ in 0..120 {
+            state.distribute_drive_torque(&cfg, &wheel_spins, true, road_speed, 1.0 / 120.0);
+        }
+        state
+    }
+
+    #[test]
+    fn tc_authority_falls_monotonically_through_sixth() {
+        let cuts = [1, 2, 3, 4, 5, 6].map(|gear| settled_cut_in_gear(gear).tc_cut_ratio);
+        assert!(cuts.windows(2).all(|pair| pair[0] > pair[1]));
+        let caps = [0.78, 0.65, 0.45, 0.30, 0.14, 0.07];
+        assert!(cuts.iter().zip(caps).all(|(cut, cap)| *cut <= cap));
+    }
+
+    #[test]
+    fn tc_remains_eligible_but_mild_in_fifth_and_sixth() {
+        for gear in [5, 6] {
+            let state = settled_cut_in_gear(gear);
+            assert!(state.tc_eligible);
+            assert!(state.tc_active);
+            assert!(state.tc_cut_ratio > 0.0);
+            assert!(state.tc_cut_ratio <= if gear == 5 { 0.14 } else { 0.07 });
+            assert_ne!(state.drive_torques, state.drive_torques_pre_tc);
+        }
+    }
+
+    #[test]
+    fn fourth_to_fifth_respects_the_lower_fifth_gear_cap() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let mut state = settled_cut_in_gear(4);
+        assert!(state.tc_cut_ratio > 0.0);
+        state.current_gear = 5;
+        state.clutch_torque = 100.0;
+        state.engine_torque = 100.0;
+        let driven_spin = 30.0 / cfg.rear_tire_radius;
+        state.distribute_drive_torque(
+            &cfg,
+            &[0.0, 0.0, driven_spin, driven_spin],
+            true,
+            20.0,
+            1.0 / 120.0,
+        );
+        assert!(state.tc_cut_ratio > 0.0);
+        assert!(state.tc_cut_ratio <= 0.14);
+        assert!(state.tc_active);
+    }
+
+    #[test]
+    fn applied_torque_matches_reported_cut() {
+        let state = settled_cut_in_gear(2);
+        for wheel in [WheelIndex::RearLeft, WheelIndex::RearRight] {
+            let i = wheel as usize;
+            let expected = state.drive_torques_pre_tc[i] * (1.0 - state.tc_cut_ratio);
+            assert!((state.drive_torques[i] - expected).abs() < 1e-9);
+        }
+    }
+}

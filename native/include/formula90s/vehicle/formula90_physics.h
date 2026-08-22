@@ -105,9 +105,18 @@ typedef struct F90TelemetryOutput {
     double fl_brake_natural_cooling_w_k, fr_brake_natural_cooling_w_k, rl_brake_natural_cooling_w_k, rr_brake_natural_cooling_w_k;
     double fl_brake_speed_cooling_w_k, fr_brake_speed_cooling_w_k, rl_brake_speed_cooling_w_k, rr_brake_speed_cooling_w_k;
     double fl_brake_surface_to_bulk_heat_w, fr_brake_surface_to_bulk_heat_w, rl_brake_surface_to_bulk_heat_w, rr_brake_surface_to_bulk_heat_w;
+    // Append-only ABI 13 traction-control diagnostics.
+    bool tc_eligible;
+    double tc_gear_authority;
+    double tc_slip_target;
+    double tc_raw_cut_ratio;
+    double tc_slip_ratio[4];
+    double drive_torque_pre_tc_nm[4];
+    double pre_tc_drive_power_w;
+    double net_drive_power_w;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 12
+#define F1_94_PHYSICS_ABI_VERSION 13
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;

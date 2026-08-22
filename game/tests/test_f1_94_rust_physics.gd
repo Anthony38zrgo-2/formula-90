@@ -27,10 +27,9 @@ func _run_test() -> void:
 		_fail("VehicleRigidBody node is missing", failures)
 		quit(1)
 		return
-	
-	var audio = car.get_node_or_null("VehicleAudio")
-	if audio == null:
-		_fail("VehicleAudio node missing on F194Rust", failures)
+	# Audio belongs to F90Core in vehicle_test_session.tscn and is covered by
+	# smoke_test_f1_94_audio.gd. This isolated physics fixture intentionally has
+	# no legacy VehicleAudio node.
 	
 	var fl_wheel = car.get_node_or_null("VehicleRigidBody/FrontLeftWheel")
 	var fr_wheel = car.get_node_or_null("VehicleRigidBody/FrontRightWheel")

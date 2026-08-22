@@ -20,7 +20,7 @@ use crate::underfloor::{UnderfloorRayHit, UnderfloorRigidContact, UnderfloorSamp
 use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
-pub const F90_CORE_ABI_VERSION: u32 = 10;
+pub const F90_CORE_ABI_VERSION: u32 = 12;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -175,6 +175,19 @@ pub struct F90CoreFrameOut {
     pub aero_global_limit_factor: f64,
     pub aero_load_ratio: f64,
     pub aero_balance_front: f64,
+    // Append-only ABI 11 powertrain diagnostics.
+    pub wheel_drive_torque_nm: [f64; 4],
+    pub tc_cut_ratio: f64,
+    pub net_drive_power_w: f64,
+    // Append-only ABI 12 expanded traction-control diagnostics.
+    pub tc_enabled: f64,
+    pub tc_eligible: f64,
+    pub tc_gear_authority: f64,
+    pub tc_slip_target: f64,
+    pub tc_raw_cut_ratio: f64,
+    pub tc_slip_ratio: [f64; 4],
+    pub wheel_drive_torque_pre_tc_nm: [f64; 4],
+    pub pre_tc_drive_power_w: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -559,6 +572,17 @@ pub unsafe extern "C" fn f90_core_step(
                 aero_global_limit_factor: frame.aero_global_limit_factor,
                 aero_load_ratio: frame.aero_load_ratio,
                 aero_balance_front: frame.aero_balance_front,
+                wheel_drive_torque_nm: frame.wheel_drive_torque_nm,
+                tc_cut_ratio: frame.tc_cut_ratio,
+                net_drive_power_w: frame.net_drive_power_w,
+                tc_enabled: if frame.tc_enabled { 1.0 } else { 0.0 },
+                tc_eligible: if frame.tc_eligible { 1.0 } else { 0.0 },
+                tc_gear_authority: frame.tc_gear_authority,
+                tc_slip_target: frame.tc_slip_target,
+                tc_raw_cut_ratio: frame.tc_raw_cut_ratio,
+                tc_slip_ratio: frame.tc_slip_ratio,
+                wheel_drive_torque_pre_tc_nm: frame.wheel_drive_torque_pre_tc_nm,
+                pre_tc_drive_power_w: frame.pre_tc_drive_power_w,
             };
         }
     }
@@ -769,7 +793,16 @@ mod layout_tests {
         );
         assert_eq!(offset_of!(F90CoreFrameOut, aero_total_downforce_n), 1512);
         assert_eq!(offset_of!(F90CoreFrameOut, aero_balance_front), 1648);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1656);
+        assert_eq!(offset_of!(F90CoreFrameOut, wheel_drive_torque_nm), 1656);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_cut_ratio), 1688);
+        assert_eq!(offset_of!(F90CoreFrameOut, net_drive_power_w), 1696);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_enabled), 1704);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_eligible), 1712);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_gear_authority), 1720);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_slip_ratio), 1744);
+        assert_eq!(offset_of!(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm), 1776);
+        assert_eq!(offset_of!(F90CoreFrameOut, pre_tc_drive_power_w), 1808);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1816);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

@@ -738,8 +738,31 @@ impl VehicleSimulator {
             rr_comp_mm: st.suspension.wheels[3].compression_mm,
             front_slip,
             rear_slip,
-            tc_active: self.aids.traction_control,
+            tc_enabled: self.aids.traction_control,
+            tc_eligible: st.powertrain.tc_eligible,
+            tc_active: st.powertrain.tc_active,
+            tc_gear_authority: st.powertrain.tc_gear_authority,
+            tc_slip_target: st.powertrain.tc_slip_target,
+            tc_raw_cut_ratio: st.powertrain.tc_raw_cut_ratio,
+            tc_cut_ratio: st.powertrain.tc_cut_ratio,
+            tc_slip_ratio: st.powertrain.tc_slip_ratio,
+            wheel_drive_torque_pre_tc_nm: st.powertrain.drive_torques_pre_tc,
+            wheel_drive_torque_nm: st.powertrain.drive_torques,
             drive_torque: st.powertrain.drive_torques[2] + st.powertrain.drive_torques[3],
+            pre_tc_drive_power_w: st
+                .powertrain
+                .drive_torques_pre_tc
+                .iter()
+                .zip(st.tires.wheels.iter())
+                .map(|(torque, wheel)| torque * wheel.spin)
+                .sum(),
+            net_drive_power_w: st
+                .powertrain
+                .drive_torques
+                .iter()
+                .zip(st.tires.wheels.iter())
+                .map(|(torque, wheel)| torque * wheel.spin)
+                .sum(),
             session_id: "rust_mechanical_triray_v2".to_string(),
             session_timestamp_utc: "".to_string(),
             physics_hz: st.physics_hz,

@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 12;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 13;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -519,6 +519,16 @@ pub struct FfiTelemetryOutput {
     pub fr_brake_surface_to_bulk_heat_w: f64,
     pub rl_brake_surface_to_bulk_heat_w: f64,
     pub rr_brake_surface_to_bulk_heat_w: f64,
+
+    // Append-only ABI 13 traction-control diagnostics.
+    pub tc_eligible: bool,
+    pub tc_gear_authority: f64,
+    pub tc_slip_target: f64,
+    pub tc_raw_cut_ratio: f64,
+    pub tc_slip_ratio: [f64; 4],
+    pub drive_torque_pre_tc_nm: [f64; 4],
+    pub pre_tc_drive_power_w: f64,
+    pub net_drive_power_w: f64,
 }
 
 #[no_mangle]
@@ -940,6 +950,28 @@ fn write_telemetry(
             fr_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[1].surface_to_bulk_heat_w,
             rl_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[2].surface_to_bulk_heat_w,
             rr_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[3].surface_to_bulk_heat_w,
+            tc_eligible: sim.state.powertrain.tc_eligible,
+            tc_gear_authority: sim.state.powertrain.tc_gear_authority,
+            tc_slip_target: sim.state.powertrain.tc_slip_target,
+            tc_raw_cut_ratio: sim.state.powertrain.tc_raw_cut_ratio,
+            tc_slip_ratio: sim.state.powertrain.tc_slip_ratio,
+            drive_torque_pre_tc_nm: sim.state.powertrain.drive_torques_pre_tc,
+            pre_tc_drive_power_w: sim
+                .state
+                .powertrain
+                .drive_torques_pre_tc
+                .iter()
+                .zip(sim.state.tires.wheels.iter())
+                .map(|(torque, wheel)| torque * wheel.spin)
+                .sum(),
+            net_drive_power_w: sim
+                .state
+                .powertrain
+                .drive_torques
+                .iter()
+                .zip(sim.state.tires.wheels.iter())
+                .map(|(torque, wheel)| torque * wheel.spin)
+                .sum(),
         };
     }
 }
@@ -985,6 +1017,12 @@ mod layout_tests {
         assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_disc_bulk_c), 1008);
         assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_surface_capacity_j_k), 1040);
         assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_surface_to_bulk_heat_w), 1200);
-        assert_eq!(size_of::<FfiTelemetryOutput>(), 1232);
+        assert_eq!(offset_of!(FfiTelemetryOutput, tc_eligible), 1232);
+        assert_eq!(offset_of!(FfiTelemetryOutput, tc_gear_authority), 1240);
+        assert_eq!(offset_of!(FfiTelemetryOutput, tc_slip_ratio), 1264);
+        assert_eq!(offset_of!(FfiTelemetryOutput, drive_torque_pre_tc_nm), 1296);
+        assert_eq!(offset_of!(FfiTelemetryOutput, pre_tc_drive_power_w), 1328);
+        assert_eq!(offset_of!(FfiTelemetryOutput, net_drive_power_w), 1336);
+        assert_eq!(size_of::<FfiTelemetryOutput>(), 1344);
     }
 }

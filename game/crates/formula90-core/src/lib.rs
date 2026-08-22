@@ -399,6 +399,29 @@ impl CoreFacade {
             frame.tc_active = et.tc_active;
             frame.drive_torque = et.drive_torque;
         }
+        frame.tc_active = ent.sim.state.powertrain.tc_active;
+        frame.tc_enabled = ent.sim.aids.traction_control;
+        frame.tc_eligible = ent.sim.state.powertrain.tc_eligible;
+        frame.tc_gear_authority = ent.sim.state.powertrain.tc_gear_authority;
+        frame.tc_slip_target = ent.sim.state.powertrain.tc_slip_target;
+        frame.tc_raw_cut_ratio = ent.sim.state.powertrain.tc_raw_cut_ratio;
+        frame.tc_cut_ratio = ent.sim.state.powertrain.tc_cut_ratio;
+        frame.tc_slip_ratio = ent.sim.state.powertrain.tc_slip_ratio;
+        frame.wheel_drive_torque_pre_tc_nm = ent.sim.state.powertrain.drive_torques_pre_tc;
+        frame.wheel_drive_torque_nm = ent.sim.state.powertrain.drive_torques;
+        frame.drive_torque = frame.wheel_drive_torque_nm.iter().sum();
+        frame.net_drive_power_w = frame
+            .wheel_drive_torque_nm
+            .iter()
+            .zip(ent.sim.state.tires.wheels.iter())
+            .map(|(torque, wheel)| torque * wheel.spin)
+            .sum();
+        frame.pre_tc_drive_power_w = frame
+            .wheel_drive_torque_pre_tc_nm
+            .iter()
+            .zip(ent.sim.state.tires.wheels.iter())
+            .map(|(torque, wheel)| torque * wheel.spin)
+            .sum();
         let pose = &ent.sim.state.transform;
         let lv = ent.sim.state.linear_velocity;
         let av = ent.sim.state.angular_velocity;
