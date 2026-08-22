@@ -221,6 +221,7 @@ struct Opts {
     use_canonical: bool,
     fixed_dt: Option<f64>,
     enable_audio: bool,
+    audio_backend: Option<vehicle_audio_engine::AudioBackend>,
     idle_rpm: Option<f64>,
     max_rpm: Option<f64>,
     vehicle_scene: Option<String>,
@@ -239,6 +240,11 @@ fn parse_opts(s: &str) -> Result<CoreConfig, String> {
         cfg.fixed_dt = d;
     }
     cfg.enable_audio = o.enable_audio;
+    cfg.audio_backend = o.audio_backend.unwrap_or(if o.enable_audio {
+        vehicle_audio_engine::AudioBackend::LegacyV10Pcm
+    } else {
+        vehicle_audio_engine::AudioBackend::Disabled
+    });
     if let Some(v) = o.idle_rpm {
         cfg.idle_rpm = v;
     }
@@ -644,6 +650,89 @@ pub extern "C" fn f90_core_audio_readouts(h: *mut c_void, out: *mut F90CoreFrame
     }
 }
 
+/// Copy the latest versioned audio command frame as UTF-8 JSON. Returns the byte
+/// count including the trailing NUL. Pass a null/zero buffer to query capacity.
+#[no_mangle]
+pub unsafe extern "C" fn f90_core_audio_commands_json(
+    h: *mut c_void,
+    out: *mut u8,
+    cap: u32,
+) -> u32 {
+    if h.is_null() {
+        return 0;
+    }
+    let json = facade_ref(h).audio_commands_json();
+    let needed = json.len().saturating_add(1) as u32;
+    if out.is_null() || cap < needed {
+        return needed;
+    }
+    std::ptr::copy_nonoverlapping(json.as_ptr(), out, json.len());
+    *out.add(json.len()) = 0;
+    needed
+}
+
+/// Submit collision facts. Sample/event selection remains authoritative in Rust.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_collision(
+    h: *mut c_void,
+    kind: u32,
+    normal_speed_m_s: f32,
+    tangential_speed_m_s: f32,
+    impulse_ns: f32,
+) {
+    use vehicle_audio_engine::{CollisionAudioInput, CollisionKind};
+    if h.is_null() {
+        return;
+    }
+    let kind = match kind {
+        1 => CollisionKind::Barrier,
+        2 => CollisionKind::Prop,
+        3 => CollisionKind::Vehicle,
+        _ => CollisionKind::Generic,
+    };
+    facade_mut(h).audio_collision(CollisionAudioInput {
+        kind,
+        normal_speed_m_s,
+        tangential_speed_m_s,
+        impulse_ns,
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn f90_core_audio_set_listener_distance(h: *mut c_void, distance_m: f32) {
+    if !h.is_null() {
+        facade_mut(h).audio_set_listener_distance(distance_m);
+    }
+}
+
+/// Diagnostic A/B mute mask (handoff section 7 paso 2). Bit0..bit7 map to
+/// engine_int, engine_ext, transmission, wind, wheel, surfaces, collisions,
+/// ambience. Muted families keep voices alive at -80 dB.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_set_mute_mask(h: *mut c_void, mask: u8) {
+    if !h.is_null() {
+        facade_mut(h).audio_set_mute_mask(mask);
+    }
+}
+
+/// Begin per-tick telemetry recording at `path` (UTF-8, CSV) for offline A/B
+/// replay through both backends. Passing null stops nothing (append-only).
+#[no_mangle]
+pub unsafe extern "C" fn f90_core_audio_set_record_path(h: *mut c_void, path: *const c_char) {
+    if h.is_null() {
+        return;
+    }
+    use std::ffi::CStr;
+    let path = if path.is_null() {
+        None
+    } else {
+        Some(std::path::PathBuf::from(
+            CStr::from_ptr(path).to_string_lossy().into_owned(),
+        ))
+    };
+    facade_mut(h).audio_set_record_path(path);
+}
+
 /// Serialize the orchestrated snapshot (bincode) into `out`. Returns bytes needed;
 /// 0 on success with `out_len` set. If the buffer is too small, returns the needed
 /// size and leaves the buffer untouched.
@@ -800,7 +889,10 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, tc_eligible), 1712);
         assert_eq!(offset_of!(F90CoreFrameOut, tc_gear_authority), 1720);
         assert_eq!(offset_of!(F90CoreFrameOut, tc_slip_ratio), 1744);
-        assert_eq!(offset_of!(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm), 1776);
+        assert_eq!(
+            offset_of!(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm),
+            1776
+        );
         assert_eq!(offset_of!(F90CoreFrameOut, pre_tc_drive_power_w), 1808);
         assert_eq!(size_of::<F90CoreFrameOut>(), 1816);
     }

@@ -1,0 +1,7 @@
+scenario=grass_skid
+ticks=288
+max_voices=36
+engine_int_holes=none
+gear_shots=0 (first: None)
+collision_shots=0 (events: [])
+legacy_render=wav

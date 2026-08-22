@@ -30,6 +30,7 @@ use std::sync::{Arc, RwLock};
 use game_sim::snapshot::{EntityTelemetry, Snapshot};
 use game_sim::world::{yaw_from_transform, World};
 use serde::{Deserialize, Serialize};
+use vehicle_audio_engine::{AudioBackend, CollisionAudioInput};
 use vehicle_physics_engine::{
     AeroEnvironment, AidsMask, BodyKinematics, Mat3, SurfaceType, Transform3D, TriRaycastSample,
     Vec3, VehicleConfig, VehicleInput,
@@ -52,6 +53,7 @@ pub struct CoreConfig {
     /// Fixed simulation timestep (seconds).
     pub fixed_dt: f64,
     pub enable_audio: bool,
+    pub audio_backend: AudioBackend,
     pub idle_rpm: f64,
     pub max_rpm: f64,
     /// Opaque packed-scene references the mirror resolves (entity metadata).
@@ -71,6 +73,9 @@ impl Default for CoreConfig {
             use_canonical: true,
             fixed_dt: 1.0 / 120.0,
             enable_audio: false,
+            // Library callers retain the historical mixer unless they opt into
+            // command rendering. The Godot F90Core node defaults to the new path.
+            audio_backend: AudioBackend::LegacyV10Pcm,
             idle_rpm: 1000.0,
             max_rpm: 15000.0,
             vehicle_scene: "res://scenes/vehicles/f1_94/f1_94_rust.tscn".to_string(),
@@ -130,7 +135,11 @@ pub struct CoreFacade {
 
 impl CoreFacade {
     pub fn new(config: CoreConfig) -> Result<Self, CoreError> {
-        let audio = AudioModule::new(config.bank_dir.as_deref(), config.enable_audio);
+        let audio = AudioModule::new(
+            config.bank_dir.as_deref(),
+            config.enable_audio,
+            config.audio_backend,
+        );
         let world = World::new(config.fixed_dt);
         let mut registry = ModuleRegistry::new();
         for name in &config.modules {
@@ -346,7 +355,16 @@ impl CoreFacade {
             underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
             self.underfloor.onset_strength as f32,
         );
-        self.finish_frame(dt, frame, surface, slip)
+        let audio_physics = self.audio_physics_inputs(id);
+        self.finish_frame(
+            dt,
+            frame,
+            surface,
+            sample_surface_codes(samples),
+            slip,
+            audio_physics,
+            id,
+        )
     }
 
     /// Advance everything one fixed step on the STANDALONE path (headless, same as
@@ -371,7 +389,16 @@ impl CoreFacade {
         frame.throttle = input.throttle;
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
-        self.finish_frame(dt, frame, surface, slip)
+        let audio_physics = self.audio_physics_inputs(id);
+        self.finish_frame(
+            dt,
+            frame,
+            surface,
+            sample_surface_codes(samples),
+            slip,
+            audio_physics,
+            id,
+        )
     }
 
     /// Copy the entity's telemetry + pose/velocity into `frame` (physics-agnostic
@@ -501,18 +528,51 @@ impl CoreFacade {
         dt: f64,
         mut frame: CoreFrame,
         surface: SurfaceType,
+        surfaces: [u8; 4],
         slip: f32,
+        audio_physics: ([f32; 4], [f32; 4], f32),
+        id: u32,
     ) -> &CoreFrame {
         // --- audio driven from the SAME tick (no round-trip) ------------------
+        // Real per-wheel data from the tick: driven-wheel shaft speed (the
+        // bank's `drivetrain_speed` domain) and per-wheel slip ratios (replaces
+        // the TC slip proxy that read zero when traction control was off).
+        let (drivetrain_speed_kph, slip_ratio) = self
+            .world
+            .entities
+            .iter()
+            .find(|e| e.id == id)
+            .map(|e| {
+                let wheels = &e.sim.state.tires.wheels;
+                let avg = wheels
+                    .iter()
+                    .skip(2)
+                    .map(|w| w.spin.abs())
+                    .sum::<f64>()
+                    / 2.0;
+                let shaft = avg * e.sim.config.rear_tire_radius * 3.6;
+                let slips = wheels.iter().map(|w| w.slip_ratio as f32).collect::<Vec<_>>();
+                let arr = [slips[0], slips[1], slips[2], slips[3]];
+                (shaft as f32, arr)
+            })
+            .unwrap_or((0.0, [0.0; 4]));
         self.audio.set_state(
             frame.rpm,
             self.config.idle_rpm,
             self.config.max_rpm,
             frame.throttle as f32,
             frame.speed_kmh,
+            drivetrain_speed_kph,
             frame.gear,
             slip,
             surface,
+            surfaces,
+            dt as f32,
+            audio_physics.2,
+            slip_ratio,
+            audio_physics.0,
+            audio_physics.1,
+            frame.tire_pressure_kpa.map(|v| v as f32),
         );
         frame.audio = self.audio.readouts();
 
@@ -539,6 +599,23 @@ impl CoreFacade {
         &self.frame
     }
 
+    fn audio_physics_inputs(&self, id: u32) -> ([f32; 4], [f32; 4], f32) {
+        let Some(entity) = self.world.entities.iter().find(|entity| entity.id == id) else {
+            return ([0.0; 4], [0.0; 4], 0.0);
+        };
+        let mut loads = [0.0; 4];
+        let mut velocities = [0.0; 4];
+        for (index, wheel) in entity.sim.state.suspension.wheels.iter().enumerate() {
+            loads[index] = wheel.total_normal_force as f32;
+            velocities[index] = (wheel.spring_speed_mm_s * 0.001) as f32;
+        }
+        (
+            loads,
+            velocities,
+            entity.sim.state.brake_input_smoothed as f32,
+        )
+    }
+
     /// Latest published frame (immutable view for any thread).
     pub fn latest_frame(&self) -> Arc<CoreFrame> {
         self.latest.read().expect("latest RwLock poisoned").clone()
@@ -556,6 +633,33 @@ impl CoreFacade {
 
     pub fn audio_readouts(&mut self) -> frame::AudioReadouts {
         self.audio.readouts()
+    }
+
+    pub fn audio_commands_json(&self) -> String {
+        self.audio.command_frame_json()
+    }
+
+    pub fn audio_collision(&mut self, collision: CollisionAudioInput) {
+        self.audio.push_collision(collision);
+    }
+
+    /// Diagnostic A/B mute mask (bit0..bit7 = engine_int..ambience). See
+    /// `AudioModule::set_mute_mask`.
+    pub fn audio_set_mute_mask(&mut self, mask: u8) {
+        self.audio.set_mute_mask(mask);
+    }
+
+    /// Begin per-tick telemetry recording (offline A/B replay).
+    pub fn audio_set_record_path(&mut self, path: Option<std::path::PathBuf>) {
+        self.audio.set_record_path(path);
+    }
+
+    pub fn audio_backend(&self) -> AudioBackend {
+        self.audio.backend()
+    }
+
+    pub fn audio_set_listener_distance(&mut self, distance_m: f32) {
+        self.audio.set_listener_distance(distance_m);
     }
 
     /// Authoritative sim snapshot (game_sim) — used for byte parity with `game_sim`.
@@ -634,4 +738,20 @@ fn dominant_surface(samples: &[TriRaycastSample; 4]) -> SurfaceType {
     } else {
         Road
     }
+}
+
+fn sample_surface_codes(samples: &[TriRaycastSample; 4]) -> [u8; 4] {
+    let mut out = [SurfaceType::Road as u8; 4];
+    for (index, sample) in samples.iter().enumerate() {
+        out[index] = if sample.center.is_colliding {
+            sample.center.surface as u8
+        } else if sample.inner.is_colliding {
+            sample.inner.surface as u8
+        } else if sample.outer.is_colliding {
+            sample.outer.surface as u8
+        } else {
+            SurfaceType::Road as u8
+        };
+    }
+    out
 }

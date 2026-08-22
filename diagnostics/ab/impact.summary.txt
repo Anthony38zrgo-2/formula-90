@@ -1,0 +1,7 @@
+scenario=impact
+ticks=336
+max_voices=33
+engine_int_holes=none
+gear_shots=0 (first: None)
+collision_shots=4 (events: ["common/collision/prop", "common/collision/barrier", "common/collision/cockpit_rattle", "common/collision/body"])
+legacy_render=wav

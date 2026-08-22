@@ -1,0 +1,25 @@
+{
+  "collision_shots": [],
+  "engine_int_holes": [],
+  "gear_shots": [
+    "t125 res://sounds/runtime/v10_v2/r25 int on upshift.wav",
+    "t245 res://sounds/runtime/v10_v2/r25 int on upshift.wav",
+    "t365 res://sounds/runtime/v10_v2/r25 int on upshift.wav"
+  ],
+  "headings": [
+    "t0001 rpm=2200 thr=0.15 gear=1 surf=asphalt voices=28",
+    "t0002 rpm=2219 thr=0.15 gear=1 surf=asphalt voices=28",
+    "t0003 rpm=2257 thr=0.16 gear=1 surf=asphalt voices=28",
+    "t0004 rpm=2295 thr=0.17 gear=1 surf=asphalt voices=28",
+    "t0005 rpm=2314 thr=0.17 gear=1 surf=asphalt voices=28",
+    "t0006 rpm=2352 thr=0.18 gear=1 surf=asphalt voices=28",
+    "t0007 rpm=2390 thr=0.19 gear=1 surf=asphalt voices=28",
+    "t0008 rpm=2409 thr=0.19 gear=1 surf=asphalt voices=28"
+  ],
+  "max_voices": 33,
+  "scenario": "idle_to_redline_with_shifts",
+  "schema": "ab-commands-v1",
+  "seq": 0,
+  "tick_hz": 120.0,
+  "ticks": 504
+}

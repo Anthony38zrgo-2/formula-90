@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cfb3hvk4sr62p"
+path="res://.godot/imported/gt3r 19 trans main mid 2.ogg-1fbaea1b8570e5012ea0e4ba6186c176.oggvorbisstr"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/gt3r 19 trans main mid 2.ogg"
+dest_files=["res://.godot/imported/gt3r 19 trans main mid 2.ogg-1fbaea1b8570e5012ea0e4ba6186c176.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

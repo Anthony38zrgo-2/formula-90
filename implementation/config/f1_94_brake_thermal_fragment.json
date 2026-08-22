@@ -1,0 +1,79 @@
+{
+  "brakes": {
+    "front_brake_bias": 0.57,
+    "max_brake_torque": 2800.0,
+    "thermal": {
+      "initial_temperature_c": 25.0,
+      "optimal_min_temperature_c": 400.0,
+      "optimal_max_temperature_c": 800.0,
+      "fade_start_temperature_c": 900.0,
+      "critical_temperature_c": 1100.0,
+      "cold_efficiency": 0.78,
+      "minimum_fade_efficiency": 0.58,
+      "braking_heat_fraction": 0.94,
+      "direct_caliper_heat_fraction": 0.04,
+      "front": {
+        "disc_heat_capacity_j_k": 2400.0,
+        "caliper_heat_capacity_j_k": 3000.0,
+        "hub_heat_capacity_j_k": 3200.0,
+        "rim_heat_capacity_j_k": 6500.0,
+        "disc_to_caliper_w_k": 26.0,
+        "disc_to_hub_w_k": 38.0,
+        "disc_to_rim_radiation_w_k": 9.0,
+        "hub_to_rim_w_k": 31.0,
+        "rim_to_tire_carcass_w_k": 14.0,
+        "rim_to_tire_gas_w_k": 8.0,
+        "disc_base_air_w_k": 18.0,
+        "caliper_base_air_w_k": 8.0,
+        "hub_base_air_w_k": 5.0,
+        "rim_base_air_w_k": 10.0,
+        "disc_flow_cooling_gain_w_k": 105.0,
+        "caliper_flow_cooling_gain_w_k": 42.0,
+        "hub_flow_cooling_gain_w_k": 18.0,
+        "rim_flow_cooling_gain_w_k": 24.0
+      },
+      "rear": {
+        "disc_heat_capacity_j_k": 2000.0,
+        "caliper_heat_capacity_j_k": 2600.0,
+        "hub_heat_capacity_j_k": 2800.0,
+        "rim_heat_capacity_j_k": 6000.0,
+        "disc_to_caliper_w_k": 26.0,
+        "disc_to_hub_w_k": 38.0,
+        "disc_to_rim_radiation_w_k": 9.0,
+        "hub_to_rim_w_k": 31.0,
+        "rim_to_tire_carcass_w_k": 14.0,
+        "rim_to_tire_gas_w_k": 8.0,
+        "disc_base_air_w_k": 18.0,
+        "caliper_base_air_w_k": 8.0,
+        "hub_base_air_w_k": 5.0,
+        "rim_base_air_w_k": 10.0,
+        "disc_flow_cooling_gain_w_k": 105.0,
+        "caliper_flow_cooling_gain_w_k": 42.0,
+        "hub_flow_cooling_gain_w_k": 18.0,
+        "rim_flow_cooling_gain_w_k": 24.0
+      },
+      "front_duct": {
+        "opening": 0.55,
+        "max_inlet_area_m2_per_wheel": 0.006,
+        "discharge_coefficient": 0.72,
+        "pressure_recovery": 0.65,
+        "cooling_reference_speed_ms": 50.0,
+        "drag_coefficient": 0.9,
+        "area_response_exponent": 1.15,
+        "cooling_flow_exponent": 0.8,
+        "minimum_cooling_flow_ratio": 0.12
+      },
+      "rear_duct": {
+        "opening": 0.4,
+        "max_inlet_area_m2_per_wheel": 0.005,
+        "discharge_coefficient": 0.72,
+        "pressure_recovery": 0.65,
+        "cooling_reference_speed_ms": 50.0,
+        "drag_coefficient": 0.85,
+        "area_response_exponent": 1.15,
+        "cooling_flow_exponent": 0.8,
+        "minimum_cooling_flow_ratio": 0.12
+      }
+    }
+  }
+}

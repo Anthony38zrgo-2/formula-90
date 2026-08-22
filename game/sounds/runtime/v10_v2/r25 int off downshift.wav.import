@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://iw7la5a3weoc"
+path="res://.godot/imported/r25 int off downshift.wav-e98812a59b2d077a4ded0699f908a263.sample"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 int off downshift.wav"
+dest_files=["res://.godot/imported/r25 int off downshift.wav-e98812a59b2d077a4ded0699f908a263.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -1,0 +1,1788 @@
+{
+  "schema_version": 2,
+  "bank": {
+    "name": "vrc_2005_renault_r25.bank",
+    "sha256": "6CC0E286E382BB71F1D8169CC8C7F7EA86D2A126AA790B4B52B9E92203843D03"
+  },
+  "pitch_automation_rpms": [
+    [
+      5281.519,
+      -11.444349,
+      -0.33287054,
+      0
+    ],
+    [
+      15687.891,
+      0.0,
+      0.0,
+      0
+    ]
+  ],
+  "engine_int": [
+    {
+      "instrument": "213a1c3e-e344-4878-a941-b8a6db23b54c",
+      "sample": "r25 int idle",
+      "vol_db": -2.5,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 3320.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              3800.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              4600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "1cba606e-4c77-4de0-95c7-16078f4e2b21",
+      "sample": "r25 int idle",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 3320.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              3800.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              4600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "95961758-3214-474d-8b7d-9c02bf23fe3c",
+      "sample": "r25 int off downshift",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 15000.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              15200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              15600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "ff90cb1d-9cb1-42eb-9a96-40bd3036c15e",
+      "sample": "r25 int off low",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 4600.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              3800.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              4600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              6600.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              8200.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "04c3506c-36ad-44dc-b831-0dbdf1c57dfe",
+      "sample": "r25 int off low",
+      "vol_db": -1.5,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 4600.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              3800.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              4600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              6600.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              8200.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "4167e908-5133-47a9-89a7-7ca724e6db96",
+      "sample": "r25 int off mid",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7800.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9400.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              11000.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              11800.0,
+              1.0,
+              -0.042599075,
+              0.0
+            ],
+            [
+              14200.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "5a2f4133-9eb1-423b-89d3-cfa5404ed554",
+      "sample": "r25 int off mid",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7800.0,
+      "seek": 54.5,
+      "windows": [
+        {
+          "points": [
+            [
+              6600.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              8200.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9400.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              11000.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "847664dd-f332-481f-9bd7-9a6f6d096737",
+      "sample": "r25 int off midhigh",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 15000.0,
+      "seek": 11.0,
+      "windows": [
+        {
+          "points": [
+            [
+              11800.0,
+              0.0,
+              -0.5246337,
+              0.0
+            ],
+            [
+              14200.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              15200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              15600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "98839dd1-6c3a-4e8f-91b2-91127461eb74",
+      "sample": "r25 int on high",
+      "vol_db": -5.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 16700.0,
+      "seek": 12.0,
+      "windows": [
+        {
+          "points": [
+            [
+              16800.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              17400.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "4089de6a-a4d1-4b14-b851-8fe9379ff2f9",
+      "sample": "r25 int on mid",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7800.0,
+      "seek": 23.0,
+      "windows": [
+        {
+          "points": [
+            [
+              6600.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              8200.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              10600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "8520f056-2b11-4e32-9027-550005b3e4a5",
+      "sample": "r25 int on midhigh",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 11400.0,
+      "seek": 74.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              10600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              13400.0,
+              1.0,
+              0.36305773,
+              0.0
+            ],
+            [
+              15600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "422da1c1-ab80-47c6-8572-1d82cd237cc2",
+      "sample": "r25 int on upshift",
+      "vol_db": -5.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 15600.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              13400.0,
+              0.0,
+              -0.21332663,
+              0.0
+            ],
+            [
+              15600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              16800.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              17400.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    }
+  ],
+  "engine_ext": [
+    {
+      "instrument": "0f3641c9-7cde-4fa9-bc4f-d7aa6d46c6f9",
+      "sample": "f2000 ext on high rear close",
+      "vol_db": -5.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 12800.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              17200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              17400.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "45cecc28-763f-412c-b83e-27b28ac2617d",
+      "sample": "f2000 ext on upshift rear close",
+      "vol_db": -5.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 12800.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              11400.0,
+              0.0,
+              -0.18688262,
+              0.0
+            ],
+            [
+              13800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              17200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              17400.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "63e2388b-17f0-41dc-964d-4681103dc126",
+      "sample": "r25 ext idle",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 3300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5400.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              7000.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "fcebe748-1912-4cbe-a16c-ae3263d819d1",
+      "sample": "r25 ext off downshift front close",
+      "vol_db": 0.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 16500.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              15200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              15600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "b3668f0a-a65b-4073-942c-c95bbbd28716",
+      "sample": "r25 ext off downshift rear close",
+      "vol_db": -6.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 12100.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              15200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              15600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "a75a2158-a915-49ed-92f8-bfa4b9121c90",
+      "sample": "r25 ext off mid rear close",
+      "vol_db": -5.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              6800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9600.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              12800.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "078b2eef-3cfd-430e-9f86-95e1fd3cd8bb",
+      "sample": "r25 ext off mid rear close",
+      "vol_db": -5.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              6800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9600.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              12800.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "d61f1eb1-aa37-4c9e-8578-a591aed0d9e1",
+      "sample": "r25 ext off midhigh front close",
+      "vol_db": 0.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 16500.0,
+      "seek": 11.5,
+      "windows": [
+        {
+          "points": [
+            [
+              9600.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              12800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              15200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              15600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "b33c34ef-9c7e-41f1-a84f-becfd9d86080",
+      "sample": "r25 ext off midhigh rear close",
+      "vol_db": -6.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 12100.0,
+      "seek": 17.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9600.0,
+              0.0,
+              -0.4783208,
+              0.0
+            ],
+            [
+              12800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              15200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              15600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "911a4305-a40b-4d50-bfc8-68a9fd829d39",
+      "sample": "r25 ext on high front close",
+      "vol_db": -4.0,
+      "base_pitch_st": -1.0,
+      "loop": -1,
+      "auto_pitch_ref": 20000.0,
+      "seek": 12.5,
+      "windows": [
+        {
+          "points": [
+            [
+              17000.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              17400.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "5af36020-2f38-4472-a314-f6aca037d4f3",
+      "sample": "r25 ext on high front close",
+      "vol_db": -4.0,
+      "base_pitch_st": -1.0,
+      "loop": -1,
+      "auto_pitch_ref": 20000.0,
+      "seek": 12.5,
+      "windows": [
+        {
+          "points": [
+            [
+              9600.0,
+              0.0,
+              -0.6062511,
+              0.0
+            ],
+            [
+              13800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              12800.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              14200.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "678c7c19-6298-466a-b03c-d5d496de5793",
+      "sample": "r25 ext on high front far 3",
+      "vol_db": -4.5,
+      "base_pitch_st": -1.0,
+      "loop": -1,
+      "auto_pitch_ref": 18100.0,
+      "seek": 8.5,
+      "windows": [
+        {
+          "points": [
+            [
+              17000.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              17400.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "7df554c0-9cda-4845-99f3-baff7664a7ec",
+      "sample": "r25 ext on high rear far",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 12400.0,
+      "seek": 16.5,
+      "windows": [
+        {
+          "points": [
+            [
+              17200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              17400.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "0038f977-47e3-42e8-82d6-53bb59cc3175",
+      "sample": "r25 ext on mid rear close",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7900.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              6800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9000.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              10600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "e0babd8c-636f-4a10-bc79-ff0468f0ca19",
+      "sample": "r25 ext on mid rear close",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7900.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              6800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9000.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              10600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "532aa8bf-e31c-40a7-abfd-67b7651c4474",
+      "sample": "r25 ext on mid rear close",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7900.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              6800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9000.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              10600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "7bf56fdf-e9a6-4880-b34b-a599a892cd0e",
+      "sample": "r25 ext on mid rear close",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 7900.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              5200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              6800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9000.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              10600.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "d241f112-82d3-47d1-9891-ba6b7524b6ba",
+      "sample": "r25 ext on midhihg rear close",
+      "vol_db": -3.5,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 11300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9000.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              10600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              11400.0,
+              1.0,
+              0.456957,
+              0.0
+            ],
+            [
+              13800.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "2267fb6c-d4e3-4424-a073-6a51e76d7690",
+      "sample": "r25 ext on midhihg rear close",
+      "vol_db": -4.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 11300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9000.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              10600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              11200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              14200.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "c74d61a1-5c8e-4099-92bc-426df99fe8bf",
+      "sample": "r25 ext on midhihg rear close",
+      "vol_db": -3.5,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 11300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9000.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              10600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              11400.0,
+              1.0,
+              0.5499584,
+              0.0
+            ],
+            [
+              13800.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "46b76dbe-16b5-4006-844c-7630b5db8792",
+      "sample": "r25 ext on midhihg rear close",
+      "vol_db": -3.5,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 11300.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              9000.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              10600.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              9600.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              13800.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "639a9839-f537-4102-975f-f54db87aa12b",
+      "sample": "r25 ext on upshift front close",
+      "vol_db": -4.0,
+      "base_pitch_st": -1.0,
+      "loop": -1,
+      "auto_pitch_ref": 20000.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              12800.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              14200.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              17000.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              17400.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "64791a9f-4ebe-49e5-8fec-38711e94e045",
+      "sample": "r25 ext on upshift front far 2",
+      "vol_db": -4.5,
+      "base_pitch_st": -1.0,
+      "loop": -1,
+      "auto_pitch_ref": 18100.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              11200.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              14200.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              17000.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              17400.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "027f7c51-a949-4cc3-990b-e3a0bea0b61d",
+      "sample": "r25 ext on upshift rear far",
+      "vol_db": -3.0,
+      "base_pitch_st": 0.0,
+      "loop": -1,
+      "auto_pitch_ref": 12400.0,
+      "seek": 0.0,
+      "windows": [
+        {
+          "points": [
+            [
+              11400.0,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              13800.0,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              17200.0,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              17400.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    }
+  ],
+  "transmission": [
+    {
+      "instrument": "ba70d97d-2dba-446d-917b-5601cbee080a",
+      "sample": "gt3r 19 trans main mid 2",
+      "vol_db": 6.5,
+      "base_pitch_st": 3.4,
+      "loop": -1,
+      "auto_pitch_ref": 107.0,
+      "windows": [
+        {
+          "points": [
+            [
+              142.73883,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              152.21606,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    },
+    {
+      "instrument": "d055e991-398e-4457-ae73-d227324680f1",
+      "sample": "z4gt3 int on tr high",
+      "vol_db": 2.0,
+      "base_pitch_st": 3.4,
+      "loop": -1,
+      "auto_pitch_ref": 173.47,
+      "windows": [
+        {
+          "points": [
+            [
+              172.43005,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              176.74503,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        }
+      ]
+    },
+    {
+      "instrument": "4238eca9-5ce6-4338-af13-397b82e7cdff",
+      "sample": "z4gt3 int on tr midhigh",
+      "vol_db": 4.0,
+      "base_pitch_st": 3.4,
+      "loop": -1,
+      "auto_pitch_ref": 158.84,
+      "windows": [
+        {
+          "points": [
+            [
+              142.73883,
+              0.0,
+              -0.2547189,
+              0.0
+            ],
+            [
+              152.21606,
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "enter"
+        },
+        {
+          "points": [
+            [
+              172.43005,
+              1.0,
+              0.25471893,
+              0.0
+            ],
+            [
+              176.74503,
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "role": "exit"
+        }
+      ]
+    }
+  ],
+  "loops": {
+    "idle": {
+      "file": "r25 int idle.ogg",
+      "wav_export": "r25 int idle.loop.wav",
+      "rate": 48000,
+      "period_samples": 329,
+      "loop_begin_s": 0.03,
+      "loop_end_s": 23.656312,
+      "cycles": 3447,
+      "seam_db": 3.7,
+      "whole_seam_db": 0.4,
+      "mode": "region"
+    },
+    "off_low": {
+      "file": "r25 int off low.ogg",
+      "wav_export": "r25 int off low.loop.wav",
+      "rate": 48000,
+      "period_samples": 1184,
+      "loop_begin_s": 0.03,
+      "loop_end_s": 4.124667,
+      "cycles": 166,
+      "seam_db": 1.2,
+      "whole_seam_db": 1.2,
+      "mode": "region"
+    },
+    "off_mid": {
+      "file": "r25 int off mid.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 648,
+      "loop_begin_s": 0.031837,
+      "loop_end_s": 2.588571,
+      "cycles": 174,
+      "seam_db": 4.1,
+      "whole_seam_db": 5.2,
+      "mode": "region"
+    },
+    "off_midhigh": {
+      "file": "r25 int off midhigh.ogg",
+      "wav_export": "r25 int off midhigh.loop.wav",
+      "rate": 48000,
+      "period_samples": 371,
+      "loop_begin_s": 0.03,
+      "loop_end_s": 1.707229,
+      "cycles": 217,
+      "seam_db": 1.6,
+      "whole_seam_db": 2.1,
+      "mode": "region"
+    },
+    "off_downshift": {
+      "file": "r25 int off downshift.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 340,
+      "loop_begin_s": 0.037619,
+      "loop_end_s": 1.887959,
+      "cycles": 240,
+      "seam_db": 2.6,
+      "whole_seam_db": 2.7,
+      "mode": "region"
+    },
+    "on_mid": {
+      "file": "r25 int on mid.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 644,
+      "loop_begin_s": 0.033628,
+      "loop_end_s": 1.639977,
+      "cycles": 110,
+      "seam_db": 0.3,
+      "whole_seam_db": 4.5,
+      "mode": "region"
+    },
+    "on_midhigh": {
+      "file": "r25 int on midhigh.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 444,
+      "loop_begin_s": 0.032494,
+      "loop_end_s": 2.630045,
+      "cycles": 258,
+      "seam_db": 2.1,
+      "whole_seam_db": 1.5,
+      "mode": "region"
+    },
+    "on_high": {
+      "file": "r25 int on high.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 303,
+      "loop_begin_s": 0.035034,
+      "loop_end_s": 4.927007,
+      "cycles": 712,
+      "seam_db": 3.5,
+      "whole_seam_db": 3.7,
+      "mode": "region"
+    },
+    "on_upshift": {
+      "file": "r25 int on upshift.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 325,
+      "loop_begin_s": 0.036349,
+      "loop_end_s": 4.104376,
+      "cycles": 552,
+      "seam_db": 0.8,
+      "whole_seam_db": 2.3,
+      "mode": "region"
+    },
+    "ext_idle": {
+      "file": "r25 ext idle.ogg",
+      "wav_export": "r25 ext idle.loop.wav",
+      "rate": 48000,
+      "period_samples": 327,
+      "loop_begin_s": 0.033333,
+      "loop_end_s": 5.149521,
+      "cycles": 751,
+      "seam_db": 0.4,
+      "whole_seam_db": 0.2,
+      "mode": "region"
+    },
+    "ext_on_mid": {
+      "file": "r25 ext on mid rear close.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 631,
+      "loop_begin_s": 0.04415,
+      "loop_end_s": 2.97737,
+      "cycles": 205,
+      "seam_db": 2.1,
+      "whole_seam_db": 2.1,
+      "mode": "region"
+    },
+    "ext_on_midhigh": {
+      "file": "r25 ext on midhihg rear close.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 355,
+      "loop_begin_s": 0.036984,
+      "loop_end_s": 2.411701,
+      "cycles": 295,
+      "seam_db": 3.3,
+      "whole_seam_db": 2.2,
+      "mode": "region"
+    },
+    "ext_on_high": {
+      "file": "r25 ext on high rear close 1.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 86,
+      "loop_begin_s": 0.031361,
+      "loop_end_s": 6.509637,
+      "cycles": 3322,
+      "seam_db": 5.5,
+      "whole_seam_db": 1.7,
+      "mode": "region"
+    },
+    "ext_off_mid": {
+      "file": "r25 ext off mid rear close.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 690,
+      "loop_begin_s": 0.045601,
+      "loop_end_s": 2.580295,
+      "cycles": 162,
+      "seam_db": 1.7,
+      "whole_seam_db": 4.4,
+      "mode": "region"
+    },
+    "ext_off_midhigh": {
+      "file": "r25 ext off midhigh rear close.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 82,
+      "loop_begin_s": 0.03,
+      "loop_end_s": 1.396667,
+      "cycles": 735,
+      "seam_db": 2.2,
+      "whole_seam_db": -0.5,
+      "mode": "region"
+    },
+    "tyre_rolling": {
+      "file": "tyre_rolling.wav",
+      "wav_export": null,
+      "rate": 44100,
+      "period_samples": 98,
+      "loop_begin_s": 0.032177,
+      "loop_end_s": 10.063288,
+      "cycles": 4514,
+      "seam_db": 3.6,
+      "whole_seam_db": 4.6,
+      "mode": "region"
+    },
+    "skid": {
+      "file": "Skid.ogg",
+      "wav_export": "Skid.loop.wav",
+      "rate": 48000,
+      "period_samples": 50,
+      "loop_begin_s": 0.03,
+      "loop_end_s": 3.270625,
+      "cycles": 3111,
+      "seam_db": 0.5,
+      "whole_seam_db": 1.7,
+      "mode": "region"
+    },
+    "wind": {
+      "file": "single seater highspeed wind.ogg",
+      "wav_export": "single seater highspeed wind.loop.wav",
+      "rate": 48000,
+      "period_samples": 72,
+      "loop_begin_s": 0.030937,
+      "loop_end_s": 16.334437,
+      "cycles": 10869,
+      "seam_db": 2.3,
+      "whole_seam_db": 2.2,
+      "mode": "region"
+    },
+    "brakes": {
+      "file": "lb brakes.ogg",
+      "wav_export": "lb brakes.loop.wav",
+      "rate": 48000,
+      "period_samples": 34,
+      "loop_begin_s": 0.030667,
+      "loop_end_s": 38.3855,
+      "cycles": 54148,
+      "seam_db": -2.1,
+      "whole_seam_db": -0.4,
+      "mode": "region"
+    }
+  }
+}

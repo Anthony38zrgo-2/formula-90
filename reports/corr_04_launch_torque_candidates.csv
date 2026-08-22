@@ -1,0 +1,5 @@
+candidate_max_torque_nm,source,status,reason
+300.0,CORR-04 runtime matrix,NOT_OBSERVED,No production delta selected; requires an isolated Godot run
+320.0,CORR-04 runtime matrix,NOT_OBSERVED,No production delta selected; requires an isolated Godot run
+340.0,CORR-04 runtime matrix,BASELINE,Current canonical F1-94 runtime result
+360.0,CORR-04 runtime matrix,NOT_OBSERVED,No production delta selected; requires an isolated Godot run

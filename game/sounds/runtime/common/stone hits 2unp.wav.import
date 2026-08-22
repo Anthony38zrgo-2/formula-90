@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://d0wo7jyg08aw5"
+path="res://.godot/imported/stone hits 2unp.wav-fc243271e6d7580c671f4cd69fc36211.sample"
+
+[deps]
+
+source_file="res://sounds/runtime/common/stone hits 2unp.wav"
+dest_files=["res://.godot/imported/stone hits 2unp.wav-fc243271e6d7580c671f4cd69fc36211.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -139,6 +139,12 @@ public:
 	bool get_enable_audio() const { return enable_audio_; }
 	void set_bank_dir(const String &p) { bank_dir_res_ = p; }
 	String get_bank_dir() const { return bank_dir_res_; }
+	void set_audio_backend(const String &v) { audio_backend_ = v; }
+	String get_audio_backend() const { return audio_backend_; }
+	String get_audio_command_frame() const;
+	void set_audio_listener_distance(float distance_m);
+	void set_audio_mute_mask(int mask);
+	void set_audio_record_path(const String &path);
 	void set_modules(const String &p) { modules_ = p; }
 	String get_modules() const { return modules_; }
 	void set_idle_rpm(float v) { idle_rpm_ = v; }
@@ -161,7 +167,10 @@ public:
 	String get_active_bed() const;
 	PackedFloat64Array get_engine_band_native_rpm() const;
 	bool is_engine_loaded() const { return core_ != nullptr && entity_id_ != 0; }
-	bool is_audio_active() const { return audio_initialized_; }
+	bool is_audio_active() const {
+		return enable_audio_ && core_ != nullptr &&
+			(audio_backend_ == "common_v10_commands" || audio_initialized_);
+	}
 
 	/// Fire a one-shot by name (e.g. "shift_up", "impact_barrier", "engine_backfire").
 	void trigger(const String &name);
@@ -204,6 +213,11 @@ private:
 	FnCoreAudioRender fn_audio_render_ = nullptr;
 	FnCoreAudioTrigger fn_audio_trigger_ = nullptr;
 	FnCoreAudioReadouts fn_audio_readouts_ = nullptr;
+	FnCoreAudioCommandsJson fn_audio_commands_json_ = nullptr;
+	FnCoreAudioCollision fn_audio_collision_ = nullptr;
+	FnCoreAudioSetListenerDistance fn_audio_set_listener_distance_ = nullptr;
+	FnCoreAudioSetMuteMask fn_audio_set_mute_mask_ = nullptr;
+	FnCoreAudioSetRecordPath fn_audio_set_record_path_ = nullptr;
 
 	double fixed_dt_ = 1.0 / 120.0;
 	String config_json_path_ = "res://data/vehicles/f1_94/f1_94_physics.json";
@@ -213,6 +227,9 @@ private:
 	double debug_throttle_ = 0.0;
 	bool enable_audio_ = true;
 	String bank_dir_res_ = "res://sounds/banks/v10_vehicle";
+	// Safe default until the specialised common+V10 command backend passes the
+	// bank-fidelity and auditory gates. The selector remains exclusive.
+	String audio_backend_ = "legacy_v10_pcm";
 	String modules_ = ""; // comma-separated module names (e.g. "weather,ai")
 	float idle_rpm_ = 1000.0f;
 	float max_rpm_ = 15000.0f;

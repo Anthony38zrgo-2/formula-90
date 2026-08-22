@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b24u6qc82lrpa"
+path="res://.godot/imported/z4gt3 int on tr high.ogg-0b7b06bc5432eb100511b834c52adf85.oggvorbisstr"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/z4gt3 int on tr high.ogg"
+dest_files=["res://.godot/imported/z4gt3 int on tr high.ogg-0b7b06bc5432eb100511b834c52adf85.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

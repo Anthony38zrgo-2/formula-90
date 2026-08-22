@@ -1,7 +1,7 @@
 //! Audio integration tests for the facade.
 
-use game_sim::DriverInput;
 use formula90_core::{CoreConfig, CoreFacade};
+use game_sim::DriverInput;
 
 const DT: f64 = 1.0 / 120.0;
 
@@ -78,8 +78,14 @@ fn audio_enabled_mixer_renders_from_facade_telemetry() {
     assert!(all_finite, "rendered audio must be finite");
 
     let ro = facade.audio_readouts();
-    assert!(ro.last_rpm.is_finite() && ro.last_rpm >= 0.0, "rpm readout sane");
+    assert!(
+        ro.last_rpm.is_finite() && ro.last_rpm >= 0.0,
+        "rpm readout sane"
+    );
     let weight_sum: f32 = ro.weights.iter().sum();
-    assert!(weight_sum > 0.5, "band weights must sum > 0.5 after rendering, got {weight_sum}");
+    assert!(
+        weight_sum > 0.5,
+        "band weights must sum > 0.5 after rendering, got {weight_sum}"
+    );
     assert!(ro.last_engine_gain >= 0.0, "engine gain sane");
 }

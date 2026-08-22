@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "runtime_uses_fmod": false,
+  "sources": {
+    "common": {
+      "bank_sha256": "25E1BB7044152C900F839FC508F56B7840299AF05A55A557B3B9F780DA4E82E1",
+      "asset_root": "res://sounds/runtime/common",
+      "asset_count": 31
+    },
+    "v10_v2": {
+      "bank_sha256": "6CC0E286E382BB71F1D8169CC8C7F7EA86D2A126AA790B4B52B9E92203843D03",
+      "guids_sha256": "E8017455427813E9648C8434D146839449C404F2EBD81A1FC8627DF0709F8B03",
+      "asset_root": "res://sounds/runtime/v10_v2",
+      "asset_count": 42
+    }
+  },
+  "ownership": {
+    "engine": "v10_v2",
+    "transmission": "v10_v2",
+    "wind": "v10_v2",
+    "wheel_and_skid": "v10_v2",
+    "surfaces": "common",
+    "debris": "common",
+    "collisions": "common",
+    "pit_and_ambience": "common"
+  },
+  "fallback": "res://sounds/banks/v10_vehicle"
+}

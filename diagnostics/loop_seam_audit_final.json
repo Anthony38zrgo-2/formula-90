@@ -1,0 +1,190 @@
+[
+  {
+    "id": "engine.idle",
+    "file": "r25 int idle.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  },
+  {
+    "id": "engine.off_low",
+    "file": "r25 int off low.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  },
+  {
+    "id": "engine.off_mid",
+    "file": "r25 int off mid.wav",
+    "mode": "region",
+    "duration_s": 2.614,
+    "rate": 44100,
+    "whole_seam_db": 1.2,
+    "region_seam_db": 3.0,
+    "region_begin_s": 0.031837,
+    "region_end_s": 2.588571
+  },
+  {
+    "id": "engine.off_midhigh",
+    "file": "r25 int off midhigh.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  },
+  {
+    "id": "engine.off_downshift",
+    "file": "r25 int off downshift.wav",
+    "mode": "whole",
+    "duration_s": 1.902,
+    "rate": 44100,
+    "whole_seam_db": 3.5,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "engine.on_mid",
+    "file": "r25 int on mid.wav",
+    "mode": "region",
+    "duration_s": 1.664,
+    "rate": 44100,
+    "whole_seam_db": -0.5,
+    "region_seam_db": 2.7,
+    "region_begin_s": 0.033628,
+    "region_end_s": 1.639977
+  },
+  {
+    "id": "engine.on_midhigh",
+    "file": "r25 int on midhigh.wav",
+    "mode": "region",
+    "duration_s": 2.65,
+    "rate": 44100,
+    "whole_seam_db": 0.6,
+    "region_seam_db": 1.8,
+    "region_begin_s": 0.098141,
+    "region_end_s": 2.551587
+  },
+  {
+    "id": "engine.on_high",
+    "file": "r25 int on high.wav",
+    "mode": "region",
+    "duration_s": 4.94,
+    "rate": 44100,
+    "whole_seam_db": 2.2,
+    "region_seam_db": 2.7,
+    "region_begin_s": 0.035034,
+    "region_end_s": 4.927007
+  },
+  {
+    "id": "engine.on_upshift",
+    "file": "r25 int on upshift.wav",
+    "mode": "whole",
+    "duration_s": 4.116,
+    "rate": 44100,
+    "whole_seam_db": 2.7,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "ext.idle",
+    "file": "r25 ext idle.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  },
+  {
+    "id": "ext.on_mid",
+    "file": "r25 ext on mid rear close.wav",
+    "mode": "whole",
+    "duration_s": 3.003,
+    "rate": 44100,
+    "whole_seam_db": 0.4,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "ext.on_midhigh",
+    "file": "r25 ext on midhihg rear close.wav",
+    "mode": "whole",
+    "duration_s": 2.427,
+    "rate": 44100,
+    "whole_seam_db": 1.2,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "ext.on_high",
+    "file": "r25 ext on high rear close 1.wav",
+    "mode": "whole",
+    "duration_s": 6.513,
+    "rate": 44100,
+    "whole_seam_db": 4.7,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "ext.off_mid",
+    "file": "r25 ext off mid rear close.wav",
+    "mode": "whole",
+    "duration_s": 2.611,
+    "rate": 44100,
+    "whole_seam_db": 2.8,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "ext.off_midhigh",
+    "file": "r25 ext off midhigh rear close.wav",
+    "mode": "whole",
+    "duration_s": 1.399,
+    "rate": 44100,
+    "whole_seam_db": -1.4,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "wheel.rolling",
+    "file": "tyre_rolling.wav",
+    "mode": "whole",
+    "duration_s": 10.067,
+    "rate": 44100,
+    "whole_seam_db": 4.6,
+    "region_seam_db": null,
+    "region_begin_s": null,
+    "region_end_s": null
+  },
+  {
+    "id": "wheel.brakes",
+    "file": "lb brakes.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  },
+  {
+    "id": "wheel.skid",
+    "file": "Skid.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  },
+  {
+    "id": "wind",
+    "file": "single seater highspeed wind.ogg",
+    "mode": "whole",
+    "note": "ogg: decode pendiente (harness Godot, fase 2b)",
+    "seam_db": null,
+    "whole_seam_db": null
+  }
+]

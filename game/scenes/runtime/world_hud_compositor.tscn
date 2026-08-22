@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/runtime/world_hud_compositor.gd" id="1_compositor"]
 [ext_resource type="Resource" path="res://data/race_sessions/default.tres" id="2_config"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="3_hud"]
+[ext_resource type="Script" path="res://scripts/audio/fmod_bank_command_renderer.gd" id="4_audio_renderer"]
 
 [node name="WorldHudCompositor" type="Control"]
 layout_mode = 3
@@ -23,6 +24,11 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="F90Core" type="F90Core" parent="."]
+
+[node name="AudioCommandRenderer" type="Node" parent="."]
+script = ExtResource("4_audio_renderer")
 
 [node name="WorldViewport" type="SubViewport" parent="."]
 size = Vector2i(640, 360)

@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://d3t7k34t78ypb"
+path="res://.godot/imported/single seater bodywork.wav-63b0a02599c2edf9bf6d15f4acdd42ff.sample"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/single seater bodywork.wav"
+dest_files=["res://.godot/imported/single seater bodywork.wav-63b0a02599c2edf9bf6d15f4acdd42ff.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

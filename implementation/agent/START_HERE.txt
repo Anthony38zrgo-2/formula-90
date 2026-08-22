@@ -1,0 +1,1 @@
+Read AGENTS.md and agent/IMPLEMENTATION_PROMPT.md, then implement in reversible slices against current_src/ as the supplied baseline.

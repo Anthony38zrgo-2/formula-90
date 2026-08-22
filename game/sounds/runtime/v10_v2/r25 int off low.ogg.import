@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bo5yisdfn2gv"
+path="res://.godot/imported/r25 int off low.ogg-e506e45810978f2694246abc1b8665ce.oggvorbisstr"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 int off low.ogg"
+dest_files=["res://.godot/imported/r25 int off low.ogg-e506e45810978f2694246abc1b8665ce.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

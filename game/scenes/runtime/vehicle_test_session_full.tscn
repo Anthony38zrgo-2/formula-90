@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/runtime/world_hud_compositor.tscn" id="1_compositor"]
+[ext_resource type="Resource" path="res://data/race_sessions/f1_94_la_chutana.tres" id="2_config"]
+
+[node name="VehicleTestSessionFull" instance=ExtResource("1_compositor")]
+session_config = ExtResource("2_config")
+
+[node name="F90Core" parent="." index="1"]
+audio_backend = "common_v10_commands"
+
+[node name="AudioCommandRenderer" parent="."]
+debug_mute_mask = 0
+debug_capture_path = "user://audio_capture_full.txt"

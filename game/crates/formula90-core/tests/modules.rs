@@ -1,9 +1,9 @@
 //! Module registry tests: the expandability contract of the facade.
 
-use game_sim::DriverInput;
 use formula90_core::modules::ai_stub::AiDirective;
 use formula90_core::modules::weather_stub::WeatherState;
 use formula90_core::{CoreConfig, CoreFacade, FacadeSnapshot};
+use game_sim::DriverInput;
 
 const DT: f64 = 1.0 / 120.0;
 
@@ -56,7 +56,11 @@ fn unknown_module_name_is_ignored_forward_compatible() {
     let mut cfg = CoreConfig::default();
     cfg.modules = vec!["future_module_not_here".to_string()];
     let facade = CoreFacade::new(cfg).expect("facade");
-    assert_eq!(facade.module_names().len(), 0, "unknown modules are ignored");
+    assert_eq!(
+        facade.module_names().len(),
+        0,
+        "unknown modules are ignored"
+    );
 }
 
 #[test]

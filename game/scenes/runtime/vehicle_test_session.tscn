@@ -6,4 +6,5 @@
 [node name="VehicleTestSession" instance=ExtResource("1_compositor")]
 session_config = ExtResource("2_config")
 
-[node name="F90Core" type="F90Core" parent="."]
+[node name="F90Core" parent="." index="1"]
+audio_backend = "common_v10_commands"

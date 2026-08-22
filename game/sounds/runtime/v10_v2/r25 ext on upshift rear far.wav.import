@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://clhn1xqs7e3wf"
+path="res://.godot/imported/r25 ext on upshift rear far.wav-ea4bb2d35cf815a7f17e643cb49977db.sample"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 ext on upshift rear far.wav"
+dest_files=["res://.godot/imported/r25 ext on upshift rear far.wav-ea4bb2d35cf815a7f17e643cb49977db.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

@@ -1,0 +1,7 @@
+scenario=road_to_sand_with_kerb
+ticks=360
+max_voices=36
+engine_int_holes=none
+gear_shots=0 (first: None)
+collision_shots=0 (events: [])
+legacy_render=wav

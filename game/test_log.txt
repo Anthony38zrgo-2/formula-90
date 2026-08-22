@@ -1,0 +1,15 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+=== SMOKE TEST: MOUNTAINS 3D ===
+RaceSession: Mountains3D manifest cargado: res://assets/backgrounds/la_chutana_snes_day/mountains_3d/manifest.json
+[OK] BackgroundMountains3D activo.
+[OK] SkyDome cargado.
+[OK] FarMountains ring cargado.
+[OK] NearMountains ring cargado.
+[OK] 3 cascadas instanciadas.
+[OK] Legacy SourceSkyboxRig oculto.
+[OK] BackgroundSkybox no instanciado (deprecado).
+[OK] BackgroundController no instanciado (deprecado).
+
+=== RESUMEN SMOKE TEST MOUNTAINS 3D ===
+Todos los checks pasaron.

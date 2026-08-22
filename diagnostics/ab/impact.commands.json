@@ -1,0 +1,26 @@
+{
+  "collision_shots": [
+    "t121 common/collision/prop",
+    "t217 common/collision/barrier",
+    "t217 common/collision/cockpit_rattle",
+    "t277 common/collision/body"
+  ],
+  "engine_int_holes": [],
+  "gear_shots": [],
+  "headings": [
+    "t0001 rpm=6000 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0002 rpm=6001 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0003 rpm=6003 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0004 rpm=6005 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0005 rpm=6006 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0006 rpm=6008 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0007 rpm=6010 thr=0.60 gear=3 surf=asphalt voices=33",
+    "t0008 rpm=6011 thr=0.60 gear=3 surf=asphalt voices=33"
+  ],
+  "max_voices": 33,
+  "scenario": "impact",
+  "schema": "ab-commands-v1",
+  "seq": 3,
+  "tick_hz": 120.0,
+  "ticks": 336
+}

@@ -1,0 +1,7 @@
+scenario=idle_to_redline_with_shifts
+ticks=504
+max_voices=33
+engine_int_holes=none
+gear_shots=3 (first: Some("res://sounds/runtime/v10_v2/r25 int on upshift.wav"))
+collision_shots=0 (events: [])
+legacy_render=wav

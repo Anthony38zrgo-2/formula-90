@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://csbv8skxbg1v6"
+path="res://.godot/imported/r25 int off midhigh.ogg-2d470309fc6e3efeb781099189ff32f9.oggvorbisstr"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 int off midhigh.ogg"
+dest_files=["res://.godot/imported/r25 int off midhigh.ogg-2d470309fc6e3efeb781099189ff32f9.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

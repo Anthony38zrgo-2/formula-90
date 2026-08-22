@@ -9,6 +9,7 @@
 #include <godot_cpp/variant/quaternion.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <algorithm>
 #include <cmath>
 
 #ifdef _WIN32
@@ -48,6 +49,14 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_bank_dir", "p"), &F90Core::set_bank_dir);
 	ClassDB::bind_method(D_METHOD("get_bank_dir"), &F90Core::get_bank_dir);
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "bank_dir"), "set_bank_dir", "get_bank_dir");
+	ClassDB::bind_method(D_METHOD("set_audio_backend", "backend"), &F90Core::set_audio_backend);
+	ClassDB::bind_method(D_METHOD("get_audio_backend"), &F90Core::get_audio_backend);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "audio_backend", PROPERTY_HINT_ENUM,
+		"common_v10_commands,legacy_v10_pcm,disabled"), "set_audio_backend", "get_audio_backend");
+	ClassDB::bind_method(D_METHOD("get_audio_command_frame"), &F90Core::get_audio_command_frame);
+	ClassDB::bind_method(D_METHOD("set_audio_listener_distance", "distance_m"), &F90Core::set_audio_listener_distance);
+	ClassDB::bind_method(D_METHOD("set_audio_mute_mask", "mask"), &F90Core::set_audio_mute_mask);
+	ClassDB::bind_method(D_METHOD("set_audio_record_path", "path"), &F90Core::set_audio_record_path);
 
 	ClassDB::bind_method(D_METHOD("set_modules", "p"), &F90Core::set_modules);
 	ClassDB::bind_method(D_METHOD("get_modules"), &F90Core::get_modules);
@@ -249,6 +258,11 @@ bool F90Core::load_dll() {
 	fn_audio_render_ = (FnCoreAudioRender)GetProcAddress(hDll, "f90_core_audio_render");
 	fn_audio_trigger_ = (FnCoreAudioTrigger)GetProcAddress(hDll, "f90_core_audio_trigger");
 	fn_audio_readouts_ = (FnCoreAudioReadouts)GetProcAddress(hDll, "f90_core_audio_readouts");
+	fn_audio_commands_json_ = (FnCoreAudioCommandsJson)GetProcAddress(hDll, "f90_core_audio_commands_json");
+	fn_audio_collision_ = (FnCoreAudioCollision)GetProcAddress(hDll, "f90_core_audio_collision");
+	fn_audio_set_listener_distance_ = (FnCoreAudioSetListenerDistance)GetProcAddress(hDll, "f90_core_audio_set_listener_distance");
+	fn_audio_set_mute_mask_ = (FnCoreAudioSetMuteMask)GetProcAddress(hDll, "f90_core_audio_set_mute_mask");
+	fn_audio_set_record_path_ = (FnCoreAudioSetRecordPath)GetProcAddress(hDll, "f90_core_audio_set_record_path");
 
 	const uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	UtilityFunctions::print(String("[F90Core]\nDLL=") + loaded_path + "\nABI=" + String::num_int64(abi_ver) +
@@ -294,6 +308,11 @@ void F90Core::unload_dll() {
 	fn_audio_render_ = nullptr;
 	fn_audio_trigger_ = nullptr;
 	fn_audio_readouts_ = nullptr;
+	fn_audio_commands_json_ = nullptr;
+	fn_audio_collision_ = nullptr;
+	fn_audio_set_listener_distance_ = nullptr;
+	fn_audio_set_mute_mask_ = nullptr;
+	fn_audio_set_record_path_ = nullptr;
 }
 
 static String json_escape(const String &s) {
@@ -350,6 +369,7 @@ void F90Core::_ready() {
 	String opts = String("{\"bank_dir\":\"") + json_escape(bank_global) + "\",\"config_json_path\":\"" +
 		json_escape(cfg_global) + "\",\"use_canonical\":" + String(use_canonical ? "true" : "false") +
 		",\"fixed_dt\":" + String::num(fixed_dt_, 10) + ",\"enable_audio\":" + String(enable_audio_ ? "true" : "false") +
+		",\"audio_backend\":\"" + json_escape(audio_backend_) + "\"" +
 		",\"idle_rpm\":" + String::num(idle_rpm_, 1) + ",\"max_rpm\":" + String::num(max_rpm_, 1) +
 		",\"modules\":" + modules_json +
 		",\"underfloor_contact\":{\"enabled\":true,\"approach_clearance_m\":0.020,\"activation_clearance_m\":0.008,\"release_clearance_m\":0.016,\"linear_rate_n_m\":450000.0,\"progressive_rate_n_m2\":40000000.0,\"damping_n_s_m\":12000.0,\"max_force_per_probe_n\":12000.0,\"rigid_contact_spring_scale\":0.25,\"normal_min_y\":0.55}}";
@@ -371,7 +391,7 @@ void F90Core::_ready() {
 	// This was previously omitted: audio nodes must exist for the pump in _process
 	// to have a playback to fill.
 	audio_initialized_ = false;
-	if (enable_audio_) {
+	if (enable_audio_ && audio_backend_ == "legacy_v10_pcm") {
 		ensure_vehicle_bus();
 		create_audio_nodes();
 	}
@@ -543,11 +563,83 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 	if (!enable_audio_ || !state) {
 		return;
 	}
+
+	const int contact_count = state->get_contact_count();
+	if (contact_count <= 0) {
+		collision_cooldown_ = 0.0;
+		return;
+	}
+
+	// Under CommonV10Commands Rust is the sole decision authority: deliver every
+	// qualifying contact as a fact (up to 4 strongest per physics frame) with no
+	// early break and no hard cooldown. The legacy path keeps its old behavior.
+	if (audio_backend_ == "common_v10_commands" && fn_audio_collision_) {
+		struct Contact {
+			float normal_impact;
+			float tang_speed;
+			float impulse_len;
+			uint32_t kind;
+		};
+		Contact best[4];
+		int best_count = 0;
+		const Vector3 body_lin_vel = state->get_linear_velocity();
+		for (int i = 0; i < contact_count; ++i) {
+			Vector3 normal = state->get_contact_local_normal(i);
+			Vector3 collider_vel = state->get_contact_collider_velocity_at_position(i);
+			Vector3 rel_vel = body_lin_vel - collider_vel;
+			Vector3 impulse = state->get_contact_impulse(i);
+			float normal_impact = (float)std::abs(rel_vel.dot(normal));
+			if (impulse.length_squared() > 0.0f) {
+				normal_impact = std::max(normal_impact, (float)impulse.length() * 0.1f);
+			}
+			float tang_speed = (rel_vel - normal * rel_vel.dot(normal)).length();
+
+			Object *col_obj = state->get_contact_collider_object(i);
+			Node *col_node = Object::cast_to<Node>(col_obj);
+			bool is_barrier = col_node && (col_node->is_in_group("Barrier") || col_node->is_in_group("Wall") ||
+				col_node->is_in_group("Armco") || col_node->is_in_group("TireBarrier") || col_node->is_in_group("Guardrail"));
+			bool is_cone = col_node && (col_node->is_in_group("Cone") || col_node->is_in_group("Prop") ||
+				col_node->is_in_group("DynamicObstacle") || col_node->is_in_group("Obstacle"));
+			uint32_t kind;
+			if (is_barrier) {
+				kind = 1u; // Barrier
+			} else if (is_cone) {
+				kind = 2u; // Prop
+			} else if (Object::cast_to<RigidBody3D>(col_obj) != nullptr) {
+				kind = 3u; // Vehicle (car-to-car)
+			} else {
+				kind = 0u; // Generic / track furniture
+			}
+			Contact c = { normal_impact, tang_speed, (float)impulse.length(), kind };
+			if (best_count < 4) {
+				best[best_count++] = c;
+			} else {
+				int weakest = 0;
+				for (int j = 1; j < 4; ++j) {
+					if (best[j].normal_impact < best[weakest].normal_impact) {
+						weakest = j;
+					}
+				}
+				if (c.normal_impact > best[weakest].normal_impact) {
+					best[weakest] = c;
+				}
+			}
+		}
+		// Rust-side thresholding rejects soft contacts; deliver strongest first
+		// so deterministic ordering matches impulse magnitude, not contact order.
+		std::sort(best, best + best_count, [](const Contact &a, const Contact &b) {
+			return a.normal_impact > b.normal_impact;
+		});
+		for (int k = 0; k < best_count; ++k) {
+			fn_audio_collision_(core_, best[k].kind, best[k].normal_impact, best[k].tang_speed, best[k].impulse_len);
+		}
+		return;
+	}
+
 	if (collision_cooldown_ > 0.0) {
 		collision_cooldown_ -= dt;
 	}
 
-	const int contact_count = state->get_contact_count();
 	if (contact_count > 0 && collision_cooldown_ <= 0.0) {
 		const Vector3 body_lin_vel = state->get_linear_velocity();
 
@@ -570,7 +662,6 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 				col_node->is_in_group("Armco") || col_node->is_in_group("TireBarrier") || col_node->is_in_group("Guardrail"));
 			bool is_cone = col_node && (col_node->is_in_group("Cone") || col_node->is_in_group("Prop") ||
 				col_node->is_in_group("DynamicObstacle") || col_node->is_in_group("Obstacle"));
-
 			if (is_barrier) {
 				if (normal_impact > 3.0f) {
 					trigger("impact_barrier");
@@ -609,7 +700,43 @@ void F90Core::_process(double) {
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
-	pump_audio();
+	if (audio_backend_ == "legacy_v10_pcm") {
+		pump_audio();
+	}
+}
+
+String F90Core::get_audio_command_frame() const {
+	if (!core_ || !fn_audio_commands_json_) return "{}";
+	const uint32_t needed = fn_audio_commands_json_(core_, nullptr, 0);
+	if (needed <= 1) return "{}";
+	std::vector<uint8_t> bytes(needed);
+	fn_audio_commands_json_(core_, bytes.data(), needed);
+	return String::utf8((const char *)bytes.data());
+}
+
+void F90Core::set_audio_listener_distance(float distance_m) {
+	if (core_ && fn_audio_set_listener_distance_) {
+		fn_audio_set_listener_distance_(core_, distance_m);
+	}
+}
+
+void F90Core::set_audio_mute_mask(int mask) {
+	if (core_ && fn_audio_set_mute_mask_) {
+		fn_audio_set_mute_mask_(core_, (uint8_t)mask);
+	}
+}
+
+void F90Core::set_audio_record_path(const String &path) {
+	if (core_ && fn_audio_set_record_path_) {
+		// Godot's user:// (and res://) schemes are unknown to the Rust side:
+		// globalize exactly like bank_dir/config paths are handled in _ready.
+		ProjectSettings *ps = ProjectSettings::get_singleton();
+		const String global = (ps && path.begins_with("res://") || path.begins_with("user://"))
+			? ps->globalize_path(path)
+			: path;
+		CharString cs = global.utf8();
+		fn_audio_set_record_path_(core_, cs.get_data());
+	}
 }
 
 void F90Core::_exit_tree() {

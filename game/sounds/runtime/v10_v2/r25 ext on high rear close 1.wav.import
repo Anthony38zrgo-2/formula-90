@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://0ttuy0i6rjjq"
+path="res://.godot/imported/r25 ext on high rear close 1.wav-11ff4b54cb9a27dc23c71ee5b4573079.sample"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 ext on high rear close 1.wav"
+dest_files=["res://.godot/imported/r25 ext on high rear close 1.wav-11ff4b54cb9a27dc23c71ee5b4573079.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

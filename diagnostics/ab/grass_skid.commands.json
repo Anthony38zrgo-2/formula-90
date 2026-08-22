@@ -1,0 +1,21 @@
+{
+  "collision_shots": [],
+  "engine_int_holes": [],
+  "gear_shots": [],
+  "headings": [
+    "t0001 rpm=6500 thr=0.80 gear=2 surf=asphalt voices=33",
+    "t0002 rpm=6502 thr=0.80 gear=2 surf=asphalt voices=33",
+    "t0003 rpm=6508 thr=0.80 gear=2 surf=asphalt voices=33",
+    "t0004 rpm=6512 thr=0.80 gear=2 surf=asphalt voices=34",
+    "t0005 rpm=6515 thr=0.81 gear=2 surf=asphalt voices=34",
+    "t0006 rpm=6520 thr=0.81 gear=2 surf=asphalt voices=34",
+    "t0007 rpm=6525 thr=0.81 gear=2 surf=asphalt voices=34",
+    "t0008 rpm=6528 thr=0.81 gear=2 surf=asphalt voices=34"
+  ],
+  "max_voices": 36,
+  "scenario": "grass_skid",
+  "schema": "ab-commands-v1",
+  "seq": 2,
+  "tick_hz": 120.0,
+  "ticks": 288
+}

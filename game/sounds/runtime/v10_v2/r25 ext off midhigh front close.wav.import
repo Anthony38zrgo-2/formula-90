@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://rv3vapnxhflf"
+path="res://.godot/imported/r25 ext off midhigh front close.wav-21549d732f7264817ef08ab1661e4060.sample"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 ext off midhigh front close.wav"
+dest_files=["res://.godot/imported/r25 ext off midhigh front close.wav-21549d732f7264817ef08ab1661e4060.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=false
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

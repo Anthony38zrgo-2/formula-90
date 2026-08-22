@@ -1,0 +1,21 @@
+{
+  "collision_shots": [],
+  "engine_int_holes": [],
+  "gear_shots": [],
+  "headings": [
+    "t0001 rpm=7000 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0002 rpm=7002 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0003 rpm=7006 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0004 rpm=7010 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0005 rpm=7012 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0006 rpm=7016 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0007 rpm=7020 thr=0.70 gear=3 surf=asphalt voices=33",
+    "t0008 rpm=7022 thr=0.70 gear=3 surf=asphalt voices=33"
+  ],
+  "max_voices": 36,
+  "scenario": "road_to_sand_with_kerb",
+  "schema": "ab-commands-v1",
+  "seq": 1,
+  "tick_hz": 120.0,
+  "ticks": 360
+}

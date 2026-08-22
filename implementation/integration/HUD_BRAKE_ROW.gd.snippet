@@ -1,0 +1,22 @@
+# Conceptual extension for TireStatusPanel / current tyre HUD.
+# Exact node names may differ in the current Godot implementation.
+
+# Add one Label per wheel cell:
+var brake_label := Label.new()
+brake_label.text = "BRK D--- C--- R---"
+brake_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+box.add_child(brake_label)
+
+# Store:
+_cells[wheel]["brake"] = brake_label
+
+# Update using get_brake_state_snapshot():
+var b: Dictionary = brake_data.get(wheel, {})
+var disc := float(b.get("disc_c", 0.0))
+var caliper := float(b.get("caliper_c", 0.0))
+var rim := float(b.get("rim_c", 0.0))
+
+brake_label.text = "BRK D%.0f° C%.0f° R%.0f°" % [disc, caliper, rim]
+
+# Color must use config-backed operating limits exposed by native/runtime.
+# Do NOT reuse tire temperature color thresholds.

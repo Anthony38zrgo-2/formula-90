@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use game_sim::{DriverInput, World};
 use vehicle_physics_engine::{
-    BodyKinematics, Mat3, Transform3D, Vec3, VehicleConfig, VehicleInput, default_spawn_height,
+    default_spawn_height, BodyKinematics, Mat3, Transform3D, Vec3, VehicleConfig, VehicleInput,
 };
 
 use formula90_core::{CoreConfig, CoreFacade};
@@ -60,7 +60,10 @@ fn facade_standalone_matches_game_sim_byte_exactly() {
     }
 
     assert_eq!(
-        facade.core_snapshot().to_bytes().expect("serialize facade core"),
+        facade
+            .core_snapshot()
+            .to_bytes()
+            .expect("serialize facade core"),
         sim_world.snapshot().to_bytes().expect("serialize sim core"),
         "facade standalone snapshot must equal game_sim snapshot (same solver path)"
     );
@@ -84,12 +87,17 @@ fn facade_snapshot_is_deterministic() {
             let samples = facade.flat_samples(id);
             facade.step_standalone(id, &input, &samples, DT);
         }
-        facade.facade_snapshot()
+        facade
+            .facade_snapshot()
             .to_bytes()
             .expect("serialize facade snapshot")
     };
 
-    assert_eq!(run(), run(), "facade snapshots must be byte-identical across identical runs");
+    assert_eq!(
+        run(),
+        run(),
+        "facade snapshots must be byte-identical across identical runs"
+    );
 }
 
 /// `--parity-sim` equivalent: with modules the INNER core snapshot still matches a
@@ -163,12 +171,20 @@ fn force_path_publishes_telemetry() {
     }
 
     let f = facade.latest_frame();
-    assert!(f.rpm > 1000.0, "force path must publish engine rpm, got {}", f.rpm);
+    assert!(
+        f.rpm > 1000.0,
+        "force path must publish engine rpm, got {}",
+        f.rpm
+    );
     assert!(
         f.force.iter().all(|v| v.is_finite()),
         "force path force must be finite"
     );
-    assert!(f.force[2] < 0.0, "full-throttle gear-1 on flat ground pushes forward (-z), got {}", f.force[2]);
+    assert!(
+        f.force[2] < 0.0,
+        "full-throttle gear-1 on flat ground pushes forward (-z), got {}",
+        f.force[2]
+    );
 }
 
 /// P0: the facade must apply the FULL aids mask every step (no frozen defaults,
@@ -197,7 +213,10 @@ fn facade_applies_full_aids_mask_each_step() {
         let samples = facade.flat_samples(id);
         facade.step(id, body, &input, mask_on, &samples, DT);
     }
-    assert!(facade.latest_frame().tc_active, "TC bit must reach the solver (ON)");
+    assert!(
+        facade.latest_frame().tc_active,
+        "TC bit must reach the solver (ON)"
+    );
 
     // TC OFF -> must flip immediately on the next steps (no frozen default).
     let mask_off = BIT_STABILITY;
@@ -234,7 +253,14 @@ fn facade_apply_runtime_config_is_accepted() {
         ..Default::default()
     };
     let samples = facade.flat_samples(id);
-    let f = facade.step(id, body_at(&facade, id), &input, BIT_STABILITY, &samples, DT);
+    let f = facade.step(
+        id,
+        body_at(&facade, id),
+        &input,
+        BIT_STABILITY,
+        &samples,
+        DT,
+    );
     assert!(f.rpm.is_finite());
 }
 

@@ -1,143 +1,406 @@
 ================================================================================
-FORMULA-90  —  HANDOFF INSTRUCTIONS (instrucciones.txt)
+FORMULA-90 — HANDOFF: INTEGRACION COMMON + V10_V2 (FEATURE INCOMPLETA)
 ================================================================================
-Generated: 2026-08-21  |  Repo: D:\Formula90s  |  Engine: Godot 4.7.1
-Mode: BUILD  |  Do NOT commit unless the user explicitly asks.
+Fecha: 2026-08-21
+Repositorio: D:\Formula90s
+Godot: 4.7.1
 
-AUTHORITY / CONVENTIONS (from .agents/AGENTS.md & PROJECT_STATE.md)
-- Fail Faster, Adapt Faster: cheapest falsification before mutation.
-- Change ONE physics family at a time. JSON (f1_94_physics.json) is the single
-  runtime authority for F1-94 (§3.1 of PROJECT_STATE). runtime > scene > docs.
-- Use subagents for independent analysis; 1 hypothesis per iteration.
-- Update PROJECT_STATE.md after completing work.
+ESTADO CRITICO
+---------------
+ESTA FEATURE NO ESTA COMPLETA NI ACEPTADA.
 
-================================================================================
-1. CONTEXT DUMP — CURRENT ARCHITECTURE (facade/orquestador)
-================================================================================
-Canonical runtime is a SINGLE Rust orchestrator (the "facade"), not three
-independent modules:
+Aunque compila, las pruebas estructurales pasan y Godot crea reproductores, el
+usuario confirma que perceptualmente sigue sin funcionar: los samples no se
+reproducen correctamente, entran en orden incorrecto y algunas capas parecen
+desfasadas, ausentes o asignadas al evento equivocado.
 
-    Godot (GDScript HUD/telemetry)  <-- getters del nodo F90Core
-        [ F90Core ]  (nodo GDExtension C++, native/src/core/f90_core.cpp)
-            |  _integrate_forces -> f90_core_step (1 llamada, 1 struct F90CoreFrameOut)
-            |  _process -> pump_audio -> 1 push_buffer (batch; no Variant por muestra)
-            |  drive_integrate -> process_collision_audio -> disparadores de impactos/scrape
-        [ game/crates/formula90-core ]  formula90_core.dll  (la FACHADA)
-            CoreFacade owns: World (game_sim) + AudioModule (vehicle_audio_engine)
-                             + ModuleRegistry (SimModule: clima/IA/...)
-            .step = física -> módulos -> audio-input -> CoreFrame atómico
-        game/crates/game-sim (World, snapshot) -> vehicle_physics_engine (solver)
-        game/crates/vehicle-audio-engine (mezclador sample-accurate en Rust)
+No marcar la integración como terminada. No hacer default el backend nuevo, no
+eliminar el banco anterior y no borrar el mixer/fallback legacy. Hace falta un
+gate auditivo humano después de corregir la fidelidad event->instrument->sample.
 
-- Crates:
-  * `game/crates/vehicle-physics-engine` (solver físico determinista)
-  * `game/crates/game-sim` (mundo y snapshot)
-  * `game/crates/vehicle-audio-engine` (motor de audio sample-accurate, crossfade 5 bandas, camas de suelo y one-shots)
-  * `game/crates/formula90-core` (fachada orquestadora unificada)
-- Nodo C++: `F90Core` (`native/src/core/f90_core.{hpp,cpp}`). Carga `formula90_core.dll` con ABI v7.
-- `F194RustVehicle` (`native/src/vehicle/f1_94_rust_vehicle.{hpp,cpp}`) es el `RigidBody3D`. En `_ready()` tiene activo `set_contact_monitor(true)` y `set_max_contacts_reported(4)`.
-- Bank de Audio: `game/sounds/banks/v10_vehicle/` (pipeline híbrido reproducible: samples fuente + síntesis determinista).
+Protocolo obligatorio del repositorio:
+sprint planning -> backlog item -> implement -> review -> human gate ->
+sprint retrospective -> done.
+
+Estado actual: REVIEW/HUMAN GATE FALLIDO; vuelve a diagnóstico.
 
 ================================================================================
-2. WHAT WAS JUST IMPLEMENTED AND VALIDATED (2026-08-21)
+1. OBJETIVO Y RESTRICCIONES
 ================================================================================
-FASE 1 DE AUDIO — CONEXIÓN DE DISPARADORES HUÉRFANOS Y OVER-RUN BACKFIRE:
 
-A) ENGINE OVER-RUN BACKFIRE (Rust Core):
-   - En `game/crates/vehicle-audio-engine/src/mixer.rs`:
-     * Agregado `backfire_cooldown_samples: usize` al estado del mezclador.
-     * En `VehicleAudioEngine::set_state()`: detecta desaceleración súbita de acelerador
-       (`last_throttle >= 0.80 && throttle <= 0.15`) con motor a altas RPM (`rpm >= 12000.0`).
-     * Dispara automáticamente `Trigger::Backfire` y selecciona pseudoaleatoriamente
-       una sola variante entre `int_backfire.wav` e `int_backfire_2.wav`, manteniendo
-       replays deterministas. Aplica cooldown de 350 ms (~15,435 samples a 44.1 kHz).
-     * En `VehicleAudioEngine::render()`: decrementa `backfire_cooldown_samples` en cada frame.
-     * `engine_start_backfire.wav` conserva el sample de arranque y NO se usa en over-run.
-     * Tests cubren umbrales, cooldown real y selección determinista de una sola variante.
+Simulation -> AudioTelemetryFrame -> FMODBankAdapter especializado (Rust)
+           -> AudioCommandFrame -> Godot renderer
 
-B) COLISIONES FÍSICAS Y RASPADO (C++ / Godot RigidBody3D):
-   - En `native/src/vehicle/f1_94_rust_vehicle.cpp`:
-     * `_ready()` activa `set_contact_monitor(true)` y `set_max_contacts_reported(4)`.
-   - En `native/src/core/f90_core.cpp` y `f90_core.hpp`:
-     * Implementado `F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt)`:
-       - Evalúa `state->get_contact_count()`.
-       - Calcula impulso normal y velocidad tangencial contra el plano de colisión.
-       - Discrimina grupos del colisionador:
-         * `Barrier` / `Wall` / `Armco` / `TireBarrier` / `Guardrail`:
-           -> `impact_barrier` si `normal_impact > 3.0f`
-           -> `scrape` si `tang_speed > 4.0f` (roce lateral)
-         * `Cone` / `Prop` / `DynamicObstacle`: código reservado; fuera de uso actual.
-         * Colisiones generales (carrocería / coche a coche):
-           -> `impact_hit_1` (impacto suave < 8)
-           -> `impact_hit_2` (impacto medio 8-15)
-           -> `impact_hit_3` (impacto fuerte 15-25)
-           -> `impact_hit_4` (impacto muy fuerte > 25)
-           -> `scrape` (roce plano contra suelo con `normal.y > 0.7f`), reproducido con
-              `impact_scrape.wav` sintético, corto y de baja intensidad.
-       - Detección de fondo plano (*chassis bottoming*): si la compresión de suspensión llega
-         al tope ($\ge 75\text{ mm}$) a más de $50\text{ km/h}$, dispara `scrape`.
-       - Cooldown de colisión (`collision_cooldown_`) para evitar saturación de audio.
-
-C) BUILD SCRIPT FIX & VALIDACIÓN DE COMPILACIÓN:
-   - `scripts/build_windows.ps1` ajustado para evitar que warnings de `cargo` en stderr detengan
-     la ejecución por `$ErrorActionPreference='Stop'`.
-   - Compilación exitosa de C++ GDExtension (`libformula90s`) y todos los crates de Rust.
-   - DLLs actualizadas en `game/addons/formula90s/bin/`:
-     * `formula90_core.windows.template_debug.x86_64.dll` (+ `formula90_core.dll`)
-     * `vehicle_audio_engine.windows.template_debug.x86_64.dll` (+ `vehicle_audio_engine.dll`)
-     * `game_sim.windows.template_debug.x86_64.dll` (+ `game_sim.dll`)
-     * `vehicle_physics_engine.windows.template_debug.x86_64.dll`
-   - Tests: `cargo test --workspace` (53 tests de física + 38 de audio + 14 de facade) -> 100% PASS.
-
-D) AJUSTE DE ALTURA DE SUSPENSIÓN (f1_94_physics.json - Punto Intermedio):
-   - Delantero: `spring_length` $0.285\text{ m}$, `resting_ratio` $0.175$ (+40 mm despeje total sobre buje), `bump_stop_multiplier` $2.6$.
-   - Trasero: `spring_length` $0.235\text{ m}$, `resting_ratio` $0.220$ (+30 mm despeje total sobre buje).
+- Rust es autoridad de eventos, selección y parámetros físicos.
+- Godot reproduce, hace resampling, spatialization, buses y efectos.
+- No integrar FMOD como runtime ni construir un motor FMOD genérico.
+- Evitar lógica duplicada y reproducción simultánea legacy/nueva.
+- Bancos fuente:
+  * D:\Formula90s\game\sounds\banks\common
+  * D:\Formula90s\game\sounds\banks\v10\_v2
+- Assets exportados:
+  * game\sounds\runtime\common
+  * game\sounds\runtime\v10_v2
+  * game\sounds\runtime\catalog.v1.json
 
 ================================================================================
-3. ESTADO DEL BANCO DE AUDIO (v10_vehicle) TRAS FASE 1
+2. RUTA DE EJECUCION ACTUAL
 ================================================================================
-Samples en uso activo en tiempo real:
-- Motor continuo: `engine_idle.wav`, `engine_low.wav` (+ silbido engranajes rectos distribución 1.2-3.2kHz), `engine_mid.wav` (dominio medios 750-1800Hz + armónico 2x 1366Hz + decay/sustain modal colector + LPF 3.6kHz), `engine_high.wav` (saturación en 3 ramas: Airbox intake 100% lineal + decay/sustain modal en medios + resto con sat mínima 1.02 y LPF 5.0kHz + onda senoidal con sat cálida dedicada 1.25 y 28% peso 465.2/232.4Hz), `engine_redline.wav` (loops 100% seamless sin clics).
-- Camas de suelo: `surf_grass.wav`, `surf_rumble.wav`, `surf_sand.wav`
-- Fondo plano: `impact_scrape.wav` (NUEVA síntesis procedural v2 con dominio medio-agudo: HPF 280 Hz + fricción 1400-4800 Hz + chispas de titanio 4.5-9 kHz + ataque Hann 16 ms; 0.36 s, pico sutil 0.28).
-- Cambios de marcha: `shift_up.wav`, `shift_down.wav`
-- Backfire: `int_backfire.wav` / `int_backfire_2.wav` / `engine_backfire.wav` (activo en lift-off > 12k RPM; NUEVA remasterización aditiva: snap de detonación 0-25ms + resonadores metálicos de escape Inconel 650-2650Hz + micro-pops estocásticos 25-160ms + sheen de combustión 5.5-11.5kHz).
-- Colisiones / Impactos: `impact_barrier.wav`, `impact_cone.wav`, `impact_hit_1.wav`, `impact_hit_2.wav`, `impact_hit_3.wav`, `impact_hit_4.wav`.
-Samples pendientes de siguientes fases:
-- `engine_starter.wav` (arranque del coche)
-- `engine_limiter.wav` (limitador de pitlane)
-- `engine_tc.wav` (modulación acústica de control de tracción)
-- `shift_3.wav` (variante alternativa de cambio)
-- `impact_fire.wav` (combustión / fuego de escape)
-- Ambiente y carrera fuera del banco de vehículo:
-  * `Ambient/ambient.mp3` (fondo de circuito)
-  * `Ambient/Crowd/fans_national_event_normal.wav` / `fans_national_event_positive.wav` (público)
-  * `Ambient/startlight_red.wav` / `Ambient/startlight_greenGO.wav` (semáforo de salida)
-  * `GP_toggle.wav` (UI) / `screenshot.wav` (modo foto)
+
+Backends mutuamente excluyentes:
+- legacy_v10_pcm
+- common_v10_commands
+- disabled
+
+IMPORTANTE:
+- `F90Core` conserva `legacy_v10_pcm` como default seguro.
+- `game/scenes/runtime/vehicle_test_session.tscn` activa explícitamente
+  `common_v10_commands`.
+- `game/scenes/runtime/world_hud_compositor.tscn` contiene `F90Core` y
+  `AudioCommandRenderer`, pero usa legacy salvo override.
+- Confirmar escena y `audio_backend` antes de comparar; puede escucharse el
+  backend equivocado.
+- En headless/Dummy, `audio_initialized=false` es normal para PCM legacy y no
+  demuestra que el backend de comandos esté roto.
+
+Smoke test de `vehicle_test_session.tscn`:
+- schema_version=2;
+- tick avanzando;
+- 14 comandos continuos en idle;
+- 14 AudioStreamPlayer/AudioStreamPlayer3D creados.
+
+Esto prueba transporte y nodos, NO fidelidad, sincronía, orden, loops ni calidad.
 
 ================================================================================
-4. PRÓXIMAS FASES RECOMENDADAS
+3. ARCHIVOS A REVISAR, EN ORDEN
 ================================================================================
-A) FASE 2 DE AUDIO — SECUENCIA DE CARRERA, SEMÁFORO Y AMBIENTE:
-   - Conectar sonidos de semáforo `startlight_red.wav` y `startlight_greenGO.wav` en `race_session.gd`.
-   - Colocar `AudioStreamPlayer3D` para sonido ambiente `ambient.mp3` y público en tribunas.
-   - Conectar sonido de UI `GP_toggle.wav` a la navegación de menús.
 
-B) FASE 3 DE AUDIO — ENRIQUECIMIENTO TÉCNICO:
-   - Crear sample / cama de chirrido de neumático sobre asfalto (*tire skid*) activado cuando `slip > 0.15`.
-   - Conectar `engine_starter.wav` a la secuencia de encendido.
-   - Conectar `engine_limiter.wav` al activar el limitador de pitlane.
+P0 — Adaptador y decisiones del banco
+-------------------------------------
 
-C) RECORDATORIO DE TAREAS DE FÍSICA PENDIENTES (P1 / P2):
-   - P1: Fidelidad del JSON `f1_94_physics.json` (superficies lateral/longitudinal grip assist, diff threshold).
-   - P2: Telemetría CSV de la ruta Rust (`telemetry_manager.gd` soporte `F194RustVehicle` y columna `TC_Active`).
+1. game/crates/vehicle-audio-engine/src/commands.rs
+   Archivo principal. Contiene AudioTelemetryFrame, AudioCommandFrame v2,
+   CommonV10BankAdapter, event->sample, ventanas RPM, gain/pitch, selección de
+   superficies/transmisión/rueda/colisiones, journal y algunas regiones de loop.
+   NO asumir que las tablas actuales reproducen FMOD: varias son aproximaciones.
+
+2. docs/audio/FMOD_COMMON_BANK_DICTIONARY.md
+3. docs/audio/FMOD_V10_V2_BANK_DICTIONARY.md
+4. docs/audio/AUDIO_BANKS_INTEGRATION_BACKLOG.md
+   Revisar loops vs instrumentos no-loop, gain/pitch base, Distance/Cone, eventos
+   compuestos, nueve eventos V10 no resueltos y curvas sin owner/property fiable.
+
+5. game/sounds/runtime/catalog.v1.json
+6. game/sounds/runtime/common/*
+7. game/sounds/runtime/v10_v2/*
+   Comparar hashes, nombres, duración, sample rate, canales y metadatos de loop
+   contra la exportación. No confiar únicamente en el nombre del sample.
+
+P0 — Renderer Godot
+-------------------
+
+8. game/scripts/audio/fmod_bank_command_renderer.gd
+   Revisar:
+   - orden stops -> voices -> one_shots;
+   - dedupe `_last_shot_id`;
+   - smoothing de gain/pitch;
+   - `restart_on_finish` de instrumentos no-loop en eventos continuos;
+   - loop_begin/loop_end WAV y loop OGG importado;
+   - parentesco/posición de AudioStreamPlayer3D;
+   - presupuesto de 32 voces;
+   - mezcla 2D cockpit/world frente a 3D body/wheels/front/rear;
+   - `load(sample)` y `duplicate()` del AudioStream.
+
+9. game/scenes/runtime/world_hud_compositor.tscn
+10. game/scenes/runtime/vehicle_test_session.tscn
+    Confirmar que no hay otro controller activo en la escena heredada o vehículo.
+    Buscar AudioStreamPlayer, VehicleAudioControllerNative y EngineAudioController.
+
+P1 — Telemetría y FFI
+---------------------
+
+11. game/crates/formula90-core/src/audio.rs
+12. game/crates/formula90-core/src/lib.rs
+13. game/crates/formula90-core/src/ffi.rs
+14. game/crates/formula90-core/tests/audio_command_pipeline.rs
+    Verificar que cada comando corresponde al mismo tick físico y que brake,
+    slip, wheel load, suspension velocity, tire pressure, surface y listener
+    distance son plausibles, no cero/default ni de un tick anterior.
+
+15. native/src/core/f90_core.cpp
+16. native/include/formula90s/core/f90_core.hpp
+17. native/include/formula90s/core/f90_core.h
+    Revisar get_audio_command_frame, listener distance, símbolos DLL,
+    process_collision_audio, exclusión legacy/commands y orden de callbacks.
+
+P1 — Referencia/fallback que debe permanecer
+--------------------------------------------
+
+18. game/crates/vehicle-audio-engine/src/mixer.rs
+19. game/crates/vehicle-audio-engine/src/ffi.rs
+20. game/crates/vehicle-audio-engine/src/lib.rs
+21. game/sounds/banks/v10_vehicle
+22. native/src/presentation/vehicle_audio_controller_native.cpp
+23. native/src/presentation/engine_audio_controller.cpp
+    No eliminar. Usar para A/B y detectar doble productor, sin copiar heurísticas.
 
 ================================================================================
-5. COMANDOS ÚTILES DE VERIFICACIÓN Y BUILD
+4. POSIBLES CAUSAS, PRIORIZADAS
 ================================================================================
-- Compilar todo en Windows:
-  `powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -Configuration debug`
-- Ejecutar tests de Rust:
-  `cd game/crates ; cargo test --workspace`
-- Ejecutar test headless de Godot:
-  `.tools\godot\Godot_v4.7.1-stable_win64_console.exe --headless --path game --quit-after 240 res://scenes/runtime/sim_bridge_quick_test.tscn`
+
+CAUSA 1 — Curvas FMOD incompletamente resueltas (muy probable)
+----------------------------------------------------------------
+Se recuperaron puntos, pero no toda la cadena controller -> owner/instrument ->
+property -> parameter. Ventanas RPM y curvas gain/pitch de `commands.rs` son
+aproximaciones. Un sample correcto en JSON puede entrar en rango/orden/volumen
+incorrectos.
+
+Acción:
+- tabla verificable por instrumento: event, instrument, sample, parameter,
+  property, puntos, timeline offset y transition region;
+- comenzar solo con `engine_int`;
+- no añadir eventos hasta aprobar un sweep RPM interior.
+
+CAUSA 2 — Se perdió timeline y orden de instrumentos
+----------------------------------------------------
+El adaptador reduce eventos FMOD a voces simultáneas. Aún no representa todos los
+offsets, transiciones, nested events, ADSR, probabilidad, delay y condiciones.
+Capas pueden entrar juntas, antes/después o en orden distinto.
+
+Acción:
+- recuperar posición/offset y ocho transiciones V10;
+- registrar por tick el orden exacto de comandos;
+- implementar solo semántica usada por estos bancos.
+
+CAUSA 3 — Loop policy incorrecta/incompleta
+-------------------------------------------
+Solo algunos WAV interiores tienen regiones explícitas. OGG y otros WAV dependen
+del import o repiten archivo completo. En common hay instrumentos no-loop dentro
+de eventos continuos; `restart_on_finish` puede causar gaps o repeticiones falsas.
+
+Acción:
+- inspeccionar `.import` y recurso importado de cada sample prioritario;
+- medir seam y duración real después de importar;
+- separar loop de sample, instrumento y evento/timeline;
+- no convertir automáticamente todo bed en loop completo.
+
+CAUSA 4 — Pitch/gain/loudness no equivalentes
+---------------------------------------------
+Se combinan bases recuperadas, trims manuales (-8/-12 dB), limiter y smoothing.
+Faltan automatizaciones/moduladores. Una capa incorrecta puede dominar u ocultar
+otra correcta.
+
+Acción:
+- quitar trims temporalmente en diagnóstico aislado;
+- medir RMS/LUFS/pico por sample/comando;
+- capturar gain_db y pitch durante sweep;
+- añadir headroom después de validar balances relativos.
+
+CAUSA 5 — engine_int/engine_ext demasiado simplificado
+------------------------------------------------------
+Se crean siete capas interiores y seis exteriores persistentes. Se mezclan por
+RPM/throttle y distancia con corte aproximado de 3 m. El exterior real contiene
+front/rear, close/far, cone y shifts, aún incompletos.
+
+Acción:
+- aislar `engine_int`, apagando exterior/transmission/common;
+- validar on/off throttle por separado;
+- añadir después exterior front/rear, close/far y cone exactos;
+- preferir listener mode explícito si la escena lo ofrece.
+
+CAUSA 6 — Transmission usa vehicle speed como proxy
+---------------------------------------------------
+`commands.rs` usa `speed_kph/350`; el banco usa `drivetrain_speed`. Shaft speed,
+gear ratio y torque sign no están conectados, así que puede entrar fuera de fase.
+
+Acción:
+- conectar drivetrain shaft speed real y validar por marcha;
+- comprobar que ningún `z4gt3` se usa como capa de motor.
+
+CAUSA 7 — One-shots fuera de orden perceptual
+----------------------------------------------
+El journal conserva eventos 120 ticks y Godot deduplica por ID monótono. Revisar
+orden de varios eventos por tick, resets del adapter/renderer, cambio de backend,
+latencia colisión C++ -> tick Rust -> `_process` y cooldown/break del primer contacto.
+
+Acción:
+- capturar tick, ID, event y timestamps de recepción/reproducción;
+- añadir epoch/session ID si la secuencia puede reiniciarse;
+- probar dos impactos consecutivos y shift+impact en el mismo tick.
+
+CAUSA 8 — Colisiones simplificadas
+----------------------------------
+`process_collision_audio` clasifica en C++, usa cooldown y procesa un contacto.
+Puede perder/reordenar hechos. Common tiene impactos compuestos; el MVP elige un
+sample principal y un rattle secundario en golpes fuertes.
+
+Acción:
+- capturar contactos y elegir determinísticamente en Rust;
+- incluir material, ángulo, ubicación y entidad;
+- implementar capas compuestas, no solo una muestra por clase.
+
+CAUSA 9 — Superficies/ruedas agregadas
+--------------------------------------
+Códigos físicos: Road=0, Curb=1, Dirt=2, Grass=3, Gravel=4, Sand=5.
+Hay tests Grass/Gravel, pero rolling/skid y emitters aún agregan cuatro ruedas.
+`wheels` está al centro; intensidad puede no corresponder a la rueda de contacto.
+
+Acción:
+- capturar surface/load/slip/contact por rueda;
+- IDs/emitters FL/FR/RL/RR donde sea necesario;
+- mantener ownership: rolling != skid != surface texture != debris.
+
+CAUSA 10 — Importación/reproducción de Godot
+--------------------------------------------
+Los assets mezclan rates/canales. Godot puede cambiar loop/compresión. `duplicate()`
+no garantiza equivalencia FMOD.
+
+Acción:
+- revisar `.import`; desactivar normalización/trim/compresión no deseada;
+- comparar archivo directo contra AudioStream importado;
+- probar uno por uno con pitch=1 y volume=0 antes de mezclar.
+
+CAUSA 11 — Doble productor o escena equivocada
+----------------------------------------------
+Puede quedar un controller legacy en otra escena/vehículo. Además compositor y
+test usan backends distintos deliberadamente.
+
+Acción:
+- inspeccionar árbol remoto;
+- contar players/controllers;
+- imprimir backend, escena y propietarios al iniciar;
+- detener análisis si legacy y commands reproducen simultáneamente.
+
+================================================================================
+5. CORRECCIONES YA HECHAS (NO SIGNIFICAN FEATURE COMPLETA)
+================================================================================
+
+- `v10.engine.on_high` usa `r25 int on high.wav`, no transmisión.
+- AudioCommandFrame schema 2.
+- one-shots con journal e IDs deduplicables.
+- voces persistentes y smoothing gain/pitch.
+- regiones de loop para algunos WAV interiores.
+- brake/slip/load/suspensión/presión desde física.
+- MVP rolling, brakes, flat/flutter y explosion.
+- primer LOD exterior y emitters 3D básicos.
+- limiter Vehicle y presupuesto de 32 voces.
+- rattle cockpit dejó de ser bed de suspensión; acompaña impactos fuertes.
+- wiring F90Core/renderer en compositor.
+- backend nuevo solo opt-in en escena de prueba.
+
+Estas correcciones resolvieron errores estructurales, pero NO el fallo perceptual.
+
+================================================================================
+6. PRUEBAS/BUILDS QUE PASAN Y SU LIMITACION
+================================================================================
+
+- `cargo test -p vehicle_audio_engine -p formula90_core --quiet`
+  Último resultado: 64 pruebas del alcance, todas pasan.
+- `cargo build -p formula90_core --release`: pasa.
+- GDExtension SCons template_debug/template_release: pasa.
+- Godot headless editor: pasa sin errores de parseo/importación.
+- Arranque headless de vehicle_test_session: pasa.
+- Smoke: schema 2 y 14 players creados en idle.
+
+Estas pruebas NO escuchan el resultado. No son gate de calidad sonora.
+
+DLLs desplegadas:
+- game/addons/formula90s/bin/formula90_core.dll
+- game/addons/formula90s/bin/formula90_core.windows.template_release.x86_64.dll
+- game/addons/formula90s/bin/libformula90s.windows.template_release.x86_64.dll
+
+Tras cambios Rust, recompilar release y copiar DLL. Tras cambios C++, recompilar
+la GDExtension.
+
+================================================================================
+7. PLAN DE DIAGNOSTICO RECOMENDADO (NO SALTAR ORDEN)
+================================================================================
+
+Paso 1 — Reproducir/capturar
+- Ejecutar `vehicle_test_session.tscn` y confirmar backend commands.
+- Capturar por tick: ID, event, sample, gain, pitch, loop, restart, emitter.
+- Grabar audio o timestamps exactos del fallo.
+
+Paso 2 — Silenciar todo salvo engine_int
+- Feature flags/debug para apagar engine_ext, transmission, wind, wheel, common y
+  collisions. No borrar código.
+- Sweep 2k->17.4k RPM: throttle=1 y luego throttle=0.
+- Identificar capa temprana/tardía, seam y sample dominante.
+
+Paso 3 — Resolver curvas/timeline de engine_int
+- Resolver owner/property del dump.
+- Comparar cada punto con comandos Rust.
+- Implementar tablas exactas especializadas.
+- Gate humano solo de engine_int.
+
+Paso 4 — Añadir familias una a una
+1. transmission con drivetrain_speed real;
+2. wind;
+3. tyre rolling;
+4. skid;
+5. engine_ext;
+6. surfaces common;
+7. dirt/debris;
+8. collisions/scrapes;
+9. ambience/pit.
+
+Cada familia requiere A/B, captura y gate antes de la siguiente. Si rompe orden,
+desactivarla detrás de feature flag.
+
+Paso 5 — Pruebas específicas
+- golden trace de sweep RPM y lift-off;
+- Grass=3 -> grass; Gravel=4 -> tyres_gravel;
+- one-shots consecutivos conservan orden/ID;
+- reset/backend no bloquea IDs nuevos;
+- un solo productor por familia;
+- seam medido por voz continua.
+
+Paso 6 — Gate/promoción
+- Solo tras aprobar motor, superficies, cambios e impactos considerar commands
+  como default.
+- Mantener legacy dos sprints estables, hacer retrospectiva y luego deprecar.
+
+================================================================================
+8. COMANDOS UTILES
+================================================================================
+
+Pruebas:
+  cd D:\Formula90s\game\crates
+  cargo test -p vehicle_audio_engine -p formula90_core --quiet
+
+Build:
+  cd D:\Formula90s\game\crates
+  cargo build -p formula90_core --release
+
+Validar Godot:
+  cd D:\Formula90s
+  .tools\godot\Godot_v4.7.1-stable_win64_console.exe --headless --editor --path game --quit
+
+Ejecutar integración nueva:
+  .tools\godot\Godot_v4.7.1-stable_win64_console.exe --path game res://scenes/runtime/vehicle_test_session.tscn
+
+Buscar dobles productores:
+  rg -n "AudioStreamPlayer|VehicleAudioController|EngineAudioController|audio_backend|pump_audio|get_audio_command_frame" game native
+
+================================================================================
+9. PRECAUCIONES DE WORKTREE
+================================================================================
+
+Hay numerosos cambios y archivos no rastreados ajenos a esta feature. No usar
+`git reset --hard`, `git checkout --` ni borrados masivos. Revisar `git status
+--short` y limitar cambios a audio. No commit/push sin petición explícita.
+
+================================================================================
+10. CRITERIO REAL DE FINALIZACION
+================================================================================
+
+- Samples correctos en orden y rango correctos.
+- Loops/transiciones sin gaps, clicks ni reinicios indebidos.
+- Misma telemetría produce misma secuencia.
+- Ningún productor legacy duplicado.
+- Motor interior/exterior, transmisión, superficies e impactos pasan A/B.
+- Usuario aprueba gate auditivo.
+- Retrospectiva antes de eliminar/deprecar activos anteriores.
+
+ESTADO DE ESTE HANDOFF: INCOMPLETO — GATE AUDITIVO FALLIDO.
+================================================================================

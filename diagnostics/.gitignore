@@ -1,0 +1,8 @@
+*.sqlite-wal
+*.sqlite-shm
+raw/**/*.log
+raw/**/*.json
+raw/**/*.jsonl
+exports/*.csv
+!raw/**/.gitkeep
+!exports/.gitkeep

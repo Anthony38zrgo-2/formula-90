@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bworp0lvkjdjk"
+path="res://.godot/imported/r25 int idle.ogg-eaecb84e05ae4d798de69be3ed3f2a63.oggvorbisstr"
+
+[deps]
+
+source_file="res://sounds/runtime/v10_v2/r25 int idle.ogg"
+dest_files=["res://.godot/imported/r25 int idle.ogg-eaecb84e05ae4d798de69be3ed3f2a63.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

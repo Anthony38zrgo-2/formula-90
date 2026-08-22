@@ -1,0 +1,38 @@
+{
+  "name": "formula90-brake-heat-transfer-handoff",
+  "baseline": "user supplied src(2).rar",
+  "observed_vehicle_physics_abi": 8,
+  "target_vehicle_physics_abi": 9,
+  "scope": [
+    "brake thermal nodes",
+    "brake fade",
+    "rim to tire carcass/gas heat transfer",
+    "brake duct setup",
+    "duct cooling/drag physical correlation",
+    "telemetry and HUD"
+  ],
+  "new_rust_file": "game/crates/vehicle-physics-engine/src/brake_thermals.rs",
+  "primary_current_files_to_modify": [
+    "lib.rs",
+    "vehicle_config.rs",
+    "simulation.rs",
+    "tire_thermals.rs",
+    "ffi.rs"
+  ],
+  "current_files_expected_unchanged_or_minimally_changed": [
+    "powertrain.rs",
+    "aero.rs",
+    "tire.rs",
+    "suspension.rs"
+  ],
+  "external_repo_files_to_inspect_and_update": [
+    "game/crates/formula90-core/src/ffi.rs",
+    "native/include/formula90s/core/f90_core.h",
+    "native/include/formula90s/core/f90_core.hpp",
+    "native/include/formula90s/vehicle/formula90_physics.h",
+    "native/include/formula90s/vehicle/f1_94_rust_vehicle.hpp",
+    "native/src/vehicle/f1_94_rust_vehicle.cpp",
+    "game/scripts/vehicle/f1_94_rust_vehicle.gd",
+    "current tyre HUD implementation"
+  ]
+}

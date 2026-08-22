@@ -8,8 +8,10 @@
 
 use std::path::Path;
 
-use vehicle_audio_engine::Trigger;
-use vehicle_audio_engine::VehicleAudioEngine;
+use vehicle_audio_engine::{
+    AudioBackend, AudioCommandFrame, AudioTelemetryFrame, CollisionAudioInput,
+    CommonV10BankAdapter, FamilyMutes, Trigger, VehicleAudioEngine,
+};
 use vehicle_physics_engine::SurfaceType;
 
 use crate::frame::{
@@ -71,13 +73,25 @@ pub struct AudioModule {
     last_surface: SurfaceType,
     last_slip: f32,
     last_trigger_code: i32,
+    backend: AudioBackend,
+    adapter: CommonV10BankAdapter,
+    commands: AudioCommandFrame,
+    tick: u64,
+    scrape_active: bool,
+    scrape_intensity: f32,
+    scrape_speed_m_s: f32,
+    listener_distance_m: f32,
+    /// Optional per-tick telemetry recorder (Fase 6 A/B): appends one CSV line
+    /// per tick; replayed offline through both backends by
+    /// `vehicle-audio-engine/examples/live_replay.rs`.
+    record_path: Option<std::path::PathBuf>,
 }
 
 impl AudioModule {
     /// Build the audio subsystem. If `enabled` and the bank fails to load, the
     /// module degrades to telemetry-only (health flag) — it never fails the facade.
-    pub fn new(bank_dir: Option<&Path>, enabled: bool) -> Self {
-        let engine = if enabled {
+    pub fn new(bank_dir: Option<&Path>, enabled: bool, backend: AudioBackend) -> Self {
+        let engine = if enabled && backend == AudioBackend::LegacyV10Pcm {
             match bank_dir {
                 Some(dir) => VehicleAudioEngine::new(dir).ok(),
                 None => None,
@@ -85,7 +99,7 @@ impl AudioModule {
         } else {
             None
         };
-        if enabled && engine.is_none() {
+        if enabled && backend == AudioBackend::LegacyV10Pcm && engine.is_none() {
             eprintln!("[formula90_core] audio bank load failed (or no bank_dir): telemetry-only");
         }
         Self {
@@ -94,6 +108,15 @@ impl AudioModule {
             last_surface: SurfaceType::Road,
             last_slip: 0.0,
             last_trigger_code: -1,
+            backend,
+            adapter: CommonV10BankAdapter::default(),
+            commands: AudioCommandFrame::default(),
+            tick: 0,
+            scrape_active: false,
+            scrape_intensity: 0.0,
+            scrape_speed_m_s: 0.0,
+            listener_distance_m: 0.0,
+            record_path: None,
         }
     }
 
@@ -126,11 +149,63 @@ impl AudioModule {
         max_rpm: f64,
         throttle: f32,
         speed_kph: f64,
+        drivetrain_speed_kph: f32,
         gear: i32,
         slip: f32,
         surface: SurfaceType,
+        surfaces: [u8; 4],
+        dt_s: f32,
+        brake: f32,
+        slip_ratio: [f32; 4],
+        wheel_load_n: [f32; 4],
+        suspension_velocity_m_s: [f32; 4],
+        tire_pressure_kpa: [f32; 4],
     ) {
         self.observe(surface, slip);
+        self.tick += 1;
+        if let Some(path) = &self.record_path {
+            record_tick(
+                path,
+                self.tick,
+                rpm,
+                throttle,
+                speed_kph,
+                drivetrain_speed_kph,
+                gear,
+                slip,
+                surfaces,
+                brake,
+                slip_ratio,
+                wheel_load_n,
+                suspension_velocity_m_s,
+                tire_pressure_kpa,
+                self.listener_distance_m,
+            );
+        }
+        self.commands = self.adapter.adapt(
+            AudioTelemetryFrame {
+                tick: self.tick,
+                dt_s,
+                rpm: rpm as f32,
+                throttle,
+                speed_kph: speed_kph as f32,
+                drivetrain_speed_kph,
+                gear,
+                slip,
+                slip_ratio,
+                surfaces,
+                brake,
+                wheel_load_n,
+                suspension_velocity_m_s,
+                tire_pressure_kpa,
+                listener_distance_m: self.listener_distance_m,
+                underfloor_scrape_active: self.scrape_active,
+                underfloor_scrape_intensity: self.scrape_intensity,
+                underfloor_scrape_speed_m_s: self.scrape_speed_m_s,
+                ..Default::default()
+            },
+            self.backend,
+        );
         if let Some(eng) = self.engine.as_mut() {
             let prev_tag = eng.last_trigger().to_string();
             eng.set_state(
@@ -221,10 +296,93 @@ impl AudioModule {
         speed_m_s: f32,
         onset_strength: f32,
     ) {
+        self.scrape_active = active;
+        self.scrape_intensity = intensity;
+        self.scrape_speed_m_s = speed_m_s;
         if let Some(eng) = self.engine.as_mut() {
             eng.set_scrape_state(active, intensity, speed_m_s, onset_strength);
         }
     }
+
+    pub fn command_frame_json(&self) -> String {
+        serde_json::to_string(&self.commands).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    pub fn push_collision(&mut self, collision: CollisionAudioInput) {
+        if self.backend == AudioBackend::CommonV10Commands {
+            self.adapter.push_collision(collision);
+        }
+    }
+
+    /// Diagnostic A/B mute mask (handoff section 7 paso 2): bit0=engine_int,
+    /// bit1=engine_ext, bit2=transmission, bit3=wind, bit4=wheel, bit5=surfaces,
+    /// bit6=collisions, bit7=ambience. Muted families keep their voices at -80 dB.
+    pub fn set_mute_mask(&mut self, mask: u8) {
+        self.adapter.set_mutes(FamilyMutes {
+            engine_int: mask & 1 != 0,
+            engine_ext: mask & 2 != 0,
+            transmission: mask & 4 != 0,
+            wind: mask & 8 != 0,
+            wheel: mask & 16 != 0,
+            surfaces: mask & 32 != 0,
+            collisions: mask & 64 != 0,
+            ambience: mask & 128 != 0,
+        });
+    }
+
+    pub fn backend(&self) -> AudioBackend {
+        self.backend
+    }
+
+    pub fn set_listener_distance(&mut self, distance_m: f32) {
+        self.listener_distance_m = distance_m.max(0.0);
+    }
+
+    /// Start appending per-tick telemetry to `path` (CSV, for offline A/B replay).
+    pub fn set_record_path(&mut self, path: Option<std::path::PathBuf>) {
+        self.record_path = path;
+    }
+}
+
+/// One CSV line per audio tick — the exact inputs the adapter consumed. Layout:
+/// tick,rpm,throttle,speed_kph,drivetrain_speed_kph,gear,slip,
+/// slip_ratio[4],surfaces[4],brake,wheel_load_n[4],suspension_velocity_m_s[4],
+/// tire_pressure_kpa[4],listener_distance_m
+fn record_tick(
+    path: &std::path::Path,
+    tick: u64,
+    rpm: f64,
+    throttle: f32,
+    speed_kph: f64,
+    drivetrain_speed_kph: f32,
+    gear: i32,
+    slip: f32,
+    surfaces: [u8; 4],
+    brake: f32,
+    slip_ratio: [f32; 4],
+    wheel_load_n: [f32; 4],
+    suspension_velocity_m_s: [f32; 4],
+    tire_pressure_kpa: [f32; 4],
+    listener_distance_m: f32,
+) {
+    use std::io::Write;
+    let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) else {
+        return;
+    };
+    let _ = writeln!(
+        f,
+        "{tick},{rpm:.3},{throttle:.5},{speed_kph:.3},{drivetrain_speed_kph:.3},{gear},{slip:.5},\
+         {},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}",
+        slip_ratio[0], slip_ratio[1], slip_ratio[2], slip_ratio[3],
+        surfaces[0], surfaces[1], surfaces[2], surfaces[3],
+        brake,
+        wheel_load_n[0], wheel_load_n[1], wheel_load_n[2], wheel_load_n[3],
+        suspension_velocity_m_s[0], suspension_velocity_m_s[1],
+        suspension_velocity_m_s[2], suspension_velocity_m_s[3],
+        tire_pressure_kpa[0], tire_pressure_kpa[1], tire_pressure_kpa[2],
+        tire_pressure_kpa[3],
+        listener_distance_m,
+    );
 }
 
 fn trigger_from_code(code: i32) -> Option<Trigger> {
