@@ -19,6 +19,7 @@
 
 pub mod adapter;
 pub mod bank;
+pub mod config;
 pub mod dsp;
 pub mod ffi;
 pub mod mixer;
@@ -27,6 +28,7 @@ pub mod telemetry;
 
 pub use adapter::{surface_token, GevpTelemetry};
 pub use bank::{BankError, Sample, VehicleSoundBank};
+pub use config::{SoundMixerConfig, MIXER_CONFIG_FILENAME};
 pub use ffi::{vehicle_audio_abi_version, VEHICLE_AUDIO_ABI_VERSION};
 pub use mixer::{AudioConfig, VehicleAudioEngine};
 pub use state::{engine_weights, mix, Mix, Trigger, VehicleAudioState};

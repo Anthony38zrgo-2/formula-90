@@ -200,149 +200,208 @@
     },
     {
       "dc_offset": 0.0,
+      "duration_s": 1.0,
+      "file": "exhaust-mic.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -7.48,
+      "peak": 0.89,
+      "provenance": "deterministic procedural synthesis",
+      "role": "exhaust_mic",
+      "sha256": "d7cc4df1cbd7f6a7d905c2bca7eadf0573ce7b148567a9489047c1a4e4cd3601",
+      "synthesis": {
+        "category": "engine",
+        "components": [
+          "v10_firing_fundamental_1200hz_14400rpm",
+          "harmonic_scream_ladder_2x6x_2400_7200hz",
+          "combustion_roar_250_9000hz_firing_ripple",
+          "exhaust_pipe_modal_resonances_850_1700_3400hz",
+          "gas_flow_hiss_2k_12khz",
+          "engine_order_body_240_480hz",
+          "seamless_1s_loop",
+          "tanh_warmth"
+        ],
+        "duration_s": 1.0,
+        "native_rpm": 14400.0,
+        "recipe": "exhaust_mic_v1",
+        "seed": 9020,
+        "target_peak": 0.89
+      }
+    },
+    {
+      "dc_offset": -1.5e-05,
       "duration_s": 2.44322,
       "file": "impact_barrier.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -10.34,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -9.72,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_barrier",
-      "sha256": "cb490f0d809218a94cc0e6c6d433cbd6d54f9c7213a5e6d506489239efc426d4",
+      "sha256": "846e3156f14cfd869d780ebb2792199bb3289144edb30d621a0317e45292b4da",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "barrier",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_barrier.wav",
         "source_rate": 44100,
         "source_sha256": "c4c3210cdc1119f4ef38055e15e843a085111806e45b1bdea28c8a8d87784b68"
       }
     },
     {
-      "dc_offset": -0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.351519,
       "file": "impact_cone.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
       "loudness_dbfs": -15.32,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_cone",
-      "sha256": "9fbfcc38f94ee30a79f40bbdb5c4f03e2faf2844b7ba374818a8b01535162622",
+      "sha256": "0e9cd6cb035dba091be061c216feda098669aa8a67d27e64e640e77c45da478a",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "cone",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_conehit.wav",
         "source_rate": 22050,
         "source_sha256": "664225b6d640c799d2752cf37a45d3258fdcc478ace3f41d011c1af5e7552ee4"
       }
     },
     {
-      "dc_offset": 0.0,
+      "dc_offset": -1.6e-05,
       "duration_s": 1.6,
       "file": "impact_fire.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -10.52,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -10.84,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_fire",
-      "sha256": "5b6aa34f4793b614e62da4f3895c901f6a8bb7f05974cf607006391d73aaebe4",
+      "sha256": "3cf65c7771ab100d487a4e614ef218093130d66fbf61747d9ee3e7f16e226d36",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "fire",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_fire.WAV",
         "source_rate": 22050,
         "source_sha256": "1d9e6ddba4cd06561c96e97bcf578fa0f0c2a9656cc4e86b755256a0c4ae9c34"
       }
     },
     {
-      "dc_offset": -0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.377188,
       "file": "impact_hit_1.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
       "loudness_dbfs": -14.45,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_hit",
-      "sha256": "dc858fe92d7904734d2ff7fac2f1ed556c60a1024bf660a35795212c80582baa",
+      "sha256": "5aa4bf5ae2dfa845331101496644dc98b2ac9690423886eb88b0a9e3e059874f",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "hit",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_hit1.WAV",
         "source_rate": 22050,
         "source_sha256": "e170d99e544c4c23ddbab438de86b72f5aaf833ceba1a6929cfc91eb560b5abe"
       }
     },
     {
-      "dc_offset": 0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.418095,
       "file": "impact_hit_2.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -12.44,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -12.7,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_hit",
-      "sha256": "0cb76b4385a140b3003cffd6c369756163bf9f350f97a7ac554f352191f035a0",
+      "sha256": "401eb52804ca640ce779e847c0dc7412e9dcc62f64becd734dc24ec970b7bacc",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "hit",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_hit2.WAV",
         "source_rate": 22050,
         "source_sha256": "b8750c1e99d8121fa4b60e1c4151ea7ce2f590ec910f2335cf3e8818da25ac9f"
       }
     },
     {
-      "dc_offset": -0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.535465,
       "file": "impact_hit_3.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -13.31,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -12.71,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_hit",
-      "sha256": "5f344271def5afb0f077c11a9d0daf68c643d416e5709b9adc44689876ad2083",
+      "sha256": "e461fbc244608295f556b7c2f2233a225c84a0eeea52b54b12ec5db448518464",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "hit",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_hit3.WAV",
         "source_rate": 22050,
         "source_sha256": "d5e49e03543d1419da7ca63b37e1327775847c2d3f01b92e6918cdd85afbed72"
       }
     },
     {
-      "dc_offset": -0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.493968,
       "file": "impact_hit_4.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -12.22,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -12.76,
+      "peak": 0.920013,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)",
       "role": "impact_hit",
-      "sha256": "a3bc39e06086333a6821a4e56ee74e93c1fe58200997ec9819baae668c365070",
+      "sha256": "82b9fb3b28251ab2d247a538b588aee7993bf1b4547c2901e8784ebc1309fdb7",
       "synthesis": {
         "category": "impact",
+        "remaster": {
+          "kind": "hit",
+          "recipe": "impact_remaster_v1"
+        },
         "source_file": "GP_hit4.WAV",
         "source_rate": 22050,
         "source_sha256": "a30118f571509349db6dce1e3de5d2679530c6bdc1f90520ddff2419e782b54e"
       }
     },
     {
-      "dc_offset": 0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.36,
       "file": "impact_scrape.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
       "loudness_dbfs": -29.59,
-      "peak": 0.28,
-      "provenance": "deterministic procedural synthesis",
+      "peak": 0.920013,
+      "provenance": "deterministic procedural synthesis; remastered with modular synthesis (impact stages)",
       "role": "impact_scrape",
-      "sha256": "7ca752c59fedbc626702e8a636484298b340bfa0ba71de192aa6bb2f6f33c2c7",
+      "sha256": "fc668e217139129988fe3f85d27d35232e87ddfc76736d375b6c95ab656562e8",
       "synthesis": {
         "attack_ms": 16.0,
         "category": "impact",
@@ -356,6 +415,10 @@
         ],
         "duration_s": 0.36,
         "recipe": "flat_floor_scrape_v2",
+        "remaster": {
+          "kind": "scrape",
+          "recipe": "impact_remaster_v1"
+        },
         "seed": 9002,
         "target_peak": 0.28
       }
@@ -430,38 +493,72 @@
       }
     },
     {
-      "dc_offset": -0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.679093,
       "file": "shift_down.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -17.87,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -15.08,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (shift_transient + metal_sheen + pedalboard)",
       "role": "shift_down",
-      "sha256": "b27cbc82a946b636ffab078739cd263e49a4b9cfb122321153e8dd1b594fa678",
+      "sha256": "eae6188110a1b91b0e811dd47599941b12ee4a1ab77fb367186b78a7af8197f4",
       "synthesis": {
         "category": "shift",
+        "remaster": {
+          "kind": "down",
+          "recipe": "shift_remaster_v1",
+          "seed": 7001,
+          "stages": [
+            "highpass_140",
+            "gain_0.7",
+            "metal_sheen_4_9k",
+            "shift_transient",
+            "compressor",
+            "distortion_4",
+            "reverb_0.12",
+            "loudness_-16",
+            "finalize_0.92"
+          ],
+          "target_lufs": -16.0
+        },
         "source_file": "98_int_shift_2.wav",
         "source_rate": 11025,
         "source_sha256": "6d5d07dbf847b3a4d55e81377061f4165bae85d5d1722adc8720bc2958fd4844"
       }
     },
     {
-      "dc_offset": -0.0,
+      "dc_offset": -1.5e-05,
       "duration_s": 0.481723,
       "file": "shift_up.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -17.38,
-      "peak": 0.89,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds)",
+      "loudness_dbfs": -15.22,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (shift_transient + metal_sheen + pedalboard)",
       "role": "shift_up",
-      "sha256": "e3ef8ebab2c83557d98335ac7465ee0cd8412a59a380b4955ff52673ca321011",
+      "sha256": "3154be4fc568fdea7bf53d400759cfe555b8644254f012c131478ce82081ed32",
       "synthesis": {
         "category": "shift",
+        "remaster": {
+          "kind": "up",
+          "recipe": "shift_remaster_v1",
+          "seed": 7001,
+          "stages": [
+            "highpass_140",
+            "gain_0.7",
+            "metal_sheen_4_9k",
+            "shift_transient",
+            "compressor",
+            "distortion_4",
+            "reverb_0.12",
+            "loudness_-16",
+            "finalize_0.92"
+          ],
+          "target_lufs": -16.0
+        },
         "source_file": "98_int_shift.wav",
         "source_rate": 11025,
         "source_sha256": "943de55bb25e8fd88630fb4a3fec5177c8c79e222a7ebdb1901c76c34ca4dc95"

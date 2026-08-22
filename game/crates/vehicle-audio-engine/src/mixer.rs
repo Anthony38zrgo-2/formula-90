@@ -9,8 +9,10 @@
 //! when `pitch_scale` was changed every frame on looping `AudioStreamPlayer`s.
 
 use crate::bank::{BankError, VehicleSoundBank};
+use crate::config::ExhaustConfig;
 use crate::state::*;
 
+use std::collections::BTreeMap;
 use std::path::Path;
 
 /// Mixing/voice configuration. Defaults mirror the F1-94 presentation layer
@@ -38,6 +40,8 @@ pub struct AudioConfig {
     pub bed_speed: f32,
     /// Continuous underfloor scrape voice gain.
     pub scrape_gain: f32,
+    /// Exhaust microphone layer (behaviour-driven sample playback).
+    pub exhaust: ExhaustConfig,
 }
 
 impl Default for AudioConfig {
@@ -57,6 +61,7 @@ impl Default for AudioConfig {
             bed_slip: 0.55,
             bed_speed: 0.12,
             scrape_gain: 0.62,
+            exhaust: ExhaustConfig::default_runtime(),
         }
     }
 }
@@ -122,6 +127,15 @@ pub struct VehicleAudioEngine {
     last_trigger: String,
     backfire_cooldown_samples: usize,
     variant_rng_state: u64,
+
+    /// Per-sample linear gain ceiling (0..1) from `sound_mixer_config.json`,
+    /// keyed by bank key. Absent keys play at full level (1.0).
+    per_sample_gain: BTreeMap<String, f32>,
+
+    // Exhaust microphone layer (behaviour-driven sample playback).
+    exhaust_key: String,
+    exhaust_cursor: f64,
+    exhaust_crackle_samples: usize,
 }
 
 impl VehicleAudioEngine {
@@ -176,6 +190,20 @@ impl VehicleAudioEngine {
             .map(|s| s.sample_rate)
             .unwrap_or(44100);
 
+        // Per-sample gain ceiling + exhaust behaviour config from
+        // <bank_dir>/../../sound_mixer_config.json (see `SoundMixerConfig`).
+        // Missing/invalid file degrades to defaults — never an error.
+        let mixer_cfg = crate::config::SoundMixerConfig::load_from_bank_dir(bank_dir).sanitized();
+        let per_sample_gain = mixer_cfg.gains.clone();
+        let mut cfg = AudioConfig::default();
+        cfg.exhaust = mixer_cfg.exhaust_config();
+
+        let exhaust_key = if bank.get("exhaust-mic").is_some() {
+            "exhaust-mic".to_string()
+        } else {
+            String::new()
+        };
+
         Ok(Self {
             bank,
             layer_keys,
@@ -195,7 +223,7 @@ impl VehicleAudioEngine {
             cur_engine_gain: 0.0,
             one_shots,
             sample_rate,
-            cfg: AudioConfig::default(),
+            cfg,
             last_norm: 0.0,
             last_rpm: 0.0,
             last_throttle: 0.0,
@@ -209,7 +237,17 @@ impl VehicleAudioEngine {
             max_rpm: 0.0,
             backfire_cooldown_samples: 0,
             variant_rng_state: 0xF090_1994_D15C_A11D,
+            per_sample_gain,
+            exhaust_key,
+            exhaust_cursor: 0.0,
+            exhaust_crackle_samples: 0,
         })
+    }
+
+    /// Per-sample linear gain ceiling; 1.0 (full level) when not configured.
+    #[inline]
+    fn sample_gain(&self, key: &str) -> f32 {
+        self.per_sample_gain.get(key).copied().unwrap_or(1.0)
     }
 
     pub fn config(&self) -> &AudioConfig {
@@ -296,14 +334,19 @@ impl VehicleAudioEngine {
             self.last_gear = gear;
         }
 
-        // Over-run backfire: sudden lift-off from high throttle at high RPM (> 12,000 RPM).
+        // Over-run backfire: sudden lift-off from high throttle at high RPM
+        // (> 13,500 RPM). The 1 s cooldown stops throttle pumps / rev-limiter
+        // bouncing from chaining full backfire samples back-to-back.
         if self.last_throttle >= 0.80
             && throttle <= 0.15
-            && rpm >= 12000.0
+            && rpm >= 13500.0
             && self.backfire_cooldown_samples == 0
         {
             self.trigger(Trigger::Backfire);
-            self.backfire_cooldown_samples = (self.sample_rate as f64 * 0.35) as usize;
+            self.backfire_cooldown_samples = (self.sample_rate as f64 * 1.0) as usize;
+            // Exhaust pop: short gain boost on the exhaust layer when a backfire
+            // fires. Duration scales with sample rate (~120 ms).
+            self.exhaust_crackle_samples = (self.sample_rate as f64 * 0.12) as usize;
         }
 
         self.last_norm = norm;
@@ -392,7 +435,7 @@ impl VehicleAudioEngine {
                 if let Some(sample) = self.bank.get(&self.layer_keys[b]) {
                     let ratio = engine_pitch_scale(self.smoothed_rpm, b) as f64;
                     let s = read_looped(&sample.pcm, &mut self.layer_cursors[b], ratio);
-                    acc += weights[b] * s;
+                    acc += weights[b] * s * self.sample_gain(&self.layer_keys[b]);
                 }
             }
             let engine = acc * eg * self.cfg.engine_headroom;
@@ -403,12 +446,33 @@ impl VehicleAudioEngine {
                 self.cur_pitches[b] = engine_pitch_scale(self.smoothed_rpm, b);
             }
 
+            // Exhaust microphone layer: pitch follows RPM, amplitude follows
+            // throttle, and a short gain boost (crackle) is added on backfire.
+            let mut exhaust = 0.0f32;
+            let ec = self.cfg.exhaust;
+            if ec.enabled && !self.exhaust_key.is_empty() {
+                if let Some(sample) = self.bank.get(&self.exhaust_key) {
+                    const EXHAUST_NATIVE_RPM: f64 = 14400.0;
+                    let ratio = (self.smoothed_rpm / EXHAUST_NATIVE_RPM) as f64;
+                    let s = read_looped(&sample.pcm, &mut self.exhaust_cursor, ratio);
+                    let throttle_env =
+                        (1.0 - ec.throttle_sensitivity) + ec.throttle_sensitivity * self.last_throttle;
+                    let mut gain = ec.base_gain * throttle_env.clamp(0.0, 1.0)
+                        * self.sample_gain(&self.exhaust_key);
+                    if self.exhaust_crackle_samples > 0 {
+                        gain += ec.crackle_gain;
+                        self.exhaust_crackle_samples -= 1;
+                    }
+                    exhaust = s * gain;
+                }
+            }
+
             // Surface bed (loops at native rate).
             let mut bed = 0.0f32;
             if let Some(bk) = &self.bed_key {
                 if let Some(sample) = self.bank.get(bk) {
                     let s = read_looped(&sample.pcm, &mut self.bed_cursor, 1.0);
-                    bed = s * bg;
+                    bed = s * bg * self.sample_gain(bk);
                 }
             }
 
@@ -425,7 +489,8 @@ impl VehicleAudioEngine {
                         0.25,
                         0.75,
                         0.035,
-                    ) * self.smoothed_scrape_gain;
+                    ) * self.smoothed_scrape_gain
+                        * self.sample_gain("impact_scrape");
                 }
             }
 
@@ -443,7 +508,11 @@ impl VehicleAudioEngine {
                     }
                     let idx = o.cursor.min(len - 1);
                     let s = sample.pcm[idx] as f32 / 32768.0;
-                    os += s * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                    // Field-level lookup: `one_shots` is mutably borrowed by the
+                    // loop, so `self.sample_gain(..)` (a whole-&self borrow) is
+                    // rejected; per_sample_gain is a disjoint field.
+                    let os_gain = self.per_sample_gain.get(o.key.as_str()).copied().unwrap_or(1.0);
+                    os += s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
                     o.cursor += 1;
                     if o.cursor >= len {
                         o.active = false;
@@ -453,7 +522,7 @@ impl VehicleAudioEngine {
                 }
             }
 
-            let mixed = engine + bed + scrape + os;
+            let mixed = engine + exhaust + bed + scrape + os;
             let out = self.limiter(mixed);
             if i < out_l.len() {
                 out_l[i] = out;
@@ -680,6 +749,73 @@ mod tests {
         }
     }
 
+    /// Like `dummy_bank` but with low-level engine sine layers, so the render
+    /// stays in the limiter's linear region and per-sample gains scale exactly.
+    fn low_level_engine_bank() -> VehicleSoundBank {
+        use crate::bank::Sample;
+        let mut samples = std::collections::BTreeMap::new();
+        let engine_pcm: Vec<i16> = (0..2048)
+            .map(|i| {
+                (2000.0 * (2.0 * std::f32::consts::PI * 8.0 * i as f32 / 2048.0).sin()) as i16
+            })
+            .collect();
+        for key in ENGINE_BAND_KEYS {
+            samples.insert(
+                key.to_string(),
+                Sample {
+                    key: key.to_string(),
+                    role: key.to_string(),
+                    sample_rate: 44100,
+                    pcm: engine_pcm.clone(),
+                    is_loop: true,
+                },
+            );
+        }
+        VehicleSoundBank {
+            samples,
+            bank_name: "unit".to_string(),
+        }
+    }
+
+    /// Bank with silent engine layers plus the two backfire one-shot variants
+    /// (deterministic ramp), for exact per-sample gain scaling checks.
+    fn silent_backfire_bank() -> VehicleSoundBank {
+        use crate::bank::Sample;
+        let mut samples = std::collections::BTreeMap::new();
+        let silent: Vec<i16> = vec![0i16; 2048];
+        let ramp: Vec<i16> = (0..2048)
+            .map(|i| ((i as f32 / 2048.0 * 2.0 - 1.0) * 800.0) as i16)
+            .collect();
+        for key in ENGINE_BAND_KEYS {
+            samples.insert(
+                key.to_string(),
+                Sample {
+                    key: key.to_string(),
+                    role: key.to_string(),
+                    sample_rate: 44100,
+                    pcm: silent.clone(),
+                    is_loop: true,
+                },
+            );
+        }
+        for key in ["int_backfire", "int_backfire_2"] {
+            samples.insert(
+                key.to_string(),
+                Sample {
+                    key: key.to_string(),
+                    role: "engine_backfire".to_string(),
+                    sample_rate: 44100,
+                    pcm: ramp.clone(),
+                    is_loop: false,
+                },
+            );
+        }
+        VehicleSoundBank {
+            samples,
+            bank_name: "unit".to_string(),
+        }
+    }
+
     fn engine_with_bank(bank: VehicleSoundBank) -> VehicleAudioEngine {
         let mut e = VehicleAudioEngine {
             bank,
@@ -714,6 +850,10 @@ mod tests {
             max_rpm: 0.0,
             backfire_cooldown_samples: 0,
             variant_rng_state: 0xF090_1994_D15C_A11D,
+            per_sample_gain: BTreeMap::new(),
+            exhaust_key: String::new(),
+            exhaust_cursor: 0.0,
+            exhaust_crackle_samples: 0,
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::ShiftUp,
@@ -890,14 +1030,14 @@ mod tests {
     }
 
     #[test]
-    fn backfire_fires_on_overrun_above_12k_rpm() {
+    fn backfire_fires_on_overrun_above_13_5k_rpm() {
         let mut e = engine_with_bank(dummy_bank());
-        // High throttle at high RPM (>12000)
-        e.set_state(13500.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
+        // High throttle at high RPM (>13500)
+        e.set_state(14500.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
         assert_eq!(e.last_trigger(), "");
 
         // Sudden lift-off
-        e.set_state(13200.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(14200.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
         assert_eq!(e.last_trigger(), "engine_backfire");
 
         // Cooldown prevents a second lift-off from restarting another variant.
@@ -907,8 +1047,8 @@ mod tests {
             .position(|o| o.trigger == Trigger::Backfire && o.active);
         e.render(&mut vec![0.0; 256], &mut vec![0.0; 256], 256);
         let cooldown_before = e.backfire_cooldown_samples;
-        e.set_state(13000.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
-        e.set_state(12800.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(14000.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(13800.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
         let active_after = e
             .one_shots
             .iter()
@@ -916,25 +1056,30 @@ mod tests {
         assert_eq!(e.backfire_cooldown_samples, cooldown_before);
         assert_eq!(active_after, active_before);
 
-        // Advance render past the remaining cooldown.
-        let mut l = vec![0.0f32; 15200];
-        let mut r = vec![0.0f32; 15200];
-        e.render(&mut l, &mut r, 15200);
+        // Advance render past the remaining cooldown (1 s @ 44.1 kHz).
+        let mut l = vec![0.0f32; 44200];
+        let mut r = vec![0.0f32; 44200];
+        e.render(&mut l, &mut r, 44200);
         assert_eq!(e.backfire_cooldown_samples, 0);
 
         // Now next lift-off triggers backfire again
-        e.set_state(13000.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
-        e.set_state(12700.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(14000.0, 1000.0, 15000.0, 1.0, 200.0, 4, 0.0, "asphalt");
+        e.set_state(13900.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
         assert_eq!(e.last_trigger(), "engine_backfire");
     }
 
     #[test]
     fn backfire_does_not_fire_at_low_rpm() {
         let mut e = engine_with_bank(dummy_bank());
-        // High throttle at low RPM (<12000)
+        // High throttle at low RPM (<13500)
         e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
         // Sudden lift-off
         e.set_state(7800.0, 1000.0, 15000.0, 0.0, 100.0, 3, 0.0, "asphalt");
+        assert_eq!(e.last_trigger(), "");
+
+        // Just below the 13.5k threshold: lift-off must not fire.
+        e.set_state(13400.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        e.set_state(13200.0, 1000.0, 15000.0, 0.0, 100.0, 3, 0.0, "asphalt");
         assert_eq!(e.last_trigger(), "");
     }
 
@@ -970,5 +1115,216 @@ mod tests {
             })
             .collect();
         assert_eq!(sequence, replay_sequence);
+    }
+
+    #[test]
+    fn configured_gain_scales_engine_bands() {
+        let mut e1 = engine_with_bank(low_level_engine_bank());
+        let mut e2 = engine_with_bank(low_level_engine_bank());
+        for key in ENGINE_BAND_KEYS {
+            e2.per_sample_gain.insert(key.to_string(), 0.5);
+        }
+        e1.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        e2.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l1 = vec![0.0f32; 512];
+        let mut r1 = vec![0.0f32; 512];
+        let mut l2 = vec![0.0f32; 512];
+        let mut r2 = vec![0.0f32; 512];
+        e1.render(&mut l1, &mut r1, 512);
+        e2.render(&mut l2, &mut r2, 512);
+        for i in 0..512 {
+            // Absolute comparison: the sine crosses zero, so ratios are NaN there.
+            let want = 0.5 * l1[i];
+            assert!(
+                (l2[i] - want).abs() < 1e-3,
+                "sample {i}: got {} want {want}",
+                l2[i]
+            );
+        }
+    }
+
+    #[test]
+    fn configured_gain_scales_backfire_one_shot() {
+        let mut e1 = engine_with_bank(silent_backfire_bank());
+        let mut e2 = engine_with_bank(silent_backfire_bank());
+        e2.per_sample_gain.insert("int_backfire".to_string(), 0.4);
+        e2.per_sample_gain.insert("int_backfire_2".to_string(), 0.4);
+        e1.set_state(14000.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        e2.set_state(14000.0, 1000.0, 15000.0, 0.0, 200.0, 4, 0.0, "asphalt");
+        e1.trigger(Trigger::Backfire);
+        e2.trigger(Trigger::Backfire);
+        let mut l1 = vec![0.0f32; 2048];
+        let mut r1 = vec![0.0f32; 2048];
+        let mut l2 = vec![0.0f32; 2048];
+        let mut r2 = vec![0.0f32; 2048];
+        e1.render(&mut l1, &mut r1, 2048);
+        e2.render(&mut l2, &mut r2, 2048);
+        let mut checked = 0;
+        for i in 100..1700 {
+            if l1[i] == 0.0 {
+                continue;
+            }
+            let ratio = l2[i] / l1[i];
+            assert!(
+                (ratio - 0.4).abs() < 0.02,
+                "sample {i}: ratio {ratio} (want 0.4)"
+            );
+            checked += 1;
+        }
+        assert!(checked > 0, "one-shot produced no audible output");
+    }
+
+    #[test]
+    fn unconfigured_keys_play_at_full_level() {
+        let mut e1 = engine_with_bank(dummy_bank());
+        let mut e2 = engine_with_bank(dummy_bank());
+        e2.per_sample_gain.insert("does_not_exist".to_string(), 0.0);
+        e1.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        e2.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l1 = vec![0.0f32; 256];
+        let mut r1 = vec![0.0f32; 256];
+        let mut l2 = vec![0.0f32; 256];
+        let mut r2 = vec![0.0f32; 256];
+        e1.render(&mut l1, &mut r1, 256);
+        e2.render(&mut l2, &mut r2, 256);
+        assert_eq!(l1, l2, "unconfigured keys must not affect the mix");
+    }
+
+    /// Bank with silent engine bands and a deterministic 100 Hz exhaust-mic loop
+    /// for testing the exhaust voice behaviour.
+    fn exhaust_test_bank() -> VehicleSoundBank {
+        use crate::bank::Sample;
+        let mut samples = std::collections::BTreeMap::new();
+        let silent: Vec<i16> = vec![0i16; 4096];
+        for key in ENGINE_BAND_KEYS {
+            samples.insert(
+                key.to_string(),
+                Sample {
+                    key: key.to_string(),
+                    role: key.to_string(),
+                    sample_rate: 44100,
+                    pcm: silent.clone(),
+                    is_loop: true,
+                },
+            );
+        }
+        let exhaust_pcm: Vec<i16> = (0..4096)
+            .map(|i| {
+                let phase = 2.0 * std::f32::consts::PI * 100.0 * i as f32 / 44100.0;
+                (1200.0 * phase.sin()) as i16
+            })
+            .collect();
+        samples.insert(
+            "exhaust-mic".to_string(),
+            Sample {
+                key: "exhaust-mic".to_string(),
+                role: "exhaust_mic".to_string(),
+                sample_rate: 44100,
+                pcm: exhaust_pcm,
+                is_loop: true,
+            },
+        );
+        VehicleSoundBank {
+            samples,
+            bank_name: "unit_exhaust".to_string(),
+        }
+    }
+
+    fn zero_crossings(buf: &[f32]) -> usize {
+        buf.iter()
+            .zip(buf.iter().skip(1))
+            .filter(|(a, b)| a.signum() != b.signum())
+            .count()
+    }
+
+    fn rms(buf: &[f32]) -> f32 {
+        (buf.iter().map(|v| v * v).sum::<f32>() / buf.len().max(1) as f32).sqrt()
+    }
+
+    #[test]
+    fn exhaust_pitch_follows_rpm() {
+        let mut e = engine_with_bank(exhaust_test_bank());
+        e.exhaust_key = "exhaust-mic".to_string();
+        e.cfg.exhaust.base_gain = 1.0;
+        e.cfg.exhaust.throttle_sensitivity = 0.0;
+
+        // Pin smoothed_rpm so the pitch is stable (no glide artefact).
+        e.smoothed_rpm = 14400.0;
+        e.target_rpm = 14400.0;
+        e.idle_rpm = 1000.0;
+        e.max_rpm = 15000.0;
+        let mut l1 = vec![0.0f32; 4096];
+        let mut r1 = vec![0.0f32; 4096];
+        e.render(&mut l1, &mut r1, 4096);
+        let zc1 = zero_crossings(&l1);
+
+        e.exhaust_cursor = 0.0;
+        e.smoothed_rpm = 7200.0;
+        e.target_rpm = 7200.0;
+        let mut l2 = vec![0.0f32; 4096];
+        let mut r2 = vec![0.0f32; 4096];
+        e.render(&mut l2, &mut r2, 4096);
+        let zc2 = zero_crossings(&l2);
+
+        assert!(
+            zc1 > 10 && zc2 > 4,
+            "expected audible exhaust output at both RPMs (zc1={zc1}, zc2={zc2})"
+        );
+        let ratio = zc2 as f32 / zc1 as f32;
+        assert!(
+            (ratio - 0.5).abs() < 0.15,
+            "exhaust pitch should halve when RPM halves: ratio {ratio}"
+        );
+    }
+
+    #[test]
+    fn exhaust_gain_follows_throttle() {
+        let mut e = engine_with_bank(exhaust_test_bank());
+        e.exhaust_key = "exhaust-mic".to_string();
+        e.cfg.exhaust.base_gain = 1.0;
+        e.cfg.exhaust.throttle_sensitivity = 1.0;
+        e.smoothed_rpm = 14400.0;
+        e.target_rpm = 14400.0;
+        e.idle_rpm = 1000.0;
+        e.max_rpm = 15000.0;
+
+        // Full throttle -> full gain.
+        e.last_throttle = 1.0;
+        let mut l_full = vec![0.0f32; 4096];
+        e.render(&mut l_full, &mut vec![0.0f32; 4096], 4096);
+        let rms_full = rms(&l_full);
+
+        // Zero throttle -> zero gain (sensitivity=1.0).
+        e.exhaust_cursor = 0.0;
+        e.last_throttle = 0.0;
+        let mut l_off = vec![0.0f32; 4096];
+        e.render(&mut l_off, &mut vec![0.0f32; 4096], 4096);
+        let rms_off = rms(&l_off);
+
+        assert!(rms_full > 0.005, "exhaust should be audible at full throttle");
+        assert!(
+            rms_off < 1e-6,
+            "exhaust should be silent at zero throttle (rms={rms_off})"
+        );
+    }
+
+    #[test]
+    fn exhaust_crackle_boosts_gain_on_backfire() {
+        let mut e = engine_with_bank(exhaust_test_bank());
+        e.exhaust_key = "exhaust-mic".to_string();
+        e.cfg.exhaust.base_gain = 0.0;
+        e.cfg.exhaust.crackle_gain = 0.5;
+        e.cfg.exhaust.throttle_sensitivity = 0.0;
+
+        e.set_state(14000.0, 1000.0, 15000.0, 0.0, 100.0, 3, 0.0, "asphalt");
+        // Simulate the crackle that set_state sets when an overrun backfire fires.
+        e.exhaust_crackle_samples = (e.sample_rate as f64 * 0.12) as usize;
+        let mut l = vec![0.0f32; 2048];
+        e.render(&mut l, &mut vec![0.0f32; 2048], 2048);
+
+        assert!(
+            l.iter().any(|v| v.abs() > 0.01),
+            "exhaust crackle should produce audible output even with base_gain=0"
+        );
     }
 }

@@ -62,6 +62,7 @@ fn bank_loads_and_has_expected_entries() {
         "engine_start_backfire",
         "int_backfire",
         "int_backfire_2",
+        "exhaust-mic",
         "impact_scrape",
     ] {
         assert!(bank.get(key).is_some(), "missing bank key {key}");

@@ -70,6 +70,9 @@ BANK_SPEC: tuple[SpecEntry, ...] = (
     SpecEntry("impact_cone", "GP_conehit.wav", "impact_cone", False, "impact"),
     SpecEntry("impact_fire", "GP_fire.WAV", "impact_fire", False, "impact"),
     SpecEntry("impact_scrape", None, "impact_scrape", False, "impact", synthesis="flat_floor_scrape_v2"),
+    # --- Exhaust microphone (V10 exhaust note, loop) ---
+    SpecEntry("exhaust-mic", None, "exhaust_mic", True, "engine",
+              native_rpm=14400.0, synthesis="exhaust_mic_v1"),
 )
 
 SPEC_BY_KEY: dict[str, SpecEntry] = {e.key: e for e in BANK_SPEC}

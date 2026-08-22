@@ -38,7 +38,7 @@ def _synthesize_flat_floor_scrape(sample_rate: int) -> tuple[list[float], dict]:
     """Mid-high dominant undertray scrape: HPF at 280Hz, 1.4-4.8kHz friction, delicate spark sheen and silky 16ms attack."""
     seed = 9002
     duration_s = 0.36
-    frame_count = int(round(duration_s * sample_rate))
+    frame_count = round(duration_s * sample_rate)
     t = np.arange(frame_count, dtype=np.float64) / sample_rate
     rng = np.random.default_rng(seed)
 
@@ -157,9 +157,9 @@ def _enhance_backfire(arr: np.ndarray, sample_rate: int, seed: int) -> np.ndarra
     pop_offsets_ms = [28, 62, 105] if seed % 2 == 1 else [34, 75, 120]
     pop_gains = [0.45, 0.25, 0.12]
     for ms, gain in zip(pop_offsets_ms, pop_gains):
-        idx = int(round(ms * 0.001 * sample_rate))
+        idx = round(ms * 0.001 * sample_rate)
         if idx < frame_count:
-            pop_dur = int(round(0.015 * sample_rate))
+            pop_dur = round(0.015 * sample_rate)
             end_idx = min(frame_count, idx + pop_dur)
             sub_t = t[:end_idx - idx]
             pop_env = (1.0 - sub_t / 0.015) * np.exp(-sub_t / 0.004)
@@ -324,7 +324,93 @@ def _enhance_engine_high(arr: np.ndarray, sample_rate: int, seed: int = 9013) ->
     return composite
 
 
+def _synthesize_exhaust_mic(sample_rate: int) -> tuple[list[float], dict]:
+    """V10 exhaust-mic loop (14,400 rpm -> 1200 Hz firing rate).
+
+    Close exhaust microphone character: strong firing fundamental (1200 Hz = rpm/12)
+    with the 2nd-6th harmonic 'scream' (2.4-7.2 kHz), per-firing combustion texture
+    in the noise floor, exhaust pipe modal resonances (0.85/1.7/3.4 kHz) and
+    broadband gas-flow hiss. All components are phase-aligned over a 1 s loop so
+    the seam is continuous; `make_loop_seamless` then forces exact endpoint equality.
+    """
+    seed = 9020
+    duration_s = 1.0
+    frame_count = round(duration_s * sample_rate)
+    t = np.arange(frame_count, dtype=np.float64) / sample_rate
+    rng = np.random.default_rng(seed)
+    f_firing = 14400.0 / 12.0  # firing frequency at the recorded rpm (V10 4-stroke)
+
+    # 1. Harmonic "scream" ladder: firing fundamental + 2..6 harmonics with slow drift.
+    harmonics = [1.0, 0.60, 0.45, 0.30, 0.18, 0.10]
+    phase_drift = 0.25 * np.sin(2.0 * np.pi * 2.8 * t)
+    scream = np.zeros(frame_count, dtype=np.float64)
+    for k, amp in enumerate(harmonics, start=1):
+        ph = phase_drift * (0.6 + 0.25 * k)
+        scream += amp * np.sin(2.0 * np.pi * f_firing * k * t + ph)
+    tremolo = 0.92 + 0.08 * np.sin(2.0 * np.pi * 24.0 * t)  # cylinder-to-cylinder roughness
+    scream *= tremolo
+
+    # 2. Combustion roar: broadband noise 250-9000 Hz with firing-rate ripple
+    #    (per-firing texture rather than discrete pulses; steady-state loop).
+    roar_bp = signal.butter(4, [250.0, 9000.0], btype="bandpass", fs=sample_rate, output="sos")
+    roar = signal.sosfilt(roar_bp, rng.standard_normal(frame_count))
+    roar /= max(float(np.max(np.abs(roar))), 1e-9)
+    firing_ripple = 0.5 + 0.5 * np.sin(2.0 * np.pi * f_firing * t + 0.3)
+    roar *= 0.35 + 0.65 * firing_ripple
+
+    # 3. Exhaust pipe modal resonances (0.85 / 1.7 / 3.4 kHz) on broadband flow.
+    pipe_raw = rng.standard_normal(frame_count)
+    pipe = np.zeros(frame_count, dtype=np.float64)
+    for (fc, q) in [(850.0, 4.0), (1700.0, 4.5), (3400.0, 5.0)]:
+        bm, am = signal.iirpeak(fc, q, fs=sample_rate)
+        pipe += signal.lfilter(bm, am, pipe_raw)
+    pipe_hp = signal.butter(2, 300.0, btype="highpass", fs=sample_rate, output="sos")
+    pipe = signal.sosfilt(pipe_hp, pipe)
+    pipe /= max(float(np.max(np.abs(pipe))), 1e-9)
+
+    # 4. Gas-flow hiss (air through the megaphone, high shelf).
+    hiss_bp = signal.butter(2, [2000.0, 12000.0], btype="bandpass", fs=sample_rate, output="sos")
+    hiss = signal.sosfilt(hiss_bp, rng.standard_normal(frame_count))
+    hiss /= max(float(np.max(np.abs(hiss))), 1e-9)
+
+    # 5. Engine-order body (240/480 Hz at 14,400 rpm) — light weight, exhaust has little sub.
+    body = 0.05 * np.sin(2.0 * np.pi * 240.0 * t) + 0.03 * np.sin(2.0 * np.pi * 480.0 * t + 0.7)
+
+    composite = 0.50 * scream + 0.38 * roar + 0.20 * pipe + 0.06 * hiss + body
+    saturated = np.tanh(composite * 1.35)
+
+    sos_lp = signal.butter(2, 12000.0, btype="lowpass", fs=sample_rate, output="sos")
+    final_sig = signal.sosfilt(sos_lp, saturated)
+    final_sig = final_sig - np.mean(final_sig)
+    final_list = final_sig.tolist()
+    final_list = make_loop_seamless(final_list, xfade_frames=LOOP_XFADE_FRAMES)
+    final_list = remove_dc(final_list)
+    final_list = normalize_peak(final_list, 0.89)
+
+    return final_list, {
+        "recipe": "exhaust_mic_v1",
+        "seed": seed,
+        "duration_s": duration_s,
+        "native_rpm": 14400.0,
+        "target_peak": 0.89,
+        "components": [
+            "v10_firing_fundamental_1200hz_14400rpm",
+            "harmonic_scream_ladder_2x6x_2400_7200hz",
+            "combustion_roar_250_9000hz_firing_ripple",
+            "exhaust_pipe_modal_resonances_850_1700_3400hz",
+            "gas_flow_hiss_2k_12khz",
+            "engine_order_body_240_480hz",
+            "seamless_1s_loop",
+            "tanh_warmth",
+        ],
+    }
+
+
 def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[list[float], dict]:
+    if spec.synthesis == "exhaust_mic_v1":
+        samples, params = _synthesize_exhaust_mic(sample_rate)
+        params["category"] = spec.category
+        return samples, params
     if spec.synthesis in ("flat_floor_scrape_v1", "flat_floor_scrape_v2"):
         samples, params = _synthesize_flat_floor_scrape(sample_rate)
         params["category"] = spec.category

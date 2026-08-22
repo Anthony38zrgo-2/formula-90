@@ -52,6 +52,21 @@ var surface := "asphalt"
 # One-shot triggers pending playback this frame.
 var _pending_triggers: Array[String] = []
 
+# Per-key linear gain ceiling from res://sounds/sound_mixer_config.json
+# (mirrors the Rust mixer's per_sample_gain). Absent keys -> 1.0.
+var _key_gain := {}
+
+# Exhaust layer config from sound_mixer_config.json["exhaust"].
+var _exhaust_cfg := {
+	"enabled": true,
+	"base_gain": 0.7,
+	"throttle_sensitivity": 0.8,
+	"crackle_gain": 0.6,
+}
+const EXHAUST_NATIVE_RPM := 14400.0
+var _exhaust_crackle_frames := 0
+var _backfire_cooldown := 0.0
+
 # role -> AudioStreamWAV.
 var _players := {}
 
@@ -78,6 +93,24 @@ var last_trigger: String = ""
 func _ready() -> void:
 	_ensure_vehicle_bus()
 	_load_bank()
+	_load_mixer_config()
+
+
+## Read the runtime mixer tuning (res://sounds/sound_mixer_config.json): per-key
+## linear gain ceilings. Mirrors the Rust `SoundMixerConfig`; malformed/missing
+## file degrades to no overrides.
+func _load_mixer_config() -> void:
+	const path := "res://sounds/sound_mixer_config.json"
+	if not FileAccess.file_exists(path):
+		return
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if data is Dictionary:
+		if data.get("gains") is Dictionary:
+			_key_gain = data["gains"]
+		if data.get("exhaust") is Dictionary:
+			for k in _exhaust_cfg:
+				if data["exhaust"].has(k):
+					_exhaust_cfg[k] = data["exhaust"][k]
 
 
 func _physics_process(delta: float) -> void:
@@ -109,7 +142,7 @@ func _load_bank() -> void:
 			wav.stereo = false
 			var bytes := FileAccess.get_file_as_bytes(res_path)
 			wav.data = _extract_pcm16(bytes)
-		var is_loop := key in ENGINE_BANDS or key.begins_with("surf_")
+		var is_loop := key in ENGINE_BANDS or key.begins_with("surf_") or key == "exhaust-mic"
 		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD if is_loop else AudioStreamWAV.LOOP_DISABLED
 		if is_loop and wav.get_length() > 0.0:
 			# loop_end está en SAMPLES (frames), no en bytes. Para streams QOA/ADPCM
@@ -242,6 +275,20 @@ func update(_delta: float) -> void:
 			player.pitch_scale = pitches[i]
 		_play_loop(key, weights[i], engine_gain)
 
+	# Exhaust microphone layer: pitch follows RPM, amplitude follows throttle,
+	# with a short gain boost (crackle) on backfire events.
+	if _exhaust_cfg["enabled"]:
+		var ex_player: AudioStreamPlayer = _players.get("exhaust-mic")
+		if ex_player != null:
+			ex_player.pitch_scale = clampf(rpm / EXHAUST_NATIVE_RPM, PITCH_MIN, PITCH_MAX)
+			var sens: float = _exhaust_cfg["throttle_sensitivity"]
+			var throttle_env := (1.0 - sens) + sens * throttle
+			var ex_gain: float = _exhaust_cfg["base_gain"] * clampf(throttle_env, 0.0, 1.0)
+			if _exhaust_crackle_frames > 0:
+				ex_gain += _exhaust_cfg["crackle_gain"]
+				_exhaust_crackle_frames -= 1
+			_play_loop("exhaust-mic", 1.0, ex_gain)
+
 	# Surface bed (asphalt none); silence any previous bed when it changes.
 	var bed: Variant = SURFACE_KEYS.get(surface)
 	var slip := _aggregate_slip()
@@ -265,6 +312,15 @@ func update(_delta: float) -> void:
 			trigger(fired)
 		_last_gear = gear
 	last_trigger = fired
+
+	# Overrun backfire: sudden lift-off from high throttle at high RPM.
+	# Triggers exhaust crackle (~120 ms boost) to mirror the Rust mixer.
+	# 1 s cooldown prevents throttle pumps / rev-limiter bouncing.
+	if _backfire_cooldown > 0.0:
+		_backfire_cooldown = maxf(_backfire_cooldown - _delta, 0.0)
+	if last_throttle >= 0.80 and throttle <= 0.15 and rpm >= 13500.0 and _backfire_cooldown <= 0.0:
+		_exhaust_crackle_frames = int(0.12 / _delta) if _delta > 0 else 8
+		_backfire_cooldown = 1.0
 
 	# One-shots fired this frame.
 	for t: String in _pending_triggers:
@@ -317,7 +373,8 @@ func _play_loop(key: String, weight: float, gain: float) -> void:
 	if weight <= 0.0:
 		_set_target_db(key, VOLUME_FLOOR_DB)
 		return
-	_set_target_db(key, linear_to_db(weight * gain) + TRIM_DB)
+	var per_key: float = float(_key_gain.get(key, 1.0))
+	_set_target_db(key, linear_to_db(weight * gain * per_key) + TRIM_DB)
 	if not player.playing:
 		player.play()
 
@@ -331,7 +388,8 @@ func _play_oneshot(key: String) -> void:
 		return
 	if player.playing:
 		return
-	player.volume_db = TRIM_DB
+	var per_key: float = float(_key_gain.get(key, 1.0))
+	player.volume_db = linear_to_db(per_key) + TRIM_DB
 	player.play()
 
 

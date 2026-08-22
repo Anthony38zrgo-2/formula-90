@@ -31,15 +31,16 @@ def test_manifest_contains_required_fields():
     assert manifest.sample_rate == 44100
     assert manifest.channels == 1
     assert manifest.pcm_bits == 16
-    assert len(manifest.files) == 25
+    assert len(manifest.files) == 26
     roles = {e.role for e in manifest.files}
     assert {"engine_idle", "engine_low", "engine_mid", "engine_high", "engine_redline"} <= roles
     assert {"shift_up", "shift_down"} <= roles
     assert {"surf_grass", "surf_sand", "surf_rumble"} <= roles
     assert {"impact_barrier", "impact_cone", "impact_hit"} <= roles
+    assert "exhaust_mic" in roles
     for e in manifest.files:
         if e.synthesis.get("recipe"):
-            assert e.synthesis["recipe"] in ("flat_floor_scrape_v1", "flat_floor_scrape_v2")
+            assert e.synthesis["recipe"] in ("flat_floor_scrape_v1", "flat_floor_scrape_v2", "exhaust_mic_v1")
             assert "procedural synthesis" in e.provenance.lower()
         else:
             assert e.synthesis.get("source_file"), f"{e.file} missing source_file"

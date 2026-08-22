@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "gains": {
+    "engine_idle": 1.0,
+    "engine_low": 0.95,
+    "engine_mid": 0.95,
+    "engine_high": 0.85,
+    "engine_redline": 0.9,
+    "engine_tc": 0.6,
+    "exhaust-mic": 0.8,
+    "surf_grass": 0.45,
+    "surf_sand": 0.5,
+    "surf_rumble": 0.55,
+    "shift_up": 0.85,
+    "shift_down": 0.85,
+    "shift_3": 0.8,
+    "engine_limiter": 0.8,
+    "engine_start_backfire": 0.8,
+    "int_backfire": 0.25,
+    "int_backfire_2": 0.25,
+    "engine_starter": 0.7,
+    "impact_hit_1": 0.7,
+    "impact_hit_2": 0.75,
+    "impact_hit_3": 0.8,
+    "impact_hit_4": 0.85,
+    "impact_barrier": 0.8,
+    "impact_cone": 0.6,
+    "impact_fire": 0.7,
+    "impact_scrape": 0.7
+  },
+  "exhaust": {
+    "enabled": true,
+    "base_gain": 0.2,
+    "throttle_sensitivity": 0.7,
+    "gas_flow_gain": 0.1,
+    "crackle_gain": 0.1
+  }
+}

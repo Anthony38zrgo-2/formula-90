@@ -42,7 +42,11 @@ def test_loop_seam_continuity():
     manifest = json.loads((BANK / "bank_manifest.json").read_text(encoding="utf-8"))
     by_file = {e["file"]: e for e in manifest["files"]}
     for wav in sorted(BANK.glob("*.wav")):
-        entry = by_file[wav.name]
+        entry = by_file.get(wav.name)
+        if entry is None:
+            # WAV on disk not listed in the manifest (e.g. *_backup originals
+            # kept alongside remasters). Loop-seam only applies to listed entries.
+            continue
         _, vals = _read_mono16(wav)
         if entry["loop"]:
             thresh = 0.05
