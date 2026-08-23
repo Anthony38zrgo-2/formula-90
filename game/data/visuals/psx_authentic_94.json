@@ -1,14 +1,14 @@
 {
   "profile_name": "PSX Authentic 1994",
-  "display": {
-    "internal_width": 320,
-    "internal_height": 240,
+   "display": {
+    "internal_width": 1280,
+    "internal_height": 720,
     "upscale_mode": "native_hires_psx",
     "fps_cap": 120
   },
-   "geometry": {
-    "vertex_snap_distance": 0.10,
-    "affine_texture_strength": 0.70
+  "geometry": {
+    "vertex_snap_distance": 0.20,
+    "affine_texture_strength": 0.95
   },
   "color": {
     "bit_depth": 4,
