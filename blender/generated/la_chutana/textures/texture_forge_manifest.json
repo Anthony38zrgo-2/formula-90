@@ -45,15 +45,15 @@
         "dither_strength": 0.01,
         "contrast": 1.035
       },
-      "sha256": "ffd846b5a48709449b20f222cded31a2de70367c95bfcd0c91844b782ed3ce2c",
+      "sha256": "a64d9e825155aca7279fd5f7617b6e307837a1c9d61dafc3c77afdc76c9c70ea",
       "biome": "south_america_west_low",
       "role": "terrain",
       "ground_cover": {
-        "mode": "hybrid_cards_texture",
-        "card_share": 1.0,
-        "texture_share": 0.0,
-        "texture_coverage": 0.0,
-        "texture_opacity": 0.0,
+        "mode": "terrain_texture_only",
+        "card_share": 0.0,
+        "texture_share": 1.0,
+        "texture_coverage": 0.22,
+        "texture_opacity": 0.18,
         "base_source": {
           "path": "blender/assets/texture_sources/la_chutana/terrain/south_america_west_low_terrain_source.png",
           "sha256": "e5d6009f035b3d9b003962e87c2019c7e240b72a8c36e795a91389f4a933a8ab"
