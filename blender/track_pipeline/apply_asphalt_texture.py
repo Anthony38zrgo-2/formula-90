@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from atomic_json import write_json_atomic
 from texture_forge import SurfaceRecipe, forge_surface, make_seamless_edges, recipe_dict, save_image_atomic
 
 
@@ -50,7 +51,7 @@ def main() -> int:
         "seamless": True,
         "source": {"path": materials["asphalt_source"], "sha256": sha256(source)},
     })
-    forge_manifest.write_text(json.dumps(forge, indent=2) + "\n", encoding="utf-8")
+    write_json_atomic(forge_manifest, forge)
     print(json.dumps({"asphalt": str(output), "resolution": [size, size], "sha256": sha256(output)}, indent=2))
     return 0
 

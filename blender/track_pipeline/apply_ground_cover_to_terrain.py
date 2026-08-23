@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from atomic_json import write_json_atomic
 from generate_procedural_textures import apply_ground_cover_detail
 from texture_forge import make_seamless_edges, save_image_atomic
 
@@ -67,7 +68,7 @@ def main() -> int:
         "base_source": {"path": spec["base_source"], "sha256": sha256(base)},
         "sources": [{"path": path.relative_to(repo).as_posix(), "sha256": sha256(path)} for path in sources],
     }
-    forge_manifest.write_text(json.dumps(forge, indent=2) + "\n", encoding="utf-8")
+    write_json_atomic(forge_manifest, forge)
     print(json.dumps({"terrain": str(output), "sha256": sha256(output), "coverage": spec["texture_coverage"]}, indent=2))
     return 0
 
