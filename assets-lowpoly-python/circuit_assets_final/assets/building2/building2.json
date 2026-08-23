@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "asset_id": "building2",
+  "category": "building",
+  "source": {
+    "file": "objects/building2.ac",
+    "format": "AC3D",
+    "sha256": "c661801cbec073e7575d2d90b401d9c1b9025e5a49ccd2652a20a211ecf492f5"
+  },
+  "output": {
+    "glb": "building2.glb",
+    "sha256": "91dc69a5f0895bfa9c92bb5f10a36f0b2bd05b308f215c84385b95f9491cd0af"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      0.0,
+      0.0,
+      1.0430800001515195e-07
+    ],
+    "translation_applied_m": [
+      -0.0,
+      -0.0,
+      -1.0430800001515195e-07
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      0.0,
+      0.0,
+      1.0430800001515195e-07
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 30.000080108642578,
+    "height_y": 15.0,
+    "depth_z": 10.0
+  },
+  "aabb_local_m": {
+    "min": [
+      -15.000040054321289,
+      0.0,
+      -5.0
+    ],
+    "max": [
+      15.000040054321289,
+      15.0,
+      5.0
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -15.00004,
+      0.0,
+      -5.0
+    ],
+    "max": [
+      15.00004,
+      15.0,
+      5.000000208616
+    ]
+  },
+  "geometry": {
+    "meshes": 13,
+    "vertices_exported": 90,
+    "triangles": 30
+  },
+  "textures": [
+    {
+      "source": "textures/building2.rgb",
+      "png": "building2.png",
+      "width": 64,
+      "height": 64,
+      "alpha": false,
+      "sha256_source": "cdb7c0fc84393e54b4763fd145bd0fdcd5728d7f65785c5ea48d07b1fc7106e0",
+      "sha256_png": "3164bef21a3ad507a8156a6c01e7585e1f63f01805180f5a921682ea12a94a2b"
+    },
+    {
+      "source": "textures/building1.rgb",
+      "png": "building1.png",
+      "width": 64,
+      "height": 64,
+      "alpha": false,
+      "sha256_source": "4f3ed822a7d08ff2dba531ff794a8e5874a81cf4d71eec37a80dd2c0830c4256",
+      "sha256_png": "b2c6ceb20db3381ad9e7b9e5591b729594b37eaa084bdc837a5c92da7972475a"
+    }
+  ],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "box_or_convex",
+    "deterministic_key": "building2"
+  }
+}

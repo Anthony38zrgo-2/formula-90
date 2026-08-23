@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "asset_id": "tree7",
+  "category": "vegetation",
+  "source": {
+    "file": "objects/tree7.ac",
+    "format": "AC3D",
+    "sha256": "42ab4575d12352d8e8c04655af72357f8d50efdfa439f1c887e2f651519fe250"
+  },
+  "output": {
+    "glb": "tree7.glb",
+    "sha256": "e93b67c631abade69acba8c90fb868587ac83922a56d9f26e6945a8f75697d70"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      -7.4505797087454084e-09,
+      0.0,
+      0.0
+    ],
+    "translation_applied_m": [
+      7.4505797087454084e-09,
+      -0.0,
+      -0.0
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      -7.4505797087454084e-09,
+      0.0,
+      0.0
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 14.0,
+    "height_y": 15.5,
+    "depth_z": 14.0
+  },
+  "aabb_local_m": {
+    "min": [
+      -7.0,
+      0.0,
+      -7.0
+    ],
+    "max": [
+      7.0,
+      15.5,
+      7.0
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -7.00000000745058,
+      0.0,
+      -7.0
+    ],
+    "max": [
+      6.99999999254942,
+      15.5,
+      7.0
+    ]
+  },
+  "geometry": {
+    "meshes": 1,
+    "vertices_exported": 12,
+    "triangles": 4
+  },
+  "textures": [
+    {
+      "source": "textures/tree7.rgb",
+      "png": "tree7.png",
+      "width": 64,
+      "height": 64,
+      "alpha": true,
+      "sha256_source": "0be68ef9f951c6ad9e501f4109e40b505c7af48eaf17d7f206f6705480bbd148",
+      "sha256_png": "4e03de08f6485acd9dfd4dd168d4a108d56434916db056161e643ce10c8cbdf7"
+    }
+  ],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "none",
+    "deterministic_key": "tree7"
+  }
+}

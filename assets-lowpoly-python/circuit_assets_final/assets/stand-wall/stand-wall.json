@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "asset_id": "stand-wall",
+  "category": "grandstand",
+  "source": {
+    "file": "objects/stand-wall.ac",
+    "format": "AC3D",
+    "sha256": "f758a6bee8452245a9db47237b96ec7a41ad16f3b02ab961a09b00ea09f0662f"
+  },
+  "output": {
+    "glb": "stand-wall.glb",
+    "sha256": "9d87575fad6e35b8863fabf481eea035107b04cdd3918fecb0a22e5b1de0b3bc"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "translation_applied_m": [
+      -0.0,
+      -0.0,
+      -0.0
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 6.0,
+    "height_y": 3.0,
+    "depth_z": 0.5
+  },
+  "aabb_local_m": {
+    "min": [
+      -3.0,
+      0.0,
+      -0.25
+    ],
+    "max": [
+      3.0,
+      3.0,
+      0.25
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -3.0,
+      0.0,
+      -0.25
+    ],
+    "max": [
+      3.0,
+      3.0,
+      0.25
+    ]
+  },
+  "geometry": {
+    "meshes": 1,
+    "vertices_exported": 54,
+    "triangles": 18
+  },
+  "textures": [],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "box_or_convex",
+    "deterministic_key": "stand-wall"
+  }
+}

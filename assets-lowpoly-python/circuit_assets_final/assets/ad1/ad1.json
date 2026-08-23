@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "asset_id": "ad1",
+  "category": "signage",
+  "source": {
+    "file": "objects/ad1.ac",
+    "format": "AC3D",
+    "sha256": "c746199d48bca382bf1b0ad3f67b0c0793ef771607160548942542d7fdc28928"
+  },
+  "output": {
+    "glb": "ad1.glb",
+    "sha256": "1074b7c4730486480c8eef0f464a64034736381a953abbbef8274e4af01eccc4"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      -1.1920900000461643e-07,
+      0.0,
+      0.0
+    ],
+    "translation_applied_m": [
+      1.1920900000461643e-07,
+      -0.0,
+      -0.0
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      -1.1920900000461643e-07,
+      0.0,
+      0.0
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 6.0,
+    "height_y": 6.0,
+    "depth_z": 0.0
+  },
+  "aabb_local_m": {
+    "min": [
+      -3.0,
+      0.0,
+      0.0
+    ],
+    "max": [
+      3.0,
+      6.0,
+      0.0
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -3.000000119209,
+      0.0,
+      0.0
+    ],
+    "max": [
+      2.999999880791,
+      6.0,
+      0.0
+    ]
+  },
+  "geometry": {
+    "meshes": 1,
+    "vertices_exported": 6,
+    "triangles": 2
+  },
+  "textures": [
+    {
+      "source": "textures/torcs-ad1.rgb",
+      "png": "torcs-ad1.png",
+      "width": 128,
+      "height": 128,
+      "alpha": true,
+      "sha256_source": "9732940ef2b02f278a1573d46a38139d175d83804ed93ddd110f71757fa71f77",
+      "sha256_png": "5a83448791ad3a5ea3af5c75509feda681e479e2c825660001cc12219d41473a"
+    }
+  ],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "box_or_convex",
+    "deterministic_key": "ad1"
+  }
+}

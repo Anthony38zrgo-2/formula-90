@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "asset_id": "bridge-arch",
+  "category": "bridge",
+  "source": {
+    "file": "objects/bridge-arch.ac",
+    "format": "AC3D",
+    "sha256": "a081fc164cd5549ac316fca72426182e02d7c0541020e80aa84a4e1a244f8682"
+  },
+  "output": {
+    "glb": "bridge-arch.glb",
+    "sha256": "6344a0b5a7ecb890cfdeb6044edcd4b8ee63dca388291b1909cdf6b363e9d191"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      6.983891999999999,
+      58.99936000000001,
+      -754.2434499999999
+    ],
+    "translation_applied_m": [
+      -6.983891999999999,
+      -58.99936000000001,
+      754.2434499999999
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      6.983891999999999,
+      58.99936000000001,
+      -754.2434499999999
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 14.00904369354248,
+    "height_y": 10.952879905700684,
+    "depth_z": 106.27030181884766
+  },
+  "aabb_local_m": {
+    "min": [
+      -7.00452184677124,
+      0.0,
+      -53.13515090942383
+    ],
+    "max": [
+      7.00452184677124,
+      10.952879905700684,
+      53.13515090942383
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -0.020629999999999704,
+      58.99936000000001,
+      -807.3786
+    ],
+    "max": [
+      13.988413999999999,
+      69.95224,
+      -701.1083
+    ]
+  },
+  "geometry": {
+    "meshes": 3,
+    "vertices_exported": 252,
+    "triangles": 84
+  },
+  "textures": [],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "static_mesh_or_convex",
+    "deterministic_key": "bridge-arch"
+  }
+}

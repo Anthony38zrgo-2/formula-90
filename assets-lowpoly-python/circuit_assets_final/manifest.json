@@ -1,0 +1,398 @@
+{
+  "schema_version": 1,
+  "package": "circuit_assets_final",
+  "source_archive": "data.rar",
+  "source_archive_sha256": "754fed2e7fc5c8d41f7e69812eb320e0a1e09b3154bf5f59acebe46da3888ac7",
+  "conventions": {
+    "units": "meters",
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "asset_origin": "bottom_center",
+    "glb_transform": "baked_identity",
+    "texture_embedding": true,
+    "godot_note": "Import GLB at scale 1.0. Place Node3D origin on ground; dimensions/AABB are authoritative from final GLB."
+  },
+  "asset_count": 31,
+  "assets": [
+    {
+      "id": "ad1",
+      "category": "signage",
+      "glb": "assets/ad1/ad1.glb",
+      "metadata": "assets/ad1/ad1.json",
+      "dimensions_m": {
+        "width_x": 6.0,
+        "height_y": 6.0,
+        "depth_z": 0.0
+      },
+      "sha256_glb": "1074b7c4730486480c8eef0f464a64034736381a953abbbef8274e4af01eccc4"
+    },
+    {
+      "id": "bridge-arch",
+      "category": "bridge",
+      "glb": "assets/bridge-arch/bridge-arch.glb",
+      "metadata": "assets/bridge-arch/bridge-arch.json",
+      "dimensions_m": {
+        "width_x": 14.00904369354248,
+        "height_y": 10.952879905700684,
+        "depth_z": 106.27030181884766
+      },
+      "sha256_glb": "6344a0b5a7ecb890cfdeb6044edcd4b8ee63dca388291b1909cdf6b363e9d191"
+    },
+    {
+      "id": "bridge",
+      "category": "bridge",
+      "glb": "assets/bridge/bridge.glb",
+      "metadata": "assets/bridge/bridge.json",
+      "dimensions_m": {
+        "width_x": 14.03182601928711,
+        "height_y": 52.48952102661133,
+        "depth_z": 357.6528015136719
+      },
+      "sha256_glb": "ec66ba12c25fc810a1968ba6a64d3f1e9b7520dbb0d7b71e5448ceac11dae288"
+    },
+    {
+      "id": "building1",
+      "category": "building",
+      "glb": "assets/building1/building1.glb",
+      "metadata": "assets/building1/building1.json",
+      "dimensions_m": {
+        "width_x": 10.000001907348633,
+        "height_y": 20.0,
+        "depth_z": 10.000001907348633
+      },
+      "sha256_glb": "2794d4aab1377f21f1c1421eebab5d70b64e0d5ea5f2657873435abe3c1b300f"
+    },
+    {
+      "id": "building2",
+      "category": "building",
+      "glb": "assets/building2/building2.glb",
+      "metadata": "assets/building2/building2.json",
+      "dimensions_m": {
+        "width_x": 30.000080108642578,
+        "height_y": 15.0,
+        "depth_z": 10.0
+      },
+      "sha256_glb": "91dc69a5f0895bfa9c92bb5f10a36f0b2bd05b308f215c84385b95f9491cd0af"
+    },
+    {
+      "id": "forest1",
+      "category": "vegetation",
+      "glb": "assets/forest1/forest1.glb",
+      "metadata": "assets/forest1/forest1.json",
+      "dimensions_m": {
+        "width_x": 1.2836819887161255,
+        "height_y": 1.2836819887161255,
+        "depth_z": 0.0
+      },
+      "sha256_glb": "07f152cc2438517890ec22d704983cdd2ac6ea852e1a784722a039fdf7198f3e"
+    },
+    {
+      "id": "forest2",
+      "category": "vegetation",
+      "glb": "assets/forest2/forest2.glb",
+      "metadata": "assets/forest2/forest2.json",
+      "dimensions_m": {
+        "width_x": 1.2805819511413574,
+        "height_y": 1.286784052848816,
+        "depth_z": 0.0
+      },
+      "sha256_glb": "1d4681395f4c3f4bb0a055f164ea38a9a68093dfb850e22919542a9e8ba24dfe"
+    },
+    {
+      "id": "forest3",
+      "category": "vegetation",
+      "glb": "assets/forest3/forest3.glb",
+      "metadata": "assets/forest3/forest3.json",
+      "dimensions_m": {
+        "width_x": 0.6429439783096313,
+        "height_y": 0.6429439783096313,
+        "depth_z": 0.0
+      },
+      "sha256_glb": "203cfa2c95384d34b58f438af7f0889cd0bc56ea6c368281fc099c179e7c1fe6"
+    },
+    {
+      "id": "needle",
+      "category": "misc",
+      "glb": "assets/needle/needle.glb",
+      "metadata": "assets/needle/needle.json",
+      "dimensions_m": {
+        "width_x": 1.0991439819335938,
+        "height_y": 0.19863079488277435,
+        "depth_z": 0.025360800325870514
+      },
+      "sha256_glb": "4dce71750aec6ab3e4b1afebefa8ab3c09c080f5e9b3fba1392ef8acd62ea277"
+    },
+    {
+      "id": "stadium1",
+      "category": "grandstand",
+      "glb": "assets/stadium1/stadium1.glb",
+      "metadata": "assets/stadium1/stadium1.json",
+      "dimensions_m": {
+        "width_x": 30.0,
+        "height_y": 5.0,
+        "depth_z": 10.0
+      },
+      "sha256_glb": "822c03abbbf64caa4a24e8d5e39d43d92b1acb78d565f7b4fb31e4e1261cfad0"
+    },
+    {
+      "id": "stand-inter",
+      "category": "grandstand",
+      "glb": "assets/stand-inter/stand-inter.glb",
+      "metadata": "assets/stand-inter/stand-inter.json",
+      "dimensions_m": {
+        "width_x": 6.0,
+        "height_y": 3.0,
+        "depth_z": 1.0
+      },
+      "sha256_glb": "6e82adcce888c6523516592912864ed4c858618ad6135aa13fe0039d31786aa6"
+    },
+    {
+      "id": "stand-main",
+      "category": "grandstand",
+      "glb": "assets/stand-main/stand-main.glb",
+      "metadata": "assets/stand-main/stand-main.json",
+      "dimensions_m": {
+        "width_x": 6.0,
+        "height_y": 3.0,
+        "depth_z": 14.0
+      },
+      "sha256_glb": "d1a57fa0d89c6a520d919c0d963e11341da14988f660b6c2c537b07e26d6717d"
+    },
+    {
+      "id": "stand-wall",
+      "category": "grandstand",
+      "glb": "assets/stand-wall/stand-wall.glb",
+      "metadata": "assets/stand-wall/stand-wall.json",
+      "dimensions_m": {
+        "width_x": 6.0,
+        "height_y": 3.0,
+        "depth_z": 0.5
+      },
+      "sha256_glb": "9d87575fad6e35b8863fabf481eea035107b04cdd3918fecb0a22e5b1de0b3bc"
+    },
+    {
+      "id": "tree1",
+      "category": "vegetation",
+      "glb": "assets/tree1/tree1.glb",
+      "metadata": "assets/tree1/tree1.json",
+      "dimensions_m": {
+        "width_x": 5.0,
+        "height_y": 12.0,
+        "depth_z": 5.0
+      },
+      "sha256_glb": "7ae19f908dd7ceb00eaa630cfe9856933d4e2fa08d39c46f12d3f8a1ffc0d26c"
+    },
+    {
+      "id": "tree10",
+      "category": "vegetation",
+      "glb": "assets/tree10/tree10.glb",
+      "metadata": "assets/tree10/tree10.json",
+      "dimensions_m": {
+        "width_x": 10.0,
+        "height_y": 18.0,
+        "depth_z": 10.0
+      },
+      "sha256_glb": "01771cc8e007ef797e653799bfd3a5e35db692893cea4f41954890cd18a209af"
+    },
+    {
+      "id": "tree11",
+      "category": "vegetation",
+      "glb": "assets/tree11/tree11.glb",
+      "metadata": "assets/tree11/tree11.json",
+      "dimensions_m": {
+        "width_x": 20.0,
+        "height_y": 20.0,
+        "depth_z": 20.0
+      },
+      "sha256_glb": "81924994a69b5195fb28a6e069c9920c765749bb6b37bb9d68dc59e299cae24b"
+    },
+    {
+      "id": "tree12",
+      "category": "vegetation",
+      "glb": "assets/tree12/tree12.glb",
+      "metadata": "assets/tree12/tree12.json",
+      "dimensions_m": {
+        "width_x": 17.0,
+        "height_y": 15.0,
+        "depth_z": 17.0
+      },
+      "sha256_glb": "1f9ea598dc2fce3def3908b4a81e888137621234de4a1f8a861d5eef195a30cf"
+    },
+    {
+      "id": "tree13",
+      "category": "vegetation",
+      "glb": "assets/tree13/tree13.glb",
+      "metadata": "assets/tree13/tree13.json",
+      "dimensions_m": {
+        "width_x": 16.0,
+        "height_y": 16.0,
+        "depth_z": 16.0
+      },
+      "sha256_glb": "0625e6d8915e893521451ec77243eb800d61e427e1403dda8d89edd5fc931dea"
+    },
+    {
+      "id": "tree14",
+      "category": "vegetation",
+      "glb": "assets/tree14/tree14.glb",
+      "metadata": "assets/tree14/tree14.json",
+      "dimensions_m": {
+        "width_x": 7.0,
+        "height_y": 12.0,
+        "depth_z": 7.0
+      },
+      "sha256_glb": "c33b035a94dc0dbf10d2fbf5de35801bdc31beb68e9aef0965a6525ab1c6a9fc"
+    },
+    {
+      "id": "tree15",
+      "category": "vegetation",
+      "glb": "assets/tree15/tree15.glb",
+      "metadata": "assets/tree15/tree15.json",
+      "dimensions_m": {
+        "width_x": 9.0,
+        "height_y": 14.0,
+        "depth_z": 9.0
+      },
+      "sha256_glb": "57e144e0c741de66cdcd878842962dd2310d3188d264f55825a63540b8460d4f"
+    },
+    {
+      "id": "tree16",
+      "category": "vegetation",
+      "glb": "assets/tree16/tree16.glb",
+      "metadata": "assets/tree16/tree16.json",
+      "dimensions_m": {
+        "width_x": 8.0,
+        "height_y": 13.0,
+        "depth_z": 8.0
+      },
+      "sha256_glb": "b6e815772e24f2d9ca19b713bef9e386bf1fbb3bf07d5654951fe9b51c9c0105"
+    },
+    {
+      "id": "tree17",
+      "category": "vegetation",
+      "glb": "assets/tree17/tree17.glb",
+      "metadata": "assets/tree17/tree17.json",
+      "dimensions_m": {
+        "width_x": 9.0,
+        "height_y": 13.5,
+        "depth_z": 9.0
+      },
+      "sha256_glb": "bba11a4fd9bbe36474393701e8243027613b1bd18ab532f06c29df2757d42702"
+    },
+    {
+      "id": "tree2",
+      "category": "vegetation",
+      "glb": "assets/tree2/tree2.glb",
+      "metadata": "assets/tree2/tree2.json",
+      "dimensions_m": {
+        "width_x": 15.0,
+        "height_y": 16.0,
+        "depth_z": 15.0
+      },
+      "sha256_glb": "45d3618d356afbe3430a628f0bb837bddfdddb6adf7f49007c598bc3a545fcba"
+    },
+    {
+      "id": "tree3",
+      "category": "vegetation",
+      "glb": "assets/tree3/tree3.glb",
+      "metadata": "assets/tree3/tree3.json",
+      "dimensions_m": {
+        "width_x": 17.0,
+        "height_y": 21.0,
+        "depth_z": 17.0
+      },
+      "sha256_glb": "5c5e3264b9391464c2280029f2e6c26c3f07130c2d2fc4f05d59cf454dd47ff6"
+    },
+    {
+      "id": "tree4",
+      "category": "vegetation",
+      "glb": "assets/tree4/tree4.glb",
+      "metadata": "assets/tree4/tree4.json",
+      "dimensions_m": {
+        "width_x": 10.0,
+        "height_y": 14.0,
+        "depth_z": 10.0
+      },
+      "sha256_glb": "03ea372b4c9e31b978af8f13bef043e16eae3407da482b82666648ece783f20a"
+    },
+    {
+      "id": "tree5",
+      "category": "vegetation",
+      "glb": "assets/tree5/tree5.glb",
+      "metadata": "assets/tree5/tree5.json",
+      "dimensions_m": {
+        "width_x": 18.0,
+        "height_y": 19.0,
+        "depth_z": 18.0
+      },
+      "sha256_glb": "cb2afa1ab6250ebaf77d7a04b05d10c56b4df31be18e2c217f911ce6b32c57f2"
+    },
+    {
+      "id": "tree6",
+      "category": "vegetation",
+      "glb": "assets/tree6/tree6.glb",
+      "metadata": "assets/tree6/tree6.json",
+      "dimensions_m": {
+        "width_x": 5.0,
+        "height_y": 18.0,
+        "depth_z": 5.0
+      },
+      "sha256_glb": "099c99ea3a184972425754f4e0011d454d0fe33a25bbf14c2bfad38a036dae01"
+    },
+    {
+      "id": "tree7",
+      "category": "vegetation",
+      "glb": "assets/tree7/tree7.glb",
+      "metadata": "assets/tree7/tree7.json",
+      "dimensions_m": {
+        "width_x": 14.0,
+        "height_y": 15.5,
+        "depth_z": 14.0
+      },
+      "sha256_glb": "e93b67c631abade69acba8c90fb868587ac83922a56d9f26e6945a8f75697d70"
+    },
+    {
+      "id": "tree8",
+      "category": "vegetation",
+      "glb": "assets/tree8/tree8.glb",
+      "metadata": "assets/tree8/tree8.json",
+      "dimensions_m": {
+        "width_x": 9.0,
+        "height_y": 12.5,
+        "depth_z": 9.0
+      },
+      "sha256_glb": "5408bb8890d6b463fcd20862f0ca8cdaa00c4f591feb54cbc9b0b93ff9726692"
+    },
+    {
+      "id": "tree9",
+      "category": "vegetation",
+      "glb": "assets/tree9/tree9.glb",
+      "metadata": "assets/tree9/tree9.json",
+      "dimensions_m": {
+        "width_x": 17.0,
+        "height_y": 19.0,
+        "depth_z": 17.0
+      },
+      "sha256_glb": "f3b28c062d29db69a2b3951710b58fe61d047b1a0fdb0ad2d7c757ca334cba71"
+    },
+    {
+      "id": "treeg1",
+      "category": "vegetation",
+      "glb": "assets/treeg1/treeg1.glb",
+      "metadata": "assets/treeg1/treeg1.json",
+      "dimensions_m": {
+        "width_x": 15.263999938964844,
+        "height_y": 18.649999618530273,
+        "depth_z": 16.996299743652344
+      },
+      "sha256_glb": "4ca993908500e17b431ac44704f148c14799bb95dbdf10d19000c1d0059bedbf"
+    }
+  ],
+  "texture_library": {
+    "path": "texture_library",
+    "manifest": "texture_manifest.json",
+    "count": 172
+  },
+  "warnings": [],
+  "errors": []
+}

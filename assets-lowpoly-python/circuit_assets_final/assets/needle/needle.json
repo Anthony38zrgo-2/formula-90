@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "asset_id": "needle",
+  "category": "misc",
+  "source": {
+    "file": "objects/needle.ac",
+    "format": "AC3D",
+    "sha256": "bc9430c72ff7057c6475bbcf583fe4040ee8e5e55d036d40e3485ae306fd5689"
+  },
+  "output": {
+    "glb": "needle.glb",
+    "sha256": "4dce71750aec6ab3e4b1afebefa8ab3c09c080f5e9b3fba1392ef8acd62ea277"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      0.450427,
+      -0.09931539813734999,
+      4.884981308350689e-15
+    ],
+    "translation_applied_m": [
+      -0.450427,
+      0.09931539813734999,
+      -4.884981308350689e-15
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      0.450427,
+      -0.09931539813734999,
+      4.884981308350689e-15
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 1.0991439819335938,
+    "height_y": 0.19863079488277435,
+    "depth_z": 0.025360800325870514
+  },
+  "aabb_local_m": {
+    "min": [
+      -0.5495719909667969,
+      0.0,
+      -0.012680400162935257
+    ],
+    "max": [
+      0.5495719909667969,
+      0.19863079488277435,
+      0.012680400162935257
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -0.09914499999999993,
+      -0.09931539813734999,
+      -0.012680399999995115
+    ],
+    "max": [
+      0.999999,
+      0.09931540186265,
+      0.012680400000004885
+    ]
+  },
+  "geometry": {
+    "meshes": 3,
+    "vertices_exported": 78,
+    "triangles": 26
+  },
+  "textures": [],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "static_mesh_or_convex",
+    "deterministic_key": "needle"
+  }
+}

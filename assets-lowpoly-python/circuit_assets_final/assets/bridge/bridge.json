@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "asset_id": "bridge",
+  "category": "bridge",
+  "source": {
+    "file": "objects/bridge.ac",
+    "format": "AC3D",
+    "sha256": "a337e40db4152532b9e9bd035638d6fddaab4d7f2d2b895f8690a7bda9d9e151"
+  },
+  "output": {
+    "glb": "bridge.glb",
+    "sha256": "ec66ba12c25fc810a1968ba6a64d3f1e9b7520dbb0d7b71e5448ceac11dae288"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      6.972501049999999,
+      17.547499999999996,
+      -640.6726
+    ],
+    "translation_applied_m": [
+      -6.972501049999999,
+      -17.547499999999996,
+      640.6726
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      6.972501049999999,
+      17.547499999999996,
+      -640.6726
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 14.03182601928711,
+    "height_y": 52.48952102661133,
+    "depth_z": 357.6528015136719
+  },
+  "aabb_local_m": {
+    "min": [
+      -7.015913009643555,
+      0.0,
+      -178.82640075683594
+    ],
+    "max": [
+      7.015913009643555,
+      52.48952102661133,
+      178.82640075683594
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -0.0434119,
+      17.547499999999996,
+      -819.499
+    ],
+    "max": [
+      13.988413999999999,
+      70.03702000000001,
+      -461.84619999999995
+    ]
+  },
+  "geometry": {
+    "meshes": 13,
+    "vertices_exported": 900,
+    "triangles": 300
+  },
+  "textures": [
+    {
+      "source": "objects/concrete.rgb",
+      "png": "concrete.png",
+      "width": 128,
+      "height": 128,
+      "alpha": false,
+      "sha256_source": "838cefff494fcb34b5fea8c78ae6ba7f3ec63170cdced3a57b6c8d0878b9e064",
+      "sha256_png": "00173de24b3e56abc5cd5b8017974ef50a9df5ab849088e96eb14efcdf1a9d58"
+    }
+  ],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "static_mesh_or_convex",
+    "deterministic_key": "bridge"
+  }
+}

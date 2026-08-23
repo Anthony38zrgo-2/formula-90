@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "asset_id": "tree12",
+  "category": "vegetation",
+  "source": {
+    "file": "objects/tree12.ac",
+    "format": "AC3D",
+    "sha256": "fb86bb9d42eb171c7c212a27ee012c18c69dd7972d453688fb1c6bf7ae014a16"
+  },
+  "output": {
+    "glb": "tree12.glb",
+    "sha256": "1f9ea598dc2fce3def3908b4a81e888137621234de4a1f8a861d5eef195a30cf"
+  },
+  "units": {
+    "source_interpretation": "meters",
+    "unit_scale_to_meters": 1.0
+  },
+  "coordinate_system": {
+    "handedness": "right",
+    "up_axis": "Y",
+    "forward_axis": "-Z",
+    "axis_conversion": "identity"
+  },
+  "normalization": {
+    "origin_policy": "bottom_center",
+    "source_bottom_center_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "translation_applied_m": [
+      -0.0,
+      -0.0,
+      -0.0
+    ],
+    "rotation_applied_deg": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "scale_applied": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "restore_source_position_by_instance_translation_m": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "dimensions_m": {
+    "width_x": 17.0,
+    "height_y": 15.0,
+    "depth_z": 17.0
+  },
+  "aabb_local_m": {
+    "min": [
+      -8.5,
+      0.0,
+      -8.5
+    ],
+    "max": [
+      8.5,
+      15.0,
+      8.5
+    ]
+  },
+  "aabb_source_m": {
+    "min": [
+      -8.5,
+      0.0,
+      -8.5
+    ],
+    "max": [
+      8.5,
+      15.0,
+      8.5
+    ]
+  },
+  "geometry": {
+    "meshes": 1,
+    "vertices_exported": 12,
+    "triangles": 4
+  },
+  "textures": [
+    {
+      "source": "textures/tree12.rgb",
+      "png": "tree12.png",
+      "width": 64,
+      "height": 64,
+      "alpha": true,
+      "sha256_source": "87770fd853812fc0297b4f5d1df6f6e0b27385a991e9dc86c11b47765f07eb73",
+      "sha256_png": "ed83d1e3e477596d74ede41f04d4098289fcae13cad19ef234e8c672cd4f0990"
+    }
+  ],
+  "missing_textures": [],
+  "godot_import": {
+    "recommended_root": "Node3D",
+    "default_scale": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "ground_snap_origin_y": 0.0,
+    "rotation_y_allowed": true,
+    "collision_source_not_encoded": true,
+    "collision_recommendation": "none",
+    "deterministic_key": "tree12"
+  }
+}
