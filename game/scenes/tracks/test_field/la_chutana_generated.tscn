@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://r30hkn4hriqm"]
 
-[ext_resource type="PackedScene" uid="uid://c2w5vea5kkt3u" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
+[ext_resource type="PackedScene" path="res://assets/generated/tracks/la_chutana/la_chutana.glb" id="1_track"]
 [ext_resource type="Script" uid="uid://bkrhcahm56i8q" path="res://scripts/track/generated_track_surface_groups.gd" id="2_groups"]
 [ext_resource type="PackedScene" path="res://scenes/visuals/la_chutana_source_skybox.tscn" id="3_skybox"]
 [ext_resource type="Texture2D" uid="uid://b6i2p2ccgciwr" path="res://assets/skybox/la_chutana/la_chutana_sky_panorama_2048x1024.png" id="4_panorama"]
