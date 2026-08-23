@@ -19,7 +19,7 @@ from pipeline_common import (
 from procedural_catalog import biome_from_config, specs_for_biome, weighted_choice
 from terrain_grid import SegmentSpatialIndex, nearest_track_sample
 from vegetation_distribution import COLORS, choose_asset, commit_asset, load_distribution, sector_for_fraction
-from guardrail_layout import guardrail_conflict, load_guardrail_layout
+from safety_barrier_layout import barrier_conflict, load_safety_barrier_layout
 
 DENSITIES = ("none", "very_low", "low", "medium", "high")
 TRACKSIDE_PROP_TYPES = ("spectator", "marshal", "photographer", "flag", "sign")
@@ -45,6 +45,8 @@ def barrier_minimum_center_distance(config: dict, category: str, radius: float) 
         return 0.0
     road_half = float(config["road"]["width_m"]) * 0.5
     tire = config.get("tire_barriers", {})
+    if not tire.get("procedural", False):
+        return 0.0
     barrier_center = road_half + float(tire.get("separation_from_edge_m", 5.0))
     barrier_half = float(tire.get("collision_thickness_m", 0.28)) * 0.5
     clearance = float(config.get("vegetation_barrier_clearance_m", {}).get(category, 0.0))
@@ -85,8 +87,12 @@ def _candidate_from_cluster(rng, category: str, anchor: ClusterAnchor, min_d: fl
     return fraction, anchor.side, distance
 
 
-def place_category(category, density, config, points, track_index, occupancy, seed, distribution=None, asset_catalog=None, guardrail_layout=None):
+def place_category(category, density, config, points, track_index, occupancy, seed, distribution=None, asset_catalog=None, safety_barrier_layout=None):
     env = config["procedural_environment"]
+    if category == "fake_buildings" and not env.get("fake_buildings", {}).get("enabled", True):
+        return [], 0, 0
+    if category == "grass" and not env.get("grass_cards", {}).get("enabled", True):
+        return [], 0, 0
     profile = env["density_profiles"][density]
     lap_length = closed_polyline_length(points)
     target = int(round(float(profile[f"{category}_per_km"]) * lap_length / 1000.0))
@@ -139,8 +145,8 @@ def place_category(category, density, config, points, track_index, occupancy, se
             required_outside = barrier_minimum_center_distance(config, category, radius)
             if global_distance + 1e-6 < required_outside:
                 continue
-            if guardrail_layout and guardrail_conflict(
-                guardrail_layout, category, fraction, int(side), global_distance, radius
+            if safety_barrier_layout and barrier_conflict(
+                safety_barrier_layout, category, fraction, int(side), global_distance, radius
             ):
                 continue
 
@@ -248,7 +254,7 @@ def main() -> int:
     repo = cp.parents[3]
     config = read_json(cp)
     distribution, color_catalogs = load_distribution(repo, config)
-    guardrails = load_guardrail_layout(repo, config)
+    safety_barriers = load_safety_barrier_layout(repo, config)
     center = read_json(repo / config["generated_dir"] / "centerline.json")
     points = np.asarray(center["points_xz"], dtype=float)
     biome = biome_from_config(config)
@@ -265,7 +271,7 @@ def main() -> int:
     ):
         placed, attempts, clusters = place_category(
             category, density, config, points, track_index, occupancy, ns.seed,
-            distribution, color_catalogs.get(category), guardrails,
+            distribution, color_catalogs.get(category), safety_barriers,
         )
         placements.extend(placed)
         stats[category] = {"density": density, "placed": len(placed), "attempts": attempts, "clusters": clusters}

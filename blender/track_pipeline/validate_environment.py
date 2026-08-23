@@ -6,7 +6,8 @@ from pathlib import Path
 from pipeline_common import read_json, SpatialHash, Occupant
 from generate_environment import barrier_minimum_center_distance
 from vegetation_distribution import COLORS, load_distribution
-from guardrail_layout import guardrail_conflict, load_guardrail_layout
+from safety_barrier_layout import (barrier_conflict, compile_layout,
+                                   exterior_coverage_gaps, load_safety_barrier_layout)
 
 
 def _minimum_center_distance(config: dict, category: str, radius: float) -> float:
@@ -28,7 +29,7 @@ def main() -> int:
     placements_doc = read_json(generated / "placements.json")
     items = placements_doc["placements"]
     distribution, catalogs = load_distribution(repo, config)
-    guardrails = load_guardrail_layout(repo, config)
+    safety_barriers = load_safety_barrier_layout(repo, config)
 
     failures = 0
     occupancy = SpatialHash(cell_size=10.0)
@@ -106,18 +107,61 @@ def main() -> int:
             else:
                 print(f"PASS {category} dominant=original colors={counts}")
 
-    guardrail_conflicts = sum(
-        guardrail_conflict(
-            guardrails, item["category"], float(item["track_fraction"]), int(item["side"]),
+    barrier_conflicts = sum(
+        barrier_conflict(
+            safety_barriers, item["category"], float(item["track_fraction"]), int(item["side"]),
             float(item.get("distance_to_track_m", item["distance_from_center_m"])), float(item["radius_m"]),
         )
         for item in items if item["category"] in {"trees", "bushes"}
     )
-    if guardrail_conflicts:
-        print(f"FAIL guardrail/vegetation conflicts={guardrail_conflicts}")
-        failures += guardrail_conflicts
+    if barrier_conflicts:
+        print(f"FAIL safety barrier/vegetation conflicts={barrier_conflicts}")
+        failures += barrier_conflicts
     else:
-        print("PASS guardrail/vegetation conflicts=0")
+        print("PASS safety barrier/vegetation conflicts=0")
+
+    centerline = read_json(generated / "centerline.json")
+    compiled = compile_layout(safety_barriers, float(centerline["length_m"]))
+    counts = {}
+    for module in compiled["modules"]:
+        counts[module["type"]] = counts.get(module["type"], 0) + 1
+    if config.get("guardrails", {}).get("procedural") or config.get("tire_barriers", {}).get("procedural"):
+        print("FAIL legacy barrier source remains active")
+        failures += 1
+    else:
+        print("PASS single safety barrier authority active")
+    road_half = float(config["road"]["width_m"]) * .5
+    curb_manifest = read_json(repo / config["curb"]["manifest"])
+    curb_width = max(float(profile["width_m"]) for profile in curb_manifest["profiles"].values())
+    invasion_count = sum(
+        float(module["center_distance_m"]) -
+        float(safety_barriers["collision_profiles"][module["collision_profile"]]["thickness_m"]) * .5
+        <= road_half + curb_width
+        for module in compiled["modules"]
+    )
+    if invasion_count:
+        print(f"FAIL safety barrier road/curb invasions={invasion_count}")
+        failures += invasion_count
+    else:
+        print("PASS safety barrier road/curb invasions=0")
+    exposed_armco = sum(
+        safety_barriers["prototypes"][(segment["system"].get("type") or segment["system"].get("items", [{}])[0].get("type"))]["geometry"] == "guardrail_armco"
+        and (segment["terminal_start"] not in {"flare_out", "buried_or_hidden", "guardrail_to_tire", "guardrail_to_tecpro"}
+             or segment["terminal_end"] not in {"flare_out", "buried_or_hidden", "guardrail_to_tire", "guardrail_to_tecpro"})
+        for segment in safety_barriers["segments"] if segment.get("enabled", True)
+    )
+    if exposed_armco:
+        print(f"FAIL exposed Armco terminals={exposed_armco}")
+        failures += exposed_armco
+    else:
+        print("PASS exposed Armco terminals=0")
+    exterior_gaps = exterior_coverage_gaps(safety_barriers)
+    if exterior_gaps:
+        print(f"FAIL unprotected exterior fractions={len(exterior_gaps)} first={exterior_gaps[0]:.4f}")
+        failures += len(exterior_gaps)
+    else:
+        print("PASS exterior containment coverage=100% (at least one declared barrier side)")
+    print(f"PASS safety barrier modules={len(compiled['modules'])} counts={counts} sha256={compiled['sha256']}")
 
     print(f"biome={placements_doc.get('biome')} seed={placements_doc['seed']}")
     return 0 if failures == 0 else 2

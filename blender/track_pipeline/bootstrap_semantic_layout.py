@@ -78,7 +78,7 @@ def main() -> int:
 
     draw_world_polyline(semantic, transform, points, palette["runoff"], bootstrap["runoff_width_m"])
     draw_world_polyline(semantic, transform, points, palette["asphalt"], bootstrap["road_width_m"])
-    barrier_sectors = config.get("barrier_sectors", [])
+    barrier_sectors = config.get("legacy_barrier_sectors", [])
     if barrier_sectors:
         n_samples = max(200, len(points) * 4)
         for sector in barrier_sectors:

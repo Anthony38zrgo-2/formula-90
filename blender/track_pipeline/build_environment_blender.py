@@ -15,9 +15,9 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from blender_output import atomic_export_glb, atomic_publish, atomic_save_blend
 from procedural_assets_blender import (
-    create_guardrail_collision,
-    create_guardrail_prototype,
     create_prototypes,
+    create_safety_barrier_collision,
+    create_safety_barrier_prototype,
     create_tire_barrier_collision,
     create_tire_barrier_card_visual,
     create_tire_barrier_visual,
@@ -27,8 +27,8 @@ from procedural_assets_blender import (
     terrain_height,
 )
 from procedural_catalog import biome_from_config
-from procedural_materials_blender import build_material_library
-from guardrail_layout import load_guardrail_layout
+from procedural_materials_blender import add_safety_barrier_materials, build_material_library
+from safety_barrier_layout import compile_layout, load_safety_barrier_layout
 
 
 def load_glb_vegetation_prototypes(repo, placement_items):
@@ -80,7 +80,8 @@ def render_review_captures(config, points, output_dir, prefix="vegetation", view
     camera.data.type = "ORTHO"
     camera.data.ortho_scale = span * 1.18
     _aim(camera, center)
-    aerial = output_dir / f"{prefix}_review_aerial.png"
+    review_token = "" if prefix == "safety_barrier" else "_review"
+    aerial = output_dir / f"{prefix}{review_token}_aerial.png"
     scene.render.filepath = str(aerial)
     bpy.ops.render.render(write_still=True)
 
@@ -92,11 +93,71 @@ def render_review_captures(config, points, output_dir, prefix="vegetation", view
         look, _, _ = sample_centerline(points, fraction + 0.025)
         camera.location = (float(pos[0]), -float(pos[1]), 2.2)
         _aim(camera, (float(look[0]), -float(look[1]), 1.0))
-        target = output_dir / f"{prefix}_review_{name}.png"
+        target = output_dir / f"{prefix}{review_token}_{name}.png"
         scene.render.filepath = str(target)
         bpy.ops.render.render(write_still=True)
         captures.append(target)
     return captures
+
+
+def render_safety_barrier_catalog(output_dir):
+    representatives = {}
+    for obj in bpy.data.objects:
+        if obj.get("formula90s_safety_barrier") and obj.get("barrier_type") not in representatives:
+            representatives[obj.get("barrier_type")] = obj
+    order = ("guardrail_2", "guardrail_3", "tire_stack", "tecpro", "concrete_wall", "concrete_jersey")
+    clones = []
+    original_visibility = {obj: obj.hide_render for obj in bpy.data.objects}
+    for obj in original_visibility:
+        obj.hide_render = True
+    for index, barrier_type in enumerate(order):
+        source = representatives.get(barrier_type)
+        if source is None:
+            continue
+        root = source.copy()
+        root.data = None
+        root.location = ((index - 2.5) * 7.0, 0.0, 0.0)
+        root.rotation_euler = (0.0, 0.0, 0.0)
+        root.scale = (1.0, 1.0, 1.0)
+        root.hide_render = False
+        bpy.context.scene.collection.objects.link(root)
+        clones.append(root)
+        for child in source.children:
+            copy = child.copy()
+            copy.data = child.data
+            copy.parent = root
+            copy.matrix_parent_inverse.identity()
+            copy.hide_render = False
+            copy.hide_viewport = False
+            copy.hide_set(False)
+            bpy.context.scene.collection.objects.link(copy)
+            clones.append(copy)
+    scene = bpy.context.scene
+    scene.world.color = (0.08, 0.10, 0.13)
+    bpy.ops.object.light_add(type="SUN", location=(0.0, -8.0, 12.0))
+    catalog_sun = bpy.context.object
+    catalog_sun.rotation_euler = (math.radians(32), math.radians(-18), math.radians(24))
+    catalog_sun.data.energy = 3.0
+    clones.append(catalog_sun)
+    camera = scene.camera
+    if camera is None:
+        bpy.ops.object.camera_add()
+        camera = bpy.context.object
+        scene.camera = camera
+    camera.data.type = "ORTHO"
+    camera.data.ortho_scale = 48.0
+    camera.hide_render = False
+    camera.location = (0.0, -38.0, 7.5)
+    _aim(camera, (0.0, 0.0, 0.55))
+    target = output_dir / "safety_barrier_catalog.png"
+    scene.render.filepath = str(target)
+    bpy.ops.render.render(write_still=True)
+    for obj in reversed(clones):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    for obj, hidden in original_visibility.items():
+        if obj.name in bpy.data.objects:
+            obj.hide_render = hidden
+    return target
 
 
 def args_after_double_dash():
@@ -107,54 +168,108 @@ def read_json(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def build_guardrails(config, points, materials):
-    if not config.get("guardrails", {}).get("procedural", True):
-        return 0
+def _pattern_color(manifest, module):
+    pattern = manifest["patterns"][module["material_style"]]
+    mode = pattern["mode"]
+    if mode == "longitudinal_band":
+        return pattern["base"]
+    if mode == "sparse_panels":
+        period = max(1, int(pattern["period_modules"]))
+        if module["module_index"] % period:
+            return pattern["base"]
+        colors = pattern["colors"]
+        return colors[(module["pattern_phase"] // period) % len(colors)]
+    spans = [max(1, int(value)) for value in pattern["span_modules"]]
+    colors = pattern["colors"]
+    position = (module["module_index"] + module["pattern_phase"]) % sum(spans)
+    for color, span in zip(colors, spans):
+        if position < span:
+            return color
+        position -= span
+    return colors[-1]
+
+
+def build_safety_barriers(config, points, materials):
+    if not config.get("safety_barriers", {}).get("procedural", True):
+        return {"modules": 0, "collisions": 0, "counts": {}, "sha256": ""}
     repo = Path(config["_repo_root"])
-    layout = load_guardrail_layout(repo, config)
-    module_length = float(layout.get("module_length_m", config["guardrails"].get("module_length_m", 4.0)))
-    terminal_length = float(layout.get("terminal_length_m", 10.0))
-    terminal_flare = float(layout.get("terminal_flare_m", 2.5))
+    manifest = load_safety_barrier_layout(repo, config)
+    compiled = compile_layout(manifest, float(config["_centerline_length_m"]))
+    guardrail_bitmap = (repo / "assets-lowpoly-python" / "track_props" / "barriers" /
+                        "guardrail_armco" / "textures" / "front_128x128.png")
+    add_safety_barrier_materials(materials, manifest["palette"], guardrail_bitmap)
     prototype_cache = {}
-    lap = float(config["_centerline_length_m"])
-    created = 0
-    for segment in layout["segments"]:
-        start = float(segment["start_fraction"])
-        end = float(segment["end_fraction"])
-        span = (end - start) % 1.0
-        if span <= 1e-9:
-            continue
-        count = max(1, int(math.ceil(span * lap / module_length)))
-        rail_count = int(segment["rail_count"])
-        if rail_count not in prototype_cache:
-            prototype_cache[rail_count] = create_guardrail_prototype(config, materials, rail_count=rail_count)[0]
-        sources = prototype_cache[rail_count]
-        for i in range(count):
-            fraction = (start + (i + .5) / count * span) % 1.0
-            pos, tangent, normal = sample_centerline(points, fraction)
-            side = 1 if segment["side"] == "right" else -1
-            distance = float(segment["center_distance_m"])
-            along_m = (i + 0.5) * span * lap / count
-            remaining_m = span * lap - along_m
-            flare = terminal_flare * max(0.0, 1.0 - min(along_m, remaining_m) / terminal_length)
-            distance += flare
-            pos = (
-                pos[0] + normal[0] * side * distance,
-                pos[1] + normal[1] * side * distance,
+    counts = {}
+    segment_lookup = {segment["id"]: segment for segment in compiled["segments"]}
+    modules_by_segment = {}
+    for module in compiled["modules"]:
+        segment = segment_lookup[module["segment_id"]]
+        fraction = float(module["fraction"])
+        side = 1 if module["side"] == "right" else -1
+        distance = float(module["center_distance_m"])
+        prototype = manifest["prototypes"][module["type"]]
+        if prototype["geometry"] == "guardrail_armco":
+            along = module["module_index"] * float(module["length_m"])
+            remaining = float(segment["compiled_length_m"]) - along - float(module["length_m"])
+            terminal_length = float(manifest["defaults"]["terminal_length_m"])
+            terminal_flare = float(manifest["defaults"]["terminal_flare_m"])
+            if segment["terminal_start"] == "flare_out":
+                distance += terminal_flare * max(0.0, 1.0 - along / terminal_length)
+            if segment["terminal_end"] == "flare_out":
+                distance += terminal_flare * max(0.0, 1.0 - remaining / terminal_length)
+        color = _pattern_color(manifest, module)
+        cache_key = (module["type"], color)
+        if cache_key not in prototype_cache:
+            prototype_cache[cache_key] = create_safety_barrier_prototype(
+                module["type"], prototype, materials, color,
             )
-            ground = terrain_height(config, fraction, side, distance)
-            yaw = math.atan2(float(tangent[1]), float(tangent[0]))
-            instantiate_prototype(
-                sources,
-                f"Guardrail_{segment['name']}_{i:03d}",
-                pos[0], pos[1], ground, yaw, 1.0,
+        pos, tangent, normal = sample_centerline(points, fraction)
+        pos = (pos[0] + normal[0] * side * distance,
+               pos[1] + normal[1] * side * distance)
+        ground = terrain_height(config, fraction, side, distance)
+        yaw = math.atan2(float(tangent[1]), float(tangent[0]))
+        root = instantiate_prototype(
+            prototype_cache[cache_key],
+            f"Safety_{module['segment_id']}_{module['module_index']:04d}_{module['type']}",
+            pos[0], pos[1], ground, yaw, float(module["length_m"]) / float(prototype["module_length_m"]),
+        )
+        root["formula90s_safety_barrier"] = True
+        root["segment_id"] = module["segment_id"]
+        root["barrier_type"] = module["type"]
+        root["pattern_phase"] = int(module["pattern_phase"])
+        counts[module["type"]] = counts.get(module["type"], 0) + 1
+        modules_by_segment.setdefault(module["segment_id"], []).append(module)
+
+    collisions = 0
+    for segment_id, segment_modules in modules_by_segment.items():
+        for start in range(0, len(segment_modules), 6):
+            group = segment_modules[start:start + 6]
+            first = group[0]
+            last = group[-1]
+            mid_fraction = ((float(first["fraction"]) +
+                             ((float(last["fraction"]) - float(first["fraction"])) % 1.0) * .5) % 1.0)
+            side = 1 if first["side"] == "right" else -1
+            distance = float(first["center_distance_m"])
+            pos, tangent, normal = sample_centerline(points, mid_fraction)
+            pos = (pos[0] + normal[0] * side * distance,
+                   pos[1] + normal[1] * side * distance)
+            ground = terrain_height(config, mid_fraction, side, distance)
+            profile = manifest["collision_profiles"][first["collision_profile"]]
+            create_safety_barrier_collision(
+                f"SafetyCollision_{segment_id}_{start:04d}", pos, tangent,
+                sum(float(item["length_m"]) for item in group) * 1.01,
+                ground, profile,
             )
-            create_guardrail_collision(
-                f"GuardrailCollision_{segment['name']}_{i:03d}",
-                pos, tangent, module_length * 1.02, ground, config,
-            )
-            created += 1
-    return created
+            collisions += 1
+    prototype_objects = [obj for objects in prototype_cache.values() for obj in objects]
+    unique_meshes = {obj.data for obj in prototype_objects if obj.data is not None}
+    vertices = sum(len(mesh.vertices) for mesh in unique_meshes)
+    triangles = sum(sum(max(0, len(poly.vertices) - 2) for poly in mesh.polygons)
+                    for mesh in unique_meshes)
+    return {"modules": len(compiled["modules"]), "collisions": collisions,
+            "counts": counts, "sha256": compiled["sha256"],
+            "segments": compiled["segments"], "prototype_count": len(prototype_cache),
+            "material_count": 6, "vertices": vertices, "triangles": triangles}
 
 
 def build_tire_barriers(config, points, materials):
@@ -260,6 +375,7 @@ def main():
     parser.add_argument("--config", required=True)
     parser.add_argument("--vegetation-review", action="store_true")
     parser.add_argument("--guardrail-review", action="store_true")
+    parser.add_argument("--safety-barrier-review", action="store_true")
     ns = parser.parse_args(args_after_double_dash())
     cp = Path(ns.config).resolve()
     repo = cp.parents[3]
@@ -307,24 +423,36 @@ def main():
         )
         placed += 1
 
-    review_mode = ns.vegetation_review or ns.guardrail_review
-    guards = 0 if ns.vegetation_review else build_guardrails(config, points, materials)
+    review_mode = ns.vegetation_review or ns.guardrail_review or ns.safety_barrier_review
+    safety = ({"modules": 0, "collisions": 0, "counts": {}, "sha256": ""}
+              if ns.vegetation_review else build_safety_barriers(config, points, materials))
     tire_barriers = {"visual_modules": 0, "collision_segments": 0} if review_mode else build_tire_barriers(config, points, materials)
     trackside_props = 0 if review_mode else build_trackside_props(config, points, placements.get("trackside_props", []), materials)
-    review_name = "guardrail" if ns.guardrail_review else "vegetation"
+    review_name = ("safety_barrier" if ns.safety_barrier_review else
+                   "guardrail" if ns.guardrail_review else "vegetation")
     blend = generated / (f"track_{review_name}_review.blend" if review_mode else "track_environment.blend")
     glb = runtime / (f"{config['track_id']}_{review_name}_review.glb" if review_mode else f"{config['track_id']}_environment.glb")
     live = runtime / f"{config['track_id']}.glb"
     atomic_save_blend(blend, generated / "backups" / "environment")
     atomic_export_glb(glb)
     if review_mode:
-        viewpoints = {"t1": 0.055, "t4": 0.36, "chicane": 0.535, "t6": 0.735} if ns.guardrail_review else None
+        viewpoints = ({"main_straight": 0.96, "t1": 0.08, "t4": 0.40,
+                       "chicane": 0.57, "t6": 0.79}
+                      if ns.safety_barrier_review else
+                      {"t1": 0.055, "t4": 0.36, "chicane": 0.535, "t6": 0.735}
+                      if ns.guardrail_review else None)
         captures = render_review_captures(config, points, generated / "review", review_name, viewpoints)
+        if ns.safety_barrier_review:
+            catalog = render_safety_barrier_catalog(generated / "review")
+            captures.append(catalog)
+            report = generated / "review" / "safety_barrier_report.json"
+            report.write_text(json.dumps(safety, indent=2), encoding="utf-8")
+            print(f"[blender] safety barrier report: {report}")
         print(f"[blender] human-gate captures: {' '.join(map(str, captures))}")
     else:
         atomic_publish(glb, live)
     print(f"[blender] biome={biome.id} procedural placements={placed}")
-    print(f"[blender] guardrail modules={guards}")
+    print(f"[blender] safety barriers modules={safety['modules']} collisions={safety['collisions']} counts={safety['counts']} sha256={safety['sha256']}")
     print(f"[blender] tire barriers visual_modules={tire_barriers['visual_modules']} collision_segments={tire_barriers['collision_segments']}")
     print(f"[blender] trackside cards={trackside_props} collision=False")
     print(f"[blender] {'review only; runtime not published' if review_mode else f'published runtime: {live}'}")

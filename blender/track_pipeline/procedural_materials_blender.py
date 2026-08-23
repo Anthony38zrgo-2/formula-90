@@ -103,3 +103,29 @@ def build_material_library(texture_dir: str | Path, curb_manifest: dict | None =
         )
     materials["active_biome"] = manifest["active_biome"]
     return materials
+
+
+def add_safety_barrier_materials(
+    materials: dict[str, bpy.types.Material],
+    palette: dict,
+    guardrail_bitmap_path: Path | None = None,
+) -> None:
+    specs = {
+        "white": (0.82, 0.0),
+        "navy": (0.86, 0.0),
+        "concrete": (0.96, 0.0),
+        "steel": (0.48, 0.68),
+        "steel_dark": (0.56, 0.58),
+    }
+    for key, (roughness, metallic) in specs.items():
+        rgba = palette[key]
+        materials[f"safety:{key}"] = flat_material(
+            f"F90_Safety_{key}", tuple(float(value) for value in rgba[:3]),
+            roughness=roughness, metallic=metallic,
+        )
+    if guardrail_bitmap_path is not None:
+        materials["safety:guardrail_card"] = texture_material(
+            "F90_Safety_GuardrailCard", guardrail_bitmap_path,
+            roughness=0.62, metallic=0.18, alpha=False,
+        )
+        materials["safety:guardrail_card"].use_backface_culling = False

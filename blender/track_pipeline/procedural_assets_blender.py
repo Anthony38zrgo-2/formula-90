@@ -123,6 +123,10 @@ def create_prototypes(materials, config):
     tree_planes = max(1, int(config.get("procedural_environment", {}).get("tree_planes", 2)))
     out = {}
     for category in ("trees", "bushes", "grass", "fake_buildings"):
+        if category == "grass" and not config.get("procedural_environment", {}).get("grass_cards", {}).get("enabled", True):
+            continue
+        if category == "fake_buildings" and not config.get("procedural_environment", {}).get("fake_buildings", {}).get("enabled", True):
+            continue
         for spec in specs_for_biome(biome, category):
             mat = materials[f"asset:{spec.id}"]
             if category == "trees":
@@ -249,6 +253,75 @@ def create_guardrail_collision(name, pos, tangent, length, ground_z, config):
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.hide_render = True
     obj.display_type = "WIRE"
+    return obj
+
+
+def create_safety_barrier_prototype(prototype_id, spec, materials, color_key):
+    length = float(spec["module_length_m"])
+    color = materials[f"safety:{color_key}"]
+    navy = materials["safety:navy"]
+    steel_dark = materials["safety:steel_dark"]
+    geometry = spec["geometry"]
+    objects = []
+    if geometry == "guardrail_armco":
+        rail_count = int(spec.get("rail_count", 2))
+        height = 0.90 if rail_count == 2 else 1.14
+        half = (length + 0.12) * 0.5
+        verts = [(-half, 0.0, 0.0), (half, 0.0, 0.0),
+                 (half, 0.0, height), (-half, 0.0, height)]
+        objects.append(_mesh_object(
+            f"Proto_{prototype_id}_BitmapCard", verts, [(0, 1, 2, 3)],
+            [materials["safety:guardrail_card"]],
+            uv_by_face=[[(0, 0), (1, 0), (1, 1), (0, 1)]],
+        ))
+    elif geometry == "painted_tire_prism":
+        for row in range(3):
+            width = 0.58 - row * 0.05
+            objects.append(_cube(
+                f"Proto_{prototype_id}_Row{row}", (length, width, 0.34),
+                (0.0, 0.04 * row, 0.17 + row * 0.32), color,
+            ))
+    elif geometry == "beveled_block":
+        half = length * 0.5
+        verts = [(-half,-.34,0),(half,-.34,0),(half,.34,0),(-half,.34,0),
+                 (-half,-.28,1.18),(half,-.28,1.18),(half,.20,1.18),(-half,.20,1.18)]
+        faces = [(0,1,5,4),(1,2,6,5),(2,3,7,6),(3,0,4,7),(4,5,6,7),(0,3,2,1)]
+        objects.append(_mesh_object(f"Proto_{prototype_id}_Block", verts, faces, [color]))
+        objects.append(_cube(f"Proto_{prototype_id}_Band", (length + .01, .03, .12),
+                             (0, -.295, .68), navy if color_key == "white" else materials["safety:white"]))
+    elif geometry == "continuous_wall":
+        objects.append(_cube(f"Proto_{prototype_id}_Wall", (length, .42, 1.42),
+                             (0, 0, .71), color))
+    elif geometry == "jersey_profile":
+        half = length * .5
+        profile = [(-.42,0),(.42,0),(.25,.52),(.18,1.15),(-.18,1.15),(-.25,.52)]
+        verts = [(x, y, z) for x in (-half, half) for y, z in profile]
+        ring = len(profile)
+        faces = []
+        for index in range(ring):
+            nxt = (index + 1) % ring
+            faces.append((index, nxt, ring + nxt, ring + index))
+        faces.extend((tuple(range(ring - 1, -1, -1)), tuple(range(ring, ring * 2))))
+        objects.append(_mesh_object(f"Proto_{prototype_id}_Jersey", verts, faces, [color]))
+    else:
+        raise RuntimeError(f"Unsupported safety barrier geometry: {geometry}")
+    return _hide(objects)
+
+
+def create_safety_barrier_collision(name, pos, tangent, length, ground_z, profile):
+    height = float(profile["height_m"])
+    thickness = float(profile["thickness_m"])
+    x, z = pos
+    bpy.ops.mesh.primitive_cube_add(location=godot_xz_to_blender(x, z, ground_z + height * .5))
+    obj = bpy.context.object
+    obj.name = name + "-colonly"
+    tx, tz = tangent
+    obj.rotation_euler[2] = math.atan2(-tz, tx)
+    obj.scale = (length * .5, thickness * .5, height * .5)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    obj.hide_render = True
+    obj.display_type = "WIRE"
+    obj["formula90s_collision_kind"] = "safety_barrier_wall"
     return obj
 
 

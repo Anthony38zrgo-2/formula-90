@@ -319,7 +319,7 @@ def main():
     barrier_sectors = None
     if layout_cfg_path.exists():
         lcfg = read_json(layout_cfg_path)
-        barrier_sectors = lcfg.get("barrier_sectors")
+        barrier_sectors = lcfg.get("legacy_barrier_sectors")
 
     visual, visual_count = create_tire_barrier_card_visual(
         "Raw_Outer_TireBarrier", points, side, barrier_cfg, front_material, side_material, top_material,

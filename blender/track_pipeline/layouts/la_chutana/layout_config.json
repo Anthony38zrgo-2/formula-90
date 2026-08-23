@@ -33,7 +33,7 @@
     "barrier_tire_black": [32, 56, 100],
     "barrier_plastic": [230, 130, 30]
   },
-  "barrier_sectors": [
+  "legacy_barrier_sectors": [
     {"name": "PitStraight", "start_fraction": 0.90, "end_fraction": 0.08, "barrier_type": "concrete_jersey", "color": [210, 210, 210]},
     {"name": "T1HardBraking", "start_fraction": 0.08, "end_fraction": 0.18, "barrier_type": "tire_red_white", "color": [180, 30, 30]},
     {"name": "T2T3Esses", "start_fraction": 0.18, "end_fraction": 0.35, "barrier_type": "guardrail_armco", "color": [140, 145, 150]},

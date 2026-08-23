@@ -147,7 +147,7 @@ There are 9 South America combinations. Each combination generates:
 
 - 4 tree cards;
 - 4 bush cards;
-- 4 grass cards;
+- 4 legacy grass-card source variants (deprecated for La Chutana; retained only for compatibility with other tracks);
 - 4 building facades;
 - terrain, shoulder and bark textures.
 
@@ -163,7 +163,10 @@ This is an art-direction system, not a scientific vegetation classifier.
 
 - La Chutana trees: exactly **2 crossed planes** (4 directional faces), tall silhouette-driven cards.
 - Bushes: exactly **2 crossed planes** (4 directional faces), lower and wider than trees.
-- Grass: exactly **1 plane/card**.
+- Grass cards: legacy one-plane geometry. **Deprecated and disabled for La Chutana.**
+- La Chutana ground cover is baked deterministically into the terrain texture from the curated `grassg1/2/3` sources. The environment generator must emit zero grass-card instances.
+- Procedural fake buildings are temporarily disabled for La Chutana.
+- Safety guardrails use one vertical 2D card with the painted `guardrail_armco/textures/front_128x128.png` bitmap. Modeled Armco beams/posts are no longer emitted; the separate invisible collision walls remain active.
 - Buildings: low-poly 3D, four walls plus one very simple top face and no bottom face.
 - Vegetation has no gameplay collision by default.
 - Guardrail visuals are independent from simplified box collision.

@@ -51,7 +51,8 @@
     {"center_fraction": 0.815, "half_width_fraction": 0.03, "degrees": 2.5}
   ],
   "guardrails": {
-    "procedural": true,
+    "procedural": false,
+    "legacy": true,
     "manifest": "blender/track_pipeline/manifests/la_chutana_guardrails.json",
     "module_length_m": 4.0,
     "visual_depth_m": 0.11,
@@ -64,6 +65,12 @@
     "collision_height_m": 0.75,
     "collision_thickness_m": 0.18,
     "segments": []
+  },
+  "safety_barriers": {
+    "procedural": true,
+    "manifest": "blender/track_pipeline/manifests/la_chutana_safety_barriers.json",
+    "legacy_guardrails_disabled": true,
+    "legacy_tire_barriers_disabled": true
   },
   "tire_barriers": {
     "procedural": false,
@@ -98,6 +105,15 @@
   },
   "procedural_environment": {
     "tree_planes": 2,
+    "grass_cards": {
+      "enabled": false,
+      "deprecated": true,
+      "replacement": "terrain_ground_cover"
+    },
+    "fake_buildings": {
+      "enabled": false,
+      "reason": "Temporarily removed from the La Chutana environment"
+    },
     "region": "south_america",
     "biome": {"continent": "south_america", "longitude": "west", "altitude": "low"},
     "terrain_palette": "balanced",
@@ -127,11 +143,11 @@
     "texture_forge_style": "ps1_rally_clean"
   },
   "terrain_ground_cover": {
-    "mode": "hybrid_cards_texture",
-    "card_share": 1.0,
-    "texture_share": 0.0,
-    "texture_coverage": 0.0,
-    "texture_opacity": 0.0,
+    "mode": "terrain_texture_only",
+    "card_share": 0.0,
+    "texture_share": 1.0,
+    "texture_coverage": 0.22,
+    "texture_opacity": 0.18,
     "base_source": "blender/assets/texture_sources/la_chutana/terrain/south_america_west_low_terrain_source.png",
     "base_source_sha256": "e5d6009f035b3d9b003962e87c2019c7e240b72a8c36e795a91389f4a933a8ab",
     "output": "blender/generated/la_chutana/textures/biomes/south_america/west/low/terrain.png",
