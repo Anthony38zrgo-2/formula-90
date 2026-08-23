@@ -14,6 +14,10 @@ $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
 $scene = 'res://scenes/runtime/vehicle_test_session.tscn'
 $manifestPath = Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
+$trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
+$trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
+$trackConfigPath = Join-Path $root 'blender\track_pipeline\configs\la_chutana.json'
+$barrierManifestPath = Join-Path $root 'blender\track_pipeline\manifests\la_chutana_safety_barriers.json'
 $smokeScript = 'res://tests/smoke_test_f1_94_la_chutana_hud.gd'
 $smokeBackgroundScript = 'res://tests/smoke_test_mountains_3d.gd'
 
@@ -54,6 +58,30 @@ foreach ($relativePath in $expectedAssets.Keys) {
         throw "Hash inesperado para $relativePath"
     }
 }
+
+if (-not (Test-Path -LiteralPath $trackPath -PathType Leaf)) {
+    throw "Circuito runtime faltante: $trackPath"
+}
+if (-not (Test-Path -LiteralPath $trackBuildPath -PathType Leaf)) {
+    throw "BUILD del circuito faltante: $trackBuildPath. Regenera La Chutana con run_track_pipeline.ps1 -Mode Procedural."
+}
+$trackBuild = Get-Content -LiteralPath $trackBuildPath -Raw | ConvertFrom-Json
+$currentHead = (& git -C $root rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $trackBuild.head -ne $currentHead) {
+    throw "BUILD/HEAD mismatch para La Chutana: BUILD=$($trackBuild.head) HEAD=$currentHead"
+}
+$parityFiles = @{
+    glb_sha256 = $trackPath
+    config_sha256 = $trackConfigPath
+    safety_barrier_manifest_sha256 = $barrierManifestPath
+}
+foreach ($field in $parityFiles.Keys) {
+    $actual = (Get-FileHash -LiteralPath $parityFiles[$field] -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actual -ne ([string]$trackBuild.$field).ToLowerInvariant()) {
+        throw "Hash de circuito no coincide para $field"
+    }
+}
+Write-Host "La Chutana BUILD/HEAD validado: $currentHead" -ForegroundColor Green
 
 $runtimeAppData = Join-Path $root '.tools\appdata'
 $runtimeLocalAppData = Join-Path $root '.tools\localappdata'

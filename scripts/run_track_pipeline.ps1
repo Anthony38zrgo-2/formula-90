@@ -117,6 +117,29 @@ if ($LASTEXITCODE -ne 0) { throw "Environment validation failed" }
 & $BlenderExe --background --python (Join-Path $pipeline "build_environment_blender.py") -- --config $config
 if ($LASTEXITCODE -ne 0) { throw "Blender procedural environment build failed" }
 
+$runtimeTrack = Join-Path $repo "game\assets\generated\tracks\$Track\$Track.glb"
+$runtimeBuild = Join-Path $repo "game\assets\generated\tracks\$Track\runtime_build.json"
+$barrierManifest = Join-Path $repo $trackConfig.safety_barriers.manifest
+if (-not (Test-Path -LiteralPath $runtimeTrack -PathType Leaf)) {
+    throw "Published runtime track missing: $runtimeTrack"
+}
+$head = (& git -C $repo rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $head -notmatch '^[0-9a-f]{40}$') {
+    throw "Unable to resolve repository HEAD for runtime BUILD parity."
+}
+$buildRecord = [ordered]@{
+    schema_version = 1
+    track = $Track
+    head = $head
+    glb_sha256 = (Get-FileHash -LiteralPath $runtimeTrack -Algorithm SHA256).Hash.ToLowerInvariant()
+    config_sha256 = (Get-FileHash -LiteralPath $config -Algorithm SHA256).Hash.ToLowerInvariant()
+    safety_barrier_manifest_sha256 = (Get-FileHash -LiteralPath $barrierManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    seed = $Seed
+    generated_utc = [DateTime]::UtcNow.ToString('o')
+}
+$buildRecord | ConvertTo-Json | Set-Content -LiteralPath $runtimeBuild -Encoding utf8
+Write-Host "Runtime BUILD manifest: $runtimeBuild" -ForegroundColor DarkGray
+
 Write-Host ""
 Write-Host "Procedural racetrack generated and published with seed $Seed." -ForegroundColor Green
 Write-Host "Biome: $($trackConfig.procedural_environment.biome.continent)/$($trackConfig.procedural_environment.biome.longitude)/$($trackConfig.procedural_environment.biome.altitude)" -ForegroundColor DarkGray
