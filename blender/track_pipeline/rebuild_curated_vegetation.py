@@ -10,6 +10,7 @@ from PIL import Image
 
 from atomic_json import write_json_atomic
 from pipeline_common import read_json
+from texture_forge import save_image_atomic
 from vegetation_texture_stylizer import palette_from_catalog, stylize_card_rgba, stylizer_recipe
 from vegetation_texture_common import (
     POSTPROCESS_ID,
@@ -138,7 +139,7 @@ def _process_asset(repo: Path, palette_catalog: Path, manifest_path: Path, manif
     metrics["stylizer"] = stylizer_metrics
 
     destination.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(output).save(destination)
+    save_image_atomic(Image.fromarray(output), destination)
     recipe = {
         "id": POSTPROCESS_ID,
         "version": POSTPROCESS_VERSION,

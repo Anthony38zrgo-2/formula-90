@@ -7,6 +7,7 @@ import math
 import sys
 
 import bpy
+from mathutils import Vector
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
@@ -27,6 +28,75 @@ from procedural_assets_blender import (
 )
 from procedural_catalog import biome_from_config
 from procedural_materials_blender import build_material_library
+from guardrail_layout import load_guardrail_layout
+
+
+def load_glb_vegetation_prototypes(repo, placement_items):
+    prototypes = {}
+    for item in placement_items:
+        asset_glb = item.get("asset_glb")
+        variant_id = item["variant_id"]
+        if not asset_glb or variant_id in prototypes:
+            continue
+        before = set(bpy.data.objects)
+        bpy.ops.import_scene.gltf(filepath=str(repo / asset_glb))
+        sources = [obj for obj in bpy.data.objects if obj not in before and obj.type == "MESH"]
+        if not sources:
+            raise RuntimeError(f"GLB vegetation asset has no mesh objects: {asset_glb}")
+        for source in sources:
+            source.hide_render = True
+            source.hide_viewport = True
+            source.hide_set(True)
+        prototypes[variant_id] = sources
+    return prototypes
+
+
+def _aim(camera, target):
+    camera.rotation_euler = (Vector(target) - camera.location).to_track_quat("-Z", "Y").to_euler()
+
+
+def render_review_captures(config, points, output_dir, prefix="vegetation", viewpoints=None):
+    output_dir.mkdir(parents=True, exist_ok=True)
+    scene = bpy.context.scene
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1280
+    scene.render.resolution_y = 720
+    scene.render.resolution_percentage = 100
+    scene.world.color = (0.08, 0.10, 0.13)
+    bpy.ops.object.light_add(type="SUN", location=(0, 0, 120))
+    sun = bpy.context.object
+    sun.rotation_euler = (math.radians(28), math.radians(-18), math.radians(24))
+    sun.data.energy = 2.4
+    bpy.ops.object.camera_add()
+    camera = bpy.context.object
+    camera.data.lens = 42
+    scene.camera = camera
+
+    xs = [float(point[0]) for point in points]
+    zs = [float(point[1]) for point in points]
+    center = ((min(xs) + max(xs)) * 0.5, -(min(zs) + max(zs)) * 0.5, 0.0)
+    span = max(max(xs) - min(xs), max(zs) - min(zs))
+    camera.location = (center[0], center[1], span * 0.92)
+    camera.data.type = "ORTHO"
+    camera.data.ortho_scale = span * 1.18
+    _aim(camera, center)
+    aerial = output_dir / f"{prefix}_review_aerial.png"
+    scene.render.filepath = str(aerial)
+    bpy.ops.render.render(write_still=True)
+
+    camera.data.type = "PERSP"
+    camera.data.lens = 46
+    captures = [aerial]
+    for name, fraction in (viewpoints or {"trackside": 0.56}).items():
+        pos, _, _ = sample_centerline(points, fraction)
+        look, _, _ = sample_centerline(points, fraction + 0.025)
+        camera.location = (float(pos[0]), -float(pos[1]), 2.2)
+        _aim(camera, (float(look[0]), -float(look[1]), 1.0))
+        target = output_dir / f"{prefix}_review_{name}.png"
+        scene.render.filepath = str(target)
+        bpy.ops.render.render(write_still=True)
+        captures.append(target)
+    return captures
 
 
 def args_after_double_dash():
@@ -40,22 +110,34 @@ def read_json(path):
 def build_guardrails(config, points, materials):
     if not config.get("guardrails", {}).get("procedural", True):
         return 0
-    sources, module_length = create_guardrail_prototype(config, materials)
-    road_half = float(config["road"]["width_m"]) * 0.5
+    repo = Path(config["_repo_root"])
+    layout = load_guardrail_layout(repo, config)
+    module_length = float(layout.get("module_length_m", config["guardrails"].get("module_length_m", 4.0)))
+    terminal_length = float(layout.get("terminal_length_m", 10.0))
+    terminal_flare = float(layout.get("terminal_flare_m", 2.5))
+    prototype_cache = {}
     lap = float(config["_centerline_length_m"])
     created = 0
-    for segment in config["guardrails"]["segments"]:
+    for segment in layout["segments"]:
         start = float(segment["start_fraction"])
         end = float(segment["end_fraction"])
         span = (end - start) % 1.0
         if span <= 1e-9:
             continue
         count = max(1, int(math.ceil(span * lap / module_length)))
+        rail_count = int(segment["rail_count"])
+        if rail_count not in prototype_cache:
+            prototype_cache[rail_count] = create_guardrail_prototype(config, materials, rail_count=rail_count)[0]
+        sources = prototype_cache[rail_count]
         for i in range(count):
             fraction = (start + (i + .5) / count * span) % 1.0
             pos, tangent, normal = sample_centerline(points, fraction)
             side = 1 if segment["side"] == "right" else -1
-            distance = road_half + float(segment["offset_from_edge_m"])
+            distance = float(segment["center_distance_m"])
+            along_m = (i + 0.5) * span * lap / count
+            remaining_m = span * lap - along_m
+            flare = terminal_flare * max(0.0, 1.0 - min(along_m, remaining_m) / terminal_length)
+            distance += flare
             pos = (
                 pos[0] + normal[0] * side * distance,
                 pos[1] + normal[1] * side * distance,
@@ -176,6 +258,8 @@ def build_trackside_props(config, points, props, materials):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
+    parser.add_argument("--vegetation-review", action="store_true")
+    parser.add_argument("--guardrail-review", action="store_true")
     ns = parser.parse_args(args_after_double_dash())
     cp = Path(ns.config).resolve()
     repo = cp.parents[3]
@@ -198,6 +282,7 @@ def main():
         materials[key].use_backface_culling = True
     biome = biome_from_config(config)
     prototypes = create_prototypes(materials, config)
+    prototypes.update(load_glb_vegetation_prototypes(repo, placements["placements"]))
     placed = 0
     for idx, item in enumerate(placements["placements"]):
         variant_id = item["variant_id"]
@@ -222,20 +307,27 @@ def main():
         )
         placed += 1
 
-    guards = build_guardrails(config, points, materials)
-    tire_barriers = build_tire_barriers(config, points, materials)
-    trackside_props = build_trackside_props(config, points, placements.get("trackside_props", []), materials)
-    blend = generated / "track_environment.blend"
-    glb = runtime / f"{config['track_id']}_environment.glb"
+    review_mode = ns.vegetation_review or ns.guardrail_review
+    guards = 0 if ns.vegetation_review else build_guardrails(config, points, materials)
+    tire_barriers = {"visual_modules": 0, "collision_segments": 0} if review_mode else build_tire_barriers(config, points, materials)
+    trackside_props = 0 if review_mode else build_trackside_props(config, points, placements.get("trackside_props", []), materials)
+    review_name = "guardrail" if ns.guardrail_review else "vegetation"
+    blend = generated / (f"track_{review_name}_review.blend" if review_mode else "track_environment.blend")
+    glb = runtime / (f"{config['track_id']}_{review_name}_review.glb" if review_mode else f"{config['track_id']}_environment.glb")
     live = runtime / f"{config['track_id']}.glb"
     atomic_save_blend(blend, generated / "backups" / "environment")
     atomic_export_glb(glb)
-    atomic_publish(glb, live)
+    if review_mode:
+        viewpoints = {"t1": 0.055, "t4": 0.36, "chicane": 0.535, "t6": 0.735} if ns.guardrail_review else None
+        captures = render_review_captures(config, points, generated / "review", review_name, viewpoints)
+        print(f"[blender] human-gate captures: {' '.join(map(str, captures))}")
+    else:
+        atomic_publish(glb, live)
     print(f"[blender] biome={biome.id} procedural placements={placed}")
     print(f"[blender] guardrail modules={guards}")
     print(f"[blender] tire barriers visual_modules={tire_barriers['visual_modules']} collision_segments={tire_barriers['collision_segments']}")
     print(f"[blender] trackside cards={trackside_props} collision=False")
-    print(f"[blender] published runtime: {live}")
+    print(f"[blender] {'review only; runtime not published' if review_mode else f'published runtime: {live}'}")
 
 
 if __name__ == "__main__":

@@ -182,7 +182,33 @@ def _cube(name, size_xyz, location, material=None):
     return obj
 
 
-def create_guardrail_prototype(config, materials):
+def _armco_beam(name, length, depth, height, center, material):
+    profile = [
+        (-height * 0.50, -depth * 0.32),
+        (-height * 0.25, depth * 0.50),
+        (0.0, -depth * 0.18),
+        (height * 0.25, depth * 0.50),
+        (height * 0.50, -depth * 0.32),
+    ]
+    verts = []
+    for x in (-length * 0.5, length * 0.5):
+        for z, y in profile:
+            verts.append((x, y, center + z))
+            verts.append((x, y - depth * 0.18, center + z))
+    faces = []
+    ring = len(profile) * 2
+    for side in range(2):
+        offset = side * ring
+        for index in range(len(profile) - 1):
+            a = offset + index * 2
+            faces.append((a, a + 2, a + 3, a + 1))
+    for index in range(ring):
+        nxt = (index + 1) % ring
+        faces.append((index, ring + index, ring + nxt, nxt))
+    return _mesh_object(name, verts, faces, [material])
+
+
+def create_guardrail_prototype(config, materials, rail_count=3):
     s = config["guardrails"]
     length = float(s.get("module_length_m", 4))
     depth = float(s.get("visual_depth_m", .11))
@@ -193,14 +219,10 @@ def create_guardrail_prototype(config, materials):
     pd = float(s.get("post_depth_m", .12))
     mat = materials["guardrail"]
     objs = []
-    strip = height / 3
-    for i, offset in enumerate((-.07, 0, .07)):
-        objs.append(_cube(
-            f"Proto_Guardrail_Beam_{i}",
-            (length, depth, strip),
-            (0, offset, center + (i-1) * strip * .82),
-            mat,
-        ))
+    beam_height = height * 0.48
+    centers = (center - 0.16, center + 0.16) if rail_count == 2 else (center - 0.22, center + 0.06, center + 0.34)
+    for i, beam_center in enumerate(centers):
+        objs.append(_armco_beam(f"Proto_Armco_{rail_count}_{i}", length + 0.18, depth, beam_height, beam_center, mat))
     spacing = max(1, float(s.get("post_spacing_m", 2)))
     count = max(2, int(math.floor(length / spacing)) + 1)
     for i in range(count):

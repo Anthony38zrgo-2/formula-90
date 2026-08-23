@@ -5,6 +5,8 @@ from pathlib import Path
 
 from pipeline_common import read_json, SpatialHash, Occupant
 from generate_environment import barrier_minimum_center_distance
+from vegetation_distribution import COLORS, load_distribution
+from guardrail_layout import guardrail_conflict, load_guardrail_layout
 
 
 def _minimum_center_distance(config: dict, category: str, radius: float) -> float:
@@ -25,6 +27,8 @@ def main() -> int:
     generated = repo / config["generated_dir"]
     placements_doc = read_json(generated / "placements.json")
     items = placements_doc["placements"]
+    distribution, catalogs = load_distribution(repo, config)
+    guardrails = load_guardrail_layout(repo, config)
 
     failures = 0
     occupancy = SpatialHash(cell_size=10.0)
@@ -84,6 +88,36 @@ def main() -> int:
         failures += 1
     else:
         print(f"PASS manifest count={len(items)}")
+
+    if distribution:
+        for category in ("trees", "bushes"):
+            category_items = [item for item in items if item["category"] == category]
+            unique = {item["variant_id"] for item in category_items}
+            expected_assets = {asset.spec.id for asset in catalogs[category]}
+            if unique != expected_assets:
+                print(f"FAIL {category} catalog coverage={len(unique)}/{len(expected_assets)}")
+                failures += 1
+            else:
+                print(f"PASS {category} catalog coverage={len(unique)}/{len(expected_assets)}")
+            counts = {color: sum(item.get("color_id") == color for item in category_items) for color in COLORS}
+            if counts["original"] != max(counts.values()):
+                print(f"FAIL {category} dominant color is not original: {counts}")
+                failures += 1
+            else:
+                print(f"PASS {category} dominant=original colors={counts}")
+
+    guardrail_conflicts = sum(
+        guardrail_conflict(
+            guardrails, item["category"], float(item["track_fraction"]), int(item["side"]),
+            float(item.get("distance_to_track_m", item["distance_from_center_m"])), float(item["radius_m"]),
+        )
+        for item in items if item["category"] in {"trees", "bushes"}
+    )
+    if guardrail_conflicts:
+        print(f"FAIL guardrail/vegetation conflicts={guardrail_conflicts}")
+        failures += guardrail_conflicts
+    else:
+        print("PASS guardrail/vegetation conflicts=0")
 
     print(f"biome={placements_doc.get('biome')} seed={placements_doc['seed']}")
     return 0 if failures == 0 else 2

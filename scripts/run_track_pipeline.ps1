@@ -80,6 +80,8 @@ if ($TextureSource -eq "Procedural") {
     if ($LASTEXITCODE -ne 0) { throw "Vegetation analysis failed" }
     Write-Host "Vegetation gate: pre-cut RGBA source rebuild + read-only bottom-anchor validation + per-asset alpha validation pass $VegetationPass" -ForegroundColor DarkGray
 }
+& $python (Join-Path $pipeline "apply_asphalt_texture.py") --config $config
+if ($LASTEXITCODE -ne 0) { throw "Curated seamless asphalt generation failed" }
 & $python (Join-Path $pipeline "apply_ground_cover_to_terrain.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Hybrid ground-cover terrain generation failed" }
 & $python (Join-Path $pipeline "validate_texture_forge.py") --config $config
@@ -88,6 +90,8 @@ if ($LASTEXITCODE -ne 0) { throw "Texture Forge validation failed" }
 if ($Mode -eq "Base") {
     & $BlenderExe --background --python (Join-Path $pipeline "build_track_blender.py") -- --config $config
     if ($LASTEXITCODE -ne 0) { throw "Blender base track build failed" }
+    & $BlenderExe --background --python (Join-Path $pipeline "validate_curbs_blender.py") -- --config $config
+    if ($LASTEXITCODE -ne 0) { throw "Generated curb profile validation failed" }
     Write-Host ""
     Write-Host "Base track generated and published to the canonical runtime GLB." -ForegroundColor Green
     Write-Host "Texture Forge: $($trackConfig.materials.texture_forge_style), seed=$Seed" -ForegroundColor DarkGray

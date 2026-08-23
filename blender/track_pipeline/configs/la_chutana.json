@@ -4,6 +4,7 @@
   "generated_dir": "blender/generated/la_chutana",
   "runtime_dir": "game/assets/generated/tracks/la_chutana",
   "sample_spacing_m": 2.0,
+  "vegetation_distribution_manifest": "blender/track_pipeline/manifests/la_chutana_vegetation_distribution.json",
   "road": {
     "width_m": 12.0,
     "thickness_m": 0.16,
@@ -20,7 +21,7 @@
     "visual_under_road_blend_m": 1.4,
     "visual_edge_blend_m": 1.25,
     "visual_sink_m": 0.003,
-    "roadside_visual_width_m": 1.4,
+    "roadside_visual_width_m": 1.8,
     "far_ground_z_m": -0.1,
     "far_ground_safety_m": 0.05,
     "far_ground_margin_m": 220.0,
@@ -30,20 +31,18 @@
     "roadside_collision_width_m": 2.0
   },
   "curb": {
-    "width_m": 0.58,
-    "base_depth_m": 0.045,
-    "stripe_length_m": 2.0,
-    "profile": [[0.0, 0.0], [0.12, 0.005], [0.29, 0.022], [0.46, 0.012], [0.58, 0.002]],
+    "manifest": "blender/track_pipeline/manifests/curb_profiles.json",
     "segments": [
-      {"name": "T1Inside", "side": "right", "start_fraction": 0.06, "end_fraction": 0.145},
-      {"name": "T1Exit", "side": "left", "start_fraction": 0.115, "end_fraction": 0.175},
-      {"name": "T2Inside", "side": "left", "start_fraction": 0.18, "end_fraction": 0.255},
-      {"name": "T3Inside", "side": "right", "start_fraction": 0.255, "end_fraction": 0.335},
-      {"name": "T4Inside", "side": "right", "start_fraction": 0.355, "end_fraction": 0.455},
-      {"name": "T4Exit", "side": "left", "start_fraction": 0.435, "end_fraction": 0.515},
-      {"name": "T5Inside", "side": "right", "start_fraction": 0.575, "end_fraction": 0.655},
-      {"name": "T6Inside", "side": "left", "start_fraction": 0.735, "end_fraction": 0.865},
-      {"name": "T6Exit", "side": "right", "start_fraction": 0.825, "end_fraction": 0.915}
+      {"name": "T1Inside", "side": "right", "profile_id": "raised", "zone": "high_speed", "start_fraction": 0.06, "end_fraction": 0.145},
+      {"name": "T1Exit", "side": "left", "profile_id": "raised", "zone": "high_speed", "start_fraction": 0.115, "end_fraction": 0.175},
+      {"name": "T2Inside", "side": "left", "profile_id": "flat", "zone": "medium_speed", "start_fraction": 0.18, "end_fraction": 0.255},
+      {"name": "T3Inside", "side": "right", "profile_id": "flat", "zone": "medium_speed", "start_fraction": 0.255, "end_fraction": 0.335},
+      {"name": "T4Inside", "side": "right", "profile_id": "flat", "zone": "medium_speed", "start_fraction": 0.355, "end_fraction": 0.455},
+      {"name": "T4Exit", "side": "left", "profile_id": "raised", "zone": "high_speed", "start_fraction": 0.435, "end_fraction": 0.515},
+      {"name": "T5ChicaneEntry", "side": "left", "profile_id": "sausage", "zone": "chicane", "start_fraction": 0.55, "end_fraction": 0.58},
+      {"name": "T5ChicaneExit", "side": "right", "profile_id": "sausage", "zone": "chicane", "start_fraction": 0.585, "end_fraction": 0.615},
+      {"name": "T6Inside", "side": "left", "profile_id": "flat", "zone": "medium_speed", "start_fraction": 0.735, "end_fraction": 0.865},
+      {"name": "T6Exit", "side": "right", "profile_id": "flat", "zone": "medium_speed", "start_fraction": 0.825, "end_fraction": 0.915}
     ]
   },
   "banking": [
@@ -52,7 +51,8 @@
     {"center_fraction": 0.815, "half_width_fraction": 0.03, "degrees": 2.5}
   ],
   "guardrails": {
-    "procedural": false,
+    "procedural": true,
+    "manifest": "blender/track_pipeline/manifests/la_chutana_guardrails.json",
     "module_length_m": 4.0,
     "visual_depth_m": 0.11,
     "beam_height_m": 0.34,
@@ -63,13 +63,10 @@
     "post_depth_m": 0.12,
     "collision_height_m": 0.75,
     "collision_thickness_m": 0.18,
-    "segments": [
-      {"name": "T1Outer", "side": "left", "start_fraction": 0.055, "end_fraction": 0.155, "offset_from_edge_m": 4.0},
-      {"name": "BackOuter", "side": "right", "start_fraction": 0.69, "end_fraction": 0.805, "offset_from_edge_m": 5.0}
-    ]
+    "segments": []
   },
   "tire_barriers": {
-    "procedural": true,
+    "procedural": false,
     "continuous_visual": true,
     "both_sides": true,
     "separation_from_edge_m": 5.0,
@@ -121,19 +118,22 @@
   },
   "materials": {
     "texture_size": 256,
-    "terrain_texture_size": 512,
+    "asphalt_texture_size": 1024,
+    "asphalt_source": "blender/assets/texture_sources/la_chutana/road/asphalt_source.png",
+    "asphalt_source_sha256": "506a0a3b99e1d62144cd64836afaed3bd614cc0d3abfe928159541214269d88e",
+    "terrain_texture_size": 4096,
     "card_texture_size": 128,
     "seed": 1995,
     "texture_forge_style": "ps1_rally_clean"
   },
   "terrain_ground_cover": {
     "mode": "hybrid_cards_texture",
-    "card_share": 0.5,
-    "texture_share": 0.5,
-    "texture_coverage": 0.5,
-    "texture_opacity": 0.35,
+    "card_share": 1.0,
+    "texture_share": 0.0,
+    "texture_coverage": 0.0,
+    "texture_opacity": 0.0,
     "base_source": "blender/assets/texture_sources/la_chutana/terrain/south_america_west_low_terrain_source.png",
-    "base_source_sha256": "7cd8645412d3c7ee27bc1de130e983b6568156476fd017b1a01dae9e99896022",
+    "base_source_sha256": "e5d6009f035b3d9b003962e87c2019c7e240b72a8c36e795a91389f4a933a8ab",
     "output": "blender/generated/la_chutana/textures/biomes/south_america/west/low/terrain.png",
     "texture_sources": [
       "assets-lowpoly-python/circuit_assets_final/texture_library/grassg1.png",
