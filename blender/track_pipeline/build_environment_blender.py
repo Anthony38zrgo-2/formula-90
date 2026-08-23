@@ -325,7 +325,7 @@ def build_tire_barriers(config, points, materials):
         barrier_sectors = None
         if layout_cfg_path.exists():
             lcfg = read_json(layout_cfg_path)
-            barrier_sectors = lcfg.get("barrier_sectors")
+            barrier_sectors = lcfg.get("barrier_sectors", lcfg.get("legacy_barrier_sectors"))
     for side in sides:
         side_name = "Right" if side > 0 else "Left"
         if card_materials:
@@ -334,6 +334,7 @@ def build_tire_barriers(config, points, materials):
                 front_uv_bounds=front_uv_bounds,
                 multi_materials=multi_materials if multi_materials else None,
                 barrier_sectors=barrier_sectors,
+                exclude_spans=settings.get("exclude_spans", []),
             )
         else:
             visual, modules = create_tire_barrier_visual(
@@ -357,7 +358,10 @@ def build_trackside_props(config, points, props, materials):
         pos, tangent, normal = sample_centerline(points, float(item["track_fraction"]))
         side = int(item["side"])
         distance = float(item["distance_from_center_m"])
-        card_pos = (pos[0] + normal[0] * side * distance, pos[1] + normal[1] * side * distance)
+        authored = item.get("position_xz")
+        card_pos = ((float(authored[0]), float(authored[1])) if authored else
+                    (pos[0] + normal[0] * side * distance,
+                     pos[1] + normal[1] * side * distance))
         ground = terrain_height(config, float(item["track_fraction"]), side, distance)
         create_trackside_card(
             f"Trackside_{prop_type}_{item['prop_id']}",
@@ -429,8 +433,11 @@ def main():
     review_mode = ns.vegetation_review or ns.guardrail_review or ns.safety_barrier_review
     safety = ({"modules": 0, "collisions": 0, "counts": {}, "sha256": ""}
               if ns.vegetation_review else build_safety_barriers(config, points, materials))
-    tire_barriers = {"visual_modules": 0, "collision_segments": 0} if review_mode else build_tire_barriers(config, points, materials)
-    trackside_props = 0 if review_mode else build_trackside_props(config, points, placements.get("trackside_props", []), materials)
+    tire_barriers = ({"visual_modules": 0, "collision_segments": 0}
+                     if ns.vegetation_review or ns.guardrail_review
+                     else build_tire_barriers(config, points, materials))
+    trackside_props = (0 if ns.vegetation_review or ns.guardrail_review
+                       else build_trackside_props(config, points, placements.get("trackside_props", []), materials))
     review_name = ("safety_barrier" if ns.safety_barrier_review else
                    "guardrail" if ns.guardrail_review else "vegetation")
     blend = generated / (f"track_{review_name}_review.blend" if review_mode else "track_environment.blend")

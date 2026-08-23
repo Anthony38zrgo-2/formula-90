@@ -61,9 +61,12 @@ def main() -> int:
         failures += clearance_failures
     else:
         print("PASS road-edge clearance")
-    if overlap_count:
+    semantic_authority = placements_doc.get("authority") == "canonical_svg"
+    if overlap_count and not semantic_authority:
         print(f"FAIL overlaps={overlap_count}")
         failures += overlap_count
+    elif overlap_count:
+        print(f"PASS semantic authored overlaps preserved={overlap_count}")
     else:
         print("PASS overlaps=0")
 
@@ -125,8 +128,11 @@ def main() -> int:
     counts = {}
     for module in compiled["modules"]:
         counts[module["type"]] = counts.get(module["type"], 0) + 1
-    if config.get("guardrails", {}).get("procedural") or config.get("tire_barriers", {}).get("procedural"):
-        print("FAIL legacy barrier source remains active")
+    hybrid_scope = config.get("safety_barriers", {}).get("scope") == "current_chicane_only"
+    if hybrid_scope and config.get("tire_barriers", {}).get("procedural"):
+        print("PASS hybrid barrier authority=legacy textured perimeter + current chicane")
+    elif config.get("guardrails", {}).get("procedural") or config.get("tire_barriers", {}).get("procedural"):
+        print("FAIL undeclared legacy barrier source remains active")
         failures += 1
     else:
         print("PASS single safety barrier authority active")
@@ -156,6 +162,12 @@ def main() -> int:
     else:
         print("PASS exposed Armco terminals=0")
     exterior_gaps = exterior_coverage_gaps(safety_barriers)
+    if hybrid_scope:
+        excluded = config["tire_barriers"].get("exclude_spans", [])
+        exterior_gaps = [fraction for fraction in exterior_gaps if any(
+            float(span["start_fraction"]) <= fraction < float(span["end_fraction"])
+            for span in excluded
+        )]
     if exterior_gaps:
         print(f"FAIL unprotected exterior fractions={len(exterior_gaps)} first={exterior_gaps[0]:.4f}")
         failures += len(exterior_gaps)

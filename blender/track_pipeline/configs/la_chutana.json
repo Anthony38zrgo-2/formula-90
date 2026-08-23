@@ -70,10 +70,11 @@
     "procedural": true,
     "manifest": "blender/track_pipeline/manifests/la_chutana_safety_barriers.json",
     "legacy_guardrails_disabled": true,
-    "legacy_tire_barriers_disabled": true
+    "legacy_tire_barriers_disabled": false,
+    "scope": "current_chicane_only"
   },
   "tire_barriers": {
-    "procedural": false,
+    "procedural": true,
     "continuous_visual": true,
     "both_sides": true,
     "separation_from_edge_m": 5.0,
@@ -84,7 +85,10 @@
     "visual_depth_m": 0.45,
     "side_repeats": 1,
     "collision_height_m": 1.25,
-    "collision_thickness_m": 0.45
+    "collision_thickness_m": 0.45,
+    "exclude_spans": [
+      {"start_fraction": 0.520, "end_fraction": 0.630, "replacement": "current_chicane_safety_barriers"}
+    ]
   },
   "vegetation_barrier_clearance_m": {
     "trees": 1.0,

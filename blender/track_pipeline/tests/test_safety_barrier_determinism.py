@@ -42,11 +42,11 @@ class SafetyBarrierDeterminismTests(unittest.TestCase):
 
     def test_segment_change_does_not_change_other_module_hash_data(self):
         changed = copy.deepcopy(self.manifest)
-        changed["segments"][2]["center_distance_m"] += 1
+        changed["segments"][0]["center_distance_m"] += 1
         a = compile_layout(self.manifest, 2420.0)["modules"]
         b = compile_layout(changed, 2420.0)["modules"]
-        self.assertEqual([m for m in a if m["segment_id"] != "T1Outer"],
-                         [m for m in b if m["segment_id"] != "T1Outer"])
+        self.assertEqual([m for m in a if m["segment_id"] != "ChicaneLeft"],
+                         [m for m in b if m["segment_id"] != "ChicaneLeft"])
 
 
 if __name__ == "__main__":

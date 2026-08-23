@@ -476,11 +476,22 @@ def _sector_barrier_type(fraction, sectors):
     return "tire_black"
 
 
+def _fraction_in_spans(fraction, spans):
+    value = float(fraction) % 1.0
+    for span in spans or ():
+        start = float(span["start_fraction"]) % 1.0
+        end = float(span["end_fraction"]) % 1.0
+        if (start <= end and start <= value < end) or (start > end and (value >= start or value < end)):
+            return True
+    return False
+
+
 def create_tire_barrier_card_visual(
     name, points, side, config, front_material, side_material, top_material,
     front_uv_bounds=(0.0, 0.0, 1.0, 1.0),
     multi_materials=None,
     barrier_sectors=None,
+    exclude_spans=None,
 ):
     """Build a closed, continuous rectangular barrier ribbon supporting multiple barrier styles."""
     tire_cfg = config["tire_barriers"]
@@ -529,6 +540,9 @@ def create_tire_barrier_card_visual(
         i = index * 4
         j = next_index * 4
         fraction = index / count
+        next_fraction = next_index / count
+        if _fraction_in_spans(fraction, exclude_spans) or _fraction_in_spans(next_fraction, exclude_spans):
+            continue
         mat_offset = 0
         if multi_materials and barrier_sectors:
             b_type = _sector_barrier_type(fraction, barrier_sectors)
@@ -622,8 +636,12 @@ def create_tire_barrier_collision(name, points, side, config):
             tuple(godot_xz_to_blender(outer[0], outer[1], ground + height)),
         ])
     faces = []
+    exclude_spans = tire_cfg.get("exclude_spans", [])
     for index in range(count):
         next_index = (index + 1) % count
+        if (_fraction_in_spans(index / count, exclude_spans) or
+                _fraction_in_spans(next_index / count, exclude_spans)):
+            continue
         i = index * 4
         j = next_index * 4
         faces.extend([
