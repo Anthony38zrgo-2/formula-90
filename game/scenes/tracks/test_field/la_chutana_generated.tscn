@@ -4,8 +4,6 @@
 [ext_resource type="Script" uid="uid://bkrhcahm56i8q" path="res://scripts/track/generated_track_surface_groups.gd" id="2_groups"]
 [ext_resource type="PackedScene" path="res://scenes/visuals/la_chutana_source_skybox.tscn" id="3_skybox"]
 [ext_resource type="Texture2D" uid="uid://b6i2p2ccgciwr" path="res://assets/skybox/la_chutana/la_chutana_sky_panorama_2048x1024.png" id="4_panorama"]
-[ext_resource type="PackedScene" uid="uid://cxq6hehb35xpn" path="res://assets/generated/tracks/la_chutana/la_chutana_vegetation.glb" id="5_vegetation"]
-[ext_resource type="Script" path="res://scripts/track/vegetation_vertex_color_binder.gd" id="6_vegetation_color"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_la_chutana"]
 panorama = ExtResource("4_panorama")
@@ -38,9 +36,6 @@ position = Vector3(0, -0.5589, 18)
 
 [node name="GeneratedTrack" parent="." unique_id=645807028 instance=ExtResource("1_track")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2188797, -0.40935707, -0.0060043335)
-
-[node name="GeneratedVegetation" parent="." unique_id=1269061341 instance=ExtResource("5_vegetation")]
-script = ExtResource("6_vegetation_color")
 
 [node name="SurfaceGroups" type="Node" parent="." unique_id=1341364364]
 script = ExtResource("2_groups")
