@@ -4,6 +4,7 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 import math
+import xml.etree.ElementTree as ET
 
 import numpy as np
 
@@ -23,6 +24,99 @@ from safety_barrier_layout import barrier_conflict, load_safety_barrier_layout
 
 DENSITIES = ("none", "very_low", "low", "medium", "high")
 TRACKSIDE_PROP_TYPES = ("spectator", "marshal", "photographer", "flag", "sign")
+
+
+def _semantic_prop_type(asset_id: str) -> str:
+    if asset_id.startswith("spectator_"):
+        return "spectator"
+    if asset_id.startswith("marshal_"):
+        return "marshal"
+    if asset_id == "photographer":
+        return "photographer"
+    if asset_id == "track_flag":
+        return "flag"
+    return "sign"
+
+
+def load_semantic_environment(repo, config, points, distribution, color_catalogs, seed):
+    """Resolve exact SVG-authored positions while remapping vegetation to the current catalog."""
+    relative = config.get("semantic_environment", {}).get("source_svg")
+    if not relative:
+        raise RuntimeError("semantic_environment.source_svg is required")
+    source = repo / relative
+    root = ET.parse(source).getroot()
+    track_index = SegmentSpatialIndex.build(points.tolist(), cell_size=32.0)
+    usage = {
+        category: {"colors": {color: 0 for color in COLORS}, "assets": {}}
+        for category in ("trees", "bushes")
+    }
+    placements = []
+    props = []
+    grass_points = []
+    nodes = sorted(
+        (node for node in root.iter() if node.get("data-role") == "asset-instance"),
+        key=lambda node: node.get("data-instance-id", ""),
+    )
+    for node in nodes:
+        x = float(node.get("cx"))
+        z = float(node.get("cy"))
+        category = node.get("data-category")
+        nearest = nearest_track_sample(track_index, x, z, 400.0)
+        if nearest is None:
+            raise RuntimeError(f"SVG instance cannot resolve against centerline: {node.get('data-instance-id')}")
+        if category == "grass":
+            grass_points.append([round(x, 4), round(z, 4)])
+            continue
+        if category in {"trees", "bushes"}:
+            assets = color_catalogs.get(category)
+            if not assets:
+                raise RuntimeError(f"Current vegetation catalog missing: {category}")
+            rng = stable_rng(seed, f"semantic:{category}:{node.get('data-instance-id')}")
+            asset = choose_asset(rng, category, nearest.fraction, distribution, assets, usage[category])
+            commit_asset(asset, usage[category])
+            scale = float(node.get("data-scale", "1"))
+            placements.append({
+                "category": category,
+                "variant_id": asset.spec.id,
+                "position_xz": [round(x, 4), round(z, 4)],
+                "track_fraction": round(nearest.fraction, 7),
+                "side": 1 if nearest.side >= 0 else -1,
+                "distance_from_center_m": round(abs(nearest.signed_offset_m), 4),
+                "distance_to_track_m": round(nearest.distance_m, 4),
+                "yaw_rad": round(float(node.get("data-yaw-rad", "0")), 7),
+                "scale": round(scale, 6),
+                "width_scale": 1.0,
+                "height_scale": 1.0,
+                "radius_m": round(asset.spec.radius_m * scale, 4),
+                "barrier_clearance_required_m": 0.0,
+                "color_id": asset.color,
+                "family": asset.family,
+                "asset_glb": asset.glb,
+                "semantic_instance_id": node.get("data-instance-id"),
+            })
+            continue
+        asset_id = node.get("data-asset-id", "")
+        props.append({
+            "prop_type": _semantic_prop_type(asset_id),
+            "prop_id": node.get("data-instance-id"),
+            "source_asset_id": asset_id,
+            "position_xz": [round(x, 4), round(z, 4)],
+            "track_fraction": round(nearest.fraction, 7),
+            "side": 1 if nearest.side >= 0 else -1,
+            "distance_from_center_m": round(abs(nearest.signed_offset_m), 4),
+            "collision": False,
+        })
+    stats = {}
+    for category in ("trees", "bushes"):
+        selected = [item for item in placements if item["category"] == category]
+        stats[category] = {
+            "authority": "canonical_svg", "placed": len(selected),
+            "unique_assets": len({item["variant_id"] for item in selected}),
+            "colors": {color: sum(item["color_id"] == color for item in selected) for color in COLORS},
+        }
+    stats["grass"] = {"authority": "canonical_svg_texture_points", "placed": 0, "texture_points": len(grass_points)}
+    stats["fake_buildings"] = {"authority": "disabled", "placed": 0}
+    return placements, props, grass_points, stats, source
 
 
 @dataclass(frozen=True)
@@ -258,6 +352,20 @@ def main() -> int:
     center = read_json(repo / config["generated_dir"] / "centerline.json")
     points = np.asarray(center["points_xz"], dtype=float)
     biome = biome_from_config(config)
+    if config.get("semantic_environment", {}).get("enabled", False):
+        placements, trackside_props, grass_points, stats, source = load_semantic_environment(
+            repo, config, points, distribution, color_catalogs, ns.seed,
+        )
+        output = repo / config["generated_dir"] / "placements.json"
+        write_json(output, {
+            "track_id": config["track_id"], "biome": biome.id, "seed": ns.seed,
+            "authority": "canonical_svg", "source_svg": str(source.relative_to(repo)).replace("\\", "/"),
+            "stats": stats, "placements": placements,
+            "trackside_props": trackside_props, "grass_texture_points_xz": grass_points,
+        })
+        print(f"[environment] semantic authority={source} wrote {output}")
+        print(f"[environment] trees={stats['trees']['placed']} bushes={stats['bushes']['placed']} grass_texture_points={len(grass_points)} props={len(trackside_props)}")
+        return 0
     occupancy = SpatialHash(cell_size=10.0)
     track_index = SegmentSpatialIndex.build(points.tolist(), cell_size=32.0)
     placements = []

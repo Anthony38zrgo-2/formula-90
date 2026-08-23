@@ -45,14 +45,14 @@
         "dither_strength": 0.01,
         "contrast": 1.035
       },
-      "sha256": "a64d9e825155aca7279fd5f7617b6e307837a1c9d61dafc3c77afdc76c9c70ea",
+      "sha256": "0bf94104d3be9dd3b36ba6af0cb15e7ceb56d65a5b86c4e3cbb20bd18fcc54b9",
       "biome": "south_america_west_low",
       "role": "terrain",
       "ground_cover": {
-        "mode": "terrain_texture_only",
+        "mode": "semantic_texture_points",
         "card_share": 0.0,
         "texture_share": 1.0,
-        "texture_coverage": 0.22,
+        "texture_coverage": 0.0,
         "texture_opacity": 0.18,
         "base_source": {
           "path": "blender/assets/texture_sources/la_chutana/terrain/south_america_west_low_terrain_source.png",
@@ -71,7 +71,8 @@
             "path": "assets-lowpoly-python/circuit_assets_final/texture_library/grassg3.png",
             "sha256": "727d546a60f1c1eed0f2ad139cedae4b683bf63fcdf65e819de1846e9aadb064"
           }
-        ]
+        ],
+        "semantic_point_count": 9320
       }
     },
     "biomes/south_america/west/low/shoulder.png": {

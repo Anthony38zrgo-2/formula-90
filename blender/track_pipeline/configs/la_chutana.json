@@ -132,6 +132,13 @@
       "high": {"grass_per_km": 1200, "bushes_per_km": 180, "trees_per_km": 95, "fake_buildings_per_km": 12}
     }
   },
+  "semantic_environment": {
+    "enabled": true,
+    "source_svg": "game/data/tracks_revisions/la_chutana/revisions/1f49978e1d7de1401b616a65d31f990b49ec3b154cd6a86b58b8a21ba7aa71b8/track.canonical.svg",
+    "grass_output": "terrain_texture",
+    "preserve_exact_positions": true
+  },
+  "semantic_layout_config": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
   "materials": {
     "texture_size": 256,
     "asphalt_texture_size": 1024,
@@ -143,10 +150,10 @@
     "texture_forge_style": "ps1_rally_clean"
   },
   "terrain_ground_cover": {
-    "mode": "terrain_texture_only",
+    "mode": "semantic_texture_points",
     "card_share": 0.0,
     "texture_share": 1.0,
-    "texture_coverage": 0.22,
+    "texture_coverage": 0.0,
     "texture_opacity": 0.18,
     "base_source": "blender/assets/texture_sources/la_chutana/terrain/south_america_west_low_terrain_source.png",
     "base_source_sha256": "e5d6009f035b3d9b003962e87c2019c7e240b72a8c36e795a91389f4a933a8ab",
