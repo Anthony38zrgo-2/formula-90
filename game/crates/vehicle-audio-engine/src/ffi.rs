@@ -143,7 +143,6 @@ pub extern "C" fn vehicle_audio_abi_version() -> u32 {
 /// Build SHA (or "unknown"). NUL-terminated.
 #[no_mangle]
 pub extern "C" fn vehicle_audio_build_sha() -> *const c_char {
-    // Mirrors physics FFI: prefer GIT_HASH, else a static placeholder.
-    static SHA: &[u8] = b"unknown\0";
+    static SHA: &[u8] = concat!(env!("FORMULA90_BUILD_SHA"), "\0").as_bytes();
     SHA.as_ptr() as *const c_char
 }

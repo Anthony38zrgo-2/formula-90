@@ -7,13 +7,13 @@
     "fps_cap": 120
   },
    "geometry": {
-    "vertex_snap_distance": 0.12,   
-    "affine_texture_strength": 0.75 
+    "vertex_snap_distance": 0.10,
+    "affine_texture_strength": 0.70
   },
   "color": {
-    "bit_depth": 5,
+    "bit_depth": 4,
     "dither_matrix_type": "bayer2x2",
-    "dither_strength": 0.9
+    "dither_strength": 1.0
   },
   "fog": {
     "enabled": true,

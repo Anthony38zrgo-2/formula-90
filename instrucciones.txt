@@ -1,143 +1,598 @@
-================================================================================
-FORMULA-90  —  HANDOFF INSTRUCTIONS (instrucciones.txt)
-================================================================================
-Generated: 2026-08-21  |  Repo: D:\Formula90s  |  Engine: Godot 4.7.1
-Mode: BUILD  |  Do NOT commit unless the user explicitly asks.
+FORMULA-90 — HANDOFF ACTIVO: SOUND MIXER CONFIGURATION SCHEMA V2
+================================================================
+Actualizado: 2026-08-22
+Repositorio: D:\Formula90s
+Rama observada: f1-94
+HEAD observado: ed5c2f0f7e226cd59dbebe49ef8838553768d6fc
+Motor: Godot 4.7.1 + Rust vehicle-audio-engine
+Estado: planificación; schema/CLI parcialmente implementados, DSP v2 aún no integrado.
 
-AUTHORITY / CONVENTIONS (from .agents/AGENTS.md & PROJECT_STATE.md)
-- Fail Faster, Adapt Faster: cheapest falsification before mutation.
-- Change ONE physics family at a time. JSON (f1_94_physics.json) is the single
-  runtime authority for F1-94 (§3.1 of PROJECT_STATE). runtime > scene > docs.
-- Use subagents for independent analysis; 1 hypothesis per iteration.
-- Update PROJECT_STATE.md after completing work.
+Este documento es la autoridad operativa para terminar SOUND_CONFIG_DOCS.md.
+La documentación pública describe el objetivo final, no el runtime disponible hoy.
 
-================================================================================
-1. CONTEXT DUMP — CURRENT ARCHITECTURE (facade/orquestador)
-================================================================================
-Canonical runtime is a SINGLE Rust orchestrator (the "facade"), not three
-independent modules:
+===============================================================================
+1. REGLAS DE EJECUCIÓN Y SEGURIDAD
+===============================================================================
 
-    Godot (GDScript HUD/telemetry)  <-- getters del nodo F90Core
-        [ F90Core ]  (nodo GDExtension C++, native/src/core/f90_core.cpp)
-            |  _integrate_forces -> f90_core_step (1 llamada, 1 struct F90CoreFrameOut)
-            |  _process -> pump_audio -> 1 push_buffer (batch; no Variant por muestra)
-            |  drive_integrate -> process_collision_audio -> disparadores de impactos/scrape
-        [ game/crates/formula90-core ]  formula90_core.dll  (la FACHADA)
-            CoreFacade owns: World (game_sim) + AudioModule (vehicle_audio_engine)
-                             + ModuleRegistry (SimModule: clima/IA/...)
-            .step = física -> módulos -> audio-input -> CoreFrame atómico
-        game/crates/game-sim (World, snapshot) -> vehicle_physics_engine (solver)
-        game/crates/vehicle-audio-engine (mezclador sample-accurate en Rust)
+Pipeline obligatorio:
 
-- Crates:
-  * `game/crates/vehicle-physics-engine` (solver físico determinista)
-  * `game/crates/game-sim` (mundo y snapshot)
-  * `game/crates/vehicle-audio-engine` (motor de audio sample-accurate, crossfade 5 bandas, camas de suelo y one-shots)
-  * `game/crates/formula90-core` (fachada orquestadora unificada)
-- Nodo C++: `F90Core` (`native/src/core/f90_core.{hpp,cpp}`). Carga `formula90_core.dll` con ABI v7.
-- `F194RustVehicle` (`native/src/vehicle/f1_94_rust_vehicle.{hpp,cpp}`) es el `RigidBody3D`. En `_ready()` tiene activo `set_contact_monitor(true)` y `set_max_contacts_reported(4)`.
-- Bank de Audio: `game/sounds/banks/v10_vehicle/` (pipeline híbrido reproducible: samples fuente + síntesis determinista).
+  sprint planning -> backlog item -> implement -> review -> human gate
+  -> sprint retrospective -> done
 
-================================================================================
-2. WHAT WAS JUST IMPLEMENTED AND VALIDATED (2026-08-21)
-================================================================================
-FASE 1 DE AUDIO — CONEXIÓN DE DISPARADORES HUÉRFANOS Y OVER-RUN BACKFIRE:
+Antes de modificar o compilar:
 
-A) ENGINE OVER-RUN BACKFIRE (Rust Core):
-   - En `game/crates/vehicle-audio-engine/src/mixer.rs`:
-     * Agregado `backfire_cooldown_samples: usize` al estado del mezclador.
-     * En `VehicleAudioEngine::set_state()`: detecta desaceleración súbita de acelerador
-       (`last_throttle >= 0.80 && throttle <= 0.15`) con motor a altas RPM (`rpm >= 12000.0`).
-     * Dispara automáticamente `Trigger::Backfire` y selecciona pseudoaleatoriamente
-       una sola variante entre `int_backfire.wav` e `int_backfire_2.wav`, manteniendo
-       replays deterministas. Aplica cooldown de 350 ms (~15,435 samples a 44.1 kHz).
-     * En `VehicleAudioEngine::render()`: decrementa `backfire_cooldown_samples` en cada frame.
-     * `engine_start_backfire.wav` conserva el sample de arranque y NO se usa en over-run.
-     * Tests cubren umbrales, cooldown real y selección determinista de una sola variante.
+  git branch --show-current
+  git rev-parse HEAD
+  git status --short
 
-B) COLISIONES FÍSICAS Y RASPADO (C++ / Godot RigidBody3D):
-   - En `native/src/vehicle/f1_94_rust_vehicle.cpp`:
-     * `_ready()` activa `set_contact_monitor(true)` y `set_max_contacts_reported(4)`.
-   - En `native/src/core/f90_core.cpp` y `f90_core.hpp`:
-     * Implementado `F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt)`:
-       - Evalúa `state->get_contact_count()`.
-       - Calcula impulso normal y velocidad tangencial contra el plano de colisión.
-       - Discrimina grupos del colisionador:
-         * `Barrier` / `Wall` / `Armco` / `TireBarrier` / `Guardrail`:
-           -> `impact_barrier` si `normal_impact > 3.0f`
-           -> `scrape` si `tang_speed > 4.0f` (roce lateral)
-         * `Cone` / `Prop` / `DynamicObstacle`: código reservado; fuera de uso actual.
-         * Colisiones generales (carrocería / coche a coche):
-           -> `impact_hit_1` (impacto suave < 8)
-           -> `impact_hit_2` (impacto medio 8-15)
-           -> `impact_hit_3` (impacto fuerte 15-25)
-           -> `impact_hit_4` (impacto muy fuerte > 25)
-           -> `scrape` (roce plano contra suelo con `normal.y > 0.7f`), reproducido con
-              `impact_scrape.wav` sintético, corto y de baja intensidad.
-       - Detección de fondo plano (*chassis bottoming*): si la compresión de suspensión llega
-         al tope ($\ge 75\text{ mm}$) a más de $50\text{ km/h}$, dispara `scrape`.
-       - Cooldown de colisión (`collision_cooldown_`) para evitar saturación de audio.
+Reglas del repositorio:
 
-C) BUILD SCRIPT FIX & VALIDACIÓN DE COMPILACIÓN:
-   - `scripts/build_windows.ps1` ajustado para evitar que warnings de `cargo` en stderr detengan
-     la ejecución por `$ErrorActionPreference='Stop'`.
-   - Compilación exitosa de C++ GDExtension (`libformula90s`) y todos los crates de Rust.
-   - DLLs actualizadas en `game/addons/formula90s/bin/`:
-     * `formula90_core.windows.template_debug.x86_64.dll` (+ `formula90_core.dll`)
-     * `vehicle_audio_engine.windows.template_debug.x86_64.dll` (+ `vehicle_audio_engine.dll`)
-     * `game_sim.windows.template_debug.x86_64.dll` (+ `game_sim.dll`)
-     * `vehicle_physics_engine.windows.template_debug.x86_64.dll`
-   - Tests: `cargo test --workspace` (53 tests de física + 38 de audio + 14 de facade) -> 100% PASS.
+- No mezclar, descartar ni reformatear cambios ajenos.
+- El worktree está sucio; actualmente son parte de este trabajo:
+    game/crates/vehicle-audio-engine/src/config.rs
+    game/crates/vehicle-audio-engine/src/mixer.rs
+    game/crates/vehicle-audio-engine/src/bin/va_baseline.rs
+    game/crates/vehicle-audio-engine/src/bin/va_validate.rs
+    game/crates/vehicle-audio-engine/tests/baseline_golden.json
+    game/crates/vehicle-audio-engine/SOUND_CONFIG_DOCS.md
+    game/crates/vehicle-audio-engine/IMPLEMENTATION_PLAN.md
+- Inventariar nuevamente antes de asumir que esas rutas siguen siendo exclusivas.
+- Prohibido `git add -A`. Preparar commits atómicos con rutas explícitas y revisar
+  `git diff --cached --check` y `git diff --cached`.
+- No crear commits WIP masivos. Un commit por contrato coherente y probado.
+- Antes de un rebuild completo, verificar HEAD y limpiar únicamente outputs/caches
+  de esta rama. No reutilizar DLL, objetos Cargo/SCons ni `game/.godot` de otra rama.
+- El runtime debe rechazar binarios cuyo BUILD no coincida con HEAD. Usar los scripts
+  canónicos de build/ejecución; no copiar DLL manualmente sin validar procedencia.
+- No actualizar SOUND_CONFIG_DOCS.md como “implementado” hasta superar los gates
+  automáticos y la escucha humana especificados aquí.
 
-D) AJUSTE DE ALTURA DE SUSPENSIÓN (f1_94_physics.json - Punto Intermedio):
-   - Delantero: `spring_length` $0.285\text{ m}$, `resting_ratio` $0.175$ (+40 mm despeje total sobre buje), `bump_stop_multiplier` $2.6$.
-   - Trasero: `spring_length` $0.235\text{ m}$, `resting_ratio` $0.220$ (+30 mm despeje total sobre buje).
+===============================================================================
+2. DIAGNÓSTICO VERIFICADO — ESTADO REAL
+===============================================================================
 
-================================================================================
-3. ESTADO DEL BANCO DE AUDIO (v10_vehicle) TRAS FASE 1
-================================================================================
-Samples en uso activo en tiempo real:
-- Motor continuo: `engine_idle.wav`, `engine_low.wav` (+ silbido engranajes rectos distribución 1.2-3.2kHz), `engine_mid.wav` (dominio medios 750-1800Hz + armónico 2x 1366Hz + decay/sustain modal colector + LPF 3.6kHz), `engine_high.wav` (saturación en 3 ramas: Airbox intake 100% lineal + decay/sustain modal en medios + resto con sat mínima 1.02 y LPF 5.0kHz + onda senoidal con sat cálida dedicada 1.25 y 28% peso 465.2/232.4Hz), `engine_redline.wav` (loops 100% seamless sin clics).
-- Camas de suelo: `surf_grass.wav`, `surf_rumble.wav`, `surf_sand.wav`
-- Fondo plano: `impact_scrape.wav` (NUEVA síntesis procedural v2 con dominio medio-agudo: HPF 280 Hz + fricción 1400-4800 Hz + chispas de titanio 4.5-9 kHz + ataque Hann 16 ms; 0.36 s, pico sutil 0.28).
-- Cambios de marcha: `shift_up.wav`, `shift_down.wav`
-- Backfire: `int_backfire.wav` / `int_backfire_2.wav` / `engine_backfire.wav` (activo en lift-off > 12k RPM; NUEVA remasterización aditiva: snap de detonación 0-25ms + resonadores metálicos de escape Inconel 650-2650Hz + micro-pops estocásticos 25-160ms + sheen de combustión 5.5-11.5kHz).
-- Colisiones / Impactos: `impact_barrier.wav`, `impact_cone.wav`, `impact_hit_1.wav`, `impact_hit_2.wav`, `impact_hit_3.wav`, `impact_hit_4.wav`.
-Samples pendientes de siguientes fases:
-- `engine_starter.wav` (arranque del coche)
-- `engine_limiter.wav` (limitador de pitlane)
-- `engine_tc.wav` (modulación acústica de control de tracción)
-- `shift_3.wav` (variante alternativa de cambio)
-- `impact_fire.wav` (combustión / fuego de escape)
-- Ambiente y carrera fuera del banco de vehículo:
-  * `Ambient/ambient.mp3` (fondo de circuito)
-  * `Ambient/Crowd/fans_national_event_normal.wav` / `fans_national_event_positive.wav` (público)
-  * `Ambient/startlight_red.wav` / `Ambient/startlight_greenGO.wav` (semáforo de salida)
-  * `GP_toggle.wav` (UI) / `screenshot.wav` (modo foto)
+Validación ejecutada el 2026-08-22:
 
-================================================================================
-4. PRÓXIMAS FASES RECOMENDADAS
-================================================================================
-A) FASE 2 DE AUDIO — SECUENCIA DE CARRERA, SEMÁFORO Y AMBIENTE:
-   - Conectar sonidos de semáforo `startlight_red.wav` y `startlight_greenGO.wav` en `race_session.gd`.
-   - Colocar `AudioStreamPlayer3D` para sonido ambiente `ambient.mp3` y público en tribunas.
-   - Conectar sonido de UI `GP_toggle.wav` a la navegación de menús.
+  cd game/crates
+  cargo test -p vehicle_audio_engine
 
-B) FASE 3 DE AUDIO — ENRIQUECIMIENTO TÉCNICO:
-   - Crear sample / cama de chirrido de neumático sobre asfalto (*tire skid*) activado cuando `slip > 0.15`.
-   - Conectar `engine_starter.wav` a la secuencia de encendido.
-   - Conectar `engine_limiter.wav` al activar el limitador de pitlane.
+Resultado:
 
-C) RECORDATORIO DE TAREAS DE FÍSICA PENDIENTES (P1 / P2):
-   - P1: Fidelidad del JSON `f1_94_physics.json` (superficies lateral/longitudinal grip assist, diff threshold).
-   - P2: Telemetría CSV de la ruta Rust (`telemetry_manager.gd` soporte `F194RustVehicle` y columna `TC_Active`).
+- 48 tests unitarios Rust: PASS.
+- 6 tests de integración del banco: PASS.
+- `va_validate ../sounds/sound_mixer_config.json --check`: PASS.
+- La configuración activa declara schema_version=1, 26 gains y exhaust legacy.
 
-================================================================================
-5. COMANDOS ÚTILES DE VERIFICACIÓN Y BUILD
-================================================================================
-- Compilar todo en Windows:
-  `powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -Configuration debug`
-- Ejecutar tests de Rust:
-  `cd game/crates ; cargo test --workspace`
-- Ejecutar test headless de Godot:
-  `.tools\godot\Godot_v4.7.1-stable_win64_console.exe --headless --path game --quit-after 240 res://scenes/runtime/sim_bridge_quick_test.tscn`
+Lo que sí existe:
+
+- Tipos serializables para schema v1 y schema v2.
+- Sanitización básica de volume, pan, ADSR, EQ, tube, reverb, master y hot reload.
+- Parser tolerante: un archivo ausente o JSON inválido cae a defaults seguros.
+- Conversión estructural v1 -> v2 mediante `to_v2()`.
+- CLI `va_validate` con check, resumen y migración.
+- CLI `va_baseline` y golden inicial.
+- El mixer consume gains por clave y la configuración legacy de exhaust.
+
+Lo que NO existe aún en el runtime:
+
+- Pan estéreo por sonido.
+- ADSR sample-accurate por voz.
+- EQ gráfico de diez bandas.
+- Coloración valvular.
+- Envíos y buses compartidos de reverb.
+- Master output_db y limitador estéreo configurable desde JSON.
+- Hot reload, snapshots ni crossfade de parámetros.
+- Herencia field-level correcta desde `defaults`.
+- Desactivación runtime de sends hacia buses inexistentes.
+- Advertencias runtime por claves JSON desconocidas.
+
+Problemas concretos que no deben ocultarse:
+
+1. `VehicleAudioEngine::new()` carga `SoundMixerConfig`, llama `gains_map()` y
+   descarta todas las propiedades v2 salvo volume y exhaust.
+2. El render suma una señal mono y escribe el mismo sample en L/R.
+3. `gains_map()` solo incluye claves explícitas. Un sonido ausente usa 1.0 en el
+   mixer, no `defaults.volume`.
+4. `merge_with_defaults()` usa valores centinela (1.0, 0.0, enabled=false) y no
+   puede distinguir “campo omitido” de “override explícito igual al default”.
+5. La CLI valida referencias de reverb, pero el cargador runtime no aplica ese
+   contrato ni conserva un diagnóstico estructurado.
+6. Los tests actuales prueban parsing y el mixer legacy, no la cadena descrita en
+   SOUND_CONFIG_DOCS.md.
+
+Conclusión: Sprint 0 es un scaffold útil, no un schema v2 terminado.
+
+===============================================================================
+3. OBJETIVO Y CONTRATO DE DONE
+===============================================================================
+
+Objetivo:
+
+Hacer que `game/sounds/sound_mixer_config.json` controle realmente la cadena:
+
+  source mono
+    -> ADSR
+    -> EQ 10 bandas
+    -> tube color
+    -> volume
+    -> pan equal-power
+    -> dry L/R + send post-pan
+    -> buses reverb compartidos L/R
+    -> master gain
+    -> protección finite/DC
+    -> limitador estéreo enlazado
+    -> salida ABI L/R
+
+Definition of Done global:
+
+- Schema v1 mantiene comportamiento y salida de referencia dentro de tolerancia.
+- Schema v2 aplica volume, pan, ADSR, EQ, tube y reverb a todos los tipos de voz.
+- `defaults` hereda por campo; overrides explícitos iguales al default se respetan.
+- Loops liberan de forma click-free y one-shots completan attack/decay/release.
+- Reverb conserva colas después de terminar la voz y no asigna memoria en render.
+- Master es estéreo enlazado y ningún canal supera el ceiling configurado.
+- Hot reload hace I/O/parsing fuera del callback y transiciona sin clicks.
+- Cero locks, filesystem, parsing y allocations heap dentro de `render()`.
+- No salen NaN/Inf; DC y discontinuidades cumplen los límites de test.
+- `va_validate` y runtime comparten resolución/validación efectiva.
+- La configuración canónica migra a v2 y pasa preflight.
+- Tests unitarios, integración, golden, benchmark, build limpio y Godot headless pasan.
+- Human gate auditivo aprobado con escenarios reproducibles.
+- SOUND_CONFIG_DOCS.md se corrige para describir exactamente el comportamiento final.
+
+===============================================================================
+4. DECISIONES DE ARQUITECTURA
+===============================================================================
+
+4.1 Configuración raw frente a configuración resuelta
+----------------------------------------------------
+
+No seguir ampliando `SoundConfig` con valores centinela. Separar:
+
+- `RawSoundConfig`: campos `Option<T>` provenientes de JSON.
+- `ResolvedSoundConfig`: todos los campos concretos, saneados y listos para DSP.
+- `ResolvedMixerConfig`: mapa completo por bank key, buses compilados y master.
+
+Resolución:
+
+  built-in safe defaults
+      <- defaults del JSON
+      <- override del sonido
+      <- sanitización/validación cruzada
+
+El resolver debe recibir las claves reales del banco para producir configuración
+efectiva incluso para sonidos no listados explícitamente.
+
+No usar comparaciones como `volume != 1.0` para inferir presencia. Un JSON que diga
+`volume: 1.0` es un override explícito válido.
+
+4.2 Diagnósticos estructurados
+------------------------------
+
+Crear un resultado común:
+
+  ConfigLoadResult {
+      resolved,
+      warnings,
+      errors,
+      source_hash,
+      schema_version
+  }
+
+Contratos:
+
+- Archivo ausente: defaults seguros + warning identificable.
+- JSON malformado: conservar último snapshot válido; en arranque usar defaults.
+- Clave desconocida: warning con ruta JSON; ignorar la clave.
+- Bus inexistente: warning/error configurable y send desactivado en el snapshot.
+- Valor fuera de rango: warning + clamp documentado.
+- Valor no finito: error/default seguro. Recordar que JSON estándar no serializa
+  NaN/Inf; cubrir construcción programática y formatos inválidos en tests.
+
+`va_validate` debe llamar al mismo resolver que el runtime. No duplicar reglas.
+
+4.3 Estado DSP por voz
+----------------------
+
+La configuración es inmutable por snapshot; el estado mutable vive por voz:
+
+- Cursor/resampler existente.
+- ADSR state y nivel.
+- Biquads L/R o mono pre-pan según la etapa.
+- Estado tube/DC blocker si se requiere.
+- Ganancia/pan suavizados.
+- Identificador del bus de reverb precompilado; no buscar strings por sample.
+
+Loops engine/exhaust/bed/scrape necesitan una strip persistente por clave.
+One-shots necesitan un pool fijo de voces; no reiniciar una voz ocupada sin una
+política explícita y probada (free -> oldest/releasing -> reject).
+
+4.4 Render real-time safe
+-------------------------
+
+Fuera de `render()`:
+
+- Lectura de archivos y timestamps.
+- Parseo JSON y validación.
+- Creación de filtros, buffers de delay y tablas.
+- Resolución de strings a índices.
+- Construcción del snapshot y preparación del crossfade.
+
+Dentro de `render()`:
+
+- Solo memoria preasignada, índices y aritmética acotada.
+- No filesystem, locks, canales bloqueantes, logging ni crecimiento de Vec/Map.
+- Intercambio de snapshot en frontera de bloque mediante mecanismo wait-free o
+  controlado por el owner thread antes de invocar render.
+
+===============================================================================
+5. BACKLOG DETALLADO Y ORDEN DE EJECUCIÓN
+===============================================================================
+
+SPRINT 0R — REPARAR EL CONTRATO DE CONFIGURACIÓN (P0)
+-----------------------------------------------------
+
+S0R-1. Introducir Raw/Resolved configs con Option por campo.
+S0R-2. Resolver herencia por campo sobre todas las claves del banco.
+S0R-3. Centralizar validación cruzada y diagnósticos.
+S0R-4. Hacer que `va_validate` consuma el resolver común.
+S0R-5. Eliminar imports/warnings de compilación en las CLIs.
+S0R-6. Crear fixtures v1, v2 mínimo, v2 completo y v2 inválido.
+
+Tests obligatorios:
+
+- Campo omitido hereda; campo explícito 0.0/1.0/false sobrescribe.
+- Sonido ausente en `sounds` recibe todos los defaults, incluido volume.
+- Bus inexistente produce diagnóstico y send efectivo disabled.
+- Claves desconocidas producen warning con JSON path.
+- Config inválida no causa panic y no reemplaza el snapshot válido.
+- Migración v1 preserva gains y exhaust.
+
+Gate S0R:
+
+- `cargo test -p vehicle_audio_engine config` PASS.
+- `va_validate` no duplica reglas de sanitización.
+- Review confirma que no quedan valores centinela para herencia.
+
+SPRINT 1 — PRIMITIVAS DSP AISLADAS (P0)
+---------------------------------------
+
+Crear módulos independientes bajo `src/dsp/`:
+
+  adsr.rs
+  biquad.rs
+  eq.rs
+  pan.rs
+  tube.rs
+  reverb.rs
+  limiter.rs
+
+S1-1 ADSR:
+
+- Estados Idle, Attack, Decay, Sustain, Release y Done.
+- Tiempos convertidos a samples al preparar config.
+- Curvas linear, exponential y logarithmic monotónicas y finitas.
+- `note_off` de loop preserva cursor durante release.
+- One-shot inicia release a tiempo para acabar sin corte.
+- Cero división por cero cuando un tiempo es 0 ms.
+
+S1-2 Biquad/EQ:
+
+- Peaking EQ estable para 31..16000 Hz, limitado por Nyquist.
+- Coeficientes calculados fuera de render.
+- Diez bandas en cascada, bypass transparente cuando disabled/0 dB.
+- Protección de denormals y reset determinista.
+- Suavizado/crossfade de coeficientes al cambiar snapshot.
+
+S1-3 Pan:
+
+- Equal-power exacto:
+    L = cos((pan + 1) * PI / 4)
+    R = sin((pan + 1) * PI / 4)
+- Tests en -1, 0, +1 y conservación de potencia.
+
+S1-4 Tube:
+
+- Parámetros configurables por sonido: enabled, amount, boost_link, bias, mix y
+  auto_gain; resolverlos fuera de render y conservarlos en el snapshot DSP.
+- Drive efectivo basado únicamente en boosts positivos normalizados.
+- Bias, saturación suave, dry/wet y compensación de ganancia.
+- Remover DC introducido por bias antes de salida.
+- enabled=false debe efectuar bypass transparente bit a bit o con tolerancia
+  explícita; mix=0.0 conserva la ruta dry y amount=0.0 no introduce color.
+- Tests separados deben demostrar efecto medible activo y transparencia en bypass.
+
+S1-5 Reverb:
+
+- Implementación estéreo determinista FDN o Schroeder.
+- Buffers preasignados; pre-delay, decay/RT60, damping, low/high cut y width.
+- Clamp de delays para evitar cero/modulo inválido.
+- Tail continúa aunque no haya sends activos.
+- Reset y cambio de sample rate probados.
+
+S1-6 Limiter master:
+
+- Estéreo enlazado: un pico en un canal aplica la misma reducción a ambos.
+- Ceiling configurable y finite guard.
+- Definir si es soft saturator + ceiling o limiter con envelope; documentarlo con
+  precisión. No llamar “limiter” a una función que solo multiplica `tanh`.
+
+Gate S1:
+
+- Respuesta EQ medida en centros y bandas vecinas.
+- RT60 aproximado dentro de tolerancia definida (por ejemplo ±15%).
+- Pan conserva potencia dentro de 1e-5.
+- Ningún test produce NaN/Inf/denormal persistente.
+- Benchmark aislado demuestra cero allocations por bloque.
+
+SPRINT 2 — INTEGRACIÓN DEL MIXER ESTÉREO (P0)
+---------------------------------------------
+
+S2-1 Crear `VoiceStrip` precompilada por bank key.
+S2-2 Convertir engine bands a strips persistentes.
+S2-3 Convertir exhaust, surface bed y scrape a strips persistentes.
+S2-4 Reemplazar `OneShot` simple por pool fijo con ADSR por voz.
+S2-5 Cambiar acumulación mono por dry L/R y buffers de send L/R.
+S2-6 Procesar cada bus una sola vez por frame y sumar returns.
+S2-7 Aplicar master gain, finite/DC protection y limiter estéreo al final.
+S2-8 Exponer telemetría de config: schema, hash, reload generation y errores.
+
+Orden por sample:
+
+1. Actualizar parámetros suavizados.
+2. Leer source.
+3. ADSR.
+4. EQ.
+5. Tube.
+6. Volume.
+7. Pan -> L/R.
+8. Sumar dry y send post-pan.
+9. Procesar buses después de todas las voces.
+10. Sumar returns.
+11. Master/protección/limiter.
+
+Tests obligatorios:
+
+- Pan izquierdo/derecho genera canales distintos.
+- Defaults afectan sonidos no configurados explícitamente.
+- Cada tipo de voz atraviesa la strip: engine, exhaust, bed, scrape y one-shot.
+- Send -120 dB es silencio; wet disabled es bypass.
+- Tail de reverb persiste después de one-shot.
+- Dos voces a un bus comparten un procesador, no duplican reverbs.
+- Ceiling se cumple en ambos canales bajo peor suma de voces.
+- El camino v1 reproduce el golden legacy dentro de tolerancia documentada.
+
+Gate S2:
+
+- Golden sintético y banco real PASS.
+- Render es estéreo real cuando pan/reverb lo requieren.
+- Instrumentación de test confirma cero allocations y locks en render.
+
+SPRINT 3 — HOT RELOAD CLICK-FREE (P0)
+-------------------------------------
+
+S3-1 Implementar watcher/polling fuera del callback de audio.
+S3-2 Parsear y preparar snapshot nuevo fuera de render.
+S3-3 Aplicar snapshot únicamente entre bloques.
+S3-4 Crossfade dry/config durante `transition_ms`.
+S3-5 Definir política de reverb: conservar tail antigua y cruzar a bus nuevo, o
+     mantener topología si es compatible. Nunca cortar buffers abruptamente.
+S3-6 Ante error, conservar último snapshot válido y publicar diagnóstico.
+S3-7 Desactivar completamente I/O cuando hot_reload.enabled=false.
+
+Tests obligatorios con reloj/filesystem inyectables:
+
+- Se respeta poll_interval_ms.
+- Un cambio válido incrementa generation una sola vez.
+- JSON parcial durante escritura no reemplaza snapshot.
+- transition_ms=0 cambia en frontera de bloque sin estado intermedio inválido.
+- Crossfade acota salto sample-a-sample y no produce click.
+- Reload no resetea cursores de loops ni voces activas innecesariamente.
+
+Gate S3:
+
+- Stress de cambios repetidos sin panic, leak ni discontinuidades fuera del límite.
+- Perfil confirma que lectura/parsing nunca ocurre dentro de render.
+
+SPRINT 4 — MIGRACIÓN CANÓNICA Y HERRAMIENTAS (P0)
+-------------------------------------------------
+
+S4-1 Corregir `va_validate`:
+
+- Retornos y mensajes consistentes.
+- `--check` valida resolución contra claves reales del banco opcionalmente.
+- `--migrate` preserva exhaust y produce JSON determinista.
+- Escritura atómica del output; no truncar config válida.
+- Sin imports/variables sin usar.
+
+S4-2 Corregir `va_baseline`:
+
+- Debe renderizar realmente con el engine instanciado.
+- Comparar métricas contra golden con tolerancias explícitas.
+- Fallar ante escenario omitido, sample faltante o drift inesperado.
+
+S4-3 Migrar `game/sounds/sound_mixer_config.json` a schema v2.
+
+La primera migración debe mantener todo DSP disabled y preservar el sonido v1.
+Solo después del parity gate activar diseño por familias:
+
+- engine_*: EQ/color sutil, ADSR apropiado para loop, poco reverb.
+- exhaust-mic/backfire: cámara de escape y transitorios controlados.
+- shifts/impacts: ADSR corto y bus mecánico/impacto.
+- surfaces/scrape: ambience corta, filtrada y sin enmascarar motor.
+
+S4-4 Actualizar SOUND_CONFIG_DOCS.md para distinguir:
+
+- Garantías reales.
+- Opciones de configuración.
+- Limitaciones de implementación.
+- Semántica exacta de herencia, reload y one-shots.
+
+Gate S4:
+
+- Config canónica v2 pasa `va_validate --check`.
+- Migración v1->v2 con DSP bypass conserva golden.
+- JSON determinista: dos migraciones idénticas producen mismos bytes.
+
+SPRINT 5 — INTEGRACIÓN FFI/GODOT Y CALIDAD (P0/P1)
+--------------------------------------------------
+
+S5-1 Verificar que formula90-core/GDExtension consume salida estéreo sin colapsarla.
+S5-2 Exponer diagnóstico de config en logs/telemetría sin escribir desde audio thread.
+S5-3 Rebuild limpio de Rust y GDExtension con BUILD==HEAD.
+S5-4 Ejecutar Godot headless y smoke de audio.
+S5-5 Capturar escenarios de escucha reproducibles.
+S5-6 Benchmark de peor caso y memoria.
+
+Escenarios mínimos de escucha:
+
+1. Idle -> aceleración -> redline -> lift-off/backfire.
+2. Cambios ascendentes y descendentes seguidos.
+3. Paso asfalto -> rumble -> grass/sand -> asfalto.
+4. Scrape sostenido + impacto simultáneo.
+5. Pan extremos y centro con señal sintética.
+6. One-shot con cola de reverb.
+7. Hot reload durante motor sostenido y durante cola de reverb.
+
+Human gate:
+
+- Sin clicks, zipper, bombeo evidente ni hard clipping.
+- Motor conserva presencia frente a superficies y reverb.
+- Estéreo perceptible sin pérdida de centro ni cambios bruscos de loudness.
+- Tube agrega color sutil, no distorsión destructiva.
+- Backfire/impactos son legibles sin disparar el limiter continuamente.
+
+===============================================================================
+6. ESTRATEGIA DE TEST Y MÉTRICAS
+===============================================================================
+
+Pirámide:
+
+A. Unit tests DSP
+   - Impulsos, senos, ruido determinista y ramps.
+   - Estado, estabilidad, respuesta y límites.
+
+B. Config resolver tests
+   - Fixtures JSON y diagnósticos exactos.
+   - Raw -> resolved -> runtime.
+
+C. Mixer synthetic tests
+   - Banco pequeño generado en memoria.
+   - Aislar una strip/bus a la vez.
+
+D. Bank integration
+   - Banco real v10_vehicle.
+   - Todas las claves usadas tienen resolución efectiva.
+
+E. Golden/offline
+   - Peak, RMS, DC, channel correlation, crest factor, discontinuidad máxima,
+     energía por bandas y duración de tails.
+
+F. Runtime Godot
+   - Carga de DLL correcta, BUILD parity, audio buffer finito y smoke headless.
+
+Métricas mínimas sugeridas (ajustar mediante baseline, no inventar al final):
+
+- Peak absoluto <= limiter_threshold + 1e-5.
+- NaN/Inf = 0.
+- DC post-master acotado por test de señal silenciosa/bias.
+- Pan center: L/R iguales dentro de 1e-5 para fuente mono sin reverb.
+- Equal-power: L^2 + R^2 constante dentro de 1e-5.
+- Bypass DSP: error máximo y RMS declarados explícitamente.
+- RT60 medido con tolerancia antes de aprobar presets.
+- Allocations en render: 0 después de warm-up.
+- Tiempo de peor bloque: medir p50/p95/p99; objetivo inicial <10% de un core a
+  44.1 kHz, pero registrar hardware y tamaño de bloque.
+
+No usar solamente “tests pasan”. Cada feature DSP necesita un test que demuestre
+que cambia la señal cuando está enabled y que es transparente cuando está disabled.
+
+===============================================================================
+7. COMANDOS DE VALIDACIÓN
+===============================================================================
+
+Desde D:\Formula90s\game\crates:
+
+  cargo fmt --all -- --check
+  cargo clippy -p vehicle_audio_engine --all-targets -- -D warnings
+  cargo test -p vehicle_audio_engine
+  cargo run -p vehicle_audio_engine --bin va_validate -- \
+    ../sounds/sound_mixer_config.json --check
+  cargo run -p vehicle_audio_engine --bin va_baseline -- \
+    ../sounds/banks/v10_vehicle
+
+Workspace antes de integrar:
+
+  cargo test --workspace
+
+Build/runtime desde la raíz, después de verificar HEAD y status:
+
+  powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 \
+    -Configuration debug
+
+  .\.tools\godot\Godot_v4.7.1-stable_win64_console.exe \
+    --headless --path game --script res://tests/smoke_test_f1_94_audio.gd
+
+Usar `scripts/run_f1_94.ps1` para la validación final porque debe compilar o
+verificar la correspondencia BUILD/HEAD antes de iniciar Godot.
+
+===============================================================================
+8. ARCHIVOS PREVISTOS Y LÍMITES DE ALCANCE
+===============================================================================
+
+Archivos centrales:
+
+  game/crates/vehicle-audio-engine/src/config.rs
+  game/crates/vehicle-audio-engine/src/mixer.rs
+  game/crates/vehicle-audio-engine/src/dsp/*.rs
+  game/crates/vehicle-audio-engine/src/bin/va_validate.rs
+  game/crates/vehicle-audio-engine/src/bin/va_baseline.rs
+  game/crates/vehicle-audio-engine/tests/*.rs
+  game/crates/vehicle-audio-engine/tests/baseline_golden.json
+  game/crates/vehicle-audio-engine/SOUND_CONFIG_DOCS.md
+  game/sounds/sound_mixer_config.json
+
+Posibles consumidores, tocar solo si la integración lo exige y tras inventario:
+
+  game/crates/formula90-core/
+  native/src/core/
+  native/include/
+  game/tests/smoke_test_f1_94_audio.gd
+  scripts/build_windows.ps1
+  scripts/run_f1_94.ps1
+
+Fuera de alcance salvo autorización expresa:
+
+- Física del vehículo.
+- Regeneración artística de WAVs.
+- Vegetación, pista, UI o skybox.
+- Cambios de sample rate del ABI.
+- Sustitución de la arquitectura F90Core.
+
+===============================================================================
+9. SECUENCIA DE COMMITS RECOMENDADA
+===============================================================================
+
+1. `refactor(audio-config): resolve schema v2 inheritance and diagnostics`
+2. `feat(audio-dsp): add measured realtime-safe processing primitives`
+3. `feat(audio-mixer): integrate stereo voice strips and shared reverb buses`
+4. `feat(audio-config): add click-free runtime hot reload`
+5. `chore(audio): migrate canonical mixer config to schema v2`
+6. `test(audio): add golden, benchmark and Godot integration gates`
+
+Cada commit debe compilar y pasar sus tests. No acumular todos los sprints en un
+solo commit. Preparar únicamente rutas explícitas y verificar staged diff.
+
+===============================================================================
+10. PRIMERA ACCIÓN DEL SIGUIENTE AGENTE
+===============================================================================
+
+1. Registrar branch/HEAD/status y preservar el worktree sucio.
+2. Leer completamente este handoff, SOUND_CONFIG_DOCS.md y los diffs actuales.
+3. Ejecutar los tests baseline sin modificar archivos.
+4. Empezar únicamente Sprint 0R: Raw/Resolved configs y resolver común.
+5. No implementar DSP hasta que el gate de herencia/diagnósticos pase.
+6. Al terminar cada sprint: review, tests, reporte al usuario y human gate cuando
+   corresponda. Actualizar este handoff con evidencia real, no porcentajes estimados.
+
+Bloqueo actual: ninguno técnico. Falta implementación; no falta información del usuario.

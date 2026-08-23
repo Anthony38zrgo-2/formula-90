@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "defaults": {
+    "volume": 0.8,
+    "pan": 0.0,
+    "adsr": {"enabled": true, "attack_ms": 2, "decay_ms": 4, "sustain": 0.9, "release_ms": 8, "curve": "linear"},
+    "eq": {"enabled": true, "bands_db": {"1000": 1.5}, "q": 1.0, "output_db": -1, "tube_color": {"enabled": true, "amount": 0.2, "boost_link": 0.35, "bias": 0.05, "mix": 0.15, "auto_gain": true}},
+    "reverb": {"enabled": true, "bus": "room", "send_db": -12}
+  },
+  "sounds": {"engine_idle": {"volume": 1.0, "eq": {"tube_color": {"enabled": false}}}},
+  "reverb_buses": {"room": {"enabled": true, "pre_delay_ms": 8, "decay_s": 0.55, "damping": 0.58, "low_cut_hz": 180, "high_cut_hz": 6800, "stereo_width": 0.75, "wet_db": -3}},
+  "master": {"output_db": 0, "limiter_threshold": 0.9, "saturation": 0.12},
+  "hot_reload": {"enabled": false, "poll_interval_ms": 250, "transition_ms": 30}
+}

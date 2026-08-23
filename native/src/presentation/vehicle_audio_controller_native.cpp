@@ -1,7 +1,12 @@
 #include "formula90s/presentation/vehicle_audio_controller_native.hpp"
+#include <godot_cpp/classes/file_access.hpp>
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+#ifndef FORMULA90_BUILD_SHA
+#define FORMULA90_BUILD_SHA "unknown"
+#endif
 
 using namespace godot;
 
@@ -107,6 +112,21 @@ void VehicleAudioControllerNative::trigger(const String &name) {
 }
 
 bool VehicleAudioControllerNative::load_dll() {
+	const String build_source_path = "res://BUILD_SOURCE";
+	if (!FileAccess::file_exists(build_source_path)) {
+		UtilityFunctions::printerr("[VehicleAudioControllerNative] FATAL: res://BUILD_SOURCE is missing");
+		return false;
+	}
+	Ref<FileAccess> build_source_file = FileAccess::open(build_source_path, FileAccess::READ);
+	const String recorded_source_sha = build_source_file.is_valid()
+		? build_source_file->get_as_text().strip_edges()
+		: String();
+	if (recorded_source_sha.length() != 40 || recorded_source_sha != String(FORMULA90_BUILD_SHA)) {
+		UtilityFunctions::printerr(String("[VehicleAudioControllerNative] FATAL: native BUILD does not match recorded source. Native=") +
+			String(FORMULA90_BUILD_SHA) + " recorded=" + recorded_source_sha);
+		return false;
+	}
+
 	if (dll_handle_ != nullptr) {
 		return true;
 	}
@@ -159,6 +179,12 @@ bool VehicleAudioControllerNative::load_dll() {
 	if (abi_ver != EXPECTED_ABI_VERSION) {
 		UtilityFunctions::printerr(String("[VehicleAudioControllerNative] FATAL: ABI mismatch! Expected ") +
 			String::num_int64(EXPECTED_ABI_VERSION) + " but loaded DLL has " + String::num_int64(abi_ver));
+		unload_dll();
+		return false;
+	}
+	if (String(build_sha) != recorded_source_sha || String(build_sha) == "unknown") {
+		UtilityFunctions::printerr(String("[VehicleAudioControllerNative] FATAL: BUILD mismatch! Expected ") +
+			recorded_source_sha + " but loaded DLL has " + String(build_sha));
 		unload_dll();
 		return false;
 	}

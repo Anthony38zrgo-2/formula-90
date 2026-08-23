@@ -4,6 +4,14 @@
 //! looped buffer with a short crossfade at the wrap point so looping never
 //! clicks, independent of bank loop seam quality.
 
+pub mod adsr;
+pub mod biquad;
+pub mod eq;
+pub mod limiter;
+pub mod pan;
+pub mod reverb;
+pub mod tube;
+
 /// Crossfade window in samples (~11.6 ms @ 44.1 kHz). Must equal the offline
 /// mixer's `LOOP_XFADE`.
 pub const LOOP_XFADE: usize = 512;

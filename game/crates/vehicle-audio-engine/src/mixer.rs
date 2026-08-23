@@ -9,7 +9,11 @@
 //! when `pitch_scale` was changed every frame on looping `AudioStreamPlayer`s.
 
 use crate::bank::{BankError, VehicleSoundBank};
-use crate::config::ExhaustConfig;
+use crate::config::{ConfigLoadResult, ExhaustConfig, SoundConfig, SoundMixerConfig};
+use crate::dsp::{
+    adsr::Adsr, eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
+    tube::Tube,
+};
 use crate::state::*;
 
 use std::collections::BTreeMap;
@@ -74,6 +78,98 @@ struct OneShot {
     active: bool,
 }
 
+struct VoiceStrip {
+    config: SoundConfig,
+    envelope: Option<Adsr>,
+    eq: GraphicEq,
+    tube: Tube,
+    bus_index: Option<usize>,
+}
+
+impl VoiceStrip {
+    fn new(config: SoundConfig, sample_rate: u32, bus_index: Option<usize>) -> Self {
+        let positive_boosts = config
+            .eq
+            .bands_db
+            .values()
+            .copied()
+            .filter(|gain| *gain > 0.0)
+            .sum();
+        let envelope = config.adsr.enabled.then(|| {
+            let mut env = Adsr::new(config.adsr, sample_rate);
+            env.note_on();
+            env
+        });
+        let eq = GraphicEq::new(&config.eq, sample_rate);
+        let tube = Tube::new(config.eq.tube_color, positive_boosts);
+        Self {
+            config,
+            envelope,
+            eq,
+            tube,
+            bus_index,
+        }
+    }
+
+    fn note_on(&mut self) {
+        if let Some(envelope) = &mut self.envelope {
+            envelope.note_on();
+        }
+    }
+    fn note_off(&mut self) {
+        if let Some(envelope) = &mut self.envelope {
+            envelope.note_off();
+        }
+    }
+    #[inline]
+    fn process(&mut self, source: f32) -> (f32, f32, Option<(usize, f32, f32)>) {
+        let envelope = self.envelope.as_mut().map_or(1.0, Adsr::next_sample);
+        let mono = self.tube.process(self.eq.process(source * envelope)) * self.config.volume;
+        let (pan_l, pan_r) = equal_power(self.config.pan);
+        let left = mono * pan_l;
+        let right = mono * pan_r;
+        let send = self
+            .bus_index
+            .filter(|_| self.config.reverb.enabled)
+            .map(|index| {
+                let gain = 10.0_f32.powf(self.config.reverb.send_db / 20.0);
+                (index, left * gain, right * gain)
+            });
+        (left, right, send)
+    }
+}
+
+struct ReverbBus {
+    processor: StereoReverb,
+    input_l: f32,
+    input_r: f32,
+}
+
+#[inline]
+fn mix_through_strip(
+    strips: &mut BTreeMap<String, VoiceStrip>,
+    buses: &mut [ReverbBus],
+    key: &str,
+    source: f32,
+    left: &mut f32,
+    right: &mut f32,
+) {
+    if let Some(strip) = strips.get_mut(key) {
+        let (out_l, out_r, send) = strip.process(source);
+        *left += out_l;
+        *right += out_r;
+        if let Some((index, send_l, send_r)) = send {
+            if let Some(bus) = buses.get_mut(index) {
+                bus.input_l += send_l;
+                bus.input_r += send_r;
+            }
+        }
+    } else {
+        *left += source;
+        *right += source;
+    }
+}
+
 /// Short fade-in/out (samples) applied to one-shots to avoid click on start/end.
 const ONE_SHOT_ENV_SAMPLES: usize = 256;
 
@@ -131,6 +227,18 @@ pub struct VehicleAudioEngine {
     /// Per-sample linear gain ceiling (0..1) from `sound_mixer_config.json`,
     /// keyed by bank key. Absent keys play at full level (1.0).
     per_sample_gain: BTreeMap<String, f32>,
+    strips: BTreeMap<String, VoiceStrip>,
+    reverb_buses: Vec<ReverbBus>,
+    stereo_limiter: StereoLimiter,
+    master_gain: f32,
+    config_generation: u64,
+    config_source_hash: String,
+    transition_remaining: usize,
+    transition_total: usize,
+    transition_start_l: f32,
+    transition_start_r: f32,
+    last_output_l: f32,
+    last_output_r: f32,
 
     // Exhaust microphone layer (behaviour-driven sample playback).
     exhaust_key: String,
@@ -193,10 +301,65 @@ impl VehicleAudioEngine {
         // Per-sample gain ceiling + exhaust behaviour config from
         // <bank_dir>/../../sound_mixer_config.json (see `SoundMixerConfig`).
         // Missing/invalid file degrades to defaults — never an error.
-        let mixer_cfg = crate::config::SoundMixerConfig::load_from_bank_dir(bank_dir).sanitized();
-        let per_sample_gain = mixer_cfg.gains.clone();
-        let mut cfg = AudioConfig::default();
-        cfg.exhaust = mixer_cfg.exhaust_config();
+        let bank_keys = bank.keys();
+        let load_result =
+            crate::config::SoundMixerConfig::load_result_from_bank_dir(bank_dir, &bank_keys);
+        let config_source_hash = load_result.source_hash.clone();
+        let mixer_cfg = load_result.resolved;
+        let mut per_sample_gain = match &mixer_cfg {
+            SoundMixerConfig::V1(_) => mixer_cfg.gains_map(),
+            SoundMixerConfig::V2(_) => BTreeMap::new(),
+        };
+        let cfg = AudioConfig {
+            exhaust: mixer_cfg.exhaust_config(),
+            ..AudioConfig::default()
+        };
+        let (resolved_sounds, bus_configs, master) = match &mixer_cfg {
+            SoundMixerConfig::V1(_) => (
+                bank_keys
+                    .iter()
+                    .map(|key| {
+                        let config = SoundConfig {
+                            volume: std::f32::consts::SQRT_2,
+                            ..SoundConfig::default()
+                        };
+                        (key.clone(), config)
+                    })
+                    .collect(),
+                BTreeMap::new(),
+                crate::config::MasterConfig::default(),
+            ),
+            SoundMixerConfig::V2(config) => {
+                let mut sounds = config.sounds.clone();
+                if let Some(exhaust) = sounds.get_mut("exhaust-mic") {
+                    per_sample_gain.insert("exhaust-mic".into(), exhaust.volume);
+                    exhaust.volume = 1.0;
+                }
+                (sounds, config.reverb_buses.clone(), config.master)
+            }
+        };
+        let bus_indices: BTreeMap<String, usize> = bus_configs
+            .keys()
+            .enumerate()
+            .map(|(index, name)| (name.clone(), index))
+            .collect();
+        let reverb_buses = bus_configs
+            .values()
+            .map(|config| ReverbBus {
+                processor: StereoReverb::new(*config, sample_rate),
+                input_l: 0.0,
+                input_r: 0.0,
+            })
+            .collect();
+        let strips = resolved_sounds
+            .into_iter()
+            .map(|(key, config)| {
+                let bus_index = bus_indices.get(&config.reverb.bus).copied();
+                (key, VoiceStrip::new(config, sample_rate, bus_index))
+            })
+            .collect();
+        let stereo_limiter = StereoLimiter::new(master.limiter_threshold);
+        let master_gain = 10.0_f32.powf(master.output_db / 20.0);
 
         let exhaust_key = if bank.get("exhaust-mic").is_some() {
             "exhaust-mic".to_string()
@@ -238,6 +401,18 @@ impl VehicleAudioEngine {
             backfire_cooldown_samples: 0,
             variant_rng_state: 0xF090_1994_D15C_A11D,
             per_sample_gain,
+            strips,
+            reverb_buses,
+            stereo_limiter,
+            master_gain,
+            config_generation: 1,
+            config_source_hash,
+            transition_remaining: 0,
+            transition_total: 0,
+            transition_start_l: 0.0,
+            transition_start_r: 0.0,
+            last_output_l: 0.0,
+            last_output_r: 0.0,
             exhaust_key,
             exhaust_cursor: 0.0,
             exhaust_crackle_samples: 0,
@@ -256,6 +431,72 @@ impl VehicleAudioEngine {
 
     pub fn set_config(&mut self, cfg: AudioConfig) {
         self.cfg = cfg;
+    }
+
+    /// Parse and prepare a complete configuration on the owner thread. Call
+    /// only between render blocks; invalid JSON leaves the active snapshot intact.
+    pub fn apply_config_json(&mut self, raw: &str) -> ConfigLoadResult {
+        let bank_keys = self.bank.keys();
+        let result = crate::config::resolve_config_json(raw, &bank_keys);
+        if !result.is_valid() || result.source_hash == self.config_source_hash {
+            return result;
+        }
+        let SoundMixerConfig::V2(config) = &result.resolved else {
+            self.per_sample_gain = result.resolved.gains_map();
+            self.config_source_hash = result.source_hash.clone();
+            self.config_generation = self.config_generation.saturating_add(1);
+            return result;
+        };
+        let bus_indices: BTreeMap<String, usize> = config
+            .reverb_buses
+            .keys()
+            .enumerate()
+            .map(|(index, name)| (name.clone(), index))
+            .collect();
+        self.reverb_buses = config
+            .reverb_buses
+            .values()
+            .map(|bus| ReverbBus {
+                processor: StereoReverb::new(*bus, self.sample_rate),
+                input_l: 0.0,
+                input_r: 0.0,
+            })
+            .collect();
+        let mut sounds = config.sounds.clone();
+        self.per_sample_gain.clear();
+        if let Some(exhaust) = sounds.get_mut("exhaust-mic") {
+            self.per_sample_gain
+                .insert("exhaust-mic".into(), exhaust.volume);
+            exhaust.volume = 1.0;
+        }
+        self.strips = sounds
+            .iter()
+            .map(|(key, sound)| {
+                let bus = bus_indices.get(&sound.reverb.bus).copied();
+                (
+                    key.clone(),
+                    VoiceStrip::new(sound.clone(), self.sample_rate, bus),
+                )
+            })
+            .collect();
+        self.master_gain = 10.0_f32.powf(config.master.output_db / 20.0);
+        self.stereo_limiter = StereoLimiter::new(config.master.limiter_threshold);
+        self.cfg.exhaust = config.exhaust.to_runtime();
+        self.transition_total =
+            ((config.hot_reload.transition_ms as u64 * self.sample_rate as u64) / 1000) as usize;
+        self.transition_remaining = self.transition_total;
+        self.transition_start_l = self.last_output_l;
+        self.transition_start_r = self.last_output_r;
+        self.config_source_hash = result.source_hash.clone();
+        self.config_generation = self.config_generation.saturating_add(1);
+        result
+    }
+
+    pub fn config_generation(&self) -> u64 {
+        self.config_generation
+    }
+    pub fn config_source_hash(&self) -> &str {
+        &self.config_source_hash
     }
 
     /// Drive the sustained underfloor scrape voice. `onset_strength > 0` fires the
@@ -284,6 +525,7 @@ impl VehicleAudioEngine {
 
     /// Feed the current vehicle telemetry. Computes the mix targets and fires
     /// gear-shift one-shots on gear changes.
+    #[allow(clippy::too_many_arguments)]
     pub fn set_state(
         &mut self,
         rpm: f64,
@@ -374,6 +616,9 @@ impl VehicleAudioEngine {
                 o.active = ordinal == selected;
                 if o.active {
                     o.cursor = 0;
+                    if let Some(strip) = self.strips.get_mut(&o.key) {
+                        strip.note_on();
+                    }
                 }
                 ordinal += 1;
             }
@@ -388,6 +633,12 @@ impl VehicleAudioEngine {
         let sr = self.sample_rate as f64;
         let rpm_alpha = 1.0 - (-1.0 / (sr * RPM_SMOOTH_TAU)).exp();
         for i in 0..n {
+            let mut mixed_l = 0.0f32;
+            let mut mixed_r = 0.0f32;
+            for bus in &mut self.reverb_buses {
+                bus.input_l = 0.0;
+                bus.input_r = 0.0;
+            }
             // Smooth RPM so pitch + band weights glide continuously (no per-frame
             // step -> no zipper/warble at RPM changes).
             self.smoothed_rpm += (self.target_rpm - self.smoothed_rpm) * rpm_alpha;
@@ -430,15 +681,29 @@ impl VehicleAudioEngine {
                 0.0
             };
             let weights = engine_weights(norm);
-            let mut acc = 0.0f32;
-            for b in 0..self.layer_keys.len().min(5) {
+            for (b, weight) in weights
+                .iter()
+                .enumerate()
+                .take(self.layer_keys.len().min(5))
+            {
                 if let Some(sample) = self.bank.get(&self.layer_keys[b]) {
                     let ratio = engine_pitch_scale(self.smoothed_rpm, b) as f64;
                     let s = read_looped(&sample.pcm, &mut self.layer_cursors[b], ratio);
-                    acc += weights[b] * s * self.sample_gain(&self.layer_keys[b]);
+                    let source = *weight
+                        * s
+                        * self.sample_gain(&self.layer_keys[b])
+                        * eg
+                        * self.cfg.engine_headroom;
+                    mix_through_strip(
+                        &mut self.strips,
+                        &mut self.reverb_buses,
+                        &self.layer_keys[b],
+                        source,
+                        &mut mixed_l,
+                        &mut mixed_r,
+                    );
                 }
             }
-            let engine = acc * eg * self.cfg.engine_headroom;
             for (wi, w) in weights.iter().enumerate() {
                 self.cur_weights[wi] = *w;
             }
@@ -453,11 +718,12 @@ impl VehicleAudioEngine {
             if ec.enabled && !self.exhaust_key.is_empty() {
                 if let Some(sample) = self.bank.get(&self.exhaust_key) {
                     const EXHAUST_NATIVE_RPM: f64 = 14400.0;
-                    let ratio = (self.smoothed_rpm / EXHAUST_NATIVE_RPM) as f64;
+                    let ratio = self.smoothed_rpm / EXHAUST_NATIVE_RPM;
                     let s = read_looped(&sample.pcm, &mut self.exhaust_cursor, ratio);
-                    let throttle_env =
-                        (1.0 - ec.throttle_sensitivity) + ec.throttle_sensitivity * self.last_throttle;
-                    let mut gain = ec.base_gain * throttle_env.clamp(0.0, 1.0)
+                    let throttle_env = (1.0 - ec.throttle_sensitivity)
+                        + ec.throttle_sensitivity * self.last_throttle;
+                    let mut gain = ec.base_gain
+                        * throttle_env.clamp(0.0, 1.0)
                         * self.sample_gain(&self.exhaust_key);
                     if self.exhaust_crackle_samples > 0 {
                         gain += ec.crackle_gain;
@@ -466,6 +732,14 @@ impl VehicleAudioEngine {
                     exhaust = s * gain;
                 }
             }
+            mix_through_strip(
+                &mut self.strips,
+                &mut self.reverb_buses,
+                &self.exhaust_key,
+                exhaust,
+                &mut mixed_l,
+                &mut mixed_r,
+            );
 
             // Surface bed (loops at native rate).
             let mut bed = 0.0f32;
@@ -474,6 +748,16 @@ impl VehicleAudioEngine {
                     let s = read_looped(&sample.pcm, &mut self.bed_cursor, 1.0);
                     bed = s * bg * self.sample_gain(bk);
                 }
+            }
+            if let Some(key) = self.bed_key.as_deref() {
+                mix_through_strip(
+                    &mut self.strips,
+                    &mut self.reverb_buses,
+                    key,
+                    bed,
+                    &mut mixed_l,
+                    &mut mixed_r,
+                );
             }
 
             // Sustained underfloor voice. The middle 50% of the existing scrape
@@ -493,9 +777,16 @@ impl VehicleAudioEngine {
                         * self.sample_gain("impact_scrape");
                 }
             }
+            mix_through_strip(
+                &mut self.strips,
+                &mut self.reverb_buses,
+                "impact_scrape",
+                scrape,
+                &mut mixed_l,
+                &mut mixed_r,
+            );
 
             // One-shots (non-looping, short envelope).
-            let mut os = 0.0f32;
             for o in self.one_shots.iter_mut() {
                 if !o.active {
                     continue;
@@ -507,12 +798,29 @@ impl VehicleAudioEngine {
                         continue;
                     }
                     let idx = o.cursor.min(len - 1);
+                    if len.saturating_sub(o.cursor) == ONE_SHOT_ENV_SAMPLES {
+                        if let Some(strip) = self.strips.get_mut(&o.key) {
+                            strip.note_off();
+                        }
+                    }
                     let s = sample.pcm[idx] as f32 / 32768.0;
                     // Field-level lookup: `one_shots` is mutably borrowed by the
                     // loop, so `self.sample_gain(..)` (a whole-&self borrow) is
                     // rejected; per_sample_gain is a disjoint field.
-                    let os_gain = self.per_sample_gain.get(o.key.as_str()).copied().unwrap_or(1.0);
-                    os += s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                    let os_gain = self
+                        .per_sample_gain
+                        .get(o.key.as_str())
+                        .copied()
+                        .unwrap_or(1.0);
+                    let source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                    mix_through_strip(
+                        &mut self.strips,
+                        &mut self.reverb_buses,
+                        &o.key,
+                        source,
+                        &mut mixed_l,
+                        &mut mixed_r,
+                    );
                     o.cursor += 1;
                     if o.cursor >= len {
                         o.active = false;
@@ -522,13 +830,31 @@ impl VehicleAudioEngine {
                 }
             }
 
-            let mixed = engine + exhaust + bed + scrape + os;
-            let out = self.limiter(mixed);
+            for bus in &mut self.reverb_buses {
+                let (wet_l, wet_r) = bus.processor.process(bus.input_l, bus.input_r);
+                mixed_l += wet_l;
+                mixed_r += wet_r;
+            }
+            let saturated_l = self.limiter(mixed_l * self.master_gain);
+            let saturated_r = self.limiter(mixed_r * self.master_gain);
+            let (mut out_left, mut out_right) =
+                self.stereo_limiter.process(saturated_l, saturated_r);
+            if self.transition_remaining > 0 && self.transition_total > 0 {
+                let progress =
+                    1.0 - self.transition_remaining as f32 / self.transition_total as f32;
+                out_left =
+                    self.transition_start_l + (out_left - self.transition_start_l) * progress;
+                out_right =
+                    self.transition_start_r + (out_right - self.transition_start_r) * progress;
+                self.transition_remaining -= 1;
+            }
+            self.last_output_l = out_left;
+            self.last_output_r = out_right;
             if i < out_l.len() {
-                out_l[i] = out;
+                out_l[i] = out_left;
             }
             if i < out_r.len() {
-                out_r[i] = out;
+                out_r[i] = out_right;
             }
         }
     }
@@ -755,9 +1081,7 @@ mod tests {
         use crate::bank::Sample;
         let mut samples = std::collections::BTreeMap::new();
         let engine_pcm: Vec<i16> = (0..2048)
-            .map(|i| {
-                (2000.0 * (2.0 * std::f32::consts::PI * 8.0 * i as f32 / 2048.0).sin()) as i16
-            })
+            .map(|i| (2000.0 * (2.0 * std::f32::consts::PI * 8.0 * i as f32 / 2048.0).sin()) as i16)
             .collect();
         for key in ENGINE_BAND_KEYS {
             samples.insert(
@@ -851,6 +1175,18 @@ mod tests {
             backfire_cooldown_samples: 0,
             variant_rng_state: 0xF090_1994_D15C_A11D,
             per_sample_gain: BTreeMap::new(),
+            strips: BTreeMap::new(),
+            reverb_buses: Vec::new(),
+            stereo_limiter: StereoLimiter::new(0.9),
+            master_gain: 1.0,
+            config_generation: 1,
+            config_source_hash: String::new(),
+            transition_remaining: 0,
+            transition_total: 0,
+            transition_start_l: 0.0,
+            transition_start_r: 0.0,
+            last_output_l: 0.0,
+            last_output_r: 0.0,
             exhaust_key: String::new(),
             exhaust_cursor: 0.0,
             exhaust_crackle_samples: 0,
@@ -888,6 +1224,60 @@ mod tests {
             assert!(*a <= e.config().limiter_threshold + 1e-3);
             assert!(*a >= -e.config().limiter_threshold - 1e-3);
         }
+    }
+
+    #[test]
+    fn voice_strip_applies_pan_and_tube_bypass_contract() {
+        let mut left_config = SoundConfig {
+            pan: -1.0,
+            ..SoundConfig::default()
+        };
+        left_config.eq.tube_color.enabled = false;
+        let mut strip = VoiceStrip::new(left_config, 44100, None);
+        let (left, right, _) = strip.process(0.5);
+        assert!((left - 0.5).abs() < 1e-6 && right.abs() < 1e-6);
+
+        let mut colored = SoundConfig::default();
+        colored.eq.tube_color.enabled = true;
+        colored.eq.tube_color.amount = 0.8;
+        colored.eq.tube_color.mix = 1.0;
+        let mut strip = VoiceStrip::new(colored, 44100, None);
+        let (left, right, _) = strip.process(0.5);
+        assert!(left.is_finite() && right.is_finite());
+        assert!((left - 0.5 * std::f32::consts::FRAC_1_SQRT_2).abs() > 1e-3);
+    }
+
+    #[test]
+    fn two_strips_share_one_reverb_processor() {
+        let mut strips = BTreeMap::new();
+        let mut config = SoundConfig::default();
+        config.reverb.enabled = true;
+        config.reverb.send_db = 0.0;
+        strips.insert("a".into(), VoiceStrip::new(config.clone(), 44100, Some(0)));
+        strips.insert("b".into(), VoiceStrip::new(config, 44100, Some(0)));
+        let mut buses = vec![ReverbBus {
+            processor: StereoReverb::new(crate::config::ReverbBusConfig::default(), 44100),
+            input_l: 0.0,
+            input_r: 0.0,
+        }];
+        let (mut left, mut right) = (0.0, 0.0);
+        mix_through_strip(&mut strips, &mut buses, "a", 1.0, &mut left, &mut right);
+        mix_through_strip(&mut strips, &mut buses, "b", 1.0, &mut left, &mut right);
+        assert_eq!(buses.len(), 1);
+        assert!(buses[0].input_l > 1.0 && buses[0].input_r > 1.0);
+    }
+
+    #[test]
+    fn config_update_is_block_boundary_and_rejects_invalid_candidate() {
+        let mut engine = engine_with_bank(dummy_bank());
+        let valid = engine.apply_config_json(r#"{"schema_version":2,"defaults":{"pan":-1.0}}"#);
+        assert!(valid.is_valid());
+        let generation = engine.config_generation();
+        let hash = engine.config_source_hash().to_string();
+        let invalid = engine.apply_config_json("{partial");
+        assert!(!invalid.is_valid());
+        assert_eq!(engine.config_generation(), generation);
+        assert_eq!(engine.config_source_hash(), hash);
     }
 
     #[test]
@@ -1019,7 +1409,7 @@ mod tests {
         // Hard RPM jump; render only a few samples so the smoothed pitch must still
         // be near the old value (gliding), not snapped to the new target.
         e.set_state(14000.0, 1000.0, 15000.0, 1.0, 0.0, 3, 0.0, "asphalt");
-        e.render(&mut vec![0.0; 4], &mut vec![0.0; 4], 4);
+        e.render(&mut [0.0; 4], &mut [0.0; 4], 4);
         let p1 = e.last_pitches()[0];
         let target = engine_pitch_scale(14000.0, 0);
         // With smoothing the pitch barely moved; without it p1 would equal target.
@@ -1301,7 +1691,10 @@ mod tests {
         e.render(&mut l_off, &mut vec![0.0f32; 4096], 4096);
         let rms_off = rms(&l_off);
 
-        assert!(rms_full > 0.005, "exhaust should be audible at full throttle");
+        assert!(
+            rms_full > 0.005,
+            "exhaust should be audible at full throttle"
+        );
         assert!(
             rms_off < 1e-6,
             "exhaust should be silent at zero throttle (rms={rms_off})"
