@@ -1,0 +1,774 @@
+FORMULA 90s - HANDOFF DE BARRERAS DE SEGURIDAD PARA LA CHUTANA
+================================================================
+
+ESTADO DEL HANDOFF
+------------------
+
+Fecha de preparación: 2026-08-23
+Repositorio: D:\Formula90s
+Rama observada: f1-94
+HEAD observado: 0834351ba5543de5d7f89f9918c1c35f17890e2e
+Script canónico: run_f1_94.ps1
+
+Este documento es la especificación ejecutable para implementar el sistema mixto
+de barreras de seguridad de La Chutana. Debe conservarse como fuente de contexto
+durante todo el sprint.
+
+IMPORTANTE: el worktree estaba muy sucio al preparar este handoff. Contiene muchos
+cambios y archivos generados que no pertenecen necesariamente a este trabajo. No
+se debe cambiar de rama, resetear, limpiar, borrar ni sobrescribir cambios ajenos.
+Antes de modificar cualquier archivo, volver a registrar rama, HEAD y git status.
+
+Protocolo obligatorio de AGENTS.md:
+
+1. sprint planning
+2. backlog item
+3. implement
+4. review
+5. human gate
+6. sprint retrospective
+7. done
+
+No se debe cruzar el human gate ni publicar el entorno final sin aprobación humana.
+
+
+OBJETIVO
+--------
+
+Reemplazar el sistema actual, dividido entre guardrails y barreras de neumáticos,
+por un sistema único y determinista de protecciones de pista que pueda combinar:
+
+- guardrail Armco de 2 raíles;
+- guardrail Armco de 3 raíles;
+- barrera de neumáticos;
+- barrera TecPro simplificada;
+- muro continuo de cemento;
+- barrera Jersey de cemento para pits, accesos y transiciones.
+
+La geometría debe ser simple y reutilizable. La apariencia se debe obtener mediante
+materiales planos, colores por caras y UV procedimental mínimo. No se deben usar
+texturas raster nuevas para estas barreras. La paleta debe relacionarse con los
+bordillos de La Chutana: blanco cálido, azul marino, hormigón y acero galvanizado.
+
+El resultado debe ser reproducible exactamente a partir del manifiesto y no debe
+depender del orden de iteración, del estado global de random ni de caches previas.
+
+
+ESTADO ACTUAL RELEVANTE
+-----------------------
+
+Archivos principales existentes:
+
+- blender/track_pipeline/manifests/la_chutana_guardrails.json
+- blender/track_pipeline/guardrail_layout.py
+- blender/track_pipeline/build_environment_blender.py
+- blender/track_pipeline/procedural_assets_blender.py
+- blender/track_pipeline/generate_environment.py
+- blender/track_pipeline/validate_environment.py
+- blender/track_pipeline/configs/la_chutana.json
+- blender/track_pipeline/layouts/la_chutana/layout_config.json
+- blender/track_pipeline/tests/test_guardrail_layout.py
+
+El manifiesto actual define siete tramos Armco, módulo de 4 m, postes cada 2 m,
+terminal de 10 m, flare de 2.5 m y despeje de vegetación. La escena de revisión más
+reciente generó 565 módulos y cero conflictos con vegetación.
+
+El sistema antiguo de tire_barriers está desactivado actualmente en la configuración
+principal. Sin embargo, todavía existe lógica histórica de barreras continuas y
+barrier_sectors dentro de layout_config.json. No deben coexistir dos fuentes de
+verdad. El nuevo manifiesto será la única autoridad para tipo, posición, patrón,
+transición y colisión de las barreras del circuito.
+
+La escena de guardrails previa y sus capturas se encuentran en:
+
+- blender/generated/la_chutana/track_guardrail_review.blend
+- game/assets/generated/tracks/la_chutana/la_chutana_guardrail_review.glb
+- blender/generated/la_chutana/review/guardrail_review_aerial.png
+- blender/generated/la_chutana/review/guardrail_review_t1.png
+- blender/generated/la_chutana/review/guardrail_review_t4.png
+- blender/generated/la_chutana/review/guardrail_review_chicane.png
+- blender/generated/la_chutana/review/guardrail_review_t6.png
+
+No asumir que esas salidas están publicadas como runtime final.
+
+
+DECISIONES DE DISEÑO CERRADAS
+-----------------------------
+
+1. Se debe crear un manifiesto nuevo:
+
+   blender/track_pipeline/manifests/la_chutana_safety_barriers.json
+
+2. El nuevo manifiesto sustituirá conceptualmente a:
+
+   - la_chutana_guardrails.json;
+   - layout_config.json -> barrier_sectors;
+   - la selección visual implícita del sistema antiguo de tire_barriers.
+
+3. No borrar el manifiesto anterior durante la primera implementación. Marcarlo como
+   legado en configuración o dejar de referenciarlo. Borrarlo requeriría revisar sus
+   consumidores y no es necesario para llegar al human gate.
+
+4. El generador nuevo debe construir sólo los segmentos declarados. No debe rodear
+   automáticamente todo el circuito con una barrera continua.
+
+5. Los cambios entre neumáticos y TecPro deben ocurrir por grupos largos y explícitos,
+   no alternando módulo a módulo.
+
+6. El aspecto de todos los sistemas debe usar materiales compartidos. No crear un
+   material único por módulo.
+
+7. La colisión será independiente y más sencilla que la geometría visual. Agrupar
+   segmentos contiguos que compartan perfil de colisión.
+
+8. Las barreras deben seguir el terreno y la tangente de la línea central. El offset
+   se mide desde el centro de la pista y cada tramo declara left o right.
+
+9. Todo terminal de Armco debe tener flare seguro o terminar contra otra protección.
+   Ningún extremo metálico puede apuntar directamente hacia la pista.
+
+10. La recta principal debe utilizar principalmente muros de cemento. En el lado de
+    pits, el muro debe formar una lectura continua y ordenada.
+
+
+LENGUAJE VISUAL
+---------------
+
+Paleta base recomendada en espacio lineal/Blender, ajustable tras la revisión:
+
+- white:    [0.88, 0.87, 0.81, 1.0]
+- navy:     [0.035, 0.10, 0.22, 1.0]
+- concrete: [0.48, 0.46, 0.41, 1.0]
+- steel:    [0.34, 0.37, 0.39, 1.0]
+- steel_dark:[0.20, 0.22, 0.24, 1.0]
+
+Tratamiento por tipo:
+
+- tire_stack:
+  Bloques transversales blanco, azul marino, blanco a lo largo de la pista. Cada
+  banda debe abarcar varios módulos, nunca una franja por neumático simulado.
+
+- tecpro:
+  Bloques blancos y azul marino agrupados. Puede tener una banda horizontal secundaria
+  para sugerir el volumen del módulo, sin textura.
+
+- guardrail_armco:
+  Acero continuo. Para relacionarlo con los bordillos, usar una banda longitudinal
+  azul marino discreta, o postes/terminales azules. No alternar el rail completo
+  blanco y azul cada pocos metros.
+
+- concrete_wall:
+  Hormigón continuo con juntas pintadas cada 4-6 m. Añadir paneles blanco/azul
+  espaciados, especialmente en la recta principal, sin convertirlo en damero.
+
+- concrete_jersey:
+  Hormigón modular. Alternancia blanco/azul permitida en accesos o pit entry, pero
+  con periodos largos para evitar ruido visual.
+
+No introducir rojo en esta fase. La identidad debe quedar centrada en blanco y azul.
+
+
+GEOMETRÍA DE BAJO COSTO
+-----------------------
+
+Crear prototipos paramétricos compartidos:
+
+1. guardrail_armco_2
+   - longitud de módulo: 4.0 m;
+   - dos vigas simplificadas;
+   - perfil corrugado de muy pocos vértices;
+   - postes cada 2.0 m;
+   - sin tornillos ni piezas pequeñas;
+   - instancias enlazadas.
+
+2. guardrail_armco_3
+   - misma malla base;
+   - tres vigas/alturas;
+   - postes compartidos;
+   - reservado para curva rápida y zonas de mayor energía lateral.
+
+3. tire_stack
+   - prisma escalonado o caja de 2.0 m;
+   - divisiones pintadas que sugieren filas de neumáticos;
+   - no modelar neumáticos individuales;
+   - ligera irregularidad sólo mediante color por caras o inclinación predefinida.
+
+4. tecpro
+   - caja biselada de 1.5 m;
+   - una o dos divisiones horizontales;
+   - forma levemente inclinada hacia atrás;
+   - materiales blanco y navy compartidos.
+
+5. concrete_wall
+   - cinta extruida simple;
+   - módulo lógico de 6.0 m;
+   - juntas representadas con geometría mínima o color, no con texturas;
+   - altura y espesor declarados en el prototipo.
+
+6. concrete_jersey
+   - sección trapezoidal extruida;
+   - módulo de 2.0 o 3.0 m;
+   - tapas sólo en extremos visibles.
+
+Las colisiones deben usar cajas o cintas cerradas simples. No duplicar la corrugación,
+los postes, las juntas ni las divisiones visuales en la malla de colisión.
+
+
+ESQUEMA DEL MANIFIESTO V2
+-------------------------
+
+Implementar schema_version 2. Estructura de referencia:
+
+{
+  "schema_version": 2,
+  "track_id": "la_chutana",
+  "seed": 1995,
+  "palette": {
+    "white": [0.88, 0.87, 0.81, 1.0],
+    "navy": [0.035, 0.10, 0.22, 1.0],
+    "concrete": [0.48, 0.46, 0.41, 1.0],
+    "steel": [0.34, 0.37, 0.39, 1.0],
+    "steel_dark": [0.20, 0.22, 0.24, 1.0]
+  },
+  "defaults": {
+    "terminal_length_m": 10.0,
+    "terminal_flare_m": 2.5,
+    "vegetation_clearance_m": {"trees": 3.0, "bushes": 1.5},
+    "collision_merge_tolerance_m": 0.10
+  },
+  "collision_profiles": {
+    "wall_low": {"height_m": 0.90, "thickness_m": 0.30},
+    "wall_medium": {"height_m": 1.20, "thickness_m": 0.40},
+    "wall_high": {"height_m": 1.45, "thickness_m": 0.50}
+  },
+  "prototypes": {
+    "guardrail_2": {
+      "geometry": "guardrail_armco",
+      "module_length_m": 4.0,
+      "rail_count": 2,
+      "post_spacing_m": 2.0,
+      "collision_profile": "wall_low",
+      "material_style": "steel_navy_continuous"
+    },
+    "guardrail_3": {
+      "geometry": "guardrail_armco",
+      "module_length_m": 4.0,
+      "rail_count": 3,
+      "post_spacing_m": 2.0,
+      "collision_profile": "wall_medium",
+      "material_style": "steel_navy_continuous"
+    },
+    "tire_stack": {
+      "geometry": "painted_tire_prism",
+      "module_length_m": 2.0,
+      "collision_profile": "wall_high",
+      "material_style": "curb_block_pattern"
+    },
+    "tecpro": {
+      "geometry": "beveled_block",
+      "module_length_m": 1.5,
+      "collision_profile": "wall_high",
+      "material_style": "tecpro_block_pattern"
+    },
+    "concrete_wall": {
+      "geometry": "continuous_wall",
+      "module_length_m": 6.0,
+      "collision_profile": "wall_high",
+      "material_style": "concrete_sparse_panels"
+    },
+    "concrete_jersey": {
+      "geometry": "jersey_profile",
+      "module_length_m": 3.0,
+      "collision_profile": "wall_medium",
+      "material_style": "concrete_long_blocks"
+    }
+  },
+  "patterns": {
+    "curb_block_pattern": {
+      "mode": "block",
+      "colors": ["white", "navy", "white"],
+      "span_modules": [3, 4, 3]
+    },
+    "tecpro_block_pattern": {
+      "mode": "block",
+      "colors": ["white", "navy"],
+      "span_modules": [4, 4]
+    },
+    "steel_navy_continuous": {
+      "mode": "longitudinal_band",
+      "base": "steel",
+      "band": "navy"
+    },
+    "concrete_sparse_panels": {
+      "mode": "sparse_panels",
+      "base": "concrete",
+      "colors": ["white", "navy"],
+      "period_modules": 6
+    },
+    "concrete_long_blocks": {
+      "mode": "block",
+      "colors": ["white", "navy"],
+      "span_modules": [6, 6]
+    }
+  },
+  "segments": []
+}
+
+Cada segmento debe incluir como mínimo:
+
+- id único y estable;
+- side: left o right;
+- start_fraction;
+- end_fraction;
+- center_distance_m;
+- system;
+- terminal_start;
+- terminal_end;
+- vegetation_clearance_m opcional;
+- enabled.
+
+Sistemas soportados:
+
+1. Tipo único:
+
+"system": {
+  "mode": "single",
+  "type": "guardrail_2"
+}
+
+2. Secuencia explícita:
+
+"system": {
+  "mode": "sequence",
+  "repeat": false,
+  "items": [
+    {"type": "tire_stack", "length_m": 24.0},
+    {"type": "tecpro", "length_m": 18.0},
+    {"type": "tire_stack", "length_m": 12.0}
+  ]
+}
+
+3. Secuencia repetible, sólo si se declara deliberadamente:
+
+"system": {
+  "mode": "sequence",
+  "repeat": true,
+  "items": [
+    {"type": "tire_stack", "length_m": 30.0},
+    {"type": "tecpro", "length_m": 15.0}
+  ]
+}
+
+No implementar selección aleatoria ponderada del tipo de barrera. La ubicación de
+TecPro es una decisión de diseño y seguridad, no decoración aleatoria.
+
+
+DETERMINISMO
+------------
+
+La clave estable para cualquier decisión visual debe ser:
+
+track_id + seed + segment.id + side + module_index + decision_kind
+
+Usar hash estable, por ejemplo SHA-256 o BLAKE2, convertido a entero. No usar hash()
+de Python, porque cambia entre procesos. No depender de random global.
+
+El hash puede controlar solamente:
+
+- fase inicial del patrón cromático;
+- una de dos variaciones aprobadas de terminal;
+- oscurecimiento sutil y cuantizado del material;
+- junta visual o inclinación predefinida de un módulo de neumáticos.
+
+El hash no debe cambiar:
+
+- tipo de barrera;
+- lado;
+- offset;
+- inicio o fin del tramo;
+- perfil de colisión;
+- posición del TecPro;
+- despeje de vegetación.
+
+La generación se debe ejecutar dos veces en un test o script de validación y producir
+el mismo resumen/hash de módulos y las mismas posiciones.
+
+
+DISTRIBUCIÓN PROPUESTA PARA LA CHUTANA
+-------------------------------------
+
+Los fractions deben revisarse contra la centerline y las capturas. Usar esta
+distribución inicial como punto de partida:
+
+1. MainStraightPitWall
+   - side: lado de pits, verificar orientación real;
+   - fraction aproximada: 0.920 -> 0.060, con wrap;
+   - concrete_wall;
+   - offset cercano pero fuera de pista, bordillo y pit lane;
+   - lectura continua, juntas discretas y paneles espaciados.
+
+2. MainStraightOuter
+   - lado exterior opuesto a pits;
+   - concrete_jersey o concrete_wall según espacio;
+   - dejar accesos explícitos; no cerrar el paddock accidentalmente.
+
+3. T1Outer
+   - aproximadamente 0.045 -> 0.180;
+   - tire_stack antes y después del punto de máximo riesgo;
+   - tecpro concentrado en la zona de impacto frontal;
+   - secuencia explícita, no repetición aleatoria.
+
+4. T2Outer
+   - aproximadamente 0.170 -> 0.260;
+   - guardrail_2;
+   - terminales con flare o transición a neumáticos.
+
+5. T3Outer
+   - aproximadamente 0.245 -> 0.350;
+   - guardrail_2;
+   - mantener espacio de escape.
+
+6. T4Outer
+   - aproximadamente 0.340 -> 0.520;
+   - tire_stack + tecpro en grupos largos;
+   - TecPro en la proyección de salida/impacto de la horquilla;
+   - neumáticos en las zonas de impacto lateral.
+
+7. BackStraight
+   - tramo posterior a T4 y antes de la chicana;
+   - guardrail_2 continuo donde sea necesario;
+   - no duplicar protección en ambos lados sin justificación visual.
+
+8. ChicaneLeft y ChicaneRight
+   - aproximadamente 0.520 -> 0.630;
+   - combinación tire_stack y tecpro;
+   - TecPro en los extremos de entrada y salida susceptibles a impacto;
+   - mantener legible el sausage kerb y no invadir su zona funcional.
+
+9. T6Outer
+   - aproximadamente 0.720 -> 0.920;
+   - guardrail_3;
+   - offset mayor y continuidad visual;
+   - terminal seguro antes de la recta principal.
+
+Evitar saturar el circuito. En sectores con grandes escapatorias y sin objetos
+peligrosos puede no haber barrera. La ausencia debe ser una decisión explícita del
+manifiesto, no un error de generación.
+
+
+TRANSICIONES Y TERMINALES
+-------------------------
+
+Tipos mínimos de terminal/transición:
+
+- flare_out: guardrail se aleja progresivamente de la pista durante 10 m;
+- buried_or_hidden: reservado para terminar detrás de terreno/otra barrera, sólo si
+  la escena lo justifica;
+- guardrail_to_tire: solape visual corto protegido por neumáticos;
+- guardrail_to_tecpro: bloque de transición que cubre el extremo metálico;
+- wall_to_tecpro: contacto directo sin hueco visual;
+- jersey_end: extremo inclinado simple;
+- closed: sólo para muros que continúan fuera del área visible o conectan a pits.
+
+Validar que no haya huecos mayores a 0.25 m entre sistemas que deban ser continuos.
+Validar que los extremos de Armco no queden orientados hacia la trayectoria del auto.
+
+
+ARQUITECTURA DE CÓDIGO PROPUESTA
+-------------------------------
+
+Crear:
+
+- blender/track_pipeline/safety_barrier_layout.py
+- blender/track_pipeline/manifests/la_chutana_safety_barriers.json
+- blender/track_pipeline/tests/test_safety_barrier_layout.py
+- blender/track_pipeline/tests/test_safety_barrier_determinism.py
+
+Modificar cuidadosamente:
+
+- blender/track_pipeline/build_environment_blender.py
+- blender/track_pipeline/procedural_assets_blender.py
+- blender/track_pipeline/generate_environment.py
+- blender/track_pipeline/validate_environment.py
+- blender/track_pipeline/configs/la_chutana.json
+- blender/track_pipeline/layouts/la_chutana/layout_config.json
+
+Responsabilidades:
+
+safety_barrier_layout.py
+- cargar y validar schema v2;
+- resolver fractions con wrap;
+- convertir sistemas y secuencias a módulos compilados;
+- calcular claves/hash estables;
+- exponer corredores de conflicto para vegetación;
+- producir un resumen determinista independiente de Blender.
+
+procedural_assets_blender.py
+- crear prototipos geométricos de bajo coste;
+- asignar materiales compartidos y colores por caras;
+- crear transiciones y terminales;
+- crear cintas de colisión simplificadas;
+- no decidir qué tipo va en cada sector.
+
+build_environment_blender.py
+- consumir el layout ya compilado;
+- cachear prototipos por parámetros;
+- instanciar módulos;
+- agrupar colisiones contiguas;
+- soportar --safety-barrier-review;
+- no publicar runtime durante review.
+
+generate_environment.py
+- usar los corredores unificados de todas las barreras;
+- reubicar vegetación mediante resampling determinista;
+- no eliminar silenciosamente assets salvo agotamiento documentado.
+
+validate_environment.py
+- verificar conflictos con árboles y bushes;
+- verificar invasión de pista/bordillos;
+- verificar continuidad, terminales, materiales y presupuesto geométrico;
+- emitir conteos por tipo y sector.
+
+la_chutana.json
+- reemplazar guardrails.manifest por una sección safety_barriers;
+- mantener tire_barriers desactivado para evitar duplicados;
+- documentar cualquier compatibilidad temporal.
+
+layout_config.json
+- retirar barrier_sectors como autoridad después de migrar y verificar todos sus
+  consumidores;
+- conservar semantic_palette sólo si todavía es necesaria para herramientas de
+  layout, pero no usarla para generar las barreras runtime.
+
+
+PLAN DE SPRINT Y BACKLOG
+-----------------------
+
+SP-1: Procedencia y aislamiento
+- registrar git branch --show-current;
+- registrar git rev-parse HEAD;
+- inventariar git status --short;
+- identificar solapamientos con cambios existentes;
+- crear backup aprobado si un archivo objetivo ya tiene cambios no atribuibles.
+
+SP-2: Esquema y compilador puro
+- crear manifiesto v2;
+- implementar loader/validator sin dependencia de bpy;
+- migrar los siete tramos actuales;
+- añadir recta principal con cemento;
+- declarar secuencias tire/TecPro.
+
+SP-3: Primitivas geométricas
+- reutilizar la lógica Armco existente;
+- añadir tire_stack, tecpro, concrete_wall y concrete_jersey;
+- crear materiales compartidos sin texturas raster;
+- verificar normales y orientación left/right.
+
+SP-4: Integración
+- reemplazar build_guardrails por build_safety_barriers;
+- eliminar el uso runtime de barrier_sectors;
+- mantener sistemas antiguos desactivados;
+- añadir terminales/transiciones y colisión unificada.
+
+SP-5: Vegetación y props
+- aplicar corredores por tipo de barrera;
+- desplazar árboles/bushes determinísticamente;
+- validar que marshals, signs y spectators queden en el lado seguro.
+
+SP-6: Tests y validación
+- ejecutar unit tests nuevos y relevantes existentes;
+- comprobar determinismo con dos ejecuciones;
+- comprobar cero solapamientos/invasiones;
+- reportar coste geométrico y número de materiales.
+
+SP-7: Revisión visual
+- generar catálogo de todos los prototipos;
+- render aéreo;
+- render recta principal;
+- render T1;
+- render T4;
+- render chicana;
+- render T6;
+- no publicar la versión final.
+
+SP-8: HUMAN GATE
+- presentar capturas, conteos y observaciones;
+- detenerse;
+- esperar aprobación o ajustes del usuario.
+
+SP-9: Publicación posterior a aprobación
+- sólo después del human gate, hacer rebuild limpio según AGENTS.md;
+- regenerar circuito completo desde cero;
+- validar BUILD/HEAD parity;
+- ejecutar run_f1_94.ps1;
+- realizar smoke test runtime;
+- retrospectiva y done.
+
+
+PRUEBAS OBLIGATORIAS
+--------------------
+
+Unitarias:
+
+- carga válida de schema v2;
+- rechazo de schema desconocido;
+- ids duplicados;
+- prototype inexistente;
+- pattern inexistente;
+- side inválido;
+- fraction inválido;
+- wrap 0.92 -> 0.06;
+- longitud ajustada a módulo;
+- secuencia repeat false;
+- secuencia repeat true;
+- transición compatible/incompatible;
+- hash estable entre procesos;
+- cero dependencia de hash() o random global.
+
+Integración:
+
+- todos los módulos quedan fuera de la calzada y bordillos;
+- cero conflicto de vegetación;
+- cero extremos Armco expuestos;
+- cero huecos indebidos entre sistemas;
+- una sola fuente de verdad activa;
+- ningún tire barrier continuo antiguo aparece;
+- conteo por tipo coincide con resumen compilado;
+- materiales compartidos, sin material por instancia;
+- colisiones simplificadas presentes y visuales no colisionables.
+
+Determinismo:
+
+- generar dos veces con mismo manifiesto/seed;
+- serializar por segment_id, module_index, type, position, yaw, pattern_phase;
+- comparar SHA-256 idéntico;
+- cambiar seed y comprobar que sólo cambian variaciones autorizadas;
+- cambiar un segmento y comprobar que los demás conservan su hash.
+
+Presupuesto recomendado para revisión:
+
+- máximo 5-7 materiales compartidos para todo el sistema;
+- máximo una malla prototipo por combinación geométrica relevante;
+- instancias enlazadas para módulos repetidos;
+- colisiones agrupadas por tramo/perfil;
+- registrar vértices, triángulos, instancias y colisiones en el reporte.
+
+
+COMANDOS Y SEGURIDAD DE REBUILD
+------------------------------
+
+Antes de implementar:
+
+git branch --show-current
+git rev-parse HEAD
+git status --short
+
+No usar git add -A. No usar git reset --hard. No usar git checkout -- para descartar
+cambios. No limpiar directorios sin resolver y verificar sus rutas absolutas.
+
+Para la revisión visual se debe usar el pipeline existente con una nueva bandera:
+
+--safety-barrier-review
+
+La bandera debe guardar una escena/reporte aislado y no sobrescribir automáticamente:
+
+game/assets/generated/tracks/la_chutana/la_chutana.glb
+
+Nombres sugeridos:
+
+- blender/generated/la_chutana/track_safety_barrier_review.blend
+- game/assets/generated/tracks/la_chutana/la_chutana_safety_barrier_review.glb
+- blender/generated/la_chutana/review/safety_barrier_catalog.png
+- blender/generated/la_chutana/review/safety_barrier_aerial.png
+- blender/generated/la_chutana/review/safety_barrier_main_straight.png
+- blender/generated/la_chutana/review/safety_barrier_t1.png
+- blender/generated/la_chutana/review/safety_barrier_t4.png
+- blender/generated/la_chutana/review/safety_barrier_chicane.png
+- blender/generated/la_chutana/review/safety_barrier_t6.png
+
+Después de aprobación humana, el rebuild completo debe seguir estrictamente AGENTS.md:
+
+- verificar nuevamente rama y HEAD;
+- inventariar cambios;
+- no reutilizar DLLs, object files o caches ignoradas de otra rama;
+- limpiar de forma controlada Cargo/SCons/game/.godot;
+- confirmar que BUILD corresponde al HEAD y al source state actual;
+- lanzar mediante run_f1_94.ps1 o la ruta canónica que éste coordine;
+- runtime debe rechazar binarios cuyo BUILD no coincida con HEAD.
+
+
+CRITERIOS DE ACEPTACIÓN DEL HUMAN GATE
+--------------------------------------
+
+La implementación está lista para presentar cuando:
+
+1. Existe un único manifiesto v2 activo.
+2. Los cinco tipos visuales se ven distintos pero pertenecen a la misma paleta.
+3. La recta principal usa cemento de forma dominante.
+4. T1, T4 y chicana combinan neumáticos/TecPro en grupos creíbles.
+5. T2/T3 usan Armco de 2 raíles.
+6. T6 usa Armco de 3 raíles.
+7. El Armco tiene lectura continua, no patrón vertical ruidoso.
+8. Neumáticos y TecPro usan blanco/azul con orientación correcta a lo largo del tramo.
+9. No hay vegetación atravesando barreras ni objetos delante de ellas.
+10. No hay barrera continua alrededor de todo el circuito.
+11. No hay extremos metálicos inseguros ni transiciones con huecos visibles.
+12. Dos generaciones producen el mismo hash.
+13. La escena de review y todas las capturas existen.
+14. El GLB runtime final todavía no ha sido publicado.
+
+Al llegar aquí, presentar:
+
+- capturas absolutas renderizables;
+- tabla de tramos y tipos;
+- conteo de módulos por tipo;
+- triángulos/materiales/colisiones;
+- hash determinista;
+- conflictos de vegetación;
+- observaciones visuales pendientes.
+
+DETENERSE y esperar respuesta del usuario.
+
+
+FUERA DE ALCANCE ANTES DEL HUMAN GATE
+-------------------------------------
+
+- regenerar el circuito runtime definitivo;
+- realizar commit sin autorización expresa;
+- modificar físicas del vehículo;
+- cambiar bordillos, asfalto o terreno;
+- rehacer vegetación fuera de los corredores necesarios;
+- introducir texturas raster nuevas para barreras;
+- borrar sistemas legacy antes de verificar consumidores;
+- ajustar BUILD o binarios sin que el rebuild final haya sido aprobado.
+
+
+NOTAS DE IMPLEMENTACIÓN Y RIESGOS
+--------------------------------
+
+- El worktree contiene cambios amplios. Stagear sólo rutas explícitas y revisar
+  git diff --cached antes de cualquier commit.
+- Hay tests antiguos que todavía esperan tire barriers continuas y guardrails
+  desactivados. Deben migrarse, no ignorarse ni borrarse sin reemplazo equivalente.
+- layout_config.json ya contiene una propuesta histórica de tipos por sector, pero
+  sus colores rojo/blanco no corresponden a esta dirección artística. Usar únicamente
+  sus fractions como referencia y confirmar contra la centerline.
+- El metal de la revisión Armco anterior se percibió demasiado oscuro. Ajustar el
+  material steel bajo la iluminación real antes del gate.
+- No convertir la paleta blanco/azul en un patrón excesivo. El tipo de geometría debe
+  aportar la variedad principal y el color debe unificar el circuito.
+- TecPro y neumáticos no son equivalentes visualmente. Aunque compartan una colisión
+  simple, deben conservar siluetas distintas.
+- Los muros de pits pueden necesitar aperturas para accesos. Toda interrupción debe
+  estar declarada como segmentos separados, nunca como hueco accidental.
+
+
+RESULTADO FINAL ESPERADO
+------------------------
+
+Un sistema modular, determinista y barato de barreras de seguridad que haga que La
+Chutana tenga una lectura más realista: cemento dominante en la recta principal,
+Armco continuo en zonas laterales, neumáticos y TecPro agrupados en zonas de impacto,
+y una identidad blanco/azul coherente con los bordillos. La implementación debe poder
+modificarse o replicarse editando un solo manifiesto, sin rehacer geometría manual ni
+añadir texturas costosas.

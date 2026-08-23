@@ -1,12 +1,17 @@
 # Formula-90 Agent Protocol
 
+CANON SCRIPT:
+
+run_f1_94.ps1
+
 PIPELINE:
+
 sprint planning -> backlog item -> implement -> review -> human gate -> sprint retrospective -> done
 
-REBUILD SAFETY: nunca mezclar cambios ajenos ni crear commits WIP masivos; al recompilar todo, no reutilizar DLL, objetos o cachés ignorados de otra rama: verificar `HEAD`, limpiar Cargo/SCons/`game/.godot` y confirmar el `BUILD` resultante.
+REBUILD SAFETY: Never mix unrelated changes or create large WIP commits. When performing a full rebuild, never reuse DLLs, object files, or ignored caches from another branch. Verify HEAD, clean Cargo/SCons/game/.godot, and confirm that the resulting BUILD matches the current source state.
 
-PROVENANCE: antes de modificar, registrar y verificar rama, HEAD y git status; no cambiar/resetear una rama sucia sin inventario y respaldo aprobado.
+PROVENANCE: Before modifying anything, record and verify the current branch, HEAD, and git status. Never switch, reset, or modify a dirty branch without first inventorying its changes and creating an approved backup.
 
-COMMIT SCOPE: commits atómicos con rutas explícitas; prohibidos git add -A y mezclar cambios previos, generados o ajenos sin revisión de git diff --cached.
+COMMIT SCOPE: Keep commits atomic and stage explicit paths only. git add -A is prohibited. Never include pre-existing, generated, unrelated, or foreign changes without reviewing git diff --cached.
 
-RUNTIME PARITY: el runtime debe rechazar binarios cuyo BUILD no coincida con HEAD; cada script de ejecución debe compilar o validar esa correspondencia antes de iniciar Godot.
+RUNTIME PARITY: The runtime must reject binaries whose BUILD does not match HEAD. Every launch script must either compile the required binaries or validate BUILD/HEAD parity before starting Godot.
