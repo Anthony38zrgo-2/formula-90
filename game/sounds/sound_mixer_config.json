@@ -625,7 +625,7 @@
       }
     },
     "int_backfire": {
-      "volume": 0.22,
+      "volume": 0.42,
       "pan": -0.5,
       "adsr": {
         "enabled": true,
@@ -660,7 +660,7 @@
       }
     },
     "int_backfire_2": {
-      "volume": 0.22,
+      "volume": 0.42,
       "pan": -0.5,
       "adsr": {
         "enabled": true,
