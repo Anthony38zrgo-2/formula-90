@@ -249,10 +249,10 @@
     "pressure": {
       "units": "kPa_gauge",
       "cold_kpa_gauge": {
-        "FL": 110.0,
-        "FR": 110.0,
-        "RL": 105.0,
-        "RR": 105.0
+        "FL": 80.0,
+        "FR": 80.0,
+        "RL": 130.0,
+        "RR": 130.0
       },
       "reference_hot_kpa_gauge": {
         "FL": 145.0,
