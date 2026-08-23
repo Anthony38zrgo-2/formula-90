@@ -8,10 +8,21 @@ from pathlib import Path
 from PIL import Image
 
 from generate_procedural_textures import apply_ground_cover_detail
+from texture_forge import make_seamless_edges, save_image_atomic
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def load_terrain_base(path: Path, texture_size: int) -> Image.Image:
+    """Load the curated terrain source at the configured runtime resolution."""
+    size = max(1, int(texture_size))
+    with Image.open(path) as source:
+        base = source.convert("RGB")
+    if base.size != (size, size):
+        base = base.resize((size, size), Image.Resampling.LANCZOS)
+    return base
 
 
 def main() -> int:
@@ -33,12 +44,14 @@ def main() -> int:
             raise RuntimeError(f"Ground-cover detail source hash mismatch: {source}")
 
     output = repo / spec["output"]
+    texture_size = int(config["materials"]["terrain_texture_size"])
     result = apply_ground_cover_detail(
-        Image.open(base).convert("RGB"), sources, int(config["materials"]["seed"]),
+        load_terrain_base(base, texture_size), sources, int(config["materials"]["seed"]),
         config["track_id"], float(spec["texture_coverage"]), float(spec["texture_opacity"]),
     )
+    result = make_seamless_edges(result)
     output.parent.mkdir(parents=True, exist_ok=True)
-    result.save(output)
+    save_image_atomic(result, output)
 
     forge_manifest = output.parents[4] / "texture_forge_manifest.json"
     forge = json.loads(forge_manifest.read_text(encoding="utf-8"))

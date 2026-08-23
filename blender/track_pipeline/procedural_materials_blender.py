@@ -62,7 +62,7 @@ def flat_material(name: str, color, roughness: float = 0.8, metallic: float = 0.
     return mat
 
 
-def build_material_library(texture_dir: str | Path) -> dict[str, bpy.types.Material]:
+def build_material_library(texture_dir: str | Path, curb_manifest: dict | None = None) -> dict[str, bpy.types.Material]:
     root = Path(texture_dir)
     manifest_path = root / "active_manifest.json"
     if not manifest_path.exists():
@@ -79,8 +79,6 @@ def build_material_library(texture_dir: str | Path) -> dict[str, bpy.types.Mater
         "bark": texture_material(f"F90_Bark_{manifest['active_biome']}", root / manifest["bark"], roughness=0.92),
         "guardrail": texture_material("F90_Guardrail", root / manifest["shared"]["guardrail"], roughness=0.50, metallic=0.66),
         "start_finish": texture_material("F90_StartFinish", root / manifest["shared"]["start_finish"], roughness=0.72),
-        "curb_red": flat_material("F90_CurbRed", (0.76, 0.052, 0.034), roughness=0.80),
-        "curb_white": flat_material("F90_CurbWhite", (0.91, 0.91, 0.87), roughness=0.84),
         "edge_line": flat_material("F90_EdgeLine", (0.94, 0.94, 0.91), roughness=0.86),
         "roof": flat_material("F90_SimpleRoof", (0.31, 0.30, 0.28), roughness=0.96),
         "tire_barrier": flat_material("F90_TireBarrier", (0.025, 0.022, 0.018), roughness=0.98),
@@ -90,6 +88,12 @@ def build_material_library(texture_dir: str | Path) -> dict[str, bpy.types.Mater
         "flag": flat_material("F90_TracksideFlag", (0.72, 0.055, 0.035), roughness=0.92),
         "sign": flat_material("F90_TracksideSign", (0.72, 0.62, 0.30), roughness=0.94),
     }
+    for material_id, spec in (curb_manifest or {}).get("palette", {}).items():
+        materials[f"curb:{material_id}"] = flat_material(
+            f"F90_Curb_{material_id}",
+            tuple(float(channel) for channel in spec["color"]),
+            roughness=float(spec.get("roughness", 0.84)),
+        )
     for asset_id, rel in manifest["assets"].items():
         alpha = ("_tree_" in asset_id or "_bush_" in asset_id or "_grass_" in asset_id)
         materials[f"asset:{asset_id}"] = texture_material(

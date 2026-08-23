@@ -14,6 +14,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from blender_output import atomic_export_glb, atomic_publish, atomic_save_blend
+from curb_manifest import load_curb_manifest, material_for_longitudinal
 from procedural_materials_blender import build_material_library
 from terrain_grid import (
     NearestTrackSample,
@@ -121,37 +122,116 @@ def curb_indices(n, start, end):
     return list(range(a, b + 1)) if a <= b else list(range(a, n)) + list(range(0, b + 1))
 
 
-def build_curb(points, segment, road_half, profile, materials, config, top_z):
+def build_curb(points, segment, road_half, manifest, materials, config, top_z):
     indices = curb_indices(len(points), float(segment["start_fraction"]), float(segment["end_fraction"]))
     side = 1 if segment["side"] == "right" else -1
+    profile_id = str(segment["profile_id"])
+    profile_spec = manifest["profiles"][profile_id]
+    profile = profile_spec["points"]
+    width = float(profile_spec["width_m"])
+    base_depth = float(profile_spec["base_depth_m"])
+    pattern = manifest["patterns"][profile_spec["pattern"]]
+    material_ids = list(manifest["palette"])
+    material_indices = {material_id: index for index, material_id in enumerate(material_ids)}
     verts = []
-    rows = len(profile)
+    columns = len(profile)
+    row_distance_m = [0.0]
+    for previous_idx, idx in zip(indices, indices[1:]):
+        previous = points[previous_idx]
+        current = points[idx]
+        segment_length = math.hypot(float(current[0]) - float(previous[0]), float(current[1]) - float(previous[1]))
+        row_distance_m.append(row_distance_m[-1] + segment_length)
     for idx in indices:
         _, normal, bank = cross_frame(points, idx, config)
         normal *= side
         p = points[idx]
         center = godot_xz_to_blender(p[0], p[1], top_z)
         edge = center + normal * road_half + Vector((0, 0, math.tan(bank) * road_half * side))
-        for off, h in profile:
-            verts.append(tuple(edge + normal * float(off) + Vector((0, 0, float(h) + math.tan(bank) * float(off) * side))))
+        for column, (off, h) in enumerate(profile):
+            vertex = edge + normal * float(off) + Vector((0, 0, float(h) + math.tan(bank) * float(off) * side))
+            if column == columns - 1:
+                outer_distance = road_half + float(off)
+                sample = NearestTrackSample(outer_distance, idx / len(points), side, outer_distance * side)
+                vertex.z = terrain_height_from_sample(config, sample, visual=False) + 0.002
+            verts.append(tuple(vertex))
+    top_vertex_count = len(verts)
+    for idx in indices:
+        _, normal, bank = cross_frame(points, idx, config)
+        normal *= side
+        p = points[idx]
+        center = godot_xz_to_blender(p[0], p[1], top_z)
+        edge = center + normal * road_half + Vector((0, 0, math.tan(bank) * road_half * side))
+        for off, _ in profile:
+            verts.append(tuple(edge + normal * float(off) + Vector((0, 0, -base_depth + math.tan(bank) * float(off) * side))))
+
     faces = []
-    for r in range(len(indices) - 1):
-        for c in range(rows - 1):
-            a = r * rows + c
-            b = (r + 1) * rows + c
-            faces.append((a, b, b + 1, a + 1))
+    face_materials = []
+
+    def append_face(face, material_id):
+        faces.append(tuple(face))
+        face_materials.append(material_indices[material_id])
+
+    for row in range(len(indices) - 1):
+        midpoint_distance = (row_distance_m[row] + row_distance_m[row + 1]) * 0.5
+        material_id = material_for_longitudinal(pattern, midpoint_distance)
+        for column in range(columns - 1):
+            a = row * columns + column
+            b = (row + 1) * columns + column
+            top_face = (a, b, b + 1, a + 1)
+            va, vb, vc = (Vector(verts[index]) for index in top_face[:3])
+            if (vb - va).cross(vc - va).z < 0.0:
+                top_face = tuple(reversed(top_face))
+            append_face(top_face, material_id)
+            append_face(tuple(top_vertex_count + index for index in reversed(top_face)), "concrete")
+
+        top_inner = row * columns
+        next_top_inner = (row + 1) * columns
+        bottom_inner = top_vertex_count + top_inner
+        next_bottom_inner = top_vertex_count + next_top_inner
+        append_face((top_inner, bottom_inner, next_bottom_inner, next_top_inner), "concrete")
+
+        top_outer = row * columns + columns - 1
+        next_top_outer = (row + 1) * columns + columns - 1
+        bottom_outer = top_vertex_count + top_outer
+        next_bottom_outer = top_vertex_count + next_top_outer
+        append_face((top_outer, next_top_outer, next_bottom_outer, bottom_outer), "concrete")
+
+    for row, reverse in ((0, True), (len(indices) - 1, False)):
+        for column in range(columns - 1):
+            top_left = row * columns + column
+            top_right = top_left + 1
+            bottom_left = top_vertex_count + top_left
+            bottom_right = bottom_left + 1
+            face = (top_left, top_right, bottom_right, bottom_left)
+            append_face(tuple(reversed(face)) if reverse else face, "concrete")
+
+    material_slots = [materials[f"curb:{material_id}"] for material_id in material_ids]
     obj = mesh_object(
         "Curb_" + segment["name"], verts, faces,
-        [materials["curb_red"], materials["curb_white"]], 1.0,
+        material_slots,
     )
-    stripe = max(.5, float(config["curb"].get("stripe_length_m", 2)))
-    spacing = float(config.get("sample_spacing_m", 2))
-    per = max(1, rows - 1)
-    for pi, poly in enumerate(obj.data.polygons):
-        poly.material_index = int((pi // per * spacing) // stripe) % 2
+    for polygon, material_index in zip(obj.data.polygons, face_materials):
+        polygon.material_index = material_index
+    uv = obj.data.uv_layers.new(name="UVMap")
+    for polygon in obj.data.polygons:
+        for loop in polygon.loop_indices:
+            vertex_index = obj.data.loops[loop].vertex_index
+            local_index = vertex_index % top_vertex_count
+            row = local_index // columns
+            column = local_index % columns
+            uv.data[loop].uv = (
+                float(profile[column][0]) / width,
+                row_distance_m[row] / float(pattern["stripe_length_m"]),
+            )
+    obj["formula90s_curb_profile"] = profile_id
+    obj["formula90s_curb_width_m"] = width
+    obj["formula90s_curb_base_depth_m"] = base_depth
+    obj["formula90s_curb_pattern"] = profile_spec["pattern"]
     col = mesh_object("CurbCollision_" + segment["name"] + "-colonly", verts, faces)
     col.hide_render = True
     col.display_type = "WIRE"
+    col["formula90s_curb_profile"] = profile_id
+    col["formula90s_curb_closed_collision"] = True
 
 
 def _upward_triangles(verts, quads):
@@ -163,6 +243,14 @@ def _upward_triangles(verts, quads):
             nz = (b-a).cross(c-a).z
             out.append(tri if nz >= 0 else (tri[0],tri[2],tri[1]))
     return out
+
+
+def _curb_occupies_fraction(config, side, fraction):
+    return any(
+        segment["side"] == side
+        and float(segment["start_fraction"]) <= fraction <= float(segment["end_fraction"])
+        for segment in config.get("curb", {}).get("segments", [])
+    )
 
 
 def build_roadside_shoulder(points, side, config, material):
@@ -186,7 +274,11 @@ def build_roadside_shoulder(points, side, config, material):
         outer = center + normal * (outer_d * sign)
         outer.z = outer_h + 0.0015
         verts.extend([tuple(edge), tuple(outer)])
-    faces = [(2*i, 2*((i+1)%n), 2*((i+1)%n)+1, 2*i+1) for i in range(n)]
+    faces = [
+        (2*i, 2*((i+1)%n), 2*((i+1)%n)+1, 2*i+1)
+        for i in range(n)
+        if not _curb_occupies_fraction(config, side, (i + 0.5) / n)
+    ]
     return mesh_object(
         ("Right" if sign > 0 else "Left") + "RoadsideVisual",
         verts, faces, [material], planar_uv_scale_m=3.0,
@@ -211,7 +303,11 @@ def build_roadside_collision(points, side, config):
         outer = center+normal*(outer_d*sign)
         outer.z = outer_h
         verts.extend([tuple(edge),tuple(outer)])
-    quads = [(2*i,2*((i+1)%n),2*((i+1)%n)+1,2*i+1) for i in range(n)]
+    quads = [
+        (2*i,2*((i+1)%n),2*((i+1)%n)+1,2*i+1)
+        for i in range(n)
+        if not _curb_occupies_fraction(config, side, (i + 0.5) / n)
+    ]
     faces = _upward_triangles(verts,quads)
     obj = mesh_object(("GrassEdgeCollisionRight" if sign>0 else "GrassEdgeCollisionLeft")+"-colonly",verts,faces)
     obj.hide_render=True
@@ -226,10 +322,13 @@ def build_terrain(points, config, material):
     if vfaces != faces:
         raise RuntimeError("Visual/collision terrain topology diverged unexpectedly")
     convert = lambda vv: [(x, -z, y) for x, z, y in vv]
-    bounds = (stats["min_x"], -stats["max_z"], stats["max_x"], -stats["min_z"])
+    texture_world_size_m = max(
+        1.0,
+        float(config.get("terrain", {}).get("texture_world_size_m", 96.0)),
+    )
     visual = mesh_object(
         "GrassTerrainVisual",
-        convert(vverts), faces, [material], normalized_uv_bounds=bounds,
+        convert(vverts), faces, [material], planar_uv_scale_m=texture_world_size_m,
     )
     col = mesh_object("GrassTerrainCollision-colonly", convert(cverts), faces)
     col.hide_render = True
@@ -289,12 +388,13 @@ def main():
     cp = Path(ns.config).resolve()
     repo = cp.parents[3]
     config = read_json(cp)
+    curb_manifest = load_curb_manifest(cp, config)
     center = read_json(repo / config["generated_dir"] / "centerline.json")
     points = center["points_xz"]
     clear_scene()
     generated = repo / config["generated_dir"]
     runtime = repo / config["runtime_dir"]
-    materials = build_material_library(generated / "textures")
+    materials = build_material_library(generated / "textures", curb_manifest)
     z = float(config["road"]["surface_elevation_m"])
     half = float(config["road"]["width_m"]) * .5
 
@@ -309,7 +409,7 @@ def main():
     build_edge_line(points, "left", half, lw, config, materials["edge_line"], z)
     build_edge_line(points, "right", half, lw, config, materials["edge_line"], z)
     for segment in config["curb"]["segments"]:
-        build_curb(points, segment, half, config["curb"]["profile"], materials, config, z)
+        build_curb(points, segment, half, curb_manifest, materials, config, z)
     build_start_finish(config, materials["start_finish"])
     build_spawn_marker(config)
 

@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import numpy as np
 
+from curb_manifest import load_curb_manifest
 from pipeline_common import read_json, closed_polyline_length, count_self_intersections, signed_curvature
 from terrain_grid import validate_heightfield, effective_far_ground_z
 
@@ -17,6 +18,7 @@ def main() -> int:
     cp = Path(args.config).resolve()
     repo = cp.parents[3]
     config = read_json(cp)
+    curb_manifest = load_curb_manifest(cp, config)
     center = read_json(repo / config["generated_dir"] / "centerline.json")
     points = np.asarray(center["points_xz"], dtype=float)
 
@@ -28,9 +30,9 @@ def main() -> int:
     nz = curvature[curvature > 1e-7]
     min_radius = float(1 / nz.max()) if len(nz) else float("inf")
 
-    curb_profile = config["curb"]["profile"]
-    curb_max = max(float(p[1]) for p in curb_profile)
-    curb_width = float(config["curb"]["width_m"])
+    curb_profiles = curb_manifest["profiles"]
+    curb_max = max(float(point[1]) for profile in curb_profiles.values() for point in profile["points"])
+    curb_widths = {float(profile["width_m"]) for profile in curb_profiles.values()}
     road_width = float(config["road"]["width_m"])
     surface = float(config["road"].get("surface_elevation_m", 0))
     terrain = validate_heightfield(points.tolist(), config)
@@ -45,8 +47,8 @@ def main() -> int:
         "centerline_self_intersections": intersections == 0,
         "road_width_positive": road_width >= 8,
         "surface_elevation_small_positive": .005 <= surface <= .08,
-        "curb_width_reasonable": .20 <= curb_width <= 1.20,
-        "curb_height_reasonable": 0 <= curb_max <= .050,
+        "curb_widths_30_percent_wider": curb_widths == {1.508},
+        "curb_height_reasonable": 0 <= curb_max <= .175,
         "terrain_grid_cell_reasonable": 3 <= grid <= 10,
         "terrain_visual_sink_visual_only": 0 <= sink <= .010,
         "terrain_collision_underlay": .05 <= underlay <= .25,
@@ -65,7 +67,7 @@ def main() -> int:
     print(f" centerline self intersections: {intersections}")
     print(f" minimum sampled radius: {min_radius:.2f} m")
     print(f" road width: {road_width:.2f} m surface elevation={surface*1000:.1f} mm")
-    print(f" curb: width={curb_width:.3f} m max_height={curb_max*1000:.1f} mm")
+    print(f" curb catalog: profiles={','.join(sorted(curb_profiles))} width=1.508 m max_height={curb_max*1000:.1f} mm")
     print(f" terrain grid: {terrain['vertices']} vertices / {terrain['triangles']} triangles / cell={terrain['cell_m']:.2f} m")
     print(f" terrain collision seam max error: {float(terrain['max_collision_seam_error_m'])*1000:.4f} mm")
     print(f" terrain collision winding upward: {terrain['blender_winding_upward']}")

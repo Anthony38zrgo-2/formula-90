@@ -8,9 +8,30 @@ import numpy as np
 from PIL import Image
 
 from generate_procedural_textures import apply_ground_cover_detail
+from apply_ground_cover_to_terrain import load_terrain_base
+from texture_forge import make_seamless_edges
 
 
 class GroundCoverTextureTests(unittest.TestCase):
+    def test_terrain_edges_are_exactly_seamless_without_mirroring_the_interior(self) -> None:
+        pixels = np.arange(8 * 8 * 3, dtype=np.uint8).reshape((8, 8, 3))
+
+        result = np.asarray(make_seamless_edges(Image.fromarray(pixels, "RGB"), 0.25))
+
+        self.assertTrue(np.array_equal(result[:, 0], result[:, -1]))
+        self.assertTrue(np.array_equal(result[0], result[-1]))
+        self.assertFalse(np.array_equal(result[:, 3], result[:, 4]))
+        self.assertFalse(np.array_equal(result[3], result[4]))
+
+    def test_curated_base_is_resized_to_configured_runtime_resolution(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "terrain.png"
+            Image.new("RGB", (32, 32), (90, 80, 65)).save(source)
+
+            result = load_terrain_base(source, 128)
+
+            self.assertEqual(result.size, (128, 128))
+
     def test_hybrid_ground_cover_is_deterministic_and_partial(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

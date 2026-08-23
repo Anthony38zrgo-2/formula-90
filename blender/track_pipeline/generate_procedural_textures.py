@@ -19,6 +19,7 @@ from texture_forge import (
     forge_card,
     forge_surface,
     low_frequency_field,
+    make_seamless_edges,
     recipe_dict,
     rng_for,
     write_recipe_manifest,
@@ -39,6 +40,19 @@ def _save_surface(image: Image.Image, path: Path, recipe: SurfaceRecipe, recipes
     forge_surface(image, recipe).save(path)
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     recipes[str(path)] = {"kind": "surface", "recipe": recipe_dict(recipe), "sha256": digest, **metadata}
+
+
+def _save_seamless_surface(image: Image.Image, path: Path, recipe: SurfaceRecipe, recipes: dict, metadata: dict):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    make_seamless_edges(forge_surface(image, recipe)).save(path)
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    recipes[str(path)] = {
+        "kind": "surface",
+        "recipe": recipe_dict(recipe),
+        "sha256": digest,
+        "seamless": True,
+        **metadata,
+    }
 
 
 def _save_card(image: Image.Image, path: Path, card_size: int, recipe: CardRecipe, recipes: dict, metadata: dict):
@@ -358,11 +372,26 @@ def main() -> int:
 
     materials_cfg = config.get("materials", {})
     surface_size = int(materials_cfg.get("texture_size",256))
+    asphalt_size = int(materials_cfg.get("asphalt_texture_size", surface_size))
     terrain_size = int(materials_cfg.get("terrain_texture_size",512))
     card_size = int(materials_cfg.get("card_texture_size",128))
     recipes: dict[str,dict] = {}
 
-    _save_surface(make_asphalt(surface_size,ns.seed),shared/"asphalt.png",SurfaceRecipe(26,.009,1.04),recipes,{"role":"asphalt"})
+    asphalt_source_path = materials_cfg.get("asphalt_source")
+    if asphalt_source_path:
+        asphalt_source = repo / asphalt_source_path
+        expected = materials_cfg.get("asphalt_source_sha256")
+        actual = hashlib.sha256(asphalt_source.read_bytes()).hexdigest()
+        if expected and actual != expected:
+            raise RuntimeError(f"Asphalt source hash mismatch: {asphalt_source} {actual}")
+        with Image.open(asphalt_source) as source:
+            asphalt = source.convert("RGB").resize((asphalt_size, asphalt_size), Image.Resampling.LANCZOS)
+    else:
+        asphalt = make_asphalt(asphalt_size, ns.seed)
+    _save_seamless_surface(
+        asphalt, shared/"asphalt.png", SurfaceRecipe(26,.009,1.04), recipes,
+        {"role":"asphalt", "source": asphalt_source_path or "procedural"},
+    )
     _save_surface(make_simple_noise(card_size,ns.seed,"guardrail",(.50,.52,.52),.026),shared/"guardrail.png",SurfaceRecipe(18,.012,1.05),recipes,{"role":"guardrail"})
     _save_surface(make_checker(card_size),shared/"start_finish.png",SurfaceRecipe(8,0.0,1.0),recipes,{"role":"start_finish"})
 

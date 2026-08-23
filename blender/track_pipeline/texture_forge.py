@@ -4,6 +4,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 import hashlib
 import json
+import os
 
 import cv2
 import numpy as np
@@ -16,6 +17,17 @@ BAYER_4 = np.array(
     [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]],
     dtype=np.float32,
 ) / 16.0
+
+
+def save_image_atomic(image: Image.Image, path: str | Path) -> Path:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp = target.with_name(f".{target.stem}.new{target.suffix}")
+    if temp.exists():
+        temp.unlink()
+    image.save(temp)
+    os.replace(temp, target)
+    return target
 
 
 @dataclass(frozen=True)
@@ -55,6 +67,32 @@ def low_frequency_field(rng: np.random.Generator, size: int, coarse: int = 9, bl
     else:
         arr = np.asarray(image, dtype=np.float32) / 255.0
     return np.clip(arr, 0.0, 1.0)
+
+
+def make_seamless_edges(image: Image.Image, blend_fraction: float = 0.125) -> Image.Image:
+    """Blend opposing edge bands while preserving the non-repeating interior."""
+    width, height = image.size
+    if width < 4 or height < 4:
+        raise ValueError("Seamless texture dimensions must be at least 4x4")
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+
+    band_x = max(2, min(width // 2, int(round(width * blend_fraction))))
+    band_y = max(2, min(height // 2, int(round(height * blend_fraction))))
+    for offset in range(band_x):
+        weight = offset / float(band_x - 1)
+        weight = weight * weight * (3.0 - 2.0 * weight)
+        opposite = width - 1 - offset
+        average = (pixels[:, offset] + pixels[:, opposite]) * 0.5
+        pixels[:, offset] = average * (1.0 - weight) + pixels[:, offset] * weight
+        pixels[:, opposite] = average * (1.0 - weight) + pixels[:, opposite] * weight
+    for offset in range(band_y):
+        weight = offset / float(band_y - 1)
+        weight = weight * weight * (3.0 - 2.0 * weight)
+        opposite = height - 1 - offset
+        average = (pixels[offset] + pixels[opposite]) * 0.5
+        pixels[offset] = average * (1.0 - weight) + pixels[offset] * weight
+        pixels[opposite] = average * (1.0 - weight) + pixels[opposite] * weight
+    return Image.fromarray(np.clip(pixels, 0, 255).astype(np.uint8), "RGB")
 
 
 def _ordered_dither(rgb: np.ndarray, strength: float) -> np.ndarray:
