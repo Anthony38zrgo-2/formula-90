@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "track_id": "la_chutana",
+  "seed": 1995,
+  "palette": {
+    "white": [0.88, 0.87, 0.81, 1.0],
+    "navy": [0.035, 0.10, 0.22, 1.0],
+    "concrete": [0.48, 0.46, 0.41, 1.0],
+    "steel": [0.34, 0.37, 0.39, 1.0],
+    "steel_dark": [0.20, 0.22, 0.24, 1.0]
+  },
+  "defaults": {
+    "terminal_length_m": 10.0,
+    "terminal_flare_m": 2.5,
+    "vegetation_clearance_m": {"trees": 3.0, "bushes": 1.5},
+    "collision_merge_tolerance_m": 0.10
+  },
+  "collision_profiles": {
+    "wall_low": {"height_m": 0.90, "thickness_m": 0.30},
+    "wall_medium": {"height_m": 1.20, "thickness_m": 0.40},
+    "wall_high": {"height_m": 1.45, "thickness_m": 0.50}
+  },
+  "prototypes": {
+    "guardrail_2": {"geometry": "guardrail_armco", "visual_mode": "painted_bitmap_card", "bitmap": "assets-lowpoly-python/track_props/barriers/guardrail_armco/textures/front_128x128.png", "module_length_m": 4.0, "rail_count": 2, "collision_profile": "wall_low", "material_style": "steel_navy_continuous"},
+    "guardrail_3": {"geometry": "guardrail_armco", "visual_mode": "painted_bitmap_card", "bitmap": "assets-lowpoly-python/track_props/barriers/guardrail_armco/textures/front_128x128.png", "module_length_m": 4.0, "rail_count": 3, "collision_profile": "wall_medium", "material_style": "steel_navy_continuous"},
+    "tire_stack": {"geometry": "painted_tire_prism", "module_length_m": 2.0, "collision_profile": "wall_high", "material_style": "curb_block_pattern"},
+    "tecpro": {"geometry": "beveled_block", "module_length_m": 1.5, "collision_profile": "wall_high", "material_style": "tecpro_block_pattern"},
+    "concrete_wall": {"geometry": "continuous_wall", "module_length_m": 6.0, "collision_profile": "wall_high", "material_style": "concrete_sparse_panels"},
+    "concrete_jersey": {"geometry": "jersey_profile", "module_length_m": 3.0, "collision_profile": "wall_medium", "material_style": "concrete_long_blocks"}
+  },
+  "patterns": {
+    "curb_block_pattern": {"mode": "block", "colors": ["white", "navy", "white"], "span_modules": [3, 4, 3]},
+    "tecpro_block_pattern": {"mode": "block", "colors": ["white", "navy"], "span_modules": [4, 4]},
+    "steel_navy_continuous": {"mode": "longitudinal_band", "base": "steel", "band": "navy"},
+    "concrete_sparse_panels": {"mode": "sparse_panels", "base": "concrete", "colors": ["white", "navy"], "period_modules": 6},
+    "concrete_long_blocks": {"mode": "block", "colors": ["white", "navy"], "span_modules": [6, 6]}
+  },
+  "segments": [
+    {"id": "MainStraightPitWall", "side": "right", "start_fraction": 0.920, "end_fraction": 0.060, "center_distance_m": 10.0, "system": {"mode": "single", "type": "concrete_wall"}, "terminal_start": "closed", "terminal_end": "wall_to_tecpro", "enabled": true},
+    {"id": "MainStraightOuter", "side": "left", "start_fraction": 0.925, "end_fraction": 0.040, "center_distance_m": 15.0, "system": {"mode": "single", "type": "concrete_jersey"}, "terminal_start": "jersey_end", "terminal_end": "jersey_end", "enabled": true},
+    {"id": "T1Outer", "side": "left", "start_fraction": 0.045, "end_fraction": 0.180, "center_distance_m": 14.0, "system": {"mode": "sequence", "repeat": false, "items": [{"type": "tire_stack", "length_m": 120.0}, {"type": "tecpro", "length_m": 90.0}, {"type": "tire_stack", "length_m": 116.7}]}, "terminal_start": "buried_or_hidden", "terminal_end": "buried_or_hidden", "enabled": true},
+    {"id": "T2Outer", "side": "right", "start_fraction": 0.170, "end_fraction": 0.260, "center_distance_m": 13.0, "system": {"mode": "single", "type": "guardrail_2"}, "terminal_start": "flare_out", "terminal_end": "flare_out", "enabled": true},
+    {"id": "T3Outer", "side": "left", "start_fraction": 0.245, "end_fraction": 0.350, "center_distance_m": 13.0, "system": {"mode": "single", "type": "guardrail_2"}, "terminal_start": "flare_out", "terminal_end": "flare_out", "enabled": true},
+    {"id": "T4Outer", "side": "left", "start_fraction": 0.340, "end_fraction": 0.520, "center_distance_m": 16.0, "system": {"mode": "sequence", "repeat": false, "items": [{"type": "tire_stack", "length_m": 155.0}, {"type": "tecpro", "length_m": 130.0}, {"type": "tire_stack", "length_m": 150.6}]}, "terminal_start": "buried_or_hidden", "terminal_end": "buried_or_hidden", "enabled": true},
+    {"id": "BackStraight", "side": "right", "start_fraction": 0.500, "end_fraction": 0.560, "center_distance_m": 15.0, "system": {"mode": "single", "type": "guardrail_2"}, "terminal_start": "flare_out", "terminal_end": "guardrail_to_tire", "enabled": true},
+    {"id": "ChicaneLeft", "side": "left", "start_fraction": 0.520, "end_fraction": 0.630, "center_distance_m": 14.0, "system": {"mode": "sequence", "repeat": false, "items": [{"type": "tecpro", "length_m": 54.0}, {"type": "tire_stack", "length_m": 158.0}, {"type": "tecpro", "length_m": 54.2}]}, "terminal_start": "buried_or_hidden", "terminal_end": "buried_or_hidden", "enabled": true},
+    {"id": "ChicaneRight", "side": "right", "start_fraction": 0.520, "end_fraction": 0.630, "center_distance_m": 14.0, "system": {"mode": "sequence", "repeat": false, "items": [{"type": "tire_stack", "length_m": 80.0}, {"type": "tecpro", "length_m": 90.0}, {"type": "tire_stack", "length_m": 96.2}]}, "terminal_start": "buried_or_hidden", "terminal_end": "buried_or_hidden", "enabled": true},
+    {"id": "NorthExteriorClosure", "side": "right", "start_fraction": 0.630, "end_fraction": 0.720, "center_distance_m": 15.0, "system": {"mode": "single", "type": "guardrail_2"}, "terminal_start": "guardrail_to_tire", "terminal_end": "flare_out", "enabled": true},
+    {"id": "T6Outer", "side": "right", "start_fraction": 0.720, "end_fraction": 0.920, "center_distance_m": 15.0, "system": {"mode": "single", "type": "guardrail_3"}, "terminal_start": "flare_out", "terminal_end": "flare_out", "enabled": true}
+  ]
+}
