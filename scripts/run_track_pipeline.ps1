@@ -42,6 +42,17 @@ if ([string]::IsNullOrWhiteSpace($BlenderExe)) {
 }
 if ([string]::IsNullOrWhiteSpace($BlenderExe)) { throw "Blender executable not found. Pass -BlenderExe explicitly." }
 
+if ($trackConfig.tire_barriers.procedural) {
+    $barrierSource = Join-Path $repo "blender\assets\texture_sources\$Track\trackside\tire_barrier\source_manifest.json"
+    $barrierOutput = Join-Path $repo "blender\generated\$Track\tire_barrier_cards"
+    & $python (Join-Path $pipeline "prepare_tire_barrier_cards.py") --manifest $barrierSource --output-dir $barrierOutput
+    if ($LASTEXITCODE -ne 0) { throw "Textured barrier preparation failed" }
+    & $python (Join-Path $pipeline "validate_tire_barrier_cards.py") `
+        --source-manifest $barrierSource `
+        --prepared-manifest (Join-Path $barrierOutput "prepared_manifest.json")
+    if ($LASTEXITCODE -ne 0) { throw "Textured barrier validation failed" }
+}
+
 & $python (Join-Path $pipeline "prepare_track.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "prepare_track.py failed" }
 & $python (Join-Path $pipeline "validate_track.py") --config $config
@@ -82,8 +93,16 @@ if ($TextureSource -eq "Procedural") {
 }
 & $python (Join-Path $pipeline "apply_asphalt_texture.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Curated seamless asphalt generation failed" }
+& $python (Join-Path $pipeline "generate_environment.py") `
+    --config $config `
+    --trees-density $TreesDensity `
+    --bushes-density $BushesDensity `
+    --grass-density $GrassDensity `
+    --buildings-density $BuildingsDensity `
+    --seed $Seed
+if ($LASTEXITCODE -ne 0) { throw "Semantic environment placement failed" }
 & $python (Join-Path $pipeline "apply_ground_cover_to_terrain.py") --config $config
-if ($LASTEXITCODE -ne 0) { throw "Hybrid ground-cover terrain generation failed" }
+if ($LASTEXITCODE -ne 0) { throw "Semantic ground-cover terrain generation failed" }
 & $python (Join-Path $pipeline "validate_texture_forge.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Texture Forge validation failed" }
 
@@ -104,14 +123,6 @@ if ($Mode -eq "Base") {
 $baseBlend = Join-Path $repo "blender\generated\$Track\track_base.blend"
 if (-not (Test-Path $baseBlend)) { throw "Base track not found. Run -Mode Base and validate it in Godot first." }
 
-& $python (Join-Path $pipeline "generate_environment.py") `
-    --config $config `
-    --trees-density $TreesDensity `
-    --bushes-density $BushesDensity `
-    --grass-density $GrassDensity `
-    --buildings-density $BuildingsDensity `
-    --seed $Seed
-if ($LASTEXITCODE -ne 0) { throw "Environment placement failed" }
 & $python (Join-Path $pipeline "validate_environment.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Environment validation failed" }
 & $BlenderExe --background --python (Join-Path $pipeline "build_environment_blender.py") -- --config $config

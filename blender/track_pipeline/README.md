@@ -164,9 +164,9 @@ This is an art-direction system, not a scientific vegetation classifier.
 - La Chutana trees: exactly **2 crossed planes** (4 directional faces), tall silhouette-driven cards.
 - Bushes: exactly **2 crossed planes** (4 directional faces), lower and wider than trees.
 - Grass cards: legacy one-plane geometry. **Deprecated and disabled for La Chutana.**
-- La Chutana ground cover is baked deterministically into the terrain texture from the curated `grassg1/2/3` sources. The environment generator must emit zero grass-card instances.
+- La Chutana ground cover is baked deterministically into the terrain texture from the curated `grassg1/2/3` sources. Its 9,320 exact stamp positions come from the canonical SVG; the environment generator must emit zero grass-card geometry.
 - Procedural fake buildings are temporarily disabled for La Chutana.
-- Safety guardrails use one vertical 2D card with the painted `guardrail_armco/textures/front_128x128.png` bitmap. Modeled Armco beams/posts are no longer emitted; the separate invisible collision walls remain active.
+- La Chutana restores the continuous pre-rendered barrier ribbon and its sector textures (concrete, tire walls and Armco). Fractions `0.520..0.630` are deliberately excluded and replaced by the current white/navy tire/TecPro chicane sequences.
 - Buildings: low-poly 3D, four walls plus one very simple top face and no bottom face.
 - Vegetation has no gameplay collision by default.
 - Guardrail visuals are independent from simplified box collision.
@@ -177,7 +177,7 @@ Placement is seeded and reproducible. It uses clustered composition rather than 
 
 Minimum placement distance is measured from the actual road edge plus the asset bounding radius, preventing rotated vegetation cards from entering asphalt.
 
-The same config + seed must produce the same `placements.json` and the same texture hashes.
+For La Chutana, `generate_environment.py` must resolve the canonical SVG rather than scatter a replacement layout. The SVG owns exact vegetation, people, flag and sign positions; the current vegetation catalog only supplies deterministic asset variants. The same SVG + catalog + config + seed must produce the same `placements.json` and texture hashes.
 
 ## Godot-load validation (Stage 5 acceptance)
 
