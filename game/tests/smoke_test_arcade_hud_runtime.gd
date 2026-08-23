@@ -11,9 +11,9 @@ func _run() -> void:
 	for _frame in 4:
 		await process_frame
 	var session := compositor.get_node_or_null("WorldViewport/RaceSession") as RaceSession
-	var hud := compositor.get_node_or_null("HudLayer/DebugHud") as ArcadeRaceHud
-	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap") as TrackMinimapController
-	var aid_message := compositor.get_node_or_null("HudLayer/DebugHud/AidMessage") as Label
+	var hud := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud") as ArcadeRaceHud
+	var minimap := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/Minimap") as TrackMinimapController
+	var aid_message := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/AidMessage") as Label
 	if session == null or hud == null or minimap == null or aid_message == null:
 		failures.append("runtime composition or HUD nodes missing")
 	else:

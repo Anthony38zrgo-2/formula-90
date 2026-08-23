@@ -11,13 +11,30 @@ func _run() -> void:
 	for _frame in 4:
 		await process_frame
 	var viewport := compositor.get_node_or_null("WorldViewport") as SubViewport
-	var presenter := compositor.get_node_or_null("WorldPresenter") as TextureRect
+	var presenter := compositor.get_node_or_null("DisplayAspect/DisplayStage/WorldPresenter") as TextureRect
+	var display_stage := compositor.get_node_or_null("DisplayAspect/DisplayStage") as Control
+	var hud_layer := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer") as Control
 	var session := compositor.get_node_or_null("WorldViewport/RaceSession") as RaceSession
-	var hud := compositor.get_node_or_null("HudLayer/DebugHud") as ArcadeRaceHud
-	if viewport == null or viewport.size != Vector2i(640, 360) or presenter == null or presenter.texture != viewport.get_texture():
+	var hud := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud") as ArcadeRaceHud
+	var psx_art := compositor.get_node_or_null("PsxArtController") as PsxArtController
+	var expected_viewport_size := Vector2i(psx_art.get_internal_width(), psx_art.get_internal_height())
+	if psx_art.get_upscale_mode() == 3:
+		expected_viewport_size = Vector2i(roundi(presenter.size.x), roundi(presenter.size.y))
+	if viewport == null or viewport.size != expected_viewport_size or viewport.msaa_3d != Viewport.MSAA_2X or presenter == null or presenter.texture != viewport.get_texture():
 		failures.append("fixed-resolution world presentation missing")
+	var presenter_aspect := presenter.size.x / presenter.size.y if presenter != null and presenter.size.y > 0.0 else 0.0
+	if presenter == null or not is_equal_approx(presenter_aspect, 16.0 / 9.0) or hud == null or hud.size != presenter.size:
+		failures.append("16:9 world and HUD layout missing (stage=%s presenter=%s layer=%s hud=%s aspect=%f)" % [display_stage.size, presenter.size, hud_layer.size, hud.size, presenter_aspect])
 	if session == null or session.active_vehicle == null or session.active_track == null or viewport.get_camera_3d() == null:
 		failures.append("RaceSession composition missing")
+	elif session.active_track != null:
+		var visual_stats := {"geometry": 0, "lod_125": 0, "alpha_scissor": 0, "alpha_to_coverage": 0}
+		_scan_visual_quality(session.active_track.get_node_or_null("GeneratedTrack"), visual_stats)
+		_scan_visual_quality(session.active_track.get_node_or_null("GeneratedVegetation"), visual_stats)
+		if visual_stats.geometry == 0 or visual_stats.lod_125 != visual_stats.geometry:
+			failures.append("canonical track LOD bias missing")
+		if visual_stats.alpha_scissor == 0 or visual_stats.alpha_to_coverage != visual_stats.alpha_scissor:
+			failures.append("vegetation alpha-to-coverage missing")
 	if hud == null or hud.get("_vehicle") != session.active_vehicle or hud.get("_aids") != session.driving_aids:
 		failures.append("root HUD direct binding missing")
 	if session != null and session.get_node_or_null("DebugHud") != null:
@@ -29,3 +46,23 @@ func _run() -> void:
 		for failure in failures:
 			printerr("[FAIL] " + failure)
 	quit(failures.size())
+
+
+func _scan_visual_quality(node: Node, stats: Dictionary) -> void:
+	if node == null:
+		return
+	if node is GeometryInstance3D:
+		stats.geometry += 1
+		if is_equal_approx((node as GeometryInstance3D).lod_bias, 1.25):
+			stats.lod_125 += 1
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			for surface in mesh_instance.mesh.get_surface_count():
+				var material := mesh_instance.get_active_material(surface)
+				if material is StandardMaterial3D and material.transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR:
+					stats.alpha_scissor += 1
+					if material.alpha_antialiasing_mode == BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE:
+						stats.alpha_to_coverage += 1
+	for child in node.get_children():
+		_scan_visual_quality(child, stats)

@@ -20,7 +20,7 @@ func _run() -> void:
 	await _await_render()
 
 	var compositor := bootstrap.get_node_or_null("Content")
-	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap") as TrackMinimapController if compositor != null else null
+	var minimap := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/Minimap") as TrackMinimapController if compositor != null else null
 	var vehicle := compositor.get_node_or_null("WorldViewport/WorldContent/VehicleController/VehicleRigidBody") as Node3D if compositor != null else null
 	var aids := compositor.get_node_or_null("WorldViewport/WorldContent/DrivingAids") if compositor != null else null
 

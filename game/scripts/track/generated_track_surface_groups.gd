@@ -4,6 +4,8 @@ extends Node
 ## lookup continues to receive the same Road/Curb/Grass/Wall groups as authored
 ## Formula90s test scenes.
 
+const CANONICAL_LOD_BIAS := 1.25
+
 @export var generated_track_root: Node
 
 func _ready() -> void:
@@ -12,6 +14,8 @@ func _ready() -> void:
 		push_warning("Generated track surface group tagger has no root.")
 		return
 	_tag_recursive(root)
+	_apply_canonical_lod_bias(root.get_node_or_null("GeneratedTrack"))
+	_apply_canonical_lod_bias(root.get_node_or_null("GeneratedVegetation"))
 	_apply_psx_native_shadow_budget(root)
 
 func _tag_recursive(node: Node) -> void:
@@ -27,6 +31,15 @@ func _tag_recursive(node: Node) -> void:
 			node.add_to_group("Wall")
 	for child in node.get_children():
 		_tag_recursive(child)
+
+
+func _apply_canonical_lod_bias(node: Node) -> void:
+	if node == null:
+		return
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).lod_bias = CANONICAL_LOD_BIAS
+	for child in node.get_children():
+		_apply_canonical_lod_bias(child)
 
 
 func _apply_psx_native_shadow_budget(root: Node) -> void:

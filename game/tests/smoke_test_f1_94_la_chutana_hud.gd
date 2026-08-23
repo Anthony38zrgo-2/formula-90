@@ -39,10 +39,10 @@ func _run() -> void:
 	var world := compositor.get_node_or_null("WorldViewport/RaceSession")
 	var vehicle := compositor.get_node_or_null("WorldViewport/RaceSession/VehicleContainer/ActiveVehicle/VehicleRigidBody") as RigidBody3D
 	var core := compositor.get_node_or_null("F90Core")
-	var hud := compositor.get_node_or_null("HudLayer/DebugHud")
-	var minimap := compositor.get_node_or_null("HudLayer/DebugHud/Minimap")
-	var speed_gauge := compositor.get_node_or_null("HudLayer/DebugHud/SpeedGauge")
-	var retro_hud := compositor.get_node_or_null("HudLayer/DebugHud/RetroHud")
+	var hud := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud")
+	var minimap := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/Minimap")
+	var speed_gauge := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/SpeedGauge")
+	var retro_hud := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/RetroHud")
 	var aids := compositor.get_node_or_null("WorldViewport/RaceSession/DrivingAids")
 
 	if world == null or vehicle == null or compositor.get_node_or_null("WorldViewport").get_camera_3d() == null:

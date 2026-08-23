@@ -19,7 +19,7 @@ func _run() -> void:
 	paused = true
 
 	var baseline_error := root.get_texture().get_image().save_png("user://world_hud_compositor_baseline.png")
-	var world_presenter := compositor.get_node_or_null("WorldPresenter") as TextureRect
+	var world_presenter := compositor.get_node_or_null("DisplayAspect/DisplayStage/WorldPresenter") as TextureRect
 	if world_presenter == null:
 		printerr("[FAIL] World presentation control is missing.")
 		paused = false
