@@ -161,6 +161,30 @@ def create_guardrail_armco_textures(tex_dir: Path):
     # Post shadow behind beam
     front.save(tex_dir / "front_128x128.png")
 
+    # Runtime billboard: transparent negative space with painted rails/posts.
+    # This intentionally reads as Armco from the driving camera without using
+    # opaque rectangular geometry.
+    card = Image.new("RGBA", (256, 128), (0, 0, 0, 0))
+    card_draw = ImageDraw.Draw(card)
+    for px in (18, 128, 238):
+        card_draw.rectangle([(px - 4, 18), (px + 4, 127)],
+                            fill=(105, 110, 116, 255))
+        card_draw.line([(px - 3, 18), (px - 3, 127)],
+                       fill=(205, 210, 214, 255), width=2)
+    for center_y in (28, 62, 96):
+        card_draw.rounded_rectangle([(0, center_y - 10), (255, center_y + 10)],
+                                    radius=5, fill=(154, 160, 166, 255),
+                                    outline=(74, 79, 84, 255), width=2)
+        card_draw.line([(2, center_y - 5), (253, center_y - 5)],
+                       fill=(225, 229, 232, 255), width=3)
+        card_draw.line([(2, center_y + 6), (253, center_y + 6)],
+                       fill=(91, 96, 101, 255), width=3)
+        for bolt_x in (18, 128, 238):
+            card_draw.ellipse([(bolt_x - 2, center_y - 2),
+                               (bolt_x + 2, center_y + 2)],
+                              fill=(45, 48, 51, 255))
+    card.save(tex_dir / "front_card_rgba_256x128.png")
+
     # Top: 128x64 top lip of beam
     top = Image.new("RGBA", (128, 64), (195, 198, 202, 255))
     top_draw = ImageDraw.Draw(top)

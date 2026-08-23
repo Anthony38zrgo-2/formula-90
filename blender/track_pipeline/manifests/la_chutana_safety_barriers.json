@@ -5,7 +5,7 @@
   "palette": {
     "white": [0.88, 0.87, 0.81, 1.0],
     "navy": [0.035, 0.10, 0.22, 1.0],
-    "concrete": [0.48, 0.46, 0.41, 1.0],
+    "concrete": [0.64, 0.61, 0.55, 1.0],
     "steel": [0.34, 0.37, 0.39, 1.0],
     "steel_dark": [0.20, 0.22, 0.24, 1.0]
   },
@@ -21,8 +21,8 @@
     "wall_high": {"height_m": 1.45, "thickness_m": 0.50}
   },
   "prototypes": {
-    "guardrail_2": {"geometry": "guardrail_armco", "visual_mode": "painted_bitmap_card", "bitmap": "assets-lowpoly-python/track_props/barriers/guardrail_armco/textures/front_128x128.png", "module_length_m": 4.0, "rail_count": 2, "collision_profile": "wall_low", "material_style": "steel_navy_continuous"},
-    "guardrail_3": {"geometry": "guardrail_armco", "visual_mode": "painted_bitmap_card", "bitmap": "assets-lowpoly-python/track_props/barriers/guardrail_armco/textures/front_128x128.png", "module_length_m": 4.0, "rail_count": 3, "collision_profile": "wall_medium", "material_style": "steel_navy_continuous"},
+    "guardrail_2": {"geometry": "guardrail_armco", "visual_mode": "painted_bitmap_card", "bitmap": "assets-lowpoly-python/track_props/barriers/guardrail_armco/textures/front_card_rgba_256x128.png", "module_length_m": 4.0, "rail_count": 2, "collision_profile": "wall_low", "material_style": "steel_navy_continuous"},
+    "guardrail_3": {"geometry": "guardrail_armco", "visual_mode": "painted_bitmap_card", "bitmap": "assets-lowpoly-python/track_props/barriers/guardrail_armco/textures/front_card_rgba_256x128.png", "module_length_m": 4.0, "rail_count": 3, "collision_profile": "wall_medium", "material_style": "steel_navy_continuous"},
     "tire_stack": {"geometry": "painted_tire_prism", "module_length_m": 2.0, "collision_profile": "wall_high", "material_style": "curb_block_pattern"},
     "tecpro": {"geometry": "beveled_block", "module_length_m": 1.5, "collision_profile": "wall_high", "material_style": "tecpro_block_pattern"},
     "concrete_wall": {"geometry": "continuous_wall", "module_length_m": 6.0, "collision_profile": "wall_high", "material_style": "concrete_sparse_panels"},
@@ -33,7 +33,7 @@
     "tecpro_block_pattern": {"mode": "block", "colors": ["white", "navy"], "span_modules": [4, 4]},
     "steel_navy_continuous": {"mode": "longitudinal_band", "base": "steel", "band": "navy"},
     "concrete_sparse_panels": {"mode": "sparse_panels", "base": "concrete", "colors": ["white", "navy"], "period_modules": 6},
-    "concrete_long_blocks": {"mode": "block", "colors": ["white", "navy"], "span_modules": [6, 6]}
+    "concrete_long_blocks": {"mode": "sparse_panels", "base": "concrete", "colors": ["white", "navy"], "period_modules": 12}
   },
   "segments": [
     {"id": "MainStraightPitWall", "side": "right", "start_fraction": 0.920, "end_fraction": 0.060, "center_distance_m": 10.0, "system": {"mode": "single", "type": "concrete_wall"}, "terminal_start": "closed", "terminal_end": "wall_to_tecpro", "enabled": true},

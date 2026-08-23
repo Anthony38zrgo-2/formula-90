@@ -16,7 +16,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from blender_output import atomic_export_glb, atomic_publish, atomic_save_blend
 from procedural_assets_blender import (
     create_prototypes,
-    create_safety_barrier_collision,
+    create_safety_barrier_ribbon_collision,
     create_safety_barrier_prototype,
     create_tire_barrier_collision,
     create_tire_barrier_card_visual,
@@ -196,8 +196,10 @@ def build_safety_barriers(config, points, materials):
     manifest = load_safety_barrier_layout(repo, config)
     compiled = compile_layout(manifest, float(config["_centerline_length_m"]))
     guardrail_bitmap = (repo / "assets-lowpoly-python" / "track_props" / "barriers" /
-                        "guardrail_armco" / "textures" / "front_128x128.png")
-    add_safety_barrier_materials(materials, manifest["palette"], guardrail_bitmap)
+                        "guardrail_armco" / "textures" / "front_card_rgba_256x128.png")
+    tire_bitmap = (repo / "assets-lowpoly-python" / "track_props" / "barriers" /
+                   "tire_black" / "textures" / "tirewall_front_albedo_128x256.png")
+    add_safety_barrier_materials(materials, manifest["palette"], guardrail_bitmap, tire_bitmap)
     prototype_cache = {}
     counts = {}
     segment_lookup = {segment["id"]: segment for segment in compiled["segments"]}
@@ -237,30 +239,31 @@ def build_safety_barriers(config, points, materials):
         root["segment_id"] = module["segment_id"]
         root["barrier_type"] = module["type"]
         root["pattern_phase"] = int(module["pattern_phase"])
+        segment_module_count = int(segment["module_count"])
+        if prototype["geometry"] == "jersey_profile":
+            ramp = 1.0
+            if segment["terminal_start"] == "jersey_end" and module["module_index"] < 3:
+                ramp = min(ramp, (module["module_index"] + 1) / 3.0)
+            from_end = segment_module_count - int(module["module_index"])
+            if segment["terminal_end"] == "jersey_end" and from_end <= 3:
+                ramp = min(ramp, from_end / 3.0)
+            root.scale.z *= ramp
         counts[module["type"]] = counts.get(module["type"], 0) + 1
-        modules_by_segment.setdefault(module["segment_id"], []).append(module)
+        collision_module = dict(module)
+        collision_module["_position_xz"] = pos
+        collision_module["_ground_z"] = ground
+        modules_by_segment.setdefault(module["segment_id"], []).append(collision_module)
 
     collisions = 0
     for segment_id, segment_modules in modules_by_segment.items():
-        for start in range(0, len(segment_modules), 6):
-            group = segment_modules[start:start + 6]
-            first = group[0]
-            last = group[-1]
-            mid_fraction = ((float(first["fraction"]) +
-                             ((float(last["fraction"]) - float(first["fraction"])) % 1.0) * .5) % 1.0)
-            side = 1 if first["side"] == "right" else -1
-            distance = float(first["center_distance_m"])
-            pos, tangent, normal = sample_centerline(points, mid_fraction)
-            pos = (pos[0] + normal[0] * side * distance,
-                   pos[1] + normal[1] * side * distance)
-            ground = terrain_height(config, mid_fraction, side, distance)
-            profile = manifest["collision_profiles"][first["collision_profile"]]
-            create_safety_barrier_collision(
-                f"SafetyCollision_{segment_id}_{start:04d}", pos, tangent,
-                sum(float(item["length_m"]) for item in group) * 1.01,
-                ground, profile,
-            )
-            collisions += 1
+        first = segment_modules[0]
+        profile = manifest["collision_profiles"][first["collision_profile"]]
+        samples = [(item["_position_xz"], float(item["_ground_z"]))
+                   for item in segment_modules]
+        create_safety_barrier_ribbon_collision(
+            f"SafetyCollision_{segment_id}", samples, profile,
+        )
+        collisions += 1
     prototype_objects = [obj for objects in prototype_cache.values() for obj in objects]
     unique_meshes = {obj.data for obj in prototype_objects if obj.data is not None}
     vertices = sum(len(mesh.vertices) for mesh in unique_meshes)

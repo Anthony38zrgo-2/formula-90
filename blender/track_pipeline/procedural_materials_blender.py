@@ -109,6 +109,7 @@ def add_safety_barrier_materials(
     materials: dict[str, bpy.types.Material],
     palette: dict,
     guardrail_bitmap_path: Path | None = None,
+    tire_bitmap_path: Path | None = None,
 ) -> None:
     specs = {
         "white": (0.82, 0.0),
@@ -126,6 +127,12 @@ def add_safety_barrier_materials(
     if guardrail_bitmap_path is not None:
         materials["safety:guardrail_card"] = texture_material(
             "F90_Safety_GuardrailCard", guardrail_bitmap_path,
-            roughness=0.62, metallic=0.18, alpha=False,
+            roughness=0.62, metallic=0.18, alpha=True,
         )
         materials["safety:guardrail_card"].use_backface_culling = False
+    if tire_bitmap_path is not None:
+        materials["safety:tire_wall"] = texture_material(
+            "F90_Safety_TireWall", tire_bitmap_path,
+            roughness=0.96, metallic=0.0, alpha=False,
+        )
+        materials["safety:tire_wall"].use_backface_culling = False

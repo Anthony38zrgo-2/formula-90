@@ -269,18 +269,32 @@ def create_safety_barrier_prototype(prototype_id, spec, materials, color_key):
         half = (length + 0.12) * 0.5
         verts = [(-half, 0.0, 0.0), (half, 0.0, 0.0),
                  (half, 0.0, height), (-half, 0.0, height)]
+        uv_bottom = 1.0 / 3.0 if rail_count == 2 else 0.0
         objects.append(_mesh_object(
             f"Proto_{prototype_id}_BitmapCard", verts, [(0, 1, 2, 3)],
             [materials["safety:guardrail_card"]],
-            uv_by_face=[[(0, 0), (1, 0), (1, 1), (0, 1)]],
+            uv_by_face=[[(0, uv_bottom), (1, uv_bottom), (1, 1), (0, 1)]],
         ))
     elif geometry == "painted_tire_prism":
-        for row in range(3):
-            width = 0.58 - row * 0.05
-            objects.append(_cube(
-                f"Proto_{prototype_id}_Row{row}", (length, width, 0.34),
-                (0.0, 0.04 * row, 0.17 + row * 0.32), color,
-            ))
+        # The source bitmap already contains the painted tire-stack pattern.
+        # Mapping it to generic cubes projected the whole image onto every face,
+        # producing a noisy grid of blocks instead of a readable tire wall.
+        half = length * 0.5
+        depth = 0.18
+        height = 1.12
+        verts = [
+            (-half, -depth, 0.0), (half, -depth, 0.0),
+            (half, -depth, height), (-half, -depth, height),
+            (half, depth, 0.0), (-half, depth, 0.0),
+            (-half, depth, height), (half, depth, height),
+        ]
+        faces = [(0, 1, 2, 3), (4, 5, 6, 7)]
+        tire_uv = [(0, 0), (1, 0), (1, 1), (0, 1)]
+        objects.append(_mesh_object(
+            f"Proto_{prototype_id}_PaintedCards", verts, faces,
+            [materials["safety:tire_wall"]],
+            uv_by_face=[tire_uv, tire_uv],
+        ))
     elif geometry == "beveled_block":
         half = length * 0.5
         verts = [(-half,-.34,0),(half,-.34,0),(half,.34,0),(-half,.34,0),
@@ -322,6 +336,45 @@ def create_safety_barrier_collision(name, pos, tangent, length, ground_z, profil
     obj.hide_render = True
     obj.display_type = "WIRE"
     obj["formula90s_collision_kind"] = "safety_barrier_wall"
+    return obj
+
+
+def create_safety_barrier_ribbon_collision(name, samples, profile):
+    """Build one closed collision ribbon that follows an entire curved segment."""
+    height = float(profile["height_m"])
+    half_thickness = float(profile["thickness_m"]) * 0.5
+    if len(samples) < 2:
+        raise RuntimeError(f"Collision ribbon requires at least two samples: {name}")
+    centers = [godot_xz_to_blender(pos[0], pos[1], ground) for pos, ground in samples]
+    verts = []
+    for index, center in enumerate(centers):
+        previous = centers[max(0, index - 1)]
+        following = centers[min(len(centers) - 1, index + 1)]
+        tangent = following - previous
+        tangent.z = 0.0
+        if tangent.length_squared < 1e-9:
+            tangent = Vector((1.0, 0.0, 0.0))
+        tangent.normalize()
+        lateral = Vector((-tangent.y, tangent.x, 0.0)) * half_thickness
+        left = center - lateral
+        right = center + lateral
+        verts.extend((tuple(left), tuple(right),
+                      tuple(left + Vector((0, 0, height))),
+                      tuple(right + Vector((0, 0, height)))))
+    faces = []
+    for index in range(len(centers) - 1):
+        a = index * 4
+        b = (index + 1) * 4
+        faces.extend(((a, b, b + 2, a + 2),
+                      (a + 1, a + 3, b + 3, b + 1),
+                      (a + 2, b + 2, b + 3, a + 3),
+                      (a, a + 1, b + 1, b)))
+    last = (len(centers) - 1) * 4
+    faces.extend(((0, 2, 3, 1), (last, last + 1, last + 3, last + 2)))
+    obj = _mesh_object(name + "-colonly", verts, faces)
+    obj.hide_render = True
+    obj.display_type = "WIRE"
+    obj["formula90s_collision_kind"] = "safety_barrier_ribbon"
     return obj
 
 
