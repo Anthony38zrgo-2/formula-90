@@ -20,6 +20,10 @@
 namespace godot {
 
 void F194RustVehicle::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("set_physics_config_path", "path"), &F194RustVehicle::set_physics_config_path);
+	ClassDB::bind_method(D_METHOD("get_physics_config_path"), &F194RustVehicle::get_physics_config_path);
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "physics_config_path", PROPERTY_HINT_FILE, "*.json"), "set_physics_config_path", "get_physics_config_path");
+
 	// NodePaths
 	ClassDB::bind_method(D_METHOD("set_chassis_node", "path"), &F194RustVehicle::set_chassis_node);
 	ClassDB::bind_method(D_METHOD("get_chassis_node"), &F194RustVehicle::get_chassis_node);
@@ -414,7 +418,9 @@ void F194RustVehicle::_ready() {
 	}
 
 	if (fn_create_from_json_) {
-		const String json_path = "res://data/vehicles/f1_94/f1_94_physics.json";
+		const String json_path = physics_config_path_.is_empty()
+			? String("res://data/vehicles/f1_94/f1_94_physics.json")
+			: physics_config_path_;
 		Ref<FileAccess> f = FileAccess::open(json_path, FileAccess::READ);
 		if (f.is_valid()) {
 			PackedByteArray bytes = f->get_buffer(f->get_length());

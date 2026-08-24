@@ -69,6 +69,7 @@ private:
 	void *sim_ptr_ = nullptr;
 	void *dll_handle_ = nullptr;
 	bool inertia_initialized_ = false;
+	String physics_config_path_ = "res://data/vehicles/f1_94/f1_94_physics.json";
 
 	// FFI function pointers
 	FnPhysicsAbiVersion fn_abi_version_ = nullptr;
@@ -220,6 +221,9 @@ protected:
 public:
 	F194RustVehicle();
 	~F194RustVehicle() override;
+
+	void set_physics_config_path(const String &p_path) { physics_config_path_ = p_path; }
+	String get_physics_config_path() const { return physics_config_path_; }
 
 	void _ready() override;
 	void _integrate_forces(PhysicsDirectBodyState3D *p_state) override;
