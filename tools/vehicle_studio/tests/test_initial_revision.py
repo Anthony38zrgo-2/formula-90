@@ -73,6 +73,14 @@ class InitialRevisionTests(unittest.TestCase):
         with self.assertRaises(OnboardingError):
             compile_initial_revision(mapping, project_id="generic-car")
 
+    def test_wheelbase_range_supports_2021_nominal_profile(self):
+        document = compile_initial_revision(accepted_mapping(), project_id="generic-car")
+        wheelbase = next(
+            item for item in document.data["parameters"]
+            if item["semantic_role"] == "wheelbase"
+        )
+        self.assertGreaterEqual(wheelbase["maximum"], 3.640)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -172,7 +172,7 @@ def _dimensions(items: list[dict[str, Any]], baseline: dict[str, Any]) -> dict[s
 
 def _parameters(dimensions: dict[str, float]) -> list[dict[str, Any]]:
     definitions = (
-        ("wheelbase", "wheelbase_m", 0.85, 1.15, [
+        ("wheelbase", "wheelbase_m", 0.85, 1.30, [
             {"kind": "translate_axle_frames", "inputs": {"ownership": "front_and_rear_axles"}, "postconditions": ["wheelbase_matches", "wheel_anchors_match"]},
             {"kind": "piecewise_body_deform", "inputs": {"protected_frames": ["front_wing_mount", "rear_wing_mount"]}, "postconditions": ["body_continuity_matches", "topology_matches_source"]},
         ]),

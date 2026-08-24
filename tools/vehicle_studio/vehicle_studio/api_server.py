@@ -17,6 +17,7 @@ from uuid import uuid4
 from .build_ir import BuildIRError, build_ir_bytes, compile_build_ir
 from .cad_views import compile_cad_views
 from .canonical import canonical_json_bytes
+from .dimension_profiles import dimension_profiles
 from .glb_scan import GLBScanError, load_existing_inspector, scan_glb
 from .initial_revision import compile_initial_revision
 from .materializer import MaterializationError, materialize_build_ir
@@ -61,6 +62,9 @@ class OnboardingController:
                 "source_count": len(WILLIAMS_94_SOURCES),
             }]
         }
+
+    def dimensional_profiles(self) -> dict[str, Any]:
+        return {"profiles": dimension_profiles()}
 
     def scan_preset(self, preset_id: str) -> dict[str, Any]:
         if preset_id != "williams94":
@@ -355,6 +359,8 @@ def make_handler(controller: OnboardingController):
                     self._send(HTTPStatus.OK, {"status": "ok"})
                 elif path == "/api/onboarding/presets":
                     self._send(HTTPStatus.OK, controller.presets())
+                elif path == "/api/dimension-profiles":
+                    self._send(HTTPStatus.OK, controller.dimensional_profiles())
                 elif path == "/api/preview/recipe":
                     self._send(HTTPStatus.OK, controller.preview_recipe())
                 elif path == "/api/assets/source":
