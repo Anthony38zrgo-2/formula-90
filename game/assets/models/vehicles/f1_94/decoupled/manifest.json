@@ -1,7 +1,8 @@
 {
   "asset": "F1_94",
-  "version": 1,
+  "version": 2,
   "standard": "Formula-90 GEVP decoupled visual asset",
+  "canonical_variant": "vehicle-studio-williams94-inspired",
   "coordinate_convention": {
     "+X": "vehicle right",
     "-X": "vehicle left",
@@ -10,30 +11,47 @@
     "+Z": "rear",
     "unit": "meter"
   },
-  "decoupling_strategy": {
-    "geometry_contains": [
-      "positions",
-      "triangles",
-      "normals",
-      "UV0",
-      "hierarchy",
-      "JNT_* pivots",
-      "DATUM_* references",
-      "texture-free placeholder materials"
+  "provenance": {
+    "build_ir_sha256": "A980A20709D44794F3649B54F8408D09646F6746FB3AB11E74291BB2F7612AE6",
+    "assembled_source_sha256": "34A1672FC87774D64286CD98BA9FA8C44720972E3658F1B2DEAD29C553B24038",
+    "canonicalizer": "blender/vehicle_studio/prepare_godot_livery.py",
+    "topology_repaired": true,
+    "uv0_rebuilt": true,
+    "surface_faces_preserved": true
+  },
+  "material_strategy": {
+    "type": "embedded_gltf_pbr",
+    "livery": "1994-inspired blue/white/yellow/red, without sponsor marks",
+    "materials": [
+      "F90_LIVERY_BLUE",
+      "F90_LIVERY_BLUE_LIGHT",
+      "F90_LIVERY_WHITE",
+      "F90_LIVERY_YELLOW",
+      "F90_LIVERY_RED",
+      "F90_CARBON",
+      "F90_RUBBER",
+      "F90_METAL",
+      "F90_HELMET",
+      "F90_LCD_GREEN"
     ],
-    "geometry_does_not_contain": [
-      "embedded images",
-      "embedded albedo textures",
-      "custom Godot shaders"
-    ],
-    "albedo": "one external PNG per mesh; original 64x64 atlas layout preserved; UV0 unchanged",
-    "reason": "avoid material/shader/texture embedding issues without introducing UV repack risk"
+    "external_albedo_binder": false
   },
   "geometry_assets": {
-    "assembly": "geometry/F1_94_geometry.glb",
-    "chassis_gevp": "geometry/F1_94_chassis_geometry.glb",
-    "wheel_front_canonical": "geometry/F1_94_wheel_front_geometry.glb",
-    "wheel_rear_canonical": "geometry/F1_94_wheel_rear_geometry.glb"
+    "chassis_gevp": {
+      "path": "geometry/F1_94_chassis_geometry.glb",
+      "sha256": "15D53AD3D2F5987B54185B532C6AF1F4015BE2A69DA52EA5150AA861AABCA340",
+      "mesh_count": 19
+    },
+    "wheel_front_canonical": {
+      "path": "geometry/F1_94_wheel_front_geometry.glb",
+      "sha256": "863CF2C642C126D790467D5717F99AE1FDAADEEE1166842FC41971E6679C46F6",
+      "mesh_count": 4
+    },
+    "wheel_rear_canonical": {
+      "path": "geometry/F1_94_wheel_rear_geometry.glb",
+      "sha256": "E5D6580C41EB09E93AB7824486A3FB707FB02F31604899243A1EDF75CD695B28",
+      "mesh_count": 4
+    }
   },
   "runtime_assets": {
     "chassis": "geometry/F1_94_chassis_geometry.glb",
@@ -42,321 +60,20 @@
     "wheel_instances": ["FL", "FR", "RL", "RR"],
     "shared_by_axle": true
   },
-  "meshes": [
-    {
-      "name": "GEO_AERO_FRONT_WING",
-      "role": "front_wing",
-      "material_slot": "MAT_GEO_AERO_FRONT_WING",
-      "albedo": "textures/albedo/GEO_AERO_FRONT_WING.png",
-      "vertices": 1260,
-      "triangles": 420,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_AERO_REAR_WING",
-      "role": "rear_wing",
-      "material_slot": "MAT_GEO_AERO_REAR_WING",
-      "albedo": "textures/albedo/GEO_AERO_REAR_WING.png",
-      "vertices": 2202,
-      "triangles": 734,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_BODY_INTERIOR",
-      "role": "chassis",
-      "material_slot": "MAT_GEO_BODY_INTERIOR",
-      "albedo": "textures/albedo/GEO_BODY_INTERIOR.png",
-      "vertices": 12,
-      "triangles": 4,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_CHASSIS",
-      "role": "chassis",
-      "material_slot": "MAT_GEO_CHASSIS",
-      "albedo": "textures/albedo/GEO_CHASSIS.png",
-      "vertices": 2376,
-      "triangles": 792,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_06",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_06",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_06.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_07",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_07",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_07.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_08",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_08",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_08.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_09",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_09",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_09.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_13",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_13",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_13.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_16",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_16",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_16.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_17",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_17",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_17.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_18",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_18",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_18.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_COCKPIT_LCD_INDICATOR",
-      "role": "cockpit",
-      "material_slot": "MAT_GEO_COCKPIT_LCD_INDICATOR",
-      "albedo": "textures/albedo/GEO_COCKPIT_LCD_INDICATOR.png",
-      "vertices": 6,
-      "triangles": 2,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_DRIVER_HELMET",
-      "role": "driver",
-      "material_slot": "MAT_GEO_DRIVER_HELMET",
-      "albedo": "textures/albedo/GEO_DRIVER_HELMET.png",
-      "vertices": 330,
-      "triangles": 110,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_NOSE",
-      "role": "nose",
-      "material_slot": "MAT_GEO_NOSE",
-      "albedo": "textures/albedo/GEO_NOSE.png",
-      "vertices": 606,
-      "triangles": 202,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_SUSPENSION_FL",
-      "role": "suspension",
-      "material_slot": "MAT_GEO_SUSPENSION_FL",
-      "albedo": "textures/albedo/GEO_SUSPENSION_FL.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_SUSPENSION_FR",
-      "role": "suspension",
-      "material_slot": "MAT_GEO_SUSPENSION_FR",
-      "albedo": "textures/albedo/GEO_SUSPENSION_FR.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_SUSPENSION_RL",
-      "role": "suspension",
-      "material_slot": "MAT_GEO_SUSPENSION_RL",
-      "albedo": "textures/albedo/GEO_SUSPENSION_RL.png",
-      "vertices": 144,
-      "triangles": 48,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_SUSPENSION_RR",
-      "role": "suspension",
-      "material_slot": "MAT_GEO_SUSPENSION_RR",
-      "albedo": "textures/albedo/GEO_SUSPENSION_RR.png",
-      "vertices": 144,
-      "triangles": 48,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FL_HUB",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FL_HUB",
-      "albedo": "textures/albedo/GEO_WHEEL_FL_HUB.png",
-      "vertices": 36,
-      "triangles": 12,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FL_TIRE_INNER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FL_TIRE_INNER",
-      "albedo": "textures/albedo/GEO_WHEEL_FL_TIRE_INNER.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FL_TIRE_OUTER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FL_TIRE_OUTER",
-      "albedo": "textures/albedo/GEO_WHEEL_FL_TIRE_OUTER.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FL_TREAD",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FL_TREAD",
-      "albedo": "textures/albedo/GEO_WHEEL_FL_TREAD.png",
-      "vertices": 120,
-      "triangles": 40,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FR_HUB",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FR_HUB",
-      "albedo": "textures/albedo/GEO_WHEEL_FR_HUB.png",
-      "vertices": 36,
-      "triangles": 12,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FR_TIRE_INNER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FR_TIRE_INNER",
-      "albedo": "textures/albedo/GEO_WHEEL_FR_TIRE_INNER.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FR_TIRE_OUTER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FR_TIRE_OUTER",
-      "albedo": "textures/albedo/GEO_WHEEL_FR_TIRE_OUTER.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_FR_TREAD",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_FR_TREAD",
-      "albedo": "textures/albedo/GEO_WHEEL_FR_TREAD.png",
-      "vertices": 120,
-      "triangles": 40,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RL_HUB",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RL_HUB",
-      "albedo": "textures/albedo/GEO_WHEEL_RL_HUB.png",
-      "vertices": 36,
-      "triangles": 12,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RL_TIRE_INNER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RL_TIRE_INNER",
-      "albedo": "textures/albedo/GEO_WHEEL_RL_TIRE_INNER.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RL_TIRE_OUTER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RL_TIRE_OUTER",
-      "albedo": "textures/albedo/GEO_WHEEL_RL_TIRE_OUTER.png",
-      "vertices": 120,
-      "triangles": 40,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RL_TREAD",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RL_TREAD",
-      "albedo": "textures/albedo/GEO_WHEEL_RL_TREAD.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RR_HUB",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RR_HUB",
-      "albedo": "textures/albedo/GEO_WHEEL_RR_HUB.png",
-      "vertices": 36,
-      "triangles": 12,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RR_TIRE_INNER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RR_TIRE_INNER",
-      "albedo": "textures/albedo/GEO_WHEEL_RR_TIRE_INNER.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RR_TIRE_OUTER",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RR_TIRE_OUTER",
-      "albedo": "textures/albedo/GEO_WHEEL_RR_TIRE_OUTER.png",
-      "vertices": 120,
-      "triangles": 40,
-      "has_uv0": true
-    },
-    {
-      "name": "GEO_WHEEL_RR_TREAD",
-      "role": "wheel",
-      "material_slot": "MAT_GEO_WHEEL_RR_TREAD",
-      "albedo": "textures/albedo/GEO_WHEEL_RR_TREAD.png",
-      "vertices": 180,
-      "triangles": 60,
-      "has_uv0": true
-    }
-  ]
+  "dimensions_m": {
+    "wheelbase": 3.066684,
+    "front_track": 1.640276,
+    "rear_track": 1.494121,
+    "front_tire_radius": 0.348652,
+    "rear_tire_radius": 0.312559,
+    "front_tire_width": 0.345344,
+    "rear_tire_width": 0.331492,
+    "ground_y": -0.322983
+  },
+  "wheel_anchors_m": {
+    "FL": [-0.820138, 0.025669, -1.533342],
+    "FR": [0.820138, 0.025669, -1.533342],
+    "RL": [-0.747060, -0.010424, 1.533342],
+    "RR": [0.747060, -0.010424, 1.533342]
+  }
 }

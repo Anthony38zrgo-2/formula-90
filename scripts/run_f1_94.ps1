@@ -55,9 +55,9 @@ if ($manifest.asset -ne 'F1_94' -or $manifest.standard -ne 'Formula-90 GEVP deco
     throw 'El manifest desacoplado F1-94 no cumple el contrato esperado.'
 }
 $expectedAssets = @{
-    'geometry\F1_94_chassis_geometry.glb' = '5C5CE50E0B94B027F1D8A835E860DC67F87DECAA4AEB17DFD87674FBF22F4AB2'
-    'geometry\F1_94_wheel_front_geometry.glb' = '0F9923994E8AC8E328EBC621358D3AA7BE86C61BCDB0C65FD5B0F4676B8F2D53'
-    'geometry\F1_94_wheel_rear_geometry.glb' = '32A9F4E78F9B7CCEDFFF72ACA851E54BA650A89D639B08622390CE451A2E1D75'
+    ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
+    ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
+    ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
 }
 $runtimeDir = Split-Path -Parent $manifestPath
 foreach ($relativePath in $expectedAssets.Keys) {
