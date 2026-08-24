@@ -1,4 +1,4 @@
-import type { BuildIRResponse, MaterializationResponse, CadResponse, OnboardingResponse, OnboardingState, Preset, PreviewRecipe, ProjectSnapshot } from './types'
+import type { BuildIRResponse, MaterializationResponse, CadResponse, DimensionProfile, OnboardingResponse, OnboardingState, Preset, PreviewRecipe, ProjectSnapshot } from './types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -14,6 +14,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getPresets(): Promise<Preset[]> {
   return (await request<{ presets: Preset[] }>('/api/onboarding/presets')).presets
+}
+
+export async function getDimensionProfiles(): Promise<DimensionProfile[]> {
+  return (await request<{ profiles: DimensionProfile[] }>('/api/dimension-profiles')).profiles
 }
 
 export function scanPreset(presetId: string): Promise<OnboardingResponse> {

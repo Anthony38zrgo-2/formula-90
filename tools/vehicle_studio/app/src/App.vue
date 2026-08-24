@@ -1,17 +1,18 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent, onMounted, ref } from 'vue'
-import { compileBuildIR, materializeBuild, compileCadViews, compileInitialRevision, getPresets, scanPreset, sendOnboardingCommand } from './api'
+import { compileBuildIR, materializeBuild, compileCadViews, compileInitialRevision, getDimensionProfiles, getPresets, scanPreset, sendOnboardingCommand } from './api'
 import CadViewPanels from './CadViewPanels.vue'
 import DiagnosticsPanel from './DiagnosticsPanel.vue'
 import ProjectInspector from './ProjectInspector.vue'
 import OnboardingPanel from './OnboardingPanel.vue'
 import ParameterInspector from './ParameterInspector.vue'
-import type { BuildIRResponse, MaterializationResponse, CadResponse, OnboardingResponse, Preset, ProjectSnapshot } from './types'
+import type { BuildIRResponse, MaterializationResponse, CadResponse, DimensionProfile, OnboardingResponse, Preset, ProjectSnapshot } from './types'
 
 const Preview3D = defineAsyncComponent(() => import('./Preview3D.vue'))
 
 const presets = ref<Preset[]>([])
+const dimensionProfiles = ref<DimensionProfile[]>([])
 const session = ref<OnboardingResponse | null>(null)
 const snapshot = ref<ProjectSnapshot | null>(null)
 const cad = ref<CadResponse | null>(null)
@@ -24,6 +25,7 @@ const errorMessage = ref('')
 onMounted(async () => {
   try {
     presets.value = await getPresets()
+    dimensionProfiles.value = await getDimensionProfiles()
   } catch (error) {
     errorMessage.value = messageOf(error)
   }
@@ -193,6 +195,7 @@ function messageOf(error: unknown) {
         <ProjectInspector :snapshot="snapshot" />
         <ParameterInspector
           :parameters="snapshot.document.parameters"
+          :profiles="dimensionProfiles"
           :build-plan="buildPlan"
           :busy="busy"
           :materialization="materialization"

@@ -43,6 +43,15 @@ export interface Preset {
   source_count: number
 }
 
+export interface DimensionProfile {
+  profile_id: string
+  label: string
+  targets: Record<string, number>
+  width_policies: Record<string, string>
+  constraints: Record<string, number>
+  notes: string[]
+}
+
 export interface SemanticSuggestion {
   suggestion_id: string
   semantic_kind: 'component' | 'frame'

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { BuildIRResponse, MaterializationResponse, Parameter } from './types'
+import type { BuildIRResponse, DimensionProfile, MaterializationResponse, Parameter } from './types'
 
 const props = defineProps<{
   parameters: Parameter[]
+  profiles?: DimensionProfile[]
   buildPlan: BuildIRResponse | null
   busy: boolean
   materialization?: MaterializationResponse | null
@@ -26,6 +27,14 @@ function setPercentage(parameter: Parameter, event: Event) {
 function label(role?: string) {
   return (role ?? 'parameter').replaceAll('_', ' ')
 }
+
+function applyProfile(profile: DimensionProfile) {
+  for (const parameter of props.parameters) {
+    const target = profile.targets[parameter.parameter_id]
+    if (target !== undefined) values[parameter.parameter_id] = target
+  }
+  Object.assign(policies, profile.width_policies)
+}
 </script>
 
 <template>
@@ -36,6 +45,19 @@ function label(role?: string) {
         <h2 class="mt-1 font-semibold">Dimensiones globales</h2>
       </div>
       <span class="rounded bg-amber-400/10 px-2 py-1 text-[10px] text-amber-300">STAGING ONLY</span>
+    </div>
+    <div v-if="profiles?.length" class="mt-4 rounded border border-sky-400/25 bg-sky-400/5 p-3">
+      <p class="text-[10px] uppercase tracking-[0.18em] text-sky-300">Perfiles dimensionales</p>
+      <button
+        v-for="profile in profiles"
+        :key="profile.profile_id"
+        class="mt-2 w-full rounded border border-sky-300/40 px-3 py-2 text-xs font-semibold text-sky-200 disabled:opacity-30"
+        :disabled="busy"
+        @click="applyProfile(profile)"
+      >
+        Aplicar {{ profile.label }}
+      </button>
+      <p class="mt-2 text-[10px] text-slate-400">Aplica medidas al formulario; compila el plan para materializar.</p>
     </div>
     <div class="mt-4 grid gap-5">
       <label v-for="parameter in parameters" :key="parameter.parameter_id" class="grid gap-2">

@@ -21,4 +21,26 @@ describe('parameter inspector', () => {
     const command = wrapper.emitted('compile')?.[0]?.[0] as Record<string, number>
     expect(command['parameter-wheelbase']).toBeCloseTo(3.045)
   })
+
+  it('applies the nominal 2021 profile without compiling implicitly', async () => {
+    const wrapper = mount(ParameterInspector, {
+      props: {
+        busy: false,
+        buildPlan: null,
+        parameters: [{
+          parameter_id: 'parameter-wheelbase', semantic_role: 'wheelbase',
+          absolute_value: 2.9, baseline_value: 2.9, minimum: 2.465,
+          maximum: 3.77, unit: 'meter',
+        }],
+        profiles: [{
+          profile_id: 'f1-2021-nominal', label: 'F1 2021 nominal (3.640 m)',
+          targets: { 'parameter-wheelbase': 3.64 }, width_policies: {},
+          constraints: {}, notes: [],
+        }],
+      },
+    })
+    await wrapper.get('button').trigger('click')
+    expect((wrapper.get('input[type="number"]').element as HTMLInputElement).value).toBe('3.64')
+    expect(wrapper.emitted('compile')).toBeUndefined()
+  })
 })
