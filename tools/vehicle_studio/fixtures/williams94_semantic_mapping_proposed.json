@@ -1,0 +1,171 @@
+{
+  "mapping_contract_version": 1,
+  "mapping_id": "williams94-semantic-mapping-proposed",
+  "status": "HUMAN_ACCEPTED",
+  "source_package": {
+    "path": "blender/williams94_wheels_retextured",
+    "covered_file_count": 55,
+    "fingerprint_sha256": "3C7B996CFAB2EDF263E223A06846BF84C6822CD343D21E03561CD9AD19FB90A9",
+    "provenance_status": "IMPORTED_BASELINE"
+  },
+  "authoring_modules": [
+    {
+      "path": "geometry/F1_94_chassis_core_geometry.glb",
+      "sha256": "E4A0DA9642ED9C3E5607C27460BFEF70DF06A264D34B84103C7405B067ACA66C",
+      "primitive_mappings": [
+        { "mesh": "GEO_CHASSIS", "primitive": 0, "role": "chassis", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_BODY_INTERIOR", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_06", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_07", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_08", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_09", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_13", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_16", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_17", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_18", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_COCKPIT_LCD_INDICATOR", "primitive": 0, "role": "cockpit", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_DRIVER_HELMET", "primitive": 0, "role": "driver", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_SUSPENSION_FL", "primitive": 0, "role": "suspension_fl", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_SUSPENSION_FR", "primitive": 0, "role": "suspension_fr", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_SUSPENSION_RL", "primitive": 0, "role": "suspension_rl", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_SUSPENSION_RR", "primitive": 0, "role": "suspension_rr", "status": "SOURCE_EXPLICIT" }
+      ]
+    },
+    {
+      "path": "geometry/F1_94_front_wing_nose_geometry.glb",
+      "sha256": "0C68F2D899F95C73095E8DA5A939586D4C903B27F91E6F7A98DD85273FD9DAD0",
+      "primitive_mappings": [
+        { "mesh": "GEO_NOSE", "primitive": 0, "role": "nose", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_AERO_FRONT_WING", "primitive": 0, "role": "front_wing", "status": "SOURCE_EXPLICIT" }
+      ]
+    },
+    {
+      "path": "geometry/F1_94_rear_wing_geometry.glb",
+      "sha256": "006BECE9B7F49FE2D851DF6A850F61B43E62D00A8329042A92A6C2A0B8F2BF9D",
+      "primitive_mappings": [
+        { "mesh": "GEO_AERO_REAR_WING", "primitive": 0, "role": "rear_wing", "status": "SOURCE_EXPLICIT" }
+      ]
+    },
+    {
+      "path": "geometry/F1_94_wheel_front_geometry.glb",
+      "sha256": "31AAC43D41A283AED8E5E68BA6F3380EAF8968BD0066AC1C5FAF35CB7C06BA03",
+      "primitive_mappings": [
+        { "mesh": "GEO_WHEEL_HUB", "primitive": 0, "role": "wheel_front", "subrole": "hub", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_WHEEL_TIRE_INNER", "primitive": 0, "role": "wheel_front", "subrole": "tire_inner", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_WHEEL_TIRE_OUTER", "primitive": 0, "role": "wheel_front", "subrole": "tire_outer", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_WHEEL_TREAD", "primitive": 0, "role": "wheel_front", "subrole": "tread", "status": "SOURCE_EXPLICIT" }
+      ]
+    },
+    {
+      "path": "geometry/F1_94_wheel_rear_geometry.glb",
+      "sha256": "62A53860EE233DC3B6FC3A4CDCF0128B091B9050530216F5C78CBED4D03CB6D9",
+      "primitive_mappings": [
+        { "mesh": "GEO_WHEEL_HUB", "primitive": 0, "role": "wheel_rear", "subrole": "hub", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_WHEEL_TIRE_INNER", "primitive": 0, "role": "wheel_rear", "subrole": "tire_inner", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_WHEEL_TIRE_OUTER", "primitive": 0, "role": "wheel_rear", "subrole": "tire_outer", "status": "SOURCE_EXPLICIT" },
+        { "mesh": "GEO_WHEEL_TREAD", "primitive": 0, "role": "wheel_rear", "subrole": "tread", "status": "SOURCE_EXPLICIT" }
+      ]
+    }
+  ],
+  "ignored_duplicate_modules": [
+    {
+      "path": "geometry/F1_94_chassis_geometry.glb",
+      "sha256": "5094201C0163C38308AF02EA345EF8A3A9355B66298FB2B2D8204E66F2211B32",
+      "reason": "compatibility assembly duplicates the canonical modular core/front/rear authoring sources",
+      "primitive_count": 19,
+      "status": "IGNORED_WITH_REASON"
+    }
+  ],
+  "frames": [
+    { "source_node": "DATUM_VEHICLE_ORIGIN", "frame_id": "frame-vehicle-origin", "role": "vehicle_origin", "translation_m": [0, 0, 0], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "DATUM_FRONT_AXLE_CENTER", "frame_id": "frame-front-axle", "role": "front_axle_center", "translation_m": [0, -0.0060272525, -1.4603255125], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "DATUM_REAR_AXLE_CENTER", "frame_id": "frame-rear-axle", "role": "rear_axle_center", "translation_m": [0, 0.0060272525, 1.4603255125], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_WHEEL_FL", "frame_id": "frame-wheel-fl", "role": "wheel_fl", "translation_m": [-0.796250495, -0.0060272525, -1.4603255125], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_WHEEL_FR", "frame_id": "frame-wheel-fr", "role": "wheel_fr", "translation_m": [0.796250495, -0.0060272525, -1.4603255125], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_WHEEL_RL", "frame_id": "frame-wheel-rl", "role": "wheel_rl", "translation_m": [-0.76230651, 0.0060272525, 1.4603255125], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_WHEEL_RR", "frame_id": "frame-wheel-rr", "role": "wheel_rr", "translation_m": [0.76230651, 0.0060272525, 1.4603255125], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_FRONT_WING_MOUNT", "frame_id": "frame-front-wing-mount", "role": "front_wing_mount", "translation_m": [-0.0725456679, -0.0114166205, -1.8533786154], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_NOSE_CHASSIS", "frame_id": "frame-nose-chassis", "role": "nose_chassis", "translation_m": [-0.0219624914, 0.0295350219, -1.6418814325], "status": "SOURCE_EXPLICIT" },
+    { "source_node": "JNT_REAR_WING_MOUNT", "frame_id": "frame-rear-wing-mount", "role": "rear_wing_mount", "translation_m": [0.0017925734, 0.2208244668, 1.5940856847], "status": "SOURCE_EXPLICIT" }
+  ],
+  "deformation_region_proposals": [
+    {
+      "region_id": "region-nose",
+      "role": "nose",
+      "source_mesh": "GEO_NOSE",
+      "source_evidence": "body_refinement_report.json",
+      "proposal": "entire primitive with fixed front-wing and nose/chassis interface vertex sets",
+      "binding_status": "REQUIRES_VERTEX_CONFIRMATION"
+    },
+    {
+      "region_id": "region-sidepod-left",
+      "role": "sidepod_left",
+      "source_mesh": "GEO_CHASSIS",
+      "source_evidence": "sidepods_refinement_report.json",
+      "proposal": "left half of reported 836-original-face coke-bottle selection; floor, airbox crown and rear suspension low zone protected",
+      "binding_status": "REPORT_ONLY_NO_PERSISTENT_FACE_IDS"
+    },
+    {
+      "region_id": "region-sidepod-right",
+      "role": "sidepod_right",
+      "source_mesh": "GEO_CHASSIS",
+      "source_evidence": "sidepods_refinement_report.json",
+      "proposal": "X-mirror of accepted left binding",
+      "binding_status": "REPORT_ONLY_NO_PERSISTENT_FACE_IDS"
+    },
+    {
+      "region_id": "region-engine-cover",
+      "role": "engine_cover",
+      "source_mesh": "GEO_CHASSIS",
+      "source_evidence": "body_refinement_report.json",
+      "proposal": "reported upper-shell support region with central affected faces; cockpit and floor protected",
+      "binding_status": "REPORT_ONLY_NO_PERSISTENT_FACE_IDS"
+    },
+    {
+      "region_id": "region-front-wing",
+      "role": "front_wing",
+      "source_mesh": "GEO_AERO_FRONT_WING",
+      "source_evidence": "source object identity",
+      "proposal": "whole-object transform in v1; per-element editing unavailable until element bindings are confirmed",
+      "binding_status": "OBJECT_BOUND_LIMITED"
+    },
+    {
+      "region_id": "region-rear-wing",
+      "role": "rear_wing",
+      "source_mesh": "GEO_AERO_REAR_WING",
+      "source_evidence": "source object identity",
+      "proposal": "whole-object transform in v1; per-element editing unavailable until element bindings are confirmed",
+      "binding_status": "OBJECT_BOUND_LIMITED"
+    }
+  ],
+  "protected_region_proposals": [
+    { "region_id": "protected-cockpit", "source_mesh": "GEO_CHASSIS", "status": "REQUIRES_VERTEX_CONFIRMATION" },
+    { "region_id": "protected-floor", "source_mesh": "GEO_CHASSIS", "status": "REQUIRES_VERTEX_CONFIRMATION" },
+    { "region_id": "protected-airbox-crown", "source_mesh": "GEO_CHASSIS", "status": "REQUIRES_VERTEX_CONFIRMATION" },
+    { "region_id": "protected-rear-suspension-low-zone", "source_mesh": "GEO_CHASSIS", "status": "REQUIRES_VERTEX_CONFIRMATION" }
+  ],
+  "coverage": {
+    "source_primitive_occurrences": 46,
+    "canonical_mapped_primitive_occurrences": 27,
+    "ignored_duplicate_primitive_occurrences": 19,
+    "unclassified_primitive_occurrences": 0,
+    "requested_deformation_regions": 6,
+    "regions_with_persistent_vertex_bindings": 0,
+    "regions_requiring_onboarding_confirmation": 6
+  },
+  "human_gate": {
+    "decision_required": false,\n    "decision": "ACCEPTED",
+    "accepts": [
+      "modular GLBs as authoring authority",
+      "full chassis GLB as ignored compatibility duplicate",
+      "source-explicit component and frame roles",
+      "interactive confirmation required for all persistent deform-region bindings",
+      "whole-object-only wing editing until element bindings are confirmed"
+    ],
+    "does_not_accept": [
+      "unverified vertex or face selections",
+      "historical refinement reproducibility",
+      "visual quality of any generated variant"
+    ]
+  }
+}

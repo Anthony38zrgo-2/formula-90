@@ -1,0 +1,547 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://formula90.local/schemas/vehicle_document_v1.schema.json",
+  "title": "Formula-90 VehicleDocument v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "revision_id",
+    "source",
+    "coordinate_system",
+    "component_map",
+    "frames",
+    "dimensions",
+    "stations",
+    "deform_regions",
+    "parameters",
+    "material_regions",
+    "material_recipes",
+    "livery_layers",
+    "view_definitions",
+    "validation_policy",
+    "metadata"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project_id": { "$ref": "#/$defs/id" },
+    "revision_id": { "$ref": "#/$defs/id" },
+    "source": { "$ref": "#/$defs/source" },
+    "coordinate_system": { "$ref": "#/$defs/coordinate_system" },
+    "component_map": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "frames": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/frame" }
+    },
+    "dimensions": { "$ref": "#/$defs/dimensions" },
+    "stations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/station" }
+    },
+    "deform_regions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/deform_region" }
+    },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+    "material_regions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/material_region" }
+    },
+    "material_recipes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/material_recipe" }
+    },
+    "livery_layers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/livery_layer" }
+    },
+    "view_definitions": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/view_definition" }
+    },
+    "validation_policy": { "$ref": "#/$defs/validation_policy" },
+    "metadata": { "$ref": "#/$defs/string_map" }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+      "maxLength": 128
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9A-F]{64}$"
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?![/\\\\])(?!.*(?:^|[/\\\\])\\.\\.(?:[/\\\\]|$))[^\\r\\n]+$"
+    },
+    "finite_number": {
+      "type": "number"
+    },
+    "non_negative_number": {
+      "type": "number",
+      "minimum": 0
+    },
+    "positive_number": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "vector2": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/finite_number" },
+        { "$ref": "#/$defs/finite_number" }
+      ],
+      "items": false
+    },
+    "vector3": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/finite_number" },
+        { "$ref": "#/$defs/finite_number" },
+        { "$ref": "#/$defs/finite_number" }
+      ],
+      "items": false
+    },
+    "quaternion": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/finite_number" },
+        { "$ref": "#/$defs/finite_number" },
+        { "$ref": "#/$defs/finite_number" },
+        { "$ref": "#/$defs/finite_number" }
+      ],
+      "items": false
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["translation_m", "rotation_xyzw", "scale"],
+      "properties": {
+        "translation_m": { "$ref": "#/$defs/vector3" },
+        "rotation_xyzw": { "$ref": "#/$defs/quaternion" },
+        "scale": { "$ref": "#/$defs/vector3" }
+      }
+    },
+    "string_map": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path",
+        "size_bytes",
+        "sha256",
+        "evaluated_geometry_sha256",
+        "provenance_status"
+      ],
+      "properties": {
+        "kind": { "enum": ["glb", "blend"] },
+        "path": { "$ref": "#/$defs/relative_path" },
+        "size_bytes": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "evaluated_geometry_sha256": { "$ref": "#/$defs/sha256" },
+        "blender_version": { "type": ["string", "null"], "maxLength": 64 },
+        "provenance_status": {
+          "enum": ["IMPORTED_BASELINE", "REPRODUCIBLE_SOURCE"]
+        }
+      }
+    },
+    "coordinate_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit",
+        "right_axis",
+        "up_axis",
+        "forward_axis",
+        "ground_y_m"
+      ],
+      "properties": {
+        "unit": { "const": "meter" },
+        "right_axis": { "const": "+X" },
+        "up_axis": { "const": "+Y" },
+        "forward_axis": { "const": "-Z" },
+        "ground_y_m": { "$ref": "#/$defs/finite_number" }
+      }
+    },
+    "semantic_role": {
+      "enum": [
+        "vehicle_root",
+        "chassis",
+        "nose",
+        "front_wing",
+        "rear_wing",
+        "sidepod_left",
+        "sidepod_right",
+        "engine_cover",
+        "cockpit",
+        "floor",
+        "diffuser",
+        "suspension_fl",
+        "suspension_fr",
+        "suspension_rl",
+        "suspension_rr",
+        "wheel_front",
+        "wheel_rear",
+        "driver",
+        "other"
+      ]
+    },
+    "source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_path", "object_ids", "primitive_ids"],
+      "properties": {
+        "source_path": { "$ref": "#/$defs/relative_path" },
+        "object_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "primitive_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "semantic_role",
+        "required_for_runtime",
+        "source_binding",
+        "deform_region_ids",
+        "material_region_ids"
+      ],
+      "properties": {
+        "component_id": { "$ref": "#/$defs/id" },
+        "semantic_role": { "$ref": "#/$defs/semantic_role" },
+        "required_for_runtime": { "type": "boolean" },
+        "source_binding": { "$ref": "#/$defs/source_binding" },
+        "deform_region_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "material_region_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "frame_role": {
+      "enum": [
+        "vehicle_origin",
+        "front_axle_center",
+        "rear_axle_center",
+        "wheel_fl",
+        "wheel_fr",
+        "wheel_rl",
+        "wheel_rr",
+        "front_wing_mount",
+        "rear_wing_mount",
+        "nose_chassis",
+        "wheel_center",
+        "wheel_inboard_face",
+        "wheel_outboard_face",
+        "tire_contact_patch",
+        "suspension_endpoint",
+        "other"
+      ]
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "frame_id",
+        "semantic_role",
+        "parent_frame_id",
+        "transform",
+        "source_binding",
+        "confirmation_status"
+      ],
+      "properties": {
+        "frame_id": { "$ref": "#/$defs/id" },
+        "semantic_role": { "$ref": "#/$defs/frame_role" },
+        "parent_frame_id": {
+          "oneOf": [
+            { "$ref": "#/$defs/id" },
+            { "type": "null" }
+          ]
+        },
+        "transform": { "$ref": "#/$defs/transform" },
+        "source_binding": {
+          "oneOf": [
+            { "$ref": "#/$defs/source_binding" },
+            { "type": "null" }
+          ]
+        },
+        "confirmation_status": {
+          "enum": ["SOURCE_EXPLICIT", "HUMAN_CONFIRMED", "UNRESOLVED"]
+        }
+      }
+    },
+    "tire_dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["radius_m", "width_m", "width_policy"],
+      "properties": {
+        "radius_m": { "$ref": "#/$defs/positive_number" },
+        "width_m": { "$ref": "#/$defs/positive_number" },
+        "width_policy": {
+          "enum": ["centered", "inboard_fixed", "outboard_fixed"]
+        }
+      }
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wheelbase_m",
+        "front_track_m",
+        "rear_track_m",
+        "body_width_m",
+        "overall_width_m",
+        "length_m",
+        "height_m",
+        "front_overhang_m",
+        "rear_overhang_m",
+        "front_tire",
+        "rear_tire"
+      ],
+      "properties": {
+        "wheelbase_m": { "$ref": "#/$defs/positive_number" },
+        "front_track_m": { "$ref": "#/$defs/positive_number" },
+        "rear_track_m": { "$ref": "#/$defs/positive_number" },
+        "body_width_m": { "$ref": "#/$defs/positive_number" },
+        "overall_width_m": { "$ref": "#/$defs/positive_number" },
+        "length_m": { "$ref": "#/$defs/positive_number" },
+        "height_m": { "$ref": "#/$defs/positive_number" },
+        "front_overhang_m": { "$ref": "#/$defs/non_negative_number" },
+        "rear_overhang_m": { "$ref": "#/$defs/non_negative_number" },
+        "front_tire": { "$ref": "#/$defs/tire_dimensions" },
+        "rear_tire": { "$ref": "#/$defs/tire_dimensions" }
+      }
+    },
+    "station": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "station_id",
+        "semantic_role",
+        "longitudinal_position_m",
+        "profile_controls"
+      ],
+      "properties": {
+        "station_id": { "$ref": "#/$defs/id" },
+        "semantic_role": { "$ref": "#/$defs/semantic_role" },
+        "longitudinal_position_m": { "$ref": "#/$defs/finite_number" },
+        "profile_controls": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/finite_number" }
+        }
+      }
+    },
+    "vertex_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_object_id", "source_primitive_id", "vertex_ids"],
+      "properties": {
+        "source_object_id": { "$ref": "#/$defs/id" },
+        "source_primitive_id": { "$ref": "#/$defs/id" },
+        "vertex_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "deform_region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "region_id",
+        "semantic_role",
+        "vertex_bindings",
+        "protected_boundary_ids",
+        "symmetry_policy",
+        "falloff"
+      ],
+      "properties": {
+        "region_id": { "$ref": "#/$defs/id" },
+        "semantic_role": { "$ref": "#/$defs/semantic_role" },
+        "vertex_bindings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/vertex_binding" }
+        },
+        "protected_boundary_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "symmetry_policy": {
+          "enum": ["mirror_x_required", "mirror_x_default", "independent"]
+        },
+        "falloff": {
+          "enum": ["linear", "smoothstep", "cubic", "explicit_weights"]
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "parameter_id",
+        "kind",
+        "absolute_value",
+        "baseline_value",
+        "percentage",
+        "unit",
+        "minimum",
+        "maximum",
+        "dependency_ids"
+      ],
+      "properties": {
+        "parameter_id": { "$ref": "#/$defs/id" },
+        "kind": {
+          "enum": ["dimension", "ratio", "angle", "enum", "boolean"]
+        },
+        "absolute_value": {},
+        "baseline_value": {},
+        "percentage": { "$ref": "#/$defs/finite_number" },
+        "unit": { "enum": ["meter", "millimeter", "degree", "ratio", "none"] },
+        "minimum": {},
+        "maximum": {},
+        "dependency_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "material_region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["region_id", "component_ids", "source_material_ids"],
+      "properties": {
+        "region_id": { "$ref": "#/$defs/id" },
+        "component_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "source_material_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        }
+      }
+    },
+    "material_recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recipe_id", "family", "library_id", "parameters"],
+      "properties": {
+        "recipe_id": { "$ref": "#/$defs/id" },
+        "family": {
+          "enum": [
+            "painted_composite",
+            "carbon_fiber",
+            "metal",
+            "rubber",
+            "plastic",
+            "glass",
+            "emissive"
+          ]
+        },
+        "library_id": { "$ref": "#/$defs/id" },
+        "parameters": { "type": "object" }
+      }
+    },
+    "livery_layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layer_id",
+        "material_region_id",
+        "kind",
+        "source_path",
+        "source_sha256",
+        "order",
+        "opacity",
+        "blend_mode",
+        "transform"
+      ],
+      "properties": {
+        "layer_id": { "$ref": "#/$defs/id" },
+        "material_region_id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["vector", "raster"] },
+        "source_path": { "$ref": "#/$defs/relative_path" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "order": { "type": "integer", "minimum": 0 },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "blend_mode": { "enum": ["normal", "multiply", "screen", "overlay"] },
+        "transform": { "$ref": "#/$defs/transform" }
+      }
+    },
+    "view_definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "view_id",
+        "kind",
+        "horizontal_axis",
+        "vertical_axis",
+        "depth_axis",
+        "units",
+        "clip_bounds_m"
+      ],
+      "properties": {
+        "view_id": { "$ref": "#/$defs/id" },
+        "kind": { "enum": ["top", "side", "front", "rear", "section", "uv"] },
+        "horizontal_axis": { "enum": ["+X", "-X", "+Y", "-Y", "+Z", "-Z"] },
+        "vertical_axis": { "enum": ["+X", "-X", "+Y", "-Y", "+Z", "-Z"] },
+        "depth_axis": { "enum": ["+X", "-X", "+Y", "-Y", "+Z", "-Z"] },
+        "units": { "const": "meter" },
+        "clip_bounds_m": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/vector2" },
+            { "$ref": "#/$defs/vector2" }
+          ],
+          "items": false
+        }
+      }
+    },
+    "validation_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topology_changes_allowed",
+        "symmetry_default",
+        "ground_contact_required",
+        "uv_preservation_required",
+        "source_mutation_allowed",
+        "tolerance_m"
+      ],
+      "properties": {
+        "topology_changes_allowed": { "const": false },
+        "symmetry_default": { "type": "boolean" },
+        "ground_contact_required": { "const": true },
+        "uv_preservation_required": { "const": true },
+        "source_mutation_allowed": { "const": false },
+        "tolerance_m": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    }
+  }
+}
