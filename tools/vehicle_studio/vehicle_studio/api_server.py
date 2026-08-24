@@ -27,6 +27,7 @@ from .semantic_suggestions import suggest_semantics
 
 WILLIAMS_94_ANCHORS = "blender/williams94_wheels_retextured/wheel_anchor_map.json"
 WILLIAMS_94_PREVIEW = "blender/williams94_wheels_retextured/geometry/F1_94_chassis_geometry.glb"
+WILLIAMS_94_TEXTURE_ROOT = "blender/williams94_wheels_retextured/textures/albedo"
 WILLIAMS_94_SOURCES = (
     "blender/williams94_wheels_retextured/geometry/F1_94_chassis_core_geometry.glb",
     "blender/williams94_wheels_retextured/geometry/F1_94_front_wing_nose_geometry.glb",
@@ -81,11 +82,13 @@ class OnboardingController:
         ))
         for index, item in enumerate(suggestions["suggestions"], 1):
             item["suggestion_id"] = f"suggestion-{index:04d}"
+        material_sources = self._williams_material_sources()
         aggregate = sha256(
             canonical_json_bytes([
                 {"path": scan["source"]["path"], "sha256": scan["source"]["sha256"]}
                 for scan in scans
-            ])
+            ] + [{"path": item["path"], "sha256": item["sha256"]}
+                 for item in material_sources])
         ).hexdigest().upper()
         materialization_source = scan_glb(
             WILLIAMS_94_PREVIEW, repo_root=self.repo_root, full=False
@@ -94,6 +97,7 @@ class OnboardingController:
             "path": "blender/williams94_wheels_retextured",
             "sha256": aggregate,
             "files": [scan["source"] for scan in scans],
+            "material_sources": material_sources,
             "baseline_dimensions": self._williams_baseline_dimensions(),
             "materialization_source": materialization_source,
         }
@@ -113,6 +117,21 @@ class OnboardingController:
             "suggestions": suggestions["suggestions"],
             "onboarding": session.snapshot(),
         }
+
+    def _williams_material_sources(self) -> list[dict[str, Any]]:
+        root = self.repo_root / WILLIAMS_94_TEXTURE_ROOT
+        results = []
+        for path in sorted(root.glob("*.png"), key=lambda item: item.name):
+            relative = path.relative_to(self.repo_root).as_posix()
+            results.append({
+                "path": relative,
+                "sha256": sha256(path.read_bytes()).hexdigest().upper(),
+                "size_bytes": path.stat().st_size,
+                "material_slot": f"MAT_{path.stem}",
+            })
+        if not results:
+            raise APIError("MATERIAL_SOURCES_MISSING", "Williams albedo sources do not exist", 404)
+        return results
 
     def _williams_baseline_dimensions(self) -> dict[str, float]:
         data = json.loads((self.repo_root / WILLIAMS_94_ANCHORS).read_text(encoding="utf-8"))

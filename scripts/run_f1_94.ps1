@@ -2,7 +2,7 @@
 param(
     [string]$GodotPath,
     [ValidateSet('1994', '2009')]
-    [string]$VehicleVariant = '1994',
+    [string]$VehicleVariant = '2009',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
     [switch]$SmokeAudio,
@@ -21,7 +21,7 @@ $manifestPath = if ($is2009Variant) {
 } else {
     Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
 }
-$variantLabel = if ($is2009Variant) { 'F1 2009 Williams FW31 dimensional' } else { 'F1 1994 canonical' }
+$variantLabel = if ($is2009Variant) { 'F1 2009 Williams FW31 canonical' } else { 'F1 1994 legacy' }
 $trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
 $trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
 $trackConfigPath = Join-Path $root 'blender\track_pipeline\configs\la_chutana.json'

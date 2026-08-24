@@ -6,5 +6,5 @@
 [resource]
 script = ExtResource("1")
 id = &"f1_2009_fw31"
-display_name = "F1 2009 Williams FW31 Dimensions"
+display_name = "F1 2009 Williams FW31 Canonical"
 vehicle_scene = ExtResource("2")

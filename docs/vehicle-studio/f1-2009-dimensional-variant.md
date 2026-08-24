@@ -1,10 +1,13 @@
-# Variante dimensional F1 2009 · Williams FW31
+# Canónico F1 2009 · Williams FW31
 
-Status: `READY_FOR_HUMAN_GATE`
+Status: `CANONICAL`
 
 La variante parte directamente del F1-94 canónico remasterizado y aplica un
 perfil dimensional reproducible mediante VehicleBuildIR. La variante 2021
 anterior queda retirada del runtime y del selector de Vehicle Studio.
+
+Desde esta revisión, `run_f1_94.ps1` inicia este vehículo por defecto. El F1-94
+anterior se conserva como variante legacy mediante `-VehicleVariant 1994`.
 
 ## Fuentes y criterio
 
@@ -35,20 +38,26 @@ y track cierren exactamente la envolvente FIA de 1.800 m:
 La escala axial es simétrica alrededor de cada anclaje. Los centros de las
 ruedas no cambian con el ancho y ambos ejes mantienen contacto en
 `Y = -0.32298276035985446 m`. La fuente F1-94 no se modifica, y se conservan
-topología y pertenencia UV.
+topología y pertenencia UV. Los albedos externos declarados por el asset base
+se enlazan por slot semántico y se incrustan en los GLB publicados, por lo que
+el resultado no depende de un binder de materiales específico de Godot. La
+importación fija `Embed as Basis Universal` para evitar PNG derivados en el
+árbol de fuentes.
 
 ## Evidencia de materialización
 
-- BuildIR: `0DDB18624C47C2EF97059B844F3BBFE821E99059A4F2912EADCECAF6239960CC`
-- Variante staged: `tools/vehicle_studio/staging/0ddb18624c47c2ef97059b844f3bbfe821e99059a4f2912eadcecaf6239960cc`
-- `vehicle.blend`: `B2ED167E344816B95C612F56D326931C5D17815B23D486B25A1E0666B3BAA815`
-- `vehicle.glb`: `08A3A326C2389D960A73CC6356579319CE9F28A8895E6D0ED68BF94A1AD619D2`
-- `wheel-front.glb`: `5288BBCE6076DC9FB314D2B18FC48C81F37B44B756B26BD65A8ADEF978BFF4DD`
-- `wheel-rear.glb`: `114C68963217460E78543BD3616098998D8D400BCF2EFAACF7381673CFF9A49A`
-- `vehicle-preview.glb`: `0C275BF4AB0A6BB66620DD32EE1C3E1C0C458EB60C69F71829177A6308EBE670`
+- BuildIR: `BBAB3FD22D24545D56FB2B4492FCA80C888D2BDAB320DDBF1D38F0F395181EFF`
+- Variante staged: `tools/vehicle_studio/staging/bbab3fd22d24545d56fb2b4492fca80c888d2bdab320ddbf1d38f0f395181eff`
+- `vehicle.blend`: `98FE7F16B8876CE0C902646B7398C2A0236098DA5366B66612CD071A00AC2D82`
+- `.blend` publicado: `blender/williams94_wheels_retextured/variants/f1_2009_fw31/F1_2009_fw31.blend`
+- `vehicle.glb`: `07B0CF10EDF149A65DD09D42E944B33369CA398D921830948B8A4AD251EED952`
+- `wheel-front.glb`: `DF051685E15BFC84B271CF151654B8F2A5EC98B3AE5E3E101C576EB4375DEB27`
+- `wheel-rear.glb`: `EEE98C7EFB2C321B5BD4E565281EAB63B3A3A537E8ADD48DE2386446D1283A12`
+- `vehicle-preview.glb`: `92B1466C21EE9BC8FC174CA1EBAD1D9EFCED83EDAAE2915D73A4DCFC96081816`
+- Contrato de textura: 19/19 materiales de chasis y 4/4 en cada rueda
+  contienen `baseColorTexture`; todas las primitivas conservan `TEXCOORD_0`.
 
-## Human gate
+## Ejecución
 
-Ejecutar `run_f1_94.ps1 -VehicleVariant 2009` y verificar proporciones,
-contacto con el suelo, dirección y comportamiento del tren delantero antes de
-considerar la variante aprobada.
+Ejecutar `run_f1_94.ps1` para iniciar el canónico 2009. Para comparar con el
+vehículo anterior, ejecutar `run_f1_94.ps1 -VehicleVariant 1994`.

@@ -48,6 +48,14 @@ class OnboardingControllerTests(unittest.TestCase):
             profile["constraints"]["maximum_overall_width_m"],
         )
 
+    def test_williams_scan_versions_external_albedo_sources(self):
+        result = OnboardingController(Path.cwd()).scan_preset("williams94")
+        sources = result["scan"]["source"]["material_sources"]
+        slots = {item["material_slot"] for item in sources}
+        self.assertIn("MAT_GEO_CHASSIS", slots)
+        self.assertIn("MAT_GEO_WHEEL_TREAD", slots)
+        self.assertTrue(all(item["sha256"] and item["path"].endswith(".png") for item in sources))
+
     def test_merge_reassigns_stable_unique_ids_and_keeps_source(self):
         scans = [
             {"source": {"path": "a.glb"}, "marker": "A"},

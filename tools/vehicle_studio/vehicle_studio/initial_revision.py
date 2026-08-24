@@ -72,6 +72,7 @@ def compile_initial_revision(
             "symmetry_plane_x_m": semantic["symmetry_plane_x_m"],
             "materialization_source": deepcopy(source.get("materialization_source")),
             "materialization_sources": deepcopy(source.get("files", [])),
+            "materialization_material_sources": deepcopy(source.get("material_sources", [])),
         },
     }
     return VehicleDocument.from_dict(document)

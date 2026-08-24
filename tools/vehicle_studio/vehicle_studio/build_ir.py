@@ -47,6 +47,7 @@ def compile_build_ir(
             "source_sha256": canonical["source"]["sha256"],
             "materialization_source": canonical.get("metadata", {}).get("materialization_source"),
             "materialization_sources": canonical.get("metadata", {}).get("materialization_sources", []),
+            "materialization_material_sources": canonical.get("metadata", {}).get("materialization_material_sources", []),
             "ground_y_m": canonical["coordinate_system"]["ground_y_m"],
         },
         "postconditions": ["source_hash_matches", "source_is_read_only"],

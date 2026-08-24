@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import sys
 from math import pi
+import re
 
 import bpy
 from mathutils import Vector
@@ -16,6 +17,42 @@ SUPPORTED_ROLES = {
     "wheelbase", "front_track", "rear_track", "front_tire_radius",
     "rear_tire_radius", "front_tire_width", "rear_tire_width",
 }
+
+
+def bind_albedo_materials(material_sources: list[dict]) -> dict:
+    if not material_sources:
+        return {"bound_count": 0, "bindings": []}
+    source_by_slot = {item["material_slot"]: Path(item["absolute_path"])
+                      for item in material_sources}
+    bound = []
+    missing = []
+    for material in sorted(bpy.data.materials, key=lambda item: item.name):
+        slot = re.sub(r"\.\d{3}$", "", material.name)
+        source = source_by_slot.get(slot)
+        if source is None:
+            missing.append(slot)
+            continue
+        material.use_nodes = True
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+        principled = nodes.get("Principled BSDF")
+        if principled is None:
+            raise ValueError(f"Principled BSDF missing for {material.name}")
+        texture = nodes.get("Formula90 Albedo") or nodes.new("ShaderNodeTexImage")
+        texture.name = "Formula90 Albedo"
+        texture.label = source.name
+        texture.interpolation = "Closest"
+        texture.image = bpy.data.images.load(str(source), check_existing=True)
+        base_color = principled.inputs.get("Base Color")
+        if base_color is None:
+            raise ValueError(f"Base Color input missing for {material.name}")
+        for link in list(base_color.links):
+            links.remove(link)
+        links.new(texture.outputs["Color"], base_color)
+        bound.append({"material_slot": slot, "albedo": source.name})
+    if missing:
+        raise ValueError(f"albedo source missing for material: {missing[0]}")
+    return {"bound_count": len(bound), "bindings": bound}
 
 
 def file_hash(path: Path) -> str:
@@ -85,9 +122,10 @@ def export_glb(path: str) -> None:
 
 
 def build_wheel(source: Path, output: str, radius: tuple[float, float],
-                width: tuple[float, float], policy: str) -> dict:
+                width: tuple[float, float], policy: str, material_sources: list[dict]) -> dict:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(source))
+    materials = bind_albedo_materials(material_sources)
     before = topology_signature()
     radial_scale = radius[1] / radius[0]
     width_scale = width[1] / width[0]
@@ -106,7 +144,7 @@ def build_wheel(source: Path, output: str, radius: tuple[float, float],
     export_glb(output)
     return {"radius_m": radius[1], "width_m": width[1], "width_policy": policy,
             "contact_patch_y_m": -radius[1], "anchor_translation_m": [0.0, 0.0, 0.0],
-            "topology_signature": after}
+            "topology_signature": after, "materials": materials}
 
 
 def source_by_suffix(config: dict, suffix: str) -> Path:
@@ -168,12 +206,14 @@ def main() -> int:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     chassis = Path(config["source"])
     bpy.ops.import_scene.gltf(filepath=str(chassis))
+    chassis_materials = bind_albedo_materials(config["material_sources"])
     before = topology_signature()
     apply_chassis(parameters)
     after = topology_signature()
     if before != after:
         raise ValueError("chassis topology or UV membership changed")
     bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=config["output_blend"], check_existing=False)
     export_glb(config["output_chassis_glb"])
 
@@ -182,12 +222,14 @@ def main() -> int:
         config["output_front_wheel_glb"],
         parameters["front_tire_radius"], parameters["front_tire_width"],
         policies.get("front_tire_width", "centered"),
+        config["material_sources"],
     )
     rear = build_wheel(
         source_by_suffix(config, "F1_94_wheel_rear_geometry.glb"),
         config["output_rear_wheel_glb"],
         parameters["rear_tire_radius"], parameters["rear_tire_width"],
         policies.get("rear_tire_width", "centered"),
+        config["material_sources"],
     )
     ground_y = float(config["build_ir"]["operations"][0]["inputs"]["ground_y_m"])
     preview = build_preview(config, parameters, ground_y)
@@ -196,8 +238,9 @@ def main() -> int:
     rear_delta = parameters["rear_tire_radius"][1] - parameters["rear_tire_radius"][0]
     measured = {role: target for role, (_, target) in sorted(parameters.items())}
     report = {
-        "ok": True, "worker_version": 3, "mesh_count": len(after),
+        "ok": True, "worker_version": 4, "mesh_count": len(after),
         "topology_signature": after, "measured_dimensions_m": measured,
+        "materials": chassis_materials,
         "ground_contact": {"front_y_m": ground_y, "rear_y_m": ground_y},
         "preview": preview,
         "chassis_height": {"front_delta_m": front_delta, "rear_delta_m": rear_delta,

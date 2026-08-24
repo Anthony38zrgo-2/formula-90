@@ -38,7 +38,6 @@ def materialize_build_ir(build_ir: dict[str, Any], *, repo_root: Path, staging_r
     _require_inside(source, repo, "MATERIALIZER_SOURCE_OUTSIDE_ROOT")
     if not source.is_file():
         raise MaterializationError("MATERIALIZER_SOURCE_MISSING", "materialization source does not exist")
-    source_specs = source_spec.get("materialization_sources")
     expected_hash = source_spec.get("sha256")
     before_hash = _sha256(source)
     if before_hash != expected_hash:
@@ -51,6 +50,17 @@ def materialize_build_ir(build_ir: dict[str, Any], *, repo_root: Path, staging_r
         if not path.is_file() or _sha256(path) != spec.get("sha256"):
             raise MaterializationError("MATERIALIZER_SOURCE_HASH_MISMATCH", f"modular source mismatch: {spec.get('path')}")
         sources.append({"path": spec["path"], "absolute_path": str(path), "sha256": spec["sha256"]})
+    material_specs = build_ir["operations"][0].get("inputs", {}).get("materialization_material_sources", [])
+    material_sources = []
+    for spec in material_specs:
+        path = (repo / str(spec.get("path", ""))).resolve()
+        _require_inside(path, repo, "MATERIALIZER_SOURCE_OUTSIDE_ROOT")
+        if not path.is_file() or _sha256(path) != spec.get("sha256"):
+            raise MaterializationError("MATERIALIZER_SOURCE_HASH_MISMATCH", f"material source mismatch: {spec.get('path')}")
+        material_sources.append({
+            "path": spec["path"], "absolute_path": str(path), "sha256": spec["sha256"],
+            "material_slot": spec.get("material_slot"),
+        })
     executable = Path(blender_executable).resolve()
     if not executable.is_file():
         raise MaterializationError("MATERIALIZER_BLENDER_MISSING", f"Blender executable not found: {executable}")
@@ -70,6 +80,7 @@ def materialize_build_ir(build_ir: dict[str, Any], *, repo_root: Path, staging_r
         raise MaterializationError("MATERIALIZER_WORKER_MISSING", "Blender materializer worker is missing")
     config = {
         "source": str(source), "source_sha256": expected_hash, "sources": sources,
+        "material_sources": material_sources,
         "build_ir": build_ir, "output_blend": str(output_blend),
         "output_chassis_glb": str(output_chassis_glb),
         "output_front_wheel_glb": str(output_front_wheel_glb),
