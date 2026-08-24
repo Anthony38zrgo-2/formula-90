@@ -5,9 +5,12 @@ from pathlib import Path
 
 from pipeline_common import read_json, SpatialHash, Occupant
 from generate_environment import barrier_minimum_center_distance
+from building_asset_library import load_building_asset_library
 from vegetation_distribution import COLORS, load_distribution
 from safety_barrier_layout import (barrier_conflict, compile_layout,
-                                   exterior_coverage_gaps, load_safety_barrier_layout)
+                                   barrier_envelope_at, coverage_gaps_by_side,
+                                   load_safety_barrier_layout,
+                                   overlaps_by_side)
 
 
 def _minimum_center_distance(config: dict, category: str, radius: float) -> float:
@@ -30,6 +33,9 @@ def main() -> int:
     items = placements_doc["placements"]
     distribution, catalogs = load_distribution(repo, config)
     safety_barriers = load_safety_barrier_layout(repo, config)
+    building_assets = load_building_asset_library(repo, config)
+    centerline = read_json(generated / "centerline.json")
+    lap_length_m = float(centerline["length_m"])
 
     failures = 0
     occupancy = SpatialHash(cell_size=10.0)
@@ -71,20 +77,36 @@ def main() -> int:
         print("PASS overlaps=0")
 
     props = placements_doc.get("trackside_props", [])
-    tire = config.get("tire_barriers", {})
     props_cfg = config.get("trackside_props", {})
-    road_half = float(config["road"]["width_m"]) * 0.5
-    minimum_prop_distance = road_half + float(tire.get("separation_from_edge_m", 5.0)) + float(props_cfg.get("outside_barrier_offset_m", 1.8))
+    object_catalog = read_json(repo / props_cfg["object_catalog"]).get("objects", {})
+    prop_assets = {spec["asset_id"]: spec for spec in object_catalog.values()}
     prop_failures = 0
     for prop in props:
         distance = float(prop.get("distance_from_center_m", 0.0))
-        if distance + 1e-4 < minimum_prop_distance or prop.get("collision", False):
+        asset_id = prop.get("source_asset_id")
+        contract = prop_assets.get(asset_id)
+        if contract is None:
+            prop_failures += 1
+            continue
+        envelope = barrier_envelope_at(
+            safety_barriers, float(prop["track_fraction"]), int(prop["side"]), lap_length_m,
+        )
+        outside_offset = float(contract.get("guardrail_offset_m", 0.0))
+        required = float(envelope["outer_face_distance_m"]) + outside_offset
+        metadata_matches = (
+            prop.get("safety_segment_id") == envelope["segment_id"] and
+            prop.get("barrier_prototype_id") == envelope["prototype_id"] and
+            abs(float(prop.get("barrier_outer_face_m", -1.0)) - float(envelope["outer_face_distance_m"])) <= 1e-3 and
+            abs(float(prop.get("required_outside_offset_m", -1.0)) - outside_offset) <= 1e-3
+        )
+        if (abs(distance - required) > 1e-3 or not metadata_matches or
+                prop.get("collision", False)):
             prop_failures += 1
     if prop_failures:
-        print(f"FAIL trackside props={prop_failures} required_distance={minimum_prop_distance:.3f}m")
+        print(f"FAIL trackside props violate active barrier envelope={prop_failures}/{len(props)}")
         failures += prop_failures
     else:
-        print(f"PASS trackside props={len(props)} non-collidable outside perimeter")
+        print(f"PASS trackside props={len(props)} sector-aware, non-collidable, outside active barrier envelope")
 
     expected = sum(int(v["placed"]) for v in placements_doc["stats"].values())
     if expected != len(items):
@@ -110,6 +132,28 @@ def main() -> int:
             else:
                 print(f"PASS {category} dominant=original colors={counts}")
 
+    building_items = [item for item in items if item["category"] == "fake_buildings"]
+    building_ids = {asset["id"] for asset in building_assets}
+    placed_building_ids = {item.get("building_asset_id") for item in building_items}
+    building_cfg = config.get("procedural_environment", {}).get("fake_buildings", {})
+    building_contract = read_json(repo / building_cfg["construction_manifest"])
+    placement_contract = building_contract["placement"]
+    building_failures = sum(
+        item.get("building_asset_id") not in building_ids
+        or not item.get("asset_glb")
+        or item.get("collision") is not False
+        or float(item.get("distance_to_track_m", item["distance_from_center_m"])) < float(placement_contract["minimum_track_distance_m"])
+        or float(item.get("distance_to_track_m", item["distance_from_center_m"])) > float(placement_contract["maximum_track_distance_m"])
+        or float(item["scale"]) < float(placement_contract["scale_minimum"])
+        or float(item["scale"]) > float(placement_contract["scale_maximum"])
+        for item in building_items
+    )
+    if building_failures or placed_building_ids != building_ids:
+        print(f"FAIL scenic buildings invalid={building_failures} coverage={sorted(placed_building_ids)} expected={sorted(building_ids)}")
+        failures += max(1, building_failures)
+    else:
+        print(f"PASS scenic buildings={len(building_items)} assets={sorted(building_ids)} collision=False")
+
     barrier_conflicts = sum(
         barrier_conflict(
             safety_barriers, item["category"], float(item["track_fraction"]), int(item["side"]),
@@ -123,19 +167,19 @@ def main() -> int:
     else:
         print("PASS safety barrier/vegetation conflicts=0")
 
-    centerline = read_json(generated / "centerline.json")
     compiled = compile_layout(safety_barriers, float(centerline["length_m"]))
     counts = {}
     for module in compiled["modules"]:
         counts[module["type"]] = counts.get(module["type"], 0) + 1
-    hybrid_scope = config.get("safety_barriers", {}).get("scope") == "current_chicane_only"
-    if hybrid_scope and config.get("tire_barriers", {}).get("procedural"):
-        print("PASS hybrid barrier authority=legacy textured perimeter + current chicane")
-    elif config.get("guardrails", {}).get("procedural") or config.get("tire_barriers", {}).get("procedural"):
+    full_scope = config.get("safety_barriers", {}).get("scope") == "full_circuit"
+    if config.get("guardrails", {}).get("procedural") or config.get("tire_barriers", {}).get("procedural"):
         print("FAIL undeclared legacy barrier source remains active")
         failures += 1
+    elif not full_scope:
+        print("FAIL safety barrier authority is not full_circuit")
+        failures += 1
     else:
-        print("PASS single safety barrier authority active")
+        print("PASS single full-circuit safety barrier authority active")
     road_half = float(config["road"]["width_m"]) * .5
     curb_manifest = read_json(repo / config["curb"]["manifest"])
     curb_width = max(float(profile["width_m"]) for profile in curb_manifest["profiles"].values())
@@ -161,18 +205,21 @@ def main() -> int:
         failures += exposed_armco
     else:
         print("PASS exposed Armco terminals=0")
-    exterior_gaps = exterior_coverage_gaps(safety_barriers)
-    if hybrid_scope:
-        excluded = config["tire_barriers"].get("exclude_spans", [])
-        exterior_gaps = [fraction for fraction in exterior_gaps if any(
-            float(span["start_fraction"]) <= fraction < float(span["end_fraction"])
-            for span in excluded
-        )]
-    if exterior_gaps:
-        print(f"FAIL unprotected exterior fractions={len(exterior_gaps)} first={exterior_gaps[0]:.4f}")
-        failures += len(exterior_gaps)
+    side_gaps = coverage_gaps_by_side(safety_barriers)
+    gap_count = sum(len(values) for values in side_gaps.values())
+    if gap_count:
+        print(f"FAIL unprotected side fractions={gap_count}")
+        failures += gap_count
     else:
-        print("PASS exterior containment coverage=100% (at least one declared barrier side)")
+        print("PASS barrier coverage=100% on both sides")
+    side_overlaps = overlaps_by_side(safety_barriers)
+    excessive_overlap = sum(max(0, len(values) - len(safety_barriers["segments"]) // 2)
+                            for values in side_overlaps.values())
+    if excessive_overlap:
+        print(f"FAIL barrier sector overlaps={excessive_overlap}")
+        failures += excessive_overlap
+    else:
+        print("PASS barrier sectors have no extended overlap")
     print(f"PASS safety barrier modules={len(compiled['modules'])} counts={counts} sha256={compiled['sha256']}")
 
     print(f"biome={placements_doc.get('biome')} seed={placements_doc['seed']}")

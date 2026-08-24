@@ -47,7 +47,7 @@ class LaChutanaSurfaceInvariantTests(unittest.TestCase):
         }
         self.assertEqual(counts, {"trees": 130, "bushes": 110, "grass": 9320})
         self.assertEqual(sum(node.get("data-category") is None for node in instances), 124)
-        self.assertFalse(self.config["procedural_environment"]["grass_cards"]["enabled"])
+        self.assertTrue(self.config["procedural_environment"]["grass_cards"]["enabled"])
 
 
 if __name__ == "__main__":

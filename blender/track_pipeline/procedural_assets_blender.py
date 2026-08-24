@@ -81,12 +81,15 @@ def _card(name, width, height, material, angle_rad=0.0):
         return (x * ca, x * sa, z)
 
     verts = [p(-half, 0), p(half, 0), p(half, height), p(-half, height)]
+    faces = [(0, 1, 2, 3), (3, 2, 1, 0)]
+    uv = [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)], [(1.0, 0.0), (0.0, 0.0), (0.0, 1.0), (1.0, 1.0)]]
     return _mesh_object(
         name,
         verts,
-        [(0, 1, 2, 3)],
+        faces,
         [material],
-        uv_by_face=[[(0, 0), (1, 0), (1, 1), (0, 1)]],
+        face_materials=[0, 0],
+        uv_by_face=uv,
     )
 
 
@@ -134,7 +137,7 @@ def create_prototypes(materials, config):
             elif category == "bushes":
                 out[spec.id] = _crossed(f"Proto_{spec.id}", spec.width_m, spec.height_m, mat, 2)
             elif category == "grass":
-                out[spec.id] = _crossed(f"Proto_{spec.id}", spec.width_m, spec.height_m, mat, 1)
+                out[spec.id] = _crossed(f"Proto_{spec.id}", spec.width_m, spec.height_m, mat, 2)
             else:
                 out[spec.id] = _building(
                     f"Proto_{spec.id}", spec.width_m, spec.height_m, spec.depth_m,
@@ -671,16 +674,55 @@ def trackside_card_shape(prop_type: str) -> list[tuple[float, float]]:
     return shapes[prop_type]
 
 
-def create_trackside_card(name, pos, tangent, normal, side, ground, prop_type, material):
-    shape = trackside_card_shape(prop_type)
+def create_trackside_card(name, pos, tangent, normal, side, ground, prop_type, material, asset_id=None):
+    dims = {
+        "sign": (7.2, 2.4),
+        "spectator": (1.40, 1.75),
+        "marshal": (1.50, 1.80),
+        "photographer": (1.20, 1.35),
+        "flag": (0.80, 2.20),
+    }
+    width, height = dims.get(prop_type, (1.5, 1.75))
     tangent_b = Vector((float(tangent[0]), -float(tangent[1]), 0.0)).normalized()
-    outward_b = Vector((float(side) * float(normal[0]), -float(side) * float(normal[1]), 0.0)).normalized()
     center = godot_xz_to_blender(pos[0], pos[1], ground)
-    vertices = [tuple(center + tangent_b * x + Vector((0.0, 0.0, z))) for x, z in shape]
-    face = tuple(range(len(vertices)))
-    if side < 0:
-        face = tuple(reversed(face))
-    obj = _mesh_object(name, vertices, [face], [material])
+    if prop_type == "flag":
+        pole_material, navy_material, white_material = material
+        def flag_vertex(along, height_value):
+            return tuple(center + tangent_b * along + Vector((0.0, 0.0, height_value)))
+        bands = [
+            (-0.38, -0.30, 0.0, height, 0),
+            (-0.30, 0.40, height * .76, height, 1),
+            (-0.30, 0.40, height * .64, height * .76, 2),
+            (-0.30, 0.40, height * .52, height * .64, 1),
+        ]
+        vertices = []
+        faces = []
+        face_materials = []
+        for x0, x1, z0, z1, material_index in bands:
+            base = len(vertices)
+            vertices.extend((flag_vertex(x0, z0), flag_vertex(x1, z0),
+                             flag_vertex(x1, z1), flag_vertex(x0, z1)))
+            faces.append((base, base + 1, base + 2, base + 3))
+            face_materials.append(material_index)
+        obj = _mesh_object(name, vertices, faces,
+                           [pole_material, navy_material, white_material],
+                           face_materials=face_materials)
+        obj["formula90s_trackside_card"] = prop_type
+        obj["formula90s_trackside_asset_id"] = asset_id or "track_flag"
+        obj["formula90s_material_authority"] = "procedural_navy_white_flag"
+        obj["formula90s_collision"] = False
+        return obj
+    half = width * 0.5
+    v0 = tuple(center - tangent_b * half)
+    v1 = tuple(center + tangent_b * half)
+    v2 = tuple(center + tangent_b * half + Vector((0.0, 0.0, height)))
+    v3 = tuple(center - tangent_b * half + Vector((0.0, 0.0, height)))
+    vertices = [v0, v1, v2, v3]
+    faces = [(0, 1, 2, 3)]
+    uv_by_face = [[(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]]
+    obj = _mesh_object(name, vertices, faces, [material], face_materials=[0], uv_by_face=uv_by_face)
     obj["formula90s_trackside_card"] = prop_type
+    obj["formula90s_trackside_asset_id"] = asset_id or prop_type
+    obj["formula90s_material_authority"] = "source_texture"
     obj["formula90s_collision"] = False
     return obj

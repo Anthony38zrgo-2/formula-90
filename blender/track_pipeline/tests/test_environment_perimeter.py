@@ -23,22 +23,22 @@ class EnvironmentPerimeterTests(unittest.TestCase):
         self.assertAlmostEqual(barrier_minimum_center_distance(config, "bushes", 2.0), 13.64)
         self.assertEqual(barrier_minimum_center_distance(config, "grass", 0.4), 0.0)
 
-    def test_la_chutana_restores_textured_tire_perimeter(self):
+    def test_la_chutana_disables_legacy_tire_perimeter(self):
         config_path = Path(__file__).resolve().parents[1] / "configs" / "la_chutana.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
         self.assertEqual(float(config["tire_barriers"]["separation_from_edge_m"]), 5.0)
-        self.assertTrue(config["tire_barriers"]["procedural"])
-        self.assertEqual(config["tire_barriers"]["exclude_spans"][0]["replacement"], "current_chicane_safety_barriers")
+        self.assertFalse(config["tire_barriers"]["procedural"])
+        self.assertTrue(config["safety_barriers"]["legacy_tire_barriers_disabled"])
         self.assertEqual(float(config["vegetation_barrier_clearance_m"]["trees"]), 1.0)
         self.assertEqual(float(config["vegetation_barrier_clearance_m"]["bushes"]), 0.5)
 
-    def test_la_chutana_uses_declared_hybrid_barrier_authority(self):
+    def test_la_chutana_uses_full_circuit_barrier_authority(self):
         config_path = Path(__file__).resolve().parents[1] / "configs" / "la_chutana.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
         self.assertFalse(config["guardrails"]["procedural"])
-        self.assertTrue(config["tire_barriers"]["procedural"])
+        self.assertFalse(config["tire_barriers"]["procedural"])
         self.assertTrue(config["safety_barriers"]["procedural"])
-        self.assertEqual(config["safety_barriers"]["scope"], "current_chicane_only")
+        self.assertEqual(config["safety_barriers"]["scope"], "full_circuit")
         self.assertTrue(config["safety_barriers"]["manifest"].endswith("la_chutana_safety_barriers.json"))
 
     def test_la_chutana_uses_texture_ground_cover_without_grass_cards(self):
@@ -53,10 +53,13 @@ class EnvironmentPerimeterTests(unittest.TestCase):
         source_manifest = repo / "blender/assets/texture_sources/la_chutana/trackside/tire_barrier/source_manifest.json"
         self.assertTrue(source_manifest.exists(), f"tire barrier source manifest missing: {source_manifest}")
 
-    def test_la_chutana_disables_fake_buildings(self):
+    def test_la_chutana_enables_manifest_backed_fake_buildings(self):
         config_path = Path(__file__).resolve().parents[1] / "configs" / "la_chutana.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
-        self.assertFalse(config["procedural_environment"]["fake_buildings"]["enabled"])
+        buildings = config["procedural_environment"]["fake_buildings"]
+        self.assertTrue(buildings["enabled"])
+        self.assertFalse(buildings["collision"])
+        self.assertTrue(buildings["asset_manifest"].endswith("building_manifest.json"))
 
     def test_trackside_cards_are_deterministic_and_outside_collision_perimeter(self):
         points = np.asarray([

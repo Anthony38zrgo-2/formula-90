@@ -190,7 +190,9 @@ def _update_forge_manifest(texture_root: Path, assets: list[dict], recipe: dict)
         **recipe,
         "assets": updated,
     }
-    forge_path.write_text(json.dumps(forge, indent=2) + "\n", encoding="utf-8")
+    tmp_path = forge_path.with_name("texture_forge_manifest.tmp")
+    tmp_path.write_text(json.dumps(forge, indent=2) + "\n", encoding="utf-8")
+    tmp_path.replace(forge_path)
 
 
 def _aggregate_recipe(assets: list[dict], pass_index: int) -> dict:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 from pathlib import Path
 import json
 import math
@@ -29,6 +30,7 @@ from procedural_assets_blender import (
 from procedural_catalog import biome_from_config
 from procedural_materials_blender import add_safety_barrier_materials, build_material_library
 from safety_barrier_layout import compile_layout, load_safety_barrier_layout
+from building_asset_library import load_building_asset_library
 
 
 def load_glb_vegetation_prototypes(repo, placement_items):
@@ -51,8 +53,68 @@ def load_glb_vegetation_prototypes(repo, placement_items):
     return prototypes
 
 
+def load_barrier_asset_library(repo, config):
+    """Load and verify the optional v2 barrier asset library before Blender import."""
+    relative = config.get("safety_barriers", {}).get("asset_library_manifest")
+    if not relative:
+        return {}
+    manifest_path = repo / relative
+    manifest = read_json(manifest_path)
+    if manifest.get("schema_version") != 2 or manifest.get("generator") != "procedural_barrier_v2":
+        raise RuntimeError(f"Unsupported barrier asset manifest: {manifest_path}")
+    entries = {}
+    for entry in manifest.get("assets", []):
+        asset_id = entry["id"]
+        if asset_id in entries:
+            raise RuntimeError(f"Duplicate barrier asset id: {asset_id}")
+        for path_key, hash_key in (("visual_glb", "visual_sha256"),
+                                   ("collision_glb", "collision_sha256")):
+            path = repo / entry[path_key]
+            if not path.is_file():
+                raise RuntimeError(f"Barrier asset missing: {path}")
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+            if actual != entry[hash_key]:
+                raise RuntimeError(f"Barrier asset hash mismatch: {path}")
+        entries[asset_id] = entry
+    if not entries:
+        raise RuntimeError(f"Barrier asset manifest has no assets: {manifest_path}")
+    return entries
+
+
+def import_barrier_asset_prototype(repo, entry):
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(repo / entry["visual_glb"]))
+    imported = [obj for obj in bpy.data.objects if obj not in before]
+    sources = [obj for obj in imported if obj.type == "MESH"]
+    if not sources:
+        raise RuntimeError(f"Barrier GLB has no mesh objects: {entry['visual_glb']}")
+    for source in imported:
+        source.hide_render = True
+        source.hide_viewport = True
+        source.hide_set(True)
+    return sources
+
+
 def _aim(camera, target):
     camera.rotation_euler = (Vector(target) - camera.location).to_track_quat("-Z", "Y").to_euler()
+
+
+def building_review_viewpoint(item, points):
+    target_x = float(item["position_xz"][0])
+    target_y = -float(item["position_xz"][1])
+    track_pos, _, _ = sample_centerline(points, float(item["track_fraction"]))
+    direction_x = float(track_pos[0]) - target_x
+    direction_y = -float(track_pos[1]) - target_y
+    length = max(1e-6, math.hypot(direction_x, direction_y))
+    distance = 28.0
+    return {
+        "camera": (
+            target_x + direction_x / length * distance,
+            target_y + direction_y / length * distance,
+            3.0,
+        ),
+        "target": (target_x, target_y, 3.0),
+    }
 
 
 def render_review_captures(config, points, output_dir, prefix="vegetation", viewpoints=None):
@@ -88,11 +150,16 @@ def render_review_captures(config, points, output_dir, prefix="vegetation", view
     camera.data.type = "PERSP"
     camera.data.lens = 46
     captures = [aerial]
-    for name, fraction in (viewpoints or {"trackside": 0.56}).items():
-        pos, _, _ = sample_centerline(points, fraction)
-        look, _, _ = sample_centerline(points, fraction + 0.025)
-        camera.location = (float(pos[0]), -float(pos[1]), 2.2)
-        _aim(camera, (float(look[0]), -float(look[1]), 1.0))
+    for name, viewpoint in (viewpoints or {"trackside": 0.56}).items():
+        if isinstance(viewpoint, dict):
+            camera.location = tuple(float(value) for value in viewpoint["camera"])
+            _aim(camera, tuple(float(value) for value in viewpoint["target"]))
+        else:
+            fraction = float(viewpoint)
+            pos, _, _ = sample_centerline(points, fraction)
+            look, _, _ = sample_centerline(points, fraction + 0.025)
+            camera.location = (float(pos[0]), -float(pos[1]), 2.2)
+            _aim(camera, (float(look[0]), -float(look[1]), 1.0))
         target = output_dir / f"{prefix}{review_token}_{name}.png"
         scene.render.filepath = str(target)
         bpy.ops.render.render(write_still=True)
@@ -105,18 +172,22 @@ def render_safety_barrier_catalog(output_dir):
     for obj in bpy.data.objects:
         if obj.get("formula90s_safety_barrier") and obj.get("barrier_type") not in representatives:
             representatives[obj.get("barrier_type")] = obj
-    order = ("guardrail_2", "guardrail_3", "tire_stack", "tecpro", "concrete_wall", "concrete_jersey")
+    order = (
+        "armco", "tire_black_single", "tire_black_double", "tire_black_triple",
+        "tire_navy_single", "tire_navy_double", "plastic", "jersey",
+    )
     clones = []
     original_visibility = {obj: obj.hide_render for obj in bpy.data.objects}
     for obj in original_visibility:
         obj.hide_render = True
-    for index, barrier_type in enumerate(order):
+    present = [barrier_type for barrier_type in order if barrier_type in representatives]
+    for index, barrier_type in enumerate(present):
         source = representatives.get(barrier_type)
         if source is None:
             continue
         root = source.copy()
         root.data = None
-        root.location = ((index - 2.5) * 7.0, 0.0, 0.0)
+        root.location = ((index - (len(present) - 1) * 0.5) * 3.2, 0.0, 0.0)
         root.rotation_euler = (0.0, 0.0, 0.0)
         root.scale = (1.0, 1.0, 1.0)
         root.hide_render = False
@@ -145,9 +216,9 @@ def render_safety_barrier_catalog(output_dir):
         camera = bpy.context.object
         scene.camera = camera
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = 48.0
+    camera.data.ortho_scale = max(4.5, len(present) * 3.2)
     camera.hide_render = False
-    camera.location = (0.0, -38.0, 7.5)
+    camera.location = (0.0, -12.0, 3.0)
     _aim(camera, (0.0, 0.0, 0.55))
     target = output_dir / "safety_barrier_catalog.png"
     scene.render.filepath = str(target)
@@ -158,6 +229,32 @@ def render_safety_barrier_catalog(output_dir):
         if obj.name in bpy.data.objects:
             obj.hide_render = hidden
     return target
+
+
+def render_trackside_asset_captures(config, points, props, output_dir, prefix):
+    """Render one exterior close-up for every resolved trackside asset."""
+    scene = bpy.context.scene
+    camera = scene.camera
+    camera.data.type = "PERSP"
+    camera.data.lens = 50
+    representatives = {}
+    for item in props:
+        representatives.setdefault(str(item.get("source_asset_id") or item["prop_type"]), item)
+    captures = []
+    for asset_id, item in sorted(representatives.items()):
+        _, _, normal = sample_centerline(points, float(item["track_fraction"]))
+        side = int(item["side"])
+        x, z = (float(value) for value in item["position_xz"])
+        outward = Vector((float(normal[0]) * side, -float(normal[1]) * side, 0.0)).normalized()
+        camera_distance = 12.0 if item["prop_type"] == "sign" else 6.0
+        target = Vector((x, -z, 1.1))
+        camera.location = target + outward * camera_distance + Vector((0.0, 0.0, .35))
+        _aim(camera, target)
+        path = output_dir / f"{prefix}_asset_{asset_id}.png"
+        scene.render.filepath = str(path)
+        bpy.ops.render.render(write_still=True)
+        captures.append(path)
+    return captures
 
 
 def args_after_double_dash():
@@ -194,6 +291,7 @@ def build_safety_barriers(config, points, materials):
         return {"modules": 0, "collisions": 0, "counts": {}, "sha256": ""}
     repo = Path(config["_repo_root"])
     manifest = load_safety_barrier_layout(repo, config)
+    barrier_assets = load_barrier_asset_library(repo, config)
     compiled = compile_layout(manifest, float(config["_centerline_length_m"]))
     guardrail_bitmap = (repo / "assets-lowpoly-python" / "track_props" / "barriers" /
                         "guardrail_armco" / "textures" / "front_card_rgba_256x128.png")
@@ -202,6 +300,7 @@ def build_safety_barriers(config, points, materials):
     add_safety_barrier_materials(materials, manifest["palette"], guardrail_bitmap, tire_bitmap)
     prototype_cache = {}
     counts = {}
+    asset_counts = {}
     segment_lookup = {segment["id"]: segment for segment in compiled["segments"]}
     modules_by_segment = {}
     for module in compiled["modules"]:
@@ -220,24 +319,36 @@ def build_safety_barriers(config, points, materials):
             if segment["terminal_end"] == "flare_out":
                 distance += terminal_flare * max(0.0, 1.0 - remaining / terminal_length)
         color = _pattern_color(manifest, module)
-        cache_key = (module["type"], color)
+        asset_id = prototype.get("asset_id")
+        asset_entry = barrier_assets.get(asset_id) if asset_id else None
+        if asset_id and asset_entry is None:
+            raise RuntimeError(f"Safety barrier prototype references unknown asset: {asset_id}")
+        cache_key = ("asset", asset_id) if asset_entry else (module["type"], color)
         if cache_key not in prototype_cache:
-            prototype_cache[cache_key] = create_safety_barrier_prototype(
-                module["type"], prototype, materials, color,
+            prototype_cache[cache_key] = (
+                import_barrier_asset_prototype(repo, asset_entry)
+                if asset_entry else
+                create_safety_barrier_prototype(module["type"], prototype, materials, color)
             )
         pos, tangent, normal = sample_centerline(points, fraction)
         pos = (pos[0] + normal[0] * side * distance,
                pos[1] + normal[1] * side * distance)
         ground = terrain_height(config, fraction, side, distance)
         yaw = math.atan2(float(tangent[1]), float(tangent[0]))
+        source_length = (float(asset_entry["visual"]["bounds_max"][0]) -
+                         float(asset_entry["visual"]["bounds_min"][0])
+                         if asset_entry else float(prototype["module_length_m"]))
         root = instantiate_prototype(
             prototype_cache[cache_key],
             f"Safety_{module['segment_id']}_{module['module_index']:04d}_{module['type']}",
-            pos[0], pos[1], ground, yaw, float(module["length_m"]) / float(prototype["module_length_m"]),
+            pos[0], pos[1], ground, yaw, float(module["length_m"]) / source_length,
         )
         root["formula90s_safety_barrier"] = True
         root["segment_id"] = module["segment_id"]
         root["barrier_type"] = module["type"]
+        if asset_id:
+            root["barrier_asset_id"] = asset_id
+            asset_counts[asset_id] = asset_counts.get(asset_id, 0) + 1
         root["pattern_phase"] = int(module["pattern_phase"])
         segment_module_count = int(segment["module_count"])
         if prototype["geometry"] == "jersey_profile":
@@ -269,14 +380,26 @@ def build_safety_barriers(config, points, materials):
     vertices = sum(len(mesh.vertices) for mesh in unique_meshes)
     triangles = sum(sum(max(0, len(poly.vertices) - 2) for poly in mesh.polygons)
                     for mesh in unique_meshes)
+    asset_manifest_relative = config.get("safety_barriers", {}).get("asset_library_manifest")
+    asset_manifest_sha256 = (
+        hashlib.sha256((repo / asset_manifest_relative).read_bytes()).hexdigest()
+        if asset_manifest_relative else ""
+    )
     return {"modules": len(compiled["modules"]), "collisions": collisions,
             "counts": counts, "sha256": compiled["sha256"],
+            "asset_counts": asset_counts,
+            "asset_manifest_sha256": asset_manifest_sha256,
             "segments": compiled["segments"], "prototype_count": len(prototype_cache),
             "material_count": 6, "vertices": vertices, "triangles": triangles}
 
 
 def build_tire_barriers(config, points, materials):
     settings = config.get("tire_barriers", {})
+    authority = config.get("safety_barriers", {})
+    if authority.get("legacy_tire_barriers_disabled", False):
+        if settings.get("procedural", False):
+            raise RuntimeError("Contradictory barrier authority: legacy tire barriers are disabled but procedural legacy generation is enabled")
+        return {"visual_modules": 0, "collision_segments": 0}
     if not settings.get("procedural", True):
         return {"visual_modules": 0, "collision_segments": 0}
     sides = (1, -1) if settings.get("both_sides", True) else (1,)
@@ -353,6 +476,7 @@ def build_trackside_props(config, points, props, materials):
     created = 0
     for item in props:
         prop_type = str(item["prop_type"])
+        asset_id = str(item.get("source_asset_id") or prop_type)
         if prop_type not in {"spectator", "marshal", "photographer", "flag", "sign"}:
             raise RuntimeError(f"Unknown trackside prop type: {prop_type}")
         pos, tangent, normal = sample_centerline(points, float(item["track_fraction"]))
@@ -363,15 +487,22 @@ def build_trackside_props(config, points, props, materials):
                     (pos[0] + normal[0] * side * distance,
                      pos[1] + normal[1] * side * distance))
         ground = terrain_height(config, float(item["track_fraction"]), side, distance)
+        if prop_type == "flag" and asset_id == "track_flag":
+            mat = (materials["flag_pole"], materials["flag_navy"], materials["flag_white"])
+        else:
+            mat = materials.get(f"card:{asset_id}") or materials.get(f"asset:{asset_id}")
+            if mat is None:
+                raise RuntimeError(f"Trackside asset has no source-backed material: {asset_id}")
         create_trackside_card(
-            f"Trackside_{prop_type}_{item['prop_id']}",
+            f"Trackside_{prop_type}_{item['prop_id']}_{asset_id}",
             card_pos,
             tangent,
             normal,
             side,
             ground,
             prop_type,
-            materials[prop_type],
+            mat,
+            asset_id=asset_id,
         )
         created += 1
     return created
@@ -383,11 +514,23 @@ def main():
     parser.add_argument("--vegetation-review", action="store_true")
     parser.add_argument("--guardrail-review", action="store_true")
     parser.add_argument("--safety-barrier-review", action="store_true")
+    parser.add_argument("--signs-review", action="store_true")
+    parser.add_argument("--people-review", action="store_true")
+    parser.add_argument("--buildings-review", action="store_true")
     ns = parser.parse_args(args_after_double_dash())
     cp = Path(ns.config).resolve()
     repo = cp.parents[3]
     config = read_json(cp)
     config["_repo_root"] = str(repo)
+    safety_authority = config.get("safety_barriers", {})
+    if safety_authority.get("scope") == "full_circuit":
+        if (not safety_authority.get("legacy_guardrails_disabled", False) or
+                not safety_authority.get("legacy_tire_barriers_disabled", False) or
+                config.get("guardrails", {}).get("procedural", False) or
+                config.get("tire_barriers", {}).get("procedural", False)):
+            raise RuntimeError("Full-circuit safety barrier authority requires every legacy barrier generator to be disabled")
+    building_assets = load_building_asset_library(repo, config)
+    building_asset_ids = {asset["id"] for asset in building_assets}
     generated = repo / config["generated_dir"]
     runtime = repo / config["runtime_dir"]
     base = generated / "track_base.blend"
@@ -401,8 +544,6 @@ def main():
     bpy.ops.wm.open_mainfile(filepath=str(base))
 
     materials = build_material_library(generated / "textures")
-    for key in ("spectator", "marshal", "photographer", "flag", "sign"):
-        materials[key].use_backface_culling = True
     biome = biome_from_config(config)
     prototypes = create_prototypes(materials, config)
     prototypes.update(load_glb_vegetation_prototypes(repo, placements["placements"]))
@@ -418,7 +559,7 @@ def main():
             float(item["side"]),
             float(item["distance_from_center_m"]),
         )
-        instantiate_prototype(
+        root = instantiate_prototype(
             prototypes[variant_id],
             f"{item['category']}_{idx:04d}_{variant_id}",
             float(x), float(z), h,
@@ -428,9 +569,19 @@ def main():
             float(item.get("width_scale", 1.0)),
             float(item.get("height_scale", 1.0)),
         )
+        building_asset_id = item.get("building_asset_id")
+        if building_asset_id:
+            if building_asset_id not in building_asset_ids:
+                raise RuntimeError(f"Placement references unknown building asset: {building_asset_id}")
+            root["building_asset_id"] = building_asset_id
+            root["formula90s_scenic_building"] = True
+            root["collision"] = False
         placed += 1
 
-    review_mode = ns.vegetation_review or ns.guardrail_review or ns.safety_barrier_review
+    review_mode = (
+        ns.vegetation_review or ns.guardrail_review or ns.safety_barrier_review
+        or ns.signs_review or ns.people_review or ns.buildings_review
+    )
     safety = ({"modules": 0, "collisions": 0, "counts": {}, "sha256": ""}
               if ns.vegetation_review else build_safety_barriers(config, points, materials))
     tire_barriers = ({"visual_modules": 0, "collision_segments": 0}
@@ -438,26 +589,56 @@ def main():
                      else build_tire_barriers(config, points, materials))
     trackside_props = (0 if ns.vegetation_review or ns.guardrail_review
                        else build_trackside_props(config, points, placements.get("trackside_props", []), materials))
-    review_name = ("safety_barrier" if ns.safety_barrier_review else
-                   "guardrail" if ns.guardrail_review else "vegetation")
+    review_name = (
+        "safety_barrier" if ns.safety_barrier_review else
+        "guardrail" if ns.guardrail_review else
+        "signs" if ns.signs_review else
+        "people" if ns.people_review else
+        "buildings" if ns.buildings_review else
+        "vegetation"
+    )
     blend = generated / (f"track_{review_name}_review.blend" if review_mode else "track_environment.blend")
     glb = runtime / (f"{config['track_id']}_{review_name}_review.glb" if review_mode else f"{config['track_id']}_environment.glb")
     live = runtime / f"{config['track_id']}.glb"
     atomic_save_blend(blend, generated / "backups" / "environment")
     atomic_export_glb(glb)
+    safety_report = generated / "review" / "safety_barrier_report.json"
+    safety_report.parent.mkdir(parents=True, exist_ok=True)
+    safety_report.write_text(json.dumps(safety, indent=2), encoding="utf-8")
+    building_counts = {
+        asset_id: sum(item.get("building_asset_id") == asset_id for item in placements["placements"])
+        for asset_id in sorted(building_asset_ids)
+    }
+    building_manifest_relative = config.get("procedural_environment", {}).get("fake_buildings", {}).get("asset_manifest")
+    building_report = {
+        "instances": sum(building_counts.values()), "asset_counts": building_counts,
+        "collision": False,
+        "asset_manifest_sha256": hashlib.sha256((repo / building_manifest_relative).read_bytes()).hexdigest(),
+    }
+    building_report_path = generated / "review" / "building_report.json"
+    building_report_path.write_text(json.dumps(building_report, indent=2), encoding="utf-8")
     if review_mode:
         viewpoints = ({"main_straight": 0.96, "t1": 0.08, "t4": 0.40,
                        "chicane": 0.57, "t6": 0.79}
-                      if ns.safety_barrier_review else
+                      if (ns.safety_barrier_review or ns.signs_review or ns.people_review) else
                       {"t1": 0.055, "t4": 0.36, "chicane": 0.535, "t6": 0.735}
-                      if ns.guardrail_review else None)
+                      if ns.guardrail_review else
+                      {
+                          f"building_{index + 1:02d}": building_review_viewpoint(item, points)
+                          for index, item in enumerate(
+                              [entry for entry in placements["placements"] if entry.get("building_asset_id")][:4])
+                      }
+                      if ns.buildings_review else None)
         captures = render_review_captures(config, points, generated / "review", review_name, viewpoints)
+        if ns.people_review or ns.signs_review:
+            captures.extend(render_trackside_asset_captures(
+                config, points, placements.get("trackside_props", []),
+                generated / "review", review_name,
+            ))
         if ns.safety_barrier_review:
             catalog = render_safety_barrier_catalog(generated / "review")
             captures.append(catalog)
-            report = generated / "review" / "safety_barrier_report.json"
-            report.write_text(json.dumps(safety, indent=2), encoding="utf-8")
-            print(f"[blender] safety barrier report: {report}")
+            print(f"[blender] safety barrier report: {safety_report}")
         print(f"[blender] human-gate captures: {' '.join(map(str, captures))}")
     else:
         atomic_publish(glb, live)
@@ -465,6 +646,7 @@ def main():
     print(f"[blender] safety barriers modules={safety['modules']} collisions={safety['collisions']} counts={safety['counts']} sha256={safety['sha256']}")
     print(f"[blender] tire barriers visual_modules={tire_barriers['visual_modules']} collision_segments={tire_barriers['collision_segments']}")
     print(f"[blender] trackside cards={trackside_props} collision=False")
+    print(f"[blender] scenic buildings={building_report['instances']} counts={building_counts} collision=False")
     print(f"[blender] {'review only; runtime not published' if review_mode else f'published runtime: {live}'}")
 
 

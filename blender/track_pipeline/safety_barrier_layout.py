@@ -197,6 +197,48 @@ def compile_layout(manifest: dict[str, Any], lap_length_m: float) -> dict[str, A
     }
 
 
+def barrier_envelope_at(manifest: dict[str, Any], fraction: float, side: int,
+                        lap_length_m: float) -> dict[str, Any]:
+    """Resolve the active barrier and its outer collision face at a lap position."""
+    validate_manifest(manifest)
+    _require(lap_length_m > 0, "Invalid lap length")
+    side_name = "right" if side > 0 else "left"
+    segment = next((entry for entry in manifest["segments"]
+                    if entry.get("enabled", True) and entry["side"] == side_name
+                    and fraction_in_span(fraction, float(entry["start_fraction"]),
+                                         float(entry["end_fraction"]))), None)
+    if segment is None:
+        raise SafetyBarrierLayoutError(
+            f"No active safety barrier at fraction={fraction:.7f} side={side_name}"
+        )
+    system = segment["system"]
+    if system["mode"] == "single":
+        prototype_id = system["type"]
+    else:
+        items = system["items"]
+        cycle_m = sum(float(item["length_m"]) for item in items)
+        local_m = ((float(fraction) - float(segment["start_fraction"])) % 1.0) * lap_length_m
+        cursor = local_m % cycle_m if system.get("repeat", False) else local_m
+        prototype_id = items[-1]["type"]
+        for item in items:
+            length_m = float(item["length_m"])
+            if cursor < length_m:
+                prototype_id = item["type"]
+                break
+            cursor -= length_m
+    prototype = manifest["prototypes"][prototype_id]
+    profile = manifest["collision_profiles"][prototype["collision_profile"]]
+    center_distance = float(segment["center_distance_m"])
+    thickness = float(profile["thickness_m"])
+    return {
+        "segment_id": segment["id"], "side": side_name,
+        "prototype_id": prototype_id,
+        "center_distance_m": center_distance,
+        "collision_thickness_m": thickness,
+        "outer_face_distance_m": center_distance + thickness * 0.5,
+    }
+
+
 def barrier_conflict(manifest: dict[str, Any], category: str, fraction: float,
                      side: int, distance: float, radius: float) -> bool:
     side_name = "right" if side > 0 else "left"
@@ -227,3 +269,27 @@ def exterior_coverage_gaps(manifest: dict[str, Any], samples: int = 2000) -> lis
                                     float(segment["end_fraction"]))
                    for segment in active)
     ]
+
+
+def coverage_gaps_by_side(manifest: dict[str, Any], samples: int = 2000) -> dict[str, list[float]]:
+    active = [segment for segment in manifest.get("segments", []) if segment.get("enabled", True)]
+    return {
+        side: [index / samples for index in range(samples) if not any(
+            segment["side"] == side and fraction_in_span(
+                index / samples, float(segment["start_fraction"]), float(segment["end_fraction"])
+            ) for segment in active
+        )]
+        for side in ("left", "right")
+    }
+
+
+def overlaps_by_side(manifest: dict[str, Any], samples: int = 2000) -> dict[str, list[float]]:
+    active = [segment for segment in manifest.get("segments", []) if segment.get("enabled", True)]
+    return {
+        side: [index / samples for index in range(samples) if sum(
+            segment["side"] == side and fraction_in_span(
+                index / samples, float(segment["start_fraction"]), float(segment["end_fraction"])
+            ) for segment in active
+        ) > 1]
+        for side in ("left", "right")
+    }

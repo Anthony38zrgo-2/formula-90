@@ -15,6 +15,13 @@ param(
     [string]$TextureSource = "Curated",
     [ValidateSet(1,2)]
     [int]$VegetationPass = 1,
+    [switch]$SkipSigns,
+    [switch]$SkipPeople,
+    [switch]$SkipTrees,
+    [switch]$SkipBushes,
+    [switch]$SkipGrass,
+    [ValidateSet("None", "Vegetation", "SafetyBarrier", "Guardrail", "Signs", "People", "Buildings")]
+    [string]$ReviewMode = "None",
     [string]$BlenderExe = ""
 )
 
@@ -27,6 +34,23 @@ $config = Join-Path $pipeline "configs\$Track.json"
 if (-not (Test-Path $python)) { throw "Pipeline venv missing. Run .\scripts\setup_track_pipeline.ps1 first." }
 if (-not (Test-Path $config)) { throw "Track config missing: $config" }
 $trackConfig = Get-Content -Path $config -Raw | ConvertFrom-Json
+
+$barrierPythonCommand = Get-Command python -ErrorAction SilentlyContinue
+if (-not $barrierPythonCommand) { throw "System Python missing; required for validated barrier asset generation." }
+$barrierPython = $barrierPythonCommand.Source
+$barrierRecipe = Join-Path $repo $trackConfig.safety_barriers.recipe_manifest
+$barrierGenerator = Join-Path $repo $trackConfig.safety_barriers.generator
+& $barrierPython $barrierGenerator --recipes $barrierRecipe --repo $repo
+if ($LASTEXITCODE -ne 0) { throw "Barrier asset library generation failed" }
+& $barrierPython -m unittest game.resources.environment.tests.test_barrier_3d_library -v
+if ($LASTEXITCODE -ne 0) { throw "Barrier asset library validation failed" }
+
+$buildingGenerator = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.generator
+$buildingSources = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.source_manifest
+& $barrierPython $buildingGenerator --sources $buildingSources --repo $repo
+if ($LASTEXITCODE -ne 0) { throw "Building asset manifest generation failed" }
+& $barrierPython -m unittest game.resources.environment.tests.test_building_asset_library -v
+if ($LASTEXITCODE -ne 0) { throw "Building asset library validation failed" }
 
 if ([string]::IsNullOrWhiteSpace($BlenderExe)) {
     $candidates = @(
@@ -125,12 +149,62 @@ if (-not (Test-Path $baseBlend)) { throw "Base track not found. Run -Mode Base a
 
 & $python (Join-Path $pipeline "validate_environment.py") --config $config
 if ($LASTEXITCODE -ne 0) { throw "Environment validation failed" }
-& $BlenderExe --background --python (Join-Path $pipeline "build_environment_blender.py") -- --config $config
+
+$blenderArgs = @("--config", $config)
+if ($ReviewMode -eq "Vegetation") { $blenderArgs += "--vegetation-review" }
+elseif ($ReviewMode -eq "SafetyBarrier") { $blenderArgs += "--safety-barrier-review" }
+elseif ($ReviewMode -eq "Guardrail") { $blenderArgs += "--guardrail-review" }
+elseif ($ReviewMode -eq "Signs") { $blenderArgs += "--signs-review" }
+elseif ($ReviewMode -eq "People") { $blenderArgs += "--people-review" }
+elseif ($ReviewMode -eq "Buildings") { $blenderArgs += "--buildings-review" }
+
+& $BlenderExe --background --python (Join-Path $pipeline "build_environment_blender.py") -- $blenderArgs
 if ($LASTEXITCODE -ne 0) { throw "Blender procedural environment build failed" }
+
+if ($ReviewMode -ne "Vegetation") {
+    $builtTrackGlb = if ($ReviewMode -eq "None") {
+        Join-Path $repo "game\assets\generated\tracks\$Track\${Track}_environment.glb"
+    } else {
+        Join-Path $repo "game\assets\generated\tracks\$Track\${Track}_$($ReviewMode.ToLowerInvariant().Replace('safetybarrier','safety_barrier'))_review.glb"
+    }
+    $assetManifestForValidation = Join-Path $repo $trackConfig.safety_barriers.asset_library_manifest
+    $barrierReport = Join-Path $repo "blender\generated\$Track\review\safety_barrier_report.json"
+    & $python (Join-Path $pipeline "validate_barrier_asset_integration.py") `
+        --glb $builtTrackGlb --asset-manifest $assetManifestForValidation --report $barrierReport
+    if ($LASTEXITCODE -ne 0) { throw "Barrier asset integration validation failed" }
+    $buildingAssetManifestForValidation = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.asset_manifest
+    $buildingReport = Join-Path $repo "blender\generated\$Track\review\building_report.json"
+    & $python (Join-Path $pipeline "validate_building_asset_integration.py") `
+        --glb $builtTrackGlb --asset-manifest $buildingAssetManifestForValidation --report $buildingReport
+    if ($LASTEXITCODE -ne 0) { throw "Building asset integration validation failed" }
+    & $python (Join-Path $pipeline "validate_trackside_asset_integration.py") `
+        --glb $builtTrackGlb --placements (Join-Path $repo "blender\generated\$Track\placements.json")
+    if ($LASTEXITCODE -ne 0) { throw "Trackside asset integration validation failed" }
+}
+
+if ($ReviewMode -ne "None") {
+    Write-Host "Review build validated; runtime and runtime_build.json were not published." -ForegroundColor Yellow
+    exit 0
+}
 
 $runtimeTrack = Join-Path $repo "game\assets\generated\tracks\$Track\$Track.glb"
 $runtimeBuild = Join-Path $repo "game\assets\generated\tracks\$Track\runtime_build.json"
 $barrierManifest = Join-Path $repo $trackConfig.safety_barriers.manifest
+$barrierAssetManifest = Join-Path $repo $trackConfig.safety_barriers.asset_library_manifest
+$barrierConstructionManifest = Join-Path $repo $trackConfig.safety_barriers.construction_manifest
+$barrierRecipeManifest = Join-Path $repo $trackConfig.safety_barriers.recipe_manifest
+$barrierPaletteManifest = Join-Path $repo $trackConfig.safety_barriers.palette_manifest
+$barrierGenerator = Join-Path $repo $trackConfig.safety_barriers.generator
+$environmentBuilder = Join-Path $pipeline "build_environment_blender.py"
+$buildingAssetManifest = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.asset_manifest
+$buildingSourceManifest = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.source_manifest
+$buildingConstructionManifest = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.construction_manifest
+$buildingGenerator = Join-Path $repo $trackConfig.procedural_environment.fake_buildings.generator
+$buildingIntegrationValidator = Join-Path $pipeline "validate_building_asset_integration.py"
+$tracksideIntegrationValidator = Join-Path $pipeline "validate_trackside_asset_integration.py"
+if (-not (Test-Path -LiteralPath $barrierAssetManifest -PathType Leaf)) {
+    throw "Barrier asset manifest missing: $barrierAssetManifest"
+}
 if (-not (Test-Path -LiteralPath $runtimeTrack -PathType Leaf)) {
     throw "Published runtime track missing: $runtimeTrack"
 }
@@ -139,12 +213,24 @@ if ($LASTEXITCODE -ne 0 -or $head -notmatch '^[0-9a-f]{40}$') {
     throw "Unable to resolve repository HEAD for runtime BUILD parity."
 }
 $buildRecord = [ordered]@{
-    schema_version = 1
+    schema_version = 3
     track = $Track
     head = $head
     glb_sha256 = (Get-FileHash -LiteralPath $runtimeTrack -Algorithm SHA256).Hash.ToLowerInvariant()
     config_sha256 = (Get-FileHash -LiteralPath $config -Algorithm SHA256).Hash.ToLowerInvariant()
     safety_barrier_manifest_sha256 = (Get-FileHash -LiteralPath $barrierManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    barrier_asset_manifest_sha256 = (Get-FileHash -LiteralPath $barrierAssetManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    barrier_construction_manifest_sha256 = (Get-FileHash -LiteralPath $barrierConstructionManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    barrier_recipe_manifest_sha256 = (Get-FileHash -LiteralPath $barrierRecipeManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    barrier_palette_manifest_sha256 = (Get-FileHash -LiteralPath $barrierPaletteManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    barrier_generator_sha256 = (Get-FileHash -LiteralPath $barrierGenerator -Algorithm SHA256).Hash.ToLowerInvariant()
+    environment_builder_sha256 = (Get-FileHash -LiteralPath $environmentBuilder -Algorithm SHA256).Hash.ToLowerInvariant()
+    building_asset_manifest_sha256 = (Get-FileHash -LiteralPath $buildingAssetManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    building_source_manifest_sha256 = (Get-FileHash -LiteralPath $buildingSourceManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    building_construction_manifest_sha256 = (Get-FileHash -LiteralPath $buildingConstructionManifest -Algorithm SHA256).Hash.ToLowerInvariant()
+    building_generator_sha256 = (Get-FileHash -LiteralPath $buildingGenerator -Algorithm SHA256).Hash.ToLowerInvariant()
+    building_integration_validator_sha256 = (Get-FileHash -LiteralPath $buildingIntegrationValidator -Algorithm SHA256).Hash.ToLowerInvariant()
+    trackside_integration_validator_sha256 = (Get-FileHash -LiteralPath $tracksideIntegrationValidator -Algorithm SHA256).Hash.ToLowerInvariant()
     seed = $Seed
     generated_utc = [DateTime]::UtcNow.ToString('o')
 }

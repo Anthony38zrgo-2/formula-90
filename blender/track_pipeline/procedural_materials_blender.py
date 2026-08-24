@@ -85,7 +85,9 @@ def build_material_library(texture_dir: str | Path, curb_manifest: dict | None =
         "spectator": flat_material("F90_SpectatorSilhouette", (0.035, 0.045, 0.055), roughness=1.0),
         "marshal": flat_material("F90_MarshalSilhouette", (0.82, 0.40, 0.08), roughness=0.96),
         "photographer": flat_material("F90_PhotographerSilhouette", (0.08, 0.10, 0.12), roughness=1.0),
-        "flag": flat_material("F90_TracksideFlag", (0.72, 0.055, 0.035), roughness=0.92),
+        "flag_pole": flat_material("F90_TracksideFlagPole", (0.18, 0.20, 0.22), roughness=0.78, metallic=0.45),
+        "flag_navy": flat_material("F90_TracksideFlagNavy", (0.035, 0.10, 0.22), roughness=0.92),
+        "flag_white": flat_material("F90_TracksideFlagWhite", (0.88, 0.87, 0.81), roughness=0.92),
         "sign": flat_material("F90_TracksideSign", (0.72, 0.62, 0.30), roughness=0.94),
     }
     for material_id, spec in (curb_manifest or {}).get("palette", {}).items():
@@ -101,6 +103,23 @@ def build_material_library(texture_dir: str | Path, curb_manifest: dict | None =
             roughness=0.98 if alpha else 0.92,
             alpha=alpha,
         )
+    repo_root = root.parents[3]
+    trackside_people = repo_root / "blender/assets/texture_sources/la_chutana/trackside/people"
+    if trackside_people.exists():
+        for png in trackside_people.glob("*_source.png"):
+            key = png.stem.replace("_source", "")
+            materials[f"card:{key}"] = texture_material(
+                f"F90_Card_{key}", png, roughness=1.0, alpha=True,
+            )
+            materials[f"asset:{key}"] = materials[f"card:{key}"]
+    trackside_signs = repo_root / "blender/assets/texture_sources/la_chutana/trackside/signs"
+    if trackside_signs.exists():
+        for png in trackside_signs.glob("*_source.png"):
+            key = png.stem.replace("_source", "")
+            materials[f"card:{key}"] = texture_material(
+                f"F90_Card_{key}", png, roughness=0.92, alpha=True,
+            )
+            materials[f"asset:{key}"] = materials[f"card:{key}"]
     materials["active_biome"] = manifest["active_biome"]
     return materials
 

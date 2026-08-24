@@ -20,7 +20,9 @@ from pipeline_common import (
 from procedural_catalog import biome_from_config, specs_for_biome, weighted_choice
 from terrain_grid import SegmentSpatialIndex, nearest_track_sample
 from vegetation_distribution import COLORS, choose_asset, commit_asset, load_distribution, sector_for_fraction
-from safety_barrier_layout import barrier_conflict, load_safety_barrier_layout
+from safety_barrier_layout import (barrier_conflict, barrier_envelope_at,
+                                   load_safety_barrier_layout)
+from building_asset_library import load_building_asset_library, specs_from_building_assets
 
 DENSITIES = ("none", "very_low", "low", "medium", "high")
 TRACKSIDE_PROP_TYPES = ("spectator", "marshal", "photographer", "flag", "sign")
@@ -38,7 +40,9 @@ def _semantic_prop_type(asset_id: str) -> str:
     return "sign"
 
 
-def load_semantic_environment(repo, config, points, distribution, color_catalogs, seed):
+def load_semantic_environment(repo, config, points, distribution, color_catalogs, seed,
+                              building_density, building_assets, building_specs,
+                              safety_barriers):
     """Resolve exact SVG-authored positions while remapping vegetation to the current catalog."""
     relative = config.get("semantic_environment", {}).get("source_svg")
     if not relative:
@@ -57,6 +61,27 @@ def load_semantic_environment(repo, config, points, distribution, color_catalogs
         (node for node in root.iter() if node.get("data-role") == "asset-instance"),
         key=lambda node: node.get("data-instance-id", ""),
     )
+    trees_cfg = config.get("procedural_environment", {}).get("trees", {})
+    bushes_cfg = config.get("procedural_environment", {}).get("bushes", {})
+    signs_cfg = config.get("trackside_props", {}).get("signs", {})
+    people_cfg = config.get("trackside_props", {}).get("people", {})
+    flags_cfg = config.get("trackside_props", {}).get("flags", {})
+    catalog_relative = config.get("trackside_props", {}).get(
+        "object_catalog", "blender/track_pipeline/layouts/la_chutana/object_catalog.json"
+    )
+    object_catalog = read_json(repo / catalog_relative).get("objects", {})
+    prop_assets = {spec["asset_id"]: spec for spec in object_catalog.values()}
+    lap_length = closed_polyline_length(points)
+
+    trees_enabled = bool(trees_cfg.get("enabled", True))
+    bushes_enabled = bool(bushes_cfg.get("enabled", True))
+    signs_enabled = bool(signs_cfg.get("enabled", True))
+    people_enabled = bool(people_cfg.get("enabled", True))
+    flags_enabled = bool(flags_cfg.get("enabled", True))
+
+    tree_scale_mult = float(trees_cfg.get("scale_multiplier", 1.85))
+    bush_scale_mult = float(bushes_cfg.get("scale_multiplier", 1.0))
+
     for node in nodes:
         x = float(node.get("cx"))
         z = float(node.get("cy"))
@@ -68,6 +93,10 @@ def load_semantic_environment(repo, config, points, distribution, color_catalogs
             grass_points.append([round(x, 4), round(z, 4)])
             continue
         if category in {"trees", "bushes"}:
+            if category == "trees" and not trees_enabled:
+                continue
+            if category == "bushes" and not bushes_enabled:
+                continue
             assets = color_catalogs.get(category)
             if not assets:
                 raise RuntimeError(f"Current vegetation catalog missing: {category}")
@@ -75,6 +104,10 @@ def load_semantic_environment(repo, config, points, distribution, color_catalogs
             asset = choose_asset(rng, category, nearest.fraction, distribution, assets, usage[category])
             commit_asset(asset, usage[category])
             scale = float(node.get("data-scale", "1"))
+            if category == "trees":
+                scale *= tree_scale_mult
+            elif category == "bushes":
+                scale *= bush_scale_mult
             placements.append({
                 "category": category,
                 "variant_id": asset.spec.id,
@@ -96,16 +129,101 @@ def load_semantic_environment(repo, config, points, distribution, color_catalogs
             })
             continue
         asset_id = node.get("data-asset-id", "")
+        prop_type = _semantic_prop_type(asset_id)
+        if prop_type == "sign" and not signs_enabled:
+            continue
+        if prop_type in {"spectator", "marshal", "photographer"} and not people_enabled:
+            continue
+        if prop_type == "flag" and not flags_enabled:
+            continue
+
+        side_val = 1 if nearest.side >= 0 else -1
+        prop_spec = prop_assets.get(asset_id)
+        if prop_spec is None:
+            raise RuntimeError(f"Semantic prop has no object catalog contract: {asset_id}")
+        outside_offset = float(prop_spec.get("guardrail_offset_m", 0.0))
+        envelope = barrier_envelope_at(
+            safety_barriers, nearest.fraction, side_val, lap_length,
+        )
+        target_dist = float(envelope["outer_face_distance_m"]) + outside_offset
+        pos, _, normal = interpolate_at_fraction(points, nearest.fraction)
+        prop_x = float(pos[0]) + float(normal[0]) * side_val * target_dist
+        prop_z = float(pos[1]) + float(normal[1]) * side_val * target_dist
         props.append({
-            "prop_type": _semantic_prop_type(asset_id),
+            "prop_type": prop_type,
             "prop_id": node.get("data-instance-id"),
             "source_asset_id": asset_id,
-            "position_xz": [round(x, 4), round(z, 4)],
+            "position_xz": [round(prop_x, 4), round(prop_z, 4)],
             "track_fraction": round(nearest.fraction, 7),
-            "side": 1 if nearest.side >= 0 else -1,
-            "distance_from_center_m": round(abs(nearest.signed_offset_m), 4),
+            "side": side_val,
+            "distance_from_center_m": round(target_dist, 4),
+            "safety_segment_id": envelope["segment_id"],
+            "barrier_prototype_id": envelope["prototype_id"],
+            "barrier_outer_face_m": round(float(envelope["outer_face_distance_m"]), 4),
+            "required_outside_offset_m": round(outside_offset, 4),
             "collision": False,
         })
+    grass_cards_placed = 0
+    if config.get("procedural_environment", {}).get("grass_cards", {}).get("enabled", True) and grass_points:
+        biome = biome_from_config(config)
+        grass_specs = specs_for_biome(biome, "grass")
+        target_count = min(len(grass_points), int(config.get("semantic_environment", {}).get("grass_cards_count", 2000)))
+        step = max(1, len(grass_points) // target_count)
+        road_half = float(config["road"]["width_m"]) * 0.5
+        min_grass_dist = road_half + float(config["procedural_environment"]["zones"]["grass"].get("min_edge_clearance_m", 1.4)) + 0.6
+        for g_idx in range(0, len(grass_points), step):
+            if grass_cards_placed >= target_count:
+                break
+            gx, gz = grass_points[g_idx]
+            g_nearest = nearest_track_sample(track_index, gx, gz, 400.0)
+            if g_nearest is None:
+                continue
+            rng = stable_rng(seed, f"semantic:grass:{g_idx}")
+            spec = grass_specs[g_idx % len(grass_specs)]
+            scale = float(1.25 + (rng.random() * 0.60))
+            yaw = float(rng.random() * math.pi * 2.0)
+            g_side = 1 if g_nearest.side >= 0 else -1
+            # Distribute grass cards nicely along shoulder & verge (8.0m to 14.5m from center)
+            g_dist = min_grass_dist + float(rng.random() * 6.5)
+            g_pos, _, g_normal = interpolate_at_fraction(points, g_nearest.fraction)
+            card_gx = float(g_pos[0]) + float(g_normal[0]) * g_side * g_dist
+            card_gz = float(g_pos[1]) + float(g_normal[1]) * g_side * g_dist
+            placements.append({
+                "category": "grass",
+                "variant_id": spec.id,
+                "position_xz": [round(card_gx, 4), round(card_gz, 4)],
+                "track_fraction": round(g_nearest.fraction, 7),
+                "side": g_side,
+                "distance_from_center_m": round(g_dist, 4),
+                "distance_to_track_m": round(g_dist, 4),
+                "yaw_rad": round(yaw, 7),
+                "scale": round(scale, 6),
+                "width_scale": 1.2,
+                "height_scale": 1.2,
+                "radius_m": round(spec.radius_m * scale, 4),
+                "barrier_clearance_required_m": 0.0,
+                "color_id": "original",
+                "family": "grass",
+                "semantic_instance_id": f"grass_{g_idx:04d}",
+            })
+            grass_cards_placed += 1
+    building_placements = []
+    building_attempts = 0
+    building_clusters = 0
+    if config.get("procedural_environment", {}).get("fake_buildings", {}).get("enabled", False):
+        occupancy = SpatialHash(cell_size=10.0)
+        for item in placements:
+            occupancy.add(Occupant(
+                float(item["position_xz"][0]), float(item["position_xz"][1]),
+                float(item["radius_m"]), item["category"], item["variant_id"],
+            ))
+        building_placements, building_attempts, building_clusters = place_category(
+            "fake_buildings", building_density, config, points, track_index,
+            occupancy, seed, distribution, None, safety_barriers,
+            building_specs, {asset["id"]: asset for asset in building_assets},
+        )
+        placements.extend(building_placements)
+
     stats = {}
     for category in ("trees", "bushes"):
         selected = [item for item in placements if item["category"] == category]
@@ -114,8 +232,20 @@ def load_semantic_environment(repo, config, points, distribution, color_catalogs
             "unique_assets": len({item["variant_id"] for item in selected}),
             "colors": {color: sum(item["color_id"] == color for item in selected) for color in COLORS},
         }
-    stats["grass"] = {"authority": "canonical_svg_texture_points", "placed": 0, "texture_points": len(grass_points)}
-    stats["fake_buildings"] = {"authority": "disabled", "placed": 0}
+    stats["grass"] = {
+        "authority": "canonical_svg_hybrid" if grass_cards_placed > 0 else "canonical_svg_texture_points",
+        "placed": grass_cards_placed,
+        "texture_points": len(grass_points),
+    }
+    stats["fake_buildings"] = {
+        "authority": "manifest_glb" if building_placements else "disabled",
+        "placed": len(building_placements), "attempts": building_attempts,
+        "clusters": building_clusters,
+        "asset_counts": {
+            asset["id"]: sum(item.get("building_asset_id") == asset["id"] for item in building_placements)
+            for asset in building_assets
+        },
+    }
     return placements, props, grass_points, stats, source
 
 
@@ -181,7 +311,9 @@ def _candidate_from_cluster(rng, category: str, anchor: ClusterAnchor, min_d: fl
     return fraction, anchor.side, distance
 
 
-def place_category(category, density, config, points, track_index, occupancy, seed, distribution=None, asset_catalog=None, safety_barrier_layout=None):
+def place_category(category, density, config, points, track_index, occupancy, seed,
+                   distribution=None, asset_catalog=None, safety_barrier_layout=None,
+                   building_specs=(), building_by_id=None):
     env = config["procedural_environment"]
     if category == "fake_buildings" and not env.get("fake_buildings", {}).get("enabled", True):
         return [], 0, 0
@@ -216,9 +348,17 @@ def place_category(category, density, config, points, track_index, occupancy, se
             distance = rng.uniform(min_d, max_d)
 
         selected_asset = None
+        selected_building = None
         if distribution and asset_catalog and category in {"trees", "bushes"}:
             selected_asset = choose_asset(rng, category, fraction, distribution, asset_catalog, usage)
             spec = selected_asset.spec
+        elif category == "fake_buildings" and building_specs:
+            # Deterministic round-robin guarantees that every reviewed building
+            # appears before variants repeat, while placement remains seeded.
+            spec = building_specs[len(output) % len(building_specs)]
+            selected_building = (building_by_id or {}).get(spec.id)
+            if selected_building is None:
+                raise RuntimeError(f"Building spec has no manifest asset: {spec.id}")
         else:
             spec = weighted_choice(rng, specs)
 
@@ -289,6 +429,10 @@ def place_category(category, density, config, points, track_index, occupancy, se
             record["family"] = selected_asset.family
             record["asset_glb"] = selected_asset.glb
             record["sector_id"] = sector_for_fraction(distribution, fraction)["id"]
+        if selected_building is not None:
+            record["asset_glb"] = selected_building["glb"]
+            record["building_asset_id"] = selected_building["id"]
+            record["collision"] = False
         output.append(record)
         if selected_asset is not None:
             commit_asset(selected_asset, usage)
@@ -299,7 +443,8 @@ def place_category(category, density, config, points, track_index, occupancy, se
     return output, attempts, len(clusters)
 
 
-def generate_trackside_props(config: dict, points: np.ndarray) -> list[dict]:
+def generate_trackside_props(config: dict, points: np.ndarray,
+                             safety_barriers: dict | None = None) -> list[dict]:
     """Place lightweight non-collidable 2D trackside cards outside the tire perimeter."""
     props_config = config.get("trackside_props", {})
     tire_config = config.get("tire_barriers", {})
@@ -307,7 +452,6 @@ def generate_trackside_props(config: dict, points: np.ndarray) -> list[dict]:
         return []
     lap_length = closed_polyline_length(points)
     road_half = float(config["road"]["width_m"]) * 0.5
-    barrier_distance = road_half + float(tire_config.get("separation_from_edge_m", 5.0))
     outside_offset = float(props_config.get("outside_barrier_offset_m", 1.8))
     max_cards = max(0, int(props_config.get("max_visible_cards", 260)))
     spacing = props_config.get("spacing_m", {})
@@ -320,6 +464,10 @@ def generate_trackside_props(config: dict, points: np.ndarray) -> list[dict]:
                 return output
             fraction = ((index + 0.37 + type_index * 0.11) / count) % 1.0
             side = -1 if (index + type_index) % 2 else 1
+            envelope = (barrier_envelope_at(safety_barriers, fraction, side, lap_length)
+                        if safety_barriers else None)
+            barrier_distance = (float(envelope["outer_face_distance_m"]) if envelope else
+                                road_half + float(tire_config.get("separation_from_edge_m", 5.0)))
             distance = barrier_distance + outside_offset
             pos, _, _ = interpolate_at_fraction(points, fraction)
             output.append({
@@ -329,6 +477,12 @@ def generate_trackside_props(config: dict, points: np.ndarray) -> list[dict]:
                 "track_fraction": round(float(fraction), 7),
                 "side": side,
                 "distance_from_center_m": round(distance, 4),
+                **({
+                    "safety_segment_id": envelope["segment_id"],
+                    "barrier_prototype_id": envelope["prototype_id"],
+                    "barrier_outer_face_m": round(float(envelope["outer_face_distance_m"]), 4),
+                    "required_outside_offset_m": round(outside_offset, 4),
+                } if envelope else {}),
                 "collision": False,
             })
     return output
@@ -349,12 +503,15 @@ def main() -> int:
     config = read_json(cp)
     distribution, color_catalogs = load_distribution(repo, config)
     safety_barriers = load_safety_barrier_layout(repo, config)
+    building_assets = load_building_asset_library(repo, config)
+    building_specs = specs_from_building_assets(building_assets)
     center = read_json(repo / config["generated_dir"] / "centerline.json")
     points = np.asarray(center["points_xz"], dtype=float)
     biome = biome_from_config(config)
     if config.get("semantic_environment", {}).get("enabled", False):
         placements, trackside_props, grass_points, stats, source = load_semantic_environment(
             repo, config, points, distribution, color_catalogs, ns.seed,
+            ns.buildings_density, building_assets, building_specs, safety_barriers,
         )
         output = repo / config["generated_dir"] / "placements.json"
         write_json(output, {
@@ -380,6 +537,7 @@ def main() -> int:
         placed, attempts, clusters = place_category(
             category, density, config, points, track_index, occupancy, ns.seed,
             distribution, color_catalogs.get(category), safety_barriers,
+            building_specs, {asset["id"]: asset for asset in building_assets},
         )
         placements.extend(placed)
         stats[category] = {"density": density, "placed": len(placed), "attempts": attempts, "clusters": clusters}
@@ -389,7 +547,7 @@ def main() -> int:
             }
             stats[category]["unique_assets"] = len({item["variant_id"] for item in placed})
 
-    trackside_props = generate_trackside_props(config, points)
+    trackside_props = generate_trackside_props(config, points, safety_barriers)
 
     output = repo / config["generated_dir"] / "placements.json"
     write_json(output, {

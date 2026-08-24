@@ -69,12 +69,17 @@
   "safety_barriers": {
     "procedural": true,
     "manifest": "blender/track_pipeline/manifests/la_chutana_safety_barriers.json",
+    "asset_library_manifest": "game/resources/environment/assets/barriers/barrier_manifest.json",
+    "construction_manifest": "game/resources/environment/manifests/barrier_construction_manifest.json",
+    "recipe_manifest": "game/resources/environment/recipes/barrier_library.json",
+    "palette_manifest": "game/resources/environment/palettes/barrier_palette.json",
+    "generator": "game/resources/environment/tools/build_barrier_3d_library.py",
     "legacy_guardrails_disabled": true,
-    "legacy_tire_barriers_disabled": false,
-    "scope": "current_chicane_only"
+    "legacy_tire_barriers_disabled": true,
+    "scope": "full_circuit"
   },
   "tire_barriers": {
-    "procedural": true,
+    "procedural": false,
     "continuous_visual": true,
     "both_sides": true,
     "separation_from_edge_m": 5.0,
@@ -85,10 +90,7 @@
     "visual_depth_m": 0.45,
     "side_repeats": 1,
     "collision_height_m": 1.25,
-    "collision_thickness_m": 0.45,
-    "exclude_spans": [
-      {"start_fraction": 0.520, "end_fraction": 0.630, "replacement": "current_chicane_safety_barriers"}
-    ]
+    "collision_thickness_m": 0.45
   },
   "vegetation_barrier_clearance_m": {
     "trees": 1.0,
@@ -97,7 +99,24 @@
   "trackside_props": {
     "procedural": true,
     "collision": false,
+    "object_catalog": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
     "outside_barrier_offset_m": 1.8,
+    "signs": {
+      "enabled": true,
+      "width_m": 7.2,
+      "height_m": 2.4,
+      "style": "arcade_billboard"
+    },
+    "people": {
+      "enabled": true,
+      "spectator_height_m": 1.75,
+      "marshal_height_m": 1.80,
+      "photographer_height_m": 1.35
+    },
+    "flags": {
+      "enabled": true,
+      "height_m": 2.20
+    },
     "spacing_m": {
       "spectator": 58.0,
       "marshal": 150.0,
@@ -109,14 +128,27 @@
   },
   "procedural_environment": {
     "tree_planes": 2,
+    "trees": {
+      "enabled": true,
+      "style": "3d_desert_mesh",
+      "scale_multiplier": 1.85
+    },
+    "bushes": {
+      "enabled": true,
+      "scale_multiplier": 1.0
+    },
     "grass_cards": {
-      "enabled": false,
-      "deprecated": true,
+      "enabled": true,
+      "max_cards": 2000,
       "replacement": "terrain_ground_cover"
     },
     "fake_buildings": {
-      "enabled": false,
-      "reason": "Temporarily removed from the La Chutana environment"
+      "enabled": true,
+      "collision": false,
+      "asset_manifest": "game/resources/environment/assets/buildings/building_manifest.json",
+      "source_manifest": "game/resources/environment/manifests/building_sources.json",
+      "construction_manifest": "game/resources/environment/manifests/building_construction_manifest.json",
+      "generator": "game/resources/environment/tools/build_building_asset_manifest.py"
     },
     "region": "south_america",
     "biome": {"continent": "south_america", "longitude": "west", "altitude": "low"},
@@ -139,7 +171,8 @@
   "semantic_environment": {
     "enabled": true,
     "source_svg": "game/data/tracks_revisions/la_chutana/revisions/1f49978e1d7de1401b616a65d31f990b49ec3b154cd6a86b58b8a21ba7aa71b8/track.canonical.svg",
-    "grass_output": "terrain_texture",
+    "grass_output": "hybrid_cards_and_texture",
+    "grass_cards_count": 2000,
     "preserve_exact_positions": true
   },
   "semantic_layout_config": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
