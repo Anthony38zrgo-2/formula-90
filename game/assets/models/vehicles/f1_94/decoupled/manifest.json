@@ -1,6 +1,6 @@
 {
   "asset": "F1_94",
-  "version": 2,
+  "version": 3,
   "standard": "Formula-90 GEVP decoupled visual asset",
   "canonical_variant": "vehicle-studio-williams94-inspired",
   "coordinate_convention": {
@@ -16,8 +16,10 @@
     "assembled_source_sha256": "34A1672FC87774D64286CD98BA9FA8C44720972E3658F1B2DEAD29C553B24038",
     "canonicalizer": "blender/vehicle_studio/prepare_godot_livery.py",
     "topology_repaired": true,
+    "topology_remaster": "formula90-topology-remaster/v1",
     "uv0_rebuilt": true,
-    "surface_faces_preserved": true
+    "uv_status": "provisional Smart Project UV0 pending semantic atlas rebuild",
+    "source_surface_preserved": true
   },
   "material_strategy": {
     "type": "embedded_gltf_pbr",
@@ -39,18 +41,21 @@
   "geometry_assets": {
     "chassis_gevp": {
       "path": "geometry/F1_94_chassis_geometry.glb",
-      "sha256": "15D53AD3D2F5987B54185B532C6AF1F4015BE2A69DA52EA5150AA861AABCA340",
-      "mesh_count": 19
+      "sha256": "495636A50BF5C51BDFF1693578C9F065A03CFD7355A08648CAC3EC19E5970A8F",
+      "mesh_count": 19,
+      "triangles": 19216
     },
     "wheel_front_canonical": {
       "path": "geometry/F1_94_wheel_front_geometry.glb",
-      "sha256": "863CF2C642C126D790467D5717F99AE1FDAADEEE1166842FC41971E6679C46F6",
-      "mesh_count": 4
+      "sha256": "F6F04AD363F1611031855A09A8A3BDA34552B3A09B50EA49588BA7609C8312D5",
+      "mesh_count": 2,
+      "triangles": 4152
     },
     "wheel_rear_canonical": {
       "path": "geometry/F1_94_wheel_rear_geometry.glb",
-      "sha256": "E5D6580C41EB09E93AB7824486A3FB707FB02F31604899243A1EDF75CD695B28",
-      "mesh_count": 4
+      "sha256": "104B99AFEA04F099BEDD253320D265BA88DD79C6A561E566FF8C462D8EA26FCE",
+      "mesh_count": 2,
+      "triangles": 4152
     }
   },
   "runtime_assets": {
@@ -75,5 +80,16 @@
     "FR": [0.820138, 0.025669, -1.533342],
     "RL": [-0.747060, -0.010424, 1.533342],
     "RR": [0.747060, -0.010424, 1.533342]
+  },
+  "topology_quality": {
+    "assembled_triangles": 35824,
+    "target_class": "2004-era game asset without LOD",
+    "open_boundary_edges_before": 1578,
+    "open_boundary_edges_after": 6,
+    "degenerate_faces_after": 0,
+    "remaining_multi_shell_junction_edges": 48,
+    "wheel_surfaces": "closed manifold hub and continuous tire",
+    "silhouette_gate": "passed at 6 percent or 0.025 m per axis",
+    "uv_policy": "provisional valid UV0; semantic UV and 2K PBR textures deferred to the next human-gated stage"
   }
 }
