@@ -20,6 +20,7 @@ remains the first thing to read. This index maps the rest.
 | [architecture/manifesto.md](architecture/manifesto.md) | Architecture manifesto (was Spanish `MANIFIESTO_ARQUITECTURA.md`). |
 | [architecture/gevp-cpp-plan.md](architecture/gevp-cpp-plan.md) | GEVP→C++ migration plan (was `PLAN_ARQUITECTURA_GEVP_CPP.md`). |
 | [adr/](adr/) | Architecture Decision Records (`0001-*.md`, `0002-*.md`). |
+| [vehicle-studio/architecture-spec.md](vehicle-studio/architecture-spec.md) | Architecture contract for semantic CAD views, constrained F1 geometry editing, Blender materials and immutable variants. |
 
 ## Engineering & operations
 
@@ -58,6 +59,7 @@ remains the first thing to read. This index maps the rest.
 | [tracks/](tracks/) | Test-track docs (`formula90s-test-track.md`, `la-chutana-test-track.md`). |
 | [vehicles/](vehicles/) | Vehicle docs (`f1-94.md`, import standard, visual-asset contract, Jordan 1995 phases). |
 | [track-studio/](track-studio/) | Track Studio tooling docs (`ts-*-status.md`, flows, decisions, migration plan). |
+| [vehicle-studio/](vehicle-studio/) | Vehicle Studio architecture, sprint plan, contracts, Phase 0 evidence and implementation backlog. |
 | [troubleshooting/](troubleshooting/) | Known issues, resolved incidents, retrospectives. |
 | [roadmap.md](roadmap.md) | Active roadmap. |
 | [arcade-references.md](arcade-references.md), [physics-model.md](physics-model.md), [v10-vehicle.md](v10-vehicle.md) | Supplementary reference docs. |
