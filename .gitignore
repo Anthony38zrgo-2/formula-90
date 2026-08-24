@@ -59,3 +59,6 @@ build_log.txt
 suspension_report.png
 instrucciones.txt
 context.md
+
+# Generated human-gate previews receive non-deterministic Godot import UIDs.
+game/resources/environment/assets/*/review/*.import
