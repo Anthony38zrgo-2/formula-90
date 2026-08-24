@@ -35,8 +35,10 @@ class RuntimeVariant2021Tests(unittest.TestCase):
 
     def test_scene_and_launcher_select_variant_without_changing_default(self):
         scene = (REPO / "game/scenes/vehicles/f1_94/f1_2021_nominal_rust.tscn").read_text(encoding="utf-8")
+        session = (REPO / "game/scenes/runtime/vehicle_test_session_2021.tscn").read_text(encoding="utf-8")
         launcher = (REPO / "scripts/run_f1_94.ps1").read_text(encoding="utf-8-sig")
         self.assertIn('physics_config_path = "res://data/vehicles/f1_94/variants/f1_2021_nominal_physics.json"', scene)
+        self.assertIn('config_json_path = "res://data/vehicles/f1_94/variants/f1_2021_nominal_physics.json"', session)
         self.assertIn("[string]$VehicleVariant = '1994'", launcher)
         self.assertIn("$VehicleVariant -eq '2021'", launcher)
         self.assertIn("vehicle_test_session_2021.tscn", launcher)
