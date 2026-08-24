@@ -17,10 +17,10 @@ open-wheel geometry, Blender materials and immutable visual variants.
 - [Williams provenance recovery](williams94-provenance-recovery.md)
 - [Williams semantic mapping](williams94-semantic-mapping.md)
 - [Phase 0 validation](phase-0-validation.md)
+- [F1 2021 nominal dimensional variant](f1-2021-dimensional-variant.md)
 
 The first implementation sequence is Phase 0 (`VS-001` through `VS-006`). It
 captures the Williams baseline and freezes the JSON/SVG contracts before any
 application scaffold or Blender mutation begins.
-
 
 
