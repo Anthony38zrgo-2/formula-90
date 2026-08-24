@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "construction_manifest": "game/resources/environment/manifests/building_construction_manifest.json",
+  "assets": [
+    {
+      "id": "house_peru_01",
+      "glb": "game/resources/environment/assets/buildings/house-peru-01.glb",
+      "biome": "south_america_west_low",
+      "weight": 1.0,
+      "triangle_budget": 3500
+    },
+    {
+      "id": "house_peru_02",
+      "glb": "game/resources/environment/assets/buildings/house-peru-02.glb",
+      "biome": "south_america_west_low",
+      "weight": 1.0,
+      "triangle_budget": 3600
+    }
+  ]
+}
