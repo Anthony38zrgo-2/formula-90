@@ -4,13 +4,14 @@
   "base_vehicle_id": "f1_94",
   "classification": "dimensional_variant",
   "mechanical_baseline": "f1_94",
-  "build_ir_sha256": "9727B3FAA237B579EEFA172ACE2B6A5106D0DC8E9F367A2ECC543BE862904EFF",
+  "build_ir_sha256": "D7B8397A7C50E035F5DE70ADBDF09A67A05A5039E6B978A76449F1D99AB98686",
   "geometry": {
     "wheelbase_m": 3.64,
     "front_track_m": 1.635,
     "rear_track_m": 1.575,
-    "front_tire_radius_m": 0.335,
-    "front_tire_width_m": 0.305,
+    "front_tire_radius_m": 0.33,
+    "front_tire_width_m": 0.29,
+    "front_overall_width_m": 1.925,
     "rear_tire_radius_m": 0.335,
     "rear_tire_width_m": 0.405,
     "maximum_overall_width_m": 2.0
@@ -20,17 +21,17 @@
     "physics_profile": "res://data/vehicles/f1_94/variants/f1_2021_nominal_physics.json",
     "chassis": {
       "path": "geometry/F1_2021_nominal_chassis.glb",
-      "sha256": "48404B3E4E3099A3CBDE7BB2597A41D612795D66D631E5B053348DA2E96BB3AA"
+      "sha256": "4F4CC8C2748D0E5DF1EB5D24FE4D1186181A9376C6CFCEF1295D48CD2A976097"
     },
     "wheel_front": {
       "path": "geometry/F1_2021_nominal_wheel_front.glb",
-      "sha256": "8837A803B5739CD1FA8A8F4AD7ACD0FE6F25F1AD295A1CC499F1BCE69C540A5C"
+      "sha256": "152585509F5C37DE18D9F955E6705A02BA38D03F10F74B04C4E21ED23206D56E"
     },
     "wheel_rear": {
       "path": "geometry/F1_2021_nominal_wheel_rear.glb",
       "sha256": "6220DBC00EA5153976425B80738D802AFB0213ADF8707A65CDED4D73CB05D51F"
     },
-    "physics_sha256": "4C33BB58BC39BD20ECEEF4F7B0C2EF8E0E4F698FD849712EA8329CD757EE0A9C"
+    "physics_sha256": "AA5408E69D2473C8ED7879C45960C47A6491D09DC8830FC72FDA45CE35A6EEE5"
   },
   "constraints": {
     "topology_changed": false,

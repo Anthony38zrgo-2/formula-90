@@ -21,7 +21,7 @@ $manifestPath = if ($is2021Variant) {
 } else {
     Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
 }
-$variantLabel = if ($is2021Variant) { 'F1 2021 nominal dimensional' } else { 'F1 1994 canonical' }
+$variantLabel = if ($is2021Variant) { 'F1 2021/1994 hybrid dimensional' } else { 'F1 1994 canonical' }
 $trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
 $trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
 $trackConfigPath = Join-Path $root 'blender\track_pipeline\configs\la_chutana.json'

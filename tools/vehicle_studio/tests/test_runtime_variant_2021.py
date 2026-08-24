@@ -22,15 +22,19 @@ class RuntimeVariant2021Tests(unittest.TestCase):
         self.assertEqual(sha256(physics.read_bytes()).hexdigest().upper(), runtime["physics_sha256"])
 
     def test_physics_dimensions_match_nominal_profile(self):
+        manifest = json.loads((VARIANT / "manifest.json").read_text(encoding="utf-8"))
         physics = json.loads((
             REPO / "game/data/vehicles/f1_94/variants/f1_2021_nominal_physics.json"
         ).read_text(encoding="utf-8"))
         self.assertEqual(physics["geometry"]["wheelbase"], 3.64)
         self.assertEqual(physics["geometry"]["front_track"], 1.635)
         self.assertEqual(physics["geometry"]["rear_track"], 1.575)
-        self.assertEqual(physics["tires"]["front"]["radius"], 0.335)
-        self.assertEqual(physics["tires"]["front"]["width"], 0.305)
+        self.assertEqual(physics["tires"]["front"]["radius"], 0.330)
+        self.assertEqual(physics["tires"]["front"]["width"], 0.290)
         self.assertEqual(physics["tires"]["rear"]["radius"], 0.335)
+        self.assertEqual(manifest["geometry"]["front_tire_radius_m"], 0.330)
+        self.assertEqual(manifest["geometry"]["front_tire_width_m"], 0.290)
+        self.assertEqual(manifest["geometry"]["front_overall_width_m"], 1.925)
         self.assertEqual(physics["tires"]["rear"]["width"], 0.405)
 
     def test_scene_and_launcher_select_variant_without_changing_default(self):
@@ -38,6 +42,8 @@ class RuntimeVariant2021Tests(unittest.TestCase):
         session = (REPO / "game/scenes/runtime/vehicle_test_session_2021.tscn").read_text(encoding="utf-8")
         launcher = (REPO / "scripts/run_f1_94.ps1").read_text(encoding="utf-8-sig")
         self.assertIn('physics_config_path = "res://data/vehicles/f1_94/variants/f1_2021_nominal_physics.json"', scene)
+        self.assertIn('position = Vector3(-0.7015, 0.235125, -1.82)', scene)
+        self.assertIn('position = Vector3(0.9335, 0.235125, -1.82)', scene)
         self.assertIn('config_json_path = "res://data/vehicles/f1_94/variants/f1_2021_nominal_physics.json"', session)
         self.assertIn("[string]$VehicleVariant = '1994'", launcher)
         self.assertIn("$VehicleVariant -eq '2021'", launcher)

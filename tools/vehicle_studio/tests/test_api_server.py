@@ -37,7 +37,7 @@ class OnboardingControllerTests(unittest.TestCase):
         self.assertEqual(profile["profile_id"], "f1-2021-nominal")
         self.assertAlmostEqual(
             targets["parameter-front-track"] + targets["parameter-front-tire-width"],
-            1.940,
+            1.925,
         )
         self.assertAlmostEqual(
             targets["parameter-rear-track"] + targets["parameter-rear-tire-width"],
@@ -76,4 +76,3 @@ class OnboardingControllerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
