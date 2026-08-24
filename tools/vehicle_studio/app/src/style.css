@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-workspace: #090d12;
+  --color-panel: #111821;
+  --color-panel-soft: #17212c;
+  --color-signal: #73e2a7;
+  --font-sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Code", monospace;
+}
+
+html, body, #app { min-height: 100%; }
+body { margin: 0; background: var(--color-workspace); color: #e5edf5; }

@@ -1,0 +1,28 @@
+{
+  "name": "formula90-vehicle-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "tailwindcss": "^4.1.0",
+    "three": "^0.185.1",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/three": "^0.185.4",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^26.0.0",
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.0",
+    "vue-tsc": "^3.0.0"
+  }
+}
