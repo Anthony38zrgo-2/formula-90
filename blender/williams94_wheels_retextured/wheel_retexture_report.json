@@ -1,0 +1,26 @@
+{
+  "operation": "wheel retexture from scratch based on original look",
+  "base": "/mnt/data/williams94_wheels_uvfixed",
+  "output": "/mnt/data/williams94_wheels_retextured",
+  "textures_created": [
+    "GEO_WHEEL_TIRE_OUTER.png",
+    "GEO_WHEEL_TREAD.png",
+    "GEO_WHEEL_TIRE_INNER.png",
+    "GEO_WHEEL_HUB.png"
+  ],
+  "strategy": {
+    "atlas": "generic wheel textures rebuilt from scratch; top half for front wheel look, bottom half for rear wheel look",
+    "uv": "wheel UVs rebuilt by procedural planar/cylindrical mapping on refined geometry",
+    "preserved_nodes": [
+      "JNT_WHEEL_FL",
+      "JNT_WHEEL_FR",
+      "JNT_WHEEL_RL",
+      "JNT_WHEEL_RR",
+      "DATUM_WHEEL_CENTER",
+      "JNT_WHEEL_MOUNT",
+      "DATUM_WHEEL_OUTBOARD_FACE",
+      "DATUM_WHEEL_INBOARD_FACE",
+      "DATUM_TIRE_CONTACT_PATCH"
+    ]
+  }
+}

@@ -1,0 +1,385 @@
+{
+  "operation": "wheel-only UV remap using original modular version and barycentric remap on refined geometry",
+  "source": "/mnt/data/williams94_modular",
+  "base": "/mnt/data/williams94_wheels_refined",
+  "wheels": {
+    "front": {
+      "file": "geometry/F1_94_wheel_front_geometry.glb",
+      "root_node": "F1_94_WHEEL_FRONT",
+      "preserved_original_nodes": [
+        "DATUM_TIRE_CONTACT_PATCH",
+        "DATUM_WHEEL_CENTER",
+        "DATUM_WHEEL_INBOARD_FACE",
+        "DATUM_WHEEL_OUTBOARD_FACE",
+        "F1_94_WHEEL_FRONT",
+        "GEO_WHEEL_HUB",
+        "GEO_WHEEL_TIRE_INNER",
+        "GEO_WHEEL_TIRE_OUTER",
+        "GEO_WHEEL_TREAD",
+        "JNT_WHEEL_MOUNT",
+        "world"
+      ],
+      "DATUM_WHEEL_CENTER_max_matrix_delta": 0.0,
+      "new_anchor_nodes": {
+        "JNT_WHEEL_MOUNT": [
+          0,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_OUTBOARD_FACE": [
+          -0.15014949440956116,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_INBOARD_FACE": [
+          0.15014949440956116,
+          0,
+          0
+        ],
+        "DATUM_TIRE_CONTACT_PATCH": [
+          0,
+          -0.31695619536451,
+          0
+        ]
+      },
+      "geometry": {
+        "GEO_WHEEL_TIRE_OUTER": {
+          "triangles_before": 240,
+          "triangles_after": 240,
+          "vertices_before": 720,
+          "vertices_after": 720,
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.39453125
+            ],
+            [
+              0.99609375,
+              0.41796875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.39453125
+            ],
+            [
+              0.99609375,
+              0.4180661372313616
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.00390625,
+              0.39453125
+            ],
+            [
+              0.99609375,
+              0.41796875
+            ]
+          ]
+        },
+        "GEO_WHEEL_TREAD": {
+          "triangles_before": 160,
+          "triangles_after": 160,
+          "vertices_before": 480,
+          "vertices_after": 480,
+          "uv_range_before": [
+            [
+              0.22265625,
+              0.39453125
+            ],
+            [
+              0.83984375,
+              0.40234375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.2226562496481872,
+              0.39453125
+            ],
+            [
+              0.83984375,
+              0.4023437532706397
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.22265625,
+              0.39453125
+            ],
+            [
+              0.83984375,
+              0.40234375
+            ]
+          ]
+        },
+        "GEO_WHEEL_TIRE_INNER": {
+          "triangles_before": 240,
+          "triangles_after": 240,
+          "vertices_before": 720,
+          "vertices_after": 720,
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.37890625
+            ],
+            [
+              0.99609375,
+              0.40234375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.37890625
+            ],
+            [
+              0.99609375,
+              0.40234375
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.00390625,
+              0.37890625
+            ],
+            [
+              0.99609375,
+              0.40234375
+            ]
+          ]
+        },
+        "GEO_WHEEL_HUB": {
+          "triangles_before": 48,
+          "triangles_after": 48,
+          "vertices_before": 144,
+          "vertices_after": 144,
+          "uv_range_before": [
+            [
+              0.78515625,
+              0.37890625
+            ],
+            [
+              0.96484375,
+              0.38671875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.78515625,
+              0.37890625
+            ],
+            [
+              0.96484375,
+              0.38671875
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.78515625,
+              0.37890625
+            ],
+            [
+              0.96484375,
+              0.38671875
+            ]
+          ]
+        }
+      },
+      "triangles_after": 688,
+      "refinement": "same 1->4 conforming refinement as wheel pass; equal-radius midpoint radial projection preserved",
+      "uv_remap": "for every generated vertex, UV is computed by barycentric coordinates against its original source triangle, instead of simple edge-midpoint interpolation"
+    },
+    "rear": {
+      "file": "geometry/F1_94_wheel_rear_geometry.glb",
+      "root_node": "F1_94_WHEEL_REAR",
+      "preserved_original_nodes": [
+        "DATUM_TIRE_CONTACT_PATCH",
+        "DATUM_WHEEL_CENTER",
+        "DATUM_WHEEL_INBOARD_FACE",
+        "DATUM_WHEEL_OUTBOARD_FACE",
+        "F1_94_WHEEL_REAR",
+        "GEO_WHEEL_HUB",
+        "GEO_WHEEL_TIRE_INNER",
+        "GEO_WHEEL_TIRE_OUTER",
+        "GEO_WHEEL_TREAD",
+        "JNT_WHEEL_MOUNT",
+        "world"
+      ],
+      "DATUM_WHEEL_CENTER_max_matrix_delta": 0.0,
+      "new_anchor_nodes": {
+        "JNT_WHEEL_MOUNT": [
+          0,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_OUTBOARD_FACE": [
+          -0.18416249752044678,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_INBOARD_FACE": [
+          0.18416249752044678,
+          0,
+          0
+        ],
+        "DATUM_TIRE_CONTACT_PATCH": [
+          0,
+          -0.32900932535519894,
+          0
+        ]
+      },
+      "geometry": {
+        "GEO_WHEEL_TIRE_OUTER": {
+          "triangles_before": 160,
+          "triangles_after": 160,
+          "vertices_before": 480,
+          "vertices_after": 480,
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.31640625
+            ],
+            [
+              0.99609375,
+              0.33984375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.31640625
+            ],
+            [
+              0.99609375,
+              0.33984375191006033
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.00390625,
+              0.31640625
+            ],
+            [
+              0.99609375,
+              0.33984375
+            ]
+          ]
+        },
+        "GEO_WHEEL_TREAD": {
+          "triangles_before": 240,
+          "triangles_after": 240,
+          "vertices_before": 720,
+          "vertices_after": 720,
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.30078125
+            ],
+            [
+              0.99609375,
+              0.32421875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.30078125
+            ],
+            [
+              0.99609375,
+              0.32421875
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.00390625,
+              0.30078125
+            ],
+            [
+              0.99609375,
+              0.32421875
+            ]
+          ]
+        },
+        "GEO_WHEEL_TIRE_INNER": {
+          "triangles_before": 240,
+          "triangles_after": 240,
+          "vertices_before": 720,
+          "vertices_after": 720,
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.28515625
+            ],
+            [
+              0.99609375,
+              0.30859375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.0039062499999999983,
+              0.28515625
+            ],
+            [
+              0.99609375,
+              0.30869113565550516
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.00390625,
+              0.28515625
+            ],
+            [
+              0.99609375,
+              0.30859375
+            ]
+          ]
+        },
+        "GEO_WHEEL_HUB": {
+          "triangles_before": 48,
+          "triangles_after": 48,
+          "vertices_before": 144,
+          "vertices_after": 144,
+          "uv_range_before": [
+            [
+              0.16015625,
+              0.28515625
+            ],
+            [
+              0.33984375,
+              0.29296875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.16015625,
+              0.28515625
+            ],
+            [
+              0.33984375,
+              0.29296875
+            ]
+          ],
+          "uv_source_range": [
+            [
+              0.16015625,
+              0.28515625
+            ],
+            [
+              0.33984375,
+              0.29296875
+            ]
+          ]
+        }
+      },
+      "triangles_after": 688,
+      "refinement": "same 1->4 conforming refinement as wheel pass; equal-radius midpoint radial projection preserved",
+      "uv_remap": "for every generated vertex, UV is computed by barycentric coordinates against its original source triangle, instead of simple edge-midpoint interpolation"
+    }
+  }
+}

@@ -1,0 +1,960 @@
+{
+  "operation": "wheel remaster geometry + deterministic anchor metadata",
+  "source": "/mnt/data/williams94_sidepods_refined",
+  "wheels": {
+    "front": {
+      "file": "geometry/F1_94_wheel_front_geometry.glb",
+      "root_node": "F1_94_WHEEL_FRONT",
+      "original_node_names_preserved": [
+        "DATUM_WHEEL_CENTER",
+        "F1_94_WHEEL_FRONT",
+        "GEO_WHEEL_HUB",
+        "GEO_WHEEL_TIRE_INNER",
+        "GEO_WHEEL_TIRE_OUTER",
+        "GEO_WHEEL_TREAD",
+        "world"
+      ],
+      "missing_original_nodes_after_export": [],
+      "DATUM_WHEEL_CENTER_max_matrix_delta": 0.0,
+      "new_anchor_nodes": {
+        "JNT_WHEEL_MOUNT": [
+          0,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_OUTBOARD_FACE": [
+          -0.15014949440956116,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_INBOARD_FACE": [
+          0.15014949440956116,
+          0,
+          0
+        ],
+        "DATUM_TIRE_CONTACT_PATCH": [
+          0,
+          -0.31695619536451,
+          0
+        ]
+      },
+      "outer_radius_m": 0.31695619536451,
+      "width_m": 0.3002989888191223,
+      "geometry": {
+        "GEO_WHEEL_TIRE_OUTER": {
+          "triangles_before": 60,
+          "triangles_after": 240,
+          "vertices_before": 180,
+          "vertices_after": 720,
+          "bounds_before": [
+            [
+              -0.15014949440956116,
+              -0.1562504917383194,
+              -0.15624994039535522
+            ],
+            [
+              -0.08361747860908508,
+              0.15625052154064178,
+              0.15625005960464478
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.15014949440956116,
+              -0.1562504917383194,
+              -0.15624994039535522
+            ],
+            [
+              -0.08361747860908508,
+              0.15625052154064178,
+              0.15625005960464478
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.39453125
+            ],
+            [
+              0.99609375,
+              0.41796875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.39453125
+            ],
+            [
+              0.99609375,
+              0.41796875
+            ]
+          ]
+        },
+        "GEO_WHEEL_TREAD": {
+          "triangles_before": 40,
+          "triangles_after": 160,
+          "vertices_before": 120,
+          "vertices_after": 480,
+          "bounds_before": [
+            [
+              -0.13326051831245422,
+              -0.31695449352264404,
+              -0.316955029964447
+            ],
+            [
+              0.1351495087146759,
+              0.31695449352264404,
+              0.316955029964447
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.13326051831245422,
+              -0.31695449352264404,
+              -0.316955029964447
+            ],
+            [
+              0.1351495087146759,
+              0.31695449352264404,
+              0.316955029964447
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.22265625,
+              0.39453125
+            ],
+            [
+              0.83984375,
+              0.40234375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.22265625,
+              0.39453125
+            ],
+            [
+              0.83984375,
+              0.40234375
+            ]
+          ]
+        },
+        "GEO_WHEEL_TIRE_INNER": {
+          "triangles_before": 60,
+          "triangles_after": 240,
+          "vertices_before": 180,
+          "vertices_after": 720,
+          "bounds_before": [
+            [
+              -0.15014949440956116,
+              -0.31695449352264404,
+              -0.316955029964447
+            ],
+            [
+              0.15014949440956116,
+              0.31695449352264404,
+              0.316955029964447
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.15014949440956116,
+              -0.31695449352264404,
+              -0.316955029964447
+            ],
+            [
+              0.15014949440956116,
+              0.31695449352264404,
+              0.316955029964447
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.37890625
+            ],
+            [
+              0.99609375,
+              0.40234375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.37890625
+            ],
+            [
+              0.99609375,
+              0.40234375
+            ]
+          ]
+        },
+        "GEO_WHEEL_HUB": {
+          "triangles_before": 12,
+          "triangles_after": 48,
+          "vertices_before": 36,
+          "vertices_after": 144,
+          "bounds_before": [
+            [
+              -0.1219315230846405,
+              -0.04099249467253685,
+              -0.04099195823073387
+            ],
+            [
+              -0.08286252617835999,
+              0.04099150374531746,
+              0.04099195823073387
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.1219315230846405,
+              -0.04099249467253685,
+              -0.04099195823073387
+            ],
+            [
+              -0.08286252617835999,
+              0.04099150374531746,
+              0.04099195823073387
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.78515625,
+              0.37890625
+            ],
+            [
+              0.96484375,
+              0.38671875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.78515625,
+              0.37890625
+            ],
+            [
+              0.96484375,
+              0.38671875
+            ]
+          ]
+        }
+      },
+      "triangles_after": 688,
+      "degenerate_triangles_after": 0,
+      "refinement": "one conforming 1->4 pass per original triangle; equal-radius edge midpoints projected to exact circular profile; UV midpoint interpolation",
+      "effective_original_circumference_segments": 20,
+      "effective_refined_circumference_segments": 40,
+      "hub_effective_segments_before_after": [
+        12,
+        24
+      ],
+      "topology_by_material_mesh": {
+        "GEO_WHEEL_TIRE_OUTER": {
+          "unique_positions": 141,
+          "boundary_edges": 40,
+          "nonmanifold_edges": 0
+        },
+        "GEO_WHEEL_TREAD": {
+          "unique_positions": 120,
+          "boundary_edges": 80,
+          "nonmanifold_edges": 0
+        },
+        "GEO_WHEEL_TIRE_INNER": {
+          "unique_positions": 181,
+          "boundary_edges": 120,
+          "nonmanifold_edges": 0
+        },
+        "GEO_WHEEL_HUB": {
+          "unique_positions": 37,
+          "boundary_edges": 24,
+          "nonmanifold_edges": 0
+        }
+      },
+      "whole_wheel_topology": {
+        "unique_positions": 359,
+        "boundary_edges": 24,
+        "nonmanifold_edges": 0,
+        "edge_multiplicity_max": 2
+      }
+    },
+    "rear": {
+      "file": "geometry/F1_94_wheel_rear_geometry.glb",
+      "root_node": "F1_94_WHEEL_REAR",
+      "original_node_names_preserved": [
+        "DATUM_WHEEL_CENTER",
+        "F1_94_WHEEL_REAR",
+        "GEO_WHEEL_HUB",
+        "GEO_WHEEL_TIRE_INNER",
+        "GEO_WHEEL_TIRE_OUTER",
+        "GEO_WHEEL_TREAD",
+        "world"
+      ],
+      "missing_original_nodes_after_export": [],
+      "DATUM_WHEEL_CENTER_max_matrix_delta": 0.0,
+      "new_anchor_nodes": {
+        "JNT_WHEEL_MOUNT": [
+          0,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_OUTBOARD_FACE": [
+          -0.18416249752044678,
+          0,
+          0
+        ],
+        "DATUM_WHEEL_INBOARD_FACE": [
+          0.18416249752044678,
+          0,
+          0
+        ],
+        "DATUM_TIRE_CONTACT_PATCH": [
+          0,
+          -0.32900932535519894,
+          0
+        ]
+      },
+      "outer_radius_m": 0.32900932535519894,
+      "width_m": 0.36832499504089355,
+      "geometry": {
+        "GEO_WHEEL_TIRE_OUTER": {
+          "triangles_before": 40,
+          "triangles_after": 160,
+          "vertices_before": 120,
+          "vertices_after": 480,
+          "bounds_before": [
+            [
+              -0.16742950677871704,
+              -0.3290089964866638,
+              -0.3290090560913086
+            ],
+            [
+              0.16916251182556152,
+              0.3290089964866638,
+              0.3290090560913086
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.16742950677871704,
+              -0.3290089964866638,
+              -0.3290090560913086
+            ],
+            [
+              0.16916251182556152,
+              0.3290089964866638,
+              0.3290090560913086
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.31640625
+            ],
+            [
+              0.99609375,
+              0.33984375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.31640625
+            ],
+            [
+              0.99609375,
+              0.33984375
+            ]
+          ]
+        },
+        "GEO_WHEEL_TREAD": {
+          "triangles_before": 60,
+          "triangles_after": 240,
+          "vertices_before": 180,
+          "vertices_after": 720,
+          "bounds_before": [
+            [
+              -0.18416249752044678,
+              -0.3290089964866638,
+              -0.3290090560913086
+            ],
+            [
+              0.18416249752044678,
+              0.3290089964866638,
+              0.3290090560913086
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.18416249752044678,
+              -0.3290089964866638,
+              -0.3290090560913086
+            ],
+            [
+              0.18416249752044678,
+              0.3290089964866638,
+              0.3290090560913086
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.30078125
+            ],
+            [
+              0.99609375,
+              0.32421875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.30078125
+            ],
+            [
+              0.99609375,
+              0.32421875
+            ]
+          ]
+        },
+        "GEO_WHEEL_TIRE_INNER": {
+          "triangles_before": 60,
+          "triangles_after": 240,
+          "vertices_before": 180,
+          "vertices_after": 720,
+          "bounds_before": [
+            [
+              -0.18416249752044678,
+              -0.1576939970254898,
+              -0.1576939821243286
+            ],
+            [
+              -0.12037050724029541,
+              0.1576939970254898,
+              0.1576939821243286
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.18416249752044678,
+              -0.1576939970254898,
+              -0.1576939821243286
+            ],
+            [
+              -0.12037050724029541,
+              0.1576939970254898,
+              0.1576939821243286
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.00390625,
+              0.28515625
+            ],
+            [
+              0.99609375,
+              0.30859375
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.00390625,
+              0.28515625
+            ],
+            [
+              0.99609375,
+              0.30859375
+            ]
+          ]
+        },
+        "GEO_WHEEL_HUB": {
+          "triangles_before": 12,
+          "triangles_after": 48,
+          "vertices_before": 36,
+          "vertices_after": 144,
+          "bounds_before": [
+            [
+              -0.15842151641845703,
+              -0.040991999208927155,
+              -0.040992025285959244
+            ],
+            [
+              -0.11935347318649292,
+              0.040991999208927155,
+              0.04099201411008835
+            ]
+          ],
+          "bounds_after": [
+            [
+              -0.15842151641845703,
+              -0.040991999208927155,
+              -0.040992025285959244
+            ],
+            [
+              -0.11935347318649292,
+              0.040991999208927155,
+              0.04099201411008835
+            ]
+          ],
+          "uv_range_before": [
+            [
+              0.16015625,
+              0.28515625
+            ],
+            [
+              0.33984375,
+              0.29296875
+            ]
+          ],
+          "uv_range_after": [
+            [
+              0.16015625,
+              0.28515625
+            ],
+            [
+              0.33984375,
+              0.29296875
+            ]
+          ]
+        }
+      },
+      "triangles_after": 688,
+      "degenerate_triangles_after": 0,
+      "refinement": "one conforming 1->4 pass per original triangle; equal-radius edge midpoints projected to exact circular profile; UV midpoint interpolation",
+      "effective_original_circumference_segments": 20,
+      "effective_refined_circumference_segments": 40,
+      "hub_effective_segments_before_after": [
+        12,
+        24
+      ],
+      "topology_by_material_mesh": {
+        "GEO_WHEEL_TIRE_OUTER": {
+          "unique_positions": 120,
+          "boundary_edges": 80,
+          "nonmanifold_edges": 0
+        },
+        "GEO_WHEEL_TREAD": {
+          "unique_positions": 181,
+          "boundary_edges": 120,
+          "nonmanifold_edges": 0
+        },
+        "GEO_WHEEL_TIRE_INNER": {
+          "unique_positions": 141,
+          "boundary_edges": 40,
+          "nonmanifold_edges": 0
+        },
+        "GEO_WHEEL_HUB": {
+          "unique_positions": 37,
+          "boundary_edges": 24,
+          "nonmanifold_edges": 0
+        }
+      },
+      "whole_wheel_topology": {
+        "unique_positions": 359,
+        "boundary_edges": 24,
+        "nonmanifold_edges": 0,
+        "edge_multiplicity_max": 2
+      }
+    }
+  },
+  "preserved_chassis_anchors": {
+    "JNT_WHEEL_FL": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.796250495
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.006027252499999997
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -1.4603255124999999
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        -0.796250495,
+        -0.006027252499999997,
+        -1.4603255124999999
+      ]
+    },
+    "JNT_WHEEL_FR": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.796250495
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.006027252499999997
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -1.4603255124999999
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        0.796250495,
+        -0.006027252499999997,
+        -1.4603255124999999
+      ]
+    },
+    "JNT_WHEEL_RL": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.76230651
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.006027252499999997
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          1.4603255124999999
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        -0.76230651,
+        0.006027252499999997,
+        1.4603255124999999
+      ]
+    },
+    "JNT_WHEEL_RR": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.76230651
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.006027252499999997
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          1.4603255124999999
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        0.76230651,
+        0.006027252499999997,
+        1.4603255124999999
+      ]
+    },
+    "JNT_SUSP_FL_HUB": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.6724382975000001
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.04410824949999998
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -1.4588828985
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        -0.6724382975000001,
+        -0.04410824949999998,
+        -1.4588828985
+      ]
+    },
+    "JNT_SUSP_FR_HUB": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.6724382975000001
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.04410824949999998
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -1.4588828985
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        0.6724382975000001,
+        -0.04410824949999998,
+        -1.4588828985
+      ]
+    },
+    "JNT_SUSP_RL_HUB": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.6000886249999999
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.08192224749999998
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          1.4624688925
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        -0.6000886249999999,
+        -0.08192224749999998,
+        1.4624688925
+      ]
+    },
+    "JNT_SUSP_RR_HUB": {
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.6000886249999999
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.08192224749999998
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          1.4624688925
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "position_m": [
+        0.6000886249999999,
+        -0.08192224749999998,
+        1.4624688925
+      ]
+    }
+  },
+  "chassis_core_sha256_before": "e4a0da9642ed9c3e5607c27460bfef70df06a264d34b84103c7405b067aca66c",
+  "chassis_core_sha256_after": "e4a0da9642ed9c3e5607c27460bfef70df06a264d34b84103c7405b067aca66c",
+  "chassis_compat_sha256_before": "5094201c0163c38308af02ea345ef8a3a9355b66298fb2b2d8204e66f2211b32",
+  "chassis_compat_sha256_after": "5094201c0163c38308af02ea345ef8a3a9355b66298fb2b2d8204e66f2211b32",
+  "chassis_anchor_validation": {
+    "F1_94_chassis_core_geometry.glb": {
+      "JNT_WHEEL_FL": 0.0,
+      "JNT_WHEEL_FR": 0.0,
+      "JNT_WHEEL_RL": 0.0,
+      "JNT_WHEEL_RR": 0.0
+    },
+    "F1_94_chassis_geometry.glb": {
+      "JNT_WHEEL_FL": 0.0,
+      "JNT_WHEEL_FR": 0.0,
+      "JNT_WHEEL_RL": 0.0,
+      "JNT_WHEEL_RR": 0.0
+    }
+  },
+  "runtime_triangle_estimate": {
+    "core": 3930,
+    "front_module": 972,
+    "rear_module": 2654,
+    "wheel_front_each": 688,
+    "wheel_rear_each": 688,
+    "assembled_total": 10308
+  },
+  "bitmap_texture_validation": {
+    "all_png_identical": true,
+    "file_count": 39,
+    "wheel_texture_files": {
+      "GEO_WHEEL_FL_HUB.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FL_TIRE_INNER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FL_TIRE_OUTER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FL_TREAD.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FR_HUB.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FR_TIRE_INNER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FR_TIRE_OUTER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_FR_TREAD.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_HUB.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RL_HUB.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RL_TIRE_INNER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RL_TIRE_OUTER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RL_TREAD.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RR_HUB.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RR_TIRE_INNER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RR_TIRE_OUTER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_RR_TREAD.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_TIRE_INNER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_TIRE_OUTER.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      },
+      "GEO_WHEEL_TREAD.png": {
+        "source_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "refined_sha256": "fdc055f2a4f24a668558f64fdd09ed83c9dd7a9b6de70f89f4317744592554b6",
+        "identical": true
+      }
+    }
+  }
+}

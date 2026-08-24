@@ -1,0 +1,896 @@
+{
+  "source": "williams94_sanitized",
+  "output": "williams94_modular",
+  "strategy": {
+    "front_module": [
+      "GEO_NOSE",
+      "GEO_AERO_FRONT_WING"
+    ],
+    "front_cut_reference": "JNT_NOSE_CHASSIS",
+    "rear_module": [
+      "GEO_AERO_REAR_WING"
+    ],
+    "rear_cut_reference": "JNT_REAR_WING_MOUNT",
+    "core_excludes": [
+      "GEO_NOSE",
+      "GEO_AERO_FRONT_WING",
+      "GEO_AERO_REAR_WING"
+    ],
+    "recentered": false,
+    "coordinates": "original vehicle-local coordinates retained"
+  },
+  "modules": {
+    "core": {
+      "path": "geometry/F1_94_chassis_core_geometry.glb",
+      "meshes": [
+        "GEO_BODY_INTERIOR",
+        "GEO_CHASSIS",
+        "GEO_COCKPIT_LCD_06",
+        "GEO_COCKPIT_LCD_07",
+        "GEO_COCKPIT_LCD_08",
+        "GEO_COCKPIT_LCD_09",
+        "GEO_COCKPIT_LCD_13",
+        "GEO_COCKPIT_LCD_16",
+        "GEO_COCKPIT_LCD_17",
+        "GEO_COCKPIT_LCD_18",
+        "GEO_COCKPIT_LCD_INDICATOR",
+        "GEO_DRIVER_HELMET",
+        "GEO_SUSPENSION_FL",
+        "GEO_SUSPENSION_FR",
+        "GEO_SUSPENSION_RL",
+        "GEO_SUSPENSION_RR"
+      ],
+      "triangles": 1140,
+      "vertices": 3420,
+      "nodes": [
+        "DATUM_FRONT_AXLE_CENTER",
+        "DATUM_REAR_AXLE_CENTER",
+        "DATUM_VEHICLE_ORIGIN",
+        "F1_94_CHASSIS_CORE",
+        "GEO_BODY_INTERIOR",
+        "GEO_CHASSIS",
+        "GEO_COCKPIT_LCD_06",
+        "GEO_COCKPIT_LCD_07",
+        "GEO_COCKPIT_LCD_08",
+        "GEO_COCKPIT_LCD_09",
+        "GEO_COCKPIT_LCD_13",
+        "GEO_COCKPIT_LCD_16",
+        "GEO_COCKPIT_LCD_17",
+        "GEO_COCKPIT_LCD_18",
+        "GEO_COCKPIT_LCD_INDICATOR",
+        "GEO_DRIVER_HELMET",
+        "GEO_SUSPENSION_FL",
+        "GEO_SUSPENSION_FR",
+        "GEO_SUSPENSION_RL",
+        "GEO_SUSPENSION_RR",
+        "JNT_DRIVER_HEAD",
+        "JNT_FRONT_WING_MOUNT",
+        "JNT_NOSE_CHASSIS",
+        "JNT_REAR_WING_MOUNT",
+        "JNT_SUSP_FL_ARM_01_INNER",
+        "JNT_SUSP_FL_ARM_01_OUTER",
+        "JNT_SUSP_FL_ARM_02_INNER",
+        "JNT_SUSP_FL_ARM_02_OUTER",
+        "JNT_SUSP_FL_ARM_03_INNER",
+        "JNT_SUSP_FL_ARM_03_OUTER",
+        "JNT_SUSP_FL_ARM_04_INNER",
+        "JNT_SUSP_FL_ARM_04_OUTER",
+        "JNT_SUSP_FL_ARM_05_INNER",
+        "JNT_SUSP_FL_ARM_05_OUTER",
+        "JNT_SUSP_FL_CHASSIS",
+        "JNT_SUSP_FL_HUB",
+        "JNT_SUSP_FR_ARM_01_INNER",
+        "JNT_SUSP_FR_ARM_01_OUTER",
+        "JNT_SUSP_FR_ARM_02_INNER",
+        "JNT_SUSP_FR_ARM_02_OUTER",
+        "JNT_SUSP_FR_ARM_03_INNER",
+        "JNT_SUSP_FR_ARM_03_OUTER",
+        "JNT_SUSP_FR_ARM_04_INNER",
+        "JNT_SUSP_FR_ARM_04_OUTER",
+        "JNT_SUSP_FR_ARM_05_INNER",
+        "JNT_SUSP_FR_ARM_05_OUTER",
+        "JNT_SUSP_FR_CHASSIS",
+        "JNT_SUSP_FR_HUB",
+        "JNT_SUSP_RL_ARM_01_INNER",
+        "JNT_SUSP_RL_ARM_01_OUTER",
+        "JNT_SUSP_RL_ARM_02_INNER",
+        "JNT_SUSP_RL_ARM_02_OUTER",
+        "JNT_SUSP_RL_ARM_03_INNER",
+        "JNT_SUSP_RL_ARM_03_OUTER",
+        "JNT_SUSP_RL_ARM_04_INNER",
+        "JNT_SUSP_RL_ARM_04_OUTER",
+        "JNT_SUSP_RL_CHASSIS",
+        "JNT_SUSP_RL_HUB",
+        "JNT_SUSP_RR_ARM_01_INNER",
+        "JNT_SUSP_RR_ARM_01_OUTER",
+        "JNT_SUSP_RR_ARM_02_INNER",
+        "JNT_SUSP_RR_ARM_02_OUTER",
+        "JNT_SUSP_RR_ARM_03_INNER",
+        "JNT_SUSP_RR_ARM_03_OUTER",
+        "JNT_SUSP_RR_ARM_04_INNER",
+        "JNT_SUSP_RR_ARM_04_OUTER",
+        "JNT_SUSP_RR_CHASSIS",
+        "JNT_SUSP_RR_HUB",
+        "JNT_WHEEL_FL",
+        "JNT_WHEEL_FR",
+        "JNT_WHEEL_RL",
+        "JNT_WHEEL_RR",
+        "world"
+      ],
+      "reference_nodes": {
+        "DATUM_VEHICLE_ORIGIN": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "DATUM_FRONT_AXLE_CENTER": {
+          "translation": [
+            0.0,
+            -0.006027252499999997,
+            -1.4603255124999999
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "DATUM_REAR_AXLE_CENTER": {
+          "translation": [
+            0.0,
+            0.006027252499999997,
+            1.4603255124999999
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_WHEEL_FL": {
+          "translation": [
+            -0.796250495,
+            -0.006027252499999997,
+            -1.4603255124999999
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_WHEEL_FR": {
+          "translation": [
+            0.796250495,
+            -0.006027252499999997,
+            -1.4603255124999999
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_WHEEL_RL": {
+          "translation": [
+            -0.76230651,
+            0.006027252499999997,
+            1.4603255124999999
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_WHEEL_RR": {
+          "translation": [
+            0.76230651,
+            0.006027252499999997,
+            1.4603255124999999
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_01_INNER": {
+          "translation": [
+            -0.166516005,
+            0.03764150750000002,
+            -1.1297974875
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_01_OUTER": {
+          "translation": [
+            -0.666172745,
+            0.06459899500000002,
+            -1.4664737600000002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_02_INNER": {
+          "translation": [
+            -0.140156,
+            0.18170076250000003,
+            -1.4597234725
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_02_OUTER": {
+          "translation": [
+            -0.6745380175,
+            -0.1234792475,
+            -1.4597234725
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_03_INNER": {
+          "translation": [
+            -0.142394005,
+            -0.13900674749999997,
+            -1.6329044975
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_03_OUTER": {
+          "translation": [
+            -0.67777799,
+            -0.11359149749999997,
+            -1.4507127700000002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_04_INNER": {
+          "translation": [
+            -0.16640249750000002,
+            -0.13873549749999997,
+            -1.129479245
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_04_OUTER": {
+          "translation": [
+            -0.6662857525,
+            -0.11361274749999999,
+            -1.46679172
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_05_INNER": {
+          "translation": [
+            -0.142754755,
+            0.036697752500000014,
+            -1.6329044975
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_ARM_05_OUTER": {
+          "translation": [
+            -0.6774169825,
+            0.06554325000000003,
+            -1.4507127700000002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_CHASSIS": {
+          "translation": [
+            -0.1516446525,
+            -0.0043404444999999734,
+            -1.39696184
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FL_HUB": {
+          "translation": [
+            -0.6724382975000001,
+            -0.04410824949999998,
+            -1.4588828985
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_01_INNER": {
+          "translation": [
+            0.166516005,
+            0.03764150750000002,
+            -1.1297974875
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_01_OUTER": {
+          "translation": [
+            0.666172745,
+            0.06459899500000002,
+            -1.4664737600000002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_02_INNER": {
+          "translation": [
+            0.140156,
+            0.18170076250000003,
+            -1.4597234725
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_02_OUTER": {
+          "translation": [
+            0.6745380175,
+            -0.1234792475,
+            -1.4597234725
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_03_INNER": {
+          "translation": [
+            0.142394005,
+            -0.13900674749999997,
+            -1.6329044975
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_03_OUTER": {
+          "translation": [
+            0.67777799,
+            -0.11359149749999997,
+            -1.4507127700000002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_04_INNER": {
+          "translation": [
+            0.16640249750000002,
+            -0.13873549749999997,
+            -1.129479245
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_04_OUTER": {
+          "translation": [
+            0.6662857525,
+            -0.11361274749999999,
+            -1.46679172
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_05_INNER": {
+          "translation": [
+            0.142754755,
+            0.036697752500000014,
+            -1.6329044975
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_ARM_05_OUTER": {
+          "translation": [
+            0.6774169825,
+            0.06554325000000003,
+            -1.4507127700000002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_CHASSIS": {
+          "translation": [
+            0.1516446525,
+            -0.0043404444999999734,
+            -1.39696184
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_FR_HUB": {
+          "translation": [
+            0.6724382975000001,
+            -0.04410824949999998,
+            -1.4588828985
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_01_INNER": {
+          "translation": [
+            -0.36624801,
+            0.04416225250000002,
+            1.3386315375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_01_OUTER": {
+          "translation": [
+            -0.6009650049999999,
+            0.04416225250000002,
+            1.4656385474999998
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_02_INNER": {
+          "translation": [
+            -0.36126301000000005,
+            0.04416225250000002,
+            1.5712614950000001
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_02_OUTER": {
+          "translation": [
+            -0.599212245,
+            0.04416225250000002,
+            1.4592992375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_03_INNER": {
+          "translation": [
+            -0.36126301000000005,
+            -0.20800674749999998,
+            1.5712614950000001
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_03_OUTER": {
+          "translation": [
+            -0.599212245,
+            -0.20800674749999998,
+            1.4592992375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_04_INNER": {
+          "translation": [
+            -0.36624801,
+            -0.20800674749999998,
+            1.3386315375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_ARM_04_OUTER": {
+          "translation": [
+            -0.6009650049999999,
+            -0.20800674749999998,
+            1.4656385474999998
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_CHASSIS": {
+          "translation": [
+            -0.36375551000000006,
+            -0.08192224749999998,
+            1.4549465162500002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RL_HUB": {
+          "translation": [
+            -0.6000886249999999,
+            -0.08192224749999998,
+            1.4624688925
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_01_INNER": {
+          "translation": [
+            0.36624801,
+            0.04416225250000002,
+            1.3386315375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_01_OUTER": {
+          "translation": [
+            0.6009650049999999,
+            0.04416225250000002,
+            1.4656385474999998
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_02_INNER": {
+          "translation": [
+            0.36126301000000005,
+            0.04416225250000002,
+            1.5712614950000001
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_02_OUTER": {
+          "translation": [
+            0.599212245,
+            0.04416225250000002,
+            1.4592992375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_03_INNER": {
+          "translation": [
+            0.36126301000000005,
+            -0.20800674749999998,
+            1.5712614950000001
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_03_OUTER": {
+          "translation": [
+            0.599212245,
+            -0.20800674749999998,
+            1.4592992375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_04_INNER": {
+          "translation": [
+            0.36624801,
+            -0.20800674749999998,
+            1.3386315375
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_ARM_04_OUTER": {
+          "translation": [
+            0.6009650049999999,
+            -0.20800674749999998,
+            1.4656385474999998
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_CHASSIS": {
+          "translation": [
+            0.36375551000000006,
+            -0.08192224749999998,
+            1.4549465162500002
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_SUSP_RR_HUB": {
+          "translation": [
+            0.6000886249999999,
+            -0.08192224749999998,
+            1.4624688925
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_NOSE_CHASSIS": {
+          "translation": [
+            -0.02196249137931035,
+            0.029535021939655202,
+            -1.6418814324999906
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_FRONT_WING_MOUNT": {
+          "translation": [
+            -0.07254566793650795,
+            -0.011416620515872982,
+            -1.8533786153571454
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_REAR_WING_MOUNT": {
+          "translation": [
+            0.001792573400000003,
+            0.22082446676666667,
+            1.5940856846999976
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_DRIVER_HEAD": {
+          "translation": [
+            -6.96969696969801e-06,
+            0.32560073607575746,
+            -0.2457849557121219
+          ],
+          "max_matrix_delta": 0.0
+        }
+      }
+    },
+    "front": {
+      "path": "geometry/F1_94_front_wing_nose_geometry.glb",
+      "meshes": [
+        "GEO_AERO_FRONT_WING",
+        "GEO_NOSE"
+      ],
+      "triangles": 558,
+      "vertices": 1674,
+      "nodes": [
+        "DATUM_VEHICLE_ORIGIN",
+        "F1_94_FRONT_WING_NOSE",
+        "GEO_AERO_FRONT_WING",
+        "GEO_NOSE",
+        "JNT_FRONT_WING_MOUNT",
+        "JNT_NOSE_CHASSIS",
+        "world"
+      ],
+      "reference_nodes": {
+        "JNT_FRONT_WING_MOUNT": {
+          "translation": [
+            -0.07254566793650795,
+            -0.011416620515872982,
+            -1.8533786153571454
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "JNT_NOSE_CHASSIS": {
+          "translation": [
+            -0.02196249137931035,
+            0.029535021939655202,
+            -1.6418814324999906
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "DATUM_VEHICLE_ORIGIN": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_matrix_delta": 0.0
+        }
+      }
+    },
+    "rear": {
+      "path": "geometry/F1_94_rear_wing_geometry.glb",
+      "meshes": [
+        "GEO_AERO_REAR_WING"
+      ],
+      "triangles": 734,
+      "vertices": 2202,
+      "nodes": [
+        "DATUM_VEHICLE_ORIGIN",
+        "F1_94_REAR_WING",
+        "GEO_AERO_REAR_WING",
+        "JNT_REAR_WING_MOUNT",
+        "world"
+      ],
+      "reference_nodes": {
+        "JNT_REAR_WING_MOUNT": {
+          "translation": [
+            0.001792573400000003,
+            0.22082446676666667,
+            1.5940856846999976
+          ],
+          "max_matrix_delta": 0.0
+        },
+        "DATUM_VEHICLE_ORIGIN": {
+          "translation": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "max_matrix_delta": 0.0
+        }
+      }
+    }
+  },
+  "verification": {
+    "core": {
+      "GEO_CHASSIS": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "da432843489109f563e63172cb4f133cfd7b72bcb0056f85afee6f5bca4ddd43",
+        "uv_hash_output": "da432843489109f563e63172cb4f133cfd7b72bcb0056f85afee6f5bca4ddd43"
+      },
+      "GEO_BODY_INTERIOR": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "a48d724791128bd2b1a1b40647f26b586a9f04bb7b744a3882769bbd4e58f9f2",
+        "uv_hash_output": "a48d724791128bd2b1a1b40647f26b586a9f04bb7b744a3882769bbd4e58f9f2"
+      },
+      "GEO_COCKPIT_LCD_06": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "81ade10913d8c21ec040ab5d06caaceffccabac4b01d63f7853ae189f28e0194",
+        "uv_hash_output": "81ade10913d8c21ec040ab5d06caaceffccabac4b01d63f7853ae189f28e0194"
+      },
+      "GEO_COCKPIT_LCD_07": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "4ea663937d50f45a1ce44931b37fa994ff3d7327d4a52a9f46824a3dee929eb5",
+        "uv_hash_output": "4ea663937d50f45a1ce44931b37fa994ff3d7327d4a52a9f46824a3dee929eb5"
+      },
+      "GEO_COCKPIT_LCD_08": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "3a790d4dfa66163ee306d6bed612e8d794827927011a61814567b0a2a8168f25",
+        "uv_hash_output": "3a790d4dfa66163ee306d6bed612e8d794827927011a61814567b0a2a8168f25"
+      },
+      "GEO_COCKPIT_LCD_09": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "699b97119db11e76691b7628f4a6435fd1b80a4831e51d89a1c255ed3daf49a6",
+        "uv_hash_output": "699b97119db11e76691b7628f4a6435fd1b80a4831e51d89a1c255ed3daf49a6"
+      },
+      "GEO_COCKPIT_LCD_13": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "7529a9e5db8d4d59fcf8e52cd51803fdd1508241434e601cf371ede889c56622",
+        "uv_hash_output": "7529a9e5db8d4d59fcf8e52cd51803fdd1508241434e601cf371ede889c56622"
+      },
+      "GEO_COCKPIT_LCD_16": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "6ec4be7ec062bcbf96aa9f53a8258d1a4cf1872fa3380137428a900a444f86ce",
+        "uv_hash_output": "6ec4be7ec062bcbf96aa9f53a8258d1a4cf1872fa3380137428a900a444f86ce"
+      },
+      "GEO_COCKPIT_LCD_17": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "724593587fdd0154e10efc5cbafdb664ea82528298f6449d06bf5f12cc219502",
+        "uv_hash_output": "724593587fdd0154e10efc5cbafdb664ea82528298f6449d06bf5f12cc219502"
+      },
+      "GEO_COCKPIT_LCD_18": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "c9a50bb3a236525bcbac8a8d68bca353c47b394a0ecb484f82f777a4e3178be9",
+        "uv_hash_output": "c9a50bb3a236525bcbac8a8d68bca353c47b394a0ecb484f82f777a4e3178be9"
+      },
+      "GEO_COCKPIT_LCD_INDICATOR": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "3fb1cb154c6fa75af702c341329cb65f4fbe602b61de1ca816936ffa70f25b82",
+        "uv_hash_output": "3fb1cb154c6fa75af702c341329cb65f4fbe602b61de1ca816936ffa70f25b82"
+      },
+      "GEO_SUSPENSION_FL": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "2acc65f0cfb70d3c22d303c0e9a01a27bd87085309649a0b50cede17782779d7",
+        "uv_hash_output": "2acc65f0cfb70d3c22d303c0e9a01a27bd87085309649a0b50cede17782779d7"
+      },
+      "GEO_SUSPENSION_FR": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "84786ed32b056447076b192acb52cdec76f7e61cdbddcf6156ddc0ee6f0711af",
+        "uv_hash_output": "84786ed32b056447076b192acb52cdec76f7e61cdbddcf6156ddc0ee6f0711af"
+      },
+      "GEO_SUSPENSION_RL": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "30c6eec19c6725dc038346ad124d67d140f443e1390bc49fbc7e4ac0ae71fbcc",
+        "uv_hash_output": "30c6eec19c6725dc038346ad124d67d140f443e1390bc49fbc7e4ac0ae71fbcc"
+      },
+      "GEO_SUSPENSION_RR": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "d491ca2e6870f5a8d9db2307753d1dc4cd46796916ab68e51fe61a6237ae2f82",
+        "uv_hash_output": "d491ca2e6870f5a8d9db2307753d1dc4cd46796916ab68e51fe61a6237ae2f82"
+      },
+      "GEO_DRIVER_HELMET": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "164646082e7978d61404f307f786a3f60c5c3618db2d5be67ce896eb3930dffd",
+        "uv_hash_output": "164646082e7978d61404f307f786a3f60c5c3618db2d5be67ce896eb3930dffd"
+      }
+    },
+    "front": {
+      "GEO_NOSE": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "55b61a5ac3d8e4e5f68c6528ba90ea876914ad5718bd8352625bbc64a2084447",
+        "uv_hash_output": "55b61a5ac3d8e4e5f68c6528ba90ea876914ad5718bd8352625bbc64a2084447"
+      },
+      "GEO_AERO_FRONT_WING": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "7acff739186f8d665684e548a398a21fbb85c2f20c92e7d3b313ad2314e7bdce",
+        "uv_hash_output": "7acff739186f8d665684e548a398a21fbb85c2f20c92e7d3b313ad2314e7bdce"
+      }
+    },
+    "rear": {
+      "GEO_AERO_REAR_WING": {
+        "vertices_shape_equal": true,
+        "faces_shape_equal": true,
+        "positions_max_abs_delta_m": 0.0,
+        "faces_exact": true,
+        "uv_present_source": true,
+        "uv_present_output": true,
+        "uv_shape_equal": true,
+        "uv_max_abs_delta": 0.0,
+        "uv_exact": true,
+        "uv_hash_source": "272ff8eb9c954682efcfb8072d4da4fad83fb4b5121f8a224174f0c8809e9e8d",
+        "uv_hash_output": "272ff8eb9c954682efcfb8072d4da4fad83fb4b5121f8a224174f0c8809e9e8d"
+      }
+    }
+  }
+}

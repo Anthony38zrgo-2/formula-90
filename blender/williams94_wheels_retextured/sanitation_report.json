@@ -1,0 +1,52 @@
+{
+  "source": "/mnt/data/williams94_extract",
+  "output": "/mnt/data/williams94_sanitized",
+  "joint_plane_z_m": -1.6418814324999906,
+  "operations": [
+    {
+      "mesh": "GEO_NOSE",
+      "operation": "remove_internal_joint_cap",
+      "faces_removed": 64,
+      "faces_remaining": 138,
+      "vertices_remaining": 414,
+      "reason": "eliminate redundant coplanar internal cap at JNT_NOSE_CHASSIS"
+    },
+    {
+      "mesh": "GEO_BODY_INTERIOR",
+      "operation": "retract_internal_sheet",
+      "offset_m": [
+        0.0,
+        0.0,
+        0.00025
+      ],
+      "reason": "preserve mesh/material/runtime name while removing coplanar topology conflict"
+    }
+  ],
+  "roundtrip": {
+    "geometry_names": [
+      "GEO_AERO_FRONT_WING",
+      "GEO_AERO_REAR_WING",
+      "GEO_BODY_INTERIOR",
+      "GEO_CHASSIS",
+      "GEO_COCKPIT_LCD_06",
+      "GEO_COCKPIT_LCD_07",
+      "GEO_COCKPIT_LCD_08",
+      "GEO_COCKPIT_LCD_09",
+      "GEO_COCKPIT_LCD_13",
+      "GEO_COCKPIT_LCD_16",
+      "GEO_COCKPIT_LCD_17",
+      "GEO_COCKPIT_LCD_18",
+      "GEO_COCKPIT_LCD_INDICATOR",
+      "GEO_DRIVER_HELMET",
+      "GEO_NOSE",
+      "GEO_SUSPENSION_FL",
+      "GEO_SUSPENSION_FR",
+      "GEO_SUSPENSION_RL",
+      "GEO_SUSPENSION_RR"
+    ],
+    "node_count": 76,
+    "nodes_geometry_count": 19,
+    "joints_preserved": true,
+    "datums_preserved": true
+  }
+}
