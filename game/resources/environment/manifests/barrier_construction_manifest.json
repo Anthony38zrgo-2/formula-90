@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "formula90_barrier_construction_v1",
+  "purpose": "Authoritative construction and review contract for Formula-90 protection barriers",
+  "coordinate_system": {
+    "units": "metres",
+    "up_axis": "+Y",
+    "module_axis": "+X",
+    "track_facing_axis": "+Z",
+    "pivot": "ground_center",
+    "module_width_m": 2.0
+  },
+  "dimensions": {
+    "minimum_height_m": 0.45,
+    "maximum_height_m": 1.5,
+    "visual_module_fill_minimum": 0.9
+  },
+  "tyre_barriers": {
+    "orientation": "flat_with_axle_on_y",
+    "layout": "vertical_stacks_in_columns_with_optional_rear_depth_layers",
+    "depth_layers_change_height": false,
+    "outer_diameter_m": {"minimum": 0.45, "maximum": 0.75},
+    "width_m": {"minimum": 0.14, "maximum": 0.32},
+    "minimum_major_sections": 12,
+    "minimum_minor_sections": 8,
+    "minimum_triangles_per_tyre": 192
+  },
+  "paint": {
+    "formula90_pattern_colours": ["navy", "white"],
+    "forbidden_pattern_colours": ["red"],
+    "pattern": "checkerboard"
+  },
+  "shading": {
+    "mode": "procedural_vertex_color_v1",
+    "external_textures_required": false,
+    "material_variation": ["tyre_tread", "concrete_grain", "metal_highlight", "plastic_height_gradient"],
+    "bake_directional_cast_shadows": false
+  },
+  "geometry": {
+    "visual_and_collision_are_separate": true,
+    "visual_must_be_watertight": true,
+    "collision_must_be_watertight": true,
+    "consistent_winding_required": true,
+    "degenerate_triangles_allowed": false,
+    "finite_vertices_required": true,
+    "triangle_budget_required_per_asset": true
+  },
+  "outputs_per_asset": ["visual_glb", "collision_glb", "strip5_glb", "individual_preview", "strip5_preview"],
+  "human_gate": {
+    "catalog_must_include_every_asset": true,
+    "required_views": ["front", "45_deg", "side", "iso"],
+    "approval_checks": ["silhouette", "colour", "scale", "seams", "front_orientation", "collision_alignment"]
+  },
+  "publication": {
+    "staged_before_publish": true,
+    "hash_recipe_palette_contract_and_outputs": true,
+    "runtime_requires_build_hash_parity": true
+  }
+}

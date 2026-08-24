@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "track_id": "la_chutana",
-  "source_contract": "opaque_continuous_ribbon_textures",
+  "source_contract": "mixed_rgba_cards_and_opaque_tiles",
   "sources": {
     "stack_front": {
       "file": "tire_stack_source.png",

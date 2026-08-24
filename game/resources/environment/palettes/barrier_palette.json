@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "biome": "circuit_90s",
+  "notes": "90s F1 circuit palette: light navy blue, white, gray, charcoal. All barriers use vertex colors.",
+  "tones": ["deep-shadow", "shadow", "base", "light", "highlight"],
+  "categories": {
+    "tire_black": {
+      "rubber":        ["#1A1C22", "#252830", "#32363E", "#3E4248", "#4A4E56"],
+      "sidewall":      ["#2A2E36", "#3A3E48", "#4A5060", "#5A5E68", "#6A7080"],
+      "accent_blue":   ["#1E3864", "#264880", "#305898", "#3A68A8", "#4878B8"]
+    },
+    "tire_navy_white": {
+      "rubber":        ["#1A1C22", "#252830", "#32363E", "#3E4248", "#4A4E56"],
+      "navy":          ["#0C1E3C", "#142E52", "#1E3E6A", "#284E82", "#325E9A"],
+      "white":         ["#C8C8C0", "#D8D8D0", "#E6E6E1", "#F0F0EB", "#F8F8F4"]
+    },
+    "concrete_jersey": {
+      "concrete":      ["#7A786E", "#9A988E", "#ACA8A0", "#BAB8B0", "#C8C6BE"],
+      "seam":          ["#606058", "#706E66", "#888680", "#9A9890", "#AAA8A0"],
+      "scuff":         ["#1E2022", "#282A2C", "#3A3C3E", "#4A4C50", "#5A5C60"]
+    },
+    "guardrail_armco": {
+      "steel":         ["#6A6E78", "#8A8E94", "#9CA0A8", "#AEB4BC", "#C2CAD2"],
+      "post":          ["#505458", "#6A6E74", "#808488", "#929698", "#A4A8AC"],
+      "bolt":          ["#2A2E34", "#3A3E44", "#5A5E64", "#DDE0E6", "#EEF0F4"]
+    },
+    "plastic_blocks": {
+      "navy":          ["#0C1E3C", "#142E52", "#1E3E6A", "#284E82", "#325E9A"],
+      "white":         ["#C0C0B8", "#D8D8D0", "#E8E8E2", "#F4F4EE", "#FAFAF6"],
+      "joint":         ["#1A1A1A", "#2A2A2A", "#3C3C3C", "#4E4E4E", "#606060"]
+    },
+    "common": {
+      "navy_blue":     ["#0C1E3C", "#142E52", "#1E3E6A", "#284E82", "#325E9A"],
+      "white":         ["#C8C8C4", "#D8D8D4", "#E4E4E0", "#F0F0EC", "#FAFAF8"],
+      "gray":          ["#5A5C60", "#727478", "#8A8C90", "#A2A4A8", "#BABCC0"],
+      "charcoal":      ["#1E2024", "#2A2C30", "#383A3E", "#484A4E", "#585A5E"]
+    }
+  }
+}
