@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/runtime/world_hud_compositor.tscn" id="1_compositor"]
+[ext_resource type="Resource" path="res://data/race_sessions/f1_2009_fw31_la_chutana.tres" id="2_config"]
+
+[node name="VehicleTestSession2009" instance=ExtResource("1_compositor")]
+session_config = ExtResource("2_config")
+
+[node name="F90Core" type="F90Core" parent="."]
+config_json_path = "res://data/vehicles/f1_94/variants/f1_2009_fw31_physics.json"

@@ -73,7 +73,7 @@ class InitialRevisionTests(unittest.TestCase):
         with self.assertRaises(OnboardingError):
             compile_initial_revision(mapping, project_id="generic-car")
 
-    def test_wheelbase_range_supports_2021_nominal_profile(self):
+    def test_wheelbase_range_supports_long_dimensional_variants(self):
         document = compile_initial_revision(accepted_mapping(), project_id="generic-car")
         wheelbase = next(
             item for item in document.data["parameters"]

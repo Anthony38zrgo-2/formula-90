@@ -22,7 +22,7 @@ describe('parameter inspector', () => {
     expect(command['parameter-wheelbase']).toBeCloseTo(3.045)
   })
 
-  it('applies the nominal 2021 profile without compiling implicitly', async () => {
+  it('applies the 2009 FW31 profile without compiling implicitly', async () => {
     const wrapper = mount(ParameterInspector, {
       props: {
         busy: false,
@@ -33,14 +33,14 @@ describe('parameter inspector', () => {
           maximum: 3.77, unit: 'meter',
         }],
         profiles: [{
-          profile_id: 'f1-2021-nominal', label: 'F1 2021 nominal (3.640 m)',
-          targets: { 'parameter-wheelbase': 3.64 }, width_policies: {},
+          profile_id: 'f1-2009-fw31', label: 'F1 2009 · Williams FW31 (3.100 m)',
+          targets: { 'parameter-wheelbase': 3.1 }, width_policies: {},
           constraints: {}, notes: [],
         }],
       },
     })
     await wrapper.get('button').trigger('click')
-    expect((wrapper.get('input[type="number"]').element as HTMLInputElement).value).toBe('3.64')
+    expect((wrapper.get('input[type="number"]').element as HTMLInputElement).value).toBe('3.1')
     expect(wrapper.emitted('compile')).toBeUndefined()
   })
 })

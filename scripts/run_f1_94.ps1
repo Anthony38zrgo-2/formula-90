@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
-    [ValidateSet('1994', '2021')]
+    [ValidateSet('1994', '2009')]
     [string]$VehicleVariant = '1994',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
@@ -14,14 +14,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
-$is2021Variant = $VehicleVariant -eq '2021'
-$scene = if ($is2021Variant) { 'res://scenes/runtime/vehicle_test_session_2021.tscn' } else { 'res://scenes/runtime/vehicle_test_session.tscn' }
-$manifestPath = if ($is2021Variant) {
-    Join-Path $game 'assets\models\vehicles\f1_94\variants\f1_2021_nominal\manifest.json'
+$is2009Variant = $VehicleVariant -eq '2009'
+$scene = if ($is2009Variant) { 'res://scenes/runtime/vehicle_test_session_2009.tscn' } else { 'res://scenes/runtime/vehicle_test_session.tscn' }
+$manifestPath = if ($is2009Variant) {
+    Join-Path $game 'assets\models\vehicles\f1_94\variants\f1_2009_fw31\manifest.json'
 } else {
     Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
 }
-$variantLabel = if ($is2021Variant) { 'F1 2021/1994 hybrid dimensional' } else { 'F1 1994 canonical' }
+$variantLabel = if ($is2009Variant) { 'F1 2009 Williams FW31 dimensional' } else { 'F1 1994 canonical' }
 $trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
 $trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
 $trackConfigPath = Join-Path $root 'blender\track_pipeline\configs\la_chutana.json'
@@ -58,9 +58,9 @@ function Resolve-Godot([string]$ExplicitPath) {
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Manifest de vehiculo faltante: $manifestPath" }
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $runtimeDir = Split-Path -Parent $manifestPath
-if ($is2021Variant) {
-    if ($manifest.variant_id -ne 'f1_2021_nominal' -or $manifest.base_vehicle_id -ne 'f1_94') {
-        throw 'El manifest de la variante 2021 no cumple el contrato esperado.'
+if ($is2009Variant) {
+    if ($manifest.variant_id -ne 'f1_2009_fw31' -or $manifest.base_vehicle_id -ne 'f1_94') {
+        throw 'El manifest de la variante 2009 no cumple el contrato esperado.'
     }
     $expectedAssets = @{
         ([string]$manifest.runtime.chassis.path).Replace('/', '\') = [string]$manifest.runtime.chassis.sha256
@@ -69,10 +69,10 @@ if ($is2021Variant) {
     }
     $physicsRelative = ([string]$manifest.runtime.physics_profile).Replace('res://', '').Replace('/', '\')
     $physicsPath = Join-Path $game $physicsRelative
-    if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2021 faltante: $physicsPath" }
+    if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2009 faltante: $physicsPath" }
     $physicsHash = (Get-FileHash -LiteralPath $physicsPath -Algorithm SHA256).Hash
     if (-not $physicsHash.Equals([string]$manifest.runtime.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
-        throw 'Hash inesperado para el perfil fisico 2021.'
+        throw 'Hash inesperado para el perfil fisico 2009.'
     }
 } else {
     if ($manifest.asset -ne 'F1_94' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {

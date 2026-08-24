@@ -31,20 +31,20 @@ class OnboardingControllerTests(unittest.TestCase):
             result = OnboardingController(Path(directory)).presets()
         self.assertFalse(result["presets"][0]["available"])
 
-    def test_2021_profile_respects_declared_width_envelope(self):
+    def test_2009_profile_respects_declared_width_envelope(self):
         profile = OnboardingController(Path.cwd()).dimensional_profiles()["profiles"][0]
         targets = profile["targets"]
-        self.assertEqual(profile["profile_id"], "f1-2021-nominal")
+        self.assertEqual(profile["profile_id"], "f1-2009-fw31")
         self.assertAlmostEqual(
             targets["parameter-front-track"] + targets["parameter-front-tire-width"],
-            1.925,
+            1.800,
         )
         self.assertAlmostEqual(
             targets["parameter-rear-track"] + targets["parameter-rear-tire-width"],
-            1.980,
+            1.800,
         )
         self.assertLessEqual(
-            profile["constraints"]["computed_rear_overall_width_m"],
+            profile["constraints"]["computed_front_overall_width_m"],
             profile["constraints"]["maximum_overall_width_m"],
         )
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
-  "vehicle_id": "f1_2021_nominal",
-  "profile_name": "F1 2021 Nominal Dimensions / F1-94 Mechanical Baseline",
+  "vehicle_id": "f1_2009_fw31",
+  "profile_name": "F1 2009 Williams FW31 Dimensions / F1-94 Mechanical Baseline",
   "units": "SI",
 
   "coordinate_contract": {
@@ -16,7 +16,7 @@
   },
 
   "chassis": {
-    "vehicle_name": "F1 2021 Dimensional Variant (F1-94 Mechanical Baseline)",
+    "vehicle_name": "F1 2009 FW31 Dimensional Variant (F1-94 Mechanical Baseline)",
     "vehicle_mass": 575.0,
     "front_weight_distribution": 0.42,
     "center_of_gravity_height_offset": -0.12,
@@ -29,9 +29,9 @@
   },
 
   "geometry": {
-    "wheelbase": 3.640000,
-    "front_track": 1.635000,
-    "rear_track": 1.575000,
+    "wheelbase": 3.100000,
+    "front_track": 1.450000,
+    "rear_track": 1.425000,
 
     "wheel_hubs": {
       "FL": {
@@ -184,7 +184,7 @@
   "tires": {
     "front": {
       "radius": 0.330000,
-      "width": 0.290000,
+      "width": 0.350000,
       "wheel_mass": 12.0,
       "contact_patch": 0.34,
       "braking_grip_multiplier": 1.02,
@@ -192,8 +192,8 @@
     },
 
     "rear": {
-      "radius": 0.335000,
-      "width": 0.405000,
+      "radius": 0.330000,
+      "width": 0.375000,
       "wheel_mass": 16.0,
       "contact_patch": 0.36,
       "braking_grip_multiplier": 1.04,
