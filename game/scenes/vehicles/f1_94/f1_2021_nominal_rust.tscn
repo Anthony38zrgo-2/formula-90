@@ -1,0 +1,162 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicle/f1_94_rust_vehicle.gd" id="1_rust_vehicle"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/variants/f1_2021_nominal/geometry/F1_2021_nominal_chassis.glb" id="2_chassis"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/variants/f1_2021_nominal/geometry/F1_2021_nominal_wheel_front.glb" id="3_front"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1_94/variants/f1_2021_nominal/geometry/F1_2021_nominal_wheel_rear.glb" id="4_rear"]
+[ext_resource type="Script" path="res://scripts/audio/vehicle_audio_controller.gd" id="6_audio"]
+[ext_resource type="Script" path="res://scripts/input/f1_94_rust_input_controller.gd" id="7_controller"]
+
+[sub_resource type="BoxShape3D" id="Box_tub"]
+size = Vector3(1.35, 0.4, 3.35)
+
+[sub_resource type="BoxShape3D" id="Box_nose"]
+size = Vector3(0.6, 0.24, 1.6)
+
+[sub_resource type="BoxShape3D" id="Box_rear"]
+size = Vector3(1.2, 0.32, 1.1)
+
+[node name="F194Rust" type="Node3D"]
+
+[node name="F194RustInputController" type="Node3D" parent="." node_paths=PackedStringArray("vehicle_node")]
+script = ExtResource("7_controller")
+vehicle_node = NodePath("../VehicleRigidBody")
+
+[node name="VehicleRigidBody" type="F194RustVehicle" parent="." node_paths=PackedStringArray("chassis_node", "front_left_wheel_node", "front_right_wheel_node", "rear_left_wheel_node", "rear_right_wheel_node", "ray_fl_in", "ray_fl_mid", "ray_fl_out", "ray_fr_in", "ray_fr_mid", "ray_fr_out", "ray_rl_in", "ray_rl_mid", "ray_rl_out", "ray_rr_in", "ray_rr_mid", "ray_rr_out")]
+mass = 505.0
+gravity_scale = 0.0
+freeze = false
+collision_layer = 2
+collision_mask = 1
+enable_player_input = true
+script = ExtResource("1_rust_vehicle")
+physics_config_path = "res://data/vehicles/f1_94/variants/f1_2021_nominal_physics.json"
+chassis_node = NodePath("ChassisVisual")
+front_left_wheel_node = NodePath("FrontLeftWheel")
+front_right_wheel_node = NodePath("FrontRightWheel")
+rear_left_wheel_node = NodePath("RearLeftWheel")
+rear_right_wheel_node = NodePath("RearRightWheel")
+ray_fl_in = NodePath("RayCast_FL_In")
+ray_fl_mid = NodePath("RayCast_FL_Mid")
+ray_fl_out = NodePath("RayCast_FL_Out")
+ray_fr_in = NodePath("RayCast_FR_In")
+ray_fr_mid = NodePath("RayCast_FR_Mid")
+ray_fr_out = NodePath("RayCast_FR_Out")
+ray_rl_in = NodePath("RayCast_RL_In")
+ray_rl_mid = NodePath("RayCast_RL_Mid")
+ray_rl_out = NodePath("RayCast_RL_Out")
+ray_rr_in = NodePath("RayCast_RR_In")
+ray_rr_mid = NodePath("RayCast_RR_Mid")
+ray_rr_out = NodePath("RayCast_RR_Out")
+
+[node name="ChassisVisual" parent="VehicleRigidBody" instance=ExtResource("2_chassis")]
+
+[node name="CollisionTub" type="CollisionShape3D" parent="VehicleRigidBody"]
+position = Vector3(0, 0.02, -0.1)
+shape = SubResource("Box_tub")
+
+[node name="CollisionNose" type="CollisionShape3D" parent="VehicleRigidBody"]
+position = Vector3(0, -0.08, -2.15)
+shape = SubResource("Box_nose")
+
+[node name="CollisionRear" type="CollisionShape3D" parent="VehicleRigidBody"]
+position = Vector3(0, 0, 1.7)
+shape = SubResource("Box_rear")
+
+[node name="FrontLeftWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(-0.8175, 0, -1.82)
+
+[node name="Visual" parent="VehicleRigidBody/FrontLeftWheel" instance=ExtResource("3_front")]
+
+[node name="FrontRightWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(0.8175, 0, -1.82)
+
+[node name="Orientation" type="Node3D" parent="VehicleRigidBody/FrontRightWheel"]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="VehicleRigidBody/FrontRightWheel/Orientation" instance=ExtResource("3_front")]
+
+[node name="RearLeftWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(-0.7875, 0, 1.82)
+
+[node name="Visual" parent="VehicleRigidBody/RearLeftWheel" instance=ExtResource("4_rear")]
+
+[node name="RearRightWheel" type="Node3D" parent="VehicleRigidBody"]
+position = Vector3(0.7875, 0, 1.82)
+
+[node name="Orientation" type="Node3D" parent="VehicleRigidBody/RearRightWheel"]
+rotation = Vector3(0, 3.14159265, 0)
+
+[node name="Visual" parent="VehicleRigidBody/RearRightWheel/Orientation" instance=ExtResource("4_rear")]
+
+[node name="RayCast_FL_In" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(-0.6955, 0.235125, -1.82)
+target_position = Vector3(0, -0.62, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_FL_Mid" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(-0.8175, 0.235125, -1.82)
+target_position = Vector3(0, -0.62, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_FL_Out" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(-0.9395, 0.235125, -1.82)
+target_position = Vector3(0, -0.62, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_FR_In" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(0.6955, 0.235125, -1.82)
+target_position = Vector3(0, -0.62, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_FR_Mid" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(0.8175, 0.235125, -1.82)
+target_position = Vector3(0, -0.62, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_FR_Out" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(0.9395, 0.235125, -1.82)
+target_position = Vector3(0, -0.62, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_RL_In" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(-0.6255, 0.182125, 1.82)
+target_position = Vector3(0, -0.57, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_RL_Mid" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(-0.7875, 0.182125, 1.82)
+target_position = Vector3(0, -0.57, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_RL_Out" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(-0.9495, 0.182125, 1.82)
+target_position = Vector3(0, -0.57, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_RR_In" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(0.6255, 0.182125, 1.82)
+target_position = Vector3(0, -0.57, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_RR_Mid" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(0.7875, 0.182125, 1.82)
+target_position = Vector3(0, -0.57, 0)
+collision_mask = 1
+collide_with_areas = false
+
+[node name="RayCast_RR_Out" type="RayCast3D" parent="VehicleRigidBody"]
+position = Vector3(0.9495, 0.182125, 1.82)
+target_position = Vector3(0, -0.57, 0)
+collision_mask = 1
+collide_with_areas = false

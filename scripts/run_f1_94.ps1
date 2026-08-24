@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
+    [ValidateSet('1994', '2021')]
+    [string]$VehicleVariant = '1994',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
     [switch]$SmokeAudio,
@@ -12,8 +14,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
-$scene = 'res://scenes/runtime/vehicle_test_session.tscn'
-$manifestPath = Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
+$is2021Variant = $VehicleVariant -eq '2021'
+$scene = if ($is2021Variant) { 'res://scenes/runtime/vehicle_test_session_2021.tscn' } else { 'res://scenes/runtime/vehicle_test_session.tscn' }
+$manifestPath = if ($is2021Variant) {
+    Join-Path $game 'assets\models\vehicles\f1_94\variants\f1_2021_nominal\manifest.json'
+} else {
+    Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
+}
+$variantLabel = if ($is2021Variant) { 'F1 2021 nominal dimensional' } else { 'F1 1994 canonical' }
 $trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
 $trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
 $trackConfigPath = Join-Path $root 'blender\track_pipeline\configs\la_chutana.json'
@@ -47,28 +55,40 @@ function Resolve-Godot([string]$ExplicitPath) {
     throw 'Godot 4.7.1 no encontrado.'
 }
 
-if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
-    throw "Manifest desacoplado F1-94 faltante: $manifestPath"
-}
+if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Manifest de vehiculo faltante: $manifestPath" }
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-if ($manifest.asset -ne 'F1_94' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
-    throw 'El manifest desacoplado F1-94 no cumple el contrato esperado.'
-}
-$expectedAssets = @{
-    ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
-    ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
-    ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
-}
 $runtimeDir = Split-Path -Parent $manifestPath
+if ($is2021Variant) {
+    if ($manifest.variant_id -ne 'f1_2021_nominal' -or $manifest.base_vehicle_id -ne 'f1_94') {
+        throw 'El manifest de la variante 2021 no cumple el contrato esperado.'
+    }
+    $expectedAssets = @{
+        ([string]$manifest.runtime.chassis.path).Replace('/', '\') = [string]$manifest.runtime.chassis.sha256
+        ([string]$manifest.runtime.wheel_front.path).Replace('/', '\') = [string]$manifest.runtime.wheel_front.sha256
+        ([string]$manifest.runtime.wheel_rear.path).Replace('/', '\') = [string]$manifest.runtime.wheel_rear.sha256
+    }
+    $physicsRelative = ([string]$manifest.runtime.physics_profile).Replace('res://', '').Replace('/', '\')
+    $physicsPath = Join-Path $game $physicsRelative
+    if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2021 faltante: $physicsPath" }
+    $physicsHash = (Get-FileHash -LiteralPath $physicsPath -Algorithm SHA256).Hash
+    if (-not $physicsHash.Equals([string]$manifest.runtime.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Hash inesperado para el perfil fisico 2021.'
+    }
+} else {
+    if ($manifest.asset -ne 'F1_94' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
+        throw 'El manifest desacoplado F1-94 no cumple el contrato esperado.'
+    }
+    $expectedAssets = @{
+        ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
+        ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
+        ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
+    }
+}
 foreach ($relativePath in $expectedAssets.Keys) {
     $assetPath = Join-Path $runtimeDir $relativePath
-    if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) {
-        throw "Asset desacoplado F1-94 faltante: $assetPath"
-    }
+    if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) { throw "Asset de vehiculo faltante: $assetPath" }
     $actualHash = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash
-    if (-not $actualHash.Equals($expectedAssets[$relativePath], [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Hash inesperado para $relativePath"
-    }
+    if (-not $actualHash.Equals($expectedAssets[$relativePath], [StringComparison]::OrdinalIgnoreCase)) { throw "Hash inesperado para $relativePath" }
 }
 
 if (-not (Test-Path -LiteralPath $trackPath -PathType Leaf)) {
@@ -117,10 +137,10 @@ $env:APPDATA = (Resolve-Path -LiteralPath $runtimeAppData).Path
 $env:LOCALAPPDATA = (Resolve-Path -LiteralPath $runtimeLocalAppData).Path
 $godot = Resolve-Godot $GodotPath
 
-Write-Host 'Importando y validando F1-94 desacoplado...' -ForegroundColor Cyan
+Write-Host "Importando y validando $variantLabel..." -ForegroundColor Cyan
 & $godot --headless --path $game --import
 if ($LASTEXITCODE -ne 0) {
-    throw "Godot no pudo importar el runtime F1-94 ($LASTEXITCODE)."
+    throw "Godot no pudo importar el runtime $variantLabel ($LASTEXITCODE)."
 }
 
 if ($SmokeAudio) {
@@ -163,10 +183,10 @@ if ($Parity) {
     exit $LASTEXITCODE
 }
 if ($ValidateRuntimeOnly) {
-    Write-Host 'Runtime F1-94 desacoplado validado.' -ForegroundColor Green
+    Write-Host "Runtime $variantLabel validado." -ForegroundColor Green
     return
 }
 
-Write-Host "Iniciando $scene" -ForegroundColor Green
+Write-Host "Iniciando $variantLabel con $scene" -ForegroundColor Green
 & $godot --path $game $scene
 exit $LASTEXITCODE
