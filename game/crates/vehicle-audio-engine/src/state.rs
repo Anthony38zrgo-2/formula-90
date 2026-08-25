@@ -20,7 +20,7 @@ pub const ENGINE_BAND_KEYS: [&str; 5] = [
 
 /// Native RPM at which each engine band sample was recorded (firing_freq*12).
 /// Mirrors `tools/audio/bank_spec.py:ENGINE_BAND_NATIVE_RPM`; GDScript mirrors too.
-pub const ENGINE_BAND_NATIVE_RPM: [f32; 5] = [3941.0, 7429.0, 8196.0, 5580.0, 7687.0];
+pub const ENGINE_BAND_NATIVE_RPM: [f32; 5] = [3941.0, 7429.0, 9800.0, 16950.0, 7687.0];
 
 /// Band centers on the normalized-RPM axis (0..1). Mirrors `EngineLayerMixer`.
 pub const BAND_CENTERS: [f32; 5] = [0.0, 0.25, 0.5, 0.75, 1.0];
@@ -326,9 +326,10 @@ mod tests {
     fn native_rpm_are_measured_not_laddered() {
         // Regression guard: high/redline were once cherry-picked to a monotonic
         // ladder (11208/15342) instead of the honest recorded revs (5580/7687).
-        assert!((ENGINE_BAND_NATIVE_RPM[3] - 5580.0).abs() < 1.0);
+        assert!((ENGINE_BAND_NATIVE_RPM[2] - 9800.0).abs() < 1.0);
+        assert!((ENGINE_BAND_NATIVE_RPM[3] - 16950.0).abs() < 1.0);
         assert!((ENGINE_BAND_NATIVE_RPM[4] - 7687.0).abs() < 1.0);
-        assert!((engine_pitch_scale(5580.0, 3) - 1.0).abs() < 1e-5);
+        assert!((engine_pitch_scale(16950.0, 3) - 1.0).abs() < 1e-5);
         assert!((engine_pitch_scale(7687.0, 4) - 1.0).abs() < 1e-5);
     }
 

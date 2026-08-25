@@ -15,6 +15,7 @@ use crate::dsp::{
     tube::Tube,
 };
 use crate::state::*;
+use crate::tire_scrub::{compute_tire_scrub_target, TireScrubMode};
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -196,6 +197,11 @@ pub struct VehicleAudioEngine {
     target_scrape_gain: f32,
     scrape_pitch: f64,
     scrape_cursor: f64,
+    smoothed_tyre_scrub_gain: f32,
+    target_tyre_scrub_gain: f32,
+    tyre_scrub_pitch: f64,
+    tyre_scrub_cursor: f64,
+    tyre_scrub_mode: TireScrubMode,
 
     // Smoothed RPM (one-pole glide) so pitch + band weights move continuously
     // instead of stepping each frame (which caused zipper/click at RPM changes).
@@ -381,6 +387,11 @@ impl VehicleAudioEngine {
             target_scrape_gain: 0.0,
             scrape_pitch: 1.0,
             scrape_cursor: 0.0,
+            smoothed_tyre_scrub_gain: 0.0,
+            target_tyre_scrub_gain: 0.0,
+            tyre_scrub_pitch: 1.0,
+            tyre_scrub_cursor: 0.0,
+            tyre_scrub_mode: TireScrubMode::None,
             cur_weights: [0.0; 5],
             cur_pitches: [1.0; 5],
             cur_engine_gain: 0.0,
@@ -598,6 +609,33 @@ impl VehicleAudioEngine {
         self.last_slip = slip;
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_tire_scrub_state(
+        &mut self,
+        slip_ratio: [f32; 4],
+        slip_angle_rad: [f32; 4],
+        contact_fraction: [f32; 4],
+        normal_force_n: [f32; 4],
+        speed_kph: f32,
+        surface: &str,
+    ) {
+        let was_inactive = self.target_tyre_scrub_gain <= 1e-4;
+        let target = compute_tire_scrub_target(
+            slip_ratio,
+            slip_angle_rad,
+            contact_fraction,
+            normal_force_n,
+            speed_kph,
+            surface,
+        );
+        self.target_tyre_scrub_gain = target.gain;
+        self.tyre_scrub_pitch = target.pitch as f64;
+        self.tyre_scrub_mode = target.mode;
+        if was_inactive && target.gain > 1e-4 {
+            self.tyre_scrub_cursor = 0.0;
+        }
+    }
+
     /// Fire one deterministic pseudo-random variant for the requested one-shot.
     pub fn trigger(&mut self, t: Trigger) {
         self.last_trigger = t.bank_key().to_string();
@@ -672,6 +710,14 @@ impl VehicleAudioEngine {
             let scrape_alpha = 1.0 - (-1.0 / (sr * scrape_tau)).exp();
             self.smoothed_scrape_gain +=
                 (self.target_scrape_gain - self.smoothed_scrape_gain) * scrape_alpha as f32;
+            let tyre_tau = if self.target_tyre_scrub_gain > self.smoothed_tyre_scrub_gain {
+                0.025
+            } else {
+                0.160
+            };
+            let tyre_alpha = 1.0 - (-1.0 / (sr * tyre_tau)).exp();
+            self.smoothed_tyre_scrub_gain +=
+                (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
 
             // Engine bands: weights + pitch derived continuously from smoothed_rpm.
             let norm = if self.max_rpm > self.idle_rpm {
@@ -759,6 +805,27 @@ impl VehicleAudioEngine {
                     &mut mixed_r,
                 );
             }
+
+            // Continuous tyre scrub from lateral slide, wheelspin or wheel lock.
+            let mut tyre_scrub = 0.0f32;
+            if self.smoothed_tyre_scrub_gain > 1e-5 {
+                if let Some(sample) = self.bank.get("tyre_scrub") {
+                    tyre_scrub = read_looped(
+                        &sample.pcm,
+                        &mut self.tyre_scrub_cursor,
+                        self.tyre_scrub_pitch,
+                    ) * self.smoothed_tyre_scrub_gain
+                        * self.sample_gain("tyre_scrub");
+                }
+            }
+            mix_through_strip(
+                &mut self.strips,
+                &mut self.reverb_buses,
+                "tyre_scrub",
+                tyre_scrub,
+                &mut mixed_l,
+                &mut mixed_r,
+            );
 
             // Sustained underfloor voice. The middle 50% of the existing scrape
             // sample is used as its stable body; a short seam crossfade prevents
@@ -905,6 +972,18 @@ impl VehicleAudioEngine {
     }
     pub fn scrape_cursor(&self) -> f64 {
         self.scrape_cursor
+    }
+    pub fn tyre_scrub_gain(&self) -> f32 {
+        self.smoothed_tyre_scrub_gain
+    }
+    pub fn tyre_scrub_pitch(&self) -> f32 {
+        self.tyre_scrub_pitch as f32
+    }
+    pub fn tyre_scrub_mode(&self) -> u8 {
+        self.tyre_scrub_mode as u8
+    }
+    pub fn tyre_scrub_cursor(&self) -> f64 {
+        self.tyre_scrub_cursor
     }
 }
 
@@ -1155,6 +1234,11 @@ mod tests {
             target_scrape_gain: 0.0,
             scrape_pitch: 1.0,
             scrape_cursor: 0.0,
+            smoothed_tyre_scrub_gain: 0.0,
+            target_tyre_scrub_gain: 0.0,
+            tyre_scrub_pitch: 1.0,
+            tyre_scrub_cursor: 0.0,
+            tyre_scrub_mode: TireScrubMode::None,
             cur_weights: [0.0; 5],
             cur_pitches: [1.0; 5],
             cur_engine_gain: 0.0,

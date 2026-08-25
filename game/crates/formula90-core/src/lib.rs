@@ -422,6 +422,12 @@ impl CoreFacade {
             .zip(ent.sim.state.tires.wheels.iter())
             .map(|(torque, wheel)| torque * wheel.spin)
             .sum();
+        for i in 0..4 {
+            frame.wheel_slip_ratio[i] = ent.sim.state.tires.wheels[i].slip_ratio;
+            frame.wheel_slip_angle_rad[i] = ent.sim.state.tires.wheels[i].slip_angle_rad;
+            frame.wheel_contact_fraction[i] = ent.sim.state.suspension.wheels[i].contact_fraction;
+            frame.wheel_normal_force_n[i] = ent.sim.state.suspension.wheels[i].total_normal_force;
+        }
         let pose = &ent.sim.state.transform;
         let lv = ent.sim.state.linear_velocity;
         let av = ent.sim.state.angular_velocity;
@@ -504,6 +510,14 @@ impl CoreFacade {
         slip: f32,
     ) -> &CoreFrame {
         // --- audio driven from the SAME tick (no round-trip) ------------------
+        self.audio.set_tire_scrub_state(
+            frame.wheel_slip_ratio.map(|v| v as f32),
+            frame.wheel_slip_angle_rad.map(|v| v as f32),
+            frame.wheel_contact_fraction.map(|v| v as f32),
+            frame.wheel_normal_force_n.map(|v| v as f32),
+            frame.speed_kmh as f32,
+            surface,
+        );
         self.audio.set_state(
             frame.rpm,
             self.config.idle_rpm,

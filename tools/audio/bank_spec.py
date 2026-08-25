@@ -32,8 +32,8 @@ class SpecEntry:
 ENGINE_BAND_NATIVE_RPM: dict[str, float] = {
     "engine_idle": 3941.0,   # 98_int_idle.wav  dominant 328.4 Hz
     "engine_low": 7429.0,    # 98_int_low.wav   619.1 Hz
-    "engine_mid": 8196.0,    # 98_int_med.wav   683.0 Hz
-    "engine_high": 5580.0,   # 98_int_high_1.wav 465.0 Hz
+    "engine_mid": 9800.0,    # promoted engine_mid.wav, firing peak ~817 Hz
+    "engine_high": 16950.0,  # promoted engine_high.wav, firing peak ~1412 Hz
     "engine_redline": 7687.0,  # 98_int_max_5.wav stable segment 7655-7687 Hz
 }
 

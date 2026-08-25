@@ -25,6 +25,7 @@ pub mod ffi;
 pub mod mixer;
 pub mod state;
 pub mod telemetry;
+pub mod tire_scrub;
 
 pub use adapter::{surface_token, GevpTelemetry};
 pub use bank::{BankError, Sample, VehicleSoundBank};

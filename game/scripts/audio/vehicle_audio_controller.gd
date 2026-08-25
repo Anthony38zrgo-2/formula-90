@@ -22,7 +22,7 @@ const BANK_DIR := "res://sounds/banks/v10_vehicle"
 
 # Engine band keys in increasing RPM order (must match Rust ENGINE_BAND_KEYS).
 const ENGINE_BANDS := ["engine_idle", "engine_low", "engine_mid", "engine_high", "engine_redline"]
-const ENGINE_BAND_NATIVE_RPM := [3941.0, 7429.0, 8196.0, 5580.0, 7687.0]
+const ENGINE_BAND_NATIVE_RPM := [3941.0, 7429.0, 9800.0, 16950.0, 7687.0]
 const BAND_CENTERS := [0.0, 0.25, 0.5, 0.75, 1.0]
 const BAND_WIDTH := 0.25
 const PITCH_MIN := 0.5
@@ -71,7 +71,7 @@ var _backfire_cooldown := 0.0
 var _players := {}
 
 # Per-loop-player smoothed volume state (key -> dB). Only looping roles (engine
-# bands + surface beds) are smoothed; one-shots are set directly to avoid being
+# bands + surface beds + tyre scrub) are smoothed; one-shots are set directly to avoid being
 # overwritten by the smoothing pass.
 var _db_target := {}
 var _db_current := {}
@@ -142,7 +142,7 @@ func _load_bank() -> void:
 			wav.stereo = false
 			var bytes := FileAccess.get_file_as_bytes(res_path)
 			wav.data = _extract_pcm16(bytes)
-		var is_loop := key in ENGINE_BANDS or key.begins_with("surf_") or key == "exhaust-mic"
+		var is_loop := key in ENGINE_BANDS or key.begins_with("surf_") or key == "exhaust-mic" or key == "tyre_scrub"
 		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD if is_loop else AudioStreamWAV.LOOP_DISABLED
 		if is_loop and wav.get_length() > 0.0:
 			# loop_end está en SAMPLES (frames), no en bytes. Para streams QOA/ADPCM
@@ -304,6 +304,15 @@ func update(_delta: float) -> void:
 				_set_target_db(key, VOLUME_FLOOR_DB)
 		_active_bed = bed if bed != null else ""
 
+	# Tyre scrub: lateral drift, positive wheelspin and negative wheel lock.
+	# The Rust mixer uses the authoritative per-wheel contact/load values; this
+	# fallback mirrors the thresholds with the telemetry exposed to GDScript.
+	var scrub := _tyre_scrub_target(speed_kph)
+	var scrub_player: AudioStreamPlayer = _players.get("tyre_scrub")
+	if scrub_player != null:
+		scrub_player.pitch_scale = scrub["pitch"]
+		_play_loop("tyre_scrub", 1.0, scrub["gain"])
+
 	# Gear-change one-shots.
 	var fired: String = ""
 	if gear != _last_gear:
@@ -345,6 +354,52 @@ func _aggregate_slip() -> float:
 				var sv: Vector2 = wheel.get("slip_vector")
 				slip = maxf(slip, absf(sv.y))
 	return clampf(slip, 0.0, 1.0)
+
+
+func _smoothstep(edge0: float, edge1: float, value: float) -> float:
+	var t := clampf((value - edge0) / (edge1 - edge0), 0.0, 1.0)
+	return t * t * (3.0 - 2.0 * t)
+
+
+func _tyre_scrub_target(speed_kph: float) -> Dictionary:
+	var speed_gate := _smoothstep(5.0, 20.0, absf(speed_kph))
+	var surface_gain := 1.0
+	match surface:
+		"rumble": surface_gain = 0.70
+		"grass", "sand": surface_gain = 0.22
+	var best := 0.0
+	var mode := 0 # 1 lateral, 2 wheelspin, 3 lockup
+	if vehicle != null and vehicle.get("axles") != null:
+		for axle in vehicle.axles:
+			for wheel in axle.wheels:
+				var sv: Vector2 = wheel.get("slip_vector")
+				var lateral := _smoothstep(0.04, 0.18, absf(sv.x))
+				var wheelspin := _smoothstep(0.08, 0.35, sv.y)
+				var lockup := _smoothstep(0.12, 0.70, -sv.y)
+				if lockup >= wheelspin and lockup >= lateral and lockup > best:
+					best = lockup
+					mode = 3
+				elif wheelspin >= lateral and wheelspin > best:
+					best = wheelspin
+					mode = 2
+				elif lateral > best:
+					best = lateral
+					mode = 1
+	# When only rigid-body telemetry is available, sideslip is still a useful
+	# lateral-drift proxy and avoids losing scrub entirely in the fallback path.
+	if vehicle is Node3D and vehicle.get("linear_velocity") is Vector3:
+		var local_velocity: Vector3 = (vehicle as Node3D).global_transform.basis.inverse() * vehicle.get("linear_velocity")
+		var body_angle := absf(atan2(local_velocity.x, maxf(absf(local_velocity.z), 0.5)))
+		var body_lateral := _smoothstep(0.04, 0.18, body_angle)
+		if body_lateral > best:
+			best = body_lateral
+			mode = 1
+	var pitch := 1.0
+	match mode:
+		1: pitch = 0.95 + 0.10 * best
+		2: pitch = 1.05 + 0.15 * best
+		3: pitch = 0.82 + 0.08 * best
+	return {"gain": best * speed_gate * surface_gain, "pitch": pitch}
 
 
 ## Triangular crossfade weights over the 5 engine bands (mirrors Rust core).

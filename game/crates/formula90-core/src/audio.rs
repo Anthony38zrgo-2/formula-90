@@ -209,6 +209,10 @@ impl AudioModule {
                 scrape_gain: eng.scrape_gain(),
                 scrape_pitch: eng.scrape_pitch(),
                 scrape_cursor: eng.scrape_cursor(),
+                tyre_scrub_gain: eng.tyre_scrub_gain(),
+                tyre_scrub_pitch: eng.tyre_scrub_pitch(),
+                tyre_scrub_mode: eng.tyre_scrub_mode(),
+                tyre_scrub_cursor: eng.tyre_scrub_cursor(),
             },
             None => base,
         }
@@ -223,6 +227,28 @@ impl AudioModule {
     ) {
         if let Some(eng) = self.engine.as_mut() {
             eng.set_scrape_state(active, intensity, speed_m_s, onset_strength);
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_tire_scrub_state(
+        &mut self,
+        slip_ratio: [f32; 4],
+        slip_angle_rad: [f32; 4],
+        contact_fraction: [f32; 4],
+        normal_force_n: [f32; 4],
+        speed_kph: f32,
+        surface: SurfaceType,
+    ) {
+        if let Some(eng) = self.engine.as_mut() {
+            eng.set_tire_scrub_state(
+                slip_ratio,
+                slip_angle_rad,
+                contact_fraction,
+                normal_force_n,
+                speed_kph,
+                surface_token(surface),
+            );
         }
     }
 }

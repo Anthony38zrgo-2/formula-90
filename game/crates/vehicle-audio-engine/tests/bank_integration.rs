@@ -11,6 +11,7 @@ use vehicle_audio_engine::bank::VehicleSoundBank;
 use vehicle_audio_engine::state::{
     engine_weights, StateInput, SURFACE_GRASS, SURFACE_RUMBLE, SURFACE_SAND,
 };
+use vehicle_audio_engine::VehicleAudioEngine;
 use vehicle_audio_engine::VehicleAudioState;
 
 fn bank_path() -> std::path::PathBuf {
@@ -19,8 +20,6 @@ fn bank_path() -> std::path::PathBuf {
     manifest_dir
         .parent()
         .unwrap()
-        .parent()
-        .unwrap() // game/crates/
         .parent()
         .unwrap() // game/
         .join("sounds/banks/v10_vehicle")
@@ -64,6 +63,7 @@ fn bank_loads_and_has_expected_entries() {
         "int_backfire_2",
         "exhaust-mic",
         "impact_scrape",
+        "tyre_scrub",
     ] {
         assert!(bank.get(key).is_some(), "missing bank key {key}");
     }
@@ -71,6 +71,20 @@ fn bank_loads_and_has_expected_entries() {
     assert!(bank.get("engine_idle").unwrap().is_loop);
     // One-shots not flagged.
     assert!(!bank.get("impact_barrier").unwrap().is_loop);
+    assert!(bank.get("tyre_scrub").unwrap().is_loop);
+}
+
+#[test]
+fn tyre_scrub_voice_activates_and_advances_on_loaded_bank() {
+    let mut engine = VehicleAudioEngine::new(&bank_path()).expect("canonical bank must load");
+    engine.set_state(9000.0, 4500.0, 17000.0, 0.5, 100.0, 3, 0.4, "asphalt");
+    engine.set_tire_scrub_state([0.45; 4], [0.0; 4], [1.0; 4], [3500.0; 4], 100.0, "asphalt");
+    let mut left = vec![0.0; 4096];
+    let mut right = vec![0.0; 4096];
+    engine.render(&mut left, &mut right, 4096);
+    assert!(engine.tyre_scrub_gain() > 0.5);
+    assert!(engine.tyre_scrub_cursor() > 0.0);
+    assert_eq!(engine.tyre_scrub_mode(), 2);
 }
 
 #[test]

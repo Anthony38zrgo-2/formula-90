@@ -38,6 +38,10 @@ pub struct AudioReadouts {
     pub scrape_gain: f32,
     pub scrape_pitch: f32,
     pub scrape_cursor: f64,
+    pub tyre_scrub_gain: f32,
+    pub tyre_scrub_pitch: f32,
+    pub tyre_scrub_mode: u8,
+    pub tyre_scrub_cursor: f64,
 }
 
 impl Default for AudioReadouts {
@@ -57,6 +61,10 @@ impl Default for AudioReadouts {
             scrape_gain: 0.0,
             scrape_pitch: 1.0,
             scrape_cursor: 0.0,
+            tyre_scrub_gain: 0.0,
+            tyre_scrub_pitch: 1.0,
+            tyre_scrub_mode: 0,
+            tyre_scrub_cursor: 0.0,
         }
     }
 }
@@ -88,6 +96,11 @@ pub struct CoreFrame {
     pub rr_comp_mm: f64,
     pub front_slip: f64,
     pub rear_slip: f64,
+    // Per-wheel tyre contact state used internally by the audio scrub voice.
+    pub wheel_slip_ratio: [f64; 4],
+    pub wheel_slip_angle_rad: [f64; 4],
+    pub wheel_contact_fraction: [f64; 4],
+    pub wheel_normal_force_n: [f64; 4],
     pub tc_enabled: bool,
     pub tc_eligible: bool,
     pub tc_active: bool,
@@ -204,6 +217,10 @@ impl Default for CoreFrame {
             rr_comp_mm: 0.0,
             front_slip: 0.0,
             rear_slip: 0.0,
+            wheel_slip_ratio: [0.0; 4],
+            wheel_slip_angle_rad: [0.0; 4],
+            wheel_contact_fraction: [0.0; 4],
+            wheel_normal_force_n: [0.0; 4],
             tc_enabled: false,
             tc_eligible: false,
             tc_active: false,

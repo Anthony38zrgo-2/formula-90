@@ -31,13 +31,14 @@ def test_manifest_contains_required_fields():
     assert manifest.sample_rate == 44100
     assert manifest.channels == 1
     assert manifest.pcm_bits == 16
-    assert len(manifest.files) == 26
+    assert len(manifest.files) == 27
     roles = {e.role for e in manifest.files}
     assert {"engine_idle", "engine_low", "engine_mid", "engine_high", "engine_redline"} <= roles
     assert {"shift_up", "shift_down"} <= roles
     assert {"surf_grass", "surf_sand", "surf_rumble"} <= roles
     assert {"impact_barrier", "impact_cone", "impact_hit"} <= roles
     assert "exhaust_mic" in roles
+    assert "tyre_scrub" in roles
     for e in manifest.files:
         if e.synthesis.get("recipe"):
             assert e.synthesis["recipe"] in ("flat_floor_scrape_v1", "flat_floor_scrape_v2", "exhaust_mic_v1")
@@ -65,13 +66,22 @@ def test_bank_matches_declared_source_spec():
     """Every manifest entry maps to its declared source or synthesis recipe."""
     from tools.audio.bank_manifest import BankManifest
     from tools.audio.bank_spec import BANK_SPEC
+    from tools.audio.promote_f1_94_replacement_sounds import REPLACEMENTS
 
     bank = Path("game/sounds/banks/v10_vehicle")
     manifest = BankManifest.load(bank / "bank_manifest.json")
     by_key = {e.key: e for e in BANK_SPEC}
-    assert len(manifest.files) == len(BANK_SPEC)
+    assert len(manifest.files) == len(BANK_SPEC) + 1
     for entry in manifest.files:
         key = entry.file[:-4]
+        if entry.synthesis.get("promotion_recipe") == "f1_94_replacement_overlay_v1":
+            role, loop, _category = REPLACEMENTS[entry.file]
+            assert entry.role == role
+            assert entry.loop == loop
+            src = Path(entry.synthesis["source_file"])
+            assert src.is_file(), f"replacement source missing {src}"
+            assert hashlib.sha256(src.read_bytes()).hexdigest() == entry.synthesis["source_sha256"]
+            continue
         spec = by_key[key]
         assert entry.role == spec.role
         assert entry.loop == spec.loop
