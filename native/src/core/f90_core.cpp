@@ -2,6 +2,7 @@
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
 
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -208,6 +209,20 @@ void F90Core::reset_vehicle() {
 }
 
 bool F90Core::load_dll() {
+	const String build_source_path = "res://BUILD_SOURCE";
+	if (!FileAccess::file_exists(build_source_path)) {
+		UtilityFunctions::printerr("[F90Core] FATAL: res://BUILD_SOURCE is missing");
+		return false;
+	}
+	Ref<FileAccess> build_source_file = FileAccess::open(build_source_path, FileAccess::READ);
+	const String recorded_source_sha = build_source_file.is_valid()
+		? build_source_file->get_as_text().strip_edges()
+		: String();
+	if (recorded_source_sha.length() != 40 || recorded_source_sha != String(FORMULA90_BUILD_SHA)) {
+		UtilityFunctions::printerr(String("[F90Core] FATAL: native BUILD does not match recorded source. Native=") +
+			String(FORMULA90_BUILD_SHA) + " recorded=" + recorded_source_sha);
+		return false;
+	}
 	if (dll_handle_ != nullptr) {
 		return true;
 	}
@@ -240,6 +255,7 @@ bool F90Core::load_dll() {
 	dll_handle_ = (void *)hDll;
 
 	fn_abi_version_ = (FnCoreAbiVersion)GetProcAddress(hDll, "f90_core_abi_version");
+	fn_build_sha_ = (FnCoreBuildSha)GetProcAddress(hDll, "f90_core_build_sha");
 	fn_create_ = (FnCoreCreate)GetProcAddress(hDll, "f90_core_create");
 	fn_destroy_ = (FnCoreDestroy)GetProcAddress(hDll, "f90_core_destroy");
 	fn_spawn_ = (FnCoreSpawn)GetProcAddress(hDll, "f90_core_spawn");
@@ -251,12 +267,19 @@ bool F90Core::load_dll() {
 	fn_audio_readouts_ = (FnCoreAudioReadouts)GetProcAddress(hDll, "f90_core_audio_readouts");
 
 	const uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
+	const String core_build_sha = fn_build_sha_ ? String(fn_build_sha_()) : String("unknown");
 	UtilityFunctions::print(String("[F90Core]\nDLL=") + loaded_path + "\nABI=" + String::num_int64(abi_ver) +
-		"\nEXPECTED=" + String::num_int64(EXPECTED_ABI_VERSION));
+		"\nEXPECTED=" + String::num_int64(EXPECTED_ABI_VERSION) + "\nBUILD=" + core_build_sha);
 
 	if (abi_ver != EXPECTED_ABI_VERSION) {
 		UtilityFunctions::printerr(String("[F90Core] FATAL: ABI mismatch! Expected ") +
 			String::num(EXPECTED_ABI_VERSION) + " but loaded DLL has " + String::num(abi_ver));
+		unload_dll();
+		return false;
+	}
+	if (core_build_sha != recorded_source_sha || core_build_sha == "unknown") {
+		UtilityFunctions::printerr(String("[F90Core] FATAL: BUILD mismatch. Expected ") +
+			recorded_source_sha + " but loaded DLL has " + core_build_sha);
 		unload_dll();
 		return false;
 	}
@@ -285,6 +308,7 @@ void F90Core::unload_dll() {
 	}
 #endif
 	fn_abi_version_ = nullptr;
+	fn_build_sha_ = nullptr;
 	fn_create_ = nullptr;
 	fn_destroy_ = nullptr;
 	fn_spawn_ = nullptr;

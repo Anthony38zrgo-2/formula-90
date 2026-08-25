@@ -207,9 +207,9 @@ pub extern "C" fn f90_core_abi_version() -> u32 {
     F90_CORE_ABI_VERSION
 }
 
-static SHA: &[u8] = b"unknown\0";
 #[no_mangle]
 pub extern "C" fn f90_core_build_sha() -> *const c_char {
+    static SHA: &[u8] = concat!(env!("FORMULA90_BUILD_SHA"), "\0").as_bytes();
     SHA.as_ptr() as *const c_char
 }
 

@@ -195,6 +195,7 @@ private:
 
 	// Single-handshake function pointers (see f90_core.h).
 	FnCoreAbiVersion fn_abi_version_ = nullptr;
+	FnCoreBuildSha fn_build_sha_ = nullptr;
 	FnCoreCreate fn_create_ = nullptr;
 	FnCoreDestroy fn_destroy_ = nullptr;
 	FnCoreSpawn fn_spawn_ = nullptr;
