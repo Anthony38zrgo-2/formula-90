@@ -34,6 +34,7 @@ REPLACEMENTS: dict[str, tuple[str, bool, str]] = {
     "impact_hit_4.wav": ("impact_hit", False, "impact"),
     "int_backfire.wav": ("engine_backfire", False, "engine"),
     "int_backfire_2.wav": ("engine_backfire", False, "engine"),
+    "shift_up.wav": ("shift_up", False, "shift"),
     "shift_down.wav": ("shift_down", False, "shift"),
     "tyre_scrub.wav": ("tyre_scrub", True, "tire"),
 }
@@ -41,10 +42,22 @@ REPLACEMENTS: dict[str, tuple[str, bool, str]] = {
 NATIVE_RPM = {"engine_mid.wav": 9800.0, "engine_high.wav": 16950.0}
 LOOP_XFADE_FRAMES = 2048
 TARGET_PEAK = 0.89
+SHIFT_FADE_IN_FRAMES = round(0.002 * SAMPLE_RATE)
+SHIFT_FADE_OUT_FRAMES = round(0.012 * SAMPLE_RATE)
 
 
 def _source_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _fade_edges(samples: list[float], fade_in: int, fade_out: int) -> list[float]:
+    faded = samples.copy()
+    for index in range(min(fade_in, len(faded))):
+        faded[index] *= index / max(fade_in - 1, 1)
+    for offset in range(min(fade_out, len(faded))):
+        index = len(faded) - 1 - offset
+        faded[index] *= offset / max(fade_out - 1, 1)
+    return faded
 
 
 def _process(path: Path, loop: bool) -> tuple[list[float], int, dict[str, object]]:
@@ -68,6 +81,10 @@ def _process(path: Path, loop: bool) -> tuple[list[float], int, dict[str, object
     # Loop folding can reintroduce a small mean; subtracting a constant preserves
     # the exact endpoint equality while restoring the bank DC contract.
     samples = remove_dc(samples)
+    if path.name in {"shift_up.wav", "shift_down.wav"}:
+        samples = _fade_edges(samples, SHIFT_FADE_IN_FRAMES, SHIFT_FADE_OUT_FRAMES)
+        processing["fade_in_frames"] = SHIFT_FADE_IN_FRAMES
+        processing["fade_out_frames"] = SHIFT_FADE_OUT_FRAMES
     samples = normalize_peak(samples, TARGET_PEAK)
     return samples, source_rate, processing
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+import struct
+import wave
 
 from tools.audio.bank_generator import generate_bank
 from tools.audio.bank_manifest import BankManifest
@@ -60,6 +62,19 @@ def test_manifest_hashes_match_files_on_disk():
     for e in manifest.files:
         actual = hashlib.sha256((bank / e.file).read_bytes()).hexdigest()
         assert actual == e.sha256, f"hash mismatch {e.file}"
+
+
+def test_promoted_shift_samples_have_safe_edges():
+    bank = Path("game/sounds/banks/v10_vehicle")
+    for filename in ("shift_up.wav", "shift_down.wav"):
+        with wave.open(str(bank / filename), "rb") as wav:
+            assert wav.getnchannels() == 1
+            assert wav.getsampwidth() == 2
+            assert wav.getframerate() == 44100
+            pcm = struct.unpack(f"<{wav.getnframes()}h", wav.readframes(wav.getnframes()))
+        assert pcm[0] == pcm[-1] == 0, f"{filename} edge click risk"
+        assert max(abs(sample) for sample in pcm) <= round(0.90 * 32767)
+        assert abs(sum(pcm) / len(pcm) / 32768.0) < 0.001
 
 
 def test_bank_matches_declared_source_spec():

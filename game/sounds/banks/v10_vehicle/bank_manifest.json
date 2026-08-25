@@ -507,65 +507,59 @@
       }
     },
     {
-      "dc_offset": -0.0,
-      "duration_s": 0.876508,
+      "dc_offset": -0.000198,
+      "duration_s": 0.928844,
       "file": "shift_down.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -21.66,
+      "loudness_dbfs": -15.52,
       "peak": 0.89,
       "provenance": "derived from original user-supplied replacement samples",
       "role": "shift_down",
-      "sha256": "88fb43313f611c4a22f6bec5b86487274130579317e7c148e415beb6cd7a1cc2",
+      "sha256": "d91507b91385bad8b7a075a7ff63fd7f607e8b80d5175349d10101ebb6d71e08",
       "synthesis": {
         "category": "shift",
         "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
           "remove_dc": true,
-          "source_rate": 22050,
+          "source_rate": 44100,
           "target_peak": 0.89,
           "target_rate": 44100
         },
         "promotion_recipe": "f1_94_replacement_overlay_v1",
         "source_file": "game/sounds/banks/new sounds/shift_down.wav",
-        "source_rate": 22050,
-        "source_sha256": "100a017c40f3a11357ff73c794bbf4671e1d75ab2f20a3502e28b889b49f56dc"
+        "source_rate": 44100,
+        "source_sha256": "221086556010be08a710f2f9349006ba6b7249ccdc58f5df9d55dc18bee3816c"
       }
     },
     {
-      "dc_offset": -1.5e-05,
-      "duration_s": 0.481723,
+      "dc_offset": -0.000101,
+      "duration_s": 0.743084,
       "file": "shift_up.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -15.22,
-      "peak": 0.919983,
-      "provenance": "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (shift_transient + metal_sheen + pedalboard)",
+      "loudness_dbfs": -15.54,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
       "role": "shift_up",
-      "sha256": "3154be4fc568fdea7bf53d400759cfe555b8644254f012c131478ce82081ed32",
+      "sha256": "99c8b32e4cd7b5fe5b766b0adaa311649a168353b3f87d2e6bcbf9737e5bcbd5",
       "synthesis": {
         "category": "shift",
-        "remaster": {
-          "kind": "up",
-          "recipe": "shift_remaster_v1",
-          "seed": 7001,
-          "stages": [
-            "highpass_140",
-            "gain_0.7",
-            "metal_sheen_4_9k",
-            "shift_transient",
-            "compressor",
-            "distortion_4",
-            "reverb_0.12",
-            "loudness_-16",
-            "finalize_0.92"
-          ],
-          "target_lufs": -16.0
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
         },
-        "source_file": "98_int_shift.wav",
-        "source_rate": 11025,
-        "source_sha256": "943de55bb25e8fd88630fb4a3fec5177c8c79e222a7ebdb1901c76c34ca4dc95"
+        "promotion_recipe": "f1_94_replacement_overlay_v1",
+        "source_file": "game/sounds/banks/new sounds/shift_up.wav",
+        "source_rate": 44100,
+        "source_sha256": "b43367f10f4f6be6d64d14a40771acd19bd61e2ac6b27fb94834ef8e279e16c7"
       }
     },
     {
