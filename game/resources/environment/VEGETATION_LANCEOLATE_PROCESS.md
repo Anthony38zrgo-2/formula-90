@@ -26,6 +26,17 @@ Las semillas existentes siguen controlando toda la variación, por lo que una mi
 
 ## Regeneración
 
+> **DEPRECADO.** Los generadores v3 (`build_vegetation_3d_library.py`,
+> `build_tree_color_library.py`) quedan solo como referencia histórica. Los
+> assets ya no se generan en este proyecto: la biblioteca canónica publicada es
+> `implementation/` (manifest schema 4, generator
+> `procedural_lanceolate_vegetation_v4`), instalada en
+> `game/resources/environment/assets/` por
+> `game/resources/environment/tools/publish_vegetation_library.py`.
+> Regenerar con las tools v3 sobrescribiría los canónicos con geometría no
+> canónica (fit a receta, hojas double-sided, dims de receta) y rompería el
+> contrato v4 (`foliage_double_sided_material`).
+
 Desde la raíz del repositorio:
 
 ```powershell
@@ -35,6 +46,22 @@ python game/resources/environment/tools/build_vegetation_3d_library.py `
 ```
 
 El comando reconstruye seis árboles, seis arbustos, sus previews de auditoría y `assets/manifest.json` con hashes SHA-256.
+
+## Publicación canónica
+
+La fuente canónica vive en `implementation/` (60 GLBs + `manifest.json`
+schema 4). Para republicar la biblioteca en el runtime:
+
+```powershell
+python game/resources/environment/tools/publish_vegetation_library.py --repo .
+```
+
+El comando verifica los shas canónicos, copia los 60 GLBs a
+`game/resources/environment/assets/{trees,bushes}/`, instala el manifest
+schema 4 y regenera los color reports, previews de auditoría y contact sheets.
+Es idempotente. Después hay que reimportar en Godot
+(`--headless --path game --import`) y, si cambian placements, regenerar el
+entorno (rebuild Blender).
 
 ## Validación requerida
 

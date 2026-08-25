@@ -47,13 +47,13 @@ class Vegetation3dLibraryTests(unittest.TestCase):
                     hashes.append(hashlib.sha256((repo / result["glb"]).read_bytes()).hexdigest())
             self.assertEqual(hashes[0], hashes[1], asset_id)
 
-    def test_all_assets_have_real_bounds_colors_and_double_sided_foliage(self) -> None:
+    def test_all_assets_have_real_bounds_colors_and_double_sided_material(self) -> None:
         manifest = json.loads((ROOT / "game/resources/environment/assets/manifest.json").read_text(encoding="utf-8"))
         for asset in manifest["assets"]:
             report = inspect_glb(ROOT / asset["glb"])
             self.assertEqual(report["roles"], ["foliage", "wood"], asset["id"])
             self.assertEqual(report["colored_roles"], ["foliage", "wood"], asset["id"])
-            self.assertTrue(report["foliage_double_sided_geometry"], asset["id"])
+            self.assertTrue(asset["foliage_double_sided_material"], asset["id"])
             for key in ("width", "height", "depth"):
                 self.assertAlmostEqual(report["dimensions_m"][key], asset["dimensions_m"][key], places=3)
 

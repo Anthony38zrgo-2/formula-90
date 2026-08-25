@@ -1,5 +1,5 @@
 {
-  "asset_count": 39,
+  "asset_count": 21,
   "assets": [
     {
       "budget": {
@@ -9,22 +9,22 @@
       "category": "bushes",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 2.0,
-        "height": 1.25,
-        "width": 2.2
+        "depth": 1.430893,
+        "height": 1.296362,
+        "width": 2.063456
       },
       "id": "bush_3d_01",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 240,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 3096
+        "triangles": 1904
       },
       "preview": "game/resources/environment/generated/library_audit/bush_3d_01.png",
       "source": "game/resources/environment/assets/bushes/bush_3d_01.glb",
-      "source_sha256": "e641a34b676ceb67bbc84953d2e15b4772b2aa0bf181dd825c08bb5918726671"
+      "source_sha256": "0c700669768cb4892fd07da81ab848d086865d47dfce3304802562a404ed1be0"
     },
     {
       "budget": {
@@ -34,22 +34,22 @@
       "category": "bushes",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 2.1,
-        "height": 1.45,
-        "width": 3.4
+        "depth": 1.595627,
+        "height": 1.617685,
+        "width": 2.784395
       },
       "id": "bush_3d_02",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 288,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 3708
+        "triangles": 2272
       },
       "preview": "game/resources/environment/generated/library_audit/bush_3d_02.png",
       "source": "game/resources/environment/assets/bushes/bush_3d_02.glb",
-      "source_sha256": "3995c8dcaa8e60d5b984b80d5afb496777900e96d64c068af7530763a6ab6b81"
+      "source_sha256": "31b6fe154fb16c2da56dfbc0745464da8d39069d5d1196fb33a25aad555cb231"
     },
     {
       "budget": {
@@ -59,22 +59,22 @@
       "category": "bushes",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 2.2,
-        "height": 2.0,
-        "width": 2.6
+        "depth": 1.614488,
+        "height": 2.021955,
+        "width": 1.988579
       },
       "id": "bush_3d_03",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 304,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 3864
+        "triangles": 2288
       },
       "preview": "game/resources/environment/generated/library_audit/bush_3d_03.png",
       "source": "game/resources/environment/assets/bushes/bush_3d_03.glb",
-      "source_sha256": "71488b371f439912cad14dc192f20a10cdcfa88e266e7af59fec8412d17857ae"
+      "source_sha256": "7c06f01e858ee8ed24078a7c3145cea9dbf01523c0a9c57bc17529439234f169"
     },
     {
       "budget": {
@@ -84,22 +84,22 @@
       "category": "bushes",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 2.6,
-        "height": 0.75,
-        "width": 3.8
+        "depth": 2.050517,
+        "height": 0.842687,
+        "width": 2.818413
       },
       "id": "bush_3d_04",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 238,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 3144
+        "triangles": 2052
       },
       "preview": "game/resources/environment/generated/library_audit/bush_3d_04.png",
       "source": "game/resources/environment/assets/bushes/bush_3d_04.glb",
-      "source_sha256": "70079315344bf51e824a3c26d5de0c25f537d5823980585495069224d21b8aac"
+      "source_sha256": "3b2809864e3f03cb7a18ee145efb28cbb083512e60f0ff99892a86c5551f2d6f"
     },
     {
       "budget": {
@@ -109,22 +109,22 @@
       "category": "bushes",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 2.3,
-        "height": 1.65,
-        "width": 3.0
+        "depth": 1.500573,
+        "height": 1.641267,
+        "width": 2.5401
       },
       "id": "bush_3d_05",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 320,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 4092
+        "triangles": 2464
       },
       "preview": "game/resources/environment/generated/library_audit/bush_3d_05.png",
       "source": "game/resources/environment/assets/bushes/bush_3d_05.glb",
-      "source_sha256": "f54b1cdf942e093bca5c64bb3c4d8c2ce93f3c8d7fcfd8a3ea497ed13e9e6e10"
+      "source_sha256": "ad242e2423b3f2d9e2e192822c6165282f25d679f77b594403905ee4fac76ec1"
     },
     {
       "budget": {
@@ -134,106 +134,22 @@
       "category": "bushes",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 2.7,
-        "height": 1.9,
-        "width": 3.5
+        "depth": 2.219705,
+        "height": 1.913247,
+        "width": 2.354714
       },
       "id": "bush_3d_06",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 196,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 2640
+        "triangles": 1800
       },
       "preview": "game/resources/environment/generated/library_audit/bush_3d_06.png",
       "source": "game/resources/environment/assets/bushes/bush_3d_06.glb",
-      "source_sha256": "b281853f6405e4330bc5fb6887d80153c82546066d614932d731507c68a5688e"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 4.8,
-        "height": 1.9,
-        "width": 4.8
-      },
-      "id": "bush_v2_01",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_01.glb",
-      "source_sha256": "b82d4fa716235a1cc503deccd562ba8b7c41b5c7347ae281d0a680c82b37dbfb"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 5.7,
-        "height": 2.2,
-        "width": 5.7
-      },
-      "id": "bush_v2_02",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_02.glb",
-      "source_sha256": "c1fcd49d265e259388bbc60340174520e86e8f8a4b0d976fca774ec3d537c213"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 4.3,
-        "height": 1.7,
-        "width": 4.3
-      },
-      "id": "bush_v2_03",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_03.glb",
-      "source_sha256": "4e30508baffade606a151b3a1ed8ebcee1200ec37818c85c5b797ade5b42f06c"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 6.2,
-        "height": 2.05,
-        "width": 6.2
-      },
-      "id": "bush_v2_04",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/bush_v2_04.glb",
-      "source_sha256": "984e3cae48b500f7990767aadcb116e9f0fe38ae422a928cc8112e57676ec7a0"
+      "source_sha256": "c6c954d1a5e9083c82907df3b58174d3156b316369e0b6b716f40d90e4177493"
     },
     {
       "budget": {
@@ -256,153 +172,6 @@
       "preview": null,
       "source": "assets-lowpoly-python/track_props/signs/sources/f90_racing_source.png",
       "source_sha256": "fd07c49584653bab12506dc3eedb6cc18550fc4187df49097450d346b00ff0c9"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 1.283682,
-        "height": 1.283682,
-        "width": 1.283682
-      },
-      "id": "forest1",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/forest1.glb",
-      "source_sha256": "51cb5a46cdc4a11b1e798fa56a14ca84e0b0780b58adddd562199742f468d8f5"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 1.280582,
-        "height": 1.286784,
-        "width": 1.280582
-      },
-      "id": "forest2",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/forest2.glb",
-      "source_sha256": "5559ae78db61636ac6e03e631fbe8b85212e7bd6d43cb5fd817e0ba8873735d2"
-    },
-    {
-      "budget": {
-        "max_instances": 110,
-        "min_instances": 0
-      },
-      "category": "bushes",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 0.642944,
-        "height": 0.642944,
-        "width": 0.642944
-      },
-      "id": "forest3",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/forest3.glb",
-      "source_sha256": "23efda1d63dcf15d15b171922d7206919e56414bcfc35fc8752e93487c70300d"
-    },
-    {
-      "budget": {
-        "max_instances": 4660,
-        "min_instances": 0
-      },
-      "category": "grass",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 0.02,
-        "height": 0.62,
-        "width": 0.9
-      },
-      "id": "grass_v2_01",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_01.glb",
-      "source_sha256": "586c4904996b9267c28e385be40b1dcf6fcffcd3004ef86c12e3958bb243da59"
-    },
-    {
-      "budget": {
-        "max_instances": 4660,
-        "min_instances": 0
-      },
-      "category": "grass",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 0.02,
-        "height": 0.78,
-        "width": 1.08
-      },
-      "id": "grass_v2_02",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_02.glb",
-      "source_sha256": "e08bc2acc8b143c341ff34b3be72ed98361c074cd66d8c048662e27e6c233eba"
-    },
-    {
-      "budget": {
-        "max_instances": 4660,
-        "min_instances": 0
-      },
-      "category": "grass",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 0.02,
-        "height": 0.56,
-        "width": 0.82
-      },
-      "id": "grass_v2_03",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_03.glb",
-      "source_sha256": "7dba8a972cbc3390cb7158e060fb73def28b6b8eaea4ac33e71d2ebbdef20499"
-    },
-    {
-      "budget": {
-        "max_instances": 4660,
-        "min_instances": 0
-      },
-      "category": "grass",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 0.02,
-        "height": 0.72,
-        "width": 1.0
-      },
-      "id": "grass_v2_04",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/grass_v2_04.glb",
-      "source_sha256": "101e2609f2a5f247603fc17bc35e516ffa02cfa8573b6ea288d6e8ff45039263"
     },
     {
       "budget": {
@@ -588,106 +357,22 @@
       "category": "trees",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 17.0,
-        "height": 21.0,
-        "width": 17.0
-      },
-      "id": "tree3",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree3.glb",
-      "source_sha256": "85fa584fd64b4d36ff9b8efb592528c8e22d5ae6a6d405f93fb6ccc47a083e5d"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 10.0,
-        "height": 14.0,
-        "width": 10.0
-      },
-      "id": "tree4",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree4.glb",
-      "source_sha256": "620750c4bdb505c9a02f60b9be97c7e914ee7ff24cc1f0691b6949f714c94abd"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 14.0,
-        "height": 15.5,
-        "width": 14.0
-      },
-      "id": "tree7",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree7.glb",
-      "source_sha256": "b7805ff5633ada73b01c23f6755c680fe82f50121e8044e75cb533566b53f630"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 9.0,
-        "height": 12.5,
-        "width": 9.0
-      },
-      "id": "tree8",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree8.glb",
-      "source_sha256": "fc0284b721984bda803cfa09e78e5c3a5360ec7d99329bb7922fbb4dde9a174a"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 6.8,
-        "height": 9.0,
-        "width": 7.5
+        "depth": 7.736307,
+        "height": 10.925205,
+        "width": 9.385289
       },
       "id": "tree_3d_01",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 480,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 6192
+        "triangles": 3800
       },
       "preview": "game/resources/environment/generated/library_audit/tree_3d_01.png",
       "source": "game/resources/environment/assets/trees/tree_3d_01.glb",
-      "source_sha256": "3f120bef0015f3c76c4128e7632d7959f17976c6c8ceb1c4de8ac5e848473703"
+      "source_sha256": "b58c8125d3d6ccb9a16d7f5768c836e23f9a872cbed6a6c5c4530940d7ea1040"
     },
     {
       "budget": {
@@ -697,22 +382,22 @@
       "category": "trees",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 4.8,
-        "height": 12.5,
-        "width": 5.4
+        "depth": 5.287139,
+        "height": 12.352224,
+        "width": 5.109835
       },
       "id": "tree_3d_02",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 500,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 6480
+        "triangles": 4032
       },
       "preview": "game/resources/environment/generated/library_audit/tree_3d_02.png",
       "source": "game/resources/environment/assets/trees/tree_3d_02.glb",
-      "source_sha256": "619bfc73098020482f6ae5bc0819e3399faf9f64b7e708ed547c8d7dc48fefd0"
+      "source_sha256": "46ea85354ac13c82b97ed276318efa3a8c7a4beba840cd4595241dde8e9bac07"
     },
     {
       "budget": {
@@ -722,22 +407,22 @@
       "category": "trees",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 7.4,
-        "height": 10.5,
-        "width": 10.0
+        "depth": 7.594762,
+        "height": 12.748316,
+        "width": 10.712515
       },
       "id": "tree_3d_03",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 540,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 6960
+        "triangles": 4272
       },
       "preview": "game/resources/environment/generated/library_audit/tree_3d_03.png",
       "source": "game/resources/environment/assets/trees/tree_3d_03.glb",
-      "source_sha256": "a5ef939991a3a514b6dd16ce0d9bf0b0f98bcdb6b9f40161755e36ca9d337648"
+      "source_sha256": "ec3017af8b97132c6f5e104c6decca93db6e405f2e40c0934d22f69ed596088a"
     },
     {
       "budget": {
@@ -747,22 +432,22 @@
       "category": "trees",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 6.8,
-        "height": 11.5,
-        "width": 9.4
+        "depth": 8.879973,
+        "height": 12.315497,
+        "width": 10.577212
       },
       "id": "tree_3d_04",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 468,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 6048
+        "triangles": 3728
       },
       "preview": "game/resources/environment/generated/library_audit/tree_3d_04.png",
       "source": "game/resources/environment/assets/trees/tree_3d_04.glb",
-      "source_sha256": "513a97328a1b4eafb3a91f23e83b2b5b8be5886d8213f4fc7af1a26e223c61df"
+      "source_sha256": "af4c24095554b10bd3eb39dc666ab53615d8e4adb43d98efe418bac534c1e4b2"
     },
     {
       "budget": {
@@ -772,22 +457,22 @@
       "category": "trees",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 9.2,
-        "height": 14.5,
-        "width": 12.5
+        "depth": 12.050695,
+        "height": 16.063236,
+        "width": 12.402986
       },
       "id": "tree_3d_05",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 660,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 8448
+        "triangles": 5104
       },
       "preview": "game/resources/environment/generated/library_audit/tree_3d_05.png",
       "source": "game/resources/environment/assets/trees/tree_3d_05.glb",
-      "source_sha256": "82923b1c0b0e0328e4e5d21e5f76a7724fe30479fbd5dfe7b603496cbf652c46"
+      "source_sha256": "c4dc3719b0e019542f5760acc3294fae5e941ebe848fb3fde58ab03b2036ccc9"
     },
     {
       "budget": {
@@ -797,85 +482,22 @@
       "category": "trees",
       "collision_class": "none",
       "dimensions_m": {
-        "depth": 5.2,
-        "height": 8.0,
-        "width": 5.8
+        "depth": 6.125511,
+        "height": 8.159568,
+        "width": 5.961257
       },
       "id": "tree_3d_06",
       "kind": "vegetation",
       "metadata": {
-        "generator": "procedural_lanceolate_vegetation_v3",
+        "generator": "procedural_lanceolate_vegetation_v4",
         "leaf_cards": 378,
         "lod": false,
         "origin": "game/resources/environment/assets/manifest.json",
-        "triangles": 4920
+        "triangles": 3076
       },
       "preview": "game/resources/environment/generated/library_audit/tree_3d_06.png",
       "source": "game/resources/environment/assets/trees/tree_3d_06.glb",
-      "source_sha256": "ca18404d86c839385de3f9b9ae842481530525b622b3adfb6e6b9e11631adaa6"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 10.8,
-        "height": 17.2,
-        "width": 10.8
-      },
-      "id": "tree_v2_01",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_01.glb",
-      "source_sha256": "87fb8b7e2b441b67f5508ae8556db586afd7906a18e63c52fb17850ab4e8e196"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 15.0,
-        "height": 13.0,
-        "width": 15.0
-      },
-      "id": "tree_v2_02",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_02.glb",
-      "source_sha256": "0188f27dedbaed219f39651bedc520fc66569bca10d36d05a90e038a9173c6e2"
-    },
-    {
-      "budget": {
-        "max_instances": 130,
-        "min_instances": 0
-      },
-      "category": "trees",
-      "collision_class": "none",
-      "dimensions_m": {
-        "depth": 11.4,
-        "height": 18.6,
-        "width": 11.4
-      },
-      "id": "tree_v2_03",
-      "kind": "vegetation",
-      "metadata": {
-        "origin": "assets_v2/manifest.csv"
-      },
-      "preview": null,
-      "source": "blender/generated/la_chutana/raw_vegetation/assets_v2/glb/tree_v2_03.glb",
-      "source_sha256": "5a6411f04c91917cca58fb7f61878a03829ede811cdd05a1c42a7a37248ecaf1"
+      "source_sha256": "9a5ff3ed87f9ae2473765e1cf998e32632cd6920c9cf1effa08e94d806aa0534"
     }
   ],
   "note": "Assets are referenced by semantic id only; generated by build_asset_registry.py.",

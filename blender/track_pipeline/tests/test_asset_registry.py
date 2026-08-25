@@ -130,9 +130,9 @@ class AssetRegistryTests(unittest.TestCase):
             repo_root=ROOT,
         )
         self.assertEqual(validate_registry(registry), [])
-        self.assertEqual(len(registry), 39)
-        self.assertEqual(len(registry.by_kind("vegetation")), 30)
-        self.assertIn("tree_v2_01", registry)
+        self.assertEqual(len(registry), 21)
+        self.assertEqual(len(registry.by_kind("vegetation")), 12)
+        self.assertNotIn("tree_v2_01", registry)
         self.assertIn("tree_3d_06", registry)
         self.assertIn("bush_3d_06", registry)
 

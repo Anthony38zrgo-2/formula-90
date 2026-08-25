@@ -23,9 +23,19 @@ def _geometry_by_role(scene: trimesh.Scene) -> dict[str, trimesh.Trimesh]:
     return roles
 
 
+def _vertex_colors(mesh: trimesh.Trimesh) -> np.ndarray | None:
+    colors = getattr(mesh.visual, "vertex_colors", None)
+    if colors is not None:
+        return np.asarray(colors)
+    attributes = getattr(mesh.visual, "vertex_attributes", None)
+    if attributes is not None and "color" in attributes:
+        return np.asarray(attributes["color"])
+    return None
+
+
 def _has_nonwhite_vertex_colors(mesh: trimesh.Trimesh) -> bool:
-    colors = np.asarray(mesh.visual.vertex_colors)
-    return len(colors) == len(mesh.vertices) and bool(np.any(colors[:, :3] < 242))
+    colors = _vertex_colors(mesh)
+    return colors is not None and len(colors) == len(mesh.vertices) and bool(np.any(colors[:, :3] < 242))
 
 
 def _is_double_sided_geometry(mesh: trimesh.Trimesh) -> bool:
@@ -58,7 +68,11 @@ def audit_asset(repo: Path, asset: dict) -> tuple[dict, list[str]]:
         failures.append(f"roles={report['roles']}")
     if report["colored_roles"] != ["foliage", "wood"]:
         failures.append(f"colored_roles={report['colored_roles']}")
-    if not report["foliage_double_sided_geometry"]:
+    material_flag = asset.get("foliage_double_sided_material")
+    if material_flag is not None:
+        if material_flag is not True:
+            failures.append("foliage_double_sided_material is not true")
+    elif not report["foliage_double_sided_geometry"]:
         failures.append("foliage is not double-sided geometry")
     if report["sha256"] != asset["sha256"]:
         failures.append("sha256 mismatch")

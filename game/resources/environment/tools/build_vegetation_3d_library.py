@@ -13,6 +13,8 @@ from PIL import Image, ImageDraw
 
 from voxelize_semantic_tree import _hex
 
+from audit_vegetation_3d_library import _vertex_colors
+
 
 def _unit(vector: np.ndarray) -> np.ndarray:
     return vector / max(float(np.linalg.norm(vector)), 1e-9)
@@ -293,7 +295,7 @@ def render_audit(wood, foliage, path: Path):
         center = (mins + maxs) * 0.5
         draw = ImageDraw.Draw(image); primitives = []
         for mesh, points, depths in projected_meshes:
-            colors = mesh.visual.vertex_colors
+            colors = _vertex_colors(mesh)
             for face in mesh.faces:
                 polygon = [(tile_x + 225 + (points[i][0] - center[0]) * scale, tile_y + 215 - (points[i][1] - center[1]) * scale) for i in face]
                 primitives.append((float(np.mean(depths[face])), polygon, tuple(int(v) for v in colors[face[0]][:3])))

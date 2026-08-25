@@ -47,26 +47,29 @@ def main() -> int:
 
     assets: list[dict] = []
 
-    with MANIFEST.open(encoding="utf-8", newline="") as handle:
-        for row in csv.DictReader(handle):
-            rel = row["file"].replace("\\", "/")
-            path = REPO / rel
-            assets.append({
-                "id": Path(rel).stem,
-                "kind": "vegetation",
-                "category": row["category"],
-                "source": rel,
-                "source_sha256": sha256_file(path) if path.exists() else None,
-                "dimensions_m": {
-                    "width": float(row["width_x"]),
-                    "height": float(row["height_y"]),
-                    "depth": float(row["depth_z"]),
-                },
-                "preview": None,
-                "collision_class": "none",
-                "budget": {"min_instances": 0, "max_instances": 0},
-                "metadata": {"origin": "assets_v2/manifest.csv"},
-            })
+    if MANIFEST.exists():
+        with MANIFEST.open(encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                rel = row["file"].replace("\\", "/")
+                path = REPO / rel
+                assets.append({
+                    "id": Path(rel).stem,
+                    "kind": "vegetation",
+                    "category": row["category"],
+                    "source": rel,
+                    "source_sha256": sha256_file(path) if path.exists() else None,
+                    "dimensions_m": {
+                        "width": float(row["width_x"]),
+                        "height": float(row["height_y"]),
+                        "depth": float(row["depth_z"]),
+                    },
+                    "preview": None,
+                    "collision_class": "none",
+                    "budget": {"min_instances": 0, "max_instances": 0},
+                    "metadata": {"origin": "assets_v2/manifest.csv"},
+                })
+    else:
+        print(f"warning: {MANIFEST.relative_to(REPO)} missing; skipping retired assets_v2 entries")
 
     if HYBRID_VEGETATION.exists():
         library = json.loads(HYBRID_VEGETATION.read_text(encoding="utf-8"))
