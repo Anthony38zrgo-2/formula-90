@@ -8,6 +8,8 @@ PIPELINE:
 
 sprint planning -> backlog item -> implement -> review -> human gate -> sprint retrospective -> done
 
+IMPORTANT: If scope is unclear, stop and request human clarification. Do not assume.
+
 REBUILD SAFETY: Never mix unrelated changes or create large WIP commits. When performing a full rebuild, never reuse DLLs, object files, or ignored caches from another branch. Verify HEAD, clean Cargo/SCons/game/.godot, and confirm that the resulting BUILD matches the current source state.
 
 PROVENANCE: Before modifying anything, record and verify the current branch, HEAD, and git status. Never switch, reset, or modify a dirty branch without first inventorying its changes and creating an approved backup.
