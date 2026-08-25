@@ -34,7 +34,7 @@
   "sounds": {
     "engine_high": {
       "volume": 0.85,
-      "pan": -0.1,
+      "pan": 0.0,
       "adsr": {
         "enabled": false,
         "attack_ms": 0.0,
@@ -171,7 +171,7 @@
     },
     "engine_mid": {
       "volume": 0.95,
-      "pan": 0.1,
+      "pan": 0.0,
       "adsr": {
         "enabled": false,
         "attack_ms": 0.0,
@@ -987,7 +987,7 @@
     "crackle_gain": 0.1
   },
   "master": {
-    "output_db": 3.0103,
+    "output_db": 0.0,
     "limiter_threshold": 0.9,
     "saturation": 0.12
   },
