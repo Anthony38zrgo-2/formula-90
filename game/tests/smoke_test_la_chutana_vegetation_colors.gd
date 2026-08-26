@@ -15,7 +15,22 @@ func _run() -> void:
 	root.add_child(track)
 	await process_frame
 	await process_frame
-	var vegetation := track.get_node_or_null("GeneratedVegetation")
+	var binder_script := load("res://scripts/track/vegetation_vertex_color_binder.gd") as GDScript
+	if binder_script == null:
+		printerr("[FAIL] VegetationVertexColorBinder script could not load")
+		track.free()
+		quit(1)
+		return
+	var binder: Node = binder_script.new()
+	track.add_child(binder)
+	await process_frame
+	await process_frame
+	var vegetation := track.get_node_or_null("GeneratedTrack")
+	if vegetation == null:
+		printerr("[FAIL] GeneratedTrack node missing")
+		track.free()
+		quit(1)
+		return
 	var colored := 0
 	var pigment_enabled := 0
 	for node in vegetation.find_children("*", "MeshInstance3D", true, false):
