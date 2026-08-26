@@ -45,7 +45,7 @@
         "dither_strength": 0.01,
         "contrast": 1.035
       },
-      "sha256": "0bf94104d3be9dd3b36ba6af0cb15e7ceb56d65a5b86c4e3cbb20bd18fcc54b9",
+      "sha256": "3f1757916d1eea0b762357c7ff72b7bc79f7f667d40422a762db74011c06474b",
       "biome": "south_america_west_low",
       "role": "terrain",
       "ground_cover": {
@@ -72,7 +72,7 @@
             "sha256": "727d546a60f1c1eed0f2ad139cedae4b683bf63fcdf65e819de1846e9aadb064"
           }
         ],
-        "semantic_point_count": 9320
+        "semantic_point_count": 4660
       }
     },
     "biomes/south_america/west/low/shoulder.png": {
