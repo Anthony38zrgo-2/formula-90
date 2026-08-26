@@ -60,7 +60,9 @@ def load_barrier_asset_library(repo, config):
         return {}
     manifest_path = repo / relative
     manifest = read_json(manifest_path)
-    if manifest.get("schema_version") != 2 or manifest.get("generator") != "procedural_barrier_v2":
+    if (manifest.get("schema_version"), manifest.get("generator")) not in (
+        (2, "procedural_barrier_v2"), (3, "gen_barriers_v2"),
+    ):
         raise RuntimeError(f"Unsupported barrier asset manifest: {manifest_path}")
     entries = {}
     for entry in manifest.get("assets", []):
@@ -88,6 +90,8 @@ def import_barrier_asset_prototype(repo, entry):
     sources = [obj for obj in imported if obj.type == "MESH"]
     if not sources:
         raise RuntimeError(f"Barrier GLB has no mesh objects: {entry['visual_glb']}")
+    for index, source in enumerate(sources):
+        source.data.name = f"{entry['id']}_visual" if index == 0 else f"{entry['id']}_visual_{index}"
     for source in imported:
         source.hide_render = True
         source.hide_viewport = True
