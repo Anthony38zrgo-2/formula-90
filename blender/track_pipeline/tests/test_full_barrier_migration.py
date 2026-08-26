@@ -16,12 +16,14 @@ class FullBarrierMigrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.config = json.loads((ROOT / "blender/track_pipeline/configs/la_chutana.json").read_text(encoding="utf-8"))
-        cls.layout = json.loads((ROOT / "blender/track_pipeline/manifests/la_chutana_safety_barriers.json").read_text(encoding="utf-8"))
-        cls.assets = json.loads((ROOT / "game/resources/environment/assets/barriers/barrier_manifest.json").read_text(encoding="utf-8"))
+        cls.layout = json.loads((ROOT / "blender/track_pipeline/manifests/la_chutana_safety_barriers_v3.json").read_text(encoding="utf-8"))
+        cls.assets = json.loads((ROOT / "game/resources/environment/assets/barriers/barrier_manifest_v3.json").read_text(encoding="utf-8"))
 
     def test_full_circuit_has_one_authority(self) -> None:
         self.assertEqual(self.layout["authority"], "full_circuit_asset_library")
         self.assertEqual(self.config["safety_barriers"]["scope"], "full_circuit")
+        self.assertEqual(self.config["safety_barriers"]["asset_library_manifest"],
+                         "game/resources/environment/assets/barriers/barrier_manifest_v3.json")
         self.assertTrue(self.config["safety_barriers"]["legacy_guardrails_disabled"])
         self.assertTrue(self.config["safety_barriers"]["legacy_tire_barriers_disabled"])
         self.assertFalse(self.config["tire_barriers"]["procedural"])
@@ -37,6 +39,14 @@ class FullBarrierMigrationTests(unittest.TestCase):
         used = {prototype["asset_id"] for prototype in self.layout["prototypes"].values()}
         self.assertEqual(used, known)
         self.assertNotIn("red", json.dumps(self.layout).lower())
+
+    def test_runs_reduce_layout_records(self) -> None:
+        from safety_barrier_layout import compile_layout
+        compiled = compile_layout(self.layout, 2420.0)
+        records = compiled["modules"]
+        runs = [m for m in records if m["type"].startswith("run_")]
+        self.assertGreater(len(runs), 0)
+        self.assertLess(len(records), 1000)
 
 
 if __name__ == "__main__":
