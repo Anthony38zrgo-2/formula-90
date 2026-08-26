@@ -49,8 +49,8 @@
       "category": "trees",
       "seed_offset": 307,
       "spacing_m": 12.5,
-      "max_count": 130,
-      "min_count": 130,
+      "max_count": 200,
+      "min_count": 200,
       "barrier_clearance_m": 1.0,
       "target_height_m": [8.0, 16.0],
       "asset_pool": [

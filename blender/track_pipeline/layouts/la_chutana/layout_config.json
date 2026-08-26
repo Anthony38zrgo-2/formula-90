@@ -18,7 +18,7 @@
   "compiled_output": "blender/generated/la_chutana/semantic_layout/compiled_layout.json",
   "barrier_visual_half_thickness_m": 0.5,
   "tree_visual_scale": 1.0,
-  "tree_overlap_factor": 1.0,
+  "tree_overlap_factor": 0.75,
   "semantic_palette": {
     "background": [21, 21, 21],
     "grass": [111, 175, 69],
