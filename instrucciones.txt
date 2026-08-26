@@ -1,598 +1,333 @@
-FORMULA-90 — HANDOFF ACTIVO: SOUND MIXER CONFIGURATION SCHEMA V2
-================================================================
-Actualizado: 2026-08-22
-Repositorio: D:\Formula90s
-Rama observada: f1-94
-HEAD observado: ed5c2f0f7e226cd59dbebe49ef8838553768d6fc
-Motor: Godot 4.7.1 + Rust vehicle-audio-engine
-Estado: planificación; schema/CLI parcialmente implementados, DSP v2 aún no integrado.
+HANDOFF - IMPLEMENTACION BARRERAS V3 + VEGETACION CANONICA
+===========================================================
+Repo: D:\Formula90s   (pipeline Blender + Godot game)
+Tambien hay arte generado en: D:\assets-3d-tencent\gen\barriers_v2
 
-Este documento es la autoridad operativa para terminar SOUND_CONFIG_DOCS.md.
-La documentación pública describe el objetivo final, no el runtime disponible hoy.
+------------------------------------------------------------------
+PARTE A - BARRERAS V3 (YA MIGRADAS EN PIPELINE, FALTA REBUILD)
+------------------------------------------------------------------
 
-===============================================================================
-1. REGLAS DE EJECUCIÓN Y SEGURIDAD
-===============================================================================
+A.1 ESTADO: HECHO
+-----------------
+1. Assets nuevos generados (origen):
+   D:\assets-3d-tencent\gen\barriers_v2\
+     assets\modules\   (8 modulos 2 m + colisiones; tires low-poly 10x6,
+                        banda superior BLANCA, checkerboard solo navy/white chicane)
+     assets\runs\      (tiras rectas centradas 10/25/50/100 m:
+                        armco, jersey, tire_black 1/2/3 capas, tire_navy 1/2)
+                        + 3 spline-bakes en mundo (armco 400 m, jersey 169 m,
+                        tire_black 252 m)
+     assets\review\    (catalogos PNG: barrier_modules_catalog_v3.png,
+                        barrier_runs_catalog_v3.png)
+     manifests\        (barrier_manifest_v3.json, barrier_run_manifest_v3.json,
+                        barrier_spline_manifest_v3.json,
+                        proposed_safety_barriers_v3.json)
+     reports\          (replacement_plan.json, validation_report.json)
 
-Pipeline obligatorio:
+2. Assets INSTALADOS en el juego:
+   D:\Formula90s\game\resources\environment\assets\barriers\v3\
+     modules\  runs\  spline\  review\   (68 GLBs, ~91 MB, sha256 verificados)
 
-  sprint planning -> backlog item -> implement -> review -> human gate
-  -> sprint retrospective -> done
+3. Manifiestos/contratos en el game repo:
+   game\resources\environment\assets\barriers\barrier_manifest_v3.json
+     - schema 3, generator "gen_barriers_v2"
+     - assets = 31 ids usados por el layout (paridad 1:1 con prototypes)
+     - spline_assets = 3 (mundo, aparte del parity set)
+   blender\track_pipeline\manifests\la_chutana_safety_barriers_v3.json
+     - layout v2-compilable con run-prototypes
+     - compila SIN gaps, cobertura exacta ambos lados
+     - 2420 registros de modulo -> 387 (-84% draw calls), 4.10M -> 3.04M tris
+     - runs capados por curvatura real (sagitta <= 0.35 m) por segmento
+   game\resources\environment\manifests\barrier_construction_manifest_v2.json
+     - contrato v2: tires lowpoly 10x6/120 tris (runs 8x5/80), banda blanca
+       permitida, rojo prohibido, contrato de runs (pivot run_center)
+     - el contrato v1 queda como historico para la libreria v1
 
-Antes de modificar o compilar:
+4. Cambios de codigo/config (git diff):
+   la_chutana.json: safety_barriers.manifest -> ..._v3.json,
+                    asset_library_manifest -> barrier_manifest_v3.json,
+                    construction_manifest -> _v2.json
+   build_environment_blender.py: load_barrier_asset_library() acepta
+                    (schema 3, generator "gen_barriers_v2")
+   test_full_barrier_migration.py: lee v3 + test nuevo de reduccion de records
+   NUEVO: game\resources\environment\assets\barriers\v3\ (todo)
 
-  git branch --show-current
-  git rev-parse HEAD
-  git status --short
+5. Tests verdes: full_barrier_migration, determinism (3/4),
+   trackside/guardrail/curb (8/8). UNICO fallo restante es PREEXISTENTE y stale:
+   test_safety_barrier_determinism.py::test_segment_change_does_not_change_other_module_hash_data
+   (asume layout con segmentos antiguos; falla igual en baseline v1).
 
-Reglas del repositorio:
+A.2 PENDIENTE: REBUILD + IMPORT
+-------------------------------
+1. (Gate previo, opcional) validar entorno: 
+   python blender\track_pipeline\validate_environment.py --config blender\track_pipeline\configs\la_chutana.json
 
-- No mezclar, descartar ni reformatear cambios ajenos.
-- El worktree está sucio; actualmente son parte de este trabajo:
-    game/crates/vehicle-audio-engine/src/config.rs
-    game/crates/vehicle-audio-engine/src/mixer.rs
-    game/crates/vehicle-audio-engine/src/bin/va_baseline.rs
-    game/crates/vehicle-audio-engine/src/bin/va_validate.rs
-    game/crates/vehicle-audio-engine/tests/baseline_golden.json
-    game/crates/vehicle-audio-engine/SOUND_CONFIG_DOCS.md
-    game/crates/vehicle-audio-engine/IMPLEMENTATION_PLAN.md
-- Inventariar nuevamente antes de asumir que esas rutas siguen siendo exclusivas.
-- Prohibido `git add -A`. Preparar commits atómicos con rutas explícitas y revisar
-  `git diff --cached --check` y `git diff --cached`.
-- No crear commits WIP masivos. Un commit por contrato coherente y probado.
-- Antes de un rebuild completo, verificar HEAD y limpiar únicamente outputs/caches
-  de esta rama. No reutilizar DLL, objetos Cargo/SCons ni `game/.godot` de otra rama.
-- El runtime debe rechazar binarios cuyo BUILD no coincida con HEAD. Usar los scripts
-  canónicos de build/ejecución; no copiar DLL manualmente sin validar procedencia.
-- No actualizar SOUND_CONFIG_DOCS.md como “implementado” hasta superar los gates
-  automáticos y la escucha humana especificados aquí.
+2. Rebuild ambiente con Blender:
+   blender -b --python blender\track_pipeline\build_environment_blender.py -- \
+     --config blender\track_pipeline\configs\la_chutana.json --safety-barrier-review
+   - Salidas: blender\generated\la_chutana\track_environment.blend,
+     track_safety_barrier_review.blend + GLBs de entorno
+   - El build instancia 1 objeto por record (runs = 1 malla grande por tira;
+     el placement escala por prototype.module_length_m, sin cambios de codigo)
 
-===============================================================================
-2. DIAGNÓSTICO VERIFICADO — ESTADO REAL
-===============================================================================
+3. Human gate visual (aprobacion):
+   - game\resources\environment\assets\barriers\v3\review\*.png (catalogos)
+   - renders del .blend de review (turnos donde se vean chicane, esses
+     T2-T3, hairpin T4, pit line; comprobar: sin rojo, banda blanca,
+     empalmes de runs rectos en curvas sin cortes horribles)
 
-Validación ejecutada el 2026-08-22:
+4. Godot 4 import:
+   - Importar game\resources\environment\assets\barriers\v3\**
+   - Import flags: mantener vertex colors (COLOR_0, material blanco base),
+     DoubleSided segun material; colision: usar la Geometria/convex de los
+     GLB *_collision.glb (son cajas exactas) o StaticBody propia.
+   - Notas completas: D:\assets-3d-tencent\gen\barriers_v2\godot\README_import.md
 
-  cd game/crates
-  cargo test -p vehicle_audio_engine
+5. Verificacion de carga Godot (si aplica al pipeline):
+   python blender\track_pipeline\validate_godot_load.py --env-glb <env.glb> \
+     --veg-glb <veg.glb> --track-id la_chutana
 
-Resultado:
+6. Rollback (si algo falla): restos v1 siguen intactos en
+   game\resources\environment\assets\barriers\*.glb (sin v3/ en config, o
+   git revert de la_chutana.json + build_environment_blender.py).
+   NOTA: el difft de la_chutana.json reescribio la estructura del JSON
+   (en vez de preservar indentacion) - revisar antes de commitear.
 
-- 48 tests unitarios Rust: PASS.
-- 6 tests de integración del banco: PASS.
-- `va_validate ../sounds/sound_mixer_config.json --check`: PASS.
-- La configuración activa declara schema_version=1, 26 gains y exhaust legacy.
+A.3 DETALLES CRITICOS (no olvidar)
+-----------------------------------
+- Pivot: modulos "ground_center" (snap colision 2.0 m exacto); runs "run_center"
+  (simetrico -L/2..+L/2, requerido por el placement existente).
+- Familias de runs: run_armco_10/25/50/100m, run_jersey_*, run_tire_black_*
+  (suffix ""=1 capa, "_2l", "_3l"), run_tire_navy_* (suffix "", "_2l").
+- Colores de neumaticos: negro + banda top BLANCA (rojo PROHIBIDO en el
+  contrato v2); navy/white checkerboard SOLO en variantes chicane/zonas
+  concretas (los modulos 3D quedan en chicanas; las tiras fusionadas en el
+  resto).
+- Los 3 spline-bakes actuales son de muestra; para reemplazar TODA una
+  seccion curva por un bake de mundo:
+  python gen\barriers_v2\tools\bake_spline_runs.py --family <f> \
+    --start <f>x.x --end <f>y.y --side left|right --distance <m> \
+    [--centerline <path>] [--out-id <id>]
+  (id queda registrado en barrier_spline_manifest_v3.json; el layout v3
+  NO los referencia automaticamente: coordinar con el plan).
 
-Lo que sí existe:
+------------------------------------------------------------------
+PARTE B - VEGETACION CANONICA (ARBOLES Y ARBUSTOS) - PENDIENTE
+------------------------------------------------------------------
 
-- Tipos serializables para schema v1 y schema v2.
-- Sanitización básica de volume, pan, ADSR, EQ, tube, reverb, master y hot reload.
-- Parser tolerante: un archivo ausente o JSON inválido cae a defaults seguros.
-- Conversión estructural v1 -> v2 mediante `to_v2()`.
-- CLI `va_validate` con check, resumen y migración.
-- CLI `va_baseline` y golden inicial.
-- El mixer consume gains por clave y la configuración legacy de exhaust.
+B.1 FUENTE CANONICA (autoridad)
+-------------------------------
+- D:\Formula90s\implementation\manifest.json
+  (schema_version 4, generator "procedural_lanceolate_vegetation_v4")
+- GLBs en D:\Formula90s\implementation\trees\ y ...\bushes\
+   - 6 arboles: tree_3d_01..06 (compact_round, columnar, umbrella,
+     windswept, mature_spreading, young_irregular)
+   - 6 arbustos: bush_3d_01..06 (round, spreading, triangular, creeping,
+     asymmetric, dry_open)
+   - cada base + 5 variantes de color: <id>.glb, _copper, _red,
+     _golden_beige, _yellow  = 72 GLBs en total
+- VERIFICADO: los sha256 de los GLBs de implementation/ coinciden con los del
+  manifest (ej tree_3d_01 = b58c8125...), por tanto implementation/ es la
+  fuente real de los canonicos.
 
-Lo que NO existe aún en el runtime:
+B.2 ALERTA - RUNTIME ACTUAL NO ES CANONICO
+-------------------------------------------
+- game\resources\environment\assets\trees\* y ...\bushes\* contienen GLBs
+  con sha256 DIFERENTE (ej tree_3d_01.glb: 3f120bef... vs canonico
+  b58c8125...; bush_3d_01.glb: e641a34b... vs 0c700669...).
+- Son copias viejas/reprocesadas. HAY QUE REPUBLICAR (paso B.4.3) y
+  re-importar en Godot antes de considerar la vegetacion canonica en runtime.
 
-- Pan estéreo por sonido.
-- ADSR sample-accurate por voz.
-- EQ gráfico de diez bandas.
-- Coloración valvular.
-- Envíos y buses compartidos de reverb.
-- Master output_db y limitador estéreo configurable desde JSON.
-- Hot reload, snapshots ni crossfade de parámetros.
-- Herencia field-level correcta desde `defaults`.
-- Desactivación runtime de sends hacia buses inexistentes.
-- Advertencias runtime por claves JSON desconocidas.
+B.3 FLUJO ACTUAL DE CONSUMO (como se engancha)
+-----------------------------------------------
+1. la_chutana_vegetation_distribution.json (config la_chutana.json lo apunta):
+   - "catalogs": {"trees": game/resources/environment/generated/tree_color_library_report.json,
+                  "bushes": .../bush_color_library_report.json}
+   - global_weights y sectors por color: original / golden_beige / copper /
+     yellow / red (o sea: colores = los sufixos de variante)
+   - "scale": trees 0.9..1.10, bushes 0.9..1.12; review_density low
+2. Los reports (schema 1, generator "..._v3_color_library") son el inventario
+   que consume vegetation_distribution.py (clase VegetationAsset,
+   choose_asset/commit_asset, ProceduralAssetSpec, color_from_id que deduce
+   el color del sufixo del id).
+   - Recetas: game\resources\environment\recipes\tree_color_library.json y
+     bush_color_library.json (variants -> palettes
+     south_america_west_low{,copper,red,golden_beige,yellow}.json, seed_base
+     1100/3100/4100/5100/6100)
+   - Generadores: game\resources\environment\tools\build_tree_color_library.py,
+     build_vegetation_3d_library.py; auditoria:
+     audit_vegetation_3d_library.py
+3. generate_environment.py -> placements.json (stats trees/bushes)
+   build_environment_blender.py -> GLB de entorno + track_environment.blend
+4. Tests existentes que deben seguir pasando:
+   test_semantic_layout.py::is_supported_vegetation_path(trees/tree_3d_01.glb)
+   test_asset_registry.py::tree_3d_06 y bush_3d_06 en registry
+   validate_environment.py --config (contract checks)
 
-Problemas concretos que no deben ocultarse:
-
-1. `VehicleAudioEngine::new()` carga `SoundMixerConfig`, llama `gains_map()` y
-   descarta todas las propiedades v2 salvo volume y exhaust.
-2. El render suma una señal mono y escribe el mismo sample en L/R.
-3. `gains_map()` solo incluye claves explícitas. Un sonido ausente usa 1.0 en el
-   mixer, no `defaults.volume`.
-4. `merge_with_defaults()` usa valores centinela (1.0, 0.0, enabled=false) y no
-   puede distinguir “campo omitido” de “override explícito igual al default”.
-5. La CLI valida referencias de reverb, pero el cargador runtime no aplica ese
-   contrato ni conserva un diagnóstico estructurado.
-6. Los tests actuales prueban parsing y el mixer legacy, no la cadena descrita en
-   SOUND_CONFIG_DOCS.md.
-
-Conclusión: Sprint 0 es un scaffold útil, no un schema v2 terminado.
-
-===============================================================================
-3. OBJETIVO Y CONTRATO DE DONE
-===============================================================================
-
-Objetivo:
-
-Hacer que `game/sounds/sound_mixer_config.json` controle realmente la cadena:
-
-  source mono
-    -> ADSR
-    -> EQ 10 bandas
-    -> tube color
-    -> volume
-    -> pan equal-power
-    -> dry L/R + send post-pan
-    -> buses reverb compartidos L/R
-    -> master gain
-    -> protección finite/DC
-    -> limitador estéreo enlazado
-    -> salida ABI L/R
-
-Definition of Done global:
-
-- Schema v1 mantiene comportamiento y salida de referencia dentro de tolerancia.
-- Schema v2 aplica volume, pan, ADSR, EQ, tube y reverb a todos los tipos de voz.
-- `defaults` hereda por campo; overrides explícitos iguales al default se respetan.
-- Loops liberan de forma click-free y one-shots completan attack/decay/release.
-- Reverb conserva colas después de terminar la voz y no asigna memoria en render.
-- Master es estéreo enlazado y ningún canal supera el ceiling configurado.
-- Hot reload hace I/O/parsing fuera del callback y transiciona sin clicks.
-- Cero locks, filesystem, parsing y allocations heap dentro de `render()`.
-- No salen NaN/Inf; DC y discontinuidades cumplen los límites de test.
-- `va_validate` y runtime comparten resolución/validación efectiva.
-- La configuración canónica migra a v2 y pasa preflight.
-- Tests unitarios, integración, golden, benchmark, build limpio y Godot headless pasan.
-- Human gate auditivo aprobado con escenarios reproducibles.
-- SOUND_CONFIG_DOCS.md se corrige para describir exactamente el comportamiento final.
-
-===============================================================================
-4. DECISIONES DE ARQUITECTURA
-===============================================================================
-
-4.1 Configuración raw frente a configuración resuelta
-----------------------------------------------------
-
-No seguir ampliando `SoundConfig` con valores centinela. Separar:
-
-- `RawSoundConfig`: campos `Option<T>` provenientes de JSON.
-- `ResolvedSoundConfig`: todos los campos concretos, saneados y listos para DSP.
-- `ResolvedMixerConfig`: mapa completo por bank key, buses compilados y master.
-
-Resolución:
-
-  built-in safe defaults
-      <- defaults del JSON
-      <- override del sonido
-      <- sanitización/validación cruzada
-
-El resolver debe recibir las claves reales del banco para producir configuración
-efectiva incluso para sonidos no listados explícitamente.
-
-No usar comparaciones como `volume != 1.0` para inferir presencia. Un JSON que diga
-`volume: 1.0` es un override explícito válido.
-
-4.2 Diagnósticos estructurados
-------------------------------
-
-Crear un resultado común:
-
-  ConfigLoadResult {
-      resolved,
-      warnings,
-      errors,
-      source_hash,
-      schema_version
-  }
-
-Contratos:
-
-- Archivo ausente: defaults seguros + warning identificable.
-- JSON malformado: conservar último snapshot válido; en arranque usar defaults.
-- Clave desconocida: warning con ruta JSON; ignorar la clave.
-- Bus inexistente: warning/error configurable y send desactivado en el snapshot.
-- Valor fuera de rango: warning + clamp documentado.
-- Valor no finito: error/default seguro. Recordar que JSON estándar no serializa
-  NaN/Inf; cubrir construcción programática y formatos inválidos en tests.
-
-`va_validate` debe llamar al mismo resolver que el runtime. No duplicar reglas.
-
-4.3 Estado DSP por voz
-----------------------
-
-La configuración es inmutable por snapshot; el estado mutable vive por voz:
-
-- Cursor/resampler existente.
-- ADSR state y nivel.
-- Biquads L/R o mono pre-pan según la etapa.
-- Estado tube/DC blocker si se requiere.
-- Ganancia/pan suavizados.
-- Identificador del bus de reverb precompilado; no buscar strings por sample.
-
-Loops engine/exhaust/bed/scrape necesitan una strip persistente por clave.
-One-shots necesitan un pool fijo de voces; no reiniciar una voz ocupada sin una
-política explícita y probada (free -> oldest/releasing -> reject).
-
-4.4 Render real-time safe
--------------------------
-
-Fuera de `render()`:
-
-- Lectura de archivos y timestamps.
-- Parseo JSON y validación.
-- Creación de filtros, buffers de delay y tablas.
-- Resolución de strings a índices.
-- Construcción del snapshot y preparación del crossfade.
-
-Dentro de `render()`:
-
-- Solo memoria preasignada, índices y aritmética acotada.
-- No filesystem, locks, canales bloqueantes, logging ni crecimiento de Vec/Map.
-- Intercambio de snapshot en frontera de bloque mediante mecanismo wait-free o
-  controlado por el owner thread antes de invocar render.
-
-===============================================================================
-5. BACKLOG DETALLADO Y ORDEN DE EJECUCIÓN
-===============================================================================
-
-SPRINT 0R — REPARAR EL CONTRATO DE CONFIGURACIÓN (P0)
------------------------------------------------------
-
-S0R-1. Introducir Raw/Resolved configs con Option por campo.
-S0R-2. Resolver herencia por campo sobre todas las claves del banco.
-S0R-3. Centralizar validación cruzada y diagnósticos.
-S0R-4. Hacer que `va_validate` consuma el resolver común.
-S0R-5. Eliminar imports/warnings de compilación en las CLIs.
-S0R-6. Crear fixtures v1, v2 mínimo, v2 completo y v2 inválido.
-
-Tests obligatorios:
-
-- Campo omitido hereda; campo explícito 0.0/1.0/false sobrescribe.
-- Sonido ausente en `sounds` recibe todos los defaults, incluido volume.
-- Bus inexistente produce diagnóstico y send efectivo disabled.
-- Claves desconocidas producen warning con JSON path.
-- Config inválida no causa panic y no reemplaza el snapshot válido.
-- Migración v1 preserva gains y exhaust.
-
-Gate S0R:
-
-- `cargo test -p vehicle_audio_engine config` PASS.
-- `va_validate` no duplica reglas de sanitización.
-- Review confirma que no quedan valores centinela para herencia.
-
-SPRINT 1 — PRIMITIVAS DSP AISLADAS (P0)
+B.4 PLAN DE IMPLEMENTACION (sugerido)
 ---------------------------------------
-
-Crear módulos independientes bajo `src/dsp/`:
-
-  adsr.rs
-  biquad.rs
-  eq.rs
-  pan.rs
-  tube.rs
-  reverb.rs
-  limiter.rs
-
-S1-1 ADSR:
-
-- Estados Idle, Attack, Decay, Sustain, Release y Done.
-- Tiempos convertidos a samples al preparar config.
-- Curvas linear, exponential y logarithmic monotónicas y finitas.
-- `note_off` de loop preserva cursor durante release.
-- One-shot inicia release a tiempo para acabar sin corte.
-- Cero división por cero cuando un tiempo es 0 ms.
-
-S1-2 Biquad/EQ:
-
-- Peaking EQ estable para 31..16000 Hz, limitado por Nyquist.
-- Coeficientes calculados fuera de render.
-- Diez bandas en cascada, bypass transparente cuando disabled/0 dB.
-- Protección de denormals y reset determinista.
-- Suavizado/crossfade de coeficientes al cambiar snapshot.
-
-S1-3 Pan:
-
-- Equal-power exacto:
-    L = cos((pan + 1) * PI / 4)
-    R = sin((pan + 1) * PI / 4)
-- Tests en -1, 0, +1 y conservación de potencia.
-
-S1-4 Tube:
-
-- Parámetros configurables por sonido: enabled, amount, boost_link, bias, mix y
-  auto_gain; resolverlos fuera de render y conservarlos en el snapshot DSP.
-- Drive efectivo basado únicamente en boosts positivos normalizados.
-- Bias, saturación suave, dry/wet y compensación de ganancia.
-- Remover DC introducido por bias antes de salida.
-- enabled=false debe efectuar bypass transparente bit a bit o con tolerancia
-  explícita; mix=0.0 conserva la ruta dry y amount=0.0 no introduce color.
-- Tests separados deben demostrar efecto medible activo y transparencia en bypass.
-
-S1-5 Reverb:
-
-- Implementación estéreo determinista FDN o Schroeder.
-- Buffers preasignados; pre-delay, decay/RT60, damping, low/high cut y width.
-- Clamp de delays para evitar cero/modulo inválido.
-- Tail continúa aunque no haya sends activos.
-- Reset y cambio de sample rate probados.
-
-S1-6 Limiter master:
-
-- Estéreo enlazado: un pico en un canal aplica la misma reducción a ambos.
-- Ceiling configurable y finite guard.
-- Definir si es soft saturator + ceiling o limiter con envelope; documentarlo con
-  precisión. No llamar “limiter” a una función que solo multiplica `tanh`.
-
-Gate S1:
-
-- Respuesta EQ medida en centros y bandas vecinas.
-- RT60 aproximado dentro de tolerancia definida (por ejemplo ±15%).
-- Pan conserva potencia dentro de 1e-5.
-- Ningún test produce NaN/Inf/denormal persistente.
-- Benchmark aislado demuestra cero allocations por bloque.
-
-SPRINT 2 — INTEGRACIÓN DEL MIXER ESTÉREO (P0)
----------------------------------------------
-
-S2-1 Crear `VoiceStrip` precompilada por bank key.
-S2-2 Convertir engine bands a strips persistentes.
-S2-3 Convertir exhaust, surface bed y scrape a strips persistentes.
-S2-4 Reemplazar `OneShot` simple por pool fijo con ADSR por voz.
-S2-5 Cambiar acumulación mono por dry L/R y buffers de send L/R.
-S2-6 Procesar cada bus una sola vez por frame y sumar returns.
-S2-7 Aplicar master gain, finite/DC protection y limiter estéreo al final.
-S2-8 Exponer telemetría de config: schema, hash, reload generation y errores.
-
-Orden por sample:
-
-1. Actualizar parámetros suavizados.
-2. Leer source.
-3. ADSR.
-4. EQ.
-5. Tube.
-6. Volume.
-7. Pan -> L/R.
-8. Sumar dry y send post-pan.
-9. Procesar buses después de todas las voces.
-10. Sumar returns.
-11. Master/protección/limiter.
-
-Tests obligatorios:
-
-- Pan izquierdo/derecho genera canales distintos.
-- Defaults afectan sonidos no configurados explícitamente.
-- Cada tipo de voz atraviesa la strip: engine, exhaust, bed, scrape y one-shot.
-- Send -120 dB es silencio; wet disabled es bypass.
-- Tail de reverb persiste después de one-shot.
-- Dos voces a un bus comparten un procesador, no duplican reverbs.
-- Ceiling se cumple en ambos canales bajo peor suma de voces.
-- El camino v1 reproduce el golden legacy dentro de tolerancia documentada.
-
-Gate S2:
-
-- Golden sintético y banco real PASS.
-- Render es estéreo real cuando pan/reverb lo requieren.
-- Instrumentación de test confirma cero allocations y locks en render.
-
-SPRINT 3 — HOT RELOAD CLICK-FREE (P0)
--------------------------------------
-
-S3-1 Implementar watcher/polling fuera del callback de audio.
-S3-2 Parsear y preparar snapshot nuevo fuera de render.
-S3-3 Aplicar snapshot únicamente entre bloques.
-S3-4 Crossfade dry/config durante `transition_ms`.
-S3-5 Definir política de reverb: conservar tail antigua y cruzar a bus nuevo, o
-     mantener topología si es compatible. Nunca cortar buffers abruptamente.
-S3-6 Ante error, conservar último snapshot válido y publicar diagnóstico.
-S3-7 Desactivar completamente I/O cuando hot_reload.enabled=false.
-
-Tests obligatorios con reloj/filesystem inyectables:
-
-- Se respeta poll_interval_ms.
-- Un cambio válido incrementa generation una sola vez.
-- JSON parcial durante escritura no reemplaza snapshot.
-- transition_ms=0 cambia en frontera de bloque sin estado intermedio inválido.
-- Crossfade acota salto sample-a-sample y no produce click.
-- Reload no resetea cursores de loops ni voces activas innecesariamente.
-
-Gate S3:
-
-- Stress de cambios repetidos sin panic, leak ni discontinuidades fuera del límite.
-- Perfil confirma que lectura/parsing nunca ocurre dentro de render.
-
-SPRINT 4 — MIGRACIÓN CANÓNICA Y HERRAMIENTAS (P0)
--------------------------------------------------
-
-S4-1 Corregir `va_validate`:
-
-- Retornos y mensajes consistentes.
-- `--check` valida resolución contra claves reales del banco opcionalmente.
-- `--migrate` preserva exhaust y produce JSON determinista.
-- Escritura atómica del output; no truncar config válida.
-- Sin imports/variables sin usar.
-
-S4-2 Corregir `va_baseline`:
-
-- Debe renderizar realmente con el engine instanciado.
-- Comparar métricas contra golden con tolerancias explícitas.
-- Fallar ante escenario omitido, sample faltante o drift inesperado.
-
-S4-3 Migrar `game/sounds/sound_mixer_config.json` a schema v2.
-
-La primera migración debe mantener todo DSP disabled y preservar el sonido v1.
-Solo después del parity gate activar diseño por familias:
-
-- engine_*: EQ/color sutil, ADSR apropiado para loop, poco reverb.
-- exhaust-mic/backfire: cámara de escape y transitorios controlados.
-- shifts/impacts: ADSR corto y bus mecánico/impacto.
-- surfaces/scrape: ambience corta, filtrada y sin enmascarar motor.
-
-S4-4 Actualizar SOUND_CONFIG_DOCS.md para distinguir:
-
-- Garantías reales.
-- Opciones de configuración.
-- Limitaciones de implementación.
-- Semántica exacta de herencia, reload y one-shots.
-
-Gate S4:
-
-- Config canónica v2 pasa `va_validate --check`.
-- Migración v1->v2 con DSP bypass conserva golden.
-- JSON determinista: dos migraciones idénticas producen mismos bytes.
-
-SPRINT 5 — INTEGRACIÓN FFI/GODOT Y CALIDAD (P0/P1)
---------------------------------------------------
-
-S5-1 Verificar que formula90-core/GDExtension consume salida estéreo sin colapsarla.
-S5-2 Exponer diagnóstico de config en logs/telemetría sin escribir desde audio thread.
-S5-3 Rebuild limpio de Rust y GDExtension con BUILD==HEAD.
-S5-4 Ejecutar Godot headless y smoke de audio.
-S5-5 Capturar escenarios de escucha reproducibles.
-S5-6 Benchmark de peor caso y memoria.
-
-Escenarios mínimos de escucha:
-
-1. Idle -> aceleración -> redline -> lift-off/backfire.
-2. Cambios ascendentes y descendentes seguidos.
-3. Paso asfalto -> rumble -> grass/sand -> asfalto.
-4. Scrape sostenido + impacto simultáneo.
-5. Pan extremos y centro con señal sintética.
-6. One-shot con cola de reverb.
-7. Hot reload durante motor sostenido y durante cola de reverb.
-
-Human gate:
-
-- Sin clicks, zipper, bombeo evidente ni hard clipping.
-- Motor conserva presencia frente a superficies y reverb.
-- Estéreo perceptible sin pérdida de centro ni cambios bruscos de loudness.
-- Tube agrega color sutil, no distorsión destructiva.
-- Backfire/impactos son legibles sin disparar el limiter continuamente.
-
-===============================================================================
-6. ESTRATEGIA DE TEST Y MÉTRICAS
-===============================================================================
-
-Pirámide:
-
-A. Unit tests DSP
-   - Impulsos, senos, ruido determinista y ramps.
-   - Estado, estabilidad, respuesta y límites.
-
-B. Config resolver tests
-   - Fixtures JSON y diagnósticos exactos.
-   - Raw -> resolved -> runtime.
-
-C. Mixer synthetic tests
-   - Banco pequeño generado en memoria.
-   - Aislar una strip/bus a la vez.
-
-D. Bank integration
-   - Banco real v10_vehicle.
-   - Todas las claves usadas tienen resolución efectiva.
-
-E. Golden/offline
-   - Peak, RMS, DC, channel correlation, crest factor, discontinuidad máxima,
-     energía por bandas y duración de tails.
-
-F. Runtime Godot
-   - Carga de DLL correcta, BUILD parity, audio buffer finito y smoke headless.
-
-Métricas mínimas sugeridas (ajustar mediante baseline, no inventar al final):
-
-- Peak absoluto <= limiter_threshold + 1e-5.
-- NaN/Inf = 0.
-- DC post-master acotado por test de señal silenciosa/bias.
-- Pan center: L/R iguales dentro de 1e-5 para fuente mono sin reverb.
-- Equal-power: L^2 + R^2 constante dentro de 1e-5.
-- Bypass DSP: error máximo y RMS declarados explícitamente.
-- RT60 medido con tolerancia antes de aprobar presets.
-- Allocations en render: 0 después de warm-up.
-- Tiempo de peor bloque: medir p50/p95/p99; objetivo inicial <10% de un core a
-  44.1 kHz, pero registrar hardware y tamaño de bloque.
-
-No usar solamente “tests pasan”. Cada feature DSP necesita un test que demuestre
-que cambia la señal cuando está enabled y que es transparente cuando está disabled.
-
-===============================================================================
-7. COMANDOS DE VALIDACIÓN
-===============================================================================
-
-Desde D:\Formula90s\game\crates:
-
-  cargo fmt --all -- --check
-  cargo clippy -p vehicle_audio_engine --all-targets -- -D warnings
-  cargo test -p vehicle_audio_engine
-  cargo run -p vehicle_audio_engine --bin va_validate -- \
-    ../sounds/sound_mixer_config.json --check
-  cargo run -p vehicle_audio_engine --bin va_baseline -- \
-    ../sounds/banks/v10_vehicle
-
-Workspace antes de integrar:
-
-  cargo test --workspace
-
-Build/runtime desde la raíz, después de verificar HEAD y status:
-
-  powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 \
-    -Configuration debug
-
-  .\.tools\godot\Godot_v4.7.1-stable_win64_console.exe \
-    --headless --path game --script res://tests/smoke_test_f1_94_audio.gd
-
-Usar `scripts/run_f1_94.ps1` para la validación final porque debe compilar o
-verificar la correspondencia BUILD/HEAD antes de iniciar Godot.
-
-===============================================================================
-8. ARCHIVOS PREVISTOS Y LÍMITES DE ALCANCE
-===============================================================================
-
-Archivos centrales:
-
-  game/crates/vehicle-audio-engine/src/config.rs
-  game/crates/vehicle-audio-engine/src/mixer.rs
-  game/crates/vehicle-audio-engine/src/dsp/*.rs
-  game/crates/vehicle-audio-engine/src/bin/va_validate.rs
-  game/crates/vehicle-audio-engine/src/bin/va_baseline.rs
-  game/crates/vehicle-audio-engine/tests/*.rs
-  game/crates/vehicle-audio-engine/tests/baseline_golden.json
-  game/crates/vehicle-audio-engine/SOUND_CONFIG_DOCS.md
-  game/sounds/sound_mixer_config.json
-
-Posibles consumidores, tocar solo si la integración lo exige y tras inventario:
-
-  game/crates/formula90-core/
-  native/src/core/
-  native/include/
-  game/tests/smoke_test_f1_94_audio.gd
-  scripts/build_windows.ps1
-  scripts/run_f1_94.ps1
-
-Fuera de alcance salvo autorización expresa:
-
-- Física del vehículo.
-- Regeneración artística de WAVs.
-- Vegetación, pista, UI o skybox.
-- Cambios de sample rate del ABI.
-- Sustitución de la arquitectura F90Core.
-
-===============================================================================
-9. SECUENCIA DE COMMITS RECOMENDADA
-===============================================================================
-
-1. `refactor(audio-config): resolve schema v2 inheritance and diagnostics`
-2. `feat(audio-dsp): add measured realtime-safe processing primitives`
-3. `feat(audio-mixer): integrate stereo voice strips and shared reverb buses`
-4. `feat(audio-config): add click-free runtime hot reload`
-5. `chore(audio): migrate canonical mixer config to schema v2`
-6. `test(audio): add golden, benchmark and Godot integration gates`
-
-Cada commit debe compilar y pasar sus tests. No acumular todos los sprints en un
-solo commit. Preparar únicamente rutas explícitas y verificar staged diff.
-
-===============================================================================
-10. PRIMERA ACCIÓN DEL SIGUIENTE AGENTE
-===============================================================================
-
-1. Registrar branch/HEAD/status y preservar el worktree sucio.
-2. Leer completamente este handoff, SOUND_CONFIG_DOCS.md y los diffs actuales.
-3. Ejecutar los tests baseline sin modificar archivos.
-4. Empezar únicamente Sprint 0R: Raw/Resolved configs y resolver común.
-5. No implementar DSP hasta que el gate de herencia/diagnósticos pase.
-6. Al terminar cada sprint: review, tests, reporte al usuario y human gate cuando
-   corresponda. Actualizar este handoff con evidencia real, no porcentajes estimados.
-
-Bloqueo actual: ninguno técnico. Falta implementación; no falta información del usuario.
+1. Validar source: comprobar sha256 manifest.json vs los 72 GLBs de
+   implementation\ (deberia dar 0 discrepancias).
+2. Regenerar los 2 reports de color (build_tree_color_library.py con
+   recipes de arriba); revisar que cada entrada del report referencie los ids
+   y paths canonicos (game/resources/environment/assets/{trees,bushes}/...) y
+   que sus sha/dims coincidan con implementation/manifest.json.
+   - Si alguna variante falta en los report, genera el GLB:
+     build_vegetation_3d_library.py (recipe vegetation_library.json, seeds
+     1101..1106 trees / 2101..2106 bushes)
+3. PUBLICAR: copiar los 72 GLBs:
+     implementation\trees\*.glb -> game\resources\environment\assets\trees\
+     implementation\bushes\*.glb -> game\resources\environment\assets\bushes\
+   (sobrescribir los stale; NO tocar los .import hasta el paso 4)
+4. Godot 4: re-importar (los nombres existen, los .import son de la version
+   vieja: dejar reimportar / rehacer .import):
+   - vertex colors + material base blanco (COLOR_0)
+   - foliage double-sided materials (campo foliage_double_sided_material en
+     el manifest)
+   - sin colision (campo collision=false), sin LOD aun (lod=false)
+5. Rebuild de entorno (si cambia distribution o placements):
+   python blender\track_pipeline\validate_environment.py --config ... y luego
+   el build blender de la parte A.2 (mismo flujo).
+6. Auditoria: audit + review PNG + validate_godot_load; aprobacion humana
+   (silhouette, color por sector, enganches con barriers clearance:
+   barrier_conflict usa vegetation_clearance_m del manifest de barreras).
+
+B.5 DECISIONES ABIERTAS (para ti)
+-----------------------------------
+- LODs: los canonicos son lod=false; con ~2.9-3.9k tris foliares + ~1k wood
+  por arbol, en circuitos largos conviene LOD o MultiMesh; si se quiere,
+  implementar distancias o variantes strip (a definir).
+- Ubicacion de colision de arboles cercanos a pista: hoy none; con los
+  canonicos decidir si se anade colision solo para arboles a < clearance.
+- Plazos de aparicion de los spline-bakes en el layout v3 (decisión sobre
+  curvas): hoy el layout usa runs rectos centrados capados por curvatura;
+  los spline-bakes quedan como opcion de calidad superior por tramo.
+
+RESULTADOS CLAVE V3 (para el reporte/human gate)
+-----------------------------------------------
+- Barreras: 2420 instancias -> 387 records; draw calls -84%; tris -26%
+  (4.10M -> 3.04M) manteniendo la silueta y el contrato de colision.
+- Los modulos 3D de neumaticos navy/white + plastic quedan SOLO en chicanas
+  y zonas designadas; armco/jersey/tires del resto son tiras fusionadas.
+
+------------------------------------------------------------------
+PARTE B - ESTADO ACTUAL (sprint vegetacion canonica, sin rebuild)
+------------------------------------------------------------------
+
+HECHO:
+1. Canonicos publicados: 60 GLBs (12 ids x 5 variantes; el handoff decia 72,
+   real = 60) copiados de implementation/ -> game/resources/environment/assets/
+   {trees,bushes}/ (sha verificados 1:1), manifest schema 4 instalado.
+2. Color reports regenerados (generator _v4_color_library, dims/tris/sha reales
+   de los GLBs publicados) + 60 previews library_audit + 2 contact sheets.
+3. Registry regenerado (build_asset_registry.py): 21 assets (12 vegetacion v4 +
+   9 markers). RETIRADAS 18 entradas assets_v2/manifest.csv muertas (fuentes
+   inexistentes; pipeline raw_vegetation v2 retirado). test_asset_registry
+   actualizado (21 assets, sin tree_v2_01).
+4. Audit tool adaptado a contrato v4 (foliage_double_sided_material) y tests
+   actualizados. Suite game 20/20 OK; test_asset_registry+test_semantic_layout
+   16/16 OK; audit exit 0.
+5. Godot reimport hecho (--headless --import, exit 0); .import intactos.
+6. Generadores v3 marcados DEPRECADOS (VEGETATION_LANCEOLATE_PROCESS.md):
+   no regenerar assets con ellos (sobrescribirian canonicos). Publicacion:
+   python game/resources/environment/tools/publish_vegetation_library.py --repo .
+
+PENDIENTE (proximo sprint, con human gate de Parte A):
+- Regenerar placements.json (dims canonicas cambian radios) + validate_environment.
+- Rebuild Blender -> publicar la_chutana.glb (hornea barreras v3 + vegetacion
+  canonica) + BUILD/HEAD parity + validate_godot_load + smoke tests.
+- Human gate visual runtime (silhouette/color por sector, enganche barriers).
+
+BACKLOG - DENSIDAD ARBOLES +50% (min):
+- Mecanismo: con semantic_environment.enabled=true los arboles salen del SVG de
+  autoria (game/data/tracks_revisions/la_chutana/revisions/1f49978e.../track.canonical.svg)
+  via layout bootstrap (layout_config.json "bootstrap".tree_zone_radius_m=10.0,
+  spacing en import_la_chutana.py). NO usan density_profiles (esos aplican en
+  modo procedural via generate_environment.py --trees-density low|medium...).
+- Opcion A (autoridad semantica): aumentar instancias de arboles en el SVG de
+  autoria (import_la_chutana/bootstrap) + nueva revision authoring store.
+- Opcion B (procedural): desactivar semantic_environment y usar
+  --trees-density medium (60/km vs 36/km = +67%).
+- Validar: conflictos barrera/vegetacion (clearance trees 1.0 m), occupancy,
+  y coste (arbol canonico ~3.8k tris, sin LOD; presupuesto MAX 10k tris/asset).
+
+------------------------------------------------------------------
+PARTE C - DENSIDAD ARBOLES +50% (dry, sin rebuild runtime)
+------------------------------------------------------------------
+
+HECHO:
+1. Mecanismo elegido tras investigacion: tree_overlap_factor 1.0->0.75
+   (layout_config.json) + object_catalog trees min/max 130->200. Se testearon
+   los levers disponibles: spacing (pico 190 @10.0m), overlap (193 @0.8),
+   combinados (hasta 230). Se eligio overlap 0.75 con spacing 12.5m intacto
+   (minimo dano a la distribucion autorada). Resultado: 200 arboles (+53.8%).
+2. Nueva revision de autoria: 3771d6311... (parent 1f49978e; 200 arboles, 110
+   arbustos, 4660 grass) creada via bootstrap_la_chutana_track.py --force +
+   commit scoped (36ecce5). la_chutana.json source_svg actualizado.
+3. Descubierto y resuelto: scale_multiplier arboles 1.85 (legado de v3)
+   ~inflaba radios canonicos un 85% y producia 2 violaciones de validate
+   (clearance + conflicto barrera). Con los v4 a tamano real (dims disenadas
+   a target) se fijo 1.0 -> validate VERDE. Arboles ahora 8-16m (antes
+   15-30m): REVISAR en el rebuild/gate.
+4. Colateral: revision vieja tenia grass 9320 (catalogo viejo); nueva 4660
+   (catalogo commitado). Cards hierba siguen 2000; textura share 0.18,
+   impacto ~nil.
+5. Validaciones: compile 200 arboles; validate_environment ALL PASS
+   (trees 200, bushes 110, colores dominante original 91/50/29/20/10;
+   overlaps autoradas preservadas=237; conflictos barrera=0;
+   props=124; buildings=7). Tests 16/16 + 20/20 OK.
+6. Renders review: blender/generated/la_chutana/review/vegetation_review_
+   aerial.png + _trackside.png (HUMAN GATE: aprobar). runtime NO publicado.
+
+PENDIENTE (rebuild, tras gate A):
+- Rebuild completo: regenerar entorno con placements 200 arboles + barreras v3
+  + publicar la_chutana.glb + BUILD parity + validate_godot_load + smoke test
+  + gate visual runtime (tamano arboles 8-16m a aprobar).
+- Comitar cambios Parte C: layout_config.json, object_catalog.json,
+  la_chutana.json (MIXTO con Parte A: sugiere commit hunks o commit conjunto
+  tras gate A), revisiones ya commiteadas por authoring store.
+
+------------------------------------------------------------------
+PARTE D - REBUILD COMPLETO CON GATES (HECHO)
+------------------------------------------------------------------
+
+RESULTADO: runtime reconstruido y publicado con barreras v3 (A) + vegetacion
+canonica v4 (B) + 200 arboles (C, +53.8%). BUILD/HEAD parity VALIDADA.
+
+1. run_track_pipeline -Mode Base: PASS (track 2419.998m, curbs 10/10 manifold,
+   terrain 69434 tris). NOTA: el generador v1 de barreras borraba de la carpeta
+   los .json/.glb/.png externos (mataba barrier_manifest_v3.json en CADA run).
+   FIX: build_barrier_3d_library.py _publish_directory ahora protege nombres
+   'barrier_manifest_v3*'.
+2. Barrier manifest v3 game-side se habia perdido (por el bug de arriba);
+   RECONSTRUIDO desde D:\assets-3d-tencent\gen\barriers_v2\manifests\
+   (union que usa el layout: 31 assets = 8 modulos + 23 runs; rutas reescritas
+   a game/resources/environment/assets/barriers/v3/{modules,runs}/; shas
+   verificados 1:1). test_full_barrier_migration PASS.
+3. FIX naming mallas: GLBs v3 de tencent traen las mallas con el id sin sufijo
+   '<id>_visual'; validate_barrier_asset_integration lo exige ->
+   build_environment_blender.import_barrier_asset_prototype renombra
+   mesh.data a '<id>_visual'. Gate de barreras PASS (387 modulos, 20
+   colisiones, 31 assets, 341 mallas, 0 legacy).
+4. Gate vegetacion PASS (renders nuevos) y PUBLICACION: la_chutana.glb
+   (57.7MB -> 140.7MB por 200 arboles v4 + runs v3) + runtime_build.json
+   (head 36ecce5). Validators barrier/building/trackside PASS.
+5. run_f1_94: -ValidateRuntimeOnly PASS (BUILD/HEAD parity OK) -
+   -Smoke PASS (HUD + Mountains3D) - -Parity PHY-010 FALLA: 82.2-82.5 km/h
+   vs >=85 esperado. A/B test contra el GLB COMMITTED viejo: TAMBIEN falla
+   (82.5) -> REGRESION PREEXISTENTE, NO causada por este rebuild. Backlog:
+   investigar tune/vehicle physics (probablemente f1_94_physics.json o cambio
+   de setup entre fb18bba y anteriores; el A/B y telemetry en
+   user://godot_f1_94_chutana_telemetry.csv).
+6. Smoke vegetacion ACTUALIZADO: la escena test_field declara
+   vegetation_vertex_color_binder.gd pero NUNCA lo instancia (referencia
+   muerta); smoke ahora lo instancia en runtime: PASS 2908/2908 superficies
+   con pigmentacion vinculada (confirmado binding COLOR_0 + double-sided
+   material en los 200 arboles + 110 arbustos).
+7. PENDIENTE COMIT: cambios A+B+C+D mezclados (la_chutana.json, layouts,
+   tools, smoke, run_f1_94, manifest v3 + v3/ untracked, la_chutana.glb
+   tracked). Sugerencia: commit conjunto del estado rebuildeado tras gate
+   humano (PARITY es item aparte).
+8. Gate humano PENDIENTE: revisar renders safety_barrier_* (7) y
+   vegetation_review_* (2) en blender/generated/la_chutana/review/ + abrir
+   runtime (scripts/open_godot_la_chutana.ps1).
