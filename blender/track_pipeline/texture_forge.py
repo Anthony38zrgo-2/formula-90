@@ -5,6 +5,7 @@ from pathlib import Path
 import hashlib
 import json
 import os
+import time
 
 import cv2
 import numpy as np
@@ -19,6 +20,18 @@ BAYER_4 = np.array(
 ) / 16.0
 
 
+def replace_with_retry(source: Path, target: Path, attempts: int = 6,
+                       delay_s: float = 0.4) -> None:
+    for attempt in range(attempts):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_s * (attempt + 1))
+
+
 def save_image_atomic(image: Image.Image, path: str | Path) -> Path:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -26,7 +39,7 @@ def save_image_atomic(image: Image.Image, path: str | Path) -> Path:
     if temp.exists():
         temp.unlink()
     image.save(temp)
-    os.replace(temp, target)
+    replace_with_retry(temp, target)
     return target
 
 

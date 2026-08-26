@@ -4,12 +4,25 @@ from datetime import datetime
 from pathlib import Path
 import os
 import shutil
+import time
 
 import bpy
 
 
 def _timestamp() -> str:
     return datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def _replace_with_retry(source: Path, target: Path, attempts: int = 6,
+                        delay_s: float = 0.4) -> None:
+    for attempt in range(attempts):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay_s * (attempt + 1))
 
 
 def backup_existing(path: str | Path, backup_dir: str | Path) -> Path | None:
@@ -36,7 +49,7 @@ def atomic_save_blend(target: str | Path, backup_dir: str | Path) -> Path:
     if temp.exists():
         temp.unlink()
     bpy.ops.wm.save_as_mainfile(filepath=str(temp))
-    os.replace(temp, target)
+    _replace_with_retry(temp, target)
     print(f"[blend] wrote {target}")
     return target
 
@@ -60,7 +73,7 @@ def atomic_export_glb(
         use_selection=use_selection,
         use_visible=True,
     )
-    os.replace(temp, target)
+    _replace_with_retry(temp, target)
     print(f"[glb] wrote {target}")
     return target
 
@@ -75,6 +88,6 @@ def atomic_publish(source: str | Path, target: str | Path) -> Path:
     if temp.exists():
         temp.unlink()
     shutil.copy2(source, temp)
-    os.replace(temp, target)
+    _replace_with_retry(temp, target)
     print(f"[publish] {source} -> {target}")
     return target
