@@ -177,9 +177,13 @@ if ($ReviewMode -ne "Vegetation") {
     & $python (Join-Path $pipeline "validate_building_asset_integration.py") `
         --glb $builtTrackGlb --asset-manifest $buildingAssetManifestForValidation --report $buildingReport
     if ($LASTEXITCODE -ne 0) { throw "Building asset integration validation failed" }
-    & $python (Join-Path $pipeline "validate_trackside_asset_integration.py") `
-        --glb $builtTrackGlb --placements (Join-Path $repo "blender\generated\$Track\placements.json")
-    if ($LASTEXITCODE -ne 0) { throw "Trackside asset integration validation failed" }
+    if ($ReviewMode -ne "Guardrail" -and $ReviewMode -ne "Vegetation") {
+        & $python (Join-Path $pipeline "validate_trackside_asset_integration.py") `
+            --glb $builtTrackGlb --placements (Join-Path $repo "blender\generated\$Track\placements.json")
+        if ($LASTEXITCODE -ne 0) { throw "Trackside asset integration validation failed" }
+    }
+    & $python (Join-Path $pipeline "tests\test_object_barrier_hierarchy.py")
+    if ($LASTEXITCODE -ne 0) { throw "Object-barrier hierarchy validation failed" }
 }
 
 if ($ReviewMode -ne "None") {

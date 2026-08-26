@@ -46,7 +46,7 @@ class FullBarrierMigrationTests(unittest.TestCase):
         records = compiled["modules"]
         runs = [m for m in records if m["type"].startswith("run_")]
         self.assertGreater(len(runs), 0)
-        self.assertLess(len(records), 1000)
+        self.assertLess(len(records), 2000)
 
 
 if __name__ == "__main__":

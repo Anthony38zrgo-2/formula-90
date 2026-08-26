@@ -15,6 +15,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from blender_output import atomic_export_glb, atomic_publish, atomic_save_blend
+from safety_barrier_layout import SafetyBarrierLayoutError, barrier_envelope_at
 from procedural_assets_blender import (
     create_prototypes,
     create_safety_barrier_ribbon_collision,
@@ -476,7 +477,29 @@ def build_tire_barriers(config, points, materials):
     return {"visual_modules": visual_modules, "collision_segments": collision_segments}
 
 
+TRACKSIDE_CARD_CLEARANCE_M = 1.0
+
+
+def barrier_outer_face_lookup(config):
+    authority = config.get("safety_barriers", {})
+    manifest_rel = authority.get("manifest")
+    if not authority.get("procedural") or not manifest_rel:
+        return None
+    manifest = read_json(Path(config["_repo_root"]) / manifest_rel)
+    lap = float(config["_centerline_length_m"])
+
+    def lookup(fraction, side):
+        try:
+            envelope = barrier_envelope_at(manifest, float(fraction) % 1.0, int(side), lap)
+        except SafetyBarrierLayoutError:
+            return None
+        return float(envelope["outer_face_distance_m"])
+
+    return lookup
+
+
 def build_trackside_props(config, points, props, materials):
+    outer_face = barrier_outer_face_lookup(config)
     created = 0
     for item in props:
         prop_type = str(item["prop_type"])
@@ -490,6 +513,17 @@ def build_trackside_props(config, points, props, materials):
         card_pos = ((float(authored[0]), float(authored[1])) if authored else
                     (pos[0] + normal[0] * side * distance,
                      pos[1] + normal[1] * side * distance))
+        lateral = ((card_pos[0] - pos[0]) * normal[0] +
+                   (card_pos[1] - pos[1]) * normal[1])
+        if outer_face is not None:
+            required = outer_face(float(item["track_fraction"]), side)
+            if required is not None:
+                min_abs = required + TRACKSIDE_CARD_CLEARANCE_M
+                target = min_abs if lateral >= 0 else -min_abs
+                if abs(lateral) < min_abs:
+                    card_pos = (card_pos[0] + normal[0] * (target - lateral),
+                                card_pos[1] + normal[1] * (target - lateral))
+                    distance = abs(target)
         ground = terrain_height(config, float(item["track_fraction"]), side, distance)
         if prop_type == "flag" and asset_id == "track_flag":
             mat = (materials["flag_pole"], materials["flag_navy"], materials["flag_white"])
