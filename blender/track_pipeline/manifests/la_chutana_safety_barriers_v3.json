@@ -151,13 +151,6 @@
       "collision_profile": "wall_high",
       "material_style": "navy_white_pattern"
     },
-    "run_armco_50m": {
-      "geometry": "guardrail_armco",
-      "asset_id": "run_armco_50m",
-      "module_length_m": 50.0,
-      "collision_profile": "wall_low",
-      "material_style": "steel_navy_continuous"
-    },
     "run_armco_10m": {
       "geometry": "guardrail_armco",
       "asset_id": "run_armco_10m",
@@ -183,13 +176,6 @@
       "geometry": "guardrail_armco",
       "asset_id": "run_armco_25m",
       "module_length_m": 25.0,
-      "collision_profile": "wall_low",
-      "material_style": "steel_navy_continuous"
-    },
-    "run_armco_100m": {
-      "geometry": "guardrail_armco",
-      "asset_id": "run_armco_100m",
-      "module_length_m": 100.0,
       "collision_profile": "wall_low",
       "material_style": "steel_navy_continuous"
     },
@@ -641,44 +627,8 @@
         "repeat": false,
         "items": [
           {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_10m",
-            "length_m": 10.0
-          },
-          {
             "type": "armco",
-            "length_m": 1.4
+            "length_m": 411.4
           }
         ]
       },
@@ -699,44 +649,8 @@
         "repeat": false,
         "items": [
           {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_50m",
-            "length_m": 50.0
-          },
-          {
-            "type": "run_armco_10m",
-            "length_m": 10.0
-          },
-          {
             "type": "armco",
-            "length_m": 1.4
+            "length_m": 411.4
           }
         ]
       },
@@ -1213,12 +1127,36 @@
         "repeat": false,
         "items": [
           {
-            "type": "run_armco_100m",
-            "length_m": 100.0
+            "type": "run_armco_25m",
+            "length_m": 25.0
           },
           {
-            "type": "run_armco_100m",
-            "length_m": 100.0
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
           },
           {
             "type": "run_armco_10m",
@@ -1247,12 +1185,36 @@
         "repeat": false,
         "items": [
           {
-            "type": "run_armco_100m",
-            "length_m": 100.0
+            "type": "run_armco_25m",
+            "length_m": 25.0
           },
           {
-            "type": "run_armco_100m",
-            "length_m": 100.0
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
+          },
+          {
+            "type": "run_armco_25m",
+            "length_m": 25.0
           },
           {
             "type": "run_armco_10m",

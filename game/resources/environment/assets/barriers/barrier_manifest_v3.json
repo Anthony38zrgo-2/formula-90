@@ -429,59 +429,6 @@
       "lod": false
     },
     {
-      "id": "run_armco_100m",
-      "kind": "barrier",
-      "family": "armco",
-      "usage_hint": "run",
-      "run_length_m": 100.0,
-      "visual_glb": "game/resources/environment/assets/barriers/v3/runs/run_armco_100m.glb",
-      "collision_glb": "game/resources/environment/assets/barriers/v3/runs/run_armco_100m_collision.glb",
-      "visual_sha256": "572c973b51170528df0b69d5d17ba998acea97ab9dbe395529fbd55d5c045047",
-      "collision_sha256": "af7aadc2ed206832ef81fc5368b9a2273739ee3dfc6929ac1c54e4239a6ae52b",
-      "coordinate_contract": {
-        "units": "metres",
-        "up_axis": "+Y",
-        "module_axis": "+X",
-        "track_facing_axis": "+Z",
-        "pivot": "run_center",
-        "module_length_m": 2.0,
-        "snap": "visual_and_collision_share_exact_module_length"
-      },
-      "shading": {
-        "mode": "procedural_vertex_color_v1",
-        "cast_shadows_baked": false
-      },
-      "visual": {
-        "vertices": 11400,
-        "triangles": 3800,
-        "bounds_min": [
-          -50.0,
-          0.0,
-          -0.06
-        ],
-        "bounds_max": [
-          50.0,
-          0.82,
-          0.06
-        ]
-      },
-      "collision": {
-        "vertices": 36,
-        "triangles": 12,
-        "bounds_min": [
-          -50.0,
-          0.0,
-          -0.15
-        ],
-        "bounds_max": [
-          50.0,
-          0.82,
-          0.15
-        ]
-      },
-      "lod": false
-    },
-    {
       "id": "run_armco_10m",
       "kind": "barrier",
       "family": "armco",
@@ -581,59 +528,6 @@
         ],
         "bounds_max": [
           12.5,
-          0.82,
-          0.15
-        ]
-      },
-      "lod": false
-    },
-    {
-      "id": "run_armco_50m",
-      "kind": "barrier",
-      "family": "armco",
-      "usage_hint": "run",
-      "run_length_m": 50.0,
-      "visual_glb": "game/resources/environment/assets/barriers/v3/runs/run_armco_50m.glb",
-      "collision_glb": "game/resources/environment/assets/barriers/v3/runs/run_armco_50m_collision.glb",
-      "visual_sha256": "ff740ec9d548f369fa352bc41d2b4c62bcbdda1d3b0392643eabc6d0c9c3af29",
-      "collision_sha256": "c9f71a6e373c373d3566cb680833b98b77d5e98e9f332ce42f9bd6b69780bb0d",
-      "coordinate_contract": {
-        "units": "metres",
-        "up_axis": "+Y",
-        "module_axis": "+X",
-        "track_facing_axis": "+Z",
-        "pivot": "run_center",
-        "module_length_m": 2.0,
-        "snap": "visual_and_collision_share_exact_module_length"
-      },
-      "shading": {
-        "mode": "procedural_vertex_color_v1",
-        "cast_shadows_baked": false
-      },
-      "visual": {
-        "vertices": 5700,
-        "triangles": 1900,
-        "bounds_min": [
-          -25.0,
-          0.0,
-          -0.06
-        ],
-        "bounds_max": [
-          25.0,
-          0.82,
-          0.06
-        ]
-      },
-      "collision": {
-        "vertices": 36,
-        "triangles": 12,
-        "bounds_min": [
-          -25.0,
-          0.0,
-          -0.15
-        ],
-        "bounds_max": [
-          25.0,
           0.82,
           0.15
         ]
