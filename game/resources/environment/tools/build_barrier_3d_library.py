@@ -487,7 +487,9 @@ def _publish_directory(staged: Path, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     staged_names = {path.name for path in staged.iterdir()}
     for old in destination.iterdir():
-        if old.name not in staged_names and old.is_file() and old.suffix.lower() in {".glb", ".json", ".png"}:
+        if (old.name not in staged_names and old.is_file()
+                and old.suffix.lower() in {".glb", ".json", ".png"}
+                and not old.name.startswith("barrier_manifest_v3")):
             old.unlink()
     for source in staged.iterdir():
         target = destination / source.name
