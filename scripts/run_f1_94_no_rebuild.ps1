@@ -119,41 +119,18 @@ foreach ($relativePath in $expectedAssets.Keys) {
 if (-not (Test-Path -LiteralPath $trackPath -PathType Leaf)) {
     throw "Circuito runtime faltante: $trackPath"
 }
-if (-not (Test-Path -LiteralPath $trackBuildPath -PathType Leaf)) {
-    throw "BUILD del circuito faltante: $trackBuildPath. Regenera La Chutana con run_track_pipeline.ps1 -Mode Procedural."
-}
-$trackBuild = Get-Content -LiteralPath $trackBuildPath -Raw | ConvertFrom-Json
-if ([int]$trackBuild.schema_version -ne 3) {
-    throw "BUILD del circuito usa schema obsoleto: $($trackBuild.schema_version); se requiere 3."
-}
-$currentHead = (& git -C $root rev-parse HEAD).Trim()
-if ($LASTEXITCODE -ne 0 -or $trackBuild.head -ne $currentHead) {
-    throw "BUILD/HEAD mismatch para La Chutana: BUILD=$($trackBuild.head) HEAD=$currentHead"
-}
-$parityFiles = @{
-    glb_sha256 = $trackPath
-    config_sha256 = $trackConfigPath
-    safety_barrier_manifest_sha256 = $barrierManifestPath
-    barrier_asset_manifest_sha256 = $barrierAssetManifestPath
-    barrier_construction_manifest_sha256 = $barrierConstructionManifestPath
-    barrier_recipe_manifest_sha256 = $barrierRecipeManifestPath
-    barrier_palette_manifest_sha256 = $barrierPaletteManifestPath
-    barrier_generator_sha256 = $barrierGeneratorPath
-    environment_builder_sha256 = $environmentBuilderPath
-    building_asset_manifest_sha256 = $buildingAssetManifestPath
-    building_source_manifest_sha256 = $buildingSourceManifestPath
-    building_construction_manifest_sha256 = $buildingConstructionManifestPath
-    building_generator_sha256 = $buildingGeneratorPath
-    building_integration_validator_sha256 = $buildingIntegrationValidatorPath
-    trackside_integration_validator_sha256 = $tracksideIntegrationValidatorPath
-}
-foreach ($field in $parityFiles.Keys) {
-    $actual = (Get-FileHash -LiteralPath $parityFiles[$field] -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($actual -ne ([string]$trackBuild.$field).ToLowerInvariant()) {
-        throw "Hash de circuito no coincide para $field"
+Write-Host "MODO NO-REBUILD: se omite la validacion de BUILD/HEAD y paridad de La Chutana." -ForegroundColor Yellow
+if (Test-Path -LiteralPath $trackBuildPath -PathType Leaf) {
+    $trackBuild = Get-Content -LiteralPath $trackBuildPath -Raw | ConvertFrom-Json
+    $currentHead = (& git -C $root rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -eq 0 -and $trackBuild.head -eq $currentHead) {
+        Write-Host "La Chutana BUILD/HEAD coincide (sin exigir rebuild): $currentHead" -ForegroundColor Green
+    } else {
+        Write-Host "Advertencia: BUILD/HEAD de La Chutana no coincide; se continua igualmente (modo no-rebuild)." -ForegroundColor Yellow
     }
+} else {
+    Write-Host "Advertencia: BUILD del circuito faltante; se continua igualmente (modo no-rebuild)." -ForegroundColor Yellow
 }
-Write-Host "La Chutana BUILD/HEAD validado: $currentHead" -ForegroundColor Green
 
 $runtimeAppData = Join-Path $root '.tools\appdata'
 $runtimeLocalAppData = Join-Path $root '.tools\localappdata'
