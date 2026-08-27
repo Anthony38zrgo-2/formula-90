@@ -19,6 +19,7 @@ class_name F194RustInputController
 var _has_required_interface: bool = false
 var _spawn_pos: Vector3 = Vector3()
 var _spawn_yaw: float = 0.0
+var _max_gear: int = 6
 
 func _ready() -> void:
 	if vehicle_node == null:
@@ -44,6 +45,8 @@ func _ready() -> void:
 			return
 
 	_has_required_interface = true
+
+	_resolve_max_gear()
 
 	# Capture spawn pose so Reset Vehicle can restore it.
 	if vehicle_node.has_method("global_transform"):
@@ -118,7 +121,7 @@ func _physics_process(_delta: float) -> void:
 	if shift_up:
 		if current_gear == -1:
 			next_gear = 0
-		elif current_gear < 6:
+		elif current_gear < _max_gear:
 			next_gear = current_gear + 1
 	elif shift_down:
 		if current_gear > 0:
@@ -140,3 +143,56 @@ func _physics_process(_delta: float) -> void:
 	vehicle_node.set_clutch_amount(clutch_val)
 	if next_gear != -2:
 		vehicle_node.set_gear_request(next_gear)
+
+
+func _resolve_max_gear() -> void:
+	# Derive the number of forward gears from the active vehicle's physics config
+	# (data-driven: a 7-gear car just needs a 7-element gear_ratios array, no code
+	# change). Falls back to 6 if the F90Core/config cannot be read.
+	_max_gear = 6
+	var core := _find_f90_core()
+	if core == null:
+		return
+	if not core.has_method("get_config_json_path"):
+		return
+	var cfg_path: String = core.get_config_json_path()
+	if cfg_path.is_empty():
+		return
+	var global_p := cfg_path
+	if cfg_path.begins_with("res://"):
+		global_p = ProjectSettings.globalize_path(cfg_path)
+	if not FileAccess.file_exists(global_p):
+		return
+	var f := FileAccess.open(global_p, FileAccess.READ)
+	if f == null:
+		return
+	var text := f.get_as_text()
+	f.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var pt: Dictionary = parsed.get("powertrain", {})
+	if typeof(pt) != TYPE_DICTIONARY:
+		return
+	var ratios: Variant = pt.get("gear_ratios", [])
+	if typeof(ratios) == TYPE_ARRAY and ratios.size() > 0:
+		_max_gear = ratios.size()
+
+
+func _find_f90_core() -> Node:
+	var root := get_tree().current_scene
+	if root == null:
+		root = get_owner()
+	return _find_by_class(root, "F90Core")
+
+
+func _find_by_class(node: Node, cls: String) -> Node:
+	if node == null:
+		return null
+	if node.get_class() == cls:
+		return node
+	for i in node.get_child_count():
+		var r := _find_by_class(node.get_child(i), cls)
+		if r != null:
+			return r
+	return null
