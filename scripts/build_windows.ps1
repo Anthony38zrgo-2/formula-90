@@ -2,6 +2,9 @@
 param([ValidateSet('debug','release')][string]$Configuration='debug',[switch]$CompileCommands)
 $ErrorActionPreference='Stop'; $root=Split-Path -Parent $PSScriptRoot; Set-Location $root
 $PSNativeCommandUseErrorActionPreference = $false
+$headSha = (& git rev-parse HEAD).Trim()
+Set-Content -LiteralPath (Join-Path $root 'game\BUILD_SOURCE') -Value $headSha -NoNewline
+Write-Host "BUILD_SOURCE regenerado: $headSha" -ForegroundColor Cyan
 if (-not (Test-Path 'third_party\godot-cpp\SConstruct')) { throw 'godot-cpp ausente. Ejecute scripts/bootstrap_windows.ps1.' }
 $python=(Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $python) { $python=Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' }
