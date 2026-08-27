@@ -80,7 +80,9 @@ pub unsafe extern "C" fn vehicle_audio_set_state(
         CStr::from_ptr(surface).to_str().unwrap_or("asphalt")
     };
     let engine = &mut *(handle as *mut VehicleAudioEngine);
-    engine.set_state(rpm, idle_rpm, max_rpm, throttle, speed_kph, gear, slip, surface);
+    engine.set_state(
+        rpm, idle_rpm, max_rpm, throttle, speed_kph, gear, slip, surface,
+    );
 }
 
 /// Fire a one-shot by integer trigger code. Mapping:

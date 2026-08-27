@@ -72,6 +72,30 @@ fn bank_loads_and_has_expected_entries() {
     // One-shots not flagged.
     assert!(!bank.get("impact_barrier").unwrap().is_loop);
     assert!(bank.get("tyre_scrub").unwrap().is_loop);
+    assert_eq!(bank.engine_bands.len(), 5);
+    assert_eq!(
+        bank.engine_bands
+            .iter()
+            .map(|band| band.key.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "engine_idle",
+            "engine_low",
+            "engine_mid",
+            "engine_high",
+            "engine_redline",
+        ]
+    );
+    assert_eq!(
+        bank.engine_bands
+            .iter()
+            .map(|band| band.center)
+            .collect::<Vec<_>>(),
+        [0.0, 0.25, 0.5, 0.75, 1.0]
+    );
+    assert!(bank.engine_bands.iter().all(|band| band.width == 0.25));
+    assert_eq!(bank.engine_bands[3].native_rpm, 16950.0);
+    assert_eq!(bank.native_rpm("exhaust-mic"), Some(14400.0));
 }
 
 #[test]
@@ -136,10 +160,12 @@ fn state(
 
 #[test]
 fn offline_scenario_states_produce_expected_mix_decisions() {
+    let Some(bank) = require_bank() else { return };
+    let bands = &bank.engine_bands;
     // Mirrors the offline renderer scenarios (asphalt/sand/grass/rumble).
     // engine mix must follow normalized rpm; asphalt has no bed.
     let idle = state(2200.0, 1000.0, 15000.0, 0.15, 0.0, 1, 0.0, "asphalt");
-    let m = idle.mix();
+    let m = idle.mix(bands);
     assert_eq!(m.surface_key, None);
     assert!(
         m.engine_weights[0] > m.engine_weights[4],
@@ -147,7 +173,7 @@ fn offline_scenario_states_produce_expected_mix_decisions() {
     );
 
     let redline = state(14500.0, 1000.0, 15000.0, 1.0, 195.0, 4, 0.03, "asphalt");
-    let m = redline.mix();
+    let m = redline.mix(bands);
     assert_eq!(m.surface_key, None);
     assert!(
         m.engine_weights[4] > m.engine_weights[0],
@@ -157,19 +183,19 @@ fn offline_scenario_states_produce_expected_mix_decisions() {
 
     // Sand off-track with slip boosts the bed gain.
     let sand = state(7200.0, 1000.0, 15000.0, 0.65, 66.0, 3, 0.14, SURFACE_SAND);
-    assert_eq!(sand.mix().surface_key, Some("surf_sand"));
-    assert!(sand.mix().surface_gain > 0.0);
+    assert_eq!(sand.mix(bands).surface_key, Some("surf_sand"));
+    assert!(sand.mix(bands).surface_gain > 0.0);
 
     // Rumble (kerb) and grass are valid beds too.
     assert_eq!(
         state(7500.0, 1000.0, 15000.0, 0.7, 75.0, 3, 0.05, SURFACE_RUMBLE)
-            .mix()
+            .mix(bands)
             .surface_key,
         Some("surf_rumble")
     );
     assert_eq!(
         state(6800.0, 1000.0, 15000.0, 0.9, 50.0, 2, 0.45, SURFACE_GRASS)
-            .mix()
+            .mix(bands)
             .surface_key,
         Some("surf_grass")
     );
@@ -185,9 +211,10 @@ fn surface_token_mapping_used_by_scenarios() {
 
 #[test]
 fn weights_are_stable_golden_values() {
+    let Some(bank) = require_bank() else { return };
     // Guard against silent regression in the crossfade curve.
-    assert_eq!(engine_weights(0.0)[0], 1.0);
-    let mid = engine_weights(0.5);
+    assert_eq!(engine_weights(0.0, &bank.engine_bands)[0], 1.0);
+    let mid = engine_weights(0.5, &bank.engine_bands);
     // At the mid point the middle band dominates and neighbors are nonzero.
     assert!(mid[2] > mid[0] && mid[2] > mid[4]);
     let sum: f32 = mid.iter().sum();

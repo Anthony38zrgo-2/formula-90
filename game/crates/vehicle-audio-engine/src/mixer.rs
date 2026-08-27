@@ -183,6 +183,7 @@ const RPM_SMOOTH_TAU: f64 = 0.025;
 /// Stateful engine audio mixer.
 pub struct VehicleAudioEngine {
     bank: VehicleSoundBank,
+    engine_bands: Vec<EngineBandProfile>,
     layer_keys: Vec<String>,
     layer_cursors: Vec<f64>,
     bed_cursor: f64,
@@ -256,7 +257,8 @@ impl VehicleAudioEngine {
     /// Load the bank and build the mixer. `bank_dir` must contain `bank_manifest.json`.
     pub fn new(bank_dir: &Path) -> Result<Self, BankError> {
         let bank = VehicleSoundBank::load(bank_dir)?;
-        let layer_keys: Vec<String> = ENGINE_BAND_KEYS.iter().map(|s| s.to_string()).collect();
+        let engine_bands = bank.engine_bands.clone();
+        let layer_keys: Vec<String> = engine_bands.iter().map(|band| band.key.clone()).collect();
         let layer_cursors = vec![0.0f64; layer_keys.len()];
 
         let mut one_shots: Vec<OneShot> = Vec::new();
@@ -375,6 +377,7 @@ impl VehicleAudioEngine {
 
         Ok(Self {
             bank,
+            engine_bands,
             layer_keys,
             layer_cursors,
             bed_cursor: 0.0,
@@ -726,14 +729,14 @@ impl VehicleAudioEngine {
             } else {
                 0.0
             };
-            let weights = engine_weights(norm);
+            let weights = engine_weights(norm, &self.engine_bands);
             for (b, weight) in weights
                 .iter()
                 .enumerate()
                 .take(self.layer_keys.len().min(5))
             {
                 if let Some(sample) = self.bank.get(&self.layer_keys[b]) {
-                    let ratio = engine_pitch_scale(self.smoothed_rpm, b) as f64;
+                    let ratio = engine_pitch_scale(self.smoothed_rpm, &self.engine_bands[b]) as f64;
                     let s = read_looped(&sample.pcm, &mut self.layer_cursors[b], ratio);
                     let source = *weight
                         * s
@@ -753,8 +756,8 @@ impl VehicleAudioEngine {
             for (wi, w) in weights.iter().enumerate() {
                 self.cur_weights[wi] = *w;
             }
-            for b in 0..5 {
-                self.cur_pitches[b] = engine_pitch_scale(self.smoothed_rpm, b);
+            for (band, pitch) in self.engine_bands.iter().zip(self.cur_pitches.iter_mut()) {
+                *pitch = engine_pitch_scale(self.smoothed_rpm, band);
             }
 
             // Exhaust microphone layer: pitch follows RPM, amplitude follows
@@ -763,8 +766,11 @@ impl VehicleAudioEngine {
             let ec = self.cfg.exhaust;
             if ec.enabled && !self.exhaust_key.is_empty() {
                 if let Some(sample) = self.bank.get(&self.exhaust_key) {
-                    const EXHAUST_NATIVE_RPM: f64 = 14400.0;
-                    let ratio = self.smoothed_rpm / EXHAUST_NATIVE_RPM;
+                    let native_rpm =
+                        self.bank
+                            .native_rpm(&self.exhaust_key)
+                            .expect("validated exhaust native_rpm") as f64;
+                    let ratio = self.smoothed_rpm / native_rpm;
                     let s = read_looped(&sample.pcm, &mut self.exhaust_cursor, ratio);
                     let throttle_env = (1.0 - ec.throttle_sensitivity)
                         + ec.throttle_sensitivity * self.last_throttle;
@@ -1109,6 +1115,8 @@ mod tests {
         VehicleSoundBank {
             samples,
             bank_name: "unit".to_string(),
+            engine_bands: Vec::new(),
+            native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
 
@@ -1151,6 +1159,8 @@ mod tests {
         VehicleSoundBank {
             samples,
             bank_name: "unit".to_string(),
+            engine_bands: Vec::new(),
+            native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
 
@@ -1162,7 +1172,7 @@ mod tests {
         let engine_pcm: Vec<i16> = (0..2048)
             .map(|i| (2000.0 * (2.0 * std::f32::consts::PI * 8.0 * i as f32 / 2048.0).sin()) as i16)
             .collect();
-        for key in ENGINE_BAND_KEYS {
+        for key in test_engine_bands().iter().map(|band| band.key.as_str()) {
             samples.insert(
                 key.to_string(),
                 Sample {
@@ -1177,6 +1187,8 @@ mod tests {
         VehicleSoundBank {
             samples,
             bank_name: "unit".to_string(),
+            engine_bands: Vec::new(),
+            native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
 
@@ -1189,7 +1201,7 @@ mod tests {
         let ramp: Vec<i16> = (0..2048)
             .map(|i| ((i as f32 / 2048.0 * 2.0 - 1.0) * 800.0) as i16)
             .collect();
-        for key in ENGINE_BAND_KEYS {
+        for key in test_engine_bands().iter().map(|band| band.key.as_str()) {
             samples.insert(
                 key.to_string(),
                 Sample {
@@ -1216,13 +1228,19 @@ mod tests {
         VehicleSoundBank {
             samples,
             bank_name: "unit".to_string(),
+            engine_bands: Vec::new(),
+            native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
 
     fn engine_with_bank(bank: VehicleSoundBank) -> VehicleAudioEngine {
         let mut e = VehicleAudioEngine {
             bank,
-            layer_keys: ENGINE_BAND_KEYS.iter().map(|s| s.to_string()).collect(),
+            engine_bands: test_engine_bands(),
+            layer_keys: test_engine_bands()
+                .iter()
+                .map(|band| band.key.clone())
+                .collect(),
             layer_cursors: vec![0.0; 5],
             bed_cursor: 0.0,
             bed_key: None,
@@ -1495,7 +1513,7 @@ mod tests {
         e.set_state(14000.0, 1000.0, 15000.0, 1.0, 0.0, 3, 0.0, "asphalt");
         e.render(&mut [0.0; 4], &mut [0.0; 4], 4);
         let p1 = e.last_pitches()[0];
-        let target = engine_pitch_scale(14000.0, 0);
+        let target = engine_pitch_scale(14000.0, &test_engine_bands()[0]);
         // With smoothing the pitch barely moved; without it p1 would equal target.
         assert!(
             (p1 - p0).abs() < (target - p0).abs() * 0.5,
@@ -1595,7 +1613,7 @@ mod tests {
     fn configured_gain_scales_engine_bands() {
         let mut e1 = engine_with_bank(low_level_engine_bank());
         let mut e2 = engine_with_bank(low_level_engine_bank());
-        for key in ENGINE_BAND_KEYS {
+        for key in test_engine_bands().iter().map(|band| band.key.as_str()) {
             e2.per_sample_gain.insert(key.to_string(), 0.5);
         }
         e1.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
@@ -1670,7 +1688,7 @@ mod tests {
         use crate::bank::Sample;
         let mut samples = std::collections::BTreeMap::new();
         let silent: Vec<i16> = vec![0i16; 4096];
-        for key in ENGINE_BAND_KEYS {
+        for key in test_engine_bands().iter().map(|band| band.key.as_str()) {
             samples.insert(
                 key.to_string(),
                 Sample {
@@ -1701,6 +1719,8 @@ mod tests {
         VehicleSoundBank {
             samples,
             bank_name: "unit_exhaust".to_string(),
+            engine_bands: Vec::new(),
+            native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
 

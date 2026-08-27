@@ -6,7 +6,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::state::{engine_pitch_scale, StateInput, VehicleAudioState};
+use crate::state::{engine_pitch_scale, EngineBandProfile, StateInput, VehicleAudioState};
 
 /// One row of vehicle telemetry relevant to audio.
 #[derive(Debug, Clone, PartialEq)]
@@ -173,7 +173,12 @@ pub fn parse_rows(csv: &str) -> Vec<TelemetryRow> {
 
 /// Replay rows through the audio core, deriving per-frame mixes.
 /// `idle_rpm`/`max_rpm` come from the session setup snapshot; defaults 4500/17000.
-pub fn replay(rows: &[TelemetryRow], idle_rpm: f64, max_rpm: f64) -> Vec<MixFrame> {
+pub fn replay(
+    rows: &[TelemetryRow],
+    idle_rpm: f64,
+    max_rpm: f64,
+    engine_bands: &[EngineBandProfile],
+) -> Vec<MixFrame> {
     let mut out = Vec::with_capacity(rows.len());
     let mut prev_gear: Option<i32> = None;
     for row in rows {
@@ -187,7 +192,7 @@ pub fn replay(rows: &[TelemetryRow], idle_rpm: f64, max_rpm: f64) -> Vec<MixFram
             slip: row.slip,
             surface: "asphalt",
         });
-        let mix = state.mix();
+        let mix = state.mix(engine_bands);
         // Derive trigger from gear transitions (as the runtime controller does).
         let trigger = match prev_gear {
             Some(pg) if pg != 0 && row.gear != pg => Some(
@@ -211,8 +216,8 @@ pub fn replay(rows: &[TelemetryRow], idle_rpm: f64, max_rpm: f64) -> Vec<MixFram
         let crossfade = mix.engine_weights.iter().filter(|&&w| w > 0.1).count() >= 2;
         // Per-band pitch for this rpm
         let mut pitches = [1.0f32; 5];
-        for (i, p) in pitches.iter_mut().enumerate() {
-            *p = engine_pitch_scale(row.rpm, i);
+        for (band, pitch) in engine_bands.iter().zip(pitches.iter_mut()) {
+            *pitch = engine_pitch_scale(row.rpm, band);
         }
         out.push(MixFrame {
             time_ms: row.time_ms,
@@ -369,8 +374,8 @@ mod tests {
     #[test]
     fn replay_is_deterministic_and_produces_mixes() {
         let rows = parse_rows(FIXTURE_CSV);
-        let frames1 = replay(&rows, 4500.0, 17000.0);
-        let frames2 = replay(&rows, 4500.0, 17000.0);
+        let frames1 = replay(&rows, 4500.0, 17000.0, &crate::state::test_engine_bands());
+        let frames2 = replay(&rows, 4500.0, 17000.0, &crate::state::test_engine_bands());
         assert_eq!(frames1, frames2);
         assert_eq!(frames1[0].dominant_band, 0);
         // 12000 rpm with idle 4500 / max 17000 => norm ≈ 0.6, mid-high band dominant.
@@ -382,7 +387,7 @@ mod tests {
     #[test]
     fn trigger_derived_from_gear_change() {
         let rows = parse_rows(FIXTURE_CSV);
-        let frames = replay(&rows, 4500.0, 17000.0);
+        let frames = replay(&rows, 4500.0, 17000.0, &crate::state::test_engine_bands());
         // Row 1 gear 0->1: no trigger (prev was 0, guard).
         assert_eq!(frames[0].trigger, None);
         // Row 2 gear 1->2: shift_up.
@@ -394,7 +399,7 @@ mod tests {
     #[test]
     fn summary_stats_are_sane() {
         let rows = parse_rows(FIXTURE_CSV);
-        let frames = replay(&rows, 4500.0, 17000.0);
+        let frames = replay(&rows, 4500.0, 17000.0, &crate::state::test_engine_bands());
         let s = summarize(&frames);
         assert_eq!(s.rows, 4);
         assert!(s.rpm_min <= s.rpm_max);
@@ -420,7 +425,12 @@ mod tests {
                 raw_surface: String::new(),
             })
             .collect();
-        let frames = replay(&idle_rows, 4500.0, 17000.0);
+        let frames = replay(
+            &idle_rows,
+            4500.0,
+            17000.0,
+            &crate::state::test_engine_bands(),
+        );
         let s = summarize(&frames);
         // Redline band never audible at idle -> no clamp hits and pitch stays 1.0.
         assert_eq!(

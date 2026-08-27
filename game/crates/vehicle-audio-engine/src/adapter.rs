@@ -71,7 +71,10 @@ mod tests {
         assert!((s.normalized_rpm - ((6000.0 - 1000.0) / 6000.0) as f32).abs() < 1e-5);
         assert_eq!(s.gear, 4);
         assert_eq!(s.surface, SURFACE_SAND);
-        assert_eq!(s.mix().surface_key, Some("surf_sand"));
+        assert_eq!(
+            s.mix(&crate::state::test_engine_bands()).surface_key,
+            Some("surf_sand")
+        );
     }
 
     #[test]

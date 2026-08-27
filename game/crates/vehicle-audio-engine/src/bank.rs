@@ -10,6 +10,8 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::state::{EngineBandProfile, ENGINE_BAND_COUNT};
+
 /// Minimum sample rate accepted by the native loader contract.
 pub const SAMPLE_RATE: u32 = 44100;
 
@@ -29,6 +31,8 @@ pub enum BankError {
     ShaMismatch(String),
     #[error("format error: {0}")]
     Format(String),
+    #[error("invalid playback metadata: {0}")]
+    InvalidPlayback(String),
 }
 
 impl From<std::io::Error> for BankError {
@@ -71,6 +75,8 @@ impl Sample {
 pub struct VehicleSoundBank {
     pub samples: BTreeMap<String, Sample>,
     pub bank_name: String,
+    pub engine_bands: Vec<EngineBandProfile>,
+    pub(crate) native_rpm: BTreeMap<String, f32>,
 }
 
 impl VehicleSoundBank {
@@ -96,6 +102,8 @@ impl VehicleSoundBank {
             .ok_or_else(|| BankError::InvalidManifest("files missing".into()))?;
 
         let mut samples = BTreeMap::new();
+        let mut engine_bands = Vec::new();
+        let mut native_rpm = BTreeMap::new();
         for entry in files {
             let file = entry
                 .get("file")
@@ -113,6 +121,59 @@ impl VehicleSoundBank {
                 .unwrap_or("")
                 .to_string();
             let key = file.trim_end_matches(".wav").to_string();
+            if let Some(playback) = entry.get("playback").and_then(|value| value.as_object()) {
+                let native = playback
+                    .get("native_rpm")
+                    .and_then(|value| value.as_f64())
+                    .ok_or_else(|| {
+                        BankError::InvalidPlayback(format!("{file}: native_rpm missing"))
+                    })? as f32;
+                if !native.is_finite() || native <= 0.0 {
+                    return Err(BankError::InvalidPlayback(format!(
+                        "{file}: native_rpm must be positive"
+                    )));
+                }
+                native_rpm.insert(key.clone(), native);
+                if let Some(band) = playback
+                    .get("engine_band")
+                    .and_then(|value| value.as_object())
+                {
+                    let index = band
+                        .get("index")
+                        .and_then(|value| value.as_u64())
+                        .ok_or_else(|| {
+                            BankError::InvalidPlayback(format!("{file}: band index missing"))
+                        })? as usize;
+                    let center = band
+                        .get("center")
+                        .and_then(|value| value.as_f64())
+                        .ok_or_else(|| {
+                            BankError::InvalidPlayback(format!("{file}: band center missing"))
+                        })? as f32;
+                    let width = band
+                        .get("width")
+                        .and_then(|value| value.as_f64())
+                        .ok_or_else(|| {
+                            BankError::InvalidPlayback(format!("{file}: band width missing"))
+                        })? as f32;
+                    if index >= ENGINE_BAND_COUNT
+                        || !(0.0..=1.0).contains(&center)
+                        || !(0.0..=1.0).contains(&width)
+                        || width == 0.0
+                    {
+                        return Err(BankError::InvalidPlayback(format!(
+                            "{file}: invalid engine band index/center/width"
+                        )));
+                    }
+                    engine_bands.push(EngineBandProfile {
+                        key: key.clone(),
+                        native_rpm: native,
+                        index,
+                        center,
+                        width,
+                    });
+                }
+            }
             let path = bank_dir.join(file);
             let pcm = read_wav_mono16(&path)?;
             if !sha.is_empty() {
@@ -132,7 +193,28 @@ impl VehicleSoundBank {
                 },
             );
         }
-        Ok(Self { samples, bank_name })
+        engine_bands.sort_by_key(|band| band.index);
+        if engine_bands.len() != ENGINE_BAND_COUNT
+            || engine_bands
+                .iter()
+                .enumerate()
+                .any(|(index, band)| band.index != index)
+        {
+            return Err(BankError::InvalidPlayback(format!(
+                "expected {ENGINE_BAND_COUNT} unique ordered engine bands"
+            )));
+        }
+        if samples.contains_key("exhaust-mic") && !native_rpm.contains_key("exhaust-mic") {
+            return Err(BankError::InvalidPlayback(
+                "exhaust-mic: native_rpm missing".into(),
+            ));
+        }
+        Ok(Self {
+            samples,
+            bank_name,
+            engine_bands,
+            native_rpm,
+        })
     }
 
     /// Look up a sample by bank key (e.g. "engine_idle", "surf_sand").
@@ -150,6 +232,10 @@ impl VehicleSoundBank {
 
     pub fn keys(&self) -> Vec<String> {
         self.samples.keys().cloned().collect()
+    }
+
+    pub fn native_rpm(&self, key: &str) -> Option<f32> {
+        self.native_rpm.get(key).copied()
     }
 }
 

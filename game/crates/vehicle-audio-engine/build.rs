@@ -5,7 +5,10 @@ fn main() {
         .args(["rev-parse", "HEAD"])
         .output()
         .expect("git must be available to stamp vehicle audio BUILD");
-    assert!(output.status.success(), "cannot resolve git HEAD for vehicle audio BUILD");
+    assert!(
+        output.status.success(),
+        "cannot resolve git HEAD for vehicle audio BUILD"
+    );
     let sha = String::from_utf8(output.stdout).expect("git HEAD must be UTF-8");
     let sha = sha.trim();
     assert_eq!(sha.len(), 40, "vehicle audio BUILD must be a full git SHA");

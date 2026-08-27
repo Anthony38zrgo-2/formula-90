@@ -9,24 +9,17 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Five engine bands, in increasing RPM order. Keys match the v10_vehicle bank.
-pub const ENGINE_BAND_KEYS: [&str; 5] = [
-    "engine_idle",
-    "engine_low",
-    "engine_mid",
-    "engine_high",
-    "engine_redline",
-];
+/// Sample-specific playback metadata loaded from the audio-bank manifest.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EngineBandProfile {
+    pub key: String,
+    pub native_rpm: f32,
+    pub index: usize,
+    pub center: f32,
+    pub width: f32,
+}
 
-/// Native RPM at which each engine band sample was recorded (firing_freq*12).
-/// Mirrors `tools/audio/bank_spec.py:ENGINE_BAND_NATIVE_RPM`; GDScript mirrors too.
-pub const ENGINE_BAND_NATIVE_RPM: [f32; 5] = [3941.0, 7429.0, 9800.0, 16950.0, 7687.0];
-
-/// Band centers on the normalized-RPM axis (0..1). Mirrors `EngineLayerMixer`.
-pub const BAND_CENTERS: [f32; 5] = [0.0, 0.25, 0.5, 0.75, 1.0];
-
-/// Bandwidth of each triangular weight function in normalized-RPM units.
-pub const BAND_WIDTH: f32 = 0.25;
+pub const ENGINE_BAND_COUNT: usize = 5;
 
 /// Clamp for pitch_scale (rpm / native_rpm) to avoid extreme chipmunk.
 /// PITCH_MAX 3.5: the high band (native 5580) reaches pitch ~3.05 at 17000 RPM,
@@ -130,9 +123,9 @@ impl VehicleAudioState {
         }
     }
 
-    /// The resulting mix.
-    pub fn mix(&self) -> Mix {
-        mix(self)
+    /// The resulting mix for manifest-derived engine bands.
+    pub fn mix(&self, engine_bands: &[EngineBandProfile]) -> Mix {
+        mix(self, engine_bands)
     }
 }
 
@@ -155,20 +148,23 @@ pub struct Mix {
 
 /// Compute 5-band triangular crossfade weights from normalized RPM. Mirrors
 /// `EngineLayerMixer::weights` in engine_dsp.hpp.
-pub fn engine_weights(normalized_rpm: f32) -> [f32; 5] {
+pub fn engine_weights(
+    normalized_rpm: f32,
+    engine_bands: &[EngineBandProfile],
+) -> [f32; ENGINE_BAND_COUNT] {
     let x = normalized_rpm.clamp(0.0, 1.0);
-    let mut weights = [0.0f32; 5];
+    let mut weights = [0.0f32; ENGINE_BAND_COUNT];
     let mut sum = 0.0f32;
-    for (i, center) in BAND_CENTERS.iter().enumerate() {
-        let w = (1.0 - (x - center).abs() / BAND_WIDTH).max(0.0);
-        weights[i] = w;
+    for band in engine_bands.iter().take(ENGINE_BAND_COUNT) {
+        let w = (1.0 - (x - band.center).abs() / band.width).max(0.0);
+        weights[band.index] = w;
         sum += w;
     }
     if sum <= 0.0 {
         weights[0] = 1.0;
     } else {
-        for w in &mut weights {
-            *w /= sum;
+        for weight in &mut weights {
+            *weight /= sum;
         }
     }
     weights
@@ -180,9 +176,8 @@ pub fn engine_gain(throttle: f32) -> f32 {
 }
 
 /// Per-band pitch scale (rpm / native_rpm), clamped.
-pub fn engine_pitch_scale(rpm: f64, band: usize) -> f32 {
-    let native = ENGINE_BAND_NATIVE_RPM[band];
-    (rpm as f32 / native).clamp(PITCH_MIN, PITCH_MAX)
+pub fn engine_pitch_scale(rpm: f64, band: &EngineBandProfile) -> f32 {
+    (rpm as f32 / band.native_rpm).clamp(PITCH_MIN, PITCH_MAX)
 }
 
 /// Surface bed gain from slip + speed (mirrors offline mixer).
@@ -202,8 +197,8 @@ pub fn surface_key(surface: &str) -> Option<&'static str> {
 }
 
 /// Compute the deterministic mix for a state.
-pub fn mix(state: &VehicleAudioState) -> Mix {
-    let engine_weights = engine_weights(state.normalized_rpm);
+pub fn mix(state: &VehicleAudioState, engine_bands: &[EngineBandProfile]) -> Mix {
+    let engine_weights = engine_weights(state.normalized_rpm, engine_bands);
     let egain = engine_gain(state.throttle);
     let skey = surface_key(state.surface);
     let sgain = if skey.is_some() {
@@ -212,8 +207,8 @@ pub fn mix(state: &VehicleAudioState) -> Mix {
         0.0
     };
     let mut pitch_scales = [1.0f32; 5];
-    for (i, scale) in pitch_scales.iter_mut().enumerate() {
-        *scale = engine_pitch_scale(state.rpm, i);
+    for (band, scale) in engine_bands.iter().zip(pitch_scales.iter_mut()) {
+        *scale = engine_pitch_scale(state.rpm, band);
     }
     Mix {
         engine_weights,
@@ -223,6 +218,27 @@ pub fn mix(state: &VehicleAudioState) -> Mix {
         surface_gain: sgain,
         trigger: None,
     }
+}
+
+#[cfg(test)]
+pub(crate) fn test_engine_bands() -> Vec<EngineBandProfile> {
+    [
+        ("engine_idle", 3941.0, 0.0),
+        ("engine_low", 7429.0, 0.25),
+        ("engine_mid", 9800.0, 0.5),
+        ("engine_high", 16950.0, 0.75),
+        ("engine_redline", 7687.0, 1.0),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(index, (key, native_rpm, center))| EngineBandProfile {
+        key: key.to_string(),
+        native_rpm,
+        index,
+        center,
+        width: 0.25,
+    })
+    .collect()
 }
 
 #[cfg(test)]
@@ -244,19 +260,22 @@ mod tests {
     #[test]
     fn weights_sum_to_one_and_follow_rpm() {
         for norm in [0.0f32, 0.25, 0.5, 0.75, 1.0] {
-            let w = engine_weights(norm);
+            let w = engine_weights(norm, &test_engine_bands());
             let sum: f32 = w.iter().sum();
             assert!((sum - 1.0).abs() < 1e-6, "norm={norm} sum={sum}");
         }
         // At idle the idle band dominates.
-        assert!(engine_weights(0.0)[0] > 0.9);
+        assert!(engine_weights(0.0, &test_engine_bands())[0] > 0.9);
         // At redline the redline band dominates.
-        assert!(engine_weights(1.0)[4] > 0.9);
+        assert!(engine_weights(1.0, &test_engine_bands())[4] > 0.9);
     }
 
     #[test]
     fn weights_are_deterministic() {
-        assert_eq!(engine_weights(0.42), engine_weights(0.42));
+        assert_eq!(
+            engine_weights(0.42, &test_engine_bands()),
+            engine_weights(0.42, &test_engine_bands())
+        );
     }
 
     #[test]
@@ -276,7 +295,7 @@ mod tests {
 
     #[test]
     fn asphalt_mix_has_no_surface_bed() {
-        let m = state(0.5, 0.7, "asphalt").mix();
+        let m = state(0.5, 0.7, "asphalt").mix(&test_engine_bands());
         assert!(m.surface_key.is_none());
         assert_eq!(m.surface_gain, 0.0);
         assert!((m.engine_gain - (0.45 + 0.55 * 0.7)).abs() < 1e-6);
@@ -284,7 +303,7 @@ mod tests {
 
     #[test]
     fn sand_mix_has_bed() {
-        let m = state(0.5, 0.7, "sand").mix();
+        let m = state(0.5, 0.7, "sand").mix(&test_engine_bands());
         assert_eq!(m.surface_key, Some("surf_sand"));
         assert!(m.surface_gain > 0.0);
     }
@@ -313,24 +332,26 @@ mod tests {
 
     #[test]
     fn pitch_scales_track_rpm() {
+        let bands = test_engine_bands();
         // At a band's native RPM its pitch is 1.0; above native it rises.
-        assert!((engine_pitch_scale(3941.0, 0) - 1.0).abs() < 1e-5);
-        assert!(engine_pitch_scale(8000.0, 0) > 1.0);
-        assert!(engine_pitch_scale(2000.0, 0) < 1.0);
+        assert!((engine_pitch_scale(3941.0, &bands[0]) - 1.0).abs() < 1e-5);
+        assert!(engine_pitch_scale(8000.0, &bands[0]) > 1.0);
+        assert!(engine_pitch_scale(2000.0, &bands[0]) < 1.0);
         // Clamped
-        assert!(engine_pitch_scale(0.0, 4) >= PITCH_MIN);
-        assert!(engine_pitch_scale(99999.0, 0) <= PITCH_MAX);
+        assert!(engine_pitch_scale(0.0, &bands[4]) >= PITCH_MIN);
+        assert!(engine_pitch_scale(99999.0, &bands[0]) <= PITCH_MAX);
     }
 
     #[test]
     fn native_rpm_are_measured_not_laddered() {
         // Regression guard: high/redline were once cherry-picked to a monotonic
         // ladder (11208/15342) instead of the honest recorded revs (5580/7687).
-        assert!((ENGINE_BAND_NATIVE_RPM[2] - 9800.0).abs() < 1.0);
-        assert!((ENGINE_BAND_NATIVE_RPM[3] - 16950.0).abs() < 1.0);
-        assert!((ENGINE_BAND_NATIVE_RPM[4] - 7687.0).abs() < 1.0);
-        assert!((engine_pitch_scale(16950.0, 3) - 1.0).abs() < 1e-5);
-        assert!((engine_pitch_scale(7687.0, 4) - 1.0).abs() < 1e-5);
+        let bands = test_engine_bands();
+        assert!((bands[2].native_rpm - 9800.0).abs() < 1.0);
+        assert!((bands[3].native_rpm - 16950.0).abs() < 1.0);
+        assert!((bands[4].native_rpm - 7687.0).abs() < 1.0);
+        assert!((engine_pitch_scale(16950.0, &bands[3]) - 1.0).abs() < 1e-5);
+        assert!((engine_pitch_scale(7687.0, &bands[4]) - 1.0).abs() < 1e-5);
     }
 
     #[test]
@@ -345,7 +366,7 @@ mod tests {
             slip: 0.0,
             surface: "asphalt",
         });
-        let m = s.mix();
+        let m = s.mix(&test_engine_bands());
         // At low band native RPM the low band pitch is ~1.0
         assert!((m.engine_pitch_scales[1] - 1.0).abs() < 1e-4);
     }
