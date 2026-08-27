@@ -180,9 +180,9 @@ pub struct AidsConfig {
     pub traction_control_slip_threshold: f64,
     pub traction_control_cut_gain: f64,
     pub traction_control_actuator: String,
-    pub traction_control_gear_authority: [f64; 6],
-    pub traction_control_gear_slip_target: [f64; 6],
-    pub traction_control_gear_max_cut: [f64; 6],
+    pub traction_control_gear_authority: Vec<f64>,
+    pub traction_control_gear_slip_target: Vec<f64>,
+    pub traction_control_gear_max_cut: Vec<f64>,
     pub traction_control_attack_rate: f64,
     pub traction_control_release_rate: f64,
 
@@ -2240,11 +2240,11 @@ struct JsonAids {
     #[serde(default = "default_tc_actuator")]
     traction_control_actuator: String,
     #[serde(default = "default_tc_gear_authority")]
-    traction_control_gear_authority: [f64; 6],
+    traction_control_gear_authority: Vec<f64>,
     #[serde(default = "default_tc_gear_slip_target")]
-    traction_control_gear_slip_target: [f64; 6],
+    traction_control_gear_slip_target: Vec<f64>,
     #[serde(default = "default_tc_gear_max_cut")]
-    traction_control_gear_max_cut: [f64; 6],
+    traction_control_gear_max_cut: Vec<f64>,
     #[serde(default = "default_tc_attack_rate")]
     traction_control_attack_rate: f64,
     #[serde(default = "default_tc_release_rate")]
@@ -2400,14 +2400,14 @@ fn default_tc_cut_gain() -> f64 {
 fn default_tc_actuator() -> String {
     "engine_torque".to_string()
 }
-fn default_tc_gear_authority() -> [f64; 6] {
-    [1.0, 0.90, 0.65, 0.45, 0.20, 0.10]
+fn default_tc_gear_authority() -> Vec<f64> {
+    vec![1.0, 0.90, 0.65, 0.45, 0.20, 0.10]
 }
-fn default_tc_gear_slip_target() -> [f64; 6] {
-    [0.055, 0.065, 0.085, 0.105, 0.140, 0.180]
+fn default_tc_gear_slip_target() -> Vec<f64> {
+    vec![0.055, 0.065, 0.085, 0.105, 0.140, 0.180]
 }
-fn default_tc_gear_max_cut() -> [f64; 6] {
-    [0.78, 0.65, 0.45, 0.30, 0.14, 0.07]
+fn default_tc_gear_max_cut() -> Vec<f64> {
+    vec![0.78, 0.65, 0.45, 0.30, 0.14, 0.07]
 }
 fn default_tc_attack_rate() -> f64 {
     34.0
@@ -2772,7 +2772,16 @@ impl JsonVehicleSpec {
             .map(JsonBrakeThermal::to_config)
             .unwrap_or_default();
         validate_brake_thermal(&brake_thermal)?;
-        for gear in 0..6 {
+        let gear_count = self.powertrain.gear_ratios.len();
+        if self.aids.traction_control_gear_authority.len() != gear_count
+            || self.aids.traction_control_gear_slip_target.len() != gear_count
+            || self.aids.traction_control_gear_max_cut.len() != gear_count
+        {
+            return Err(format!(
+                "Traction-control gear arrays (authority/slip_target/max_cut) must have exactly {gear_count} entries matching gear_ratios"
+            ));
+        }
+        for gear in 0..gear_count {
             let authority = self.aids.traction_control_gear_authority[gear];
             let slip_target = self.aids.traction_control_gear_slip_target[gear];
             let max_cut = self.aids.traction_control_gear_max_cut[gear];
@@ -3216,9 +3225,9 @@ impl JsonVehicleSpec {
                 traction_control_slip_threshold: cfg.aids.traction_control_slip_threshold,
                 traction_control_cut_gain: cfg.aids.traction_control_cut_gain,
                 traction_control_actuator: cfg.aids.traction_control_actuator.clone(),
-                traction_control_gear_authority: cfg.aids.traction_control_gear_authority,
-                traction_control_gear_slip_target: cfg.aids.traction_control_gear_slip_target,
-                traction_control_gear_max_cut: cfg.aids.traction_control_gear_max_cut,
+                traction_control_gear_authority: cfg.aids.traction_control_gear_authority.clone(),
+                traction_control_gear_slip_target: cfg.aids.traction_control_gear_slip_target.clone(),
+                traction_control_gear_max_cut: cfg.aids.traction_control_gear_max_cut.clone(),
                 traction_control_attack_rate: cfg.aids.traction_control_attack_rate,
                 traction_control_release_rate: cfg.aids.traction_control_release_rate,
                 abs_available: cfg.aids.abs_available,
@@ -3649,9 +3658,9 @@ mod json_tests {
     #[test]
     fn tc_gear_curve_defaults_are_progressive_through_sixth() {
         let cfg = VehicleConfig::from_json_str(r#"{"schema_version":2}"#).unwrap();
-        assert_eq!(cfg.aids.traction_control_gear_authority, [1.0, 0.90, 0.65, 0.45, 0.20, 0.10]);
-        assert_eq!(cfg.aids.traction_control_gear_max_cut, [0.78, 0.65, 0.45, 0.30, 0.14, 0.07]);
-        assert_eq!(cfg.aids.traction_control_gear_slip_target, [0.055, 0.065, 0.085, 0.105, 0.140, 0.180]);
+        assert_eq!(cfg.aids.traction_control_gear_authority, vec![1.0, 0.90, 0.65, 0.45, 0.20, 0.10]);
+        assert_eq!(cfg.aids.traction_control_gear_max_cut, vec![0.78, 0.65, 0.45, 0.30, 0.14, 0.07]);
+        assert_eq!(cfg.aids.traction_control_gear_slip_target, vec![0.055, 0.065, 0.085, 0.105, 0.140, 0.180]);
     }
 
     #[test]
@@ -3665,5 +3674,45 @@ mod json_tests {
             }
         }"#;
         assert!(VehicleConfig::from_json_str(json).is_ok());
+    }
+
+    #[test]
+    fn tc_gear_curve_accepts_seven_gears_data_driven() {
+        // A 7-speed car must be expressible purely in JSON (no code change / rebuild).
+        let json = r#"{
+            "schema_version": 2,
+            "powertrain": {
+                "gear_ratios": [3.15, 2.55, 2.05, 1.68, 1.38, 1.15, 0.95],
+                "final_drive": 3.0
+            },
+            "aids": {
+                "traction_control_gear_authority": [1.0, 0.9, 0.65, 0.45, 0.2, 0.1, 0.05],
+                "traction_control_gear_slip_target": [0.055, 0.065, 0.085, 0.105, 0.14, 0.18, 0.21],
+                "traction_control_gear_max_cut": [0.78, 0.65, 0.45, 0.30, 0.14, 0.07, 0.04]
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).expect("7-speed config must validate");
+        assert_eq!(cfg.gear_ratios.len(), 7);
+        assert_eq!(cfg.aids.traction_control_gear_authority.len(), 7);
+        assert_eq!(cfg.aids.traction_control_gear_max_cut.len(), 7);
+    }
+
+    #[test]
+    fn f1_2026_2008_physics_json_is_data_driven_seven_gears() {
+        // Integration lock-in: the actual shipped 2026 content file must load via
+        // the JSON path (no code change / rebuild needed for a 7-speed car).
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../game/data/vehicles/f1_2026_2008/f1_2026_2008_physics.json");
+        let json = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
+        let cfg = VehicleConfig::from_json_str(&json)
+            .unwrap_or_else(|e| panic!("2026 physics JSON must validate: {e}"));
+        assert_eq!(cfg.gear_ratios.len(), 7, "2026 car must have 7 gears");
+        assert_eq!(
+            cfg.aids.traction_control_gear_authority.len(),
+            7,
+            "TC authority array must match gear count"
+        );
+        assert_eq!(cfg.aids.traction_control_gear_max_cut.len(), 7);
     }
 }

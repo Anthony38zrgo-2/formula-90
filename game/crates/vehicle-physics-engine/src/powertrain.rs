@@ -355,7 +355,7 @@ impl PowertrainState {
         self.tc_raw_cut_ratio = 0.0;
 
         let gear_index = (self.current_gear - 1) as usize;
-        if self.current_gear > 0 && gear_index < config.gear_ratios.len().min(6) {
+        if self.current_gear > 0 && gear_index < config.gear_ratios.len() {
             self.tc_gear_authority = config.aids.traction_control_gear_authority[gear_index];
             self.tc_slip_target = config.aids.traction_control_gear_slip_target[gear_index];
             self.tc_eligible = tc_enabled
@@ -394,7 +394,7 @@ impl PowertrainState {
             }
         }
 
-        let max_cut = if gear_index < 6 {
+        let max_cut = if gear_index < config.gear_ratios.len() {
             config.aids.traction_control_gear_max_cut[gear_index]
         } else {
             0.0
