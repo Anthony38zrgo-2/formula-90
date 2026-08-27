@@ -1,7 +1,7 @@
 """Bank spec — declarative mapping of source and synthesized samples to bank roles.
 
 The bank is derived from the original F1-1998 engine internal + Grand Prix sample
-set in `assets-lowpoly-python/sounds/`. Entries either map a source filename to
+set in `source-assets/audio/legacy-f1-1998/`. Entries either map a source filename to
 a stable bank key or name a deterministic synthesis recipe. This is the single
 place to change what the bank contains.
 """
@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_SOURCE_DIR = Path("assets-lowpoly-python/sounds")
+DEFAULT_SOURCE_DIR = Path("source-assets/audio/legacy-f1-1998")
 
 
 @dataclass(frozen=True)
@@ -21,21 +21,7 @@ class SpecEntry:
     role: str           # semantic role, e.g. engine_idle, surf_grass, impact_hit
     loop: bool
     category: str       # engine | shift | surface | impact | start
-    native_rpm: float | None = None  # for engine bands: RPM at which sample was recorded
     synthesis: str | None = None     # deterministic synthesis recipe
-
-
-# Native RPM per engine band (measured via full-loop dominant spectral peak as
-# firing_freq*12; V10 4-stroke firing = RPM/12). Values are the honest recorded
-# revs, NOT a monotonic ladder — each band is pitch-corrected to the current RPM,
-# so non-monotonicity is fine. redline = stable high segment (t=1-2s) of the 5s file.
-ENGINE_BAND_NATIVE_RPM: dict[str, float] = {
-    "engine_idle": 3941.0,   # 98_int_idle.wav  dominant 328.4 Hz
-    "engine_low": 7429.0,    # 98_int_low.wav   619.1 Hz
-    "engine_mid": 9800.0,    # promoted engine_mid.wav, firing peak ~817 Hz
-    "engine_high": 16950.0,  # promoted engine_high.wav, firing peak ~1412 Hz
-    "engine_redline": 7687.0,  # 98_int_max_5.wav stable segment 7655-7687 Hz
-}
 
 
 # Mapping source -> bank key. Chosen variants prefer the higher sample-rate or
@@ -72,7 +58,7 @@ BANK_SPEC: tuple[SpecEntry, ...] = (
     SpecEntry("impact_scrape", None, "impact_scrape", False, "impact", synthesis="flat_floor_scrape_v2"),
     # --- Exhaust microphone (V10 exhaust note, loop) ---
     SpecEntry("exhaust-mic", None, "exhaust_mic", True, "engine",
-              native_rpm=14400.0, synthesis="exhaust_mic_v1"),
+              synthesis="exhaust_mic_v1"),
 )
 
 SPEC_BY_KEY: dict[str, SpecEntry] = {e.key: e for e in BANK_SPEC}

@@ -9,6 +9,8 @@ import wave
 from dataclasses import dataclass
 from pathlib import Path
 
+from tools.audio.bank_contract import validate_manifest_contract
+
 
 @dataclass
 class Finding:
@@ -37,9 +39,16 @@ def validate_bank(bank_dir: Path, manifest_name: str = "bank_manifest.json") -> 
     except (OSError, ValueError) as e:
         findings.append(Finding(manifest_name, "manifest.invalid_json", "error", str(e)))
         return findings
+    for issue in validate_manifest_contract(manifest):
+        findings.append(
+            Finding(manifest_name, f"contract.{issue.code}", "error", f"{issue.path}: {issue.message}")
+        )
+    if not isinstance(manifest, dict):
+        return findings
     files = manifest.get("files", [])
-    if not files:
-        findings.append(Finding(manifest_name, "manifest.empty", "error", "no files listed"))
+    if not isinstance(files, list):
+        return findings
+    if not files:        findings.append(Finding(manifest_name, "manifest.empty", "error", "no files listed"))
     for entry in files:
         fname = entry.get("file", "")
         fpath = bank_dir / fname

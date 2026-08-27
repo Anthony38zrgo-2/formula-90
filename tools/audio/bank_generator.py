@@ -7,13 +7,14 @@ PCM16 WAVs plus `bank_manifest.json`. Same sources + same code => same bytes.
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
 from scipy import signal
 
 from tools.audio.bank_manifest import BankManifest, FileEntry, sha256_file
-from tools.audio.bank_spec import BANK_SPEC, DEFAULT_SOURCE_DIR, ENGINE_BAND_NATIVE_RPM, SpecEntry
+from tools.audio.bank_spec import BANK_SPEC, DEFAULT_SOURCE_DIR, SpecEntry
 from tools.audio.dsp_common import (
     SAMPLE_RATE,
     dc_offset,
@@ -26,9 +27,11 @@ from tools.audio.dsp_common import (
     resample_mono,
     write_wav_mono16,
 )
+from tools.audio.playback_metadata import playback_for_key
+from tools.common.output_policy import OutputMode, OutputPolicyError, validate_output_path
 
 DEFAULT_CONFIG = Path("tools/audio/bank_config.yaml")
-DEFAULT_OUTPUT = Path("game/sounds/banks/v10_vehicle")
+DEFAULT_OUTPUT = Path("scratch/audio/v10_vehicle")
 
 # Loop seam crossfade frames (~46 ms) applied only to loopable entries.
 LOOP_XFADE_FRAMES = 2048
@@ -391,7 +394,6 @@ def _synthesize_exhaust_mic(sample_rate: int) -> tuple[list[float], dict]:
         "recipe": "exhaust_mic_v1",
         "seed": seed,
         "duration_s": duration_s,
-        "native_rpm": 14400.0,
         "target_peak": 0.89,
         "components": [
             "v10_firing_fundamental_1200hz_14400rpm",
@@ -476,8 +478,6 @@ def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[l
     }
     if enhancement_info is not None:
         params["additive_enhancement"] = enhancement_info
-    if spec.key in ENGINE_BAND_NATIVE_RPM:
-        params["native_rpm"] = ENGINE_BAND_NATIVE_RPM[spec.key]
     return samples, params
 
 
@@ -499,11 +499,12 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
                 loudness_dbfs=round(lufs_approx(samples), 2),
                 peak=round(peak_abs(samples), 6),
                 dc_offset=round(dc_offset(samples), 6),
+                playback=playback_for_key(spec.key),
                 synthesis=params,
                 provenance=(
                     "deterministic procedural synthesis"
                     if spec.synthesis is not None
-                    else "derived from original samples (assets-lowpoly-python/sounds)"
+                    else "derived from original samples (source-assets/audio/legacy-f1-1998)"
                 ),
                 sha256="",
             )
@@ -526,17 +527,24 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
     return manifest
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description="Build v10_vehicle bank from sources and deterministic synthesis")
+def main(argv: Sequence[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Build a v10_vehicle preview bank")
+    ap.add_argument("--repo-root", type=Path, default=Path("."))
     ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE_DIR)
     ap.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     ap.add_argument("--sample-rate", type=int, default=SAMPLE_RATE)
-    args = ap.parse_args()
-    if not args.source.is_dir():
-        print(f"Source samples dir not found: {args.source}")
+    args = ap.parse_args(argv)
+    try:
+        root = args.repo_root.resolve(strict=True)
+        output = validate_output_path(root, args.output, OutputMode.PREVIEW).path
+    except (OSError, OutputPolicyError) as error:
+        ap.exit(2, f"audio-bank-preview: {error}\n")
+    source = args.source if args.source.is_absolute() else root / args.source
+    if not source.is_dir():
+        print(f"Source samples dir not found: {source}")
         return 2
-    m = generate_bank(args.source, args.output, args.sample_rate)
-    print(f"Generated {m.bank_name} -> {args.output} ({len(m.files)} files)")
+    manifest = generate_bank(source, output, args.sample_rate)
+    print(f"Generated preview {manifest.bank_name} -> {output} ({len(manifest.files)} files)")
     return 0
 
 

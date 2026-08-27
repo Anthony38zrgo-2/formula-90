@@ -3,7 +3,7 @@
 
 Consumes a deterministic `Scenario` (RPM, speed, throttle, gear, slip, surface,
 impact events), crossfades bank loops at their wrap points, and emits an
-auditionable WAV + CSV/JSON report under reports/audio/. No GEVP/Godot coupling.
+auditionable WAV + CSV/JSON preview under scratch/audio/scenarios/. No GEVP/Godot coupling.
 
 Bank contract: game/sounds/banks/v10_vehicle/*.wav + bank_manifest.json
 Scenario definitions live in `scenarios.py`; DSP helpers in `dsp_common.py`.
@@ -17,14 +17,16 @@ import json
 import math
 import struct
 import wave
+from collections.abc import Sequence
 from pathlib import Path
 
 from tools.audio.bank_manifest import BankManifest
 from tools.audio.dsp_common import SAMPLE_RATE, normalize_peak, write_wav_mono16
 from tools.audio.scenarios import SCENARIO_FACTORIES, Scenario
+from tools.common.output_policy import OutputMode, OutputPolicyError, validate_output_path
 
 BANK_DIR = Path("game/sounds/banks/v10_vehicle")
-REPORTS_DIR = Path("reports/audio")
+DEFAULT_OUTPUT = Path("scratch/audio/scenarios")
 
 # Loop-wrap crossfade (~11.6 ms) so bank loops never click when wrapped by the mixer.
 LOOP_XFADE = 512
@@ -174,13 +176,19 @@ def render_scenario(scenario: Scenario, bank_dir: Path, out_wav: Path, out_csv: 
     return report
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description="Render audio scenarios offline")
+def main(argv: Sequence[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Render audio scenario previews offline")
+    ap.add_argument("--repo-root", type=Path, default=Path("."))
     ap.add_argument("--bank", type=Path, default=BANK_DIR)
-    ap.add_argument("--out", type=Path, default=REPORTS_DIR)
+    ap.add_argument("--out", type=Path, default=DEFAULT_OUTPUT)
     ap.add_argument("--scenario", type=str, default="all", help="name or 'all'")
-    args = ap.parse_args()
-    bank_dir: Path = args.bank
+    args = ap.parse_args(argv)
+    try:
+        root = args.repo_root.resolve(strict=True)
+        output = validate_output_path(root, args.out, OutputMode.PREVIEW).path
+    except (OSError, OutputPolicyError) as error:
+        ap.exit(2, f"audio-scenario-preview: {error}\n")
+    bank_dir: Path = args.bank if args.bank.is_absolute() else root / args.bank
     if not bank_dir.is_dir():
         print(f"Bank not found: {bank_dir}")
         return 2
@@ -191,9 +199,9 @@ def main() -> int:
             print(f"Unknown scenario: {name} (choices: {', '.join(SCENARIO_FACTORIES)})")
             return 2
         sc = fn()
-        out_wav = args.out / f"{sc.name}.wav"
-        out_csv = args.out / f"{sc.name}.csv"
-        out_json = args.out / f"{sc.name}.json"
+        out_wav = output / f"{sc.name}.wav"
+        out_csv = output / f"{sc.name}.csv"
+        out_json = output / f"{sc.name}.json"
         rep = render_scenario(sc, bank_dir, out_wav, out_csv, out_json)
         print(f"{sc.name}: peak {rep['peak']:.3f} rms {rep['rms']:.4f} -> {out_wav}")
     return 0

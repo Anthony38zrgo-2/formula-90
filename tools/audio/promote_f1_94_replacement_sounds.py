@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from collections.abc import Sequence
 from pathlib import Path
 
 from tools.audio.bank_manifest import BankManifest, FileEntry, sha256_file
@@ -23,7 +24,7 @@ from tools.audio.dsp_common import (
     resample_mono,
     write_wav_mono16,
 )
-
+from tools.audio.playback_metadata import playback_for_key
 
 REPLACEMENTS: dict[str, tuple[str, bool, str]] = {
     "engine_high.wav": ("engine_high", True, "engine"),
@@ -39,7 +40,6 @@ REPLACEMENTS: dict[str, tuple[str, bool, str]] = {
     "tyre_scrub.wav": ("tyre_scrub", True, "tire"),
 }
 
-NATIVE_RPM = {"engine_mid.wav": 9800.0, "engine_high.wav": 16950.0}
 LOOP_XFADE_FRAMES = 2048
 TARGET_PEAK = 0.89
 SHIFT_FADE_IN_FRAMES = round(0.002 * SAMPLE_RATE)
@@ -110,8 +110,6 @@ def promote(source_dir: Path, bank_dir: Path, repo_root: Path) -> BankManifest:
             "promotion_recipe": "f1_94_replacement_overlay_v1",
             "processing": processing,
         }
-        if filename in NATIVE_RPM:
-            synthesis["native_rpm"] = NATIVE_RPM[filename]
         entries[filename] = FileEntry(
             file=filename,
             role=role,
@@ -122,6 +120,7 @@ def promote(source_dir: Path, bank_dir: Path, repo_root: Path) -> BankManifest:
             loudness_dbfs=round(lufs_approx(samples), 2),
             peak=round(peak_abs(samples), 6),
             dc_offset=round(dc_offset(samples), 6),
+            playback=playback_for_key(filename.removesuffix(".wav")),
             synthesis=synthesis,
             provenance="derived from original user-supplied replacement samples",
             sha256=sha256_file(output),
@@ -133,20 +132,22 @@ def promote(source_dir: Path, bank_dir: Path, repo_root: Path) -> BankManifest:
     return manifest
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--source",
         type=Path,
-        default=Path("game/sounds/banks/new sounds"),
+        required=True,
+        help="Reviewed replacement sources (explicit; no runtime default)",
     )
     parser.add_argument(
         "--bank",
         type=Path,
-        default=Path("game/sounds/banks/v10_vehicle"),
+        required=True,
+        help="Explicit bank destination; prefer promote_content.ps1 for runtime cutover",
     )
     parser.add_argument("--repo-root", type=Path, default=Path("."))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     manifest = promote(args.source, args.bank, args.repo_root)
     print(f"Promoted {len(REPLACEMENTS)} sounds; bank now has {len(manifest.files)} entries.")
     return 0

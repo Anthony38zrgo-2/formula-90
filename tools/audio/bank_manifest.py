@@ -20,8 +20,9 @@ class FileEntry:
     loudness_dbfs: float = 0.0
     peak: float = 0.0
     dc_offset: float = 0.0
+    playback: dict[str, Any] = field(default_factory=dict)
     synthesis: dict[str, Any] = field(default_factory=dict)
-    provenance: str = "derived from original samples (assets-lowpoly-python/sounds)"
+    provenance: str = "derived from original samples (source-assets/audio/legacy-f1-1998)"
     sha256: str = ""
 
 
@@ -37,9 +38,12 @@ class BankManifest:
     files: list[FileEntry] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        d = asdict(self)
-        d["files"] = sorted(d["files"], key=lambda e: e["file"])
-        return d
+        data = asdict(self)
+        for entry in data["files"]:
+            if not entry["playback"]:
+                del entry["playback"]
+        data["files"] = sorted(data["files"], key=lambda entry: entry["file"])
+        return data
 
     def to_json_bytes(self) -> bytes:
         return (json.dumps(self.to_dict(), indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")

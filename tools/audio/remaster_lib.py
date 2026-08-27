@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-DEFAULT_BANK = Path("D:/Formula90s/game/sounds/banks/v10_vehicle")
+DEFAULT_BANK = Path("scratch/audio/v10_vehicle")
 
 
 def _wav_metrics(path: Path):
@@ -48,9 +48,9 @@ def update_manifest_entry(bank_dir, out_name, sha, dur, peak, dc, lufs, kind, re
                     prov = prov + "; remastered with modular synthesis (impact stages)"
             else:
                 if "derived from original" not in prov.lower():
-                    prov = "derived from original samples (assets-lowpoly-python/sounds); " + prov
+                    prov = "derived from original samples (source-assets/audio/legacy-f1-1998); " + prov
                 else:
-                    prov = "derived from original samples (assets-lowpoly-python/sounds); remastered with modular synthesis (impact stages)"
+                    prov = "derived from original samples (source-assets/audio/legacy-f1-1998); remastered with modular synthesis (impact stages)"
             e["provenance"] = prov
             e.setdefault("synthesis", {})["remaster"] = {"recipe": recipe, "kind": kind}
             break

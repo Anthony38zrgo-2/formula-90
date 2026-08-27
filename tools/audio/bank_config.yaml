@@ -1,9 +1,9 @@
 # v10_vehicle bank configuration.
 # The bank is derived from the original F1-1998 engine internal + Grand Prix
-# sample set in assets-lowpoly-python/sounds/. No synthesis.
+# sample set in source-assets/audio/legacy-f1-1998/. No synthesis.
 
 bank_name: v10_vehicle
-source_dir: assets-lowpoly-python/sounds
+source_dir: source-assets/audio/legacy-f1-1998
 sample_rate: 44100
 channels: 1
 pcm_bits: 16

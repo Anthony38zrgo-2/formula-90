@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
 import struct
 import wave
+from pathlib import Path
 
 from tools.audio.bank_generator import generate_bank
 from tools.audio.bank_manifest import BankManifest
 
-SOURCE = Path("assets-lowpoly-python/sounds")
+SOURCE = Path("source-assets/audio/legacy-f1-1998")
 
 
 def test_bank_is_byte_deterministic(tmp_path):
