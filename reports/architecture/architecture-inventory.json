@@ -1,0 +1,4096 @@
+{
+  "counts_by_kind": {
+    "cross_zone_literal": 422,
+    "game_source_dependency": 28,
+    "parent_arithmetic": 110,
+    "runtime_output_default": 7,
+    "runtime_write_candidate": 15
+  },
+  "finding_count": 582,
+  "findings": [
+    {
+      "evidence": "\"source\": \"game/assets/models/vehicles/f1_90s_canonical_1997/source/jordan_191_1995/jordan_191_1995_chassis_source.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 2,
+      "path": "blender/analysis_suite/configs/example_glb_audit.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/assets/models/vehicles/f1_90s_canonical_1997/source/jordan_191_1995/jordan_191_1995_chassis_source.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 2,
+      "path": "blender/analysis_suite/configs/example_probe_geometry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/assets/models/vehicles/f1_90s_canonical_1997/source/jordan_191_1995/jordan_191_1995_wheel_fl_source.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 2,
+      "path": "blender/analysis_suite/configs/example_probe_wheel.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"path\": \"game/assets/models/vehicles/f1_90s_canonical_1997/source/jordan_191_1995/jordan_191_1995_chassis_source.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "blender/analysis_suite/configs/example_vehicle_measurement.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"path\": \"game/assets/models/vehicles/f1_90s_canonical_1997/source/jordan_191_1995/jordan_191_1995_wheel_fl_source.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "blender/analysis_suite/configs/example_vehicle_measurement.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"import_pipeline\": \"blender/track_pipeline/import_generated_tree_cards.py\",",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "blender/assets/texture_sources/la_chutana/south_america/west/low/vegetation/trees/source_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--catalog\", default=\"blender/track_pipeline/layouts/la_chutana/object_catalog.json\")",
+      "kind": "cross_zone_literal",
+      "line": 37,
+      "path": "blender/track_pipeline/bootstrap_la_chutana_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--config\", default=\"blender/track_pipeline/layouts/la_chutana/layout_config.json\")",
+      "kind": "cross_zone_literal",
+      "line": 38,
+      "path": "blender/track_pipeline/bootstrap_la_chutana_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--registry\", default=\"blender/track_pipeline/configs/asset_registry.json\")",
+      "kind": "cross_zone_literal",
+      "line": 39,
+      "path": "blender/track_pipeline/bootstrap_la_chutana_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 90,
+      "path": "blender/track_pipeline/build_asset_registry.py",
+      "related_line": null
+    },
+    {
+      "evidence": "guardrail_bitmap = (repo / \"assets-lowpoly-python\" / \"track_props\" / \"barriers\" /",
+      "kind": "cross_zone_literal",
+      "line": 301,
+      "path": "blender/track_pipeline/build_environment_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "tire_bitmap = (repo / \"assets-lowpoly-python\" / \"track_props\" / \"barriers\" /",
+      "kind": "cross_zone_literal",
+      "line": 303,
+      "path": "blender/track_pipeline/build_environment_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "barriers_manifest_path = repo / \"assets-lowpoly-python\" / \"track_props\" / \"barriers\" / \"source_manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 437,
+      "path": "blender/track_pipeline/build_environment_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "runtime = repo / \"game/assets/trackside\"",
+      "kind": "cross_zone_literal",
+      "line": 121,
+      "path": "blender/track_pipeline/build_jordan_tire_barrier_asset.py",
+      "related_line": null
+    },
+    {
+      "evidence": "canonical_dir = repo / \"assets-lowpoly-python\" / \"nature\" / variant[\"category\"] / \"glb\"",
+      "kind": "cross_zone_literal",
+      "line": 126,
+      "path": "blender/track_pipeline/build_raw_vegetation_assets_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "shutil.copyfile(csv_path, repo / \"assets-lowpoly-python\" / \"nature\" / \"manifest.csv\")",
+      "kind": "cross_zone_literal",
+      "line": 161,
+      "path": "blender/track_pipeline/build_raw_vegetation_assets_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "barriers_manifest_path = repo / \"assets-lowpoly-python\" / \"track_props\" / \"barriers\" / \"source_manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 303,
+      "path": "blender/track_pipeline/build_raw_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "layout_cfg_path = repo / config.get(\"semantic_layout_config\", \"blender/track_pipeline/layouts/la_chutana/layout_config.json\")",
+      "kind": "cross_zone_literal",
+      "line": 318,
+      "path": "blender/track_pipeline/build_raw_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 22,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 25,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/bushes/bush_3d_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 26,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 47,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_02.png\",",
+      "kind": "cross_zone_literal",
+      "line": 50,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/bushes/bush_3d_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 51,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 72,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_03.png\",",
+      "kind": "cross_zone_literal",
+      "line": 75,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/bushes/bush_3d_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 76,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 97,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_04.png\",",
+      "kind": "cross_zone_literal",
+      "line": 100,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/bushes/bush_3d_04.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 101,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 122,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_05.png\",",
+      "kind": "cross_zone_literal",
+      "line": 125,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/bushes/bush_3d_05.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 126,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 147,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_06.png\",",
+      "kind": "cross_zone_literal",
+      "line": 150,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/bushes/bush_3d_06.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 151,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/signs/sources/f90_racing_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 173,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/signs/sources/la_chutana_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 195,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/people/sources/marshal_flag_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 217,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/signs/sources/nitro_95_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 239,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/people/sources/photographer_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 261,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/signs/sources/pit_service_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 283,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/people/sources/spectator_cap_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 305,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"assets-lowpoly-python/track_props/people/sources/spectator_wave_source.png\",",
+      "kind": "cross_zone_literal",
+      "line": 327,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 370,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 373,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/trees/tree_3d_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 374,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 395,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_02.png\",",
+      "kind": "cross_zone_literal",
+      "line": 398,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/trees/tree_3d_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 399,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 420,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_03.png\",",
+      "kind": "cross_zone_literal",
+      "line": 423,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/trees/tree_3d_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 424,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 445,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_04.png\",",
+      "kind": "cross_zone_literal",
+      "line": 448,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/trees/tree_3d_04.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 449,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 470,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_05.png\",",
+      "kind": "cross_zone_literal",
+      "line": 473,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/trees/tree_3d_05.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 474,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"origin\": \"game/resources/environment/assets/manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 495,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_06.png\",",
+      "kind": "cross_zone_literal",
+      "line": 498,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"game/resources/environment/assets/trees/tree_3d_06.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 499,
+      "path": "blender/track_pipeline/configs/asset_registry.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"reference_file\": \"blender/track_pipeline/data/la_chutana_reference.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"runtime_dir\": \"game/assets/generated/tracks/la_chutana\",",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"vegetation_distribution_manifest\": \"blender/track_pipeline/manifests/la_chutana_vegetation_distribution.json\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"manifest\": \"blender/track_pipeline/manifests/curb_profiles.json\",",
+      "kind": "cross_zone_literal",
+      "line": 34,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"manifest\": \"blender/track_pipeline/manifests/la_chutana_guardrails.json\",",
+      "kind": "cross_zone_literal",
+      "line": 138,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"manifest\": \"blender/track_pipeline/manifests/la_chutana_safety_barriers_v3.json\",",
+      "kind": "cross_zone_literal",
+      "line": 153,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"asset_library_manifest\": \"game/resources/environment/assets/barriers/barrier_manifest_v3.json\",",
+      "kind": "cross_zone_literal",
+      "line": 154,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/barrier_construction_manifest_v2.json\",",
+      "kind": "cross_zone_literal",
+      "line": 155,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"recipe_manifest\": \"game/resources/environment/recipes/barrier_library.json\",",
+      "kind": "cross_zone_literal",
+      "line": 156,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette_manifest\": \"game/resources/environment/palettes/barrier_palette.json\",",
+      "kind": "cross_zone_literal",
+      "line": 157,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"generator\": \"game/resources/environment/tools/build_barrier_3d_library.py\",",
+      "kind": "cross_zone_literal",
+      "line": 158,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"object_catalog\": \"blender/track_pipeline/layouts/la_chutana/object_catalog.json\",",
+      "kind": "cross_zone_literal",
+      "line": 185,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"asset_manifest\": \"game/resources/environment/assets/buildings/building_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 231,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_manifest\": \"game/resources/environment/manifests/building_sources.json\",",
+      "kind": "cross_zone_literal",
+      "line": 232,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/building_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 233,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"generator\": \"game/resources/environment/tools/build_building_asset_manifest.py\"",
+      "kind": "cross_zone_literal",
+      "line": 234,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"semantic_layout_config\": \"blender/track_pipeline/layouts/la_chutana/layout_config.json\",",
+      "kind": "cross_zone_literal",
+      "line": 302,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/circuit_assets_final/texture_library/grassg1.png\",",
+      "kind": "cross_zone_literal",
+      "line": 323,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/circuit_assets_final/texture_library/grassg2.png\",",
+      "kind": "cross_zone_literal",
+      "line": 324,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/circuit_assets_final/texture_library/grassg3.png\"",
+      "kind": "cross_zone_literal",
+      "line": 325,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"track_config\": \"blender/track_pipeline/configs/la_chutana.json\",",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "blender/track_pipeline/configs/la_chutana_raw.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"semantic_layout_config\": \"blender/track_pipeline/layouts/la_chutana/layout_config.json\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "blender/track_pipeline/configs/la_chutana_raw.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"vegetation_v2_source_manifest\": \"assets-lowpoly-python/nature/source_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "blender/track_pipeline/configs/la_chutana_raw.json",
+      "related_line": null
+    },
+    {
+      "evidence": "BARRIERS_DIR = REPO_ROOT / \"assets-lowpoly-python\" / \"track_props\" / \"barriers\"",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "blender/track_pipeline/generate_barrier_assets.py",
+      "related_line": null
+    },
+    {
+      "evidence": "source_tb = REPO_ROOT / \"assets-lowpoly-python\" / \"track_props\" / \"tire_barrier\" / \"textures\"",
+      "kind": "cross_zone_literal",
+      "line": 257,
+      "path": "blender/track_pipeline/generate_barrier_assets.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"object_catalog\", \"blender/track_pipeline/layouts/la_chutana/object_catalog.json\"",
+      "kind": "cross_zone_literal",
+      "line": 70,
+      "path": "blender/track_pipeline/generate_environment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--catalog\", default=\"blender/track_pipeline/layouts/la_chutana/object_catalog.json\")",
+      "kind": "cross_zone_literal",
+      "line": 471,
+      "path": "blender/track_pipeline/import_la_chutana.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--config\", default=\"blender/track_pipeline/layouts/la_chutana/layout_config.json\")",
+      "kind": "cross_zone_literal",
+      "line": 472,
+      "path": "blender/track_pipeline/import_la_chutana.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--registry\", default=\"blender/track_pipeline/configs/asset_registry.json\")",
+      "kind": "cross_zone_literal",
+      "line": 473,
+      "path": "blender/track_pipeline/import_la_chutana.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"semantic_image\": \"blender/track_pipeline/layouts/la_chutana/semantic_layout.png\",",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"marker_image\": \"blender/track_pipeline/layouts/la_chutana/object_markers.png\",",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview_image\": \"blender/track_pipeline/layouts/la_chutana/layout_preview.png\",",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"object_catalog\": \"blender/track_pipeline/layouts/la_chutana/object_catalog.json\",",
+      "kind": "cross_zone_literal",
+      "line": 13,
+      "path": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"asset_dimensions_manifest\": \"assets-lowpoly-python/nature/manifest.csv\",",
+      "kind": "cross_zone_literal",
+      "line": 14,
+      "path": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 16,
+      "path": "blender/track_pipeline/layouts/la_chutana/layout_config.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"001\": {\"asset_id\": \"spectator_wave\", \"kind\": \"card\", \"category\": \"spectator\", \"source\": \"assets-lowpoly-python/track_props/people/sources/spectator_wave_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 5.0, \"max_sna",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"002\": {\"asset_id\": \"spectator_cap\", \"kind\": \"card\", \"category\": \"spectator\", \"source\": \"assets-lowpoly-python/track_props/people/sources/spectator_cap_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 5.0, \"max_snap_",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"003\": {\"asset_id\": \"marshal_flag\", \"kind\": \"card\", \"category\": \"marshal\", \"source\": \"assets-lowpoly-python/track_props/people/sources/marshal_flag_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 5.0, \"max_snap_dist",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"004\": {\"asset_id\": \"photographer\", \"kind\": \"card\", \"category\": \"photographer\", \"source\": \"assets-lowpoly-python/track_props/people/sources/photographer_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 4.0, \"max_snap",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"005\": {\"asset_id\": \"f90_racing\", \"kind\": \"card\", \"category\": \"sign\", \"source\": \"assets-lowpoly-python/track_props/signs/sources/f90_racing_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 2.0, \"max_snap_distance_m\":",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"006\": {\"asset_id\": \"la_chutana\", \"kind\": \"card\", \"category\": \"sign\", \"source\": \"assets-lowpoly-python/track_props/signs/sources/la_chutana_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 2.0, \"max_snap_distance_m\":",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"007\": {\"asset_id\": \"pit_service\", \"kind\": \"card\", \"category\": \"sign\", \"source\": \"assets-lowpoly-python/track_props/signs/sources/pit_service_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 2.0, \"max_snap_distance_m",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"008\": {\"asset_id\": \"nitro_95\", \"kind\": \"card\", \"category\": \"sign\", \"source\": \"assets-lowpoly-python/track_props/signs/sources/nitro_95_source.png\", \"placement_mode\": \"barrier_relative\", \"guardrail_offset_m\": 2.0, \"max_snap_distance_m\": 20.",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/nature/grass/glb/grass_v2_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 25,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/nature/grass/glb/grass_v2_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 26,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/nature/grass/glb/grass_v2_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 27,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/nature/grass/glb/grass_v2_04.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 28,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/bushes/bush_3d_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 40,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/bushes/bush_3d_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 41,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/bushes/bush_3d_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 42,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/bushes/bush_3d_04.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 43,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/bushes/bush_3d_05.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 44,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/bushes/bush_3d_06.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 45,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/trees/tree_3d_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 57,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/trees/tree_3d_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 58,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/trees/tree_3d_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 59,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/trees/tree_3d_04.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 60,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/trees/tree_3d_05.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 61,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/trees/tree_3d_06.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 62,
+      "path": "blender/track_pipeline/layouts/la_chutana/object_catalog.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/barrier_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "blender/track_pipeline/manifests/la_chutana_safety_barriers.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"asset_library_manifest\": \"game/resources/environment/assets/barriers/barrier_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "blender/track_pipeline/manifests/la_chutana_safety_barriers.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/barrier_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "blender/track_pipeline/manifests/la_chutana_safety_barriers_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"asset_library_manifest\": \"game/resources/environment/assets/barriers/barrier_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "blender/track_pipeline/manifests/la_chutana_safety_barriers_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"trees\": \"game/resources/environment/generated/tree_color_library_report.json\",",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "blender/track_pipeline/manifests/la_chutana_vegetation_distribution.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"bushes\": \"game/resources/environment/generated/bush_color_library_report.json\"",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "blender/track_pipeline/manifests/la_chutana_vegetation_distribution.json",
+      "related_line": null
+    },
+    {
+      "evidence": "if normalized.startswith((\"blender/\", \"assets-lowpoly-python/\", \"game/\")):",
+      "kind": "cross_zone_literal",
+      "line": 178,
+      "path": "blender/track_pipeline/semantic_layout_common.py",
+      "related_line": null
+    },
+    {
+      "evidence": "return f\"assets-lowpoly-python/{normalized}\"",
+      "kind": "cross_zone_literal",
+      "line": 180,
+      "path": "blender/track_pipeline/semantic_layout_common.py",
+      "related_line": null
+    },
+    {
+      "evidence": "dimensions[f\"assets-lowpoly-python/nature/{row['category']}/glb/{stem_name}\"] = data",
+      "kind": "cross_zone_literal",
+      "line": 215,
+      "path": "blender/track_pipeline/semantic_layout_common.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/valid_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 22,
+      "path": "blender/track_pipeline/tests/fixtures/asset_registry_blender_test.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 22,
+      "path": "blender/track_pipeline/tests/fixtures/asset_registry_test.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 13,
+      "path": "blender/track_pipeline/tests/fixtures/la_chutana_registry_mini.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 25,
+      "path": "blender/track_pipeline/tests/fixtures/la_chutana_registry_mini.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 49,
+      "path": "blender/track_pipeline/tests/fixtures/la_chutana_registry_mini.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 61,
+      "path": "blender/track_pipeline/tests/fixtures/la_chutana_registry_mini.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 73,
+      "path": "blender/track_pipeline/tests/fixtures/la_chutana_registry_mini.json",
+      "related_line": null
+    },
+    {
+      "evidence": "source=\"blender/track_pipeline/tests/_tmp_asset_registry/asset.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 44,
+      "path": "blender/track_pipeline/tests/test_asset_registry.py",
+      "related_line": null
+    },
+    {
+      "evidence": "[self._spec(source=\"blender/track_pipeline/tests/_tmp_asset_registry/missing.glb\")],",
+      "kind": "cross_zone_literal",
+      "line": 64,
+      "path": "blender/track_pipeline/tests/test_asset_registry.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/missing.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 261,
+      "path": "blender/track_pipeline/tests/test_build_normalized_gateway.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source\": \"blender/track_pipeline/tests/fixtures/assets/missing.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 326,
+      "path": "blender/track_pipeline/tests/test_build_normalized_gateway.py",
+      "related_line": null
+    },
+    {
+      "evidence": "source=\"blender/track_pipeline/tests/fixtures/assets/dummy_tree.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 162,
+      "path": "blender/track_pipeline/tests/test_compile_svg_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "sys.path.insert(0, str(ROOT / \"blender/track_pipeline\"))",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "blender/track_pipeline/tests/test_full_barrier_migration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "cls.config = json.loads((ROOT / \"blender/track_pipeline/configs/la_chutana.json\").read_text(encoding=\"utf-8\"))",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "blender/track_pipeline/tests/test_full_barrier_migration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "cls.layout = json.loads((ROOT / \"blender/track_pipeline/manifests/la_chutana_safety_barriers_v3.json\").read_text(encoding=\"utf-8\"))",
+      "kind": "cross_zone_literal",
+      "line": 19,
+      "path": "blender/track_pipeline/tests/test_full_barrier_migration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "cls.assets = json.loads((ROOT / \"game/resources/environment/assets/barriers/barrier_manifest_v3.json\").read_text(encoding=\"utf-8\"))",
+      "kind": "cross_zone_literal",
+      "line": 20,
+      "path": "blender/track_pipeline/tests/test_full_barrier_migration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/barriers/barrier_manifest_v3.json\")",
+      "kind": "cross_zone_literal",
+      "line": 26,
+      "path": "blender/track_pipeline/tests/test_full_barrier_migration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.config = json.loads((ROOT / \"blender/track_pipeline/configs/la_chutana.json\").read_text(encoding=\"utf-8\"))",
+      "kind": "cross_zone_literal",
+      "line": 15,
+      "path": "blender/track_pipeline/tests/test_guardrail_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.config = json.loads((ROOT / \"blender/track_pipeline/configs/la_chutana.json\").read_text())",
+      "kind": "cross_zone_literal",
+      "line": 19,
+      "path": "blender/track_pipeline/tests/test_la_chutana_surface_invariants.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config = json.loads((root / \"blender/track_pipeline/configs/la_chutana_raw.json\").read_text())",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "blender/track_pipeline/tests/test_raw_vegetation_pipeline.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config = json.loads((ROOT / \"blender/track_pipeline/configs/la_chutana.json\").read_text())",
+      "kind": "cross_zone_literal",
+      "line": 17,
+      "path": "blender/track_pipeline/tests/test_safety_barrier_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config[\"safety_barriers\"] = {\"manifest\": \"blender/track_pipeline/manifests/la_chutana_safety_barriers.json\"}",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "blender/track_pipeline/tests/test_safety_barrier_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "path = \"assets-lowpoly-python/nature/trees/glb/tree_v2_01.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 16,
+      "path": "blender/track_pipeline/tests/test_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.assertEqual(_asset_repo_path(\"trees/example.glb\"), \"assets-lowpoly-python/trees/example.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "blender/track_pipeline/tests/test_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.assertTrue(is_supported_vegetation_path(\"game/resources/environment/assets/trees/tree_3d_01.glb\"))",
+      "kind": "cross_zone_literal",
+      "line": 21,
+      "path": "blender/track_pipeline/tests/test_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.assertTrue(is_supported_vegetation_path(\"assets-lowpoly-python/nature/grass/glb/grass_v2_01.glb\"))",
+      "kind": "cross_zone_literal",
+      "line": 22,
+      "path": "blender/track_pipeline/tests/test_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.assertFalse(is_supported_vegetation_path(\"game/resources/unknown/legacy_tree.glb\"))",
+      "kind": "cross_zone_literal",
+      "line": 24,
+      "path": "blender/track_pipeline/tests/test_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT / \"blender/track_pipeline/manifests/la_chutana_safety_barriers.json\"",
+      "kind": "cross_zone_literal",
+      "line": 20,
+      "path": "blender/track_pipeline/tests/test_trackside_safety_integration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "blender/track_pipeline/.venv/Scripts/python.exe build_svg_track.py \\",
+      "kind": "cross_zone_literal",
+      "line": 23,
+      "path": "blender/track_pipeline/validate_godot_load.py",
+      "related_line": null
+    },
+    {
+      "evidence": "blender/track_pipeline/.venv/Scripts/python.exe validate_godot_load.py \\",
+      "kind": "cross_zone_literal",
+      "line": 31,
+      "path": "blender/track_pipeline/validate_godot_load.py",
+      "related_line": null
+    },
+    {
+      "evidence": "if \"assets-lowpoly-python/nature/\" not in str(obj.get(\"formula90s_raw_asset\", \"\")).replace(\"\\\\\", \"/\")",
+      "kind": "cross_zone_literal",
+      "line": 42,
+      "path": "blender/track_pipeline/validate_raw_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "and \"game/resources/environment/assets/\" not in str(obj.get(\"formula90s_raw_asset\", \"\")).replace(\"\\\\\", \"/\")",
+      "kind": "cross_zone_literal",
+      "line": 43,
+      "path": "blender/track_pipeline/validate_raw_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "and \"assets-lowpoly-python/nature/\" in str(root.get(\"formula90s_raw_asset\", \"\")).replace(\"\\\\\", \"/\")",
+      "kind": "cross_zone_literal",
+      "line": 54,
+      "path": "blender/track_pipeline/validate_raw_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"assets-lowpoly-python/nature/\",",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "blender/track_pipeline/validate_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"game/resources/environment/assets/\",",
+      "kind": "cross_zone_literal",
+      "line": 13,
+      "path": "blender/track_pipeline/validate_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "r'D:\\Formula90s\\game\\assets\\models\\vehicles'",
+      "kind": "cross_zone_literal",
+      "line": 22,
+      "path": "blender/vehicle_pipeline/examples/deep_analysis_k3.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"vehicle_glb\": \"assets-lowpoly-python/vehicles/canonical/f1_94_gevp_ready.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 15,
+      "path": "game/assets/models/vehicles/f1_94/vehicle_runtime_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"metadata\": \"assets-lowpoly-python/vehicles/F194_GEVP_READY/vehicle_metadata.json\",",
+      "kind": "cross_zone_literal",
+      "line": 17,
+      "path": "game/assets/models/vehicles/f1_94/vehicle_runtime_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"repair_bundle\": \"assets-lowpoly-python/vehicles/F194_GEVP_READY\"",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "game/assets/models/vehicles/f1_94/vehicle_runtime_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "// Crates live at game/crates/<crate>; the bank is at game/sounds/banks/v10_vehicle.",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "game/crates/formula90-core/tests/facade_audio.rs",
+      "related_line": null
+    },
+    {
+      "evidence": "//! `game/sounds/banks/v10_vehicle/`, validates format (mono, 16-bit, 44.1 kHz)",
+      "kind": "cross_zone_literal",
+      "line": 4,
+      "path": "game/crates/vehicle-audio-engine/src/bank.rs",
+      "related_line": null
+    },
+    {
+      "evidence": "//! Example: cargo run -p vehicle_audio_engine --bin va_baseline -- game/sounds/banks/v10_vehicle",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "game/crates/vehicle-audio-engine/src/bin/va_baseline.rs",
+      "related_line": null
+    },
+    {
+      "evidence": ".unwrap_or_else(|| \"game/sounds/banks/v10_vehicle\".to_string());",
+      "kind": "cross_zone_literal",
+      "line": 327,
+      "path": "game/crates/vehicle-audio-engine/src/bin/va_baseline.rs",
+      "related_line": null
+    },
+    {
+      "evidence": "//! game/telemetry/telemetry_*.csv --bank game/sounds/banks/v10_vehicle",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "game/crates/vehicle-audio-engine/src/bin/va_replay.rs",
+      "related_line": null
+    },
+    {
+      "evidence": "//! The file lives in the sounds root (`game/sounds/`), two levels above the bank",
+      "kind": "cross_zone_literal",
+      "line": 4,
+      "path": "game/crates/vehicle-audio-engine/src/config.rs",
+      "related_line": null
+    },
+    {
+      "evidence": "//! directory (`game/sounds/banks/v10_vehicle` -> `../../sound_mixer_config.json`).",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "game/crates/vehicle-audio-engine/src/config.rs",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/barrier_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"human_gate_catalog\": \"game/resources/environment/assets/barriers/review/barrier_library_catalog.png\",",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 16,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 17,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_01_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_black_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 19,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_black_01_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 20,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_02_double.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 77,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_02_double_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 78,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_02_double_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 79,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_black_02_double.png\",",
+      "kind": "cross_zone_literal",
+      "line": 80,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_black_02_double_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 81,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_03_triple.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 138,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_03_triple_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 139,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_tire_black_03_triple_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 140,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_black_03_triple.png\",",
+      "kind": "cross_zone_literal",
+      "line": 141,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_black_03_triple_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 142,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_tire_navy_white_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 199,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_tire_navy_white_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 200,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_tire_navy_white_01_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 201,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_navy_white_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 202,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_navy_white_01_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 203,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_tire_navy_white_02_double.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 260,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_tire_navy_white_02_double_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 261,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_tire_navy_white_02_double_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 262,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_navy_white_02_double.png\",",
+      "kind": "cross_zone_literal",
+      "line": 263,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_tire_navy_white_02_double_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 264,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_concrete_jersey_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 321,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_concrete_jersey_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 322,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_concrete_jersey_01_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 323,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_concrete_jersey_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 324,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_concrete_jersey_01_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 325,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_armco_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 382,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_armco_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 383,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_armco_01_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 384,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_armco_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 385,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_armco_01_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 386,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/barrier_plastic_navy_white_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 443,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/barrier_plastic_navy_white_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 444,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_glb\": \"game/resources/environment/assets/barriers/barrier_plastic_navy_white_01_strip5.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 445,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/barriers/review/barrier_plastic_navy_white_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 446,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"strip_preview\": \"game/resources/environment/assets/barriers/review/barrier_plastic_navy_white_01_strip5.png\",",
+      "kind": "cross_zone_literal",
+      "line": 447,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_armco_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_armco_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 13,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_concrete_jersey_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 65,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_concrete_jersey_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 66,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_plastic_navy_white_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 118,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_plastic_navy_white_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 119,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_black_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 171,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_black_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 172,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_black_02_double.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 224,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_black_02_double_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 225,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_black_03_triple.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 277,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_black_03_triple_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 278,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_navy_white_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 330,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_navy_white_01_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 331,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_navy_white_02_double.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 383,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/modules/barrier_tire_navy_white_02_double_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 384,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_armco_10m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 437,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_armco_10m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 438,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_armco_25m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 490,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_armco_25m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 491,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_jersey_100m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 543,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_jersey_100m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 544,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_jersey_10m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 596,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_jersey_10m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 597,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_jersey_50m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 649,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_jersey_50m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 650,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_black_10m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 702,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_black_10m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 703,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_black_2l_10m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 755,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_black_2l_10m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 756,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_black_3l_10m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 808,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_black_3l_10m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 809,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_navy_2l_10m.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 861,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/runs/run_tire_navy_2l_10m_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 862,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/spline/run_armco_spline_400m_f21901.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 924,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/spline/run_armco_spline_400m_f21901_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 925,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/spline/run_jersey_spline_169m_529394.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 985,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/spline/run_jersey_spline_169m_529394_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 986,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"visual_glb\": \"game/resources/environment/assets/barriers/v3/spline/run_tire_black_spline_252m_08e52b.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 1046,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"collision_glb\": \"game/resources/environment/assets/barriers/v3/spline/run_tire_black_spline_252m_08e52b_collision.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 1047,
+      "path": "game/resources/environment/assets/barriers/barrier_manifest_v3.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/building_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "game/resources/environment/assets/buildings/building_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"human_gate_catalog\": \"game/resources/environment/assets/buildings/review/building_library_catalog.png\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "game/resources/environment/assets/buildings/building_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/buildings/house-peru-01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "game/resources/environment/assets/buildings/building_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/buildings/review/house_peru_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 17,
+      "path": "game/resources/environment/assets/buildings/building_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/buildings/house-peru-02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 44,
+      "path": "game/resources/environment/assets/buildings/building_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/assets/buildings/review/house_peru_02.png\",",
+      "kind": "cross_zone_literal",
+      "line": 49,
+      "path": "game/resources/environment/assets/buildings/building_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/trees/tree_3d_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/trees/tree_3d_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 31,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_02.png\",",
+      "kind": "cross_zone_literal",
+      "line": 32,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/trees/tree_3d_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 52,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_03.png\",",
+      "kind": "cross_zone_literal",
+      "line": 53,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/trees/tree_3d_04.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 73,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_04.png\",",
+      "kind": "cross_zone_literal",
+      "line": 74,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/trees/tree_3d_05.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 94,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_05.png\",",
+      "kind": "cross_zone_literal",
+      "line": 95,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/trees/tree_3d_06.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 115,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/tree_3d_06.png\",",
+      "kind": "cross_zone_literal",
+      "line": 116,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/bushes/bush_3d_01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 136,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_01.png\",",
+      "kind": "cross_zone_literal",
+      "line": 137,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/bushes/bush_3d_02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 157,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_02.png\",",
+      "kind": "cross_zone_literal",
+      "line": 158,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/bushes/bush_3d_03.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 178,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_03.png\",",
+      "kind": "cross_zone_literal",
+      "line": 179,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/bushes/bush_3d_04.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 199,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_04.png\",",
+      "kind": "cross_zone_literal",
+      "line": 200,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/bushes/bush_3d_05.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 220,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_05.png\",",
+      "kind": "cross_zone_literal",
+      "line": 221,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/bushes/bush_3d_06.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 241,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": \"game/resources/environment/generated/library_audit/bush_3d_06.png\",",
+      "kind": "cross_zone_literal",
+      "line": 242,
+      "path": "game/resources/environment/assets/manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/building_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/manifests/building_sources.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/buildings/house-peru-01.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "game/resources/environment/manifests/building_sources.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"glb\": \"game/resources/environment/assets/buildings/house-peru-02.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 14,
+      "path": "game/resources/environment/manifests/building_sources.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"construction_manifest\": \"game/resources/environment/manifests/barrier_construction_manifest.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/recipes/barrier_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette\": \"game/resources/environment/palettes/barrier_palette.json\",",
+      "kind": "cross_zone_literal",
+      "line": 4,
+      "path": "game/resources/environment/recipes/barrier_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"base_recipe\": \"game/resources/environment/recipes/vegetation_library.json\",",
+      "kind": "cross_zone_literal",
+      "line": 4,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"review\": \"game/resources/environment/generated/bush_color_library_review.png\",",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"report\": \"game/resources/environment/generated/bush_color_library_report.json\",",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"original\", \"suffix\": \"\", \"palette\": \"game/resources/environment/palettes/south_america_west_low.json\", \"seed_base\": 2100},",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"copper\", \"suffix\": \"copper\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_copper.json\", \"seed_base\": 7100},",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"red\", \"suffix\": \"red\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_red.json\", \"seed_base\": 8100},",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"golden_beige\", \"suffix\": \"golden_beige\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_golden_beige.json\", \"seed_base\": 9100},",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"yellow\", \"suffix\": \"yellow\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_yellow.json\", \"seed_base\": 10100}",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "game/resources/environment/recipes/bush_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette\": \"game/resources/environment/palettes/south_america_west_low_copper.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/recipes/tree_3d_01_copper_preview.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette\": \"game/resources/environment/palettes/south_america_west_low_golden_beige.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/recipes/tree_3d_01_golden_beige_preview.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette\": \"game/resources/environment/palettes/south_america_west_low_red.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/recipes/tree_3d_01_red_preview.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette\": \"game/resources/environment/palettes/south_america_west_low_yellow.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/recipes/tree_3d_01_yellow_preview.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"base_recipe\": \"game/resources/environment/recipes/vegetation_library.json\",",
+      "kind": "cross_zone_literal",
+      "line": 4,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"review\": \"game/resources/environment/generated/tree_color_library_review.png\",",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"report\": \"game/resources/environment/generated/tree_color_library_report.json\",",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"original\", \"suffix\": \"\", \"palette\": \"game/resources/environment/palettes/south_america_west_low.json\", \"seed_base\": 1100},",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"copper\", \"suffix\": \"copper\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_copper.json\", \"seed_base\": 3100},",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"red\", \"suffix\": \"red\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_red.json\", \"seed_base\": 4100},",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"golden_beige\", \"suffix\": \"golden_beige\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_golden_beige.json\", \"seed_base\": 5100},",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "{\"id\": \"yellow\", \"suffix\": \"yellow\", \"palette\": \"game/resources/environment/palettes/south_america_west_low_yellow.json\", \"seed_base\": 6100}",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "game/resources/environment/recipes/tree_color_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"palette\": \"game/resources/environment/palettes/south_america_west_low.json\",",
+      "kind": "cross_zone_literal",
+      "line": 3,
+      "path": "game/resources/environment/recipes/vegetation_library.json",
+      "related_line": null
+    },
+    {
+      "evidence": "TOOLS = ROOT / \"game/resources/environment/tools\"",
+      "kind": "cross_zone_literal",
+      "line": 15,
+      "path": "game/resources/environment/tests/test_barrier_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "cls.recipe_path = ROOT / \"game/resources/environment/recipes/barrier_library.json\"",
+      "kind": "cross_zone_literal",
+      "line": 28,
+      "path": "game/resources/environment/tests/test_barrier_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "cls.manifest_path = ROOT / \"game/resources/environment/assets/barriers/barrier_manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 34,
+      "path": "game/resources/environment/tests/test_barrier_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "cls.manifest_path = ROOT / \"game/resources/environment/assets/buildings/building_manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "game/resources/environment/tests/test_building_asset_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "self.recipe_doc = json.loads((ROOT / \"game/resources/environment/recipes/vegetation_library.json\").read_text(encoding=\"utf-8\"))",
+      "kind": "cross_zone_literal",
+      "line": 21,
+      "path": "game/resources/environment/tests/test_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "report = audit_manifest(ROOT, ROOT / \"game/resources/environment/assets/manifest.json\")",
+      "kind": "cross_zone_literal",
+      "line": 25,
+      "path": "game/resources/environment/tests/test_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "output = repo / \"game/resources/environment/assets\"",
+      "kind": "cross_zone_literal",
+      "line": 44,
+      "path": "game/resources/environment/tests/test_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "audit = repo / \"game/resources/environment/generated/library_audit\"",
+      "kind": "cross_zone_literal",
+      "line": 45,
+      "path": "game/resources/environment/tests/test_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "manifest = json.loads((ROOT / \"game/resources/environment/assets/manifest.json\").read_text(encoding=\"utf-8\"))",
+      "kind": "cross_zone_literal",
+      "line": 51,
+      "path": "game/resources/environment/tests/test_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--manifest\", type=Path, default=Path(\"game/resources/environment/assets/manifest.json\"))",
+      "kind": "cross_zone_literal",
+      "line": 112,
+      "path": "game/resources/environment/tools/audit_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ASSET_DIR = Path(\"game/resources/environment/assets/barriers\")",
+      "kind": "cross_zone_literal",
+      "line": 25,
+      "path": "game/resources/environment/tools/build_barrier_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "OUTPUT_DIR = Path(\"game/resources/environment/assets/buildings\")",
+      "kind": "cross_zone_literal",
+      "line": 15,
+      "path": "game/resources/environment/tools/build_building_asset_manifest.py",
+      "related_line": null
+    },
+    {
+      "evidence": "preview = repo / \"game/resources/environment/generated/library_audit\" / f\"{recipe['id']}.png\"",
+      "kind": "cross_zone_literal",
+      "line": 52,
+      "path": "game/resources/environment/tools/build_tree_color_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "output_root = repo / \"game/resources/environment/assets\"",
+      "kind": "cross_zone_literal",
+      "line": 76,
+      "path": "game/resources/environment/tools/build_tree_color_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "audit_root = repo / \"game/resources/environment/generated/library_audit\"",
+      "kind": "cross_zone_literal",
+      "line": 77,
+      "path": "game/resources/environment/tools/build_tree_color_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "output_root = repo / \"game/resources/environment/assets\"; audit_root = repo / \"game/resources/environment/generated/library_audit\"",
+      "kind": "cross_zone_literal",
+      "line": 322,
+      "path": "game/resources/environment/tools/build_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "path = args.repo / \"game/resources/environment/assets/manifest.json\"; path.write_text(json.dumps(manifest, indent=2) + \"\\n\", encoding=\"utf-8\")",
+      "kind": "cross_zone_literal",
+      "line": 340,
+      "path": "game/resources/environment/tools/build_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "copies the canonical GLBs into game/resources/environment/assets/, installs the",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"trees\": \"game/resources/environment/recipes/tree_color_library.json\",",
+      "kind": "cross_zone_literal",
+      "line": 26,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"bushes\": \"game/resources/environment/recipes/bush_color_library.json\",",
+      "kind": "cross_zone_literal",
+      "line": 27,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"preview\": f\"game/resources/environment/generated/library_audit/{asset_id}.png\",",
+      "kind": "cross_zone_literal",
+      "line": 74,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "target = repo / \"game/resources/environment/assets\" / category / f\"{asset_id}.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 127,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "published_manifest = repo / \"game/resources/environment/assets/manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 133,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "$configPath = Join-Path $root 'blender\\track_pipeline\\configs\\la_chutana.json'",
+      "kind": "cross_zone_literal",
+      "line": 33,
+      "path": "scripts/human_gate_check.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "[string]$FixtureSource = \"blender/track_pipeline/tests/fixtures/compile_track.svg\",",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "scripts/run-circuit-editor.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "[string]$FixtureRegistry = \"blender/track_pipeline/tests/fixtures/asset_registry_blender_test.json\",",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "scripts/run-circuit-editor.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "# game runtime (game/assets/generated/) and the legacy raster pipeline are",
+      "kind": "cross_zone_literal",
+      "line": 21,
+      "path": "scripts/run-circuit-editor.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$pipeline = Join-Path $repo \"blender\\track_pipeline\"",
+      "kind": "cross_zone_literal",
+      "line": 58,
+      "path": "scripts/run-circuit-editor.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$pipeline = Join-Path $repo \"blender\\track_pipeline\"",
+      "kind": "cross_zone_literal",
+      "line": 17,
+      "path": "scripts/run_authoring_server.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$trackConfigPath = Join-Path $root 'blender\\track_pipeline\\configs\\la_chutana.json'",
+      "kind": "cross_zone_literal",
+      "line": 27,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$barrierManifestPath = Join-Path $root 'blender\\track_pipeline\\manifests\\la_chutana_safety_barriers_v3.json'",
+      "kind": "cross_zone_literal",
+      "line": 28,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$barrierAssetManifestPath = Join-Path $root 'game\\resources\\environment\\assets\\barriers\\barrier_manifest_v3.json'",
+      "kind": "cross_zone_literal",
+      "line": 29,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$barrierConstructionManifestPath = Join-Path $root 'game\\resources\\environment\\manifests\\barrier_construction_manifest_v2.json'",
+      "kind": "cross_zone_literal",
+      "line": 30,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$barrierRecipeManifestPath = Join-Path $root 'game\\resources\\environment\\recipes\\barrier_library.json'",
+      "kind": "cross_zone_literal",
+      "line": 31,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$barrierPaletteManifestPath = Join-Path $root 'game\\resources\\environment\\palettes\\barrier_palette.json'",
+      "kind": "cross_zone_literal",
+      "line": 32,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$barrierGeneratorPath = Join-Path $root 'game\\resources\\environment\\tools\\build_barrier_3d_library.py'",
+      "kind": "cross_zone_literal",
+      "line": 33,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$environmentBuilderPath = Join-Path $root 'blender\\track_pipeline\\build_environment_blender.py'",
+      "kind": "cross_zone_literal",
+      "line": 34,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$buildingAssetManifestPath = Join-Path $root 'game\\resources\\environment\\assets\\buildings\\building_manifest.json'",
+      "kind": "cross_zone_literal",
+      "line": 35,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$buildingSourceManifestPath = Join-Path $root 'game\\resources\\environment\\manifests\\building_sources.json'",
+      "kind": "cross_zone_literal",
+      "line": 36,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$buildingConstructionManifestPath = Join-Path $root 'game\\resources\\environment\\manifests\\building_construction_manifest.json'",
+      "kind": "cross_zone_literal",
+      "line": 37,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$buildingGeneratorPath = Join-Path $root 'game\\resources\\environment\\tools\\build_building_asset_manifest.py'",
+      "kind": "cross_zone_literal",
+      "line": 38,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$buildingIntegrationValidatorPath = Join-Path $root 'blender\\track_pipeline\\validate_building_asset_integration.py'",
+      "kind": "cross_zone_literal",
+      "line": 39,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$tracksideIntegrationValidatorPath = Join-Path $root 'blender\\track_pipeline\\validate_trackside_asset_integration.py'",
+      "kind": "cross_zone_literal",
+      "line": 40,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$pipeline = Join-Path $repo \"blender\\track_pipeline\"",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "scripts/run_semantic_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$v2SourceManifest = Join-Path $repo \"assets-lowpoly-python\\nature\\source_manifest.json\"",
+      "kind": "cross_zone_literal",
+      "line": 15,
+      "path": "scripts/run_semantic_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "Runtime = Join-Path $repo \"game\\assets\\generated\\tracks\\$Track\\$Track.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 68,
+      "path": "scripts/run_semantic_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "Runtime = Join-Path $repo \"game\\assets\\generated\\tracks\\$Track\\${Track}_vegetation.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 72,
+      "path": "scripts/run_semantic_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$pipeline = Join-Path $repo \"blender\\track_pipeline\"",
+      "kind": "cross_zone_literal",
+      "line": 30,
+      "path": "scripts/run_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "Join-Path $repo \"game\\assets\\generated\\tracks\\$Track\\${Track}_environment.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 166,
+      "path": "scripts/run_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "Join-Path $repo \"game\\assets\\generated\\tracks\\$Track\\${Track}_$($ReviewMode.ToLowerInvariant().Replace('safetybarrier','safety_barrier'))_review.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 168,
+      "path": "scripts/run_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$runtimeTrack = Join-Path $repo \"game\\assets\\generated\\tracks\\$Track\\$Track.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 194,
+      "path": "scripts/run_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$runtimeBuild = Join-Path $repo \"game\\assets\\generated\\tracks\\$Track\\runtime_build.json\"",
+      "kind": "cross_zone_literal",
+      "line": 195,
+      "path": "scripts/run_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$pipeline = Join-Path $repo \"blender\\track_pipeline\"",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "scripts/setup_track_pipeline.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "PACKAGE = ROOT / \"game/assets/models/vehicles/f1_94/decoupled\"",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "scripts/validate_f1_94_decoupled.py",
+      "related_line": null
+    },
+    {
+      "evidence": "chassis_path = \"game/assets/models/vehicles/jordan_197/jordan_197_chassis.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "tools/asset_pipeline/analyze_suspension_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fl_path = \"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fl.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "tools/asset_pipeline/analyze_suspension_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fr_path = \"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fr.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "tools/asset_pipeline/analyze_suspension_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rl_path = \"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rl.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "tools/asset_pipeline/analyze_suspension_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rr_path = \"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rr.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "tools/asset_pipeline/analyze_suspension_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "chassis_path = \"game/assets/models/vehicles/jordan_197/jordan_197_chassis.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "tools/asset_pipeline/find_hub_datums.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fl = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fl.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 45,
+      "path": "tools/asset_pipeline/find_hub_datums.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rl = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rl.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 46,
+      "path": "tools/asset_pipeline/find_hub_datums.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_BUNDLE = REPO_ROOT / \"assets-lowpoly-python/vehicles/F194_GEVP_READY\"",
+      "kind": "cross_zone_literal",
+      "line": 21,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_CANONICAL = REPO_ROOT / \"assets-lowpoly-python/vehicles/canonical/f1_94_gevp_ready.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 22,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_OUTPUT = REPO_ROOT / \"game/assets/models/vehicles/f1_94\"",
+      "kind": "cross_zone_literal",
+      "line": 23,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_vehicle_glb\": \"assets-lowpoly-python/vehicles/canonical/f1_94_gevp_ready.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 373,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"vehicle_glb\": \"assets-lowpoly-python/vehicles/canonical/f1_94_gevp_ready.glb\",",
+      "kind": "cross_zone_literal",
+      "line": 419,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"metadata\": \"assets-lowpoly-python/vehicles/F194_GEVP_READY/vehicle_metadata.json\",",
+      "kind": "cross_zone_literal",
+      "line": 421,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"repair_bundle\": \"assets-lowpoly-python/vehicles/F194_GEVP_READY\",",
+      "kind": "cross_zone_literal",
+      "line": 422,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "/ \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 15,
+      "path": "tools/asset_pipeline/generate_jordan_197_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "/ \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated_datums.json\"",
+      "kind": "cross_zone_literal",
+      "line": 19,
+      "path": "tools/asset_pipeline/generate_jordan_197_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_OUTPUT = REPO_ROOT / \"game/assets/models/vehicles/jordan_197\"",
+      "kind": "cross_zone_literal",
+      "line": 21,
+      "path": "tools/asset_pipeline/generate_jordan_197_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_SOURCE = REPO_ROOT / \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 39,
+      "path": "tools/asset_pipeline/generate_vehicle_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_OUTPUT = REPO_ROOT / \"game/assets/models/vehicles/jordan_197\"",
+      "kind": "cross_zone_literal",
+      "line": 40,
+      "path": "tools/asset_pipeline/generate_vehicle_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "chassis_scene = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_chassis.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "tools/asset_pipeline/solve_exact_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fl_scene = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fl.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "tools/asset_pipeline/solve_exact_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fr_scene = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fr.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "tools/asset_pipeline/solve_exact_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rl_scene = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rl.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "tools/asset_pipeline/solve_exact_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rr_scene = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rr.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "tools/asset_pipeline/solve_exact_alignment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "SOURCE = REPO_ROOT / \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "tools/asset_pipeline/tests/test_gltf_normals.py",
+      "related_line": null
+    },
+    {
+      "evidence": "SOURCE = REPO_ROOT / \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 20,
+      "path": "tools/asset_pipeline/tests/test_vehicle_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DATUMS = REPO_ROOT / \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated_datums.json\"",
+      "kind": "cross_zone_literal",
+      "line": 21,
+      "path": "tools/asset_pipeline/tests/test_vehicle_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_SOURCE = REPO_ROOT / \"assets-lowpoly-python/vehicles/canonical/formula_reference_livery_contract_annotated.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 25,
+      "path": "tools/asset_pipeline/validate_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_RUNTIME_DIR = REPO_ROOT / \"game/assets/models/vehicles/jordan_197\"",
+      "kind": "cross_zone_literal",
+      "line": 26,
+      "path": "tools/asset_pipeline/validate_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "chassis_scene = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_chassis.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 5,
+      "path": "tools/asset_pipeline/verify_mesh_contacts.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fl = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fl.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 6,
+      "path": "tools/asset_pipeline/verify_mesh_contacts.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_fr = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_fr.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 7,
+      "path": "tools/asset_pipeline/verify_mesh_contacts.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rl = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rl.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "tools/asset_pipeline/verify_mesh_contacts.py",
+      "related_line": null
+    },
+    {
+      "evidence": "wheel_rr = trimesh.load(\"game/assets/models/vehicles/jordan_197/jordan_197_wheel_rr.glb\")",
+      "kind": "cross_zone_literal",
+      "line": 9,
+      "path": "tools/asset_pipeline/verify_mesh_contacts.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ap.add_argument(\"--bank\", type=Path, default=Path(\"game/sounds/banks/v10_vehicle\"))",
+      "kind": "cross_zone_literal",
+      "line": 115,
+      "path": "tools/audio/bank_validator.py",
+      "related_line": null
+    },
+    {
+      "evidence": "Bank contract: game/sounds/banks/v10_vehicle/*.wav + bank_manifest.json",
+      "kind": "cross_zone_literal",
+      "line": 8,
+      "path": "tools/audio/render_audio_scenario.py",
+      "related_line": null
+    },
+    {
+      "evidence": "BANK_DIR = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 28,
+      "path": "tools/audio/render_audio_scenario.py",
+      "related_line": null
+    },
+    {
+      "evidence": ">>> synth.render_to_wav(\"game/sounds/banks/v10_vehicle/engine_test.wav\")",
+      "kind": "cross_zone_literal",
+      "line": 20,
+      "path": "tools/audio/synthesis/orchestrator.py",
+      "related_line": null
+    },
+    {
+      "evidence": "bank = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 30,
+      "path": "tools/audio/tests/test_bank_determinism.py",
+      "related_line": null
+    },
+    {
+      "evidence": "bank = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 60,
+      "path": "tools/audio/tests/test_bank_determinism.py",
+      "related_line": null
+    },
+    {
+      "evidence": "bank = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 68,
+      "path": "tools/audio/tests/test_bank_determinism.py",
+      "related_line": null
+    },
+    {
+      "evidence": "bank = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 86,
+      "path": "tools/audio/tests/test_bank_determinism.py",
+      "related_line": null
+    },
+    {
+      "evidence": "BANK = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "tools/audio/tests/test_bank_format.py",
+      "related_line": null
+    },
+    {
+      "evidence": "[\"--output\", \"game/sounds/banks/unsafe-preview\"],",
+      "kind": "cross_zone_literal",
+      "line": 26,
+      "path": "tools/audio/tests/test_cli_boundaries.py",
+      "related_line": null
+    },
+    {
+      "evidence": "[\"--out\", \"game/sounds/scenarios/unsafe-preview\"],",
+      "kind": "cross_zone_literal",
+      "line": 30,
+      "path": "tools/audio/tests/test_cli_boundaries.py",
+      "related_line": null
+    },
+    {
+      "evidence": "BANK = Path(\"game/sounds/banks/v10_vehicle\")",
+      "kind": "cross_zone_literal",
+      "line": 13,
+      "path": "tools/audio/tests/test_scenario_renderer.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REF_PATH = os.path.join(ROOT, \"assets-lowpoly-python\", \"background\", \"background_layering_codex\", \"reference\", \"00_original_reference.jpg\")",
+      "kind": "cross_zone_literal",
+      "line": 10,
+      "path": "tools/background_analysis/analyze_composition.py",
+      "related_line": null
+    },
+    {
+      "evidence": "$protectedAssetPath = Join-Path $workspacePath \"assets-lowpoly-python\"",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "tools/cleanup/archive_legacy_blender.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "$protectedBackendPath = Join-Path $workspacePath \"blender\\track_pipeline\\blender_backend\"",
+      "kind": "cross_zone_literal",
+      "line": 12,
+      "path": "tools/cleanup/archive_legacy_blender.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "-not $_.FullName.StartsWith((Join-Path $workspacePath \"blender\\track_pipeline\\.venv\") + '\\', [StringComparison]::OrdinalIgnoreCase) -and",
+      "kind": "cross_zone_literal",
+      "line": 56,
+      "path": "tools/cleanup/archive_legacy_blender.ps1",
+      "related_line": null
+    },
+    {
+      "evidence": "source = REPO / \"assets-lowpoly-python\" / \"vehicles\" / \"blender\" / \"Untitled.blend\"",
+      "kind": "cross_zone_literal",
+      "line": 90,
+      "path": "tools/vehicle_studio/tests/test_blend_scan.py",
+      "related_line": null
+    },
+    {
+      "evidence": "FIXTURE = \"blender/track_pipeline/tests/fixtures/assets/valid_tree.glb\"",
+      "kind": "cross_zone_literal",
+      "line": 18,
+      "path": "tools/vehicle_studio/tests/test_cad_views.py",
+      "related_line": null
+    },
+    {
+      "evidence": "VARIANT = REPO / \"game/assets/models/vehicles/f1_94/variants/f1_2009_fw31\"",
+      "kind": "cross_zone_literal",
+      "line": 11,
+      "path": "tools/vehicle_studio/tests/test_runtime_variant_2009.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"vehicle_glb\": \"assets-lowpoly-python/vehicles/canonical/f1_94_gevp_ready.glb\",",
+      "kind": "game_source_dependency",
+      "line": 15,
+      "path": "game/assets/models/vehicles/f1_94/vehicle_runtime_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"metadata\": \"assets-lowpoly-python/vehicles/F194_GEVP_READY/vehicle_metadata.json\",",
+      "kind": "game_source_dependency",
+      "line": 17,
+      "path": "game/assets/models/vehicles/f1_94/vehicle_runtime_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"repair_bundle\": \"assets-lowpoly-python/vehicles/F194_GEVP_READY\"",
+      "kind": "game_source_dependency",
+      "line": 18,
+      "path": "game/assets/models/vehicles/f1_94/vehicle_runtime_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/engine_high.wav\",",
+      "kind": "game_source_dependency",
+      "line": 35,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 57,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 76,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 103,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/engine_mid.wav\",",
+      "kind": "game_source_dependency",
+      "line": 147,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 169,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 188,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 207,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 226,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998); remastered with modular synthesis (impact stages)\",",
+      "kind": "game_source_dependency",
+      "line": 278,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998); remastered with modular synthesis (impact stages)\",",
+      "kind": "game_source_dependency",
+      "line": 301,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998); remastered with modular synthesis (impact stages)\",",
+      "kind": "game_source_dependency",
+      "line": 324,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/impact_hit_1.wav\",",
+      "kind": "game_source_dependency",
+      "line": 359,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/impact_hit_2.wav\",",
+      "kind": "game_source_dependency",
+      "line": 385,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/impact_hit_3.wav\",",
+      "kind": "game_source_dependency",
+      "line": 411,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/impact_hit_4.wav\",",
+      "kind": "game_source_dependency",
+      "line": 437,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/int_backfire.wav\",",
+      "kind": "game_source_dependency",
+      "line": 496,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/int_backfire_2.wav\",",
+      "kind": "game_source_dependency",
+      "line": 522,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 536,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/shift_down.wav\",",
+      "kind": "game_source_dependency",
+      "line": 569,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/shift_up.wav\",",
+      "kind": "game_source_dependency",
+      "line": 597,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 611,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 630,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"provenance\": \"derived from original samples (source-assets/audio/legacy-f1-1998)\",",
+      "kind": "game_source_dependency",
+      "line": 649,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "\"source_file\": \"source-assets/audio/replacements/f1_94/tyre_scrub.wav\",",
+      "kind": "game_source_dependency",
+      "line": 685,
+      "path": "game/sounds/banks/v10_vehicle/bank_manifest.json",
+      "related_line": null
+    },
+    {
+      "evidence": "SUITE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "blender/analysis_suite/tests/test_cli_contract.py",
+      "related_line": null
+    },
+    {
+      "evidence": "SUITE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "blender/analysis_suite/tests/test_glb_adapter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "SUITE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "blender/analysis_suite/tests/test_predicates.py",
+      "related_line": null
+    },
+    {
+      "evidence": "SUITE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "blender/analysis_suite/tests/test_reporting.py",
+      "related_line": null
+    },
+    {
+      "evidence": "SUITE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "blender/analysis_suite/tests/test_vehicle_policy.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 69,
+      "path": "blender/track_pipeline/analyze_vegetation_textures.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 23,
+      "path": "blender/track_pipeline/apply_asphalt_texture.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 60,
+      "path": "blender/track_pipeline/apply_ground_cover_to_terrain.py",
+      "related_line": null
+    },
+    {
+      "evidence": "forge_manifest = output.parents[4] / \"texture_forge_manifest.json\"",
+      "kind": "parent_arithmetic",
+      "line": 99,
+      "path": "blender/track_pipeline/apply_ground_cover_to_terrain.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 38,
+      "path": "blender/track_pipeline/authoring/server.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_PIPELINE = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 16,
+      "path": "blender/track_pipeline/blender_backend/_validate_objects_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_PIPELINE = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 15,
+      "path": "blender/track_pipeline/blender_backend/_validate_road_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_PIPELINE = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 15,
+      "path": "blender/track_pipeline/blender_backend/_validate_terrain_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 23,
+      "path": "blender/track_pipeline/bootstrap_la_chutana_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 54,
+      "path": "blender/track_pipeline/bootstrap_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 18,
+      "path": "blender/track_pipeline/build_asset_registry.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 560,
+      "path": "blender/track_pipeline/build_environment_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "marker = SCRIPT_DIR.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 24,
+      "path": "blender/track_pipeline/build_jordan_tire_barrier_asset.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 71,
+      "path": "blender/track_pipeline/build_normalized_track_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 263,
+      "path": "blender/track_pipeline/build_raw_vegetation_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 63,
+      "path": "blender/track_pipeline/build_svg_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 389,
+      "path": "blender/track_pipeline/build_track_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "root = config_path.parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 17,
+      "path": "blender/track_pipeline/compile_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 36,
+      "path": "blender/track_pipeline/compile_svg_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 15,
+      "path": "blender/track_pipeline/curb_manifest.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 43,
+      "path": "blender/track_pipeline/document_vegetation_palette.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "blender/track_pipeline/generate_barrier_assets.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 502,
+      "path": "blender/track_pipeline/generate_environment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 367,
+      "path": "blender/track_pipeline/generate_procedural_textures.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 62,
+      "path": "blender/track_pipeline/import_la_chutana.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = Path(ns.config).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 89,
+      "path": "blender/track_pipeline/inspect_assets_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo_root = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 15,
+      "path": "blender/track_pipeline/prepare_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo_root = root.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 106,
+      "path": "blender/track_pipeline/procedural_materials_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 218,
+      "path": "blender/track_pipeline/rebuild_curated_vegetation.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 105,
+      "path": "blender/track_pipeline/recut_vegetation_textures.py",
+      "related_line": null
+    },
+    {
+      "evidence": "root = layout_config_path.parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 222,
+      "path": "blender/track_pipeline/semantic_layout_common.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 7,
+      "path": "blender/track_pipeline/tests/test_asset_registry.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "blender/track_pipeline/tests/test_authoring_revisions.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "blender/track_pipeline/tests/test_authoring_server.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 6,
+      "path": "blender/track_pipeline/tests/test_authoring_store.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "blender/track_pipeline/tests/test_build_ir_backend.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 24,
+      "path": "blender/track_pipeline/tests/test_build_normalized_gateway.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "blender/track_pipeline/tests/test_compile_svg_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "blender/track_pipeline/tests/test_curb_manifest.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "blender/track_pipeline/tests/test_editor_regions.py",
+      "related_line": null
+    },
+    {
+      "evidence": "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config_path = Path(__file__).resolve().parents[1] / \"configs\" / \"la_chutana.json\"",
+      "kind": "parent_arithmetic",
+      "line": 27,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config_path = Path(__file__).resolve().parents[1] / \"configs\" / \"la_chutana.json\"",
+      "kind": "parent_arithmetic",
+      "line": 36,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config_path = Path(__file__).resolve().parents[1] / \"configs\" / \"la_chutana.json\"",
+      "kind": "parent_arithmetic",
+      "line": 45,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 52,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "config_path = Path(__file__).resolve().parents[1] / \"configs\" / \"la_chutana.json\"",
+      "kind": "parent_arithmetic",
+      "line": 57,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 90,
+      "path": "blender/track_pipeline/tests/test_environment_perimeter.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "blender/track_pipeline/tests/test_full_barrier_migration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "blender/track_pipeline/tests/test_guardrail_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 7,
+      "path": "blender/track_pipeline/tests/test_import_la_chutana.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "blender/track_pipeline/tests/test_la_chutana_surface_invariants.py",
+      "related_line": null
+    },
+    {
+      "evidence": "PIPELINE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "blender/track_pipeline/tests/test_object_barrier_hierarchy.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 18,
+      "path": "blender/track_pipeline/tests/test_object_barrier_hierarchy.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 6,
+      "path": "blender/track_pipeline/tests/test_raw_vegetation_pipeline.py",
+      "related_line": null
+    },
+    {
+      "evidence": "root = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 17,
+      "path": "blender/track_pipeline/tests/test_raw_vegetation_pipeline.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "blender/track_pipeline/tests/test_safety_barrier_determinism.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 7,
+      "path": "blender/track_pipeline/tests/test_safety_barrier_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 7,
+      "path": "blender/track_pipeline/tests/test_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 6,
+      "path": "blender/track_pipeline/tests/test_svg_profile.py",
+      "related_line": null
+    },
+    {
+      "evidence": "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "blender/track_pipeline/tests/test_trackside_safety_integration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 13,
+      "path": "blender/track_pipeline/tests/test_trackside_safety_integration.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 21,
+      "path": "blender/track_pipeline/tests/test_validate_godot_load.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "blender/track_pipeline/tests/test_vegetation_regions.py",
+      "related_line": null
+    },
+    {
+      "evidence": "sys.path.insert(0, str(Path(__file__).resolve().parents[1]))",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "blender/track_pipeline/tests/test_vegetation_texture_pipeline.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 16,
+      "path": "blender/track_pipeline/validate_asset_registry.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = config_path.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 32,
+      "path": "blender/track_pipeline/validate_curbs_blender.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 29,
+      "path": "blender/track_pipeline/validate_environment.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 47,
+      "path": "blender/track_pipeline/validate_godot_load.py",
+      "related_line": null
+    },
+    {
+      "evidence": "glb = source_path.parents[2] / item[\"glb\"]",
+      "kind": "parent_arithmetic",
+      "line": 40,
+      "path": "blender/track_pipeline/validate_raw_vegetation_v2.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = layout_path.parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 29,
+      "path": "blender/track_pipeline/validate_semantic_layout.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 17,
+      "path": "blender/track_pipeline/validate_texture_forge.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo = cp.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 19,
+      "path": "blender/track_pipeline/validate_track.py",
+      "related_line": null
+    },
+    {
+      "evidence": "INSPECTOR = Path(__file__).resolve().parents[1] / 'inspect_glb.py'",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "blender/vehicle_pipeline/tests/test_inspect_glb.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 14,
+      "path": "game/resources/environment/tests/test_barrier_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "game/resources/environment/tests/test_building_asset_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "game/resources/environment/tests/test_semantic_cards.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[4]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "game/resources/environment/tests/test_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "repo_root = output_root.parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 315,
+      "path": "game/resources/environment/tools/build_vegetation_3d_library.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "scripts/validate_f1_94_decoupled.py",
+      "related_line": null
+    },
+    {
+      "evidence": "parser.add_argument(\"--root\", type=Path, default=Path(__file__).resolve().parents[2])",
+      "kind": "parent_arithmetic",
+      "line": 205,
+      "path": "tools/agent_validation/validate_agents.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 20,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 38,
+      "path": "tools/asset_pipeline/generate_vehicle_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "PIPELINE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "tools/asset_pipeline/tests/test_gltf_normals.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO_ROOT = PIPELINE_DIR.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 17,
+      "path": "tools/asset_pipeline/tests/test_gltf_normals.py",
+      "related_line": null
+    },
+    {
+      "evidence": "PIPELINE_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "tools/asset_pipeline/tests/test_vehicle_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO_ROOT = PIPELINE_DIR.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "tools/asset_pipeline/tests/test_vehicle_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO_ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 24,
+      "path": "tools/asset_pipeline/validate_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 18,
+      "path": "tools/background_analysis/capture_runtime_mountains.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[2]",
+      "kind": "parent_arithmetic",
+      "line": 13,
+      "path": "tools/background_analysis/render_mountain_preview.py",
+      "related_line": null
+    },
+    {
+      "evidence": "COMMON_DIR = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "tools/common/tests/test_content_flow.py",
+      "related_line": null
+    },
+    {
+      "evidence": "_REPO = Path(__file__).resolve().parents[5]",
+      "kind": "parent_arithmetic",
+      "line": 17,
+      "path": "tools/track_studio/crates/track-geometry/tests/generate_centerline_golden.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "tools/vehicle_studio/tests/test_api_server.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "tools/vehicle_studio/tests/test_blend_scan.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = ROOT.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "tools/vehicle_studio/tests/test_blend_scan.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "tools/vehicle_studio/tests/test_build_ir.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "tools/vehicle_studio/tests/test_cad_views.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = ROOT.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "tools/vehicle_studio/tests/test_cad_views.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 9,
+      "path": "tools/vehicle_studio/tests/test_glb_scan.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = ROOT.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "tools/vehicle_studio/tests/test_glb_scan.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 8,
+      "path": "tools/vehicle_studio/tests/test_initial_revision.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 12,
+      "path": "tools/vehicle_studio/tests/test_materializer.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = ROOT.parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 13,
+      "path": "tools/vehicle_studio/tests/test_materializer.py",
+      "related_line": null
+    },
+    {
+      "evidence": "FIXTURE = Path(__file__).parents[1] / \"fixtures\" / \"vehicle_document_valid_minimal.json\"",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "tools/vehicle_studio/tests/test_project_service.py",
+      "related_line": null
+    },
+    {
+      "evidence": "REPO = Path(__file__).resolve().parents[3]",
+      "kind": "parent_arithmetic",
+      "line": 10,
+      "path": "tools/vehicle_studio/tests/test_runtime_variant_2009.py",
+      "related_line": null
+    },
+    {
+      "evidence": "ROOT = Path(__file__).resolve().parents[1]",
+      "kind": "parent_arithmetic",
+      "line": 11,
+      "path": "tools/vehicle_studio/tests/test_vehicle_document.py",
+      "related_line": null
+    },
+    {
+      "evidence": "\"runtime_dir\": \"game/assets/generated/tracks/la_chutana\",",
+      "kind": "runtime_output_default",
+      "line": 5,
+      "path": "blender/track_pipeline/configs/la_chutana.json",
+      "related_line": null
+    },
+    {
+      "evidence": "OUTPUT_DIR = Path(\"game/resources/environment/assets/buildings\")",
+      "kind": "runtime_output_default",
+      "line": 15,
+      "path": "game/resources/environment/tools/build_building_asset_manifest.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_OUTPUT = REPO_ROOT / \"game/assets/models/vehicles/f1_94\"",
+      "kind": "runtime_output_default",
+      "line": 23,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_OUTPUT = REPO_ROOT / \"game/assets/models/vehicles/jordan_197\"",
+      "kind": "runtime_output_default",
+      "line": 21,
+      "path": "tools/asset_pipeline/generate_jordan_197_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_OUTPUT = REPO_ROOT / \"game/assets/models/vehicles/jordan_197\"",
+      "kind": "runtime_output_default",
+      "line": 40,
+      "path": "tools/asset_pipeline/generate_vehicle_runtime.py",
+      "related_line": null
+    },
+    {
+      "evidence": "DEFAULT_RUNTIME_DIR = REPO_ROOT / \"game/assets/models/vehicles/jordan_197\"",
+      "kind": "runtime_output_default",
+      "line": 26,
+      "path": "tools/asset_pipeline/validate_assembly_equivalence.py",
+      "related_line": null
+    },
+    {
+      "evidence": "[\"--output\", \"game/sounds/banks/unsafe-preview\"],",
+      "kind": "runtime_output_default",
+      "line": 26,
+      "path": "tools/audio/tests/test_cli_boundaries.py",
+      "related_line": null
+    },
+    {
+      "evidence": "output.write_text(json.dumps(registry, indent=2, sort_keys=True) + \"\\n\", encoding=\"utf-8\")",
+      "kind": "runtime_write_candidate",
+      "line": 134,
+      "path": "blender/track_pipeline/build_asset_registry.py",
+      "related_line": 90
+    },
+    {
+      "evidence": "copy = src.copy()",
+      "kind": "runtime_write_candidate",
+      "line": 65,
+      "path": "blender/track_pipeline/build_jordan_tire_barrier_asset.py",
+      "related_line": 121
+    },
+    {
+      "evidence": "copy = mesh.copy()",
+      "kind": "runtime_write_candidate",
+      "line": 418,
+      "path": "game/resources/environment/tools/build_barrier_3d_library.py",
+      "related_line": 25
+    },
+    {
+      "evidence": "mesh = scene.geometry[geometry_name].copy()",
+      "kind": "runtime_write_candidate",
+      "line": 28,
+      "path": "game/resources/environment/tools/build_building_asset_manifest.py",
+      "related_line": 15
+    },
+    {
+      "evidence": "report_path.write_text(json.dumps(report, indent=2) + \"\\n\", encoding=\"utf-8\")",
+      "kind": "runtime_write_candidate",
+      "line": 97,
+      "path": "game/resources/environment/tools/build_tree_color_library.py",
+      "related_line": 52
+    },
+    {
+      "evidence": "glb.write_bytes(scene.export(file_type=\"glb\"))",
+      "kind": "runtime_write_candidate",
+      "line": 313,
+      "path": "game/resources/environment/tools/build_vegetation_3d_library.py",
+      "related_line": 322
+    },
+    {
+      "evidence": "report_path.write_text(json.dumps(report, indent=2) + \"\\n\", encoding=\"utf-8\")",
+      "kind": "runtime_write_candidate",
+      "line": 96,
+      "path": "game/resources/environment/tools/publish_vegetation_library.py",
+      "related_line": 6
+    },
+    {
+      "evidence": "New-Item -ItemType Directory -Force -Path $work | Out-Null",
+      "kind": "runtime_write_candidate",
+      "line": 111,
+      "path": "scripts/run-circuit-editor.ps1",
+      "related_line": 21
+    },
+    {
+      "evidence": "New-Item -ItemType Directory -Force -Path $runtimeAppData, $runtimeLocalAppData | Out-Null",
+      "kind": "runtime_write_candidate",
+      "line": 135,
+      "path": "scripts/run_f1_94.ps1",
+      "related_line": 29
+    },
+    {
+      "evidence": "New-Item -ItemType Directory -Path $backupDir -Force | Out-Null",
+      "kind": "runtime_write_candidate",
+      "line": 76,
+      "path": "scripts/run_semantic_track_pipeline.ps1",
+      "related_line": 68
+    },
+    {
+      "evidence": "$buildRecord | ConvertTo-Json | Set-Content -LiteralPath $runtimeBuild -Encoding utf8",
+      "kind": "runtime_write_candidate",
+      "line": 241,
+      "path": "scripts/run_track_pipeline.ps1",
+      "related_line": 166
+    },
+    {
+      "evidence": "path.write_bytes(result)",
+      "kind": "runtime_write_candidate",
+      "line": 116,
+      "path": "tools/asset_pipeline/generate_f1_94_runtime.py",
+      "related_line": 23
+    },
+    {
+      "evidence": "mesh = scene.geometry[geometry_name].copy()",
+      "kind": "runtime_write_candidate",
+      "line": 94,
+      "path": "tools/asset_pipeline/generate_vehicle_runtime.py",
+      "related_line": 40
+    },
+    {
+      "evidence": "mesh = scene.geometry[geometry_name].copy()",
+      "kind": "runtime_write_candidate",
+      "line": 64,
+      "path": "tools/asset_pipeline/validate_assembly_equivalence.py",
+      "related_line": 26
+    },
+    {
+      "evidence": "with open(out_csv, \"w\", newline=\"\", encoding=\"utf-8\") as f:",
+      "kind": "runtime_write_candidate",
+      "line": 164,
+      "path": "tools/audio/render_audio_scenario.py",
+      "related_line": 8
+    }
+  ],
+  "scan_roots": [
+    "blender",
+    "tools",
+    "game",
+    "scripts",
+    "tests",
+    "native"
+  ],
+  "scanned_file_count": 950,
+  "schema_version": 1
+}

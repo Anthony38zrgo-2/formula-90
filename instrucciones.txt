@@ -1,333 +1,207 @@
-HANDOFF - IMPLEMENTACION BARRERAS V3 + VEGETACION CANONICA
-===========================================================
-Repo: D:\Formula90s   (pipeline Blender + Godot game)
-Tambien hay arte generado en: D:\assets-3d-tencent\gen\barriers_v2
+# Handoff — Mejoras de desacoplamiento y robustez de build (Formula90s)
 
-------------------------------------------------------------------
-PARTE A - BARRERAS V3 (YA MIGRADAS EN PIPELINE, FALTA REBUILD)
-------------------------------------------------------------------
+Este documento es un handoff detallado del análisis y el plan de mejoras
+derivado del incidente: "audio V10 silencioso + 7ª marcha no disponible"
+en el coche f1_2026_2008. El objetivo es evitar que errores de este tipo
+(DESINCRONIZACION de SHA/BUILD, constantes hardcodeadas, validacion
+enganosa, acoplamiento entre capas) vuelvan a ocurrir con frecuencia.
 
-A.1 ESTADO: HECHO
------------------
-1. Assets nuevos generados (origen):
-   D:\assets-3d-tencent\gen\barriers_v2\
-     assets\modules\   (8 modulos 2 m + colisiones; tires low-poly 10x6,
-                        banda superior BLANCA, checkerboard solo navy/white chicane)
-     assets\runs\      (tiras rectas centradas 10/25/50/100 m:
-                        armco, jersey, tire_black 1/2/3 capas, tire_navy 1/2)
-                        + 3 spline-bakes en mundo (armco 400 m, jersey 169 m,
-                        tire_black 252 m)
-     assets\review\    (catalogos PNG: barrier_modules_catalog_v3.png,
-                        barrier_runs_catalog_v3.png)
-     manifests\        (barrier_manifest_v3.json, barrier_run_manifest_v3.json,
-                        barrier_spline_manifest_v3.json,
-                        proposed_safety_barriers_v3.json)
-     reports\          (replacement_plan.json, validation_report.json)
+================================================================================
+0. CONTEXTO / INCIDENTE RAIZ
+================================================================================
 
-2. Assets INSTALADOS en el juego:
-   D:\Formula90s\game\resources\environment\assets\barriers\v3\
-     modules\  runs\  spline\  review\   (68 GLBs, ~91 MB, sha256 verificados)
+Sintomas:
+  - El audio del V10 no sonaba en absoluto.
+  - La 7ª marcha no estaba disponible (el coche solo subia hasta 6ª).
 
-3. Manifiestos/contratos en el game repo:
-   game\resources\environment\assets\barriers\barrier_manifest_v3.json
-     - schema 3, generator "gen_barriers_v2"
-     - assets = 31 ids usados por el layout (paridad 1:1 con prototypes)
-     - spline_assets = 3 (mundo, aparte del parity set)
-   blender\track_pipeline\manifests\la_chutana_safety_barriers_v3.json
-     - layout v2-compilable con run-prototypes
-     - compila SIN gaps, cobertura exacta ambos lados
-     - 2420 registros de modulo -> 387 (-84% draw calls), 4.10M -> 3.04M tris
-     - runs capados por curvatura real (sagitta <= 0.35 m) por segmento
-   game\resources\environment\manifests\barrier_construction_manifest_v2.json
-     - contrato v2: tires lowpoly 10x6/120 tris (runs 8x5/80), banda blanca
-       permitida, rojo prohibido, contrato de runs (pivot run_center)
-     - el contrato v1 queda como historico para la libreria v1
+Causa raiz del AUDIO:
+  - Desincronizacion de res://BUILD_SOURCE. El DLL compilado lleva embebido
+    FORMULA90_BUILD_SHA = git rev-parse HEAD = 6d862847e5b8466267a25be907f168acfe94fce3,
+    pero game/BUILD_SOURCE contenia d7d8a08fca460341cf1591f508bd58be4c7d1c14 (SHA viejo).
+  - El gate de F90Core::load_dll (f90_core.cpp:221) fallaba con:
+      FATAL: native BUILD does not match recorded source.
+      Native=6d862847... recorded=d7d8a08f...
+  - Eso hacia que el facade NUNCA se inicializara -> cero audio.
+  - El coche se movia porque F194RustVehicle tiene fisica legacy propia,
+    pero sin F90Core no hay cadena de audio.
 
-4. Cambios de codigo/config (git diff):
-   la_chutana.json: safety_barriers.manifest -> ..._v3.json,
-                    asset_library_manifest -> barrier_manifest_v3.json,
-                    construction_manifest -> _v2.json
-   build_environment_blender.py: load_barrier_asset_library() acepta
-                    (schema 3, generator "gen_barriers_v2")
-   test_full_barrier_migration.py: lee v3 + test nuevo de reduccion de records
-   NUEVO: game\resources\environment\assets\barriers\v3\ (todo)
+Causa del BUG de 7ª:
+  - Cap hardcodeado `current_gear < 6` en f1_94_rust_input_controller.gd.
+  - YA CORREGIDO a data-driven leyendo gear_ratios.size() del JSON.
 
-5. Tests verdes: full_barrier_migration, determinism (3/4),
-   trackside/guardrail/curb (8/8). UNICO fallo restante es PREEXISTENTE y stale:
-   test_safety_barrier_determinism.py::test_segment_change_does_not_change_other_module_hash_data
-   (asume layout con segmentos antiguos; falla igual en baseline v1).
+Fix YA APLICADO (parche temporal):
+  - game/BUILD_SOURCE escrito con el HEAD actual.
+  - build_windows.ps1 ahora regenera BUILD_SOURCE al inicio del build.
+  - Esto desbloquea, pero NO PREVIENE que vuelva a desincronizarse.
 
-A.2 PENDIENTE: REBUILD + IMPORT
--------------------------------
-1. (Gate previo, opcional) validar entorno: 
-   python blender\track_pipeline\validate_environment.py --config blender\track_pipeline\configs\la_chutana.json
+================================================================================
+1. HALLAZGOS CLAVE (EVIDENCIA)
+================================================================================
 
-2. Rebuild ambiente con Blender:
-   blender -b --python blender\track_pipeline\build_environment_blender.py -- \
-     --config blender\track_pipeline\configs\la_chutana.json --safety-barrier-review
-   - Salidas: blender\generated\la_chutana\track_environment.blend,
-     track_safety_barrier_review.blend + GLBs de entorno
-   - El build instancia 1 objeto por record (runs = 1 malla grande por tira;
-     el placement escala por prototype.module_length_m, sin cambios de codigo)
+1.1 Tres gates de BUILD/SHA en nativo:
+  - F90Core            native/src/core/f90_core.cpp:212-224
+                       (mismatch -> return false, early return) + 2a comprobacion :280-285
+  - VehicleAudio...    native/src/presentation/vehicle_audio_controller_native.cpp:115-127
+                       (mismatch -> return false) + :185-190
+  - F194RustVehicle    native/src/vehicle/f1_94_rust_vehicle.cpp:286-288
+                       SOLO IMPRIME el SHA; NO gatea.
 
-3. Human gate visual (aprobacion):
-   - game\resources\environment\assets\barriers\v3\review\*.png (catalogos)
-   - renders del .blend de review (turnos donde se vean chicane, esses
-     T2-T3, hairpin T4, pit line; comprobar: sin rojo, banda blanca,
-     empalmes de runs rectos en curvas sin cortes horribles)
+1.2 SHA generado en 4 sitios independientes (puede derivar):
+  - SConstruct:10-13                       -> C++ (libformula90s)
+  - formula90-core/build.rs:4-15           -> crate Rust
+  - vehicle-audio-engine/build.rs:4-15     -> crate Rust
+  - vehicle-physics-engine/build.rs        -> hash CORTO, nunca comparado
 
-4. Godot 4 import:
-   - Importar game\resources\environment\assets\barriers\v3\**
-   - Import flags: mantener vertex colors (COLOR_0, material blanco base),
-     DoubleSided segun material; colision: usar la Geometria/convex de los
-     GLB *_collision.glb (son cajas exactas) o StaticBody propia.
-   - Notas completas: D:\assets-3d-tencent\gen\barriers_v2\godot\README_import.md
+1.3 -ValidateRuntimeOnly es un NO-OP que imprime "validado" sin verificar nada:
+  - run_f1_94.ps1:210-213
+  - run_f1_94_no_rebuild.ps1:187-190
+  Enganoso: da sensacion de validacion exitosa cuando no la hay.
 
-5. Verificacion de carga Godot (si aplica al pipeline):
-   python blender\track_pipeline\validate_godot_load.py --env-glb <env.glb> \
-     --veg-glb <veg.glb> --track-id la_chutana
+1.4 Ruta de config triplicada:
+  - physics_config_path  (vehicle node, f1_94_rust_vehicle.hpp:72)
+  - config_json_path     (F90Core,        f90_core.hpp:210)
+  - F1_94_PHYSICS_CONFIG hardcodeado en telemetry_manager.gd:21
+        BUG LATENTE: siempre lee el JSON de f1_94 aunque el coche sea otro.
 
-6. Rollback (si algo falla): restos v1 siguen intactos en
-   game\resources\environment\assets\barriers\*.glb (sin v3/ en config, o
-   git revert de la_chutana.json + build_environment_blender.py).
-   NOTA: el difft de la_chutana.json reescribio la estructura del JSON
-   (en vez de preservar indentacion) - revisar antes de commitear.
+1.5 Magic strings:
+  - Bus "Vehicle" triplicado:
+        ensure_vehicle_bus.gd:16,23
+        f90_core.cpp:666,674,675
+        vehicle_audio_controller_native.cpp:249,257,258
+    Ademas el nodo de escena se llama "VehicleAudio" (nombre confuso).
+  - Bank res://sounds/banks/v10_vehicle hardcodeado en
+        vehicle_audio_controller_native.cpp:198
+    (F90Core SI usa la propiedad bank_dir).
 
-A.3 DETALLES CRITICOS (no olvidar)
------------------------------------
-- Pivot: modulos "ground_center" (snap colision 2.0 m exacto); runs "run_center"
-  (simetrico -L/2..+L/2, requerido por el placement existente).
-- Familias de runs: run_armco_10/25/50/100m, run_jersey_*, run_tire_black_*
-  (suffix ""=1 capa, "_2l", "_3l"), run_tire_navy_* (suffix "", "_2l").
-- Colores de neumaticos: negro + banda top BLANCA (rojo PROHIBIDO en el
-  contrato v2); navy/white checkerboard SOLO en variantes chicane/zonas
-  concretas (los modulos 3D quedan en chicanas; las tiras fusionadas en el
-  resto).
-- Los 3 spline-bakes actuales son de muestra; para reemplazar TODA una
-  seccion curva por un bake de mundo:
-  python gen\barriers_v2\tools\bake_spline_runs.py --family <f> \
-    --start <f>x.x --end <f>y.y --side left|right --distance <m> \
-    [--centerline <path>] [--out-id <id>]
-  (id queda registrado en barrier_spline_manifest_v3.json; el layout v3
-  NO los referencia automaticamente: coordinar con el plan).
+1.6 Error silencioso:
+  - game-sim/src/c_abi.rs:117-120 devuelve 0 sin mensaje en fallo de parseo;
+    formula90-core/src/ffi.rs SI escribe err_buf. Inconsistente.
 
-------------------------------------------------------------------
-PARTE B - VEGETACION CANONICA (ARBOLES Y ARBUSTOS) - PENDIENTE
-------------------------------------------------------------------
+1.7 Manifest physics_sha256 solo se chequea en un test Python
+   (tools/vehicle_studio/tests/test_runtime_variant_2009.py:33);
+   en runtime carga silenciosamente aunque no cuadre.
 
-B.1 FUENTE CANONICA (autoridad)
--------------------------------
-- D:\Formula90s\implementation\manifest.json
-  (schema_version 4, generator "procedural_lanceolate_vegetation_v4")
-- GLBs en D:\Formula90s\implementation\trees\ y ...\bushes\
-   - 6 arboles: tree_3d_01..06 (compact_round, columnar, umbrella,
-     windswept, mature_spreading, young_irregular)
-   - 6 arbustos: bush_3d_01..06 (round, spreading, triangular, creeping,
-     asymmetric, dry_open)
-   - cada base + 5 variantes de color: <id>.glb, _copper, _red,
-     _golden_beige, _yellow  = 72 GLBs en total
-- VERIFICADO: los sha256 de los GLBs de implementation/ coinciden con los del
-  manifest (ej tree_3d_01 = b58c8125...), por tanto implementation/ es la
-  fuente real de los canonicos.
+================================================================================
+2. PLAN DE MEJORAS
+================================================================================
 
-B.2 ALERTA - RUNTIME ACTUAL NO ES CANONICO
--------------------------------------------
-- game\resources\environment\assets\trees\* y ...\bushes\* contienen GLBs
-  con sha256 DIFERENTE (ej tree_3d_01.glb: 3f120bef... vs canonico
-  b58c8125...; bush_3d_01.glb: e641a34b... vs 0c700669...).
-- Son copias viejas/reprocesadas. HAY QUE REPUBLICAR (paso B.4.3) y
-  re-importar en Godot antes de considerar la vegetacion canonica en runtime.
+--------------------------------------------------------------------------------
+P0 — INTEGRIDAD DE BUILD (CRITICO: previene la recurrencia exacta)
+--------------------------------------------------------------------------------
 
-B.3 FLUJO ACTUAL DE CONSUMO (como se engancha)
------------------------------------------------
-1. la_chutana_vegetation_distribution.json (config la_chutana.json lo apunta):
-   - "catalogs": {"trees": game/resources/environment/generated/tree_color_library_report.json,
-                  "bushes": .../bush_color_library_report.json}
-   - global_weights y sectors por color: original / golden_beige / copper /
-     yellow / red (o sea: colores = los sufixos de variante)
-   - "scale": trees 0.9..1.10, bushes 0.9..1.12; review_density low
-2. Los reports (schema 1, generator "..._v3_color_library") son el inventario
-   que consume vegetation_distribution.py (clase VegetationAsset,
-   choose_asset/commit_asset, ProceduralAssetSpec, color_from_id que deduce
-   el color del sufixo del id).
-   - Recetas: game\resources\environment\recipes\tree_color_library.json y
-     bush_color_library.json (variants -> palettes
-     south_america_west_low{,copper,red,golden_beige,yellow}.json, seed_base
-     1100/3100/4100/5100/6100)
-   - Generadores: game\resources\environment\tools\build_tree_color_library.py,
-     build_vegetation_3d_library.py; auditoria:
-     audit_vegetation_3d_library.py
-3. generate_environment.py -> placements.json (stats trees/bushes)
-   build_environment_blender.py -> GLB de entorno + track_environment.blend
-4. Tests existentes que deben seguir pasando:
-   test_semantic_layout.py::is_supported_vegetation_path(trees/tree_3d_01.glb)
-   test_asset_registry.py::tree_3d_06 y bush_3d_06 en registry
-   validate_environment.py --config (contract checks)
+P0.1 Fuente unica de SHA via env-var  (ENFOQUE ELEGIDO)
+  - scripts/build_windows.ps1:
+      Calcular UNA vez:  $sha = (git rev-parse HEAD).Trim()
+      Exportar:          $env:FORMULA90_BUILD_SHA = $sha
+      ANTES de invocar SCons y cargo.
+  - SConstruct:10-13:
+      Leer FORMULA90_BUILD_SHA del entorno si existe; si no, git rev-parse HEAD.
+  - formula90-core/build.rs:4-15  y  vehicle-audio-engine/build.rs:4-15:
+      Leer std::env::var("FORMULA90_BUILD_SHA") primero; fallback a git.
+  - (Opcional, consistencia) vehicle-physics-engine/build.rs:
+      Alinear para usar el mismo SHA de 40 chars en f1_94_physics_build_sha().
+  - RESULTADO: C++, los crates Rust y BUILD_SOURCE comparten un SHA identico
+    e imposible de desincronizar. El gate runtime queda como backstop que
+    nunca deberia dispararse.
 
-B.4 PLAN DE IMPLEMENTACION (sugerido)
----------------------------------------
-1. Validar source: comprobar sha256 manifest.json vs los 72 GLBs de
-   implementation\ (deberia dar 0 discrepancias).
-2. Regenerar los 2 reports de color (build_tree_color_library.py con
-   recipes de arriba); revisar que cada entrada del report referencie los ids
-   y paths canonicos (game/resources/environment/assets/{trees,bushes}/...) y
-   que sus sha/dims coincidan con implementation/manifest.json.
-   - Si alguna variante falta en los report, genera el GLB:
-     build_vegetation_3d_library.py (recipe vegetation_library.json, seeds
-     1101..1106 trees / 2101..2106 bushes)
-3. PUBLICAR: copiar los 72 GLBs:
-     implementation\trees\*.glb -> game\resources\environment\assets\trees\
-     implementation\bushes\*.glb -> game\resources\environment\assets\bushes\
-   (sobrescribir los stale; NO tocar los .import hasta el paso 4)
-4. Godot 4: re-importar (los nombres existen, los .import son de la version
-   vieja: dejar reimportar / rehacer .import):
-   - vertex colors + material base blanco (COLOR_0)
-   - foliage double-sided materials (campo foliage_double_sided_material en
-     el manifest)
-   - sin colision (campo collision=false), sin LOD aun (lod=false)
-5. Rebuild de entorno (si cambia distribution o placements):
-   python blender\track_pipeline\validate_environment.py --config ... y luego
-   el build blender de la parte A.2 (mismo flujo).
-6. Auditoria: audit + review PNG + validate_godot_load; aprobacion humana
-   (silhouette, color por sector, enganches con barriers clearance:
-   barrier_conflict usa vegetation_clearance_m del manifest de barreras).
+P0.2 scripts/check_runtime_parity.ps1  (nuevo, pre-launch)
+  - expected = git rev-parse HEAD
+  - recorded = Get-Content game/BUILD_SOURCE (strip)
+  - Assert expected == recorded  y  recorded.length() == 40.
+    Con P0.1 esto garantiza que todos los DLL desplegados coinciden
+    (porque se construyeron con ese mismo SHA).
+  - (Opcional) Recalcular SHA256 del JSON de fisica de cada vehiculo y
+    comparar con physics_sha256 de su manifest.json; fallar con mensaje
+    accionable si difiere.
+  - Llamar este script desde run_f1_94.ps1 y run_f1_94_no_rebuild.ps1
+    ANTES de lanzar Godot.
 
-B.5 DECISIONES ABIERTAS (para ti)
------------------------------------
-- LODs: los canonicos son lod=false; con ~2.9-3.9k tris foliares + ~1k wood
-  por arbol, en circuitos largos conviene LOD o MultiMesh; si se quiere,
-  implementar distancias o variantes strip (a definir).
-- Ubicacion de colision de arboles cercanos a pista: hoy none; con los
-  canonicos decidir si se anade colision solo para arboles a < clearance.
-- Plazos de aparicion de los spline-bakes en el layout v3 (decisión sobre
-  curvas): hoy el layout usa runs rectos centrados capados por curvatura;
-  los spline-bakes quedan como opcion de calidad superior por tramo.
+P0.3 Arreglar -ValidateRuntimeOnly
+  - Reemplazar el no-op (run_f1_94.ps1:210-213, run_f1_94_no_rebuild.ps1:187-190)
+    por una llamada real a check_runtime_parity.ps1 (o al menos el assert
+    HEAD==BUILD_SOURCE). Eliminar el mensaje enganoso "validado".
 
-RESULTADOS CLAVE V3 (para el reporte/human gate)
------------------------------------------------
-- Barreras: 2420 instancias -> 387 records; draw calls -84%; tris -26%
-  (4.10M -> 3.04M) manteniendo la silueta y el contrato de colision.
-- Los modulos 3D de neumaticos navy/white + plastic quedan SOLO en chicanas
-  y zonas designadas; armco/jersey/tires del resto son tiras fusionadas.
+--------------------------------------------------------------------------------
+P1 — DESACOPLAR GDSCRIPT DE LA CONFIG NATIVA
+--------------------------------------------------------------------------------
 
-------------------------------------------------------------------
-PARTE B - ESTADO ACTUAL (sprint vegetacion canonica, sin rebuild)
-------------------------------------------------------------------
+P1.1 Exponer get_gear_count() / get_gear_ratios()
+  - Anadir al FFI de F194RustVehicle (y/o F90Core) un getter que devuelva el
+    nº de marchas del config cargado (el facade ya tiene el config).
+  - El input controller usara vehicle.get_gear_count() en vez de re-leer/parsear
+    el JSON: mantiene el beneficio data-driven pero elimina el duplicado de
+    ruta/parseo. Conservar el fallback a JSON como red de seguridad.
 
-HECHO:
-1. Canonicos publicados: 60 GLBs (12 ids x 5 variantes; el handoff decia 72,
-   real = 60) copiados de implementation/ -> game/resources/environment/assets/
-   {trees,bushes}/ (sha verificados 1:1), manifest schema 4 instalado.
-2. Color reports regenerados (generator _v4_color_library, dims/tris/sha reales
-   de los GLBs publicados) + 60 previews library_audit + 2 contact sheets.
-3. Registry regenerado (build_asset_registry.py): 21 assets (12 vegetacion v4 +
-   9 markers). RETIRADAS 18 entradas assets_v2/manifest.csv muertas (fuentes
-   inexistentes; pipeline raw_vegetation v2 retirado). test_asset_registry
-   actualizado (21 assets, sin tree_v2_01).
-4. Audit tool adaptado a contrato v4 (foliage_double_sided_material) y tests
-   actualizados. Suite game 20/20 OK; test_asset_registry+test_semantic_layout
-   16/16 OK; audit exit 0.
-5. Godot reimport hecho (--headless --import, exit 0); .import intactos.
-6. Generadores v3 marcados DEPRECADOS (VEGETATION_LANCEOLATE_PROCESS.md):
-   no regenerar assets con ellos (sobrescribirian canonicos). Publicacion:
-   python game/resources/environment/tools/publish_vegetation_library.py --repo .
+P1.2 Autoridad unica de ruta de config
+  - F90Core.config_json_path es la autoridad. En _ready del vehicle (o del
+    F90Core), derivar physics_config_path del core cuando exista, eliminando
+    la propiedad duplicada.
+  - telemetry_manager.gd:21: reemplazar F1_94_PHYSICS_CONFIG hardcodeado por
+    lectura de config_json_path del vehiculo/F90Core activo.
 
-PENDIENTE (proximo sprint, con human gate de Parte A):
-- Regenerar placements.json (dims canonicas cambian radios) + validate_environment.
-- Rebuild Blender -> publicar la_chutana.glb (hornea barreras v3 + vegetacion
-  canonica) + BUILD/HEAD parity + validate_godot_load + smoke tests.
-- Human gate visual runtime (silhouette/color por sector, enganche barriers).
+--------------------------------------------------------------------------------
+P2 — ELIMINAR MAGIC STRINGS
+--------------------------------------------------------------------------------
 
-BACKLOG - DENSIDAD ARBOLES +50% (min):
-- Mecanismo: con semantic_environment.enabled=true los arboles salen del SVG de
-  autoria (game/data/tracks_revisions/la_chutana/revisions/1f49978e.../track.canonical.svg)
-  via layout bootstrap (layout_config.json "bootstrap".tree_zone_radius_m=10.0,
-  spacing en import_la_chutana.py). NO usan density_profiles (esos aplican en
-  modo procedural via generate_environment.py --trees-density low|medium...).
-- Opcion A (autoridad semantica): aumentar instancias de arboles en el SVG de
-  autoria (import_la_chutana/bootstrap) + nueva revision authoring store.
-- Opcion B (procedural): desactivar semantic_environment y usar
-  --trees-density medium (60/km vs 36/km = +67%).
-- Validar: conflictos barrera/vegetacion (clearance trees 1.0 m), occupancy,
-  y coste (arbol canonico ~3.8k tris, sin LOD; presupuesto MAX 10k tris/asset).
+P2.1 Bank path
+  - vehicle_audio_controller_native.cpp:198: sustituir el literal
+    res://sounds/banks/v10_vehicle por la propiedad bank_dir compartida
+    (igual que usa F90Core). Anadir propiedad bank_dir a
+    VehicleAudioControllerNative que espeje la de F90Core.
 
-------------------------------------------------------------------
-PARTE C - DENSIDAD ARBOLES +50% (dry, sin rebuild runtime)
-------------------------------------------------------------------
+P2.2 Nombre de bus constante
+  - Definir const String VEHICLE_AUDIO_BUS = "Vehicle"; en un header
+    compartido (o constante en .gd autoload) usado por ensure_vehicle_bus.gd,
+    f90_core.cpp y vehicle_audio_controller_native.cpp.
+  - Unificar el naming del nodo de escena ("VehicleAudio" -> algo coherente)
+    para evitar confusion.
 
-HECHO:
-1. Mecanismo elegido tras investigacion: tree_overlap_factor 1.0->0.75
-   (layout_config.json) + object_catalog trees min/max 130->200. Se testearon
-   los levers disponibles: spacing (pico 190 @10.0m), overlap (193 @0.8),
-   combinados (hasta 230). Se eligio overlap 0.75 con spacing 12.5m intacto
-   (minimo dano a la distribucion autorada). Resultado: 200 arboles (+53.8%).
-2. Nueva revision de autoria: 3771d6311... (parent 1f49978e; 200 arboles, 110
-   arbustos, 4660 grass) creada via bootstrap_la_chutana_track.py --force +
-   commit scoped (36ecce5). la_chutana.json source_svg actualizado.
-3. Descubierto y resuelto: scale_multiplier arboles 1.85 (legado de v3)
-   ~inflaba radios canonicos un 85% y producia 2 violaciones de validate
-   (clearance + conflicto barrera). Con los v4 a tamano real (dims disenadas
-   a target) se fijo 1.0 -> validate VERDE. Arboles ahora 8-16m (antes
-   15-30m): REVISAR en el rebuild/gate.
-4. Colateral: revision vieja tenia grass 9320 (catalogo viejo); nueva 4660
-   (catalogo commitado). Cards hierba siguen 2000; textura share 0.18,
-   impacto ~nil.
-5. Validaciones: compile 200 arboles; validate_environment ALL PASS
-   (trees 200, bushes 110, colores dominante original 91/50/29/20/10;
-   overlaps autoradas preservadas=237; conflictos barrera=0;
-   props=124; buildings=7). Tests 16/16 + 20/20 OK.
-6. Renders review: blender/generated/la_chutana/review/vegetation_review_
-   aerial.png + _trackside.png (HUMAN GATE: aprobar). runtime NO publicado.
+--------------------------------------------------------------------------------
+P3 — SUPERFICIE DE ERRORES Y GUARDAS DE REGRESION
+--------------------------------------------------------------------------------
 
-PENDIENTE (rebuild, tras gate A):
-- Rebuild completo: regenerar entorno con placements 200 arboles + barreras v3
-  + publicar la_chutana.glb + BUILD parity + validate_godot_load + smoke test
-  + gate visual runtime (tamano arboles 8-16m a aprobar).
-- Comitar cambios Parte C: layout_config.json, object_catalog.json,
-  la_chutana.json (MIXTO con Parte A: sugiere commit hunks o commit conjunto
-  tras gate A), revisiones ya commiteadas por authoring store.
+P3.1 Unificar reporte de errores FFI
+  - game-sim/src/c_abi.rs:117-120: en fallo de from_json_path, escribir
+    err_buf + printerr en vez de return 0 silencioso.
 
-------------------------------------------------------------------
-PARTE D - REBUILD COMPLETO CON GATES (HECHO)
-------------------------------------------------------------------
+P3.2 Log de skip de audio en headless
+  - f90_core.cpp create_audio_nodes: cuando es headless,
+    print("[F90Core] audio nodes skipped (headless)") para no parecer roto.
 
-RESULTADO: runtime reconstruido y publicado con barreras v3 (A) + vegetacion
-canonica v4 (B) + 200 arboles (C, +53.8%). BUILD/HEAD parity VALIDADA.
+P3.3 Test de integracion cargo
+  - Extender el test de vehicle-physics-engine para cargar cada JSON de
+    vehiculo shipeado en game/data/vehicles/*/ y assert validate() pasa y
+    gear_ratios.len() == traction_control_*.len().
+    Detecta JSON obsoletos sin abrir Godot.
 
-1. run_track_pipeline -Mode Base: PASS (track 2419.998m, curbs 10/10 manifold,
-   terrain 69434 tris). NOTA: el generador v1 de barreras borraba de la carpeta
-   los .json/.glb/.png externos (mataba barrier_manifest_v3.json en CADA run).
-   FIX: build_barrier_3d_library.py _publish_directory ahora protege nombres
-   'barrier_manifest_v3*'.
-2. Barrier manifest v3 game-side se habia perdido (por el bug de arriba);
-   RECONSTRUIDO desde D:\assets-3d-tencent\gen\barriers_v2\manifests\
-   (union que usa el layout: 31 assets = 8 modulos + 23 runs; rutas reescritas
-   a game/resources/environment/assets/barriers/v3/{modules,runs}/; shas
-   verificados 1:1). test_full_barrier_migration PASS.
-3. FIX naming mallas: GLBs v3 de tencent traen las mallas con el id sin sufijo
-   '<id>_visual'; validate_barrier_asset_integration lo exige ->
-   build_environment_blender.import_barrier_asset_prototype renombra
-   mesh.data a '<id>_visual'. Gate de barreras PASS (387 modulos, 20
-   colisiones, 31 assets, 341 mallas, 0 legacy).
-4. Gate vegetacion PASS (renders nuevos) y PUBLICACION: la_chutana.glb
-   (57.7MB -> 140.7MB por 200 arboles v4 + runs v3) + runtime_build.json
-   (head 36ecce5). Validators barrier/building/trackside PASS.
-5. run_f1_94: -ValidateRuntimeOnly PASS (BUILD/HEAD parity OK) -
-   -Smoke PASS (HUD + Mountains3D) - -Parity PHY-010 FALLA: 82.2-82.5 km/h
-   vs >=85 esperado. A/B test contra el GLB COMMITTED viejo: TAMBIEN falla
-   (82.5) -> REGRESION PREEXISTENTE, NO causada por este rebuild. Backlog:
-   investigar tune/vehicle physics (probablemente f1_94_physics.json o cambio
-   de setup entre fb18bba y anteriores; el A/B y telemetry en
-   user://godot_f1_94_chutana_telemetry.csv).
-6. Smoke vegetacion ACTUALIZADO: la escena test_field declara
-   vegetation_vertex_color_binder.gd pero NUNCA lo instancia (referencia
-   muerta); smoke ahora lo instancia en runtime: PASS 2908/2908 superficies
-   con pigmentacion vinculada (confirmado binding COLOR_0 + double-sided
-   material en los 200 arboles + 110 arbustos).
-7. PENDIENTE COMIT: cambios A+B+C+D mezclados (la_chutana.json, layouts,
-   tools, smoke, run_f1_94, manifest v3 + v3/ untracked, la_chutana.glb
-   tracked). Sugerencia: commit conjunto del estado rebuildeado tras gate
-   humano (PARITY es item aparte).
-8. Gate humano PENDIENTE: revisar renders safety_barrier_* (7) y
-   vegetation_review_* (2) en blender/generated/la_chutana/review/ + abrir
-   runtime (scripts/open_godot_la_chutana.ps1).
+P3.4 Auto-regenerar physics_sha256 del manifest
+  - En build_windows.ps1, tras copiar DLLs, recalcular el SHA256 del JSON de
+    fisica y actualizar physics_sha256 en el manifest.json afectado para que
+    no derive.
+
+================================================================================
+3. ORDEN DE IMPLEMENTACION SUGERIDO
+================================================================================
+
+  1. P0.1 -> P0.2 -> P0.3   (critico; previene la recurrencia exacta)
+  2. P1.1 -> P1.2           (desacopla GDScript de la config nativa)
+  3. P2.1 -> P2.2           (elimina magic strings)
+  4. P3.1 -> P3.4           (robustez y regresion)
+
+================================================================================
+4. RIESGOS / NOTAS
+================================================================================
+
+- P0.1 toca SConstruct y los build.rs: conservar el fallback a
+  `git rev-parse HEAD` para que builds fuera de CI (invocando scons/cargo
+  directo) sigan funcionando.
+- El gate runtime FATAL se mantiene como backstop; con P0.1 no deberia
+  dispararse nunca.
+- check_runtime_parity.ps1 es suficiente verificando HEAD == BUILD_SOURCE
+  (gracias a P0.1 todos los DLL comparten ese SHA); no hace falta invocar
+  exports de DLL desde PowerShell.
+- Verificar que el cambio de env-var no rompa bootstrap_windows.ps1 ni
+  pipelines que llamen a scons/cargo directamente (usaran el fallback git).
+- Mantener el principio RUNTIME PARITY del AGENTS.md: el runtime debe
+  rechazar binarios cuyo BUILD no coincida con HEAD; P0 lo hace fallar
+  rapido y ANTES del launch, no como FATAL silencioso dentro de Godot.
