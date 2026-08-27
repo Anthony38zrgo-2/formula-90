@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "formula90s://formats/audio_bank/manifest.schema.json",
+  "title": "Formula90s audio bank manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "bank_name",
+    "sample_rate",
+    "channels",
+    "pcm_bits",
+    "files"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "bank_name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9_-]*$"
+    },
+    "sample_rate": {
+      "type": "integer",
+      "const": 44100
+    },
+    "channels": {
+      "type": "integer",
+      "const": 1
+    },
+    "pcm_bits": {
+      "type": "integer",
+      "const": 16
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "generator": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/file"
+      }
+    }
+  },
+  "$defs": {
+    "file": {
+      "type": "object",
+      "required": [
+        "file",
+        "role",
+        "loop",
+        "duration_s",
+        "sha256"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "pattern": "^[^/\\\\]+\\.wav$"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "loop": {
+          "type": "boolean"
+        },
+        "duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "loop_start_s": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "loop_end_s": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "loudness_dbfs": {
+          "type": "number"
+        },
+        "peak": {
+          "type": "number"
+        },
+        "dc_offset": {
+          "type": "number"
+        },
+        "provenance": {
+          "type": "string"
+        },
+        "synthesis": {
+          "type": "object"
+        },
+        "playback": {
+          "type": "object",
+          "required": ["native_rpm"],
+          "properties": {
+            "native_rpm": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "engine_band": {
+              "type": "object",
+              "required": ["index", "center", "width"],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "center": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "width": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
