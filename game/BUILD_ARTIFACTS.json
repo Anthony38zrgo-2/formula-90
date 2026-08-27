@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "8c8e0970c24eaa10d763534462a70b1f741cb0a6",
+  "source_commit": "d7d8a08fca460341cf1591f508bd58be4c7d1c14",
   "platform": "windows-x86_64",
   "configuration": [
     "template_debug"
@@ -8,13 +8,13 @@
   "artifacts": [
     {
       "path": "game/addons/formula90s/bin/formula90_core.dll",
-      "bytes": 2566144,
-      "sha256": "2d1065ecff77dfdfaa919b383372c276ee56cb573545030ebf2b716606f2d0f8"
+      "bytes": 2605056,
+      "sha256": "6fc71ea9a954b52690cd661c52917754b5ba509e1ca0e31fec4b5c5b0106addd"
     },
     {
       "path": "game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
-      "bytes": 2566144,
-      "sha256": "2d1065ecff77dfdfaa919b383372c276ee56cb573545030ebf2b716606f2d0f8"
+      "bytes": 2605056,
+      "sha256": "6fc71ea9a954b52690cd661c52917754b5ba509e1ca0e31fec4b5c5b0106addd"
     },
     {
       "path": "game/addons/formula90s/bin/game_sim.dll",
@@ -29,7 +29,7 @@
     {
       "path": "game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
       "bytes": 983552,
-      "sha256": "b90bb39a0b6cb428770bb391b052dc177dfec06dc8399ab720b7a09607369732"
+      "sha256": "ca7fe9a93b060c4c580d187151339bae9407e96e421c4811a6020c1cdccf904b"
     },
     {
       "path": "game/addons/formula90s/bin/psx_art_plugin.dll",
@@ -43,13 +43,13 @@
     },
     {
       "path": "game/addons/formula90s/bin/vehicle_audio_engine.dll",
-      "bytes": 1363968,
-      "sha256": "dc3e9baa791477374de81edc8be5c12c433a88430a67f0b3a449074051363344"
+      "bytes": 1402368,
+      "sha256": "21948d0d0342e43912faa0fba2e8a7792e9f6ade202e014f2cab7edc448140f3"
     },
     {
       "path": "game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
-      "bytes": 1363968,
-      "sha256": "dc3e9baa791477374de81edc8be5c12c433a88430a67f0b3a449074051363344"
+      "bytes": 1402368,
+      "sha256": "21948d0d0342e43912faa0fba2e8a7792e9f6ade202e014f2cab7edc448140f3"
     },
     {
       "path": "game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
