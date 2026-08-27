@@ -1,0 +1,692 @@
+{
+  "files": {
+    "f1_2026_2008_chassis.glb": 3313624,
+    "f1_2026_2008_wheel_front.glb": 3449124,
+    "f1_2026_2008_wheel_rear.glb": 3521656,
+    "f1_2026_2008_source.blend": 10054449,
+    "vehicle_metadata.json": 3401
+  },
+  "mesh_stats": {
+    "GEO_CHASSIS_ACTIVEFRONT": {
+      "vertices": 256,
+      "polygons": 490,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_ACTIVEREAR": {
+      "vertices": 108,
+      "polygons": 192,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_AEROPART2": {
+      "vertices": 108,
+      "polygons": 192,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_AEROPART3": {
+      "vertices": 160,
+      "polygons": 256,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_BODY": {
+      "vertices": 5527,
+      "polygons": 10744,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_LIVERY_YELLOW",
+        "MAT_LIVERY_RED",
+        "MAT_LIVERY_BLACK"
+      ]
+    },
+    "GEO_CHASSIS_CARBON3": {
+      "vertices": 25,
+      "polygons": 24,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_CARBON4": {
+      "vertices": 50,
+      "polygons": 64,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_CARBON5": {
+      "vertices": 613,
+      "polygons": 1136,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_ENDPLATE": {
+      "vertices": 1860,
+      "polygons": 3712,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_LIVERY_YELLOW"
+      ]
+    },
+    "GEO_CHASSIS_FLOOR": {
+      "vertices": 4991,
+      "polygons": 9952,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_FRONTSUPPORT": {
+      "vertices": 160,
+      "polygons": 316,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_FRONTWING": {
+      "vertices": 864,
+      "polygons": 1656,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_LATERALCAM": {
+      "vertices": 40,
+      "polygons": 72,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_MIRRORS": {
+      "vertices": 424,
+      "polygons": 840,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_LIVERY_RED"
+      ]
+    },
+    "GEO_CHASSIS_ONBOARDCAM": {
+      "vertices": 54,
+      "polygons": 104,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_REAR_WING": {
+      "vertices": 556,
+      "polygons": 1104,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_LIVERY_YELLOW"
+      ]
+    },
+    "GEO_CHASSIS_REARLIGHT": {
+      "vertices": 79,
+      "polygons": 128,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_MECHANICAL_DARK"
+      ]
+    },
+    "GEO_CHASSIS_REARSUPPORT": {
+      "vertices": 16,
+      "polygons": 24,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_EXHAUST": {
+      "vertices": 256,
+      "polygons": 508,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_MECHANICAL_DARK"
+      ]
+    },
+    "GEO_CHASSIS_FRONT_SUSPENSION": {
+      "vertices": 128,
+      "polygons": 224,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_INTERIOR": {
+      "vertices": 463,
+      "polygons": 792,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_REAR_SUSPENSION": {
+      "vertices": 80,
+      "polygons": 136,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_SEAT": {
+      "vertices": 108,
+      "polygons": 212,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_STEER": {
+      "vertices": 886,
+      "polygons": 1752,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_CYLINDER_001": {
+      "vertices": 128,
+      "polygons": 252,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_SCREEN": {
+      "vertices": 28,
+      "polygons": 24,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_MECHANICAL_DARK"
+      ]
+    },
+    "GEO_CHASSIS_SHIFTERBRAK": {
+      "vertices": 48,
+      "polygons": 88,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_SHIFTERTHRO": {
+      "vertices": 48,
+      "polygons": 88,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_CHASSIS_STEERCOLUM": {
+      "vertices": 128,
+      "polygons": 252,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_CARBON_PBR"
+      ]
+    },
+    "GEO_WHEEL_HUB": {
+      "vertices": 3083,
+      "polygons": 5898,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_WHEEL_METAL"
+      ]
+    },
+    "GEO_WHEEL_TIRE": {
+      "vertices": 1472,
+      "polygons": 2880,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_SLICK_RUBBER_PBR"
+      ]
+    },
+    "GEO_WHEEL_HUB.001": {
+      "vertices": 3009,
+      "polygons": 5754,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_WHEEL_METAL"
+      ]
+    },
+    "GEO_WHEEL_TIRE.001": {
+      "vertices": 1472,
+      "polygons": 2880,
+      "uv0": true,
+      "degenerate_faces": 0,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "negative_scale": false,
+      "materials": [
+        "MAT_SLICK_RUBBER_PBR"
+      ]
+    }
+  },
+  "tire_boundary_edges": {
+    "front": 0,
+    "rear": 0
+  },
+  "checks": {
+    "three_glb_files_created": true,
+    "source_blend_created": true,
+    "metadata_created": true,
+    "all_geometry_named_GEO": true,
+    "all_materials_named_MAT": true,
+    "uv0_all_meshes": true,
+    "no_degenerate_faces": true,
+    "identity_mesh_transforms": true,
+    "no_negative_scale": true,
+    "front_tire_closed": true,
+    "rear_tire_closed": true,
+    "wheel_contract_nodes_present": true
+  },
+  "passed": true
+}

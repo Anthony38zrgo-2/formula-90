@@ -1,0 +1,153 @@
+{
+  "schema": "formula90s/vehicle-metadata/v1",
+  "vehicle_id": "f1_2026_2008",
+  "format": "glb",
+  "coordinate_contract": {
+    "right": "+X",
+    "left": "-X",
+    "up": "+Y",
+    "front": "-Z",
+    "rear": "+Z",
+    "units": "meters",
+    "origin": "centered longitudinally between axle centers at mean wheel-center height",
+    "transformations_applied": true
+  },
+  "dimensions_m": {
+    "overall_length": 4.775,
+    "overall_width": 1.8,
+    "bodywork_height_from_reference": 0.95,
+    "wheelbase": 3.23,
+    "front_track_center": 1.445,
+    "rear_track_center": 1.42,
+    "front_tire_radius_visual": 0.33,
+    "front_tire_width_visual": 0.355,
+    "rear_tire_radius_visual": 0.33,
+    "rear_tire_width_visual": 0.38,
+    "ground_y": -0.33,
+    "visual_ground_clearance": 0.023363
+  },
+  "validation_datums": {
+    "DATUM_VEHICLE_ORIGIN": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "DATUM_FRONT_AXLE_CENTER": [
+      0.0,
+      0.0,
+      -1.615
+    ],
+    "DATUM_REAR_AXLE_CENTER": [
+      0.0,
+      0.0,
+      1.615
+    ],
+    "JNT_WHEEL_FL": [
+      -0.7225,
+      0.0,
+      -1.615
+    ],
+    "JNT_WHEEL_FR": [
+      0.7225,
+      0.0,
+      -1.615
+    ],
+    "JNT_WHEEL_RL": [
+      -0.71,
+      0.0,
+      1.615
+    ],
+    "JNT_WHEEL_RR": [
+      0.71,
+      0.0,
+      1.615
+    ],
+    "JNT_DRIVER_HEAD": [
+      0.0,
+      0.6288823741674423,
+      -0.2946024417877197
+    ],
+    "JNT_FRONT_WING_MOUNT": [
+      7.450580596923828e-09,
+      -0.15783168375492096,
+      -2.456909418106079
+    ],
+    "JNT_REAR_WING_MOUNT": [
+      -9.313225746154785e-10,
+      0.3431345522403717,
+      1.8965158462524414
+    ]
+  },
+  "wheel_front_datums": {
+    "DATUM_WHEEL_CENTER": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "DATUM_TIRE_CONTACT_PATCH": [
+      0.0,
+      -0.33,
+      0.0
+    ],
+    "DATUM_WHEEL_INBOARD_FACE": [
+      -0.1775,
+      0.0,
+      0.0
+    ],
+    "DATUM_WHEEL_OUTBOARD_FACE": [
+      0.1775,
+      0.0,
+      0.0
+    ],
+    "JNT_WHEEL_MOUNT": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "wheel_rear_datums": {
+    "DATUM_WHEEL_CENTER": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "DATUM_TIRE_CONTACT_PATCH": [
+      0.0,
+      -0.33,
+      0.0
+    ],
+    "DATUM_WHEEL_INBOARD_FACE": [
+      -0.19,
+      0.0,
+      0.0
+    ],
+    "DATUM_WHEEL_OUTBOARD_FACE": [
+      0.19,
+      0.0,
+      0.0
+    ],
+    "JNT_WHEEL_MOUNT": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "assets": {
+    "chassis": "f1_2026_2008_chassis.glb",
+    "wheel_front": "f1_2026_2008_wheel_front.glb",
+    "wheel_rear": "f1_2026_2008_wheel_rear.glb",
+    "source_blend": "f1_2026_2008_source.blend"
+  },
+  "hierarchy": {
+    "right_side_yaw_baked": false,
+    "negative_scale_used": false,
+    "wheel_pivot_at_origin": true,
+    "wheel_rotation_axis_local": "+X/-X",
+    "wheel_asset_orientation": "right-side; outboard is +X; instantiate left wheels with 180-degree rotation, never negative scale"
+  },
+  "notes": {
+    "JNT_DRIVER_HEAD": "Reference-only joint included to satisfy the interface contract; this model has no driver head geometry.",
+    "tyres": "Unbranded slick tyres retained deliberately; no 2008 grooves.",
+    "design": "2026 halo/chassis/aerodynamic architecture in a Ferrari F2008-inspired macro envelope."
+  }
+}
