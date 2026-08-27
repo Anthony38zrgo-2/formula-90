@@ -53,7 +53,8 @@ __pycache__/
 .vscode/
 .idea/
 tmp/
-scratch/
+scratch/*
+!scratch/README.md
 car1_sprite_sheet.png
 build_log.txt
 suspension_report.png
@@ -73,7 +74,3 @@ diagnostics/
 
 # Raw archives (3D models are committed as GLB in assets/)
 *.rar
-
-# Local-only sound backups (keep tracked .gdignore)
-game/sounds/banks/v10_vehicle/backup/*
-!game/sounds/banks/v10_vehicle/backup/.gdignore
