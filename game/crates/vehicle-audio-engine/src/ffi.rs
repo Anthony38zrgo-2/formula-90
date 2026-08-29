@@ -11,7 +11,7 @@ use std::ffi::{c_char, c_void, CStr};
 use std::path::Path;
 
 /// ABI version. Bump on any signature/semantic change to the symbols below.
-pub const VEHICLE_AUDIO_ABI_VERSION: u32 = 1;
+pub const VEHICLE_AUDIO_ABI_VERSION: u32 = 2;
 
 /// Opaque handle = `Box<VehicleAudioEngine>` leaked via `Box::into_raw`.
 pub struct AudioHandle;
@@ -140,6 +140,58 @@ pub unsafe extern "C" fn vehicle_audio_render(
 #[no_mangle]
 pub extern "C" fn vehicle_audio_abi_version() -> u32 {
     VEHICLE_AUDIO_ABI_VERSION
+}
+
+/// Set the camera-to-vehicle listener distance in metres.
+///
+/// # Safety
+/// `handle` must be a valid engine handle.
+#[no_mangle]
+pub unsafe extern "C" fn vehicle_audio_set_listener_distance(handle: *mut c_void, distance_m: f32) {
+    if handle.is_null() {
+        return;
+    }
+    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    engine.set_listener_distance(distance_m);
+}
+
+/// Get the camera-to-vehicle listener distance in metres.
+///
+/// # Safety
+/// `handle` must be a valid engine handle.
+#[no_mangle]
+pub unsafe extern "C" fn vehicle_audio_listener_distance(handle: *mut c_void) -> f32 {
+    if handle.is_null() {
+        return 0.0;
+    }
+    let engine = &*(handle as *mut VehicleAudioEngine);
+    engine.listener_distance()
+}
+
+/// Set the traction-control cut ratio [0.0, 1.0] on the active synth.
+///
+/// # Safety
+/// `handle` must be a valid engine handle.
+#[no_mangle]
+pub unsafe extern "C" fn vehicle_audio_set_tc_cut(handle: *mut c_void, cut_ratio: f32) {
+    if handle.is_null() {
+        return;
+    }
+    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    engine.set_tc_cut(cut_ratio);
+}
+
+/// Set the RPM-limiter hard gate enabled flag on the active synth.
+///
+/// # Safety
+/// `handle` must be a valid engine handle.
+#[no_mangle]
+pub unsafe extern "C" fn vehicle_audio_set_limiter_flag(handle: *mut c_void, active: bool) {
+    if handle.is_null() {
+        return;
+    }
+    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    engine.set_limiter_flag(active);
 }
 
 /// Build SHA (or "unknown"). NUL-terminated.

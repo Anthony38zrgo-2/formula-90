@@ -265,6 +265,7 @@ bool F90Core::load_dll() {
 	fn_audio_render_ = (FnCoreAudioRender)GetProcAddress(hDll, "f90_core_audio_render");
 	fn_audio_trigger_ = (FnCoreAudioTrigger)GetProcAddress(hDll, "f90_core_audio_trigger");
 	fn_audio_readouts_ = (FnCoreAudioReadouts)GetProcAddress(hDll, "f90_core_audio_readouts");
+	fn_audio_set_ambient_ = (FnCoreAudioSetAmbient)GetProcAddress(hDll, "f90_core_audio_set_ambient");
 
 	const uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	const String core_build_sha = fn_build_sha_ ? String(fn_build_sha_()) : String("unknown");
@@ -318,6 +319,7 @@ void F90Core::unload_dll() {
 	fn_audio_render_ = nullptr;
 	fn_audio_trigger_ = nullptr;
 	fn_audio_readouts_ = nullptr;
+	fn_audio_set_ambient_ = nullptr;
 }
 
 static String json_escape(const String &s) {
@@ -629,11 +631,41 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 	}
 }
 
-void F90Core::_process(double) {
+void F90Core::_process(double delta) {
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
+	update_listener_distance(delta);
+	set_audio_ambient(tc_cut_ratio_, limiter_active_);
 	pump_audio();
+}
+
+void F90Core::update_listener_distance(double delta) {
+	if (!cached_veh_) {
+		return;
+	}
+	Viewport *vp = get_viewport();
+	if (!vp) {
+		return;
+	}
+	Camera3D *cam = vp->get_camera_3d();
+	if (!cam) {
+		return;
+	}
+	const double dx = cam->get_global_transform().get_origin().x - cached_veh_->get_global_transform().get_origin().x;
+	const double dy = cam->get_global_transform().get_origin().y - cached_veh_->get_global_transform().get_origin().y;
+	const double dz = cam->get_global_transform().get_origin().z - cached_veh_->get_global_transform().get_origin().z;
+	const double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+	// One-pole toward the target with ~0.1 s time constant (frame-rate independent).
+	const double alpha = delta > 0.0 ? 1.0 - std::exp(-delta / 0.1) : 0.0;
+	listener_distance_smoothed_ += (dist - listener_distance_smoothed_) * alpha;
+}
+
+void F90Core::set_audio_ambient(float tc_cut_ratio, bool limiter_active) {
+	if (core_ && fn_audio_set_ambient_) {
+		fn_audio_set_ambient_(
+			core_, static_cast<float>(listener_distance_smoothed_), tc_cut_ratio, limiter_active ? 1 : 0);
+	}
 }
 
 void F90Core::_exit_tree() {

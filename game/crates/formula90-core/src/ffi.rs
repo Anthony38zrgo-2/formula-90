@@ -20,7 +20,8 @@ use crate::underfloor::{UnderfloorRayHit, UnderfloorRigidContact, UnderfloorSamp
 use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
-pub const F90_CORE_ABI_VERSION: u32 = 12;
+/// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
+pub const F90_CORE_ABI_VERSION: u32 = 13;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -610,6 +611,24 @@ pub unsafe extern "C" fn f90_core_audio_render(
     facade_mut(h).audio_render(l, r, n) as u32
 }
 
+/// Set the listener/ambient downlink: camera-to-vehicle distance (m), TC cut
+/// ratio, and RPM-limiter enabled flag. Returns true when the audio mixer is
+/// present and the telemetry was applied.
+/// # Safety
+/// `h` must be null or a valid facade handle.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_set_ambient(
+    h: *mut c_void,
+    distance_m: f32,
+    tc_cut_ratio: f32,
+    limiter_active: bool,
+) -> bool {
+    if h.is_null() {
+        return false;
+    }
+    facade_mut(h).audio_set_ambient(distance_m, tc_cut_ratio, limiter_active)
+}
+
 /// Fire a named one-shot by legacy code (0..10). Returns true if consumed.
 /// # Safety
 /// `h` must be a valid facade handle.
@@ -800,7 +819,10 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, tc_eligible), 1712);
         assert_eq!(offset_of!(F90CoreFrameOut, tc_gear_authority), 1720);
         assert_eq!(offset_of!(F90CoreFrameOut, tc_slip_ratio), 1744);
-        assert_eq!(offset_of!(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm), 1776);
+        assert_eq!(
+            offset_of!(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm),
+            1776
+        );
         assert_eq!(offset_of!(F90CoreFrameOut, pre_tc_drive_power_w), 1808);
         assert_eq!(size_of::<F90CoreFrameOut>(), 1816);
     }

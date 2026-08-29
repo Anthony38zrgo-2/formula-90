@@ -184,6 +184,7 @@ pub struct HalfBlock {
     limiter_target_cut: f32,
     limiter_attack_alpha: f32,
     limiter_release_alpha: f32,
+    limiter_enabled: bool,
     tc: TcEnvelope,
     tc_config: TcConfig,
     tc_attack_alpha: f32,
@@ -234,6 +235,7 @@ impl HalfBlock {
             limiter_target_cut: 0.0,
             limiter_attack_alpha: 0.0,
             limiter_release_alpha: 0.0,
+            limiter_enabled: true,
             tc: TcEnvelope::new(&config.tc),
             tc_config: config.tc.clone(),
             tc_attack_alpha: 0.0,
@@ -278,7 +280,12 @@ impl HalfBlock {
         self.release_alpha = one_pole_alpha(self.sample_rate, self.release_smoothing_s as f64);
         // Limiter gate + cut target are control-time; the smoothed envelope
         // advances per sample so entering/exiting the cut is click-free.
-        self.limiter_target_cut = self.limiter.evaluate(rpm, max_rpm, &self.limiter_config);
+        if self.limiter_enabled {
+            self.limiter_target_cut = self.limiter.evaluate(rpm, max_rpm, &self.limiter_config);
+        } else {
+            self.limiter.active = false;
+            self.limiter_target_cut = 0.0;
+        }
         self.limiter_attack_alpha = one_pole_alpha(
             self.sample_rate,
             self.limiter_config.attack_ms as f64 / 1000.0,
@@ -364,6 +371,12 @@ impl HalfBlock {
     /// the next commit).
     pub fn set_tc_cut_ratio(&mut self, ratio: f32) {
         self.tc.set_target(ratio);
+    }
+
+    /// Enable/disable the RPM-limiter hard gate. While disabled the limiter
+    /// target is forced open (no suppression and no pre-cut ramp).
+    pub fn set_limiter_enabled(&mut self, enabled: bool) {
+        self.limiter_enabled = enabled;
     }
 
     /// Current smoothed traction-control suppression [0.0, 1.0].

@@ -260,6 +260,10 @@ pub struct VehicleAudioEngine {
     synth_volume: f32,
     synth_pan: f32,
     last_synth_energy: f32,
+
+    // Camera-to-vehicle listener distance (metres), forwarded to the controller
+    // and smoothed upstream. Not baked into the synth (see Commit 6 spec).
+    listener_distance: f32,
 }
 
 impl VehicleAudioEngine {
@@ -444,6 +448,7 @@ impl VehicleAudioEngine {
             synth_volume: 1.0,
             synth_pan: 0.0,
             last_synth_energy: 0.0,
+            listener_distance: 0.0,
         })
     }
 
@@ -1073,6 +1078,36 @@ impl VehicleAudioEngine {
     pub fn last_synth_energy(&self) -> f32 {
         self.last_synth_energy
     }
+
+    /// Camera-to-vehicle listener distance in metres. Stored (not folded into
+    /// the synth) so the controller can expose it as telemetry.
+    pub fn set_listener_distance(&mut self, distance: f32) {
+        self.listener_distance = distance.max(0.0);
+    }
+
+    pub fn listener_distance(&self) -> f32 {
+        self.listener_distance
+    }
+
+    /// Set the traction-control cut ratio [0.0, 1.0] on the active synth.
+    /// No-op when the synth is disabled or missing.
+    pub fn set_tc_cut(&mut self, cut_ratio: f32) {
+        if self.synth_enabled {
+            if let Some(synth) = &mut self.synth {
+                synth.set_tc_cut_ratio(cut_ratio);
+            }
+        }
+    }
+
+    /// Set the RPM-limiter hard gate enabled flag on the active synth.
+    /// No-op when the synth is disabled or missing.
+    pub fn set_limiter_flag(&mut self, active: bool) {
+        if self.synth_enabled {
+            if let Some(synth) = &mut self.synth {
+                synth.set_limiter_enabled(active);
+            }
+        }
+    }
 }
 
 /// Fractional-cursor looped read with linear interpolation (no resampler). The
@@ -1379,6 +1414,7 @@ mod tests {
             synth_volume: 1.0,
             synth_pan: 0.0,
             last_synth_energy: 0.0,
+            listener_distance: 0.0,
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::ShiftUp,

@@ -5,10 +5,12 @@
 #include <godot_cpp/classes/audio_server.hpp>
 #include <godot_cpp/classes/audio_stream_generator.hpp>
 #include <godot_cpp/classes/audio_stream_generator_playback.hpp>
+#include <godot_cpp/classes/camera3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/node3d.hpp>
 #include <godot_cpp/classes/physics_direct_body_state3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/variant/packed_float32_array.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 
@@ -109,7 +111,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 12;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 13;
 
 	F90Core();
 	~F90Core() override;
@@ -165,6 +167,11 @@ public:
 
 	/// Fire a one-shot by name (e.g. "shift_up", "impact_barrier", "engine_backfire").
 	void trigger(const String &name);
+	/// Set the ambient/listener downlink (camera-to-vehicle distance, TC cut ratio,
+	/// limiter enabled flag) that the audio facade applies on the mixer.
+	void set_audio_ambient(float tc_cut_ratio, bool limiter_active);
+	/// Camera-to-vehicle listener distance (metres), smoothed in `_process`.
+	float get_listener_distance_m() const { return static_cast<float>(listener_distance_smoothed_); }
 	/// Reset the core to the vehicle's current pose/yaw (also resets modules).
 	void reset_vehicle();
 	/// Reset the facade's entity + modules to an explicit pose/yaw. Called from
@@ -205,6 +212,7 @@ private:
 	FnCoreAudioRender fn_audio_render_ = nullptr;
 	FnCoreAudioTrigger fn_audio_trigger_ = nullptr;
 	FnCoreAudioReadouts fn_audio_readouts_ = nullptr;
+	FnCoreAudioSetAmbient fn_audio_set_ambient_ = nullptr;
 
 	double fixed_dt_ = 1.0 / 120.0;
 	String config_json_path_ = "res://data/vehicles/f1_94/f1_94_physics.json";
@@ -218,6 +226,13 @@ private:
 	float idle_rpm_ = 1000.0f;
 	float max_rpm_ = 15000.0f;
 
+	// Listener/ambient downlink: smoothed camera-to-vehicle distance (m) plus the
+	// TC/limiter telemetry forwarded to the mixer. Default limiter on so the
+	// existing behaviour is preserved when nothing calls `set_audio_ambient`.
+	double listener_distance_smoothed_ = 0.0;
+	float tc_cut_ratio_ = 0.0f;
+	bool limiter_active_ = true;
+
 	// Audio plumbing (mirrors the legacy native controller, but batched).
 	Ref<AudioStreamGenerator> generator_;
 	Object *audio_player_ = nullptr;
@@ -226,6 +241,8 @@ private:
 	std::vector<float> mix_l_, mix_r_;
 	double collision_cooldown_ = 0.0;
 	void process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt);
+	/// Smooth the camera-to-vehicle distance with a ~0.1 s one-pole in `_process`.
+	void update_listener_distance(double delta);
 
 	double telemetry_print_accum_ = 0.0;
 };

@@ -161,6 +161,7 @@ typedef void (*FnCoreStep)(void *core, uint32_t id,
 typedef uint32_t (*FnCoreAudioRender)(void *core, float *out_l, float *out_r, uint32_t n);
 typedef bool (*FnCoreAudioTrigger)(void *core, int32_t code);
 typedef void (*FnCoreAudioReadouts)(void *core, F90CoreFrameOut *out);
+typedef void (*FnCoreAudioSetAmbient)(void *core, float distance_m, float tc_cut_ratio, int32_t limiter_active);
 typedef uint32_t (*FnCoreSnapshot)(void *core, uint8_t *out, uint32_t cap, uint32_t *out_len);
 
 #ifdef __cplusplus

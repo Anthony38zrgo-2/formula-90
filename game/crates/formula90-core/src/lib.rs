@@ -588,6 +588,17 @@ impl CoreFacade {
         self.audio.trigger_code(code)
     }
 
+    /// Apply the listener/ambient downlink. Returns true when the mixer is present.
+    pub fn audio_set_ambient(
+        &mut self,
+        distance_m: f32,
+        tc_cut_ratio: f32,
+        limiter_active: bool,
+    ) -> bool {
+        self.audio
+            .set_ambient(distance_m, tc_cut_ratio, limiter_active)
+    }
+
     pub fn audio_readouts(&mut self) -> frame::AudioReadouts {
         self.audio.readouts()
     }

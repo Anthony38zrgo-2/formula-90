@@ -110,6 +110,25 @@ impl AudioModule {
         self.engine.as_mut()
     }
 
+    /// Apply the listener/ambient downlink (camera-to-vehicle distance, TC cut
+    /// ratio, RPM-limiter enabled flag). Returns false when the mixer is absent.
+    pub fn set_ambient(
+        &mut self,
+        distance_m: f32,
+        tc_cut_ratio: f32,
+        limiter_active: bool,
+    ) -> bool {
+        match self.engine.as_mut() {
+            Some(eng) => {
+                eng.set_listener_distance(distance_m);
+                eng.set_tc_cut(tc_cut_ratio);
+                eng.set_limiter_flag(limiter_active);
+                true
+            }
+            None => false,
+        }
+    }
+
     /// Record the surface/slip the physics step observed this tick (used even when
     /// the mixer is missing so readouts stay meaningful).
     pub fn observe(&mut self, surface: SurfaceType, slip: f32) {
