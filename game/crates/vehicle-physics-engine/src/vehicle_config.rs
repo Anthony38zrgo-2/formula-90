@@ -3729,7 +3729,7 @@ mod json_tests {
         );
         assert_eq!(cfg.aids.traction_control_gear_max_cut.len(), 7);
         assert_eq!(
-            cfg.torque_attack_rate_nm_s, 1800.0,
+            cfg.torque_attack_rate_nm_s, 1100.0,
             "2026 car must ship with the engine torque attack limiter enabled"
         );
     }
