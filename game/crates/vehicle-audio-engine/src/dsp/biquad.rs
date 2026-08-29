@@ -26,6 +26,22 @@ impl Biquad {
             z2: 0.0,
         }
     }
+    pub fn lowpass(sample_rate: f32, cutoff_hz: f32) -> Self {
+        let cutoff = cutoff_hz.clamp(1.0, sample_rate * 0.49);
+        let omega = std::f32::consts::TAU * cutoff / sample_rate;
+        let cos_omega = omega.cos();
+        let alpha = omega.sin() * std::f32::consts::FRAC_1_SQRT_2;
+        let a0 = 1.0 + alpha;
+        Self {
+            b0: (1.0 - cos_omega) * 0.5 / a0,
+            b1: (1.0 - cos_omega) / a0,
+            b2: (1.0 - cos_omega) * 0.5 / a0,
+            a1: (-2.0 * cos_omega) / a0,
+            a2: (1.0 - alpha) / a0,
+            z1: 0.0,
+            z2: 0.0,
+        }
+    }
     #[inline]
     pub fn process(&mut self, input: f32) -> f32 {
         let output = self.b0 * input + self.z1;
@@ -59,5 +75,21 @@ mod tests {
         for x in [-1.0, 0.0, 0.3, 1.0] {
             assert!((f.process(x) - x).abs() < 1e-6);
         }
+    }
+    #[test]
+    fn lowpass_has_unity_dc_gain_and_suppresses_high_freq() {
+        let mut f = Biquad::lowpass(44100.0, 150.0);
+        let mut dc = 0.0f32;
+        for _ in 0..4096 {
+            dc = f.process(1.0);
+        }
+        assert!((dc - 1.0).abs() < 1e-3, "dc gain {dc}");
+        let mut f = Biquad::lowpass(44100.0, 150.0);
+        let mut steady = 0.0f32;
+        for i in 4000..4096 {
+            let phase = 2.0 * std::f32::consts::PI * 5000.0 * i as f32 / 44100.0;
+            steady = f.process(phase.sin() * 0.5);
+        }
+        assert!(steady.abs() < 0.05, "5000 Hz not suppressed: {steady}");
     }
 }

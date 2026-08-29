@@ -25,6 +25,7 @@ pub mod ffi;
 pub mod mixer;
 pub mod powertrain;
 pub mod state;
+pub mod synth;
 pub mod telemetry;
 pub mod tire_scrub;
 

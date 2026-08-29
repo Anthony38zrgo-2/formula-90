@@ -14,6 +14,7 @@ use crate::dsp::{
     adsr::Adsr, eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
     tube::Tube,
 };
+use crate::powertrain::AudioPowertrainSynthesis;
 use crate::state::*;
 use crate::tire_scrub::{compute_tire_scrub_target, TireScrubMode};
 
@@ -251,6 +252,13 @@ pub struct VehicleAudioEngine {
     exhaust_key: String,
     exhaust_cursor: f64,
     exhaust_crackle_samples: usize,
+
+    // Half-block V10 synthesizer (default OFF; replaces the sampled engine
+    // bands + exhaust microphone layer when enabled).
+    synth: Option<crate::synth::HalfBlock>,
+    synth_enabled: bool,
+    synth_volume: f32,
+    last_synth_energy: f32,
 }
 
 impl VehicleAudioEngine {
@@ -430,6 +438,10 @@ impl VehicleAudioEngine {
             exhaust_key,
             exhaust_cursor: 0.0,
             exhaust_crackle_samples: 0,
+            synth: None,
+            synth_enabled: false,
+            synth_volume: 1.0,
+            last_synth_energy: 0.0,
         })
     }
 
@@ -605,6 +617,12 @@ impl VehicleAudioEngine {
             self.exhaust_crackle_samples = (self.sample_rate as f64 * 0.12) as usize;
         }
 
+        if self.synth_enabled {
+            if let Some(synth) = &mut self.synth {
+                synth.update_controls(rpm, idle_rpm, max_rpm, throttle);
+            }
+        }
+
         self.last_norm = norm;
         self.last_rpm = rpm;
         self.last_throttle = throttle;
@@ -722,76 +740,89 @@ impl VehicleAudioEngine {
             self.smoothed_tyre_scrub_gain +=
                 (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
 
-            // Engine bands: weights + pitch derived continuously from smoothed_rpm.
-            let norm = if self.max_rpm > self.idle_rpm {
-                (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
-                    .clamp(0.0, 1.0)
+            if self.synth_enabled {
+                let engine_sample = self.synth.as_mut().map_or(0.0, |s| s.render_sample());
+                let source = engine_sample * eg * self.cfg.engine_headroom * self.synth_volume;
+                mixed_l += source;
+                mixed_r += source;
+                self.last_synth_energy = self.synth.as_ref().map_or(0.0, |s| s.energy());
+                self.cur_weights.iter_mut().for_each(|w| *w = 0.0);
+                self.cur_weights[0] = 1.0;
+                self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
             } else {
-                0.0
-            };
-            let weights = engine_weights(norm, &self.engine_bands);
-            for (b, weight) in weights
-                .iter()
-                .enumerate()
-                .take(self.layer_keys.len().min(5))
-            {
-                if let Some(sample) = self.bank.get(&self.layer_keys[b]) {
-                    let ratio = engine_pitch_scale(self.smoothed_rpm, &self.engine_bands[b]) as f64;
-                    let s = read_looped(&sample.pcm, &mut self.layer_cursors[b], ratio);
-                    let source = *weight
-                        * s
-                        * self.sample_gain(&self.layer_keys[b])
-                        * eg
-                        * self.cfg.engine_headroom;
-                    mix_through_strip(
-                        &mut self.strips,
-                        &mut self.reverb_buses,
-                        &self.layer_keys[b],
-                        source,
-                        &mut mixed_l,
-                        &mut mixed_r,
-                    );
-                }
-            }
-            for (wi, w) in weights.iter().enumerate() {
-                self.cur_weights[wi] = *w;
-            }
-            for (band, pitch) in self.engine_bands.iter().zip(self.cur_pitches.iter_mut()) {
-                *pitch = engine_pitch_scale(self.smoothed_rpm, band);
-            }
-
-            // Exhaust microphone layer: pitch follows RPM, amplitude follows
-            // throttle, and a short gain boost (crackle) is added on backfire.
-            let mut exhaust = 0.0f32;
-            let ec = self.cfg.exhaust;
-            if ec.enabled && !self.exhaust_key.is_empty() {
-                if let Some(sample) = self.bank.get(&self.exhaust_key) {
-                    let native_rpm =
-                        self.bank
-                            .native_rpm(&self.exhaust_key)
-                            .expect("validated exhaust native_rpm") as f64;
-                    let ratio = self.smoothed_rpm / native_rpm;
-                    let s = read_looped(&sample.pcm, &mut self.exhaust_cursor, ratio);
-                    let throttle_env = (1.0 - ec.throttle_sensitivity)
-                        + ec.throttle_sensitivity * self.last_throttle;
-                    let mut gain = ec.base_gain
-                        * throttle_env.clamp(0.0, 1.0)
-                        * self.sample_gain(&self.exhaust_key);
-                    if self.exhaust_crackle_samples > 0 {
-                        gain += ec.crackle_gain;
-                        self.exhaust_crackle_samples -= 1;
+                // Engine bands: weights + pitch derived continuously from smoothed_rpm.
+                let norm = if self.max_rpm > self.idle_rpm {
+                    (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
+                        .clamp(0.0, 1.0)
+                } else {
+                    0.0
+                };
+                let weights = engine_weights(norm, &self.engine_bands);
+                for (b, weight) in weights
+                    .iter()
+                    .enumerate()
+                    .take(self.layer_keys.len().min(5))
+                {
+                    if let Some(sample) = self.bank.get(&self.layer_keys[b]) {
+                        let ratio =
+                            engine_pitch_scale(self.smoothed_rpm, &self.engine_bands[b]) as f64;
+                        let s = read_looped(&sample.pcm, &mut self.layer_cursors[b], ratio);
+                        let source = *weight
+                            * s
+                            * self.sample_gain(&self.layer_keys[b])
+                            * eg
+                            * self.cfg.engine_headroom;
+                        mix_through_strip(
+                            &mut self.strips,
+                            &mut self.reverb_buses,
+                            &self.layer_keys[b],
+                            source,
+                            &mut mixed_l,
+                            &mut mixed_r,
+                        );
                     }
-                    exhaust = s * gain;
                 }
+                for (wi, w) in weights.iter().enumerate() {
+                    self.cur_weights[wi] = *w;
+                }
+                for (band, pitch) in self.engine_bands.iter().zip(self.cur_pitches.iter_mut()) {
+                    *pitch = engine_pitch_scale(self.smoothed_rpm, band);
+                }
+
+                // Exhaust microphone layer: pitch follows RPM, amplitude follows
+                // throttle, and a short gain boost (crackle) is added on backfire.
+                let mut exhaust = 0.0f32;
+                let ec = self.cfg.exhaust;
+                if ec.enabled && !self.exhaust_key.is_empty() {
+                    if let Some(sample) = self.bank.get(&self.exhaust_key) {
+                        let native_rpm = self
+                            .bank
+                            .native_rpm(&self.exhaust_key)
+                            .expect("validated exhaust native_rpm")
+                            as f64;
+                        let ratio = self.smoothed_rpm / native_rpm;
+                        let s = read_looped(&sample.pcm, &mut self.exhaust_cursor, ratio);
+                        let throttle_env = (1.0 - ec.throttle_sensitivity)
+                            + ec.throttle_sensitivity * self.last_throttle;
+                        let mut gain = ec.base_gain
+                            * throttle_env.clamp(0.0, 1.0)
+                            * self.sample_gain(&self.exhaust_key);
+                        if self.exhaust_crackle_samples > 0 {
+                            gain += ec.crackle_gain;
+                            self.exhaust_crackle_samples -= 1;
+                        }
+                        exhaust = s * gain;
+                    }
+                }
+                mix_through_strip(
+                    &mut self.strips,
+                    &mut self.reverb_buses,
+                    &self.exhaust_key,
+                    exhaust,
+                    &mut mixed_l,
+                    &mut mixed_r,
+                );
             }
-            mix_through_strip(
-                &mut self.strips,
-                &mut self.reverb_buses,
-                &self.exhaust_key,
-                exhaust,
-                &mut mixed_l,
-                &mut mixed_r,
-            );
 
             // Surface bed (loops at native rate).
             let mut bed = 0.0f32;
@@ -990,6 +1021,42 @@ impl VehicleAudioEngine {
     }
     pub fn tyre_scrub_cursor(&self) -> f64 {
         self.tyre_scrub_cursor
+    }
+
+    // --- Half-block V10 synthesizer ---
+
+    /// Build the half-block synthesizer from the powertrain contract and switch
+    /// the engine/exhaust path to it. Off by default.
+    pub fn enable_synth(&mut self, config: &AudioPowertrainSynthesis) -> bool {
+        let was_enabled = self.synth_enabled;
+        let powertrain = crate::synth::PowertrainConfig::from(config);
+        self.synth = Some(crate::synth::HalfBlock::new(&powertrain, self.sample_rate));
+        self.synth_enabled = true;
+        was_enabled
+    }
+
+    pub fn disable_synth(&mut self) {
+        self.synth_enabled = false;
+        self.synth = None;
+    }
+
+    pub fn set_synth_enabled(&mut self, enabled: bool) {
+        if enabled && self.synth.is_none() {
+            return;
+        }
+        self.synth_enabled = enabled;
+    }
+
+    pub fn set_synth_volume(&mut self, volume: f32) {
+        self.synth_volume = volume.clamp(0.0, 2.0);
+    }
+
+    pub fn synth_enabled(&self) -> bool {
+        self.synth_enabled
+    }
+
+    pub fn last_synth_energy(&self) -> f32 {
+        self.last_synth_energy
     }
 }
 
@@ -1292,6 +1359,10 @@ mod tests {
             exhaust_key: String::new(),
             exhaust_cursor: 0.0,
             exhaust_crackle_samples: 0,
+            synth: None,
+            synth_enabled: false,
+            synth_volume: 1.0,
+            last_synth_energy: 0.0,
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::ShiftUp,
@@ -1823,5 +1894,62 @@ mod tests {
             l.iter().any(|v| v.abs() > 0.01),
             "exhaust crackle should produce audible output even with base_gain=0"
         );
+    }
+
+    #[test]
+    fn synth_defaults_disabled() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        assert!(!e.synth_enabled());
+        assert_eq!(e.last_synth_energy(), 0.0);
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l = vec![0.0f32; 4096];
+        e.render(&mut l, &mut vec![0.0f32; 4096], 4096);
+        assert!(
+            l.iter().all(|v| v.abs() < 1e-6),
+            "silence expected while disabled"
+        );
+    }
+
+    #[test]
+    fn synth_render_produces_finite_bounded_output() {
+        let mut e = engine_with_bank(dummy_bank());
+        let contract = AudioPowertrainSynthesis::default();
+        e.enable_synth(&contract);
+        assert!(e.synth_enabled());
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l = vec![0.0f32; 4096];
+        let mut r = vec![0.0f32; 4096];
+        e.render(&mut l, &mut r, 4096);
+        assert!(l
+            .iter()
+            .zip(r.iter())
+            .all(|(a, b)| a.is_finite() && b.is_finite()));
+        let peak = l.iter().fold(0.0f32, |m, v| m.max(v.abs()));
+        assert!(peak > 0.0, "synth should be audible when enabled");
+        assert!(
+            peak <= e.config().limiter_threshold + 1e-3,
+            "synth must stay under limiter ({peak})"
+        );
+        assert!(e.last_synth_energy() > 0.0, "energy should track state");
+    }
+
+    #[test]
+    fn toggle_synth_switches_engine_feed() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        let contract = AudioPowertrainSynthesis::default();
+        e.enable_synth(&contract);
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l_on = vec![0.0f32; 2048];
+        e.render(&mut l_on, &mut vec![0.0f32; 2048], 2048);
+        let rms_on = rms(&l_on);
+
+        e.disable_synth();
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l_off = vec![0.0f32; 2048];
+        e.render(&mut l_off, &mut vec![0.0f32; 2048], 2048);
+        let rms_off = rms(&l_off);
+
+        assert!(rms_on > 1e-5, "synth on should be audible");
+        assert!(rms_off < 1e-6, "synth off should be silent");
     }
 }
