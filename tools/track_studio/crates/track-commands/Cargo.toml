@@ -1,9 +1,0 @@
-[package]
-name = "track-commands"
-version = "0.1.0"
-edition = "2021"
-publish = false
-
-[dependencies]
-track-domain = { path = "../track-domain" }
-track-geometry = { path = "../track-geometry" }

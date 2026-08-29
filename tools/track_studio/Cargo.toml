@@ -1,8 +1,0 @@
-[workspace]
-resolver = "2"
-members = ["crates/track-domain", "crates/track-storage", "crates/track-geometry", "crates/track-commands", "crates/track-validation", "crates/track-assets", "crates/track-import-svg", "crates/track-export", "crates/track-build", "crates/track-service"]
-
-[workspace.package]
-edition = "2021"
-license = "proprietary"
-publish = false
