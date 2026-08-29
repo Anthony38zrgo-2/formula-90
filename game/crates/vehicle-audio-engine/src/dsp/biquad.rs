@@ -92,4 +92,41 @@ mod tests {
         }
         assert!(steady.abs() < 0.05, "5000 Hz not suppressed: {steady}");
     }
+    #[test]
+    fn peaking_boosts_center_frequency_by_gain_db() {
+        let sr = 44100.0;
+        let center = 1000.0;
+        let gain_db = 6.0;
+        let mut f = Biquad::peaking(sr, center, 2.0, gain_db);
+        let mut peak = 0.0f32;
+        for i in 0..200_000 {
+            let phase = 2.0 * std::f32::consts::PI * center * i as f32 / sr;
+            let y = f.process(phase.sin());
+            if i >= 100_000 {
+                peak = peak.max(y.abs());
+            }
+        }
+        let expected = 10.0_f32.powf(gain_db / 20.0);
+        assert!(
+            (peak - expected).abs() / expected < 0.03,
+            "center gain {peak} vs expected {expected}"
+        );
+    }
+    #[test]
+    fn peaking_is_unity_far_from_center() {
+        let sr = 44100.0;
+        let mut f = Biquad::peaking(sr, 1000.0, 2.0, 6.0);
+        let mut peak = 0.0f32;
+        for i in 0..200_000 {
+            let phase = 2.0 * std::f32::consts::PI * 40.0 * i as f32 / sr;
+            let y = f.process(phase.sin());
+            if i >= 100_000 {
+                peak = peak.max(y.abs());
+            }
+        }
+        assert!(
+            (peak - 1.0).abs() < 0.05,
+            "far band gain should be unity: {peak}"
+        );
+    }
 }

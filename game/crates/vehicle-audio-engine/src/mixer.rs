@@ -258,6 +258,7 @@ pub struct VehicleAudioEngine {
     synth: Option<crate::synth::HalfBlock>,
     synth_enabled: bool,
     synth_volume: f32,
+    synth_pan: f32,
     last_synth_energy: f32,
 }
 
@@ -441,6 +442,7 @@ impl VehicleAudioEngine {
             synth: None,
             synth_enabled: false,
             synth_volume: 1.0,
+            synth_pan: 0.0,
             last_synth_energy: 0.0,
         })
     }
@@ -741,10 +743,14 @@ impl VehicleAudioEngine {
                 (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
 
             if self.synth_enabled {
-                let engine_sample = self.synth.as_mut().map_or(0.0, |s| s.render_sample());
-                let source = engine_sample * eg * self.cfg.engine_headroom * self.synth_volume;
-                mixed_l += source;
-                mixed_r += source;
+                let (synth_l, synth_r) = self
+                    .synth
+                    .as_mut()
+                    .map_or((0.0, 0.0), |s| s.render_stereo());
+                let gain = eg * self.cfg.engine_headroom * self.synth_volume;
+                let (pan_l, pan_r) = equal_power(self.synth_pan);
+                mixed_l += synth_l * gain * pan_l;
+                mixed_r += synth_r * gain * pan_r;
                 self.last_synth_energy = self.synth.as_ref().map_or(0.0, |s| s.energy());
                 self.cur_weights.iter_mut().for_each(|w| *w = 0.0);
                 self.cur_weights[0] = 1.0;
@@ -1049,6 +1055,15 @@ impl VehicleAudioEngine {
 
     pub fn set_synth_volume(&mut self, volume: f32) {
         self.synth_volume = volume.clamp(0.0, 2.0);
+    }
+
+    /// Stereo pan of the procedural engine (-1.0 = full left, 1.0 = full right).
+    pub fn set_synth_pan(&mut self, pan: f32) {
+        self.synth_pan = pan.clamp(-1.0, 1.0);
+    }
+
+    pub fn synth_pan(&self) -> f32 {
+        self.synth_pan
     }
 
     pub fn synth_enabled(&self) -> bool {
@@ -1362,6 +1377,7 @@ mod tests {
             synth: None,
             synth_enabled: false,
             synth_volume: 1.0,
+            synth_pan: 0.0,
             last_synth_energy: 0.0,
         };
         e.one_shots.push(OneShot {
@@ -1806,6 +1822,27 @@ mod tests {
         (buf.iter().map(|v| v * v).sum::<f32>() / buf.len().max(1) as f32).sqrt()
     }
 
+    fn pearson(a: &[f32], b: &[f32]) -> f32 {
+        let n = a.len().min(b.len()).max(1);
+        let mut mean_a = 0.0f64;
+        let mut mean_b = 0.0f64;
+        for i in 0..n {
+            mean_a += a[i] as f64;
+            mean_b += b[i] as f64;
+        }
+        mean_a /= n as f64;
+        mean_b /= n as f64;
+        let (mut cov, mut var_a, mut var_b) = (0.0f64, 0.0f64, 0.0f64);
+        for i in 0..n {
+            let da = a[i] as f64 - mean_a;
+            let db = b[i] as f64 - mean_b;
+            cov += da * db;
+            var_a += da * da;
+            var_b += db * db;
+        }
+        (cov / (var_a * var_b).sqrt()) as f32
+    }
+
     #[test]
     fn exhaust_pitch_follows_rpm() {
         let mut e = engine_with_bank(exhaust_test_bank());
@@ -1951,5 +1988,67 @@ mod tests {
 
         assert!(rms_on > 1e-5, "synth on should be audible");
         assert!(rms_off < 1e-6, "synth off should be silent");
+    }
+
+    #[test]
+    fn synth_stereo_output_is_decorrelated_and_finite() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        let contract = AudioPowertrainSynthesis::default();
+        e.enable_synth(&contract);
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l = vec![0.0f32; 8192];
+        let mut r = vec![0.0f32; 8192];
+        e.render(&mut l, &mut r, 8192);
+        assert!(l
+            .iter()
+            .zip(r.iter())
+            .all(|(a, b)| a.is_finite() && b.is_finite()));
+        assert!(
+            l.iter().zip(r.iter()).any(|(a, b)| (a - b).abs() > 1e-4),
+            "stereo channels must differ"
+        );
+        let corr = pearson(&l[4096..], &r[4096..]);
+        assert!(corr < 0.999, "channels too correlated: corr={corr}");
+        let peak = l.iter().fold(0.0f32, |m, v| m.max(v.abs()));
+        assert!(
+            peak <= e.config().limiter_threshold + 1e-3,
+            "stereo synth must stay under limiter ({peak})"
+        );
+    }
+
+    #[test]
+    fn synth_pan_pans_the_stereo_output() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        e.enable_synth(&AudioPowertrainSynthesis::default());
+        e.set_synth_pan(-1.0);
+        assert_eq!(e.synth_pan(), -1.0);
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut l = vec![0.0f32; 8192];
+        let mut r = vec![0.0f32; 8192];
+        e.render(&mut l, &mut r, 8192);
+        assert!(rms(&l[1024..]) > 1e-5, "full-left pan must be audible on L");
+        assert!(
+            rms(&r[1024..]) < 1e-6,
+            "full-left pan must silence R (rms={})",
+            rms(&r[1024..])
+        );
+    }
+
+    #[test]
+    fn synth_stereo_render_is_deterministic() {
+        let build = || {
+            let mut e = engine_with_bank(silent_engine_bank());
+            e.enable_synth(&AudioPowertrainSynthesis::default());
+            e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+            e
+        };
+        let mut a = build();
+        let mut b = build();
+        let (mut la, mut ra) = (vec![0.0f32; 4096], vec![0.0f32; 4096]);
+        let (mut lb, mut rb) = (vec![0.0f32; 4096], vec![0.0f32; 4096]);
+        a.render(&mut la, &mut ra, 4096);
+        b.render(&mut lb, &mut rb, 4096);
+        assert_eq!(la, lb);
+        assert_eq!(ra, rb);
     }
 }

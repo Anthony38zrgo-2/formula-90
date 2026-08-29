@@ -1,14 +1,20 @@
 pub mod event_gen;
+pub mod exhaust;
+pub mod half_block_reconstruct;
 pub mod impulse;
+pub mod intake;
 
 use crate::dsp::biquad::Biquad;
-use crate::powertrain::AudioPowertrainSynthesis;
+use crate::powertrain::{AudioPowertrainSynthesis, ExhaustConfig, HalfBlockConfig, IntakeConfig};
 
 use event_gen::EventJitter;
+use exhaust::ExhaustSynth;
+use half_block_reconstruct::HalfBlockReconstruct;
 use impulse::{
     one_pole_alpha, torque_curve_value, BODY_LOWPASS_HZ, IMPULSE_ATTACK_S, IMPULSE_DECAY_S,
     IMPULSE_LEVEL,
 };
+use intake::IntakeSynth;
 
 pub const CYCLE_DEG: f64 = 720.0;
 pub const DEFAULT_FIRING_PHASES_DEG: [f64; 5] = [0.0, 144.0, 288.0, 432.0, 576.0];
@@ -23,6 +29,9 @@ pub struct PowertrainConfig {
     pub release_smoothing_s: f32,
     pub load_smoothing_s: f32,
     pub torque_curve: Vec<(f64, f64)>,
+    pub intake: IntakeConfig,
+    pub exhaust: ExhaustConfig,
+    pub half_block: HalfBlockConfig,
 }
 
 impl Default for PowertrainConfig {
@@ -37,6 +46,9 @@ impl Default for PowertrainConfig {
             release_smoothing_s: 0.12,
             load_smoothing_s: 0.03,
             torque_curve: impulse::default_torque_curve(),
+            intake: IntakeConfig::default(),
+            exhaust: ExhaustConfig::default(),
+            half_block: HalfBlockConfig::default(),
         }
     }
 }
@@ -53,6 +65,9 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             release_smoothing_s: contract.energy.release_smoothing_s,
             load_smoothing_s: contract.energy.load_smoothing_s,
             torque_curve: impulse::default_torque_curve(),
+            intake: contract.intake.clone(),
+            exhaust: contract.exhaust.clone(),
+            half_block: contract.half_block.clone(),
         }
     }
 }
@@ -150,6 +165,10 @@ pub struct HalfBlock {
     target_load: f32,
     smoothed_load: f32,
     energy: f32,
+    reconstruct: HalfBlockReconstruct,
+    intake: IntakeSynth,
+    exhaust: ExhaustSynth,
+    current_throttle: f32,
 }
 
 impl HalfBlock {
@@ -187,6 +206,10 @@ impl HalfBlock {
             target_load: 0.0,
             smoothed_load: 0.0,
             energy: 0.0,
+            reconstruct: HalfBlockReconstruct::new(sample_rate, &config.half_block),
+            intake: IntakeSynth::new(&config.intake, sample_rate as f32, config.seed),
+            exhaust: ExhaustSynth::new(&config.exhaust, sample_rate as f32),
+            current_throttle: 0.0,
         }
     }
 
@@ -217,6 +240,8 @@ impl HalfBlock {
             self.torque_curve_weight as f64 * torque + (1.0 - self.torque_curve_weight as f64);
         self.target_load = (throttle.clamp(0.0, 1.0) as f64 * weighted) as f32;
         let increment = (rpm.max(0.0) / 120.0 * CYCLE_DEG) / self.sample_rate;
+        self.reconstruct.update(increment);
+        self.current_throttle = throttle.clamp(0.0, 1.0);
         for cylinder in &mut self.cylinders {
             cylinder.increment = increment;
         }
@@ -225,7 +250,10 @@ impl HalfBlock {
         self.release_alpha = one_pole_alpha(self.sample_rate, self.release_smoothing_s as f64);
     }
 
-    pub fn render_sample(&mut self) -> f32 {
+    /// Advance the simulated half block one sample and return the raw firing
+    /// excitation (before body filtering). Shared by the mono and stereo paths
+    /// so both renderers advance the same mechanical state.
+    fn advance_excitation(&mut self) -> f32 {
         self.smoothed_load += (self.target_load - self.smoothed_load) * self.load_alpha;
         let target_energy = self.throttle_response * self.smoothed_load;
         let alpha = if target_energy > self.energy {
@@ -238,7 +266,38 @@ impl HalfBlock {
         for cylinder in &mut self.cylinders {
             excitation += cylinder.step(self.energy, self.decay_alpha);
         }
+        excitation
+    }
+
+    pub fn render_sample(&mut self) -> f32 {
+        let excitation = self.advance_excitation();
         self.body_filter.process(excitation * IMPULSE_LEVEL)
+    }
+
+    /// Render one stereo frame: the simulated bank plus the derived second
+    /// bank, with the intake and exhaust layers mixed equally into both
+    /// channels.
+    pub fn render_stereo(&mut self) -> (f32, f32) {
+        let excitation = self.advance_excitation();
+        let (bank1, bank2) =
+            self.reconstruct
+                .process(excitation, &mut self.body_filter, IMPULSE_LEVEL);
+        let intake = self
+            .intake
+            .process(self.current_throttle, self.smoothed_load);
+        let exhaust = self.exhaust.process(excitation);
+        (bank1 + intake + exhaust, bank2 + intake + exhaust)
+    }
+
+    /// Current smoothed load [0.0, 1.0] (for intake gating diagnostics).
+    pub fn load(&self) -> f32 {
+        self.smoothed_load
+    }
+
+    /// Sample-domain offset of the second bank's firing phase (see
+    /// `HalfBlockReconstruct::offset_samples`).
+    pub fn reconstruct_offset_samples(&self) -> f32 {
+        self.reconstruct.offset_samples()
     }
 }
 
@@ -369,5 +428,113 @@ mod tests {
         assert_eq!(config.seed, 99);
         assert_eq!(config.throttle_response, 1.4);
         assert!(config.torque_curve.len() >= 2);
+        assert_eq!(config.intake, contract.intake);
+        assert_eq!(config.exhaust, contract.exhaust);
+        assert_eq!(config.half_block, contract.half_block);
+    }
+
+    fn pearson(a: &[f32], b: &[f32]) -> f32 {
+        let n = a.len().min(b.len()).max(1);
+        let mut mean_a = 0.0f64;
+        let mut mean_b = 0.0f64;
+        for i in 0..n {
+            mean_a += a[i] as f64;
+            mean_b += b[i] as f64;
+        }
+        mean_a /= n as f64;
+        mean_b /= n as f64;
+        let (mut cov, mut var_a, mut var_b) = (0.0f64, 0.0f64, 0.0f64);
+        for i in 0..n {
+            let da = a[i] as f64 - mean_a;
+            let db = b[i] as f64 - mean_b;
+            cov += da * db;
+            var_a += da * da;
+            var_b += db * db;
+        }
+        (cov / (var_a * var_b).sqrt()) as f32
+    }
+
+    #[test]
+    fn render_stereo_keeps_five_cylinder_states() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..512 {
+            let _ = block.render_stereo();
+        }
+        assert_eq!(block.cylinder_count(), 5);
+    }
+
+    #[test]
+    fn reconstruct_offset_matches_phase_offset_at_rpm() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let increment = (9000.0 / 120.0 * CYCLE_DEG) / 44100.0;
+        let expected = 36.0f32 / increment as f32;
+        assert!(
+            (block.reconstruct_offset_samples() - expected).abs() < 1e-3,
+            "offset {} vs {expected}",
+            block.reconstruct_offset_samples()
+        );
+        // Idle / zero RPM must not produce a run-away offset.
+        block.update_controls(0.0, 1000.0, 15000.0, 0.0);
+        assert_eq!(block.reconstruct_offset_samples(), 0.0);
+    }
+
+    #[test]
+    fn render_stereo_channels_are_decorrelated_by_default() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let mut left = Vec::with_capacity(8192);
+        let mut right = Vec::with_capacity(8192);
+        for _ in 0..8192 {
+            let (l, r) = block.render_stereo();
+            left.push(l);
+            right.push(r);
+        }
+        let corr = pearson(&left[4096..], &right[4096..]);
+        assert!(
+            corr < 0.999,
+            "channels must decorrelate mechanically: corr={corr}"
+        );
+    }
+
+    #[test]
+    fn render_stereo_is_identical_with_reconstruction_neutralized() {
+        let mut cfg = config();
+        cfg.half_block.phase_offset_deg = 0.0;
+        cfg.half_block.delay_s = 0.0;
+        cfg.half_block.decorrelation = 0.0;
+        cfg.half_block.gain = 1.0;
+        cfg.half_block.timbre_diff = 0.0;
+        let mut block = HalfBlock::new(&cfg, 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..4096 {
+            let (l, r) = block.render_stereo();
+            assert!(
+                (l - r).abs() < 1e-6,
+                "identical banks must render identical channels: {l} vs {r}"
+            );
+        }
+    }
+
+    #[test]
+    fn render_stereo_energy_is_continuous_across_rpm_ramp() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        let mut previous = 0.0f32;
+        for step in 0..16 {
+            let rpm = 3000.0 + step as f64 * (6000.0 / 16.0);
+            block.update_controls(rpm, 1000.0, 15000.0, 1.0);
+            for _ in 0..512 {
+                let (l, r) = block.render_stereo();
+                assert!(l.is_finite() && r.is_finite());
+            }
+            let energy = block.energy();
+            let delta = (energy - previous).abs();
+            assert!(
+                delta < 0.25,
+                "energy jumped across RPM step: {previous} -> {energy}"
+            );
+            previous = energy;
+        }
     }
 }
