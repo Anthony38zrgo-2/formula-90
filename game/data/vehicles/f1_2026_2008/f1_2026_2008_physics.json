@@ -74,7 +74,7 @@
   },
 
   "powertrain": {
-    "max_torque": 440.0,
+    "max_torque": 445.0,
     "max_rpm": 15000.0,
     "idle_rpm": 4500.0,
     "motor_moment": 0.12,
@@ -92,7 +92,7 @@
     ],
 
     "gear_ratios": [3.15, 2.55, 2.05, 1.68, 1.38, 1.15, 0.95],
-    "final_drive": 4.15,
+    "final_drive": 4.25,
     "reverse_ratio": 3.00,
 
     "shift_time": 0.10,
@@ -253,8 +253,8 @@
       "cold_kpa_gauge": {
         "FL": 80.0,
         "FR": 80.0,
-        "RL": 130.0,
-        "RR": 130.0
+        "RL": 80.0,
+        "RR": 80.0
       },
       "reference_hot_kpa_gauge": {
         "FL": 145.0,
@@ -433,7 +433,7 @@
     "model": {
       "front_wing": {
         "area_m2": 0.72,
-        "incidence_deg": 7.0,
+        "incidence_deg": 16.0,
         "min_angle_deg": 4.0,
         "max_angle_deg": 20.0,
         "yaw_decay_exponent": 1.15,
@@ -448,7 +448,7 @@
       },
       "rear_wing": {
         "area_m2": 0.90,
-        "incidence_deg": 11.0,
+        "incidence_deg": 18.0,
         "min_angle_deg": 6.0,
         "max_angle_deg": 26.0,
         "yaw_decay_exponent": 1.05,
