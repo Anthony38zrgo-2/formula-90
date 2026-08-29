@@ -16,6 +16,10 @@ pub struct IntakeSynth {
     enabled: bool,
     noise_gain: f32,
     throttle_follow: f32,
+    /// Fraction of the configured resonances actually processed (per LOD). Only
+    /// limits how many Biquads run; it never rebuilds the filter bank, so the
+    /// configured timbre is preserved (higher qualities just process more of it).
+    resonator_scale: f32,
 }
 
 impl IntakeSynth {
@@ -38,7 +42,17 @@ impl IntakeSynth {
             enabled: config.enabled,
             noise_gain: config.noise_gain.clamp(0.0, 1.0),
             throttle_follow: config.throttle_follow.clamp(0.0, 1.0),
+            resonator_scale: 1.0,
         }
+    }
+
+    /// Set the fraction of configured resonances to process, clamped to (0, 1].
+    pub fn set_resonator_scale(&mut self, scale: f32) {
+        self.resonator_scale = scale.clamp(0.0, 1.0);
+    }
+
+    pub fn resonator_scale(&self) -> f32 {
+        self.resonator_scale
     }
 
     #[inline]
@@ -67,8 +81,9 @@ impl IntakeSynth {
         }
         let gate = aperture
             * (1.0 - self.throttle_follow + self.throttle_follow * throttle.clamp(0.0, 1.0));
+        let n = (self.filters.len() as f32 * self.resonator_scale).ceil() as usize;
         let mut out = self.next_noise();
-        for filter in &mut self.filters {
+        for filter in self.filters.iter_mut().take(n) {
             out = filter.process(out);
         }
         out * self.noise_gain * gate

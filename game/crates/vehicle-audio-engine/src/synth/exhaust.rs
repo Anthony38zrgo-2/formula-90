@@ -17,6 +17,9 @@ pub struct ExhaustSynth {
     damp_alpha: f32,
     tube: Option<Tube>,
     pulse_gain: f32,
+    /// Fraction of the configured collector resonances actually processed (per
+    /// LOD). Limits how many Biquads run without rebuilding the filter bank.
+    resonator_scale: f32,
 }
 
 impl ExhaustSynth {
@@ -54,7 +57,17 @@ impl ExhaustSynth {
             damp_alpha: 1.0 - config.damping.clamp(0.0, 0.99),
             tube,
             pulse_gain: config.pulse_gain.clamp(0.0, 2.0),
+            resonator_scale: 1.0,
         }
+    }
+
+    /// Set the fraction of configured resonances to process, clamped to (0, 1].
+    pub fn set_resonator_scale(&mut self, scale: f32) {
+        self.resonator_scale = scale.clamp(0.0, 1.0);
+    }
+
+    pub fn resonator_scale(&self) -> f32 {
+        self.resonator_scale
     }
 
     #[inline]
@@ -63,7 +76,8 @@ impl ExhaustSynth {
             return 0.0;
         }
         let mut pulse = excitation * self.pulse_gain;
-        for resonator in &mut self.resonators {
+        let n = (self.resonators.len() as f32 * self.resonator_scale).ceil() as usize;
+        for resonator in self.resonators.iter_mut().take(n) {
             pulse = resonator.process(pulse);
         }
         self.damp_state += (pulse - self.damp_state) * self.damp_alpha;

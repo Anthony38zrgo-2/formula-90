@@ -14,8 +14,9 @@ use crate::dsp::{
     adsr::Adsr, eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
     tube::Tube,
 };
-use crate::powertrain::AudioPowertrainSynthesis;
+use crate::powertrain::{AudioPowertrainSynthesis, DistanceLevels};
 use crate::state::*;
+use crate::synth::LodLevel;
 use crate::tire_scrub::{compute_tire_scrub_target, TireScrubMode};
 
 use std::collections::BTreeMap;
@@ -48,6 +49,10 @@ pub struct AudioConfig {
     pub scrape_gain: f32,
     /// Exhaust microphone layer (behaviour-driven sample playback).
     pub exhaust: ExhaustConfig,
+    /// Crossfade duration (ms) applied on a distance-level (LOD) change. Reuses
+    /// the same `transition_*` mechanism as config hot-reload so switches between
+    /// Near/Mid/Far/Virtual are click-free.
+    pub lod_transition_ms: u32,
 }
 
 impl Default for AudioConfig {
@@ -68,6 +73,7 @@ impl Default for AudioConfig {
             bed_speed: 0.12,
             scrape_gain: 0.62,
             exhaust: ExhaustConfig::default_runtime(),
+            lod_transition_ms: LOD_TRANSITION_MS,
         }
     }
 }
@@ -181,6 +187,10 @@ const ONE_SHOT_ENV_SAMPLES: usize = 256;
 /// removes the per-frame discontinuity.
 const RPM_SMOOTH_TAU: f64 = 0.025;
 
+/// Crossfade duration (ms) on a distance-level (LOD) change. Defaults to the
+/// same 30 ms hot-reload crossfade so LOD switches are inaudible.
+const LOD_TRANSITION_MS: u32 = 30;
+
 /// Stateful engine audio mixer.
 pub struct VehicleAudioEngine {
     bank: VehicleSoundBank,
@@ -264,6 +274,10 @@ pub struct VehicleAudioEngine {
     // Camera-to-vehicle listener distance (metres), forwarded to the controller
     // and smoothed upstream. Not baked into the synth (see Commit 6 spec).
     listener_distance: f32,
+    // Current distance level (LOD) of the procedural engine, and the distance
+    // thresholds/hysteresis that drive it (derived from the powertrain contract).
+    lod: LodLevel,
+    lod_levels: DistanceLevels,
 }
 
 impl VehicleAudioEngine {
@@ -449,6 +463,8 @@ impl VehicleAudioEngine {
             synth_pan: 0.0,
             last_synth_energy: 0.0,
             listener_distance: 0.0,
+            lod: LodLevel::Near,
+            lod_levels: DistanceLevels::default(),
         })
     }
 
@@ -748,10 +764,18 @@ impl VehicleAudioEngine {
                 (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
 
             if self.synth_enabled {
-                let (synth_l, synth_r) = self
-                    .synth
-                    .as_mut()
-                    .map_or((0.0, 0.0), |s| s.render_stereo());
+                let (synth_l, synth_r) = if self.lod == LodLevel::Virtual {
+                    // Virtual: no audible frames. Only advance the mechanical phase
+                    // accumulator ring (cheap, keeps re-entry phase-coherent).
+                    if let Some(synth) = &mut self.synth {
+                        synth.update_phase();
+                    }
+                    (0.0, 0.0)
+                } else {
+                    self.synth
+                        .as_mut()
+                        .map_or((0.0, 0.0), |s| s.render_stereo())
+                };
                 let gain = eg * self.cfg.engine_headroom * self.synth_volume;
                 let (pan_l, pan_r) = equal_power(self.synth_pan);
                 mixed_l += synth_l * gain * pan_l;
@@ -1041,8 +1065,22 @@ impl VehicleAudioEngine {
     pub fn enable_synth(&mut self, config: &AudioPowertrainSynthesis) -> bool {
         let was_enabled = self.synth_enabled;
         let powertrain = crate::synth::PowertrainConfig::from(config);
+        self.lod_levels = config.distance_levels.clone();
         self.synth = Some(crate::synth::HalfBlock::new(&powertrain, self.sample_rate));
         self.synth_enabled = true;
+        // Derive the initial LOD from the current listener distance and apply its
+        // quality so the first render already runs the correct DSP budget.
+        self.lod = crate::synth::select_lod(
+            self.listener_distance,
+            LodLevel::Near,
+            self.lod_levels.near_max_m,
+            self.lod_levels.mid_max_m,
+            self.lod_levels.far_max_m,
+            self.lod_levels.hysteresis_ratio,
+        );
+        if let Some(synth) = &mut self.synth {
+            synth.set_lod(self.lod);
+        }
         was_enabled
     }
 
@@ -1083,10 +1121,55 @@ impl VehicleAudioEngine {
     /// the synth) so the controller can expose it as telemetry.
     pub fn set_listener_distance(&mut self, distance: f32) {
         self.listener_distance = distance.max(0.0);
+        self.refine_lod();
     }
 
     pub fn listener_distance(&self) -> f32 {
         self.listener_distance
+    }
+
+    /// Current distance level (LOD) of the procedural engine.
+    pub fn synth_lod(&self) -> LodLevel {
+        self.lod
+    }
+
+    /// Current mechanical phase (deg) of the procedural engine. Diagnostic hook
+    /// used to verify Virtual only advances the phase ring, never resets it.
+    pub fn synth_phase_deg(&self) -> f64 {
+        self.synth.as_ref().map_or(0.0, |s| s.phase_deg())
+    }
+
+    /// Re-derive the LOD from `listener_distance` with direction-aware hysteresis
+    /// and, on any change, switch the synth quality and start a click-free
+    /// crossfade using the existing `transition_*` mechanism.
+    fn refine_lod(&mut self) {
+        let new = crate::synth::select_lod(
+            self.listener_distance,
+            self.lod,
+            self.lod_levels.near_max_m,
+            self.lod_levels.mid_max_m,
+            self.lod_levels.far_max_m,
+            self.lod_levels.hysteresis_ratio,
+        );
+        if new != self.lod {
+            self.lod = new;
+            if let Some(synth) = &mut self.synth {
+                synth.set_lod(new);
+            }
+            if self.synth_enabled {
+                self.lod_transition_start();
+            }
+        }
+    }
+
+    /// Arm a crossfade from the last rendered output toward the new mix. Reuses
+    /// the exact `transition_*` fields the config hot-reload path already uses.
+    fn lod_transition_start(&mut self) {
+        let ms = self.cfg.lod_transition_ms;
+        self.transition_total = ((ms as u64 * self.sample_rate as u64) / 1000) as usize;
+        self.transition_remaining = self.transition_total;
+        self.transition_start_l = self.last_output_l;
+        self.transition_start_r = self.last_output_r;
     }
 
     /// Set the traction-control cut ratio [0.0, 1.0] on the active synth.
@@ -1415,6 +1498,8 @@ mod tests {
             synth_pan: 0.0,
             last_synth_energy: 0.0,
             listener_distance: 0.0,
+            lod: LodLevel::Near,
+            lod_levels: DistanceLevels::default(),
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::ShiftUp,
@@ -2133,5 +2218,103 @@ mod tests {
         b.render(&mut lb, &mut rb, 4096);
         assert_eq!(la, lb);
         assert_eq!(ra, rb);
+    }
+
+    #[test]
+    fn synth_lod_follows_listener_distance_with_hysteresis() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        e.enable_synth(&AudioPowertrainSynthesis::default());
+        // Default contract distance levels: near 25 / mid 80 / far 200, hyst 0.10.
+        assert_eq!(e.synth_lod(), LodLevel::Near);
+
+        e.set_listener_distance(28.0); // >= 25 * 1.10 -> Mid
+        assert_eq!(e.synth_lod(), LodLevel::Mid);
+        e.set_listener_distance(25.0); // inside 22.5..27.5 band -> stays Mid
+        assert_eq!(e.synth_lod(), LodLevel::Mid);
+        e.set_listener_distance(22.0); // < 25 * 0.90 -> Near
+        assert_eq!(e.synth_lod(), LodLevel::Near);
+
+        e.set_listener_distance(88.0); // climb Near -> Far
+        assert_eq!(e.synth_lod(), LodLevel::Far);
+        e.set_listener_distance(200.0); // inside 180..220 band -> stays Far
+        assert_eq!(e.synth_lod(), LodLevel::Far);
+        e.set_listener_distance(220.0); // >= 200 * 1.10 -> Virtual
+        assert_eq!(e.synth_lod(), LodLevel::Virtual);
+        e.set_listener_distance(179.0); // < 200 * 0.90 -> Far
+        assert_eq!(e.synth_lod(), LodLevel::Far);
+    }
+
+    #[test]
+    fn virtual_lod_is_silent_and_reentry_is_deterministic() {
+        let render_lod = || {
+            let mut e = engine_with_bank(silent_engine_bank());
+            e.enable_synth(&AudioPowertrainSynthesis::default());
+            e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+            let (mut l, mut r) = (vec![0.0f32; 2048], vec![0.0f32; 2048]);
+            // Approach/depart: Near -> Virtual (silent) -> Near (audible, phase kept).
+            e.set_listener_distance(5.0);
+            e.render(&mut l, &mut r, 2048);
+            assert!(rms(&l) > 1e-5, "Near should be audible");
+            let near_phase = e.synth_phase_deg();
+
+            e.set_listener_distance(250.0);
+            assert_eq!(e.synth_lod(), LodLevel::Virtual);
+            // Drain the armed LOD crossfade, then measure the settled silence.
+            e.render(&mut l, &mut r, 2048);
+            assert!(l.iter().all(|v| v.is_finite()), "Virtual must stay finite");
+            e.render(&mut l, &mut r, 2048);
+            assert!(rms(&l) < 1e-6, "Virtual must be silent");
+
+            e.set_listener_distance(5.0);
+            assert_eq!(e.synth_lod(), LodLevel::Near);
+            let mut near = vec![0.0f32; 2048];
+            e.render(&mut near, &mut vec![0.0f32; 2048], 2048);
+            assert!(rms(&near) > 1e-5, "re-entering Near must be audible");
+            // Phase must have advanced through Virtual, not reset.
+            assert_ne!(e.synth_phase_deg(), near_phase);
+            near
+        };
+        let a = render_lod();
+        let b = render_lod();
+        assert_eq!(a, b, "Virtual re-entry must be deterministic");
+    }
+
+    #[test]
+    fn lod_ramp_is_click_free() {
+        // Baseline peak sample-to-sample step in steady Near.
+        let mut base = engine_with_bank(silent_engine_bank());
+        base.enable_synth(&AudioPowertrainSynthesis::default());
+        base.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut prev = 0.0f32;
+        let mut base_step = 0.0f32;
+        for _ in 0..8192 {
+            let (mut l, mut r) = (vec![0.0f32; 128], vec![0.0f32; 128]);
+            base.render(&mut l, &mut r, 128);
+            for &v in l.iter() {
+                base_step = base_step.max((v - prev).abs());
+                prev = v;
+            }
+        }
+
+        // Sweep the whole LOD range; every boundary must crossfade, not click.
+        let mut e = engine_with_bank(silent_engine_bank());
+        e.enable_synth(&AudioPowertrainSynthesis::default());
+        e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let mut prev = 0.0f32;
+        let mut peak_step = 0.0f32;
+        for dist in [0.0, 30.0, 90.0, 250.0, 5.0] {
+            e.set_listener_distance(dist);
+            let (mut l, mut r) = (vec![0.0f32; 2048], vec![0.0f32; 2048]);
+            e.render(&mut l, &mut r, 2048);
+            for &v in l.iter() {
+                assert!(v.is_finite(), "LOD ramp must stay finite");
+                peak_step = peak_step.max((v - prev).abs());
+                prev = v;
+            }
+        }
+        assert!(
+            peak_step < base_step * 2.0 + 0.05,
+            "LOD switch produced a click: step {peak_step} vs baseline {base_step}"
+        );
     }
 }

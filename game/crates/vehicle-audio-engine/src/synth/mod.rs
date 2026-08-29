@@ -7,7 +7,8 @@ pub mod limiter_tc;
 
 use crate::dsp::biquad::Biquad;
 use crate::powertrain::{
-    AudioPowertrainSynthesis, ExhaustConfig, HalfBlockConfig, IntakeConfig, LimiterConfig, TcConfig,
+    AudioPowertrainSynthesis, ExhaustConfig, HalfBlockConfig, IntakeConfig, LimiterConfig,
+    QualityProfile, TcConfig,
 };
 
 use event_gen::EventJitter;
@@ -22,6 +23,94 @@ use limiter_tc::{tc_alpha, LimiterState, TcEnvelope};
 
 pub const CYCLE_DEG: f64 = 720.0;
 pub const DEFAULT_FIRING_PHASES_DEG: [f64; 5] = [0.0, 144.0, 288.0, 432.0, 576.0];
+
+/// Distance-based detail level of the procedural engine (LOD). Higher LODs run
+/// a reduced DSP model (fewer resonators, coarser control updates) and the
+/// farthest level keeps only the mechanical phase ring alive without rendering
+/// audio. Purely a DSP-cost selector: it never changes the modelled timbre
+/// beyond limiting how many resonances are actually processed.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LodLevel {
+    Near,
+    Mid,
+    Far,
+    Virtual,
+}
+
+impl LodLevel {
+    #[inline]
+    fn level_index(self) -> u8 {
+        match self {
+            LodLevel::Near => 0,
+            LodLevel::Mid => 1,
+            LodLevel::Far => 2,
+            LodLevel::Virtual => 3,
+        }
+    }
+
+    #[inline]
+    fn from_index(index: u8) -> LodLevel {
+        match index {
+            0 => LodLevel::Near,
+            1 => LodLevel::Mid,
+            2 => LodLevel::Far,
+            _ => LodLevel::Virtual,
+        }
+    }
+}
+
+/// Select the LOD from a listener distance using direction-aware hysteresis.
+///
+/// The ascending-distance boundaries are `near_max_m`, `mid_max_m`,
+/// `far_max_m`. To *raise* the level (move farther away) a boundary is crossed
+/// when `distance >= boundary * (1 + hysteresis_ratio)`; to *lower* the level
+/// (move closer) it is crossed when `distance < boundary * (1 - hysteresis_ratio)`.
+/// This leaves a stable band of half-width `boundary * hysteresis_ratio` around
+/// each boundary where the current level is retained, preventing flapping.
+pub fn select_lod(
+    distance: f32,
+    current: LodLevel,
+    near_max_m: f32,
+    mid_max_m: f32,
+    far_max_m: f32,
+    hysteresis_ratio: f32,
+) -> LodLevel {
+    if !distance.is_finite() {
+        return current;
+    }
+    let up = 1.0 + hysteresis_ratio.max(0.0);
+    let down = 1.0 - hysteresis_ratio.clamp(0.0, 0.9);
+    let mut raw = current.level_index();
+    // Move up (farther) one level at a time; the expanded upper boundary must be
+    // crossed. `far_max_m` is the boundary into Virtual.
+    loop {
+        let break_boundary = match raw {
+            0 => Some(near_max_m),
+            1 => Some(mid_max_m),
+            2 => Some(far_max_m),
+            _ => None,
+        };
+        match break_boundary {
+            Some(bound) if distance >= bound * up => raw = raw.saturating_add(1),
+            _ => break,
+        }
+    }
+    // Move down (closer) one level at a time; the contracted lower boundary must
+    // be crossed.
+    loop {
+        let break_boundary = match raw {
+            0 => None,
+            1 => Some(near_max_m),
+            2 => Some(mid_max_m),
+            _ => Some(far_max_m),
+        };
+        match break_boundary {
+            Some(bound) if distance < bound * down => raw = raw.saturating_sub(1),
+            _ => break,
+        }
+    }
+    LodLevel::from_index(raw)
+}
 
 pub struct PowertrainConfig {
     pub firing_phases_deg: [f64; 5],
@@ -38,6 +127,9 @@ pub struct PowertrainConfig {
     pub half_block: HalfBlockConfig,
     pub limiter: LimiterConfig,
     pub tc: TcConfig,
+    /// Per-LOD DSP quality profile (resonator scales + coefficient update
+    /// cadence). Copied directly from the contract's `distance_levels.dsp`.
+    pub quality: QualityProfile,
 }
 
 impl Default for PowertrainConfig {
@@ -57,6 +149,7 @@ impl Default for PowertrainConfig {
             half_block: HalfBlockConfig::default(),
             limiter: LimiterConfig::default(),
             tc: TcConfig::default(),
+            quality: QualityProfile::default(),
         }
     }
 }
@@ -78,6 +171,7 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             half_block: contract.half_block.clone(),
             limiter: contract.limiter.clone(),
             tc: contract.tc.clone(),
+            quality: contract.distance_levels.dsp.clone(),
         }
     }
 }
@@ -189,6 +283,9 @@ pub struct HalfBlock {
     tc_config: TcConfig,
     tc_attack_alpha: f32,
     tc_release_alpha: f32,
+    lod_quality: QualityProfile,
+    coeff_update_steps: u32,
+    coeff_update_counter: u32,
 }
 
 impl HalfBlock {
@@ -240,6 +337,9 @@ impl HalfBlock {
             tc_config: config.tc.clone(),
             tc_attack_alpha: 0.0,
             tc_release_alpha: 0.0,
+            lod_quality: config.quality.clone(),
+            coeff_update_steps: config.quality.coeff_update_steps.max(1),
+            coeff_update_counter: 0,
         }
     }
 
@@ -260,32 +360,38 @@ impl HalfBlock {
     }
 
     pub fn update_controls(&mut self, rpm: f64, idle_rpm: f64, max_rpm: f64, throttle: f32) {
-        let norm = if max_rpm > idle_rpm {
-            ((rpm - idle_rpm) / (max_rpm - idle_rpm)).clamp(0.0, 1.0)
-        } else {
-            0.0
-        };
-        let torque = torque_curve_value(&self.torque_curve, norm);
-        let weighted =
-            self.torque_curve_weight as f64 * torque + (1.0 - self.torque_curve_weight as f64);
-        self.target_load = (throttle.clamp(0.0, 1.0) as f64 * weighted) as f32;
-        let increment = (rpm.max(0.0) / 120.0 * CYCLE_DEG) / self.sample_rate;
-        self.reconstruct.update(increment);
-        self.current_throttle = throttle.clamp(0.0, 1.0);
-        for cylinder in &mut self.cylinders {
-            cylinder.increment = increment;
+        // RPM-dependent coefficients are re-derived only every `coeff_update_steps`
+        // control blocks (LOD quality): at Near this is every block (1), at Far it
+        // is every `far_coeff_update_steps` blocks. The envelope/limiter alphas are
+        // fixed time constants and are refreshed every block regardless.
+        if self.coeff_update_counter == 0 {
+            let norm = if max_rpm > idle_rpm {
+                ((rpm - idle_rpm) / (max_rpm - idle_rpm)).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            let torque = torque_curve_value(&self.torque_curve, norm);
+            let weighted =
+                self.torque_curve_weight as f64 * torque + (1.0 - self.torque_curve_weight as f64);
+            self.target_load = (throttle.clamp(0.0, 1.0) as f64 * weighted) as f32;
+            let increment = (rpm.max(0.0) / 120.0 * CYCLE_DEG) / self.sample_rate;
+            self.reconstruct.update(increment);
+            for cylinder in &mut self.cylinders {
+                cylinder.increment = increment;
+            }
+            // Limiter gate + cut target are control-time; the smoothed envelope
+            // advances per sample so entering/exiting the cut is click-free.
+            if self.limiter_enabled {
+                self.limiter_target_cut = self.limiter.evaluate(rpm, max_rpm, &self.limiter_config);
+            } else {
+                self.limiter.active = false;
+                self.limiter_target_cut = 0.0;
+            }
         }
+        self.current_throttle = throttle.clamp(0.0, 1.0);
         self.load_alpha = one_pole_alpha(self.sample_rate, self.load_smoothing_s as f64);
         self.attack_alpha = one_pole_alpha(self.sample_rate, self.attack_smoothing_s as f64);
         self.release_alpha = one_pole_alpha(self.sample_rate, self.release_smoothing_s as f64);
-        // Limiter gate + cut target are control-time; the smoothed envelope
-        // advances per sample so entering/exiting the cut is click-free.
-        if self.limiter_enabled {
-            self.limiter_target_cut = self.limiter.evaluate(rpm, max_rpm, &self.limiter_config);
-        } else {
-            self.limiter.active = false;
-            self.limiter_target_cut = 0.0;
-        }
         self.limiter_attack_alpha = one_pole_alpha(
             self.sample_rate,
             self.limiter_config.attack_ms as f64 / 1000.0,
@@ -296,6 +402,58 @@ impl HalfBlock {
         );
         self.tc_attack_alpha = tc_alpha(self.sample_rate, self.tc_config.attack_ms);
         self.tc_release_alpha = tc_alpha(self.sample_rate, self.tc_config.release_ms);
+        self.coeff_update_counter = (self.coeff_update_counter + 1) % self.coeff_update_steps;
+    }
+
+    /// Set the DSP detail level. Propagates the per-LOD resonator scale into the
+    /// intake/exhaust layers (fewer Biquads actually processed) and switches the
+    /// coefficient update cadence. Resets the update counter so the first block
+    /// after a change re-derives the RPM-dependent coefficients.
+    pub fn set_lod(&mut self, level: LodLevel) {
+        let scale = match level {
+            LodLevel::Near => self.lod_quality.near_resonator_scale,
+            LodLevel::Mid => self.lod_quality.mid_resonator_scale,
+            LodLevel::Far => self.lod_quality.far_resonator_scale,
+            LodLevel::Virtual => 0.0,
+        }
+        .clamp(0.0, 1.0);
+        self.intake.set_resonator_scale(scale);
+        self.exhaust.set_resonator_scale(scale);
+        self.coeff_update_steps = match level {
+            LodLevel::Near | LodLevel::Mid => self.lod_quality.coeff_update_steps.max(1),
+            LodLevel::Far | LodLevel::Virtual => self.lod_quality.far_coeff_update_steps.max(1),
+        };
+        self.coeff_update_counter = 0;
+    }
+
+    /// Advance only the mechanical phase accumulator ring (Virtual LOD). This
+    /// keeps the firing/phase state coherent so re-entering an audible level
+    /// resumes without a phonic discontinuity, while never rendering audio (and
+    /// never mixing). It is sample-rate cheap: a single increment per cylinder
+    /// plus the phase-into-event ring update.
+    pub fn update_phase(&mut self) {
+        let increment = self.cylinders[0].increment;
+        if !(increment > 0.0) {
+            return;
+        }
+        for cylinder in &mut self.cylinders {
+            cylinder.phase_deg += increment;
+            // Keep the event ring ahead of the phase without firing the impulse
+            // envelope, so re-entry does not trigger a stale catch-up event.
+            while cylinder.phase_deg >= cylinder.next_event_phase {
+                cylinder.events_fired += 1;
+                cylinder.event_index += 1;
+                let jitter = cylinder.jitter.next_offset();
+                cylinder.next_event_phase =
+                    cylinder.firing_phase + cylinder.event_index as f64 * CYCLE_DEG + jitter;
+            }
+        }
+        self.reconstruct.update(increment);
+    }
+
+    /// Resonator scale currently applied (0.0 at Virtual, 1.0 at Near).
+    pub fn resonator_scale(&self) -> f32 {
+        self.intake.resonator_scale()
     }
 
     /// Advance the simulated half block one sample and return the raw firing
@@ -824,5 +982,86 @@ mod tests {
             engaged.energy() > 0.5,
             "energia fisica inesperadamente baja"
         );
+    }
+
+    #[test]
+    fn select_lod_uses_direction_aware_hysteresis() {
+        let (near, mid, far) = (25.0f32, 80.0, 200.0);
+        // Ascend: a boundary is only crossed at boundary * (1 + ratio).
+        assert_eq!(
+            select_lod(0.0, LodLevel::Near, near, mid, far, 0.10),
+            LodLevel::Near
+        );
+        assert_eq!(
+            select_lod(27.5, LodLevel::Near, near, mid, far, 0.10),
+            LodLevel::Mid
+        );
+        assert_eq!(
+            select_lod(88.0, LodLevel::Mid, near, mid, far, 0.10),
+            LodLevel::Far
+        );
+        assert_eq!(
+            select_lod(220.0, LodLevel::Far, near, mid, far, 0.10),
+            LodLevel::Virtual
+        );
+        // Descend uses a strict `< boundary * (1 - ratio)`; a value exactly on the
+        // (lowered) boundary still retains the current level (no flapping).
+        assert_eq!(
+            select_lod(22.5, LodLevel::Mid, near, mid, far, 0.10),
+            LodLevel::Mid
+        );
+        assert_eq!(
+            select_lod(22.4, LodLevel::Mid, near, mid, far, 0.10),
+            LodLevel::Near
+        );
+        assert_eq!(
+            select_lod(72.0, LodLevel::Far, near, mid, far, 0.10),
+            LodLevel::Far
+        );
+        assert_eq!(
+            select_lod(71.9, LodLevel::Far, near, mid, far, 0.10),
+            LodLevel::Mid
+        );
+        assert_eq!(
+            select_lod(180.0, LodLevel::Virtual, near, mid, far, 0.10),
+            LodLevel::Virtual
+        );
+        assert_eq!(
+            select_lod(179.9, LodLevel::Virtual, near, mid, far, 0.10),
+            LodLevel::Far
+        );
+        // Stay-bands: a value inside the hysteresis zone retains the current level.
+        assert_eq!(
+            select_lod(25.0, LodLevel::Mid, near, mid, far, 0.10),
+            LodLevel::Mid
+        );
+        assert_eq!(
+            select_lod(80.0, LodLevel::Far, near, mid, far, 0.10),
+            LodLevel::Far
+        );
+        // Non-finite distance keeps the current level; boundaries are clamped.
+        assert_eq!(
+            select_lod(f32::NAN, LodLevel::Far, near, mid, far, 0.10),
+            LodLevel::Far
+        );
+        assert_eq!(
+            select_lod(10_000.0, LodLevel::Far, near, mid, far, 0.10),
+            LodLevel::Virtual
+        );
+        assert_eq!(
+            select_lod(220.0, LodLevel::Virtual, near, mid, far, 0.10),
+            LodLevel::Virtual
+        );
+    }
+
+    #[test]
+    fn set_lod_scales_resonators_and_cadence() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        // Default LOD starts at Near: full resonators, single-step coefs.
+        assert_eq!(block.resonator_scale(), 1.0);
+        block.set_lod(LodLevel::Virtual);
+        assert_eq!(block.resonator_scale(), 0.0);
+        let virtual_steps = config().quality.far_coeff_update_steps.max(1);
+        assert_eq!(block.coeff_update_steps, virtual_steps);
     }
 }
