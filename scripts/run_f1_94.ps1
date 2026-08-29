@@ -33,20 +33,6 @@ $manifestPath = if ($is2026Variant) {
 $variantLabel = if ($is2026Variant) { 'F1 2026-2008 new base vehicle' } elseif ($is2009Variant) { 'F1 2009 Williams FW31 optional variant' } else { 'F1 1994 textured canonical' }
 $trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
 $trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
-$trackConfigPath = Join-Path $root 'blender\track_pipeline\configs\la_chutana.json'
-$barrierManifestPath = Join-Path $root 'blender\track_pipeline\manifests\la_chutana_safety_barriers_v3.json'
-$barrierAssetManifestPath = Join-Path $root 'game\resources\environment\assets\barriers\barrier_manifest_v3.json'
-$barrierConstructionManifestPath = Join-Path $root 'game\resources\environment\manifests\barrier_construction_manifest_v2.json'
-$barrierRecipeManifestPath = Join-Path $root 'game\resources\environment\recipes\barrier_library.json'
-$barrierPaletteManifestPath = Join-Path $root 'game\resources\environment\palettes\barrier_palette.json'
-$barrierGeneratorPath = Join-Path $root 'game\resources\environment\tools\build_barrier_3d_library.py'
-$environmentBuilderPath = Join-Path $root 'blender\track_pipeline\build_environment_blender.py'
-$buildingAssetManifestPath = Join-Path $root 'game\resources\environment\assets\buildings\building_manifest.json'
-$buildingSourceManifestPath = Join-Path $root 'game\resources\environment\manifests\building_sources.json'
-$buildingConstructionManifestPath = Join-Path $root 'game\resources\environment\manifests\building_construction_manifest.json'
-$buildingGeneratorPath = Join-Path $root 'game\resources\environment\tools\build_building_asset_manifest.py'
-$buildingIntegrationValidatorPath = Join-Path $root 'blender\track_pipeline\validate_building_asset_integration.py'
-$tracksideIntegrationValidatorPath = Join-Path $root 'blender\track_pipeline\validate_trackside_asset_integration.py'
 $smokeScript = 'res://tests/smoke_test_f1_94_la_chutana_hud.gd'
 $smokeBackgroundScript = 'res://tests/smoke_test_mountains_3d.gd'
 
@@ -120,40 +106,20 @@ if (-not (Test-Path -LiteralPath $trackPath -PathType Leaf)) {
     throw "Circuito runtime faltante: $trackPath"
 }
 if (-not (Test-Path -LiteralPath $trackBuildPath -PathType Leaf)) {
-    throw "BUILD del circuito faltante: $trackBuildPath. Regenera La Chutana con run_track_pipeline.ps1 -Mode Procedural."
+    throw "Manifest del circuito publicado faltante: $trackBuildPath. Importa el paquete generado por la fabrica."
 }
 $trackBuild = Get-Content -LiteralPath $trackBuildPath -Raw | ConvertFrom-Json
 if ([int]$trackBuild.schema_version -ne 3) {
     throw "BUILD del circuito usa schema obsoleto: $($trackBuild.schema_version); se requiere 3."
 }
-$currentHead = (& git -C $root rev-parse HEAD).Trim()
-if ($LASTEXITCODE -ne 0 -or $trackBuild.head -ne $currentHead) {
-    throw "BUILD/HEAD mismatch para La Chutana: BUILD=$($trackBuild.head) HEAD=$currentHead"
+if (-not $trackBuild.glb_sha256) {
+    throw 'El manifest del circuito publicado no declara glb_sha256.'
 }
-$parityFiles = @{
-    glb_sha256 = $trackPath
-    config_sha256 = $trackConfigPath
-    safety_barrier_manifest_sha256 = $barrierManifestPath
-    barrier_asset_manifest_sha256 = $barrierAssetManifestPath
-    barrier_construction_manifest_sha256 = $barrierConstructionManifestPath
-    barrier_recipe_manifest_sha256 = $barrierRecipeManifestPath
-    barrier_palette_manifest_sha256 = $barrierPaletteManifestPath
-    barrier_generator_sha256 = $barrierGeneratorPath
-    environment_builder_sha256 = $environmentBuilderPath
-    building_asset_manifest_sha256 = $buildingAssetManifestPath
-    building_source_manifest_sha256 = $buildingSourceManifestPath
-    building_construction_manifest_sha256 = $buildingConstructionManifestPath
-    building_generator_sha256 = $buildingGeneratorPath
-    building_integration_validator_sha256 = $buildingIntegrationValidatorPath
-    trackside_integration_validator_sha256 = $tracksideIntegrationValidatorPath
+$trackHash = (Get-FileHash -LiteralPath $trackPath -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($trackHash -ne ([string]$trackBuild.glb_sha256).ToLowerInvariant()) {
+    throw 'Hash del GLB de La Chutana no coincide con el paquete publicado.'
 }
-foreach ($field in $parityFiles.Keys) {
-    $actual = (Get-FileHash -LiteralPath $parityFiles[$field] -Algorithm SHA256).Hash.ToLowerInvariant()
-    if ($actual -ne ([string]$trackBuild.$field).ToLowerInvariant()) {
-        throw "Hash de circuito no coincide para $field"
-    }
-}
-Write-Host "La Chutana BUILD/HEAD validado: $currentHead" -ForegroundColor Green
+Write-Host 'Paquete runtime de La Chutana validado.' -ForegroundColor Green
 
 $runtimeAppData = Join-Path $root '.tools\appdata'
 $runtimeLocalAppData = Join-Path $root '.tools\localappdata'
