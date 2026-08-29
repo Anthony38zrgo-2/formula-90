@@ -562,5 +562,70 @@
     "input_smoothing_steering_rate": 7.00,
     "input_smoothing_throttle_rate": 4.0,
     "input_smoothing_brake_rate": 14.0
+  },
+
+  "audio": {
+    "powertrain_synthesis": {
+      "schema_version": 1,
+      "enabled": true,
+      "synthesis_model": "half_block_5_four_stroke",
+      "cycle": "four_stroke",
+      "aspiration": "naturally_aspirated",
+      "total_cylinders": 10,
+      "physically_simulated_cylinders": 5,
+      "bank_count": 2,
+      "even_firing": true,
+      "combustion": { "irregularity": 0.012, "seed": 4500 },
+      "energy": {
+        "torque_curve_weight": 1.0,
+        "throttle_response": 1.0,
+        "attack_smoothing_s": 0.02,
+        "release_smoothing_s": 0.12,
+        "load_smoothing_s": 0.03
+      },
+      "intake": {
+        "enabled": true,
+        "noise_gain": 0.35,
+        "throttle_follow": 0.8,
+        "resonances": [
+          { "frequency_hz": 320.0, "q": 2.0, "gain_db": 3.0 },
+          { "frequency_hz": 640.0, "q": 3.0, "gain_db": 1.5 }
+        ]
+      },
+      "exhaust": {
+        "enabled": true,
+        "pulse_gain": 1.0,
+        "saturation": 0.3,
+        "damping": 0.5,
+        "collector_resonances": [
+          { "frequency_hz": 190.0, "q": 4.0, "gain_db": 4.0 },
+          { "frequency_hz": 380.0, "q": 2.5, "gain_db": 1.0 }
+        ]
+      },
+      "half_block": {
+        "phase_offset_deg": 36.0,
+        "delay_s": 0.004,
+        "decorrelation": 0.35,
+        "gain": 0.98,
+        "timbre_diff": 0.06
+      },
+      "limiter": { "threshold_rpm_ratio": 0.995, "attack_ms": 2.0, "release_ms": 60.0, "cut_shape": "soft" },
+      "tc": { "suppress_gain": 0.55, "attack_ms": 8.0, "release_ms": 120.0, "min_cut_threshold": 0.02 },
+      "distance_levels": {
+        "near_max_m": 25.0,
+        "mid_max_m": 80.0,
+        "far_max_m": 200.0,
+        "hysteresis_ratio": 0.1,
+        "dsp": {
+          "near_resonator_scale": 1.0,
+          "mid_resonator_scale": 0.6,
+          "far_resonator_scale": 0.35,
+          "coeff_update_steps": 1,
+          "far_coeff_update_steps": 4,
+          "organic_jitter_scale": 1.0
+        }
+      },
+      "cpu_budget": { "near_percent": 5.0, "far_percent": 2.0 }
+    }
   }
 }

@@ -165,6 +165,12 @@ pub struct VehicleConfig {
     // Automatic transmission shift logic (from f1_94_physics.json `automatic_shift`)
     pub automatic_shift: AutomaticShift,
     pub gear_inertia: f64,
+
+    /// Opaque passthrough of the profile `audio` section. Not consumed by the
+    /// physics solver; parsed by the audio-contract consumer (e.g.
+    /// vehicle-audio-engine `powertrain` module).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio: Option<serde_json::Value>,
 }
 
 /// Canonical driving-aid model and policy for a vehicle profile.
@@ -478,6 +484,7 @@ impl VehicleConfig {
             automatic_transmission: false,
             automatic_shift: AutomaticShift::default(),
             gear_inertia: default_gear_inertia(),
+            audio: None,
             front_torque_split: 0.0,
 
             // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
@@ -646,6 +653,7 @@ impl VehicleConfig {
             automatic_transmission: true,
             automatic_shift: AutomaticShift::default(),
             gear_inertia: default_gear_inertia(),
+            audio: None,
             front_torque_split: 0.0, // RWD
 
             // Differential (Salisbury Clutch-Pack LSD)
@@ -905,6 +913,8 @@ struct JsonVehicleSpec {
     aids: JsonAids,
     #[serde(default)]
     coordinate_contract: Option<HashMap<String, String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    audio: Option<serde_json::Value>,
 }
 
 fn default_schema_version() -> u32 {
@@ -3045,6 +3055,7 @@ impl JsonVehicleSpec {
                 input_smoothing_throttle_rate: self.aids.input_smoothing_throttle_rate,
                 input_smoothing_brake_rate: self.aids.input_smoothing_brake_rate,
             },
+            audio: self.audio.clone(),
         }
     }
 
@@ -3084,6 +3095,7 @@ impl JsonVehicleSpec {
             vehicle_id: "f1_94".to_string(),
             profile_name: cfg.vehicle_name.clone(),
             units: "SI".to_string(),
+            audio: cfg.audio.clone(),
             chassis: JsonChassis {
                 vehicle_name: cfg.vehicle_name.clone(),
                 vehicle_mass: cfg.vehicle_mass,
@@ -3731,6 +3743,14 @@ mod json_tests {
         assert_eq!(
             cfg.torque_attack_rate_nm_s, 1100.0,
             "2026 car must ship with the engine torque attack limiter enabled"
+        );
+        let audio = cfg
+            .audio
+            .as_ref()
+            .expect("2026 profile must carry the audio section");
+        assert!(
+            audio.get("powertrain_synthesis").is_some(),
+            "audio section must contain powertrain_synthesis contract"
         );
     }
 }
