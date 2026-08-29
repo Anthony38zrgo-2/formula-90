@@ -295,6 +295,26 @@ impl CoreFacade {
             ent.aids.steering_slip_assist = ent.sim.aids.steering_slip_assist;
             ent.aids.abs = ent.sim.aids.abs;
             ent.aids.stability = ent.sim.aids.stability;
+            // When the host underfloor probes report no valid contact (e.g. a test
+            // scene that does not raycast the floor), the floor/diffuser would run
+            // at an invalid stance and contribute ~no downforce, leaving the rears
+            // unloaded at speed (top-gear wheelspin). Fall back to a nominal
+            // environment derived from the profile's underfloor optimal stance so the
+            // floor still loads the tires.
+            let aero_environment = if aero_environment.valid_mask == 0 {
+                let uf = &ent.sim.config.aero_model.underfloor;
+                let h = uf.optimal_height_m.max(0.01);
+                AeroEnvironment {
+                    clearance_m: [h * 0.90, h * 0.90, h, h * 1.80, h * 2.80],
+                    valid_mask: 0x1f,
+                    rake_rad: uf.optimal_rake_deg.to_radians(),
+                    roll_rad: 0.0,
+                    bottoming_mask: 0,
+                    contact_confidence: 1.0,
+                }
+            } else {
+                aero_environment
+            };
             let (forces, telem) =
                 ent.sim
                     .solve_external_with_aero(body, input, samples, &aero_environment, dt);

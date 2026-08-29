@@ -74,7 +74,7 @@
   },
 
   "powertrain": {
-    "max_torque": 514.0,
+    "max_torque": 480.0,
     "max_rpm": 15000.0,
     "idle_rpm": 4500.0,
     "motor_moment": 0.12,
@@ -92,7 +92,7 @@
     ],
 
     "gear_ratios": [3.15, 2.55, 2.05, 1.68, 1.38, 1.15, 0.95],
-    "final_drive": 5.15,
+    "final_drive": 4.4,
     "reverse_ratio": 3.00,
 
     "shift_time": 0.10,
@@ -101,9 +101,11 @@
     "front_torque_split": 0.0,
 
     "gear_inertia": 0.02,
-    "max_clutch_torque_ratio": 1.10,
+    "max_clutch_torque_ratio": 0.85,
     "clutch_out_rpm_offset": 900.0,
     "idle_disengagement_hysteresis_rpm": 100.0,
+
+    "torque_attack_rate_nm_s": 1800.0,
 
     "variable_drag_ratio": 0.12,
     "constant_brake_ratio": 0.02,

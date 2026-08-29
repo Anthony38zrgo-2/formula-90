@@ -37,6 +37,8 @@ pub struct PowertrainState {
     pub tc_cut_ratio: f64,
     pub tc_cut_ratio_smoothed: f64,
     pub drive_torques_pre_tc: [f64; 4],
+    /// Engine-side positive torque after the attack limiter (rise-cap Nm/s).
+    pub engine_attack_limited_torque: f64,
 }
 
 impl PowertrainState {
@@ -64,6 +66,7 @@ impl PowertrainState {
             tc_cut_ratio: 0.0,
             tc_cut_ratio_smoothed: 0.0,
             drive_torques_pre_tc: [0.0; 4],
+            engine_attack_limited_torque: 0.0,
         }
     }
 
@@ -232,7 +235,18 @@ impl PowertrainState {
         let throttle = input.throttle.clamp(0.0, 1.0);
         let rpm_factor = (self.rpm / config.max_rpm.max(1.0)).clamp(0.0, 1.0);
         let curve = config.evaluate_torque_curve(rpm_factor);
-        let positive_torque = curve * config.max_torque * throttle;
+        let mut positive_torque = curve * config.max_torque * throttle;
+
+        // Attack limiter: positive torque may only RISE at `torque_attack_rate_nm_s`
+        // Nm/s, so throttle no longer slams the drivetrain in a single tick. Release
+        // follows instantly because `min(target, prev + rate*dt)` snaps down when
+        // the target drops below the previous value. 0.0 = disabled (legacy).
+        if config.torque_attack_rate_nm_s > 0.0 {
+            self.engine_attack_limited_torque = (self.engine_attack_limited_torque
+                + config.torque_attack_rate_nm_s * dt)
+                .min(positive_torque);
+            positive_torque = self.engine_attack_limited_torque;
+        }
 
         // GEVP has variable motor drag and a constant motor brake term. These values
         // are now profile-tunable via JSON (variable_drag_ratio / constant_brake_ratio).
@@ -653,5 +667,96 @@ mod tc_tests {
             let expected = state.drive_torques_pre_tc[i] * (1.0 - state.tc_cut_ratio);
             assert!((state.drive_torques[i] - expected).abs() < 1e-9);
         }
+    }
+}
+
+#[cfg(test)]
+mod engine_torque_attack_tests {
+    use super::*;
+
+    fn step_one(config: &VehicleConfig, state: &mut PowertrainState, throttle: f64, dt: f64) {
+        let input = VehicleInput {
+            throttle,
+            ..VehicleInput::default()
+        };
+        state.step_with_reaction(
+            config,
+            &input,
+            &[0.0; 4],
+            &[0.0; 4],
+            0.0,
+            false,
+            false,
+            false,
+            dt,
+        );
+    }
+
+    #[test]
+    fn attack_rate_caps_torque_rise_on_first_tick() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.torque_attack_rate_nm_s = 1200.0;
+        let mut state = PowertrainState::new(&cfg);
+        let dt = 1.0 / 600.0;
+
+        step_one(&cfg, &mut state, 1.0, dt);
+
+        // Legacy: first tick would deliver ~positive_torque instantly. With the
+        // limiter the first tick must not exceed rate * dt (2 Nm @ 1200 Nm/s).
+        assert!(
+            state.engine_attack_limited_torque <= 1200.0 * dt + 1e-9,
+            "first-tick tolerated torque {} Nm exceeds attack budget",
+            state.engine_attack_limited_torque
+        );
+        assert!(
+            state.engine_torque < 0.0,
+            "limited torque must not allow positive delivery at idle on tick one"
+        );
+    }
+
+    #[test]
+    fn attack_rate_ramps_toward_target_then_release_is_instant() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.torque_attack_rate_nm_s = 1200.0;
+        let mut state = PowertrainState::new(&cfg);
+        let dt = 1.0 / 600.0;
+
+        let mut prev = 0.0;
+        for _ in 0..600 {
+            step_one(&cfg, &mut state, 1.0, dt);
+            let rise = state.engine_attack_limited_torque - prev;
+            assert!(
+                rise <= 1200.0 * dt + 1e-9,
+                "per-tick rise {} Nm exceeds attack budget",
+                rise
+            );
+            prev = state.engine_attack_limited_torque;
+        }
+        assert!(
+            state.engine_attack_limited_torque > 100.0,
+            "limiter should ramp toward engine target over time"
+        );
+
+        step_one(&cfg, &mut state, 0.0, dt);
+        assert_eq!(state.engine_attack_limited_torque, 0.0);
+        assert!(state.engine_torque < 0.0, "lift-off engine braking stays instant");
+    }
+
+    #[test]
+    fn zero_rate_preserves_legacy_instant_delivery() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        assert_eq!(cfg.torque_attack_rate_nm_s, 0.0);
+        let mut state = PowertrainState::new(&cfg);
+        let dt = 1.0 / 600.0;
+
+        step_one(&cfg, &mut state, 1.0, dt);
+
+        let target = cfg.evaluate_torque_curve(cfg.idle_rpm / cfg.max_rpm) * cfg.max_torque;
+        let instantaneous = target - cfg.variable_drag_ratio * (cfg.idle_rpm / cfg.max_rpm) * cfg.max_torque;
+        assert!(
+            state.engine_torque > instantaneous - 1.0,
+            "legacy path must deliver engine torque (nearly) instantly"
+        );
+        assert_eq!(state.engine_attack_limited_torque, 0.0);
     }
 }

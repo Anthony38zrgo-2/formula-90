@@ -119,6 +119,10 @@ pub struct VehicleConfig {
     pub constant_brake_ratio: f64,
     pub handbrake_torque_fraction: f64,
 
+    // Engine torque attack limiter: caps the RISE of positive engine torque in Nm/s
+    // so throttle no longer slams the drivetrain. 0.0 = disabled (legacy behavior).
+    pub torque_attack_rate_nm_s: f64,
+
     // Differential slip transition threshold (was hardcoded 0.50)
     pub diff_slip_transition_threshold_rad_s: f64,
 
@@ -543,6 +547,7 @@ impl VehicleConfig {
             variable_drag_ratio: 0.10,
             constant_brake_ratio: 0.02,
             handbrake_torque_fraction: 0.4,
+            torque_attack_rate_nm_s: default_torque_attack_rate(),
 
             // Differential slip transition threshold (was hardcoded 0.50)
             diff_slip_transition_threshold_rad_s: 0.5,
@@ -710,6 +715,7 @@ impl VehicleConfig {
             variable_drag_ratio: 0.10,
             constant_brake_ratio: 0.02,
             handbrake_torque_fraction: 0.4,
+            torque_attack_rate_nm_s: default_torque_attack_rate(),
 
             // Differential slip transition threshold (was hardcoded 0.50)
             diff_slip_transition_threshold_rad_s: 0.5,
@@ -1088,6 +1094,8 @@ struct JsonPowertrain {
     max_clutch_torque_ratio: f64,
     #[serde(default = "default_clutch_out_offset")]
     clutch_out_rpm_offset: f64,
+    #[serde(default = "default_torque_attack_rate")]
+    torque_attack_rate_nm_s: f64,
     #[serde(default = "default_idle_hysteresis")]
     idle_disengagement_hysteresis_rpm: f64,
     #[serde(default = "default_var_drag")]
@@ -1118,6 +1126,7 @@ impl Default for JsonPowertrain {
             gear_inertia: default_gear_inertia(),
             max_clutch_torque_ratio: default_max_clutch_ratio(),
             clutch_out_rpm_offset: default_clutch_out_offset(),
+            torque_attack_rate_nm_s: default_torque_attack_rate(),
             idle_disengagement_hysteresis_rpm: default_idle_hysteresis(),
             variable_drag_ratio: default_var_drag(),
             constant_brake_ratio: default_const_brake(),
@@ -1174,6 +1183,9 @@ fn default_max_clutch_ratio() -> f64 {
 }
 fn default_clutch_out_offset() -> f64 {
     1000.0
+}
+fn default_torque_attack_rate() -> f64 {
+    0.0
 }
 fn default_idle_hysteresis() -> f64 {
     50.0
@@ -2869,6 +2881,7 @@ impl JsonVehicleSpec {
                 .unwrap_or_default(),
             gear_inertia: self.powertrain.gear_inertia,
             front_torque_split: self.powertrain.front_torque_split,
+            torque_attack_rate_nm_s: self.powertrain.torque_attack_rate_nm_s,
             diff_preload: self.powertrain.differential.preload_nm,
             diff_power_ramp_angle_deg: self.powertrain.differential.power_ramp_angle_deg,
             diff_coast_ramp_angle_deg: self.powertrain.differential.coast_ramp_angle_deg,
@@ -3115,6 +3128,7 @@ impl JsonVehicleSpec {
                 gear_inertia: 0.02,
                 max_clutch_torque_ratio: cfg.max_clutch_torque_ratio,
                 clutch_out_rpm_offset: cfg.clutch_out_rpm_offset,
+                torque_attack_rate_nm_s: cfg.torque_attack_rate_nm_s,
                 idle_disengagement_hysteresis_rpm: cfg.idle_disengagement_hysteresis_rpm,
                 variable_drag_ratio: cfg.variable_drag_ratio,
                 constant_brake_ratio: cfg.constant_brake_ratio,
@@ -3714,5 +3728,9 @@ mod json_tests {
             "TC authority array must match gear count"
         );
         assert_eq!(cfg.aids.traction_control_gear_max_cut.len(), 7);
+        assert_eq!(
+            cfg.torque_attack_rate_nm_s, 1800.0,
+            "2026 car must ship with the engine torque attack limiter enabled"
+        );
     }
 }
