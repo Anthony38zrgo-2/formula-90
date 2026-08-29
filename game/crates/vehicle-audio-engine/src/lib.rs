@@ -23,6 +23,7 @@ pub mod config;
 pub mod dsp;
 pub mod ffi;
 pub mod mixer;
+pub mod powertrain;
 pub mod state;
 pub mod telemetry;
 pub mod tire_scrub;
@@ -32,6 +33,7 @@ pub use bank::{BankError, Sample, VehicleSoundBank};
 pub use config::{SoundMixerConfig, MIXER_CONFIG_FILENAME};
 pub use ffi::{vehicle_audio_abi_version, VEHICLE_AUDIO_ABI_VERSION};
 pub use mixer::{AudioConfig, VehicleAudioEngine};
+pub use powertrain::AudioPowertrainSynthesis;
 pub use state::{engine_weights, mix, EngineBandProfile, Mix, Trigger, VehicleAudioState};
 
 /// The default relative path to the v10_vehicle bank from the game/ directory.
