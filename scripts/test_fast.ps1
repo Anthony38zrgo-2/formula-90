@@ -27,8 +27,8 @@ function Invoke-FastStep {
 
     Write-Host "FAST [$Name]" -ForegroundColor Cyan
     & $Action
-    if ($LASTEXITCODE -ne 0) {
-        throw "FAST [$Name] failed with exit code $LASTEXITCODE."
+    if (-not $?) {
+        throw "FAST [$Name] failed."
     }
 }
 
