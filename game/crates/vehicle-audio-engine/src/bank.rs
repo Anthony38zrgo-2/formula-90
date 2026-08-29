@@ -15,6 +15,19 @@ use crate::state::{EngineBandProfile, ENGINE_BAND_COUNT};
 /// Minimum sample rate accepted by the native loader contract.
 pub const SAMPLE_RATE: u32 = 44100;
 
+/// Continuous sampled engine/exhaust voices retired in favour of the procedural
+/// synth. The runtime bank must not contain any of these keys.
+pub const RETIRED_KEYS: &[&str] = &[
+    "engine_high",
+    "engine_idle",
+    "engine_limiter",
+    "engine_low",
+    "engine_mid",
+    "engine_redline",
+    "engine_tc",
+    "exhaust-mic",
+];
+
 #[derive(Debug, thiserror::Error)]
 pub enum BankError {
     #[error("bank directory not found: {0}")]
@@ -76,6 +89,7 @@ pub struct VehicleSoundBank {
     pub samples: BTreeMap<String, Sample>,
     pub bank_name: String,
     pub engine_bands: Vec<EngineBandProfile>,
+    pub retired_names: Vec<String>,
     pub(crate) native_rpm: BTreeMap<String, f32>,
 }
 
@@ -101,6 +115,17 @@ impl VehicleSoundBank {
             .and_then(|v| v.as_array())
             .ok_or_else(|| BankError::InvalidManifest("files missing".into()))?;
 
+        let retired_names = manifest
+            .get("retired_keys")
+            .and_then(|v| v.as_array())
+            .map(|arr| {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect::<Vec<_>>()
+            })
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| RETIRED_KEYS.iter().map(|s| s.to_string()).collect());
+
         let mut samples = BTreeMap::new();
         let mut engine_bands = Vec::new();
         let mut native_rpm = BTreeMap::new();
@@ -121,6 +146,11 @@ impl VehicleSoundBank {
                 .unwrap_or("")
                 .to_string();
             let key = file.trim_end_matches(".wav").to_string();
+            if RETIRED_KEYS.contains(&key.as_str()) {
+                return Err(BankError::InvalidManifest(format!(
+                    "retired key present in bank: {key}"
+                )));
+            }
             if let Some(playback) = entry.get("playback").and_then(|value| value.as_object()) {
                 let native = playback
                     .get("native_rpm")
@@ -194,11 +224,14 @@ impl VehicleSoundBank {
             );
         }
         engine_bands.sort_by_key(|band| band.index);
-        if engine_bands.len() != ENGINE_BAND_COUNT
-            || engine_bands
-                .iter()
-                .enumerate()
-                .any(|(index, band)| band.index != index)
+        // The continuous engine bands are retired, so zero bands is valid; when
+        // bands are present they must still be the full, unique, ordered set.
+        if !engine_bands.is_empty()
+            && (engine_bands.len() != ENGINE_BAND_COUNT
+                || engine_bands
+                    .iter()
+                    .enumerate()
+                    .any(|(index, band)| band.index != index))
         {
             return Err(BankError::InvalidPlayback(format!(
                 "expected {ENGINE_BAND_COUNT} unique ordered engine bands"
@@ -213,6 +246,7 @@ impl VehicleSoundBank {
             samples,
             bank_name,
             engine_bands,
+            retired_names,
             native_rpm,
         })
     }

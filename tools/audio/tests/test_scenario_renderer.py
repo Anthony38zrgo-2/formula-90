@@ -27,8 +27,17 @@ def test_all_scenarios_render_and_are_deterministic(tmp_path):
         rep2 = render_scenario(factory(), BANK, out2, tmp_path / f"{name}2.csv", tmp_path / f"{name}2.json")
         assert hashlib.sha256(out_wav.read_bytes()).hexdigest() == hashlib.sha256(out2.read_bytes()).hexdigest()
         assert rep["peak"] == rep2["peak"]
-        assert rep["peak"] < 1.0 and rep["peak"] > 0.05
-        assert rep["rms"] > 0
+        assert rep["peak"] < 1.0
+        assert rep["rms"] >= 0
+        # The continuous sampled engine voices are retired (the procedural synth
+        # is the engine), so the engine-only scenario renders silence while the
+        # surface/impact scenarios still produce audible output.
+        if name == "idle_to_redline_with_shifts":
+            assert rep["peak"] == 0.0
+            assert rep["rms"] == 0.0
+        else:
+            assert rep["peak"] > 0.05
+            assert rep["rms"] > 0
         assert "\\" not in rep["wav"] and "\\" not in rep["csv"]
 
 

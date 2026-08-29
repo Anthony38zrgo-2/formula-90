@@ -14,7 +14,7 @@ import numpy as np
 from scipy import signal
 
 from tools.audio.bank_manifest import BankManifest, FileEntry, sha256_file
-from tools.audio.bank_spec import BANK_SPEC, DEFAULT_SOURCE_DIR, SpecEntry
+from tools.audio.bank_spec import BANK_SPEC, DEFAULT_SOURCE_DIR, RETIRED_KEYS, SpecEntry
 from tools.audio.dsp_common import (
     SAMPLE_RATE,
     dc_offset,
@@ -409,6 +409,8 @@ def _synthesize_exhaust_mic(sample_rate: int) -> tuple[list[float], dict]:
 
 
 def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[list[float], dict]:
+    if spec.key in RETIRED_KEYS:
+        raise ValueError(f"refusing to build retired key: {spec.key}")
     if spec.synthesis == "exhaust_mic_v1":
         samples, params = _synthesize_exhaust_mic(sample_rate)
         params["category"] = spec.category
@@ -484,6 +486,8 @@ def _build_entry(spec: SpecEntry, source_dir: Path, sample_rate: int) -> tuple[l
 def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_RATE) -> BankManifest:
     entries: list[FileEntry] = []
     for spec in BANK_SPEC:
+        if spec.key in RETIRED_KEYS:
+            continue
         samples, params = _build_entry(spec, source_dir, sample_rate)
         name = f"{spec.key}.wav"
         write_wav_mono16(output_dir / name, samples, sample_rate)
@@ -509,6 +513,12 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
                 sha256="",
             )
         )
+
+    # Purge any stale retired wavs left over from a previous build.
+    for key in RETIRED_KEYS:
+        stale = output_dir / f"{key}.wav"
+        if stale.is_file():
+            stale.unlink()
 
     # Fill sha256 after write.
     for e in entries:

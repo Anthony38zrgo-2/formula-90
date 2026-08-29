@@ -24,21 +24,27 @@ class SpecEntry:
     synthesis: str | None = None     # deterministic synthesis recipe
 
 
+# Keys whose continuous sampled audio was retired in favour of the procedural
+# synth. Generation and validation refuse to (re)emit or accept these keys.
+RETIRED_KEYS: tuple[str, ...] = (
+    "engine_high",
+    "engine_idle",
+    "engine_limiter",
+    "engine_low",
+    "engine_mid",
+    "engine_redline",
+    "engine_tc",
+    "exhaust-mic",
+)
+
+
 # Mapping source -> bank key. Chosen variants prefer the higher sample-rate or
 # longest representative source where multiple exist (e.g. _2 at 44.1 kHz).
 BANK_SPEC: tuple[SpecEntry, ...] = (
-    # --- Engine loops ---
-    SpecEntry("engine_idle", "98_int_idle.wav", "engine_idle", True, "engine"),
-    SpecEntry("engine_low", "98_int_low.wav", "engine_low", True, "engine"),
-    SpecEntry("engine_mid", "98_int_med.wav", "engine_mid", True, "engine"),
-    SpecEntry("engine_high", "98_int_high_1.wav", "engine_high", True, "engine"),
-    SpecEntry("engine_redline", "98_int_max_5.wav", "engine_redline", True, "engine"),
-    SpecEntry("engine_tc", "98_INT_tc.wav", "engine_tc", True, "engine"),
     # --- Shifts / start (one-shots) ---
     SpecEntry("shift_up", "98_int_shift.wav", "shift_up", False, "shift"),
     SpecEntry("shift_down", "98_int_shift_2.wav", "shift_down", False, "shift"),
     SpecEntry("shift_3", "98_int_shift_3.wav", "shift_3", False, "shift"),
-    SpecEntry("engine_limiter", "98_INT_limiter_engage_disengage.wav", "engine_limiter", False, "engine"),
     SpecEntry("engine_start_backfire", "98_start_backfire.wav", "engine_start_backfire", False, "start"),
     SpecEntry("int_backfire", "ALT_int_backfire.wav", "engine_backfire", False, "engine"),
     SpecEntry("int_backfire_2", "ALT_int_backfire_2.wav", "engine_backfire", False, "engine"),
@@ -56,9 +62,6 @@ BANK_SPEC: tuple[SpecEntry, ...] = (
     SpecEntry("impact_cone", "GP_conehit.wav", "impact_cone", False, "impact"),
     SpecEntry("impact_fire", "GP_fire.WAV", "impact_fire", False, "impact"),
     SpecEntry("impact_scrape", None, "impact_scrape", False, "impact", synthesis="flat_floor_scrape_v2"),
-    # --- Exhaust microphone (V10 exhaust note, loop) ---
-    SpecEntry("exhaust-mic", None, "exhaust_mic", True, "engine",
-              synthesis="exhaust_mic_v1"),
 )
 
 SPEC_BY_KEY: dict[str, SpecEntry] = {e.key: e for e in BANK_SPEC}

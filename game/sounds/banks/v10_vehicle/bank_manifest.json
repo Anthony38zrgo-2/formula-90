@@ -4,180 +4,6 @@
   "files": [
     {
       "dc_offset": -0.0,
-      "duration_s": 3.56644,
-      "file": "engine_high.wav",
-      "loop": true,
-      "loop_end_s": 3.56644,
-      "loop_start_s": 0.0,
-      "loudness_dbfs": -9.4,
-      "peak": 0.89,
-      "playback": {
-        "engine_band": {
-          "center": 0.75,
-          "index": 3,
-          "width": 0.25
-        },
-        "native_rpm": 16950.0
-      },
-      "provenance": "derived from original user-supplied replacement samples",
-      "role": "engine_high",
-      "sha256": "0926776b3c3ec0f072a352d3d8b61b1da6d60c304d609fcda2a90a45f890f0a4",
-      "synthesis": {
-        "category": "engine",
-        "processing": {
-          "equal_power_loop_crossfade_frames": 2048,
-          "remove_dc": true,
-          "source_rate": 44100,
-          "target_peak": 0.89,
-          "target_rate": 44100
-        },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/engine_high.wav",
-        "source_rate": 44100,
-        "source_sha256": "f683dda13de097b713470c358a3ceace07701aaa36f5eccef43d95a7b282b309"
-      }
-    },
-    {
-      "dc_offset": -0.0,
-      "duration_s": 2.0,
-      "file": "engine_idle.wav",
-      "loop": true,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -10.9,
-      "peak": 0.89,
-      "playback": {
-        "engine_band": {
-          "center": 0.0,
-          "index": 0,
-          "width": 0.25
-        },
-        "native_rpm": 3941.0
-      },
-      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
-      "role": "engine_idle",
-      "sha256": "735ce3ff953ba3071772c8cf58fc37f565159d9a6e1506e821eff7bc1e8a1e71",
-      "synthesis": {
-        "category": "engine",
-        "source_file": "98_int_idle.wav",
-        "source_rate": 44100,
-        "source_sha256": "f0021afba4048c59ae237325c932abef76433f03c437794d73de0e417384ddea"
-      }
-    },
-    {
-      "dc_offset": -0.0,
-      "duration_s": 0.53551,
-      "file": "engine_limiter.wav",
-      "loop": false,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -13.58,
-      "peak": 0.89,
-      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
-      "role": "engine_limiter",
-      "sha256": "f20fa2eb4f5d681810e692d8561a1e475077ed0e21d2a3729935d489606094d7",
-      "synthesis": {
-        "category": "engine",
-        "source_file": "98_INT_limiter_engage_disengage.wav",
-        "source_rate": 22050,
-        "source_sha256": "682b3f78204a550ce60b575405315ef2671b3ccfb8aea7520a819ac11cf3167c"
-      }
-    },
-    {
-      "dc_offset": -0.0,
-      "duration_s": 2.5,
-      "file": "engine_low.wav",
-      "loop": true,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -10.58,
-      "peak": 0.89,
-      "playback": {
-        "engine_band": {
-          "center": 0.25,
-          "index": 1,
-          "width": 0.25
-        },
-        "native_rpm": 7429.0
-      },
-      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
-      "role": "engine_low",
-      "sha256": "5d55124cf9553f615b8ca5d133eb319dbae4c1c4fe6e7daad44f29d063a5a4f2",
-      "synthesis": {
-        "additive_enhancement": [
-          "straight_cut_gear_whine_1.2_3.2khz",
-          "tanh_warmth"
-        ],
-        "category": "engine",
-        "source_file": "98_int_low.wav",
-        "source_rate": 44100,
-        "source_sha256": "2eac0ef746c818ecac50fe77ca0099894f4762d55428a3cddfeb3007a6092cc5"
-      }
-    },
-    {
-      "dc_offset": -0.0,
-      "duration_s": 1.275079,
-      "file": "engine_mid.wav",
-      "loop": true,
-      "loop_end_s": 1.275079,
-      "loop_start_s": 0.0,
-      "loudness_dbfs": -9.53,
-      "peak": 0.89,
-      "playback": {
-        "engine_band": {
-          "center": 0.5,
-          "index": 2,
-          "width": 0.25
-        },
-        "native_rpm": 9800.0
-      },
-      "provenance": "derived from original user-supplied replacement samples",
-      "role": "engine_mid",
-      "sha256": "574f2454e65480eb869249ab617f7f89d4c71871b3b5c1b0ed5753c0b053e2fb",
-      "synthesis": {
-        "category": "engine",
-        "processing": {
-          "equal_power_loop_crossfade_frames": 2048,
-          "remove_dc": true,
-          "source_rate": 44100,
-          "target_peak": 0.89,
-          "target_rate": 44100
-        },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/engine_mid.wav",
-        "source_rate": 44100,
-        "source_sha256": "e2ae60504fd429c1ffbb250409f46c37d9f504f1a8adcd7db2a6b69e48475523"
-      }
-    },
-    {
-      "dc_offset": 0.0,
-      "duration_s": 5.05424,
-      "file": "engine_redline.wav",
-      "loop": true,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -8.53,
-      "peak": 0.89,
-      "playback": {
-        "engine_band": {
-          "center": 1.0,
-          "index": 4,
-          "width": 0.25
-        },
-        "native_rpm": 7687.0
-      },
-      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
-      "role": "engine_redline",
-      "sha256": "f6e085e4c1efa1a5ccf937d6c474f8f2b4eef0cebffee0287b6460e475749be0",
-      "synthesis": {
-        "category": "engine",
-        "source_file": "98_int_max_5.wav",
-        "source_rate": 44100,
-        "source_sha256": "f6b6cd4389fee32cb5f4b41a550e7aa146d4a5d0912fda86551dabfd598aa50b"
-      }
-    },
-    {
-      "dc_offset": -0.0,
       "duration_s": 3.285624,
       "file": "engine_start_backfire.wav",
       "loop": false,
@@ -212,58 +38,6 @@
         "source_file": "98_starter.wav",
         "source_rate": 22050,
         "source_sha256": "9cd06da343af654960fa27f6d294b7f5970d1366f200b5a88e15f5aa06d94821"
-      }
-    },
-    {
-      "dc_offset": 0.0,
-      "duration_s": 1.531156,
-      "file": "engine_tc.wav",
-      "loop": true,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -11.54,
-      "peak": 0.89,
-      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
-      "role": "engine_tc",
-      "sha256": "efc97b1da82be493adfd4f61c21b5ca4f5af9bb6d7c45bf4d1d09f86e0447182",
-      "synthesis": {
-        "category": "engine",
-        "source_file": "98_INT_tc.wav",
-        "source_rate": 44100,
-        "source_sha256": "4198b9e21b098371a80eb8990317778e6bb62294af9eaded88c0f75f0ba2f553"
-      }
-    },
-    {
-      "dc_offset": 0.0,
-      "duration_s": 1.0,
-      "file": "exhaust-mic.wav",
-      "loop": true,
-      "loop_end_s": null,
-      "loop_start_s": null,
-      "loudness_dbfs": -7.48,
-      "peak": 0.89,
-      "playback": {
-        "native_rpm": 14400.0
-      },
-      "provenance": "deterministic procedural synthesis",
-      "role": "exhaust_mic",
-      "sha256": "d7cc4df1cbd7f6a7d905c2bca7eadf0573ce7b148567a9489047c1a4e4cd3601",
-      "synthesis": {
-        "category": "engine",
-        "components": [
-          "v10_firing_fundamental_1200hz_14400rpm",
-          "harmonic_scream_ladder_2x6x_2400_7200hz",
-          "combustion_roar_250_9000hz_firing_ripple",
-          "exhaust_pipe_modal_resonances_850_1700_3400hz",
-          "gas_flow_hiss_2k_12khz",
-          "engine_order_body_240_480hz",
-          "seamless_1s_loop",
-          "tanh_warmth"
-        ],
-        "duration_s": 1.0,
-        "recipe": "exhaust_mic_v1",
-        "seed": 9020,
-        "target_peak": 0.89
       }
     },
     {
@@ -690,6 +464,16 @@
   ],
   "generator": "formula90s canonical bank + f1_94 replacement overlay v1",
   "pcm_bits": 16,
+  "retired_keys": [
+    "engine_high",
+    "engine_idle",
+    "engine_limiter",
+    "engine_low",
+    "engine_mid",
+    "engine_redline",
+    "engine_tc",
+    "exhaust-mic"
+  ],
   "sample_rate": 44100,
   "schema_version": 1,
   "seed": 0

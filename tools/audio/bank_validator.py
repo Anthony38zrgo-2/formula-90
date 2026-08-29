@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tools.audio.bank_contract import validate_manifest_contract
+from tools.audio.bank_spec import RETIRED_KEYS
 
 
 @dataclass
@@ -48,6 +49,20 @@ def validate_bank(bank_dir: Path, manifest_name: str = "bank_manifest.json") -> 
     files = manifest.get("files", [])
     if not isinstance(files, list):
         return findings
+    retired_keys = set(RETIRED_KEYS)
+    for key in sorted(retired_keys):
+        retired_file = f"{key}.wav"
+        on_disk = (bank_dir / retired_file).is_file()
+        in_manifest = any(entry.get("file") == retired_file for entry in files)
+        if on_disk or in_manifest:
+            findings.append(
+                Finding(
+                    retired_file,
+                    "retired.key_present",
+                    "error",
+                    f"retired key '{key}' still present (disk={on_disk}, manifest={in_manifest})",
+                )
+            )
     if not files:        findings.append(Finding(manifest_name, "manifest.empty", "error", "no files listed"))
     for entry in files:
         fname = entry.get("file", "")

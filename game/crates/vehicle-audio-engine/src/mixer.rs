@@ -785,7 +785,10 @@ impl VehicleAudioEngine {
                 self.cur_weights[0] = 1.0;
                 self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
             } else {
-                // Engine bands: weights + pitch derived continuously from smoothed_rpm.
+                // The sampled engine bands and exhaust microphone layer are retired
+                // (see bank::RETIRED_KEYS); the procedural synth (above) is the engine
+                // source. Keep the band telemetry (weights/pitches) so consumers still
+                // see a glide, but emit no sampled engine/exhaust audio.
                 let norm = if self.max_rpm > self.idle_rpm {
                     (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
                         .clamp(0.0, 1.0)
@@ -793,70 +796,12 @@ impl VehicleAudioEngine {
                     0.0
                 };
                 let weights = engine_weights(norm, &self.engine_bands);
-                for (b, weight) in weights
-                    .iter()
-                    .enumerate()
-                    .take(self.layer_keys.len().min(5))
-                {
-                    if let Some(sample) = self.bank.get(&self.layer_keys[b]) {
-                        let ratio =
-                            engine_pitch_scale(self.smoothed_rpm, &self.engine_bands[b]) as f64;
-                        let s = read_looped(&sample.pcm, &mut self.layer_cursors[b], ratio);
-                        let source = *weight
-                            * s
-                            * self.sample_gain(&self.layer_keys[b])
-                            * eg
-                            * self.cfg.engine_headroom;
-                        mix_through_strip(
-                            &mut self.strips,
-                            &mut self.reverb_buses,
-                            &self.layer_keys[b],
-                            source,
-                            &mut mixed_l,
-                            &mut mixed_r,
-                        );
-                    }
-                }
                 for (wi, w) in weights.iter().enumerate() {
                     self.cur_weights[wi] = *w;
                 }
                 for (band, pitch) in self.engine_bands.iter().zip(self.cur_pitches.iter_mut()) {
                     *pitch = engine_pitch_scale(self.smoothed_rpm, band);
                 }
-
-                // Exhaust microphone layer: pitch follows RPM, amplitude follows
-                // throttle, and a short gain boost (crackle) is added on backfire.
-                let mut exhaust = 0.0f32;
-                let ec = self.cfg.exhaust;
-                if ec.enabled && !self.exhaust_key.is_empty() {
-                    if let Some(sample) = self.bank.get(&self.exhaust_key) {
-                        let native_rpm = self
-                            .bank
-                            .native_rpm(&self.exhaust_key)
-                            .expect("validated exhaust native_rpm")
-                            as f64;
-                        let ratio = self.smoothed_rpm / native_rpm;
-                        let s = read_looped(&sample.pcm, &mut self.exhaust_cursor, ratio);
-                        let throttle_env = (1.0 - ec.throttle_sensitivity)
-                            + ec.throttle_sensitivity * self.last_throttle;
-                        let mut gain = ec.base_gain
-                            * throttle_env.clamp(0.0, 1.0)
-                            * self.sample_gain(&self.exhaust_key);
-                        if self.exhaust_crackle_samples > 0 {
-                            gain += ec.crackle_gain;
-                            self.exhaust_crackle_samples -= 1;
-                        }
-                        exhaust = s * gain;
-                    }
-                }
-                mix_through_strip(
-                    &mut self.strips,
-                    &mut self.reverb_buses,
-                    &self.exhaust_key,
-                    exhaust,
-                    &mut mixed_l,
-                    &mut mixed_r,
-                );
             }
 
             // Surface bed (loops at native rate).
@@ -1316,6 +1261,7 @@ mod tests {
             samples,
             bank_name: "unit".to_string(),
             engine_bands: Vec::new(),
+            retired_names: Vec::new(),
             native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
@@ -1360,6 +1306,7 @@ mod tests {
             samples,
             bank_name: "unit".to_string(),
             engine_bands: Vec::new(),
+            retired_names: Vec::new(),
             native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
@@ -1388,6 +1335,7 @@ mod tests {
             samples,
             bank_name: "unit".to_string(),
             engine_bands: Vec::new(),
+            retired_names: Vec::new(),
             native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
@@ -1429,6 +1377,7 @@ mod tests {
             samples,
             bank_name: "unit".to_string(),
             engine_bands: Vec::new(),
+            retired_names: Vec::new(),
             native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
         }
     }
@@ -1937,55 +1886,6 @@ mod tests {
         assert_eq!(l1, l2, "unconfigured keys must not affect the mix");
     }
 
-    /// Bank with silent engine bands and a deterministic 100 Hz exhaust-mic loop
-    /// for testing the exhaust voice behaviour.
-    fn exhaust_test_bank() -> VehicleSoundBank {
-        use crate::bank::Sample;
-        let mut samples = std::collections::BTreeMap::new();
-        let silent: Vec<i16> = vec![0i16; 4096];
-        for key in test_engine_bands().iter().map(|band| band.key.as_str()) {
-            samples.insert(
-                key.to_string(),
-                Sample {
-                    key: key.to_string(),
-                    role: key.to_string(),
-                    sample_rate: 44100,
-                    pcm: silent.clone(),
-                    is_loop: true,
-                },
-            );
-        }
-        let exhaust_pcm: Vec<i16> = (0..4096)
-            .map(|i| {
-                let phase = 2.0 * std::f32::consts::PI * 100.0 * i as f32 / 44100.0;
-                (1200.0 * phase.sin()) as i16
-            })
-            .collect();
-        samples.insert(
-            "exhaust-mic".to_string(),
-            Sample {
-                key: "exhaust-mic".to_string(),
-                role: "exhaust_mic".to_string(),
-                sample_rate: 44100,
-                pcm: exhaust_pcm,
-                is_loop: true,
-            },
-        );
-        VehicleSoundBank {
-            samples,
-            bank_name: "unit_exhaust".to_string(),
-            engine_bands: Vec::new(),
-            native_rpm: BTreeMap::from([("exhaust-mic".to_string(), 14400.0)]),
-        }
-    }
-
-    fn zero_crossings(buf: &[f32]) -> usize {
-        buf.iter()
-            .zip(buf.iter().skip(1))
-            .filter(|(a, b)| a.signum() != b.signum())
-            .count()
-    }
-
     fn rms(buf: &[f32]) -> f32 {
         (buf.iter().map(|v| v * v).sum::<f32>() / buf.len().max(1) as f32).sqrt()
     }
@@ -2009,96 +1909,6 @@ mod tests {
             var_b += db * db;
         }
         (cov / (var_a * var_b).sqrt()) as f32
-    }
-
-    #[test]
-    fn exhaust_pitch_follows_rpm() {
-        let mut e = engine_with_bank(exhaust_test_bank());
-        e.exhaust_key = "exhaust-mic".to_string();
-        e.cfg.exhaust.base_gain = 1.0;
-        e.cfg.exhaust.throttle_sensitivity = 0.0;
-
-        // Pin smoothed_rpm so the pitch is stable (no glide artefact).
-        e.smoothed_rpm = 14400.0;
-        e.target_rpm = 14400.0;
-        e.idle_rpm = 1000.0;
-        e.max_rpm = 15000.0;
-        let mut l1 = vec![0.0f32; 4096];
-        let mut r1 = vec![0.0f32; 4096];
-        e.render(&mut l1, &mut r1, 4096);
-        let zc1 = zero_crossings(&l1);
-
-        e.exhaust_cursor = 0.0;
-        e.smoothed_rpm = 7200.0;
-        e.target_rpm = 7200.0;
-        let mut l2 = vec![0.0f32; 4096];
-        let mut r2 = vec![0.0f32; 4096];
-        e.render(&mut l2, &mut r2, 4096);
-        let zc2 = zero_crossings(&l2);
-
-        assert!(
-            zc1 > 10 && zc2 > 4,
-            "expected audible exhaust output at both RPMs (zc1={zc1}, zc2={zc2})"
-        );
-        let ratio = zc2 as f32 / zc1 as f32;
-        assert!(
-            (ratio - 0.5).abs() < 0.15,
-            "exhaust pitch should halve when RPM halves: ratio {ratio}"
-        );
-    }
-
-    #[test]
-    fn exhaust_gain_follows_throttle() {
-        let mut e = engine_with_bank(exhaust_test_bank());
-        e.exhaust_key = "exhaust-mic".to_string();
-        e.cfg.exhaust.base_gain = 1.0;
-        e.cfg.exhaust.throttle_sensitivity = 1.0;
-        e.smoothed_rpm = 14400.0;
-        e.target_rpm = 14400.0;
-        e.idle_rpm = 1000.0;
-        e.max_rpm = 15000.0;
-
-        // Full throttle -> full gain.
-        e.last_throttle = 1.0;
-        let mut l_full = vec![0.0f32; 4096];
-        e.render(&mut l_full, &mut vec![0.0f32; 4096], 4096);
-        let rms_full = rms(&l_full);
-
-        // Zero throttle -> zero gain (sensitivity=1.0).
-        e.exhaust_cursor = 0.0;
-        e.last_throttle = 0.0;
-        let mut l_off = vec![0.0f32; 4096];
-        e.render(&mut l_off, &mut vec![0.0f32; 4096], 4096);
-        let rms_off = rms(&l_off);
-
-        assert!(
-            rms_full > 0.005,
-            "exhaust should be audible at full throttle"
-        );
-        assert!(
-            rms_off < 1e-6,
-            "exhaust should be silent at zero throttle (rms={rms_off})"
-        );
-    }
-
-    #[test]
-    fn exhaust_crackle_boosts_gain_on_backfire() {
-        let mut e = engine_with_bank(exhaust_test_bank());
-        e.exhaust_key = "exhaust-mic".to_string();
-        e.cfg.exhaust.base_gain = 0.0;
-        e.cfg.exhaust.crackle_gain = 0.5;
-        e.cfg.exhaust.throttle_sensitivity = 0.0;
-
-        e.set_state(14000.0, 1000.0, 15000.0, 0.0, 100.0, 3, 0.0, "asphalt");
-        // Simulate the crackle that set_state sets when an overrun backfire fires.
-        e.exhaust_crackle_samples = (e.sample_rate as f64 * 0.12) as usize;
-        let mut l = vec![0.0f32; 2048];
-        e.render(&mut l, &mut vec![0.0f32; 2048], 2048);
-
-        assert!(
-            l.iter().any(|v| v.abs() > 0.01),
-            "exhaust crackle should produce audible output even with base_gain=0"
-        );
     }
 
     #[test]

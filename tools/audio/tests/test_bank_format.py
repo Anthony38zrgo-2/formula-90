@@ -8,6 +8,8 @@ import struct
 import wave
 from pathlib import Path
 
+from tools.audio.bank_spec import RETIRED_KEYS
+
 BANK = Path("game/sounds/banks/v10_vehicle")
 
 
@@ -60,3 +62,9 @@ def test_bank_validator_passes():
     findings = validate_bank(BANK)
     errors = [f for f in findings if f.level == "error"]
     assert not errors, f"validator errors: {errors}"
+
+
+def test_retired_keys_absent_from_disk():
+    on_disk = {p.name for p in BANK.glob("*.wav")}
+    for key in RETIRED_KEYS:
+        assert f"{key}.wav" not in on_disk, f"retired key {key} wav still on disk"

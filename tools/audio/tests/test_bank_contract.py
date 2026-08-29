@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from tools.audio.bank_contract import CONTRACT_PATH, load_contract, validate_manifest_contract
+from tools.audio.bank_spec import RETIRED_KEYS
 from tools.audio.render_audio_scenario import BANK_DIR
 
 RUNTIME_MANIFEST = BANK_DIR / "bank_manifest.json"
@@ -61,9 +62,21 @@ def test_contract_rejects_invalid_hash_and_loop_bounds():
 
 def test_contract_rejects_invalid_playback_metadata():
     manifest = _runtime_manifest()
-    playback = manifest["files"][0]["playback"]
+    entry = copy.deepcopy(manifest["files"][0])
+    entry["file"] = "synthetic_probe.wav"
+    entry["playback"] = {"native_rpm": 6000, "engine_band": {"index": 0, "center": 0.0, "width": 0.25}}
+    manifest["files"].append(entry)
+    playback = manifest["files"][-1]["playback"]
     playback["native_rpm"] = 0
     playback["engine_band"]["width"] = 0
     issues = validate_manifest_contract(manifest)
     assert any(issue.path.endswith("playback.native_rpm") for issue in issues)
     assert any(issue.path.endswith("playback.engine_band.width") for issue in issues)
+
+
+def test_retired_keys_are_absent():
+    manifest = _runtime_manifest()
+    files = {e["file"] for e in manifest["files"]}
+    for key in RETIRED_KEYS:
+        assert f"{key}.wav" not in files, f"retired key {key} still in manifest files"
+    assert manifest.get("retired_keys") == list(RETIRED_KEYS)

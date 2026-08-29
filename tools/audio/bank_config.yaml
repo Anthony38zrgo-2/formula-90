@@ -11,3 +11,13 @@ pcm_bits: 16
 loop_xfade_frames: 2048
 # Peak normalization ceiling.
 normalization_peak: 0.89
+# Continuous sampled voices retired in favour of the procedural synth.
+retired_keys:
+  - engine_high
+  - engine_idle
+  - engine_limiter
+  - engine_low
+  - engine_mid
+  - engine_redline
+  - engine_tc
+  - exhaust-mic

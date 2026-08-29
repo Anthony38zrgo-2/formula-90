@@ -48,54 +48,69 @@ fn bank_loads_and_has_expected_entries() {
     let Some(bank) = require_bank() else { return };
     assert_eq!(bank.bank_name, "v10_vehicle");
     assert!(!bank.is_empty());
+    // Kept one-shots / beds must all be present.
     for key in [
-        "engine_idle",
-        "engine_mid",
-        "engine_redline",
         "surf_sand",
         "surf_grass",
         "surf_rumble",
         "impact_barrier",
         "impact_cone",
+        "impact_fire",
+        "impact_scrape",
+        "impact_hit_1",
+        "impact_hit_2",
+        "impact_hit_3",
+        "impact_hit_4",
         "shift_up",
+        "shift_down",
+        "shift_3",
+        "engine_starter",
         "engine_start_backfire",
         "int_backfire",
         "int_backfire_2",
-        "exhaust-mic",
-        "impact_scrape",
         "tyre_scrub",
     ] {
         assert!(bank.get(key).is_some(), "missing bank key {key}");
     }
-    // Engine loops flagged as loops.
-    assert!(bank.get("engine_idle").unwrap().is_loop);
-    // One-shots not flagged.
+    // Retired continues (engine bands + exhaust mic) must be absent from the bank.
+    for key in [
+        "engine_idle",
+        "engine_low",
+        "engine_mid",
+        "engine_high",
+        "engine_redline",
+        "engine_limiter",
+        "engine_tc",
+        "exhaust-mic",
+    ] {
+        assert!(
+            bank.get(key).is_none(),
+            "retired key {key} still present in bank"
+        );
+    }
+    // One-shots vs loops.
     assert!(!bank.get("impact_barrier").unwrap().is_loop);
+    assert!(bank.get("surf_grass").unwrap().is_loop);
     assert!(bank.get("tyre_scrub").unwrap().is_loop);
-    assert_eq!(bank.engine_bands.len(), 5);
+    // Sampled engine bands are retired: the bank exposes an empty band set and the
+    // engine is now driven by the procedural synth.
+    assert!(bank.engine_bands.is_empty());
+    assert_eq!(bank.native_rpm("exhaust-mic"), None);
     assert_eq!(
-        bank.engine_bands
-            .iter()
-            .map(|band| band.key.as_str())
-            .collect::<Vec<_>>(),
+        bank.retired_names,
         [
+            "engine_high",
             "engine_idle",
+            "engine_limiter",
             "engine_low",
             "engine_mid",
-            "engine_high",
             "engine_redline",
+            "engine_tc",
+            "exhaust-mic",
         ]
+        .map(String::from)
+        .to_vec()
     );
-    assert_eq!(
-        bank.engine_bands
-            .iter()
-            .map(|band| band.center)
-            .collect::<Vec<_>>(),
-        [0.0, 0.25, 0.5, 0.75, 1.0]
-    );
-    assert!(bank.engine_bands.iter().all(|band| band.width == 0.25));
-    assert_eq!(bank.engine_bands[3].native_rpm, 16950.0);
-    assert_eq!(bank.native_rpm("exhaust-mic"), Some(14400.0));
 }
 
 #[test]
@@ -124,7 +139,7 @@ fn bank_samples_are_mono_44k_and_reasonable_duration() {
 #[test]
 fn loop_sample_stays_in_range_across_wrap() {
     let Some(bank) = require_bank() else { return };
-    let engine = bank.get("engine_mid").unwrap();
+    let engine = bank.get("surf_grass").unwrap();
     // Wrap across several loop iterations; every read must be finite and in [-1,1].
     for step in (0..engine.pcm.len() * 3 + 100).step_by(997) {
         let v = vehicle_audio_engine::dsp::loop_sample(&engine.pcm, step);
@@ -162,22 +177,23 @@ fn state(
 fn offline_scenario_states_produce_expected_mix_decisions() {
     let Some(bank) = require_bank() else { return };
     let bands = &bank.engine_bands;
-    // Mirrors the offline renderer scenarios (asphalt/sand/grass/rumble).
-    // engine mix must follow normalized rpm; asphalt has no bed.
+    // Sampled engine bands are retired, so the loaded bank has an empty band set:
+    // the engine crossfade degrades to the deterministic band-0 fallback, while the
+    // surface-bed, gain and trigger decisions remain meaningful and must survive.
     let idle = state(2200.0, 1000.0, 15000.0, 0.15, 0.0, 1, 0.0, "asphalt");
     let m = idle.mix(bands);
     assert_eq!(m.surface_key, None);
-    assert!(
-        m.engine_weights[0] > m.engine_weights[4],
-        "idle should favor idle band"
+    assert_eq!(
+        m.engine_weights[0], 1.0,
+        "empty-band set falls back to band 0"
     );
 
     let redline = state(14500.0, 1000.0, 15000.0, 1.0, 195.0, 4, 0.03, "asphalt");
     let m = redline.mix(bands);
     assert_eq!(m.surface_key, None);
-    assert!(
-        m.engine_weights[4] > m.engine_weights[0],
-        "redline should favor redline band"
+    assert_eq!(
+        m.engine_weights[0], 1.0,
+        "empty-band set falls back to band 0"
     );
     assert!((m.engine_gain - 1.0).abs() < 1e-5);
 
@@ -212,11 +228,14 @@ fn surface_token_mapping_used_by_scenarios() {
 #[test]
 fn weights_are_stable_golden_values() {
     let Some(bank) = require_bank() else { return };
-    // Guard against silent regression in the crossfade curve.
+    // Sampled engine bands are retired: the loaded bank exposes an empty band set,
+    // so the crossfade degrades to the documented engine_weights fallback.
+    assert!(bank.engine_bands.is_empty());
     assert_eq!(engine_weights(0.0, &bank.engine_bands)[0], 1.0);
-    let mid = engine_weights(0.5, &bank.engine_bands);
-    // At the mid point the middle band dominates and neighbors are nonzero.
-    assert!(mid[2] > mid[0] && mid[2] > mid[4]);
-    let sum: f32 = mid.iter().sum();
+    let weights = engine_weights(0.5, &bank.engine_bands);
+    // Empty band set falls back to band 0 only; neighbours are zero.
+    assert_eq!(weights[0], 1.0);
+    assert!(weights[1..].iter().all(|w| *w == 0.0));
+    let sum: f32 = weights.iter().sum();
     assert!((sum - 1.0).abs() < 1e-5);
 }
