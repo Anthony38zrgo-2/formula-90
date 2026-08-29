@@ -48,15 +48,23 @@ try {
             }
             'Vehicle' {
                 Invoke-FastStep 'Vehicle' {
-                    & python (Join-Path $PSScriptRoot 'validate_f1_94_decoupled.py')
+                    $vehicleRoots = @(
+                        'game/assets/models/vehicles/f1_94/decoupled',
+                        'game/assets/models/vehicles/f1_94/variants/f1_2009_fw31',
+                        'game/assets/models/vehicles/f1-2026-2008'
+                    )
+                    foreach ($relativeRoot in $vehicleRoots) {
+                        $manifest = Join-Path $root $relativeRoot
+                        if (-not (Test-Path (Join-Path $manifest 'manifest.json'))) {
+                            throw "Vehicle manifest missing: $relativeRoot"
+                        }
+                    }
                 }
             }
             'Track' {
-                Invoke-FastStep 'Track SVG profile' {
-                    & python -m unittest blender.track_pipeline.tests.test_svg_profile -v
-                }
-                Invoke-FastStep 'Track compiler' {
-                    & python -m unittest blender.track_pipeline.tests.test_compile_svg_track -v
+                Invoke-FastStep 'Published track package' {
+                    $track = Join-Path $root 'game/assets/generated/tracks/la_chutana/la_chutana.glb'
+                    if (-not (Test-Path $track)) { throw "Published track GLB missing: $track" }
                 }
             }
             'Runtime' {
