@@ -1,9 +1,9 @@
 extends SceneTree
 
-## Smoke test: BackgroundMountains3D integration with La Chutana.
-## Verifies that the procedural 3D mountain system loads correctly.
+## Smoke test: factory-authored mountain integration with La Chutana.
+## Near/Far must come exclusively from the published track GLB.
 
-const SESSION_SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
+const SESSION_SCENE_PATH := "res://scenes/runtime/vehicle_test_session_2026.tscn"
 var _failures: Array[String] = []
 
 func _init():
@@ -31,42 +31,16 @@ func _run():
 		_report_and_quit(comp)
 		return
 
-	# Check BackgroundMountains3D exists
-	var mountains := rs.background_mountains_3d
-	if mountains == null:
-		_fail("BackgroundMountains3D no esta instanciado.")
-		_report_and_quit(comp)
-		return
-
-	# Check it's active
-	if not mountains.is_active():
-		_fail("BackgroundMountains3D no esta activo.")
+	if rs.background_mountains_3d != null:
+		_fail("BackgroundMountains3D runtime debe permanecer desactivado.")
 	else:
-		print("[OK] BackgroundMountains3D activo.")
+		print("[OK] BackgroundMountains3D runtime desactivado.")
 
-	# Check debug info
-	var info := mountains.get_debug_info()
-	if not info.sky_dome:
-		_fail("SkyDome no cargado.")
+	var factory_mountains := _count_factory_mountains(rs.active_track)
+	if factory_mountains != 2:
+		_fail("Se esperaban 2 montañas dentro del GLB de fábrica; encontradas: %d" % factory_mountains)
 	else:
-		print("[OK] SkyDome cargado.")
-
-	if not info.far_ring:
-		_fail("FarMountains ring no cargado.")
-	else:
-		print("[OK] FarMountains ring cargado.")
-
-	if not info.near_ring:
-		_fail("NearMountains ring no cargado.")
-	else:
-		print("[OK] NearMountains ring cargado.")
-
-	if info.get("has_texture", false):
-		print("[OK] Textura de montañas de desierto costero aplicada correctamente.")
-	elif info.waterfalls < 3:
-		_fail("Se esperaban 3 cascadas legacy, encontradas: %d" % info.waterfalls)
-	else:
-		print("[OK] %d cascadas legacy instanciadas." % info.waterfalls)
+		print("[OK] Near/Far provienen exclusivamente del GLB de fábrica.")
 
 	# Check legacy is hidden
 	var legacy := rs.active_track.get_node_or_null("SourceSkyboxRig") as Node3D if rs.active_track != null else null
@@ -92,6 +66,21 @@ func _run():
 func _fail(msg: String) -> void:
 	_failures.append(msg)
 	printerr("[FAIL] %s" % msg)
+
+
+func _count_factory_mountains(track: Node) -> int:
+	var count := 0
+	var pending: Array[Node] = [track]
+	while not pending.is_empty():
+		var node: Node = pending.pop_back() as Node
+		pending.append_array(node.get_children())
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var size := mesh_instance.mesh.get_aabb().size
+		if size.x >= 2500.0 and size.z >= 2500.0 and size.y <= 300.0 and mesh_instance.visible:
+			count += 1
+	return count
 
 
 func _report() -> void:

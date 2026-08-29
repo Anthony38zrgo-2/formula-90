@@ -14,6 +14,8 @@ var active_vehicle: Node
 var driving_aids: DrivingAidsController
 var background_controller: BackgroundController
 var background_skybox: BackgroundSkybox
+# Deprecated compatibility handle. Factory-authored tracks no longer
+# instantiate BackgroundMountains3D at runtime.
 var background_mountains_3d: BackgroundMountains3D
 
 func _ready() -> void:
@@ -98,22 +100,11 @@ func _setup_background(camera_rig: Node3D) -> void:
 	if cam == null:
 		push_warning("RaceSession: No se encontró Camera3D en camera_rig '%s'; skybox sin seguimiento." % camera_rig.name)
 	
-	# Try 3D mountains system first (new procedural approach)
-	var mountains_manifest := _resolve_mountains_3d_manifest()
-	if not mountains_manifest.is_empty():
-		var mountains := BackgroundMountains3D.new()
-		mountains.name = "BackgroundMountains3D"
-		if mountains.setup(mountains_manifest):
-			if cam != null:
-				mountains.set_camera_source(cam)
-			add_child(mountains)
-			background_mountains_3d = mountains
-			
-			# Hide legacy skybox and disable PanoramaSky
-			_hide_legacy_background()
-			return
-		else:
-			push_warning("RaceSession: No se pudo activar BackgroundMountains3D; intentando fallback.")
+	# La Chutana's published factory GLB is the sole authority for Near/Far.
+	# Keep its embedded materials and the track WorldEnvironment untouched.
+	if config.selected_track.id == &"la_chutana":
+		print("RaceSession: fondo de La Chutana provisto por el GLB de fábrica.")
+		return
 	
 	# Fallback: legacy 2D parallax system
 	var preset := config.selected_track.get_effective_background_preset()
@@ -144,31 +135,6 @@ func _setup_background(camera_rig: Node3D) -> void:
 		_hide_legacy_background()
 	else:
 		push_warning("RaceSession: No se pudo activar el BackgroundController; se conserva el fallback legacy.")
-
-
-func _resolve_mountains_3d_manifest() -> String:
-	if config == null or config.selected_track == null:
-		return ""
-	
-	var preset := config.selected_track.get_effective_background_preset()
-	if preset == null:
-		return ""
-	
-	# Ruta esperada: mountains_3d/manifest.json junto al preset
-	var preset_path: String = config.selected_track.background_preset_path
-	if preset_path.is_empty():
-		push_warning("RaceSession: background_preset_path vacío; no se puede resolver mountains_3d/manifest.json")
-		return ""
-	
-	var base_dir := preset_path.get_base_dir()
-	var manifest_res := base_dir.path_join("mountains_3d/manifest.json")
-	
-	if FileAccess.file_exists(manifest_res):
-		print("RaceSession: Mountains3D manifest cargado: %s" % manifest_res)
-		return manifest_res
-	
-	push_warning("RaceSession: No se encontró mountains_3d/manifest.json en '%s'; usando fallback legacy." % manifest_res)
-	return ""
 
 
 func _hide_legacy_background() -> void:

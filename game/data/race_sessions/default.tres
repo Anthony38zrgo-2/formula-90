@@ -1,7 +1,7 @@
 [gd_resource type="Resource" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/runtime/race_session_config.gd" id="1"]
-[ext_resource type="Resource" path="res://data/vehicles/f1_2009_fw31.tres" id="2"]
+[ext_resource type="Resource" path="res://data/vehicles/f1_2026_2008.tres" id="2"]
 [ext_resource type="Resource" path="res://data/tracks/la_chutana.tres" id="3"]
 
 [resource]
