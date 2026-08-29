@@ -1590,6 +1590,53 @@ mod tests {
     }
 
     #[test]
+    fn synth_rpm_ramp_stays_below_headroom_ceiling() {
+        let mut e = engine_with_bank(dummy_bank());
+        e.enable_synth(&AudioPowertrainSynthesis::default());
+        let mut l = vec![0.0f32; 2048];
+        let mut r = vec![0.0f32; 2048];
+        let mut peak_post = 0.0f32;
+        let mut peak_limited = 0.0f32;
+        // Same ramp as the banked test: the procedural synth runs the full band
+        // range. Step 36 is the last below the limiter threshold (14925 f32);
+        // steps 37..39 are cut by the procedural limiter. With headroom 0.62
+        // and the 0.90 limiter ceiling the peak must stay under the ceiling
+        // everywhere; the last step (cut settled long ago) must come out
+        // clearly suppressed.
+        for step in 0..40 {
+            let rpm = 2000.0 + step as f64 * 350.0;
+            e.set_state(rpm, 1000.0, 15000.0, 1.0, 0.0, 3, 0.0, "asphalt");
+            e.render(&mut l, &mut r, 2048);
+            for v in l.iter() {
+                let a = v.abs();
+                if a > peak_post {
+                    peak_post = a;
+                }
+                if step == 39 && a > peak_limited {
+                    peak_limited = a;
+                }
+            }
+        }
+        let ceiling = e.config().limiter_threshold;
+        assert!(
+            peak_post <= ceiling + 1e-3,
+            "synth exceeded limiter ceiling: {peak_post}"
+        );
+        assert!(
+            peak_post < 0.90,
+            "synth peak too close to ceiling: peak_post={peak_post}"
+        );
+        assert!(
+            peak_limited < 0.50,
+            "procedural limiter did not suppress the top steps: {peak_limited}"
+        );
+        assert!(
+            e.last_synth_energy() > 0.0,
+            "synth energy missing during ramp"
+        );
+    }
+
+    #[test]
     fn pitch_glides_instead_of_stepping() {
         let mut e = engine_with_bank(dummy_bank());
         e.set_state(2000.0, 1000.0, 15000.0, 1.0, 0.0, 3, 0.0, "asphalt");

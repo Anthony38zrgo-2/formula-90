@@ -3,9 +3,12 @@ pub mod exhaust;
 pub mod half_block_reconstruct;
 pub mod impulse;
 pub mod intake;
+pub mod limiter_tc;
 
 use crate::dsp::biquad::Biquad;
-use crate::powertrain::{AudioPowertrainSynthesis, ExhaustConfig, HalfBlockConfig, IntakeConfig};
+use crate::powertrain::{
+    AudioPowertrainSynthesis, ExhaustConfig, HalfBlockConfig, IntakeConfig, LimiterConfig, TcConfig,
+};
 
 use event_gen::EventJitter;
 use exhaust::ExhaustSynth;
@@ -15,6 +18,7 @@ use impulse::{
     IMPULSE_LEVEL,
 };
 use intake::IntakeSynth;
+use limiter_tc::{tc_alpha, LimiterState, TcEnvelope};
 
 pub const CYCLE_DEG: f64 = 720.0;
 pub const DEFAULT_FIRING_PHASES_DEG: [f64; 5] = [0.0, 144.0, 288.0, 432.0, 576.0];
@@ -32,6 +36,8 @@ pub struct PowertrainConfig {
     pub intake: IntakeConfig,
     pub exhaust: ExhaustConfig,
     pub half_block: HalfBlockConfig,
+    pub limiter: LimiterConfig,
+    pub tc: TcConfig,
 }
 
 impl Default for PowertrainConfig {
@@ -49,6 +55,8 @@ impl Default for PowertrainConfig {
             intake: IntakeConfig::default(),
             exhaust: ExhaustConfig::default(),
             half_block: HalfBlockConfig::default(),
+            limiter: LimiterConfig::default(),
+            tc: TcConfig::default(),
         }
     }
 }
@@ -68,6 +76,8 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             intake: contract.intake.clone(),
             exhaust: contract.exhaust.clone(),
             half_block: contract.half_block.clone(),
+            limiter: contract.limiter.clone(),
+            tc: contract.tc.clone(),
         }
     }
 }
@@ -169,6 +179,15 @@ pub struct HalfBlock {
     intake: IntakeSynth,
     exhaust: ExhaustSynth,
     current_throttle: f32,
+    limiter: LimiterState,
+    limiter_config: LimiterConfig,
+    limiter_target_cut: f32,
+    limiter_attack_alpha: f32,
+    limiter_release_alpha: f32,
+    tc: TcEnvelope,
+    tc_config: TcConfig,
+    tc_attack_alpha: f32,
+    tc_release_alpha: f32,
 }
 
 impl HalfBlock {
@@ -210,6 +229,15 @@ impl HalfBlock {
             intake: IntakeSynth::new(&config.intake, sample_rate as f32, config.seed),
             exhaust: ExhaustSynth::new(&config.exhaust, sample_rate as f32),
             current_throttle: 0.0,
+            limiter: LimiterState::new(),
+            limiter_config: config.limiter.clone(),
+            limiter_target_cut: 0.0,
+            limiter_attack_alpha: 0.0,
+            limiter_release_alpha: 0.0,
+            tc: TcEnvelope::new(&config.tc),
+            tc_config: config.tc.clone(),
+            tc_attack_alpha: 0.0,
+            tc_release_alpha: 0.0,
         }
     }
 
@@ -248,11 +276,27 @@ impl HalfBlock {
         self.load_alpha = one_pole_alpha(self.sample_rate, self.load_smoothing_s as f64);
         self.attack_alpha = one_pole_alpha(self.sample_rate, self.attack_smoothing_s as f64);
         self.release_alpha = one_pole_alpha(self.sample_rate, self.release_smoothing_s as f64);
+        // Limiter gate + cut target are control-time; the smoothed envelope
+        // advances per sample so entering/exiting the cut is click-free.
+        self.limiter_target_cut = self.limiter.evaluate(rpm, max_rpm, &self.limiter_config);
+        self.limiter_attack_alpha = one_pole_alpha(
+            self.sample_rate,
+            self.limiter_config.attack_ms as f64 / 1000.0,
+        );
+        self.limiter_release_alpha = one_pole_alpha(
+            self.sample_rate,
+            self.limiter_config.release_ms as f64 / 1000.0,
+        );
+        self.tc_attack_alpha = tc_alpha(self.sample_rate, self.tc_config.attack_ms);
+        self.tc_release_alpha = tc_alpha(self.sample_rate, self.tc_config.release_ms);
     }
 
     /// Advance the simulated half block one sample and return the raw firing
     /// excitation (before body filtering). Shared by the mono and stereo paths
-    /// so both renderers advance the same mechanical state.
+    /// so both renderers advance the same mechanical state. The limiter and TC
+    /// envelopes also advance here: they are post-processing (they never feed
+    /// back into the physical energy model) and must be stepped exactly once
+    /// per rendered sample.
     fn advance_excitation(&mut self) -> f32 {
         self.smoothed_load += (self.target_load - self.smoothed_load) * self.load_alpha;
         let target_energy = self.throttle_response * self.smoothed_load;
@@ -266,12 +310,23 @@ impl HalfBlock {
         for cylinder in &mut self.cylinders {
             excitation += cylinder.step(self.energy, self.decay_alpha);
         }
+        self.limiter.step(
+            self.limiter_target_cut,
+            self.limiter_attack_alpha,
+            self.limiter_release_alpha,
+        );
+        self.tc.step(self.tc_attack_alpha, self.tc_release_alpha);
         excitation
     }
 
     pub fn render_sample(&mut self) -> f32 {
         let excitation = self.advance_excitation();
-        self.body_filter.process(excitation * IMPULSE_LEVEL)
+        let raw = excitation * IMPULSE_LEVEL;
+        let body = self.body_filter.process(raw);
+        // Limiter "apertura" sin recalcular el Biquad: mientras corta, el
+        // tono de cuerpo se mezcla con la excitacion seca (brillo) y la
+        // ganancia de corte suprime la senal.
+        (body + self.limiter.air_amount() * (raw - body)) * self.limiter.gain() * self.tc.gain()
     }
 
     /// Render one stereo frame: the simulated bank plus the derived second
@@ -286,12 +341,44 @@ impl HalfBlock {
             .intake
             .process(self.current_throttle, self.smoothed_load);
         let exhaust = self.exhaust.process(excitation);
-        (bank1 + intake + exhaust, bank2 + intake + exhaust)
+        // Same limiter treatment as the mono path: air mix over each bank's
+        // own body tone (Biquad stays fixed) and one gain for suppression.
+        let raw = excitation * IMPULSE_LEVEL;
+        let air = self.limiter.air_amount();
+        let cut = self.limiter.gain() * self.tc.gain();
+        let mut left = bank1 + air * (raw - bank1);
+        let mut right = bank2 + air * (raw - bank2);
+        left = (left + intake + exhaust) * cut;
+        right = (right + intake + exhaust) * cut;
+        (left, right)
     }
 
     /// Current smoothed load [0.0, 1.0] (for intake gating diagnostics).
     pub fn load(&self) -> f32 {
         self.smoothed_load
+    }
+
+    /// Set the traction-control cut ratio [0.0, 1.0]. Clamped; the effective
+    /// suppression is smoothed with the profile attack/release taus and a
+    /// dead zone below `TcConfig::min_cut_threshold` (ABI parameter exposed by
+    /// the next commit).
+    pub fn set_tc_cut_ratio(&mut self, ratio: f32) {
+        self.tc.set_target(ratio);
+    }
+
+    /// Current smoothed traction-control suppression [0.0, 1.0].
+    pub fn tc_suppression(&self) -> f32 {
+        self.tc.suppression()
+    }
+
+    /// Whether the RPM limiter hard gate is active (rpm >= threshold).
+    pub fn limiter_active(&self) -> bool {
+        self.limiter.active
+    }
+
+    /// Current smoothed limiter cut depth [0.0, 1.0].
+    pub fn limiter_cut(&self) -> f32 {
+        self.limiter.cut_smoothed
     }
 
     /// Sample-domain offset of the second bank's firing phase (see
@@ -454,6 +541,10 @@ mod tests {
         (cov / (var_a * var_b).sqrt()) as f32
     }
 
+    fn rms(buf: &[f32]) -> f32 {
+        (buf.iter().map(|v| v * v).sum::<f32>() / buf.len().max(1) as f32).sqrt()
+    }
+
     #[test]
     fn render_stereo_keeps_five_cylinder_states() {
         let mut block = HalfBlock::new(&config(), 44100);
@@ -536,5 +627,189 @@ mod tests {
             );
             previous = energy;
         }
+    }
+
+    #[test]
+    fn limiter_enters_smoothly_no_click() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        // Threshold is 0.995 * 15000 = 14925; 14000 sits below even the soft
+        // pre-cut band (starts at 14178.75) so the baseline has no cut at all.
+        block.update_controls(14000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..8192 {
+            let _ = block.render_stereo();
+        }
+        // Baseline: máximo paso sample a sample bajo el umbral.
+        let mut peak_step_below = 0.0f32;
+        let mut previous = 0.0f32;
+        for _ in 0..4096 {
+            let (l, _) = block.render_stereo();
+            assert!(l.is_finite(), "señal no finita bajo el umbral");
+            peak_step_below = peak_step_below.max((l - previous).abs());
+            previous = l;
+        }
+        assert!(!block.limiter_active());
+
+        // Entrada: el cut suavizado no debe introducir un salto.
+        block.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        assert!(block.limiter_active());
+        let mut peak_step_enter = 0.0f32;
+        for _ in 0..4096 {
+            let (l, _) = block.render_stereo();
+            assert!(l.is_finite(), "señal no finita en la entrada del limiter");
+            peak_step_enter = peak_step_enter.max((l - previous).abs());
+            previous = l;
+        }
+        assert!(
+            peak_step_enter < peak_step_below * 2.0 + 0.05,
+            "limiter entro con click: paso {peak_step_enter} vs suelo {peak_step_below}"
+        );
+        assert!(
+            block.limiter_cut() > 0.9,
+            "cut no se asento: {}",
+            block.limiter_cut()
+        );
+
+        // Salida: mismo criterio al volver por debajo del umbral.
+        block.update_controls(14000.0, 1000.0, 15000.0, 1.0);
+        assert!(!block.limiter_active());
+        let mut peak_step_exit = 0.0f32;
+        for _ in 0..4096 {
+            let (l, _) = block.render_stereo();
+            assert!(l.is_finite(), "señal no finita en la salida del limiter");
+            peak_step_exit = peak_step_exit.max((l - previous).abs());
+            previous = l;
+        }
+        assert!(
+            peak_step_exit < peak_step_below * 2.0 + 0.05,
+            "limiter salio con click: paso {peak_step_exit} vs suelo {peak_step_below}"
+        );
+    }
+
+    #[test]
+    fn limiter_reduces_gain_above_threshold() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(14000.0, 1000.0, 15000.0, 1.0);
+        let mut below = vec![0.0f32; 8192];
+        for s in &mut below {
+            *s = block.render_sample();
+        }
+        block.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        let mut above = vec![0.0f32; 8192];
+        for s in &mut above {
+            *s = block.render_sample();
+        }
+        let rms_below = rms(&below[4096..]);
+        let rms_above = rms(&above[4096..]);
+        assert!(
+            above.iter().all(|v| v.is_finite()),
+            "valores no finitos con limiter activo"
+        );
+        assert!(
+            rms_above < rms_below * 0.75,
+            "el limiter no suprime por encima del umbral: {rms_below} -> {rms_above}"
+        );
+        let peak = above.iter().fold(0.0f32, |m, v| m.max(v.abs()));
+        assert!(peak < 1.0, "señal sobre unidad con limiter: {peak}");
+    }
+
+    #[test]
+    fn tc_pulses_are_smoothed() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..8192 {
+            let _ = block.render_stereo();
+        }
+        let mut baseline = vec![0.0f32; 2048];
+        for s in &mut baseline {
+            *s = block.render_sample();
+        }
+        let last_baseline = baseline[baseline.len() - 1];
+        assert_eq!(block.tc_suppression(), 0.0);
+
+        // Pulso: target 1.0, la primera muestra tras el cambio no salta.
+        block.set_tc_cut_ratio(1.0);
+        let first_after = block.render_sample();
+        assert!(
+            (first_after - last_baseline).abs() < 0.10,
+            "TC ataco con salto: {last_baseline} -> {first_after}"
+        );
+        let mut suppressed = vec![0.0f32; 8192];
+        for s in &mut suppressed {
+            *s = block.render_sample();
+        }
+        let rms_base = rms(&baseline);
+        let rms_sup = rms(&suppressed[4096..]);
+        assert!(
+            rms_sup < rms_base * 0.80,
+            "TC no suprime la senal: {rms_base} -> {rms_sup}"
+        );
+        assert!(block.tc_suppression() > 0.8, "supresion no asentada");
+        assert!(
+            suppressed.iter().all(|v| v.is_finite()),
+            "valores no finitos con TC activo"
+        );
+
+        // Release: de vuelta a 0, sin salto y con recuperacion de energia.
+        let last_sup = suppressed[suppressed.len() - 1];
+        block.set_tc_cut_ratio(0.0);
+        let first_rel = block.render_sample();
+        assert!(
+            (first_rel - last_sup).abs() < 0.10,
+            "TC solto con salto: {last_sup} -> {first_rel}"
+        );
+        let mut recovered = vec![0.0f32; 16384];
+        for s in &mut recovered {
+            *s = block.render_sample();
+        }
+        let rms_rec = rms(&recovered[8192..]);
+        assert!(
+            rms_rec > rms_sup * 1.30,
+            "TC no se recupera tras el pulso: {rms_sup} -> {rms_rec}"
+        );
+        assert!(
+            rms_rec < rms_base * 1.05,
+            "recuperacion supera el nivel base: {rms_rec} vs {rms_base}"
+        );
+    }
+
+    #[test]
+    fn tc_ratio_clamps_and_renders_deterministic() {
+        let mut a = HalfBlock::new(&config(), 44100);
+        let mut b = HalfBlock::new(&config(), 44100);
+        a.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        b.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        // Same block, clamped target vs 1.0: identical output (det + clamp).
+        a.set_tc_cut_ratio(7.0);
+        b.set_tc_cut_ratio(1.0);
+        for _ in 0..4096 {
+            let (al, _) = a.render_stereo();
+            let (bl, _) = b.render_stereo();
+            assert_eq!(al, bl);
+        }
+    }
+
+    #[test]
+    fn limiter_and_tc_do_not_feed_back_into_energy() {
+        let mut engaged = HalfBlock::new(&config(), 44100);
+        let mut cut = HalfBlock::new(&config(), 44100);
+        engaged.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        cut.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        cut.set_tc_cut_ratio(1.0);
+        for _ in 0..8192 {
+            let _ = engaged.render_stereo();
+            let _ = cut.render_stereo();
+        }
+        // El corte afecta la salida, no la energia fisica (exposicion):
+        // last_synth_energy en el mixer sigue reflejando el proceso.
+        assert!(
+            (engaged.energy() - cut.energy()).abs() < 1e-6,
+            "el corte se colo en la energia: {} vs {}",
+            engaged.energy(),
+            cut.energy()
+        );
+        assert!(
+            engaged.energy() > 0.5,
+            "energia fisica inesperadamente baja"
+        );
     }
 }
