@@ -287,8 +287,10 @@ void VehicleAudioControllerNative::create_audio_nodes() {
 	add_child(pn);
 	p->call("play");
 	audio_player_ = p;
-	audio_playback_ = p->call("get_stream_playback");
-	audio_initialized_ = (audio_playback_ != nullptr);
+	// get_stream_playback() is not guaranteed on the frame the player starts;
+	// resolve it lazily in the pump instead of gating initialization on it.
+	audio_playback_ = nullptr;
+	audio_initialized_ = true;
 }
 
 void VehicleAudioControllerNative::update_telemetry_snapshot(double rpm, double idle, double maxr, double throttle, int, double speed_kph, double slip, const String &surface) {
@@ -487,7 +489,14 @@ void VehicleAudioControllerNative::_physics_process(double) {
 	}
 
 	// Render into the AudioStreamGenerator buffer.
-	if (audio_initialized_ && audio_playback_ != nullptr) {
+	if (audio_initialized_) {
+		// Playback may not be available yet; resolve it lazily and retry each tick.
+		if (audio_playback_ == nullptr && audio_player_ != nullptr) {
+			audio_playback_ = audio_player_->call("get_stream_playback");
+		}
+		if (audio_playback_ == nullptr) {
+			return;
+		}
 		const int frames = (int)audio_playback_->call("get_frames_available");
 		if (frames > 0) {
 			// Reuse member buffers; only grow when the frame count increases.

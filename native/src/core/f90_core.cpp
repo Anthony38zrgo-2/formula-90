@@ -702,13 +702,24 @@ void F90Core::create_audio_nodes() {
 	add_child(pn);
 	p->call("play");
 	audio_player_ = p;
-	audio_playback_ = p->call("get_stream_playback");
-	audio_initialized_ = (audio_playback_ != nullptr);
+	// `get_stream_playback()` is NOT guaranteed on the same frame the player starts:
+	// Godot hands out the playback object a frame later. Gating initialization on the
+	// immediate result made the pump permanently dead (silent audio), so instead
+	// mark the player as started and resolve the playback lazily in pump_audio().
+	audio_playback_ = nullptr;
+	audio_initialized_ = true;
 }
 
 void F90Core::pump_audio() {
-	if (!audio_initialized_ || audio_playback_ == nullptr || core_ == nullptr || fn_audio_render_ == nullptr) {
+	if (!audio_initialized_ || audio_player_ == nullptr || core_ == nullptr || fn_audio_render_ == nullptr) {
 		return;
+	}
+	// Lazy playback: the player may not have yielded its stream playback yet.
+	if (audio_playback_ == nullptr) {
+		audio_playback_ = audio_player_->call("get_stream_playback");
+		if (audio_playback_ == nullptr) {
+			return;
+		}
 	}
 	const int frames = (int)audio_playback_->call("get_frames_available");
 	if (frames <= 0) {
