@@ -83,6 +83,8 @@ pub struct EnergyConfig {
     pub torque_curve_weight: f32,
     /// Throttle response gain [0.1, 2.0].
     pub throttle_response: f32,
+    /// Basal combustion energy retained at closed throttle [0.0, 0.5].
+    pub idle_combustion_gain: f32,
     /// Attack smoothing in seconds (0.0, 0.5].
     pub attack_smoothing_s: f32,
     /// Release smoothing in seconds (0.0, 2.0].
@@ -96,6 +98,7 @@ impl Default for EnergyConfig {
         Self {
             torque_curve_weight: 1.0,
             throttle_response: 1.0,
+            idle_combustion_gain: 0.08,
             attack_smoothing_s: 0.02,
             release_smoothing_s: 0.12,
             load_smoothing_s: 0.03,
@@ -219,7 +222,10 @@ pub struct HalfBlockConfig {
 impl Default for HalfBlockConfig {
     fn default() -> Self {
         Self {
-            phase_offset_deg: 36.0,
+            // A four-stroke V10 fires every 720 / 10 = 72 degrees. The
+            // reconstructed bank sits halfway between the 144-degree events
+            // of the physically simulated five-cylinder bank.
+            phase_offset_deg: 72.0,
             delay_s: 0.004,
             decorrelation: 0.35,
             gain: 0.98,
@@ -664,6 +670,13 @@ impl AudioPowertrainSynthesis {
             0.1,
             2.0,
         );
+        check_range_closed(
+            &mut diags,
+            path("energy.idle_combustion_gain"),
+            self.energy.idle_combustion_gain,
+            0.0,
+            0.5,
+        );
         check_range_open_low(
             &mut diags,
             path("energy.attack_smoothing_s"),
@@ -920,7 +933,7 @@ mod tests {
         assert!(defaults.even_firing);
         assert_eq!(defaults.firing_order, None);
         assert_eq!(defaults.firing_phases_deg, None);
-        assert_eq!(defaults.half_block.phase_offset_deg, 36.0);
+        assert_eq!(defaults.half_block.phase_offset_deg, 72.0);
         assert_eq!(defaults.cpu_budget.near_percent, 5.0);
         assert_eq!(defaults.cpu_budget.far_percent, 2.0);
         assert!(defaults.validate().is_empty());
@@ -943,10 +956,10 @@ mod tests {
                     "firing_phases_deg": [0.0, 144.0, 288.0, 432.0, 576.0],
                     "even_firing": true,
                     "combustion": {"irregularity": 0.02, "seed": 42},
-                    "energy": {"torque_curve_weight": 0.9, "throttle_response": 1.2, "attack_smoothing_s": 0.01, "release_smoothing_s": 0.1, "load_smoothing_s": 0.05},
+                    "energy": {"torque_curve_weight": 0.9, "throttle_response": 1.2, "idle_combustion_gain": 0.08, "attack_smoothing_s": 0.01, "release_smoothing_s": 0.1, "load_smoothing_s": 0.05},
                     "intake": {"enabled": true, "noise_gain": 0.4, "throttle_follow": 0.85, "resonances": [{"frequency_hz": 320.0, "q": 2.0, "gain_db": 3.0}]},
                     "exhaust": {"enabled": true, "pulse_gain": 1.1, "saturation": 0.3, "damping": 0.5, "collector_resonances": [{"frequency_hz": 190.0, "q": 4.0, "gain_db": 4.0}, {"frequency_hz": 380.0, "q": 2.5, "gain_db": 1.0}]},
-                    "half_block": {"phase_offset_deg": 36.0, "delay_s": 0.004, "decorrelation": 0.35, "gain": 0.98, "timbre_diff": 0.06},
+                    "half_block": {"phase_offset_deg": 72.0, "delay_s": 0.004, "decorrelation": 0.35, "gain": 0.98, "timbre_diff": 0.06},
                     "limiter": {"threshold_rpm_ratio": 0.995, "attack_ms": 2.0, "release_ms": 60.0, "cut_shape": "soft"},
                     "tc": {"suppress_gain": 0.55, "attack_ms": 8.0, "release_ms": 120.0, "min_cut_threshold": 0.02},
                     "distance_levels": {"near_max_m": 25.0, "mid_max_m": 80.0, "far_max_m": 200.0, "hysteresis_ratio": 0.1, "dsp": {"near_resonator_scale": 1.0, "mid_resonator_scale": 0.6, "far_resonator_scale": 0.35, "coeff_update_steps": 1, "far_coeff_update_steps": 4, "organic_jitter_scale": 1.0}},

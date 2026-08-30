@@ -42,6 +42,22 @@ impl Biquad {
             z2: 0.0,
         }
     }
+    pub fn highpass(sample_rate: f32, cutoff_hz: f32) -> Self {
+        let cutoff = cutoff_hz.clamp(1.0, sample_rate * 0.49);
+        let omega = std::f32::consts::TAU * cutoff / sample_rate;
+        let cos_omega = omega.cos();
+        let alpha = omega.sin() * std::f32::consts::FRAC_1_SQRT_2;
+        let a0 = 1.0 + alpha;
+        Self {
+            b0: (1.0 + cos_omega) * 0.5 / a0,
+            b1: -(1.0 + cos_omega) / a0,
+            b2: (1.0 + cos_omega) * 0.5 / a0,
+            a1: (-2.0 * cos_omega) / a0,
+            a2: (1.0 - alpha) / a0,
+            z1: 0.0,
+            z2: 0.0,
+        }
+    }
     #[inline]
     pub fn process(&mut self, input: f32) -> f32 {
         let output = self.b0 * input + self.z1;
@@ -91,6 +107,26 @@ mod tests {
             steady = f.process(phase.sin() * 0.5);
         }
         assert!(steady.abs() < 0.05, "5000 Hz not suppressed: {steady}");
+    }
+    #[test]
+    fn highpass_rejects_dc_and_preserves_engine_band() {
+        let mut f = Biquad::highpass(44100.0, 20.0);
+        let mut dc = 0.0f32;
+        for _ in 0..200_000 {
+            dc = f.process(1.0);
+        }
+        assert!(dc.abs() < 3e-4, "dc residue {dc}");
+
+        let mut f = Biquad::highpass(44100.0, 20.0);
+        let mut peak = 0.0f32;
+        for i in 0..100_000 {
+            let phase = std::f32::consts::TAU * 750.0 * i as f32 / 44100.0;
+            let y = f.process(phase.sin());
+            if i >= 50_000 {
+                peak = peak.max(y.abs());
+            }
+        }
+        assert!(peak > 0.98, "engine band attenuated: {peak}");
     }
     #[test]
     fn peaking_boosts_center_frequency_by_gain_db() {

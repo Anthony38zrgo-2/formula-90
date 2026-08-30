@@ -169,7 +169,7 @@ mod tests {
         let mut r = HalfBlockReconstruct::new(44100, &HalfBlockConfig::default());
         let increment = (9000.0 / 120.0 * 720.0) / 44100.0;
         r.update(increment);
-        let expected = 36.0f32 / increment as f32;
+        let expected = 72.0f32 / increment as f32;
         assert!(
             (r.offset_samples() - expected).abs() < 1e-3,
             "offset {} vs {expected}",

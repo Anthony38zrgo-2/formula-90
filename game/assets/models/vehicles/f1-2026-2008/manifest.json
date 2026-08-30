@@ -5,7 +5,7 @@
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2026_2008",
   "physics_profile": "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json",
-  "physics_sha256": "4E1ACF7B8B691F0C8DD93618121734DD9B27A1D97A274E8043C5FB7B0E486447",
+  "physics_sha256": "1F23E4911287622347626A19FCF7AB03D80E616E12204D7BD1E749BEE333FF0B",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",

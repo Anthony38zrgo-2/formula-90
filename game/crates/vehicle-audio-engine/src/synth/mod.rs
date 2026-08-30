@@ -118,6 +118,7 @@ pub struct PowertrainConfig {
     pub seed: u64,
     pub torque_curve_weight: f32,
     pub throttle_response: f32,
+    pub idle_combustion_gain: f32,
     pub attack_smoothing_s: f32,
     pub release_smoothing_s: f32,
     pub load_smoothing_s: f32,
@@ -140,6 +141,7 @@ impl Default for PowertrainConfig {
             seed: 0xF090_1994_D15C_A11D,
             torque_curve_weight: 1.0,
             throttle_response: 1.0,
+            idle_combustion_gain: 0.08,
             attack_smoothing_s: 0.02,
             release_smoothing_s: 0.12,
             load_smoothing_s: 0.03,
@@ -162,6 +164,7 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             seed: contract.combustion.seed,
             torque_curve_weight: contract.energy.torque_curve_weight,
             throttle_response: contract.energy.throttle_response,
+            idle_combustion_gain: contract.energy.idle_combustion_gain,
             attack_smoothing_s: contract.energy.attack_smoothing_s,
             release_smoothing_s: contract.energy.release_smoothing_s,
             load_smoothing_s: contract.energy.load_smoothing_s,
@@ -255,10 +258,12 @@ impl CylState {
 pub struct HalfBlock {
     cylinders: [CylState; 5],
     body_filter: Biquad,
+    excitation_dc_block: Biquad,
     sample_rate: f64,
     torque_curve: Vec<(f64, f64)>,
     torque_curve_weight: f32,
     throttle_response: f32,
+    idle_combustion_gain: f32,
     attack_smoothing_s: f32,
     release_smoothing_s: f32,
     load_smoothing_s: f32,
@@ -309,10 +314,12 @@ impl HalfBlock {
         Self {
             cylinders,
             body_filter: Biquad::lowpass(sample_rate as f32, BODY_LOWPASS_HZ),
+            excitation_dc_block: Biquad::highpass(sample_rate as f32, 20.0),
             sample_rate: sr,
             torque_curve: config.torque_curve.clone(),
             torque_curve_weight: config.torque_curve_weight,
             throttle_response: config.throttle_response,
+            idle_combustion_gain: config.idle_combustion_gain,
             attack_smoothing_s: config.attack_smoothing_s,
             release_smoothing_s: config.release_smoothing_s,
             load_smoothing_s: config.load_smoothing_s,
@@ -373,7 +380,10 @@ impl HalfBlock {
             let torque = torque_curve_value(&self.torque_curve, norm);
             let weighted =
                 self.torque_curve_weight as f64 * torque + (1.0 - self.torque_curve_weight as f64);
-            self.target_load = (throttle.clamp(0.0, 1.0) as f64 * weighted) as f32;
+            let throttle = throttle.clamp(0.0, 1.0) as f64;
+            let idle = self.idle_combustion_gain.clamp(0.0, 0.5) as f64;
+            let combustion = idle + throttle * (1.0 - idle);
+            self.target_load = (combustion * weighted) as f32;
             let increment = (rpm.max(0.0) / 120.0 * CYCLE_DEG) / self.sample_rate;
             self.reconstruct.update(increment);
             for cylinder in &mut self.cylinders {
@@ -463,14 +473,14 @@ impl HalfBlock {
     /// back into the physical energy model) and must be stepped exactly once
     /// per rendered sample.
     fn advance_excitation(&mut self) -> f32 {
-        self.smoothed_load += (self.target_load - self.smoothed_load) * self.load_alpha;
+        self.smoothed_load += (self.target_load - self.smoothed_load) * (1.0 - self.load_alpha);
         let target_energy = self.throttle_response * self.smoothed_load;
         let alpha = if target_energy > self.energy {
             self.attack_alpha
         } else {
             self.release_alpha
         };
-        self.energy += (target_energy - self.energy) * alpha;
+        self.energy += (target_energy - self.energy) * (1.0 - alpha);
         let mut excitation = 0.0f32;
         for cylinder in &mut self.cylinders {
             excitation += cylinder.step(self.energy, self.decay_alpha);
@@ -481,7 +491,10 @@ impl HalfBlock {
             self.limiter_release_alpha,
         );
         self.tc.step(self.tc_attack_alpha, self.tc_release_alpha);
-        excitation
+        // Combustion envelopes are unipolar. Remove accumulated DC before the
+        // signal reaches body, reconstructed bank and exhaust; otherwise
+        // overlapping high-RPM pulses collapse into a saturated plateau.
+        self.excitation_dc_block.process(excitation)
     }
 
     pub fn render_sample(&mut self) -> f32 {
@@ -574,6 +587,30 @@ mod tests {
         let per = std::mem::size_of::<CylState>();
         let array = std::mem::size_of::<[CylState; 5]>();
         assert_eq!(array, per * 5);
+    }
+
+    #[test]
+    fn energy_attack_uses_declared_time_constant() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let _ = block.render_sample();
+        assert!(
+            block.energy() > 0.0 && block.energy() < 0.01,
+            "energy stepped instead of smoothing: {}",
+            block.energy()
+        );
+    }
+
+    #[test]
+    fn closed_throttle_idle_keeps_combustion_audible() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(1000.0, 1000.0, 15000.0, 0.0);
+        let mut signal = vec![0.0f32; 44100];
+        for sample in &mut signal {
+            *sample = block.render_sample();
+        }
+        assert!(block.energy() > 0.001, "idle energy collapsed to zero");
+        assert!(rms(&signal[22050..]) > 1e-5, "idle output is silent");
     }
 
     #[test]
@@ -731,7 +768,7 @@ mod tests {
         let mut block = HalfBlock::new(&config(), 44100);
         block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
         let increment = (9000.0 / 120.0 * CYCLE_DEG) / 44100.0;
-        let expected = 36.0f32 / increment as f32;
+        let expected = 72.0f32 / increment as f32;
         assert!(
             (block.reconstruct_offset_samples() - expected).abs() < 1e-3,
             "offset {} vs {expected}",
@@ -858,26 +895,26 @@ mod tests {
 
     #[test]
     fn limiter_reduces_gain_above_threshold() {
-        let mut block = HalfBlock::new(&config(), 44100);
-        block.update_controls(14000.0, 1000.0, 15000.0, 1.0);
-        let mut below = vec![0.0f32; 8192];
-        for s in &mut below {
-            *s = block.render_sample();
-        }
-        block.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        let mut open = HalfBlock::new(&config(), 44100);
+        let mut limited = HalfBlock::new(&config(), 44100);
+        open.set_limiter_enabled(false);
+        open.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        limited.update_controls(15000.0, 1000.0, 15000.0, 1.0);
+        let mut reference = vec![0.0f32; 8192];
         let mut above = vec![0.0f32; 8192];
-        for s in &mut above {
-            *s = block.render_sample();
+        for (dry, cut) in reference.iter_mut().zip(&mut above) {
+            *dry = open.render_sample();
+            *cut = limited.render_sample();
         }
-        let rms_below = rms(&below[4096..]);
+        let rms_reference = rms(&reference[4096..]);
         let rms_above = rms(&above[4096..]);
         assert!(
             above.iter().all(|v| v.is_finite()),
             "valores no finitos con limiter activo"
         );
         assert!(
-            rms_above < rms_below * 0.75,
-            "el limiter no suprime por encima del umbral: {rms_below} -> {rms_above}"
+            rms_above < rms_reference * 0.75,
+            "el limiter no suprime a igual RPM: {rms_reference} -> {rms_above}"
         );
         let peak = above.iter().fold(0.0f32, |m, v| m.max(v.abs()));
         assert!(peak < 1.0, "señal sobre unidad con limiter: {peak}");

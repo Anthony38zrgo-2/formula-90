@@ -579,6 +579,7 @@
       "energy": {
         "torque_curve_weight": 1.0,
         "throttle_response": 1.0,
+        "idle_combustion_gain": 0.08,
         "attack_smoothing_s": 0.02,
         "release_smoothing_s": 0.12,
         "load_smoothing_s": 0.03
@@ -603,7 +604,7 @@
         ]
       },
       "half_block": {
-        "phase_offset_deg": 36.0,
+        "phase_offset_deg": 72.0,
         "delay_s": 0.004,
         "decorrelation": 0.35,
         "gain": 0.98,

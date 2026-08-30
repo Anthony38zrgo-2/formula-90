@@ -20,7 +20,10 @@ pub const LIMITER_DEPTH: f32 = 0.65;
 /// lowpassed body tone while the limiter opens the tone ("air"/brillo). The
 /// body `Biquad` keeps its fixed `BODY_LOWPASS_HZ` cutoff, so no coefficients
 /// are recomputed per sample.
-pub const LIMITER_AIR_AMOUNT: f32 = 0.35;
+// Keep this modest: after DC removal the raw pulse train has substantially
+// more RMS than the body-filtered signal. A large blend can cancel the gain
+// reduction and turn the limiter into a harsh high-frequency boost.
+pub const LIMITER_AIR_AMOUNT: f32 = 0.05;
 
 /// Width of the gradual pre-cut ramp of [`CutShape::Soft`], as a fraction of
 /// the limiter threshold (the ramp spans the 5% of the threshold below it).
