@@ -8,6 +8,29 @@ use serde::{Deserialize, Serialize};
 
 use crate::state::{engine_pitch_scale, EngineBandProfile, StateInput, VehicleAudioState};
 
+/// One row of the P7.6 per-block synth telemetry contract.
+///
+/// Field names mirror the CSV/JSON contract consumed by the Python scenario
+/// renderer (`render_audio_scenario.py --synth-metrics`). LOD int follows
+/// `LodLevel`: Near=0, Mid=1, Far=2, Virtual=3.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SynthFrame {
+    pub time_ms: u64,
+    pub lod: i32,
+    pub distancia: f32,
+    pub coste: f64,
+    pub frecuencia_eventos: f64,
+    pub energia: f32,
+    pub carga: f32,
+    pub resonator_scale: f32,
+    pub limiter_active: i32,
+    pub limiter_cut: f32,
+    pub tc_active: i32,
+    pub tc_cut: f32,
+    pub underruns: u32,
+    pub frames_virtualizados: u32,
+}
+
 /// One row of vehicle telemetry relevant to audio.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TelemetryRow {
@@ -342,6 +365,100 @@ pub fn summarize(frames: &[MixFrame]) -> Summary {
     }
 }
 
+/// Aggregated stats over the P7.6 per-frame synth contract.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct SynthSummary {
+    pub rows: usize,
+    pub lod_share: [f32; 4],
+    pub energia_min: f32,
+    pub energia_mean: f32,
+    pub carga_min: f32,
+    pub carga_mean: f32,
+    pub coste_median: f64,
+    pub coste_worst: f64,
+    pub coste_p95: f64,
+    pub underruns: u32,
+    pub frames_virtualizados: u32,
+    pub limiter_cutbacks: usize,
+    pub tc_events: usize,
+}
+
+fn quantile(sorted: &[f64], p: f64) -> f64 {
+    if sorted.is_empty() {
+        return 0.0;
+    }
+    let idx = ((sorted.len() - 1) as f64 * p).round() as usize;
+    sorted[idx.min(sorted.len() - 1)]
+}
+
+/// Aggregate the per-frame synth contract rows.
+pub fn synth_summary(frames: &[SynthFrame]) -> SynthSummary {
+    if frames.is_empty() {
+        return SynthSummary {
+            rows: 0,
+            lod_share: [0.0; 4],
+            energia_min: 0.0,
+            energia_mean: 0.0,
+            carga_min: 0.0,
+            carga_mean: 0.0,
+            coste_median: 0.0,
+            coste_worst: 0.0,
+            coste_p95: 0.0,
+            underruns: 0,
+            frames_virtualizados: 0,
+            limiter_cutbacks: 0,
+            tc_events: 0,
+        };
+    }
+    let mut lod_counts = [0usize; 4];
+    let mut energia_min = f32::INFINITY;
+    let mut energia_sum = 0.0f32;
+    let mut carga_min = f32::INFINITY;
+    let mut carga_sum = 0.0f32;
+    let mut coste: Vec<f64> = frames.iter().map(|f| f.coste).collect();
+    coste.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let mut underruns = 0u32;
+    let mut virtualized = 0u32;
+    let mut limiter_cuts = 0usize;
+    let mut tc_events = 0usize;
+    for f in frames {
+        lod_counts[(f.lod.min(3).max(0)) as usize] += 1;
+        energia_min = energia_min.min(f.energia);
+        energia_sum += f.energia;
+        carga_min = carga_min.min(f.carga);
+        carga_sum += f.carga;
+        underruns = underruns.max(f.underruns);
+        virtualized = virtualized.max(f.frames_virtualizados);
+        if f.limiter_active != 0 {
+            limiter_cuts += 1;
+        }
+        if f.tc_active != 0 {
+            tc_events += 1;
+        }
+    }
+    let n = frames.len() as f32;
+    SynthSummary {
+        rows: frames.len(),
+        lod_share: [
+            lod_counts[0] as f32 / n,
+            lod_counts[1] as f32 / n,
+            lod_counts[2] as f32 / n,
+            lod_counts[3] as f32 / n,
+        ],
+        energia_min,
+        energia_mean: energia_sum / n,
+        carga_min,
+        carga_mean: carga_sum / n,
+        coste_median: quantile(&coste, 0.50),
+        coste_worst: coste.last().copied().unwrap_or(0.0),
+        coste_p95: quantile(&coste, 0.95),
+        underruns,
+        frames_virtualizados: virtualized,
+        limiter_cutbacks: limiter_cuts,
+        tc_events,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -451,5 +568,73 @@ mod tests {
             "Time_ms,Speed_kmh,RPM,Gear,Throttle,Brake,Steering\nnot-a-row\n0,0,3000,1,0.5,0,0",
         );
         assert!(rows.len() <= 1);
+    }
+
+    #[test]
+    fn synth_summary_aggregates_and_is_deterministic() {
+        let frames = vec![
+            SynthFrame {
+                time_ms: 0,
+                lod: 0,
+                distancia: 2.0,
+                coste: 1.0,
+                frecuencia_eventos: 20.0,
+                energia: 0.5,
+                carga: 0.6,
+                resonator_scale: 1.0,
+                limiter_active: 0,
+                limiter_cut: 0.0,
+                tc_active: 0,
+                tc_cut: 0.0,
+                underruns: 0,
+                frames_virtualizados: 0,
+            },
+            SynthFrame {
+                time_ms: 12,
+                lod: 3,
+                distancia: 30.0,
+                coste: 2.0,
+                frecuencia_eventos: 0.0,
+                energia: 0.2,
+                carga: 0.1,
+                resonator_scale: 0.0,
+                limiter_active: 1,
+                limiter_cut: 0.9,
+                tc_active: 1,
+                tc_cut: 0.4,
+                underruns: 1,
+                frames_virtualizados: 1,
+            },
+            SynthFrame {
+                time_ms: 24,
+                lod: 3,
+                distancia: 31.0,
+                coste: 3.0,
+                frecuencia_eventos: 0.0,
+                energia: 0.1,
+                carga: 0.1,
+                resonator_scale: 0.0,
+                limiter_active: 0,
+                limiter_cut: 0.0,
+                tc_active: 0,
+                tc_cut: 0.0,
+                underruns: 2,
+                frames_virtualizados: 2,
+            },
+        ];
+        let s1 = synth_summary(&frames);
+        let s2 = synth_summary(&frames);
+        assert_eq!(s1, s2, "aggregate must be deterministic");
+        assert_eq!(s1.rows, 3);
+        assert!((s1.lod_share[0] - 1.0 / 3.0).abs() < 1e-6);
+        assert!((s1.lod_share[3] - 2.0 / 3.0).abs() < 1e-6);
+        assert_eq!(s1.underruns, 2, "cumulative underrun count is the max");
+        assert_eq!(s1.frames_virtualizados, 2);
+        assert_eq!(s1.limiter_cutbacks, 1);
+        assert_eq!(s1.tc_events, 1);
+        assert!((s1.coste_median - 2.0).abs() < 1e-9);
+        assert!((s1.coste_p95 - 3.0).abs() < 1e-9);
+        assert!((s1.coste_worst - 3.0).abs() < 1e-9);
+        assert!((s1.energia_mean - 0.8 / 3.0).abs() < 1e-6);
     }
 }

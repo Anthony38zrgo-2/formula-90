@@ -164,9 +164,9 @@ impl CoreFacade {
                 .map(|e| e.id)
                 .ok_or_else(|| CoreError::Spawn("world has no entities".to_string()));
         }
-        let id = if self.config.use_canonical {
+        let (id, cfg) = if self.config.use_canonical {
             let cfg = VehicleConfig::f1_94_canonical();
-            self.spawn(&cfg)
+            (self.spawn(&cfg), cfg)
         } else {
             let json = self.config.config_json_path.as_ref().ok_or_else(|| {
                 CoreError::Config(
@@ -175,8 +175,11 @@ impl CoreFacade {
             })?;
             let cfg = VehicleConfig::from_json_path(json)
                 .map_err(|e| CoreError::Spawn(format!("failed to parse config: {e}")))?;
-            self.spawn(&cfg)
+            (self.spawn(&cfg), cfg)
         };
+        // Enable the procedural powertrain synth from the profile `audio` section
+        // (best-effort: a missing/disabled section silently keeps the sampled path).
+        self.audio.enable_synth_from_profile(cfg.audio.as_ref());
         self.spawned = true;
         Ok(id)
     }
@@ -218,6 +221,11 @@ impl CoreFacade {
 
     pub fn audio_healthy(&self) -> bool {
         self.audio.healthy()
+    }
+
+    /// Whether the procedural powertrain synth is driving the engine path.
+    pub fn audio_synth_enabled(&self) -> bool {
+        self.audio.synth_enabled()
     }
 
     /// Tri-ray samples for flat ground at the entity's current pose (headless/CLI

@@ -96,7 +96,7 @@ def _make_loop_reader(buf: list[float]):
     return read
 
 
-def render_scenario(scenario: Scenario, bank_dir: Path, out_wav: Path, out_csv: Path, out_json: Path) -> dict:
+def render_scenario(scenario: Scenario, bank_dir: Path, out_wav: Path, out_csv: Path, out_json: Path, synth_metrics: Path | None = None) -> dict:
     bank_wavs = _load_bank_wavs(bank_dir)
     manifest = None
     mp = bank_dir / "bank_manifest.json"
@@ -172,6 +172,13 @@ def render_scenario(scenario: Scenario, bank_dir: Path, out_wav: Path, out_csv: 
               "rms": round(rms_val, 6), "events": [{"t": e.t, "kind": e.kind, "gain": e.gain} for e in scenario.impacts],
               "bank": manifest.bank_name if manifest else "unknown",
               "wav": str(out_wav).replace("\\", "/"), "csv": str(out_csv).replace("\\", "/")}
+    # Attach P7.6 synth metrics produced by va_baseline/va_replay (additive; the
+    # offline mixer never synthesizes the engine, it only reports the contract).
+    if synth_metrics is not None:
+        try:
+            report["synth_metrics"] = json.loads(synth_metrics.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise ValueError(f"cannot read synth_metrics {synth_metrics}: {error}") from error
     out_json.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
 
@@ -182,6 +189,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--bank", type=Path, default=BANK_DIR)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUTPUT)
     ap.add_argument("--scenario", type=str, default="all", help="name or 'all'")
+    ap.add_argument("--synth-metrics", type=Path, default=None,
+                    help="optional synth metrics JSON (from va_baseline/va_replay) to attach per scenario")
     args = ap.parse_args(argv)
     try:
         root = args.repo_root.resolve(strict=True)
@@ -192,6 +201,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not bank_dir.is_dir():
         print(f"Bank not found: {bank_dir}")
         return 2
+    synth_metrics = args.synth_metrics.resolve() if args.synth_metrics is not None else None
     names = list(SCENARIO_FACTORIES) if args.scenario == "all" else [args.scenario]
     for name in names:
         fn = SCENARIO_FACTORIES.get(name)
@@ -202,7 +212,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         out_wav = output / f"{sc.name}.wav"
         out_csv = output / f"{sc.name}.csv"
         out_json = output / f"{sc.name}.json"
-        rep = render_scenario(sc, bank_dir, out_wav, out_csv, out_json)
+        rep = render_scenario(sc, bank_dir, out_wav, out_csv, out_json, synth_metrics)
         print(f"{sc.name}: peak {rep['peak']:.3f} rms {rep['rms']:.4f} -> {out_wav}")
     return 0
 

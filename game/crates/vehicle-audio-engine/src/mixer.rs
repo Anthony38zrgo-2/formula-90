@@ -92,6 +92,13 @@ struct VoiceStrip {
     eq: GraphicEq,
     tube: Tube,
     bus_index: Option<usize>,
+    // Constants per strip: pan-law gains and linear reverb send gain. Computed
+    // once at build time so `process` avoids `cos/sin` (equal_power) and a
+    // `10^powf` on every sample — the always-on strip cost that pushed the CPU
+    // gate over budget on active layers.
+    pan_l: f32,
+    pan_r: f32,
+    reverb_gain: f32,
 }
 
 impl VoiceStrip {
@@ -110,12 +117,21 @@ impl VoiceStrip {
         });
         let eq = GraphicEq::new(&config.eq, sample_rate);
         let tube = Tube::new(config.eq.tube_color, positive_boosts);
+        let (pan_l, pan_r) = equal_power(config.pan);
+        let reverb_gain = if config.reverb.enabled {
+            10.0_f32.powf(config.reverb.send_db / 20.0)
+        } else {
+            0.0
+        };
         Self {
             config,
             envelope,
             eq,
             tube,
             bus_index,
+            pan_l,
+            pan_r,
+            reverb_gain,
         }
     }
 
@@ -133,16 +149,12 @@ impl VoiceStrip {
     fn process(&mut self, source: f32) -> (f32, f32, Option<(usize, f32, f32)>) {
         let envelope = self.envelope.as_mut().map_or(1.0, Adsr::next_sample);
         let mono = self.tube.process(self.eq.process(source * envelope)) * self.config.volume;
-        let (pan_l, pan_r) = equal_power(self.config.pan);
-        let left = mono * pan_l;
-        let right = mono * pan_r;
+        let left = mono * self.pan_l;
+        let right = mono * self.pan_r;
         let send = self
             .bus_index
             .filter(|_| self.config.reverb.enabled)
-            .map(|index| {
-                let gain = 10.0_f32.powf(self.config.reverb.send_db / 20.0);
-                (index, left * gain, right * gain)
-            });
+            .map(|index| (index, left * self.reverb_gain, right * self.reverb_gain));
         (left, right, send)
     }
 }
@@ -162,6 +174,14 @@ fn mix_through_strip(
     left: &mut f32,
     right: &mut f32,
 ) {
+    // A zero source is bit-identical through the strip pipeline (eq(0)=0,
+    // tube(0)=0, send=(0,0)) so skip the BTreeMap lookup and the full
+    // ADSR->EQ->Tube pipeline entirely. Silent non-looping layers are the
+    // norm (bed/scrape/tyre are often muted), and this was the always-on
+    // single-core cost that pushed the CPU gate over budget.
+    if source == 0.0 {
+        return;
+    }
     if let Some(strip) = strips.get_mut(key) {
         let (out_l, out_r, send) = strip.process(source);
         *left += out_l;
@@ -192,6 +212,45 @@ const RPM_SMOOTH_TAU: f64 = 0.025;
 const LOD_TRANSITION_MS: u32 = 30;
 
 /// Stateful engine audio mixer.
+/// Real-time audio DSP must never stall on subnormal (denormal) floats. On x86
+/// a subnormal operand or result costs ~100+ cycles; after a loud passage the
+/// reverb/feedback filters decay into subnormal territory and the mixer slows
+/// catastrophically. Set the MXCSR FTZ (flush-to-zero, bit 15) and DAZ
+/// (denormals-are-zero, bit 6) flags once per render thread so subnormals are
+/// treated as zero (inaudible below ~1e-38). Other platforms are no-ops.
+#[cfg(target_arch = "x86_64")]
+fn enable_fast_floats() {
+    use std::cell::Cell;
+    thread_local! {
+        static SET: Cell<bool> = const { Cell::new(false) };
+    }
+    SET.with(|s| {
+        if s.get() {
+            return;
+        }
+        let mut mxcsr: u32 = 0;
+        unsafe {
+            core::arch::asm!(
+                "stmxcsr [{0}]",
+                in(reg) &mut mxcsr,
+                options(nostack, preserves_flags),
+            );
+        }
+        mxcsr |= 0x8000 | 0x0040;
+        unsafe {
+            core::arch::asm!(
+                "ldmxcsr [{0}]",
+                in(reg) &mxcsr,
+                options(nostack, preserves_flags),
+            );
+        }
+        s.set(true);
+    });
+}
+
+#[cfg(not(target_arch = "x86_64"))]
+fn enable_fast_floats() {}
+
 pub struct VehicleAudioEngine {
     bank: VehicleSoundBank,
     engine_bands: Vec<EngineBandProfile>,
@@ -711,6 +770,7 @@ impl VehicleAudioEngine {
     /// layers and bed are read with a fractional cursor (no Godot resampler),
     /// gains are smoothed per-sample, and a tanh soft-clip limiter catches peaks.
     pub fn render(&mut self, out_l: &mut [f32], out_r: &mut [f32], n: usize) {
+        enable_fast_floats();
         self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
         let sr = self.sample_rate as f64;
         let rpm_alpha = 1.0 - (-1.0 / (sr * RPM_SMOOTH_TAU)).exp();
@@ -725,41 +785,51 @@ impl VehicleAudioEngine {
             // step -> no zipper/warble at RPM changes).
             self.smoothed_rpm += (self.target_rpm - self.smoothed_rpm) * rpm_alpha;
 
-            // Per-sample gain smoothing (attack/release time constants).
-            let (eg_tgt, eg_cur) = (self.target_engine_gain, self.smoothed_engine_gain);
-            let eg_tau = if eg_tgt > eg_cur {
-                self.cfg.attack_seconds
+            // Per-sample gain smoothing (attack/release time constants). The
+            // one-pole alpha depends only on the constant sample rate and the
+            // fixed attack/release taus, so both directions are precomputed once
+            // per block instead of calling `exp` four times per sample. The
+            // four-per-sample `exp` (2048/block) dominated the always-on single-core
+            // budget, so hoisting is bit-identical but removes it from the loop.
+            let eg_attack_alpha = 1.0 - (-1.0 / (sr * self.cfg.attack_seconds as f64)).exp();
+            let eg_release_alpha = 1.0 - (-1.0 / (sr * self.cfg.release_seconds as f64)).exp();
+            let eg_alpha = if self.target_engine_gain > self.smoothed_engine_gain {
+                eg_attack_alpha
             } else {
-                self.cfg.release_seconds
+                eg_release_alpha
             };
-            let eg_alpha = 1.0 - (-1.0 / (sr * eg_tau as f64)).exp();
-            let eg = eg_cur + (eg_tgt - eg_cur) * eg_alpha as f32;
+            let eg = self.smoothed_engine_gain
+                + (self.target_engine_gain - self.smoothed_engine_gain) * eg_alpha as f32;
             self.smoothed_engine_gain = eg;
 
-            let (bg_tgt, bg_cur) = (self.target_bed_gain, self.smoothed_bed_gain);
-            let bg_tau = if bg_tgt > bg_cur {
-                self.cfg.attack_seconds
+            let bg_attack_alpha = 1.0 - (-1.0 / (sr * self.cfg.attack_seconds as f64)).exp();
+            let bg_release_alpha = 1.0 - (-1.0 / (sr * self.cfg.release_seconds as f64)).exp();
+            let bg_alpha = if self.target_bed_gain > self.smoothed_bed_gain {
+                bg_attack_alpha
             } else {
-                self.cfg.release_seconds
+                bg_release_alpha
             };
-            let bg_alpha = 1.0 - (-1.0 / (sr * bg_tau as f64)).exp();
-            let bg = bg_cur + (bg_tgt - bg_cur) * bg_alpha as f32;
+            let bg = self.smoothed_bed_gain
+                + (self.target_bed_gain - self.smoothed_bed_gain) * bg_alpha as f32;
             self.smoothed_bed_gain = bg;
 
-            let scrape_tau = if self.target_scrape_gain > self.smoothed_scrape_gain {
-                0.020
+            let scrape_attack_alpha = 1.0 - (-1.0 / (sr * 0.020)).exp();
+            let scrape_release_alpha = 1.0 - (-1.0 / (sr * 0.150)).exp();
+            let scrape_alpha = if self.target_scrape_gain > self.smoothed_scrape_gain {
+                scrape_attack_alpha
             } else {
-                0.150
+                scrape_release_alpha
             };
-            let scrape_alpha = 1.0 - (-1.0 / (sr * scrape_tau)).exp();
             self.smoothed_scrape_gain +=
                 (self.target_scrape_gain - self.smoothed_scrape_gain) * scrape_alpha as f32;
-            let tyre_tau = if self.target_tyre_scrub_gain > self.smoothed_tyre_scrub_gain {
-                0.025
+
+            let tyre_attack_alpha = 1.0 - (-1.0 / (sr * 0.025)).exp();
+            let tyre_release_alpha = 1.0 - (-1.0 / (sr * 0.160)).exp();
+            let tyre_alpha = if self.target_tyre_scrub_gain > self.smoothed_tyre_scrub_gain {
+                tyre_attack_alpha
             } else {
-                0.160
+                tyre_release_alpha
             };
-            let tyre_alpha = 1.0 - (-1.0 / (sr * tyre_tau)).exp();
             self.smoothed_tyre_scrub_gain +=
                 (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
 
@@ -1076,6 +1146,48 @@ impl VehicleAudioEngine {
     /// Current distance level (LOD) of the procedural engine.
     pub fn synth_lod(&self) -> LodLevel {
         self.lod
+    }
+
+    // --- P7.6 synth telemetry accessors (proxy the procedural half-block) ----
+    // These expose the synth state so replay/baseline/bench tools can emit the
+    // per-frame synth contract without reaching into private fields. When the
+    // synth is disabled (or not built yet) they return a safe zero/default.
+
+    /// Total firing events fired since the synth was built (cumulative).
+    pub fn synth_events_fired(&self) -> u64 {
+        self.synth.as_ref().map_or(0, |s| s.events_fired())
+    }
+
+    /// Current smoothed energy [0.0, 1.0].
+    pub fn synth_energy(&self) -> f32 {
+        self.synth
+            .as_ref()
+            .map_or(self.last_synth_energy, |s| s.energy())
+    }
+
+    /// Current smoothed load [0.0, 1.0] (intake gating/burble indicator).
+    pub fn synth_load(&self) -> f32 {
+        self.synth.as_ref().map_or(0.0, |s| s.load())
+    }
+
+    /// Current intake/exhaust resonator scale (0.0 at Virtual, 1.0 at Near).
+    pub fn synth_resonator_scale(&self) -> f32 {
+        self.synth.as_ref().map_or(0.0, |s| s.resonator_scale())
+    }
+
+    /// Whether the RPM limiter hard gate is currently cutting.
+    pub fn synth_limiter_active(&self) -> bool {
+        self.synth.as_ref().map_or(false, |s| s.limiter_active())
+    }
+
+    /// Current smoothed limiter cut depth [0.0, 1.0].
+    pub fn synth_limiter_cut(&self) -> f32 {
+        self.synth.as_ref().map_or(0.0, |s| s.limiter_cut())
+    }
+
+    /// Current smoothed traction-control suppression [0.0, 1.0].
+    pub fn synth_tc_suppression(&self) -> f32 {
+        self.synth.as_ref().map_or(0.0, |s| s.tc_suppression())
     }
 
     /// Current mechanical phase (deg) of the procedural engine. Diagnostic hook

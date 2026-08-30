@@ -136,6 +136,41 @@ impl AudioModule {
         self.last_slip = slip;
     }
 
+    /// Enable the procedural synth from the profile `audio` section (a JSON object
+    /// whose `powertrain_synthesis` child is parsed by
+    /// `vehicle_audio_engine::powertrain`). Returns false when the mixer is absent
+    /// or the profile has no (valid) enabled `powertrain_synthesis` section. The
+    /// fallback is a no-op: the engine keeps its sampled-band path (silent engine).
+    pub fn enable_synth_from_profile(&mut self, audio: Option<&serde_json::Value>) -> bool {
+        let Some(audio) = audio else {
+            return false;
+        };
+        // `from_profile_json` expects the full profile JSON with an `audio` root;
+        // re-wrap the passthrough section to satisfy that contract.
+        let wrapped = serde_json::json!({ "audio": audio });
+        let Ok(Some(config)) =
+            vehicle_audio_engine::powertrain::from_profile_json(&wrapped.to_string())
+        else {
+            return false;
+        };
+        if !config.enabled {
+            return false;
+        }
+        if let Some(eng) = self.engine.as_mut() {
+            eng.enable_synth(&config);
+            // `enable_synth` returns the *previous* enabled state; the real result
+            // is observable via `synth_enabled`.
+            eng.synth_enabled()
+        } else {
+            false
+        }
+    }
+
+    /// Whether the procedural synth is currently driving the engine path.
+    pub fn synth_enabled(&self) -> bool {
+        self.engine.as_ref().map_or(false, VehicleAudioEngine::synth_enabled)
+    }
+
     /// Push the current telemetry into the mixer. Gear-change one-shots fire inside
     /// the mixer; the facade must not re-trigger them.
     pub fn set_state(
