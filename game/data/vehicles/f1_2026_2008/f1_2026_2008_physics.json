@@ -579,7 +579,10 @@
         "irregularity": 0.012,
         "seed": 4500,
         "body_cutoff_hz": 3200.0,
-        "scavenging_ratio": 0.38
+        "scavenging_ratio": 0.38,
+        "cylinder_variation": 0.055,
+        "cycle_variation": 0.075,
+        "pressure_derivative_mix": 0.62
       },
       "energy": {
         "torque_curve_weight": 1.0,
@@ -591,7 +594,7 @@
       },
       "intake": {
         "enabled": true,
-        "noise_gain": 0.08,
+        "noise_gain": 0.045,
         "pulse_gain": 0.45,
         "throttle_follow": 0.8,
         "resonances": [

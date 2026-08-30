@@ -17,6 +17,10 @@ pub struct IntakeSynth {
     noise_gain: f32,
     pulse_gain: f32,
     throttle_follow: f32,
+    turbulence_fast: f32,
+    turbulence_slow: f32,
+    turbulence_fast_alpha: f32,
+    turbulence_slow_alpha: f32,
     /// Fraction of the configured resonances actually processed (per LOD). Only
     /// limits how many Biquads run; it never rebuilds the filter bank, so the
     /// configured timbre is preserved (higher qualities just process more of it).
@@ -44,6 +48,10 @@ impl IntakeSynth {
             noise_gain: config.noise_gain.clamp(0.0, 1.0),
             pulse_gain: config.pulse_gain.clamp(0.0, 1.0),
             throttle_follow: config.throttle_follow.clamp(0.0, 1.0),
+            turbulence_fast: 0.0,
+            turbulence_slow: 0.0,
+            turbulence_fast_alpha: 1.0 - (-1.0 / (sample_rate * 0.00035)).exp(),
+            turbulence_slow_alpha: 1.0 - (-1.0 / (sample_rate * 0.0025)).exp(),
             resonator_scale: 1.0,
         }
     }
@@ -84,9 +92,15 @@ impl IntakeSynth {
         let gate = aperture
             * (1.0 - self.throttle_follow + self.throttle_follow * throttle.clamp(0.0, 1.0));
         let n = (self.filters.len() as f32 * self.resonator_scale).ceil() as usize;
-        // Valve events carry the engine cadence. Broadband turbulence is kept
-        // deliberately quiet so it adds breath without becoming white noise.
-        let source = excitation * self.pulse_gain + self.next_noise() * self.noise_gain;
+        // Turbulence is coloured before mixing and, critically, is multiplied
+        // by the valve-event envelope. It cannot become a free-running white
+        // hiss between events.
+        let noise = self.next_noise();
+        self.turbulence_fast += (noise - self.turbulence_fast) * self.turbulence_fast_alpha;
+        self.turbulence_slow += (noise - self.turbulence_slow) * self.turbulence_slow_alpha;
+        let event_gate = (excitation.abs() * 2.5).clamp(0.0, 1.0);
+        let turbulence = (self.turbulence_fast - self.turbulence_slow) * event_gate;
+        let source = excitation * self.pulse_gain + turbulence * self.noise_gain;
         let mut resonant = 0.0f32;
         for filter in self.filters.iter_mut().take(n) {
             resonant += filter.process(source);

@@ -23,6 +23,13 @@ impl EventJitter {
     pub fn next_offset(&mut self) -> f64 {
         (self.next_uniform() * 2.0 - 1.0) * self.amplitude_deg
     }
+
+    /// Deterministic bipolar value used for slow cycle-to-cycle combustion
+    /// variation. Keeping this in the event RNG avoids a second noise generator
+    /// in the sample loop.
+    pub fn next_signed(&mut self) -> f32 {
+        (self.next_uniform() * 2.0 - 1.0) as f32
+    }
 }
 
 #[cfg(test)]

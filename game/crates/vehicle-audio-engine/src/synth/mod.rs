@@ -118,6 +118,9 @@ pub struct PowertrainConfig {
     pub seed: u64,
     pub body_cutoff_hz: f32,
     pub scavenging_ratio: f32,
+    pub cylinder_variation: f32,
+    pub cycle_variation: f32,
+    pub pressure_derivative_mix: f32,
     pub torque_curve_weight: f32,
     pub throttle_response: f32,
     pub idle_combustion_gain: f32,
@@ -143,6 +146,9 @@ impl Default for PowertrainConfig {
             seed: 0xF090_1994_D15C_A11D,
             body_cutoff_hz: 3200.0,
             scavenging_ratio: 0.38,
+            cylinder_variation: 0.055,
+            cycle_variation: 0.075,
+            pressure_derivative_mix: 0.62,
             torque_curve_weight: 1.0,
             throttle_response: 1.0,
             idle_combustion_gain: 0.08,
@@ -168,6 +174,9 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             seed: contract.combustion.seed,
             body_cutoff_hz: contract.combustion.body_cutoff_hz,
             scavenging_ratio: contract.combustion.scavenging_ratio,
+            cylinder_variation: contract.combustion.cylinder_variation,
+            cycle_variation: contract.combustion.cycle_variation,
+            pressure_derivative_mix: contract.combustion.pressure_derivative_mix,
             torque_curve_weight: contract.energy.torque_curve_weight,
             throttle_response: contract.energy.throttle_response,
             idle_combustion_gain: contract.energy.idle_combustion_gain,
@@ -213,10 +222,26 @@ pub struct CylState {
     impulse_amp: f32,
     attack_samples: u32,
     attack_rem: u32,
+    cylinder_gain: f32,
+    cycle_variation: f32,
+    last_pressure: f32,
+}
+
+#[derive(Clone, Copy, Default)]
+struct CylinderExcitation {
+    body: f32,
+    intake: f32,
+    exhaust: f32,
 }
 
 impl CylState {
-    fn new(firing_phase: f64, jitter: EventJitter, attack_samples: u32) -> Self {
+    fn new(
+        firing_phase: f64,
+        jitter: EventJitter,
+        attack_samples: u32,
+        cylinder_gain: f32,
+        cycle_variation: f32,
+    ) -> Self {
         Self {
             phase_deg: 0.0,
             increment: 0.0,
@@ -230,6 +255,9 @@ impl CylState {
             impulse_amp: 0.0,
             attack_samples,
             attack_rem: 0,
+            cylinder_gain,
+            cycle_variation,
+            last_pressure: 0.0,
         }
     }
 
@@ -247,7 +275,8 @@ impl CylState {
         decay_alpha: f32,
         scavenge_decay_alpha: f32,
         scavenging_ratio: f32,
-    ) -> f32 {
+        pressure_derivative_mix: f32,
+    ) -> CylinderExcitation {
         self.phase_deg += self.increment;
         if self.phase_deg >= self.next_event_phase {
             self.events_fired += 1;
@@ -255,7 +284,8 @@ impl CylState {
             let jitter = self.jitter.next_offset();
             self.next_event_phase =
                 self.firing_phase + self.event_index as f64 * CYCLE_DEG + jitter;
-            self.impulse_amp = amp;
+            let cycle_gain = 1.0 + self.jitter.next_signed() * self.cycle_variation;
+            self.impulse_amp = amp * self.cylinder_gain * cycle_gain;
             self.attack_rem = self.attack_samples;
         }
         if self.attack_rem > 0 {
@@ -267,7 +297,19 @@ impl CylState {
             self.impulse_env *= decay_alpha;
             self.scavenge_env *= scavenge_decay_alpha;
         }
-        (self.impulse_env - scavenging_ratio * self.scavenge_env) * self.impulse_amp
+        // Cheap pressure proxy: rounded crown during the burn plus a slower
+        // negative gas-exchange tail. Its derivative supplies broadband attack
+        // energy without a sine oscillator or an additional physical cylinder.
+        let burn = self.impulse_env * (2.0 - self.impulse_env);
+        let pressure = (burn - scavenging_ratio * self.scavenge_env) * self.impulse_amp;
+        let derivative = pressure - self.last_pressure;
+        self.last_pressure = pressure;
+        let edge = pressure_derivative_mix.clamp(0.0, 1.0);
+        CylinderExcitation {
+            body: pressure * (1.0 - edge) + derivative * (4.0 * edge),
+            intake: self.scavenge_env * self.impulse_amp,
+            exhaust: derivative * 6.0 + pressure * 0.22,
+        }
     }
 }
 
@@ -289,6 +331,7 @@ pub struct HalfBlock {
     decay_alpha: f32,
     scavenge_decay_alpha: f32,
     scavenging_ratio: f32,
+    pressure_derivative_mix: f32,
     target_load: f32,
     smoothed_load: f32,
     energy: f32,
@@ -316,7 +359,11 @@ impl HalfBlock {
         let sr = sample_rate as f64;
         let attack_samples = ((IMPULSE_ATTACK_S * sr).round() as u32).max(1);
         let jitter_amp_deg = (config.irregularity as f64).clamp(0.0, 0.25) * CYCLE_DEG;
+        let variation = config.cylinder_variation.clamp(0.0, 0.25);
         let cylinders: [CylState; 5] = std::array::from_fn(|index| {
+            // Fixed zero-mean spread: manufacturing/header differences remain
+            // stable, while the event RNG supplies the slower cycle variation.
+            const SPREAD: [f32; 5] = [-0.72, 0.38, 0.91, -0.21, -0.36];
             CylState::new(
                 config.firing_phases_deg[index],
                 EventJitter::new(
@@ -327,6 +374,8 @@ impl HalfBlock {
                     jitter_amp_deg,
                 ),
                 attack_samples,
+                1.0 + SPREAD[index] * variation,
+                config.cycle_variation.clamp(0.0, 0.25),
             )
         });
         Self {
@@ -347,6 +396,7 @@ impl HalfBlock {
             decay_alpha: (-1.0 / (sr * IMPULSE_DECAY_S)).exp() as f32,
             scavenge_decay_alpha: (-1.0 / (sr * SCAVENGE_DECAY_S)).exp() as f32,
             scavenging_ratio: config.scavenging_ratio.clamp(0.0, 0.9),
+            pressure_derivative_mix: config.pressure_derivative_mix.clamp(0.0, 1.0),
             target_load: 0.0,
             smoothed_load: 0.0,
             energy: 0.0,
@@ -496,7 +546,7 @@ impl HalfBlock {
     /// envelopes also advance here: they are post-processing (they never feed
     /// back into the physical energy model) and must be stepped exactly once
     /// per rendered sample.
-    fn advance_excitation(&mut self) -> f32 {
+    fn advance_excitation(&mut self) -> CylinderExcitation {
         self.smoothed_load += (self.target_load - self.smoothed_load) * (1.0 - self.load_alpha);
         let target_energy = self.throttle_response * self.smoothed_load;
         let alpha = if target_energy > self.energy {
@@ -505,14 +555,18 @@ impl HalfBlock {
             self.release_alpha
         };
         self.energy += (target_energy - self.energy) * (1.0 - alpha);
-        let mut excitation = 0.0f32;
+        let mut excitation = CylinderExcitation::default();
         for cylinder in &mut self.cylinders {
-            excitation += cylinder.step(
+            let event = cylinder.step(
                 self.energy,
                 self.decay_alpha,
                 self.scavenge_decay_alpha,
                 self.scavenging_ratio,
+                self.pressure_derivative_mix,
             );
+            excitation.body += event.body;
+            excitation.intake += event.intake;
+            excitation.exhaust += event.exhaust;
         }
         self.limiter.step(
             self.limiter_target_cut,
@@ -523,12 +577,13 @@ impl HalfBlock {
         // Combustion envelopes are unipolar. Remove accumulated DC before the
         // signal reaches body, reconstructed bank and exhaust; otherwise
         // overlapping high-RPM pulses collapse into a saturated plateau.
-        self.excitation_dc_block.process(excitation)
+        excitation.body = self.excitation_dc_block.process(excitation.body);
+        excitation
     }
 
     pub fn render_sample(&mut self) -> f32 {
         let excitation = self.advance_excitation();
-        let raw = excitation * IMPULSE_LEVEL;
+        let raw = excitation.body * IMPULSE_LEVEL;
         let body = self.body_filter.process(raw);
         // Limiter "apertura" sin recalcular el Biquad: mientras corta, el
         // tono de cuerpo se mezcla con la excitacion seca (brillo) y la
@@ -543,20 +598,23 @@ impl HalfBlock {
         let excitation = self.advance_excitation();
         let (bank1, bank2) =
             self.reconstruct
-                .process(excitation, &mut self.body_filter, IMPULSE_LEVEL);
-        let intake = self
-            .intake
-            .process(excitation, self.current_throttle, self.smoothed_load);
-        let exhaust = self.exhaust.process(excitation);
+                .process(excitation.body, &mut self.body_filter, IMPULSE_LEVEL);
+        let intake =
+            self.intake
+                .process(excitation.intake, self.current_throttle, self.smoothed_load);
+        let exhaust = self.exhaust.process(excitation.exhaust);
         // Same limiter treatment as the mono path: air mix over each bank's
         // own body tone (Biquad stays fixed) and one gain for suppression.
-        let raw = excitation * IMPULSE_LEVEL;
+        let raw = excitation.body * IMPULSE_LEVEL;
         let air = self.limiter.air_amount();
         let cut = self.limiter.gain() * self.tc.gain();
         let mut left = bank1 + air * (raw - bank1);
         let mut right = bank2 + air * (raw - bank2);
-        left = (left + intake + exhaust) * cut;
-        right = (right + intake + exhaust) * cut;
+        // Intake is biased toward the body/camera side and exhaust toward the
+        // reconstructed bank. This prevents both acoustic routes collapsing to
+        // the same mono signal while preserving a single stereo output bus.
+        left = (left + intake * 0.92 + exhaust * 0.76) * cut;
+        right = (right + intake * 0.74 + exhaust * 0.96) * cut;
         (left, right)
     }
 

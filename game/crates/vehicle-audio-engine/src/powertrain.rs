@@ -69,6 +69,14 @@ pub struct CombustionConfig {
     pub body_cutoff_hz: f32,
     /// Negative scavenging tail relative to the pressure pulse [0.0, 0.9].
     pub scavenging_ratio: f32,
+    /// Fixed manufacturing/thermal spread between the five simulated cylinders
+    /// [0.0, 0.25]. This changes energy, not firing order.
+    pub cylinder_variation: f32,
+    /// Deterministic cycle-to-cycle combustion-energy spread [0.0, 0.25].
+    pub cycle_variation: f32,
+    /// Amount of pressure derivative mixed into the acoustic excitation
+    /// [0.0, 1.0]. Higher values retain the combustion edge without oscillators.
+    pub pressure_derivative_mix: f32,
 }
 
 impl Default for CombustionConfig {
@@ -78,6 +86,9 @@ impl Default for CombustionConfig {
             seed: 0xF090_1994_D15C_A11D,
             body_cutoff_hz: 3200.0,
             scavenging_ratio: 0.38,
+            cylinder_variation: 0.055,
+            cycle_variation: 0.075,
+            pressure_derivative_mix: 0.62,
         }
     }
 }
@@ -141,7 +152,8 @@ impl Default for Resonance {
 pub struct IntakeConfig {
     /// Enable the intake layer.
     pub enabled: bool,
-    /// Broadband intake noise gain [0.0, 1.0].
+    /// Event-gated, band-coloured turbulence gain [0.0, 1.0]. This is never
+    /// emitted as free-running white noise.
     pub noise_gain: f32,
     /// RPM-synchronous intake pulse gain [0.0, 1.0].
     pub pulse_gain: f32,
@@ -678,6 +690,27 @@ impl AudioPowertrainSynthesis {
             self.combustion.scavenging_ratio,
             0.0,
             0.9,
+        );
+        check_range_closed(
+            &mut diags,
+            path("combustion.cylinder_variation"),
+            self.combustion.cylinder_variation,
+            0.0,
+            0.25,
+        );
+        check_range_closed(
+            &mut diags,
+            path("combustion.cycle_variation"),
+            self.combustion.cycle_variation,
+            0.0,
+            0.25,
+        );
+        check_range_closed(
+            &mut diags,
+            path("combustion.pressure_derivative_mix"),
+            self.combustion.pressure_derivative_mix,
+            0.0,
+            1.0,
         );
 
         check_range_closed(
