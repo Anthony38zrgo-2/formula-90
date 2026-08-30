@@ -63,7 +63,8 @@ impl FracRing {
 
 /// Derives the second bank from the simulated first bank (see module docs).
 pub struct HalfBlockReconstruct {
-    phase_rings: [FracRing; 8],
+    // Indices: 0=body, 1=intake, 2=exhaust, 3=rasp, 4..=8=exhaust_headers[0..5].
+    phase_rings: [FracRing; 9],
     offset_deg: f32,
     offset_samples: f32,
     second_gain: f32,
@@ -74,6 +75,9 @@ pub struct BankExcitation {
     pub body: f32,
     pub intake: f32,
     pub exhaust: f32,
+    /// Event-driven rasp (grit) excitation, reconstructed for bank B with the
+    /// same 72-degree mechanical offset and second-gain as the other streams.
+    pub rasp: f32,
     pub exhaust_headers: [f32; 5],
 }
 
@@ -113,7 +117,12 @@ impl HalfBlockReconstruct {
         &mut self,
         excitation: BankExcitation,
     ) -> (BankExcitation, BankExcitation) {
-        let values = [excitation.body, excitation.intake, excitation.exhaust];
+        let values = [
+            excitation.body,
+            excitation.intake,
+            excitation.exhaust,
+            excitation.rasp,
+        ];
         let mut bank2 = BankExcitation::default();
         for (index, value) in values.into_iter().enumerate() {
             self.phase_rings[index].push(value);
@@ -121,13 +130,14 @@ impl HalfBlockReconstruct {
             match index {
                 0 => bank2.body = delayed,
                 1 => bank2.intake = delayed,
-                _ => bank2.exhaust = delayed,
+                2 => bank2.exhaust = delayed,
+                _ => bank2.rasp = delayed,
             }
         }
         for (index, value) in excitation.exhaust_headers.into_iter().enumerate() {
-            self.phase_rings[index + 3].push(value);
+            self.phase_rings[index + 4].push(value);
             bank2.exhaust_headers[index] =
-                self.phase_rings[index + 3].read(self.offset_samples) * self.second_gain;
+                self.phase_rings[index + 4].read(self.offset_samples) * self.second_gain;
         }
         (excitation, bank2)
     }
@@ -177,6 +187,7 @@ mod tests {
             body: 1.0,
             intake: 2.0,
             exhaust: 3.0,
+            rasp: 4.0,
             exhaust_headers: [3.0; 5],
         };
         let (a, _) = r.process_excitation(input);
@@ -186,5 +197,74 @@ mod tests {
         let (_, b) = r.process_excitation(input);
         assert_eq!(a, input);
         assert!(b.body != 0.0 || b.intake != 0.0 || b.exhaust != 0.0);
+    }
+
+    /// A constant excitation cannot demonstrate a lag (every delayed read
+    /// returns the same value). This test drives a single impulse through the
+    /// rasp stream and checks that bank B reproduces it `offset_samples` later,
+    /// scaled by `second_gain` — proving it is a reconstruction, not an
+    /// independent simulation nor a simultaneous copy.
+    #[test]
+    fn rasp_b_is_the_delayed_impulse_of_rasp_a() {
+        let mut r = HalfBlockReconstruct::new(&HalfBlockConfig::default());
+        let increment = (9000.0 / 120.0 * 720.0) / 44100.0;
+        r.update(increment);
+        let offset = r.offset_samples();
+        assert!(offset > 1.0, "offset must be a real multi-sample lag");
+        let gain = HalfBlockConfig::default().gain;
+
+        let impulse = BankExcitation {
+            body: 0.0,
+            intake: 0.0,
+            exhaust: 0.0,
+            rasp: 1.0,
+            exhaust_headers: [0.0; 5],
+        };
+        let silence = BankExcitation::default();
+
+        let mut b_series = Vec::new();
+        let mut a_series = Vec::new();
+        // Fire one impulse, then keep feeding silence and record both streams.
+        for index in 0..512 {
+            let frame = if index == 0 { impulse } else { silence };
+            let (a, b) = r.process_excitation(frame);
+            a_series.push(a.rasp);
+            b_series.push(b.rasp);
+        }
+
+        // Bank A sees the impulse immediately.
+        assert!(
+            (a_series[0] - 1.0).abs() < 1e-6,
+            "bank A impulse must be immediate: {}",
+            a_series[0]
+        );
+        // Bank B must be silent until the mechanical offset has elapsed: a
+        // simultaneous copy would already be non-zero at sample 0.
+        let before = (offset.floor() as usize).saturating_sub(2);
+        assert!(
+            b_series[..before].iter().all(|v| v.abs() < 1e-6),
+            "bank B must not anticipate the impulse (offset {offset})"
+        );
+        // At the offset, bank B reproduces the impulse scaled by second_gain.
+        let peak = b_series
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.abs().partial_cmp(&b.1.abs()).unwrap())
+            .unwrap()
+            .0;
+        let expected_index = offset.round() as isize;
+        assert!(
+            (peak as isize - expected_index).abs() <= 1,
+            "bank B impulse peak at {peak}, expected ~{expected_index}"
+        );
+        // The offset is fractional, so the impulse is spread across two adjacent
+        // samples by linear interpolation; their sum is what must equal
+        // second_gain. That also rules out an independent simulation.
+        let total: f32 = b_series.iter().sum();
+        assert!(
+            (total - gain).abs() < 1e-2,
+            "bank B impulse energy {} should equal second_gain {gain}",
+            total
+        );
     }
 }

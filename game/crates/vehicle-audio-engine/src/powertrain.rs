@@ -335,6 +335,82 @@ impl Default for HalfBlockConfig {
     }
 }
 
+/// Combustion-only voices for the continuous procedural engine.
+///
+/// The engine is built from exactly two voices derived from the *same*
+/// combustion excitation:
+///
+/// 1. `combustion_body`: the approved body path (existing low-pass).
+/// 2. `combustion_edge`: the complementary residual `pre_body - body`, i.e. the
+///    upper content that the body low-pass removes. It is not a separate
+///    subsystem: it carries no filter of its own, so it inherits the body
+///    cutoff automatically and stays phase-coherent when summed back.
+///
+/// A profile that omits this block keeps `edge_enabled = false` so no other
+/// vehicle changes timbre without explicit approval.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CombustionVoicesConfig {
+    /// Enables the `combustion_edge` voice. Disabled by default on purpose.
+    pub edge_enabled: bool,
+    /// Static gain for `combustion_edge` [0.0, 2.0]. It is the only allowed
+    /// control: no saturation, modulation or envelope may follow it.
+    pub edge_gain: f32,
+}
+
+impl Default for CombustionVoicesConfig {
+    fn default() -> Self {
+        Self {
+            edge_enabled: false,
+            edge_gain: 1.0,
+        }
+    }
+}
+
+/// Event-driven rasp (grit) layer configuration.
+///
+/// The rasp is a structured, band-limited texture derived from the smoothed
+/// combustion-pressure derivative of each bank. It never contains a free-running
+/// oscillator or white-noise source. Per-field defaults give a sensible
+/// naturally-aspirated V10 grit when the profile omits the block entirely.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RaspConfig {
+    /// Master enable for the rasp layer.
+    pub enabled: bool,
+    /// Overall rasp gain (scaled further by the RPM curve). [0.0, 2.0].
+    pub gain: f32,
+    /// Rasp band high-pass corner in Hz [200.0, 20000.0].
+    pub highpass_hz: f32,
+    /// Rasp band low-pass corner in Hz [200.0, 20000.0].
+    pub lowpass_hz: f32,
+    /// Soft saturation drive [0.0, 1.0].
+    pub saturation: f32,
+    /// RPM ratio at which rasp starts rising from its floor [0.0, 1.0].
+    pub rpm_start_ratio: f32,
+    /// RPM ratio at which rasp reaches full `gain` [0.0, 1.0].
+    pub rpm_full_ratio: f32,
+    /// Scales the rasp excitation feeding the band-pass. It is NOT a mix between
+    /// two sources: it only sets how hard the raw event edge drives the grit.
+    /// [0.0, 1.0].
+    pub input_gain: f32,
+}
+
+impl Default for RaspConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            gain: 0.6,
+            highpass_hz: 2500.0,
+            lowpass_hz: 7000.0,
+            saturation: 0.5,
+            rpm_start_ratio: 0.25,
+            rpm_full_ratio: 0.9,
+            input_gain: 1.0,
+        }
+    }
+}
+
 /// Global RPM limiter configuration.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -502,6 +578,10 @@ pub struct AudioPowertrainSynthesis {
     pub exhaust: ExhaustConfig,
     /// Half-block derivation tuning.
     pub half_block: HalfBlockConfig,
+    /// Combustion-only voices (`combustion_body` + `combustion_edge`).
+    pub combustion_voices: CombustionVoicesConfig,
+    /// Event-driven rasp (grit) layer tuning.
+    pub rasp: RaspConfig,
     /// RPM limiter tuning.
     pub limiter: LimiterConfig,
     /// Traction control tuning.
@@ -522,6 +602,8 @@ impl Default for AudioPowertrainSynthesis {
             aspiration: Aspiration::NaturallyAspirated,
             total_cylinders: 10,
             physically_simulated_cylinders: 5,
+            rasp: RaspConfig::default(),
+            combustion_voices: CombustionVoicesConfig::default(),
             bank_count: 2,
             firing_order: None,
             firing_phases_deg: None,
@@ -1033,6 +1115,69 @@ impl AudioPowertrainSynthesis {
 
         check_range_closed(
             &mut diags,
+            path("combustion_voices.edge_gain"),
+            self.combustion_voices.edge_gain,
+            0.0,
+            2.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.gain"),
+            self.rasp.gain,
+            0.0,
+            2.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.highpass_hz"),
+            self.rasp.highpass_hz,
+            200.0,
+            20000.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.lowpass_hz"),
+            self.rasp.lowpass_hz,
+            200.0,
+            20000.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.saturation"),
+            self.rasp.saturation,
+            0.0,
+            1.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.rpm_start_ratio"),
+            self.rasp.rpm_start_ratio,
+            0.0,
+            1.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.rpm_full_ratio"),
+            self.rasp.rpm_full_ratio,
+            0.0,
+            1.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("rasp.input_gain"),
+            self.rasp.input_gain,
+            0.0,
+            1.0,
+        );
+        if self.rasp.lowpass_hz <= self.rasp.highpass_hz {
+            diags.push(ConfigDiagnostic {
+                path: path("rasp.lowpass_hz"),
+                message: "rasp.lowpass_hz must be greater than rasp.highpass_hz".into(),
+            });
+        }
+
+        check_range_closed(
+            &mut diags,
             path("limiter.threshold_rpm_ratio"),
             self.limiter.threshold_rpm_ratio,
             0.90,
@@ -1186,6 +1331,34 @@ mod tests {
         assert_eq!(defaults.cpu_budget.near_percent, 5.0);
         assert_eq!(defaults.cpu_budget.far_percent, 2.0);
         assert!(defaults.validate().is_empty());
+    }
+
+    #[test]
+    fn rasp_defaults_are_valid_and_sane() {
+        let r = RaspConfig::default();
+        assert!(r.enabled);
+        assert_eq!(r.highpass_hz, 2500.0);
+        assert!(r.lowpass_hz > r.highpass_hz);
+        let mut config = AudioPowertrainSynthesis::default();
+        assert!(config.validate().is_empty());
+        // Omitting the block entirely still resolves to a valid default.
+        let parsed = from_profile_json(&section(r#"{"enabled": true}"#)).unwrap().unwrap();
+        assert!(parsed.validate().is_empty());
+        assert_eq!(parsed.rasp, RaspConfig::default());
+    }
+
+    #[test]
+    fn rasp_invalid_ranges_reported() {
+        let mut config = AudioPowertrainSynthesis::default();
+        config.rasp.gain = 5.0;
+        config.rasp.highpass_hz = 50.0;
+        config.rasp.lowpass_hz = 100.0; // below highpass
+        config.rasp.saturation = -1.0;
+        let paths: Vec<String> = config.validate().iter().map(|d| d.path.clone()).collect();
+        assert!(paths.contains(&"audio.powertrain_synthesis.rasp.gain".into()));
+        assert!(paths.contains(&"audio.powertrain_synthesis.rasp.highpass_hz".into()));
+        assert!(paths.contains(&"audio.powertrain_synthesis.rasp.lowpass_hz".into()));
+        assert!(paths.contains(&"audio.powertrain_synthesis.rasp.saturation".into()));
     }
 
     #[test]

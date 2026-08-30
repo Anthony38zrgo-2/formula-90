@@ -4,11 +4,12 @@ pub mod half_block_reconstruct;
 pub mod impulse;
 pub mod intake;
 pub mod limiter_tc;
+pub mod rasp;
 
 use crate::dsp::biquad::Biquad;
 use crate::powertrain::{
-    AudioPowertrainSynthesis, ExhaustConfig, HalfBlockConfig, IntakeConfig, LimiterConfig,
-    QualityProfile, TcConfig,
+    AudioPowertrainSynthesis, CombustionVoicesConfig, ExhaustConfig, HalfBlockConfig, IntakeConfig,
+    LimiterConfig, QualityProfile, RaspConfig, TcConfig,
 };
 
 use event_gen::EventJitter;
@@ -19,12 +20,25 @@ use impulse::{
 };
 use intake::IntakeSynth;
 use limiter_tc::{tc_alpha, LimiterState, TcEnvelope};
+use rasp::RaspSynth;
 
 pub const CYCLE_DEG: f64 = 720.0;
 pub const DEFAULT_FIRING_PHASES_DEG: [f64; 5] = [0.0, 144.0, 288.0, 432.0, 576.0];
 /// One-pole corner for the smoothed combustion pressure derivative. Keeps the
 /// event attack crack while removing the 6 dB/oct overbright fuzz above ~4 kHz.
 pub const DERIVATIVE_CUTOFF_HZ: f64 = 3500.0;
+
+/// One-pole corner for the *rasp* excitation. Deliberately far above the body's
+/// 3.5 kHz corner: the grit lives in 2.5-7 kHz, so the body envelope (which is
+/// low-passed at 3.5 kHz) cannot be its source. High enough to leave the band
+/// essentially intact, still a one-pole (cheap) and never a noise generator.
+pub const RASP_DERIVATIVE_CUTOFF_HZ: f64 = 16000.0;
+
+/// The continuous engine is combustion-only: intake, exhaust and limiter "air"
+/// are disabled for this iteration and must contribute nothing to the mix.
+/// The rasp layer is NOT gated here: it follows the profile `rasp.enabled` flag
+/// so its timbre can be auditioned without reactivating the other voices.
+const COMBUSTION_ONLY: bool = true;
 
 /// Distance-based detail level of the procedural engine (LOD). Higher LODs run
 /// a reduced DSP model (fewer resonators, coarser control updates) and the
@@ -141,6 +155,8 @@ pub struct PowertrainConfig {
     pub intake: IntakeConfig,
     pub exhaust: ExhaustConfig,
     pub half_block: HalfBlockConfig,
+    pub combustion_voices: CombustionVoicesConfig,
+    pub rasp: RaspConfig,
     pub limiter: LimiterConfig,
     pub tc: TcConfig,
     /// Per-LOD DSP quality profile (resonator scales + coefficient update
@@ -176,6 +192,8 @@ impl Default for PowertrainConfig {
             intake: IntakeConfig::default(),
             exhaust: ExhaustConfig::default(),
             half_block: HalfBlockConfig::default(),
+            combustion_voices: CombustionVoicesConfig::default(),
+            rasp: RaspConfig::default(),
             limiter: LimiterConfig::default(),
             tc: TcConfig::default(),
             quality: QualityProfile::default(),
@@ -211,6 +229,8 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             intake: contract.intake.clone(),
             exhaust: contract.exhaust.clone(),
             half_block: contract.half_block.clone(),
+            combustion_voices: contract.combustion_voices.clone(),
+            rasp: contract.rasp.clone(),
             limiter: contract.limiter.clone(),
             tc: contract.tc.clone(),
             quality: contract.distance_levels.dsp.clone(),
@@ -248,6 +268,12 @@ pub struct CylState {
     cycle_variation: f32,
     last_body_pressure: f32,
     body_derivative_env: f32,
+    /// Rasp excitation: combustion-pressure derivative smoothed by its OWN
+    /// much higher corner, fed from the raw first difference before the 3.5 kHz
+    /// body smoothing. This is what preserves 2.5-7 kHz content; reusing
+    /// `body_derivative_env` left nothing above ~3.5 kHz to band-pass.
+    rasp_derivative_env: f32,
+    rasp_derivative_alpha: f32,
     last_exhaust_pressure: f32,
     exhaust_derivative_env: f32,
     derivative_alpha: f32,
@@ -289,6 +315,10 @@ struct CylinderExcitation {
     body: f32,
     intake: f32,
     exhaust: f32,
+    /// Event-driven rasp (grit) excitation, derived from the raw combustion
+    /// pressure edge (own high corner, see `rasp_derivative_env`) so it is
+    /// inherently event-synced and decays between firing events.
+    rasp: f32,
 }
 
 impl CylState {
@@ -298,6 +328,7 @@ impl CylState {
         cylinder_gain: f32,
         cycle_variation: f32,
         derivative_alpha: f32,
+        rasp_derivative_alpha: f32,
         event_params: [f32; 7],
     ) -> Self {
         Self {
@@ -315,6 +346,8 @@ impl CylState {
             cycle_variation,
             last_body_pressure: 0.0,
             body_derivative_env: 0.0,
+            rasp_derivative_env: 0.0,
+            rasp_derivative_alpha,
             last_exhaust_pressure: 0.0,
             exhaust_derivative_env: 0.0,
             derivative_alpha,
@@ -381,8 +414,14 @@ impl CylState {
         let pressure = burn * self.impulse_amp;
         let raw_body_derivative = pressure - self.last_body_pressure;
         self.last_body_pressure = pressure;
+        // Body path unchanged: 3.5 kHz corner keeps the approved mid timbre.
         self.body_derivative_env +=
             (raw_body_derivative - self.body_derivative_env) * self.derivative_alpha;
+        // Rasp path: the SAME raw event edge, but smoothed by its own much
+        // higher corner. This keeps the 2.5-7 kHz band alive for the rasp
+        // band-pass instead of reusing the already-lowpassed body envelope.
+        self.rasp_derivative_env +=
+            (raw_body_derivative - self.rasp_derivative_env) * self.rasp_derivative_alpha;
 
         // Blowdown is its own delayed pressure event. Its derivative must not
         // reuse the combustion-pressure derivative, otherwise the exhaust edge
@@ -398,6 +437,7 @@ impl CylState {
             body: pressure * (1.0 - edge) + self.body_derivative_env * (1.5 * edge),
             intake: self.scavenge_env * self.impulse_amp,
             exhaust: exhaust_pressure * (1.0 - edge) + self.exhaust_derivative_env * (1.5 * edge),
+            rasp: self.rasp_derivative_env,
         }
     }
 }
@@ -408,8 +448,21 @@ pub struct DiagnosticFrame {
     pub full_block_raw: f32,
     pub body_a: f32,
     pub body_b: f32,
+    /// Body excitation *before* the low-pass (per bank). Voice 1 + voice 2 must
+    /// reconstruct this exactly.
+    pub pre_body_a: f32,
+    pub pre_body_b: f32,
+    /// Voice 1: approved body path, summed mono (the audible body).
+    pub combustion_body: f32,
+    /// Voice 2: complementary residual `pre_body - body`, per bank and summed.
+    pub combustion_edge_a: f32,
+    pub combustion_edge_b: f32,
+    pub combustion_edge: f32,
     pub intake_a: f32,
     pub intake_b: f32,
+    /// Rasp (grit) excitation after band-limiting + soft saturation, per bank.
+    pub rasp_a: f32,
+    pub rasp_b: f32,
     /// Exhaust excitation before the per-bank exhaust DSP/DC guard.
     pub exhaust_raw_a: f32,
     pub exhaust_raw_b: f32,
@@ -417,9 +470,15 @@ pub struct DiagnosticFrame {
     pub collector_b: f32,
     pub exhaust_a: f32,
     pub exhaust_b: f32,
+    /// Pre-spatial composite mix per bank (body + intake + exhaust + rasp with
+    /// identical per-channel layer gains), useful for audit/telemetry.
+    /// Mono engine mix (body + intake + exhaust + rasp, both banks summed)
+    /// before the DC block and before channel duplication.
+    pub mono_engine: f32,
     pub body: f32,
     pub intake: f32,
     pub exhaust: f32,
+    pub rasp: f32,
     pub master: (f32, f32),
 }
 
@@ -441,60 +500,29 @@ impl BankDsp {
     }
 }
 
-pub struct Spatializer {
-    pub decorrelation: f32,
-    pub delay_s: f32,
-    left_dc: Biquad,
-    right_dc: Biquad,
-    delay_i: usize,
-    delay_frac: f32,
-    head: usize,
-    delay_a: [f32; 4096],
-    delay_b: [f32; 4096],
+/// Mono master stage for the procedural engine.
+///
+/// The continuous engine is strictly dual-mono: `L` and `R` carry the *same*
+/// sample. There is no delay ring, no crossfeed, no decorrelation and no
+/// per-channel filter — the two banks are summed per layer before this point,
+/// and a single DC block + a single limiter/TC gain are applied once to the
+/// summed mono signal. The result is duplicated verbatim, so both channels are
+/// bit-identical by construction rather than by balance-matching.
+pub struct MonoMaster {
+    dc: Biquad,
 }
 
-impl Spatializer {
-    fn new(config: &HalfBlockConfig, sample_rate: u32) -> Self {
+impl MonoMaster {
+    fn new(sample_rate: u32) -> Self {
         Self {
-            decorrelation: config.decorrelation.clamp(0.0, 1.0),
-            delay_s: config.delay_s.max(0.0),
-            left_dc: Biquad::highpass(sample_rate as f32, 20.0),
-            right_dc: Biquad::highpass(sample_rate as f32, 20.0),
-            delay_i: (config.delay_s.max(0.0) * sample_rate as f32)
-                .min(4094.0)
-                .floor() as usize,
-            delay_frac: (config.delay_s.max(0.0) * sample_rate as f32)
-                .min(4094.0)
-                .fract(),
-            head: 0,
-            delay_a: [0.0; 4096],
-            delay_b: [0.0; 4096],
+            dc: Biquad::highpass(sample_rate as f32, 20.0),
         }
     }
-    fn process(
-        &mut self,
-        body_a: f32,
-        body_b: f32,
-        intake: f32,
-        exhaust: f32,
-        cut: f32,
-    ) -> (f32, f32) {
-        self.delay_a[self.head] = body_a;
-        self.delay_b[self.head] = body_b;
-        let read = |ring: &[f32; 4096], delay_i: usize, frac: f32, head: usize| {
-            let a = ring[(head + 4096 - delay_i) % 4096];
-            let b = ring[(head + 4096 - delay_i.saturating_add(1)) % 4096];
-            a + (b - a) * frac
-        };
-        let delayed_a = read(&self.delay_a, self.delay_i, self.delay_frac, self.head);
-        let delayed_b = read(&self.delay_b, self.delay_i, self.delay_frac, self.head);
-        self.head = (self.head + 1) % 4096;
-        let left = body_a + self.decorrelation * delayed_b + intake * 0.92 + exhaust * 0.76;
-        let right = body_b + self.decorrelation * delayed_a + intake * 0.74 + exhaust * 0.96;
-        (
-            self.left_dc.process(left * cut),
-            self.right_dc.process(right * cut),
-        )
+
+    #[inline]
+    fn process(&mut self, mono: f32, cut: f32) -> (f32, f32) {
+        let out = self.dc.process(mono * cut);
+        (out, out)
     }
 }
 
@@ -505,7 +533,6 @@ pub struct HalfBlock {
     excitation_dc_block: Biquad,
     intake_dc_block: Biquad,
     exhaust_pre_dc_blocks: [Biquad; 5],
-    spatializer: Spatializer,
     sample_rate: f64,
     torque_curve: Vec<(f64, f64)>,
     torque_curve_weight: f32,
@@ -523,7 +550,14 @@ pub struct HalfBlock {
     smoothed_load: f32,
     energy: f32,
     reconstruct: HalfBlockReconstruct,
-    neutral_reconstruction: bool,
+    rasp_a: RaspSynth,
+    rasp_b: RaspSynth,
+    rasp_config: RaspConfig,
+    combustion_voices: CombustionVoicesConfig,
+    current_rpm_norm: f32,
+    /// LOD gate for the rasp path (Near full, Mid reduced, Far/Virtual off).
+    rasp_lod_enabled: bool,
+    master: MonoMaster,
     current_throttle: f32,
     limiter: LimiterState,
     limiter_config: LimiterConfig,
@@ -547,6 +581,8 @@ impl HalfBlock {
         let variation = config.cylinder_variation.clamp(0.0, 0.25);
         let derivative_alpha =
             1.0 - one_pole_alpha(sr, 1.0 / (std::f64::consts::TAU * DERIVATIVE_CUTOFF_HZ));
+        let rasp_derivative_alpha = 1.0
+            - one_pole_alpha(sr, 1.0 / (std::f64::consts::TAU * RASP_DERIVATIVE_CUTOFF_HZ));
         let cylinders: [CylState; 5] = std::array::from_fn(|index| {
             // Fixed zero-mean spread: manufacturing/header differences remain
             // stable, while the event RNG supplies the slower cycle variation.
@@ -563,6 +599,7 @@ impl HalfBlock {
                 1.0 + SPREAD[index] * variation,
                 config.cycle_variation.clamp(0.0, 0.25),
                 derivative_alpha,
+                rasp_derivative_alpha,
                 [
                     config.combustion_attack_deg,
                     config.combustion_decay_deg,
@@ -577,18 +614,21 @@ impl HalfBlock {
         Self {
             cylinders,
             bank_a_dsp: BankDsp::new(config, sample_rate, config.seed, config.body_cutoff_hz),
+            // Both bodies are acoustically identical: no lateral cutoff
+            // multiplier, so timbre differences can only come from the 72-degree
+            // mechanical offset, never from an asymmetric filter.
             bank_b_dsp: BankDsp::new(
                 config,
                 sample_rate,
                 config.seed.wrapping_add(1),
-                config.body_cutoff_hz * (1.0 + config.half_block.timbre_diff.clamp(0.0, 1.0)),
+                config.body_cutoff_hz,
             ),
             excitation_dc_block: Biquad::highpass(sample_rate as f32, 20.0),
             intake_dc_block: Biquad::highpass(sample_rate as f32, 20.0),
             exhaust_pre_dc_blocks: std::array::from_fn(|_| {
                 Biquad::highpass(sample_rate as f32, 20.0)
             }),
-            spatializer: Spatializer::new(&config.half_block, sample_rate),
+            master: MonoMaster::new(sample_rate),
             sample_rate: sr,
             torque_curve: config.torque_curve.clone(),
             torque_curve_weight: config.torque_curve_weight,
@@ -606,9 +646,22 @@ impl HalfBlock {
             smoothed_load: 0.0,
             energy: 0.0,
             reconstruct: HalfBlockReconstruct::new(&config.half_block),
-            neutral_reconstruction: config.half_block.phase_offset_deg == 0.0
-                && config.half_block.delay_s == 0.0
-                && config.half_block.decorrelation == 0.0,
+            rasp_a: RaspSynth::new(
+                sample_rate,
+                config.rasp.highpass_hz,
+                config.rasp.lowpass_hz,
+                config.rasp.saturation,
+            ),
+            rasp_b: RaspSynth::new(
+                sample_rate,
+                config.rasp.highpass_hz,
+                config.rasp.lowpass_hz,
+                config.rasp.saturation,
+            ),
+            rasp_config: config.rasp.clone(),
+            combustion_voices: config.combustion_voices.clone(),
+            current_rpm_norm: 0.0,
+            rasp_lod_enabled: true,
             current_throttle: 0.0,
             limiter: LimiterState::new(),
             limiter_config: config.limiter.clone(),
@@ -663,6 +716,7 @@ impl HalfBlock {
             // closed throttle. The torque curve only shapes the throttle part.
             let combustion = idle + throttle * (1.0 - idle) * weighted;
             self.target_load = combustion as f32;
+            self.current_rpm_norm = norm as f32;
             let increment = (rpm.max(0.0) / 120.0 * CYCLE_DEG) / self.sample_rate;
             self.reconstruct.update(increment);
             for cylinder in &mut self.cylinders {
@@ -721,6 +775,9 @@ impl HalfBlock {
         let distant = matches!(level, LodLevel::Far | LodLevel::Virtual);
         self.bank_a_dsp.exhaust.set_distant(distant);
         self.bank_b_dsp.exhaust.set_distant(distant);
+        // Rasp budget: full near, reduced mid, and completely bypassed at
+        // Far/Virtual (no Biquads and no tanh in the distant path).
+        self.rasp_lod_enabled = !matches!(level, LodLevel::Far | LodLevel::Virtual);
         self.coeff_update_steps = match level {
             LodLevel::Near | LodLevel::Mid => self.lod_quality.coeff_update_steps.max(1),
             LodLevel::Far | LodLevel::Virtual => self.lod_quality.far_coeff_update_steps.max(1),
@@ -758,6 +815,18 @@ impl HalfBlock {
         self.bank_a_dsp.intake.resonator_scale()
     }
 
+    /// Test helper: copy of bank A's body filter (to prove A/B parity).
+    #[cfg(test)]
+    pub fn clone_body_filter_a(&self) -> Biquad {
+        self.bank_a_dsp.body_filter
+    }
+
+    /// Test helper: copy of bank B's body filter (to prove A/B parity).
+    #[cfg(test)]
+    pub fn clone_body_filter_b(&self) -> Biquad {
+        self.bank_b_dsp.body_filter
+    }
+
     /// Advance the simulated half block one sample and return the raw firing
     /// excitation (before body filtering). Shared by the mono and stereo paths
     /// so both renderers advance the same mechanical state. The limiter and TC
@@ -784,6 +853,7 @@ impl HalfBlock {
             excitation.body += event.body;
             excitation.intake += event.intake;
             excitation.exhaust += event.exhaust;
+            excitation.rasp += event.rasp * self.rasp_config.input_gain;
             exhaust_headers[index] = event.exhaust;
         }
         self.limiter.step(
@@ -805,6 +875,7 @@ impl HalfBlock {
             body: excitation.body,
             intake: excitation.intake,
             exhaust: excitation.exhaust,
+            rasp: excitation.rasp,
             exhaust_headers,
         }
     }
@@ -819,9 +890,12 @@ impl HalfBlock {
         (body + self.limiter.air_amount() * (raw - body)) * self.limiter.gain() * self.tc.gain()
     }
 
-    /// Render one stereo frame: the simulated bank plus the derived second
-    /// bank, with the intake and exhaust layers mixed equally into both
-    /// channels.
+    /// Render one frame of the procedural engine.
+    ///
+    /// Both banks keep independent acoustic processing until the very end, then
+    /// every layer is summed to mono. The engine is intentionally dual-mono:
+    /// there is no width, crossfeed, delay or per-channel processing anywhere in
+    /// this path, so `master.0` and `master.1` are the same value by construction.
     pub fn render_diagnostic_frame(&mut self) -> DiagnosticFrame {
         let raw_excitation = self.advance_excitation();
         let (bank_a, bank_b) = self.reconstruct.process_excitation(raw_excitation);
@@ -836,63 +910,112 @@ impl HalfBlock {
                 .body_filter
                 .process(bank_b.body * IMPULSE_LEVEL)
         };
-        let intake_a = self.bank_a_dsp.intake.process(
-            bank_a.intake,
-            self.current_throttle,
-            self.smoothed_load,
-        );
-        let intake_b = self.bank_b_dsp.intake.process(
-            bank_b.intake,
-            self.current_throttle,
-            self.smoothed_load,
-        );
-        let exhaust_a = self.bank_a_dsp.exhaust_dc.process(
-            self.bank_a_dsp
-                .exhaust
-                .process_individual(&bank_a.exhaust_headers),
-        );
-        let exhaust_b = self.bank_b_dsp.exhaust_dc.process(
-            self.bank_b_dsp
-                .exhaust
-                .process_individual(&bank_b.exhaust_headers),
-        );
+        // Voice 2: `combustion_edge` is the complementary residual of the body
+        // low-pass (pre_body - body). It is the exact high-pass counterpart of
+        // the existing path: no second filter, no tanh, no resonator, no
+        // envelope, no RPM/load modulation. Summing body + edge reconstructs
+        // pre_body without inter-filter phase error.
+        let pre_body_a = bank_a.body * IMPULSE_LEVEL;
+        let pre_body_b = bank_b.body * IMPULSE_LEVEL;
+        let edge_a = pre_body_a - bank1;
+        let edge_b = pre_body_b - bank2;
+        let combustion_body = bank1 + bank2;
+        let combustion_edge = edge_a + edge_b;
+        let edge_gain = if self.combustion_voices.edge_enabled {
+            self.combustion_voices.edge_gain
+        } else {
+            0.0
+        };
+
+        // Intake/exhaust are disabled for the combustion-only test. Their synths
+        // are not merely configured off internally: they are not called at all,
+        // so the outputs below are exact zeros.
+        let intake_a = 0.0f32;
+        let intake_b = 0.0f32;
+        let exhaust_a = 0.0f32;
+        let exhaust_b = 0.0f32;
         let intake = intake_a + intake_b;
         let exhaust = exhaust_a + exhaust_b;
-        // Same limiter treatment as the mono path: air mix over each bank's
-        // own body tone (Biquad stays fixed) and one gain for suppression.
-        let raw = (bank_a.body + bank_b.body) * IMPULSE_LEVEL;
-        let cut = self.limiter.gain() * self.tc.gain();
-        let mut master = self.spatializer.process(
-            bank1 + self.limiter.air_amount() * (raw - bank1),
-            bank2 + self.limiter.air_amount() * (raw - bank2),
-            intake,
-            exhaust,
-            cut,
+        // Event-driven rasp (grit): band-limited combustion-pressure derivative.
+        // Gain is RPM/load modulated so it grows toward high/redline while
+        // keeping a floor in the mid range. Disabled entirely if !enabled.
+        let rasp_gain = if self.rasp_config.enabled {
+            RaspSynth::rpm_gain(
+                self.rasp_config.gain,
+                self.rasp_config.rpm_start_ratio,
+                self.rasp_config.rpm_full_ratio,
+                self.current_rpm_norm,
+            )
+        } else {
+            0.0
+        };
+        // Rasp follows the profile `rasp.enabled` flag even in combustion-only
+        // mode: it is the only non-body voice allowed to reach the mix while
+        // intake/exhaust/air stay hard-disabled.
+        let rasp_active = rasp_gain != 0.0 && self.rasp_lod_enabled;
+        let rasp_a = if rasp_active {
+            self.rasp_a.process(bank_a.rasp)
+        } else {
+            0.0
+        };
+        let rasp_b = if rasp_active {
+            self.rasp_b.process(bank_b.rasp)
+        } else {
+            0.0
+        };
+        // The limiter "air" blend re-injects dry excitation while cutting. That
+        // would be a *third* sharp voice on top of the two declared ones, so it
+        // is held at zero for the combustion-only test: the output is composed
+        // of combustion_body + combustion_edge (+ rasp when enabled).
+        let air = if COMBUSTION_ONLY {
+            0.0
+        } else {
+            self.limiter.air_amount()
+        };
+        let body_mono_air = combustion_body + air * ((pre_body_a + pre_body_b) - combustion_body);
+        // Body + edge + optional rasp: intake/exhaust/air are forced to zero
+        // above; the only global controls left are the engine limiter and TC.
+        let rasp_mono = rasp_gain * (rasp_a + rasp_b);
+        let mono_engine = body_mono_air + edge_gain * combustion_edge + rasp_mono;
+        debug_assert!(
+            intake == 0.0 && exhaust == 0.0,
+            "combustion-only mix received a non-combustion voice"
         );
-        if self.neutral_reconstruction {
-            master.1 = master.0;
-        }
+        let cut = self.limiter.gain() * self.tc.gain();
+        let master = self.master.process(mono_engine, cut);
         DiagnosticFrame {
             bank_a_raw: bank_a.body,
             bank_b_raw: bank_b.body,
             full_block_raw: bank_a.body + bank_b.body,
             body_a: bank1,
             body_b: bank2,
+            pre_body_a,
+            pre_body_b,
+            combustion_body,
+            combustion_edge_a: edge_a,
+            combustion_edge_b: edge_b,
+            combustion_edge,
             intake_a,
             intake_b,
+            rasp_a,
+            rasp_b,
             exhaust_raw_a: bank_a.exhaust,
             exhaust_raw_b: bank_b.exhaust,
             collector_a: self.bank_a_dsp.exhaust.collector_output(),
             collector_b: self.bank_b_dsp.exhaust.collector_output(),
             exhaust_a,
             exhaust_b,
+            mono_engine,
             body: bank1 + bank2,
             intake,
             exhaust,
+            rasp: rasp_mono,
             master,
         }
     }
 
+    /// ABI-compatible stereo render. The procedural engine is dual-mono, so both
+    /// returned samples are always bit-identical.
     pub fn render_stereo(&mut self) -> (f32, f32) {
         self.render_diagnostic_frame().master
     }
@@ -962,46 +1085,339 @@ mod tests {
         );
     }
 
+    /// The dual-mono contract must hold in every operating region, including
+    /// while the limiter and traction control are actively gating.
     #[test]
-    fn spatializer_neutral_is_mono_and_parameters_change_output() {
-        let mut neutral_cfg = HalfBlockConfig::default();
-        neutral_cfg.decorrelation = 0.0;
-        neutral_cfg.delay_s = 0.0;
-        let mut neutral = Spatializer::new(&neutral_cfg, 44100);
-        let a = neutral.process(0.2, 0.2, 0.0, 0.0, 1.0);
-        assert!((a.0 - a.1).abs() < 1e-6);
-        let mut colored_cfg = neutral_cfg.clone();
-        colored_cfg.decorrelation = 0.8;
-        colored_cfg.delay_s = 0.002;
-        let mut colored = Spatializer::new(&colored_cfg, 44100);
-        let b = colored.process(0.2, 0.0, 0.0, 0.0, 1.0);
-        assert!((b.0 - b.1).abs() > 1e-5);
-        assert!(b.0.is_finite() && b.1.is_finite());
+    fn render_stereo_is_bit_identical_in_all_regions() {
+        let regions = [
+            (1000.0, 0.0, "idle"),
+            (4500.0, 0.3, "low"),
+            (9000.0, 0.8, "high"),
+            (14900.0, 1.0, "redline"),
+        ];
+        for (rpm, throttle, name) in regions {
+            let mut block = HalfBlock::new(&config(), 44100);
+            block.set_limiter_enabled(true);
+            block.set_tc_cut_ratio(0.5);
+            block.update_controls(rpm, 1000.0, 15000.0, throttle);
+            for index in 0..4096 {
+                let (l, r) = block.render_stereo();
+                assert_eq!(
+                    l.to_bits(),
+                    r.to_bits(),
+                    "{name}: channels diverged at sample {index} ({l} vs {r})"
+                );
+                assert!(l.is_finite(), "{name}: non-finite sample");
+            }
+        }
     }
 
     #[test]
-    fn spatializer_delay_is_sample_timed() {
-        let mut cfg = HalfBlockConfig::default();
-        cfg.decorrelation = 1.0;
-        cfg.delay_s = 10.0 / 44100.0;
-        let mut spatial = Spatializer::new(&cfg, 44100);
-        let mut right = Vec::new();
-        for i in 0..24 {
-            right.push(
-                spatial
-                    .process(if i == 0 { 1.0 } else { 0.0 }, 0.0, 0.0, 0.0, 1.0)
-                    .1,
+    fn render_stereo_is_bit_identical_during_rpm_sweep() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        for step in 0..2205 {
+            let rpm = 4500.0 + step as f64 * (15000.0 - 4500.0) / 2205.0;
+            block.update_controls(rpm, 4500.0, 15000.0, 1.0);
+            for _ in 0..10 {
+                let (l, r) = block.render_stereo();
+                assert_eq!(l.to_bits(), r.to_bits(), "sweep diverged at rpm {rpm}");
+            }
+        }
+    }
+
+    #[test]
+    fn mono_master_is_exactly_monophonic() {
+        // A mono stage cannot create a difference: identical inputs yield
+        // bit-identical outputs for any gain.
+        let mut m = MonoMaster::new(44100);
+        for cut in [1.0, 0.5, 0.0] {
+            let (l, r) = m.process(0.37, cut);
+            assert_eq!(l.to_bits(), r.to_bits(), "cut {cut} broke dual-mono");
+        }
+    }
+
+    #[test]
+    fn mono_master_removes_dc_and_stays_finite() {
+        let mut m = MonoMaster::new(44100);
+        let mut last = 0.0f32;
+        for _ in 0..200_000 {
+            last = m.process(1.0, 1.0).0;
+        }
+        assert!(last.abs() < 3e-4, "dc residue {last}");
+        assert!(last.is_finite());
+    }
+
+    #[test]
+    fn no_events_produce_no_rasp() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(0.0, 1000.0, 15000.0, 0.0);
+        for _ in 0..4096 {
+            let frame = block.render_diagnostic_frame();
+            assert!(frame.rasp.abs() < 1.0e-6, "rasp must be silent without events");
+        }
+    }
+
+    /// Helper: render frames and collect a named scalar from each.
+    fn collect(cfg: &PowertrainConfig, rpm: f64, throttle: f32, frames: usize) -> Vec<f32> {
+        let mut block = HalfBlock::new(cfg, 44100);
+        block.update_controls(rpm, 4500.0, 15000.0, throttle);
+        for _ in 0..4410 {
+            block.render_diagnostic_frame();
+        }
+        (0..frames)
+            .map(|_| block.render_diagnostic_frame().mono_engine)
+            .collect()
+    }
+
+    #[test]
+    fn edge_disabled_reproduces_the_approved_body_alone() {
+        // With edge off, the mix must be exactly the body: no other voice may
+        // reach the output.
+        let mut cfg = config();
+        cfg.combustion_voices.edge_enabled = false;
+        cfg.rasp.enabled = false;
+        let mut block = HalfBlock::new(&cfg, 44100);
+        block.update_controls(12000.0, 4500.0, 15000.0, 1.0);
+        for _ in 0..8192 {
+            let frame = block.render_diagnostic_frame();
+            // The residual is still reported for inspection, but its
+            // contribution to the mix is gated to zero.
+            assert!(
+                (frame.mono_engine - frame.combustion_body).abs() < 1e-6,
+                "mono must equal the body alone: {} vs {}",
+                frame.mono_engine,
+                frame.combustion_body
             );
         }
-        let peak = right
-            .iter()
-            .enumerate()
-            .max_by(|a, b| a.1.abs().partial_cmp(&b.1.abs()).unwrap())
-            .unwrap()
-            .0;
+    }
+
+    #[test]
+    fn body_plus_edge_reconstructs_pre_body_per_bank() {
+        // The residual is the exact complementary high-pass: body + edge ==
+        // pre_body, so summing the two voices cannot introduce inter-filter
+        // phase error.
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(11000.0, 4500.0, 15000.0, 1.0);
+        for index in 0..8192 {
+            let frame = block.render_diagnostic_frame();
+            for bank in ["a", "b"] {
+                let (pre, body, edge) = if bank == "a" {
+                    (frame.pre_body_a, frame.body_a, frame.combustion_edge_a)
+                } else {
+                    (frame.pre_body_b, frame.body_b, frame.combustion_edge_b)
+                };
+                assert!(
+                    (pre - (body + edge)).abs() < 1e-5,
+                    "bank {bank} reconstruction failed at {index}: {pre} vs {}",
+                    body + edge
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn edge_is_zero_for_stable_dc_after_the_transient() {
+        // The residual of a low-pass cannot pass DC. Feeding a constant
+        // excitation, `pre_body - body` must decay to zero once the filter
+        // transient settles: the edge carries no DC of its own.
+        let block = HalfBlock::new(&config(), 44100);
+        let mut filter = block.clone_body_filter_a();
+        let constant = 0.5f32;
+        let mut worst = 0.0f32;
+        for index in 0..200_000 {
+            let body = filter.process(constant);
+            // Only judge after the transient has died away.
+            if index >= 100_000 {
+                worst = worst.max((constant - body).abs());
+            }
+        }
         assert!(
-            (peak as isize - 10).abs() <= 1,
-            "crossfeed impulse peak at {peak}"
+            worst < 1e-3,
+            "edge must vanish for stable dc: residual {worst}"
+        );
+    }
+
+    #[test]
+    fn disabled_voices_are_never_processed_or_mixed() {
+        // intake/exhaust/rasp are off in this configuration: their stems must be
+        // exact zeros and the mono mix must contain no trace of them.
+        let mut cfg = config();
+        cfg.rasp.enabled = false;
+        let effective_edge_gain = if cfg.combustion_voices.edge_enabled {
+            cfg.combustion_voices.edge_gain
+        } else {
+            0.0
+        };
+        let mut block = HalfBlock::new(&cfg, 44100);
+        block.update_controls(13000.0, 4500.0, 15000.0, 1.0);
+        for _ in 0..8192 {
+            let frame = block.render_diagnostic_frame();
+            assert_eq!(frame.intake, 0.0, "intake must be exact zero");
+            assert_eq!(frame.exhaust, 0.0, "exhaust must be exact zero");
+            assert_eq!(frame.rasp, 0.0, "rasp must be exact zero");
+            // mono is exactly body + edge_gain * edge.
+            let expected = frame.combustion_body + effective_edge_gain * frame.combustion_edge;
+            assert!(
+                (frame.mono_engine - expected).abs() < 1e-6,
+                "mono {} must be body+edge {}",
+                frame.mono_engine,
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn edge_adds_upper_band_energy_without_touching_the_body() {
+        let mut off = config();
+        off.combustion_voices.edge_enabled = false;
+        let mut on = config();
+        on.combustion_voices.edge_enabled = true;
+        let body_only = rms(&collect(&off, 12000.0, 1.0, 22050));
+        let with_edge = rms(&collect(&on, 12000.0, 1.0, 22050));
+        assert!(
+            with_edge > body_only,
+            "edge must add energy: {body_only} -> {with_edge}"
+        );
+        // And it must not change the body itself.
+        let mut a = HalfBlock::new(&off, 44100);
+        let mut b = HalfBlock::new(&on, 44100);
+        a.update_controls(12000.0, 4500.0, 15000.0, 1.0);
+        b.update_controls(12000.0, 4500.0, 15000.0, 1.0);
+        for _ in 0..8192 {
+            let fa = a.render_diagnostic_frame();
+            let fb = b.render_diagnostic_frame();
+            assert_eq!(
+                fa.combustion_body.to_bits(),
+                fb.combustion_body.to_bits(),
+                "enabling the edge must not alter the approved body"
+            );
+        }
+    }
+
+    /// Helper: RMS of the rendered rasp contribution for a control region.
+    fn rasp_rms(cfg: &PowertrainConfig, rpm: f64, throttle: f32) -> f32 {
+        let mut block = HalfBlock::new(cfg, 44100);
+        block.update_controls(rpm, 4500.0, 15000.0, throttle);
+        // Let the energy/load envelopes settle before measuring.
+        for _ in 0..4410 {
+            block.render_diagnostic_frame();
+        }
+        let mut sum = 0.0f64;
+        let mut count = 0usize;
+        for _ in 0..22050 {
+            let value = block.render_diagnostic_frame().rasp as f64;
+            sum += value * value;
+            count += 1;
+        }
+        (sum / count as f64).sqrt() as f32
+    }
+
+    #[test]
+    fn rasp_follows_profile_flag_in_combustion_only_mode() {
+        // Rasp is allowed to reach the mix in combustion-only mode when the
+        // profile enables it; intake/exhaust/air remain hard-disabled. The
+        // layer must be exactly silent when the profile disables it.
+        let mut cfg = config();
+        cfg.rasp.enabled = true;
+        let audible = rasp_rms(&cfg, 14000.0, 1.0);
+        assert!(
+            audible > 1e-4,
+            "enabled rasp must be audible in combustion-only mode, got {audible}"
+        );
+        cfg.rasp.enabled = false;
+        let silent = rasp_rms(&cfg, 14000.0, 1.0);
+        assert_eq!(silent, 0.0, "disabled rasp must be exact zero");
+    }
+
+    #[test]
+    fn rasp_disabled_produces_no_audible_processing() {
+        let mut cfg = config();
+        cfg.rasp.enabled = false;
+        let mut block = HalfBlock::new(&cfg, 44100);
+        block.update_controls(14000.0, 4500.0, 15000.0, 1.0);
+        for _ in 0..8192 {
+            let frame = block.render_diagnostic_frame();
+            assert_eq!(
+                frame.rasp, 0.0,
+                "disabled rasp must contribute exactly zero"
+            );
+            assert!(frame.mono_engine.is_finite());
+        }
+        // The rest of the engine still renders when rasp is off.
+        let energy = (0..4096)
+            .map(|_| block.render_diagnostic_frame().mono_engine)
+            .fold(0.0f32, |m, v| m.max(v.abs()));
+        assert!(energy > 1e-4, "engine body must remain with rasp disabled");
+    }
+
+    #[test]
+    fn rasp_is_bypassed_at_far_and_virtual_lod() {
+        let cfg = config();
+        for level in [LodLevel::Far, LodLevel::Virtual] {
+            let mut block = HalfBlock::new(&cfg, 44100);
+            block.set_lod(level);
+            block.update_controls(14000.0, 4500.0, 15000.0, 1.0);
+            for _ in 0..4096 {
+                assert_eq!(
+                    block.render_diagnostic_frame().rasp,
+                    0.0,
+                    "{level:?} must not run the rasp path"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn edge_survives_near_and_mid_lod() {
+        // Unlike rasp, `combustion_edge` is a declared voice: it must remain
+        // present wherever the engine is audible (only Far/Virtual may drop it).
+        let cfg = config();
+        for level in [LodLevel::Near, LodLevel::Mid] {
+            let mut block = HalfBlock::new(&cfg, 44100);
+            block.set_lod(level);
+            block.update_controls(14000.0, 4500.0, 15000.0, 1.0);
+            let peak = (0..8192)
+                .map(|_| block.render_diagnostic_frame().combustion_edge)
+                .fold(0.0f32, |m, v| m.max(v.abs()));
+            assert!(peak > 0.0, "{level:?} must keep the edge voice");
+        }
+    }
+
+    #[test]
+    fn body_filters_are_identical_even_with_timbre_diff_set() {
+        // The lateral cutoff multiplier is gone, so `timbre_diff` can no longer
+        // make bank B brighter than bank A. Both bodies must be acoustically
+        // identical even when the field is non-zero; bank B's only difference is
+        // the 72-degree mechanical offset applied before the mono sum.
+        let mut cfg = config();
+        cfg.half_block.timbre_diff = 0.6;
+        let mut block = HalfBlock::new(&cfg, 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let mut a = block.clone_body_filter_a();
+        let mut b = block.clone_body_filter_b();
+        for index in 0..4096 {
+            let x = (index as f32 * 0.017).sin() * 0.3;
+            assert_eq!(
+                a.process(x).to_bits(),
+                b.process(x).to_bits(),
+                "body filters must be identical at sample {index}"
+            );
+        }
+    }
+
+    #[test]
+    fn second_bank_keeps_seventy_two_degree_offset_before_mono_sum() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..512 {
+            block.render_diagnostic_frame();
+        }
+        let increment = (9000.0 / 120.0 * 720.0) / 44100.0;
+        let expected = 72.0f32 / increment as f32;
+        assert!(
+            (block.reconstruct_offset_samples() - expected).abs() < 1e-3,
+            "offset {} vs expected {expected}",
+            block.reconstruct_offset_samples()
         );
     }
 
@@ -1415,7 +1831,9 @@ mod tests {
     }
 
     #[test]
-    fn render_stereo_channels_are_decorrelated_by_default() {
+    fn render_stereo_channels_are_dual_mono_by_default() {
+        // Replaces the old decorrelation test: the procedural engine is now
+        // intentionally monophonic, so the two channels are the same sample.
         let mut block = HalfBlock::new(&config(), 44100);
         block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
         let mut left = Vec::with_capacity(8192);
@@ -1425,11 +1843,15 @@ mod tests {
             left.push(l);
             right.push(r);
         }
+        for (index, (l, r)) in left.iter().zip(right.iter()).enumerate() {
+            assert_eq!(
+                l.to_bits(),
+                r.to_bits(),
+                "channels must be dual-mono (sample {index}: {l} vs {r})"
+            );
+        }
         let corr = pearson(&left[4096..], &right[4096..]);
-        assert!(
-            corr < 0.999,
-            "channels must decorrelate mechanically: corr={corr}"
-        );
+        assert!(corr > 0.999, "dual-mono must be fully correlated: {corr}");
     }
 
     #[test]

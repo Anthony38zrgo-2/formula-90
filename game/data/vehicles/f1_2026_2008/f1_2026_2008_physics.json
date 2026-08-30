@@ -600,7 +600,7 @@
         "load_smoothing_s": 0.03
       },
       "intake": {
-        "enabled": true,
+        "enabled": false,
         "noise_gain": 0.02,
         "pulse_gain": 0.45,
         "throttle_follow": 0.8,
@@ -610,7 +610,7 @@
         ]
       },
       "exhaust": {
-        "enabled": true,
+        "enabled": false,
         "pulse_gain": 1.0,
         "saturation": 0.15,
         "damping": 0.5,
@@ -628,12 +628,26 @@
           { "frequency_hz": 380.0, "q": 2.5, "gain_db": 1.0 }
         ]
       },
+      "combustion_voices": {
+        "edge_enabled": true,
+        "edge_gain": 1.0
+      },
       "half_block": {
         "phase_offset_deg": 72.0,
-        "delay_s": 0.0015,
-        "decorrelation": 0.40,
+        "delay_s": 0.0,
+        "decorrelation": 0.0,
         "gain": 0.98,
-        "timbre_diff": 0.30
+        "timbre_diff": 0.0
+      },
+      "rasp": {
+        "enabled": false,
+        "gain": 0.72,
+        "highpass_hz": 2500.0,
+        "lowpass_hz": 7000.0,
+        "saturation": 0.5,
+        "rpm_start_ratio": 0.25,
+        "rpm_full_ratio": 0.9,
+        "input_gain": 1.0
       },
       "limiter": { "threshold_rpm_ratio": 0.995, "attack_ms": 2.0, "release_ms": 60.0, "cut_shape": "soft" },
       "tc": { "suppress_gain": 0.55, "attack_ms": 8.0, "release_ms": 120.0, "min_cut_threshold": 0.02 },

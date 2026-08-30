@@ -30,6 +30,13 @@ def _looks_like_pure_tone(flatness: float, top1: float, top10: float,
     )
 
 
+def _is_single_partial_dominant(fundamental_ratio: float, threshold: float = 0.5) -> bool:
+    """The delayed-impulse engine must spread energy over many harmonics. When
+    the fundamental partial alone carries more than `threshold` of the band
+    energy, the impulse train has collapsed into a sinusoidal oscillator."""
+    return fundamental_ratio > threshold
+
+
 def _order_energy(mono: np.ndarray, sr: int, rpm: float, order: float) -> float:
     """Energy in a narrow, detrended FFT band around an engine order."""
     if mono.size < 32 or rpm <= 0:
@@ -100,6 +107,100 @@ def dbfs(value: float) -> float:
     return 20.0 * math.log10(max(abs(value), EPS))
 
 
+def band_envelope_modulation(
+    mono: np.ndarray,
+    sr: int,
+    band_lo: float = 2500.0,
+    band_hi: float = 7000.0,
+    mod_lo: float = 0.2,
+    mod_hi: float = 30.0,
+) -> dict[str, float]:
+    """Modulation of the 2.5-7 kHz envelope, for fixed-RPM renders.
+
+    A real LFO/phaser shows up as a *dominant* narrow peak at the same
+    frequency regardless of RPM. Natural event jitter spreads the modulation
+    energy and the peak frequency moves with RPM, so this reports both the
+    coefficient of variation and how dominant the strongest peak is.
+    """
+    band = signal.sosfiltfilt(
+        signal.butter(4, [band_lo / (sr / 2), band_hi / (sr / 2)], btype="band", output="sos"),
+        mono,
+    )
+    envelope = np.abs(signal.hilbert(band))
+    envelope = signal.sosfiltfilt(
+        signal.butter(4, 60.0 / (sr / 2), btype="low", output="sos"), envelope
+    )
+    mean = float(np.mean(envelope))
+    cv = float(np.std(envelope) / max(mean, EPS))
+    detrended = envelope - mean
+    spectrum = np.abs(np.fft.rfft(detrended * np.hanning(detrended.size))) ** 2
+    freqs = np.fft.rfftfreq(detrended.size, 1.0 / sr)
+    selected = (freqs >= mod_lo) & (freqs <= mod_hi)
+    if not np.any(selected):
+        return {"envelope_cv": cv, "mod_peak_hz": 0.0, "mod_peak_ratio": 0.0,
+                "mod_peak_to_median": 0.0}
+    power = spectrum[selected]
+    peak = int(np.argmax(power))
+    median = float(np.median(power))
+    return {
+        "envelope_cv": cv,
+        "mod_peak_hz": float(freqs[selected][peak]),
+        "mod_peak_ratio": float(power[peak] / max(power.sum(), EPS)),
+        "mod_peak_to_median": float(power[peak] / max(median, EPS)),
+    }
+
+
+def analyze_combustion_stems(stem_dir: Path) -> dict:
+    """Provenance checks for the two declared combustion voices."""
+    def read(name: str) -> np.ndarray | None:
+        path = stem_dir / f"{name}.wav"
+        if not path.exists():
+            return None
+        _, raw = wavfile.read(path)
+        return raw.astype(np.float64) / 32767.0
+
+    result: dict = {"stems_present": False}
+
+    def rms(x: np.ndarray) -> float:
+        return dbfs(float(np.sqrt(np.mean(np.square(x)))))
+
+    body = read("combustion_body")
+    edge = read("combustion_edge")
+    if body is not None and edge is not None:
+        result["stems_present"] = True
+        result["combustion_body_rms_dbfs"] = rms(body)
+        result["combustion_edge_rms_dbfs"] = rms(edge)
+        result["edge_body_ratio"] = float(
+            np.sqrt(np.mean(np.square(edge))) / max(np.sqrt(np.mean(np.square(body))), EPS)
+        )
+
+    # Residual complementarity: body + edge must rebuild pre_body per sample.
+    # Checked per bank, independently of whether the summed stems exist.
+    worst = 0.0
+    checked = False
+    for bank in ("a", "b"):
+        pre = read(f"pre_body_{bank}")
+        body_bank = read(f"combustion_body_{bank}")
+        edge_bank = read(f"combustion_edge_{bank}")
+        if pre is None or body_bank is None or edge_bank is None:
+            continue
+        checked = True
+        worst = max(worst, float(np.max(np.abs(pre - (body_bank + edge_bank)))))
+    # 2 LSB of int16 is the expected f32/PCM tolerance.
+    result["reconstruction_error"] = worst
+    result["reconstruction_ok"] = checked and worst <= 2.0 / 32767.0
+
+    # Disabled voices must be exact silence, not merely quiet.
+    for name in ("intake", "exhaust", "rasp"):
+        values = read(name)
+        result[f"{name}_rms_exact_zero"] = (
+            bool(np.all(values == 0.0)) if values is not None else None
+        )
+        if values is not None:
+            result["stems_present"] = True
+    return result
+
+
 def load_telemetry(path: Path) -> dict[str, np.ndarray]:
     with path.open("r", newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
@@ -109,24 +210,47 @@ def load_telemetry(path: Path) -> dict[str, np.ndarray]:
     }
 
 
+def _band_energy_fraction(signal_mono: np.ndarray, sr: int, lo: float, hi: float) -> float:
+    """Fraction of total energy contained in the [lo, hi] Hz band (mono)."""
+    x = signal_mono - np.mean(signal_mono)
+    spectrum = np.abs(np.fft.rfft(x * np.hanning(x.size))) ** 2
+    freqs = np.fft.rfftfreq(x.size, 1.0 / sr)
+    band = (freqs >= lo) & (freqs <= hi)
+    return float(np.sum(spectrum[band]) / max(np.sum(spectrum), EPS))
+
+
 def segment_metrics(stereo: np.ndarray, sr: int, start: float, end: float) -> dict[str, float]:
+    """Per-segment metrics for a dual-mono engine.
+
+    Everything musical is measured on the real mono signal. Channel agreement is
+    reported as an exact sample-domain difference, not as a correlation: the
+    engine is required to be bit-identical, so any non-zero difference is a bug.
+    """
     part = stereo[int(start * sr) : int(end * sr)]
     mono = part.mean(axis=1)
     rms = float(np.sqrt(np.mean(np.square(mono), dtype=np.float64)))
     peak = float(np.max(np.abs(part)))
     crest = dbfs(peak / max(rms, EPS))
-    corr = float(np.corrcoef(part[:, 0], part[:, 1])[0, 1])
+    # Exact L/R disagreement in the sample domain (0.0 == dual-mono).
+    max_lr_diff = float(np.max(np.abs(part[:, 0] - part[:, 1])))
     return {
         "start_s": start,
         "end_s": end,
         "rms_dbfs": dbfs(rms),
         "peak_dbfs": dbfs(peak),
         "crest_db": crest,
-        "stereo_correlation": corr,
+        "max_lr_diff": max_lr_diff,
+        "dual_mono_identical": max_lr_diff == 0.0,
+        # Approved mid layer 700 Hz - 2.5 kHz.
+        "energy_700_2500": _band_energy_fraction(mono, sr, 700.0, 2500.0),
+        # Structured grit (rasp) band 2.5-7 kHz, measured on mono.
+        "energy_2500_7000": _band_energy_fraction(mono, sr, 2500.0, 7000.0),
     }
 
 
-def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.ndarray]]:
+def analyze(
+    wav_path: Path, telemetry_path: Path, stem_dir: Path | None = None
+) -> tuple[dict, dict[str, np.ndarray]]:
     sr, raw = wavfile.read(wav_path)
     if raw.ndim != 2 or raw.shape[1] != 2:
         raise ValueError("expected stereo WAV")
@@ -264,11 +388,29 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
         flag("pure_tone", "high", "Energy is concentrated like a near-pure oscillator.")
     if median_top10 > 0.92:
         flag("spectral_concentration", "medium", f"Ten FFT bins contain {median_top10 * 100.0:.1f}% of energy.")
+    median_fundamental_ratio = float(np.median(fundamental_ratio))
+    if _is_single_partial_dominant(median_fundamental_ratio):
+        flag(
+            "single_partial_dominance",
+            "high",
+            f"The firing-frequency partial contains {median_fundamental_ratio * 100.0:.1f}% of "
+            "the band energy: the impulse train degenerated into a sinusoidal oscillator.",
+        )
     median_tracking = float(np.nanmedian(firing_error[valid])) if np.any(valid) else float("nan")
     if not math.isfinite(median_tracking) or median_tracking > 8.0:
         flag("firing_mismatch", "high", f"Median V10 firing-frequency error is {median_tracking:.1f}%.")
-    if segments["mid"]["stereo_correlation"] > 0.985:
-        flag("stereo_collapse", "medium", "Mid-range output is effectively mono.")
+    # Mono is now a requirement for the continuous engine, not a defect, so
+    # `stereo_collapse` is intentionally gone. What IS a defect is any L/R
+    # difference at all: the engine must be bit-identical on both channels.
+    for seg_name in ("idle", "low", "mid", "high", "redline"):
+        diff = float(segments[seg_name]["max_lr_diff"])
+        if diff != 0.0:
+            flag(
+                "dual_mono_violation",
+                "critical",
+                f"{seg_name} channels differ by up to {diff:g}; the procedural engine "
+                f"must be dual-mono (L == R bit for bit).",
+            )
     if segments["high"]["crest_db"] < 3.5:
         flag("high_rpm_flat_envelope", "medium", f"High-RPM crest factor is only {segments['high']['crest_db']:.1f} dB.")
     if clipping_fraction > 0.0001:
@@ -302,8 +444,23 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
             "median_top_10_bins_energy_ratio": median_top10,
             "median_spectral_centroid_hz": float(np.median(centroid)),
             "median_firing_frequency_error_percent": median_tracking,
-            "median_fundamental_band_energy_ratio": float(np.median(fundamental_ratio)),
+            "median_fundamental_band_energy_ratio": median_fundamental_ratio,
+            "single_partial_dominance": bool(_is_single_partial_dominant(median_fundamental_ratio)),
             "idle_to_high_level_span_db": dynamic_range,
+            "rms_mono_dbfs": dbfs(float(np.sqrt(np.mean(np.square(mono))))),
+            "max_lr_diff": float(np.max(np.abs(stereo[:, 0] - stereo[:, 1]))),
+            "dual_mono_identical": bool(np.max(np.abs(stereo[:, 0] - stereo[:, 1])) == 0.0),
+            # Approved mid layer and structured grit, both measured on mono.
+            "energy_700_2500": float(
+                np.mean([segments["high"]["energy_700_2500"], segments["redline"]["energy_700_2500"]])
+            ),
+            "energy_2500_7000": float(
+                np.mean(
+                    [segments["high"]["energy_2500_7000"], segments["redline"]["energy_2500_7000"]]
+                )
+            ),
+            "energy_2500_7000_high": float(segments["high"]["energy_2500_7000"]),
+            "energy_2500_7000_redline": float(segments["redline"]["energy_2500_7000"]),
         },
         "segments": segments,
         "v2": {**v2, "windows": len(v2_windows),
@@ -313,6 +470,12 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
                                                         max(float(v2["engine_order_2_5_energy"]), EPS)),
                "channels": {**channel_v2, "mono": {k: v for k, v in v2.items() if k in ("mean", "rms", "ac_rms", "dc_ratio", "dc_to_ac_db")}}},
         "metadata": metadata,
+        # Combustion-only: two voices from the same excitation, and the
+        # modulation health of the upper band for fixed-RPM renders.
+        "combustion_voices": analyze_combustion_stems(stem_dir)
+        if stem_dir is not None
+        else {"stems_present": False},
+        "band_modulation": band_envelope_modulation(mono, sr),
         "diagnostics": diagnostics,
         "thresholds": {
             "idle_inaudible_dbfs": -45.0,
@@ -321,9 +484,10 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
             "pure_tone_top_10_ratio": 0.92,
             "pure_tone_max_significant_orders": 2,
             "firing_error_percent": 8.0,
-            "stereo_collapse_correlation": 0.985,
+            "dual_mono_max_lr_diff": 0.0,
             "dc_ratio": 0.05,
             "half_block_leakage_db": 3.0,
+            "single_partial_dominance_ratio": 0.5,
         },
     }
     arrays = {
@@ -395,8 +559,14 @@ def main() -> None:
     parser.add_argument("telemetry", type=Path)
     parser.add_argument("--json", required=True, type=Path)
     parser.add_argument("--plot", required=True, type=Path)
+    parser.add_argument(
+        "--stems",
+        type=Path,
+        default=None,
+        help="stem directory for combustion-voice provenance checks",
+    )
     args = parser.parse_args()
-    result, arrays = analyze(args.wav, args.telemetry)
+    result, arrays = analyze(args.wav, args.telemetry, args.stems)
     args.json.parent.mkdir(parents=True, exist_ok=True)
     args.json.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     plot_report(result, arrays, args.plot)

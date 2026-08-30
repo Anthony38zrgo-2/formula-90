@@ -327,7 +327,6 @@ pub struct VehicleAudioEngine {
     synth: Option<crate::synth::HalfBlock>,
     synth_enabled: bool,
     synth_volume: f32,
-    synth_pan: f32,
     last_synth_energy: f32,
 
     // Camera-to-vehicle listener distance (metres), forwarded to the controller
@@ -519,7 +518,6 @@ impl VehicleAudioEngine {
             synth: None,
             synth_enabled: false,
             synth_volume: 1.0,
-            synth_pan: 0.0,
             last_synth_energy: 0.0,
             listener_distance: 0.0,
             lod: LodLevel::Near,
@@ -849,9 +847,13 @@ impl VehicleAudioEngine {
                         .map_or((0.0, 0.0), |s| s.render_stereo())
                 };
                 let gain = eg * self.cfg.engine_headroom * self.synth_volume;
-                let (pan_l, pan_r) = equal_power(self.synth_pan);
-                mixed_l += synth_l * gain * pan_l;
-                mixed_r += synth_r * gain * pan_r;
+                // The procedural engine is strictly dual-mono (synth_l ==
+                // synth_r bit for bit). No pan law is applied here: an
+                // equal-power centre would shave ~3.01 dB off each channel and
+                // reintroduce a channel difference, so the mono signal is summed
+                // at unity.
+                mixed_l += synth_l * gain;
+                mixed_r += synth_r * gain;
                 self.last_synth_energy = self.synth.as_ref().map_or(0.0, |s| s.energy());
                 self.cur_weights.iter_mut().for_each(|w| *w = 0.0);
                 self.cur_weights[0] = 1.0;
@@ -1115,15 +1117,6 @@ impl VehicleAudioEngine {
 
     pub fn set_synth_volume(&mut self, volume: f32) {
         self.synth_volume = volume.clamp(0.0, 2.0);
-    }
-
-    /// Stereo pan of the procedural engine (-1.0 = full left, 1.0 = full right).
-    pub fn set_synth_pan(&mut self, pan: f32) {
-        self.synth_pan = pan.clamp(-1.0, 1.0);
-    }
-
-    pub fn synth_pan(&self) -> f32 {
-        self.synth_pan
     }
 
     pub fn synth_enabled(&self) -> bool {
@@ -1562,7 +1555,6 @@ mod tests {
             synth: None,
             synth_enabled: false,
             synth_volume: 1.0,
-            synth_pan: 0.0,
             last_synth_energy: 0.0,
             listener_distance: 0.0,
             lod: LodLevel::Near,
@@ -2087,7 +2079,9 @@ mod tests {
     }
 
     #[test]
-    fn synth_stereo_output_is_decorrelated_and_finite() {
+    fn synth_stereo_output_is_dual_mono_and_finite() {
+        // The continuous engine carries no width: both mixer channels must be
+        // bit-identical while still being audible and bounded.
         let mut e = engine_with_bank(silent_engine_bank());
         let contract = AudioPowertrainSynthesis::default();
         e.enable_synth(&contract);
@@ -2100,11 +2094,10 @@ mod tests {
             .zip(r.iter())
             .all(|(a, b)| a.is_finite() && b.is_finite()));
         assert!(
-            l.iter().zip(r.iter()).any(|(a, b)| (a - b).abs() > 1e-4),
-            "stereo channels must differ"
+            l.iter().zip(r.iter()).all(|(a, b)| a.to_bits() == b.to_bits()),
+            "dual-mono engine channels must not differ"
         );
-        let corr = pearson(&l[4096..], &r[4096..]);
-        assert!(corr < 0.999, "channels too correlated: corr={corr}");
+        assert!(rms(&l[1024..]) > 1e-5, "engine must be audible");
         let peak = l.iter().fold(0.0f32, |m, v| m.max(v.abs()));
         assert!(
             peak <= e.config().limiter_threshold + 1e-3,
@@ -2113,21 +2106,24 @@ mod tests {
     }
 
     #[test]
-    fn synth_pan_pans_the_stereo_output() {
+    fn synth_engine_is_dual_mono_in_the_mixer() {
+        // The continuous procedural engine carries no pan law: both mixer
+        // channels must receive the identical sample, so no width, crossfeed or
+        // equal-power attenuation can reappear downstream of the synth.
         let mut e = engine_with_bank(silent_engine_bank());
         e.enable_synth(&AudioPowertrainSynthesis::default());
-        e.set_synth_pan(-1.0);
-        assert_eq!(e.synth_pan(), -1.0);
         e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
         let mut l = vec![0.0f32; 8192];
         let mut r = vec![0.0f32; 8192];
         e.render(&mut l, &mut r, 8192);
-        assert!(rms(&l[1024..]) > 1e-5, "full-left pan must be audible on L");
-        assert!(
-            rms(&r[1024..]) < 1e-6,
-            "full-left pan must silence R (rms={})",
-            rms(&r[1024..])
-        );
+        assert!(rms(&l[1024..]) > 1e-5, "engine must be audible");
+        for (index, (left, right)) in l.iter().zip(r.iter()).enumerate() {
+            assert_eq!(
+                left.to_bits(),
+                right.to_bits(),
+                "channels must be bit-identical (sample {index}: {left} vs {right})"
+            );
+        }
     }
 
     #[test]
