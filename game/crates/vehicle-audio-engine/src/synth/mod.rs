@@ -15,8 +15,8 @@ use event_gen::EventJitter;
 use exhaust::ExhaustSynth;
 use half_block_reconstruct::HalfBlockReconstruct;
 use impulse::{
-    one_pole_alpha, torque_curve_value, BODY_LOWPASS_HZ, IMPULSE_ATTACK_S, IMPULSE_DECAY_S,
-    IMPULSE_LEVEL,
+    one_pole_alpha, torque_curve_value, IMPULSE_ATTACK_S, IMPULSE_DECAY_S, IMPULSE_LEVEL,
+    SCAVENGE_DECAY_S,
 };
 use intake::IntakeSynth;
 use limiter_tc::{tc_alpha, LimiterState, TcEnvelope};
@@ -116,6 +116,8 @@ pub struct PowertrainConfig {
     pub firing_phases_deg: [f64; 5],
     pub irregularity: f32,
     pub seed: u64,
+    pub body_cutoff_hz: f32,
+    pub scavenging_ratio: f32,
     pub torque_curve_weight: f32,
     pub throttle_response: f32,
     pub idle_combustion_gain: f32,
@@ -139,6 +141,8 @@ impl Default for PowertrainConfig {
             firing_phases_deg: DEFAULT_FIRING_PHASES_DEG,
             irregularity: 0.01,
             seed: 0xF090_1994_D15C_A11D,
+            body_cutoff_hz: 3200.0,
+            scavenging_ratio: 0.38,
             torque_curve_weight: 1.0,
             throttle_response: 1.0,
             idle_combustion_gain: 0.08,
@@ -162,6 +166,8 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             firing_phases_deg: firing_phases(contract),
             irregularity: contract.combustion.irregularity,
             seed: contract.combustion.seed,
+            body_cutoff_hz: contract.combustion.body_cutoff_hz,
+            scavenging_ratio: contract.combustion.scavenging_ratio,
             torque_curve_weight: contract.energy.torque_curve_weight,
             throttle_response: contract.energy.throttle_response,
             idle_combustion_gain: contract.energy.idle_combustion_gain,
@@ -203,6 +209,7 @@ pub struct CylState {
     event_index: u64,
     events_fired: u64,
     impulse_env: f32,
+    scavenge_env: f32,
     impulse_amp: f32,
     attack_samples: u32,
     attack_rem: u32,
@@ -219,6 +226,7 @@ impl CylState {
             event_index: 0,
             events_fired: 0,
             impulse_env: 0.0,
+            scavenge_env: 0.0,
             impulse_amp: 0.0,
             attack_samples,
             attack_rem: 0,
@@ -233,7 +241,13 @@ impl CylState {
         self.events_fired
     }
 
-    fn step(&mut self, amp: f32, decay_alpha: f32) -> f32 {
+    fn step(
+        &mut self,
+        amp: f32,
+        decay_alpha: f32,
+        scavenge_decay_alpha: f32,
+        scavenging_ratio: f32,
+    ) -> f32 {
         self.phase_deg += self.increment;
         if self.phase_deg >= self.next_event_phase {
             self.events_fired += 1;
@@ -248,10 +262,12 @@ impl CylState {
             self.attack_rem -= 1;
             let t = (self.attack_samples - self.attack_rem) as f32 / self.attack_samples as f32;
             self.impulse_env = t;
+            self.scavenge_env = t;
         } else {
             self.impulse_env *= decay_alpha;
+            self.scavenge_env *= scavenge_decay_alpha;
         }
-        self.impulse_env * self.impulse_amp
+        (self.impulse_env - scavenging_ratio * self.scavenge_env) * self.impulse_amp
     }
 }
 
@@ -271,6 +287,8 @@ pub struct HalfBlock {
     release_alpha: f32,
     load_alpha: f32,
     decay_alpha: f32,
+    scavenge_decay_alpha: f32,
+    scavenging_ratio: f32,
     target_load: f32,
     smoothed_load: f32,
     energy: f32,
@@ -313,7 +331,7 @@ impl HalfBlock {
         });
         Self {
             cylinders,
-            body_filter: Biquad::lowpass(sample_rate as f32, BODY_LOWPASS_HZ),
+            body_filter: Biquad::lowpass(sample_rate as f32, config.body_cutoff_hz),
             excitation_dc_block: Biquad::highpass(sample_rate as f32, 20.0),
             sample_rate: sr,
             torque_curve: config.torque_curve.clone(),
@@ -327,10 +345,16 @@ impl HalfBlock {
             release_alpha: 0.0,
             load_alpha: 0.0,
             decay_alpha: (-1.0 / (sr * IMPULSE_DECAY_S)).exp() as f32,
+            scavenge_decay_alpha: (-1.0 / (sr * SCAVENGE_DECAY_S)).exp() as f32,
+            scavenging_ratio: config.scavenging_ratio.clamp(0.0, 0.9),
             target_load: 0.0,
             smoothed_load: 0.0,
             energy: 0.0,
-            reconstruct: HalfBlockReconstruct::new(sample_rate, &config.half_block),
+            reconstruct: HalfBlockReconstruct::new(
+                sample_rate,
+                &config.half_block,
+                config.body_cutoff_hz,
+            ),
             intake: IntakeSynth::new(&config.intake, sample_rate as f32, config.seed),
             exhaust: ExhaustSynth::new(&config.exhaust, sample_rate as f32),
             current_throttle: 0.0,
@@ -483,7 +507,12 @@ impl HalfBlock {
         self.energy += (target_energy - self.energy) * (1.0 - alpha);
         let mut excitation = 0.0f32;
         for cylinder in &mut self.cylinders {
-            excitation += cylinder.step(self.energy, self.decay_alpha);
+            excitation += cylinder.step(
+                self.energy,
+                self.decay_alpha,
+                self.scavenge_decay_alpha,
+                self.scavenging_ratio,
+            );
         }
         self.limiter.step(
             self.limiter_target_cut,
@@ -517,7 +546,7 @@ impl HalfBlock {
                 .process(excitation, &mut self.body_filter, IMPULSE_LEVEL);
         let intake = self
             .intake
-            .process(self.current_throttle, self.smoothed_load);
+            .process(excitation, self.current_throttle, self.smoothed_load);
         let exhaust = self.exhaust.process(excitation);
         // Same limiter treatment as the mono path: air mix over each bank's
         // own body tone (Biquad stays fixed) and one gain for suppression.

@@ -13,8 +13,6 @@
 use crate::dsp::biquad::Biquad;
 use crate::powertrain::HalfBlockConfig;
 
-use super::impulse::BODY_LOWPASS_HZ;
-
 /// History depth of every reconstruction ring. At 44.1 kHz this is ~93 ms,
 /// comfortably above the maximum configurable delay (50 ms).
 const RECON_CAP: usize = 4096;
@@ -80,10 +78,10 @@ pub struct HalfBlockReconstruct {
 }
 
 impl HalfBlockReconstruct {
-    pub fn new(sample_rate: u32, config: &HalfBlockConfig) -> Self {
+    pub fn new(sample_rate: u32, config: &HalfBlockConfig, body_cutoff_hz: f32) -> Self {
         let sr = sample_rate as f32;
         let cutoff =
-            (BODY_LOWPASS_HZ * (1.0 + config.timbre_diff.clamp(0.0, 1.0))).clamp(1.0, sr * 0.49);
+            (body_cutoff_hz * (1.0 + config.timbre_diff.clamp(0.0, 1.0))).clamp(1.0, sr * 0.49);
         let delay = (config.delay_s.clamp(0.0, 0.05) * sample_rate as f32).round() as f32;
         Self {
             phase_ring: FracRing::new(),
@@ -166,7 +164,7 @@ mod tests {
 
     #[test]
     fn offset_samples_follows_rpm_increment() {
-        let mut r = HalfBlockReconstruct::new(44100, &HalfBlockConfig::default());
+        let mut r = HalfBlockReconstruct::new(44100, &HalfBlockConfig::default(), 3200.0);
         let increment = (9000.0 / 120.0 * 720.0) / 44100.0;
         r.update(increment);
         let expected = 72.0f32 / increment as f32;

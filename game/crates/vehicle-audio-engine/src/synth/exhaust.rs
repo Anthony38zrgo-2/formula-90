@@ -2,7 +2,7 @@
 //! cancellation and soft saturation.
 //!
 //! The raw firing excitation (the physical bank) feeds the collector
-//! resonances in series, then a one-pole damping stage (phase-cancellation
+//! resonances in parallel, then a one-pole damping stage (phase-cancellation
 //! comb damping) and finally a generic saturation stage (`dsp::Tube`).
 
 use crate::config::TubeColorConfig;
@@ -75,12 +75,18 @@ impl ExhaustSynth {
         if !self.enabled {
             return 0.0;
         }
-        let mut pulse = excitation * self.pulse_gain;
+        let pulse = excitation * self.pulse_gain;
         let n = (self.resonators.len() as f32 * self.resonator_scale).ceil() as usize;
+        let mut resonant = 0.0f32;
         for resonator in self.resonators.iter_mut().take(n) {
-            pulse = resonator.process(pulse);
+            resonant += resonator.process(pulse);
         }
-        self.damp_state += (pulse - self.damp_state) * self.damp_alpha;
+        let collector = if n > 0 {
+            pulse * 0.35 + (resonant / n as f32) * 0.65
+        } else {
+            pulse
+        };
+        self.damp_state += (collector - self.damp_state) * self.damp_alpha;
         let mut out = self.damp_state;
         if let Some(tube) = &mut self.tube {
             out = tube.process(out);

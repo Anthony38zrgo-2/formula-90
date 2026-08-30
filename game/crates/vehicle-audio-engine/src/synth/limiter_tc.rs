@@ -18,8 +18,8 @@ pub const LIMITER_DEPTH: f32 = 0.65;
 
 /// How much of the raw (pre-body-filter) excitation is blended back over the
 /// lowpassed body tone while the limiter opens the tone ("air"/brillo). The
-/// body `Biquad` keeps its fixed `BODY_LOWPASS_HZ` cutoff, so no coefficients
-/// are recomputed per sample.
+/// body `Biquad` keeps its profile-derived cutoff fixed for the render block,
+/// so no coefficients are recomputed per sample.
 // Keep this modest: after DC removal the raw pulse train has substantially
 // more RMS than the body-filtered signal. A large blend can cancel the gain
 // reduction and turn the limiter into a harsh high-frequency boost.

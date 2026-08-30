@@ -64,6 +64,11 @@ pub struct CombustionConfig {
     pub irregularity: f32,
     /// Deterministic RNG seed.
     pub seed: u64,
+    /// Upper body bandwidth in Hz. Higher values retain the V10 firing
+    /// harmonics instead of reducing the engine to a single low tone.
+    pub body_cutoff_hz: f32,
+    /// Negative scavenging tail relative to the pressure pulse [0.0, 0.9].
+    pub scavenging_ratio: f32,
 }
 
 impl Default for CombustionConfig {
@@ -71,6 +76,8 @@ impl Default for CombustionConfig {
         Self {
             irregularity: 0.01,
             seed: 0xF090_1994_D15C_A11D,
+            body_cutoff_hz: 3200.0,
+            scavenging_ratio: 0.38,
         }
     }
 }
@@ -136,6 +143,8 @@ pub struct IntakeConfig {
     pub enabled: bool,
     /// Broadband intake noise gain [0.0, 1.0].
     pub noise_gain: f32,
+    /// RPM-synchronous intake pulse gain [0.0, 1.0].
+    pub pulse_gain: f32,
     /// How much throttle modulates intake noise [0.0, 1.0].
     pub throttle_follow: f32,
     /// Intake resonances.
@@ -146,7 +155,8 @@ impl Default for IntakeConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            noise_gain: 0.35,
+            noise_gain: 0.08,
+            pulse_gain: 0.45,
             throttle_follow: 0.8,
             resonances: vec![
                 Resonance {
@@ -655,6 +665,20 @@ impl AudioPowertrainSynthesis {
             0.0,
             0.25,
         );
+        check_range_closed(
+            &mut diags,
+            path("combustion.body_cutoff_hz"),
+            self.combustion.body_cutoff_hz,
+            200.0,
+            8000.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("combustion.scavenging_ratio"),
+            self.combustion.scavenging_ratio,
+            0.0,
+            0.9,
+        );
 
         check_range_closed(
             &mut diags,
@@ -703,6 +727,13 @@ impl AudioPowertrainSynthesis {
             &mut diags,
             path("intake.noise_gain"),
             self.intake.noise_gain,
+            0.0,
+            1.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("intake.pulse_gain"),
+            self.intake.pulse_gain,
             0.0,
             1.0,
         );

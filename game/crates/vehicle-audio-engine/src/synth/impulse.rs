@@ -1,7 +1,7 @@
 pub const IMPULSE_ATTACK_S: f64 = 0.00075;
 pub const IMPULSE_DECAY_S: f64 = 0.006;
-pub const BODY_LOWPASS_HZ: f32 = 150.0;
 pub const IMPULSE_LEVEL: f32 = 0.35;
+pub const SCAVENGE_DECAY_S: f64 = 0.012;
 
 const DEFAULT_TORQUE_CURVE: &[(f64, f64)] = &[
     (0.00, 0.10),
