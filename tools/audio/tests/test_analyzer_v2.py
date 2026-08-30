@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from scripts.audio.analyze_engine_sweep import analyze_v2_signal
+from scripts.audio.analyze_engine_sweep import _looks_like_pure_tone, analyze_v2_signal
 
 SR = 44100
 RPM = 6000.0
@@ -40,3 +40,8 @@ def test_sine_plus_noise_keeps_real_order_metrics():
     assert report["residual_energy"] >= 0.0
     assert 0.0 <= report["sync_energy_ratio"] <= 1.0
     assert report["order_to_residual_db"] > 0.0
+
+
+def test_pure_tone_gate_requires_concentration_and_sparse_orders():
+    assert _looks_like_pure_tone(0.0001, 0.60, 0.99, 1)
+    assert not _looks_like_pure_tone(0.0006, 0.23, 0.62, 15)

@@ -2,7 +2,13 @@ extends SceneTree
 
 # Canonical audio smoke. The runtime owns audio through F90Core; the old
 # VehicleAudio scene is legacy and is intentionally not used here.
-const SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
+const DEFAULT_SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
+
+func _scene_path() -> String:
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--scene="):
+			return argument.trim_prefix("--scene=")
+	return DEFAULT_SCENE_PATH
 
 func _fail(msg: String, failures: Array[String]) -> void:
 	printerr("[FAIL] " + msg)
@@ -10,9 +16,10 @@ func _fail(msg: String, failures: Array[String]) -> void:
 
 func _run() -> void:
 	var failures: Array[String] = []
-	var packed := load(SCENE_PATH) as PackedScene
+	var scene_path := _scene_path()
+	var packed := load(scene_path) as PackedScene
 	if packed == null:
-		_fail("Canonical F1-94 runtime scene could not load.", failures)
+		_fail("Runtime scene could not load: %s" % scene_path, failures)
 		quit(1)
 		return
 
@@ -40,7 +47,7 @@ func _run() -> void:
 
 	runtime.queue_free()
 	if failures.is_empty():
-		print("[PASS] Canonical F90Core audio integration initialized and publishes mixer telemetry.")
+		print("[PASS] F90Core audio integration initialized for %s and publishes mixer telemetry." % scene_path)
 	quit(failures.size())
 
 func _init() -> void:

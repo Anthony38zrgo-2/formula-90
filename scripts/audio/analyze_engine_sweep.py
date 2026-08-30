@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import subprocess
-import hashlib
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -16,8 +16,18 @@ import numpy as np
 from scipy import signal
 from scipy.io import wavfile
 
-
 EPS = 1e-15
+
+
+def _looks_like_pure_tone(flatness: float, top1: float, top10: float,
+                          significant_order_count: int) -> bool:
+    """Distinguish an oscillator from a harmonic, impulse-driven engine tone."""
+    return (
+        flatness < 0.008
+        and top1 > 0.18
+        and top10 > 0.92
+        and significant_order_count <= 2
+    )
 
 
 def _order_energy(mono: np.ndarray, sr: int, rpm: float, order: float) -> float:
@@ -194,7 +204,7 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
     half_window = 2048
     frame_rms = np.empty_like(times)
     for index, time_s in enumerate(times):
-        centre = int(round(time_s * sr))
+        centre = round(time_s * sr)
         lo = max(0, centre - half_window)
         hi = min(mono.size, centre + half_window)
         frame_rms[index] = np.sqrt(np.mean(np.square(mono[lo:hi]), dtype=np.float64))
@@ -245,7 +255,12 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
             "high",
             f"High-RPM flatness reaches {high_flatness:.3f}; turbulence is approaching noise dominance.",
         )
-    if median_flatness < 0.008 and median_top1 > 0.18:
+    if _looks_like_pure_tone(
+        median_flatness,
+        median_top1,
+        median_top10,
+        len(v2["significant_orders"]),
+    ):
         flag("pure_tone", "high", "Energy is concentrated like a near-pure oscillator.")
     if median_top10 > 0.92:
         flag("spectral_concentration", "medium", f"Ten FFT bins contain {median_top10 * 100.0:.1f}% of energy.")
@@ -303,6 +318,8 @@ def analyze(wav_path: Path, telemetry_path: Path) -> tuple[dict, dict[str, np.nd
             "idle_inaudible_dbfs": -45.0,
             "idle_silent_dbfs": -70.0,
             "noise_flatness": 0.35,
+            "pure_tone_top_10_ratio": 0.92,
+            "pure_tone_max_significant_orders": 2,
             "firing_error_percent": 8.0,
             "stereo_collapse_correlation": 0.985,
             "dc_ratio": 0.05,
