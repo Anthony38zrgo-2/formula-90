@@ -1,16 +1,13 @@
 //! Second-bank reconstruction for the half-block V10 synthesis model.
 //!
 //! The second cylinder bank is never simulated directly: it is derived from
-//! the first bank's firing excitation by (1) delaying the excitation train
-//! by the configured firing phase offset (the bank is physically rotated),
-//! (2) running it through a slightly different body timbre (the second bank
-//! lowpass is shifted by `timbre_diff`), and (3) crossfeed delay lines that
-//! reproduce the mechanical decorrelation between banks.
+//! the first bank's firing excitation by delaying each event stream by the
+//! configured firing phase offset and applying the configured gain. Acoustic
+//! timbre and spatial transfer are applied by later layers.
 //!
 //! All reads are linear-interpolated from fixed-size ring buffers (allocation
 //! free in the render path).
 
-use crate::dsp::biquad::Biquad;
 use crate::powertrain::HalfBlockConfig;
 
 /// History depth of every reconstruction ring. At 44.1 kHz this is ~93 ms,
@@ -19,7 +16,7 @@ const RECON_CAP: usize = 4096;
 
 /// Fixed-size delay ring with linear-interpolated reads.
 struct FracRing {
-    data: [f32; RECON_CAP],
+    data: Box<[f32; RECON_CAP]>,
     head: usize,
     filled: usize,
 }
@@ -27,7 +24,7 @@ struct FracRing {
 impl FracRing {
     fn new() -> Self {
         Self {
-            data: [0.0; RECON_CAP],
+            data: Box::new([0.0; RECON_CAP]),
             head: 0,
             filled: 0,
         }
@@ -66,32 +63,29 @@ impl FracRing {
 
 /// Derives the second bank from the simulated first bank (see module docs).
 pub struct HalfBlockReconstruct {
-    phase_ring: FracRing,
-    bank1_ring: FracRing,
-    bank2_ring: FracRing,
-    bank2_filter: Biquad,
+    phase_rings: [FracRing; 8],
     offset_deg: f32,
     offset_samples: f32,
-    delay_samples: f32,
-    crossfeed_gain: f32,
     second_gain: f32,
 }
 
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
+pub struct BankExcitation {
+    pub body: f32,
+    pub intake: f32,
+    pub exhaust: f32,
+    pub exhaust_headers: [f32; 5],
+}
+
 impl HalfBlockReconstruct {
-    pub fn new(sample_rate: u32, config: &HalfBlockConfig, body_cutoff_hz: f32) -> Self {
-        let sr = sample_rate as f32;
-        let cutoff =
-            (body_cutoff_hz * (1.0 + config.timbre_diff.clamp(0.0, 1.0))).clamp(1.0, sr * 0.49);
-        let delay = (config.delay_s.clamp(0.0, 0.05) * sample_rate as f32).round() as f32;
+    pub fn new(config: &HalfBlockConfig) -> Self {
+        // Phase/gain belong to event reconstruction. Timbre, delay and
+        // decorrelation are intentionally owned by the later acoustic/spatial
+        // layers; they must not alter the event train here.
         Self {
-            phase_ring: FracRing::new(),
-            bank1_ring: FracRing::new(),
-            bank2_ring: FracRing::new(),
-            bank2_filter: Biquad::lowpass(sr, cutoff),
+            phase_rings: std::array::from_fn(|_| FracRing::new()),
             offset_deg: config.phase_offset_deg.clamp(0.0, 720.0),
             offset_samples: 0.0,
-            delay_samples: delay.min((RECON_CAP - 1) as f32),
-            crossfeed_gain: config.decorrelation.clamp(0.0, 1.0),
             second_gain: config.gain.clamp(0.0, 2.0),
         }
     }
@@ -112,32 +106,30 @@ impl HalfBlockReconstruct {
         self.offset_samples
     }
 
-    /// Render one stereo frame from the first bank.
-    ///
-    /// - Bank 1: the simulated bank's body-filtered excitation (`bank1_filter`).
-    /// - Bank 2: the excitation train delayed by the firing-phase offset, shaped
-    ///   by `bank2_filter` (timbre-shifted body) and scaled by `second_gain`.
-    /// - Stereo: each bank feeds the opposite channel through a short crossfeed
-    ///   delay (`decorrelation`), producing the mechanical decorrelation.
+    /// Reconstruct all three event streams before acoustic DSP. No filtering,
+    /// crossfeed or spatialization is performed here.
     #[inline]
-    pub fn process(
+    pub fn process_excitation(
         &mut self,
-        excitation: f32,
-        bank1_filter: &mut Biquad,
-        level: f32,
-    ) -> (f32, f32) {
-        self.phase_ring.push(excitation);
-        let second_excitation = self.phase_ring.read(self.offset_samples) * level;
-        let bank1 = bank1_filter.process(excitation * level);
-        let bank2 = self.bank2_filter.process(second_excitation) * self.second_gain;
-        self.bank1_ring.push(bank1);
-        self.bank2_ring.push(bank2);
-        let bank2_delayed = self.bank2_ring.read(self.delay_samples);
-        let bank1_delayed = self.bank1_ring.read(self.delay_samples);
-        (
-            bank1 + self.crossfeed_gain * bank2_delayed,
-            bank2 + self.crossfeed_gain * bank1_delayed,
-        )
+        excitation: BankExcitation,
+    ) -> (BankExcitation, BankExcitation) {
+        let values = [excitation.body, excitation.intake, excitation.exhaust];
+        let mut bank2 = BankExcitation::default();
+        for (index, value) in values.into_iter().enumerate() {
+            self.phase_rings[index].push(value);
+            let delayed = self.phase_rings[index].read(self.offset_samples) * self.second_gain;
+            match index {
+                0 => bank2.body = delayed,
+                1 => bank2.intake = delayed,
+                _ => bank2.exhaust = delayed,
+            }
+        }
+        for (index, value) in excitation.exhaust_headers.into_iter().enumerate() {
+            self.phase_rings[index + 3].push(value);
+            bank2.exhaust_headers[index] =
+                self.phase_rings[index + 3].read(self.offset_samples) * self.second_gain;
+        }
+        (excitation, bank2)
     }
 }
 
@@ -164,7 +156,7 @@ mod tests {
 
     #[test]
     fn offset_samples_follows_rpm_increment() {
-        let mut r = HalfBlockReconstruct::new(44100, &HalfBlockConfig::default(), 3200.0);
+        let mut r = HalfBlockReconstruct::new(&HalfBlockConfig::default());
         let increment = (9000.0 / 120.0 * 720.0) / 44100.0;
         r.update(increment);
         let expected = 72.0f32 / increment as f32;
@@ -175,5 +167,24 @@ mod tests {
         );
         r.update(0.0);
         assert_eq!(r.offset_samples(), 0.0);
+    }
+
+    #[test]
+    fn reconstruction_preserves_all_three_event_streams() {
+        let mut r = HalfBlockReconstruct::new(&HalfBlockConfig::default());
+        r.update((9000.0 / 120.0 * 720.0) / 44100.0);
+        let input = BankExcitation {
+            body: 1.0,
+            intake: 2.0,
+            exhaust: 3.0,
+            exhaust_headers: [3.0; 5],
+        };
+        let (a, _) = r.process_excitation(input);
+        for _ in 0..512 {
+            r.process_excitation(input);
+        }
+        let (_, b) = r.process_excitation(input);
+        assert_eq!(a, input);
+        assert!(b.body != 0.0 || b.intake != 0.0 || b.exhaust != 0.0);
     }
 }

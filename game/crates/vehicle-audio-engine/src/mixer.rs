@@ -62,7 +62,7 @@ impl Default for AudioConfig {
             pitch_max: PITCH_MAX,
             coast_gain: 0.45,
             throttle_gain: 0.50,
-            saturation: 0.12,
+            saturation: 0.06,
             limiter_threshold: 0.90,
             engine_headroom: 0.62,
             attack_seconds: 0.035,
@@ -774,6 +774,16 @@ impl VehicleAudioEngine {
         self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
         let sr = self.sample_rate as f64;
         let rpm_alpha = 1.0 - (-1.0 / (sr * RPM_SMOOTH_TAU)).exp();
+        // All smoothing time constants are invariant for the whole render
+        // block. Derive their coefficients once, outside the sample hot path.
+        let eg_attack_alpha = 1.0 - (-1.0 / (sr * self.cfg.attack_seconds as f64)).exp();
+        let eg_release_alpha = 1.0 - (-1.0 / (sr * self.cfg.release_seconds as f64)).exp();
+        let bg_attack_alpha = eg_attack_alpha;
+        let bg_release_alpha = eg_release_alpha;
+        let scrape_attack_alpha = 1.0 - (-1.0 / (sr * 0.020)).exp();
+        let scrape_release_alpha = 1.0 - (-1.0 / (sr * 0.150)).exp();
+        let tyre_attack_alpha = 1.0 - (-1.0 / (sr * 0.025)).exp();
+        let tyre_release_alpha = 1.0 - (-1.0 / (sr * 0.160)).exp();
         for i in 0..n {
             let mut mixed_l = 0.0f32;
             let mut mixed_r = 0.0f32;
@@ -791,8 +801,6 @@ impl VehicleAudioEngine {
             // per block instead of calling `exp` four times per sample. The
             // four-per-sample `exp` (2048/block) dominated the always-on single-core
             // budget, so hoisting is bit-identical but removes it from the loop.
-            let eg_attack_alpha = 1.0 - (-1.0 / (sr * self.cfg.attack_seconds as f64)).exp();
-            let eg_release_alpha = 1.0 - (-1.0 / (sr * self.cfg.release_seconds as f64)).exp();
             let eg_alpha = if self.target_engine_gain > self.smoothed_engine_gain {
                 eg_attack_alpha
             } else {
@@ -802,8 +810,6 @@ impl VehicleAudioEngine {
                 + (self.target_engine_gain - self.smoothed_engine_gain) * eg_alpha as f32;
             self.smoothed_engine_gain = eg;
 
-            let bg_attack_alpha = 1.0 - (-1.0 / (sr * self.cfg.attack_seconds as f64)).exp();
-            let bg_release_alpha = 1.0 - (-1.0 / (sr * self.cfg.release_seconds as f64)).exp();
             let bg_alpha = if self.target_bed_gain > self.smoothed_bed_gain {
                 bg_attack_alpha
             } else {
@@ -813,8 +819,6 @@ impl VehicleAudioEngine {
                 + (self.target_bed_gain - self.smoothed_bed_gain) * bg_alpha as f32;
             self.smoothed_bed_gain = bg;
 
-            let scrape_attack_alpha = 1.0 - (-1.0 / (sr * 0.020)).exp();
-            let scrape_release_alpha = 1.0 - (-1.0 / (sr * 0.150)).exp();
             let scrape_alpha = if self.target_scrape_gain > self.smoothed_scrape_gain {
                 scrape_attack_alpha
             } else {
@@ -823,8 +827,6 @@ impl VehicleAudioEngine {
             self.smoothed_scrape_gain +=
                 (self.target_scrape_gain - self.smoothed_scrape_gain) * scrape_alpha as f32;
 
-            let tyre_attack_alpha = 1.0 - (-1.0 / (sr * 0.025)).exp();
-            let tyre_release_alpha = 1.0 - (-1.0 / (sr * 0.160)).exp();
             let tyre_alpha = if self.target_tyre_scrub_gain > self.smoothed_tyre_scrub_gain {
                 tyre_attack_alpha
             } else {
@@ -1135,7 +1137,11 @@ impl VehicleAudioEngine {
     /// Camera-to-vehicle listener distance in metres. Stored (not folded into
     /// the synth) so the controller can expose it as telemetry.
     pub fn set_listener_distance(&mut self, distance: f32) {
-        self.listener_distance = distance.max(0.0);
+        self.listener_distance = if distance.is_finite() {
+            distance.max(0.0)
+        } else {
+            0.0
+        };
         self.refine_lod();
     }
 
@@ -2164,6 +2170,17 @@ mod tests {
         assert_eq!(e.synth_lod(), LodLevel::Virtual);
         e.set_listener_distance(179.0); // < 200 * 0.90 -> Far
         assert_eq!(e.synth_lod(), LodLevel::Far);
+    }
+
+    #[test]
+    fn nonfinite_listener_distance_normalizes_to_near() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        e.enable_synth(&AudioPowertrainSynthesis::default());
+        e.set_listener_distance(f32::NAN);
+        assert_eq!(e.listener_distance(), 0.0);
+        assert_eq!(e.synth_lod(), LodLevel::Near);
+        e.set_listener_distance(f32::INFINITY);
+        assert_eq!(e.listener_distance(), 0.0);
     }
 
     #[test]

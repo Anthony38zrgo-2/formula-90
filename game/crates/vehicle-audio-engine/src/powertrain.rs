@@ -77,6 +77,36 @@ pub struct CombustionConfig {
     /// Amount of pressure derivative mixed into the acoustic excitation
     /// [0.0, 1.0]. Higher values retain the combustion edge without oscillators.
     pub pressure_derivative_mix: f32,
+    #[serde(default = "default_combustion_attack_deg")]
+    pub combustion_attack_deg: f32,
+    #[serde(default = "default_combustion_decay_deg")]
+    pub combustion_decay_deg: f32,
+    #[serde(default)]
+    pub exhaust_open_offset_deg: f32,
+    #[serde(default = "default_exhaust_blowdown_attack_deg")]
+    pub exhaust_blowdown_attack_deg: f32,
+    #[serde(default = "default_exhaust_blowdown_decay_deg")]
+    pub exhaust_blowdown_decay_deg: f32,
+    #[serde(default)]
+    pub intake_open_offset_deg: f32,
+    #[serde(default = "default_intake_event_width_deg")]
+    pub intake_event_width_deg: f32,
+}
+
+fn default_combustion_attack_deg() -> f32 {
+    18.0
+}
+fn default_combustion_decay_deg() -> f32 {
+    110.0
+}
+fn default_exhaust_blowdown_decay_deg() -> f32 {
+    150.0
+}
+fn default_exhaust_blowdown_attack_deg() -> f32 {
+    12.0
+}
+fn default_intake_event_width_deg() -> f32 {
+    90.0
 }
 
 impl Default for CombustionConfig {
@@ -88,7 +118,14 @@ impl Default for CombustionConfig {
             scavenging_ratio: 0.38,
             cylinder_variation: 0.055,
             cycle_variation: 0.075,
-            pressure_derivative_mix: 0.62,
+            pressure_derivative_mix: 0.58,
+            combustion_attack_deg: default_combustion_attack_deg(),
+            combustion_decay_deg: default_combustion_decay_deg(),
+            exhaust_open_offset_deg: 18.0,
+            exhaust_blowdown_attack_deg: default_exhaust_blowdown_attack_deg(),
+            exhaust_blowdown_decay_deg: default_exhaust_blowdown_decay_deg(),
+            intake_open_offset_deg: 36.0,
+            intake_event_width_deg: default_intake_event_width_deg(),
         }
     }
 }
@@ -116,7 +153,7 @@ impl Default for EnergyConfig {
         Self {
             torque_curve_weight: 1.0,
             throttle_response: 1.0,
-            idle_combustion_gain: 0.08,
+            idle_combustion_gain: 0.35,
             attack_smoothing_s: 0.02,
             release_smoothing_s: 0.12,
             load_smoothing_s: 0.03,
@@ -167,7 +204,7 @@ impl Default for IntakeConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            noise_gain: 0.08,
+            noise_gain: 0.02,
             pulse_gain: 0.45,
             throttle_follow: 0.8,
             resonances: vec![
@@ -200,6 +237,45 @@ pub struct ExhaustConfig {
     pub damping: f32,
     /// Collector resonances.
     pub collector_resonances: Vec<Resonance>,
+    pub headers: Vec<HeaderConfig>,
+    pub collector: CollectorConfig,
+    pub effective_sound_speed_mps: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct HeaderConfig {
+    pub length_m: f32,
+    pub gain: f32,
+    pub damping: f32,
+}
+
+impl Default for HeaderConfig {
+    fn default() -> Self {
+        Self {
+            length_m: 0.82,
+            gain: 1.0,
+            damping: 0.08,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CollectorConfig {
+    pub effective_length_m: f32,
+    pub reflection_gain: f32,
+    pub damping_hz: f32,
+}
+
+impl Default for CollectorConfig {
+    fn default() -> Self {
+        Self {
+            effective_length_m: 1.45,
+            reflection_gain: 0.35,
+            damping_hz: 1800.0,
+        }
+    }
 }
 
 impl Default for ExhaustConfig {
@@ -207,7 +283,7 @@ impl Default for ExhaustConfig {
         Self {
             enabled: true,
             pulse_gain: 1.0,
-            saturation: 0.30,
+            saturation: 0.15,
             damping: 0.50,
             collector_resonances: vec![
                 Resonance {
@@ -221,6 +297,9 @@ impl Default for ExhaustConfig {
                     gain_db: 1.0,
                 },
             ],
+            headers: vec![HeaderConfig::default(); 5],
+            collector: CollectorConfig::default(),
+            effective_sound_speed_mps: 343.0,
         }
     }
 }
@@ -248,10 +327,10 @@ impl Default for HalfBlockConfig {
             // reconstructed bank sits halfway between the 144-degree events
             // of the physically simulated five-cylinder bank.
             phase_offset_deg: 72.0,
-            delay_s: 0.004,
-            decorrelation: 0.35,
+            delay_s: 0.0015,
+            decorrelation: 0.40,
             gain: 0.98,
-            timbre_diff: 0.06,
+            timbre_diff: 0.30,
         }
     }
 }
@@ -712,6 +791,55 @@ impl AudioPowertrainSynthesis {
             0.0,
             1.0,
         );
+        check_range_open_low(
+            &mut diags,
+            path("combustion.combustion_attack_deg"),
+            self.combustion.combustion_attack_deg,
+            0.0,
+            720.0,
+        );
+        check_range_open_low(
+            &mut diags,
+            path("combustion.combustion_decay_deg"),
+            self.combustion.combustion_decay_deg,
+            0.0,
+            720.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("combustion.exhaust_open_offset_deg"),
+            self.combustion.exhaust_open_offset_deg,
+            0.0,
+            720.0,
+        );
+        check_range_open_low(
+            &mut diags,
+            path("combustion.exhaust_blowdown_attack_deg"),
+            self.combustion.exhaust_blowdown_attack_deg,
+            0.0,
+            720.0,
+        );
+        check_range_open_low(
+            &mut diags,
+            path("combustion.exhaust_blowdown_decay_deg"),
+            self.combustion.exhaust_blowdown_decay_deg,
+            0.0,
+            720.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("combustion.intake_open_offset_deg"),
+            self.combustion.intake_open_offset_deg,
+            0.0,
+            720.0,
+        );
+        check_range_open_low(
+            &mut diags,
+            path("combustion.intake_event_width_deg"),
+            self.combustion.intake_event_width_deg,
+            0.0,
+            720.0,
+        );
 
         check_range_closed(
             &mut diags,
@@ -809,6 +937,63 @@ impl AudioPowertrainSynthesis {
             "audio.powertrain_synthesis.exhaust.collector_resonances",
             &self.exhaust.collector_resonances,
         );
+        if self.exhaust.headers.len() != 5 {
+            diags.push(ConfigDiagnostic {
+                path: "audio.powertrain_synthesis.exhaust.headers".into(),
+                message: "half_block_5 requires exactly five header configurations".into(),
+            });
+        }
+        check_range_closed(
+            &mut diags,
+            path("exhaust.effective_sound_speed_mps"),
+            self.exhaust.effective_sound_speed_mps,
+            1.0,
+            1000.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("exhaust.collector.effective_length_m"),
+            self.exhaust.collector.effective_length_m,
+            0.001,
+            20.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("exhaust.collector.reflection_gain"),
+            self.exhaust.collector.reflection_gain,
+            -0.99,
+            0.99,
+        );
+        check_range_closed(
+            &mut diags,
+            path("exhaust.collector.damping_hz"),
+            self.exhaust.collector.damping_hz,
+            0.0,
+            20000.0,
+        );
+        for (index, header) in self.exhaust.headers.iter().enumerate() {
+            check_range_closed(
+                &mut diags,
+                format!("audio.powertrain_synthesis.exhaust.headers[{index}].length_m"),
+                header.length_m,
+                0.001,
+                20.0,
+            );
+            check_range_closed(
+                &mut diags,
+                format!("audio.powertrain_synthesis.exhaust.headers[{index}].gain"),
+                header.gain,
+                -4.0,
+                4.0,
+            );
+            check_range_closed(
+                &mut diags,
+                format!("audio.powertrain_synthesis.exhaust.headers[{index}].damping"),
+                header.damping,
+                0.0,
+                1.0,
+            );
+        }
 
         check_range_closed(
             &mut diags,
@@ -1156,5 +1341,31 @@ mod tests {
         let error = from_profile_json(&json).expect_err("expected validation error");
         assert!(error.contains("audio.powertrain_synthesis.total_cylinders"));
         assert!(error.contains("audio.powertrain_synthesis.energy.throttle_response"));
+    }
+
+    #[test]
+    fn legacy_profile_gets_angular_event_defaults() {
+        let parsed = from_profile_json(&section(
+            r#"{"enabled":true,"combustion":{"irregularity":0.01}}"#,
+        ))
+        .unwrap()
+        .unwrap();
+        assert!(parsed.combustion.combustion_attack_deg > 0.0);
+        assert!(parsed.combustion.combustion_decay_deg > 0.0);
+        assert!(parsed.combustion.intake_event_width_deg > 0.0);
+    }
+
+    #[test]
+    fn angular_event_validation_reports_nonfinite_and_offsets() {
+        let mut config = AudioPowertrainSynthesis::default();
+        config.combustion.combustion_attack_deg = 0.0;
+        config.combustion.exhaust_open_offset_deg = 721.0;
+        let diagnostics = config.validate();
+        assert!(diagnostics
+            .iter()
+            .any(|d| d.path.ends_with("combustion_attack_deg")));
+        assert!(diagnostics
+            .iter()
+            .any(|d| d.path.ends_with("exhaust_open_offset_deg")));
     }
 }

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from tools.audio.bank_spec import RETIRED_KEYS
 from tools.audio.playback_metadata import ENGINE_BANDS, playback_for_key
 from tools.audio.render_audio_scenario import BANK_DIR
 
@@ -26,16 +27,15 @@ def test_engine_band_order_and_sample_metadata_are_explicit():
     assert {band.width for band in ENGINE_BANDS} == {0.25}
 
 
-def test_runtime_manifest_contains_canonical_engine_playback_metadata():
+def test_runtime_manifest_excludes_retired_engine_playback_metadata():
     files = _runtime_files()
-    for band in ENGINE_BANDS:
-        assert files[f"{band.key}.wav"]["playback"] == playback_for_key(band.key)
+    for key in RETIRED_KEYS:
+        assert f"{key}.wav" not in files
 
 
-def test_exhaust_has_native_rpm_without_engine_band_membership():
-    files = _runtime_files()
-    assert files["exhaust-mic.wav"]["playback"] == {"native_rpm": 14400.0}
-    assert "engine_band" not in files["exhaust-mic.wav"]["playback"]
+def test_runtime_manifest_declares_retired_keys_explicitly():
+    manifest = json.loads((BANK_DIR / "bank_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["retired_keys"] == list(RETIRED_KEYS)
 
 
 def test_non_pitched_entries_do_not_serialize_empty_playback():

@@ -13,16 +13,18 @@ use crate::powertrain::{
 
 use event_gen::EventJitter;
 use exhaust::ExhaustSynth;
-use half_block_reconstruct::HalfBlockReconstruct;
+use half_block_reconstruct::{BankExcitation as ReconstructedExcitation, HalfBlockReconstruct};
 use impulse::{
-    one_pole_alpha, torque_curve_value, IMPULSE_ATTACK_S, IMPULSE_DECAY_S, IMPULSE_LEVEL,
-    SCAVENGE_DECAY_S,
+    one_pole_alpha, torque_curve_value, IMPULSE_DECAY_S, IMPULSE_LEVEL, SCAVENGE_DECAY_S,
 };
 use intake::IntakeSynth;
 use limiter_tc::{tc_alpha, LimiterState, TcEnvelope};
 
 pub const CYCLE_DEG: f64 = 720.0;
 pub const DEFAULT_FIRING_PHASES_DEG: [f64; 5] = [0.0, 144.0, 288.0, 432.0, 576.0];
+/// One-pole corner for the smoothed combustion pressure derivative. Keeps the
+/// event attack crack while removing the 6 dB/oct overbright fuzz above ~4 kHz.
+pub const DERIVATIVE_CUTOFF_HZ: f64 = 3500.0;
 
 /// Distance-based detail level of the procedural engine (LOD). Higher LODs run
 /// a reduced DSP model (fewer resonators, coarser control updates) and the
@@ -112,6 +114,7 @@ pub fn select_lod(
     LodLevel::from_index(raw)
 }
 
+#[derive(Clone)]
 pub struct PowertrainConfig {
     pub firing_phases_deg: [f64; 5],
     pub irregularity: f32,
@@ -121,6 +124,13 @@ pub struct PowertrainConfig {
     pub cylinder_variation: f32,
     pub cycle_variation: f32,
     pub pressure_derivative_mix: f32,
+    pub combustion_attack_deg: f32,
+    pub combustion_decay_deg: f32,
+    pub exhaust_open_offset_deg: f32,
+    pub exhaust_blowdown_attack_deg: f32,
+    pub exhaust_blowdown_decay_deg: f32,
+    pub intake_open_offset_deg: f32,
+    pub intake_event_width_deg: f32,
     pub torque_curve_weight: f32,
     pub throttle_response: f32,
     pub idle_combustion_gain: f32,
@@ -148,10 +158,17 @@ impl Default for PowertrainConfig {
             scavenging_ratio: 0.38,
             cylinder_variation: 0.055,
             cycle_variation: 0.075,
-            pressure_derivative_mix: 0.62,
+            pressure_derivative_mix: 0.58,
+            combustion_attack_deg: 18.0,
+            combustion_decay_deg: 110.0,
+            exhaust_open_offset_deg: 18.0,
+            exhaust_blowdown_attack_deg: 12.0,
+            exhaust_blowdown_decay_deg: 150.0,
+            intake_open_offset_deg: 36.0,
+            intake_event_width_deg: 90.0,
             torque_curve_weight: 1.0,
             throttle_response: 1.0,
-            idle_combustion_gain: 0.08,
+            idle_combustion_gain: 0.35,
             attack_smoothing_s: 0.02,
             release_smoothing_s: 0.12,
             load_smoothing_s: 0.03,
@@ -177,6 +194,13 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             cylinder_variation: contract.combustion.cylinder_variation,
             cycle_variation: contract.combustion.cycle_variation,
             pressure_derivative_mix: contract.combustion.pressure_derivative_mix,
+            combustion_attack_deg: contract.combustion.combustion_attack_deg,
+            combustion_decay_deg: contract.combustion.combustion_decay_deg,
+            exhaust_open_offset_deg: contract.combustion.exhaust_open_offset_deg,
+            exhaust_blowdown_attack_deg: contract.combustion.exhaust_blowdown_attack_deg,
+            exhaust_blowdown_decay_deg: contract.combustion.exhaust_blowdown_decay_deg,
+            intake_open_offset_deg: contract.combustion.intake_open_offset_deg,
+            intake_event_width_deg: contract.combustion.intake_event_width_deg,
             torque_curve_weight: contract.energy.torque_curve_weight,
             throttle_response: contract.energy.throttle_response,
             idle_combustion_gain: contract.energy.idle_combustion_gain,
@@ -220,11 +244,44 @@ pub struct CylState {
     impulse_env: f32,
     scavenge_env: f32,
     impulse_amp: f32,
-    attack_samples: u32,
-    attack_rem: u32,
     cylinder_gain: f32,
     cycle_variation: f32,
-    last_pressure: f32,
+    last_body_pressure: f32,
+    body_derivative_env: f32,
+    last_exhaust_pressure: f32,
+    exhaust_derivative_env: f32,
+    derivative_alpha: f32,
+    combustion_event: AngularEventEnvelope,
+    exhaust_event: AngularEventEnvelope,
+    intake_event: AngularEventEnvelope,
+    event_age_deg: f64,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct AngularEventEnvelope {
+    pub open_offset_deg: f32,
+    pub attack_deg: f32,
+    pub hold_deg: f32,
+    pub decay_deg: f32,
+}
+
+impl AngularEventEnvelope {
+    #[inline]
+    fn value(self, age_deg: f64) -> f32 {
+        if age_deg < self.open_offset_deg.max(0.0) as f64 {
+            return 0.0;
+        }
+        let age = age_deg - self.open_offset_deg.max(0.0) as f64;
+        let attack = self.attack_deg.max(1.0) as f64;
+        if age < attack {
+            return (age / attack) as f32;
+        }
+        if age < attack + self.hold_deg.max(0.0) as f64 {
+            return 1.0;
+        }
+        (1.0 - (age - attack - self.hold_deg.max(0.0) as f64) / self.decay_deg.max(1.0) as f64)
+            .max(0.0) as f32
+    }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -238,9 +295,10 @@ impl CylState {
     fn new(
         firing_phase: f64,
         jitter: EventJitter,
-        attack_samples: u32,
         cylinder_gain: f32,
         cycle_variation: f32,
+        derivative_alpha: f32,
+        event_params: [f32; 7],
     ) -> Self {
         Self {
             phase_deg: 0.0,
@@ -253,11 +311,32 @@ impl CylState {
             impulse_env: 0.0,
             scavenge_env: 0.0,
             impulse_amp: 0.0,
-            attack_samples,
-            attack_rem: 0,
             cylinder_gain,
             cycle_variation,
-            last_pressure: 0.0,
+            last_body_pressure: 0.0,
+            body_derivative_env: 0.0,
+            last_exhaust_pressure: 0.0,
+            exhaust_derivative_env: 0.0,
+            derivative_alpha,
+            event_age_deg: 1.0e9,
+            combustion_event: AngularEventEnvelope {
+                open_offset_deg: 0.0,
+                attack_deg: event_params[0],
+                hold_deg: 0.0,
+                decay_deg: event_params[1],
+            },
+            exhaust_event: AngularEventEnvelope {
+                open_offset_deg: event_params[2],
+                attack_deg: event_params[3],
+                hold_deg: 0.0,
+                decay_deg: event_params[4],
+            },
+            intake_event: AngularEventEnvelope {
+                open_offset_deg: event_params[5],
+                attack_deg: event_params[6] * 0.2,
+                hold_deg: event_params[6] * 0.3,
+                decay_deg: event_params[6] * 0.5,
+            },
         }
     }
 
@@ -272,12 +351,11 @@ impl CylState {
     fn step(
         &mut self,
         amp: f32,
-        decay_alpha: f32,
-        scavenge_decay_alpha: f32,
-        scavenging_ratio: f32,
+        _scavenging_ratio: f32,
         pressure_derivative_mix: f32,
     ) -> CylinderExcitation {
         self.phase_deg += self.increment;
+        self.event_age_deg += self.increment;
         if self.phase_deg >= self.next_event_phase {
             self.events_fired += 1;
             self.event_index += 1;
@@ -286,37 +364,148 @@ impl CylState {
                 self.firing_phase + self.event_index as f64 * CYCLE_DEG + jitter;
             let cycle_gain = 1.0 + self.jitter.next_signed() * self.cycle_variation;
             self.impulse_amp = amp * self.cylinder_gain * cycle_gain;
-            self.attack_rem = self.attack_samples;
+            self.event_age_deg = 0.0;
         }
-        if self.attack_rem > 0 {
-            self.attack_rem -= 1;
-            let t = (self.attack_samples - self.attack_rem) as f32 / self.attack_samples as f32;
-            self.impulse_env = t;
-            self.scavenge_env = t;
-        } else {
-            self.impulse_env *= decay_alpha;
-            self.scavenge_env *= scavenge_decay_alpha;
-        }
+        let x = self.event_age_deg.max(0.0);
+        self.impulse_env = self.combustion_event.value(x);
+        self.scavenge_env = self.intake_event.value(x);
         // Cheap pressure proxy: rounded crown during the burn plus a slower
         // negative gas-exchange tail. Its derivative supplies broadband attack
         // energy without a sine oscillator or an additional physical cylinder.
+        // The raw first difference is 6 dB/oct overbright, so it is smoothed
+        // once and weighted to preserve the body (fundamental + low harmonics)
+        // instead of dominating the timbre with thin high-range energy.
         let burn = self.impulse_env * (2.0 - self.impulse_env);
-        let pressure = (burn - scavenging_ratio * self.scavenge_env) * self.impulse_amp;
-        let derivative = pressure - self.last_pressure;
-        self.last_pressure = pressure;
+        // Combustion, intake flow and exhaust blowdown are independent event
+        // channels; intake width must not retune body/exhaust pressure.
+        let pressure = burn * self.impulse_amp;
+        let raw_body_derivative = pressure - self.last_body_pressure;
+        self.last_body_pressure = pressure;
+        self.body_derivative_env +=
+            (raw_body_derivative - self.body_derivative_env) * self.derivative_alpha;
+
+        // Blowdown is its own delayed pressure event. Its derivative must not
+        // reuse the combustion-pressure derivative, otherwise the exhaust edge
+        // exists before the exhaust valve event and the two sources are not
+        // independently controllable.
+        let exhaust_pressure = self.exhaust_event.value(x) * self.impulse_amp;
+        let raw_exhaust_derivative = exhaust_pressure - self.last_exhaust_pressure;
+        self.last_exhaust_pressure = exhaust_pressure;
+        self.exhaust_derivative_env +=
+            (raw_exhaust_derivative - self.exhaust_derivative_env) * self.derivative_alpha;
         let edge = pressure_derivative_mix.clamp(0.0, 1.0);
         CylinderExcitation {
-            body: pressure * (1.0 - edge) + derivative * (4.0 * edge),
+            body: pressure * (1.0 - edge) + self.body_derivative_env * (1.5 * edge),
             intake: self.scavenge_env * self.impulse_amp,
-            exhaust: derivative * 6.0 + pressure * 0.22,
+            exhaust: exhaust_pressure * (1.0 - edge) + self.exhaust_derivative_env * (1.5 * edge),
         }
+    }
+}
+
+pub struct DiagnosticFrame {
+    pub bank_a_raw: f32,
+    pub bank_b_raw: f32,
+    pub full_block_raw: f32,
+    pub body_a: f32,
+    pub body_b: f32,
+    pub intake_a: f32,
+    pub intake_b: f32,
+    /// Exhaust excitation before the per-bank exhaust DSP/DC guard.
+    pub exhaust_raw_a: f32,
+    pub exhaust_raw_b: f32,
+    pub collector_a: f32,
+    pub collector_b: f32,
+    pub exhaust_a: f32,
+    pub exhaust_b: f32,
+    pub body: f32,
+    pub intake: f32,
+    pub exhaust: f32,
+    pub master: (f32, f32),
+}
+
+pub struct BankDsp {
+    pub body_filter: Biquad,
+    pub intake: IntakeSynth,
+    pub exhaust: ExhaustSynth,
+    pub exhaust_dc: Biquad,
+}
+
+impl BankDsp {
+    fn new(config: &PowertrainConfig, sample_rate: u32, seed: u64, body_cutoff: f32) -> Self {
+        Self {
+            body_filter: Biquad::lowpass(sample_rate as f32, body_cutoff),
+            intake: IntakeSynth::new(&config.intake, sample_rate as f32, seed),
+            exhaust: ExhaustSynth::new(&config.exhaust, sample_rate as f32),
+            exhaust_dc: Biquad::highpass(sample_rate as f32, 20.0),
+        }
+    }
+}
+
+pub struct Spatializer {
+    pub decorrelation: f32,
+    pub delay_s: f32,
+    left_dc: Biquad,
+    right_dc: Biquad,
+    delay_i: usize,
+    delay_frac: f32,
+    head: usize,
+    delay_a: [f32; 4096],
+    delay_b: [f32; 4096],
+}
+
+impl Spatializer {
+    fn new(config: &HalfBlockConfig, sample_rate: u32) -> Self {
+        Self {
+            decorrelation: config.decorrelation.clamp(0.0, 1.0),
+            delay_s: config.delay_s.max(0.0),
+            left_dc: Biquad::highpass(sample_rate as f32, 20.0),
+            right_dc: Biquad::highpass(sample_rate as f32, 20.0),
+            delay_i: (config.delay_s.max(0.0) * sample_rate as f32)
+                .min(4094.0)
+                .floor() as usize,
+            delay_frac: (config.delay_s.max(0.0) * sample_rate as f32)
+                .min(4094.0)
+                .fract(),
+            head: 0,
+            delay_a: [0.0; 4096],
+            delay_b: [0.0; 4096],
+        }
+    }
+    fn process(
+        &mut self,
+        body_a: f32,
+        body_b: f32,
+        intake: f32,
+        exhaust: f32,
+        cut: f32,
+    ) -> (f32, f32) {
+        self.delay_a[self.head] = body_a;
+        self.delay_b[self.head] = body_b;
+        let read = |ring: &[f32; 4096], delay_i: usize, frac: f32, head: usize| {
+            let a = ring[(head + 4096 - delay_i) % 4096];
+            let b = ring[(head + 4096 - delay_i.saturating_add(1)) % 4096];
+            a + (b - a) * frac
+        };
+        let delayed_a = read(&self.delay_a, self.delay_i, self.delay_frac, self.head);
+        let delayed_b = read(&self.delay_b, self.delay_i, self.delay_frac, self.head);
+        self.head = (self.head + 1) % 4096;
+        let left = body_a + self.decorrelation * delayed_b + intake * 0.92 + exhaust * 0.76;
+        let right = body_b + self.decorrelation * delayed_a + intake * 0.74 + exhaust * 0.96;
+        (
+            self.left_dc.process(left * cut),
+            self.right_dc.process(right * cut),
+        )
     }
 }
 
 pub struct HalfBlock {
     cylinders: [CylState; 5],
-    body_filter: Biquad,
+    bank_a_dsp: BankDsp,
+    bank_b_dsp: BankDsp,
     excitation_dc_block: Biquad,
+    intake_dc_block: Biquad,
+    exhaust_pre_dc_blocks: [Biquad; 5],
+    spatializer: Spatializer,
     sample_rate: f64,
     torque_curve: Vec<(f64, f64)>,
     torque_curve_weight: f32,
@@ -328,16 +517,13 @@ pub struct HalfBlock {
     attack_alpha: f32,
     release_alpha: f32,
     load_alpha: f32,
-    decay_alpha: f32,
-    scavenge_decay_alpha: f32,
     scavenging_ratio: f32,
     pressure_derivative_mix: f32,
     target_load: f32,
     smoothed_load: f32,
     energy: f32,
     reconstruct: HalfBlockReconstruct,
-    intake: IntakeSynth,
-    exhaust: ExhaustSynth,
+    neutral_reconstruction: bool,
     current_throttle: f32,
     limiter: LimiterState,
     limiter_config: LimiterConfig,
@@ -357,9 +543,10 @@ pub struct HalfBlock {
 impl HalfBlock {
     pub fn new(config: &PowertrainConfig, sample_rate: u32) -> Self {
         let sr = sample_rate as f64;
-        let attack_samples = ((IMPULSE_ATTACK_S * sr).round() as u32).max(1);
         let jitter_amp_deg = (config.irregularity as f64).clamp(0.0, 0.25) * CYCLE_DEG;
         let variation = config.cylinder_variation.clamp(0.0, 0.25);
+        let derivative_alpha =
+            1.0 - one_pole_alpha(sr, 1.0 / (std::f64::consts::TAU * DERIVATIVE_CUTOFF_HZ));
         let cylinders: [CylState; 5] = std::array::from_fn(|index| {
             // Fixed zero-mean spread: manufacturing/header differences remain
             // stable, while the event RNG supplies the slower cycle variation.
@@ -373,15 +560,35 @@ impl HalfBlock {
                         .wrapping_add(index as u64 + 1),
                     jitter_amp_deg,
                 ),
-                attack_samples,
                 1.0 + SPREAD[index] * variation,
                 config.cycle_variation.clamp(0.0, 0.25),
+                derivative_alpha,
+                [
+                    config.combustion_attack_deg,
+                    config.combustion_decay_deg,
+                    config.exhaust_open_offset_deg,
+                    config.exhaust_blowdown_attack_deg,
+                    config.exhaust_blowdown_decay_deg,
+                    config.intake_open_offset_deg,
+                    config.intake_event_width_deg,
+                ],
             )
         });
         Self {
             cylinders,
-            body_filter: Biquad::lowpass(sample_rate as f32, config.body_cutoff_hz),
+            bank_a_dsp: BankDsp::new(config, sample_rate, config.seed, config.body_cutoff_hz),
+            bank_b_dsp: BankDsp::new(
+                config,
+                sample_rate,
+                config.seed.wrapping_add(1),
+                config.body_cutoff_hz * (1.0 + config.half_block.timbre_diff.clamp(0.0, 1.0)),
+            ),
             excitation_dc_block: Biquad::highpass(sample_rate as f32, 20.0),
+            intake_dc_block: Biquad::highpass(sample_rate as f32, 20.0),
+            exhaust_pre_dc_blocks: std::array::from_fn(|_| {
+                Biquad::highpass(sample_rate as f32, 20.0)
+            }),
+            spatializer: Spatializer::new(&config.half_block, sample_rate),
             sample_rate: sr,
             torque_curve: config.torque_curve.clone(),
             torque_curve_weight: config.torque_curve_weight,
@@ -393,20 +600,15 @@ impl HalfBlock {
             attack_alpha: 0.0,
             release_alpha: 0.0,
             load_alpha: 0.0,
-            decay_alpha: (-1.0 / (sr * IMPULSE_DECAY_S)).exp() as f32,
-            scavenge_decay_alpha: (-1.0 / (sr * SCAVENGE_DECAY_S)).exp() as f32,
             scavenging_ratio: config.scavenging_ratio.clamp(0.0, 0.9),
             pressure_derivative_mix: config.pressure_derivative_mix.clamp(0.0, 1.0),
             target_load: 0.0,
             smoothed_load: 0.0,
             energy: 0.0,
-            reconstruct: HalfBlockReconstruct::new(
-                sample_rate,
-                &config.half_block,
-                config.body_cutoff_hz,
-            ),
-            intake: IntakeSynth::new(&config.intake, sample_rate as f32, config.seed),
-            exhaust: ExhaustSynth::new(&config.exhaust, sample_rate as f32),
+            reconstruct: HalfBlockReconstruct::new(&config.half_block),
+            neutral_reconstruction: config.half_block.phase_offset_deg == 0.0
+                && config.half_block.delay_s == 0.0
+                && config.half_block.decorrelation == 0.0,
             current_throttle: 0.0,
             limiter: LimiterState::new(),
             limiter_config: config.limiter.clone(),
@@ -456,8 +658,11 @@ impl HalfBlock {
                 self.torque_curve_weight as f64 * torque + (1.0 - self.torque_curve_weight as f64);
             let throttle = throttle.clamp(0.0, 1.0) as f64;
             let idle = self.idle_combustion_gain.clamp(0.0, 0.5) as f64;
-            let combustion = idle + throttle * (1.0 - idle);
-            self.target_load = (combustion * weighted) as f32;
+            // The idle combustion base is kept independent of the torque curve:
+            // otherwise torque_curve(0.0) * idle_gain collapses to silence at
+            // closed throttle. The torque curve only shapes the throttle part.
+            let combustion = idle + throttle * (1.0 - idle) * weighted;
+            self.target_load = combustion as f32;
             let increment = (rpm.max(0.0) / 120.0 * CYCLE_DEG) / self.sample_rate;
             self.reconstruct.update(increment);
             for cylinder in &mut self.cylinders {
@@ -476,6 +681,14 @@ impl HalfBlock {
         self.load_alpha = one_pole_alpha(self.sample_rate, self.load_smoothing_s as f64);
         self.attack_alpha = one_pole_alpha(self.sample_rate, self.attack_smoothing_s as f64);
         self.release_alpha = one_pole_alpha(self.sample_rate, self.release_smoothing_s as f64);
+        // Pulse decay compresses with RPM: the single-pulse length is modelled at
+        // idle, but a fixed 6 ms decay overlaps into a near-flat (low-crest) sum
+        // above ~10k RPM where pulse spacing drops below 2 ms.
+        let ratio = (idle_rpm.max(1000.0) / rpm.max(1000.0)).clamp(0.25, 1.0);
+        let pulse_decay_s = (IMPULSE_DECAY_S * ratio).clamp(0.0015, IMPULSE_DECAY_S);
+        let _ = pulse_decay_s;
+        let scavenge_s = (SCAVENGE_DECAY_S * ratio).clamp(0.003, SCAVENGE_DECAY_S);
+        let _ = scavenge_s;
         self.limiter_attack_alpha = one_pole_alpha(
             self.sample_rate,
             self.limiter_config.attack_ms as f64 / 1000.0,
@@ -501,8 +714,13 @@ impl HalfBlock {
             LodLevel::Virtual => 0.0,
         }
         .clamp(0.0, 1.0);
-        self.intake.set_resonator_scale(scale);
-        self.exhaust.set_resonator_scale(scale);
+        self.bank_a_dsp.intake.set_resonator_scale(scale);
+        self.bank_a_dsp.exhaust.set_resonator_scale(scale);
+        self.bank_b_dsp.intake.set_resonator_scale(scale);
+        self.bank_b_dsp.exhaust.set_resonator_scale(scale);
+        let distant = matches!(level, LodLevel::Far | LodLevel::Virtual);
+        self.bank_a_dsp.exhaust.set_distant(distant);
+        self.bank_b_dsp.exhaust.set_distant(distant);
         self.coeff_update_steps = match level {
             LodLevel::Near | LodLevel::Mid => self.lod_quality.coeff_update_steps.max(1),
             LodLevel::Far | LodLevel::Virtual => self.lod_quality.far_coeff_update_steps.max(1),
@@ -537,7 +755,7 @@ impl HalfBlock {
 
     /// Resonator scale currently applied (0.0 at Virtual, 1.0 at Near).
     pub fn resonator_scale(&self) -> f32 {
-        self.intake.resonator_scale()
+        self.bank_a_dsp.intake.resonator_scale()
     }
 
     /// Advance the simulated half block one sample and return the raw firing
@@ -546,7 +764,7 @@ impl HalfBlock {
     /// envelopes also advance here: they are post-processing (they never feed
     /// back into the physical energy model) and must be stepped exactly once
     /// per rendered sample.
-    fn advance_excitation(&mut self) -> CylinderExcitation {
+    fn advance_excitation(&mut self) -> ReconstructedExcitation {
         self.smoothed_load += (self.target_load - self.smoothed_load) * (1.0 - self.load_alpha);
         let target_energy = self.throttle_response * self.smoothed_load;
         let alpha = if target_energy > self.energy {
@@ -556,17 +774,17 @@ impl HalfBlock {
         };
         self.energy += (target_energy - self.energy) * (1.0 - alpha);
         let mut excitation = CylinderExcitation::default();
-        for cylinder in &mut self.cylinders {
+        let mut exhaust_headers = [0.0f32; 5];
+        for (index, cylinder) in self.cylinders.iter_mut().enumerate() {
             let event = cylinder.step(
                 self.energy,
-                self.decay_alpha,
-                self.scavenge_decay_alpha,
                 self.scavenging_ratio,
                 self.pressure_derivative_mix,
             );
             excitation.body += event.body;
             excitation.intake += event.intake;
             excitation.exhaust += event.exhaust;
+            exhaust_headers[index] = event.exhaust;
         }
         self.limiter.step(
             self.limiter_target_cut,
@@ -578,13 +796,23 @@ impl HalfBlock {
         // signal reaches body, reconstructed bank and exhaust; otherwise
         // overlapping high-RPM pulses collapse into a saturated plateau.
         excitation.body = self.excitation_dc_block.process(excitation.body);
-        excitation
+        excitation.intake = self.intake_dc_block.process(excitation.intake);
+        for (index, value) in exhaust_headers.iter_mut().enumerate() {
+            *value = self.exhaust_pre_dc_blocks[index].process(*value);
+        }
+        excitation.exhaust = exhaust_headers.iter().sum();
+        ReconstructedExcitation {
+            body: excitation.body,
+            intake: excitation.intake,
+            exhaust: excitation.exhaust,
+            exhaust_headers,
+        }
     }
 
     pub fn render_sample(&mut self) -> f32 {
         let excitation = self.advance_excitation();
         let raw = excitation.body * IMPULSE_LEVEL;
-        let body = self.body_filter.process(raw);
+        let body = self.bank_a_dsp.body_filter.process(raw);
         // Limiter "apertura" sin recalcular el Biquad: mientras corta, el
         // tono de cuerpo se mezcla con la excitacion seca (brillo) y la
         // ganancia de corte suprime la senal.
@@ -594,28 +822,79 @@ impl HalfBlock {
     /// Render one stereo frame: the simulated bank plus the derived second
     /// bank, with the intake and exhaust layers mixed equally into both
     /// channels.
-    pub fn render_stereo(&mut self) -> (f32, f32) {
-        let excitation = self.advance_excitation();
-        let (bank1, bank2) =
-            self.reconstruct
-                .process(excitation.body, &mut self.body_filter, IMPULSE_LEVEL);
-        let intake =
-            self.intake
-                .process(excitation.intake, self.current_throttle, self.smoothed_load);
-        let exhaust = self.exhaust.process(excitation.exhaust);
+    pub fn render_diagnostic_frame(&mut self) -> DiagnosticFrame {
+        let raw_excitation = self.advance_excitation();
+        let (bank_a, bank_b) = self.reconstruct.process_excitation(raw_excitation);
+        let bank1 = self
+            .bank_a_dsp
+            .body_filter
+            .process(bank_a.body * IMPULSE_LEVEL);
+        let bank2 = if self.reconstruct.offset_samples() == 0.0 {
+            bank1
+        } else {
+            self.bank_b_dsp
+                .body_filter
+                .process(bank_b.body * IMPULSE_LEVEL)
+        };
+        let intake_a = self.bank_a_dsp.intake.process(
+            bank_a.intake,
+            self.current_throttle,
+            self.smoothed_load,
+        );
+        let intake_b = self.bank_b_dsp.intake.process(
+            bank_b.intake,
+            self.current_throttle,
+            self.smoothed_load,
+        );
+        let exhaust_a = self.bank_a_dsp.exhaust_dc.process(
+            self.bank_a_dsp
+                .exhaust
+                .process_individual(&bank_a.exhaust_headers),
+        );
+        let exhaust_b = self.bank_b_dsp.exhaust_dc.process(
+            self.bank_b_dsp
+                .exhaust
+                .process_individual(&bank_b.exhaust_headers),
+        );
+        let intake = intake_a + intake_b;
+        let exhaust = exhaust_a + exhaust_b;
         // Same limiter treatment as the mono path: air mix over each bank's
         // own body tone (Biquad stays fixed) and one gain for suppression.
-        let raw = excitation.body * IMPULSE_LEVEL;
-        let air = self.limiter.air_amount();
+        let raw = (bank_a.body + bank_b.body) * IMPULSE_LEVEL;
         let cut = self.limiter.gain() * self.tc.gain();
-        let mut left = bank1 + air * (raw - bank1);
-        let mut right = bank2 + air * (raw - bank2);
-        // Intake is biased toward the body/camera side and exhaust toward the
-        // reconstructed bank. This prevents both acoustic routes collapsing to
-        // the same mono signal while preserving a single stereo output bus.
-        left = (left + intake * 0.92 + exhaust * 0.76) * cut;
-        right = (right + intake * 0.74 + exhaust * 0.96) * cut;
-        (left, right)
+        let mut master = self.spatializer.process(
+            bank1 + self.limiter.air_amount() * (raw - bank1),
+            bank2 + self.limiter.air_amount() * (raw - bank2),
+            intake,
+            exhaust,
+            cut,
+        );
+        if self.neutral_reconstruction {
+            master.1 = master.0;
+        }
+        DiagnosticFrame {
+            bank_a_raw: bank_a.body,
+            bank_b_raw: bank_b.body,
+            full_block_raw: bank_a.body + bank_b.body,
+            body_a: bank1,
+            body_b: bank2,
+            intake_a,
+            intake_b,
+            exhaust_raw_a: bank_a.exhaust,
+            exhaust_raw_b: bank_b.exhaust,
+            collector_a: self.bank_a_dsp.exhaust.collector_output(),
+            collector_b: self.bank_b_dsp.exhaust.collector_output(),
+            exhaust_a,
+            exhaust_b,
+            body: bank1 + bank2,
+            intake,
+            exhaust,
+            master,
+        }
+    }
+
+    pub fn render_stereo(&mut self) -> (f32, f32) {
+        self.render_diagnostic_frame().master
     }
 
     /// Current smoothed load [0.0, 1.0] (for intake gating diagnostics).
@@ -665,6 +944,266 @@ mod tests {
 
     fn config() -> PowertrainConfig {
         PowertrainConfig::default()
+    }
+
+    #[test]
+    fn no_events_produce_no_stochastic_combustion_noise() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(0.0, 1000.0, 15000.0, 0.0);
+        let mut sum = 0.0f64;
+        for _ in 0..4096 {
+            let frame = block.render_diagnostic_frame();
+            sum += (frame.full_block_raw as f64) * (frame.full_block_raw as f64);
+        }
+        assert!(
+            sum.sqrt() < 1e-5,
+            "free-running combustion noise RMS={}",
+            sum.sqrt() / 4096.0f64.sqrt()
+        );
+    }
+
+    #[test]
+    fn spatializer_neutral_is_mono_and_parameters_change_output() {
+        let mut neutral_cfg = HalfBlockConfig::default();
+        neutral_cfg.decorrelation = 0.0;
+        neutral_cfg.delay_s = 0.0;
+        let mut neutral = Spatializer::new(&neutral_cfg, 44100);
+        let a = neutral.process(0.2, 0.2, 0.0, 0.0, 1.0);
+        assert!((a.0 - a.1).abs() < 1e-6);
+        let mut colored_cfg = neutral_cfg.clone();
+        colored_cfg.decorrelation = 0.8;
+        colored_cfg.delay_s = 0.002;
+        let mut colored = Spatializer::new(&colored_cfg, 44100);
+        let b = colored.process(0.2, 0.0, 0.0, 0.0, 1.0);
+        assert!((b.0 - b.1).abs() > 1e-5);
+        assert!(b.0.is_finite() && b.1.is_finite());
+    }
+
+    #[test]
+    fn spatializer_delay_is_sample_timed() {
+        let mut cfg = HalfBlockConfig::default();
+        cfg.decorrelation = 1.0;
+        cfg.delay_s = 10.0 / 44100.0;
+        let mut spatial = Spatializer::new(&cfg, 44100);
+        let mut right = Vec::new();
+        for i in 0..24 {
+            right.push(
+                spatial
+                    .process(if i == 0 { 1.0 } else { 0.0 }, 0.0, 0.0, 0.0, 1.0)
+                    .1,
+            );
+        }
+        let peak = right
+            .iter()
+            .enumerate()
+            .max_by(|a, b| a.1.abs().partial_cmp(&b.1.abs()).unwrap())
+            .unwrap()
+            .0;
+        assert!(
+            (peak as isize - 10).abs() <= 1,
+            "crossfeed impulse peak at {peak}"
+        );
+    }
+
+    #[test]
+    fn angular_event_width_scales_inversely_with_rpm() {
+        let event = AngularEventEnvelope {
+            open_offset_deg: 0.0,
+            attack_deg: 20.0,
+            hold_deg: 20.0,
+            decay_deg: 180.0,
+        };
+        let mut counts = Vec::new();
+        for rpm in [4500.0, 9000.0] {
+            let step = rpm / 120.0 * 720.0 / 44100.0;
+            let mut age = 0.0;
+            let mut n = 0;
+            while age < (event.attack_deg + event.hold_deg + event.decay_deg) as f64 {
+                age += step;
+                n += 1;
+            }
+            counts.push(n);
+        }
+        assert!((counts[0] as f32 / counts[1] as f32 - 2.0).abs() < 0.05);
+    }
+
+    #[test]
+    fn event_branches_are_independent() {
+        let mut a = config();
+        let mut b = a.clone();
+        b.exhaust_open_offset_deg = 240.0;
+        let mut x = HalfBlock::new(&a, 44100);
+        let mut y = HalfBlock::new(&b, 44100);
+        x.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        y.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..2000 {
+            let fx = x.render_diagnostic_frame();
+            let fy = y.render_diagnostic_frame();
+            assert!((fx.body - fy.body).abs() < 1e-5);
+            assert!((fx.intake - fy.intake).abs() < 1e-5);
+        }
+        a.intake_event_width_deg = 20.0;
+        b = config();
+        let mut p = HalfBlock::new(&a, 44100);
+        let mut q = HalfBlock::new(&b, 44100);
+        p.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        q.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..2000 {
+            let fp = p.render_diagnostic_frame();
+            let fq = q.render_diagnostic_frame();
+            assert!((fp.body - fq.body).abs() < 1e-5);
+            assert!((fp.exhaust - fq.exhaust).abs() < 1e-5);
+        }
+        // Combustion shaping is independent of the exhaust event timing.
+        let mut combustion_fast = config();
+        combustion_fast.combustion_attack_deg = 4.0;
+        combustion_fast.combustion_decay_deg = 40.0;
+        let mut combustion_slow = config();
+        combustion_slow.combustion_attack_deg = 40.0;
+        combustion_slow.combustion_decay_deg = 220.0;
+        let mut fast = HalfBlock::new(&combustion_fast, 44100);
+        let mut slow = HalfBlock::new(&combustion_slow, 44100);
+        fast.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        slow.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let mut fast_start = None;
+        let mut slow_start = None;
+        for i in 0..3000 {
+            if fast.render_diagnostic_frame().exhaust_raw_a.abs() > 1e-6 && fast_start.is_none() {
+                fast_start = Some(i);
+            }
+            if slow.render_diagnostic_frame().exhaust_raw_a.abs() > 1e-6 && slow_start.is_none() {
+                slow_start = Some(i);
+            }
+            if fast_start.is_some() && slow_start.is_some() {
+                break;
+            }
+        }
+        assert_eq!(
+            fast_start, slow_start,
+            "combustion pulse changed exhaust timing"
+        );
+
+        // Exhaust envelope shaping must not feed back into body or intake.
+        let mut exhaust_short = config();
+        exhaust_short.exhaust_blowdown_attack_deg = 4.0;
+        exhaust_short.exhaust_blowdown_decay_deg = 40.0;
+        let mut exhaust_long = config();
+        exhaust_long.exhaust_blowdown_attack_deg = 40.0;
+        exhaust_long.exhaust_blowdown_decay_deg = 220.0;
+        let mut es = HalfBlock::new(&exhaust_short, 44100);
+        let mut el = HalfBlock::new(&exhaust_long, 44100);
+        es.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        el.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..2000 {
+            let fs = es.render_diagnostic_frame();
+            let fl = el.render_diagnostic_frame();
+            assert!((fs.body_a - fl.body_a).abs() < 1e-5);
+            assert!((fs.intake_a - fl.intake_a).abs() < 1e-5);
+        }
+        let mut late = config();
+        late.exhaust_open_offset_deg = 720.0;
+        let mut probe = HalfBlock::new(&late, 44100);
+        probe.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let mut checked = false;
+        for _ in 0..300 {
+            let f = probe.render_diagnostic_frame();
+            if f.body_a.abs() > 1e-5 {
+                checked = true;
+                assert!(
+                    f.exhaust_raw_a.abs() < 1e-6,
+                    "pre-offset exhaust={} body={}",
+                    f.exhaust_raw_a,
+                    f.body_a
+                );
+                break;
+            }
+        }
+        assert!(checked);
+    }
+
+    #[test]
+    fn blowdown_is_zero_before_open_offset() {
+        let event = AngularEventEnvelope {
+            open_offset_deg: 120.0,
+            attack_deg: 10.0,
+            hold_deg: 0.0,
+            decay_deg: 100.0,
+        };
+        assert_eq!(event.value(119.99), 0.0);
+        assert_eq!(event.value(120.0), 0.0);
+        assert!(event.value(125.0) > 0.0);
+    }
+
+    #[test]
+    fn rpm_change_keeps_frames_finite_and_continuous() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(4500.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..1000 {
+            let f = block.render_diagnostic_frame();
+            assert!(f.master.0.is_finite() && f.master.1.is_finite());
+        }
+        let before = block.render_diagnostic_frame().master;
+        block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let after = block.render_diagnostic_frame().master;
+        assert!((after.0 - before.0).abs() < 1.0 && (after.1 - before.1).abs() < 1.0);
+    }
+
+    #[test]
+    fn full_block_has_four_orders_without_noise() {
+        let mut block = HalfBlock::new(&config(), 44100);
+        let rpm = 9000.0;
+        block.update_controls(rpm, 1000.0, 15000.0, 1.0);
+        let n = 44100;
+        let mut samples = Vec::with_capacity(n);
+        let mut bank_a = Vec::with_capacity(n);
+        for _ in 0..n {
+            let f = block.render_diagnostic_frame();
+            samples.push(f.full_block_raw);
+            bank_a.push(f.bank_a_raw);
+        }
+        let mut energies = Vec::new();
+        let mut bank_energies = Vec::new();
+        let orders: [f64; 16] = [
+            0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 7.5, 10.0, 12.5, 15.0, 20.0, 25.0,
+        ];
+        for order in orders {
+            let f = rpm / 60.0 * order;
+            let mut re = 0.0;
+            let mut im = 0.0;
+            for (i, sample) in samples.iter().enumerate() {
+                let phase = std::f64::consts::TAU * f * i as f64 / 44100.0;
+                let w = 0.5 - 0.5 * (std::f64::consts::TAU * i as f64 / n as f64).cos();
+                re += *sample as f64 * w * phase.cos();
+                im -= *sample as f64 * w * phase.sin();
+            }
+            energies.push(re * re + im * im);
+            let mut re = 0.0;
+            let mut im = 0.0;
+            for (i, sample) in bank_a.iter().enumerate() {
+                let phase = std::f64::consts::TAU * f * i as f64 / 44100.0;
+                let w = 0.5 - 0.5 * (std::f64::consts::TAU * i as f64 / n as f64).cos();
+                re += *sample as f64 * w * phase.cos();
+                im -= *sample as f64 * w * phase.sin();
+            }
+            bank_energies.push(re * re + im * im);
+        }
+        let max = energies.iter().copied().fold(0.0, f64::max);
+        let significant = energies
+            .iter()
+            .filter(|energy| **energy >= max * 10f64.powf(-2.4))
+            .count();
+        assert!(
+            significant >= 4,
+            "significant orders={significant}, energies={energies:?}"
+        );
+        assert!(
+            bank_energies[4] > bank_energies[9],
+            "bank A negative control: {bank_energies:?}"
+        );
+        assert!(
+            energies[9] >= energies[4] * 10f64.powf(0.3),
+            "full block E5/E2.5 < +3 dB: {energies:?}"
+        );
     }
 
     #[test]
@@ -783,7 +1322,8 @@ mod tests {
 
     #[test]
     fn energy_follows_throttle_and_settles_high() {
-        let mut block = HalfBlock::new(&config(), 44100);
+        let cfg = config();
+        let mut block = HalfBlock::new(&cfg, 44100);
         block.update_controls(9000.0, 1000.0, 15000.0, 1.0);
         for _ in 0..44100 {
             block.render_sample();
@@ -794,7 +1334,15 @@ mod tests {
         for _ in 0..44100 {
             block.render_sample();
         }
-        assert!(block.energy() < loaded * 0.2, "throttle cut not releasing");
+        let released = block.energy();
+        assert!(
+            released < loaded * 0.5,
+            "throttle cut not releasing: {released}"
+        );
+        assert!(
+            (released - cfg.idle_combustion_gain).abs() < 0.05,
+            "closed throttle must settle on the audible idle base: {released}"
+        );
     }
 
     #[test]
@@ -882,6 +1430,45 @@ mod tests {
             corr < 0.999,
             "channels must decorrelate mechanically: corr={corr}"
         );
+    }
+
+    #[test]
+    fn steady_rpm_outputs_are_dc_guarded() {
+        for rpm in [4500.0, 9000.0, 15000.0] {
+            let mut block = HalfBlock::new(&config(), 44100);
+            block.update_controls(rpm, 1000.0, 15000.0, 1.0);
+            let mut left = Vec::with_capacity(44100);
+            let mut right = Vec::with_capacity(44100);
+            for _ in 0..44100 {
+                let (l, r) = block.render_stereo();
+                left.push(l);
+                right.push(r);
+            }
+            for channel in [&left, &right] {
+                let mean = channel.iter().sum::<f32>() / channel.len() as f32;
+                let rms = rms(channel);
+                assert!(
+                    mean.abs() / rms.max(1e-9) <= 0.05,
+                    "rpm={rpm} dc ratio={}",
+                    mean.abs() / rms.max(1e-9)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn diagnostic_frame_uses_one_state_advance_and_has_finite_headroom() {
+        let mut a = HalfBlock::new(&config(), 44100);
+        let mut b = HalfBlock::new(&config(), 44100);
+        a.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        b.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        for _ in 0..1024 {
+            let master_a = a.render_stereo();
+            let frame_b = b.render_diagnostic_frame();
+            assert_eq!(master_a, frame_b.master);
+            assert!(frame_b.master.0.is_finite() && frame_b.master.1.is_finite());
+            assert!(frame_b.master.0.abs() <= 1.0 && frame_b.master.1.abs() <= 1.0);
+        }
     }
 
     #[test]

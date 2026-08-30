@@ -1,4 +1,4 @@
-"""Tests for the cheap audio A/B human gate."""
+"""Tests for the legacy sample-bank preview boundary."""
 
 from __future__ import annotations
 
@@ -29,4 +29,7 @@ def test_builds_current_and_candidate_for_same_scenario():
         assert (output / "candidate-bank" / "bank_manifest.json").is_file()
         stored = json.loads((output / "comparison.json").read_text(encoding="utf-8"))
         assert stored == summary
-        assert not summary["same_render"]
+        # Continuous engine keys are retired from both banks. Rebuilding the
+        # sample bank must not silently reintroduce a sampled-engine fallback,
+        # so this legacy sample-only preview is intentionally identical.
+        assert summary["same_render"]

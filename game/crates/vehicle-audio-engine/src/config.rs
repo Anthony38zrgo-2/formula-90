@@ -391,7 +391,7 @@ fn default_limiter_threshold() -> f32 {
 }
 
 fn default_saturation() -> f32 {
-    0.12
+    0.06
 }
 
 impl Default for MasterConfig {
@@ -399,7 +399,7 @@ impl Default for MasterConfig {
         Self {
             output_db: 0.0,
             limiter_threshold: 0.90,
-            saturation: 0.12,
+            saturation: 0.06,
         }
     }
 }

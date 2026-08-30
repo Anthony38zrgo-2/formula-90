@@ -92,6 +92,12 @@ impl IntakeSynth {
         let gate = aperture
             * (1.0 - self.throttle_follow + self.throttle_follow * throttle.clamp(0.0, 1.0));
         let n = (self.filters.len() as f32 * self.resonator_scale).ceil() as usize;
+        // Far LOD sets the resonator scale to zero. Preserve the deterministic,
+        // valve-synchronous intake pulse but skip the RNG, turbulence states and
+        // filter bank: their high-frequency detail is not useful at distance.
+        if n == 0 {
+            return excitation * self.pulse_gain * gate;
+        }
         // Turbulence is coloured before mixing and, critically, is multiplied
         // by the valve-event envelope. It cannot become a free-running white
         // hiss between events.
@@ -183,5 +189,23 @@ mod tests {
             peak = peak.max(intake.process(0.5, 1.0, 1.0).abs());
         }
         assert!(peak > 0.05, "synchronous intake pulse missing: {peak}");
+    }
+
+    #[test]
+    fn zero_resonator_scale_keeps_only_synchronous_pulse() {
+        let mut cfg = config();
+        cfg.noise_gain = 1.0;
+        cfg.pulse_gain = 0.5;
+        let mut intake = IntakeSynth::new(&cfg, 44100.0, 7);
+        intake.set_resonator_scale(0.0);
+        let excitation = 0.4;
+        let throttle = 0.8;
+        let load = 0.75;
+        let gate = IntakeSynth::aperture(throttle, load)
+            * (1.0 - cfg.throttle_follow + cfg.throttle_follow * throttle);
+        let expected = excitation * cfg.pulse_gain * gate;
+        for _ in 0..32 {
+            assert_eq!(intake.process(excitation, throttle, load), expected);
+        }
     }
 }

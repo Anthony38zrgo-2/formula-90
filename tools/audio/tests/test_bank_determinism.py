@@ -1,4 +1,4 @@
-"""Determinism & metadata tests for the hybrid v10_vehicle bank."""
+"""Determinism and metadata tests for the procedural-engine vehicle bank."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from pathlib import Path
 
 from tools.audio.bank_generator import generate_bank
 from tools.audio.bank_manifest import BankManifest
+from tools.audio.bank_spec import RETIRED_KEYS
 
 SOURCE = Path("source-assets/audio/legacy-f1-1998")
 
@@ -33,13 +34,12 @@ def test_manifest_contains_required_fields():
     assert manifest.sample_rate == 44100
     assert manifest.channels == 1
     assert manifest.pcm_bits == 16
-    assert len(manifest.files) == 27
+    assert len(manifest.files) == 19
     roles = {e.role for e in manifest.files}
-    assert {"engine_idle", "engine_low", "engine_mid", "engine_high", "engine_redline"} <= roles
+    assert not set(RETIRED_KEYS) & roles
     assert {"shift_up", "shift_down"} <= roles
     assert {"surf_grass", "surf_sand", "surf_rumble"} <= roles
     assert {"impact_barrier", "impact_cone", "impact_hit"} <= roles
-    assert "exhaust_mic" in roles
     assert "tyre_scrub" in roles
     for e in manifest.files:
         if e.synthesis.get("recipe"):

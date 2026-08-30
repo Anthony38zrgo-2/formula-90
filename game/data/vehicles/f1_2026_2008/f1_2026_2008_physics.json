@@ -582,19 +582,26 @@
         "scavenging_ratio": 0.38,
         "cylinder_variation": 0.055,
         "cycle_variation": 0.075,
-        "pressure_derivative_mix": 0.62
+        "pressure_derivative_mix": 0.58
+        ,"combustion_attack_deg": 18.0
+        ,"combustion_decay_deg": 110.0
+        ,"exhaust_open_offset_deg": 18.0
+        ,"exhaust_blowdown_attack_deg": 12.0
+        ,"exhaust_blowdown_decay_deg": 150.0
+        ,"intake_open_offset_deg": 36.0
+        ,"intake_event_width_deg": 90.0
       },
       "energy": {
         "torque_curve_weight": 1.0,
         "throttle_response": 1.0,
-        "idle_combustion_gain": 0.08,
+        "idle_combustion_gain": 0.35,
         "attack_smoothing_s": 0.02,
         "release_smoothing_s": 0.12,
         "load_smoothing_s": 0.03
       },
       "intake": {
         "enabled": true,
-        "noise_gain": 0.045,
+        "noise_gain": 0.02,
         "pulse_gain": 0.45,
         "throttle_follow": 0.8,
         "resonances": [
@@ -605,8 +612,17 @@
       "exhaust": {
         "enabled": true,
         "pulse_gain": 1.0,
-        "saturation": 0.3,
+        "saturation": 0.15,
         "damping": 0.5,
+        "effective_sound_speed_mps": 343.0,
+        "headers": [
+          { "length_m": 0.78, "gain": 1.0, "damping": 0.08 },
+          { "length_m": 0.81, "gain": 1.0, "damping": 0.08 },
+          { "length_m": 0.84, "gain": 0.99, "damping": 0.08 },
+          { "length_m": 0.87, "gain": 0.99, "damping": 0.08 },
+          { "length_m": 0.90, "gain": 0.98, "damping": 0.08 }
+        ],
+        "collector": { "effective_length_m": 1.45, "reflection_gain": 0.35, "damping_hz": 1800.0 },
         "collector_resonances": [
           { "frequency_hz": 190.0, "q": 4.0, "gain_db": 4.0 },
           { "frequency_hz": 380.0, "q": 2.5, "gain_db": 1.0 }
@@ -614,10 +630,10 @@
       },
       "half_block": {
         "phase_offset_deg": 72.0,
-        "delay_s": 0.004,
-        "decorrelation": 0.35,
+        "delay_s": 0.0015,
+        "decorrelation": 0.40,
         "gain": 0.98,
-        "timbre_diff": 0.06
+        "timbre_diff": 0.30
       },
       "limiter": { "threshold_rpm_ratio": 0.995, "attack_ms": 2.0, "release_ms": 60.0, "cut_shape": "soft" },
       "tc": { "suppress_gain": 0.55, "attack_ms": 8.0, "release_ms": 120.0, "min_cut_threshold": 0.02 },
@@ -629,9 +645,9 @@
         "dsp": {
           "near_resonator_scale": 1.0,
           "mid_resonator_scale": 0.6,
-          "far_resonator_scale": 0.35,
+          "far_resonator_scale": 0.0,
           "coeff_update_steps": 1,
-          "far_coeff_update_steps": 4,
+          "far_coeff_update_steps": 8,
           "organic_jitter_scale": 1.0
         }
       },

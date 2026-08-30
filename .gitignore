@@ -2,6 +2,10 @@
 .tools/
 build/
 bin/
+!game/crates/vehicle-audio-engine/src/bin/
+game/crates/vehicle-audio-engine/src/bin/*
+!game/crates/vehicle-audio-engine/src/bin/engine_sweep_render.rs
+!game/crates/vehicle-audio-engine/src/bin/va_bench.rs
 game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 game/telemetry/*
