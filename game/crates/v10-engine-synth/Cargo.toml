@@ -1,0 +1,20 @@
+[package]
+name = "v10-engine-synth"
+version = "0.1.0"
+edition = "2021"
+
+# Keep this greenfield crate isolated from the dirty parent workspace until the
+# perceptual gate is approved.
+[workspace]
+
+[lib]
+name = "v10_engine_synth"
+path = "src/lib.rs"
+
+[[bin]]
+name = "v10_render"
+path = "src/bin/v10_render.rs"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
