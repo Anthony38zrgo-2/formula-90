@@ -12,6 +12,9 @@ pub struct AcousticSceneConfig {
     pub airbox_gain: f32,
     pub engine_cover_gain: f32,
     pub rear_exhaust_gain: f32,
+    pub mount_monocoque_gain: f32,
+    pub under_seat_gain: f32,
+    pub cockpit_cavity_gain: f32,
     pub output_gain: f32,
 }
 
@@ -22,12 +25,15 @@ impl Default for AcousticSceneConfig {
             dry_mid_gain: 0.18,
             dry_high_gain: 0.12,
             metal_gain: 1.00,
-            gearbox_gain: 0.72,
+            gearbox_gain: 0.82,
             head_cover_gain: 0.70,
             airbox_gain: 0.64,
             engine_cover_gain: 0.42,
             rear_exhaust_gain: 0.48,
-            output_gain: 2.60,
+            mount_monocoque_gain: 0.12,
+            under_seat_gain: 0.09,
+            cockpit_cavity_gain: 0.16,
+            output_gain: 2.10,
         }
     }
 }
@@ -46,6 +52,11 @@ pub struct AcousticFrame {
     pub rear_exhaust_a: f32,
     pub rear_exhaust_b: f32,
     pub rear_exhaust: f32,
+    pub engine_mounts: f32,
+    pub monocoque_seat: f32,
+    pub mount_monocoque: f32,
+    pub under_seat_vibration: f32,
+    pub cockpit_cavity: f32,
     pub output: f32,
 }
 
@@ -55,6 +66,7 @@ pub struct GearboxHousing {
     transmission_delay: Vec<f32>,
     delay_cursor: usize,
     dc: DcBlocker,
+    casing_lowpass: OnePoleLowPass,
 }
 
 pub struct CylinderHeadCovers {
@@ -99,6 +111,226 @@ pub struct RearExhaustCapture {
     dc_b: DcBlocker,
     lowpass_a: OnePoleLowPass,
     lowpass_b: OnePoleLowPass,
+}
+
+pub struct EngineMountMonocoque {
+    mount_modes: ModalBank,
+    monocoque_modes: ModalBank,
+    mount_delay: Vec<f32>,
+    monocoque_delay: Vec<f32>,
+    mount_cursor: usize,
+    monocoque_cursor: usize,
+    mount_dc: DcBlocker,
+    monocoque_dc: DcBlocker,
+    mount_lowpass: OnePoleLowPass,
+    monocoque_lowpass: OnePoleLowPass,
+}
+
+pub struct UnderSeatVibration {
+    seat_modes: ModalBank,
+    transmission_delay: Vec<f32>,
+    delay_cursor: usize,
+    dc: DcBlocker,
+    lowpass: OnePoleLowPass,
+}
+
+pub struct CockpitCavity {
+    cavity_modes: ModalBank,
+    reflection_delay: Vec<f32>,
+    delay_cursor: usize,
+    taps: [(usize, f32); 4],
+    dc: DcBlocker,
+    absorption_lowpass_a: OnePoleLowPass,
+    absorption_lowpass_b: OnePoleLowPass,
+}
+
+impl CockpitCavity {
+    pub fn new(sample_rate: f32) -> Self {
+        let tap = |milliseconds: f32| (milliseconds * 0.001 * sample_rate).round() as usize;
+        let taps = [
+            (tap(2.15), 0.38),
+            (tap(3.85), -0.24),
+            (tap(5.70), 0.17),
+            (tap(7.90), -0.11),
+        ];
+        let maximum = taps.iter().map(|&(delay, _)| delay).max().unwrap();
+        Self {
+            cavity_modes: ModalBank::new(
+                &[
+                    (168.0, 0.024, 0.20),
+                    (226.0, 0.020, -0.18),
+                    (271.0, 0.017, 0.17),
+                    (338.0, 0.014, -0.15),
+                    (401.0, 0.012, 0.13),
+                    (482.0, 0.010, -0.11),
+                    (596.0, 0.008, 0.075),
+                    (742.0, 0.006, -0.050),
+                ],
+                sample_rate,
+            ),
+            reflection_delay: vec![0.0; maximum + 1],
+            delay_cursor: 0,
+            taps,
+            dc: DcBlocker::new(38.0, sample_rate),
+            absorption_lowpass_a: OnePoleLowPass::new(1_600.0, sample_rate),
+            absorption_lowpass_b: OnePoleLowPass::new(1_600.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    pub fn process(
+        &mut self,
+        engine_air: f32,
+        airbox: f32,
+        engine_cover: f32,
+        rear_exhaust: f32,
+    ) -> f32 {
+        let airborne =
+            engine_air * 0.62 + airbox * 0.27 + engine_cover * 0.12 + rear_exhaust * 0.10;
+        self.reflection_delay[self.delay_cursor] = airborne;
+        let mut reflected = 0.0;
+        for &(delay, gain) in &self.taps {
+            let index = (self.delay_cursor + self.reflection_delay.len() - delay)
+                % self.reflection_delay.len();
+            reflected += self.reflection_delay[index] * gain;
+        }
+        self.delay_cursor += 1;
+        if self.delay_cursor == self.reflection_delay.len() {
+            self.delay_cursor = 0;
+        }
+
+        let modes = self.cavity_modes.process(airborne * 0.34 + reflected);
+        let absorbed = self
+            .absorption_lowpass_b
+            .process(self.absorption_lowpass_a.process(reflected * 0.42 + modes));
+        let cavity = self.dc.process(absorbed);
+        (cavity * 12.0).tanh() / 3.2
+    }
+}
+
+impl UnderSeatVibration {
+    pub fn new(sample_rate: f32) -> Self {
+        let delay_samples = (0.00145 * sample_rate).round().max(1.0) as usize;
+        Self {
+            seat_modes: ModalBank::new(
+                &[
+                    (92.0, 0.032, 0.13),
+                    (117.0, 0.028, -0.18),
+                    (146.0, 0.024, 0.20),
+                    (179.0, 0.020, -0.18),
+                    (216.0, 0.016, 0.15),
+                    (263.0, 0.012, -0.09),
+                ],
+                sample_rate,
+            ),
+            transmission_delay: vec![0.0; delay_samples + 1],
+            delay_cursor: 0,
+            dc: DcBlocker::new(28.0, sample_rate),
+            lowpass: OnePoleLowPass::new(360.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    pub fn process(&mut self, mounts: f32, monocoque: f32, load: f32) -> f32 {
+        let input = (mounts * 0.34 + monocoque * 0.72) * (0.48 + 0.52 * load);
+        let arrived = self.transmission_delay[self.delay_cursor];
+        self.transmission_delay[self.delay_cursor] = input;
+        self.delay_cursor += 1;
+        if self.delay_cursor == self.transmission_delay.len() {
+            self.delay_cursor = 0;
+        }
+        let resonance = self.seat_modes.process(arrived);
+        let vibration = self
+            .lowpass
+            .process(self.dc.process(arrived * 0.045 + resonance));
+        // The seat path is deliberately soft and dense. It should be felt as
+        // transmitted mass, never heard as an isolated sub oscillator.
+        (vibration * 9.0).tanh() / 3.4
+    }
+}
+
+impl EngineMountMonocoque {
+    pub fn new(sample_rate: f32) -> Self {
+        let delay = |milliseconds: f32| {
+            vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
+        };
+        Self {
+            mount_modes: ModalBank::new(
+                &[
+                    (148.0, 0.022, 0.10),
+                    (193.0, 0.020, -0.12),
+                    (247.0, 0.018, 0.31),
+                    (318.0, 0.016, -0.34),
+                    (402.0, 0.013, 0.30),
+                    (515.0, 0.010, -0.25),
+                ],
+                sample_rate,
+            ),
+            monocoque_modes: ModalBank::new(
+                &[
+                    (171.0, 0.021, -0.09),
+                    (226.0, 0.019, 0.13),
+                    (291.0, 0.017, -0.30),
+                    (367.0, 0.014, 0.32),
+                    (454.0, 0.012, -0.28),
+                    (548.0, 0.009, 0.22),
+                ],
+                sample_rate,
+            ),
+            mount_delay: delay(0.18),
+            monocoque_delay: delay(0.82),
+            mount_cursor: 0,
+            monocoque_cursor: 0,
+            mount_dc: DcBlocker::new(48.0, sample_rate),
+            monocoque_dc: DcBlocker::new(42.0, sample_rate),
+            mount_lowpass: OnePoleLowPass::new(920.0, sample_rate),
+            monocoque_lowpass: OnePoleLowPass::new(760.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    fn delayed(delay: &mut [f32], cursor: &mut usize, input: f32) -> f32 {
+        let arrived = delay[*cursor];
+        delay[*cursor] = input;
+        *cursor += 1;
+        if *cursor == delay.len() {
+            *cursor = 0;
+        }
+        arrived
+    }
+
+    #[inline]
+    pub fn process(&mut self, frame: &EngineFrame) -> (f32, f32) {
+        let torque_transfer = 0.42 + 0.58 * frame.load * (0.30 + 0.70 * frame.throttle);
+        let block_force = (frame.pressure_direct * 0.52
+            + frame.block_head * 0.68
+            + frame.block * 0.32
+            + (frame.collector_pressure_a + frame.collector_pressure_b) * 0.14
+            + frame.pressure_derivative * 0.035)
+            * torque_transfer;
+        let mount_arrival =
+            Self::delayed(&mut self.mount_delay, &mut self.mount_cursor, block_force);
+        let mount_resonance = self.mount_modes.process(mount_arrival);
+        let engine_mounts = self.mount_lowpass.process(
+            self.mount_dc
+                .process(mount_arrival * 0.10 + mount_resonance),
+        );
+
+        let chassis_force = Self::delayed(
+            &mut self.monocoque_delay,
+            &mut self.monocoque_cursor,
+            engine_mounts * 0.84 + frame.block_head * 0.055,
+        );
+        let shell = self.monocoque_modes.process(chassis_force);
+        let monocoque_seat = self
+            .monocoque_lowpass
+            .process(self.monocoque_dc.process(chassis_force * 0.08 + shell));
+
+        (
+            (engine_mounts * 13.0).tanh() / 3.0,
+            (monocoque_seat * 15.0).tanh() / 3.2,
+        )
+    }
 }
 
 impl RearExhaustCapture {
@@ -369,29 +601,32 @@ impl GearboxHousing {
         Self {
             casing: ModalBank::new(
                 &[
-                    (246.0, 0.034, 0.38),
-                    (329.0, 0.029, -0.34),
-                    (443.0, 0.024, 0.32),
-                    (574.0, 0.020, -0.29),
-                    (731.0, 0.016, 0.25),
-                    (914.0, 0.013, -0.22),
-                    (1_147.0, 0.010, 0.18),
+                    (246.0, 0.024, 0.40),
+                    (278.0, 0.022, -0.24),
+                    (344.0, 0.020, 0.35),
+                    (431.0, 0.017, -0.34),
+                    (522.0, 0.014, 0.32),
+                    (588.0, 0.012, -0.26),
+                    (742.0, 0.009, 0.10),
+                    (914.0, 0.007, -0.07),
+                    (1_147.0, 0.005, 0.04),
                 ],
                 sample_rate,
             ),
             gear_mesh: ModalBank::new(
                 &[
-                    (1_423.0, 0.0075, 0.16),
-                    (1_769.0, 0.0060, -0.14),
-                    (2_183.0, 0.0048, 0.12),
-                    (2_677.0, 0.0038, -0.095),
-                    (3_241.0, 0.0030, 0.068),
+                    (1_423.0, 0.0060, 0.080),
+                    (1_769.0, 0.0048, -0.065),
+                    (2_183.0, 0.0038, 0.052),
+                    (2_677.0, 0.0030, -0.038),
+                    (3_241.0, 0.0023, 0.024),
                 ],
                 sample_rate,
             ),
             transmission_delay: vec![0.0; delay_samples + 1],
             delay_cursor: 0,
             dc: DcBlocker::new(32.0, sample_rate),
+            casing_lowpass: OnePoleLowPass::new(1_500.0, sample_rate),
         }
     }
 
@@ -399,10 +634,10 @@ impl GearboxHousing {
     pub fn process(&mut self, frame: &EngineFrame) -> f32 {
         // The bellhousing is driven through the rear face of the block and by
         // collector pressure, not by a copy of the final engine microphone.
-        let excitation = frame.block_head * 0.62
-            + frame.block * 0.48
-            + (frame.collector_pressure_a + frame.collector_pressure_b) * 0.34
-            + frame.exhaust * 0.08;
+        let excitation = frame.block_head * 0.25
+            + frame.block * 0.15
+            + (frame.collector_pressure_a + frame.collector_pressure_b) * 1.20
+            + frame.exhaust * 0.03;
         let arrived = self.transmission_delay[self.delay_cursor];
         self.transmission_delay[self.delay_cursor] = excitation;
         self.delay_cursor += 1;
@@ -413,8 +648,10 @@ impl GearboxHousing {
         let casing = self.casing.process(arrived);
         let mesh = self
             .gear_mesh
-            .process(arrived + frame.pressure_derivative * 0.12);
-        let housing = self.dc.process(casing + mesh * 0.72);
+            .process(arrived + frame.pressure_derivative * 0.075);
+        let housing = self
+            .casing_lowpass
+            .process(self.dc.process(casing + mesh * 0.42));
         // Thick cast alloy has more mass and less hard clipping than the thin
         // panels represented by `MetallicStructure`.
         (housing * 10.0).tanh() / 2.9
@@ -551,6 +788,9 @@ pub struct AcousticScene {
     airbox: AirboxPlenum,
     engine_cover: EngineCover,
     rear_exhaust: RearExhaustCapture,
+    mount_monocoque: EngineMountMonocoque,
+    under_seat: UnderSeatVibration,
+    cockpit_cavity: CockpitCavity,
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
@@ -570,6 +810,9 @@ impl AcousticScene {
             || !(0.0..=1.5).contains(&config.airbox_gain)
             || !(0.0..=1.5).contains(&config.engine_cover_gain)
             || !(0.0..=1.5).contains(&config.rear_exhaust_gain)
+            || !(0.0..=1.5).contains(&config.mount_monocoque_gain)
+            || !(0.0..=1.5).contains(&config.under_seat_gain)
+            || !(0.0..=1.5).contains(&config.cockpit_cavity_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
         {
             return Err("acoustic scene gain outside supported range".into());
@@ -582,6 +825,9 @@ impl AcousticScene {
             airbox: AirboxPlenum::new(sample_rate),
             engine_cover: EngineCover::new(sample_rate),
             rear_exhaust: RearExhaustCapture::new(sample_rate),
+            mount_monocoque: EngineMountMonocoque::new(sample_rate),
+            under_seat: UnderSeatVibration::new(sample_rate),
+            cockpit_cavity: CockpitCavity::new(sample_rate),
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
@@ -601,6 +847,11 @@ impl AcousticScene {
         let engine_cover = self.engine_cover.process(engine, airbox_plenum);
         let (rear_exhaust_a, rear_exhaust_b) = self.rear_exhaust.process(engine);
         let rear_exhaust = rear_exhaust_a + rear_exhaust_b;
+        let (engine_mounts, monocoque_seat) = self.mount_monocoque.process(engine);
+        let mount_monocoque = engine_mounts * 0.58 + monocoque_seat;
+        let under_seat_vibration =
+            self.under_seat
+                .process(engine_mounts, monocoque_seat, engine.load);
         let detector = metallic_structure.abs();
         let envelope_coefficient = if detector > self.metal_envelope {
             self.envelope_attack
@@ -620,6 +871,9 @@ impl AcousticScene {
             + dry_mid * self.config.dry_mid_gain * duck
             + dry_high * self.config.dry_high_gain;
         let engine_air = self.air_path.process(filtered_dry);
+        let cockpit_cavity =
+            self.cockpit_cavity
+                .process(engine_air, airbox_plenum, engine_cover, rear_exhaust);
         AcousticFrame {
             engine_dry: engine.master,
             engine_air,
@@ -633,13 +887,21 @@ impl AcousticScene {
             rear_exhaust_a,
             rear_exhaust_b,
             rear_exhaust,
+            engine_mounts,
+            monocoque_seat,
+            mount_monocoque,
+            under_seat_vibration,
+            cockpit_cavity,
             output: (engine_air
                 + metallic_structure * self.config.metal_gain
                 + gearbox_housing * self.config.gearbox_gain
                 + cylinder_head_covers * self.config.head_cover_gain
                 + airbox_plenum * self.config.airbox_gain
                 + engine_cover * self.config.engine_cover_gain
-                + rear_exhaust * self.config.rear_exhaust_gain)
+                + rear_exhaust * self.config.rear_exhaust_gain
+                + mount_monocoque * self.config.mount_monocoque_gain
+                + under_seat_vibration * self.config.under_seat_gain
+                + cockpit_cavity * self.config.cockpit_cavity_gain)
                 * self.config.output_gain,
         }
     }
@@ -673,6 +935,9 @@ mod tests {
                 airbox_gain: 0.0,
                 engine_cover_gain: 0.0,
                 rear_exhaust_gain: 0.0,
+                mount_monocoque_gain: 0.0,
+                under_seat_gain: 0.0,
+                cockpit_cavity_gain: 0.0,
                 output_gain: 1.0,
             },
         )

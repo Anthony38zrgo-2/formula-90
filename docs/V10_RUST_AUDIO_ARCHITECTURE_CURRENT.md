@@ -1,7 +1,7 @@
 # Current Rust V10 audio architecture
 
 This diagram describes the implemented Rust-only signal path as of the
-`GF363` 7,499 RPM validation render. C++ and Faust are not part of this path.
+`GF442` 7,499 RPM validation render. C++ and Faust are not part of this path.
 
 ```mermaid
 flowchart LR
@@ -25,7 +25,7 @@ flowchart LR
         PRESSURE --> BULKHEAD
         COLLECTORS --> BULKHEAD
 
-        BLOCK --> GEARBOX["Gearbox housing / transmission bell<br/>246–1147 Hz casing modes<br/>1.4–3.2 kHz gear-mesh modes<br/>0.38 ms structural arrival"]
+        BLOCK --> GEARBOX["Gearbox housing / transmission bell<br/>246–588 Hz reinforced casing modes<br/>attenuated gear-mesh family<br/>0.38 ms structural arrival"]
         COLLECTORS --> GEARBOX
 
         PRESSURE --> COVERS["Cylinder-head covers A/B<br/>independent bank excitation<br/>1.18–5.29 kHz panel modes<br/>0.72 / 0.96 ms arrivals"]
@@ -43,6 +43,15 @@ flowchart LR
         COLLECTORS --> REAR["Rear exhaust capture A/B<br/>584 Hz–4.45 kHz pipe modes<br/>load-dependent radiation<br/>1.85 / 2.20 ms arrivals"]
         HEADERS --> REAR
 
+        BLOCK --> MOUNTS["Engine mounts → monocoque<br/>148–548 Hz damped structural modes<br/>0.18 / 0.82 ms transmissions"]
+        COLLECTORS --> MOUNTS
+        MOUNTS --> SEAT["Under-seat vibration<br/>92–263 Hz body-coupled modes<br/>1.45 ms additional transmission"]
+
+        AIR --> COCKPIT["Cockpit cavity<br/>168–742 Hz broad modes<br/>2.15–7.90 ms early reflections<br/>1.6 kHz absorption"]
+        AIRBOX --> COCKPIT
+        COVER --> COCKPIT
+        REAR --> COCKPIT
+
         AIR --> MIX["Cockpit capture mix"]
         BULKHEAD --> MIX
         GEARBOX --> MIX
@@ -50,9 +59,12 @@ flowchart LR
         AIRBOX --> MIX
         COVER --> MIX
         REAR --> MIX
+        MOUNTS --> MIX
+        SEAT --> MIX
+        COCKPIT --> MIX
     end
 
-    MIX --> OUTPUT["Scene output<br/>GF363 reference render"]
+    MIX --> OUTPUT["Scene output<br/>GF442 reference render"]
 
     DRY -. diagnostic .-> STEMS["Auditable stems"]
     AIR -. diagnostic .-> STEMS
@@ -62,6 +74,9 @@ flowchart LR
     AIRBOX -. diagnostic .-> STEMS
     COVER -. diagnostic .-> STEMS
     REAR -. "A · B · combined" .-> STEMS
+    MOUNTS -. "mounts · monocoque · combined" .-> STEMS
+    SEAT -. diagnostic .-> STEMS
+    COCKPIT -. diagnostic .-> STEMS
     MIX -. diagnostic .-> STEMS
 
     classDef source fill:#5b2333,color:#fff,stroke:#d78a9c,stroke-width:2px;
@@ -70,7 +85,7 @@ flowchart LR
     classDef output fill:#6b5428,color:#fff,stroke:#e7c56d,stroke-width:2px;
     class INPUT,CRANK,CYL source;
     class PRESSURE,HEADERS,COLLECTORS,TURB,BLOCK,DRY physical;
-    class AIR,BULKHEAD,GEARBOX,COVERS,AIRBOX,COVER,REAR capture;
+    class AIR,BULKHEAD,GEARBOX,COVERS,AIRBOX,COVER,REAR,MOUNTS,SEAT,COCKPIT capture;
     class MIX,OUTPUT,STEMS output;
 ```
 
@@ -90,6 +105,9 @@ directly into the cockpit output.
 | Airbox/plenum | Airborne intake body and aspiration |
 | Engine cover | Hollow, laminated bodywork-panel radiation |
 | Rear exhaust A/B | Load-dependent collector and tailpipe radiation |
+| Engine mounts/monocoque | Damped torque and block transmission in low mids |
+| Under-seat vibration | Body-coupled weight below 300 Hz |
+| Cockpit cavity | Absorbed low-mid air volume and early reflections |
 
 The renderer writes each path independently so perceptual changes can be
 validated without guessing which subsystem caused them.

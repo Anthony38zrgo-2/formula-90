@@ -11,6 +11,7 @@ pub mod wav;
 pub use config::EngineConfig;
 pub use engine::{EngineFrame, EngineInput, V10Engine};
 pub use scene::{
-    AcousticFrame, AcousticScene, AcousticSceneConfig, AirboxPlenum, CylinderHeadCovers,
-    EngineCover, GearboxHousing, MetallicStructure, RearExhaustCapture,
+    AcousticFrame, AcousticScene, AcousticSceneConfig, AirboxPlenum, CockpitCavity,
+    CylinderHeadCovers, EngineCover, EngineMountMonocoque, GearboxHousing, MetallicStructure,
+    RearExhaustCapture, UnderSeatVibration,
 };
