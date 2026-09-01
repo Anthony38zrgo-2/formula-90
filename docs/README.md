@@ -37,6 +37,7 @@ remains the first thing to read. This index maps the rest.
 | [engineering/tree.txt](engineering/tree.txt) | Repo tree snapshot (informational). |
 | [build-and-run.md](build-and-run.md) | How to build and run. |
 | [audio-pipeline.md](audio-pipeline.md), [cpp-dsp-architecture.md](cpp-dsp-architecture.md) | Audio pipeline / DSP architecture. |
+| [dsp-integration/](dsp-integration/) | Rust↔C++ DSP integration: [contract.md](dsp-integration/contract.md) (authorities/RT invariants), [abi-v2.md](dsp-integration/abi-v2.md) (ABI v2 layout — Rust autoridad temporal, C++ no reconstruye banco B), [events-v2.md](dsp-integration/events-v2.md) (event stream semantics v2), [abi-v1.md](dsp-integration/abi-v1.md) (ABI v1, **obsoleto**), [events-v1.md](dsp-integration/events-v1.md) (eventos v1, **obsoleto**). |
 | [sprite-pipeline.md](sprite-pipeline.md), [camera-and-directional-sprites.md](camera-and-directional-sprites.md) | Sprite + camera presentation. |
 
 ## Game design

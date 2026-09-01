@@ -3,6 +3,13 @@ use crate::config::EngineConfig;
 use crate::crank::{Crankshaft, CYLINDER_COUNT};
 use crate::cylinder::Cylinder;
 
+const COAST_IDLE_RPM: f32 = 1_000.0;
+const COAST_MAX_RPM: f32 = 15_000.0;
+const COAST_BASE_ENERGY: f32 = 0.12;
+const COAST_RPM_ENERGY: f32 = 0.20;
+const ENERGY_ATTACK_SECONDS: f32 = 0.018;
+const ENERGY_RELEASE_SECONDS: f32 = 0.413;
+
 #[derive(Clone, Copy, Debug)]
 pub struct EngineInput {
     pub rpm: f32,
@@ -23,6 +30,16 @@ impl EngineInput {
         }
         Ok(self)
     }
+}
+
+#[inline]
+fn target_acoustic_energy(input: EngineInput) -> f32 {
+    let rpm_norm = ((input.rpm - COAST_IDLE_RPM) / (COAST_MAX_RPM - COAST_IDLE_RPM))
+        .clamp(0.0, 1.0);
+    let coast_energy = COAST_BASE_ENERGY + COAST_RPM_ENERGY * rpm_norm;
+    let powered_energy =
+        0.25 * input.throttle + 0.63 * input.load * (0.35 + 0.65 * input.throttle);
+    (coast_energy + powered_energy).clamp(0.0, 1.0)
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -117,13 +134,11 @@ impl V10Engine {
     #[inline]
     pub fn render_sample(&mut self) -> EngineFrame {
         let sample_rate = self.config.sample_rate as f32;
-        let target_energy = 0.055
-            + 0.25 * self.input.throttle
-            + 0.695 * self.input.load * (0.35 + 0.65 * self.input.throttle);
+        let target_energy = target_acoustic_energy(self.input);
         let tau = if target_energy > self.smoothed_energy {
-            0.018
+            ENERGY_ATTACK_SECONDS
         } else {
-            0.090
+            ENERGY_RELEASE_SECONDS
         };
         let alpha = 1.0 - (-1.0 / (tau * sample_rate)).exp();
         self.smoothed_energy += (target_energy - self.smoothed_energy) * alpha;
@@ -255,6 +270,43 @@ impl V10Engine {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn coast_energy_retains_rpm_dependent_engine_drag() {
+        let closed = |rpm| {
+            target_acoustic_energy(EngineInput {
+                rpm,
+                throttle: 0.0,
+                load: 0.0,
+            })
+        };
+
+        assert!((closed(1_000.0) - 0.12).abs() < 1.0e-6);
+        assert!((closed(8_000.0) - 0.22).abs() < 1.0e-6);
+        assert!((closed(15_000.0) - 0.32).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn lift_off_energy_release_uses_413_ms_time_constant() {
+        let config = EngineConfig::default();
+        let sample_rate = config.sample_rate as usize;
+        let mut engine = V10Engine::new(config).unwrap();
+        engine.smoothed_energy = 1.0;
+        engine
+            .set_input(EngineInput {
+                rpm: 15_000.0,
+                throttle: 0.0,
+                load: 0.0,
+            })
+            .unwrap();
+
+        for _ in 0..(sample_rate * 413 / 1_000) {
+            engine.render_sample();
+        }
+
+        let expected_after_one_tau = 0.32 + (1.0 - 0.32) / std::f32::consts::E;
+        assert!((engine.smoothed_energy - expected_after_one_tau).abs() < 2.0e-4);
+    }
 
     #[test]
     fn identical_seed_and_controls_are_bit_deterministic() {

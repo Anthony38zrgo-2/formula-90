@@ -20,8 +20,8 @@ pub struct Cylinder {
 impl Cylinder {
     pub fn new(index: usize, config: &EngineConfig) -> Self {
         let centered = index as f32 - 4.5;
-        let fixed_gain = (1.0 + centered / 4.5 * config.cylinder_spread)
-            * config.cylinder_signature[index];
+        let fixed_gain =
+            (1.0 + centered / 4.5 * config.cylinder_spread) * config.cylinder_signature[index];
         Self {
             age_deg: 1.0e9,
             last_pressure: 0.0,

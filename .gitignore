@@ -30,6 +30,7 @@ compile_commands.json
 *.pdb
 *.log
 *.exe
+game/native/vehicle-audio-dsp/generated/
 
 # Rust build artifacts
 target/

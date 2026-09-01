@@ -411,6 +411,134 @@ impl Default for RaspConfig {
     }
 }
 
+/// Oscillator family of a modular voice. `Noise` is a burst source (LCG), not
+/// an oscillator: it has no `frequency_factor` semantics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Waveform {
+    Saw,
+    Square,
+    Noise,
+}
+
+/// One modular synthesis voice.
+///
+/// The simulator stops at the V10 bank + combustion body; the modular layer is
+/// post-simulator. Each voice is an anti-aliased PolyBLEP oscillator (or an
+/// LCG noise burst), band-shaped by its own HP/LP cascade, keyed by the bank
+/// firing clock and scaled by the shared ADSR envelope of its bank.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ModularVoiceConfig {
+    /// Enables this voice in the layer blend.
+    pub enabled: bool,
+    /// Oscillator family (`noise` has no oscillator).
+    pub waveform: Waveform,
+    /// Voice frequency as a multiple of the engine firing rate
+    /// (rpm/12 Hz, e.g. 1.0 = 1000 Hz at 12000 rpm) [0.05, 40.0].
+    pub frequency_factor: f32,
+    /// In-layer gain [0.0, 1.0].
+    pub gain: f32,
+    /// Voice high-pass corner in Hz [20.0, 20000.0].
+    pub highpass_hz: f32,
+    /// Voice low-pass corner in Hz [20.0, 24000.0].
+    pub lowpass_hz: f32,
+}
+
+impl Default for ModularVoiceConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            waveform: Waveform::Saw,
+            frequency_factor: 0.5,
+            gain: 0.3,
+            highpass_hz: 300.0,
+            lowpass_hz: 3500.0,
+        }
+    }
+}
+
+/// Modular synthesis layer configuration.
+///
+/// Four layers blend by design into non-competing registers so the saw/square
+/// oscillator content never fights the combustion body: saw 300-3500 Hz,
+/// square 1200-5000 Hz, noise 3500-9000 Hz, air-saw 7000-11000 Hz (reference
+/// 12000 rpm). A single per-bank ADSR envelope (attack/decay/sustain, release
+/// is the next trigger) retriggers on every firing event, so the layer is
+/// mechanically synced to the body. Profiles that omit the block keep
+/// `enabled = false`; no other vehicle changes without explicit approval.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ModularConfig {
+    /// Master enable for the whole modular layer.
+    pub enabled: bool,
+    /// Layer gain after the RPM curve, before the master limiter [0.0, 2.0].
+    pub gain: f32,
+    /// Envelope attack in degrees of the 720-degree cycle [0.5, 36.0].
+    pub attack_deg: f32,
+    /// Envelope decay (peak -> sustain) in degrees [1.0, 143.0].
+    pub decay_deg: f32,
+    /// Envelope sustain level [0.0, 1.0].
+    pub sustain: f32,
+    /// Per-event timing jitter in degrees [0.0, 8.0].
+    pub jitter_deg: f32,
+    /// RPM ratio at which the layer starts rising from its floor [0.0, 1.0].
+    pub rpm_start_ratio: f32,
+    /// RPM ratio at which the layer reaches full `gain` [0.0, 1.0].
+    pub rpm_full_ratio: f32,
+    /// Four-layer blend: saw, square, noise, air-saw (rendering order).
+    pub voices: [ModularVoiceConfig; 4],
+}
+
+impl Default for ModularConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            gain: 0.5,
+            attack_deg: 3.0,
+            decay_deg: 90.0,
+            sustain: 0.30,
+            jitter_deg: 2.0,
+            rpm_start_ratio: 0.30,
+            rpm_full_ratio: 0.95,
+            voices: [
+                ModularVoiceConfig {
+                    enabled: false,
+                    waveform: Waveform::Saw,
+                    frequency_factor: 0.5,
+                    gain: 0.30,
+                    highpass_hz: 300.0,
+                    lowpass_hz: 3500.0,
+                },
+                ModularVoiceConfig {
+                    enabled: false,
+                    waveform: Waveform::Square,
+                    frequency_factor: 1.25,
+                    gain: 0.12,
+                    highpass_hz: 1200.0,
+                    lowpass_hz: 5000.0,
+                },
+                ModularVoiceConfig {
+                    enabled: false,
+                    waveform: Waveform::Noise,
+                    frequency_factor: 1.0,
+                    gain: 0.08,
+                    highpass_hz: 3500.0,
+                    lowpass_hz: 9000.0,
+                },
+                ModularVoiceConfig {
+                    enabled: false,
+                    waveform: Waveform::Saw,
+                    frequency_factor: 7.0,
+                    gain: 0.035,
+                    highpass_hz: 7000.0,
+                    lowpass_hz: 11000.0,
+                },
+            ],
+        }
+    }
+}
+
 /// Global RPM limiter configuration.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -582,6 +710,8 @@ pub struct AudioPowertrainSynthesis {
     pub combustion_voices: CombustionVoicesConfig,
     /// Event-driven rasp (grit) layer tuning.
     pub rasp: RaspConfig,
+    /// Post-simulator modular synthesis layer tuning.
+    pub modular: ModularConfig,
     /// RPM limiter tuning.
     pub limiter: LimiterConfig,
     /// Traction control tuning.
@@ -603,6 +733,7 @@ impl Default for AudioPowertrainSynthesis {
             total_cylinders: 10,
             physically_simulated_cylinders: 5,
             rasp: RaspConfig::default(),
+            modular: ModularConfig::default(),
             combustion_voices: CombustionVoicesConfig::default(),
             bank_count: 2,
             firing_order: None,
@@ -1120,13 +1251,7 @@ impl AudioPowertrainSynthesis {
             0.0,
             2.0,
         );
-        check_range_closed(
-            &mut diags,
-            path("rasp.gain"),
-            self.rasp.gain,
-            0.0,
-            2.0,
-        );
+        check_range_closed(&mut diags, path("rasp.gain"), self.rasp.gain, 0.0, 2.0);
         check_range_closed(
             &mut diags,
             path("rasp.highpass_hz"),
@@ -1174,6 +1299,94 @@ impl AudioPowertrainSynthesis {
                 path: path("rasp.lowpass_hz"),
                 message: "rasp.lowpass_hz must be greater than rasp.highpass_hz".into(),
             });
+        }
+
+        check_range_closed(
+            &mut diags,
+            path("modular.gain"),
+            self.modular.gain,
+            0.0,
+            2.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("modular.attack_deg"),
+            self.modular.attack_deg,
+            0.5,
+            36.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("modular.decay_deg"),
+            self.modular.decay_deg,
+            1.0,
+            143.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("modular.sustain"),
+            self.modular.sustain,
+            0.0,
+            1.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("modular.jitter_deg"),
+            self.modular.jitter_deg,
+            0.0,
+            8.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("modular.rpm_start_ratio"),
+            self.modular.rpm_start_ratio,
+            0.0,
+            1.0,
+        );
+        check_range_closed(
+            &mut diags,
+            path("modular.rpm_full_ratio"),
+            self.modular.rpm_full_ratio,
+            0.0,
+            1.0,
+        );
+        if self.modular.rpm_full_ratio <= self.modular.rpm_start_ratio {
+            diags.push(ConfigDiagnostic {
+                path: path("modular.rpm_full_ratio"),
+                message: "modular.rpm_full_ratio must be greater than modular.rpm_start_ratio"
+                    .into(),
+            });
+        }
+        for (index, voice) in self.modular.voices.iter().enumerate() {
+            let vp = |field: &str| format!("{PROFILE_SECTION}.modular.voices[{index}].{field}");
+            check_range_closed(
+                &mut diags,
+                vp("frequency_factor"),
+                voice.frequency_factor,
+                0.05,
+                40.0,
+            );
+            check_range_closed(&mut diags, vp("gain"), voice.gain, 0.0, 1.0);
+            check_range_closed(
+                &mut diags,
+                vp("highpass_hz"),
+                voice.highpass_hz,
+                20.0,
+                20000.0,
+            );
+            check_range_closed(
+                &mut diags,
+                vp("lowpass_hz"),
+                voice.lowpass_hz,
+                20.0,
+                24000.0,
+            );
+            if voice.lowpass_hz <= voice.highpass_hz {
+                diags.push(ConfigDiagnostic {
+                    path: vp("lowpass_hz"),
+                    message: "modular voice lowpass_hz must be greater than highpass_hz".into(),
+                });
+            }
         }
 
         check_range_closed(
@@ -1342,7 +1555,9 @@ mod tests {
         let mut config = AudioPowertrainSynthesis::default();
         assert!(config.validate().is_empty());
         // Omitting the block entirely still resolves to a valid default.
-        let parsed = from_profile_json(&section(r#"{"enabled": true}"#)).unwrap().unwrap();
+        let parsed = from_profile_json(&section(r#"{"enabled": true}"#))
+            .unwrap()
+            .unwrap();
         assert!(parsed.validate().is_empty());
         assert_eq!(parsed.rasp, RaspConfig::default());
     }

@@ -41,9 +41,7 @@ impl Default for EngineConfig {
             // Keep it subordinate to the fixed ten-cylinder signature.
             cycle_variation: 0.004,
             cylinder_spread: 0.012,
-            cylinder_signature: [
-                1.10, 0.94, 1.04, 0.90, 1.07, 0.96, 1.12, 0.92, 1.02, 0.97,
-            ],
+            cylinder_signature: [1.10, 0.94, 1.04, 0.90, 1.07, 0.96, 1.12, 0.92, 1.02, 0.97],
             header_lengths_m: [
                 0.535, 0.557, 0.548, 0.571, 0.562, 0.541, 0.566, 0.552, 0.578, 0.559,
             ],

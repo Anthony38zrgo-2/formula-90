@@ -278,6 +278,7 @@ impl CoreFacade {
             time_ms: (self.world.time * 1000.0).round() as i64,
             ..CoreFrame::default()
         };
+        let mut engine_load = 0.0f32;
         self.underfloor.step(
             underfloor_sample,
             Some(&body),
@@ -342,6 +343,7 @@ impl CoreFacade {
             frame.force[1] += self.underfloor.force_world[1];
             frame.force[2] += self.underfloor.force_world[2];
             frame.throttle = input.throttle;
+            engine_load = Self::physical_engine_load(ent);
         }
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
@@ -374,7 +376,7 @@ impl CoreFacade {
             underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
             self.underfloor.onset_strength as f32,
         );
-        self.finish_frame(dt, frame, surface, slip)
+        self.finish_frame(dt, frame, surface, slip, engine_load)
     }
 
     /// Advance everything one fixed step on the STANDALONE path (headless, same as
@@ -393,13 +395,15 @@ impl CoreFacade {
             time_ms: (self.world.time * 1000.0).round() as i64,
             ..CoreFrame::default()
         };
+        let mut engine_load = 0.0f32;
         if let Some(ent) = self.world.entities.iter().find(|e| e.id == id) {
             Self::fill_frame_from_entity(&mut frame, ent, dt);
+            engine_load = Self::physical_engine_load(ent);
         }
         frame.throttle = input.throttle;
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
-        self.finish_frame(dt, frame, surface, slip)
+        self.finish_frame(dt, frame, surface, slip, engine_load)
     }
 
     /// Copy the entity's telemetry + pose/velocity into `frame` (physics-agnostic
@@ -528,6 +532,14 @@ impl CoreFacade {
         }
     }
 
+    fn physical_engine_load(ent: &game_sim::world::VehicleEntity) -> f32 {
+        let powertrain = &ent.sim.state.powertrain;
+        let config = &ent.sim.config;
+        let rpm_factor = (powertrain.rpm / config.max_rpm.max(1.0)).clamp(0.0, 1.0);
+        let available = config.evaluate_torque_curve(rpm_factor) * config.max_torque;
+        (powertrain.engine_torque.max(0.0) / available.max(1.0)).clamp(0.0, 1.0) as f32
+    }
+
     /// Shared tail of every step: drive the audio from the frame telemetry, tick the
     /// modules, publish the frame, return it.
     fn finish_frame(
@@ -536,6 +548,7 @@ impl CoreFacade {
         mut frame: CoreFrame,
         surface: SurfaceType,
         slip: f32,
+        engine_load: f32,
     ) -> &CoreFrame {
         // --- audio driven from the SAME tick (no round-trip) ------------------
         self.audio.set_tire_scrub_state(
@@ -553,6 +566,8 @@ impl CoreFacade {
             frame.throttle as f32,
             frame.speed_kmh,
             frame.gear,
+            engine_load,
+            dt as f32,
             slip,
             surface,
         );
@@ -637,6 +652,7 @@ impl CoreFacade {
         self.registry.reset_all();
         self.underfloor.reset();
         self.audio.set_scrape_state(false, 0.0, 0.0, 0.0);
+        self.audio.reset();
     }
 
     /// Apply a runtime-tunable config (mirror of the legacy `FfiRuntimeConfig`) to

@@ -4,12 +4,14 @@ pub mod half_block_reconstruct;
 pub mod impulse;
 pub mod intake;
 pub mod limiter_tc;
+pub mod modular;
 pub mod rasp;
 
 use crate::dsp::biquad::Biquad;
 use crate::powertrain::{
     AudioPowertrainSynthesis, CombustionVoicesConfig, ExhaustConfig, HalfBlockConfig, IntakeConfig,
-    LimiterConfig, QualityProfile, RaspConfig, TcConfig,
+    LimiterConfig, ModularConfig, ModularVoiceConfig, QualityProfile, RaspConfig, TcConfig,
+    Waveform,
 };
 
 use event_gen::EventJitter;
@@ -20,6 +22,7 @@ use impulse::{
 };
 use intake::IntakeSynth;
 use limiter_tc::{tc_alpha, LimiterState, TcEnvelope};
+use modular::ModularSynth;
 use rasp::RaspSynth;
 
 pub const CYCLE_DEG: f64 = 720.0;
@@ -157,6 +160,7 @@ pub struct PowertrainConfig {
     pub half_block: HalfBlockConfig,
     pub combustion_voices: CombustionVoicesConfig,
     pub rasp: RaspConfig,
+    pub modular: ModularConfig,
     pub limiter: LimiterConfig,
     pub tc: TcConfig,
     /// Per-LOD DSP quality profile (resonator scales + coefficient update
@@ -194,6 +198,7 @@ impl Default for PowertrainConfig {
             half_block: HalfBlockConfig::default(),
             combustion_voices: CombustionVoicesConfig::default(),
             rasp: RaspConfig::default(),
+            modular: ModularConfig::default(),
             limiter: LimiterConfig::default(),
             tc: TcConfig::default(),
             quality: QualityProfile::default(),
@@ -231,6 +236,7 @@ impl From<&AudioPowertrainSynthesis> for PowertrainConfig {
             half_block: contract.half_block.clone(),
             combustion_voices: contract.combustion_voices.clone(),
             rasp: contract.rasp.clone(),
+            modular: contract.modular.clone(),
             limiter: contract.limiter.clone(),
             tc: contract.tc.clone(),
             quality: contract.distance_levels.dsp.clone(),
@@ -319,6 +325,22 @@ struct CylinderExcitation {
     /// pressure edge (own high corner, see `rasp_derivative_env`) so it is
     /// inherently event-synced and decays between firing events.
     rasp: f32,
+    fired: bool,
+    crank_phase_deg: f32,
+    pressure_peak: f32,
+    pressure_derivative_delta: f32,
+    event_energy: f32,
+    cycle_variation: f32,
+}
+
+#[derive(Clone, Copy, Default)]
+struct PhysicalCombustion {
+    cylinder: u8,
+    crank_phase_deg: f32,
+    pressure_peak: f32,
+    pressure_derivative: f32,
+    energy: f32,
+    cycle_variation: f32,
 }
 
 impl CylState {
@@ -389,13 +411,19 @@ impl CylState {
     ) -> CylinderExcitation {
         self.phase_deg += self.increment;
         self.event_age_deg += self.increment;
+        let mut fired = false;
+        let mut crank_phase_deg = 0.0f32;
+        let mut event_cycle_variation = 0.0f32;
         if self.phase_deg >= self.next_event_phase {
+            fired = true;
+            crank_phase_deg = self.next_event_phase.rem_euclid(CYCLE_DEG) as f32;
             self.events_fired += 1;
             self.event_index += 1;
             let jitter = self.jitter.next_offset();
             self.next_event_phase =
                 self.firing_phase + self.event_index as f64 * CYCLE_DEG + jitter;
             let cycle_gain = 1.0 + self.jitter.next_signed() * self.cycle_variation;
+            event_cycle_variation = cycle_gain - 1.0;
             self.impulse_amp = amp * self.cylinder_gain * cycle_gain;
             self.event_age_deg = 0.0;
         }
@@ -438,6 +466,21 @@ impl CylState {
             intake: self.scavenge_env * self.impulse_amp,
             exhaust: exhaust_pressure * (1.0 - edge) + self.exhaust_derivative_env * (1.5 * edge),
             rasp: self.rasp_derivative_env,
+            fired,
+            crank_phase_deg,
+            pressure_peak: self.impulse_amp,
+            // The transport converts this real model delta to pressure units/s.
+            // At the exact threshold sample the attack envelope is zero, so use
+            // the model's next-sample pressure rather than fabricating a value.
+            pressure_derivative_delta: if fired {
+                let next_env = self.combustion_event.value(self.increment);
+                let next_burn = next_env * (2.0 - next_env);
+                next_burn * self.impulse_amp - pressure
+            } else {
+                raw_body_derivative
+            },
+            event_energy: amp * self.cylinder_gain,
+            cycle_variation: event_cycle_variation,
         }
     }
 }
@@ -463,6 +506,12 @@ pub struct DiagnosticFrame {
     /// Rasp (grit) excitation after band-limiting + soft saturation, per bank.
     pub rasp_a: f32,
     pub rasp_b: f32,
+    /// Post-simulator modular layer (PolyBLEP voices + ADSR), per bank and
+    /// summed. Like every layer, both banks stay separate until the final mono
+    /// sum.
+    pub modular_a: f32,
+    pub modular_b: f32,
+    pub modular: f32,
     /// Exhaust excitation before the per-bank exhaust DSP/DC guard.
     pub exhaust_raw_a: f32,
     pub exhaust_raw_b: f32,
@@ -553,10 +602,14 @@ pub struct HalfBlock {
     rasp_a: RaspSynth,
     rasp_b: RaspSynth,
     rasp_config: RaspConfig,
+    modular_engine: ModularSynth,
+    modular_config: ModularConfig,
     combustion_voices: CombustionVoicesConfig,
     current_rpm_norm: f32,
     /// LOD gate for the rasp path (Near full, Mid reduced, Far/Virtual off).
     rasp_lod_enabled: bool,
+    /// LOD gate for the modular layer (Near/Mid full, Far/Virtual off).
+    modular_lod_enabled: bool,
     master: MonoMaster,
     current_throttle: f32,
     limiter: LimiterState,
@@ -572,6 +625,7 @@ pub struct HalfBlock {
     lod_quality: QualityProfile,
     coeff_update_steps: u32,
     coeff_update_counter: u32,
+    last_physical_events: [Option<PhysicalCombustion>; 5],
 }
 
 impl HalfBlock {
@@ -582,7 +636,10 @@ impl HalfBlock {
         let derivative_alpha =
             1.0 - one_pole_alpha(sr, 1.0 / (std::f64::consts::TAU * DERIVATIVE_CUTOFF_HZ));
         let rasp_derivative_alpha = 1.0
-            - one_pole_alpha(sr, 1.0 / (std::f64::consts::TAU * RASP_DERIVATIVE_CUTOFF_HZ));
+            - one_pole_alpha(
+                sr,
+                1.0 / (std::f64::consts::TAU * RASP_DERIVATIVE_CUTOFF_HZ),
+            );
         let cylinders: [CylState; 5] = std::array::from_fn(|index| {
             // Fixed zero-mean spread: manufacturing/header differences remain
             // stable, while the event RNG supplies the slower cycle variation.
@@ -659,9 +716,17 @@ impl HalfBlock {
                 config.rasp.saturation,
             ),
             rasp_config: config.rasp.clone(),
+            modular_engine: ModularSynth::new(
+                &config.modular,
+                sample_rate,
+                config.seed,
+                config.half_block.phase_offset_deg as f64,
+            ),
+            modular_config: config.modular.clone(),
             combustion_voices: config.combustion_voices.clone(),
             current_rpm_norm: 0.0,
             rasp_lod_enabled: true,
+            modular_lod_enabled: true,
             current_throttle: 0.0,
             limiter: LimiterState::new(),
             limiter_config: config.limiter.clone(),
@@ -676,6 +741,7 @@ impl HalfBlock {
             lod_quality: config.quality.clone(),
             coeff_update_steps: config.quality.coeff_update_steps.max(1),
             coeff_update_counter: 0,
+            last_physical_events: [None; 5],
         }
     }
 
@@ -778,6 +844,9 @@ impl HalfBlock {
         // Rasp budget: full near, reduced mid, and completely bypassed at
         // Far/Virtual (no Biquads and no tanh in the distant path).
         self.rasp_lod_enabled = !matches!(level, LodLevel::Far | LodLevel::Virtual);
+        // Modular budget: same doctrine as rasp (16 biquads + 4 oscillators per
+        // bank stay out of the distant path).
+        self.modular_lod_enabled = !matches!(level, LodLevel::Far | LodLevel::Virtual);
         self.coeff_update_steps = match level {
             LodLevel::Near | LodLevel::Mid => self.lod_quality.coeff_update_steps.max(1),
             LodLevel::Far | LodLevel::Virtual => self.lod_quality.far_coeff_update_steps.max(1),
@@ -844,6 +913,7 @@ impl HalfBlock {
         self.energy += (target_energy - self.energy) * (1.0 - alpha);
         let mut excitation = CylinderExcitation::default();
         let mut exhaust_headers = [0.0f32; 5];
+        self.last_physical_events = [None; 5];
         for (index, cylinder) in self.cylinders.iter_mut().enumerate() {
             let event = cylinder.step(
                 self.energy,
@@ -855,6 +925,16 @@ impl HalfBlock {
             excitation.exhaust += event.exhaust;
             excitation.rasp += event.rasp * self.rasp_config.input_gain;
             exhaust_headers[index] = event.exhaust;
+            if event.fired {
+                self.last_physical_events[index] = Some(PhysicalCombustion {
+                    cylinder: index as u8,
+                    crank_phase_deg: event.crank_phase_deg,
+                    pressure_peak: event.pressure_peak,
+                    pressure_derivative: event.pressure_derivative_delta * self.sample_rate as f32,
+                    energy: event.event_energy,
+                    cycle_variation: event.cycle_variation,
+                });
+            }
         }
         self.limiter.step(
             self.limiter_target_cut,
@@ -963,6 +1043,29 @@ impl HalfBlock {
         } else {
             0.0
         };
+        // Modular layer: post-simulator PolyBLEP voices + ADSR, keyed by the
+        // same bank firing clock. Follows the profile `modular.enabled` flag,
+        // its own RPM curve and the simulated energy. All voices are banded, so
+        // the layer only fills registers the combustion body lacks.
+        let modular_gain = if self.modular_config.enabled {
+            ModularSynth::rpm_gain(
+                self.modular_config.gain,
+                self.modular_config.rpm_start_ratio,
+                self.modular_config.rpm_full_ratio,
+                self.current_rpm_norm,
+            )
+        } else {
+            0.0
+        };
+        let modular_active = modular_gain != 0.0 && self.modular_lod_enabled;
+        let (modular_a, modular_b) = if modular_active {
+            let (a, b) = self
+                .modular_engine
+                .process(self.cylinders[0].increment, self.energy);
+            (a * modular_gain, b * modular_gain)
+        } else {
+            (0.0, 0.0)
+        };
         // The limiter "air" blend re-injects dry excitation while cutting. That
         // would be a *third* sharp voice on top of the two declared ones, so it
         // is held at zero for the combustion-only test: the output is composed
@@ -976,7 +1079,8 @@ impl HalfBlock {
         // Body + edge + optional rasp: intake/exhaust/air are forced to zero
         // above; the only global controls left are the engine limiter and TC.
         let rasp_mono = rasp_gain * (rasp_a + rasp_b);
-        let mono_engine = body_mono_air + edge_gain * combustion_edge + rasp_mono;
+        let modular_mono = modular_a + modular_b;
+        let mono_engine = body_mono_air + edge_gain * combustion_edge + rasp_mono + modular_mono;
         debug_assert!(
             intake == 0.0 && exhaust == 0.0,
             "combustion-only mix received a non-combustion voice"
@@ -999,6 +1103,9 @@ impl HalfBlock {
             intake_b,
             rasp_a,
             rasp_b,
+            modular_a,
+            modular_b,
+            modular: modular_mono,
             exhaust_raw_a: bank_a.exhaust,
             exhaust_raw_b: bank_b.exhaust,
             collector_a: self.bank_a_dsp.exhaust.collector_output(),
@@ -1018,6 +1125,30 @@ impl HalfBlock {
     /// returned samples are always bit-identical.
     pub fn render_stereo(&mut self) -> (f32, f32) {
         self.render_diagnostic_frame().master
+    }
+
+    /// Render one sample and packetize the combustion events produced by the
+    /// same `CylState::step` call. This is the only C++ event ingress.
+    pub fn render_stereo_with_events(
+        &mut self,
+        sink: &mut crate::dsp_contract::EventBuilder,
+        sample_offset: u32,
+    ) -> (f32, f32) {
+        let master = self.render_diagnostic_frame().master;
+        let bank_b_delay = self.reconstruct.offset_samples();
+        for event in self.last_physical_events.iter().flatten() {
+            sink.record_physical(
+                sample_offset,
+                event.cylinder,
+                event.crank_phase_deg,
+                event.pressure_peak,
+                event.pressure_derivative,
+                event.energy,
+                event.cycle_variation,
+                bank_b_delay,
+            );
+        }
+        master
     }
 
     /// Current smoothed load [0.0, 1.0] (for intake gating diagnostics).
@@ -1064,6 +1195,57 @@ impl HalfBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn captured_events(block_size: usize, total: usize) -> Vec<(u64, u8, u8, u32, u32, u32)> {
+        let mut synth = HalfBlock::new(&config(), 44_100);
+        synth.update_controls(9000.0, 1000.0, 15000.0, 1.0);
+        let mut sink = crate::dsp_contract::EventBuilder::new(44_100.0, 0);
+        let mut result = Vec::new();
+        let mut base = 0usize;
+        while base < total {
+            let count = block_size.min(total - base);
+            sink.begin_block(count as u32);
+            for offset in 0..count {
+                synth.render_stereo_with_events(&mut sink, offset as u32);
+            }
+            let events = sink.finish_block();
+            for event in &events.events[..events.event_count as usize] {
+                result.push((
+                    base as u64 + event.sample_offset as u64,
+                    event.bank,
+                    event.cylinder,
+                    event.pressure.to_bits(),
+                    event.pressure_derivative.to_bits(),
+                    event.cycle_variation.to_bits(),
+                ));
+            }
+            base += count;
+        }
+        result
+    }
+
+    #[test]
+    fn physical_v10_cycle_has_exactly_ten_events_and_both_banks() {
+        // At 9000 RPM and 44.1 kHz one 720-degree cycle is exactly 588 samples.
+        let events = captured_events(588, 588);
+        assert_eq!(events.len(), 10);
+        assert_eq!(events.iter().filter(|e| e.1 == 0).count(), 5);
+        assert_eq!(events.iter().filter(|e| e.1 == 1).count(), 5);
+        for cylinder in 0..5u8 {
+            assert_eq!(events.iter().filter(|e| e.2 == cylinder).count(), 2);
+        }
+    }
+
+    #[test]
+    fn physical_event_transport_is_block_partition_invariant() {
+        let reference = captured_events(2048, 2048);
+        assert_eq!(reference, captured_events(1024, 2048));
+        assert_eq!(reference, captured_events(512, 2048));
+        assert_eq!(reference, captured_events(256, 2048));
+        for pair in reference.windows(2) {
+            assert!((pair[0].0, pair[0].1, pair[0].2) <= (pair[1].0, pair[1].1, pair[1].2));
+        }
+    }
 
     fn config() -> PowertrainConfig {
         PowertrainConfig::default()
@@ -1125,6 +1307,106 @@ mod tests {
         }
     }
 
+    fn modular_test_config() -> ModularConfig {
+        let mut modular = ModularConfig::default();
+        modular.enabled = true;
+        modular.gain = 0.5;
+        modular.voices[0] = ModularVoiceConfig {
+            enabled: true,
+            waveform: Waveform::Saw,
+            frequency_factor: 0.5,
+            gain: 0.30,
+            highpass_hz: 300.0,
+            lowpass_hz: 3500.0,
+        };
+        modular.voices[1] = ModularVoiceConfig {
+            enabled: true,
+            waveform: Waveform::Square,
+            frequency_factor: 1.25,
+            gain: 0.12,
+            highpass_hz: 1200.0,
+            lowpass_hz: 5000.0,
+        };
+        modular.voices[2] = ModularVoiceConfig {
+            enabled: true,
+            waveform: Waveform::Noise,
+            frequency_factor: 1.0,
+            gain: 0.08,
+            highpass_hz: 3500.0,
+            lowpass_hz: 9000.0,
+        };
+        modular.voices[3] = ModularVoiceConfig {
+            enabled: true,
+            waveform: Waveform::Saw,
+            frequency_factor: 7.0,
+            gain: 0.035,
+            highpass_hz: 7000.0,
+            lowpass_hz: 11000.0,
+        };
+        modular
+    }
+
+    #[test]
+    fn modular_disabled_is_exact_zero() {
+        // Default profile: modular.enabled = false, the layer must be silence
+        // even while the engine and the other voices are running.
+        let mut block = HalfBlock::new(&config(), 44100);
+        block.update_controls(12000.0, 1000.0, 15000.0, 0.85);
+        let mut engine_ran = false;
+        for _ in 0..4096 {
+            let frame = block.render_diagnostic_frame();
+            assert_eq!(frame.modular_a.to_bits(), 0.0f32.to_bits());
+            assert_eq!(frame.modular_b.to_bits(), 0.0f32.to_bits());
+            assert_eq!(frame.modular.to_bits(), 0.0f32.to_bits());
+            engine_ran = engine_ran || frame.mono_engine != 0.0;
+        }
+        assert!(engine_ran, "engine body did not run during silence check");
+    }
+
+    #[test]
+    fn modular_enabled_outputs_band_content_and_stays_finite() {
+        let mut powertrain = config();
+        powertrain.modular = modular_test_config();
+        let mut block = HalfBlock::new(&powertrain, 44100);
+        block.update_controls(12000.0, 1000.0, 15000.0, 0.85);
+        let mut peak = 0.0f32;
+        let mut nonzero = 0usize;
+        for _ in 0..4096 {
+            let frame = block.render_diagnostic_frame();
+            assert!(frame.modular_a.is_finite() && frame.modular_b.is_finite());
+            peak = peak.max(frame.modular.abs());
+            if frame.modular != 0.0 {
+                nonzero += 1;
+            }
+        }
+        assert!(peak > 0.0, "modular layer produced no output");
+        assert!(peak <= 1.2, "modular layer unbounded: {peak}");
+        assert!(
+            nonzero > 2048,
+            "modular layer mostly silent: {nonzero}/4096"
+        );
+    }
+
+    #[test]
+    fn modular_bank_b_is_offset_from_bank_a() {
+        let mut powertrain = config();
+        powertrain.modular = modular_test_config();
+        let mut block = HalfBlock::new(&powertrain, 44100);
+        block.update_controls(12000.0, 1000.0, 15000.0, 0.85);
+        let mut same = true;
+        for _ in 0..4096 {
+            let frame = block.render_diagnostic_frame();
+            if frame.modular_a.to_bits() != frame.modular_b.to_bits() {
+                same = false;
+                break;
+            }
+        }
+        assert!(
+            !same,
+            "modular banks are identical: bank B offset is not applied"
+        );
+    }
+
     #[test]
     fn mono_master_is_exactly_monophonic() {
         // A mono stage cannot create a difference: identical inputs yield
@@ -1153,7 +1435,10 @@ mod tests {
         block.update_controls(0.0, 1000.0, 15000.0, 0.0);
         for _ in 0..4096 {
             let frame = block.render_diagnostic_frame();
-            assert!(frame.rasp.abs() < 1.0e-6, "rasp must be silent without events");
+            assert!(
+                frame.rasp.abs() < 1.0e-6,
+                "rasp must be silent without events"
+            );
         }
     }
 

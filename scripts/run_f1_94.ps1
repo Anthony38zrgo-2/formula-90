@@ -128,6 +128,31 @@ $env:APPDATA = (Resolve-Path -LiteralPath $runtimeAppData).Path
 $env:LOCALAPPDATA = (Resolve-Path -LiteralPath $runtimeLocalAppData).Path
 $godot = Resolve-Godot $GodotPath
 
+$buildSourcePath = Join-Path $game 'BUILD_SOURCE'
+if (-not (Test-Path -LiteralPath $buildSourcePath -PathType Leaf)) {
+    throw 'game/BUILD_SOURCE ausente. Ejecute scripts/build_windows.ps1.'
+}
+$headSha = (& git rev-parse HEAD).Trim()
+$buildSource = (Get-Content -LiteralPath $buildSourcePath -Raw).Trim()
+if ($buildSource -ne $headSha) {
+    throw "Paridad BUILD/HEAD rota: BUILD_SOURCE=$buildSource HEAD=$headSha. Ejecute scripts/build_windows.ps1."
+}
+$requiredDlls = @(
+    'formula90_core.dll',
+    'game_sim.dll',
+    'vehicle_audio_engine.dll',
+    'vehicle_physics_engine.dll',
+    'psx_art_plugin.dll',
+    'f90_audio_dsp.dll'
+)
+$binDir = Join-Path $game 'addons\formula90s\bin'
+foreach ($dll in $requiredDlls) {
+    if (-not (Test-Path -LiteralPath (Join-Path $binDir $dll) -PathType Leaf)) {
+        throw "DLL faltante: $dll. Ejecute scripts/build_windows.ps1."
+    }
+}
+Write-Host "Paridad BUILD/HEAD validada: $headSha" -ForegroundColor Green
+
 Write-Host "Importando y validando $variantLabel..." -ForegroundColor Cyan
 & $godot --headless --path $game --import
 if ($LASTEXITCODE -ne 0) {

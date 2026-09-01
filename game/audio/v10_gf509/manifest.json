@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "key": "v10_gf509",
+  "output_gain": 0.61,
+  "samples": [
+    {
+      "key": "low",
+      "metadata": "98_int_low.sample-layer.json",
+      "native_rpm": 7499.0,
+      "effective_loop_rpm": 7496.8126,
+      "sample_rate": 44100,
+      "channels": 1,
+      "loop_frames": 7059,
+      "tonal": "98_int_low.loop.tonal.wav",
+      "tonal_sha256": "09b52292fae91e3c4ae4c2805de1f5f418799f737a6fd999b6207d67203e071f",
+      "residual": "98_int_low.loop.residual.wav",
+      "residual_sha256": "c454c232a0d8e274200495420948aa74666c944d5911bde413e41d5bb3e0c635"
+    },
+    {
+      "key": "med",
+      "metadata": "98_int_med.sample-layer.json",
+      "native_rpm": 8202.0,
+      "effective_loop_rpm": 8195.1220,
+      "sample_rate": 44100,
+      "channels": 1,
+      "loop_frames": 2583,
+      "tonal": "98_int_med.loop.tonal.wav",
+      "tonal_sha256": "55f57a3ec2e7caf9eca8edeb01dc18f3dedca074cc27a038ce129f9c0fe3fff4",
+      "residual": "98_int_med.loop.residual.wav",
+      "residual_sha256": "50e8e51c719d76feff5b5cba4237cfbaf05bb8323af524c8e5fe6ad040cbf14d"
+    },
+    {
+      "key": "max",
+      "metadata": "98_int_max_5.sample-layer.json",
+      "native_rpm": 15327.0,
+      "effective_loop_rpm": 15320.6273,
+      "sample_rate": 44100,
+      "channels": 1,
+      "loop_frames": 4145,
+      "tonal": "98_int_max_5.loop.tonal.wav",
+      "tonal_sha256": "657f55a1e34b154d948009f20e6ae78fcad9a4904b5bfc3bb34638a23079082e",
+      "residual": "98_int_max_5.loop.residual.wav",
+      "residual_sha256": "544a22367793c8111ce182e54438164f70895c6a39b2cf9616cb101470187b48"
+    }
+  ]
+}

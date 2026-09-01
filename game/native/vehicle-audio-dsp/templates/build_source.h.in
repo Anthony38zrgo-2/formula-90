@@ -1,0 +1,6 @@
+#ifndef F90_DSP_BUILD_SOURCE_H
+#define F90_DSP_BUILD_SOURCE_H
+
+#define F90_DSP_BUILD_SOURCE "@F90_DSP_GIT_HEAD_SHA@"
+
+#endif

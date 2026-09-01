@@ -24,12 +24,7 @@ pub struct RaspSynth {
 }
 
 impl RaspSynth {
-    pub fn new(
-        sample_rate: u32,
-        highpass_hz: f32,
-        lowpass_hz: f32,
-        saturation: f32,
-    ) -> Self {
+    pub fn new(sample_rate: u32, highpass_hz: f32, lowpass_hz: f32, saturation: f32) -> Self {
         Self {
             hp: Biquad::highpass(sample_rate as f32, highpass_hz),
             lp: Biquad::lowpass(sample_rate as f32, lowpass_hz),
@@ -53,12 +48,7 @@ impl RaspSynth {
     /// Compute the RPM/load-dependent rasp gain multiplier for one control
     /// update. Returns `gain` scaled by a curve that floors at `RASP_RPM_FLOOR`
     /// and reaches full `gain` at `rpm_full_ratio`.
-    pub fn rpm_gain(
-        gain: f32,
-        rpm_start_ratio: f32,
-        rpm_full_ratio: f32,
-        rpm_norm: f32,
-    ) -> f32 {
+    pub fn rpm_gain(gain: f32, rpm_start_ratio: f32, rpm_full_ratio: f32, rpm_norm: f32) -> f32 {
         let span = (rpm_full_ratio - rpm_start_ratio).max(1e-3);
         let t = ((rpm_norm - rpm_start_ratio) / span).clamp(0.0, 1.0);
         gain * (RASP_RPM_FLOOR + (1.0 - RASP_RPM_FLOOR) * t)

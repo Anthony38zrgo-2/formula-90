@@ -14,6 +14,8 @@ use crate::dsp::{
     adsr::Adsr, eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
     tube::Tube,
 };
+use crate::dsp_contract::EventBuilder;
+use crate::dsp_runtime::{DspControls, DspRuntime};
 use crate::powertrain::{AudioPowertrainSynthesis, DistanceLevels};
 use crate::state::*;
 use crate::synth::LodLevel;
@@ -211,6 +213,32 @@ const RPM_SMOOTH_TAU: f64 = 0.025;
 /// same 30 ms hot-reload crossfade so LOD switches are inaudible.
 const LOD_TRANSITION_MS: u32 = 30;
 
+/// Hard cap on the per-render-block size the C++ DSP can process in one call
+/// (`F90_DSP_MAX_BLOCK_SAMPLES`). The runtime render callback chunks at this
+/// bound; the Fase-4 harness uses 512, comfortably within it.
+const MAX_CPP_BLOCK: usize = 4096;
+
+#[inline]
+fn scale_cpp_layer(sample: f32, gain: f32) -> f32 {
+    sample * gain.max(0.0)
+}
+
+#[inline]
+fn continuous_output_gain(
+    source: ContinuousSourceKind,
+    smoothed_engine_gain: f32,
+    engine_headroom: f32,
+    synth_volume: f32,
+) -> f32 {
+    let source_gain = match source {
+        // GF509 already models throttle and authoritative engine load internally.
+        // Applying the legacy pedal gain here attenuates coast a second time.
+        ContinuousSourceKind::V10Gf509 => 1.0,
+        ContinuousSourceKind::Legacy => smoothed_engine_gain,
+    };
+    source_gain * engine_headroom * synth_volume
+}
+
 /// Stateful engine audio mixer.
 /// Real-time audio DSP must never stall on subnormal (denormal) floats. On x86
 /// a subnormal operand or result costs ~100+ cycles; after a loud passage the
@@ -328,6 +356,18 @@ pub struct VehicleAudioEngine {
     synth_enabled: bool,
     synth_volume: f32,
     last_synth_energy: f32,
+    // Used only when the C++ layer is active: the Rust body is rendered first
+    // so its real CylState events can be packetized before the DLL processes
+    // the same block. Allocated once during construction.
+    synth_block_l: Vec<f32>,
+    synth_block_r: Vec<f32>,
+    gf509: Option<v10_engine_synth::Gf509Runtime>,
+    continuous_source: ContinuousSourceKind,
+    gf509_block_l: Vec<f32>,
+    gf509_block_r: Vec<f32>,
+    gf509_render_failed: bool,
+    diagnostics: ContinuousDiagnostics,
+    diagnostic_mode: DiagnosticMode,
 
     // Camera-to-vehicle listener distance (metres), forwarded to the controller
     // and smoothed upstream. Not baked into the synth (see Commit 6 spec).
@@ -336,6 +376,45 @@ pub struct VehicleAudioEngine {
     // thresholds/hysteresis that drive it (derived from the powertrain contract).
     lod: LodLevel,
     lod_levels: DistanceLevels,
+
+    // Fase 4 — optional C++ post-combustion DSP layer. It is an *added
+    // enhancement* to the approved `combustion_body`, never a replacement.
+    // `cpp_layer_gain` defaults to 0.0 and the layer is disabled by default, so
+    // the existing path is byte-invariant until explicitly enabled (4.3).
+    cpp_dsp: Option<DspRuntime>,
+    cpp_event_builder: Option<EventBuilder>,
+    cpp_layer_enabled: bool,
+    cpp_layer_gain: f32,
+    // Preallocated per-block C++ output buffers (no allocation in the callback).
+    cpp_out_l: Vec<f32>,
+    cpp_out_r: Vec<f32>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContinuousSourceKind {
+    Legacy,
+    V10Gf509,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DiagnosticMode {
+    Mix,
+    V10Only,
+    EventsOnly,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ContinuousDiagnostics {
+    pub source: u8,
+    pub received_rpm: f32,
+    pub rendered_rpm: f32,
+    pub peak_pre_protection: f32,
+    pub protection_reduction_db: f32,
+    pub last_render_ns: u64,
+    pub worst_render_ns: u64,
+    pub blocks: u64,
+    pub underruns: u64,
+    pub asset_or_render_errors: u64,
 }
 
 impl VehicleAudioEngine {
@@ -519,9 +598,24 @@ impl VehicleAudioEngine {
             synth_enabled: false,
             synth_volume: 1.0,
             last_synth_energy: 0.0,
+            synth_block_l: vec![0.0; MAX_CPP_BLOCK],
+            synth_block_r: vec![0.0; MAX_CPP_BLOCK],
+            gf509: None,
+            continuous_source: ContinuousSourceKind::Legacy,
+            gf509_block_l: vec![0.0; MAX_CPP_BLOCK],
+            gf509_block_r: vec![0.0; MAX_CPP_BLOCK],
+            gf509_render_failed: false,
+            diagnostics: ContinuousDiagnostics::default(),
+            diagnostic_mode: DiagnosticMode::Mix,
             listener_distance: 0.0,
             lod: LodLevel::Near,
             lod_levels: DistanceLevels::default(),
+            cpp_dsp: None,
+            cpp_event_builder: None,
+            cpp_layer_enabled: false,
+            cpp_layer_gain: 0.0,
+            cpp_out_l: vec![0.0f32; MAX_CPP_BLOCK],
+            cpp_out_r: vec![0.0f32; MAX_CPP_BLOCK],
         })
     }
 
@@ -702,6 +796,15 @@ impl VehicleAudioEngine {
                 synth.update_controls(rpm, idle_rpm, max_rpm, throttle);
             }
         }
+        if let Some(gf509) = &mut self.gf509 {
+            let _ = gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
+                rpm: rpm.clamp(0.0, 25_000.0) as f32,
+                throttle: throttle.clamp(0.0, 1.0),
+                load: throttle.clamp(0.0, 1.0),
+                gear: gear.clamp(-1, 12) as i8,
+                dt_seconds: 0.0,
+            });
+        }
 
         self.last_norm = norm;
         self.last_rpm = rpm;
@@ -768,6 +871,8 @@ impl VehicleAudioEngine {
     /// layers and bed are read with a fractional cursor (no Godot resampler),
     /// gains are smoothed per-sample, and a tanh soft-clip limiter catches peaks.
     pub fn render(&mut self, out_l: &mut [f32], out_r: &mut [f32], n: usize) {
+        let render_started = std::time::Instant::now();
+        let mut peak_pre_protection = 0.0f32;
         enable_fast_floats();
         self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
         let sr = self.sample_rate as f64;
@@ -782,6 +887,84 @@ impl VehicleAudioEngine {
         let scrape_release_alpha = 1.0 - (-1.0 / (sr * 0.150)).exp();
         let tyre_attack_alpha = 1.0 - (-1.0 / (sr * 0.025)).exp();
         let tyre_release_alpha = 1.0 - (-1.0 / (sr * 0.160)).exp();
+
+        // Fase 4 — C++ post-combustion enhancement layer. Disabled by default
+        // (gain 0); it never alters `combustion_body`. The Rust `EventBuilder` is
+        // the temporal authority: it produces the same `F90DspEventBlock` the C++
+        // consumes, so the cpp impulse coincides with `rust_event_impulse` timing.
+        let cpp_active = self.cpp_layer_enabled
+            && self.cpp_dsp.is_some()
+            && self.cpp_event_builder.is_some()
+            && n <= MAX_CPP_BLOCK;
+        let cpp_gain = if cpp_active { self.cpp_layer_gain } else { 0.0 };
+        let mut synth_prerendered = false;
+        let gf509_active = self.continuous_source == ContinuousSourceKind::V10Gf509
+            && self.gf509.is_some()
+            && n <= MAX_CPP_BLOCK;
+        self.gf509_render_failed = false;
+        if gf509_active {
+            if let Some(gf509) = &mut self.gf509 {
+                if gf509
+                    .render_block(&mut self.gf509_block_l[..n], &mut self.gf509_block_r[..n])
+                    .is_err()
+                {
+                    self.gf509_render_failed = true;
+                    self.gf509_block_l[..n].fill(0.0);
+                    self.gf509_block_r[..n].fill(0.0);
+                }
+            }
+        }
+        if cpp_active {
+            let block_rpm = self.smoothed_rpm as f32;
+            let mut ok = false;
+            if let (Some(dsp), Some(builder), Some(synth)) = (
+                self.cpp_dsp.as_mut(),
+                self.cpp_event_builder.as_mut(),
+                self.synth.as_mut(),
+            ) {
+                builder.begin_block(n as u32);
+                if self.synth_enabled && self.lod != LodLevel::Virtual {
+                    for i in 0..n {
+                        let (l, r) = synth.render_stereo_with_events(builder, i as u32);
+                        self.synth_block_l[i] = l;
+                        self.synth_block_r[i] = r;
+                    }
+                    synth_prerendered = true;
+                }
+                // The event derivative already carries physical event amplitude.
+                // Feed the C++ layer the synth's smoothed mechanical energy rather
+                // than raw pedal position so coast/idle retain a continuous timbre
+                // and load is not squared by a second throttle multiplier.
+                let acoustic_load = synth.energy().clamp(0.0, 1.0);
+                let block = builder.finish_block();
+                let ctl = DspControls {
+                    rpm: block_rpm,
+                    throttle: self.last_throttle,
+                    load: acoustic_load,
+                    tc_cut: 0.0,
+                    // Rust owns the layer gain at the final mix point. C++ runs
+                    // at unity so the response is gain, never gain squared.
+                    master_gain: 1.0,
+                    lod: 0,
+                    bypass: false,
+                };
+                if dsp.process_block(&block, &ctl).is_ok() {
+                    let m = dsp.left().len().min(n);
+                    self.cpp_out_l[..m].copy_from_slice(&dsp.left()[..m]);
+                    self.cpp_out_r[..m].copy_from_slice(&dsp.right()[..m]);
+                    ok = true;
+                }
+            }
+            if !ok {
+                for v in &mut self.cpp_out_l[..n] {
+                    *v = 0.0;
+                }
+                for v in &mut self.cpp_out_r[..n] {
+                    *v = 0.0;
+                }
+            }
+        }
+
         for i in 0..n {
             let mut mixed_l = 0.0f32;
             let mut mixed_r = 0.0f32;
@@ -833,7 +1016,21 @@ impl VehicleAudioEngine {
             self.smoothed_tyre_scrub_gain +=
                 (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
 
-            if self.synth_enabled {
+            if self.diagnostic_mode != DiagnosticMode::EventsOnly
+                && self.continuous_source == ContinuousSourceKind::V10Gf509
+            {
+                let gain = continuous_output_gain(
+                    self.continuous_source,
+                    eg,
+                    self.cfg.engine_headroom,
+                    self.synth_volume,
+                );
+                mixed_l += self.gf509_block_l.get(i).copied().unwrap_or(0.0) * gain;
+                mixed_r += self.gf509_block_r.get(i).copied().unwrap_or(0.0) * gain;
+                self.cur_weights.iter_mut().for_each(|weight| *weight = 0.0);
+                self.cur_weights[0] = 1.0;
+                self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
+            } else if self.diagnostic_mode != DiagnosticMode::EventsOnly && self.synth_enabled {
                 let (synth_l, synth_r) = if self.lod == LodLevel::Virtual {
                     // Virtual: no audible frames. Only advance the mechanical phase
                     // accumulator ring (cheap, keeps re-entry phase-coherent).
@@ -842,11 +1039,20 @@ impl VehicleAudioEngine {
                     }
                     (0.0, 0.0)
                 } else {
-                    self.synth
-                        .as_mut()
-                        .map_or((0.0, 0.0), |s| s.render_stereo())
+                    if synth_prerendered {
+                        (self.synth_block_l[i], self.synth_block_r[i])
+                    } else {
+                        self.synth
+                            .as_mut()
+                            .map_or((0.0, 0.0), |s| s.render_stereo())
+                    }
                 };
-                let gain = eg * self.cfg.engine_headroom * self.synth_volume;
+                let gain = continuous_output_gain(
+                    self.continuous_source,
+                    eg,
+                    self.cfg.engine_headroom,
+                    self.synth_volume,
+                );
                 // The procedural engine is strictly dual-mono (synth_l ==
                 // synth_r bit for bit). No pan law is applied here: an
                 // equal-power centre would shave ~3.01 dB off each channel and
@@ -877,6 +1083,9 @@ impl VehicleAudioEngine {
                     *pitch = engine_pitch_scale(self.smoothed_rpm, band);
                 }
             }
+
+            let continuous_l = mixed_l;
+            let continuous_r = mixed_r;
 
             // Surface bed (loops at native rate).
             let mut bed = 0.0f32;
@@ -993,8 +1202,23 @@ impl VehicleAudioEngine {
                 mixed_l += wet_l;
                 mixed_r += wet_r;
             }
+            if self.diagnostic_mode == DiagnosticMode::V10Only {
+                mixed_l = continuous_l;
+                mixed_r = continuous_r;
+            }
+            // Fase 4 C++ enhancement, added to the master (pre-limiter). Inert when
+            // disabled or gain 0, leaving `combustion_body` untouched.
+            if cpp_gain > 0.0 {
+                let cl = self.cpp_out_l.get(i).copied().unwrap_or(0.0);
+                let cr = self.cpp_out_r.get(i).copied().unwrap_or(0.0);
+                mixed_l += scale_cpp_layer(cl, cpp_gain);
+                mixed_r += scale_cpp_layer(cr, cpp_gain);
+            }
             let saturated_l = self.limiter(mixed_l * self.master_gain);
             let saturated_r = self.limiter(mixed_r * self.master_gain);
+            peak_pre_protection = peak_pre_protection
+                .max((mixed_l * self.master_gain).abs())
+                .max((mixed_r * self.master_gain).abs());
             let (mut out_left, mut out_right) =
                 self.stereo_limiter.process(saturated_l, saturated_r);
             if self.transition_remaining > 0 && self.transition_total > 0 {
@@ -1014,6 +1238,30 @@ impl VehicleAudioEngine {
             if i < out_r.len() {
                 out_r[i] = out_right;
             }
+        }
+        let elapsed_ns = render_started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
+        let deadline_ns = n as u64 * 1_000_000_000u64 / self.sample_rate.max(1) as u64;
+        self.diagnostics.source = u8::from(self.continuous_source == ContinuousSourceKind::V10Gf509);
+        self.diagnostics.received_rpm = self.target_rpm as f32;
+        self.diagnostics.rendered_rpm = self.gf509.as_ref().map_or(
+            self.smoothed_rpm as f32,
+            |runtime| runtime.rendered_telemetry().rpm,
+        );
+        self.diagnostics.peak_pre_protection = peak_pre_protection;
+        self.diagnostics.protection_reduction_db = if peak_pre_protection > 1.0 {
+            -20.0 * peak_pre_protection.log10()
+        } else {
+            0.0
+        };
+        self.diagnostics.last_render_ns = elapsed_ns;
+        self.diagnostics.worst_render_ns = self.diagnostics.worst_render_ns.max(elapsed_ns);
+        self.diagnostics.blocks = self.diagnostics.blocks.saturating_add(1);
+        if elapsed_ns > deadline_ns {
+            self.diagnostics.underruns = self.diagnostics.underruns.saturating_add(1);
+        }
+        if self.gf509_render_failed {
+            self.diagnostics.asset_or_render_errors =
+                self.diagnostics.asset_or_render_errors.saturating_add(1);
         }
     }
 
@@ -1121,6 +1369,94 @@ impl VehicleAudioEngine {
 
     pub fn synth_enabled(&self) -> bool {
         self.synth_enabled
+    }
+
+    /// Select the packaged GF509 continuous source. Initialization failures
+    /// explicitly retain the legacy source; render failures never switch source.
+    pub fn enable_v10_gf509(&mut self, asset_directory: &Path) -> Result<(), String> {
+        let mut config = v10_engine_synth::Gf509RuntimeConfig::default();
+        config.engine.sample_rate = self.sample_rate;
+        config.sample_layer_directory = Some(asset_directory.to_path_buf());
+        config.max_block_frames = MAX_CPP_BLOCK;
+        match v10_engine_synth::Gf509Runtime::new(config) {
+            Ok(runtime) => {
+                self.gf509 = Some(runtime);
+                self.continuous_source = ContinuousSourceKind::V10Gf509;
+                self.gf509_render_failed = false;
+                Ok(())
+            }
+            Err(error) => {
+                self.continuous_source = ContinuousSourceKind::Legacy;
+                Err(error)
+            }
+        }
+    }
+
+    pub fn use_legacy_continuous_source(&mut self) {
+        self.continuous_source = ContinuousSourceKind::Legacy;
+    }
+
+    pub fn continuous_source(&self) -> ContinuousSourceKind {
+        self.continuous_source
+    }
+
+    pub fn gf509_render_failed(&self) -> bool {
+        self.gf509_render_failed
+    }
+
+    pub fn continuous_diagnostics(&self) -> ContinuousDiagnostics {
+        self.diagnostics
+    }
+
+    pub fn set_diagnostic_mode(&mut self, mode: DiagnosticMode) {
+        self.diagnostic_mode = mode;
+    }
+
+    /// Replace the provisional control-only load with the authoritative physics
+    /// load and tick duration before the next audio block.
+    pub fn set_gf509_physics(&mut self, load: f32, dt_seconds: f32) -> Result<(), String> {
+        if let Some(gf509) = &mut self.gf509 {
+            gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
+                rpm: self.target_rpm.clamp(0.0, 25_000.0) as f32,
+                throttle: self.last_throttle.clamp(0.0, 1.0),
+                load: load.clamp(0.0, 1.0),
+                gear: self.last_gear.clamp(-1, 12) as i8,
+                dt_seconds: dt_seconds.clamp(0.0, 1.0),
+            })?;
+        }
+        Ok(())
+    }
+
+    /// Reset continuous-engine state and stop all active transient voices.
+    /// Asset reload performed by GF509 is a control-thread operation.
+    pub fn reset_audio_state(&mut self) -> Result<(), String> {
+        if let Some(gf509) = &mut self.gf509 {
+            gf509.reset()?;
+        }
+        for one_shot in &mut self.one_shots {
+            one_shot.active = false;
+            one_shot.cursor = 0;
+        }
+        self.bed_cursor = 0.0;
+        self.scrape_cursor = 0.0;
+        self.tyre_scrub_cursor = 0.0;
+        self.smoothed_engine_gain = 0.0;
+        self.target_engine_gain = 0.0;
+        self.smoothed_bed_gain = 0.0;
+        self.target_bed_gain = 0.0;
+        self.smoothed_scrape_gain = 0.0;
+        self.target_scrape_gain = 0.0;
+        self.smoothed_tyre_scrub_gain = 0.0;
+        self.target_tyre_scrub_gain = 0.0;
+        self.smoothed_rpm = 0.0;
+        self.target_rpm = 0.0;
+        self.exhaust_crackle_samples = 0;
+        self.backfire_cooldown_samples = 0;
+        self.last_throttle = 0.0;
+        self.last_gear = 0;
+        self.last_trigger.clear();
+        self.gf509_render_failed = false;
+        Ok(())
     }
 
     pub fn last_synth_energy(&self) -> f32 {
@@ -1246,6 +1582,55 @@ impl VehicleAudioEngine {
                 synth.set_limiter_enabled(active);
             }
         }
+    }
+
+    // --- Fase 4: C++ post-combustion DSP layer (enhancement, default OFF) ---
+
+    /// Attach a loaded C++ DSP runtime. The layer starts disabled with gain 0, so
+    /// the `combustion_body` path is unaffected until explicitly enabled.
+    pub fn attach_cpp_dsp(&mut self, runtime: DspRuntime) {
+        self.cpp_dsp = Some(runtime);
+        self.cpp_event_builder = Some(DspRuntime::make_event_builder(
+            self.sample_rate as f64,
+            0xF090_1994_5CA1,
+        ));
+        self.cpp_layer_enabled = false;
+        self.cpp_layer_gain = 0.0;
+    }
+
+    /// Explicit profile flag: enable/disable the C++ enhancement layer.
+    pub fn set_cpp_layer_enabled(&mut self, on: bool) {
+        self.cpp_layer_enabled = on;
+    }
+
+    /// Set the C++ layer linear gain. Clamped to >= 0. Default is 0 (inert).
+    pub fn set_cpp_layer_gain(&mut self, g: f32) {
+        self.cpp_layer_gain = g.max(0.0);
+    }
+
+    pub fn cpp_layer_enabled(&self) -> bool {
+        self.cpp_layer_enabled
+    }
+
+    pub fn cpp_layer_gain(&self) -> f32 {
+        self.cpp_layer_gain
+    }
+
+    pub fn has_cpp_dsp(&self) -> bool {
+        self.cpp_dsp.is_some()
+    }
+
+    /// Returns a copy of the C++ DSP layer output for the most recently rendered
+    /// block (up to `n` frames), or `None` when the layer is inactive. Used by the
+    /// offline renderer to emit the `cpp_event_impulse` diagnostic stem.
+    pub fn cpp_block_output(&self, n: usize) -> Option<(Vec<f32>, Vec<f32>)> {
+        let active =
+            self.cpp_layer_enabled && self.cpp_dsp.is_some() && self.cpp_event_builder.is_some();
+        if !active {
+            return None;
+        }
+        let n = n.min(self.cpp_out_l.len()).min(self.cpp_out_r.len());
+        Some((self.cpp_out_l[..n].to_vec(), self.cpp_out_r[..n].to_vec()))
     }
 }
 
@@ -1556,9 +1941,24 @@ mod tests {
             synth_enabled: false,
             synth_volume: 1.0,
             last_synth_energy: 0.0,
+            synth_block_l: vec![0.0; MAX_CPP_BLOCK],
+            synth_block_r: vec![0.0; MAX_CPP_BLOCK],
+            gf509: None,
+            continuous_source: ContinuousSourceKind::Legacy,
+            gf509_block_l: vec![0.0; MAX_CPP_BLOCK],
+            gf509_block_r: vec![0.0; MAX_CPP_BLOCK],
+            gf509_render_failed: false,
+            diagnostics: ContinuousDiagnostics::default(),
+            diagnostic_mode: DiagnosticMode::Mix,
             listener_distance: 0.0,
             lod: LodLevel::Near,
             lod_levels: DistanceLevels::default(),
+            cpp_dsp: None,
+            cpp_event_builder: None,
+            cpp_layer_enabled: false,
+            cpp_layer_gain: 0.0,
+            cpp_out_l: vec![0.0f32; MAX_CPP_BLOCK],
+            cpp_out_r: vec![0.0f32; MAX_CPP_BLOCK],
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::ShiftUp,
@@ -2078,6 +2478,71 @@ mod tests {
         assert!(rms_off < 1e-6, "synth off should be silent");
     }
 
+    fn packaged_gf509_assets() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../audio/v10_gf509")
+    }
+
+    #[test]
+    fn gf509_initialization_is_fail_fast_and_retains_legacy() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        assert!(engine
+            .enable_v10_gf509(std::path::Path::new("definitely-missing-gf509-assets"))
+            .is_err());
+        assert_eq!(engine.continuous_source(), ContinuousSourceKind::Legacy);
+    }
+
+    #[test]
+    fn gf509_replaces_only_continuous_source_and_one_shots_remain() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        engine.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
+        engine.set_synth_volume(0.0);
+        engine.set_state(7_499.0, 1_000.0, 15_000.0, 0.92, 100.0, 3, 0.0, "asphalt");
+        let mut silent_l = vec![0.0; 512];
+        let mut silent_r = vec![0.0; 512];
+        engine.render(&mut silent_l, &mut silent_r, 512);
+        assert!(silent_l.iter().all(|sample| sample.abs() < 1e-7));
+        assert_eq!(silent_l, silent_r);
+
+        engine.trigger(Trigger::ShiftUp);
+        let mut event_l = vec![0.0; 512];
+        let mut event_r = vec![0.0; 512];
+        engine.render(&mut event_l, &mut event_r, 512);
+        assert!(event_l.iter().any(|sample| sample.abs() > 1e-6));
+        assert_eq!(engine.continuous_source(), ContinuousSourceKind::V10Gf509);
+        assert!(!engine.gf509_render_failed());
+    }
+
+    #[test]
+    fn gf509_render_has_zero_rust_allocations() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        engine.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
+        engine.set_state(9_000.0, 1_000.0, 15_000.0, 0.8, 120.0, 4, 0.0, "asphalt");
+        let mut left = vec![0.0; 512];
+        let mut right = vec![0.0; 512];
+        engine.render(&mut left, &mut right, 512);
+        crate::allocation_probe::start();
+        engine.render(&mut left, &mut right, 512);
+        let (allocations, frees) = crate::allocation_probe::stop();
+        assert_eq!((allocations, frees), (0, 0));
+    }
+
+    #[test]
+    fn reset_stops_one_shots_and_clears_gf509_state() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        engine.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
+        engine.set_synth_volume(0.0);
+        engine.set_state(9_000.0, 1_000.0, 15_000.0, 0.8, 120.0, 4, 0.0, "asphalt");
+        engine.trigger(Trigger::ShiftUp);
+        engine.reset_audio_state().unwrap();
+        let mut left = vec![0.0; 512];
+        let mut right = vec![0.0; 512];
+        engine.render(&mut left, &mut right, 512);
+        assert!(left.iter().all(|sample| sample.abs() < 1e-7));
+        assert_eq!(left, right);
+        assert!(!engine.gf509_render_failed());
+    }
+
     #[test]
     fn synth_stereo_output_is_dual_mono_and_finite() {
         // The continuous engine carries no width: both mixer channels must be
@@ -2094,7 +2559,9 @@ mod tests {
             .zip(r.iter())
             .all(|(a, b)| a.is_finite() && b.is_finite()));
         assert!(
-            l.iter().zip(r.iter()).all(|(a, b)| a.to_bits() == b.to_bits()),
+            l.iter()
+                .zip(r.iter())
+                .all(|(a, b)| a.to_bits() == b.to_bits()),
             "dual-mono engine channels must not differ"
         );
         assert!(rms(&l[1024..]) > 1e-5, "engine must be audible");
@@ -2250,6 +2717,135 @@ mod tests {
         assert!(
             peak_step < base_step * 2.0 + 0.05,
             "LOD switch produced a click: step {peak_step} vs baseline {base_step}"
+        );
+    }
+
+    // --- Fase 4: C++ DSP layer ON/OFF comparison (4.3 conservative mix) ---
+
+    #[cfg(windows)]
+    fn cpp_scenario(attach: bool, gain: f32) -> (Vec<f32>, Vec<f32>) {
+        let mut e = engine_with_bank(dummy_bank());
+        // The C++ layer consumes real CylState combustion events; there is no
+        // fallback event generator when the physical synth is absent.
+        e.enable_synth(&AudioPowertrainSynthesis::default());
+        if attach {
+            let dsp = DspRuntime::load_default().expect("f90_audio_dsp.dll must be available");
+            e.attach_cpp_dsp(dsp);
+            e.set_cpp_layer_enabled(true);
+            e.set_cpp_layer_gain(gain);
+        }
+        let mut l = Vec::new();
+        let mut r = Vec::new();
+        for _ in 0..3 {
+            e.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+            let mut bl = vec![0.0f32; 512];
+            let mut br = vec![0.0f32; 512];
+            e.render(&mut bl, &mut br, 512);
+            l.extend_from_slice(&bl);
+            r.extend_from_slice(&br);
+        }
+        (l, r)
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn cpp_layer_gain_zero_leaves_body_invariant() {
+        let (a_l, a_r) = cpp_scenario(false, 0.0);
+        let (b_l, b_r) = cpp_scenario(true, 0.0);
+        assert_eq!(a_l.len(), b_l.len());
+        for (x, y) in a_l.iter().zip(&b_l) {
+            assert_eq!(
+                x.to_bits(),
+                y.to_bits(),
+                "left body changed with cpp gain 0"
+            );
+        }
+        for (x, y) in a_r.iter().zip(&b_r) {
+            assert_eq!(
+                x.to_bits(),
+                y.to_bits(),
+                "right body changed with cpp gain 0"
+            );
+        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn cpp_layer_enabled_augments_master() {
+        let (a_l, a_r) = cpp_scenario(false, 0.0);
+        let (c_l, c_r) = cpp_scenario(true, 1.0);
+        let energy = |v: &[f32]| v.iter().map(|s| (s * s) as f64).sum::<f64>();
+        let ea = energy(&a_l) + energy(&a_r);
+        let ec = energy(&c_l) + energy(&c_r);
+        assert!(
+            ec > ea + 1e-6,
+            "enabled C++ layer must increase master energy"
+        );
+        let diff = a_l
+            .iter()
+            .zip(&c_l)
+            .filter(|(x, y)| x.to_bits() != y.to_bits())
+            .count();
+        assert!(diff > 0, "enabled C++ layer must alter at least one sample");
+    }
+
+    #[test]
+    fn gf509_output_gain_does_not_apply_legacy_throttle_attenuation() {
+        let headroom = 0.62;
+        let volume = 0.8;
+        let coast_legacy_gain = engine_gain(0.0);
+        let gf509 = continuous_output_gain(
+            ContinuousSourceKind::V10Gf509,
+            coast_legacy_gain,
+            headroom,
+            volume,
+        );
+        let legacy = continuous_output_gain(
+            ContinuousSourceKind::Legacy,
+            coast_legacy_gain,
+            headroom,
+            volume,
+        );
+
+        assert_eq!(gf509.to_bits(), (headroom * volume).to_bits());
+        assert_eq!(
+            legacy.to_bits(),
+            (coast_legacy_gain * headroom * volume).to_bits()
+        );
+        assert!(gf509 > legacy);
+    }
+
+    #[test]
+    fn cpp_layer_gain_is_linear_not_squared() {
+        let unity = scale_cpp_layer(0.8, 1.0);
+        let half = scale_cpp_layer(0.8, 0.5);
+        let zero = scale_cpp_layer(0.8, 0.0);
+        assert_eq!(zero.to_bits(), 0.0f32.to_bits());
+        assert!((half / unity - 0.5).abs() < f32::EPSILON);
+        let db = 20.0 * (half / unity).log10();
+        assert!((db + 6.0206).abs() < 0.001, "half gain was {db} dB");
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn cpp_callback_has_zero_rust_allocations_and_frees() {
+        let mut engine = engine_with_bank(dummy_bank());
+        engine.enable_synth(&AudioPowertrainSynthesis::default());
+        engine.set_state(9000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        let runtime = DspRuntime::load_default().expect("f90_audio_dsp.dll must be available");
+        engine.attach_cpp_dsp(runtime);
+        engine.set_cpp_layer_enabled(true);
+        engine.set_cpp_layer_gain(0.5);
+        let mut left = [0.0f32; 512];
+        let mut right = [0.0f32; 512];
+        engine.render(&mut left, &mut right, 512); // warm caches/state
+        crate::allocation_probe::start();
+        engine.render(&mut left, &mut right, 512);
+        let (allocs, frees) = crate::allocation_probe::stop();
+        assert_eq!(
+            (allocs, frees),
+            (0, 0),
+            "callback allocated/freed Rust memory"
         );
     }
 }

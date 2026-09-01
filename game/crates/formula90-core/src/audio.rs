@@ -6,7 +6,7 @@
 //! `set_state` (see `mixer.rs`), so the facade must NOT re-trigger on gear change
 //! (that was a double-trigger in the legacy C++ controller).
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use vehicle_audio_engine::Trigger;
 use vehicle_audio_engine::VehicleAudioEngine;
@@ -71,12 +71,19 @@ pub struct AudioModule {
     last_surface: SurfaceType,
     last_slip: f32,
     last_trigger_code: i32,
+    gf509_asset_dir: Option<PathBuf>,
 }
 
 impl AudioModule {
     /// Build the audio subsystem. If `enabled` and the bank fails to load, the
     /// module degrades to telemetry-only (health flag) — it never fails the facade.
     pub fn new(bank_dir: Option<&Path>, enabled: bool) -> Self {
+        let gf509_asset_dir = bank_dir.and_then(|dir| {
+            dir.parent()?
+                .parent()?
+                .parent()
+                .map(|game| game.join("audio/v10_gf509"))
+        });
         let engine = if enabled {
             match bank_dir {
                 Some(dir) => VehicleAudioEngine::new(dir).ok(),
@@ -94,6 +101,7 @@ impl AudioModule {
             last_surface: SurfaceType::Road,
             last_slip: 0.0,
             last_trigger_code: -1,
+            gf509_asset_dir,
         }
     }
 
@@ -158,9 +166,79 @@ impl AudioModule {
         }
         if let Some(eng) = self.engine.as_mut() {
             eng.enable_synth(&config);
+            // Optional C++/Faust post-combustion layer. Loading, symbol
+            // resolution, BUILD validation and instance creation all happen
+            // here during profile setup, never in `render()`.
+            if let Some(cpp) = audio.get("cpp_dsp") {
+                let enabled = cpp
+                    .get("enabled")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false);
+                let gain = cpp
+                    .get("gain")
+                    .and_then(serde_json::Value::as_f64)
+                    .unwrap_or(0.0) as f32;
+                if enabled {
+                    match vehicle_audio_engine::dsp_runtime::DspRuntime::load_default() {
+                        Ok(runtime) => {
+                            eng.attach_cpp_dsp(runtime);
+                            eng.set_cpp_layer_gain(gain);
+                            eng.set_cpp_layer_enabled(true);
+                        }
+                        Err(error) => {
+                            eprintln!(
+                                "[formula90_core] C++/Faust audio layer unavailable: {error:?}"
+                            );
+                            eng.set_cpp_layer_enabled(false);
+                            eng.set_cpp_layer_gain(0.0);
+                        }
+                    }
+                } else {
+                    eng.set_cpp_layer_enabled(false);
+                    eng.set_cpp_layer_gain(0.0);
+                }
+            }
+            let source = audio
+                .get("continuous_source")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("legacy");
+            if source == "v10_gf509" {
+                let gf509_gain = audio
+                    .get("gf509")
+                    .and_then(|value| value.get("gain"))
+                    .and_then(serde_json::Value::as_f64)
+                    .unwrap_or(1.0) as f32;
+                eng.set_synth_volume(gf509_gain);
+                let diagnostic_mode = audio
+                    .get("gf509")
+                    .and_then(|value| value.get("diagnostic_mode"))
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("mix");
+                eng.set_diagnostic_mode(match diagnostic_mode {
+                    "v10_only" => vehicle_audio_engine::DiagnosticMode::V10Only,
+                    "events_only" => vehicle_audio_engine::DiagnosticMode::EventsOnly,
+                    _ => vehicle_audio_engine::DiagnosticMode::Mix,
+                });
+                match self.gf509_asset_dir.as_deref() {
+                    Some(directory) => {
+                        if let Err(error) = eng.enable_v10_gf509(directory) {
+                            eprintln!(
+                                "[formula90_core] GF509 initialization failed; using legacy: {error}"
+                            );
+                        }
+                    }
+                    None => {
+                        eprintln!("[formula90_core] GF509 asset root unavailable; using legacy");
+                        eng.use_legacy_continuous_source();
+                    }
+                }
+            } else {
+                eng.use_legacy_continuous_source();
+            }
             // `enable_synth` returns the *previous* enabled state; the real result
             // is observable via `synth_enabled`.
             eng.synth_enabled()
+                || eng.continuous_source() == vehicle_audio_engine::ContinuousSourceKind::V10Gf509
         } else {
             false
         }
@@ -168,7 +246,9 @@ impl AudioModule {
 
     /// Whether the procedural synth is currently driving the engine path.
     pub fn synth_enabled(&self) -> bool {
-        self.engine.as_ref().map_or(false, VehicleAudioEngine::synth_enabled)
+        self.engine
+            .as_ref()
+            .map_or(false, VehicleAudioEngine::synth_enabled)
     }
 
     /// Push the current telemetry into the mixer. Gear-change one-shots fire inside
@@ -181,6 +261,8 @@ impl AudioModule {
         throttle: f32,
         speed_kph: f64,
         gear: i32,
+        engine_load: f32,
+        dt_seconds: f32,
         slip: f32,
         surface: SurfaceType,
     ) {
@@ -197,6 +279,7 @@ impl AudioModule {
                 slip,
                 surface_token(surface),
             );
+            let _ = eng.set_gf509_physics(engine_load, dt_seconds);
             let now_tag = eng.last_trigger();
             self.last_trigger_code = if !now_tag.is_empty() && now_tag != prev_tag {
                 code_from_bank_key(now_tag)
@@ -204,6 +287,15 @@ impl AudioModule {
                 self.last_trigger_code
             };
         }
+    }
+
+    pub fn reset(&mut self) {
+        if let Some(engine) = self.engine.as_mut() {
+            let _ = engine.reset_audio_state();
+        }
+        self.last_surface = SurfaceType::Road;
+        self.last_slip = 0.0;
+        self.last_trigger_code = -1;
     }
 
     /// Fire a named one-shot via its legacy code (0..10). Returns true if the mixer

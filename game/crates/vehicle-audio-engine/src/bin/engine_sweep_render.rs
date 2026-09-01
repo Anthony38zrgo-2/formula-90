@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use vehicle_audio_engine::dsp_runtime::DspRuntime;
 use vehicle_audio_engine::powertrain;
 use vehicle_audio_engine::synth::{HalfBlock, PowertrainConfig};
 use vehicle_audio_engine::VehicleAudioEngine;
@@ -189,6 +190,9 @@ fn render_diagnostic(
                         ("intake", frame.intake),
                         ("exhaust", frame.exhaust),
                         ("rasp", frame.rasp),
+                        ("modular_a", frame.modular_a),
+                        ("modular_b", frame.modular_b),
+                        ("modular", frame.modular),
                         ("master_l", frame.master.0),
                         ("master_r", frame.master.1),
                     ];
@@ -273,6 +277,16 @@ fn render_diagnostic(
             if values.iter().any(|v| *v != 0.0) {
                 return Err(
                     "disabled voice rasp produced non-zero samples; it must be exact silence"
+                        .to_string(),
+                );
+            }
+        }
+    }
+    if !contract.modular.enabled {
+        if let Some(values) = buffers.get("modular") {
+            if values.iter().any(|v| *v != 0.0) {
+                return Err(
+                    "disabled voice modular produced non-zero samples; it must be exact silence"
                         .to_string(),
                 );
             }
@@ -366,6 +380,7 @@ fn render_diagnostic(
         "git_sha":git_sha, "synthesis_version":env!("CARGO_PKG_VERSION"), "hashes":hashes,
         "sample_rate_hz":SAMPLE_RATE, "duration_s":duration_s, "warmup_s":warmup_s, "fixed_rpm":fixed_rpm,
         "raw_engine":raw_engine,
+        "modular_enabled":contract.modular.enabled,
         "road":road.as_ref().map(|spec| serde_json::json!({"min_rpm":spec.min_rpm,
             "bottom_hold_s":spec.bottom_hold_s, "up_s":spec.up_s, "top_hold_s":spec.top_hold_s,
             "down_s":spec.down_s, "tail_s":spec.tail_s, "decay_k":spec.decay_k,
@@ -384,7 +399,7 @@ fn render_diagnostic(
 fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 5 {
-        return Err("usage: engine_sweep_render <bank_dir> <physics_profile.json> <output.wav> <telemetry.csv> [--fixed-rpm RPM] [--road-sweep MIN_RPM] [--road-up-s SEC] [--road-down-s SEC] [--road-top-s SEC] [--road-bottom-s SEC] [--road-tail-s SEC] [--road-decay-k K] [--raw-engine] [--duration SEC] [--warmup SEC] [--metadata PATH] [--diagnostic-stems DIR]".to_string());
+        return Err("usage: engine_sweep_render <bank_dir> <physics_profile.json> <output.wav> <telemetry.csv> [--fixed-rpm RPM] [--road-sweep MIN_RPM] [--road-up-s SEC] [--road-down-s SEC] [--road-top-s SEC] [--road-bottom-s SEC] [--road-tail-s SEC] [--road-decay-k K] [--raw-engine] [--duration SEC] [--warmup SEC] [--metadata PATH] [--diagnostic-stems DIR] [--cpp-gain G]".to_string());
     }
     let bank_dir = PathBuf::from(&args[1]);
     let profile_path = PathBuf::from(&args[2]);
@@ -404,6 +419,7 @@ fn run() -> Result<(), String> {
     let mut metadata_path = wav_path.with_extension("metadata.json");
     let mut diagnostic_dir: Option<PathBuf> = None;
     let mut raw_engine = false;
+    let mut cpp_gain: Option<f32> = None;
     let mut i = 5;
     while i < args.len() {
         let flag = &args[i];
@@ -457,6 +473,13 @@ fn run() -> Result<(), String> {
             "--warmup" => warmup_s = value.parse().map_err(|_| "invalid --warmup".to_string())?,
             "--metadata" => metadata_path = PathBuf::from(value),
             "--diagnostic-stems" => diagnostic_dir = Some(PathBuf::from(value)),
+            "--cpp-gain" => {
+                cpp_gain = Some(
+                    value
+                        .parse()
+                        .map_err(|_| "invalid --cpp-gain".to_string())?,
+                )
+            }
             _ => return Err(format!("unknown option {flag}")),
         }
         i += 2;
@@ -556,6 +579,20 @@ fn run() -> Result<(), String> {
     engine.enable_synth(&contract);
     engine.set_listener_distance(3.0);
 
+    // Optional Fase-4 diagnostic: attach the real C++ post-combustion DSP and
+    // capture its `cpp_event_impulse` layer output as a stem. The layer gain
+    // defaults to 0 and is disabled unless explicitly enabled here, so the
+    // master path is unchanged when --cpp-gain is omitted.
+    let mut cpp_capture: Option<(Vec<f32>, Vec<f32>)> = None;
+    if let Some(g) = cpp_gain {
+        let runtime = DspRuntime::load_default()
+            .map_err(|e| format!("cpp dsp load failed: {e:?}"))?;
+        engine.attach_cpp_dsp(runtime);
+        engine.set_cpp_layer_enabled(true);
+        engine.set_cpp_layer_gain(g);
+        cpp_capture = Some((Vec::new(), Vec::new()));
+    }
+
     // Warm-up is rendered and discarded so fixed-RPM output starts after the
     // same filter/envelope settling period used by the runtime.
     if warmup_s > 0.0 {
@@ -607,6 +644,12 @@ fn run() -> Result<(), String> {
             "asphalt",
         );
         engine.render(&mut left[..count], &mut right[..count], count);
+        if let Some((cl, cr)) = engine.cpp_block_output(count) {
+            if let Some((acc_l, acc_r)) = cpp_capture.as_mut() {
+                acc_l.extend_from_slice(&cl);
+                acc_r.extend_from_slice(&cr);
+            }
+        }
         let mut sum_l = 0.0f64;
         let mut sum_r = 0.0f64;
         let mut peak = 0.0f32;
@@ -630,6 +673,25 @@ fn run() -> Result<(), String> {
     }
     wav.flush().map_err(|e| e.to_string())?;
     csv.flush().map_err(|e| e.to_string())?;
+
+    // Fase-4 artifact: write the real C++ DSP layer as `cpp_event_impulse.wav`
+    // (dual-mono; we store the left channel as a mono stem to match the other
+    // diagnostic stems).
+    if let Some((acc_l, _acc_r)) = cpp_capture {
+        if !acc_l.is_empty() {
+            let stem_path = wav_path.with_file_name("cpp_event_impulse.wav");
+            ensure_parent(&stem_path).map_err(|e| e.to_string())?;
+            let mut stem = BufWriter::new(File::create(&stem_path).map_err(|e| e.to_string())?);
+            write_mono_header(&mut stem, acc_l.len() as u32).map_err(|e| e.to_string())?;
+            for v in &acc_l {
+                stem.write_all(&pcm16(*v).to_le_bytes())
+                    .map_err(|e| e.to_string())?;
+            }
+            stem.flush().map_err(|e| e.to_string())?;
+            println!("cpp_event_impulse stem -> {}", stem_path.display());
+        }
+    }
+
     let git_sha = std::process::Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()
