@@ -1,4 +1,4 @@
-use crate::acoustics::{DcBlocker, ModalBank, OnePoleLowPass};
+use crate::acoustics::{BandPassNoise, DcBlocker, ModalBank, OnePoleLowPass};
 use crate::engine::EngineFrame;
 
 #[derive(Clone, Copy, Debug)]
@@ -17,6 +17,7 @@ pub struct AcousticSceneConfig {
     pub cockpit_cavity_gain: f32,
     pub low_mid_parallel_gain: f32,
     pub load_saturation_gain: f32,
+    pub event_residual_gain: f32,
     pub output_gain: f32,
 }
 
@@ -35,9 +36,10 @@ impl Default for AcousticSceneConfig {
             mount_monocoque_gain: 0.12,
             under_seat_gain: 0.09,
             cockpit_cavity_gain: 0.16,
-            low_mid_parallel_gain: 0.24,
-            load_saturation_gain: 0.18,
-            output_gain: 2.10,
+            low_mid_parallel_gain: 0.14,
+            load_saturation_gain: 0.10,
+            event_residual_gain: 0.055,
+            output_gain: 2.90,
         }
     }
 }
@@ -63,6 +65,7 @@ pub struct AcousticFrame {
     pub cockpit_cavity: f32,
     pub low_mid_parallel: f32,
     pub load_saturation: f32,
+    pub event_residual: f32,
     pub output: f32,
 }
 
@@ -171,6 +174,89 @@ pub struct LoadDependentSaturation {
     dc: DcBlocker,
 }
 
+/// RPM-tracking rejection used only on structural routes that over-capture
+/// the V10 firing family. The dry engine and final mix never pass through it.
+pub struct TrackingOrderNotch {
+    sample_rate: f32,
+    q: f32,
+    wet: f32,
+    x1: f32,
+    x2: f32,
+    y1: f32,
+    y2: f32,
+}
+
+impl TrackingOrderNotch {
+    fn new(sample_rate: f32, q: f32, wet: f32) -> Self {
+        Self {
+            sample_rate,
+            q,
+            wet,
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, input: f32, frequency_hz: f32) -> f32 {
+        if frequency_hz < 40.0 || frequency_hz >= self.sample_rate * 0.45 {
+            return input;
+        }
+        let omega = std::f32::consts::TAU * frequency_hz / self.sample_rate;
+        let alpha = omega.sin() / (2.0 * self.q);
+        let a0_recip = 1.0 / (1.0 + alpha);
+        let b0 = a0_recip;
+        let b1 = -2.0 * omega.cos() * a0_recip;
+        let b2 = a0_recip;
+        let a1 = b1;
+        let a2 = (1.0 - alpha) * a0_recip;
+        let notched = b0 * input + b1 * self.x1 + b2 * self.x2 - a1 * self.y1 - a2 * self.y2;
+        self.x2 = self.x1;
+        self.x1 = input;
+        self.y2 = self.y1;
+        self.y1 = notched;
+        input + (notched - input) * self.wet
+    }
+}
+
+pub struct EventResidual {
+    noise: BandPassNoise,
+    envelope: f32,
+    release: f32,
+    rng: u64,
+}
+
+impl EventResidual {
+    fn new(sample_rate: f32) -> Self {
+        Self {
+            noise: BandPassNoise::new(2_450.0, 6_200.0, sample_rate),
+            envelope: 0.0,
+            release: 1.0 - (-1.0 / (0.0028 * sample_rate)).exp(),
+            rng: 0x9E37_79B9_7F4A_7C15,
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, frame: &EngineFrame) -> f32 {
+        if frame.fired_mask != 0 {
+            let impact = frame.pressure_derivative.abs().min(1.0);
+            self.envelope = self.envelope.max(0.10 + impact * 0.90);
+        } else {
+            self.envelope += self.release * (0.0 - self.envelope);
+        }
+        let mut x = self.rng;
+        x ^= x >> 12;
+        x ^= x << 25;
+        x ^= x >> 27;
+        self.rng = x;
+        let bits = x.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 40;
+        let white = bits as f32 / ((1u64 << 24) - 1) as f32 * 2.0 - 1.0;
+        self.noise.process(white) * self.envelope * (0.18 + 0.82 * frame.load)
+    }
+}
+
 impl LoadDependentSaturation {
     pub fn new(sample_rate: f32) -> Self {
         Self {
@@ -206,11 +292,11 @@ impl LowMidParallelCompressor {
             band_lowpass_b: OnePoleLowPass::new(560.0, sample_rate),
             band_highpass: OnePoleLowPass::new(150.0, sample_rate),
             envelope: 0.0,
-            attack: 1.0 - (-1.0 / (0.006 * sample_rate)).exp(),
-            release: 1.0 - (-1.0 / (0.052 * sample_rate)).exp(),
-            threshold: 0.024,
-            ratio: 2.5,
-            makeup: 2.15,
+            attack: 1.0 - (-1.0 / (0.014 * sample_rate)).exp(),
+            release: 1.0 - (-1.0 / (0.075 * sample_rate)).exp(),
+            threshold: 0.030,
+            ratio: 1.8,
+            makeup: 1.55,
             dc: DcBlocker::new(90.0, sample_rate),
         }
     }
@@ -794,6 +880,7 @@ impl AirPath {
 /// physical stems emitted by `V10Engine`.
 pub struct MetallicStructure {
     heavy_castings: ModalBank,
+    bank_signature: ModalBank,
     bellhousing: ModalBank,
     thin_panels: ModalBank,
     panel_lowpass: OnePoleLowPass,
@@ -815,6 +902,15 @@ impl MetallicStructure {
                     (665.0, 0.0075, -0.060),
                     (735.0, 0.0065, 0.050),
                     (810.0, 0.0055, -0.040),
+                ],
+                sample_rate,
+            ),
+            bank_signature: ModalBank::new(
+                &[
+                    (188.0, 0.018, 0.18),
+                    (314.0, 0.014, -0.17),
+                    (438.0, 0.011, 0.15),
+                    (562.0, 0.008, -0.11),
                 ],
                 sample_rate,
             ),
@@ -860,6 +956,11 @@ impl MetallicStructure {
             frame.head * 0.72 + frame.pressure_derivative * 0.55 + frame.turbulence * 0.08;
 
         let heavy = self.heavy_castings.process(mount_excitation);
+        // Opposing banks do not load the chassis identically. Keeping their
+        // difference separate restores half/integer crank signatures that a
+        // summed firing pulse erases.
+        let bank_difference = frame.pressure_derivative_a - frame.pressure_derivative_b;
+        let bank_body = self.bank_signature.process(bank_difference);
         let bell = self.bellhousing.process(bell_excitation);
         let panel_modes = self
             .panel_lowpass
@@ -867,9 +968,9 @@ impl MetallicStructure {
         // A small high-passed strain component preserves the initial metallic
         // tick that modal ringing alone tends to smear away.
         let panel_edge = self.panel_highpass.process(panel_excitation);
-        let metal = self
-            .dc
-            .process(heavy * 1.00 + bell * 1.20 + panel_modes * 2.35 + panel_edge * 0.16);
+        let metal = self.dc.process(
+            heavy * 1.00 + bank_body * 0.42 + bell * 1.20 + panel_modes * 2.35 + panel_edge * 0.16,
+        );
 
         // Local strain compression keeps coincident modes from producing a
         // bell-like spike. This is coloration of the structure, not a limiter.
@@ -890,12 +991,20 @@ pub struct AcousticScene {
     cockpit_cavity: CockpitCavity,
     low_mid_parallel: LowMidParallelCompressor,
     load_saturation: LoadDependentSaturation,
+    event_residual: EventResidual,
+    metal_order_notch: TrackingOrderNotch,
+    gearbox_order_notch: TrackingOrderNotch,
+    parallel_order_notch: TrackingOrderNotch,
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
     metal_envelope: f32,
     envelope_attack: f32,
     envelope_release: f32,
+    sample_rate: f32,
+    previous_crank_phase: f32,
+    firing_frequency_hz: f32,
+    sample_clock: u64,
 }
 
 impl AcousticScene {
@@ -914,6 +1023,7 @@ impl AcousticScene {
             || !(0.0..=1.5).contains(&config.cockpit_cavity_gain)
             || !(0.0..=1.5).contains(&config.low_mid_parallel_gain)
             || !(0.0..=1.5).contains(&config.load_saturation_gain)
+            || !(0.0..=1.5).contains(&config.event_residual_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
         {
             return Err("acoustic scene gain outside supported range".into());
@@ -931,19 +1041,37 @@ impl AcousticScene {
             cockpit_cavity: CockpitCavity::new(sample_rate),
             low_mid_parallel: LowMidParallelCompressor::new(sample_rate),
             load_saturation: LoadDependentSaturation::new(sample_rate),
+            event_residual: EventResidual::new(sample_rate),
+            metal_order_notch: TrackingOrderNotch::new(sample_rate, 3.2, 0.64),
+            gearbox_order_notch: TrackingOrderNotch::new(sample_rate, 3.0, 0.48),
+            parallel_order_notch: TrackingOrderNotch::new(sample_rate, 2.7, 0.70),
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
             metal_envelope: 0.0,
             envelope_attack: 1.0 - (-1.0 / (0.0012 * sample_rate)).exp(),
             envelope_release: 1.0 - (-1.0 / (0.026 * sample_rate)).exp(),
+            sample_rate,
+            previous_crank_phase: 0.0,
+            firing_frequency_hz: 0.0,
+            sample_clock: 0,
         })
     }
 
     #[inline]
     pub fn process(&mut self, engine: &EngineFrame) -> AcousticFrame {
-        let metallic_structure = self.metal.process(engine);
-        let gearbox_housing = self.gearbox.process(engine);
+        let crank_delta = (engine.crank_phase_deg - self.previous_crank_phase).rem_euclid(720.0);
+        self.previous_crank_phase = engine.crank_phase_deg;
+        let measured_firing = crank_delta * self.sample_rate / 360.0 * 5.0;
+        if measured_firing.is_finite() && measured_firing < self.sample_rate * 0.45 {
+            self.firing_frequency_hz += 0.04 * (measured_firing - self.firing_frequency_hz);
+        }
+        let metallic_structure = self
+            .metal_order_notch
+            .process(self.metal.process(engine), self.firing_frequency_hz);
+        let gearbox_housing = self
+            .gearbox_order_notch
+            .process(self.gearbox.process(engine), self.firing_frequency_hz);
         let (head_cover_a, head_cover_b) = self.head_covers.process(engine);
         let cylinder_head_covers = head_cover_a + head_cover_b;
         let airbox_plenum = self.airbox.process(engine);
@@ -982,12 +1110,21 @@ impl AcousticScene {
             + mount_monocoque * 1.00
             + under_seat_vibration * 0.62
             + cockpit_cavity * 0.72;
-        let low_mid_parallel = self.low_mid_parallel.process(structural_low_mid_bus);
+        let parallel_input = self
+            .parallel_order_notch
+            .process(structural_low_mid_bus, self.firing_frequency_hz);
+        let low_mid_parallel = self.low_mid_parallel.process(parallel_input);
         let load_saturation = self.load_saturation.process(
-            structural_low_mid_bus * 0.72 + low_mid_parallel * 0.38,
+            parallel_input * 0.66 + low_mid_parallel * 0.24,
             engine.throttle,
             engine.load,
         );
+        let event_residual = self.event_residual.process(engine);
+        let time = self.sample_clock as f32 / self.sample_rate;
+        self.sample_clock = self.sample_clock.wrapping_add(1);
+        let slow_scene_drift = 1.0
+            + 0.012 * (std::f32::consts::TAU * 0.79 * time + 0.4).sin()
+            + 0.006 * (std::f32::consts::TAU * 1.09 * time + 2.1).sin();
         AcousticFrame {
             engine_dry: engine.master,
             engine_air,
@@ -1008,9 +1145,10 @@ impl AcousticScene {
             cockpit_cavity,
             low_mid_parallel,
             load_saturation,
-            output: (engine_air
-                + metallic_structure * self.config.metal_gain
-                + gearbox_housing * self.config.gearbox_gain
+            event_residual,
+            output: ((engine_air
+                + metallic_structure * self.config.metal_gain * slow_scene_drift
+                + gearbox_housing * self.config.gearbox_gain * slow_scene_drift
                 + cylinder_head_covers * self.config.head_cover_gain
                 + airbox_plenum * self.config.airbox_gain
                 + engine_cover * self.config.engine_cover_gain
@@ -1020,6 +1158,7 @@ impl AcousticScene {
                 + cockpit_cavity * self.config.cockpit_cavity_gain
                 + low_mid_parallel * self.config.low_mid_parallel_gain
                 + load_saturation * self.config.load_saturation_gain)
+                + event_residual * self.config.event_residual_gain)
                 * self.config.output_gain,
         }
     }
@@ -1058,6 +1197,7 @@ mod tests {
                 cockpit_cavity_gain: 0.0,
                 low_mid_parallel_gain: 0.0,
                 load_saturation_gain: 0.0,
+                event_residual_gain: 0.0,
                 output_gain: 1.0,
             },
         )

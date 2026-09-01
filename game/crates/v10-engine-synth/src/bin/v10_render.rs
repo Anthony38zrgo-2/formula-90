@@ -20,6 +20,9 @@ struct Args {
     out: PathBuf,
     stems_dir: PathBuf,
     acoustic_scene: bool,
+    sweep_end_rpm: Option<f32>,
+    accel_seconds: f32,
+    coast_end_rpm: f32,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -47,6 +50,9 @@ fn parse_args() -> Result<Args, String> {
         out: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm.wav"),
         stems_dir: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm_stems"),
         acoustic_scene: false,
+        sweep_end_rpm: None,
+        accel_seconds: 7.0,
+        coast_end_rpm: 6_500.0,
     };
     let mut i = 0;
     while i < raw.len() {
@@ -64,6 +70,15 @@ fn parse_args() -> Result<Args, String> {
                     PathBuf::from(parse_value::<String>(&raw, &mut i, "--stems-dir")?)
             }
             "--acoustic-scene" => parsed.acoustic_scene = true,
+            "--sweep-end-rpm" => {
+                parsed.sweep_end_rpm = Some(parse_value(&raw, &mut i, "--sweep-end-rpm")?)
+            }
+            "--accel-seconds" => {
+                parsed.accel_seconds = parse_value(&raw, &mut i, "--accel-seconds")?
+            }
+            "--coast-end-rpm" => {
+                parsed.coast_end_rpm = parse_value(&raw, &mut i, "--coast-end-rpm")?
+            }
             unknown => return Err(format!("unknown argument: {unknown}")),
         }
         i += 1;
@@ -74,13 +89,63 @@ fn parse_args() -> Result<Args, String> {
     if !parsed.warmup.is_finite() || !(0.0..=10.0).contains(&parsed.warmup) {
         return Err("--warmup must be in 0..10".into());
     }
+    if !parsed.accel_seconds.is_finite()
+        || parsed.accel_seconds <= 0.0
+        || parsed.accel_seconds >= parsed.seconds
+    {
+        return Err("--accel-seconds must be inside the render duration".into());
+    }
     EngineInput {
         rpm: parsed.rpm,
         throttle: parsed.throttle,
         load: parsed.load,
     }
     .validate()?;
+    if let Some(end_rpm) = parsed.sweep_end_rpm {
+        EngineInput {
+            rpm: end_rpm,
+            throttle: parsed.throttle,
+            load: parsed.load,
+        }
+        .validate()?;
+        EngineInput {
+            rpm: parsed.coast_end_rpm,
+            throttle: 0.0,
+            load: 0.0,
+        }
+        .validate()?;
+    }
     Ok(parsed)
+}
+
+fn render_input(args: &Args, time_s: f32) -> EngineInput {
+    let Some(end_rpm) = args.sweep_end_rpm else {
+        return EngineInput {
+            rpm: args.rpm,
+            throttle: args.throttle,
+            load: args.load,
+        };
+    };
+    if time_s < args.accel_seconds {
+        let t = (time_s / args.accel_seconds).clamp(0.0, 1.0);
+        // Smoothstep avoids an acceleration discontinuity at either endpoint.
+        let shaped = t * t * (3.0 - 2.0 * t);
+        EngineInput {
+            rpm: args.rpm + (end_rpm - args.rpm) * shaped,
+            throttle: args.throttle,
+            load: args.load,
+        }
+    } else {
+        let coast_duration = (args.seconds - args.accel_seconds).max(1.0e-6);
+        let t = ((time_s - args.accel_seconds) / coast_duration).clamp(0.0, 1.0);
+        let rpm_decay = 1.0 - (1.0 - t).powf(1.55);
+        let lift = (-t / 0.035).exp();
+        EngineInput {
+            rpm: end_rpm + (args.coast_end_rpm - end_rpm) * rpm_decay,
+            throttle: 0.035 + (args.throttle - 0.035) * lift,
+            load: 0.10 + (args.load - 0.10) * (-t / 0.12).exp(),
+        }
+    }
 }
 
 fn git_head() -> String {
@@ -161,6 +226,7 @@ fn run() -> Result<(), String> {
         "cockpit_cavity",
         "low_mid_parallel",
         "load_saturation",
+        "event_residual",
         "scene_mix",
     ];
     let mut stems: BTreeMap<&str, Vec<f32>> = names
@@ -181,6 +247,9 @@ fn run() -> Result<(), String> {
     let mut worst_reduction = 0.0f32;
     let mut event_count = 0u64;
     for sample in 0..total {
+        let time_s = sample as f32 / args.sample_rate as f32;
+        let current_input = render_input(&args, time_s);
+        engine.set_input(current_input)?;
         let frame: EngineFrame = engine.render_sample();
         let acoustic = scene.process(&frame);
         stems
@@ -308,6 +377,10 @@ fn run() -> Result<(), String> {
             .get_mut("load_saturation")
             .unwrap()
             .push(acoustic.load_saturation);
+        stems
+            .get_mut("event_residual")
+            .unwrap()
+            .push(acoustic.event_residual);
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
         let rendered = if args.acoustic_scene {
             acoustic.output
@@ -326,7 +399,7 @@ fn run() -> Result<(), String> {
                         telemetry,
                         "{sample},{:.9},{:.3},{:.6},{cylinder},{bank}",
                         sample as f64 / args.sample_rate as f64,
-                        args.rpm,
+                        current_input.rpm,
                         frame.crank_phase_deg,
                     )
                     .map_err(|e| e.to_string())?;
@@ -352,6 +425,12 @@ fn run() -> Result<(), String> {
 
     let rms = (sum_sq / total as f64).sqrt();
     let metadata_path = args.out.with_extension("metadata.json");
+    let profile = if args.sweep_end_rpm.is_some() {
+        "sweep_lift_coast"
+    } else {
+        "steady"
+    };
+    let peak_rpm = args.sweep_end_rpm.unwrap_or(args.rpm);
     let metadata = format!(
         concat!(
             "{{\n",
@@ -359,7 +438,11 @@ fn run() -> Result<(), String> {
             "  \"git_head\": \"{}\",\n",
             "  \"sample_rate\": {},\n",
             "  \"seed\": {},\n",
+            "  \"profile\": \"{}\",\n",
             "  \"rpm\": {:.3},\n",
+            "  \"peak_rpm\": {:.3},\n",
+            "  \"coast_end_rpm\": {:.3},\n",
+            "  \"accel_seconds\": {:.6},\n",
             "  \"throttle\": {:.6},\n",
             "  \"load\": {:.6},\n",
             "  \"duration_s\": {:.6},\n",
@@ -377,7 +460,11 @@ fn run() -> Result<(), String> {
         git_head(),
         args.sample_rate,
         args.seed,
+        profile,
         args.rpm,
+        peak_rpm,
+        args.coast_end_rpm,
+        args.accel_seconds,
         args.throttle,
         args.load,
         args.seconds,
