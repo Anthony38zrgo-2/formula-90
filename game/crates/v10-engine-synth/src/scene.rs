@@ -15,6 +15,8 @@ pub struct AcousticSceneConfig {
     pub mount_monocoque_gain: f32,
     pub under_seat_gain: f32,
     pub cockpit_cavity_gain: f32,
+    pub low_mid_parallel_gain: f32,
+    pub load_saturation_gain: f32,
     pub output_gain: f32,
 }
 
@@ -33,6 +35,8 @@ impl Default for AcousticSceneConfig {
             mount_monocoque_gain: 0.12,
             under_seat_gain: 0.09,
             cockpit_cavity_gain: 0.16,
+            low_mid_parallel_gain: 0.24,
+            load_saturation_gain: 0.18,
             output_gain: 2.10,
         }
     }
@@ -57,6 +61,8 @@ pub struct AcousticFrame {
     pub mount_monocoque: f32,
     pub under_seat_vibration: f32,
     pub cockpit_cavity: f32,
+    pub low_mid_parallel: f32,
+    pub load_saturation: f32,
     pub output: f32,
 }
 
@@ -142,6 +148,97 @@ pub struct CockpitCavity {
     dc: DcBlocker,
     absorption_lowpass_a: OnePoleLowPass,
     absorption_lowpass_b: OnePoleLowPass,
+}
+
+pub struct LowMidParallelCompressor {
+    band_lowpass_a: OnePoleLowPass,
+    band_lowpass_b: OnePoleLowPass,
+    band_highpass: OnePoleLowPass,
+    envelope: f32,
+    attack: f32,
+    release: f32,
+    threshold: f32,
+    ratio: f32,
+    makeup: f32,
+    dc: DcBlocker,
+}
+
+pub struct LoadDependentSaturation {
+    pre_lowpass_a: OnePoleLowPass,
+    pre_lowpass_b: OnePoleLowPass,
+    low_reject: OnePoleLowPass,
+    post_lowpass: OnePoleLowPass,
+    dc: DcBlocker,
+}
+
+impl LoadDependentSaturation {
+    pub fn new(sample_rate: f32) -> Self {
+        Self {
+            pre_lowpass_a: OnePoleLowPass::new(680.0, sample_rate),
+            pre_lowpass_b: OnePoleLowPass::new(680.0, sample_rate),
+            low_reject: OnePoleLowPass::new(105.0, sample_rate),
+            post_lowpass: OnePoleLowPass::new(920.0, sample_rate),
+            dc: DcBlocker::new(72.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    pub fn process(&mut self, structural_bus: f32, throttle: f32, load: f32) -> f32 {
+        let below_680 = self
+            .pre_lowpass_b
+            .process(self.pre_lowpass_a.process(structural_bus));
+        let band = below_680 - self.low_reject.process(below_680);
+        let torque = load * (0.28 + 0.72 * throttle);
+        let drive = 1.0 + 2.35 * torque;
+        // A small even-order bias represents unequal compression and tension
+        // in mounts/castings. DC removal follows immediately.
+        let driven = band * drive * 6.0;
+        let asymmetric = driven + 0.075 * driven.abs();
+        let colored = asymmetric.tanh() / 6.0;
+        self.post_lowpass.process(self.dc.process(colored))
+    }
+}
+
+impl LowMidParallelCompressor {
+    pub fn new(sample_rate: f32) -> Self {
+        Self {
+            band_lowpass_a: OnePoleLowPass::new(560.0, sample_rate),
+            band_lowpass_b: OnePoleLowPass::new(560.0, sample_rate),
+            band_highpass: OnePoleLowPass::new(150.0, sample_rate),
+            envelope: 0.0,
+            attack: 1.0 - (-1.0 / (0.006 * sample_rate)).exp(),
+            release: 1.0 - (-1.0 / (0.052 * sample_rate)).exp(),
+            threshold: 0.024,
+            ratio: 2.5,
+            makeup: 2.15,
+            dc: DcBlocker::new(90.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    pub fn process(&mut self, structural_bus: f32) -> f32 {
+        let below_560 = self
+            .band_lowpass_b
+            .process(self.band_lowpass_a.process(structural_bus));
+        let low_tail = self.band_highpass.process(below_560);
+        let band = below_560 - low_tail;
+        let detector = band.abs();
+        let coefficient = if detector > self.envelope {
+            self.attack
+        } else {
+            self.release
+        };
+        self.envelope += coefficient * (detector - self.envelope);
+
+        let gain = if self.envelope > self.threshold {
+            let compressed_level =
+                self.threshold * (self.envelope / self.threshold).powf(1.0 / self.ratio);
+            compressed_level / self.envelope.max(1.0e-12)
+        } else {
+            1.0
+        };
+        self.dc.process(band * gain * self.makeup)
+    }
 }
 
 impl CockpitCavity {
@@ -791,6 +888,8 @@ pub struct AcousticScene {
     mount_monocoque: EngineMountMonocoque,
     under_seat: UnderSeatVibration,
     cockpit_cavity: CockpitCavity,
+    low_mid_parallel: LowMidParallelCompressor,
+    load_saturation: LoadDependentSaturation,
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
@@ -813,6 +912,8 @@ impl AcousticScene {
             || !(0.0..=1.5).contains(&config.mount_monocoque_gain)
             || !(0.0..=1.5).contains(&config.under_seat_gain)
             || !(0.0..=1.5).contains(&config.cockpit_cavity_gain)
+            || !(0.0..=1.5).contains(&config.low_mid_parallel_gain)
+            || !(0.0..=1.5).contains(&config.load_saturation_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
         {
             return Err("acoustic scene gain outside supported range".into());
@@ -828,6 +929,8 @@ impl AcousticScene {
             mount_monocoque: EngineMountMonocoque::new(sample_rate),
             under_seat: UnderSeatVibration::new(sample_rate),
             cockpit_cavity: CockpitCavity::new(sample_rate),
+            low_mid_parallel: LowMidParallelCompressor::new(sample_rate),
+            load_saturation: LoadDependentSaturation::new(sample_rate),
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
@@ -874,6 +977,17 @@ impl AcousticScene {
         let cockpit_cavity =
             self.cockpit_cavity
                 .process(engine_air, airbox_plenum, engine_cover, rear_exhaust);
+        let structural_low_mid_bus = metallic_structure * 0.08
+            + gearbox_housing * 0.38
+            + mount_monocoque * 1.00
+            + under_seat_vibration * 0.62
+            + cockpit_cavity * 0.72;
+        let low_mid_parallel = self.low_mid_parallel.process(structural_low_mid_bus);
+        let load_saturation = self.load_saturation.process(
+            structural_low_mid_bus * 0.72 + low_mid_parallel * 0.38,
+            engine.throttle,
+            engine.load,
+        );
         AcousticFrame {
             engine_dry: engine.master,
             engine_air,
@@ -892,6 +1006,8 @@ impl AcousticScene {
             mount_monocoque,
             under_seat_vibration,
             cockpit_cavity,
+            low_mid_parallel,
+            load_saturation,
             output: (engine_air
                 + metallic_structure * self.config.metal_gain
                 + gearbox_housing * self.config.gearbox_gain
@@ -901,7 +1017,9 @@ impl AcousticScene {
                 + rear_exhaust * self.config.rear_exhaust_gain
                 + mount_monocoque * self.config.mount_monocoque_gain
                 + under_seat_vibration * self.config.under_seat_gain
-                + cockpit_cavity * self.config.cockpit_cavity_gain)
+                + cockpit_cavity * self.config.cockpit_cavity_gain
+                + low_mid_parallel * self.config.low_mid_parallel_gain
+                + load_saturation * self.config.load_saturation_gain)
                 * self.config.output_gain,
         }
     }
@@ -938,6 +1056,8 @@ mod tests {
                 mount_monocoque_gain: 0.0,
                 under_seat_gain: 0.0,
                 cockpit_cavity_gain: 0.0,
+                low_mid_parallel_gain: 0.0,
+                load_saturation_gain: 0.0,
                 output_gain: 1.0,
             },
         )

@@ -12,6 +12,6 @@ pub use config::EngineConfig;
 pub use engine::{EngineFrame, EngineInput, V10Engine};
 pub use scene::{
     AcousticFrame, AcousticScene, AcousticSceneConfig, AirboxPlenum, CockpitCavity,
-    CylinderHeadCovers, EngineCover, EngineMountMonocoque, GearboxHousing, MetallicStructure,
-    RearExhaustCapture, UnderSeatVibration,
+    CylinderHeadCovers, EngineCover, EngineMountMonocoque, GearboxHousing, LoadDependentSaturation,
+    LowMidParallelCompressor, MetallicStructure, RearExhaustCapture, UnderSeatVibration,
 };
