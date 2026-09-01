@@ -1280,7 +1280,7 @@ impl AcousticScene {
         let cylinder_head_covers = self.head_cover_order_notch.process_with_wet(
             head_cover_a + head_cover_b,
             self.firing_frequency_hz,
-            0.70 * high_rpm,
+            0.20 + 0.50 * high_rpm,
         );
         let airbox_plenum = self.airbox.process(engine, high_rpm);
         let engine_cover = self.engine_cover.process(engine, airbox_plenum, high_rpm);
@@ -1338,8 +1338,8 @@ impl AcousticScene {
         let time = self.sample_clock as f32 / self.sample_rate;
         self.sample_clock = self.sample_clock.wrapping_add(1);
         let slow_scene_drift = 1.0
-            + 0.012 * (std::f32::consts::TAU * 0.79 * time + 0.4).sin()
-            + 0.006 * (std::f32::consts::TAU * 1.09 * time + 2.1).sin();
+            + 0.007 * (std::f32::consts::TAU * 0.79 * time + 0.4).sin()
+            + 0.003 * (std::f32::consts::TAU * 1.09 * time + 2.1).sin();
         AcousticFrame {
             engine_dry: engine.master,
             engine_air,

@@ -165,6 +165,10 @@ struct ZoneMidProcessor {
     compressor_envelope: f32,
     compressor_attack: f32,
     compressor_release: f32,
+    compressor_threshold: f32,
+    compressor_parallel_mix: f32,
+    saturation_drive: f32,
+    saturation_mix: f32,
     order_five_wet: f32,
     rasp_gain: f32,
     zone_tonal_gain: f32,
@@ -184,9 +188,9 @@ impl ZoneMidProcessor {
             zone_tonal_db,
             zone_residual_db,
         ) = match zone {
-            0 => (250.0, 900.0, 1.0, 4.0, 0.0, 0.0, 0.0, 0.0),
-            1 => (350.0, 1_800.0, 1.5, 3.0, 0.0, 0.0, 0.0, 0.0),
-            _ => (500.0, 2_500.0, 0.75, 2.5, 0.30, 3.5, 1.5, 2.0),
+            0 => (250.0, 900.0, 1.0, 4.0, 0.0, 0.0, 0.0, 3.0),
+            1 => (350.0, 1_800.0, 1.5, 3.0, 0.0, 0.0, 2.5, 3.5),
+            _ => (500.0, 2_500.0, 0.75, 2.5, 0.30, 2.5, 2.5, 3.0),
         };
         Self {
             tonal_low: OnePoleLowPass::new(low_hz, sample_rate),
@@ -202,6 +206,10 @@ impl ZoneMidProcessor {
             compressor_envelope: 0.0,
             compressor_attack: 1.0 - (-1.0 / (0.025 * sample_rate)).exp(),
             compressor_release: 1.0 - (-1.0 / (0.120 * sample_rate)).exp(),
+            compressor_threshold: if zone == 2 { 0.0275 } else { 0.040 },
+            compressor_parallel_mix: if zone == 2 { 0.425 } else { 0.30 },
+            saturation_drive: if zone == 2 { 1.7 } else { 1.4 },
+            saturation_mix: if zone == 2 { 0.275 } else { 0.20 },
             order_five_wet,
             rasp_gain: 10.0f32.powf(rasp_db / 20.0),
             zone_tonal_gain: 10.0f32.powf(zone_tonal_db / 20.0),
@@ -240,16 +248,19 @@ impl ZoneMidProcessor {
             self.compressor_release
         };
         self.compressor_envelope += envelope_rate * (level - self.compressor_envelope);
-        let threshold = 0.040;
-        let compressed_gain = if self.compressor_envelope > threshold {
-            (threshold / self.compressor_envelope).sqrt()
+        let compressed_gain = if self.compressor_envelope > self.compressor_threshold {
+            (self.compressor_threshold / self.compressor_envelope).sqrt()
         } else {
             1.0
         };
         let boosted_band = residual_band * self.residual_gain;
-        let parallel_band = boosted_band * (0.70 + 0.30 * compressed_gain * 1.25);
-        let saturated_band = (parallel_band * 1.4).tanh() / 1.4f32.tanh();
-        let processed_band = parallel_band * 0.80 + saturated_band * 0.20;
+        let parallel_band = boosted_band
+            * ((1.0 - self.compressor_parallel_mix)
+                + self.compressor_parallel_mix * compressed_gain * 1.25);
+        let saturated_band =
+            (parallel_band * self.saturation_drive).tanh() / self.saturation_drive.tanh();
+        let processed_band =
+            parallel_band * (1.0 - self.saturation_mix) + saturated_band * self.saturation_mix;
         let residual_shaped =
             residual - residual_band + processed_band + residual_rasp * (self.rasp_gain - 1.0);
         (

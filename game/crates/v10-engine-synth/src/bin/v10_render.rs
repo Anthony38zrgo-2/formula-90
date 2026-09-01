@@ -10,7 +10,7 @@ use v10_engine_synth::{
     ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
 };
 
-const HYBRID_HEADROOM_GAIN: f32 = 0.67;
+const HYBRID_HEADROOM_GAIN: f32 = 0.61;
 
 struct OnePoleLowPass {
     alpha: f32,
@@ -669,7 +669,7 @@ fn run() -> Result<(), String> {
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
-            "  \"sample_mid_architecture\": \"zone EQ + residual parallel compression/saturation + max-zone order-5 control + complementary 350-2000 Hz duck + max-only 1800-6500 Hz rasp at +3.5 dB + max tonal/residual gains at +1.5/+2.0 dB + perceptual max crossfade 10000-13750 RPM\"\n",
+            "  \"sample_mid_architecture\": \"zone-specific post gains + base head-cover order-5 notch + deeper max residual compression/saturation + max rasp at +2.5 dB + reduced engine/scene drift + perceptual max crossfade 10000-13750 RPM\"\n",
             "}}\n"
         ),
         git_head(),

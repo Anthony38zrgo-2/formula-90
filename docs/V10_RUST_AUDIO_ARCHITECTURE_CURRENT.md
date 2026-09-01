@@ -1,5 +1,9 @@
 # Current Rust V10 audio architecture
 
+> **Historical GF460 document.** The current hybrid architecture and complete
+> GF509 parameter snapshot are documented in
+> [`V10_GF509_HYBRID_AUDIO_ARCHITECTURE.md`](V10_GF509_HYBRID_AUDIO_ARCHITECTURE.md).
+
 This diagram describes the implemented Rust-only signal path as of the
 `GF460` 7,499 RPM validation render. C++ and Faust are not part of this path.
 

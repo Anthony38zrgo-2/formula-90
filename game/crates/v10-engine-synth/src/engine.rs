@@ -131,8 +131,8 @@ impl V10Engine {
         // gain every mechanical cycle. Two incommensurate rates avoid a loop.
         let time = self.sample_clock as f32 / sample_rate;
         let slow_drift = 1.0
-            + 0.018 * (std::f32::consts::TAU * 0.83 * time).sin()
-            + 0.009 * (std::f32::consts::TAU * 1.17 * time + 1.3).sin();
+            + 0.010 * (std::f32::consts::TAU * 0.83 * time).sin()
+            + 0.005 * (std::f32::consts::TAU * 1.17 * time + 1.3).sin();
 
         let events = self.crank.step(self.input.rpm);
         let deg_per_sample = self.input.rpm.max(0.0) * 6.0 / sample_rate;
