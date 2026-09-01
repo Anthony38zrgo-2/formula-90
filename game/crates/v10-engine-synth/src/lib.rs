@@ -5,7 +5,12 @@ pub mod config;
 pub mod crank;
 pub mod cylinder;
 pub mod engine;
+pub mod scene;
 pub mod wav;
 
 pub use config::EngineConfig;
 pub use engine::{EngineFrame, EngineInput, V10Engine};
+pub use scene::{
+    AcousticFrame, AcousticScene, AcousticSceneConfig, AirboxPlenum, CylinderHeadCovers,
+    GearboxHousing, MetallicStructure,
+};

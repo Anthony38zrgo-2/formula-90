@@ -29,6 +29,8 @@ impl EngineInput {
 pub struct EngineFrame {
     pub combustion_source: f32,
     pub pressure_derivative: f32,
+    pub pressure_derivative_a: f32,
+    pub pressure_derivative_b: f32,
     pub pressure_direct: f32,
     pub crankcase: f32,
     pub block: f32,
@@ -131,6 +133,8 @@ impl V10Engine {
         let deg_per_sample = self.input.rpm.max(0.0) * 6.0 / sample_rate;
         let mut pressure = 0.0;
         let mut derivative = 0.0;
+        let mut derivative_a = 0.0;
+        let mut derivative_b = 0.0;
         let mut header_a = 0.0;
         let mut header_b = 0.0;
         let mut turbulence_trigger = 0.0f32;
@@ -139,14 +143,18 @@ impl V10Engine {
             if events.fired(index) {
                 self.cylinders[index].fire(self.config.cycle_variation);
             }
-            let cylinder =
-                self.cylinders[index].process(
-                    deg_per_sample,
-                    self.smoothed_energy * slow_drift,
-                    &self.config,
-                );
+            let cylinder = self.cylinders[index].process(
+                deg_per_sample,
+                self.smoothed_energy * slow_drift,
+                &self.config,
+            );
             pressure += cylinder.pressure;
             derivative += cylinder.pressure_derivative;
+            if index < 5 {
+                derivative_a += cylinder.pressure_derivative;
+            } else {
+                derivative_b += cylinder.pressure_derivative;
+            }
             let header = self.headers[index].process(cylinder.blowdown);
             turbulence_trigger += cylinder.blowdown.abs();
             if index < 5 {
@@ -204,6 +212,8 @@ impl V10Engine {
         EngineFrame {
             combustion_source: pressure,
             pressure_derivative: derivative,
+            pressure_derivative_a: derivative_a,
+            pressure_derivative_b: derivative_b,
             pressure_direct: structure.pressure_direct,
             crankcase: structure.crankcase,
             block: structure.block,

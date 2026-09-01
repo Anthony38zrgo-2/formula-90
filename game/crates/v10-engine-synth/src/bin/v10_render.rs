@@ -5,7 +5,9 @@ use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 use v10_engine_synth::wav::write_mono_pcm16;
-use v10_engine_synth::{EngineConfig, EngineFrame, EngineInput, V10Engine};
+use v10_engine_synth::{
+    AcousticScene, AcousticSceneConfig, EngineConfig, EngineFrame, EngineInput, V10Engine,
+};
 
 struct Args {
     rpm: f32,
@@ -17,6 +19,7 @@ struct Args {
     seed: u64,
     out: PathBuf,
     stems_dir: PathBuf,
+    acoustic_scene: bool,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -43,6 +46,7 @@ fn parse_args() -> Result<Args, String> {
         seed: 0xF090_0010,
         out: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm.wav"),
         stems_dir: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm_stems"),
+        acoustic_scene: false,
     };
     let mut i = 0;
     while i < raw.len() {
@@ -59,6 +63,7 @@ fn parse_args() -> Result<Args, String> {
                 parsed.stems_dir =
                     PathBuf::from(parse_value::<String>(&raw, &mut i, "--stems-dir")?)
             }
+            "--acoustic-scene" => parsed.acoustic_scene = true,
             unknown => return Err(format!("unknown argument: {unknown}")),
         }
         i += 1;
@@ -103,6 +108,7 @@ fn run() -> Result<(), String> {
         ..EngineConfig::default()
     };
     let mut engine = V10Engine::new(config.clone())?;
+    let mut scene = AcousticScene::new(args.sample_rate as f32, AcousticSceneConfig::default())?;
     engine.set_input(EngineInput {
         rpm: args.rpm,
         throttle: args.throttle,
@@ -111,13 +117,16 @@ fn run() -> Result<(), String> {
 
     let warmup_samples = (args.warmup * args.sample_rate as f32).round() as usize;
     for _ in 0..warmup_samples {
-        engine.render_sample();
+        let frame = engine.render_sample();
+        scene.process(&frame);
     }
 
     let total = (args.seconds * args.sample_rate as f32).round() as usize;
     let names = [
         "combustion_source",
         "pressure_derivative",
+        "pressure_derivative_a",
+        "pressure_derivative_b",
         "pressure_direct",
         "crankcase",
         "block",
@@ -133,6 +142,15 @@ fn run() -> Result<(), String> {
         "turbulence",
         "master_pre_limiter",
         "master",
+        "engine_dry",
+        "engine_air",
+        "metallic_structure",
+        "gearbox_housing",
+        "head_cover_a",
+        "head_cover_b",
+        "cylinder_head_covers",
+        "airbox_plenum",
+        "scene_mix",
     ];
     let mut stems: BTreeMap<&str, Vec<f32>> = names
         .iter()
@@ -153,6 +171,7 @@ fn run() -> Result<(), String> {
     let mut event_count = 0u64;
     for sample in 0..total {
         let frame: EngineFrame = engine.render_sample();
+        let acoustic = scene.process(&frame);
         stems
             .get_mut("combustion_source")
             .unwrap()
@@ -161,6 +180,14 @@ fn run() -> Result<(), String> {
             .get_mut("pressure_derivative")
             .unwrap()
             .push(frame.pressure_derivative);
+        stems
+            .get_mut("pressure_derivative_a")
+            .unwrap()
+            .push(frame.pressure_derivative_a);
+        stems
+            .get_mut("pressure_derivative_b")
+            .unwrap()
+            .push(frame.pressure_derivative_b);
         stems
             .get_mut("pressure_direct")
             .unwrap()
@@ -194,8 +221,46 @@ fn run() -> Result<(), String> {
             .unwrap()
             .push(frame.master_pre_limiter);
         stems.get_mut("master").unwrap().push(frame.master);
-        peak = peak.max(frame.master.abs());
-        sum_sq += (frame.master * frame.master) as f64;
+        stems
+            .get_mut("engine_dry")
+            .unwrap()
+            .push(acoustic.engine_dry);
+        stems
+            .get_mut("engine_air")
+            .unwrap()
+            .push(acoustic.engine_air);
+        stems
+            .get_mut("metallic_structure")
+            .unwrap()
+            .push(acoustic.metallic_structure);
+        stems
+            .get_mut("gearbox_housing")
+            .unwrap()
+            .push(acoustic.gearbox_housing);
+        stems
+            .get_mut("head_cover_a")
+            .unwrap()
+            .push(acoustic.head_cover_a);
+        stems
+            .get_mut("head_cover_b")
+            .unwrap()
+            .push(acoustic.head_cover_b);
+        stems
+            .get_mut("cylinder_head_covers")
+            .unwrap()
+            .push(acoustic.cylinder_head_covers);
+        stems
+            .get_mut("airbox_plenum")
+            .unwrap()
+            .push(acoustic.airbox_plenum);
+        stems.get_mut("scene_mix").unwrap().push(acoustic.output);
+        let rendered = if args.acoustic_scene {
+            acoustic.output
+        } else {
+            frame.master
+        };
+        peak = peak.max(rendered.abs());
+        sum_sq += (rendered * rendered) as f64;
         worst_reduction = worst_reduction.min(frame.limiter_reduction_db);
         if frame.fired_mask != 0 {
             for cylinder in 0..10 {
@@ -216,7 +281,12 @@ fn run() -> Result<(), String> {
     }
     telemetry.flush().map_err(|e| e.to_string())?;
 
-    write_mono_pcm16(&args.out, args.sample_rate, stems.get("master").unwrap())?;
+    let output_stem = if args.acoustic_scene {
+        "scene_mix"
+    } else {
+        "master"
+    };
+    write_mono_pcm16(&args.out, args.sample_rate, stems.get(output_stem).unwrap())?;
     for (name, samples) in &stems {
         write_mono_pcm16(
             &args.stems_dir.join(format!("{name}.wav")),
@@ -245,7 +315,8 @@ fn run() -> Result<(), String> {
             "  \"worst_limiter_reduction_db\": {:.6},\n",
             "  \"legacy_synth_used\": false,\n",
             "  \"cpp_used\": false,\n",
-            "  \"faust_used\": false\n",
+            "  \"faust_used\": false,\n",
+            "  \"acoustic_scene_used\": {}\n",
             "}}\n"
         ),
         git_head(),
@@ -260,6 +331,7 @@ fn run() -> Result<(), String> {
         peak,
         rms,
         worst_reduction,
+        args.acoustic_scene,
     );
     fs::write(&metadata_path, metadata).map_err(|e| e.to_string())?;
     println!("wav={}", args.out.display());
