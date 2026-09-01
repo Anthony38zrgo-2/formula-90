@@ -6,8 +6,11 @@ use std::path::{Path, PathBuf};
 
 use v10_engine_synth::wav::write_mono_pcm16;
 use v10_engine_synth::{
-    AcousticScene, AcousticSceneConfig, EngineConfig, EngineFrame, EngineInput, V10Engine,
+    AcousticScene, AcousticSceneConfig, EngineConfig, EngineFrame, EngineInput, SampleLayerInput,
+    ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
 };
+
+const HYBRID_HEADROOM_GAIN: f32 = 0.60;
 
 struct Args {
     rpm: f32,
@@ -20,6 +23,7 @@ struct Args {
     out: PathBuf,
     stems_dir: PathBuf,
     acoustic_scene: bool,
+    sample_layer_dir: Option<PathBuf>,
     sweep_end_rpm: Option<f32>,
     accel_seconds: f32,
     coast_end_rpm: f32,
@@ -50,6 +54,7 @@ fn parse_args() -> Result<Args, String> {
         out: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm.wav"),
         stems_dir: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm_stems"),
         acoustic_scene: false,
+        sample_layer_dir: None,
         sweep_end_rpm: None,
         accel_seconds: 7.0,
         coast_end_rpm: 6_500.0,
@@ -70,6 +75,13 @@ fn parse_args() -> Result<Args, String> {
                     PathBuf::from(parse_value::<String>(&raw, &mut i, "--stems-dir")?)
             }
             "--acoustic-scene" => parsed.acoustic_scene = true,
+            "--sample-layer-dir" => {
+                parsed.sample_layer_dir = Some(PathBuf::from(parse_value::<String>(
+                    &raw,
+                    &mut i,
+                    "--sample-layer-dir",
+                )?))
+            }
             "--sweep-end-rpm" => {
                 parsed.sweep_end_rpm = Some(parse_value(&raw, &mut i, "--sweep-end-rpm")?)
             }
@@ -158,12 +170,13 @@ fn git_head() -> String {
         .unwrap_or_else(|| "unknown".into())
 }
 
-const SOURCE_PATHS: [&str; 7] = [
+const SOURCE_PATHS: [&str; 8] = [
     "game/crates/v10-engine-synth/src/acoustics.rs",
     "game/crates/v10-engine-synth/src/config.rs",
     "game/crates/v10-engine-synth/src/crank.rs",
     "game/crates/v10-engine-synth/src/cylinder.rs",
     "game/crates/v10-engine-synth/src/engine.rs",
+    "game/crates/v10-engine-synth/src/sample_layer.rs",
     "game/crates/v10-engine-synth/src/scene.rs",
     "game/crates/v10-engine-synth/src/bin/v10_render.rs",
 ];
@@ -222,6 +235,17 @@ fn run() -> Result<(), String> {
     };
     let mut engine = V10Engine::new(config.clone())?;
     let mut scene = AcousticScene::new(args.sample_rate as f32, AcousticSceneConfig::default())?;
+    let mut sample_layer = args
+        .sample_layer_dir
+        .as_ref()
+        .map(|directory| {
+            ThreeZoneSampleLayer::load_directory(
+                args.sample_rate,
+                directory,
+                ThreeZoneSampleLayerConfig::default(),
+            )
+        })
+        .transpose()?;
     engine.set_input(EngineInput {
         rpm: args.rpm,
         throttle: args.throttle,
@@ -287,6 +311,10 @@ fn run() -> Result<(), String> {
         "cylinder_mechanical_8",
         "cylinder_mechanical_9",
         "scene_mix",
+        "sample_tonal",
+        "sample_residual",
+        "sample_layer",
+        "hybrid_mix",
     ];
     let mut stems: BTreeMap<&str, Vec<f32>> = names
         .iter()
@@ -311,6 +339,17 @@ fn run() -> Result<(), String> {
         engine.set_input(current_input)?;
         let frame: EngineFrame = engine.render_sample();
         let acoustic = scene.process(&frame);
+        let sampled = sample_layer
+            .as_mut()
+            .map(|layer| {
+                layer.process(SampleLayerInput {
+                    rpm: current_input.rpm,
+                    throttle: current_input.throttle,
+                    load: current_input.load,
+                    crank_phase_deg: frame.crank_phase_deg,
+                })
+            })
+            .transpose()?;
         stems
             .get_mut("combustion_source")
             .unwrap()
@@ -463,7 +502,22 @@ fn run() -> Result<(), String> {
                 .push(acoustic.cylinder_mechanical[index]);
         }
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
-        let rendered = if args.acoustic_scene {
+        let sample_tonal = sampled.map_or(0.0, |frame| frame.tonal);
+        let sample_residual = sampled.map_or(0.0, |frame| frame.residual);
+        let sample_output = sampled.map_or(0.0, |frame| frame.output);
+        // Hybrid headroom is static and transparent. A limiter here would hide
+        // gain errors and make the sample layer part of the sound design.
+        let hybrid = (acoustic.output + sample_output) * HYBRID_HEADROOM_GAIN;
+        stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
+        stems
+            .get_mut("sample_residual")
+            .unwrap()
+            .push(sample_residual);
+        stems.get_mut("sample_layer").unwrap().push(sample_output);
+        stems.get_mut("hybrid_mix").unwrap().push(hybrid);
+        let rendered = if sample_layer.is_some() {
+            hybrid
+        } else if args.acoustic_scene {
             acoustic.output
         } else {
             frame.master
@@ -490,7 +544,9 @@ fn run() -> Result<(), String> {
     }
     telemetry.flush().map_err(|e| e.to_string())?;
 
-    let output_stem = if args.acoustic_scene {
+    let output_stem = if sample_layer.is_some() {
+        "hybrid_mix"
+    } else if args.acoustic_scene {
         "scene_mix"
     } else {
         "master"
@@ -537,7 +593,9 @@ fn run() -> Result<(), String> {
             "  \"legacy_synth_used\": false,\n",
             "  \"cpp_used\": false,\n",
             "  \"faust_used\": false,\n",
-            "  \"acoustic_scene_used\": {}\n",
+            "  \"acoustic_scene_used\": {},\n",
+            "  \"sample_layer_used\": {},\n",
+            "  \"hybrid_headroom_gain\": {:.6}\n",
             "}}\n"
         ),
         git_head(),
@@ -559,6 +617,8 @@ fn run() -> Result<(), String> {
         rms,
         worst_reduction,
         args.acoustic_scene,
+        sample_layer.is_some(),
+        HYBRID_HEADROOM_GAIN,
     );
     fs::write(&metadata_path, metadata).map_err(|e| e.to_string())?;
     println!("wav={}", args.out.display());
