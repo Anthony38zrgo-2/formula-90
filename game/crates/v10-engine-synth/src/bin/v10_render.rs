@@ -227,6 +227,17 @@ fn run() -> Result<(), String> {
         "low_mid_parallel",
         "load_saturation",
         "event_residual",
+        "cylinder_mechanical_sum",
+        "cylinder_mechanical_0",
+        "cylinder_mechanical_1",
+        "cylinder_mechanical_2",
+        "cylinder_mechanical_3",
+        "cylinder_mechanical_4",
+        "cylinder_mechanical_5",
+        "cylinder_mechanical_6",
+        "cylinder_mechanical_7",
+        "cylinder_mechanical_8",
+        "cylinder_mechanical_9",
         "scene_mix",
     ];
     let mut stems: BTreeMap<&str, Vec<f32>> = names
@@ -381,6 +392,28 @@ fn run() -> Result<(), String> {
             .get_mut("event_residual")
             .unwrap()
             .push(acoustic.event_residual);
+        stems
+            .get_mut("cylinder_mechanical_sum")
+            .unwrap()
+            .push(acoustic.cylinder_mechanical_sum);
+        const CYLINDER_STEMS: [&str; 10] = [
+            "cylinder_mechanical_0",
+            "cylinder_mechanical_1",
+            "cylinder_mechanical_2",
+            "cylinder_mechanical_3",
+            "cylinder_mechanical_4",
+            "cylinder_mechanical_5",
+            "cylinder_mechanical_6",
+            "cylinder_mechanical_7",
+            "cylinder_mechanical_8",
+            "cylinder_mechanical_9",
+        ];
+        for (index, name) in CYLINDER_STEMS.iter().enumerate() {
+            stems
+                .get_mut(name)
+                .unwrap()
+                .push(acoustic.cylinder_mechanical[index]);
+        }
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
         let rendered = if args.acoustic_scene {
             acoustic.output

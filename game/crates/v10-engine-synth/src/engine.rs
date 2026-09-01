@@ -33,6 +33,9 @@ pub struct EngineFrame {
     pub pressure_derivative: f32,
     pub pressure_derivative_a: f32,
     pub pressure_derivative_b: f32,
+    pub cylinder_pressure_derivative: [f32; CYLINDER_COUNT],
+    pub cylinder_blowdown: [f32; CYLINDER_COUNT],
+    pub cylinder_headers: [f32; CYLINDER_COUNT],
     pub pressure_direct: f32,
     pub crankcase: f32,
     pub block: f32,
@@ -140,6 +143,9 @@ impl V10Engine {
         let mut header_a = 0.0;
         let mut header_b = 0.0;
         let mut turbulence_trigger = 0.0f32;
+        let mut cylinder_pressure_derivative = [0.0; CYLINDER_COUNT];
+        let mut cylinder_blowdown = [0.0; CYLINDER_COUNT];
+        let mut cylinder_headers = [0.0; CYLINDER_COUNT];
 
         for index in 0..CYLINDER_COUNT {
             if events.fired(index) {
@@ -158,6 +164,9 @@ impl V10Engine {
                 derivative_b += cylinder.pressure_derivative;
             }
             let header = self.headers[index].process(cylinder.blowdown);
+            cylinder_pressure_derivative[index] = cylinder.pressure_derivative;
+            cylinder_blowdown[index] = cylinder.blowdown;
+            cylinder_headers[index] = header;
             turbulence_trigger += cylinder.blowdown.abs();
             if index < 5 {
                 header_a += header;
@@ -218,6 +227,9 @@ impl V10Engine {
             pressure_derivative: derivative,
             pressure_derivative_a: derivative_a,
             pressure_derivative_b: derivative_b,
+            cylinder_pressure_derivative,
+            cylinder_blowdown,
+            cylinder_headers,
             pressure_direct: structure.pressure_direct,
             crankcase: structure.crankcase,
             block: structure.block,
@@ -291,6 +303,33 @@ mod tests {
             worst_reduction > -0.5,
             "limiter reduction {worst_reduction} dB"
         );
+    }
+
+    #[test]
+    fn ten_cylinder_signals_remain_independent_before_bank_sum() {
+        let mut engine = V10Engine::new(EngineConfig::default()).unwrap();
+        engine
+            .set_input(EngineInput {
+                rpm: 7_499.0,
+                throttle: 0.72,
+                load: 0.66,
+            })
+            .unwrap();
+        let mut energy = [0.0f64; CYLINDER_COUNT];
+        for _ in 0..48_000 {
+            let frame = engine.render_sample();
+            let bank_a: f32 = frame.cylinder_pressure_derivative[..5].iter().sum();
+            let bank_b: f32 = frame.cylinder_pressure_derivative[5..].iter().sum();
+            assert!((bank_a - frame.pressure_derivative_a).abs() < 1.0e-6);
+            assert!((bank_b - frame.pressure_derivative_b).abs() < 1.0e-6);
+            for (total, sample) in energy
+                .iter_mut()
+                .zip(frame.cylinder_pressure_derivative.iter())
+            {
+                *total += (*sample * *sample) as f64;
+            }
+        }
+        assert!(energy.iter().all(|value| *value > 1.0e-8), "{energy:?}");
     }
 
     #[test]

@@ -240,12 +240,16 @@ def seam_metrics(audio: np.ndarray) -> tuple[float, float, float, int]:
     return value_jump, slope_jump, best_corr, best_lag
 
 
-def analyze(path: Path) -> tuple[AudioMetrics, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def analyze(
+    path: Path, forced_shaft_hz: float | None = None
+) -> tuple[AudioMetrics, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     sample_rate, audio, dtype_name, channels = read_audio(path)
     chunks, loops = read_riff_chunks(path)
     centered = audio - np.mean(audio)
     freq, power = spectrum(centered, sample_rate)
-    shaft_hz, _ = estimate_shaft_frequency(freq, power)
+    shaft_hz = forced_shaft_hz
+    if shaft_hz is None:
+        shaft_hz, _ = estimate_shaft_frequency(freq, power)
     firing_hz = shaft_hz * 5.0
     resolution = freq[1] - freq[0]
     firing_mask = np.abs(freq - firing_hz) <= max(1.5 * resolution, 3.0)
@@ -386,9 +390,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("inputs", nargs="+", type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument(
+        "--forced-rpm",
+        type=float,
+        help="Known tuning RPM; resolves half-order ambiguity in layered game samples.",
+    )
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    results = [analyze(path) for path in args.inputs]
+    forced_shaft_hz = None if args.forced_rpm is None else args.forced_rpm / 60.0
+    results = [analyze(path, forced_shaft_hz) for path in args.inputs]
     payload = {metrics.name: asdict(metrics) for metrics, *_ in results}
     (args.output_dir / "reference_metrics.json").write_text(
         json.dumps(payload, indent=2), encoding="utf-8"

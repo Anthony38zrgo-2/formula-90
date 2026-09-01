@@ -1,6 +1,8 @@
 use crate::acoustics::{BandPassNoise, DcBlocker, ModalBank, OnePoleLowPass};
 use crate::engine::EngineFrame;
 
+const CYLINDER_COUNT: usize = 10;
+
 #[derive(Clone, Copy, Debug)]
 pub struct AcousticSceneConfig {
     pub dry_low_gain: f32,
@@ -66,6 +68,8 @@ pub struct AcousticFrame {
     pub low_mid_parallel: f32,
     pub load_saturation: f32,
     pub event_residual: f32,
+    pub cylinder_mechanical: [f32; CYLINDER_COUNT],
+    pub cylinder_mechanical_sum: f32,
     pub output: f32,
 }
 
@@ -76,6 +80,66 @@ pub struct GearboxHousing {
     delay_cursor: usize,
     dc: DcBlocker,
     casing_lowpass: OnePoleLowPass,
+}
+
+/// One short structural route per cylinder. These paths retain cylinder
+/// identity until after propagation; collectors and the large vehicle
+/// structures remain shared.
+pub struct CylinderMechanicalPath {
+    signature: ModalBank,
+    propagation_delay: Vec<f32>,
+    delay_cursor: usize,
+    dc: DcBlocker,
+    radiation_lowpass: OnePoleLowPass,
+    polarity: f32,
+}
+
+impl CylinderMechanicalPath {
+    fn new(index: usize, sample_rate: f32) -> Self {
+        let bank = if index < 5 { 0.0 } else { 1.0 };
+        let position = (index % 5) as f32;
+        let spread = position - 2.0;
+        let base = 236.0 + spread * 11.5 + bank * 8.0;
+        let delay_ms = 0.16 + position * 0.085 + bank * 0.055;
+        Self {
+            signature: ModalBank::new(
+                &[
+                    (base, 0.0095 + position * 0.00035, 0.115),
+                    (base * (1.47 + bank * 0.018), 0.0072, -0.090),
+                    (base * (2.08 - position * 0.012), 0.0050, 0.062),
+                ],
+                sample_rate,
+            ),
+            propagation_delay: vec![
+                0.0;
+                (delay_ms * 0.001 * sample_rate).round().max(1.0) as usize + 1
+            ],
+            delay_cursor: 0,
+            dc: DcBlocker::new(72.0 + position * 4.0, sample_rate),
+            radiation_lowpass: OnePoleLowPass::new(1_350.0 + position * 85.0, sample_rate),
+            polarity: if (index + index / 5) % 2 == 0 {
+                1.0
+            } else {
+                -1.0
+            },
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, derivative: f32, blowdown: f32, header: f32) -> f32 {
+        let excitation = derivative * 0.72 + blowdown * 0.22 + header * 0.16;
+        let arrived = self.propagation_delay[self.delay_cursor];
+        self.propagation_delay[self.delay_cursor] = excitation;
+        self.delay_cursor += 1;
+        if self.delay_cursor == self.propagation_delay.len() {
+            self.delay_cursor = 0;
+        }
+        let resonant = self.signature.process(arrived * self.polarity);
+        let radiated = self
+            .radiation_lowpass
+            .process(self.dc.process(arrived * 0.018 + resonant));
+        (radiated * 10.0).tanh() / 4.0
+    }
 }
 
 pub struct CylinderHeadCovers {
@@ -367,9 +431,13 @@ impl CockpitCavity {
         airbox: f32,
         engine_cover: f32,
         rear_exhaust: f32,
+        cylinder_structure: f32,
     ) -> f32 {
-        let airborne =
-            engine_air * 0.62 + airbox * 0.27 + engine_cover * 0.12 + rear_exhaust * 0.10;
+        let airborne = engine_air * 0.62
+            + airbox * 0.27
+            + engine_cover * 0.12
+            + rear_exhaust * 0.10
+            + cylinder_structure * 0.065;
         self.reflection_delay[self.delay_cursor] = airborne;
         let mut reflected = 0.0;
         for &(delay, gain) in &self.taps {
@@ -483,13 +551,14 @@ impl EngineMountMonocoque {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame) -> (f32, f32) {
+    pub fn process(&mut self, frame: &EngineFrame, cylinder_structure: f32) -> (f32, f32) {
         let torque_transfer = 0.42 + 0.58 * frame.load * (0.30 + 0.70 * frame.throttle);
         let block_force = (frame.pressure_direct * 0.52
             + frame.block_head * 0.68
             + frame.block * 0.32
             + (frame.collector_pressure_a + frame.collector_pressure_b) * 0.14
-            + frame.pressure_derivative * 0.035)
+            + frame.pressure_derivative * 0.035
+            + cylinder_structure * 0.24)
             * torque_transfer;
         let mount_arrival =
             Self::delayed(&mut self.mount_delay, &mut self.mount_cursor, block_force);
@@ -944,12 +1013,13 @@ impl MetallicStructure {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame) -> f32 {
+    pub fn process(&mut self, frame: &EngineFrame, cylinder_structure: f32) -> f32 {
         // Mounts mostly conduct the block; the bellhousing also sees collector
         // pressure; thin covers respond to fast head/pressure changes.
         let mount_excitation = frame.block * 1.15
             + frame.block_head * 0.48
-            + (frame.collector_pressure_a + frame.collector_pressure_b) * 0.12;
+            + (frame.collector_pressure_a + frame.collector_pressure_b) * 0.12
+            + cylinder_structure * 0.52;
         let bell_excitation =
             frame.head * 1.05 + frame.pressure_derivative * 0.38 + frame.exhaust * 0.10;
         let panel_excitation =
@@ -992,6 +1062,7 @@ pub struct AcousticScene {
     low_mid_parallel: LowMidParallelCompressor,
     load_saturation: LoadDependentSaturation,
     event_residual: EventResidual,
+    cylinder_paths: [CylinderMechanicalPath; CYLINDER_COUNT],
     metal_order_notch: TrackingOrderNotch,
     gearbox_order_notch: TrackingOrderNotch,
     parallel_order_notch: TrackingOrderNotch,
@@ -1042,6 +1113,9 @@ impl AcousticScene {
             low_mid_parallel: LowMidParallelCompressor::new(sample_rate),
             load_saturation: LoadDependentSaturation::new(sample_rate),
             event_residual: EventResidual::new(sample_rate),
+            cylinder_paths: std::array::from_fn(|index| {
+                CylinderMechanicalPath::new(index, sample_rate)
+            }),
             metal_order_notch: TrackingOrderNotch::new(sample_rate, 3.2, 0.64),
             gearbox_order_notch: TrackingOrderNotch::new(sample_rate, 3.0, 0.48),
             parallel_order_notch: TrackingOrderNotch::new(sample_rate, 2.7, 0.70),
@@ -1066,9 +1140,19 @@ impl AcousticScene {
         if measured_firing.is_finite() && measured_firing < self.sample_rate * 0.45 {
             self.firing_frequency_hz += 0.04 * (measured_firing - self.firing_frequency_hz);
         }
-        let metallic_structure = self
-            .metal_order_notch
-            .process(self.metal.process(engine), self.firing_frequency_hz);
+        let mut cylinder_mechanical = [0.0; CYLINDER_COUNT];
+        for (index, path) in self.cylinder_paths.iter_mut().enumerate() {
+            cylinder_mechanical[index] = path.process(
+                engine.cylinder_pressure_derivative[index],
+                engine.cylinder_blowdown[index],
+                engine.cylinder_headers[index],
+            );
+        }
+        let cylinder_mechanical_sum = cylinder_mechanical.iter().sum::<f32>() * 0.34;
+        let metallic_structure = self.metal_order_notch.process(
+            self.metal.process(engine, cylinder_mechanical_sum),
+            self.firing_frequency_hz,
+        );
         let gearbox_housing = self
             .gearbox_order_notch
             .process(self.gearbox.process(engine), self.firing_frequency_hz);
@@ -1078,7 +1162,9 @@ impl AcousticScene {
         let engine_cover = self.engine_cover.process(engine, airbox_plenum);
         let (rear_exhaust_a, rear_exhaust_b) = self.rear_exhaust.process(engine);
         let rear_exhaust = rear_exhaust_a + rear_exhaust_b;
-        let (engine_mounts, monocoque_seat) = self.mount_monocoque.process(engine);
+        let (engine_mounts, monocoque_seat) = self
+            .mount_monocoque
+            .process(engine, cylinder_mechanical_sum);
         let mount_monocoque = engine_mounts * 0.58 + monocoque_seat;
         let under_seat_vibration =
             self.under_seat
@@ -1102,9 +1188,13 @@ impl AcousticScene {
             + dry_mid * self.config.dry_mid_gain * duck
             + dry_high * self.config.dry_high_gain;
         let engine_air = self.air_path.process(filtered_dry);
-        let cockpit_cavity =
-            self.cockpit_cavity
-                .process(engine_air, airbox_plenum, engine_cover, rear_exhaust);
+        let cockpit_cavity = self.cockpit_cavity.process(
+            engine_air,
+            airbox_plenum,
+            engine_cover,
+            rear_exhaust,
+            cylinder_mechanical_sum,
+        );
         let structural_low_mid_bus = metallic_structure * 0.08
             + gearbox_housing * 0.38
             + mount_monocoque * 1.00
@@ -1146,6 +1236,8 @@ impl AcousticScene {
             low_mid_parallel,
             load_saturation,
             event_residual,
+            cylinder_mechanical,
+            cylinder_mechanical_sum,
             output: ((engine_air
                 + metallic_structure * self.config.metal_gain * slow_scene_drift
                 + gearbox_housing * self.config.gearbox_gain * slow_scene_drift
