@@ -155,15 +155,26 @@ struct ZoneMidProcessor {
     compressor_release: f32,
     order_five_wet: f32,
     rasp_gain: f32,
+    zone_tonal_gain: f32,
+    zone_residual_gain: f32,
     order_five_notch: TrackingNotch,
 }
 
 impl ZoneMidProcessor {
     fn new(zone: usize, sample_rate: f32) -> Self {
-        let (low_hz, high_hz, tonal_db, residual_db, order_five_wet, rasp_db) = match zone {
-            0 => (250.0, 900.0, 1.0, 4.0, 0.0, 0.0),
-            1 => (350.0, 1_800.0, 1.5, 3.0, 0.0, 0.0),
-            _ => (500.0, 2_500.0, 0.75, 2.5, 0.30, 3.5),
+        let (
+            low_hz,
+            high_hz,
+            tonal_db,
+            residual_db,
+            order_five_wet,
+            rasp_db,
+            zone_tonal_db,
+            zone_residual_db,
+        ) = match zone {
+            0 => (250.0, 900.0, 1.0, 4.0, 0.0, 0.0, 0.0, 0.0),
+            1 => (350.0, 1_800.0, 1.5, 3.0, 0.0, 0.0, 0.0, 0.0),
+            _ => (500.0, 2_500.0, 0.75, 2.5, 0.30, 3.5, 1.5, 2.0),
         };
         Self {
             tonal_low: OnePoleLowPass::new(low_hz, sample_rate),
@@ -181,6 +192,8 @@ impl ZoneMidProcessor {
             compressor_release: 1.0 - (-1.0 / (0.120 * sample_rate)).exp(),
             order_five_wet,
             rasp_gain: 10.0f32.powf(rasp_db / 20.0),
+            zone_tonal_gain: 10.0f32.powf(zone_tonal_db / 20.0),
+            zone_residual_gain: 10.0f32.powf(zone_residual_db / 20.0),
             order_five_notch: TrackingNotch::new(),
         }
     }
@@ -228,17 +241,17 @@ impl ZoneMidProcessor {
         let residual_shaped =
             residual - residual_band + processed_band + residual_rasp * (self.rasp_gain - 1.0);
         (
-            tonal_shaped,
-            residual_shaped,
-            tonal_band,
-            processed_band,
+            tonal_shaped * self.zone_tonal_gain,
+            residual_shaped * self.zone_residual_gain,
+            tonal_band * self.zone_tonal_gain,
+            processed_band * self.zone_residual_gain,
             if self.rasp_gain > 1.0 {
-                tonal_rasp * self.rasp_gain
+                tonal_rasp * self.rasp_gain * self.zone_tonal_gain
             } else {
                 0.0
             },
             if self.rasp_gain > 1.0 {
-                residual_rasp * self.rasp_gain
+                residual_rasp * self.rasp_gain * self.zone_residual_gain
             } else {
                 0.0
             },
