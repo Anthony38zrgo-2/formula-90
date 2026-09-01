@@ -669,7 +669,7 @@ fn run() -> Result<(), String> {
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
-            "  \"sample_mid_architecture\": \"zone EQ + residual parallel compression/saturation + max-zone order-5 control + complementary 350-2000 Hz duck + max-only 1800-6500 Hz rasp at +3.5 dB + max tonal/residual gains at +1.5/+2.0 dB\"\n",
+            "  \"sample_mid_architecture\": \"zone EQ + residual parallel compression/saturation + max-zone order-5 control + complementary 350-2000 Hz duck + max-only 1800-6500 Hz rasp at +3.5 dB + max tonal/residual gains at +1.5/+2.0 dB + perceptual max crossfade 10000-13750 RPM\"\n",
             "}}\n"
         ),
         git_head(),

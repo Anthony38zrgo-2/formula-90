@@ -41,6 +41,8 @@ pub struct ThreeZoneSampleLayerConfig {
     pub tonal_gain_loaded: f32,
     pub residual_gain_closed: f32,
     pub residual_gain_loaded: f32,
+    pub max_fade_start_rpm: f32,
+    pub max_full_rpm: f32,
 }
 
 impl Default for ThreeZoneSampleLayerConfig {
@@ -50,6 +52,8 @@ impl Default for ThreeZoneSampleLayerConfig {
             tonal_gain_loaded: 0.22,
             residual_gain_closed: 0.12,
             residual_gain_loaded: 0.40,
+            max_fade_start_rpm: 10_000.0,
+            max_full_rpm: 13_750.0,
         }
     }
 }
@@ -65,6 +69,14 @@ impl ThreeZoneSampleLayerConfig {
             if !value.is_finite() || !(0.0..=1.5).contains(&value) {
                 return Err(format!("{name} outside 0..1.5: {value}"));
             }
+        }
+        if !self.max_fade_start_rpm.is_finite()
+            || !self.max_full_rpm.is_finite()
+            || self.max_fade_start_rpm < 1_000.0
+            || self.max_full_rpm > 25_000.0
+            || self.max_full_rpm - self.max_fade_start_rpm < 500.0
+        {
+            return Err("invalid max-zone RPM crossfade window".into());
         }
         Ok(self)
     }
@@ -417,6 +429,11 @@ impl ThreeZoneSampleLayer {
         {
             return Err("sample-layer RPM anchors must be distinct and ordered".into());
         }
+        if config.max_fade_start_rpm < loaded[1].rpm_anchor
+            || config.max_full_rpm > loaded[2].rpm_anchor
+        {
+            return Err("max-zone crossfade window must stay between med and max anchors".into());
+        }
         let zones: [SampleZone; ZONE_COUNT] = loaded
             .try_into()
             .map_err(|_| "ThreeZoneSampleLayer requires exactly three zones".to_string())?;
@@ -452,7 +469,12 @@ impl ThreeZoneSampleLayer {
         if !self.phase_aligned {
             self.reset_phase(input.crank_phase_deg)?;
         }
-        let weights = zone_weights(input.rpm, self.rpm_anchors());
+        let weights = zone_weights(
+            input.rpm,
+            self.rpm_anchors(),
+            self.config.max_fade_start_rpm,
+            self.config.max_full_rpm,
+        );
         let mut tonal = 0.0;
         let mut residual = 0.0;
         let mut tonal_mid = 0.0;
@@ -502,7 +524,12 @@ impl ThreeZoneSampleLayer {
 }
 
 #[inline]
-fn zone_weights(rpm: f32, anchors: [f32; ZONE_COUNT]) -> [f32; ZONE_COUNT] {
+fn zone_weights(
+    rpm: f32,
+    anchors: [f32; ZONE_COUNT],
+    max_fade_start_rpm: f32,
+    max_full_rpm: f32,
+) -> [f32; ZONE_COUNT] {
     if rpm <= anchors[0] {
         return [1.0, 0.0, 0.0];
     }
@@ -511,8 +538,11 @@ fn zone_weights(rpm: f32, anchors: [f32; ZONE_COUNT]) -> [f32; ZONE_COUNT] {
         let theta = t * std::f32::consts::FRAC_PI_2;
         return [theta.cos(), theta.sin(), 0.0];
     }
-    if rpm < anchors[2] {
-        let t = ((rpm - anchors[1]) / (anchors[2] - anchors[1])).clamp(0.0, 1.0);
+    if rpm < max_fade_start_rpm {
+        return [0.0, 1.0, 0.0];
+    }
+    if rpm < max_full_rpm {
+        let t = ((rpm - max_fade_start_rpm) / (max_full_rpm - max_fade_start_rpm)).clamp(0.0, 1.0);
         let theta = t * std::f32::consts::FRAC_PI_2;
         return [0.0, theta.cos(), theta.sin()];
     }
@@ -605,12 +635,17 @@ mod tests {
 
     #[test]
     fn crossfades_have_constant_power() {
-        let anchors = [7_500.0, 10_000.0, 15_000.0];
+        let anchors = [7_500.0, 8_200.0, 15_000.0];
         for rpm in [7_500.0, 8_750.0, 10_000.0, 12_500.0, 15_000.0] {
-            let weights = zone_weights(rpm, anchors);
+            let weights = zone_weights(rpm, anchors, 10_000.0, 13_750.0);
             let power: f32 = weights.iter().map(|weight| weight * weight).sum();
             assert!((power - 1.0).abs() < 1.0e-6);
         }
+        assert_eq!(zone_weights(9_999.0, anchors, 10_000.0, 13_750.0)[2], 0.0);
+        assert_eq!(
+            zone_weights(13_750.0, anchors, 10_000.0, 13_750.0),
+            [0.0, 0.0, 1.0]
+        );
     }
 
     #[test]
