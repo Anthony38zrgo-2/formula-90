@@ -10,7 +10,64 @@ use v10_engine_synth::{
     ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
 };
 
-const HYBRID_HEADROOM_GAIN: f32 = 0.60;
+const HYBRID_HEADROOM_GAIN: f32 = 0.67;
+
+struct OnePoleLowPass {
+    alpha: f32,
+    state: f32,
+}
+
+impl OnePoleLowPass {
+    fn new(cutoff_hz: f32, sample_rate: f32) -> Self {
+        Self {
+            alpha: 1.0 - (-std::f32::consts::TAU * cutoff_hz / sample_rate).exp(),
+            state: 0.0,
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, input: f32) -> f32 {
+        self.state += self.alpha * (input - self.state);
+        self.state
+    }
+}
+
+struct ComplementaryMidDucker {
+    low: OnePoleLowPass,
+    high: OnePoleLowPass,
+    envelope: f32,
+    attack: f32,
+    release: f32,
+}
+
+impl ComplementaryMidDucker {
+    fn new(sample_rate: f32) -> Self {
+        Self {
+            low: OnePoleLowPass::new(350.0, sample_rate),
+            high: OnePoleLowPass::new(2_000.0, sample_rate),
+            envelope: 0.0,
+            attack: 1.0 - (-1.0 / (0.020 * sample_rate)).exp(),
+            release: 1.0 - (-1.0 / (0.140 * sample_rate)).exp(),
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, simulation: f32, sample_mid: f32) -> (f32, f32) {
+        let detector = sample_mid.abs();
+        let rate = if detector > self.envelope {
+            self.attack
+        } else {
+            self.release
+        };
+        self.envelope += rate * (detector - self.envelope);
+        let depth = (self.envelope / 0.080).clamp(0.0, 1.0);
+        let gain = 1.0 - (1.0 - 10.0f32.powf(-3.0 / 20.0)) * depth;
+        let below_high = self.high.process(simulation);
+        let below_low = self.low.process(simulation);
+        let mid = below_high - below_low;
+        (simulation + mid * (gain - 1.0), gain)
+    }
+}
 
 struct Args {
     rpm: f32,
@@ -246,6 +303,7 @@ fn run() -> Result<(), String> {
             )
         })
         .transpose()?;
+    let mut mid_ducker = ComplementaryMidDucker::new(args.sample_rate as f32);
     engine.set_input(EngineInput {
         rpm: args.rpm,
         throttle: args.throttle,
@@ -313,7 +371,10 @@ fn run() -> Result<(), String> {
         "scene_mix",
         "sample_tonal",
         "sample_residual",
+        "sample_mid",
+        "sample_max_rasp",
         "sample_layer",
+        "scene_mid_ducked",
         "hybrid_mix",
     ];
     let mut stems: BTreeMap<&str, Vec<f32>> = names
@@ -504,16 +565,28 @@ fn run() -> Result<(), String> {
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
         let sample_tonal = sampled.map_or(0.0, |frame| frame.tonal);
         let sample_residual = sampled.map_or(0.0, |frame| frame.residual);
+        let sample_mid = sampled.map_or(0.0, |frame| frame.mid_bus);
+        let sample_max_rasp = sampled.map_or(0.0, |frame| frame.max_rasp);
         let sample_output = sampled.map_or(0.0, |frame| frame.output);
+        let (scene_mid_ducked, _) = mid_ducker.process(acoustic.output, sample_mid);
         // Hybrid headroom is static and transparent. A limiter here would hide
         // gain errors and make the sample layer part of the sound design.
-        let hybrid = (acoustic.output + sample_output) * HYBRID_HEADROOM_GAIN;
+        let hybrid = (scene_mid_ducked + sample_output) * HYBRID_HEADROOM_GAIN;
         stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
         stems
             .get_mut("sample_residual")
             .unwrap()
             .push(sample_residual);
+        stems.get_mut("sample_mid").unwrap().push(sample_mid);
+        stems
+            .get_mut("sample_max_rasp")
+            .unwrap()
+            .push(sample_max_rasp);
         stems.get_mut("sample_layer").unwrap().push(sample_output);
+        stems
+            .get_mut("scene_mid_ducked")
+            .unwrap()
+            .push(scene_mid_ducked);
         stems.get_mut("hybrid_mix").unwrap().push(hybrid);
         let rendered = if sample_layer.is_some() {
             hybrid
@@ -595,7 +668,8 @@ fn run() -> Result<(), String> {
             "  \"faust_used\": false,\n",
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
-            "  \"hybrid_headroom_gain\": {:.6}\n",
+            "  \"hybrid_headroom_gain\": {:.6},\n",
+            "  \"sample_mid_architecture\": \"zone EQ + residual parallel compression/saturation + max-zone order-5 control + complementary 350-2000 Hz duck + max-only 1800-6500 Hz rasp at +3.5 dB\"\n",
             "}}\n"
         ),
         git_head(),

@@ -74,8 +74,176 @@ impl ThreeZoneSampleLayerConfig {
 pub struct SampleLayerFrame {
     pub tonal: f32,
     pub residual: f32,
+    pub mid_bus: f32,
+    pub max_rasp: f32,
     pub output: f32,
     pub zone_weights: [f32; ZONE_COUNT],
+}
+
+struct OnePoleLowPass {
+    alpha: f32,
+    state: f32,
+}
+
+impl OnePoleLowPass {
+    fn new(cutoff_hz: f32, sample_rate: f32) -> Self {
+        Self {
+            alpha: 1.0 - (-std::f32::consts::TAU * cutoff_hz / sample_rate).exp(),
+            state: 0.0,
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, input: f32) -> f32 {
+        self.state += self.alpha * (input - self.state);
+        self.state
+    }
+}
+
+struct TrackingNotch {
+    x1: f32,
+    x2: f32,
+    y1: f32,
+    y2: f32,
+}
+
+impl TrackingNotch {
+    fn new() -> Self {
+        Self {
+            x1: 0.0,
+            x2: 0.0,
+            y1: 0.0,
+            y2: 0.0,
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, input: f32, frequency_hz: f32, sample_rate: f32, wet: f32) -> f32 {
+        if wet <= 0.0 || frequency_hz >= sample_rate * 0.45 {
+            return input;
+        }
+        let omega = std::f32::consts::TAU * frequency_hz / sample_rate;
+        let alpha = omega.sin() / (2.0 * 10.0);
+        let inverse_a0 = 1.0 / (1.0 + alpha);
+        let b0 = inverse_a0;
+        let b1 = -2.0 * omega.cos() * inverse_a0;
+        let b2 = inverse_a0;
+        let a1 = b1;
+        let a2 = (1.0 - alpha) * inverse_a0;
+        let filtered = b0 * input + b1 * self.x1 + b2 * self.x2 - a1 * self.y1 - a2 * self.y2;
+        self.x2 = self.x1;
+        self.x1 = input;
+        self.y2 = self.y1;
+        self.y1 = filtered;
+        input + (filtered - input) * wet
+    }
+}
+
+struct ZoneMidProcessor {
+    tonal_low: OnePoleLowPass,
+    tonal_high: OnePoleLowPass,
+    residual_low: OnePoleLowPass,
+    residual_high: OnePoleLowPass,
+    rasp_tonal_low: OnePoleLowPass,
+    rasp_tonal_high: OnePoleLowPass,
+    rasp_residual_low: OnePoleLowPass,
+    rasp_residual_high: OnePoleLowPass,
+    tonal_gain: f32,
+    residual_gain: f32,
+    compressor_envelope: f32,
+    compressor_attack: f32,
+    compressor_release: f32,
+    order_five_wet: f32,
+    rasp_gain: f32,
+    order_five_notch: TrackingNotch,
+}
+
+impl ZoneMidProcessor {
+    fn new(zone: usize, sample_rate: f32) -> Self {
+        let (low_hz, high_hz, tonal_db, residual_db, order_five_wet, rasp_db) = match zone {
+            0 => (250.0, 900.0, 1.0, 4.0, 0.0, 0.0),
+            1 => (350.0, 1_800.0, 1.5, 3.0, 0.0, 0.0),
+            _ => (500.0, 2_500.0, 0.75, 2.5, 0.30, 3.5),
+        };
+        Self {
+            tonal_low: OnePoleLowPass::new(low_hz, sample_rate),
+            tonal_high: OnePoleLowPass::new(high_hz, sample_rate),
+            residual_low: OnePoleLowPass::new(low_hz, sample_rate),
+            residual_high: OnePoleLowPass::new(high_hz, sample_rate),
+            rasp_tonal_low: OnePoleLowPass::new(1_800.0, sample_rate),
+            rasp_tonal_high: OnePoleLowPass::new(6_500.0, sample_rate),
+            rasp_residual_low: OnePoleLowPass::new(1_800.0, sample_rate),
+            rasp_residual_high: OnePoleLowPass::new(6_500.0, sample_rate),
+            tonal_gain: 10.0f32.powf(tonal_db / 20.0),
+            residual_gain: 10.0f32.powf(residual_db / 20.0),
+            compressor_envelope: 0.0,
+            compressor_attack: 1.0 - (-1.0 / (0.025 * sample_rate)).exp(),
+            compressor_release: 1.0 - (-1.0 / (0.120 * sample_rate)).exp(),
+            order_five_wet,
+            rasp_gain: 10.0f32.powf(rasp_db / 20.0),
+            order_five_notch: TrackingNotch::new(),
+        }
+    }
+
+    #[inline]
+    fn process(
+        &mut self,
+        tonal: f32,
+        residual: f32,
+        rpm: f32,
+        sample_rate: f32,
+    ) -> (f32, f32, f32, f32, f32, f32) {
+        let tonal_band = self.tonal_high.process(tonal) - self.tonal_low.process(tonal);
+        let residual_band =
+            self.residual_high.process(residual) - self.residual_low.process(residual);
+        let tonal_rasp = self.rasp_tonal_high.process(tonal) - self.rasp_tonal_low.process(tonal);
+        let residual_rasp =
+            self.rasp_residual_high.process(residual) - self.rasp_residual_low.process(residual);
+        let tonal_shaped =
+            tonal + tonal_band * (self.tonal_gain - 1.0) + tonal_rasp * (self.rasp_gain - 1.0);
+        let tonal_shaped = self.order_five_notch.process(
+            tonal_shaped,
+            rpm / 12.0,
+            sample_rate,
+            self.order_five_wet,
+        );
+
+        let level = residual_band.abs();
+        let envelope_rate = if level > self.compressor_envelope {
+            self.compressor_attack
+        } else {
+            self.compressor_release
+        };
+        self.compressor_envelope += envelope_rate * (level - self.compressor_envelope);
+        let threshold = 0.040;
+        let compressed_gain = if self.compressor_envelope > threshold {
+            (threshold / self.compressor_envelope).sqrt()
+        } else {
+            1.0
+        };
+        let boosted_band = residual_band * self.residual_gain;
+        let parallel_band = boosted_band * (0.70 + 0.30 * compressed_gain * 1.25);
+        let saturated_band = (parallel_band * 1.4).tanh() / 1.4f32.tanh();
+        let processed_band = parallel_band * 0.80 + saturated_band * 0.20;
+        let residual_shaped =
+            residual - residual_band + processed_band + residual_rasp * (self.rasp_gain - 1.0);
+        (
+            tonal_shaped,
+            residual_shaped,
+            tonal_band,
+            processed_band,
+            if self.rasp_gain > 1.0 {
+                tonal_rasp * self.rasp_gain
+            } else {
+                0.0
+            },
+            if self.rasp_gain > 1.0 {
+                residual_rasp * self.rasp_gain
+            } else {
+                0.0
+            },
+        )
+    }
 }
 
 #[derive(Deserialize)]
@@ -179,6 +347,7 @@ pub struct ThreeZoneSampleLayer {
     output_sample_rate: u32,
     config: ThreeZoneSampleLayerConfig,
     zones: [SampleZone; ZONE_COUNT],
+    mid_processors: [ZoneMidProcessor; ZONE_COUNT],
     phase_aligned: bool,
 }
 
@@ -242,6 +411,9 @@ impl ThreeZoneSampleLayer {
             output_sample_rate,
             config,
             zones,
+            mid_processors: std::array::from_fn(|zone| {
+                ZoneMidProcessor::new(zone, output_sample_rate as f32)
+            }),
             phase_aligned: false,
         })
     }
@@ -270,10 +442,31 @@ impl ThreeZoneSampleLayer {
         let weights = zone_weights(input.rpm, self.rpm_anchors());
         let mut tonal = 0.0;
         let mut residual = 0.0;
-        for (zone, weight) in self.zones.iter_mut().zip(weights) {
+        let mut tonal_mid = 0.0;
+        let mut residual_mid = 0.0;
+        let mut tonal_rasp = 0.0;
+        let mut residual_rasp = 0.0;
+        for (index, (zone, weight)) in self.zones.iter_mut().zip(weights).enumerate() {
             let (zone_tonal, zone_residual) = zone.render(input.rpm, self.output_sample_rate);
+            let (
+                zone_tonal,
+                zone_residual,
+                zone_tonal_mid,
+                zone_residual_mid,
+                zone_tonal_rasp,
+                zone_residual_rasp,
+            ) = self.mid_processors[index].process(
+                zone_tonal,
+                zone_residual,
+                input.rpm,
+                self.output_sample_rate as f32,
+            );
             tonal += zone_tonal * weight;
             residual += zone_residual * weight;
+            tonal_mid += zone_tonal_mid * weight;
+            residual_mid += zone_residual_mid * weight;
+            tonal_rasp += zone_tonal_rasp * weight;
+            residual_rasp += zone_residual_rasp * weight;
         }
         let charge = input.load * (0.35 + 0.65 * input.throttle);
         let tonal_gain = self.config.tonal_gain_closed
@@ -282,9 +475,13 @@ impl ThreeZoneSampleLayer {
             + (self.config.residual_gain_loaded - self.config.residual_gain_closed) * charge;
         tonal *= tonal_gain;
         residual *= residual_gain;
+        let mid_bus = tonal_mid * tonal_gain + residual_mid * residual_gain;
+        let max_rasp = tonal_rasp * tonal_gain + residual_rasp * residual_gain;
         Ok(SampleLayerFrame {
             tonal,
             residual,
+            mid_bus,
+            max_rasp,
             output: tonal + residual,
             zone_weights: weights,
         })
