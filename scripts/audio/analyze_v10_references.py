@@ -396,6 +396,10 @@ def main() -> int:
         help="Known tuning RPM; resolves half-order ambiguity in layered game samples.",
     )
     args = parser.parse_args()
+    if args.forced_rpm is not None and (
+        not math.isfinite(args.forced_rpm) or args.forced_rpm <= 0.0
+    ):
+        parser.error("--forced-rpm must be finite and greater than zero")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     forced_shaft_hz = None if args.forced_rpm is None else args.forced_rpm / 60.0
     results = [analyze(path, forced_shaft_hz) for path in args.inputs]

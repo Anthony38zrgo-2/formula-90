@@ -158,6 +158,54 @@ fn git_head() -> String {
         .unwrap_or_else(|| "unknown".into())
 }
 
+const SOURCE_PATHS: [&str; 7] = [
+    "game/crates/v10-engine-synth/src/acoustics.rs",
+    "game/crates/v10-engine-synth/src/config.rs",
+    "game/crates/v10-engine-synth/src/crank.rs",
+    "game/crates/v10-engine-synth/src/cylinder.rs",
+    "game/crates/v10-engine-synth/src/engine.rs",
+    "game/crates/v10-engine-synth/src/scene.rs",
+    "game/crates/v10-engine-synth/src/bin/v10_render.rs",
+];
+
+fn source_dirty() -> bool {
+    let dirty = |cached: bool| {
+        let mut command = std::process::Command::new("git");
+        command.args(["diff", "--quiet"]);
+        if cached {
+            command.arg("--cached");
+        }
+        command.arg("--").args(SOURCE_PATHS);
+        command
+            .status()
+            .map(|status| !status.success())
+            .unwrap_or(true)
+    };
+    dirty(false) || dirty(true)
+}
+
+fn source_fingerprint() -> String {
+    // Stable FNV-1a over path names and working-tree bytes. This is provenance,
+    // not a cryptographic signature.
+    let mut hash = 0xcbf2_9ce4_8422_2325u64;
+    for path in SOURCE_PATHS {
+        for byte in path.bytes().chain([0]) {
+            hash ^= byte as u64;
+            hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        match fs::read(path) {
+            Ok(bytes) => {
+                for byte in bytes {
+                    hash ^= byte as u64;
+                    hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+                }
+            }
+            Err(_) => return "unavailable".into(),
+        }
+    }
+    format!("fnv1a64:{hash:016x}")
+}
+
 fn main() {
     if let Err(error) = run() {
         eprintln!("v10_render: {error}");
@@ -469,6 +517,8 @@ fn run() -> Result<(), String> {
             "{{\n",
             "  \"architecture\": \"rust-greenfield-v10\",\n",
             "  \"git_head\": \"{}\",\n",
+            "  \"source_dirty\": {},\n",
+            "  \"source_fingerprint\": \"{}\",\n",
             "  \"sample_rate\": {},\n",
             "  \"seed\": {},\n",
             "  \"profile\": \"{}\",\n",
@@ -491,6 +541,8 @@ fn run() -> Result<(), String> {
             "}}\n"
         ),
         git_head(),
+        source_dirty(),
+        source_fingerprint(),
         args.sample_rate,
         args.seed,
         profile,

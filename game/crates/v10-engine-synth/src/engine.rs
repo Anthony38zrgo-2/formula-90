@@ -307,17 +307,23 @@ mod tests {
 
     #[test]
     fn ten_cylinder_signals_remain_independent_before_bank_sum() {
-        let mut engine = V10Engine::new(EngineConfig::default()).unwrap();
-        engine
-            .set_input(EngineInput {
-                rpm: 7_499.0,
-                throttle: 0.72,
-                load: 0.66,
-            })
-            .unwrap();
+        let baseline = EngineConfig::default();
+        let mut altered = baseline.clone();
+        altered.cylinder_signature[3] = 0.75;
+        let mut engine = V10Engine::new(baseline).unwrap();
+        let mut isolated = V10Engine::new(altered).unwrap();
+        let input = EngineInput {
+            rpm: 7_499.0,
+            throttle: 0.72,
+            load: 0.66,
+        };
+        engine.set_input(input).unwrap();
+        isolated.set_input(input).unwrap();
         let mut energy = [0.0f64; CYLINDER_COUNT];
+        let mut altered_target = false;
         for _ in 0..48_000 {
             let frame = engine.render_sample();
+            let isolated_frame = isolated.render_sample();
             let bank_a: f32 = frame.cylinder_pressure_derivative[..5].iter().sum();
             let bank_b: f32 = frame.cylinder_pressure_derivative[5..].iter().sum();
             assert!((bank_a - frame.pressure_derivative_a).abs() < 1.0e-6);
@@ -328,8 +334,26 @@ mod tests {
             {
                 *total += (*sample * *sample) as f64;
             }
+            for index in 0..CYLINDER_COUNT {
+                if index == 3 {
+                    altered_target |= frame.cylinder_pressure_derivative[index].to_bits()
+                        != isolated_frame.cylinder_pressure_derivative[index].to_bits();
+                } else {
+                    assert_eq!(
+                        frame.cylinder_pressure_derivative[index].to_bits(),
+                        isolated_frame.cylinder_pressure_derivative[index].to_bits(),
+                        "cylinder {index} changed when only cylinder 3 was altered"
+                    );
+                    assert_eq!(
+                        frame.cylinder_headers[index].to_bits(),
+                        isolated_frame.cylinder_headers[index].to_bits(),
+                        "header {index} changed when only cylinder 3 was altered"
+                    );
+                }
+            }
         }
         assert!(energy.iter().all(|value| *value > 1.0e-8), "{energy:?}");
+        assert!(altered_target, "altered cylinder never diverged");
     }
 
     #[test]

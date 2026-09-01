@@ -1,7 +1,7 @@
 use crate::acoustics::{BandPassNoise, DcBlocker, ModalBank, OnePoleLowPass};
 use crate::engine::EngineFrame;
 
-const CYLINDER_COUNT: usize = 10;
+use crate::crank::CYLINDER_COUNT;
 
 #[derive(Clone, Copy, Debug)]
 pub struct AcousticSceneConfig {
@@ -74,7 +74,9 @@ pub struct AcousticFrame {
 }
 
 pub struct GearboxHousing {
-    casing: ModalBank,
+    casing_low: ModalBank,
+    casing_second: ModalBank,
+    casing_treble: ModalBank,
     gear_mesh: ModalBank,
     transmission_delay: Vec<f32>,
     delay_cursor: usize,
@@ -112,12 +114,12 @@ impl CylinderMechanicalPath {
             ),
             propagation_delay: vec![
                 0.0;
-                (delay_ms * 0.001 * sample_rate).round().max(1.0) as usize + 1
+                (delay_ms * 0.001 * sample_rate).round().max(1.0) as usize
             ],
             delay_cursor: 0,
             dc: DcBlocker::new(72.0 + position * 4.0, sample_rate),
             radiation_lowpass: OnePoleLowPass::new(1_350.0 + position * 85.0, sample_rate),
-            polarity: if (index + index / 5) % 2 == 0 {
+            polarity: if (index + index / 5).is_multiple_of(2) {
                 1.0
             } else {
                 -1.0
@@ -143,8 +145,10 @@ impl CylinderMechanicalPath {
 }
 
 pub struct CylinderHeadCovers {
-    bank_a: ModalBank,
-    bank_b: ModalBank,
+    bank_a_low: ModalBank,
+    bank_a_high: ModalBank,
+    bank_b_low: ModalBank,
+    bank_b_high: ModalBank,
     delay_a: Vec<f32>,
     delay_b: Vec<f32>,
     cursor_a: usize,
@@ -174,8 +178,10 @@ pub struct EngineCover {
 }
 
 pub struct RearExhaustCapture {
-    bank_a: ModalBank,
-    bank_b: ModalBank,
+    bank_a_low: ModalBank,
+    bank_a_high: ModalBank,
+    bank_b_low: ModalBank,
+    bank_b_high: ModalBank,
     delay_a: Vec<f32>,
     delay_b: Vec<f32>,
     cursor_a: usize,
@@ -265,6 +271,11 @@ impl TrackingOrderNotch {
 
     #[inline]
     fn process(&mut self, input: f32, frequency_hz: f32) -> f32 {
+        self.process_with_wet(input, frequency_hz, self.wet)
+    }
+
+    #[inline]
+    fn process_with_wet(&mut self, input: f32, frequency_hz: f32, wet: f32) -> f32 {
         if frequency_hz < 40.0 || frequency_hz >= self.sample_rate * 0.45 {
             return input;
         }
@@ -281,7 +292,7 @@ impl TrackingOrderNotch {
         self.x1 = input;
         self.y2 = self.y1;
         self.y1 = notched;
-        input + (notched - input) * self.wet
+        input + (notched - input) * wet.clamp(0.0, 1.0)
     }
 }
 
@@ -591,13 +602,18 @@ impl RearExhaustCapture {
             vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
         };
         Self {
-            bank_a: ModalBank::new(
+            bank_a_low: ModalBank::new(
                 &[
                     (584.0, 0.0100, 0.24),
                     (773.0, 0.0085, -0.22),
                     (1_013.0, 0.0070, 0.20),
                     (1_307.0, 0.0058, -0.18),
                     (1_674.0, 0.0047, 0.16),
+                ],
+                sample_rate,
+            ),
+            bank_a_high: ModalBank::new(
+                &[
                     (2_129.0, 0.0038, -0.135),
                     (2_697.0, 0.0030, 0.105),
                     (3_421.0, 0.0023, -0.078),
@@ -605,13 +621,18 @@ impl RearExhaustCapture {
                 ],
                 sample_rate,
             ),
-            bank_b: ModalBank::new(
+            bank_b_low: ModalBank::new(
                 &[
                     (607.0, 0.0096, -0.23),
                     (806.0, 0.0081, 0.215),
                     (1_049.0, 0.0067, -0.195),
                     (1_352.0, 0.0055, 0.175),
                     (1_729.0, 0.0045, -0.15),
+                ],
+                sample_rate,
+            ),
+            bank_b_high: ModalBank::new(
+                &[
                     (2_196.0, 0.0036, 0.128),
                     (2_781.0, 0.0029, -0.10),
                     (3_519.0, 0.0022, 0.074),
@@ -619,8 +640,8 @@ impl RearExhaustCapture {
                 ],
                 sample_rate,
             ),
-            delay_a: delay(1.85),
-            delay_b: delay(2.20),
+            delay_a: delay(2.915),
+            delay_b: delay(3.265),
             cursor_a: 0,
             cursor_b: 0,
             dc_a: DcBlocker::new(115.0, sample_rate),
@@ -642,20 +663,24 @@ impl RearExhaustCapture {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame) -> (f32, f32) {
+    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> (f32, f32) {
         let load_radiation = 0.32 + 0.68 * frame.load * (0.35 + 0.65 * frame.throttle);
         let excite_a = (frame.collector_a * 1.18 + frame.headers_a * 0.20) * load_radiation;
         let excite_b = (frame.collector_b * 1.18 + frame.headers_b * 0.20) * load_radiation;
         let arrived_a = Self::delayed(&mut self.delay_a, &mut self.cursor_a, excite_a);
         let arrived_b = Self::delayed(&mut self.delay_b, &mut self.cursor_b, excite_b);
-        let resonant_a = self.bank_a.process(arrived_a);
-        let resonant_b = self.bank_b.process(arrived_b);
+        let resonant_a = self.bank_a_low.process(arrived_a) * (1.0 + 0.29 * high_rpm)
+            + self.bank_a_high.process(arrived_a) * (1.0 - 0.72 * high_rpm);
+        let resonant_b = self.bank_b_low.process(arrived_b) * (1.0 + 0.29 * high_rpm)
+            + self.bank_b_high.process(arrived_b) * (1.0 - 0.72 * high_rpm);
+        let direct_a = arrived_a * 0.62 * (1.0 - 0.45 * high_rpm);
+        let direct_b = arrived_b * 0.62 * (1.0 - 0.45 * high_rpm);
         let radiated_a = self
             .lowpass_a
-            .process(self.dc_a.process(arrived_a * 0.62 + resonant_a * 1.25));
+            .process(self.dc_a.process(direct_a + resonant_a * 1.25));
         let radiated_b = self
             .lowpass_b
-            .process(self.dc_b.process(arrived_b * 0.62 + resonant_b * 1.25));
+            .process(self.dc_b.process(direct_b + resonant_b * 1.25));
         (
             (radiated_a * 12.0).tanh() / 3.1,
             (radiated_b * 12.0).tanh() / 3.1,
@@ -665,7 +690,8 @@ impl RearExhaustCapture {
 
 impl EngineCover {
     pub fn new(sample_rate: f32) -> Self {
-        let delay_samples = (0.00135 * sample_rate).round().max(1.0) as usize;
+        // Panel radiation faces the cockpit microphone ~0.45 m away.
+        let delay_samples = (0.001309 * sample_rate).round().max(1.0) as usize;
         Self {
             broad_panels: ModalBank::new(
                 &[
@@ -696,7 +722,7 @@ impl EngineCover {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame, airbox: f32) -> f32 {
+    pub fn process(&mut self, frame: &EngineFrame, airbox: f32, high_rpm: f32) -> f32 {
         // The cover is a lightly coupled skin. It receives structure from the
         // heads plus airborne pressure from the plenum and engine bay.
         let excitation =
@@ -708,10 +734,11 @@ impl EngineCover {
             self.delay_cursor = 0;
         }
 
-        let broad = self.broad_panels.process(arrived);
+        let broad = self.broad_panels.process(arrived) * (1.0 + 0.28 * high_rpm);
         let skin = self
             .upper_skin
-            .process(arrived + frame.pressure_derivative * 0.08);
+            .process(arrived + frame.pressure_derivative * 0.08)
+            * (1.0 - 0.68 * high_rpm);
         let radiated = self
             .dc
             .process(self.radiation_lowpass.process(broad + skin * 1.35));
@@ -754,7 +781,7 @@ impl AirboxPlenum {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame) -> f32 {
+    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> f32 {
         // Intake roar is driven mostly by the changing cylinder demand and
         // turbulent flow. Direct combustion pressure is deliberately absent.
         let demand = frame.pressure_derivative * 0.46
@@ -762,8 +789,10 @@ impl AirboxPlenum {
             + (frame.headers_a + frame.headers_b) * 0.055;
         self.chamber_pressure += demand * 0.18 - self.chamber_leak * self.chamber_pressure;
         let chamber = self.chamber_pressure / (1.0 + self.chamber_pressure.abs() * 0.8);
-        let body = self.helmholtz.process(chamber + demand * 0.20);
-        let runner = self.runners.process(demand + chamber * 0.12);
+        // The Helmholtz cavity is a 250-600 Hz boom; above 6000 rpm it must
+        // shrink so the runner band can carry the intake voice instead.
+        let body = self.helmholtz.process(chamber + demand * 0.20) * (1.0 - 0.55 * high_rpm);
+        let runner = self.runners.process(demand + chamber * 0.12) * (1.0 + 0.28 * high_rpm);
         let radiated = self.dc.process(
             self.chamber_lowpass
                 .process(body + runner + chamber * 0.012),
@@ -785,11 +814,16 @@ impl CylinderHeadCovers {
             vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
         };
         Self {
-            bank_a: ModalBank::new(
+            bank_a_low: ModalBank::new(
                 &[
                     (1_184.0, 0.0072, 0.22),
                     (1_427.0, 0.0061, -0.20),
                     (1_731.0, 0.0051, 0.18),
+                ],
+                sample_rate,
+            ),
+            bank_a_high: ModalBank::new(
+                &[
                     (2_086.0, 0.0043, -0.16),
                     (2_511.0, 0.0036, 0.14),
                     (3_018.0, 0.0030, -0.12),
@@ -799,11 +833,16 @@ impl CylinderHeadCovers {
                 ],
                 sample_rate,
             ),
-            bank_b: ModalBank::new(
+            bank_b_low: ModalBank::new(
                 &[
                     (1_219.0, 0.0069, -0.21),
                     (1_471.0, 0.0059, 0.195),
                     (1_784.0, 0.0049, -0.175),
+                ],
+                sample_rate,
+            ),
+            bank_b_high: ModalBank::new(
+                &[
                     (2_151.0, 0.0041, 0.155),
                     (2_583.0, 0.0035, -0.135),
                     (3_109.0, 0.0029, 0.115),
@@ -834,15 +873,24 @@ impl CylinderHeadCovers {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame) -> (f32, f32) {
+    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> (f32, f32) {
         let excite_a =
             frame.pressure_derivative_a * 1.15 + frame.headers_a * 0.20 + frame.turbulence * 0.045;
         let excite_b =
             frame.pressure_derivative_b * 1.15 + frame.headers_b * 0.20 - frame.turbulence * 0.045;
         let arrived_a = Self::delayed(&mut self.delay_a, &mut self.cursor_a, excite_a);
         let arrived_b = Self::delayed(&mut self.delay_b, &mut self.cursor_b, excite_b);
-        let cover_a = self.dc_a.process(self.bank_a.process(arrived_a));
-        let cover_b = self.dc_b.process(self.bank_b.process(arrived_b));
+        // The 1.18-1.78 kHz head-shell family radiates the firing pulse that
+        // the reference shows; the 2.1 kHz and up cap ticking does not and
+        // instead fuels the overbright second-harmonic bed.
+        let cover_a = self.dc_a.process(
+            self.bank_a_low.process(arrived_a) * (1.0 + 0.52 * high_rpm)
+                + self.bank_a_high.process(arrived_a) * (1.0 - 0.82 * high_rpm),
+        );
+        let cover_b = self.dc_b.process(
+            self.bank_b_low.process(arrived_b) * (1.0 + 0.52 * high_rpm)
+                + self.bank_b_high.process(arrived_b) * (1.0 - 0.82 * high_rpm),
+        );
         ((cover_a * 32.0).tanh() / 3.2, (cover_b * 32.0).tanh() / 3.2)
     }
 }
@@ -851,14 +899,21 @@ impl GearboxHousing {
     pub fn new(sample_rate: f32) -> Self {
         let delay_samples = (0.00038 * sample_rate).round().max(1.0) as usize;
         Self {
-            casing: ModalBank::new(
+            casing_low: ModalBank::new(
                 &[
                     (246.0, 0.024, 0.40),
                     (278.0, 0.022, -0.24),
                     (344.0, 0.020, 0.35),
                     (431.0, 0.017, -0.34),
-                    (522.0, 0.014, 0.32),
-                    (588.0, 0.012, -0.26),
+                ],
+                sample_rate,
+            ),
+            casing_second: ModalBank::new(
+                &[(522.0, 0.014, 0.32), (588.0, 0.012, -0.26)],
+                sample_rate,
+            ),
+            casing_treble: ModalBank::new(
+                &[
                     (742.0, 0.009, 0.10),
                     (914.0, 0.007, -0.07),
                     (1_147.0, 0.005, 0.04),
@@ -883,7 +938,7 @@ impl GearboxHousing {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame) -> f32 {
+    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> f32 {
         // The bellhousing is driven through the rear face of the block and by
         // collector pressure, not by a copy of the final engine microphone.
         let excitation = frame.block_head * 0.25
@@ -897,7 +952,13 @@ impl GearboxHousing {
             self.delay_cursor = 0;
         }
 
-        let casing = self.casing.process(arrived);
+        // At high RPM the hum of the casing's first-order/crank-coupled mass
+        // (246-431 Hz) is a wash that buries the midrange, so it is throttled
+        // progressively while the second-order shell and the mid cast panels
+        // above 700 Hz are allowed to carry the useful engine body.
+        let casing = self.casing_low.process(arrived) * (1.0 - 0.60 * high_rpm)
+            + self.casing_second.process(arrived) * (1.0 - 0.38 * high_rpm)
+            + self.casing_treble.process(arrived) * (1.0 + 0.57 * high_rpm);
         let mesh = self
             .gear_mesh
             .process(arrived + frame.pressure_derivative * 0.075);
@@ -919,7 +980,7 @@ struct AirPath {
 impl AirPath {
     fn new(sample_rate: f32) -> Self {
         let tap = |milliseconds: f32| (milliseconds * 0.001 * sample_rate).round() as usize;
-        let taps = [(tap(1.6), 0.56), (tap(3.4), 0.28), (tap(5.8), 0.13)];
+        let taps = [(tap(2.11), 0.56), (tap(3.91), 0.28), (tap(6.31), 0.13)];
         let maximum = taps.iter().map(|&(delay, _)| delay).max().unwrap();
         Self {
             delay: vec![0.0; maximum + 1],
@@ -948,24 +1009,41 @@ impl AirPath {
 /// nearby sheet metal. Nothing here free-runs: all modes are excited by the
 /// physical stems emitted by `V10Engine`.
 pub struct MetallicStructure {
-    heavy_castings: ModalBank,
+    heavy_low: ModalBank,
+    heavy_high: ModalBank,
     bank_signature: ModalBank,
     bellhousing: ModalBank,
     thin_panels: ModalBank,
     panel_lowpass: OnePoleLowPass,
     panel_highpass: DcBlocker,
     dc: DcBlocker,
+    // Cast bulk and surface shells arrive at the microphone through different
+    // path lengths, so their order-2 and order-5 tones do not share one phase.
+    cast_delay: Vec<f32>,
+    cast_cursor: usize,
+    bell_delay: Vec<f32>,
+    bell_cursor: usize,
+    panel_delay: Vec<f32>,
+    panel_cursor: usize,
 }
 
 impl MetallicStructure {
     pub fn new(sample_rate: f32) -> Self {
+        let delay = |milliseconds: f32| {
+            vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
+        };
         Self {
-            heavy_castings: ModalBank::new(
+            heavy_low: ModalBank::new(
                 &[
                     (214.0, 0.024, 0.34),
                     (287.0, 0.019, -0.28),
                     (373.0, 0.016, 0.31),
                     (468.0, 0.013, -0.25),
+                ],
+                sample_rate,
+            ),
+            heavy_high: ModalBank::new(
+                &[
                     (535.0, 0.0090, 0.060),
                     (592.0, 0.0085, 0.200),
                     (665.0, 0.0075, -0.060),
@@ -1009,11 +1087,28 @@ impl MetallicStructure {
             panel_lowpass: OnePoleLowPass::new(6_200.0, sample_rate),
             panel_highpass: DcBlocker::new(1_650.0, sample_rate),
             dc: DcBlocker::new(45.0, sample_rate),
+            cast_delay: delay(3.036),
+            cast_cursor: 0,
+            bell_delay: delay(0.145),
+            bell_cursor: 0,
+            panel_delay: delay(0.145),
+            panel_cursor: 0,
         }
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame, cylinder_structure: f32) -> f32 {
+    fn delayed(delay: &mut [f32], cursor: &mut usize, input: f32) -> f32 {
+        let arrived = delay[*cursor];
+        delay[*cursor] = input;
+        *cursor += 1;
+        if *cursor == delay.len() {
+            *cursor = 0;
+        }
+        arrived
+    }
+
+    #[inline]
+    pub fn process(&mut self, frame: &EngineFrame, cylinder_structure: f32, high_rpm: f32) -> f32 {
         // Mounts mostly conduct the block; the bellhousing also sees collector
         // pressure; thin covers respond to fast head/pressure changes.
         let mount_excitation = frame.block * 1.15
@@ -1025,19 +1120,35 @@ impl MetallicStructure {
         let panel_excitation =
             frame.head * 0.72 + frame.pressure_derivative * 0.55 + frame.turbulence * 0.08;
 
-        let heavy = self.heavy_castings.process(mount_excitation);
+        let cast_arrived = Self::delayed(
+            &mut self.cast_delay,
+            &mut self.cast_cursor,
+            mount_excitation,
+        );
+        // The cast block's 214-468 Hz clatter is cabin boomy noise; at high
+        // engine speed the 535 Hz and up cast/bell mass carries the body.
+        let heavy = self.heavy_low.process(cast_arrived) * (1.0 - 0.41 * high_rpm)
+            + self.heavy_high.process(cast_arrived) * (1.0 + 0.12 * high_rpm);
         // Opposing banks do not load the chassis identically. Keeping their
         // difference separate restores half/integer crank signatures that a
         // summed firing pulse erases.
         let bank_difference = frame.pressure_derivative_a - frame.pressure_derivative_b;
-        let bank_body = self.bank_signature.process(bank_difference);
-        let bell = self.bellhousing.process(bell_excitation);
+        let bank_body = self.bank_signature.process(bank_difference) * (1.0 - 0.30 * high_rpm);
+        let bell_arrived =
+            Self::delayed(&mut self.bell_delay, &mut self.bell_cursor, bell_excitation);
+        let panel_arrived = Self::delayed(
+            &mut self.panel_delay,
+            &mut self.panel_cursor,
+            panel_excitation,
+        );
+        let bell = self.bellhousing.process(bell_arrived) * (1.0 + 0.50 * high_rpm);
         let panel_modes = self
             .panel_lowpass
-            .process(self.thin_panels.process(panel_excitation));
+            .process(self.thin_panels.process(panel_arrived))
+            * (1.0 - 0.82 * high_rpm);
         // A small high-passed strain component preserves the initial metallic
         // tick that modal ringing alone tends to smear away.
-        let panel_edge = self.panel_highpass.process(panel_excitation);
+        let panel_edge = self.panel_highpass.process(panel_arrived) * (1.0 - 0.72 * high_rpm);
         let metal = self.dc.process(
             heavy * 1.00 + bank_body * 0.42 + bell * 1.20 + panel_modes * 2.35 + panel_edge * 0.16,
         );
@@ -1066,6 +1177,7 @@ pub struct AcousticScene {
     metal_order_notch: TrackingOrderNotch,
     gearbox_order_notch: TrackingOrderNotch,
     parallel_order_notch: TrackingOrderNotch,
+    head_cover_order_notch: TrackingOrderNotch,
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
@@ -1119,6 +1231,7 @@ impl AcousticScene {
             metal_order_notch: TrackingOrderNotch::new(sample_rate, 3.2, 0.64),
             gearbox_order_notch: TrackingOrderNotch::new(sample_rate, 3.0, 0.48),
             parallel_order_notch: TrackingOrderNotch::new(sample_rate, 2.7, 0.70),
+            head_cover_order_notch: TrackingOrderNotch::new(sample_rate, 12.0, 0.0),
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
@@ -1140,6 +1253,11 @@ impl AcousticScene {
         if measured_firing.is_finite() && measured_firing < self.sample_rate * 0.45 {
             self.firing_frequency_hz += 0.04 * (measured_firing - self.firing_frequency_hz);
         }
+        // HR-2: the low-body capture of the gearbox/empty casing and the
+        // overbright second-harmonic shell are speed-sensitive, so the whole
+        // redistribution rides one continuous high-RPM ramp (8500 -> 14500).
+        let rpm = self.firing_frequency_hz * 60.0 / 5.0;
+        let high_rpm = ((rpm - 8_500.0) / 6_000.0).clamp(0.0, 1.0);
         let mut cylinder_mechanical = [0.0; CYLINDER_COUNT];
         for (index, path) in self.cylinder_paths.iter_mut().enumerate() {
             cylinder_mechanical[index] = path.process(
@@ -1150,17 +1268,23 @@ impl AcousticScene {
         }
         let cylinder_mechanical_sum = cylinder_mechanical.iter().sum::<f32>() * 0.34;
         let metallic_structure = self.metal_order_notch.process(
-            self.metal.process(engine, cylinder_mechanical_sum),
+            self.metal
+                .process(engine, cylinder_mechanical_sum, high_rpm),
             self.firing_frequency_hz,
         );
-        let gearbox_housing = self
-            .gearbox_order_notch
-            .process(self.gearbox.process(engine), self.firing_frequency_hz);
-        let (head_cover_a, head_cover_b) = self.head_covers.process(engine);
-        let cylinder_head_covers = head_cover_a + head_cover_b;
-        let airbox_plenum = self.airbox.process(engine);
-        let engine_cover = self.engine_cover.process(engine, airbox_plenum);
-        let (rear_exhaust_a, rear_exhaust_b) = self.rear_exhaust.process(engine);
+        let gearbox_housing = self.gearbox_order_notch.process(
+            self.gearbox.process(engine, high_rpm),
+            self.firing_frequency_hz,
+        );
+        let (head_cover_a, head_cover_b) = self.head_covers.process(engine, high_rpm);
+        let cylinder_head_covers = self.head_cover_order_notch.process_with_wet(
+            head_cover_a + head_cover_b,
+            self.firing_frequency_hz,
+            0.70 * high_rpm,
+        );
+        let airbox_plenum = self.airbox.process(engine, high_rpm);
+        let engine_cover = self.engine_cover.process(engine, airbox_plenum, high_rpm);
+        let (rear_exhaust_a, rear_exhaust_b) = self.rear_exhaust.process(engine, high_rpm);
         let rear_exhaust = rear_exhaust_a + rear_exhaust_b;
         let (engine_mounts, monocoque_seat) = self
             .mount_monocoque
@@ -1182,11 +1306,12 @@ impl AcousticScene {
         let dry_mid = below_mid - dry_low;
         let dry_high = engine.master - below_mid;
         // Only the competing mid band ducks. Low-frequency mass remains stable
-        // and high-frequency air is already attenuated by the remote position.
+        // and the high-frequency air is rolled off as the intake charge pulse
+        // shortens at high engine speed.
         let duck = 1.0 - 0.52 * (self.metal_envelope * 10.0).clamp(0.0, 1.0);
         let filtered_dry = dry_low * self.config.dry_low_gain
             + dry_mid * self.config.dry_mid_gain * duck
-            + dry_high * self.config.dry_high_gain;
+            + dry_high * self.config.dry_high_gain * (1.0 - 0.72 * high_rpm);
         let engine_air = self.air_path.process(filtered_dry);
         let cockpit_cavity = self.cockpit_cavity.process(
             engine_air,
