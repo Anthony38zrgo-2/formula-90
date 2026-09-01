@@ -27,6 +27,8 @@ impl EngineInput {
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct EngineFrame {
+    pub throttle: f32,
+    pub load: f32,
     pub combustion_source: f32,
     pub pressure_derivative: f32,
     pub pressure_derivative_a: f32,
@@ -210,6 +212,8 @@ impl V10Engine {
 
         debug_assert!(master.is_finite());
         EngineFrame {
+            throttle: self.input.throttle,
+            load: self.input.load,
             combustion_source: pressure,
             pressure_derivative: derivative,
             pressure_derivative_a: derivative_a,

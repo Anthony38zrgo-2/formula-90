@@ -12,5 +12,5 @@ pub use config::EngineConfig;
 pub use engine::{EngineFrame, EngineInput, V10Engine};
 pub use scene::{
     AcousticFrame, AcousticScene, AcousticSceneConfig, AirboxPlenum, CylinderHeadCovers,
-    GearboxHousing, MetallicStructure,
+    EngineCover, GearboxHousing, MetallicStructure, RearExhaustCapture,
 };

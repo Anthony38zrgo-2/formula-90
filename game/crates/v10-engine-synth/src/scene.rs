@@ -10,6 +10,8 @@ pub struct AcousticSceneConfig {
     pub gearbox_gain: f32,
     pub head_cover_gain: f32,
     pub airbox_gain: f32,
+    pub engine_cover_gain: f32,
+    pub rear_exhaust_gain: f32,
     pub output_gain: f32,
 }
 
@@ -19,11 +21,13 @@ impl Default for AcousticSceneConfig {
             dry_low_gain: 0.45,
             dry_mid_gain: 0.18,
             dry_high_gain: 0.12,
-            metal_gain: 0.88,
+            metal_gain: 1.00,
             gearbox_gain: 0.72,
             head_cover_gain: 0.70,
             airbox_gain: 0.64,
-            output_gain: 3.75,
+            engine_cover_gain: 0.42,
+            rear_exhaust_gain: 0.48,
+            output_gain: 2.60,
         }
     }
 }
@@ -38,6 +42,10 @@ pub struct AcousticFrame {
     pub head_cover_b: f32,
     pub cylinder_head_covers: f32,
     pub airbox_plenum: f32,
+    pub engine_cover: f32,
+    pub rear_exhaust_a: f32,
+    pub rear_exhaust_b: f32,
+    pub rear_exhaust: f32,
     pub output: f32,
 }
 
@@ -69,6 +77,162 @@ pub struct AirboxPlenum {
     air_delay: Vec<f32>,
     delay_cursor: usize,
     dc: DcBlocker,
+}
+
+pub struct EngineCover {
+    broad_panels: ModalBank,
+    upper_skin: ModalBank,
+    propagation_delay: Vec<f32>,
+    delay_cursor: usize,
+    dc: DcBlocker,
+    radiation_lowpass: OnePoleLowPass,
+}
+
+pub struct RearExhaustCapture {
+    bank_a: ModalBank,
+    bank_b: ModalBank,
+    delay_a: Vec<f32>,
+    delay_b: Vec<f32>,
+    cursor_a: usize,
+    cursor_b: usize,
+    dc_a: DcBlocker,
+    dc_b: DcBlocker,
+    lowpass_a: OnePoleLowPass,
+    lowpass_b: OnePoleLowPass,
+}
+
+impl RearExhaustCapture {
+    pub fn new(sample_rate: f32) -> Self {
+        let delay = |milliseconds: f32| {
+            vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
+        };
+        Self {
+            bank_a: ModalBank::new(
+                &[
+                    (584.0, 0.0100, 0.24),
+                    (773.0, 0.0085, -0.22),
+                    (1_013.0, 0.0070, 0.20),
+                    (1_307.0, 0.0058, -0.18),
+                    (1_674.0, 0.0047, 0.16),
+                    (2_129.0, 0.0038, -0.135),
+                    (2_697.0, 0.0030, 0.105),
+                    (3_421.0, 0.0023, -0.078),
+                    (4_317.0, 0.0017, 0.052),
+                ],
+                sample_rate,
+            ),
+            bank_b: ModalBank::new(
+                &[
+                    (607.0, 0.0096, -0.23),
+                    (806.0, 0.0081, 0.215),
+                    (1_049.0, 0.0067, -0.195),
+                    (1_352.0, 0.0055, 0.175),
+                    (1_729.0, 0.0045, -0.15),
+                    (2_196.0, 0.0036, 0.128),
+                    (2_781.0, 0.0029, -0.10),
+                    (3_519.0, 0.0022, 0.074),
+                    (4_449.0, 0.0016, -0.048),
+                ],
+                sample_rate,
+            ),
+            delay_a: delay(1.85),
+            delay_b: delay(2.20),
+            cursor_a: 0,
+            cursor_b: 0,
+            dc_a: DcBlocker::new(115.0, sample_rate),
+            dc_b: DcBlocker::new(125.0, sample_rate),
+            lowpass_a: OnePoleLowPass::new(6_200.0, sample_rate),
+            lowpass_b: OnePoleLowPass::new(6_000.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    fn delayed(delay: &mut [f32], cursor: &mut usize, input: f32) -> f32 {
+        let arrived = delay[*cursor];
+        delay[*cursor] = input;
+        *cursor += 1;
+        if *cursor == delay.len() {
+            *cursor = 0;
+        }
+        arrived
+    }
+
+    #[inline]
+    pub fn process(&mut self, frame: &EngineFrame) -> (f32, f32) {
+        let load_radiation = 0.32 + 0.68 * frame.load * (0.35 + 0.65 * frame.throttle);
+        let excite_a = (frame.collector_a * 1.18 + frame.headers_a * 0.20) * load_radiation;
+        let excite_b = (frame.collector_b * 1.18 + frame.headers_b * 0.20) * load_radiation;
+        let arrived_a = Self::delayed(&mut self.delay_a, &mut self.cursor_a, excite_a);
+        let arrived_b = Self::delayed(&mut self.delay_b, &mut self.cursor_b, excite_b);
+        let resonant_a = self.bank_a.process(arrived_a);
+        let resonant_b = self.bank_b.process(arrived_b);
+        let radiated_a = self
+            .lowpass_a
+            .process(self.dc_a.process(arrived_a * 0.62 + resonant_a * 1.25));
+        let radiated_b = self
+            .lowpass_b
+            .process(self.dc_b.process(arrived_b * 0.62 + resonant_b * 1.25));
+        (
+            (radiated_a * 12.0).tanh() / 3.1,
+            (radiated_b * 12.0).tanh() / 3.1,
+        )
+    }
+}
+
+impl EngineCover {
+    pub fn new(sample_rate: f32) -> Self {
+        let delay_samples = (0.00135 * sample_rate).round().max(1.0) as usize;
+        Self {
+            broad_panels: ModalBank::new(
+                &[
+                    (684.0, 0.0130, 0.25),
+                    (817.0, 0.0110, -0.23),
+                    (1_036.0, 0.0092, 0.22),
+                    (1_291.0, 0.0077, -0.20),
+                    (1_603.0, 0.0063, 0.18),
+                    (1_982.0, 0.0051, -0.16),
+                ],
+                sample_rate,
+            ),
+            upper_skin: ModalBank::new(
+                &[
+                    (2_438.0, 0.0042, 0.14),
+                    (2_997.0, 0.0034, -0.12),
+                    (3_611.0, 0.0027, 0.095),
+                    (4_283.0, 0.0021, -0.070),
+                    (5_071.0, 0.0016, 0.045),
+                ],
+                sample_rate,
+            ),
+            propagation_delay: vec![0.0; delay_samples + 1],
+            delay_cursor: 0,
+            dc: DcBlocker::new(420.0, sample_rate),
+            radiation_lowpass: OnePoleLowPass::new(6_400.0, sample_rate),
+        }
+    }
+
+    #[inline]
+    pub fn process(&mut self, frame: &EngineFrame, airbox: f32) -> f32 {
+        // The cover is a lightly coupled skin. It receives structure from the
+        // heads plus airborne pressure from the plenum and engine bay.
+        let excitation =
+            frame.head * 0.58 + frame.block * 0.16 + airbox * 0.34 + frame.turbulence * 0.12;
+        let arrived = self.propagation_delay[self.delay_cursor];
+        self.propagation_delay[self.delay_cursor] = excitation;
+        self.delay_cursor += 1;
+        if self.delay_cursor == self.propagation_delay.len() {
+            self.delay_cursor = 0;
+        }
+
+        let broad = self.broad_panels.process(arrived);
+        let skin = self
+            .upper_skin
+            .process(arrived + frame.pressure_derivative * 0.08);
+        let radiated = self
+            .dc
+            .process(self.radiation_lowpass.process(broad + skin * 1.35));
+        (radiated * 21.0).tanh() / 3.15
+    }
 }
 
 impl AirboxPlenum {
@@ -312,7 +476,11 @@ impl MetallicStructure {
                     (287.0, 0.019, -0.28),
                     (373.0, 0.016, 0.31),
                     (468.0, 0.013, -0.25),
-                    (592.0, 0.011, 0.22),
+                    (535.0, 0.0090, 0.060),
+                    (592.0, 0.0085, 0.200),
+                    (665.0, 0.0075, -0.060),
+                    (735.0, 0.0065, 0.050),
+                    (810.0, 0.0055, -0.040),
                 ],
                 sample_rate,
             ),
@@ -367,7 +535,7 @@ impl MetallicStructure {
         let panel_edge = self.panel_highpass.process(panel_excitation);
         let metal = self
             .dc
-            .process(heavy * 0.82 + bell * 1.30 + panel_modes * 2.8 + panel_edge * 0.18);
+            .process(heavy * 1.00 + bell * 1.20 + panel_modes * 2.35 + panel_edge * 0.16);
 
         // Local strain compression keeps coincident modes from producing a
         // bell-like spike. This is coloration of the structure, not a limiter.
@@ -381,6 +549,8 @@ pub struct AcousticScene {
     gearbox: GearboxHousing,
     head_covers: CylinderHeadCovers,
     airbox: AirboxPlenum,
+    engine_cover: EngineCover,
+    rear_exhaust: RearExhaustCapture,
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
@@ -398,6 +568,8 @@ impl AcousticScene {
             || !(0.0..=1.5).contains(&config.gearbox_gain)
             || !(0.0..=1.5).contains(&config.head_cover_gain)
             || !(0.0..=1.5).contains(&config.airbox_gain)
+            || !(0.0..=1.5).contains(&config.engine_cover_gain)
+            || !(0.0..=1.5).contains(&config.rear_exhaust_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
         {
             return Err("acoustic scene gain outside supported range".into());
@@ -408,6 +580,8 @@ impl AcousticScene {
             gearbox: GearboxHousing::new(sample_rate),
             head_covers: CylinderHeadCovers::new(sample_rate),
             airbox: AirboxPlenum::new(sample_rate),
+            engine_cover: EngineCover::new(sample_rate),
+            rear_exhaust: RearExhaustCapture::new(sample_rate),
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
@@ -424,6 +598,9 @@ impl AcousticScene {
         let (head_cover_a, head_cover_b) = self.head_covers.process(engine);
         let cylinder_head_covers = head_cover_a + head_cover_b;
         let airbox_plenum = self.airbox.process(engine);
+        let engine_cover = self.engine_cover.process(engine, airbox_plenum);
+        let (rear_exhaust_a, rear_exhaust_b) = self.rear_exhaust.process(engine);
+        let rear_exhaust = rear_exhaust_a + rear_exhaust_b;
         let detector = metallic_structure.abs();
         let envelope_coefficient = if detector > self.metal_envelope {
             self.envelope_attack
@@ -452,11 +629,17 @@ impl AcousticScene {
             head_cover_b,
             cylinder_head_covers,
             airbox_plenum,
+            engine_cover,
+            rear_exhaust_a,
+            rear_exhaust_b,
+            rear_exhaust,
             output: (engine_air
                 + metallic_structure * self.config.metal_gain
                 + gearbox_housing * self.config.gearbox_gain
                 + cylinder_head_covers * self.config.head_cover_gain
-                + airbox_plenum * self.config.airbox_gain)
+                + airbox_plenum * self.config.airbox_gain
+                + engine_cover * self.config.engine_cover_gain
+                + rear_exhaust * self.config.rear_exhaust_gain)
                 * self.config.output_gain,
         }
     }
@@ -488,6 +671,8 @@ mod tests {
                 gearbox_gain: 0.0,
                 head_cover_gain: 0.0,
                 airbox_gain: 0.0,
+                engine_cover_gain: 0.0,
+                rear_exhaust_gain: 0.0,
                 output_gain: 1.0,
             },
         )

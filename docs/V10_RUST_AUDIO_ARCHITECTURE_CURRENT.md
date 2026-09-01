@@ -36,11 +36,20 @@ flowchart LR
         HEADERS --> AIRBOX
         TURB --> AIRBOX
 
+        BLOCK --> COVER["Engine cover / bodywork skin<br/>684–1982 Hz broad panels<br/>2.4–5.1 kHz upper skin<br/>1.35 ms coupled arrival"]
+        AIRBOX --> COVER
+        TURB --> COVER
+
+        COLLECTORS --> REAR["Rear exhaust capture A/B<br/>584 Hz–4.45 kHz pipe modes<br/>load-dependent radiation<br/>1.85 / 2.20 ms arrivals"]
+        HEADERS --> REAR
+
         AIR --> MIX["Cockpit capture mix"]
         BULKHEAD --> MIX
         GEARBOX --> MIX
         COVERS --> MIX
         AIRBOX --> MIX
+        COVER --> MIX
+        REAR --> MIX
     end
 
     MIX --> OUTPUT["Scene output<br/>GF363 reference render"]
@@ -51,6 +60,8 @@ flowchart LR
     GEARBOX -. diagnostic .-> STEMS
     COVERS -. "A · B · combined" .-> STEMS
     AIRBOX -. diagnostic .-> STEMS
+    COVER -. diagnostic .-> STEMS
+    REAR -. "A · B · combined" .-> STEMS
     MIX -. diagnostic .-> STEMS
 
     classDef source fill:#5b2333,color:#fff,stroke:#d78a9c,stroke-width:2px;
@@ -59,7 +70,7 @@ flowchart LR
     classDef output fill:#6b5428,color:#fff,stroke:#e7c56d,stroke-width:2px;
     class INPUT,CRANK,CYL source;
     class PRESSURE,HEADERS,COLLECTORS,TURB,BLOCK,DRY physical;
-    class AIR,BULKHEAD,GEARBOX,COVERS,AIRBOX capture;
+    class AIR,BULKHEAD,GEARBOX,COVERS,AIRBOX,COVER,REAR capture;
     class MIX,OUTPUT,STEMS output;
 ```
 
@@ -77,6 +88,8 @@ directly into the cockpit output.
 | Gearbox housing | Lower, heavier casting and torsional resonance |
 | Head covers A/B | Short, bright mechanical detail from each bank |
 | Airbox/plenum | Airborne intake body and aspiration |
+| Engine cover | Hollow, laminated bodywork-panel radiation |
+| Rear exhaust A/B | Load-dependent collector and tailpipe radiation |
 
 The renderer writes each path independently so perceptual changes can be
 validated without guessing which subsystem caused them.

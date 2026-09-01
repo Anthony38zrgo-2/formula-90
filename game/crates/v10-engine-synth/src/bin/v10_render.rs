@@ -150,6 +150,10 @@ fn run() -> Result<(), String> {
         "head_cover_b",
         "cylinder_head_covers",
         "airbox_plenum",
+        "engine_cover",
+        "rear_exhaust_a",
+        "rear_exhaust_b",
+        "rear_exhaust",
         "scene_mix",
     ];
     let mut stems: BTreeMap<&str, Vec<f32>> = names
@@ -253,6 +257,22 @@ fn run() -> Result<(), String> {
             .get_mut("airbox_plenum")
             .unwrap()
             .push(acoustic.airbox_plenum);
+        stems
+            .get_mut("engine_cover")
+            .unwrap()
+            .push(acoustic.engine_cover);
+        stems
+            .get_mut("rear_exhaust_a")
+            .unwrap()
+            .push(acoustic.rear_exhaust_a);
+        stems
+            .get_mut("rear_exhaust_b")
+            .unwrap()
+            .push(acoustic.rear_exhaust_b);
+        stems
+            .get_mut("rear_exhaust")
+            .unwrap()
+            .push(acoustic.rear_exhaust);
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
         let rendered = if args.acoustic_scene {
             acoustic.output
