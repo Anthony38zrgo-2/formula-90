@@ -19,4 +19,9 @@ fn main() {
     // GIT_HASH reflects the commit the DLL was actually built from.
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src");
+    // HEAD changes on every commit (even with unchanged sources); watch it so
+    // the stale build-script output is invalidated and GIT_HASH is refreshed
+    // (CAL-1300 parity fix, mirrors formula90-core/vehicle-audio-engine).
+    println!("cargo:rerun-if-changed=../../../.git/HEAD");
+    println!("cargo:rerun-if-env-changed=FORMULA90_FORCE_BUILD_SHA_REFRESH");
 }
