@@ -85,8 +85,11 @@ struct OneShot {
     trigger: Trigger,
     key: String,
     cursor: usize,
+    delay_remaining: usize,
     active: bool,
 }
+
+const SHIFT_COMPANION_DELAY_MS: usize = 20;
 
 struct VoiceStrip {
     config: SoundConfig,
@@ -444,6 +447,23 @@ impl VehicleAudioEngine {
                     trigger: t,
                     key,
                     cursor: 0,
+                    delay_remaining: 0,
+                    active: false,
+                });
+            }
+        }
+        // Exterior gear samples layer with, rather than replace, the existing
+        // shift voices. Their delay is applied in the sample domain below.
+        for (trigger, key) in [
+            (Trigger::ShiftUp, "shift_up_delayed"),
+            (Trigger::ShiftDown, "shift_down_delayed"),
+        ] {
+            if bank.get(key).is_some() {
+                one_shots.push(OneShot {
+                    trigger,
+                    key: key.to_string(),
+                    cursor: 0,
+                    delay_remaining: 0,
                     active: false,
                 });
             }
@@ -459,6 +479,7 @@ impl VehicleAudioEngine {
                 trigger: Trigger::Backfire,
                 key: sample.key.clone(),
                 cursor: 0,
+                delay_remaining: 0,
                 active: false,
             });
         }
@@ -843,7 +864,11 @@ impl VehicleAudioEngine {
     /// Fire one deterministic pseudo-random variant for the requested one-shot.
     pub fn trigger(&mut self, t: Trigger) {
         self.last_trigger = t.bank_key().to_string();
-        let variant_count = self.one_shots.iter().filter(|o| o.trigger == t).count();
+        let variant_count = self
+            .one_shots
+            .iter()
+            .filter(|o| o.trigger == t && !o.key.ends_with("_delayed"))
+            .count();
         if variant_count == 0 {
             return;
         }
@@ -855,14 +880,22 @@ impl VehicleAudioEngine {
         let mut ordinal = 0usize;
         for o in self.one_shots.iter_mut() {
             if o.trigger == t {
-                o.active = ordinal == selected;
+                let is_companion = o.key.ends_with("_delayed");
+                o.active = is_companion || ordinal == selected;
                 if o.active {
                     o.cursor = 0;
+                    o.delay_remaining = if is_companion {
+                        self.sample_rate as usize * SHIFT_COMPANION_DELAY_MS / 1000
+                    } else {
+                        0
+                    };
                     if let Some(strip) = self.strips.get_mut(&o.key) {
                         strip.note_on();
                     }
                 }
-                ordinal += 1;
+                if !is_companion {
+                    ordinal += 1;
+                }
             }
         }
     }
@@ -1156,6 +1189,10 @@ impl VehicleAudioEngine {
             // One-shots (non-looping, short envelope).
             for o in self.one_shots.iter_mut() {
                 if !o.active {
+                    continue;
+                }
+                if o.delay_remaining > 0 {
+                    o.delay_remaining -= 1;
                     continue;
                 }
                 if let Some(sample) = self.bank.get(&o.key) {
@@ -1964,18 +2001,21 @@ mod tests {
             trigger: Trigger::ShiftUp,
             key: "shift_up".to_string(),
             cursor: 0,
+            delay_remaining: 0,
             active: false,
         });
         e.one_shots.push(OneShot {
             trigger: Trigger::Backfire,
             key: "int_backfire".to_string(),
             cursor: 0,
+            delay_remaining: 0,
             active: false,
         });
         e.one_shots.push(OneShot {
             trigger: Trigger::Backfire,
             key: "int_backfire_2".to_string(),
             cursor: 0,
+            delay_remaining: 0,
             active: false,
         });
         e
@@ -2122,6 +2162,46 @@ mod tests {
             .copied()
             .fold(0.0f32, |m, v| m.max(v.abs()));
         assert!(tail < 1e-3, "one-shot should have ended, tail={tail}");
+    }
+
+    #[test]
+    fn shift_companion_starts_exactly_twenty_ms_late() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        let mut delayed_sample = e.bank.samples["shift_up"].clone();
+        delayed_sample.key = "shift_up_delayed".to_string();
+        e.bank
+            .samples
+            .insert("shift_up_delayed".to_string(), delayed_sample);
+        e.one_shots.push(OneShot {
+            trigger: Trigger::ShiftUp,
+            key: "shift_up_delayed".to_string(),
+            cursor: 0,
+            delay_remaining: 0,
+            active: false,
+        });
+
+        e.trigger(Trigger::ShiftUp);
+        let delay_frames = e.sample_rate as usize * SHIFT_COMPANION_DELAY_MS / 1000;
+        let mut left = vec![0.0; delay_frames];
+        let mut right = vec![0.0; delay_frames];
+        e.render(&mut left, &mut right, delay_frames);
+
+        let delayed = e
+            .one_shots
+            .iter()
+            .find(|voice| voice.key == "shift_up_delayed")
+            .unwrap();
+        assert!(delayed.active);
+        assert_eq!(delayed.delay_remaining, 0);
+        assert_eq!(delayed.cursor, 0, "companion must not advance before 20 ms");
+
+        e.render(&mut [0.0], &mut [0.0], 1);
+        let delayed = e
+            .one_shots
+            .iter()
+            .find(|voice| voice.key == "shift_up_delayed")
+            .unwrap();
+        assert_eq!(delayed.cursor, 1, "companion must start on frame 882");
     }
 
     #[test]

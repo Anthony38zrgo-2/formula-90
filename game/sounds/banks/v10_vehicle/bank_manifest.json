@@ -346,6 +346,30 @@
       }
     },
     {
+      "dc_offset": -0.000282,
+      "duration_s": 2.552426,
+      "file": "shift_down_delayed.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -15.86,
+      "peak": 0.999969,
+      "provenance": "copied from user-supplied Automobilista sample",
+      "role": "shift_down_delayed",
+      "sha256": "2e26b341e6bfd60497288ae3daad63d9f30d0e16b6fee91e65bf4a6b726175cc",
+      "synthesis": {
+        "category": "shift",
+        "processing": {
+          "delay_ms": 20,
+          "source_rate": 44100,
+          "target_rate": 44100
+        },
+        "source_file": "source-assets/audio/replacements/f1_94/shift_down_delayed.wav",
+        "source_rate": 44100,
+        "source_sha256": "2e26b341e6bfd60497288ae3daad63d9f30d0e16b6fee91e65bf4a6b726175cc"
+      }
+    },
+    {
       "dc_offset": -0.000101,
       "duration_s": 0.743084,
       "file": "shift_up.wav",
@@ -371,6 +395,30 @@
         "source_file": "source-assets/audio/replacements/f1_94/shift_up.wav",
         "source_rate": 44100,
         "source_sha256": "b43367f10f4f6be6d64d14a40771acd19bd61e2ac6b27fb94834ef8e279e16c7"
+      }
+    },
+    {
+      "dc_offset": -0.001214,
+      "duration_s": 2.587256,
+      "file": "shift_up_delayed.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -14.93,
+      "peak": 0.999603,
+      "provenance": "copied from user-supplied Automobilista sample",
+      "role": "shift_up_delayed",
+      "sha256": "7fc95e68aa4e8e764800a14b1fec40fa4be10fb8fbd1834a9ece146cc8529580",
+      "synthesis": {
+        "category": "shift",
+        "processing": {
+          "delay_ms": 20,
+          "source_rate": 44100,
+          "target_rate": 44100
+        },
+        "source_file": "source-assets/audio/replacements/f1_94/shift_up_delayed.wav",
+        "source_rate": 44100,
+        "source_sha256": "7fc95e68aa4e8e764800a14b1fec40fa4be10fb8fbd1834a9ece146cc8529580"
       }
     },
     {
