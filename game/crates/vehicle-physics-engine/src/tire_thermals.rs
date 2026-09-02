@@ -65,16 +65,6 @@ pub struct TireThermalConfig {
     pub slip_heat_efficiency: f64,
     pub carcass_hysteresis_efficiency: f64,
 
-    /// Mechanical pressure sensitivities around `reference_hot_kpa_gauge`.
-    pub pressure_stiffness_exponent: f64,
-    pub pressure_damping_exponent: f64,
-    pub pressure_max_deflection_exponent: f64,
-    pub pressure_patch_exponent: f64,
-    pub pressure_relaxation_exponent: f64,
-    pub pressure_rr_exponent: f64,
-    pub pressure_force_stiffness_exponent: f64,
-    pub pressure_trail_exponent: f64,
-
     /// Small ideal-gas volume correction from carcass compression.
     pub volume_deflection_gain: f64,
 
@@ -108,15 +98,6 @@ impl Default for TireThermalConfig {
 
             slip_heat_efficiency: 0.88,
             carcass_hysteresis_efficiency: 0.75,
-
-            pressure_stiffness_exponent: 0.72,
-            pressure_damping_exponent: -0.22,
-            pressure_max_deflection_exponent: -0.55,
-            pressure_patch_exponent: -0.32,
-            pressure_relaxation_exponent: -0.18,
-            pressure_rr_exponent: -0.35,
-            pressure_force_stiffness_exponent: 0.12,
-            pressure_trail_exponent: -0.16,
 
             volume_deflection_gain: 0.04,
 
@@ -153,6 +134,32 @@ impl TireThermalAxleConfig {
             &self.front
         } else {
             &self.rear
+        }
+    }
+}
+
+/// Schema v3 consolidated pressure mechanics (THERM-700): three interpretable
+/// sensitivities replace the legacy eight per-exponent knobs.
+///
+/// - `compliance_sensitivity` controls radial stiffness vs pressure (and, by
+///   derivation, damping ratio and compliant max deflection).
+/// - `response_sensitivity` controls slip transient response vs pressure.
+/// - `rolling_resistance_sensitivity` controls rolling resistance vs pressure.
+///
+/// All are exponent-like scalars applied around `reference_hot_kpa_gauge`.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PressureMechanicsSensitivity {
+    pub compliance_sensitivity: f64,
+    pub response_sensitivity: f64,
+    pub rolling_resistance_sensitivity: f64,
+}
+impl Default for PressureMechanicsSensitivity {
+    fn default() -> Self {
+        Self {
+            compliance_sensitivity: 0.72,
+            response_sensitivity: -0.18,
+            rolling_resistance_sensitivity: -0.35,
         }
     }
 }
@@ -322,6 +329,7 @@ impl TireThermalSystem {
         wheel: WheelIndex,
         pressure: &TirePressureConfig,
         thermal: &TireThermalConfig,
+        mechanics: PressureMechanicsSensitivity,
     ) -> TireMechanicalModifiers {
         let i = wheel as usize;
         let st = &self.wheels[i];
@@ -337,45 +345,51 @@ impl TireThermalSystem {
         let average_tread = st.average_tread_c();
         let thermal_grip = thermal_grip_scale(average_tread, thermal);
 
-        // Pressure itself should have only a mild direct peak-grip penalty away from
-        // nominal. Its main handling effects come through mechanics/transients.
-        let pressure_grip = (-0.30 * p_ratio.ln().powi(2)).exp().clamp(0.88, 1.0);
+        // THERM-700: pressure drives exactly three mechanical effects. Compliance
+        // sets radial stiffness; damping and max compliant deflection are derived
+        // from it (consistent damping ratio, deflection inverse to stiffness).
+        let compliance_scale = p_ratio
+            .powf(mechanics.compliance_sensitivity.max(-3.0).min(3.0))
+            .clamp(0.55, 1.80);
 
         TireMechanicalModifiers {
-            vertical_stiffness_scale: (p_ratio.powf(thermal.pressure_stiffness_exponent)
-                * carcass_structure)
-                .clamp(0.55, 1.65),
+            // THERM-701/702: radial stiffness from compliance sensitivity; damping
+            // keeps an approximately consistent damping ratio (c scales with sqrt(k)).
+            vertical_stiffness_scale: (compliance_scale * carcass_structure).clamp(0.55, 1.65),
 
-            vertical_damping_scale: (p_ratio.powf(thermal.pressure_damping_exponent)
-                * (2.0 - carcass_structure))
+            vertical_damping_scale: (compliance_scale.sqrt() * (2.0 - carcass_structure))
                 .clamp(0.65, 1.55),
 
-            max_deflection_scale: p_ratio
-                .powf(thermal.pressure_max_deflection_exponent)
-                .clamp(0.65, 1.55),
+            // THERM-703: higher pressure reduces compliant max deflection.
+            max_deflection_scale: (1.0 / compliance_scale).clamp(0.65, 1.55),
 
-            contact_patch_scale: p_ratio
-                .powf(thermal.pressure_patch_exponent)
-                .clamp(0.75, 1.35),
+            // THERM-704: no direct pressure contact-patch scaling. The dynamic patch
+            // responds to Fz and actual carcass deflection in wheel_mechanics; pressure
+            // affects it only indirectly through compliance/deflection.
+            contact_patch_scale: 1.0,
 
+            // THERM-701: transient response sensitivity (slip relaxation response).
             relaxation_length_scale: p_ratio
-                .powf(thermal.pressure_relaxation_exponent)
+                .powf(mechanics.response_sensitivity.max(-3.0).min(3.0))
                 .clamp(0.80, 1.30),
 
+            // THERM-701: rolling resistance sensitivity.
             rolling_resistance_scale: p_ratio
-                .powf(thermal.pressure_rr_exponent)
+                .powf(mechanics.rolling_resistance_sensitivity.max(-3.0).min(3.0))
                 .clamp(0.75, 1.50),
 
-            force_stiffness_scale: (p_ratio
-                .powf(thermal.pressure_force_stiffness_exponent)
-                * (0.92 + 0.08 * thermal_grip))
-                .clamp(0.75, 1.25),
+            // THERM-705: no direct pressure force-stiffness term. Force build is
+            // controlled by the tire force profile and the relaxation model; only the
+            // temperature grip window modulates force build here.
+            force_stiffness_scale: (0.92 + 0.08 * thermal_grip).clamp(0.75, 1.25),
 
-            grip_scale: (thermal_grip * pressure_grip).clamp(0.60, 1.03),
+            // THERM-706: peak grip is primarily tread-temperature driven; pressure no
+            // longer contributes a bell-curve grip term.
+            grip_scale: thermal_grip.clamp(0.60, 1.03),
 
-            pneumatic_trail_scale: p_ratio
-                .powf(thermal.pressure_trail_exponent)
-                .clamp(0.78, 1.30),
+            // THERM-705: pneumatic trail derives from base construction/contact state
+            // and saturation (see tire.rs TIRE-104), not from a pressure exponent.
+            pneumatic_trail_scale: 1.0,
         }
     }
 
@@ -627,24 +641,74 @@ mod tests {
     fn lower_pressure_softens_vertical_tire() {
         let p = TirePressureConfig::default();
         let t = TireThermalConfig::default();
+        let m = PressureMechanicsSensitivity::default();
         let mut sys = TireThermalSystem::new(&p, &t);
         sys.wheels[0].pressure_kpa_gauge = 90.0;
         sys.wheels[1].pressure_kpa_gauge = 160.0;
 
-        let low = sys.mechanical_modifiers(WheelIndex::FrontLeft, &p, &t);
-        let high = sys.mechanical_modifiers(WheelIndex::FrontRight, &p, &t);
+        let low = sys.mechanical_modifiers(WheelIndex::FrontLeft, &p, &t, m);
+        let high = sys.mechanical_modifiers(WheelIndex::FrontRight, &p, &t, m);
 
         assert!(low.vertical_stiffness_scale < high.vertical_stiffness_scale);
         assert!(low.max_deflection_scale > high.max_deflection_scale);
-        assert!(low.contact_patch_scale > high.contact_patch_scale);
         assert!(low.relaxation_length_scale > high.relaxation_length_scale);
         assert!(low.rolling_resistance_scale > high.rolling_resistance_scale);
+    }
+
+    #[test]
+    fn pressure_only_drives_three_mechanical_knobs() {
+        // THERM-700: contact patch, force stiffness and pneumatic trail carry no
+        // direct pressure term; they stay identity/temperature-driven.
+        let p = TirePressureConfig::default();
+        let t = TireThermalConfig::default();
+        let m = PressureMechanicsSensitivity::default();
+        let mut sys = TireThermalSystem::new(&p, &t);
+        sys.wheels[0].pressure_kpa_gauge = 90.0;
+        sys.wheels[1].pressure_kpa_gauge = 170.0;
+
+        let low = sys.mechanical_modifiers(WheelIndex::FrontLeft, &p, &t, m);
+        let high = sys.mechanical_modifiers(WheelIndex::FrontRight, &p, &t, m);
+
+        assert_eq!(low.contact_patch_scale, 1.0);
+        assert_eq!(high.contact_patch_scale, 1.0);
+        assert_eq!(low.pneumatic_trail_scale, 1.0);
+        assert_eq!(high.pneumatic_trail_scale, 1.0);
+        assert!((low.force_stiffness_scale - high.force_stiffness_scale).abs() < 1e-9);
+        assert!((low.grip_scale - high.grip_scale).abs() < 1e-9);
+    }
+
+    #[test]
+    fn damping_follows_stiffness_keeping_ratio_consistent() {
+        // THERM-702: damping scale must equal sqrt(stiffness scale) so the damping
+        // ratio stays approximately consistent as radial stiffness changes.
+        let p = TirePressureConfig::default();
+        let t = TireThermalConfig::default();
+        let m = PressureMechanicsSensitivity::default();
+        let mut sys = TireThermalSystem::new(&p, &t);
+        sys.wheels[0].pressure_kpa_gauge = 95.0;
+        sys.wheels[1].pressure_kpa_gauge = 150.0;
+        sys.wheels[0].carcass_c = 80.0;
+        sys.wheels[1].carcass_c = 80.0;
+
+        for w in [WheelIndex::FrontLeft, WheelIndex::FrontRight] {
+            let mods = sys.mechanical_modifiers(w, &p, &t, m);
+            // With carcass at optimum temperature, structure = 1.0, so damping
+            // scales exactly as sqrt(stiffness): (2 - structure) = 1.
+            let expected_damping = mods.vertical_stiffness_scale.sqrt();
+            assert!(
+                (mods.vertical_damping_scale - expected_damping).abs() < 1e-9,
+                "damping must track sqrt(stiffness): {} vs {}",
+                mods.vertical_damping_scale,
+                expected_damping
+            );
+        }
     }
 
     #[test]
     fn hot_tire_over_optimum_loses_grip() {
         let p = TirePressureConfig::default();
         let t = TireThermalConfig::default();
+        let m = PressureMechanicsSensitivity::default();
         let mut sys = TireThermalSystem::new(&p, &t);
 
         sys.wheels[0].tread_inner_c = 95.0;
@@ -655,8 +719,8 @@ mod tests {
         sys.wheels[1].tread_center_c = 145.0;
         sys.wheels[1].tread_outer_c = 145.0;
 
-        let optimum = sys.mechanical_modifiers(WheelIndex::FrontLeft, &p, &t);
-        let overheated = sys.mechanical_modifiers(WheelIndex::FrontRight, &p, &t);
+        let optimum = sys.mechanical_modifiers(WheelIndex::FrontLeft, &p, &t, m);
+        let overheated = sys.mechanical_modifiers(WheelIndex::FrontRight, &p, &t, m);
 
         assert!(overheated.grip_scale < optimum.grip_scale);
     }

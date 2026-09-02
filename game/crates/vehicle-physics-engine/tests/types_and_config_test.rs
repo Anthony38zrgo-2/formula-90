@@ -53,25 +53,3 @@ fn spring_rate_supports_static_wheel_load() {
         assert!((supported - expected).abs() < 1e-6);
     }
 }
-
-#[test]
-fn aero_pitch_moment_is_zero_around_center_of_mass() {
-    let cfg = VehicleConfig::f1_94_canonical();
-    let cg = center_of_mass_local(&cfg);
-
-    // Front wing at front axle center, Diffuser at (0, -0.12, 0), Rear wing at rear axle center
-    let r_front_z = -cfg.wheelbase * 0.5 - cg.z;
-    let r_diff_z = 0.0 - cg.z;
-    let r_rear_z = cfg.wheelbase * 0.5 - cg.z;
-
-    // Pitch torque per unit of downforce: tau = sum(r_z * (-F_split)) -> net moment
-    let net_pitch_moment_arm = cfg.aero_split_front * r_front_z
-        + cfg.aero_split_diffuser * r_diff_z
-        + cfg.aero_split_rear * r_rear_z;
-
-    assert!(
-        net_pitch_moment_arm.abs() < 1e-6,
-        "Aerodynamic center of pressure must align with center of mass, net arm={}",
-        net_pitch_moment_arm
-    );
-}

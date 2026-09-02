@@ -527,8 +527,6 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		frame_.tire_gas_c);
 	veh->set_core_brake_telemetry(
 		frame_.brake_disc_c,
-		frame_.brake_caliper_c,
-		frame_.brake_hub_c,
 		frame_.brake_rim_c,
 		frame_.brake_efficiency,
 		frame_.duct_mass_flow_kg_s,
@@ -543,14 +541,9 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		frame_.brake_spin_post_rad_s,
 		frame_.brake_power_w,
 		frame_.brake_energy_j);
-	veh->set_core_brake_disc_bulk_telemetry(frame_.brake_disc_bulk_c);
-	veh->set_core_brake_resolved_thermal_telemetry(
-		frame_.brake_surface_capacity_j_k,
-		frame_.brake_bulk_capacity_j_k,
-		frame_.brake_surface_bulk_w_k,
+	veh->set_core_brake_cooling_telemetry(
 		frame_.brake_natural_cooling_w_k,
-		frame_.brake_speed_cooling_w_k,
-		frame_.brake_surface_to_bulk_heat_w);
+		frame_.brake_speed_cooling_w_k);
 	veh->set_core_underfloor_telemetry(frame_);
 
 	process_collision_audio(veh, state, dt);

@@ -442,14 +442,6 @@ pub struct FfiTelemetryOutput {
     pub fr_brake_disc_c: f64,
     pub rl_brake_disc_c: f64,
     pub rr_brake_disc_c: f64,
-    pub fl_brake_caliper_c: f64,
-    pub fr_brake_caliper_c: f64,
-    pub rl_brake_caliper_c: f64,
-    pub rr_brake_caliper_c: f64,
-    pub fl_brake_hub_c: f64,
-    pub fr_brake_hub_c: f64,
-    pub rl_brake_hub_c: f64,
-    pub rr_brake_hub_c: f64,
     pub fl_brake_rim_c: f64,
     pub fr_brake_rim_c: f64,
     pub rl_brake_rim_c: f64,
@@ -492,22 +484,7 @@ pub struct FfiTelemetryOutput {
     pub fr_brake_energy_j: f64,
     pub rl_brake_energy_j: f64,
     pub rr_brake_energy_j: f64,
-    pub fl_brake_disc_bulk_c: f64,
-    pub fr_brake_disc_bulk_c: f64,
-    pub rl_brake_disc_bulk_c: f64,
-    pub rr_brake_disc_bulk_c: f64,
-    pub fl_brake_surface_capacity_j_k: f64,
-    pub fr_brake_surface_capacity_j_k: f64,
-    pub rl_brake_surface_capacity_j_k: f64,
-    pub rr_brake_surface_capacity_j_k: f64,
-    pub fl_brake_bulk_capacity_j_k: f64,
-    pub fr_brake_bulk_capacity_j_k: f64,
-    pub rl_brake_bulk_capacity_j_k: f64,
-    pub rr_brake_bulk_capacity_j_k: f64,
-    pub fl_brake_surface_bulk_w_k: f64,
-    pub fr_brake_surface_bulk_w_k: f64,
-    pub rl_brake_surface_bulk_w_k: f64,
-    pub rr_brake_surface_bulk_w_k: f64,
+    // Lumped rotor cooling diagnostics (couples to the compact brake model).
     pub fl_brake_natural_cooling_w_k: f64,
     pub fr_brake_natural_cooling_w_k: f64,
     pub rl_brake_natural_cooling_w_k: f64,
@@ -516,10 +493,6 @@ pub struct FfiTelemetryOutput {
     pub fr_brake_speed_cooling_w_k: f64,
     pub rl_brake_speed_cooling_w_k: f64,
     pub rr_brake_speed_cooling_w_k: f64,
-    pub fl_brake_surface_to_bulk_heat_w: f64,
-    pub fr_brake_surface_to_bulk_heat_w: f64,
-    pub rl_brake_surface_to_bulk_heat_w: f64,
-    pub rr_brake_surface_to_bulk_heat_w: f64,
 
     // Append-only ABI 13 traction-control diagnostics.
     pub tc_eligible: bool,
@@ -896,14 +869,6 @@ fn write_telemetry(
             fr_brake_disc_c: sim.state.brake_thermal.wheels[1].disc_c,
             rl_brake_disc_c: sim.state.brake_thermal.wheels[2].disc_c,
             rr_brake_disc_c: sim.state.brake_thermal.wheels[3].disc_c,
-            fl_brake_caliper_c: sim.state.brake_thermal.wheels[0].caliper_c,
-            fr_brake_caliper_c: sim.state.brake_thermal.wheels[1].caliper_c,
-            rl_brake_caliper_c: sim.state.brake_thermal.wheels[2].caliper_c,
-            rr_brake_caliper_c: sim.state.brake_thermal.wheels[3].caliper_c,
-            fl_brake_hub_c: sim.state.brake_thermal.wheels[0].hub_c,
-            fr_brake_hub_c: sim.state.brake_thermal.wheels[1].hub_c,
-            rl_brake_hub_c: sim.state.brake_thermal.wheels[2].hub_c,
-            rr_brake_hub_c: sim.state.brake_thermal.wheels[3].hub_c,
             fl_brake_rim_c: sim.state.brake_thermal.wheels[0].rim_c,
             fr_brake_rim_c: sim.state.brake_thermal.wheels[1].rim_c,
             rl_brake_rim_c: sim.state.brake_thermal.wheels[2].rim_c,
@@ -944,22 +909,6 @@ fn write_telemetry(
             fr_brake_energy_j: sim.state.brake_thermal.wheels[1].brake_energy_j,
             rl_brake_energy_j: sim.state.brake_thermal.wheels[2].brake_energy_j,
             rr_brake_energy_j: sim.state.brake_thermal.wheels[3].brake_energy_j,
-            fl_brake_disc_bulk_c: sim.state.brake_thermal.wheels[0].disc_bulk_c,
-            fr_brake_disc_bulk_c: sim.state.brake_thermal.wheels[1].disc_bulk_c,
-            rl_brake_disc_bulk_c: sim.state.brake_thermal.wheels[2].disc_bulk_c,
-            rr_brake_disc_bulk_c: sim.state.brake_thermal.wheels[3].disc_bulk_c,
-            fl_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[0].resolved_surface_capacity_j_k,
-            fr_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[1].resolved_surface_capacity_j_k,
-            rl_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[2].resolved_surface_capacity_j_k,
-            rr_brake_surface_capacity_j_k: sim.state.brake_thermal.wheels[3].resolved_surface_capacity_j_k,
-            fl_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[0].resolved_bulk_capacity_j_k,
-            fr_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[1].resolved_bulk_capacity_j_k,
-            rl_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[2].resolved_bulk_capacity_j_k,
-            rr_brake_bulk_capacity_j_k: sim.state.brake_thermal.wheels[3].resolved_bulk_capacity_j_k,
-            fl_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[0].resolved_surface_bulk_w_k,
-            fr_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[1].resolved_surface_bulk_w_k,
-            rl_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[2].resolved_surface_bulk_w_k,
-            rr_brake_surface_bulk_w_k: sim.state.brake_thermal.wheels[3].resolved_surface_bulk_w_k,
             fl_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[0].natural_cooling_w_k,
             fr_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[1].natural_cooling_w_k,
             rl_brake_natural_cooling_w_k: sim.state.brake_thermal.wheels[2].natural_cooling_w_k,
@@ -968,10 +917,6 @@ fn write_telemetry(
             fr_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[1].speed_cooling_w_k,
             rl_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[2].speed_cooling_w_k,
             rr_brake_speed_cooling_w_k: sim.state.brake_thermal.wheels[3].speed_cooling_w_k,
-            fl_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[0].surface_to_bulk_heat_w,
-            fr_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[1].surface_to_bulk_heat_w,
-            rl_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[2].surface_to_bulk_heat_w,
-            rr_brake_surface_to_bulk_heat_w: sim.state.brake_thermal.wheels[3].surface_to_bulk_heat_w,
             tc_eligible: sim.state.powertrain.tc_eligible,
             tc_gear_authority: sim.state.powertrain.tc_gear_authority,
             tc_slip_target: sim.state.powertrain.tc_slip_target,
@@ -1018,33 +963,30 @@ mod layout_tests {
         assert_eq!(offset_of!(FfiTelemetryOutput, fl_pressure_kpa), 400);
         assert_eq!(offset_of!(FfiTelemetryOutput, rr_gas_c), 584);
         assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_disc_c), 592);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_caliper_c), 624);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_hub_c), 656);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_rim_c), 688);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_efficiency), 720);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_duct_mass_flow_kg_s), 752);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_duct_drag_n), 784);
-        assert_eq!(offset_of!(FfiTelemetryOutput, brake_optimal_min_c), 816);
-        assert_eq!(offset_of!(FfiTelemetryOutput, brake_optimal_max_c), 824);
-        assert_eq!(offset_of!(FfiTelemetryOutput, brake_fade_start_c), 832);
-        assert_eq!(offset_of!(FfiTelemetryOutput, brake_critical_c), 840);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_torque_nm), 848);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_spin_pre_rad_s), 880);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_rim_c), 624);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_efficiency), 656);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_duct_mass_flow_kg_s), 688);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_duct_drag_n), 720);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_optimal_min_c), 752);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_optimal_max_c), 760);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_fade_start_c), 768);
+        assert_eq!(offset_of!(FfiTelemetryOutput, brake_critical_c), 776);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_torque_nm), 784);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_spin_pre_rad_s), 816);
         assert_eq!(
             offset_of!(FfiTelemetryOutput, fl_brake_spin_post_rad_s),
-            912
+            848
         );
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_power_w), 944);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_energy_j), 976);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_disc_bulk_c), 1008);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_surface_capacity_j_k), 1040);
-        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_surface_to_bulk_heat_w), 1200);
-        assert_eq!(offset_of!(FfiTelemetryOutput, tc_eligible), 1232);
-        assert_eq!(offset_of!(FfiTelemetryOutput, tc_gear_authority), 1240);
-        assert_eq!(offset_of!(FfiTelemetryOutput, tc_slip_ratio), 1264);
-        assert_eq!(offset_of!(FfiTelemetryOutput, drive_torque_pre_tc_nm), 1296);
-        assert_eq!(offset_of!(FfiTelemetryOutput, pre_tc_drive_power_w), 1328);
-        assert_eq!(offset_of!(FfiTelemetryOutput, net_drive_power_w), 1336);
-        assert_eq!(size_of::<FfiTelemetryOutput>(), 1344);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_power_w), 880);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_energy_j), 912);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_natural_cooling_w_k), 944);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fl_brake_speed_cooling_w_k), 976);
+        assert_eq!(offset_of!(FfiTelemetryOutput, tc_eligible), 1008);
+        assert_eq!(offset_of!(FfiTelemetryOutput, tc_gear_authority), 1016);
+        assert_eq!(offset_of!(FfiTelemetryOutput, tc_slip_ratio), 1040);
+        assert_eq!(offset_of!(FfiTelemetryOutput, drive_torque_pre_tc_nm), 1072);
+        assert_eq!(offset_of!(FfiTelemetryOutput, pre_tc_drive_power_w), 1104);
+        assert_eq!(offset_of!(FfiTelemetryOutput, net_drive_power_w), 1112);
+        assert_eq!(size_of::<FfiTelemetryOutput>(), 1120);
     }
 }

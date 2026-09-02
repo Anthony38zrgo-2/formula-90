@@ -86,9 +86,11 @@ func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 		var brake_wheel: Dictionary = brake_data.get(wheel, {})
 		if not brake_wheel.is_empty():
 			var disc := float(brake_wheel.get("disc_c", 0.0))
-			var caliper := float(brake_wheel.get("caliper_c", 0.0))
-			var rim := float(brake_wheel.get("rim_c", 0.0))
-			brake_label.text = "BRK D%.0f° C%.0f° R%.0f°" % [disc, caliper, rim]
+			var rim := float(brake_wheel.get("rim_c", -9999.0))
+			if rim == -9999.0:
+				# Legacy snapshot fallback (pre-compact two-node HUD contract).
+				rim = float(brake_wheel.get("caliper_c", 0.0))
+			brake_label.text = "BRK D%.0f° RIM%.0f°" % [disc, rim]
 			brake_label.add_theme_color_override("font_color", _brake_temperature_color(
 				disc,
 				float(brake_wheel.get("optimal_min_c", 400.0)),
@@ -149,7 +151,7 @@ func _build_ui() -> void:
 		box.add_child(carcass_label)
 
 		var brake_label := Label.new()
-		brake_label.text = "BRK D---° C---° R---°"
+		brake_label.text = "BRK D---° RIM---°"
 		brake_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(brake_label)
 

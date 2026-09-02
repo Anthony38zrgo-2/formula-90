@@ -252,9 +252,9 @@ fn test_surface_interaction_parity() {
         dt,
     );
 
-    let mut tires_grass = TireSystem::new(&cfg);
-    tires_grass.wheels[0].spin = 30.0;
-    tires_grass.process_wheel_forces(
+    let mut tires_grass_equal = TireSystem::new(&cfg);
+    tires_grass_equal.wheels[0].spin = 30.0;
+    tires_grass_equal.process_wheel_forces(
         &cfg,
         WheelIndex::FrontLeft,
         3000.0,
@@ -267,10 +267,37 @@ fn test_surface_interaction_parity() {
         dt,
     );
 
+    // TIRE-500: lateral_grip_assist is removed from the runtime. Surface interaction is
+    // governed by physical surface properties only (friction/stiffness/RR); equal physics
+    // inputs must produce identical forces (no hidden surface-specific grip inflation).
     assert!(
-        tires_grass.wheels[0].lateral_force.abs() < tires_road.wheels[0].lateral_force.abs(),
-        "Grass surface must produce less lateral grip than road: grass={}, road={}",
-        tires_grass.wheels[0].lateral_force,
+        (tires_grass_equal.wheels[0].lateral_force - tires_road.wheels[0].lateral_force).abs()
+            < 1e-9,
+        "Equal physics inputs must produce equal lateral force: grass={}, road={}",
+        tires_grass_equal.wheels[0].lateral_force,
+        tires_road.wheels[0].lateral_force
+    );
+
+    // Lower physical friction must strictly reduce lateral grip.
+    let mut tires_grass_low = TireSystem::new(&cfg);
+    tires_grass_low.wheels[0].spin = 30.0;
+    tires_grass_low.process_wheel_forces(
+        &cfg,
+        WheelIndex::FrontLeft,
+        3000.0,
+        SurfaceType::Grass,
+        1.2,
+        8.75,
+        1.0,
+        false,
+        Vec3::new(5.0, 0.0, -20.0),
+        dt,
+    );
+    assert!(
+        tires_grass_low.wheels[0].lateral_force.abs()
+            < tires_road.wheels[0].lateral_force.abs(),
+        "Lower friction must produce less lateral grip: low={}, road={}",
+        tires_grass_low.wheels[0].lateral_force,
         tires_road.wheels[0].lateral_force
     );
 }

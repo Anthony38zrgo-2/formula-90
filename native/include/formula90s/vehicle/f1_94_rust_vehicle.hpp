@@ -162,15 +162,9 @@ private:
 
 	// Brake thermal + duct telemetry (WheelIndex order FL/FR/RL/RR).
 	double brake_disc_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_disc_bulk_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_surface_capacity_j_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_bulk_capacity_j_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_surface_bulk_w_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	// Lumped rotor cooling diagnostics (compact brake model).
 	double brake_natural_cooling_w_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_speed_cooling_w_k_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_surface_to_bulk_heat_w_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_caliper_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
-	double brake_hub_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_rim_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_efficiency_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double duct_mass_flow_kg_s_[4] = { 0.0, 0.0, 0.0, 0.0 };
@@ -206,7 +200,7 @@ private:
 	double underfloor_bottoming_torque_[3] = {};
 	double underfloor_dissipated_energy_j_ = 0.0;
 	double underfloor_rigid_contact_blend_ = 0.0;
-	double aero_telemetry_[18] = {};
+	double aero_telemetry_[17] = {};
 
 	bool load_rust_dll();
 	void unload_rust_dll();
@@ -445,8 +439,6 @@ public:
 		const double gas_c[4]);
 	void set_core_brake_telemetry(
 		const double disc_c[4],
-		const double caliper_c[4],
-		const double hub_c[4],
 		const double rim_c[4],
 		const double efficiency[4],
 		const double duct_mass_flow_kg_s[4],
@@ -461,14 +453,9 @@ public:
 		const double spin_post_rad_s[4],
 		const double power_w[4],
 		const double energy_j[4]);
-	void set_core_brake_disc_bulk_telemetry(const double disc_bulk_c[4]);
-	void set_core_brake_resolved_thermal_telemetry(
-		const double surface_capacity_j_k[4],
-		const double bulk_capacity_j_k[4],
-		const double surface_bulk_w_k[4],
+	void set_core_brake_cooling_telemetry(
 		const double natural_cooling_w_k[4],
-		const double speed_cooling_w_k[4],
-		const double surface_to_bulk_heat_w[4]);
+		const double speed_cooling_w_k[4]);
 	// Tire pressure + thermal snapshot for the HUD (no raw C structs leak out).
 	godot::Dictionary get_tire_state_snapshot() const;
 	godot::Dictionary get_brake_state_snapshot() const;

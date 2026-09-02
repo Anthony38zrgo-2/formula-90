@@ -1,18 +1,42 @@
-# Handoff autoritativo — V10 Rust GF480
+# Backlog autoritativo — V10 Rust GF509 en Godot
 
-Fecha: 2026-08-31
-
-Workspace: `D:\Formula90s`
-
-Rama: `fix/v10-audio-physical-boundary`
-
+Fecha: 2026-09-01  
+Workspace: `D:\Formula90s`  
+Rama observada: `fix/v10-audio-physical-boundary`  
+HEAD observado: `4c6854081c21dc8cdc6ea1f761935120848090ea`  
 Script canónico: `run_f1_94.ps1`
 
-## Objetivo inmediato
+## Objetivo
 
-Continuar afinando exclusivamente el sintetizador V10 greenfield en Rust contra `98_int_max_5.wav`, sin perder lo alcanzado a 7499 RPM ni volver a concentrar toda la energía en la orden 5. No integrar todavía C++, Faust, Godot o `VehicleAudioEngine`; el renderer offline es el gate.
+Reproducir GF509 en tiempo real dentro de Godot. `v10-engine-synth` reemplazará sólo la fuente continua del motor. `vehicle-audio-engine` conservará el mezclador, one-shots, backfires, impactos, scraping, superficies/neumáticos y protección final.
 
-## Seguridad y procedencia
+```text
+Godot: rpm · throttle · load · gear · dt
+                    │
+                    ▼
+ v10-engine-synth: V10Engine + AcousticScene
+                    + ThreeZoneSampleLayer
+                    │ motor continuo estéreo
+                    ▼
+ vehicle-audio-engine
+   ├── one-shots / backfires
+   ├── impactos / scraping
+   ├── superficies / neumáticos
+   └── mezcla y protección final
+                    │ PCM
+                    ▼
+ VehicleAudioControllerNative → bus Vehicle → Godot
+```
+
+## Reglas y seguridad
+
+- Integrar Rust con Rust; no añadir C++ ni Faust.
+- No rediseñar el timbre GF509 durante la integración.
+- No reimplementar ni duplicar one-shots en `v10-engine-synth`.
+- No depender en runtime de `reports/`, `D:\ASETS` ni rutas absolutas.
+- Mantener el motor continuo anterior como fallback explícito hasta el human gate.
+- No versionar renders, stems, DLL, `target` o caches salvo autorización.
+- Aplicar fail-fast; no crear smoke tests redundantes.
 
 Antes de modificar:
 
@@ -22,230 +46,140 @@ git rev-parse HEAD
 git status --short
 ```
 
-El worktree tiene numerosos cambios y artefactos ajenos. No limpiar, resetear, cambiar de rama ni incluirlos. Stagear rutas explícitas; `git add -A` está prohibido. No versionar WAV, stems, DLL, `target` ni reportes salvo autorización.
+El worktree ya contiene numerosos cambios y artefactos ajenos. No limpiar, resetear, cambiar de rama ni sobrescribirlos. Stagear rutas explícitas; `git add -A` está prohibido.
 
-Pipeline: `sprint planning → backlog item → implement → review → human gate → sprint retrospective → done`.
-
-Aplicar fail-fast: primero render estacionario y métricas; no ocultar defectos con sweeps o smoke tests redundantes.
-
-## Historial y arquitectura
-
-Base GF471 consolidada:
+No ejecutar Godot como evidencia hasta cumplir:
 
 ```text
-e0497ac1 feat(audio): rebalance V10 orders and add dynamic sweep render
+game/BUILD_SOURCE == git rev-parse HEAD
 ```
 
-GF471 introdujo matriz `stem × orden`, notch dinámico de orden 5 sólo por rutas, menor compresión/saturación, firma A/B, deriva lenta, residual disparado por eventos y sweep/lift-and-coast configurable.
+Al redactar este backlog, `BUILD_SOURCE` contiene `7bcde9ab5ed0ef787107fab23e8265ba8102ea39` y no coincide con HEAD. Una reconstrucción completa debe limpiar únicamente outputs/caches autorizados de Cargo, SCons y `game/.godot`, usar `run_f1_94.ps1` y confirmar nuevamente la paridad.
 
-GF480, contenido en el commit que acompaña este handoff, conserva identidad de cilindro hasta la escena:
+Pipeline:
 
 ```text
-Crankshaft 720°
-  → 10 Cylinder independientes
-      ├─ pressure_derivative[10]
-      ├─ blowdown[10]
-      └─ Header[10] → cylinder_headers[10]
-             ├─ CylinderMechanicalPath[10]
-             │    ├─ delay geométrico individual
-             │    ├─ 3 resonancias cortas individuales
-             │    └─ polaridad/filtro por posición y banco
-             ├─ Collector A compartido (0–4)
-             ├─ Collector B compartido (5–9)
-             └─ suma mecánica → estructura, soportes y cockpit compartidos
+sprint planning → backlog item → implement → review → human gate → sprint retrospective → done
 ```
 
-Las rutas no son copias: RMS aproximado -51.7 a -54.4 dBFS; correlación media entre pares `-0.071`, mínimo `-0.671`, máximo `0.705`.
+## Backlog ordenado
 
-Costo Release para renderizar 10 s: GF471 `1451 ms`; GF480 `2105 ms`; incremento aproximado 45 %. No optimizar sacrificando identidad por cilindro.
+### INT-00 — Congelar baseline y contrato — P0
 
-## Archivos en alcance
+- Identificar commit y configuración exactos de GF509.
+- Registrar sample rate, seed, parámetros, ganancias y hashes SHA-256 de low/med/max preparados.
+- Conservar como referencia 7499 RPM y el sweep 5000–14500 RPM con lift-and-coast.
+- Definir entrada: `rpm`, `throttle`, `load`, `gear`, `dt`; fase de cigüeñal sólo si existe una fuente autoritativa.
+- Definir salida: estéreo `f32`, sample rate, frames máximos por bloque y semántica de reset.
+- Resolver procedencia/licencia de los samples antes de empaquetarlos.
 
-- `game/crates/v10-engine-synth/src/engine.rs`: arrays individuales de derivada, blowdown y header; test de sumas A/B.
-- `game/crates/v10-engine-synth/src/scene.rs`: `CylinderMechanicalPath[10]`, estructuras compartidas y rutas GF471.
-- `game/crates/v10-engine-synth/src/bin/v10_render.rs`: stems `cylinder_mechanical_0..9`, suma, steady y sweep.
-- `scripts/audio/analyze_v10_references.py`: opción `--forced-rpm`.
-- `scripts/audio/analyze_acoustic_scene_orders.py`: fase, coherencia y contribución firmada por stem/orden.
+Gate: tests actuales del V10 pasan, baseline reproducible y contrato documentado. Detenerse si los samples no pueden distribuirse.
 
-No asumir que otros archivos dirty pertenecen a la tarea.
+### INT-01 — API integrable de `v10-engine-synth` — P0
 
-## Referencias y RPM correctas
+- Resolver su workspace aislado de forma compatible con el workspace/build canónico.
+- Añadir dependencia de path explícita desde `vehicle-audio-engine`.
+- Exponer una API mínima: construir, actualizar telemetría, renderizar bloque y resetear.
+- Separar CLI, WAV, stems y análisis de la biblioteca runtime.
+- Evitar estado global, I/O y allocations durante render; conservar seed determinista.
 
-Directorio:
+Gate: `cargo check` del workspace canónico y tests de ambos crates pasan. Una prueba contractual cubre tamaños de bloque variables, muestras finitas y continuidad de frontera.
 
-```text
-D:\ASETS\Automobilista_Grand_Prix_Evolution_Whills_v25.4\Automobilista_Grand_Prix_Evolution_Whills_v25.4\Automobilista\GameData\Vehicles\Grand_Prix_Evo\1998\_Sounds\ALT
-```
+### INT-02 — Empaquetar `ThreeZoneSampleLayer` — P0
 
-- `98_int_low.wav`: afinación declarada 7499.31 RPM.
-- `98_int_med.wav`: 8313.25 RPM.
-- `98_int_max_5.wav`: afinación declarada 15537.94 RPM.
+- Ubicar low/med/max dentro de `game/` y accesibles por el runtime instalado.
+- Crear manifest versionado: clave, RPM nativa, sample rate, canales, loops, gain y hash.
+- Resolver paths desde el proyecto/configuración, nunca mediante rutas absolutas.
+- Cargar, validar y preparar buffers fuera del callback.
+- Fallar con mensaje accionable si falta un sample o formato/hash/loop es inválido.
 
-Advertencia: el contenido periódico de `max_5` corresponde aproximadamente a 15327 RPM: 127.725 Hz es orden 0.5 y 1277.25 Hz orden 5. El estimador ciego devuelve erróneamente 7663.5 RPM al tomar la media orden como fundamental. Para bins de órdenes usar `--forced-rpm 15327`; conservar 15537.94 sólo como control de reproducción del mod.
+Gate: los tres samples cargan desde una copia limpia; retirar uno falla inmediatamente; no quedan referencias runtime a `reports/` o `D:\ASETS`.
 
-## Gate preservado a 7499 RPM
+### INT-03 — Fuente continua dentro de `vehicle-audio-engine` — P0
 
-| Métrica | 98 low | GF471 | GF480 |
-|---|---:|---:|---:|
-| RMS dBFS | -12.18 | -12.53 | -13.37 |
-| Crest dB | 11.46 | 10.38 | 10.91 |
-| Orden 5 | 19.6 % | 23.8 % | 22.4 % |
-| Energía armónica | 42.0 % | 47.8 % | 47.0 % |
-| 80–250 Hz | 31 % | 25 % | 26 % |
-| 250–600 Hz | 24 % | 37 % | 38 % |
-| 600–2500 Hz | 42 % | 29 % | 28 % |
+- Crear una abstracción interna como `EngineContinuousSource`.
+- Adaptar la fuente actual como `Legacy`.
+- Implementar `V10Gf509Source`, propietario de `V10Engine`, `AcousticScene` y `ThreeZoneSampleLayer`.
+- Añadir selección `legacy | v10_gf509` y fallback sólo ante error de inicialización, nunca silenciosamente durante render.
+- Insertar el V10 exactamente donde entra el motor continuo, antes de one-shots y protección final.
+- Desactivar la fuente tonal legacy cuando se seleccione V10.
+- Mantener triggers y rutas actuales de one-shots/beds sin duplicarlos.
 
-No degradar estos gates sin A/B humano. Mantener orden 5 aproximadamente entre 20–30 % en baja/media RPM y conservar el peso metálico.
+Gate: con V10 silenciado siguen sonando one-shots pero legacy entrega silencio exacto; un shift/backfire dispara una voz; modo legacy conserva el comportamiento previo.
 
-Evidencia: `reports/audio/rust-greenfield/gf480_7499rpm_ten_cylinder_paths.wav`, su carpeta `_stems` y `gf480_target_comparison/`.
+### INT-04 — Telemetría y tiempo real Godot — P0
 
-## Diagnóstico alineado a 15327 RPM
+- Trazar `VehicleAudioControllerNative → formula90-core → VehicleAudioEngine` y reutilizar el estado coherente existente.
+- Separar frecuencia de física de frecuencia de audio e interpolar parámetros dentro del bloque.
+- Si no existe fase autoritativa, mantener fase sample-accurate interna; no reiniciarla por frame.
+- Definir pausa, respawn, cambio de coche, neutral, stall y pérdida del nodo físico.
+- Alimentar el `AudioStreamGenerator` y bus `Vehicle` existentes.
 
-GF480 limpio: throttle `0.72`, load `0.66`, 8 s útiles, warmup 1 s, 44100 Hz, seed `4035964944`, peak `0.841`, limiter `0 dB`.
+Gate: RPM fija sin modulación al ritmo de física; sweep sin clicks/reinicios; lift-and-coast conserva inercia tonal; reset no deja estado o voces colgadas.
 
-| Métrica | 98 max_5 | GF480 |
-|---|---:|---:|
-| RMS dBFS | -5.04 | -14.21 |
-| Crest dB | 4.99 | 12.71 |
-| Centroide Hz | 761 | 726 |
-| Rolloff85 Hz | 1277 | 669 |
-| Energía armónica | 39.2 % | 24.2 % |
-| Orden 5 | 11.0 % | 0.8 % |
-| 80–250 Hz | 26.3 % | 16.7 % |
-| 250–600 Hz | 25.2 % | 63.2 % |
-| 600–2500 Hz | 44.3 % | 13.0 % |
-| 2500–7000 Hz | 3.5 % | 5.5 % |
-| Corr. ciclos 720° | 0.936 | 0.607 |
-| Desv. ciclos | 0.024 | 0.173 |
-| Modulación | 0.67 Hz | 10.43 Hz |
+### INT-05 — Configuración y observabilidad — P1
 
-El centroide parecido es engañoso: GF480 tiene exceso estrecho en 250–600 Hz, hueco en 600–2500 Hz y cola aguda algo excesiva.
+- Configuración versionada para fuente, manifest, gain y fallback.
+- Mantener parámetros GF509 centralizados; exponer sólo controles de integración.
+- Medir fuente activa, RPM recibida/renderizada, peak pre-limitador, reducción, tiempo de render, underruns y errores de assets.
+- Añadir diagnóstico `V10 solo | one-shots/beds solos | mezcla`.
+- No loguear desde el callback; publicar snapshots/contadores fuera de él.
 
-Órdenes relativas:
+Gate: Godot confirma que la fuente activa es `v10_gf509` y permite aislar rutas sin recompilar.
 
-| Orden | 98 max_5 | GF480 | Diferencia |
-|---:|---:|---:|---:|
-| 0.5 | 0.0 dB | -7.5 | -7.5 |
-| 1.0 | -4.4 | -1.0 | +3.4 |
-| 1.5 | -9.6 | 0.0 | +9.6; dominante incorrecta |
-| 2.0 | -3.2 | -23.8 | -20.6 |
-| 2.5 | -2.0 | -11.2 | -9.2 |
-| 3.0 | -11.6 | -18.9 | -7.3 |
-| 3.5 | -11.3 | -21.4 | -10.1 |
-| 4.5 | -9.8 | -20.4 | -10.6 |
-| 5.0 | -3.5 | -14.6 | -11.1 |
+### INT-06 — Presupuesto de tiempo real — P1
 
-## Cancelaciones confirmadas
+- Medir Release con tamaños de bloque reales: mediana, p95 y peor caso, V10 solo y mezcla completa.
+- Verificar cero allocations, locks bloqueantes, disco y logs dentro de `render`.
+- Preasignar/reutilizar buffers.
+- Perfilar antes de optimizar. No volver a duplicar un banco de cinco cilindros ni eliminar identidad de cilindro sin human gate.
 
-Orden 2:
+Gate: margen suficiente bajo el deadline de audio, cero underruns y sin degradación audible frente al baseline GF509.
 
-```text
-gearbox_housing      +2.65
-metallic_structure   -1.33
-engine_air           -0.57
-rear_exhaust         +0.18
-```
+### INT-07 — Rebuild seguro y validación en juego — P0
 
-Orden 5:
+- Revisar el diff y ejecutar tests dirigidos.
+- Verificar HEAD justo antes del build.
+- Limpiar sólo outputs/caches autorizados y ejecutar `run_f1_94.ps1`.
+- Confirmar `BUILD_SOURCE == HEAD` y procedencia de las DLL cargadas.
+- Probar idle/5000, 7499, zona media, 14500, lift-and-coast, shifts, backfires, impactos y superficies.
 
-```text
-cylinder_head_covers +3.62
-engine_cover         -2.36
-engine_air           -0.69
-metallic_structure   +0.55
-rear_exhaust         -0.36
-```
+Human gate: comparar GF509 en juego contra el baseline offline y confirmar que one-shots/beds siguen correctos. El refinamiento tonal posterior será otro backlog.
 
-Las órdenes ya existen y se cancelan. No crear otra fuente. Corregir propagación/fase. `gearbox_housing`, seguido por `airbox_plenum`, domina 250–600 Hz. No usar EQ master.
+### INT-08 — Documentación y commits atómicos — P1
 
-Evidencia: `gf480_15327rpm_vs_98_int_max.wav`, su carpeta `_stems`, `gf480_vs_98_int_max_15327_aligned/` y `gf480_15327_order_matrix/` bajo `reports/audio/rust-greenfield/`.
+- Actualizar `docs/` con ownership, flujo, assets, configuración y fallback.
+- Documentar preparación/licencia/hash de samples y lectura de métricas.
+- Registrar tests, benchmark y human gate sin añadir WAV generados.
+- Revisar `git diff` y `git diff --cached`; stagear sólo rutas explícitas.
+- Separar commits de contrato, assets/config, integración y documentación.
+- Completar review y retrospectiva.
 
-## Máxima carga y headroom
+## Definición de terminado
 
-A 15537.94 RPM, throttle `0.92`, load `0.90`: peak de escena `1.156994`, RMS `0.249069`, limiter interno `-0.711 dB`. La escena excede PCM16 antes de igualar el objetivo. No subir `output_gain`.
+- GF509 responde en tiempo real a RPM, throttle y load.
+- Low/med/max participan desde assets empaquetados.
+- One-shots y beds funcionan una sola vez y no fueron reimplementados.
+- No hay clicks de bloque, underruns, clipping ni allocations en callback.
+- El fallback recupera legacy sin afectar eventos.
+- BUILD/HEAD coinciden y el usuario aprueba el A/B dentro del juego.
 
-`max_5` está fuertemente procesado (crest 4.99 dB). Meta inicial razonable para GF480 a máxima carga: crest 6–7 dB, progresivo desde 10–12 dB a carga media, sin hard clipping.
+## Tests mínimos con valor
 
-## Backlog inmediato fail-fast
+1. Bloques variables sin NaN, discontinuidad ni allocation conocida.
+2. Seleccionar V10 silencia exactamente la fuente continua legacy.
+3. Shift/backfire dispara una sola vez y sigue audible con V10 silenciado.
+4. Manifest valida los tres assets; ausencia/corrupción falla rápido.
+5. Reset elimina estado anterior y conserva determinismo.
+6. El script canónico rechaza BUILD/HEAD fuera de paridad.
 
-### HR-1 — Fase de órdenes 2 y 5 — P0
+## Fuera de alcance
 
-- Medir fase a 7499 y 15327 RPM.
-- Ajustar delays/polaridades sólo en metal, engine air/cover, rear exhaust y head covers cuando corresponda.
-- Preferir propagación física o dependencia continua de RPM; no un delay fijo que sólo pase un punto.
-- No aplicar boost de órdenes ni notch al master.
+- Rediseñar GF509 o añadir capas, micrófonos, C++, Faust o nuevos samples.
+- Reescribir one-shots.
+- Ocultar errores mediante EQ/limitación master.
+- Hacer push o distribuir samples sin autorización expresa.
 
-Gate: órdenes 2 y 5 a menos de 6 dB del objetivo a 15327; orden 5 a 7499 permanece 20–30 %; cero clipping y limiter menor de 0.5 dB a carga nominal.
+## Primer bloque recomendado
 
-### HR-2 — Redistribuir cuerpo — P0, después de HR-1
-
-- Reducir captura 250–600 de `gearbox_housing` y revisar `airbox_plenum` a alta RPM.
-- Aumentar radiación útil de culata, colectores y estructura entre 700–1800 Hz.
-- Transición continua dependiente de RPM/carga; sin presets abruptos ni ruido continuo.
-
-Gate inicial a 15327: 250–600 `<=40 %`, 600–2500 `>=30 %`, 2500–7000 `2–5 %`, rolloff85 `>=950 Hz`.
-
-### HR-3 — Firma de órdenes — P0
-
-- Reducir orden 1.5.
-- Recuperar 0.5, 2, 2.5 y 3–4.5 desde las diez rutas existentes.
-- Inspeccionar contribución por cilindro/banco antes de añadir resonadores.
-
-### HR-4 — Dinámica máxima carga — P1, después del timbre
-
-- Compresión/saturación de bus dependiente de carga/RPM.
-- Ataque que conserve combustión y release sin bombeo mecánico.
-- Headroom antes de `output_gain`; safety limiter no crea timbre.
-
-Gate: crest 6–7 dB, peak `<0.98`, cero samples clipped, safety limiter `>-0.5 dB`.
-
-### HR-5 — Estabilidad temporal — P1
-
-- Identificar modulación a 10.43 Hz.
-- Usar alineación fraccional de ciclos a alta RPM.
-- Conservar identidad determinista por cilindro.
-
-Gate: deriva 0.7–1.2 Hz y dispersión entre ciclos 0.02–0.07 con medición confiable.
-
-## Comandos reproducibles
-
-```powershell
-cargo test --manifest-path game/crates/v10-engine-synth/Cargo.toml
-
-cargo run --release --manifest-path game/crates/v10-engine-synth/Cargo.toml --bin v10_render -- `
-  --rpm 15327 --seconds 8 --warmup 1 --throttle 0.72 --load 0.66 `
-  --sample-rate 44100 --seed 4035964944 --acoustic-scene `
-  --out reports/audio/rust-greenfield/gf480_15327rpm_vs_98_int_max.wav `
-  --stems-dir reports/audio/rust-greenfield/gf480_15327rpm_vs_98_int_max_stems
-
-python scripts/audio/analyze_v10_references.py `
-  "D:\ASETS\Automobilista_Grand_Prix_Evolution_Whills_v25.4\Automobilista_Grand_Prix_Evolution_Whills_v25.4\Automobilista\GameData\Vehicles\Grand_Prix_Evo\1998\_Sounds\ALT\98_int_max_5.wav" `
-  reports/audio/rust-greenfield/gf480_15327rpm_vs_98_int_max.wav `
-  --forced-rpm 15327 `
-  --output-dir reports/audio/rust-greenfield/gf480_vs_98_int_max_15327_aligned
-
-python scripts/audio/analyze_acoustic_scene_orders.py `
-  reports/audio/rust-greenfield/gf480_15327rpm_vs_98_int_max_stems `
-  --rpm 15327 --output-gain 2.90 --start 1 --end 4 --max-order 10 `
-  --output-dir reports/audio/rust-greenfield/gf480_15327_order_matrix
-```
-
-## Reglas de decisión
-
-- No añadir capas antes de comprobar cancelación por fase.
-- No resolver una ruta con EQ master.
-- No convertir diez rutas nuevamente en dos bancos duplicados.
-- No igualar RMS antes de corregir clipping y crest.
-- `max_5` es una capa procesada y mezclada/pitch-shifted en el juego, no presión cruda.
-- Validar cada cambio a 7499 y 15327 RPM.
-- Sólo el usuario aprueba el human gate perceptual.
-
-## Estado del handoff
-
-- GF471 consolidado en `e0497ac1`.
-- GF480 implementado; 12 tests Rust pasan.
-- Diez rutas exportadas como stems.
-- Orden 5 a 7499 RPM dentro del gate.
-- Comparación alineada de alta RPM completada.
-- HR-1 es el siguiente trabajo recomendado.
-- Sin integración al runtime del juego.
+Ejecutar sólo `INT-00` e `INT-01`, hacer review y detenerse ante fallo de compilación, ambigüedad de procedencia/licencia o conflicto con cambios dirty. Después avanzar a `INT-02` e `INT-03`.

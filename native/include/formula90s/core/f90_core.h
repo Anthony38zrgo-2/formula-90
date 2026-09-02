@@ -51,8 +51,6 @@ typedef struct F90CoreFrameOut {
     double tire_carcass_c[4];
     double tire_gas_c[4];
     double brake_disc_c[4];
-    double brake_caliper_c[4];
-    double brake_hub_c[4];
     double brake_rim_c[4];
     double brake_efficiency[4];
     double duct_mass_flow_kg_s[4];
@@ -67,13 +65,9 @@ typedef struct F90CoreFrameOut {
     double brake_spin_post_rad_s[4];
     double brake_power_w[4];
     double brake_energy_j[4];
-    double brake_disc_bulk_c[4];
-    double brake_surface_capacity_j_k[4];
-    double brake_bulk_capacity_j_k[4];
-    double brake_surface_bulk_w_k[4];
+    // Lumped rotor cooling diagnostics (compact brake model).
     double brake_natural_cooling_w_k[4];
     double brake_speed_cooling_w_k[4];
-    double brake_surface_to_bulk_heat_w[4];
     double underfloor_clearance_m[5];
     uint32_t underfloor_valid_mask;
     int32_t underfloor_scrape_phase;
@@ -109,7 +103,6 @@ typedef struct F90CoreFrameOut {
     double aero_floor_height_factor;
     double aero_floor_rake_factor;
     double aero_floor_seal_factor;
-    double aero_diffuser_expansion_deg;
     double aero_diffuser_stall_factor;
     double aero_global_limit_factor;
     double aero_load_ratio;

@@ -435,7 +435,6 @@
         "min_angle_deg": 4.0,
         "max_angle_deg": 20.0,
         "yaw_decay_exponent": 1.15,
-        "flex_coefficient": 0.0008,
         "polar": [
           { "angle_deg": 4.0, "cl": 0.45, "cd": 0.075 },
           { "angle_deg": 8.0, "cl": 0.82, "cd": 0.105 },
@@ -450,7 +449,6 @@
         "min_angle_deg": 6.0,
         "max_angle_deg": 26.0,
         "yaw_decay_exponent": 1.05,
-        "flex_coefficient": 0.0010,
         "polar": [
           { "angle_deg": 6.0, "cl": 0.55, "cd": 0.090 },
           { "angle_deg": 10.0, "cl": 0.90, "cd": 0.130 },
@@ -466,8 +464,6 @@
         "high_height_m": 0.160,
         "optimal_rake_deg": 0.5,
         "rake_window_deg": 2.5,
-        "optimal_expansion_deg": 3.0,
-        "expansion_window_deg": 5.0,
         "yaw_decay_exponent": 1.8,
         "stall_attack_tau_s": 0.030,
         "stall_recovery_tau_s": 0.160,
@@ -482,15 +478,6 @@
     },
     "drag_coefficient": 0.78,
     "frontal_area": 1.25,
-
-    "downforce_coefficient": 1.90,
-
-    "split": {
-      "front": 0.28,
-      "diffuser": 0.36,
-      "rear": 0.36
-    },
-
     "air_density": 1.225,
 
     "lag_tau_s": 0.030,
@@ -498,8 +485,7 @@
     "blend_min_speed_mps": 5.556,
     "blend_full_speed_mps": 41.667,
 
-    "yaw_decay_exponent": 0.80,
-    "flex_coefficient": 0.0008
+    "yaw_decay_exponent": 0.80
   },
 
   "aids": {

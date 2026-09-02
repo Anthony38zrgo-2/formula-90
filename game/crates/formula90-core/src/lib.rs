@@ -487,7 +487,6 @@ impl CoreFacade {
         frame.aero_floor_height_factor = aero.floor_height_factor;
         frame.aero_floor_rake_factor = aero.floor_rake_factor;
         frame.aero_floor_seal_factor = aero.floor_seal_factor;
-        frame.aero_diffuser_expansion_deg = aero.diffuser_expansion_deg;
         frame.aero_diffuser_stall_factor = aero.diffuser_stall_factor;
         frame.aero_global_limit_factor = aero.global_limit_factor;
         frame.aero_load_ratio = aero.load_ratio;
@@ -504,8 +503,6 @@ impl CoreFacade {
         }
         for (i, w) in ent.sim.state.brake_thermal.wheels.iter().enumerate() {
             frame.brake_disc_c[i] = w.disc_c;
-            frame.brake_caliper_c[i] = w.caliper_c;
-            frame.brake_hub_c[i] = w.hub_c;
             frame.brake_rim_c[i] = w.rim_c;
             frame.brake_efficiency[i] = w.efficiency;
             frame.duct_mass_flow_kg_s[i] = w.duct.mass_flow_kg_s;
@@ -522,13 +519,8 @@ impl CoreFacade {
             frame.brake_spin_post_rad_s[i] = w.wheel_spin_post_rad_s;
             frame.brake_power_w[i] = w.brake_power_w;
             frame.brake_energy_j[i] = w.brake_energy_j;
-            frame.brake_disc_bulk_c[i] = w.disc_bulk_c;
-            frame.brake_surface_capacity_j_k[i] = w.resolved_surface_capacity_j_k;
-            frame.brake_bulk_capacity_j_k[i] = w.resolved_bulk_capacity_j_k;
-            frame.brake_surface_bulk_w_k[i] = w.resolved_surface_bulk_w_k;
             frame.brake_natural_cooling_w_k[i] = w.natural_cooling_w_k;
             frame.brake_speed_cooling_w_k[i] = w.speed_cooling_w_k;
-            frame.brake_surface_to_bulk_heat_w[i] = w.surface_to_bulk_heat_w;
         }
     }
 

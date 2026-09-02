@@ -6,11 +6,26 @@
 // stable for a game solver rather than attempting a full Pacejka parameter set.
 use crate::tire_thermals::TireMechanicalModifiers;
 use crate::types::{SurfaceType, Vec3, WheelIndex};
-use crate::vehicle_config::VehicleConfig;
+use crate::vehicle_config::{TireForceProfile, VehicleConfig};
 use crate::wheel_mechanics::{
     base_contact_patch, static_wheel_load, tire_radius, wheel_mass, WheelMechanicalTuning,
 };
 use serde::{Deserialize, Serialize};
+
+/// Axis regime reported by the pure-slip envelope (TIRE-101/103 diagnostic).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TireSlipRegime {
+    PrePeak,
+    PostPeak,
+}
+
+/// Result of evaluating one pure-slip axis (TIRE-101). Magnitude only; sign is
+/// applied by the caller so odd symmetry is easy to test.
+#[derive(Debug, Clone, Copy)]
+pub struct PureSlipResponse {
+    pub force_coefficient: f64,
+    pub regime: TireSlipRegime,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WheelTireState {
@@ -33,6 +48,13 @@ pub struct WheelTireState {
     pub applied_torque: f64,
     pub limit_spin: bool,
     pub reaction_torque: f64,
+    /// Shared friction-budget utilization after combined-slip projection (0..=1).
+    #[serde(default)]
+    pub combined_utilization: f64,
+    /// Axis regime diagnostic: 0 = pre-peak both axes, 1 = lateral post-peak,
+    /// 2 = longitudinal post-peak, 3 = both post-peak.
+    #[serde(default)]
+    pub tire_regime: i32,
 
     // Mechanical coupling supplied by suspension.rs each tick.
     #[serde(default)]
@@ -76,6 +98,8 @@ impl WheelTireState {
             applied_torque: 0.0,
             limit_spin: false,
             reaction_torque: 0.0,
+            combined_utilization: 0.0,
+            tire_regime: 0,
             camber_rad: 0.0,
             tire_deflection_m: 0.0,
             contact_fraction: 1.0,
@@ -216,7 +240,7 @@ impl TireSystem {
         effective_friction: f64,
         effective_stiffness: f64,
         effective_rolling_resistance: f64,
-        braking: bool,
+        _braking: bool,
         local_wheel_velocity: Vec3,
         dt: f64,
     ) {
@@ -237,6 +261,8 @@ impl TireSystem {
             state.spin_velocity_diff = 0.0;
             state.reaction_torque = 0.0;
             state.limit_spin = false;
+            state.combined_utilization = 0.0;
+            state.tire_regime = 0;
             state.spin -= state.spin.signum()
                 * (tire_airborne_decay(config, wheel) / state.wheel_moment.max(1e-6))
                 * dt;
@@ -282,33 +308,18 @@ impl TireSystem {
             (target_kappa - state.effective_slip_ratio) * relax;
 
         let fz = normal_force_n.max(0.0);
-        let mut mu = effective_friction.max(0.0) * state.load_sensitivity_scale;
-        // Preserve the per-axle braking-grip multiplier config contract: it scales the
-        // contact friction while braking (replaces the old GEVP braking_help hack with
-        // a direct brake-compound mu multiplier).
-        if braking {
-            let grip = if wheel.is_front() {
-                config.front_braking_grip
-            } else {
-                config.rear_braking_grip
-            };
-            mu *= grip.max(0.0);
-        }
-        // Secondary thermal/pressure peak-friction correction. Pressure mechanics
-        // remain the dominant effect; this only nudges mu near cold/overheat windows.
-        mu *= modifiers.grip_scale.clamp(0.05, 2.0);
+        // TIRE-600: braking no longer multiplies mu. Peak tire capacity comes only from
+        // friction, load sensitivity, the surface longitudinal grip ratio and the thermal
+        // grip window; brake torque is consumed through the shared friction budget below.
+        let mu = effective_friction.max(0.0)
+            * state.load_sensitivity_scale
+            * modifiers.grip_scale.clamp(0.05, 2.0);
         let longitudinal_ratio = config
             .surface_longitudinal_grip_ratio
             .get(&surface)
             .copied()
             .unwrap_or(0.5)
             .clamp(0.10, 1.50);
-        let lateral_assist = config
-            .surface_lateral_grip_assist
-            .get(&surface)
-            .copied()
-            .unwrap_or(0.0)
-            .clamp(0.0, 1.0);
 
         let fx_max = (mu * longitudinal_ratio * fz).max(1e-6);
         let fy_max = (mu * fz).max(1e-6);
@@ -316,13 +327,13 @@ impl TireSystem {
             .clamp(0.15, 2.5)
             .sqrt();
         let patch_stiffness_scale = patch_ratio.sqrt();
-        let longitudinal_shape =
-            9.5 * stiffness_scale * patch_stiffness_scale * modifiers.force_stiffness_scale;
-        let lateral_shape = 7.5
-            * stiffness_scale
-            * patch_stiffness_scale
-            * (1.0 + 0.25 * lateral_assist)
-            * modifiers.force_stiffness_scale;
+        // TIRE-203: the legacy tanh shape constants are retired. A small pre-peak
+        // rise scaling (rise_gamma) may shape force build, but it can never erase the
+        // configured peak slip / slide-ratio relationship of the pure-slip envelope.
+        let rise_gamma = (2.0 * stiffness_scale * patch_stiffness_scale * modifiers.force_stiffness_scale)
+            .clamp(1.2, 4.0);
+
+        let profile = tire_force_profile(config, wheel);
 
         // Config camber is expressed with the same sign on both sides. Mirror the right
         // side so static camber thrust is symmetric and cancels on a straight, flat road.
@@ -334,16 +345,51 @@ impl TireSystem {
         let alpha_with_camber = state.effective_slip_angle_rad
             + signed_camber * tuning.camber_thrust_gain;
 
-        let mut fx = fx_max * (longitudinal_shape * state.effective_slip_ratio).tanh();
-        let mut fy = fy_max * (lateral_shape * alpha_with_camber).tanh();
+        // TIRE-101: pure-slip curve evaluation lives outside combined-slip projection.
+        // Both axes share the same compact envelope machinery with independent peaks.
+        let lat_response = pure_curve_coefficient(
+            alpha_with_camber.abs(),
+            profile.lateral_peak_slip_angle_rad,
+            profile.lateral_slide_mu_ratio,
+            rise_gamma,
+        );
+        let lon_response = pure_curve_coefficient(
+            state.effective_slip_ratio.abs(),
+            profile.longitudinal_peak_slip_ratio,
+            profile.longitudinal_slide_mu_ratio,
+            rise_gamma,
+        );
+        let fx_candidate =
+            fx_max * lon_response.force_coefficient * state.effective_slip_ratio.signum();
+        let fy_candidate =
+            fy_max * lat_response.force_coefficient * alpha_with_camber.signum();
 
-        // Friction ellipse: longitudinal and lateral demands consume the same contact patch.
-        let utilization = ((fx / fx_max).powi(2) + (fy / fy_max).powi(2)).sqrt();
-        if utilization > 1.0 {
-            fx /= utilization;
-            fy /= utilization;
-        }
-        state.limit_spin = utilization >= 0.995 || state.effective_slip_ratio.abs() > 0.20;
+        // TIRE-102: one shared normalized friction budget. Normalized demand is scaled
+        // coherently on both axes with a fixed internal ellipse exponent; no single-axis
+        // clip and no user-visible combined-slip exponent. Rolling resistance is applied
+        // AFTER the budget so it cannot inflate demand beyond traction capacity.
+        let nx = (fx_candidate.abs() / fx_max).clamp(0.0, 1.0);
+        let ny = (fy_candidate.abs() / fy_max).clamp(0.0, 1.0);
+        let utilization = (nx * nx + ny * ny).sqrt();
+        let (mut fx, fy) = if utilization > 1.0 {
+            let budget_scale = 1.0 / utilization;
+            (fx_candidate * budget_scale, fy_candidate * budget_scale)
+        } else {
+            (fx_candidate, fy_candidate)
+        };
+        state.combined_utilization = utilization.min(1.0);
+
+        // TIRE-103: saturation state derives from utilization and post-peak regime
+        // instead of fixed slip-threshold decisions.
+        let post_peak = lat_response.regime == TireSlipRegime::PostPeak
+            || lon_response.regime == TireSlipRegime::PostPeak;
+        state.limit_spin = state.combined_utilization >= 0.995 || post_peak;
+        state.tire_regime = match (lat_response.regime, lon_response.regime) {
+            (TireSlipRegime::PrePeak, TireSlipRegime::PrePeak) => 0,
+            (TireSlipRegime::PostPeak, TireSlipRegime::PrePeak) => 1,
+            (TireSlipRegime::PrePeak, TireSlipRegime::PostPeak) => 2,
+            (TireSlipRegime::PostPeak, TireSlipRegime::PostPeak) => 3,
+        };
 
         state.rolling_resistance = rolling_resistance_force(v_forward, fz)
             * effective_rolling_resistance.max(0.0)
@@ -355,12 +401,12 @@ impl TireSystem {
         state.lateral_force = finite_or_zero(fy);
         state.longitudinal_force = finite_or_zero(fx);
 
-        // Pneumatic trail collapses past the force peak and under heavy longitudinal slip,
-        // giving the steering a natural load-up then release at front-tire saturation.
-        let alpha_decay =
-            (1.0 - (state.effective_slip_angle_rad.abs() / 0.35).clamp(0.0, 1.0)).max(0.0);
-        let kappa_decay =
-            (1.0 - 0.65 * state.effective_slip_ratio.abs().clamp(0.0, 1.0)).max(0.0);
+        // TIRE-104: pneumatic-trail collapse depends on lateral saturation/post-peak
+        // state and longitudinal utilization, not a fixed absolute slip-angle decay.
+        let nx_final = (fx.abs() / fx_max).clamp(0.0, 1.0);
+        let ny_final = (fy.abs() / fy_max).clamp(0.0, 1.0);
+        let alpha_decay = (-2.5 * ny_final).exp();
+        let kappa_decay = (1.0 - 0.65 * nx_final * nx_final).max(0.0);
         let trail = tuning.pneumatic_trail_m
             * alpha_decay
             * kappa_decay
@@ -428,6 +474,53 @@ impl TireSystem {
             local_wheel_velocity,
             dt,
         );
+    }
+}
+
+fn tire_force_profile(config: &VehicleConfig, wheel: WheelIndex) -> &TireForceProfile {
+    if wheel.is_front() {
+        &config.front_tire_force
+    } else {
+        &config.rear_tire_force
+    }
+}
+
+/// Relative falloff sharpness of the post-peak decay. Internal constant; the
+/// backlog intentionally keeps curve shape/falloff sharpness internal initially.
+const POST_PEAK_FALLOFF_SHARPNESS: f64 = 2.0;
+
+/// Compact C1 pure-slip envelope shared by both axes (TIRE-200).
+///
+/// Pre-peak: `c = 1 - (1 - u)^gamma` with `u = slip_abs / peak_slip`, rising
+/// monotonically to `1.0` at `u = 1`. For `gamma > 1` the derivative approaches
+/// zero at the peak, matching the post-peak derivative of zero (C1).
+///
+/// Post-peak: `c = slide + (1 - slide) / (1 + (s * (u - 1))^2)`, decaying
+/// monotonically toward the configured sliding plateau `slide` and holding a
+/// zero derivative at the peak.
+pub fn pure_curve_coefficient(
+    slip_abs: f64,
+    peak_slip: f64,
+    slide_mu_ratio: f64,
+    rise_gamma: f64,
+) -> PureSlipResponse {
+    let peak = peak_slip.max(1e-6);
+    let slide = slide_mu_ratio.clamp(0.0, 1.0);
+    let gamma = rise_gamma.max(1.2);
+    let u = slip_abs.max(0.0) / peak;
+    if u <= 1.0 {
+        let coefficient = (1.0 - (1.0 - u).powf(gamma)).clamp(0.0, 1.0);
+        PureSlipResponse {
+            force_coefficient: coefficient,
+            regime: TireSlipRegime::PrePeak,
+        }
+    } else {
+        let d = POST_PEAK_FALLOFF_SHARPNESS * (u - 1.0);
+        let coefficient = (slide + (1.0 - slide) / (1.0 + d * d)).clamp(0.0, 1.0);
+        PureSlipResponse {
+            force_coefficient: coefficient,
+            regime: TireSlipRegime::PostPeak,
+        }
     }
 }
 
@@ -640,4 +733,289 @@ mod tests {
             "left/right camber thrust must cancel on a straight: fl={fl} fr={fr}"
         );
     }
+
+    // ── TIRE-100/TIRE-200 acceptance tests ──────────────────────────────────────
+
+    fn curve_profile() -> TireForceProfile {
+        TireForceProfile {
+            lateral_peak_slip_angle_rad: 0.10,
+            longitudinal_peak_slip_ratio: 0.12,
+            lateral_slide_mu_ratio: 0.82,
+            longitudinal_slide_mu_ratio: 0.78,
+        }
+    }
+
+    #[test]
+    fn pure_curve_reaches_peak_then_decays_to_plateau() {
+        let p = curve_profile();
+        let gamma = 2.0;
+        let mut prev = -1.0;
+        for i in 0..=100 {
+            let x = p.lateral_peak_slip_angle_rad * (i as f64 / 100.0);
+            let r = pure_curve_coefficient(
+                x,
+                p.lateral_peak_slip_angle_rad,
+                p.lateral_slide_mu_ratio,
+                gamma,
+            );
+            assert_eq!(r.regime, TireSlipRegime::PrePeak);
+            assert!(r.force_coefficient + 1e-9 >= prev, "pre-peak must rise monotonically");
+            prev = r.force_coefficient;
+        }
+        let at_peak = pure_curve_coefficient(
+            p.lateral_peak_slip_angle_rad,
+            p.lateral_peak_slip_angle_rad,
+            p.lateral_slide_mu_ratio,
+            gamma,
+        );
+        assert!(
+            (at_peak.force_coefficient - 1.0).abs() < 1e-9,
+            "force coefficient must peak at the configured slip"
+        );
+
+        let mut prev = 2.0;
+        for i in 1..=100 {
+            let x = p.lateral_peak_slip_angle_rad * (1.0 + i as f64 * 0.05);
+            let r = pure_curve_coefficient(
+                x,
+                p.lateral_peak_slip_angle_rad,
+                p.lateral_slide_mu_ratio,
+                gamma,
+            );
+            assert_eq!(r.regime, TireSlipRegime::PostPeak);
+            assert!(r.force_coefficient + 1e-9 <= prev, "post-peak must decay monotonically");
+            prev = r.force_coefficient;
+        }
+        let deep = pure_curve_coefficient(
+            p.lateral_peak_slip_angle_rad * 12.0,
+            p.lateral_peak_slip_angle_rad,
+            p.lateral_slide_mu_ratio,
+            gamma,
+        );
+        assert!(
+            (deep.force_coefficient - p.lateral_slide_mu_ratio).abs() < 0.01,
+            "deep slide must converge to the configured plateau: {}",
+            deep.force_coefficient
+        );
+    }
+
+    #[test]
+    fn pure_curve_is_smooth_at_peak_boundary() {
+        let p = curve_profile();
+        let gamma = 2.0;
+        let epsilon = 1e-6;
+        let below = pure_curve_coefficient(
+            p.lateral_peak_slip_angle_rad - epsilon,
+            p.lateral_peak_slip_angle_rad,
+            p.lateral_slide_mu_ratio,
+            gamma,
+        );
+        let above = pure_curve_coefficient(
+            p.lateral_peak_slip_angle_rad + epsilon,
+            p.lateral_peak_slip_angle_rad,
+            p.lateral_slide_mu_ratio,
+            gamma,
+        );
+        assert!(
+            (below.force_coefficient - above.force_coefficient).abs() < 1e-6,
+            "curve must be continuous across the peak boundary"
+        );
+    }
+
+    #[test]
+    fn combined_utilization_never_exceeds_one_over_slip_grid() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        let profile = curve_profile();
+        cfg.front_tire_force = profile;
+        cfg.rear_tire_force = profile;
+
+        let wheel = WheelIndex::FrontLeft;
+        let reference = static_wheel_load(&cfg, wheel);
+        let alpha_max = profile.lateral_peak_slip_angle_rad * 2.5;
+        let kappa_max = profile.longitudinal_peak_slip_ratio * 2.5;
+        let dt = 1.0 / 120.0;
+
+        for fz_scale in [0.5, 1.0, 1.5] {
+            let fz = reference * fz_scale;
+            for alpha_steps in 0..=10 {
+                let alpha = alpha_max * (alpha_steps as f64 / 10.0);
+                for kappa_steps in 0..=10 {
+                    let kappa = kappa_max * (kappa_steps as f64 / 10.0);
+                    let mut tires = TireSystem::new(&cfg);
+                    tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+                    let radius = tires.wheels[wheel as usize].effective_rolling_radius.max(0.05);
+                    tires.wheels[wheel as usize].spin = (20.0 * (1.0 + kappa)) / radius;
+                    let vel = Vec3::new(-(alpha.tan()) * 20.0, 0.0, -20.0);
+                    for _ in 0..60 {
+                        tires.process_wheel_forces(
+                            &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+                        );
+                    }
+                    let s = &tires.wheels[wheel as usize];
+                    assert!(
+                        s.combined_utilization <= 1.0 + 1e-9,
+                        "utilization must stay within the budget (fz={fz_scale} alpha={alpha} kappa={kappa}: {})",
+                        s.combined_utilization
+                    );
+                    assert!(s.longitudinal_force.is_finite() && s.lateral_force.is_finite());
+                    assert!(s.lateral_force.is_finite() && s.aligning_torque.is_finite());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn combined_slip_forces_are_odd_symmetric() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let dt = 1.0 / 120.0;
+        let radius = cfg.front_tire_radius.max(0.05);
+
+        let run_ws = |lat_speed: f64, wheel_speed: f64| -> (f64, f64, f64) {
+            let mut tires = TireSystem::new(&cfg);
+            tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+            tires.wheels[wheel as usize].spin = wheel_speed / radius;
+            let vel = Vec3::new(lat_speed, 0.0, -20.0);
+            for _ in 0..60 {
+                tires.process_wheel_forces(
+                    &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+                );
+            }
+            let s = &tires.wheels[wheel as usize];
+            (s.longitudinal_force, s.lateral_force, s.rolling_resistance)
+        };
+
+        let (fx_neg_lat, fy_neg_lat, _) = run_ws(-3.0, 22.0);
+        let (fx_pos_lat, fy_pos_lat, _) = run_ws(3.0, 22.0);
+        assert!((fx_neg_lat - fx_pos_lat).abs() < 1e-6, "Fx must be left/right invariant");
+        assert!((fy_neg_lat + fy_pos_lat).abs() < 1e-6, "Fy must flip sign with lateral slip");
+
+        // Symmetric kappa ±0.3 relative to v_forward=20 under the solver's
+        // denominator rule: kappa+ = w/(w-v) with w = v/(1-k), kappa- = (w-v)/v with w = v(1-k).
+        // Tire force is odd in kappa, but rolling resistance always opposes forward
+        // motion, so the odd-symmetry check accounts for exactly 2 * rolling resistance.
+        let (fx_neg_k, _, rr_neg) = run_ws(0.0, 20.0 * 0.7);
+        let (fx_pos_k, _, _) = run_ws(0.0, 20.0 / 0.7);
+        assert!(
+            ((fx_neg_k.abs() - fx_pos_k.abs()) - 2.0 * rr_neg).abs() < 1e-6,
+            "Fx must flip sign with longitudinal slip modulo rolling resistance: neg={} pos={} rr={rr_neg}",
+            fx_neg_k,
+            fx_pos_k
+        );
+    }
+
+    #[test]
+    fn trail_braking_consumes_lateral_capacity() {
+        // Same Fz and slip angle: adding brake slip must reduce |Fy|.
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        let profile = curve_profile();
+        cfg.front_tire_force = profile;
+        cfg.rear_tire_force = profile;
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let dt = 1.0 / 120.0;
+        let radius = cfg.front_tire_radius.max(0.05);
+        let alpha_peak = profile.lateral_peak_slip_angle_rad;
+
+        let fy_at_alpha = move |kappa: f64| -> f64 {
+            let mut tires = TireSystem::new(&cfg);
+            tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+            tires.wheels[wheel as usize].spin = 20.0 * (1.0 + kappa) / radius;
+            let vel = Vec3::new(-(alpha_peak.tan()) * 20.0, 0.0, -20.0);
+            for _ in 0..60 {
+                tires.process_wheel_forces(
+                    &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+                );
+            }
+            tires.wheels[wheel as usize].lateral_force.abs()
+        };
+
+        let pure = fy_at_alpha(0.0);
+        let braking = fy_at_alpha(0.30);
+        assert!(
+            braking < pure * 0.95,
+            "braking slip must reduce lateral force (pure={pure}, braking={braking})"
+        );
+    }
+
+    #[test]
+    fn power_exit_consumes_longitudinal_capacity() {
+        // Same Fz and slip ratio: adding lateral slip must reduce |Fx|.
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        let profile = curve_profile();
+        cfg.front_tire_force = profile;
+        cfg.rear_tire_force = profile;
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let dt = 1.0 / 120.0;
+        let radius = cfg.front_tire_radius.max(0.05);
+        let kappa = 0.30;
+
+        let fx_at_kappa = move |alpha: f64| -> f64 {
+            let mut tires = TireSystem::new(&cfg);
+            tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+            tires.wheels[wheel as usize].spin = 20.0 * (1.0 + kappa) / radius;
+            let vel = Vec3::new(-(alpha.tan()) * 20.0, 0.0, -20.0);
+            for _ in 0..60 {
+                tires.process_wheel_forces(
+                    &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+                );
+            }
+            tires.wheels[wheel as usize].longitudinal_force.abs()
+        };
+
+        let pure = fx_at_kappa(0.0);
+        let cornering = fx_at_kappa(0.30);
+        assert!(
+            cornering < pure * 0.95,
+            "lateral slip must reduce drive force (pure={pure}, cornering={cornering})"
+        );
+    }
+
+    #[test]
+    fn near_zero_speed_produces_no_nan_and_keeps_finite_forces() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let dt = 1.0 / 120.0;
+        let mut tires = TireSystem::new(&cfg);
+        tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+        tires.wheels[wheel as usize].spin = 1.0;
+        let vel = Vec3::new(0.0, 0.0, -0.05);
+        for _ in 0..10 {
+            tires.process_wheel_forces(
+                &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+            );
+        }
+        let s = &tires.wheels[wheel as usize];
+        assert!(s.longitudinal_force.is_finite(), "Fx must be finite near zero speed");
+        assert!(s.lateral_force.is_finite(), "Fy must be finite near zero speed");
+        assert!(s.aligning_torque.is_finite(), "aligning torque must be finite");
+        assert!(s.combined_utilization.is_finite());
+        assert!(s.combined_utilization >= 0.0);
+    }
+
+    #[test]
+    fn limit_spin_and_regime_reflect_post_peak_state() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let dt = 1.0 / 120.0;
+        let radius = cfg.front_tire_radius.max(0.05);
+        let mut tires = TireSystem::new(&cfg);
+        tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+        tires.wheels[wheel as usize].spin = 20.0 * 1.5 / radius;
+        for _ in 0..60 {
+            tires.process_wheel_forces(
+                &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false,
+                Vec3::new(0.0, 0.0, -20.0), dt,
+            );
+        }
+        let s = &tires.wheels[wheel as usize];
+        assert!(s.limit_spin, "deep longitudinal slip must flag limit_spin");
+        assert_eq!(s.tire_regime, 2, "wheel must report longitudinal post-peak regime");
+        assert!(s.combined_utilization <= 1.0 + 1e-9);
+    }
 }
+

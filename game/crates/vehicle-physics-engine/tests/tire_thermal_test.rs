@@ -49,13 +49,14 @@ fn braking_thermal_input() -> TireThermalInput {
 fn pressure_sweep_mechanical_modifiers_are_monotonic() {
     let p = TirePressureConfig::default();
     let t = TireThermalConfig::default();
+    let m = PressureMechanicsSensitivity::default();
     let mut sys = TireThermalSystem::new(&p, &t);
     let pressures = [90.0, 110.0, 145.0, 170.0];
     for (i, &pr) in pressures.iter().enumerate() {
         sys.wheels[i].pressure_kpa_gauge = pr;
     }
     let mods: Vec<TireMechanicalModifiers> = (0..4)
-        .map(|i| sys.mechanical_modifiers(WheelIndex::ALL[i], &p, &t))
+        .map(|i| sys.mechanical_modifiers(WheelIndex::ALL[i], &p, &t, m))
         .collect();
     for w in 0..3 {
         assert!(
@@ -66,10 +67,11 @@ fn pressure_sweep_mechanical_modifiers_are_monotonic() {
             mods[w].max_deflection_scale > mods[w + 1].max_deflection_scale,
             "max deflection must decrease with pressure"
         );
-        assert!(
-            mods[w].contact_patch_scale > mods[w + 1].contact_patch_scale,
-            "contact patch must decrease with pressure"
-        );
+        // THERM-700: contact patch, force stiffness, trail and grip carry no
+        // pressure term while temperatures are identical across wheels.
+        assert_eq!(mods[w].contact_patch_scale, mods[w + 1].contact_patch_scale);
+        assert!((mods[w].force_stiffness_scale - mods[w + 1].force_stiffness_scale).abs() < 1e-9);
+        assert!(mods[w].grip_scale == mods[w + 1].grip_scale);
         assert!(
             mods[w].relaxation_length_scale > mods[w + 1].relaxation_length_scale,
             "relaxation length must decrease with pressure"
@@ -112,7 +114,12 @@ fn pressure_sweep_vertical_deflection_decreases() {
         pcfg.cold_kpa_gauge = [pr; 4];
         let sys = TireThermalSystem::new(&pcfg, &cfg.tire_thermal.front);
         let mods: [TireMechanicalModifiers; 4] = [0, 1, 2, 3]
-            .map(|i| sys.mechanical_modifiers(WheelIndex::ALL[i], &pcfg, &cfg.tire_thermal.front));
+            .map(|i| sys.mechanical_modifiers(
+                WheelIndex::ALL[i],
+                &pcfg,
+                &cfg.tire_thermal.front,
+                cfg.pressure_mechanics,
+            ));
         let mut suspension = SuspensionSystem::new(&cfg);
         for _ in 0..240 {
             suspension.step_with_modifiers(&cfg, &mods, &samples, dt);
@@ -379,19 +386,20 @@ fn thermal_grip_cold_below_window_overheated_below_window() {
         sys.wheels[i].tread_center_c = 20.0;
         sys.wheels[i].tread_outer_c = 20.0;
     }
-    let cold = sys.mechanical_modifiers(WheelIndex::FrontLeft, p, t).grip_scale;
+    let m = cfg.pressure_mechanics;
+    let cold = sys.mechanical_modifiers(WheelIndex::FrontLeft, p, t, m).grip_scale;
     for i in 0..3 {
         sys.wheels[i].tread_inner_c = 95.0;
         sys.wheels[i].tread_center_c = 95.0;
         sys.wheels[i].tread_outer_c = 95.0;
     }
-    let optimal = sys.mechanical_modifiers(WheelIndex::FrontRight, p, t).grip_scale;
+    let optimal = sys.mechanical_modifiers(WheelIndex::FrontRight, p, t, m).grip_scale;
     for i in 0..3 {
         sys.wheels[i].tread_inner_c = 145.0;
         sys.wheels[i].tread_center_c = 145.0;
         sys.wheels[i].tread_outer_c = 145.0;
     }
-    let overheated = sys.mechanical_modifiers(WheelIndex::RearLeft, p, t).grip_scale;
+    let overheated = sys.mechanical_modifiers(WheelIndex::RearLeft, p, t, m).grip_scale;
     assert!(cold < optimal, "cold grip must be below operating window");
     assert!(overheated < optimal, "overheated grip must fall below operating window");
     assert!(cold < overheated, "cold must be the weakest of the three");

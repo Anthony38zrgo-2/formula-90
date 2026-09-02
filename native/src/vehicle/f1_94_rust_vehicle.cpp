@@ -762,14 +762,6 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	brake_disc_c_[1] = telem.fr_brake_disc_c;
 	brake_disc_c_[2] = telem.rl_brake_disc_c;
 	brake_disc_c_[3] = telem.rr_brake_disc_c;
-	brake_caliper_c_[0] = telem.fl_brake_caliper_c;
-	brake_caliper_c_[1] = telem.fr_brake_caliper_c;
-	brake_caliper_c_[2] = telem.rl_brake_caliper_c;
-	brake_caliper_c_[3] = telem.rr_brake_caliper_c;
-	brake_hub_c_[0] = telem.fl_brake_hub_c;
-	brake_hub_c_[1] = telem.fr_brake_hub_c;
-	brake_hub_c_[2] = telem.rl_brake_hub_c;
-	brake_hub_c_[3] = telem.rr_brake_hub_c;
 	brake_rim_c_[0] = telem.fl_brake_rim_c;
 	brake_rim_c_[1] = telem.fr_brake_rim_c;
 	brake_rim_c_[2] = telem.rl_brake_rim_c;
@@ -810,22 +802,6 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	brake_energy_j_[1] = telem.fr_brake_energy_j;
 	brake_energy_j_[2] = telem.rl_brake_energy_j;
 	brake_energy_j_[3] = telem.rr_brake_energy_j;
-	brake_disc_bulk_c_[0] = telem.fl_brake_disc_bulk_c;
-	brake_disc_bulk_c_[1] = telem.fr_brake_disc_bulk_c;
-	brake_disc_bulk_c_[2] = telem.rl_brake_disc_bulk_c;
-	brake_disc_bulk_c_[3] = telem.rr_brake_disc_bulk_c;
-	brake_surface_capacity_j_k_[0] = telem.fl_brake_surface_capacity_j_k;
-	brake_surface_capacity_j_k_[1] = telem.fr_brake_surface_capacity_j_k;
-	brake_surface_capacity_j_k_[2] = telem.rl_brake_surface_capacity_j_k;
-	brake_surface_capacity_j_k_[3] = telem.rr_brake_surface_capacity_j_k;
-	brake_bulk_capacity_j_k_[0] = telem.fl_brake_bulk_capacity_j_k;
-	brake_bulk_capacity_j_k_[1] = telem.fr_brake_bulk_capacity_j_k;
-	brake_bulk_capacity_j_k_[2] = telem.rl_brake_bulk_capacity_j_k;
-	brake_bulk_capacity_j_k_[3] = telem.rr_brake_bulk_capacity_j_k;
-	brake_surface_bulk_w_k_[0] = telem.fl_brake_surface_bulk_w_k;
-	brake_surface_bulk_w_k_[1] = telem.fr_brake_surface_bulk_w_k;
-	brake_surface_bulk_w_k_[2] = telem.rl_brake_surface_bulk_w_k;
-	brake_surface_bulk_w_k_[3] = telem.rr_brake_surface_bulk_w_k;
 	brake_natural_cooling_w_k_[0] = telem.fl_brake_natural_cooling_w_k;
 	brake_natural_cooling_w_k_[1] = telem.fr_brake_natural_cooling_w_k;
 	brake_natural_cooling_w_k_[2] = telem.rl_brake_natural_cooling_w_k;
@@ -834,10 +810,6 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	brake_speed_cooling_w_k_[1] = telem.fr_brake_speed_cooling_w_k;
 	brake_speed_cooling_w_k_[2] = telem.rl_brake_speed_cooling_w_k;
 	brake_speed_cooling_w_k_[3] = telem.rr_brake_speed_cooling_w_k;
-	brake_surface_to_bulk_heat_w_[0] = telem.fl_brake_surface_to_bulk_heat_w;
-	brake_surface_to_bulk_heat_w_[1] = telem.fr_brake_surface_to_bulk_heat_w;
-	brake_surface_to_bulk_heat_w_[2] = telem.rl_brake_surface_to_bulk_heat_w;
-	brake_surface_to_bulk_heat_w_[3] = telem.rr_brake_surface_to_bulk_heat_w;
 
 	// 7. Visual Animation of Wheel Meshes
 	update_wheel_visuals(dt);
@@ -1507,8 +1479,6 @@ void F194RustVehicle::set_core_tire_telemetry(
 
 void F194RustVehicle::set_core_brake_telemetry(
 	const double disc_c[4],
-	const double caliper_c[4],
-	const double hub_c[4],
 	const double rim_c[4],
 	const double efficiency[4],
 	const double duct_mass_flow_kg_s[4],
@@ -1523,8 +1493,6 @@ void F194RustVehicle::set_core_brake_telemetry(
 	brake_critical_c_ = critical_c;
 	for (int i = 0; i < 4; ++i) {
 		brake_disc_c_[i] = disc_c[i];
-		brake_caliper_c_[i] = caliper_c[i];
-		brake_hub_c_[i] = hub_c[i];
 		brake_rim_c_[i] = rim_c[i];
 		brake_efficiency_[i] = efficiency[i];
 		duct_mass_flow_kg_s_[i] = duct_mass_flow_kg_s[i];
@@ -1554,15 +1522,8 @@ Dictionary F194RustVehicle::get_brake_state_snapshot() const {
 	for (int i = 0; i < 4; ++i) {
 		Dictionary wheel;
 		wheel["disc_c"] = brake_disc_c_[i];
-		wheel["disc_bulk_c"] = brake_disc_bulk_c_[i];
-		wheel["resolved_surface_capacity_j_k"] = brake_surface_capacity_j_k_[i];
-		wheel["resolved_bulk_capacity_j_k"] = brake_bulk_capacity_j_k_[i];
-		wheel["resolved_surface_bulk_w_k"] = brake_surface_bulk_w_k_[i];
 		wheel["natural_cooling_w_k"] = brake_natural_cooling_w_k_[i];
 		wheel["speed_cooling_w_k"] = brake_speed_cooling_w_k_[i];
-		wheel["surface_to_bulk_heat_w"] = brake_surface_to_bulk_heat_w_[i];
-		wheel["caliper_c"] = brake_caliper_c_[i];
-		wheel["hub_c"] = brake_hub_c_[i];
 		wheel["rim_c"] = brake_rim_c_[i];
 		wheel["efficiency"] = brake_efficiency_[i];
 		wheel["duct_mass_flow_kg_s"] = duct_mass_flow_kg_s_[i];
@@ -1617,14 +1578,14 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	out["dissipated_energy_j"] = underfloor_dissipated_energy_j_;
 	out["rigid_contact_blend"] = underfloor_rigid_contact_blend_;
 	Dictionary aero;
-	static const char *AERO_NAMES[18] = {
+	static const char *AERO_NAMES[17] = {
 		"total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n",
 		"rear_downforce_n", "drag_n", "front_wing_angle_deg", "rear_wing_angle_deg",
 		"front_wing_cl", "rear_wing_cl", "floor_height_factor", "floor_rake_factor",
-		"floor_seal_factor", "diffuser_expansion_deg", "diffuser_stall_factor",
+		"floor_seal_factor", "diffuser_stall_factor",
 		"global_limit_factor", "load_ratio", "balance_front"
 	};
-	for (int i = 0; i < 18; ++i) aero[String(AERO_NAMES[i])] = aero_telemetry_[i];
+	for (int i = 0; i < 17; ++i) aero[String(AERO_NAMES[i])] = aero_telemetry_[i];
 	out["aero"] = aero;
 	return out;
 }
@@ -1656,18 +1617,18 @@ void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_fra
 	}
 	underfloor_dissipated_energy_j_ = p_frame.underfloor_dissipated_energy_j;
 	underfloor_rigid_contact_blend_ = p_frame.underfloor_rigid_contact_blend;
-	const double aero_values[18] = {
+	const double aero_values[17] = {
 		p_frame.aero_total_downforce_n, p_frame.aero_raw_downforce_n,
 		p_frame.aero_front_downforce_n, p_frame.aero_floor_downforce_n,
 		p_frame.aero_rear_downforce_n, p_frame.aero_drag_n,
 		p_frame.aero_front_wing_angle_deg, p_frame.aero_rear_wing_angle_deg,
 		p_frame.aero_front_wing_cl, p_frame.aero_rear_wing_cl,
 		p_frame.aero_floor_height_factor, p_frame.aero_floor_rake_factor,
-		p_frame.aero_floor_seal_factor, p_frame.aero_diffuser_expansion_deg,
-		p_frame.aero_diffuser_stall_factor, p_frame.aero_global_limit_factor,
-		p_frame.aero_load_ratio, p_frame.aero_balance_front
+		p_frame.aero_floor_seal_factor, p_frame.aero_diffuser_stall_factor,
+		p_frame.aero_global_limit_factor, p_frame.aero_load_ratio,
+		p_frame.aero_balance_front
 	};
-	for (int i = 0; i < 18; ++i) aero_telemetry_[i] = aero_values[i];
+	for (int i = 0; i < 17; ++i) aero_telemetry_[i] = aero_values[i];
 }
 
 void F194RustVehicle::set_core_brake_energy_telemetry(
@@ -1685,26 +1646,12 @@ void F194RustVehicle::set_core_brake_energy_telemetry(
 	}
 }
 
-void F194RustVehicle::set_core_brake_disc_bulk_telemetry(const double disc_bulk_c[4]) {
-	for (int i = 0; i < 4; ++i) {
-		brake_disc_bulk_c_[i] = disc_bulk_c[i];
-	}
-}
-
-void F194RustVehicle::set_core_brake_resolved_thermal_telemetry(
-	const double surface_capacity_j_k[4],
-	const double bulk_capacity_j_k[4],
-	const double surface_bulk_w_k[4],
+void F194RustVehicle::set_core_brake_cooling_telemetry(
 	const double natural_cooling_w_k[4],
-	const double speed_cooling_w_k[4],
-	const double surface_to_bulk_heat_w[4]) {
+	const double speed_cooling_w_k[4]) {
 	for (int i = 0; i < 4; ++i) {
-		brake_surface_capacity_j_k_[i] = surface_capacity_j_k[i];
-		brake_bulk_capacity_j_k_[i] = bulk_capacity_j_k[i];
-		brake_surface_bulk_w_k_[i] = surface_bulk_w_k[i];
 		brake_natural_cooling_w_k_[i] = natural_cooling_w_k[i];
 		brake_speed_cooling_w_k_[i] = speed_cooling_w_k[i];
-		brake_surface_to_bulk_heat_w_[i] = surface_to_bulk_heat_w[i];
 	}
 }
 

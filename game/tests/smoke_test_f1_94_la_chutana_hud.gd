@@ -53,10 +53,10 @@ func _run() -> void:
 		var brake_snapshot: Dictionary = vehicle.get_brake_state_snapshot()
 		for wheel_name in ["FL", "FR", "RL", "RR"]:
 			var wheel: Dictionary = brake_snapshot.get(wheel_name, {})
-			if not wheel.has("disc_c") or not wheel.has("disc_bulk_c"):
+			if not wheel.has("disc_c") or not wheel.has("rim_c"):
 				_fail("Two-node brake telemetry missing for %s." % wheel_name, failures)
-			if not wheel.has("resolved_surface_capacity_j_k") or not wheel.has("resolved_surface_bulk_w_k"):
-				_fail("Resolved brake thermal telemetry missing for %s." % wheel_name, failures)
+			if not wheel.has("efficiency"):
+				_fail("Brake efficiency telemetry missing for %s." % wheel_name, failures)
 	if hud == null or minimap == null or (speed_gauge == null and retro_hud == null):
 		_fail("HUD, minimap, or speed gauge/retro HUD was not extracted into HudLayer.", failures)
 	if hud != null and hud.get("_vehicle") != vehicle:

@@ -277,21 +277,25 @@ impl VehicleSimulator {
                 WheelIndex::FrontLeft,
                 &cfg.tire_pressure,
                 &cfg.tire_thermal.front,
+                cfg.pressure_mechanics,
             ),
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::FrontRight,
                 &cfg.tire_pressure,
                 &cfg.tire_thermal.front,
+                cfg.pressure_mechanics,
             ),
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::RearLeft,
                 &cfg.tire_pressure,
                 &cfg.tire_thermal.rear,
+                cfg.pressure_mechanics,
             ),
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::RearRight,
                 &cfg.tire_pressure,
                 &cfg.tire_thermal.rear,
+                cfg.pressure_mechanics,
             ),
         ];
         st.suspension
@@ -817,6 +821,10 @@ impl VehicleSimulator {
             aero_floor_downforce_n: st.aero.diffuser_downforce,
             aero_rear_downforce_n: st.aero.rear_downforce,
             aero_drag_n: st.aero.drag_force,
+            wheel_combined_utilization: std::array::from_fn(|i| {
+                st.tires.wheels[i].combined_utilization
+            }),
+            wheel_tire_regime: std::array::from_fn(|i| st.tires.wheels[i].tire_regime),
         }
     }
 }

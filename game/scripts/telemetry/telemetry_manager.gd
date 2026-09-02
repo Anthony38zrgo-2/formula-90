@@ -36,17 +36,12 @@ const CSV_COLUMNS := [
     "FR_BrakeTorque_Nm", "FR_SpinPre_RadS", "FR_SpinPost_RadS", "FR_BrakePower_W", "FR_BrakeEnergy_J",
     "RL_BrakeTorque_Nm", "RL_SpinPre_RadS", "RL_SpinPost_RadS", "RL_BrakePower_W", "RL_BrakeEnergy_J",
     "RR_BrakeTorque_Nm", "RR_SpinPre_RadS", "RR_SpinPost_RadS", "RR_BrakePower_W", "RR_BrakeEnergy_J",
-    "FL_TreadInner_C", "FL_TreadCenter_C", "FL_TreadOuter_C", "FL_Carcass_C", "FL_Gas_C", "FL_Disc_C", "FL_Caliper_C", "FL_Hub_C", "FL_Rim_C", "FL_BrakeEfficiency", "FL_DuctMassFlow_kg_s", "FL_DuctDrag_N",
-    "FR_TreadInner_C", "FR_TreadCenter_C", "FR_TreadOuter_C", "FR_Carcass_C", "FR_Gas_C", "FR_Disc_C", "FR_Caliper_C", "FR_Hub_C", "FR_Rim_C", "FR_BrakeEfficiency", "FR_DuctMassFlow_kg_s", "FR_DuctDrag_N",
-    "RL_TreadInner_C", "RL_TreadCenter_C", "RL_TreadOuter_C", "RL_Carcass_C", "RL_Gas_C", "RL_Disc_C", "RL_Caliper_C", "RL_Hub_C", "RL_Rim_C", "RL_BrakeEfficiency", "RL_DuctMassFlow_kg_s", "RL_DuctDrag_N",
-    "RR_TreadInner_C", "RR_TreadCenter_C", "RR_TreadOuter_C", "RR_Carcass_C", "RR_Gas_C", "RR_Disc_C", "RR_Caliper_C", "RR_Hub_C", "RR_Rim_C", "RR_BrakeEfficiency", "RR_DuctMassFlow_kg_s", "RR_DuctDrag_N",
-    "FL_DiscBulk_C", "FR_DiscBulk_C", "RL_DiscBulk_C", "RR_DiscBulk_C",
-    "FL_ResolvedSurfaceCapacity_JK", "FR_ResolvedSurfaceCapacity_JK", "RL_ResolvedSurfaceCapacity_JK", "RR_ResolvedSurfaceCapacity_JK",
-    "FL_ResolvedBulkCapacity_JK", "FR_ResolvedBulkCapacity_JK", "RL_ResolvedBulkCapacity_JK", "RR_ResolvedBulkCapacity_JK",
-    "FL_ResolvedSurfaceBulk_WK", "FR_ResolvedSurfaceBulk_WK", "RL_ResolvedSurfaceBulk_WK", "RR_ResolvedSurfaceBulk_WK",
+    "FL_TreadInner_C", "FL_TreadCenter_C", "FL_TreadOuter_C", "FL_Carcass_C", "FL_Gas_C", "FL_Disc_C", "FL_Rim_C", "FL_BrakeEfficiency", "FL_DuctMassFlow_kg_s", "FL_DuctDrag_N",
+    "FR_TreadInner_C", "FR_TreadCenter_C", "FR_TreadOuter_C", "FR_Carcass_C", "FR_Gas_C", "FR_Disc_C", "FR_Rim_C", "FR_BrakeEfficiency", "FR_DuctMassFlow_kg_s", "FR_DuctDrag_N",
+    "RL_TreadInner_C", "RL_TreadCenter_C", "RL_TreadOuter_C", "RL_Carcass_C", "RL_Gas_C", "RL_Disc_C", "RL_Rim_C", "RL_BrakeEfficiency", "RL_DuctMassFlow_kg_s", "RL_DuctDrag_N",
+    "RR_TreadInner_C", "RR_TreadCenter_C", "RR_TreadOuter_C", "RR_Carcass_C", "RR_Gas_C", "RR_Disc_C", "RR_Rim_C", "RR_BrakeEfficiency", "RR_DuctMassFlow_kg_s", "RR_DuctDrag_N",
     "FL_NaturalCooling_WK", "FR_NaturalCooling_WK", "RL_NaturalCooling_WK", "RR_NaturalCooling_WK",
     "FL_SpeedCooling_WK", "FR_SpeedCooling_WK", "RL_SpeedCooling_WK", "RR_SpeedCooling_WK",
-    "FL_SurfaceToBulkHeat_W", "FR_SurfaceToBulkHeat_W", "RL_SurfaceToBulkHeat_W", "RR_SurfaceToBulkHeat_W",
     "UF_FL_Clearance_m", "UF_FR_Clearance_m", "UF_Center_Clearance_m", "UF_DiffuserThroat_Clearance_m", "UF_DiffuserExit_Clearance_m",
     "UF_ValidMask", "UF_ScrapePhase", "UF_MinClearance_m", "UF_Rake_rad", "UF_Roll_rad",
     "UF_ContactConfidence", "UF_ScrapeIntensity", "UF_AudioGain", "UF_AudioPitch", "UF_AudioCursor",
@@ -221,18 +216,17 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var spin_post: Array = [0.0, 0.0, 0.0, 0.0]
     var brake_power: Array = [0.0, 0.0, 0.0, 0.0]
     var brake_energy: Array = [0.0, 0.0, 0.0, 0.0]
-    var disc_bulk: Array = [0.0, 0.0, 0.0, 0.0]
     var resolved: Array = []
-    for _field in range(24):
+    for _field in range(8):
         resolved.append(0.0)
-    # Per wheel: tread I/C/O, carcass, gas, disc, caliper, hub, rim,
+    # Per wheel: tread I/C/O, carcass, gas, disc, rim,
     # brake efficiency, duct mass flow, duct drag.
     var thermal: Array = []
-    for _field in range(48):
+    for _field in range(40):
         thermal.append(0.0)
     var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0]
     var aero_fields: Array = []
-    aero_fields.resize(18)
+    aero_fields.resize(17)
     aero_fields.fill(0.0)
     if _is_rust:
         var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
@@ -241,7 +235,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
             var brakes_value: Variant = snapshot_value.get("brakes", {})
             for i in range(4):
                 var wheel_name: String = ["FL", "FR", "RL", "RR"][i]
-                var offset := i * 12
+                var offset := i * 10
                 if tire_state.has(wheel_name):
                     var tire_value: Variant = tire_state.get(wheel_name, {})
                     if tire_value is Dictionary:
@@ -261,20 +255,13 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                         spin_post[i] = float(wheel_state.get("spin_post_rad_s", 0.0))
                         brake_power[i] = float(wheel_state.get("brake_power_w", 0.0))
                         brake_energy[i] = float(wheel_state.get("brake_energy_j", 0.0))
-                        disc_bulk[i] = float(wheel_state.get("disc_bulk_c", wheel_state.get("disc_c", 0.0)))
-                        resolved[i] = float(wheel_state.get("resolved_surface_capacity_j_k", 0.0))
-                        resolved[4 + i] = float(wheel_state.get("resolved_bulk_capacity_j_k", 0.0))
-                        resolved[8 + i] = float(wheel_state.get("resolved_surface_bulk_w_k", 0.0))
-                        resolved[12 + i] = float(wheel_state.get("natural_cooling_w_k", 0.0))
-                        resolved[16 + i] = float(wheel_state.get("speed_cooling_w_k", 0.0))
-                        resolved[20 + i] = float(wheel_state.get("surface_to_bulk_heat_w", 0.0))
+                        resolved[i] = float(wheel_state.get("natural_cooling_w_k", 0.0))
+                        resolved[4 + i] = float(wheel_state.get("speed_cooling_w_k", 0.0))
                         thermal[offset + 5] = float(wheel_state.get("disc_c", 0.0))
-                        thermal[offset + 6] = float(wheel_state.get("caliper_c", 0.0))
-                        thermal[offset + 7] = float(wheel_state.get("hub_c", 0.0))
-                        thermal[offset + 8] = float(wheel_state.get("rim_c", 0.0))
-                        thermal[offset + 9] = float(wheel_state.get("efficiency", 0.0))
-                        thermal[offset + 10] = float(wheel_state.get("duct_mass_flow_kg_s", 0.0))
-                        thermal[offset + 11] = float(wheel_state.get("duct_drag_n", 0.0))
+                        thermal[offset + 6] = float(wheel_state.get("rim_c", 0.0))
+                        thermal[offset + 7] = float(wheel_state.get("efficiency", 0.0))
+                        thermal[offset + 8] = float(wheel_state.get("duct_mass_flow_kg_s", 0.0))
+                        thermal[offset + 9] = float(wheel_state.get("duct_drag_n", 0.0))
         if vehicle.has_method(&"get_underfloor_state_snapshot"):
             var underfloor_value: Variant = vehicle.call(&"get_underfloor_state_snapshot")
             if underfloor_value is Dictionary:
@@ -315,7 +302,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                 var aero_value: Variant = underfloor.get("aero", {})
                 if aero_value is Dictionary:
                     var aero: Dictionary = aero_value
-                    var aero_names := ["total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n", "rear_downforce_n", "drag_n", "front_wing_angle_deg", "rear_wing_angle_deg", "front_wing_cl", "rear_wing_cl", "floor_height_factor", "floor_rake_factor", "floor_seal_factor", "diffuser_expansion_deg", "diffuser_stall_factor", "global_limit_factor", "load_ratio", "balance_front"]
+                    var aero_names := ["total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n", "rear_downforce_n", "drag_n", "front_wing_angle_deg", "rear_wing_angle_deg", "front_wing_cl", "rear_wing_cl", "floor_height_factor", "floor_rake_factor", "floor_seal_factor", "diffuser_stall_factor", "global_limit_factor", "load_ratio", "balance_front"]
                     for i in range(aero_names.size()):
                         aero_fields[i] = float(aero.get(aero_names[i], 0.0))
 
@@ -345,7 +332,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         base_fields.append("%.3f" % float(spin_post[i]))
         base_fields.append("%.3f" % float(brake_power[i]))
         base_fields.append("%.3f" % float(brake_energy[i]))
-    return ",".join(base_fields) + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(disc_bulk)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
+    return ",".join(base_fields) + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
 
 func _thermal_csv_fields(values: Array) -> PackedStringArray:
     var fields := PackedStringArray()

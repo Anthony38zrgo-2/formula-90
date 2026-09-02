@@ -31,7 +31,6 @@ pub struct WingAeroConfig {
     pub min_angle_deg: f64,
     pub max_angle_deg: f64,
     pub yaw_decay_exponent: f64,
-    pub flex_coefficient: f64,
     pub polar: Vec<WingPolarPoint>,
 }
 impl WingAeroConfig {
@@ -42,7 +41,6 @@ impl WingAeroConfig {
             min_angle_deg: 4.0,
             max_angle_deg: 20.0,
             yaw_decay_exponent: 1.15,
-            flex_coefficient: 0.0008,
             polar: vec![
                 WingPolarPoint {
                     angle_deg: 4.0,
@@ -79,7 +77,6 @@ impl WingAeroConfig {
             min_angle_deg: 6.0,
             max_angle_deg: 26.0,
             yaw_decay_exponent: 1.05,
-            flex_coefficient: 0.0010,
             polar: vec![
                 WingPolarPoint {
                     angle_deg: 6.0,
@@ -125,8 +122,6 @@ pub struct UnderfloorAeroConfig {
     pub high_height_m: f64,
     pub optimal_rake_deg: f64,
     pub rake_window_deg: f64,
-    pub optimal_expansion_deg: f64,
-    pub expansion_window_deg: f64,
     pub yaw_decay_exponent: f64,
     pub stall_attack_tau_s: f64,
     pub stall_recovery_tau_s: f64,
@@ -141,8 +136,6 @@ impl Default for UnderfloorAeroConfig {
             high_height_m: 0.160,
             optimal_rake_deg: 0.5,
             rake_window_deg: 2.5,
-            optimal_expansion_deg: 3.0,
-            expansion_window_deg: 5.0,
             yaw_decay_exponent: 1.8,
             stall_attack_tau_s: 0.030,
             stall_recovery_tau_s: 0.160,
@@ -223,8 +216,6 @@ pub struct AeroForces {
     pub yaw_decay_factor: f64,
     #[serde(default)]
     pub blend_factor: f64,
-    #[serde(default = "one")]
-    pub flex_factor: f64,
     #[serde(default)]
     pub front_wing_angle_deg: f64,
     #[serde(default)]
@@ -239,8 +230,6 @@ pub struct AeroForces {
     pub floor_rake_factor: f64,
     #[serde(default)]
     pub floor_seal_factor: f64,
-    #[serde(default)]
-    pub diffuser_expansion_deg: f64,
     #[serde(default)]
     pub diffuser_stall_factor: f64,
     #[serde(default)]
@@ -264,7 +253,6 @@ impl AeroForces {
             effective_cl: 0.0,
             yaw_decay_factor: 1.0,
             blend_factor: 0.0,
-            flex_factor: 1.0,
             front_wing_angle_deg: 0.0,
             rear_wing_angle_deg: 0.0,
             front_wing_cl: 0.0,
@@ -272,48 +260,12 @@ impl AeroForces {
             floor_height_factor: 0.0,
             floor_rake_factor: 0.0,
             floor_seal_factor: 0.0,
-            diffuser_expansion_deg: 0.0,
             diffuser_stall_factor: 1.0,
             raw_downforce: 0.0,
             global_limit_factor: 1.0,
             load_ratio: 0.0,
             balance_front: 0.45,
         }
-    }
-
-    /// Compatibility path for callers without ride-height probes.
-    pub fn step(&mut self, config: &VehicleConfig, local_velocity: Vec3, dt: f64) {
-        let v_fwd = (-local_velocity.z).max(0.0);
-        let v_lat = local_velocity.x.abs();
-        let range = (config.aero_blend_full_speed - config.aero_blend_min_speed).max(1e-6);
-        let x = ((v_fwd - config.aero_blend_min_speed) / range).clamp(0.0, 1.0);
-        let blend = 3.0 * x * x - 2.0 * x * x * x;
-        let yaw = (v_fwd / (v_fwd * v_fwd + v_lat * v_lat + 1e-6).sqrt())
-            .clamp(0.0, 1.0)
-            .powf(config.aero_yaw_decay_exponent);
-        let flex = 1.0 / (1.0 + config.aero_flex_coefficient.max(0.0) * v_fwd);
-        let q = 0.5 * config.air_density.max(0.0) * v_fwd * v_fwd;
-        let target = q
-            * config.frontal_area.max(0.0)
-            * config.coefficient_of_downforce.max(0.0)
-            * blend
-            * yaw
-            * flex;
-        let drag_target = q * config.frontal_area.max(0.0) * config.coefficient_of_drag.max(0.0);
-        let alpha = (dt / config.aero_lag_tau.max(1e-4)).clamp(0.0, 1.0);
-        self.total_downforce += alpha * (target - self.total_downforce);
-        self.drag_force += alpha * (drag_target - self.drag_force);
-        self.front_downforce = self.total_downforce * config.aero_split_front;
-        self.diffuser_downforce = self.total_downforce * config.aero_split_diffuser;
-        self.rear_downforce = self.total_downforce * config.aero_split_rear;
-        self.effective_cl = config.coefficient_of_downforce * blend * yaw * flex;
-        self.yaw_decay_factor = yaw;
-        self.blend_factor = blend;
-        self.flex_factor = flex;
-        self.raw_downforce = target;
-        self.global_limit_factor = 1.0;
-        self.load_ratio = self.total_downforce / (config.vehicle_mass * 9.81).max(1.0);
-        self.balance_front = config.aero_split_front;
     }
 
     pub fn step_with_environment(
@@ -341,12 +293,8 @@ impl AeroForces {
         let (rw_cl, rw_cd) = polar_at(&m.rear_wing.polar, rw_angle);
         let fw_yaw = cos_yaw.powf(m.front_wing.yaw_decay_exponent.max(0.0));
         let rw_yaw = cos_yaw.powf(m.rear_wing.yaw_decay_exponent.max(0.0));
-        let fw_flex = 1.0 / (1.0 + m.front_wing.flex_coefficient.max(0.0) * v_fwd);
-        let rw_flex = 1.0 / (1.0 + m.rear_wing.flex_coefficient.max(0.0) * v_fwd);
-        let fw_target =
-            q * m.front_wing.area_m2.max(0.0) * fw_cl.max(0.0) * fw_yaw * fw_flex * blend;
-        let rw_target =
-            q * m.rear_wing.area_m2.max(0.0) * rw_cl.max(0.0) * rw_yaw * rw_flex * blend;
+        let fw_target = q * m.front_wing.area_m2.max(0.0) * fw_cl.max(0.0) * fw_yaw * blend;
+        let rw_target = q * m.rear_wing.area_m2.max(0.0) * rw_cl.max(0.0) * rw_yaw * blend;
         let f = &m.underfloor;
         let confidence = env.valid_mask.count_ones().min(5) as f64 / 5.0;
         let floor_h = (0.5 * (env.clearance_m[0] + env.clearance_m[1])
@@ -357,18 +305,11 @@ impl AeroForces {
         let rake_factor = (1.0
             - (env.rake_rad.to_degrees() - f.optimal_rake_deg).abs() / f.rake_window_deg.max(0.1))
         .clamp(0.15, 1.0);
-        let expansion_deg = ((env.clearance_m[4] - env.clearance_m[3]) / 0.80)
-            .atan()
-            .to_degrees();
-        let expansion_factor = (1.0
-            - (expansion_deg - f.optimal_expansion_deg).abs() / f.expansion_window_deg.max(0.1))
-        .clamp(0.10, 1.0);
         let asymmetry = (env.clearance_m[0] - env.clearance_m[1]).abs();
         let seal_factor = (1.0 - asymmetry / 0.080 - env.roll_rad.abs() / 0.12).clamp(0.15, 1.0);
         let contact_factor = if env.bottoming_mask != 0 { 0.20 } else { 1.0 };
         let target_flow = height_factor
             * rake_factor
-            * expansion_factor
             * seal_factor
             * confidence
             * cos_yaw.powf(f.yaw_decay_exponent.max(0.0))
@@ -411,7 +352,6 @@ impl AeroForces {
         };
         self.yaw_decay_factor = cos_yaw;
         self.blend_factor = blend;
-        self.flex_factor = 0.5 * (fw_flex + rw_flex);
         self.front_wing_angle_deg = fw_angle;
         self.rear_wing_angle_deg = rw_angle;
         self.front_wing_cl = fw_cl;
@@ -419,7 +359,6 @@ impl AeroForces {
         self.floor_height_factor = height_factor;
         self.floor_rake_factor = rake_factor;
         self.floor_seal_factor = seal_factor;
-        self.diffuser_expansion_deg = expansion_deg;
         self.raw_downforce = raw;
         self.global_limit_factor = limit_factor;
         self.load_ratio = self.total_downforce / weight;
@@ -532,5 +471,36 @@ mod tests {
         assert!(bottoming.diffuser_downforce < clear.diffuser_downforce * 0.45);
         assert!((bottoming.front_wing_cl - clear.front_wing_cl).abs() < 1e-9);
         assert!((bottoming.rear_wing_cl - clear.rear_wing_cl).abs() < 1e-9);
+    }
+
+    #[test]
+    fn floor_ignores_probe_5_and_responds_to_rake() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let velocity = Vec3::new(0.0, 0.0, -55.0);
+        let step_floor = |env: &AeroEnvironment, n: usize| {
+            let mut aero = AeroForces::zero();
+            for _ in 0..n {
+                aero.step_with_environment(&cfg, velocity, env, 0.0, 1.0 / 120.0);
+            }
+            aero
+        };
+        let base = AeroEnvironment {
+            clearance_m: [0.05, 0.05, 0.06, 0.075, 0.075],
+            valid_mask: 0x1f,
+            rake_rad: 0.5f64.to_radians(),
+            roll_rad: 0.0,
+            bottoming_mask: 0,
+            contact_confidence: 1.0,
+        };
+        let mut expanded = base;
+        expanded.clearance_m[4] = 0.30;
+        let a = step_floor(&base, 200);
+        let b = step_floor(&expanded, 200);
+        assert_eq!(a.diffuser_downforce, b.diffuser_downforce);
+        assert_eq!(a.diffuser_stall_factor, b.diffuser_stall_factor);
+        let mut raked = base;
+        raked.rake_rad = 0.35f64.to_radians();
+        let r = step_floor(&raked, 200);
+        assert!((r.diffuser_downforce - a.diffuser_downforce).abs() > 1.0);
     }
 }

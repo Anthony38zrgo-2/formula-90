@@ -68,6 +68,9 @@ pub struct TelemetryFrame {
     pub aero_floor_downforce_n: f64,
     pub aero_rear_downforce_n: f64,
     pub aero_drag_n: f64,
+    // --- TIRE-100/103 combined-slip diagnostics ---
+    pub wheel_combined_utilization: [f64; 4],
+    pub wheel_tire_regime: [i32; 4],
 }
 
 #[cfg(test)]
@@ -211,6 +214,14 @@ impl TelemetryFrame {
         "AeroFloor_N",
         "AeroRear_N",
         "AeroDrag_N",
+        "FL_CombinedUtil",
+        "FR_CombinedUtil",
+        "RL_CombinedUtil",
+        "RR_CombinedUtil",
+        "FL_TireRegime",
+        "FR_TireRegime",
+        "RL_TireRegime",
+        "RR_TireRegime",
     ];
 
     /// Formats the telemetry frame into a single comma-separated CSV line.
@@ -301,6 +312,12 @@ impl TelemetryFrame {
             format!("{:.3}", self.aero_rear_downforce_n),
             format!("{:.3}", self.aero_drag_n),
         ]);
+        fields.extend(
+            self.wheel_combined_utilization
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(self.wheel_tire_regime.iter().map(|v| v.to_string()));
         fields.join(",")
     }
 }

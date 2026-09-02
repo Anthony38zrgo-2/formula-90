@@ -85,8 +85,6 @@ typedef struct F90TelemetryOutput {
 
     // Brake thermal + duct telemetry, ABI 12 append-only block.
     double fl_brake_disc_c, fr_brake_disc_c, rl_brake_disc_c, rr_brake_disc_c;
-    double fl_brake_caliper_c, fr_brake_caliper_c, rl_brake_caliper_c, rr_brake_caliper_c;
-    double fl_brake_hub_c, fr_brake_hub_c, rl_brake_hub_c, rr_brake_hub_c;
     double fl_brake_rim_c, fr_brake_rim_c, rl_brake_rim_c, rr_brake_rim_c;
     double fl_brake_efficiency, fr_brake_efficiency, rl_brake_efficiency, rr_brake_efficiency;
     double fl_duct_mass_flow_kg_s, fr_duct_mass_flow_kg_s, rl_duct_mass_flow_kg_s, rr_duct_mass_flow_kg_s;
@@ -98,13 +96,9 @@ typedef struct F90TelemetryOutput {
     double fl_brake_spin_post_rad_s, fr_brake_spin_post_rad_s, rl_brake_spin_post_rad_s, rr_brake_spin_post_rad_s;
     double fl_brake_power_w, fr_brake_power_w, rl_brake_power_w, rr_brake_power_w;
     double fl_brake_energy_j, fr_brake_energy_j, rl_brake_energy_j, rr_brake_energy_j;
-    double fl_brake_disc_bulk_c, fr_brake_disc_bulk_c, rl_brake_disc_bulk_c, rr_brake_disc_bulk_c;
-    double fl_brake_surface_capacity_j_k, fr_brake_surface_capacity_j_k, rl_brake_surface_capacity_j_k, rr_brake_surface_capacity_j_k;
-    double fl_brake_bulk_capacity_j_k, fr_brake_bulk_capacity_j_k, rl_brake_bulk_capacity_j_k, rr_brake_bulk_capacity_j_k;
-    double fl_brake_surface_bulk_w_k, fr_brake_surface_bulk_w_k, rl_brake_surface_bulk_w_k, rr_brake_surface_bulk_w_k;
+    // Lumped rotor cooling diagnostics (compact brake model).
     double fl_brake_natural_cooling_w_k, fr_brake_natural_cooling_w_k, rl_brake_natural_cooling_w_k, rr_brake_natural_cooling_w_k;
     double fl_brake_speed_cooling_w_k, fr_brake_speed_cooling_w_k, rl_brake_speed_cooling_w_k, rr_brake_speed_cooling_w_k;
-    double fl_brake_surface_to_bulk_heat_w, fr_brake_surface_to_bulk_heat_w, rl_brake_surface_to_bulk_heat_w, rr_brake_surface_to_bulk_heat_w;
     // Append-only ABI 13 traction-control diagnostics.
     bool tc_eligible;
     double tc_gear_authority;

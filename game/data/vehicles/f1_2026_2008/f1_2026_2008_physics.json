@@ -185,7 +185,6 @@
       "width": 0.355,
       "wheel_mass": 23.0,
       "contact_patch": 0.34,
-      "braking_grip_multiplier": 1.02,
       "airborne_spin_decay_torque": 1.0
     },
     "rear": {
@@ -193,46 +192,39 @@
       "width": 0.38,
       "wheel_mass": 28.0,
       "contact_patch": 0.36,
-      "braking_grip_multiplier": 1.04,
       "airborne_spin_decay_torque": 1.0
     },
     "contact_patch": 0.35,
-    "braking_grip_multiplier": 1.03,
     "airborne_spin_decay_torque": 1.0,
     "surfaces": {
       "Road": {
         "friction": 2.6,
         "stiffness": 7.2,
         "rolling_resistance": 1.0,
-        "lateral_grip_assist": 0.04,
         "longitudinal_grip_ratio": 0.64
       },
       "Curb": {
         "friction": 2.05,
         "stiffness": 5.9,
         "rolling_resistance": 1.5,
-        "lateral_grip_assist": 0.015,
         "longitudinal_grip_ratio": 0.56
       },
       "Dirt": {
         "friction": 1.2,
         "stiffness": 0.45,
         "rolling_resistance": 2.4,
-        "lateral_grip_assist": 0.0,
         "longitudinal_grip_ratio": 0.42
       },
       "Grass": {
         "friction": 0.75,
         "stiffness": 0.35,
         "rolling_resistance": 4.2,
-        "lateral_grip_assist": 0.0,
         "longitudinal_grip_ratio": 0.35
       },
       "Gravel": {
         "friction": 1.0,
         "stiffness": 0.45,
         "rolling_resistance": 3.0,
-        "lateral_grip_assist": 0.0,
         "longitudinal_grip_ratio": 0.4
       }
     },
@@ -273,14 +265,6 @@
         "lateral_tread_conductance_w_k": 24.0,
         "slip_heat_efficiency": 1.0,
         "carcass_hysteresis_efficiency": 1.0,
-        "pressure_stiffness_exponent": 0.72,
-        "pressure_damping_exponent": -0.22,
-        "pressure_max_deflection_exponent": -0.55,
-        "pressure_patch_exponent": -0.32,
-        "pressure_relaxation_exponent": -0.18,
-        "pressure_rr_exponent": -0.35,
-        "pressure_force_stiffness_exponent": 0.12,
-        "pressure_trail_exponent": -0.16,
         "volume_deflection_gain": 0.04,
         "minimum_pressure_kpa_gauge": 55.0,
         "maximum_pressure_kpa_gauge": 260.0
@@ -304,14 +288,6 @@
         "lateral_tread_conductance_w_k": 22.0,
         "slip_heat_efficiency": 0.72,
         "carcass_hysteresis_efficiency": 0.72,
-        "pressure_stiffness_exponent": 0.72,
-        "pressure_damping_exponent": -0.22,
-        "pressure_max_deflection_exponent": -0.55,
-        "pressure_patch_exponent": -0.32,
-        "pressure_relaxation_exponent": -0.18,
-        "pressure_rr_exponent": -0.35,
-        "pressure_force_stiffness_exponent": 0.12,
-        "pressure_trail_exponent": -0.16,
         "volume_deflection_gain": 0.04,
         "minimum_pressure_kpa_gauge": 55.0,
         "maximum_pressure_kpa_gauge": 260.0
@@ -414,7 +390,6 @@
         "min_angle_deg": 4.0,
         "max_angle_deg": 20.0,
         "yaw_decay_exponent": 1.15,
-        "flex_coefficient": 0.0008,
         "polar": [
           {
             "angle_deg": 4.0,
@@ -449,7 +424,6 @@
         "min_angle_deg": 6.0,
         "max_angle_deg": 26.0,
         "yaw_decay_exponent": 1.05,
-        "flex_coefficient": 0.001,
         "polar": [
           {
             "angle_deg": 6.0,
@@ -485,8 +459,6 @@
         "high_height_m": 0.16,
         "optimal_rake_deg": 0.5,
         "rake_window_deg": 2.5,
-        "optimal_expansion_deg": 3.0,
-        "expansion_window_deg": 5.0,
         "yaw_decay_exponent": 1.8,
         "stall_attack_tau_s": 0.03,
         "stall_recovery_tau_s": 0.16,
@@ -501,18 +473,11 @@
     },
     "drag_coefficient": 0.78,
     "frontal_area": 1.25,
-    "downforce_coefficient": 1.9,
-    "split": {
-      "front": 0.28,
-      "diffuser": 0.36,
-      "rear": 0.36
-    },
     "air_density": 1.225,
     "lag_tau_s": 0.03,
     "blend_min_speed_mps": 5.556,
     "blend_full_speed_mps": 41.667,
-    "yaw_decay_exponent": 0.8,
-    "flex_coefficient": 0.0008
+    "yaw_decay_exponent": 0.8
   },
   "aids": {
     "traction_control_available": true,

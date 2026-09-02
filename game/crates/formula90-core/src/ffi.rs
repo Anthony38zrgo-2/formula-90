@@ -113,8 +113,6 @@ pub struct F90CoreFrameOut {
     pub tire_carcass_c: [f64; 4],
     pub tire_gas_c: [f64; 4],
     pub brake_disc_c: [f64; 4],
-    pub brake_caliper_c: [f64; 4],
-    pub brake_hub_c: [f64; 4],
     pub brake_rim_c: [f64; 4],
     pub brake_efficiency: [f64; 4],
     pub duct_mass_flow_kg_s: [f64; 4],
@@ -129,13 +127,9 @@ pub struct F90CoreFrameOut {
     pub brake_spin_post_rad_s: [f64; 4],
     pub brake_power_w: [f64; 4],
     pub brake_energy_j: [f64; 4],
-    pub brake_disc_bulk_c: [f64; 4],
-    pub brake_surface_capacity_j_k: [f64; 4],
-    pub brake_bulk_capacity_j_k: [f64; 4],
-    pub brake_surface_bulk_w_k: [f64; 4],
+    // Lumped rotor cooling diagnostics (compact brake model).
     pub brake_natural_cooling_w_k: [f64; 4],
     pub brake_speed_cooling_w_k: [f64; 4],
-    pub brake_surface_to_bulk_heat_w: [f64; 4],
     pub underfloor_clearance_m: [f64; 5],
     pub underfloor_valid_mask: u32,
     pub underfloor_scrape_phase: i32,
@@ -171,7 +165,6 @@ pub struct F90CoreFrameOut {
     pub aero_floor_height_factor: f64,
     pub aero_floor_rake_factor: f64,
     pub aero_floor_seal_factor: f64,
-    pub aero_diffuser_expansion_deg: f64,
     pub aero_diffuser_stall_factor: f64,
     pub aero_global_limit_factor: f64,
     pub aero_load_ratio: f64,
@@ -510,8 +503,6 @@ pub unsafe extern "C" fn f90_core_step(
                 tire_carcass_c: frame.tire_carcass_c,
                 tire_gas_c: frame.tire_gas_c,
                 brake_disc_c: frame.brake_disc_c,
-                brake_caliper_c: frame.brake_caliper_c,
-                brake_hub_c: frame.brake_hub_c,
                 brake_rim_c: frame.brake_rim_c,
                 brake_efficiency: frame.brake_efficiency,
                 duct_mass_flow_kg_s: frame.duct_mass_flow_kg_s,
@@ -526,13 +517,8 @@ pub unsafe extern "C" fn f90_core_step(
                 brake_spin_post_rad_s: frame.brake_spin_post_rad_s,
                 brake_power_w: frame.brake_power_w,
                 brake_energy_j: frame.brake_energy_j,
-                brake_disc_bulk_c: frame.brake_disc_bulk_c,
-                brake_surface_capacity_j_k: frame.brake_surface_capacity_j_k,
-                brake_bulk_capacity_j_k: frame.brake_bulk_capacity_j_k,
-                brake_surface_bulk_w_k: frame.brake_surface_bulk_w_k,
                 brake_natural_cooling_w_k: frame.brake_natural_cooling_w_k,
                 brake_speed_cooling_w_k: frame.brake_speed_cooling_w_k,
-                brake_surface_to_bulk_heat_w: frame.brake_surface_to_bulk_heat_w,
                 underfloor_clearance_m: frame.underfloor_clearance_m,
                 underfloor_valid_mask: frame.underfloor_valid_mask,
                 underfloor_scrape_phase: frame.underfloor_scrape_phase,
@@ -568,7 +554,6 @@ pub unsafe extern "C" fn f90_core_step(
                 aero_floor_height_factor: frame.aero_floor_height_factor,
                 aero_floor_rake_factor: frame.aero_floor_rake_factor,
                 aero_floor_seal_factor: frame.aero_floor_seal_factor,
-                aero_diffuser_expansion_deg: frame.aero_diffuser_expansion_deg,
                 aero_diffuser_stall_factor: frame.aero_diffuser_stall_factor,
                 aero_global_limit_factor: frame.aero_global_limit_factor,
                 aero_load_ratio: frame.aero_load_ratio,
@@ -763,68 +748,62 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, tire_carcass_c), 472);
         assert_eq!(offset_of!(F90CoreFrameOut, tire_gas_c), 504);
         assert_eq!(offset_of!(F90CoreFrameOut, brake_disc_c), 536);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_caliper_c), 568);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_hub_c), 600);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_rim_c), 632);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_efficiency), 664);
-        assert_eq!(offset_of!(F90CoreFrameOut, duct_mass_flow_kg_s), 696);
-        assert_eq!(offset_of!(F90CoreFrameOut, duct_drag_n), 728);
-        assert_eq!(offset_of!(F90CoreFrameOut, total_brake_duct_drag_n), 760);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_optimal_min_c), 768);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_optimal_max_c), 776);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_fade_start_c), 784);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_critical_c), 792);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_torque_nm), 800);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_spin_pre_rad_s), 832);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_spin_post_rad_s), 864);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_power_w), 896);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_energy_j), 928);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_disc_bulk_c), 960);
-        assert_eq!(offset_of!(F90CoreFrameOut, brake_surface_capacity_j_k), 992);
-        assert_eq!(
-            offset_of!(F90CoreFrameOut, brake_surface_to_bulk_heat_w),
-            1152
-        );
-        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_clearance_m), 1184);
-        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_valid_mask), 1224);
-        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_scrape_phase), 1228);
-        assert_eq!(offset_of!(F90CoreFrameOut, audio_scrape_cursor), 1280);
-        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_compression_m), 1288);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_rim_c), 568);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_efficiency), 600);
+        assert_eq!(offset_of!(F90CoreFrameOut, duct_mass_flow_kg_s), 632);
+        assert_eq!(offset_of!(F90CoreFrameOut, duct_drag_n), 664);
+        assert_eq!(offset_of!(F90CoreFrameOut, total_brake_duct_drag_n), 696);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_optimal_min_c), 704);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_optimal_max_c), 712);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_fade_start_c), 720);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_critical_c), 728);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_torque_nm), 736);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_spin_pre_rad_s), 768);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_spin_post_rad_s), 800);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_power_w), 832);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_energy_j), 864);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_natural_cooling_w_k), 896);
+        assert_eq!(offset_of!(F90CoreFrameOut, brake_speed_cooling_w_k), 928);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_clearance_m), 960);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_valid_mask), 1000);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_scrape_phase), 1004);
+        assert_eq!(offset_of!(F90CoreFrameOut, audio_scrape_cursor), 1056);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_compression_m), 1064);
         assert_eq!(
             offset_of!(F90CoreFrameOut, underfloor_bottoming_phase),
-            1408
+            1184
         );
         assert_eq!(
             offset_of!(F90CoreFrameOut, underfloor_active_probe_mask),
-            1428
+            1204
         );
         assert_eq!(
             offset_of!(F90CoreFrameOut, underfloor_total_normal_force_n),
-            1432
+            1208
         );
         assert_eq!(
             offset_of!(F90CoreFrameOut, underfloor_bottoming_torque),
-            1472
+            1248
         );
         assert_eq!(
             offset_of!(F90CoreFrameOut, underfloor_rigid_contact_blend),
-            1504
+            1280
         );
-        assert_eq!(offset_of!(F90CoreFrameOut, aero_total_downforce_n), 1512);
-        assert_eq!(offset_of!(F90CoreFrameOut, aero_balance_front), 1648);
-        assert_eq!(offset_of!(F90CoreFrameOut, wheel_drive_torque_nm), 1656);
-        assert_eq!(offset_of!(F90CoreFrameOut, tc_cut_ratio), 1688);
-        assert_eq!(offset_of!(F90CoreFrameOut, net_drive_power_w), 1696);
-        assert_eq!(offset_of!(F90CoreFrameOut, tc_enabled), 1704);
-        assert_eq!(offset_of!(F90CoreFrameOut, tc_eligible), 1712);
-        assert_eq!(offset_of!(F90CoreFrameOut, tc_gear_authority), 1720);
-        assert_eq!(offset_of!(F90CoreFrameOut, tc_slip_ratio), 1744);
+        assert_eq!(offset_of!(F90CoreFrameOut, aero_total_downforce_n), 1288);
+        assert_eq!(offset_of!(F90CoreFrameOut, aero_balance_front), 1416);
+        assert_eq!(offset_of!(F90CoreFrameOut, wheel_drive_torque_nm), 1424);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_cut_ratio), 1456);
+        assert_eq!(offset_of!(F90CoreFrameOut, net_drive_power_w), 1464);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_enabled), 1472);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_eligible), 1480);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_gear_authority), 1488);
+        assert_eq!(offset_of!(F90CoreFrameOut, tc_slip_ratio), 1512);
         assert_eq!(
             offset_of!(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm),
-            1776
+            1544
         );
-        assert_eq!(offset_of!(F90CoreFrameOut, pre_tc_drive_power_w), 1808);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1816);
+        assert_eq!(offset_of!(F90CoreFrameOut, pre_tc_drive_power_w), 1576);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1584);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

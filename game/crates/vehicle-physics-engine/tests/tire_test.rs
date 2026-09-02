@@ -147,27 +147,37 @@ fn contact_patch_scales_relaxation_and_converges_in_steady_state() {
 }
 
 #[test]
-fn braking_grip_is_per_axle() {
+fn brake_input_does_not_change_available_mu() {
+    // TIRE-600: peak tire capacity must be independent of the brake input flag.
+    // Same tire/Fz/slip state must produce identical forces with braking on or off.
     let fr = SurfaceType::Road;
     let base = VehicleConfig::f1_94_canonical();
     let ef = *base.surface_friction.get(&fr).unwrap();
     let es = *base.surface_stiffness.get(&fr).unwrap();
     let er = *base.surface_rolling_resistance.get(&fr).unwrap();
 
-    let mut high = VehicleConfig::f1_94_canonical();
-    high.front_braking_grip = 2.0;
-    let mut low = VehicleConfig::f1_94_canonical();
-    low.front_braking_grip = 0.5;
-
-    let mut t_high = TireSystem::new(&high);
-    let mut t_low = TireSystem::new(&low);
-    let vel = Vec3::new(0.0, 0.0, -20.0); // sy > 0.3 so braking_help applies
+    let mut braking = TireSystem::new(&base);
+    let mut coasting = TireSystem::new(&base);
+    let vel = Vec3::new(0.0, 0.0, -20.0);
     let dt = 1.0 / 120.0;
+    braking.wheels[WheelIndex::FrontLeft as usize].spin = 40.0;
+    coasting.wheels[WheelIndex::FrontLeft as usize].spin = 40.0;
 
-    t_high.process_wheel_forces(&high, WheelIndex::FrontLeft, 1500.0, fr, ef, es, er, true, vel, dt);
-    t_low.process_wheel_forces(&low, WheelIndex::FrontLeft, 1500.0, fr, ef, es, er, true, vel, dt);
+    for _ in 0..40 {
+        braking.process_wheel_forces(&base, WheelIndex::FrontLeft, 1500.0, fr, ef, es, er, true, vel, dt);
+        coasting.process_wheel_forces(&base, WheelIndex::FrontLeft, 1500.0, fr, ef, es, er, false, vel, dt);
+    }
 
-    let h = t_high.wheels[WheelIndex::FrontLeft as usize].longitudinal_force.abs();
-    let l = t_low.wheels[WheelIndex::FrontLeft as usize].longitudinal_force.abs();
-    assert!(h > l, "higher front_braking_grip must increase braking force ({} vs {})", h, l);
+    let b = &braking.wheels[WheelIndex::FrontLeft as usize];
+    let c = &coasting.wheels[WheelIndex::FrontLeft as usize];
+    assert!(
+        (b.longitudinal_force - c.longitudinal_force).abs() < 1e-9,
+        "brake flag must not change longitudinal force (braking={}, coasting={})",
+        b.longitudinal_force,
+        c.longitudinal_force
+    );
+    assert!(
+        (b.lateral_force - c.lateral_force).abs() < 1e-9,
+        "brake flag must not change lateral force"
+    );
 }
