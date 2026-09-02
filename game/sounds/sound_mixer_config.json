@@ -760,22 +760,19 @@
       }
     },
     "shift_down_delayed": {
-      "volume": 0.85,
-      "pan": -0.1,
+      "volume": 0.0,
+      "pan": -0.15,
       "adsr": {
         "enabled": true,
         "attack_ms": 0.0,
         "decay_ms": 0.0,
-        "sustain": 1.0,
+        "sustain": 1.5,
         "release_ms": 14.0,
         "curve": "linear"
       },
       "eq": {
-        "enabled": true,
-        "bands_db": {
-          "500": -0.8,
-          "1000": -1.2
-        },
+        "enabled": false,
+        "bands_db": {},
         "q": 0.9,
         "output_db": 0.0,
         "tube_color": {
@@ -788,9 +785,9 @@
         }
       },
       "reverb": {
-        "enabled": true,
+        "enabled": false,
         "bus": "mechanical_small",
-        "send_db": -18.0
+        "send_db": -120.0
       }
     },
     "shift_up": {
@@ -828,22 +825,19 @@
       }
     },
     "shift_up_delayed": {
-      "volume": 0.85,
-      "pan": -0.1,
+      "volume": 0.0,
+      "pan": -0.15,
       "adsr": {
         "enabled": true,
         "attack_ms": 0.0,
         "decay_ms": 0.0,
-        "sustain": 1.0,
+        "sustain": 1.5,
         "release_ms": 12.0,
         "curve": "linear"
       },
       "eq": {
-        "enabled": true,
-        "bands_db": {
-          "500": -0.8,
-          "1000": -1.2
-        },
+        "enabled": false,
+        "bands_db": {},
         "q": 0.9,
         "output_db": 0.0,
         "tube_color": {
@@ -856,9 +850,9 @@
         }
       },
       "reverb": {
-        "enabled": true,
+        "enabled": false,
         "bus": "mechanical_small",
-        "send_db": -18.0
+        "send_db": -120.0
       }
     },
     "tyre_scrub": {
