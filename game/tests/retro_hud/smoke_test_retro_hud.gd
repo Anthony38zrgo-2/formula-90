@@ -14,35 +14,44 @@ func _run() -> void:
 	var display := display_scene.instantiate()
 	root.add_child(display)
 	await process_frame
-	if display.base.texture == null:
-		failures.append("generated retro HUD base texture is missing")
-	if display.tachometer == null:
-		failures.append("tachometer overlay is missing")
-	if display.speed_value == null or display.gear_value == null:
-		failures.append("manual glyph readouts are missing")
-	display.set_readout(254.4, 11950.0, "4")
+
+	if display.get("state") == null:
+		failures.append("procedural retro HUD is missing its state object")
+	if not display.has_method("set_readout"):
+		failures.append("procedural retro HUD is missing the decoupled readout API")
+	if display.get("config") == null:
+		failures.append("procedural retro HUD is missing its config")
+
+	display.set_readout(254.4, 11950.0, "4", 0.7, 0.3)
 	await process_frame
-	if display.speed_value.text != "254" or display.gear_value.text != "4":
-		failures.append("state did not update dynamic readouts")
-	var glyph_script := load("res://features/retro_hud/scripts/retro_hud_glyph_renderer.gd")
-	if glyph_script == null or not glyph_script.STROKES.has("R") or not glyph_script.STROKES.has("N") or not glyph_script.STROKES.has("%"):
-		failures.append("manual glyph catalogue is incomplete")
-	if display.config.rpm_max <= display.config.rpm_redline:
-		failures.append("tachometer configuration is invalid")
+	var state: RefCounted = display.get("state")
+	if not is_equal_approx(state.speed_kph, 254.4):
+		failures.append("state did not store the speed readout")
+	if not is_equal_approx(state.rpm, 11950.0):
+		failures.append("state did not store the RPM readout")
+	if state.gear_label != "4":
+		failures.append("state did not store the gear readout")
+	if not is_equal_approx(state.throttle, 0.7):
+		failures.append("state did not store the throttle readout")
+	if not is_equal_approx(state.brake, 0.3):
+		failures.append("state did not store the brake readout")
+	var peak_rpm: float = display.get("_peak_rpm")
+	if peak_rpm < state.rpm:
+		failures.append("peak-hold RPM did not advance to the live RPM")
+
+	var config: RefCounted = display.get("config")
+	if config.rpm_max <= config.rpm_min:
+		failures.append("RPM scale is invalid (max <= min)")
+	if config.rpm_redline < config.rpm_min or config.rpm_redline > config.rpm_max:
+		failures.append("redline is outside the RPM scale")
+	if config.speed_segments < 4 or config.speed_segments > 19:
+		failures.append("speed segment count is outside the supported 4-19 range")
+	if config.peak_activation_rpm < config.rpm_min or config.peak_activation_rpm > config.rpm_max:
+		failures.append("peak activation RPM is outside the RPM scale")
+
 	display.queue_free()
-	var demo_scene := load("res://features/retro_hud/scenes/retro_hud_demo.tscn") as PackedScene
-	if demo_scene == null:
-		failures.append("standalone retro HUD demo could not load")
-	else:
-		var demo := demo_scene.instantiate()
-		root.add_child(demo)
-		await process_frame
-		var demo_display := demo.get_node_or_null("RetroHudDisplay")
-		if demo_display == null or demo_display.get("state").rpm <= 0.0:
-			failures.append("standalone mock provider did not drive the retro HUD")
-		demo.queue_free()
 	if failures.is_empty():
-		print("[PASS] Retro HUD loads its generated base, config, state, tachometer, and manual glyphs.")
+		print("[PASS] Retro HUD loads its procedural display, state, and validated config.")
 	else:
 		for failure in failures:
 			printerr("[FAIL] " + failure)

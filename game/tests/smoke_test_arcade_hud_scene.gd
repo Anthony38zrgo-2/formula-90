@@ -63,7 +63,7 @@ func _run() -> void:
 	elif retro_hud.get("state").gear_label != "N":
 		printerr("[FAIL] Retro HUD did not receive the standalone adapter state.")
 		failures += 1
-	elif not is_equal_approx(retro_hud.scale.x, 0.28):
+	elif not is_equal_approx(retro_hud.scale.x, 0.5):
 		printerr("[FAIL] Embedded Retro HUD layout was overridden by its config.")
 		failures += 1
 	if aid_message == null or aid_message.visible:

@@ -111,9 +111,13 @@ func _update_speed_gauge() -> void:
 	var motor_rpm_value: Variant = _vehicle.get("motor_rpm")
 	var motor_rpm := float(motor_rpm_value) if motor_rpm_value != null else 0.0
 	var displayed_gear := "R" if gear < 0 else ("N" if gear == 0 else str(gear))
+	var throttle_value: Variant = _vehicle.get("throttle_input")
+	var brake_value: Variant = _vehicle.get("brake_input")
+	var throttle := clampf(float(throttle_value) if throttle_value != null else 0.0, 0.0, 1.0)
+	var brake := clampf(float(brake_value) if brake_value != null else 0.0, 0.0, 1.0)
 	speed_gauge.set_readout(absf(speed_mps) * 3.6, displayed_gear)
 	if retro_hud != null and retro_hud.has_method("set_readout"):
-		retro_hud.call("set_readout", absf(speed_mps) * 3.6, motor_rpm, displayed_gear)
+		retro_hud.call("set_readout", absf(speed_mps) * 3.6, motor_rpm, displayed_gear, throttle, brake)
 
 
 func _on_aid_toggled(aid_label: String, enabled: bool) -> void:

@@ -3,21 +3,29 @@ extends RefCounted
 
 const DEFAULT_PATH := "res://features/retro_hud/config/retro_hud.json"
 
-var base_texture_path := "res://features/retro_hud/assets/retro_lcd_bezel_base.png"
-var speed_unit := "KPH"
-var rpm_max := 15000.0
-var rpm_redline := 12200.0
-var tach_segments := 14
-var tach_start_degrees := 201.0
-var tach_end_degrees := 339.0
-var normal_color := Color("65ffe0")
-var high_rpm_color := Color("f4d35e")
-var redline_color := Color("ff5a5f")
-var glyph_color := Color("061414")
-var gear_color := Color("7fffe8")
-var background_opacity := 1.0
+var speed_unit := "km/h"
+var rpm_min := 6000.0
+var rpm_max := 20000.0
+var rpm_redline := 18000.0
+var speed_max := 360.0
+var speed_segments := 20
+var peak_hold_seconds := 2.0
+var peak_activation_rpm := 12000.0
+var peak_return_rpm_per_second := 7500.0
+var background_opacity := 0.82
 var display_scale := 1.0
 var display_position := Vector2.ZERO
+
+var dial_color := Color("f4f4f4")
+var dial_shadow_color := Color("080808d9")
+var peak_color := Color("dc1f27")
+var throttle_color := Color("19ed39")
+var brake_color := Color("f02a2a")
+var speed_green := Color("00ec2e")
+var speed_yellow := Color("ffd702")
+var speed_orange := Color("fe9a0d")
+var speed_red := Color("ea0000")
+var inactive_multiplier := 0.55
 
 
 static func load_from_json(path: String = DEFAULT_PATH) -> RetroHudConfig:
@@ -35,20 +43,29 @@ static func load_from_json(path: String = DEFAULT_PATH) -> RetroHudConfig:
 
 
 func _apply(data: Dictionary) -> void:
-	base_texture_path = str(data.get("base_texture", base_texture_path))
-	speed_unit = str(data.get("speed_unit", speed_unit)).to_upper()
-	rpm_max = maxf(float(data.get("rpm_max", rpm_max)), 1.0)
-	rpm_redline = clampf(float(data.get("rpm_redline", rpm_redline)), 0.0, rpm_max)
-	tach_segments = maxi(int(data.get("tach_segments", tach_segments)), 1)
-	tach_start_degrees = float(data.get("tach_start_degrees", tach_start_degrees))
-	tach_end_degrees = float(data.get("tach_end_degrees", tach_end_degrees))
-	normal_color = _color(data.get("normal_color", "#65ffe0"), normal_color)
-	high_rpm_color = _color(data.get("high_rpm_color", "#f4d35e"), high_rpm_color)
-	redline_color = _color(data.get("redline_color", "#ff5a5f"), redline_color)
-	glyph_color = _color(data.get("glyph_color", "#061414"), glyph_color)
-	gear_color = _color(data.get("gear_color", "#7fffe8"), gear_color)
+	speed_unit = str(data.get("speed_unit", speed_unit))
+	rpm_min = maxf(float(data.get("rpm_min", rpm_min)), 0.0)
+	rpm_max = maxf(float(data.get("rpm_max", rpm_max)), rpm_min + 1.0)
+	rpm_redline = clampf(float(data.get("rpm_redline", rpm_redline)), rpm_min, rpm_max)
+	speed_max = maxf(float(data.get("speed_max", speed_max)), 1.0)
+	speed_segments = clampi(int(data.get("speed_segments", speed_segments)), 4, 19)
+	peak_hold_seconds = maxf(float(data.get("peak_hold_seconds", peak_hold_seconds)), 0.0)
+	peak_activation_rpm = clampf(float(data.get("peak_activation_rpm", peak_activation_rpm)), rpm_min, rpm_max)
+	peak_return_rpm_per_second = maxf(float(data.get("peak_return_rpm_per_second", peak_return_rpm_per_second)), 1.0)
 	background_opacity = clampf(float(data.get("background_opacity", background_opacity)), 0.0, 1.0)
 	display_scale = maxf(float(data.get("scale", display_scale)), 0.1)
+	inactive_multiplier = clampf(float(data.get("inactive_multiplier", inactive_multiplier)), 0.0, 1.0)
+
+	dial_color = _color(data.get("dial_color", "#f4f4f4"), dial_color)
+	dial_shadow_color = _color(data.get("dial_shadow_color", "#080808d9"), dial_shadow_color)
+	peak_color = _color(data.get("peak_color", "#dc1f27"), peak_color)
+	throttle_color = _color(data.get("throttle_color", "#19ed39"), throttle_color)
+	brake_color = _color(data.get("brake_color", "#f02a2a"), brake_color)
+	speed_green = _color(data.get("speed_green", "#00ec2e"), speed_green)
+	speed_yellow = _color(data.get("speed_yellow", "#ffd702"), speed_yellow)
+	speed_orange = _color(data.get("speed_orange", "#fe9a0d"), speed_orange)
+	speed_red = _color(data.get("speed_red", "#ea0000"), speed_red)
+
 	var position_value: Variant = data.get("position", [0.0, 0.0])
 	if position_value is Array and position_value.size() >= 2:
 		display_position = Vector2(float(position_value[0]), float(position_value[1]))

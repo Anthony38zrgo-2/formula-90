@@ -1,14 +1,24 @@
-# Retro HUD
+# Retro HUD — Formula broadcast 2004–2008
 
-`RetroHudDisplay` is presentation-only. It receives a `RetroHudState` or calls to
-`set_readout(speed_kph, rpm, gear_label)` and never resolves vehicle nodes.
+`RetroHudDisplay` remains presentation-only. The race HUD adapter provides:
 
-The race HUD is the adapter that reads the existing vehicle properties and forwards
-them to this component. Other game modes can instead provide their own state source.
+- speed in km/h
+- engine RPM
+- gear
+- analog throttle input (0–1)
+- analog brake input (0–1)
 
-Visual tuning lives in [config/retro_hud.json](config/retro_hud.json). Call
-`reload_config()` on an existing display after changing the file to apply it during
-runtime. The base panel is a generated original asset in `assets/`; all variable
-labels and digits are drawn by the manual stroke glyph renderer.
+The display is now procedural and intentionally does **not** depend on texture frames from the Assetto Corsa reference mod. It recreates the useful visual grammar of the 2004–2008 broadcast HUD:
 
-Open `scenes/retro_hud_demo.tscn` for the standalone mock-driven preview.
+- circular 6k–20k RPM scale
+- white live RPM needle
+- red peak-hold RPM needle
+- white gear plate
+- green analog throttle bar
+- red analog brake bar
+- 20-segment speed arc with green/yellow/orange/red regions
+- numeric speed and 200/260/320/340 scale labels
+
+Visual/behaviour tuning lives in `config/retro_hud.json`.
+
+The existing `ArcadeRaceHud` is still the runtime adapter and `RetroHudDisplay` still does not resolve the vehicle itself.

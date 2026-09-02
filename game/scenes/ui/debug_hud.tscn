@@ -16,6 +16,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1")
+; vehicle_path/aids_path are STANDALONE bootstrap NodePaths used when this HUD
+; is instanced without bind_runtime() (smoke tests / handling harness). The
+; production runtime path binds the HUD via WorldHudCompositor.bind_runtime().
 vehicle_path = NodePath("../VehicleController/VehicleRigidBody")
 aids_path = NodePath("../DrivingAids")
 
@@ -66,13 +69,13 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -173.0
-offset_top = -105.0
-offset_right = 387.0
-offset_bottom = 210.0
+offset_left = -194.0
+offset_top = -266.0
+offset_right = 159.0
+offset_bottom = 234.0
 grow_horizontal = 0
 grow_vertical = 0
-scale = Vector2(0.28, 0.28)
+scale = Vector2(0.5, 0.5)
 
 [node name="SpeedValue" type="Label" parent="SpeedGauge"]
 layout_mode = 0
