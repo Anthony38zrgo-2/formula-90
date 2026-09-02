@@ -106,6 +106,22 @@ pub struct VehicleConfig {
     pub tire_pressure: TirePressureConfig,
     pub tire_thermal: TireThermalAxleConfig,
 
+    // Schema v3 (parser-only; solver does not consume these yet)
+    #[serde(default)]
+    pub front_tire_force: TireForceProfile,
+    #[serde(default)]
+    pub rear_tire_force: TireForceProfile,
+    #[serde(default)]
+    pub pressure_mechanics: PressureMechanicsSensitivity,
+    #[serde(default)]
+    pub front_camber_gain_rad_per_m: f64,
+    #[serde(default)]
+    pub rear_camber_gain_rad_per_m: f64,
+    #[serde(default)]
+    pub front_toe_gain_rad_per_m: f64,
+    #[serde(default)]
+    pub rear_toe_gain_rad_per_m: f64,
+
     // ABS
     pub enable_abs: bool,
     pub abs_pulse_time: f64,
@@ -171,6 +187,46 @@ pub struct VehicleConfig {
     /// vehicle-audio-engine `powertrain` module).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio: Option<serde_json::Value>,
+}
+
+/// Schema v3 steady tire force curve (parser-only until TIRE-100/TIRE-200).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct TireForceProfile {
+    pub lateral_peak_slip_angle_rad: f64,
+    pub longitudinal_peak_slip_ratio: f64,
+    pub lateral_slide_mu_ratio: f64,
+    pub longitudinal_slide_mu_ratio: f64,
+}
+impl Default for TireForceProfile {
+    fn default() -> Self {
+        Self {
+            lateral_peak_slip_angle_rad: 0.10,
+            longitudinal_peak_slip_ratio: 0.12,
+            // 1.0 = no post-peak drop (matches current saturating tanh baseline).
+            // TIRE-200 introduces an explicit post-peak decay via profile values.
+            lateral_slide_mu_ratio: 1.0,
+            longitudinal_slide_mu_ratio: 1.0,
+        }
+    }
+}
+
+/// Schema v3 consolidated pressure mechanics sensitivities (parser-only until
+/// THERM-700/THERM-701 replaces the per-exponent v2 fields).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PressureMechanicsSensitivity {
+    pub compliance_sensitivity: f64,
+    pub response_sensitivity: f64,
+    pub rolling_resistance_sensitivity: f64,
+}
+impl Default for PressureMechanicsSensitivity {
+    fn default() -> Self {
+        Self {
+            compliance_sensitivity: 0.0,
+            response_sensitivity: 0.0,
+            rolling_resistance_sensitivity: 0.0,
+        }
+    }
 }
 
 /// Canonical driving-aid model and policy for a vehicle profile.
@@ -541,6 +597,13 @@ impl VehicleConfig {
             // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
             tire_pressure: TirePressureConfig::default(),
             tire_thermal: TireThermalAxleConfig::default(),
+            front_tire_force: TireForceProfile::default(),
+            rear_tire_force: TireForceProfile::default(),
+            pressure_mechanics: PressureMechanicsSensitivity::default(),
+            front_camber_gain_rad_per_m: 0.0,
+            rear_camber_gain_rad_per_m: 0.0,
+            front_toe_gain_rad_per_m: 0.0,
+            rear_toe_gain_rad_per_m: 0.0,
 
             // ABS
             enable_abs: false,
@@ -710,6 +773,13 @@ impl VehicleConfig {
             // Tire pressure + thermal (legacy Jordan uses canonical defaults)
             tire_pressure: TirePressureConfig::default(),
             tire_thermal: TireThermalAxleConfig::default(),
+            front_tire_force: TireForceProfile::default(),
+            rear_tire_force: TireForceProfile::default(),
+            pressure_mechanics: PressureMechanicsSensitivity::default(),
+            front_camber_gain_rad_per_m: 0.0,
+            rear_camber_gain_rad_per_m: 0.0,
+            front_toe_gain_rad_per_m: 0.0,
+            rear_toe_gain_rad_per_m: 0.0,
 
             // ABS
             enable_abs: false,
@@ -1324,6 +1394,12 @@ struct JsonSuspensionAxle {
     camber: f64,
     #[serde(default = "default_bump_stop")]
     bump_stop_multiplier: f64,
+    /// Schema v3: camber variation per meter of suspension compression (parser-only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    camber_gain_rad_per_m: Option<f64>,
+    /// Schema v3: toe variation per meter of suspension compression (parser-only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    toe_gain_rad_per_m: Option<f64>,
 }
 impl Default for JsonSuspensionAxle {
     fn default() -> Self {
@@ -1337,6 +1413,8 @@ impl Default for JsonSuspensionAxle {
             toe: 0.0017453,
             camber: -0.0174533,
             bump_stop_multiplier: 2.2,
+            camber_gain_rad_per_m: None,
+            toe_gain_rad_per_m: None,
         }
     }
 }
@@ -1374,6 +1452,12 @@ struct JsonTires {
     /// Optional thermal section (5-node thermal model tuning). Absent -> canonical defaults.
     #[serde(default)]
     thermal: Option<JsonTireThermal>,
+    /// Schema v3: per-axle steady tire force curve (TIRE-200). Absent -> parser-only defaults.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    force_model: Option<JsonTireForceModel>,
+    /// Schema v3: consolidated pressure mechanics sensitivities (THERM-700). Absent -> parser-only defaults.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pressure_mechanics: Option<JsonPressureMechanics>,
 }
 impl Default for JsonTires {
     fn default() -> Self {
@@ -1386,6 +1470,82 @@ impl Default for JsonTires {
             surfaces: HashMap::new(),
             pressure: None,
             thermal: None,
+            force_model: None,
+            pressure_mechanics: None,
+        }
+    }
+}
+
+// ── Schema v3: tire force model + pressure mechanics (parser-only) ──────────────
+// Parsed and validated so v3 profiles carry TIRE-200/THERM-700 data. The solver
+// does NOT consume them yet; v2 files (canonical f1_2026_2008) keep their
+// existing behavior unchanged.
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonTireForceModel {
+    front: JsonTireForceProfile,
+    rear: JsonTireForceProfile,
+}
+impl Default for JsonTireForceModel {
+    fn default() -> Self {
+        Self {
+            front: JsonTireForceProfile::default(),
+            rear: JsonTireForceProfile::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonTireForceProfile {
+    #[serde(default = "default_peak_slip_angle_rad")]
+    lateral_peak_slip_angle_rad: f64,
+    #[serde(default = "default_peak_slip_ratio")]
+    longitudinal_peak_slip_ratio: f64,
+    #[serde(default = "default_slide_mu_ratio")]
+    lateral_slide_mu_ratio: f64,
+    #[serde(default = "default_slide_mu_ratio")]
+    longitudinal_slide_mu_ratio: f64,
+}
+impl Default for JsonTireForceProfile {
+    fn default() -> Self {
+        Self {
+            lateral_peak_slip_angle_rad: default_peak_slip_angle_rad(),
+            longitudinal_peak_slip_ratio: default_peak_slip_ratio(),
+            lateral_slide_mu_ratio: default_slide_mu_ratio(),
+            longitudinal_slide_mu_ratio: default_slide_mu_ratio(),
+        }
+    }
+}
+fn default_peak_slip_angle_rad() -> f64 {
+    0.10
+}
+fn default_peak_slip_ratio() -> f64 {
+    0.12
+}
+fn default_slide_mu_ratio() -> f64 {
+    // 1.0 = no post-peak drop (matches current saturating tanh baseline).
+    // TIRE-200 introduces an explicit post-peak decay via profile values.
+    1.0
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonPressureMechanics {
+    #[serde(default)]
+    compliance_sensitivity: f64,
+    #[serde(default)]
+    response_sensitivity: f64,
+    #[serde(default)]
+    rolling_resistance_sensitivity: f64,
+}
+impl Default for JsonPressureMechanics {
+    fn default() -> Self {
+        Self {
+            compliance_sensitivity: 0.0,
+            response_sensitivity: 0.0,
+            rolling_resistance_sensitivity: 0.0,
         }
     }
 }
@@ -2725,7 +2885,7 @@ fn validate_brake_duct(name: &str, c: &BrakeDuctAxleConfig) -> Result<(), String
 
 impl JsonVehicleSpec {
     fn validate(&self) -> Result<(), String> {
-        if self.schema_version != 1 && self.schema_version != 2 {
+        if self.schema_version != 1 && self.schema_version != 2 && self.schema_version != 3 {
             return Err(format!(
                 "Unsupported schema_version: {}",
                 self.schema_version
@@ -2784,6 +2944,72 @@ impl JsonVehicleSpec {
                     return Err(format!(
                         "tires.thermal.{name}.minimum_pressure_kpa_gauge must be below maximum_pressure_kpa_gauge"
                     ));
+                }
+            }
+        }
+        if let Some(fm) = &self.tires.force_model {
+            for (name, profile) in [("front", &fm.front), ("rear", &fm.rear)] {
+                for (field, value) in [
+                    ("lateral_peak_slip_angle_rad", profile.lateral_peak_slip_angle_rad),
+                    ("longitudinal_peak_slip_ratio", profile.longitudinal_peak_slip_ratio),
+                    ("lateral_slide_mu_ratio", profile.lateral_slide_mu_ratio),
+                    ("longitudinal_slide_mu_ratio", profile.longitudinal_slide_mu_ratio),
+                ] {
+                    if !value.is_finite() {
+                        return Err(format!(
+                            "tires.force_model.{name}.{field} must be finite, got {value}"
+                        ));
+                    }
+                }
+            }
+            for (name, profile) in [
+                ("front", &fm.front),
+                ("rear", &fm.rear),
+            ] {
+                if !(0.02..=0.60).contains(&profile.lateral_peak_slip_angle_rad) {
+                    return Err(format!(
+                        "tires.force_model.{name}.lateral_peak_slip_angle_rad must be in [0.02,0.60]"
+                    ));
+                }
+                if !(0.02..=1.5).contains(&profile.longitudinal_peak_slip_ratio) {
+                    return Err(format!(
+                        "tires.force_model.{name}.longitudinal_peak_slip_ratio must be in [0.02,1.5]"
+                    ));
+                }
+                if !(0.10..=1.0).contains(&profile.lateral_slide_mu_ratio) {
+                    return Err(format!(
+                        "tires.force_model.{name}.lateral_slide_mu_ratio must be in [0.10,1.0]"
+                    ));
+                }
+                if !(0.10..=1.0).contains(&profile.longitudinal_slide_mu_ratio) {
+                    return Err(format!(
+                        "tires.force_model.{name}.longitudinal_slide_mu_ratio must be in [0.10,1.0]"
+                    ));
+                }
+            }
+        }
+        if let Some(pm) = &self.tires.pressure_mechanics {
+            for (field, value) in [
+                ("compliance_sensitivity", pm.compliance_sensitivity),
+                ("response_sensitivity", pm.response_sensitivity),
+                ("rolling_resistance_sensitivity", pm.rolling_resistance_sensitivity),
+            ] {
+                if !value.is_finite() {
+                    return Err(format!("tires.pressure_mechanics.{field} must be finite"));
+                }
+            }
+        }
+        for (name, axle) in [("front", &self.suspension.front), ("rear", &self.suspension.rear)] {
+            for (field, value) in [
+                ("camber_gain_rad_per_m", axle.camber_gain_rad_per_m),
+                ("toe_gain_rad_per_m", axle.toe_gain_rad_per_m),
+            ] {
+                if let Some(v) = value {
+                    if !v.is_finite() {
+                        return Err(format!(
+                            "suspension.{name}.{field} must be finite (got {v})"
+                        ));
+                    }
                 }
             }
         }
@@ -2956,6 +3182,42 @@ impl JsonVehicleSpec {
                 .unwrap_or(self.tires.airborne_spin_decay_torque),
             tire_pressure: tire_pressure_from_json(&self.tires.pressure),
             tire_thermal: tire_thermal_from_json(&self.tires.thermal),
+            front_tire_force: self
+                .tires
+                .force_model
+                .as_ref()
+                .map(|fm| TireForceProfile {
+                    lateral_peak_slip_angle_rad: fm.front.lateral_peak_slip_angle_rad,
+                    longitudinal_peak_slip_ratio: fm.front.longitudinal_peak_slip_ratio,
+                    lateral_slide_mu_ratio: fm.front.lateral_slide_mu_ratio,
+                    longitudinal_slide_mu_ratio: fm.front.longitudinal_slide_mu_ratio,
+                })
+                .unwrap_or_default(),
+            rear_tire_force: self
+                .tires
+                .force_model
+                .as_ref()
+                .map(|fm| TireForceProfile {
+                    lateral_peak_slip_angle_rad: fm.rear.lateral_peak_slip_angle_rad,
+                    longitudinal_peak_slip_ratio: fm.rear.longitudinal_peak_slip_ratio,
+                    lateral_slide_mu_ratio: fm.rear.lateral_slide_mu_ratio,
+                    longitudinal_slide_mu_ratio: fm.rear.longitudinal_slide_mu_ratio,
+                })
+                .unwrap_or_default(),
+            pressure_mechanics: self
+                .tires
+                .pressure_mechanics
+                .as_ref()
+                .map(|pm| PressureMechanicsSensitivity {
+                    compliance_sensitivity: pm.compliance_sensitivity,
+                    response_sensitivity: pm.response_sensitivity,
+                    rolling_resistance_sensitivity: pm.rolling_resistance_sensitivity,
+                })
+                .unwrap_or_default(),
+            front_camber_gain_rad_per_m: self.suspension.front.camber_gain_rad_per_m.unwrap_or(0.0),
+            rear_camber_gain_rad_per_m: self.suspension.rear.camber_gain_rad_per_m.unwrap_or(0.0),
+            front_toe_gain_rad_per_m: self.suspension.front.toe_gain_rad_per_m.unwrap_or(0.0),
+            rear_toe_gain_rad_per_m: self.suspension.rear.toe_gain_rad_per_m.unwrap_or(0.0),
             front_brake_bias: self.brakes.front_brake_bias,
             max_brake_torque: self.brakes.max_brake_torque,
             brake_thermal: self
@@ -3091,7 +3353,7 @@ impl JsonVehicleSpec {
             );
         }
         Self {
-            schema_version: 2,
+            schema_version: cfg.schema_version,
             vehicle_id: "f1_94".to_string(),
             profile_name: cfg.vehicle_name.clone(),
             units: "SI".to_string(),
@@ -3166,6 +3428,9 @@ impl JsonVehicleSpec {
                     toe: cfg.front_toe,
                     camber: cfg.front_camber,
                     bump_stop_multiplier: cfg.front_bump_stop_multiplier,
+                    camber_gain_rad_per_m: (cfg.schema_version >= 3)
+                        .then(|| cfg.front_camber_gain_rad_per_m),
+                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.front_toe_gain_rad_per_m),
                 },
                 rear: JsonSuspensionAxle {
                     spring_length: cfg.rear_spring_length,
@@ -3177,6 +3442,9 @@ impl JsonVehicleSpec {
                     toe: cfg.rear_toe,
                     camber: cfg.rear_camber,
                     bump_stop_multiplier: cfg.rear_bump_stop_multiplier,
+                    camber_gain_rad_per_m: (cfg.schema_version >= 3)
+                        .then(|| cfg.rear_camber_gain_rad_per_m),
+                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.rear_toe_gain_rad_per_m),
                 },
                 tri_ray_spacing_ratio: cfg.tri_ray_spacing_ratio,
             },
@@ -3211,6 +3479,25 @@ impl JsonVehicleSpec {
                     atmospheric_pressure_kpa: Some(cfg.tire_pressure.atmospheric_pressure_kpa),
                 }),
                 thermal: Some(JsonTireThermal::from_config(&cfg.tire_thermal)),
+                force_model: (cfg.schema_version >= 3).then(|| JsonTireForceModel {
+                    front: JsonTireForceProfile {
+                        lateral_peak_slip_angle_rad: cfg.front_tire_force.lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: cfg.front_tire_force.longitudinal_peak_slip_ratio,
+                        lateral_slide_mu_ratio: cfg.front_tire_force.lateral_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: cfg.front_tire_force.longitudinal_slide_mu_ratio,
+                    },
+                    rear: JsonTireForceProfile {
+                        lateral_peak_slip_angle_rad: cfg.rear_tire_force.lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: cfg.rear_tire_force.longitudinal_peak_slip_ratio,
+                        lateral_slide_mu_ratio: cfg.rear_tire_force.lateral_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: cfg.rear_tire_force.longitudinal_slide_mu_ratio,
+                    },
+                }),
+                pressure_mechanics: (cfg.schema_version >= 3).then(|| JsonPressureMechanics {
+                    compliance_sensitivity: cfg.pressure_mechanics.compliance_sensitivity,
+                    response_sensitivity: cfg.pressure_mechanics.response_sensitivity,
+                    rolling_resistance_sensitivity: cfg.pressure_mechanics.rolling_resistance_sensitivity,
+                }),
             },
             brakes: JsonBrakes {
                 front_brake_bias: cfg.front_brake_bias,
@@ -3752,5 +4039,179 @@ mod json_tests {
             audio.get("powertrain_synthesis").is_some(),
             "audio section must contain powertrain_synthesis contract"
         );
+    }
+
+    #[test]
+    fn schema_v3_full_profile_parses_and_round_trips() {
+        let json = r#"{
+            "schema_version": 3,
+            "tires": {
+                "force_model": {
+                    "front": {
+                        "lateral_peak_slip_angle_rad": 0.18,
+                        "longitudinal_peak_slip_ratio": 0.14,
+                        "lateral_slide_mu_ratio": 0.92,
+                        "longitudinal_slide_mu_ratio": 0.88
+                    },
+                    "rear": {
+                        "lateral_peak_slip_angle_rad": 0.21,
+                        "longitudinal_peak_slip_ratio": 0.16,
+                        "lateral_slide_mu_ratio": 0.95,
+                        "longitudinal_slide_mu_ratio": 0.90
+                    }
+                },
+                "pressure_mechanics": {
+                    "compliance_sensitivity": 0.72,
+                    "response_sensitivity": -0.18,
+                    "rolling_resistance_sensitivity": -0.35
+                }
+            },
+            "suspension": {
+                "front": {
+                    "spring_length": 0.25,
+                    "resting_ratio": 0.28,
+                    "damping_ratio": 0.80,
+                    "bump_damp_multiplier": 1.3,
+                    "rebound_damp_multiplier": 1.1,
+                    "arb_ratio": 0.20,
+                    "toe": 0.0017453,
+                    "camber": -0.0174533,
+                    "bump_stop_multiplier": 2.2,
+                    "camber_gain_rad_per_m": -0.021,
+                    "toe_gain_rad_per_m": 0.004
+                },
+                "rear": {
+                    "spring_length": 0.25,
+                    "resting_ratio": 0.28,
+                    "damping_ratio": 0.80,
+                    "bump_damp_multiplier": 1.3,
+                    "rebound_damp_multiplier": 1.1,
+                    "arb_ratio": 0.20,
+                    "toe": 0.0017453,
+                    "camber": -0.0174533,
+                    "bump_stop_multiplier": 2.2,
+                    "camber_gain_rad_per_m": 0.018,
+                    "toe_gain_rad_per_m": -0.002
+                }
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).expect("v3 profile must validate");
+        assert_eq!(cfg.schema_version, 3);
+        assert_eq!(cfg.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
+        assert_eq!(cfg.front_tire_force.longitudinal_peak_slip_ratio, 0.14);
+        assert_eq!(cfg.front_tire_force.lateral_slide_mu_ratio, 0.92);
+        assert_eq!(cfg.front_tire_force.longitudinal_slide_mu_ratio, 0.88);
+        assert_eq!(cfg.rear_tire_force.lateral_peak_slip_angle_rad, 0.21);
+        assert_eq!(cfg.rear_tire_force.longitudinal_peak_slip_ratio, 0.16);
+        assert_eq!(cfg.rear_tire_force.lateral_slide_mu_ratio, 0.95);
+        assert_eq!(cfg.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
+        assert_eq!(cfg.pressure_mechanics.compliance_sensitivity, 0.72);
+        assert_eq!(cfg.pressure_mechanics.response_sensitivity, -0.18);
+        assert_eq!(
+            cfg.pressure_mechanics.rolling_resistance_sensitivity,
+            -0.35
+        );
+        assert_eq!(cfg.front_camber_gain_rad_per_m, -0.021);
+        assert_eq!(cfg.front_toe_gain_rad_per_m, 0.004);
+        assert_eq!(cfg.rear_camber_gain_rad_per_m, 0.018);
+        assert_eq!(cfg.rear_toe_gain_rad_per_m, -0.002);
+
+        let round_trip = VehicleConfig::from_json_str(
+            &serde_json::to_string(&cfg.to_json_value()).unwrap(),
+        )
+        .expect("v3 round trip must validate");
+        assert_eq!(round_trip.schema_version, 3);
+        assert_eq!(round_trip.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
+        assert_eq!(round_trip.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
+        assert_eq!(round_trip.pressure_mechanics.compliance_sensitivity, 0.72);
+        assert_eq!(round_trip.front_camber_gain_rad_per_m, -0.021);
+        assert_eq!(round_trip.rear_toe_gain_rad_per_m, -0.002);
+    }
+
+    #[test]
+    fn schema_v3_absent_sections_use_parser_defaults() {
+        let cfg = VehicleConfig::from_json_str(r#"{"schema_version": 3}"#).unwrap();
+        assert_eq!(cfg.schema_version, 3);
+        assert_eq!(
+            cfg.front_tire_force,
+            TireForceProfile {
+                lateral_peak_slip_angle_rad: 0.10,
+                longitudinal_peak_slip_ratio: 0.12,
+                lateral_slide_mu_ratio: 1.0,
+                longitudinal_slide_mu_ratio: 1.0,
+            }
+        );
+        assert_eq!(cfg.rear_tire_force, cfg.front_tire_force);
+        assert_eq!(
+            cfg.pressure_mechanics,
+            PressureMechanicsSensitivity::default()
+        );
+        assert_eq!(cfg.front_camber_gain_rad_per_m, 0.0);
+        assert_eq!(cfg.rear_toe_gain_rad_per_m, 0.0);
+    }
+
+    #[test]
+    fn schema_v3_invalid_force_model_values_rejected() {
+        for bad in [
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"lateral_peak_slip_angle_rad": 0.61}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"lateral_peak_slip_angle_rad": 0.01}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"longitudinal_peak_slip_ratio": 1.6}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"lateral_slide_mu_ratio": 0.05}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"rear": {"longitudinal_slide_mu_ratio": 1.2}}}}"#,
+        ] {
+            assert!(
+                VehicleConfig::from_json_str(bad).is_err(),
+                "must reject: {bad}"
+            );
+        }
+    }
+
+    #[test]
+    fn schema_v3_invalid_pressure_mechanics_and_gains_rejected() {
+        let bad_mechanics = r#"{
+            "schema_version": 3,
+            "tires": {"pressure_mechanics": {"compliance_sensitivity": 1e320}}
+        }"#;
+        assert!(VehicleConfig::from_json_str(bad_mechanics).is_err());
+        let bad_gain = r#"{
+            "schema_version": 3,
+            "suspension": {
+                "front": {
+                    "spring_length": 0.25,
+                    "resting_ratio": 0.28,
+                    "damping_ratio": 0.80,
+                    "camber_gain_rad_per_m": 1e320
+                }
+            }
+        }"#;
+        assert!(VehicleConfig::from_json_str(bad_gain).is_err());
+    }
+
+    #[test]
+    fn schema_v2_emission_does_not_include_v3_sections() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        assert_eq!(cfg.schema_version, 2);
+        let json = serde_json::to_string(&cfg.to_json_value()).unwrap();
+        assert!(
+            !json.contains("force_model"),
+            "v2 emission must not carry force_model: {json}"
+        );
+        assert!(
+            !json.contains("pressure_mechanics"),
+            "v2 emission must not carry pressure_mechanics"
+        );
+        assert!(
+            !json.contains("camber_gain_rad_per_m"),
+            "v2 emission must not carry camber_gain_rad_per_m"
+        );
+    }
+
+    #[test]
+    fn schema_v4_is_rejected() {
+        let json = r#"{
+            "schema_version": 4,
+            "tires": {"force_model": {"front": {"lateral_peak_slip_angle_rad": 0.18}}}
+        }"#;
+        assert!(VehicleConfig::from_json_str(json).is_err());
     }
 }
