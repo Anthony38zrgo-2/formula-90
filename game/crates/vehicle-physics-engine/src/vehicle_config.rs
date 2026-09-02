@@ -166,8 +166,6 @@ pub struct VehicleConfig {
     pub aero_blend_min_speed: f64,
     #[serde(default = "default_aero_blend_full_speed")]
     pub aero_blend_full_speed: f64,
-    #[serde(default = "default_aero_yaw_decay_exponent")]
-    pub aero_yaw_decay_exponent: f64,
 
     // Automatic transmission shift logic (from f1_94_physics.json `automatic_shift`)
     pub automatic_shift: AutomaticShift,
@@ -407,9 +405,6 @@ fn default_aero_blend_min_speed() -> f64 {
 fn default_aero_blend_full_speed() -> f64 {
     27.778
 }
-fn default_aero_yaw_decay_exponent() -> f64 {
-    1.30
-}
 
 impl Default for VehicleConfig {
     fn default() -> Self {
@@ -597,7 +592,6 @@ impl VehicleConfig {
             aero_lag_tau: default_aero_lag_tau(),
             aero_blend_min_speed: default_aero_blend_min_speed(),
             aero_blend_full_speed: default_aero_blend_full_speed(),
-            aero_yaw_decay_exponent: default_aero_yaw_decay_exponent(),
         }
     }
 
@@ -764,7 +758,6 @@ impl VehicleConfig {
             aero_lag_tau: default_aero_lag_tau(),
             aero_blend_min_speed: default_aero_blend_min_speed(),
             aero_blend_full_speed: default_aero_blend_full_speed(),
-            aero_yaw_decay_exponent: default_aero_yaw_decay_exponent(),
         }
     }
 
@@ -2250,8 +2243,6 @@ struct JsonAero {
     blend_min_speed_mps: f64,
     #[serde(default = "default_blend_full")]
     blend_full_speed_mps: f64,
-    #[serde(default = "default_yaw_exp")]
-    yaw_decay_exponent: f64,
 }
 impl Default for JsonAero {
     fn default() -> Self {
@@ -2263,7 +2254,6 @@ impl Default for JsonAero {
             lag_tau_s: 0.048,
             blend_min_speed_mps: 4.167,
             blend_full_speed_mps: 27.778,
-            yaw_decay_exponent: 1.30,
         }
     }
 }
@@ -2284,9 +2274,6 @@ fn default_blend_min() -> f64 {
 }
 fn default_blend_full() -> f64 {
     27.778
-}
-fn default_yaw_exp() -> f64 {
-    1.30
 }
 
 // ── Driving aids (schema v2) ────────────────────────────────────────────────────
@@ -3075,7 +3062,6 @@ impl JsonVehicleSpec {
             aero_lag_tau: self.aero.lag_tau_s,
             aero_blend_min_speed: self.aero.blend_min_speed_mps,
             aero_blend_full_speed: self.aero.blend_full_speed_mps,
-            aero_yaw_decay_exponent: self.aero.yaw_decay_exponent,
 
             // Auto-clutch / launch fidelity (previously hardcoded/ignored)
             max_clutch_torque_ratio: self.powertrain.max_clutch_torque_ratio,
@@ -3345,7 +3331,6 @@ impl JsonVehicleSpec {
                 lag_tau_s: cfg.aero_lag_tau,
                 blend_min_speed_mps: cfg.aero_blend_min_speed,
                 blend_full_speed_mps: cfg.aero_blend_full_speed,
-                yaw_decay_exponent: cfg.aero_yaw_decay_exponent,
             },
             coordinate_contract: Some({
                 let mut m = HashMap::new();
@@ -3470,10 +3455,6 @@ mod json_tests {
         assert_eq!(loaded.gear_ratios, original.gear_ratios);
         assert_eq!(loaded.torque_curve, original.torque_curve);
         assert_eq!(loaded.coefficient_of_drag, original.coefficient_of_drag);
-        assert_eq!(
-            loaded.aero_yaw_decay_exponent,
-            original.aero_yaw_decay_exponent
-        );
         assert!(
             (loaded.front_weight_distribution - original.front_weight_distribution).abs() < 1e-10
         );

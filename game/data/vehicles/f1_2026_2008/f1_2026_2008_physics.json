@@ -476,8 +476,7 @@
     "air_density": 1.225,
     "lag_tau_s": 0.03,
     "blend_min_speed_mps": 5.556,
-    "blend_full_speed_mps": 41.667,
-    "yaw_decay_exponent": 0.8
+    "blend_full_speed_mps": 41.667
   },
   "aids": {
     "traction_control_available": true,
