@@ -15,6 +15,10 @@ name = "physics_cli"
 path = "src/bin/physics_cli.rs"
 
 [[bin]]
+name = "tire_sweep"
+path = "src/bin/tire_sweep.rs"
+
+[[bin]]
 name = "telemetry_compare"
 path = "src/bin/telemetry_compare.rs"
 

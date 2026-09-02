@@ -1,5 +1,7 @@
 pub mod aero;
+pub mod bin_support;
 pub mod brake_thermals;
+pub mod calibration;
 pub mod ffi;
 pub mod powertrain;
 pub mod simulation;
@@ -12,7 +14,9 @@ pub mod types;
 pub mod vehicle_config;
 
 pub use aero::*;
+pub use bin_support::*;
 pub use brake_thermals::*;
+pub use calibration::*;
 pub use ffi::*;
 pub use powertrain::*;
 pub use simulation::*;

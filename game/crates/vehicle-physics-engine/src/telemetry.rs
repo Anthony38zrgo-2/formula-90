@@ -48,6 +48,26 @@ pub struct TelemetryFrame {
     pub brake_spin_post_rad_s: [f64; 4],
     pub brake_power_w: [f64; 4],
     pub brake_energy_j: [f64; 4],
+    // --- BASE-000 calibration/baseline metrics (FL/FR/RL/RR order) ---
+    pub yaw_rate_rad_s: f64,
+    pub wheel_normal_force_n: [f64; 4],
+    pub wheel_slip_angle_rad: [f64; 4],
+    pub wheel_slip_ratio: [f64; 4],
+    pub wheel_effective_slip_angle_rad: [f64; 4],
+    pub wheel_effective_slip_ratio: [f64; 4],
+    pub wheel_longitudinal_force_n: [f64; 4],
+    pub wheel_lateral_force_n: [f64; 4],
+    pub wheel_aligning_torque_nm: [f64; 4],
+    pub wheel_spin_rad_s: [f64; 4],
+    pub wheel_dynamic_camber_rad: [f64; 4],
+    pub tire_pressure_kpa: [f64; 4],
+    pub tread_temperature_c: [f64; 4],
+    pub carcass_temperature_c: [f64; 4],
+    pub brake_efficiency: [f64; 4],
+    pub aero_front_downforce_n: f64,
+    pub aero_floor_downforce_n: f64,
+    pub aero_rear_downforce_n: f64,
+    pub aero_drag_n: f64,
 }
 
 #[cfg(test)]
@@ -130,6 +150,67 @@ impl TelemetryFrame {
         "RR_SpinPost_RadS",
         "RR_BrakePower_W",
         "RR_BrakeEnergy_J",
+        "YawRate_RadS",
+        "FL_NormalForce_N",
+        "FR_NormalForce_N",
+        "RL_NormalForce_N",
+        "RR_NormalForce_N",
+        "FL_SlipAngle_Rad",
+        "FR_SlipAngle_Rad",
+        "RL_SlipAngle_Rad",
+        "RR_SlipAngle_Rad",
+        "FL_SlipRatio",
+        "FR_SlipRatio",
+        "RL_SlipRatio",
+        "RR_SlipRatio",
+        "FL_EffSlipAngle_Rad",
+        "FR_EffSlipAngle_Rad",
+        "RL_EffSlipAngle_Rad",
+        "RR_EffSlipAngle_Rad",
+        "FL_EffSlipRatio",
+        "FR_EffSlipRatio",
+        "RL_EffSlipRatio",
+        "RR_EffSlipRatio",
+        "FL_LongForce_N",
+        "FR_LongForce_N",
+        "RL_LongForce_N",
+        "RR_LongForce_N",
+        "FL_LatForce_N",
+        "FR_LatForce_N",
+        "RL_LatForce_N",
+        "RR_LatForce_N",
+        "FL_AlignTorque_Nm",
+        "FR_AlignTorque_Nm",
+        "RL_AlignTorque_Nm",
+        "RR_AlignTorque_Nm",
+        "FL_Spin_RadS",
+        "FR_Spin_RadS",
+        "RL_Spin_RadS",
+        "RR_Spin_RadS",
+        "FL_Camber_Rad",
+        "FR_Camber_Rad",
+        "RL_Camber_Rad",
+        "RR_Camber_Rad",
+        "FL_TirePressure_KPa",
+        "FR_TirePressure_KPa",
+        "RL_TirePressure_KPa",
+        "RR_TirePressure_KPa",
+        "FL_TreadTemp_C",
+        "FR_TreadTemp_C",
+        "RL_TreadTemp_C",
+        "RR_TreadTemp_C",
+        "FL_CarcassTemp_C",
+        "FR_CarcassTemp_C",
+        "RL_CarcassTemp_C",
+        "RR_CarcassTemp_C",
+        "FL_BrakeEff",
+        "FR_BrakeEff",
+        "RL_BrakeEff",
+        "RR_BrakeEff",
+        "AeroFront_N",
+        "AeroFloor_N",
+        "AeroRear_N",
+        "AeroDrag_N",
     ];
 
     /// Formats the telemetry frame into a single comma-separated CSV line.
@@ -191,6 +272,35 @@ impl TelemetryFrame {
                 format!("{:.3}", self.brake_energy_j[i]),
             ]);
         }
+        fields.push(format!("{:.5}", self.yaw_rate_rad_s));
+        fields.extend(self.wheel_normal_force_n.iter().map(|v| format!("{v:.3}")));
+        fields.extend(self.wheel_slip_angle_rad.iter().map(|v| format!("{v:.5}")));
+        fields.extend(self.wheel_slip_ratio.iter().map(|v| format!("{v:.5}")));
+        fields.extend(
+            self.wheel_effective_slip_angle_rad
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_effective_slip_ratio
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(self.wheel_longitudinal_force_n.iter().map(|v| format!("{v:.3}")));
+        fields.extend(self.wheel_lateral_force_n.iter().map(|v| format!("{v:.3}")));
+        fields.extend(self.wheel_aligning_torque_nm.iter().map(|v| format!("{v:.3}")));
+        fields.extend(self.wheel_spin_rad_s.iter().map(|v| format!("{v:.3}")));
+        fields.extend(self.wheel_dynamic_camber_rad.iter().map(|v| format!("{v:.5}")));
+        fields.extend(self.tire_pressure_kpa.iter().map(|v| format!("{v:.2}")));
+        fields.extend(self.tread_temperature_c.iter().map(|v| format!("{v:.2}")));
+        fields.extend(self.carcass_temperature_c.iter().map(|v| format!("{v:.2}")));
+        fields.extend(self.brake_efficiency.iter().map(|v| format!("{v:.4}")));
+        fields.extend([
+            format!("{:.3}", self.aero_front_downforce_n),
+            format!("{:.3}", self.aero_floor_downforce_n),
+            format!("{:.3}", self.aero_rear_downforce_n),
+            format!("{:.3}", self.aero_drag_n),
+        ]);
         fields.join(",")
     }
 }

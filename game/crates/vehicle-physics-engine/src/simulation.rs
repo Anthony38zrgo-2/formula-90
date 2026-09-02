@@ -784,6 +784,39 @@ impl VehicleSimulator {
             }),
             brake_power_w: std::array::from_fn(|i| st.brake_thermal.wheels[i].brake_power_w),
             brake_energy_j: std::array::from_fn(|i| st.brake_thermal.wheels[i].brake_energy_j),
+            yaw_rate_rad_s: st.angular_velocity.y,
+            wheel_normal_force_n: std::array::from_fn(|i| {
+                st.suspension.wheels[i].total_normal_force
+            }),
+            wheel_slip_angle_rad: std::array::from_fn(|i| st.tires.wheels[i].slip_angle_rad),
+            wheel_slip_ratio: std::array::from_fn(|i| st.tires.wheels[i].slip_ratio),
+            wheel_effective_slip_angle_rad: std::array::from_fn(|i| {
+                st.tires.wheels[i].effective_slip_angle_rad
+            }),
+            wheel_effective_slip_ratio: std::array::from_fn(|i| {
+                st.tires.wheels[i].effective_slip_ratio
+            }),
+            wheel_longitudinal_force_n: std::array::from_fn(|i| {
+                st.tires.wheels[i].longitudinal_force
+            }),
+            wheel_lateral_force_n: std::array::from_fn(|i| st.tires.wheels[i].lateral_force),
+            wheel_aligning_torque_nm: std::array::from_fn(|i| st.tires.wheels[i].aligning_torque),
+            wheel_spin_rad_s: std::array::from_fn(|i| st.tires.wheels[i].spin),
+            wheel_dynamic_camber_rad: std::array::from_fn(|i| {
+                st.suspension.wheels[i].dynamic_camber
+            }),
+            tire_pressure_kpa: std::array::from_fn(|i| {
+                st.tire_thermal.wheels[i].pressure_kpa_gauge
+            }),
+            tread_temperature_c: std::array::from_fn(|i| {
+                st.tire_thermal.wheels[i].average_tread_c()
+            }),
+            carcass_temperature_c: std::array::from_fn(|i| st.tire_thermal.wheels[i].carcass_c),
+            brake_efficiency: st.brake_thermal.efficiency_scales(),
+            aero_front_downforce_n: st.aero.front_downforce,
+            aero_floor_downforce_n: st.aero.diffuser_downforce,
+            aero_rear_downforce_n: st.aero.rear_downforce,
+            aero_drag_n: st.aero.drag_force,
         }
     }
 }
