@@ -40,6 +40,15 @@ pub struct WheelSuspensionState {
     pub effective_friction: f64,
     pub effective_stiffness: f64,
     pub effective_rolling_resistance: f64,
+    /// Effective camber (rad) at the contact patch — kinematic camber combined with
+    /// the road-plane (tri-ray footprint) contribution. Consumed by the tire model
+    /// and thermal inputs via `dynamic_camber` (kept in sync).
+    #[serde(default)]
+    pub effective_contact_camber_rad: f64,
+    /// Wheel-kinematic camber (rad): static camber plus the camber gain applied to
+    /// suspension travel relative to rest. Never includes the road-plane incline.
+    #[serde(default)]
+    pub kinematic_camber_rad: f64,
     pub dynamic_camber: f64,
 
     // --- New mechanical wheel state ---
@@ -109,6 +118,8 @@ impl WheelSuspensionState {
                 1.0,
             ),
             dynamic_camber: camber(config, wheel),
+            effective_contact_camber_rad: camber(config, wheel),
+            kinematic_camber_rad: camber(config, wheel),
             contact_fraction: 0.0,
             ray_grounded: [false; 3],
             ray_compressions_m: [0.0; 3],
@@ -251,7 +262,16 @@ impl SuspensionSystem {
                 SurfaceType::Road,
                 1.0,
             );
-            state.dynamic_camber = camber(config, wheel);
+            // No road plane: effective camber equals the wheel-kinematic camber derived
+            // from the current suspension travel. Continuous with the contact branch
+            // because the compression state itself is continuous.
+            let travel_delta_m = state.suspension_compression_m
+                - spring_len * resting_ratio(config, wheel);
+            let kinematic_camber =
+                camber(config, wheel) + camber_gain(config, wheel) * travel_delta_m;
+            state.kinematic_camber_rad = kinematic_camber;
+            state.dynamic_camber = kinematic_camber;
+            state.effective_contact_camber_rad = kinematic_camber;
             return;
         }
 
@@ -266,15 +286,22 @@ impl SuspensionSystem {
             blended_surface(sample, &config.surface_rolling_resistance, 1.0);
 
         let base_camber = camber(config, wheel);
+        let travel_delta_m =
+            state.suspension_compression_m - spring_len * resting_ratio(config, wheel);
+        let kinematic_camber = base_camber + camber_gain(config, wheel) * travel_delta_m;
+        state.kinematic_camber_rad = kinematic_camber;
         let span = tire_width(config, wheel) * config.tri_ray_spacing_ratio * 2.0;
         if sample.inner.is_colliding && sample.outer.is_colliding && span > 1e-6 {
             let delta_h = sample.inner.distance - sample.outer.distance;
             let incline = (delta_h / span).atan();
+            // Effective camber combines the kinematic travel term with the road plane:
+            // the right side mirrors the incline (existing banked-road convention).
             state.dynamic_camber =
-                base_camber + if wheel.is_right() { -incline } else { incline };
+                kinematic_camber + if wheel.is_right() { -incline } else { incline };
         } else {
-            state.dynamic_camber = base_camber;
+            state.dynamic_camber = kinematic_camber;
         }
+        state.effective_contact_camber_rad = state.dynamic_camber;
     }
 
     fn solve_force(
@@ -536,6 +563,20 @@ fn camber(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
         config.rear_camber
     }
 }
+fn camber_gain(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
+    if wheel.is_front() {
+        config.front_camber_gain_rad_per_m
+    } else {
+        config.rear_camber_gain_rad_per_m
+    }
+}
+
+/// Static/rest suspension compression (m): spring length x resting ratio.
+/// `suspension_compression_m - rest_compression_m` is the travel delta consumed by
+/// the camber/toe gain terms. Positive delta = bump, negative delta = rebound.
+pub fn rest_compression_m(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
+    spring_length(config, wheel) * resting_ratio(config, wheel)
+}
 
 fn ray_compression(hit: &RaycastHit, max_ray_length: f64) -> f64 {
     if hit.is_colliding {
@@ -780,5 +821,184 @@ mod tests {
             d_compression
         );
         assert!(s.total_normal_force > static_wheel_load(&cfg, WheelIndex::FrontLeft));
+    }
+
+    #[test]
+    fn camber_gain_zero_preserves_legacy_static_camber() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let mut sus = SuspensionSystem::new(&cfg);
+        let wheel = WheelIndex::FrontLeft;
+        let max_len = cfg.front_spring_length + cfg.front_tire_radius;
+        let rest = rest_compression_m(&cfg, wheel);
+        let dt = 1.0 / 120.0;
+        let sample = TriRaycastSample {
+            inner: flat_hit(max_len - rest),
+            center: flat_hit(max_len - rest),
+            outer: flat_hit(max_len - rest),
+        };
+        // First call performs the one-shot snapshot initialization; afterwards the
+        // state compression feeds the travel delta directly.
+        sus.sample_contact(&cfg, wheel, &sample, dt);
+        sus.wheels[wheel as usize].suspension_compression_m = rest;
+        sus.sample_contact(&cfg, wheel, &sample, dt);
+        let s = &sus.wheels[wheel as usize];
+        assert!(
+            (s.kinematic_camber_rad - cfg.front_camber).abs() < 1e-12,
+            "kinematic camber at rest must equal static camber, got {}",
+            s.kinematic_camber_rad
+        );
+        assert!((s.effective_contact_camber_rad - cfg.front_camber).abs() < 1e-12);
+        assert!((s.dynamic_camber - cfg.front_camber).abs() < 1e-12);
+    }
+
+    #[test]
+    fn camber_gain_bump_rebound_direction_and_flat_mirror_symmetry() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.front_camber_gain_rad_per_m = -0.021;
+        cfg.rear_camber_gain_rad_per_m = 0.0;
+        let mut sus = SuspensionSystem::new(&cfg);
+        let dt = 1.0 / 120.0;
+        let max_len = cfg.front_spring_length + cfg.front_tire_radius;
+        let rest = rest_compression_m(&cfg, WheelIndex::FrontLeft);
+        let sample_at =
+            |x: f64| TriRaycastSample {
+                inner: flat_hit(max_len - x),
+                center: flat_hit(max_len - x),
+                outer: flat_hit(max_len - x),
+            };
+        // Initialize both wheels with a rest-time contact snapshot, then drive the
+        // state compression directly so the travel delta is exact.
+        for wheel in [WheelIndex::FrontLeft, WheelIndex::FrontRight] {
+            sus.sample_contact(&cfg, wheel, &sample_at(rest), dt);
+        }
+
+        // Bump: +20 mm travel => camber shifts by gain * travel (negative direction).
+        let bump = rest + 0.020;
+        sus.wheels[WheelIndex::FrontLeft as usize].suspension_compression_m = bump;
+        sus.wheels[WheelIndex::FrontRight as usize].suspension_compression_m = bump;
+        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample_at(bump), dt);
+        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(bump), dt);
+        let fl = &sus.wheels[WheelIndex::FrontLeft as usize];
+        let fr = &sus.wheels[WheelIndex::FrontRight as usize];
+        let expected = cfg.front_camber + (-0.021 * 0.020);
+        assert!(
+            (fl.kinematic_camber_rad - expected).abs() < 1e-9,
+            "bump must shift kinematic camber by gain*travel, got {} expected {}",
+            fl.kinematic_camber_rad,
+            expected
+        );
+        assert!(
+            (fr.kinematic_camber_rad - fl.kinematic_camber_rad).abs() < 1e-12,
+            "flat road must keep left/right kinematic camber symmetric"
+        );
+
+        // Rebound: -10 mm travel shifts opposite direction; mirror symmetry holds.
+        let rebound = rest - 0.010;
+        sus.wheels[WheelIndex::FrontLeft as usize].suspension_compression_m = rebound;
+        sus.wheels[WheelIndex::FrontRight as usize].suspension_compression_m = rebound;
+        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample_at(rebound), dt);
+        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(rebound), dt);
+        let rl = &sus.wheels[WheelIndex::FrontLeft as usize];
+        let rr = &sus.wheels[WheelIndex::FrontRight as usize];
+        let expected_rebound = cfg.front_camber + (-0.021 * -0.010);
+        assert!(
+            (rl.kinematic_camber_rad - expected_rebound).abs() < 1e-9,
+            "rebound must shift camber opposite to bump, got {}",
+            rl.kinematic_camber_rad
+        );
+        assert!((rl.dynamic_camber - rr.dynamic_camber).abs() < 1e-12);
+    }
+
+    #[test]
+    fn banked_road_splits_kinematic_camber_from_effective_contact_camber() {
+        let cfg = VehicleConfig::f1_94_canonical();
+        let mut sus = SuspensionSystem::new(&cfg);
+        let dt = 1.0 / 120.0;
+        let max_len = cfg.front_spring_length + cfg.front_tire_radius;
+        let rest = rest_compression_m(&cfg, WheelIndex::FrontLeft);
+        let span = cfg.front_tire_width * cfg.tri_ray_spacing_ratio * 2.0;
+        // Inner ray 10 mm closer than the outer: a road-plane incline of atan(0.010/span).
+        let sample = TriRaycastSample {
+            inner: flat_hit(max_len - rest - 0.010),
+            center: flat_hit(max_len - rest),
+            outer: flat_hit(max_len - rest),
+        };
+        sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample, dt);
+        let fl = &sus.wheels[WheelIndex::FrontLeft as usize];
+        assert!(
+            (fl.kinematic_camber_rad - cfg.front_camber).abs() < 1e-12,
+            "kinematic camber must ignore the road plane"
+        );
+        let incline = (0.010_f64 / span).atan();
+        let expected_effective = cfg.front_camber - incline;
+        assert!(
+            (fl.effective_contact_camber_rad - expected_effective).abs() < 1e-9,
+            "effective camber must combine kinematic camber with the road incline"
+        );
+        assert!((fl.dynamic_camber - expected_effective).abs() < 1e-9);
+        let fl_kinematic = fl.kinematic_camber_rad;
+        let fl_dynamic = fl.dynamic_camber;
+
+        // Same geometric relationship on the right wheel mirrors the incline sign,
+        // keeping the axle symmetric across identical (mirrored) road shapes.
+        sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample, dt);
+        let fr = &sus.wheels[WheelIndex::FrontRight as usize];
+        let expected_right = cfg.front_camber + incline;
+        assert!(
+            (fr.effective_contact_camber_rad - expected_right).abs() < 1e-9,
+            "right wheel must mirror the incline, got {}",
+            fr.effective_contact_camber_rad
+        );
+        assert!((fl_kinematic - fr.kinematic_camber_rad).abs() < 1e-12);
+        assert!(
+            (fl_dynamic + fr.dynamic_camber - 2.0 * cfg.front_camber).abs() < 1e-9,
+            "symmetric banked samples must keep the axle camber neutral"
+        );
+    }
+
+    #[test]
+    fn curb_strike_camber_stays_continuous() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.front_camber_gain_rad_per_m = -0.021;
+        cfg.rear_camber_gain_rad_per_m = -0.015;
+        let mut suspension = SuspensionSystem::new(&cfg);
+        let dt = 1.0 / 120.0;
+        let rest_fl =
+            cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
+        let rest_rl =
+            cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+        let flat = [
+            TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
+            TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
+            TriRaycastSample { inner: flat_hit(rest_rl), center: flat_hit(rest_rl), outer: flat_hit(rest_rl) },
+            TriRaycastSample { inner: flat_hit(rest_rl), center: flat_hit(rest_rl), outer: flat_hit(rest_rl) },
+        ];
+        for _ in 0..120 {
+            suspension.step(&cfg, &flat, dt);
+        }
+        let static_camber = suspension.wheels[0].dynamic_camber;
+
+        // 40 mm curb under the front-left wheel.
+        let mut bump = flat.clone();
+        bump[0].inner.distance -= 0.040;
+        bump[0].center.distance -= 0.040;
+        bump[0].outer.distance -= 0.040;
+        for _ in 0..60 {
+            suspension.step(&cfg, &bump, dt);
+            let s = &suspension.wheels[0];
+            assert!(
+                (s.dynamic_camber - static_camber).abs() < 0.03,
+                "camber must not jump on a curb strike, delta {}",
+                s.dynamic_camber - static_camber
+            );
+            assert!(
+                (s.dynamic_camber - s.effective_contact_camber_rad).abs() < 1e-12,
+                "effective contact camber must stay in sync with the tire feed"
+            );
+        }
+        assert!(
+            suspension.wheels[0].kinematic_camber_rad < cfg.front_camber,
+            "negative gain on a bump must shift camber toward negative"
+        );
     }
 }

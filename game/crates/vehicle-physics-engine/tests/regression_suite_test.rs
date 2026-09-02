@@ -113,8 +113,8 @@ fn test_steering_response_parity() {
     let dt = 1.0 / 120.0;
 
     // 1. Positive steering input (left) produces positive wheel angle
-    let angle_left = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 0.5);
-    let angle_right = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, -0.5);
+    let angle_left = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 0.5, 0.0);
+    let angle_right = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, -0.5, 0.0);
     assert!(angle_left > 0.0, "Positive steer input must produce positive wheel angle");
     assert!(angle_right < 0.0, "Negative steer input must produce negative wheel angle");
 

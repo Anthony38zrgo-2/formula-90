@@ -1,7 +1,7 @@
 use crate::aero::{AeroEnvironment, AeroForces};
 use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
-use crate::suspension::SuspensionSystem;
+use crate::suspension::{rest_compression_m, SuspensionSystem};
 use crate::telemetry::TelemetryFrame;
 use crate::tire::TireSystem;
 use crate::tire_thermals::{TireEnvironment, TireThermalInput, TireThermalSystem};
@@ -386,7 +386,10 @@ impl VehicleSimulator {
         let braking = effective_input.brake > 0.0 || effective_input.handbrake > 0.0;
         for wheel in WheelIndex::ALL {
             let i = wheel as usize;
-            let steer_angle = steering_angle_for_wheel(cfg, wheel, st.steer_input_smoothed);
+            let travel_delta_m = st.suspension.wheels[i].suspension_compression_m
+                - rest_compression_m(cfg, wheel);
+            let steer_angle =
+                steering_angle_for_wheel(cfg, wheel, st.steer_input_smoothed, travel_delta_m);
             st.tires.wheels[i].steer_angle_rad = steer_angle;
 
             let contact_point = st.suspension.wheels[i].effective_contact_point;
@@ -582,7 +585,11 @@ impl VehicleSimulator {
         }
 
         let yaw_rate = basis.inverse_transform_vector(st.angular_velocity).y;
-        let steer = steering_angle_for_wheel(cfg, WheelIndex::FrontLeft, st.steer_input_smoothed);
+        let fl_travel = st.suspension.wheels[WheelIndex::FrontLeft as usize]
+            .suspension_compression_m
+            - rest_compression_m(cfg, WheelIndex::FrontLeft);
+        let steer =
+            steering_angle_for_wheel(cfg, WheelIndex::FrontLeft, st.steer_input_smoothed, fl_travel);
         let target_yaw = forward_speed * steer.tan() / cfg.wheelbase.max(1e-3);
 
         // True stability limiter: only counter rotation that EXCEEDS the yaw the
@@ -719,6 +726,7 @@ impl VehicleSimulator {
 
     fn build_telemetry_frame(&self) -> TelemetryFrame {
         let st = &self.state;
+        let cfg = &self.config;
         let basis = st.transform.basis;
         let local_accel = basis.inverse_transform_vector(st.linear_acceleration);
         let front_slip =
@@ -825,6 +833,23 @@ impl VehicleSimulator {
                 st.tires.wheels[i].combined_utilization
             }),
             wheel_tire_regime: std::array::from_fn(|i| st.tires.wheels[i].tire_regime),
+            wheel_kinematic_camber_rad: std::array::from_fn(|i| {
+                st.suspension.wheels[i].kinematic_camber_rad
+            }),
+            wheel_effective_camber_rad: std::array::from_fn(|i| {
+                st.suspension.wheels[i].effective_contact_camber_rad
+            }),
+            wheel_effective_toe_rad: std::array::from_fn(|i| {
+                effective_toe_rad(
+                    cfg,
+                    WheelIndex::ALL[i],
+                    st.suspension.wheels[i].suspension_compression_m
+                        - rest_compression_m(cfg, WheelIndex::ALL[i]),
+                )
+            }),
+            wheel_effective_steer_angle_rad: std::array::from_fn(|i| {
+                st.tires.wheels[i].steer_angle_rad
+            }),
         }
     }
 }
@@ -855,7 +880,39 @@ pub fn diffuser_center_local(config: &VehicleConfig) -> Vec3 {
     Vec3::new(0.0, config.center_of_gravity_height_offset, 0.0)
 }
 
-pub fn steering_angle_for_wheel(config: &VehicleConfig, wheel: WheelIndex, steering: f64) -> f64 {
+/// Generous final-bound clamp on effective toe (rad) that protects against corrupt
+/// configuration gain values producing extreme steer angles. All physically sane
+/// calibration ranges (static toe up to ~0.006 rad, gain-driven extremes up to
+/// ~0.005 rad over a full corner travel) sit far inside this bound.
+pub const MAX_EFFECTIVE_TOE_RAD: f64 = 0.05;
+
+/// Effective toe (rad) for one wheel at a given suspension travel delta (m).
+///
+/// Travel delta is `suspension_compression_m - rest_compression_m`: positive for a
+/// bump, negative for a rebound. The gain term applies even when the axle steering
+/// ratio is zero, and it is NOT filtered by steering input smoothing (it is driven
+/// by the road, not by driver input). The static+dynamic total is clamped to
+/// `MAX_EFFECTIVE_TOE_RAD`.
+pub fn effective_toe_rad(config: &VehicleConfig, wheel: WheelIndex, travel_delta_m: f64) -> f64 {
+    let static_toe = if wheel.is_front() {
+        config.front_toe
+    } else {
+        config.rear_toe
+    };
+    let gain = if wheel.is_front() {
+        config.front_toe_gain_rad_per_m
+    } else {
+        config.rear_toe_gain_rad_per_m
+    };
+    (static_toe + gain * travel_delta_m).clamp(-MAX_EFFECTIVE_TOE_RAD, MAX_EFFECTIVE_TOE_RAD)
+}
+
+pub fn steering_angle_for_wheel(
+    config: &VehicleConfig,
+    wheel: WheelIndex,
+    steering: f64,
+    travel_delta_m: f64,
+) -> f64 {
     let ratio = if wheel.is_front() {
         config.front_steering_ratio
     } else {
@@ -884,11 +941,7 @@ pub fn steering_angle_for_wheel(config: &VehicleConfig, wheel: WheelIndex, steer
     } else {
         -geometric_ackermann
     };
-    let toe = if wheel.is_front() {
-        config.front_toe
-    } else {
-        config.rear_toe
-    };
+    let toe = effective_toe_rad(config, wheel, travel_delta_m);
     let signed_toe = if wheel.is_left() { -toe } else { toe };
     config.max_steering_angle
         * (input + (1.0 - (input * 0.5 * std::f64::consts::PI).cos()) * ackermann)

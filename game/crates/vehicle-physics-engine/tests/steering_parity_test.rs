@@ -5,14 +5,14 @@ fn steering_input_sign_matches_wheel_angle_convention() {
     let cfg = VehicleConfig::f1_94_canonical();
 
     // +1.0 = LEFT steering => positive steering angle in local Y-up coordinate frame
-    let angle_left = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 1.0);
-    let angle_right_wheel = steering_angle_for_wheel(&cfg, WheelIndex::FrontRight, 1.0);
+    let angle_left = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 1.0, 0.0);
+    let angle_right_wheel = steering_angle_for_wheel(&cfg, WheelIndex::FrontRight, 1.0, 0.0);
     assert!(angle_left > 0.0, "Steering +1.0 (LEFT) must produce positive wheel angle (angle={})", angle_left);
     assert!(angle_right_wheel > 0.0, "Steering +1.0 (LEFT) must produce positive wheel angle (angle={})", angle_right_wheel);
 
     // -1.0 = RIGHT steering => negative steering angle
-    let angle_left_neg = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, -1.0);
-    let angle_right_neg = steering_angle_for_wheel(&cfg, WheelIndex::FrontRight, -1.0);
+    let angle_left_neg = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, -1.0, 0.0);
+    let angle_right_neg = steering_angle_for_wheel(&cfg, WheelIndex::FrontRight, -1.0, 0.0);
     assert!(angle_left_neg < 0.0, "Steering -1.0 (RIGHT) must produce negative wheel angle (angle={})", angle_left_neg);
     assert!(angle_right_neg < 0.0, "Steering -1.0 (RIGHT) must produce negative wheel angle (angle={})", angle_right_neg);
 }

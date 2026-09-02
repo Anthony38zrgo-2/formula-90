@@ -71,6 +71,12 @@ pub struct TelemetryFrame {
     // --- TIRE-100/103 combined-slip diagnostics ---
     pub wheel_combined_utilization: [f64; 4],
     pub wheel_tire_regime: [i32; 4],
+    // --- SUSP-300 camber kinematics (FL/FR/RL/RR order) ---
+    pub wheel_kinematic_camber_rad: [f64; 4],
+    pub wheel_effective_camber_rad: [f64; 4],
+    // --- SUSP-400 toe / steer kinematics (FL/FR/RL/RR order) ---
+    pub wheel_effective_toe_rad: [f64; 4],
+    pub wheel_effective_steer_angle_rad: [f64; 4],
 }
 
 #[cfg(test)]
@@ -222,6 +228,22 @@ impl TelemetryFrame {
         "FR_TireRegime",
         "RL_TireRegime",
         "RR_TireRegime",
+        "FL_KinCamber_Rad",
+        "FR_KinCamber_Rad",
+        "RL_KinCamber_Rad",
+        "RR_KinCamber_Rad",
+        "FL_EffCamber_Rad",
+        "FR_EffCamber_Rad",
+        "RL_EffCamber_Rad",
+        "RR_EffCamber_Rad",
+        "FL_EffToe_Rad",
+        "FR_EffToe_Rad",
+        "RL_EffToe_Rad",
+        "RR_EffToe_Rad",
+        "FL_EffSteerAngle_Rad",
+        "FR_EffSteerAngle_Rad",
+        "RL_EffSteerAngle_Rad",
+        "RR_EffSteerAngle_Rad",
     ];
 
     /// Formats the telemetry frame into a single comma-separated CSV line.
@@ -318,6 +340,26 @@ impl TelemetryFrame {
                 .map(|v| format!("{v:.5}")),
         );
         fields.extend(self.wheel_tire_regime.iter().map(|v| v.to_string()));
+        fields.extend(
+            self.wheel_kinematic_camber_rad
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_effective_camber_rad
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_effective_toe_rad
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_effective_steer_angle_rad
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
         fields.join(",")
     }
 }

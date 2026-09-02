@@ -112,15 +112,28 @@ pub struct VehicleConfig {
     pub rear_tire_force: TireForceProfile,
     #[serde(default)]
     pub pressure_mechanics: PressureMechanicsSensitivity,
+    /// Wheel-kinematic camber change (rad) per meter of suspension travel relative
+    /// to static/rest compression (see `rest_compression_m`). Positive gain means a
+    /// bump (compression > rest, e.g. +0.02 m travel) shifts camber toward positive
+    /// by the gain times the travel; a rebound (compression < rest, e.g. -0.01 m)
+    /// shifts it negative. Expressed in the same sign convention as axle `camber`
+    /// (the tire model mirrors the right-hand wheels). Default 0.0 (legacy parity).
     #[serde(default)]
     pub front_camber_gain_rad_per_m: f64,
+    /// Same sign convention and bump/rebound behaviour as `front_camber_gain_rad_per_m`.
     #[serde(default)]
     pub rear_camber_gain_rad_per_m: f64,
+    /// Effective toe change (rad) per meter of suspension travel relative to static/rest
+    /// compression (bump steer). Positive gain means a bump (e.g. +0.02 m) increases the
+    /// effective toe (and the mirrored per-wheel steer angle) by the gain times the
+    /// travel; rebound inverts it. Left wheels negate the signed result, so symmetric
+    /// travel keeps the axle neutral. Applies even when the axle steering ratio is 0.
+    /// Default 0.0 (legacy parity).
     #[serde(default)]
     pub front_toe_gain_rad_per_m: f64,
+    /// Same sign convention and bump/rebound behaviour as `front_toe_gain_rad_per_m`.
     #[serde(default)]
     pub rear_toe_gain_rad_per_m: f64,
-
     // ABS
     pub enable_abs: bool,
     pub abs_pulse_time: f64,
