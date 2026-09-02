@@ -28,7 +28,7 @@ flowchart LR
     CRANK["Fase de cigüeñal"] --> ZONES
     LOW["98_int_low"] --> ZONES
     MED["98_int_med"] --> ZONES
-    MAX["98_int_max_5"] --> ZONES
+    MAX["01_22_r25_int_on_high"] --> ZONES
     ZONES --> TONAL["sample_tonal"]
     ZONES --> RESIDUAL["sample_residual"]
     ZONES --> MID["sample_mid detector"]
@@ -58,10 +58,15 @@ Directorio esperado:
 |---|---|---:|---|---:|
 | low | `98_int_low.wav` | 7499 | explícita | 7496.81 RPM |
 | med | `98_int_med.wav` | 8202 | **estimada** | 8195.12 RPM |
-| max | `98_int_max_5.wav` | 15327 | explícita | 15320.63 RPM |
+| max | `01_22_r25_int_on_high.wav` | 8731.50 | estimada | 8732.07 RPM |
 
 La RPM de `med` no es contractual. Debe reemplazarse con `--rpm
 98_int_med.wav=VALOR` si aparece una medición fiable.
+
+La zona `max` usa un loop de 24 ciclos completos de motor (720°), 14545
+frames a 44100 Hz (329.82 ms), preparado con `--loop-cycles 24`.
+Su crossfade comienza a 8205 RPM y queda completo a 8730 RPM, dentro de las
+anclas `med`/`max`; por encima de ahí el runtime lo transpone con las RPM.
 
 ## 2. Síntesis física `V10Engine`
 

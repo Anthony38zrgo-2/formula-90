@@ -131,12 +131,18 @@ def normalized_seam_error(audio: np.ndarray, start: int, length: int, window: in
     return value_error + 0.35 * slope_error + 0.65 * boundary_jump
 
 
-def find_engine_loop(audio: np.ndarray, sample_rate: int, shaft_hz: float):
+def find_engine_loop(
+    audio: np.ndarray,
+    sample_rate: int,
+    shaft_hz: float,
+    requested_cycles: int | None = None,
+):
     period_720 = sample_rate * 2.0 / shaft_hz
     window = min(768, max(128, round(period_720 * 0.75)))
     margin = max(window, round(sample_rate * 0.08))
     best: tuple[float, int, int, int] | None = None
-    for cycles in range(4, 17):
+    cycle_counts = [requested_cycles] if requested_cycles is not None else range(4, 17)
+    for cycles in cycle_counts:
         ideal_length = period_720 * cycles
         for length in range(round(ideal_length) - 2, round(ideal_length) + 3):
             last_start = len(audio) - margin - length - window
@@ -183,7 +189,13 @@ def write_pcm16(path: Path, sample_rate: int, audio: np.ndarray) -> None:
     wavfile.write(path, sample_rate, pcm)
 
 
-def prepare(path: Path, output_dir: Path, rpm_assignments: dict[str, float], target_peak_dbfs: float):
+def prepare(
+    path: Path,
+    output_dir: Path,
+    rpm_assignments: dict[str, float],
+    target_peak_dbfs: float,
+    loop_cycles: int | None = None,
+):
     sample_rate, source, channels = read_audio(path)
     source_dc = float(np.mean(source))
     centered = source - source_dc
@@ -191,7 +203,7 @@ def prepare(path: Path, output_dir: Path, rpm_assignments: dict[str, float], tar
     shaft_hz = rpm / 60.0
     firing_hz = shaft_hz * 5.0
     _, loop_start, loop_length, loop_cycles = find_engine_loop(
-        centered, sample_rate, shaft_hz
+        centered, sample_rate, shaft_hz, loop_cycles
     )
     tonal, residual = tonal_residual(centered, sample_rate, shaft_hz)
 
@@ -272,9 +284,16 @@ def main() -> int:
         help="Anchor RPM for one input; repeat per file. Unspecified inputs are estimated.",
     )
     parser.add_argument("--target-peak-dbfs", type=float, default=-1.0)
+    parser.add_argument(
+        "--loop-cycles",
+        type=int,
+        help="Require an exact number of complete 720-degree engine cycles per loop.",
+    )
     args = parser.parse_args()
     if not math.isfinite(args.target_peak_dbfs) or not (-24.0 <= args.target_peak_dbfs <= -0.1):
         parser.error("--target-peak-dbfs must be finite and inside -24..-0.1")
+    if args.loop_cycles is not None and args.loop_cycles <= 0:
+        parser.error("--loop-cycles must be a positive integer")
     try:
         rpm_assignments = parse_rpm_assignments(args.rpm)
     except ValueError as error:
@@ -286,7 +305,11 @@ def main() -> int:
     manifest = []
     for path in args.inputs:
         metadata_path, metadata = prepare(
-            path, args.output_dir, rpm_assignments, args.target_peak_dbfs
+            path,
+            args.output_dir,
+            rpm_assignments,
+            args.target_peak_dbfs,
+            args.loop_cycles,
         )
         manifest.append(asdict(metadata))
         print(

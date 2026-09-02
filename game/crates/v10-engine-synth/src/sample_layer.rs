@@ -52,8 +52,8 @@ impl Default for ThreeZoneSampleLayerConfig {
             tonal_gain_loaded: 0.22,
             residual_gain_closed: 0.12,
             residual_gain_loaded: 0.40,
-            max_fade_start_rpm: 10_000.0,
-            max_full_rpm: 13_750.0,
+            max_fade_start_rpm: 8_205.0,
+            max_full_rpm: 8_730.0,
         }
     }
 }

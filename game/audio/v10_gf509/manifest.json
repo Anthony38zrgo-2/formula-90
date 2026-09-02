@@ -31,16 +31,16 @@
     },
     {
       "key": "max",
-      "metadata": "98_int_max_5.sample-layer.json",
-      "native_rpm": 15327.0,
-      "effective_loop_rpm": 15320.6273,
+      "metadata": "01_22_r25_int_on_high.sample-layer.json",
+      "native_rpm": 8731.5,
+      "effective_loop_rpm": 8732.0729,
       "sample_rate": 44100,
       "channels": 1,
-      "loop_frames": 4145,
-      "tonal": "98_int_max_5.loop.tonal.wav",
-      "tonal_sha256": "657f55a1e34b154d948009f20e6ae78fcad9a4904b5bfc3bb34638a23079082e",
-      "residual": "98_int_max_5.loop.residual.wav",
-      "residual_sha256": "544a22367793c8111ce182e54438164f70895c6a39b2cf9616cb101470187b48"
+      "loop_frames": 14545,
+      "tonal": "01_22_r25_int_on_high.loop.tonal.wav",
+      "tonal_sha256": "249fb955dce5e20a0bbe224d81ed47c6fdc0b940e60d9564ec9b0cb2f83e9831",
+      "residual": "01_22_r25_int_on_high.loop.residual.wav",
+      "residual_sha256": "74a8af7f61b99ebc91ca7b53aa09e5155debbe9b96d9db57ff9ff88a9dfc6b55"
     }
   ]
 }
