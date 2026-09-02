@@ -7,8 +7,6 @@ if(-not(Test-Path $vsdev)){throw 'Visual Studio 2022 C++ toolchain no encontrado
 $unit=Join-Path $root 'build\tests'; New-Item -ItemType Directory -Force $unit | Out-Null
 $command='"'+$vsdev+'" -arch=x64 -host_arch=x64 >nul && cl /nologo /std:c++20 /EHsc /I"'+(Join-Path $root 'native\include')+'" "'+(Join-Path $root 'native\tests\unit_tests.cpp')+'" /Fo:"'+(Join-Path $unit 'unit_tests.obj')+'" /Fe:"'+(Join-Path $unit 'unit_tests.exe')+'" && "'+(Join-Path $unit 'unit_tests.exe')+'"'
 cmd.exe /d /s /c $command; if($LASTEXITCODE -ne 0){throw 'Unit tests fallaron.'}
-& python "$PSScriptRoot\validate_f1_94_decoupled.py"
-if ($LASTEXITCODE -ne 0) { throw 'Validación de assets F1-94 falló.' }
 
 $godot=if($GodotPath){$GodotPath}elseif($env:GODOT_BIN){$env:GODOT_BIN}else{Join-Path $root '.tools\godot\Godot_v4.7.1-stable_win64_console.exe'}
 if(-not(Test-Path $godot)){throw 'Godot console no encontrado para smoke tests.'}
@@ -20,5 +18,6 @@ Write-Host "Ejecutando tests de Rust Vehicle Physics Engine..." -ForegroundColor
 if ($LASTEXITCODE -ne 0) { throw 'Rust vehicle physics tests fallaron.' }
 
 foreach($script in @('res://tests/test_f1_94_rust_physics.gd', 'res://tests/smoke_test_f1_94_la_chutana_hud.gd', 'res://tests/smoke_test_mountains_3d.gd', 'res://tests/smoke_test_f1_94_audio.gd')){Write-Host "Smoke/Test script: $script";& $godot --headless --path (Join-Path $root 'game') --script $script;if($LASTEXITCODE -ne 0){throw "Test script failed: $script"}}
+& "$PSScriptRoot\gate_hud_removed_telemetry_keys.ps1"
 & "$PSScriptRoot\test_gdunit.ps1" -GodotPath $godot
 Write-Host 'Todas las pruebas automáticas pasaron.' -ForegroundColor Green

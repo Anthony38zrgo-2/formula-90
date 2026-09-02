@@ -2,12 +2,19 @@ class_name TireStatusPanel
 extends PanelContainer
 
 ## Compact four-wheel pressure + thermal panel.
-## Expected native/GDScript data contract:
+## Expected native/GDScript data contract (post-BRAKE-1000, snapshot schema 1):
 ## {
 ##   "FL": {"pressure_kpa":145.0,"tread_inner_c":92.0,"tread_center_c":96.0,
 ##          "tread_outer_c":88.0,"carcass_c":81.0,"gas_c":73.0},
 ##   ...
+##   "schema_version": 1
 ## }
+## Brake wheels (two-node compact contract, snapshot schema 1) keyed FL/FR/RL/RR:
+## {"disc_c":..,"rim_c":..,"efficiency":..,"natural_cooling_w_k":..,
+##  "speed_cooling_w_k":..,"duct_mass_flow_kg_s":..,"duct_drag_n":..,
+##  "optimal_min_c":..,"optimal_max_c":..,"fade_start_c":..,"critical_c":..}
+## Removed states (caliper_c, hub_c) are never read; the panel branches on
+## field availability so transitional snapshots never render stale zeros.
 
 const WHEELS := ["FL", "FR", "RL", "RR"]
 
@@ -85,14 +92,17 @@ func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 
 		var brake_wheel: Dictionary = brake_data.get(wheel, {})
 		if not brake_wheel.is_empty():
-			var disc := float(brake_wheel.get("disc_c", 0.0))
-			var rim := float(brake_wheel.get("rim_c", -9999.0))
-			if rim == -9999.0:
-				# Legacy snapshot fallback (pre-compact two-node HUD contract).
-				rim = float(brake_wheel.get("caliper_c", 0.0))
-			brake_label.text = "BRK D%.0f° RIM%.0f°" % [disc, rim]
+			var disc_text := "D---"
+			var disc_value: Variant = brake_wheel.get("disc_c")
+			if disc_value != null:
+				disc_text = "D%.0f°" % float(disc_value)
+			var rim_text := "RIM---"
+			var rim_value: Variant = brake_wheel.get("rim_c")
+			if rim_value != null:
+				rim_text = "RIM%.0f°" % float(rim_value)
+			brake_label.text = "BRK %s %s" % [disc_text, rim_text]
 			brake_label.add_theme_color_override("font_color", _brake_temperature_color(
-				disc,
+				float(disc_value if disc_value != null else 0.0),
 				float(brake_wheel.get("optimal_min_c", 400.0)),
 				float(brake_wheel.get("optimal_max_c", 800.0)),
 				float(brake_wheel.get("fade_start_c", 900.0)),

@@ -1503,6 +1503,7 @@ void F194RustVehicle::set_core_brake_telemetry(
 Dictionary F194RustVehicle::get_tire_state_snapshot() const {
 	static const char *WHEELS[4] = { "FL", "FR", "RL", "RR" };
 	Dictionary out;
+	out["schema_version"] = 1;
 	for (int i = 0; i < 4; ++i) {
 		Dictionary wheel;
 		wheel["pressure_kpa"] = tire_pressure_kpa_[i];
@@ -1519,6 +1520,7 @@ Dictionary F194RustVehicle::get_tire_state_snapshot() const {
 Dictionary F194RustVehicle::get_brake_state_snapshot() const {
 	static const char *WHEELS[4] = { "FL", "FR", "RL", "RR" };
 	Dictionary out;
+	out["schema_version"] = 1;
 	for (int i = 0; i < 4; ++i) {
 		Dictionary wheel;
 		wheel["disc_c"] = brake_disc_c_[i];
@@ -1545,6 +1547,7 @@ Dictionary F194RustVehicle::get_brake_state_snapshot() const {
 Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	static const char *NAMES[5] = { "front_left", "front_right", "center", "diffuser_throat", "diffuser_exit" };
 	Dictionary out;
+	out["schema_version"] = 1;
 	Dictionary clearances;
 	for (int i = 0; i < 5; ++i) clearances[String(NAMES[i])] = underfloor_clearance_m_[i];
 	out["clearance_m"] = clearances;

@@ -1389,8 +1389,8 @@ struct JsonTires {
     contact_patch: f64,
     /// DEPRECATED (TIRE-600): parsed only so legacy schema v2 profiles load; never
     /// reaches runtime config and never influences forces.
-    #[serde(default = "default_braking_grip")]
-    braking_grip_multiplier: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    braking_grip_multiplier: Option<f64>,
     #[serde(default = "default_airborne_decay")]
     airborne_spin_decay_torque: f64,
     #[serde(default)]
@@ -1414,7 +1414,7 @@ impl Default for JsonTires {
             front: JsonTireAxle::default(),
             rear: JsonTireAxle::default(),
             contact_patch: default_contact_patch(),
-            braking_grip_multiplier: default_braking_grip(),
+            braking_grip_multiplier: None,
             airborne_spin_decay_torque: default_airborne_decay(),
             surfaces: HashMap::new(),
             pressure: None,
@@ -1500,9 +1500,6 @@ impl Default for JsonPressureMechanics {
 }
 fn default_contact_patch() -> f64 {
     0.21
-}
-fn default_braking_grip() -> f64 {
-    1.08
 }
 fn default_airborne_decay() -> f64 {
     2.0
@@ -3294,8 +3291,9 @@ impl JsonVehicleSpec {
                     airborne_spin_decay_torque: Some(cfg.rear_airborne_decay),
                 },
                 contact_patch: cfg.contact_patch,
-                // DEPRECATED (TIRE-600): emitted neutral (1.0) for legacy v2 compatibility only.
-                braking_grip_multiplier: 1.0,
+                // DEPRECATED (TIRE-600): emitted neutral (1.0) for legacy v2 compatibility
+                // only; schema-v3 payloads must not carry deprecated keys (CAL-1300).
+                braking_grip_multiplier: (cfg.schema_version < 3).then_some(1.0),
                 airborne_spin_decay_torque: cfg.front_airborne_decay,
                 surfaces,
                 pressure: Some(JsonTirePressure {

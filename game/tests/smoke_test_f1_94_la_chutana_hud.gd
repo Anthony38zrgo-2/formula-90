@@ -51,12 +51,27 @@ func _run() -> void:
 		_fail("F90Core did not initialize. Check the GDExtension/Rust core ABI contract.", failures)
 	if vehicle != null and vehicle.has_method("get_brake_state_snapshot"):
 		var brake_snapshot: Dictionary = vehicle.get_brake_state_snapshot()
+		if not brake_snapshot.has("schema_version") or int(brake_snapshot["schema_version"]) != 1:
+			_fail("Brake snapshot schema_version is missing or not 1.", failures)
 		for wheel_name in ["FL", "FR", "RL", "RR"]:
 			var wheel: Dictionary = brake_snapshot.get(wheel_name, {})
 			if not wheel.has("disc_c") or not wheel.has("rim_c"):
 				_fail("Two-node brake telemetry missing for %s." % wheel_name, failures)
 			if not wheel.has("efficiency"):
 				_fail("Brake efficiency telemetry missing for %s." % wheel_name, failures)
+			if wheel.has("caliper_c") or wheel.has("hub_c"):
+				_fail("Removed caliper/hub brake state still present for %s." % wheel_name, failures)
+	if vehicle != null and vehicle.has_method("get_tire_state_snapshot"):
+		var tire_snapshot: Dictionary = vehicle.get_tire_state_snapshot()
+		if not tire_snapshot.has("schema_version") or int(tire_snapshot["schema_version"]) != 1:
+			_fail("Tire snapshot schema_version is missing or not 1.", failures)
+		for wheel_name in ["FL", "FR", "RL", "RR"]:
+			var wheel: Dictionary = tire_snapshot.get(wheel_name, {})
+			for key in ["pressure_kpa", "tread_inner_c", "tread_center_c", "tread_outer_c", "carcass_c", "gas_c"]:
+				if not wheel.has(key):
+					_fail("Tire telemetry key %s missing for %s." % [key, wheel_name], failures)
+			if wheel.has("caliper_c") or wheel.has("hub_c"):
+				_fail("Removed caliper/hub state still present in tire snapshot for %s." % wheel_name, failures)
 	if hud == null or minimap == null or (speed_gauge == null and retro_hud == null):
 		_fail("HUD, minimap, or speed gauge/retro HUD was not extracted into HudLayer.", failures)
 	if hud != null and hud.get("_vehicle") != vehicle:
