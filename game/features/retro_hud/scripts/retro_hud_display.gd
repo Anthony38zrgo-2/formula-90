@@ -60,6 +60,15 @@ func reload_config() -> void:
 	queue_redraw()
 
 
+## Applies the unified HUD layout (hud_config.json retro_hud section). Only the
+## JSON-safe scale/visibility knobs are pushed through; position stays anchored
+## in the scene so the tuned RetroHud layout is preserved.
+func apply_hud_layout(scale_value: float, visible_value: bool) -> void:
+	visible = visible_value
+	scale = Vector2.ONE * maxf(scale_value, 0.1)
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
 	var changed := false
 	if state.rpm >= _peak_rpm:

@@ -15,6 +15,7 @@ var peak_return_rpm_per_second := 7500.0
 var background_opacity := 0.82
 var display_scale := 1.0
 var display_position := Vector2.ZERO
+var visible := true
 
 var dial_color := Color("f4f4f4")
 var dial_shadow_color := Color("080808d9")
@@ -42,6 +43,10 @@ static func load_from_json(path: String = DEFAULT_PATH) -> RetroHudConfig:
 	return config
 
 
+func apply(data: Dictionary) -> void:
+	_apply(data)
+
+
 func _apply(data: Dictionary) -> void:
 	speed_unit = str(data.get("speed_unit", speed_unit))
 	rpm_min = maxf(float(data.get("rpm_min", rpm_min)), 0.0)
@@ -55,6 +60,7 @@ func _apply(data: Dictionary) -> void:
 	background_opacity = clampf(float(data.get("background_opacity", background_opacity)), 0.0, 1.0)
 	display_scale = maxf(float(data.get("scale", display_scale)), 0.1)
 	inactive_multiplier = clampf(float(data.get("inactive_multiplier", inactive_multiplier)), 0.0, 1.0)
+	visible = bool(data.get("visible", visible))
 
 	dial_color = _color(data.get("dial_color", "#f4f4f4"), dial_color)
 	dial_shadow_color = _color(data.get("dial_shadow_color", "#080808d9"), dial_shadow_color)

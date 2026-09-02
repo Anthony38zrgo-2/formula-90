@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "retro_hud": {
+    "config_path": "res://features/retro_hud/config/retro_hud.json",
+    "visible": true,
+    "scale": 0.5
+  },
+  "tires": {
+    "visible": true,
+    "scale": 0.25,
+    "size": [
+      390.0,
+      170.0
+    ],
+    "gap": 10.0,
+    "title": "TYRES",
+    "box_size": [
+      180.0,
+      60.0
+    ],
+    "margin_left": 8.0,
+    "margin_right": 8.0,
+    "margin_top": 6.0,
+    "margin_bottom": 6.0,
+    "h_separation": 10.0,
+    "v_separation": 6.0,
+    "wheel_order": [
+      "FL",
+      "FR",
+      "RL",
+      "RR"
+    ],
+    "temperature": {
+      "cold_max_c": 65.0,
+      "optimal_max_c": 107.0,
+      "warm_max_c": 120.0,
+      "cold_color": "#73b8ff",
+      "optimal_color": "#a6ff9e",
+      "warm_color": "#ffd16b",
+      "hot_color": "#ff6b61"
+    },
+    "brake": {
+      "cold_color": "#73b8ff",
+      "optimal_color": "#a6ff9e",
+      "warm_color": "#ffd16b",
+      "hot_color": "#ff6b61",
+      "critical_color": "#d91f1f"
+    }
+  }
+}

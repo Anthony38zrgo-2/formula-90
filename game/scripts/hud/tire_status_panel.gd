@@ -15,24 +15,47 @@ extends PanelContainer
 ##  "optimal_min_c":..,"optimal_max_c":..,"fade_start_c":..,"critical_c":..}
 ## Removed states (caliper_c, hub_c) are never read; the panel branches on
 ## field availability so transitional snapshots never render stale zeros.
+##
+## Every visual/layout knob is data-driven through HudConfig (hud_config.json);
+## the whole panel can be resized/retuned by editing that JSON without touching
+## GDScript. Default scale is 50% of the compact readout (0.25).
 
-const WHEELS := ["FL", "FR", "RL", "RR"]
-
-## Visual scale of the whole panel (1.0 = full size). Reduced to 50% so the
-## compact tyre readout does not crowd the tachometer/HUD.
-@export var display_scale: float = 0.5
+var _settings := HudConfig.TiresSettings.new()
 
 var _vehicle: Node
 var _cells: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	custom_minimum_size = Vector2(390.0, 170.0)
-	scale = Vector2(display_scale, display_scale)
+	_apply_layout()
 	_build_ui()
+
 
 func bind_vehicle(vehicle: Node) -> void:
 	_vehicle = vehicle
+
+
+## Applies injected tyre settings (from ArcadeRaceHud via HudConfig). Safe to call
+## before add_child() so the panel is laid out with the requested scale exactly once.
+func apply_settings(settings: HudConfig.TiresSettings) -> void:
+	_settings = settings
+	_apply_layout()
+	if is_node_ready():
+		_rebuild_ui()
+
+
+func _apply_layout() -> void:
+	custom_minimum_size = _settings.size
+	scale = Vector2(_settings.scale, _settings.scale)
+	visible = _settings.visible
+
+
+func _rebuild_ui() -> void:
+	for child in get_children():
+		child.free()
+	_cells.clear()
+	_build_ui()
+
 
 func _process(_delta: float) -> void:
 	if _vehicle == null:
@@ -65,8 +88,9 @@ func _process(_delta: float) -> void:
 	if not data.is_empty() or not brake_data.is_empty():
 		set_tire_data(data, brake_data)
 
+
 func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
-	for wheel: String in WHEELS:
+	for wheel: String in _settings.wheel_order:
 		if not _cells.has(wheel) or not data.has(wheel):
 			continue
 		var wheel_data: Dictionary = data.get(wheel, {})
@@ -114,31 +138,33 @@ func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 		zones_label.add_theme_color_override("font_color", _temperature_color(hottest))
 		carcass_label.add_theme_color_override("font_color", _temperature_color(carcass))
 
+
 func _build_ui() -> void:
+	var s := _settings
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_bottom", 6)
+	margin.add_theme_constant_override("margin_left", int(s.margin_left))
+	margin.add_theme_constant_override("margin_right", int(s.margin_right))
+	margin.add_theme_constant_override("margin_top", int(s.margin_top))
+	margin.add_theme_constant_override("margin_bottom", int(s.margin_bottom))
 	add_child(margin)
 
 	var root_box := VBoxContainer.new()
 	margin.add_child(root_box)
 
 	var title := Label.new()
-	title.text = "TYRES"
+	title.text = s.title
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(title)
 
 	var grid := GridContainer.new()
 	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 6)
+	grid.add_theme_constant_override("h_separation", int(s.h_separation))
+	grid.add_theme_constant_override("v_separation", int(s.v_separation))
 	root_box.add_child(grid)
 
-	for wheel: String in WHEELS:
+	for wheel: String in s.wheel_order:
 		var box := VBoxContainer.new()
-		box.custom_minimum_size = Vector2(180.0, 60.0)
+		box.custom_minimum_size = s.box_size
 
 		var header := Label.new()
 		header.text = wheel
@@ -173,22 +199,26 @@ func _build_ui() -> void:
 			"brake": brake_label,
 		}
 
+
 func _temperature_color(temp_c: float) -> Color:
-	if temp_c < 65.0:
-		return Color(0.45, 0.72, 1.0)
-	if temp_c <= 107.0:
-		return Color(0.65, 1.0, 0.62)
-	if temp_c <= 120.0:
-		return Color(1.0, 0.82, 0.42)
-	return Color(1.0, 0.42, 0.38)
+	var s := _settings
+	if temp_c < s.cold_max_c:
+		return s.cold_color
+	if temp_c <= s.optimal_max_c:
+		return s.optimal_color
+	if temp_c <= s.warm_max_c:
+		return s.warm_color
+	return s.hot_color
+
 
 func _brake_temperature_color(temp_c: float, optimal_min_c: float, optimal_max_c: float, fade_start_c: float, critical_c: float) -> Color:
+	var s := _settings
 	if temp_c < optimal_min_c:
-		return Color(0.45, 0.72, 1.0)
+		return s.brake_cold_color
 	if temp_c <= optimal_max_c:
-		return Color(0.65, 1.0, 0.62)
+		return s.brake_optimal_color
 	if temp_c < fade_start_c:
-		return Color(1.0, 0.82, 0.42)
+		return s.brake_warm_color
 	if temp_c < critical_c:
-		return Color(1.0, 0.42, 0.38)
-	return Color(0.85, 0.12, 0.12)
+		return s.brake_hot_color
+	return s.brake_critical_color

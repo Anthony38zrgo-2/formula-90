@@ -4,10 +4,11 @@ extends Control
 const AID_NOTIFICATION_SECONDS := 2.4
 const AID_FADE_SECONDS := 0.35
 const TireStatusPanelScript := preload("res://scripts/hud/tire_status_panel.gd")
-const TIRE_PANEL_GAP := 10.0
+const DEFAULT_GAP := 10.0
 
 @export var vehicle_path: NodePath
 @export var aids_path: NodePath
+@export_file("*.json") var hud_config_path := HudConfig.DEFAULT_PATH
 
 @onready var speed_gauge: ArcadeSpeedGauge = $SpeedGauge
 @onready var retro_hud: Node = $RetroHud
@@ -16,6 +17,7 @@ const TIRE_PANEL_GAP := 10.0
 var _vehicle: Node
 var _aids: Node
 var _notification_remaining := 0.0
+var _hud_config: HudConfig = HudConfig.load_from_json(hud_config_path)
 var tire_status_panel: TireStatusPanel
 
 func bind_runtime(vehicle: Node, aids: Node) -> void:
@@ -31,6 +33,7 @@ func _ready() -> void:
 	aid_message.visible = false
 	_resolve_runtime_nodes()
 	_ensure_tire_status_panel()
+	_apply_hud_layout()
 
 
 func _process(delta: float) -> void:
@@ -63,9 +66,18 @@ func _ensure_tire_status_panel() -> void:
 		return
 	tire_status_panel = TireStatusPanelScript.new()
 	tire_status_panel.name = "TireStatusPanel"
+	tire_status_panel.apply_settings(_hud_config.tires)
 	add_child(tire_status_panel)
 	tire_status_panel.bind_vehicle(_vehicle)
 	_position_tire_status_panel()
+
+
+func _apply_hud_layout() -> void:
+	# RetroHud theme lives in retro_hud.json (referenced from hud_config.json); the
+	# unified config only drives the JSON-safe scale/visibility. Position stays
+	# anchored in the scene so the RetroHud layout is preserved.
+	if retro_hud != null and retro_hud.has_method("apply_hud_layout"):
+		retro_hud.call("apply_hud_layout", _hud_config.retro_hud.display_scale, _hud_config.retro_hud.visible)
 
 
 func _position_tire_status_panel() -> void:
@@ -89,7 +101,7 @@ func _position_tire_status_panel() -> void:
 
 	var target_global := Vector2(
 		ref_rect.position.x + (ref_rect.size.x - panel_size.x) * 0.5,
-		ref_rect.position.y - panel_size.y - TIRE_PANEL_GAP
+		ref_rect.position.y - panel_size.y - _hud_config.tires.gap
 	)
 
 	tire_status_panel.global_position = target_global
