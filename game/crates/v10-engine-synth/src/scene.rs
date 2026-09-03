@@ -1280,14 +1280,14 @@ impl AcousticScene {
         );
         let (head_cover_a, head_cover_b) = self.head_covers.process(engine, high_rpm);
         let cylinder_head_covers = self.head_cover_order_notch.process_with_wet(
-            head_cover_a + head_cover_b,
+            head_cover_a * 1.08 + head_cover_b * 0.92,
             self.firing_frequency_hz,
             0.20 + 0.50 * high_rpm,
         );
         let airbox_plenum = self.airbox.process(engine, high_rpm);
         let engine_cover = self.engine_cover.process(engine, airbox_plenum, high_rpm);
         let (rear_exhaust_a, rear_exhaust_b) = self.rear_exhaust.process(engine, high_rpm);
-        let rear_exhaust = rear_exhaust_a + rear_exhaust_b;
+        let rear_exhaust = rear_exhaust_a * 1.12 + rear_exhaust_b * 0.88;
         let (engine_mounts, monocoque_seat) = self
             .mount_monocoque
             .process(engine, cylinder_mechanical_sum);

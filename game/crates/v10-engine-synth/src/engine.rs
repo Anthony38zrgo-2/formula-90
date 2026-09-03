@@ -166,8 +166,8 @@ impl V10Engine {
 
         let events = self.crank.step(self.input.rpm);
         let deg_per_sample = self.input.rpm.max(0.0) * 6.0 / sample_rate;
-        let mut pressure = 0.0;
-        let mut derivative = 0.0;
+        let mut pressure_a = 0.0;
+        let mut pressure_b = 0.0;
         let mut derivative_a = 0.0;
         let mut derivative_b = 0.0;
         let mut runners_a = [0.0f32; 5];
@@ -196,11 +196,11 @@ impl V10Engine {
                 self.smoothed_energy * slow_drift,
                 &self.config,
             );
-            pressure += cylinder.pressure;
-            derivative += cylinder.pressure_derivative;
             if index < 5 {
+                pressure_a += cylinder.pressure;
                 derivative_a += cylinder.pressure_derivative;
             } else {
+                pressure_b += cylinder.pressure;
                 derivative_b += cylinder.pressure_derivative;
             }
             let header = self
@@ -227,15 +227,27 @@ impl V10Engine {
             }
         }
 
-        let structural_derivative = self.source_dc.process(derivative);
-        let structure = self.block_head.process(pressure, structural_derivative);
+        let pressure = pressure_a + pressure_b;
+        let derivative = derivative_a + derivative_b;
+        // Bank acoustic asymmetry: models crank journal stagger and asymmetric acoustic
+        // transmission to the cockpit/T-cam observation point, exciting the Order 0.5
+        // (f0 / 2) 5-cylinder bank pulsation observed at -5.2 dB in the Renault R24 onboard.
+        const BANK_A_ACOUSTIC_WEIGHT: f32 = 1.20;
+        const BANK_B_ACOUSTIC_WEIGHT: f32 = 0.80;
+        let structural_derivative = self
+            .source_dc
+            .process(derivative_a * BANK_A_ACOUSTIC_WEIGHT + derivative_b * BANK_B_ACOUSTIC_WEIGHT);
+        let structural_pressure = pressure_a * 1.10 + pressure_b * 0.90;
+        let structure = self.block_head.process(structural_pressure, structural_derivative);
         let block_sum = structure.pressure_direct * self.config.pressure_direct_gain
             + structure.crankcase * self.config.crankcase_gain
             + structure.block * self.config.block_gain
             + structure.head * self.config.head_gain;
         let collector_a = self.collectors[0].process_bank(&runners_a);
         let collector_b = self.collectors[1].process_bank(&runners_b);
-        let exhaust = (collector_a.radiated + collector_b.radiated) * self.config.exhaust_gain;
+        let exhaust = (collector_a.radiated * BANK_A_ACOUSTIC_WEIGHT
+            + collector_b.radiated * BANK_B_ACOUSTIC_WEIGHT)
+            * self.config.exhaust_gain;
         let attack = 0.34;
         let release = 1.0 - (-1.0 / (0.0038 * sample_rate)).exp();
         if turbulence_trigger > self.turbulence_envelope {
