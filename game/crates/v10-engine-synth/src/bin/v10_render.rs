@@ -85,6 +85,7 @@ struct Args {
     accel_seconds: f32,
     coast_end_rpm: f32,
     physical_telemetry_csv: Option<PathBuf>,
+    physical_master_lowpass_hz: Option<f32>,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -117,6 +118,7 @@ fn parse_args() -> Result<Args, String> {
         accel_seconds: 7.0,
         coast_end_rpm: 6_500.0,
         physical_telemetry_csv: None,
+        physical_master_lowpass_hz: Some(2_500.0),
     };
     let mut i = 0;
     while i < raw.len() {
@@ -156,6 +158,12 @@ fn parse_args() -> Result<Args, String> {
                     &mut i,
                     "--physical-telemetry-csv",
                 )?))
+            }
+            "--physical-master-lowpass-hz" => {
+                parsed.physical_master_lowpass_hz = Some(parse_value(&raw, &mut i, "--physical-master-lowpass-hz")?)
+            }
+            "--no-physical-master-lowpass" => {
+                parsed.physical_master_lowpass_hz = None;
             }
             unknown => return Err(format!("unknown argument: {unknown}")),
         }
@@ -430,6 +438,9 @@ fn run() -> Result<(), String> {
     let mut sum_sq = 0.0f64;
     let mut worst_reduction = 0.0f32;
     let mut event_count = 0u64;
+    let mut physical_master_lp = args
+        .physical_master_lowpass_hz
+        .map(|cutoff| OnePoleLowPass::new(cutoff.clamp(100.0, args.sample_rate as f32 * 0.48), args.sample_rate as f32));
     for sample in 0..total {
         let time_s = sample as f32 / args.sample_rate as f32;
         let current_input = render_input(&args, time_s);
@@ -648,10 +659,15 @@ fn run() -> Result<(), String> {
             .get_mut("runner_acoustic_pressure")
             .unwrap()
             .push(frame.cylinder_runner_acoustic_pressure.iter().sum::<f32>());
+        let filtered_physical_master = if let Some(lp) = physical_master_lp.as_mut() {
+            lp.process(frame.master)
+        } else {
+            frame.master
+        };
         stems
             .get_mut("physical_master")
             .unwrap()
-            .push(frame.master);
+            .push(filtered_physical_master);
         stems
             .get_mut("sample_master")
             .unwrap()
@@ -688,7 +704,7 @@ fn run() -> Result<(), String> {
         } else if args.acoustic_scene {
             acoustic.output
         } else {
-            frame.master
+            filtered_physical_master
         };
         peak = peak.max(rendered.abs());
         sum_sq += (rendered * rendered) as f64;
