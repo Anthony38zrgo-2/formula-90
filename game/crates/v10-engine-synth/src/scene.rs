@@ -26,7 +26,7 @@ pub struct AcousticSceneConfig {
 impl Default for AcousticSceneConfig {
     fn default() -> Self {
         Self {
-            dry_low_gain: 0.12,
+            dry_low_gain: 0.18,
             dry_mid_gain: 0.32,
             dry_high_gain: 0.14,
             metal_gain: 1.00,
@@ -1236,7 +1236,7 @@ impl AcousticScene {
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
-            onboard_highpass: DcBlocker::new(140.0, sample_rate),
+            onboard_highpass: DcBlocker::new(75.0, sample_rate),
             metal_envelope: 0.0,
             envelope_attack: 1.0 - (-1.0 / (0.0012 * sample_rate)).exp(),
             envelope_release: 1.0 - (-1.0 / (0.026 * sample_rate)).exp(),
