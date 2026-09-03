@@ -1,7 +1,8 @@
-use crate::acoustics::{BandPassNoise, BlockHead, Collector, DcBlocker, Header};
+use crate::acoustics::{BandPassNoise, BlockHead, Collector, DcBlocker};
 use crate::config::EngineConfig;
 use crate::crank::{Crankshaft, CYLINDER_COUNT};
 use crate::cylinder::Cylinder;
+use crate::exhaust::runner::RunnerWaveguide;
 
 const COAST_IDLE_RPM: f32 = 1_000.0;
 const COAST_MAX_RPM: f32 = 15_000.0;
@@ -53,6 +54,12 @@ pub struct EngineFrame {
     pub cylinder_pressure_derivative: [f32; CYLINDER_COUNT],
     pub cylinder_blowdown: [f32; CYLINDER_COUNT],
     pub cylinder_headers: [f32; CYLINDER_COUNT],
+    /// Per-cylinder physical exhaust mass flow (kg/s) from the runner boundary.
+    pub cylinder_mass_flow: [f32; CYLINDER_COUNT],
+    /// Per-cylinder exhaust-runner gas pressure (Pa).
+    pub cylinder_runner_pressure: [f32; CYLINDER_COUNT],
+    /// Per-cylinder normalised header excitation fed into the runner waveguide.
+    pub cylinder_exhaust_excitation: [f32; CYLINDER_COUNT],
     pub pressure_direct: f32,
     pub crankcase: f32,
     pub block: f32,
@@ -78,7 +85,7 @@ pub struct V10Engine {
     crank: Crankshaft,
     cylinders: [Cylinder; CYLINDER_COUNT],
     block_head: BlockHead,
-    headers: [Header; CYLINDER_COUNT],
+    headers: [RunnerWaveguide; CYLINDER_COUNT],
     collectors: [Collector; 2],
     source_dc: DcBlocker,
     master_dc: DcBlocker,
@@ -99,7 +106,7 @@ impl V10Engine {
             cylinders: std::array::from_fn(|index| Cylinder::new(index, &config)),
             block_head: BlockHead::new(sample_rate),
             headers: std::array::from_fn(|index| {
-                Header::new(
+                RunnerWaveguide::new(
                     config.header_lengths_m[index],
                     config.exhaust_wave_speed_mps,
                     config.header_reflection,
@@ -161,6 +168,9 @@ impl V10Engine {
         let mut cylinder_pressure_derivative = [0.0; CYLINDER_COUNT];
         let mut cylinder_blowdown = [0.0; CYLINDER_COUNT];
         let mut cylinder_headers = [0.0; CYLINDER_COUNT];
+        let mut cylinder_mass_flow = [0.0; CYLINDER_COUNT];
+        let mut cylinder_runner_pressure = [0.0; CYLINDER_COUNT];
+        let mut cylinder_exhaust_excitation = [0.0; CYLINDER_COUNT];
 
         for index in 0..CYLINDER_COUNT {
             if events.fired(index) {
@@ -178,10 +188,13 @@ impl V10Engine {
             } else {
                 derivative_b += cylinder.pressure_derivative;
             }
-            let header = self.headers[index].process(cylinder.blowdown);
+            let header = self.headers[index].process(cylinder.exhaust_excitation);
             cylinder_pressure_derivative[index] = cylinder.pressure_derivative;
             cylinder_blowdown[index] = cylinder.blowdown;
             cylinder_headers[index] = header;
+            cylinder_mass_flow[index] = cylinder.exhaust_mass_flow_kg_s;
+            cylinder_runner_pressure[index] = cylinder.runner_pressure_pa;
+            cylinder_exhaust_excitation[index] = cylinder.exhaust_excitation;
             turbulence_trigger += cylinder.blowdown.abs();
             if index < 5 {
                 header_a += header;
@@ -245,6 +258,9 @@ impl V10Engine {
             cylinder_pressure_derivative,
             cylinder_blowdown,
             cylinder_headers,
+            cylinder_mass_flow,
+            cylinder_runner_pressure,
+            cylinder_exhaust_excitation,
             pressure_direct: structure.pressure_direct,
             crankcase: structure.crankcase,
             block: structure.block,

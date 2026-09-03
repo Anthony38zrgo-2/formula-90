@@ -209,41 +209,6 @@ impl BlockHead {
     }
 }
 
-pub struct Header {
-    delay: Vec<f32>,
-    cursor: usize,
-    reflection: f32,
-    feedback_lowpass: f32,
-}
-
-impl Header {
-    pub fn new(length_m: f32, wave_speed_mps: f32, reflection: f32, sample_rate: f32) -> Self {
-        let delay_samples = (length_m / wave_speed_mps * sample_rate).round().max(2.0) as usize;
-        Self {
-            delay: vec![0.0; delay_samples],
-            cursor: 0,
-            reflection,
-            feedback_lowpass: 0.0,
-        }
-    }
-
-    #[inline]
-    pub fn process(&mut self, input: f32) -> f32 {
-        let arrived = self.delay[self.cursor];
-        self.feedback_lowpass += 0.32 * (arrived - self.feedback_lowpass);
-        self.delay[self.cursor] = input + self.reflection * self.feedback_lowpass;
-        self.cursor += 1;
-        if self.cursor == self.delay.len() {
-            self.cursor = 0;
-        }
-        arrived
-    }
-
-    pub fn delay_samples(&self) -> usize {
-        self.delay.len()
-    }
-}
-
 pub struct Collector {
     body: ModalBank,
     dc: DcBlocker,
@@ -303,20 +268,6 @@ impl Collector {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn header_arrival_matches_geometry() {
-        let mut header = Header::new(0.545, 545.0, -0.3, 48_000.0);
-        let expected = header.delay_samples();
-        let mut first = None;
-        for sample in 0..expected + 4 {
-            let y = header.process(if sample == 0 { 1.0 } else { 0.0 });
-            if y != 0.0 && first.is_none() {
-                first = Some(sample);
-            }
-        }
-        assert_eq!(first, Some(expected));
-    }
 
     #[test]
     fn resonator_decays_without_free_running_output() {
