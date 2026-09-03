@@ -232,12 +232,12 @@ impl Collector {
         Self {
             body: ModalBank::new(
                 &[
-                    (164.0 + bank_offset, 0.022, 1.05),
-                    (328.0 + bank_offset * 1.7, 0.016, 0.88),
+                    (164.0 + bank_offset, 0.022, 0.45),
+                    (328.0 + bank_offset * 1.7, 0.016, 0.60),
                     (585.0 + bank_offset * 2.1, 0.008, 0.58),
-                    (820.0 + bank_offset * 2.4, 0.006, 0.48),
-                    (1_080.0 + bank_offset * 2.8, 0.005, 0.48),
-                    (1_390.0 + bank_offset * 2.9, 0.0042, 0.42),
+                    (820.0 + bank_offset * 2.4, 0.006, 0.85),
+                    (1_080.0 + bank_offset * 2.8, 0.005, 0.95),
+                    (1_390.0 + bank_offset * 2.9, 0.0042, 0.80),
                     (1_720.0 + bank_offset * 3.0, 0.0036, 0.36),
                     (2_080.0 + bank_offset * 3.0, 0.0030, 0.30),
                     (3_250.0 + bank_offset * 4.0, 0.0020, 0.20),

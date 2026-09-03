@@ -27,14 +27,14 @@ impl Default for AcousticSceneConfig {
     fn default() -> Self {
         Self {
             dry_low_gain: 0.18,
-            dry_mid_gain: 0.32,
+            dry_mid_gain: 0.46,
             dry_high_gain: 0.14,
             metal_gain: 1.00,
             gearbox_gain: 0.60,
             head_cover_gain: 0.70,
             airbox_gain: 0.85,
             engine_cover_gain: 0.42,
-            rear_exhaust_gain: 0.75,
+            rear_exhaust_gain: 0.90,
             mount_monocoque_gain: 0.06,
             under_seat_gain: 0.04,
             cockpit_cavity_gain: 0.22,
@@ -1310,7 +1310,7 @@ impl AcousticScene {
         // Only the competing mid band ducks. Low-frequency mass remains stable
         // and the high-frequency air is rolled off as the intake charge pulse
         // shortens at high engine speed.
-        let duck = 1.0 - 0.52 * (self.metal_envelope * 10.0).clamp(0.0, 1.0);
+        let duck = 1.0 - 0.10 * (self.metal_envelope * 10.0).clamp(0.0, 1.0);
         let filtered_dry = dry_low * self.config.dry_low_gain
             + dry_mid * self.config.dry_mid_gain * duck
             + dry_high * self.config.dry_high_gain * (1.0 - 0.72 * high_rpm);

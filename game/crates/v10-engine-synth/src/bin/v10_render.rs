@@ -83,7 +83,7 @@ impl ComplementaryMidDucker {
         };
         self.envelope += rate * (detector - self.envelope);
         let depth = (self.envelope / 0.080).clamp(0.0, 1.0);
-        let gain = 1.0 - (1.0 - 10.0f32.powf(-3.0 / 20.0)) * depth;
+        let gain = 1.0 - (1.0 - 10.0f32.powf(-0.8 / 20.0)) * depth;
         let below_high = self.high.process(simulation);
         let below_low = self.low.process(simulation);
         let mid = below_high - below_low;
