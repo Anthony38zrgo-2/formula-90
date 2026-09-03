@@ -209,6 +209,11 @@ impl BlockHead {
     }
 }
 
+/// Quadratic confluence dissipation coefficient at the 5-in-1 collector junction.
+pub const COLLECTOR_CONFLUENCE_LOSS_COEFF: f32 = 0.08;
+/// Inflow coupling coefficient from runner incident pulses to collector chamber pressure.
+pub const COLLECTOR_CHAMBER_INFLOW_COEFF: f32 = 0.42;
+
 pub struct Collector {
     body: ModalBank,
     dc: DcBlocker,
@@ -258,10 +263,10 @@ impl Collector {
     #[inline]
     pub fn process_bank(&mut self, runners: &[f32; 5]) -> CollectorFrame {
         let sum: f32 = runners.iter().sum();
-        let nonlinear_loss = 0.08 * sum * sum.abs();
+        let nonlinear_loss = COLLECTOR_CONFLUENCE_LOSS_COEFF * sum * sum.abs();
         let junction_input = sum - nonlinear_loss;
 
-        self.chamber_pressure += 0.42 * junction_input - self.chamber_leak * self.chamber_pressure;
+        self.chamber_pressure += COLLECTOR_CHAMBER_INFLOW_COEFF * junction_input - self.chamber_leak * self.chamber_pressure;
         let pressure = self.chamber_pressure / (1.0 + 0.35 * self.chamber_pressure.abs());
         let resonant = self.body.process(junction_input + pressure * 0.12);
         CollectorFrame {

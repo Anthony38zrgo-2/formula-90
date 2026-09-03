@@ -16,6 +16,9 @@ use crate::thermodynamics::exhaust_runner::{GAMMA, SPECIFIC_GAS_CONSTANT_J_PER_K
 /// physical delay (a colder gas is a slower pipe and therefore a longer delay).
 const MIN_RUNNER_TEMPERATURE_K: f32 = 200.0;
 
+/// Viscous and thermal wall boundary-layer acoustic attenuation coefficient per runner transit.
+pub const RUNNER_WALL_LOSS_COEFF: f32 = 0.32;
+
 /// Instantaneous acoustic state of the runner waveguide.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct RunnerAcousticState {
@@ -111,7 +114,7 @@ impl RunnerWaveguide {
         let i1 = (i0 + 1) % self.delay.len();
         let frac = read - read.floor();
         let arrived = self.delay[i0] + frac * (self.delay[i1] - self.delay[i0]);
-        self.feedback_lowpass += 0.32 * (arrived - self.feedback_lowpass);
+        self.feedback_lowpass += RUNNER_WALL_LOSS_COEFF * (arrived - self.feedback_lowpass);
         let reflected = self.reflection * self.feedback_lowpass;
         let acoustic_pressure = input + reflected;
         self.delay[self.cursor] = acoustic_pressure;
@@ -125,7 +128,7 @@ impl RunnerWaveguide {
     #[inline]
     fn process_fixed(&mut self, input: f32) -> f32 {
         let arrived = self.delay[self.cursor];
-        self.feedback_lowpass += 0.32 * (arrived - self.feedback_lowpass);
+        self.feedback_lowpass += RUNNER_WALL_LOSS_COEFF * (arrived - self.feedback_lowpass);
         let reflected = self.reflection * self.feedback_lowpass;
         let acoustic_pressure = input + reflected;
         self.delay[self.cursor] = acoustic_pressure;

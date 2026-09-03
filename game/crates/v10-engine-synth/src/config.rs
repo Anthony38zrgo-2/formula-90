@@ -281,4 +281,185 @@ impl EngineConfig {
     pub fn engine_displacement_liters(&self) -> f32 {
         self.cylinder_displacement_liters() * crate::crank::CYLINDER_COUNT as f32
     }
+
+    /// Extract the dedicated physical engine configuration (PHY-130).
+    pub fn physical(&self) -> PhysicalEngineConfig {
+        PhysicalEngineConfig {
+            bore_m: self.bore_m,
+            stroke_m: self.stroke_m,
+            rod_length_m: self.rod_length_m,
+            compression_ratio: self.compression_ratio,
+            bank_angle_deg: self.bank_angle_deg,
+            firing_order: self.firing_order,
+            combustion_start_deg: self.combustion_start_deg,
+            combustion_rise_deg: self.combustion_rise_deg,
+            combustion_shape_factor: self.combustion_shape_factor,
+            combustion_efficiency: self.combustion_efficiency,
+            fuel_energy_per_cycle: self.fuel_energy_per_cycle,
+            combustion_pressure_reference_pa: self.combustion_pressure_reference_pa,
+            use_physical_pressure: self.use_physical_pressure,
+            expansion_decay_deg: self.expansion_decay_deg,
+            exhaust_open_deg: self.exhaust_open_deg,
+            exhaust_opening_ramp_deg: self.exhaust_opening_ramp_deg,
+            exhaust_duration_deg: self.exhaust_duration_deg,
+            exhaust_closing_ramp_deg: self.exhaust_closing_ramp_deg,
+            exhaust_valve_diameter_m: self.exhaust_valve_diameter_m,
+            exhaust_max_lift_m: self.exhaust_max_lift_m,
+            exhaust_discharge_coefficient: self.exhaust_discharge_coefficient,
+            exhaust_opening_shape: self.exhaust_opening_shape,
+            exhaust_closing_shape: self.exhaust_closing_shape,
+            cycle_variation: self.cycle_variation,
+            cylinder_spread: self.cylinder_spread,
+            cylinder_signature: self.cylinder_signature,
+            header_lengths_m: self.header_lengths_m,
+            exhaust_wave_speed_mps: self.exhaust_wave_speed_mps,
+            header_reflection: self.header_reflection,
+            use_temperature_dependent_wave_speed: self.use_temperature_dependent_wave_speed,
+            use_physical_exhaust_excitation: self.use_physical_exhaust_excitation,
+            exhaust_excitation_gain: self.exhaust_excitation_gain,
+        }
+    }
+
+    /// Extract the dedicated acoustic mix configuration (PHY-130).
+    pub fn mix(&self) -> AcousticMixConfig {
+        AcousticMixConfig {
+            pressure_direct_gain: self.pressure_direct_gain,
+            crankcase_gain: self.crankcase_gain,
+            block_gain: self.block_gain,
+            head_gain: self.head_gain,
+            exhaust_gain: self.exhaust_gain,
+            turbulence_gain: self.turbulence_gain,
+            master_gain: self.master_gain,
+        }
+    }
+
+    /// Construct a unified EngineConfig from separate physical and mix configurations (PHY-130).
+    pub fn from_subsystems(
+        sample_rate: u32,
+        seed: u64,
+        physical: PhysicalEngineConfig,
+        mix: AcousticMixConfig,
+    ) -> Self {
+        Self {
+            sample_rate,
+            seed,
+            bore_m: physical.bore_m,
+            stroke_m: physical.stroke_m,
+            rod_length_m: physical.rod_length_m,
+            compression_ratio: physical.compression_ratio,
+            bank_angle_deg: physical.bank_angle_deg,
+            firing_order: physical.firing_order,
+            combustion_start_deg: physical.combustion_start_deg,
+            combustion_rise_deg: physical.combustion_rise_deg,
+            combustion_shape_factor: physical.combustion_shape_factor,
+            combustion_efficiency: physical.combustion_efficiency,
+            fuel_energy_per_cycle: physical.fuel_energy_per_cycle,
+            combustion_pressure_reference_pa: physical.combustion_pressure_reference_pa,
+            use_physical_pressure: physical.use_physical_pressure,
+            expansion_decay_deg: physical.expansion_decay_deg,
+            exhaust_open_deg: physical.exhaust_open_deg,
+            exhaust_opening_ramp_deg: physical.exhaust_opening_ramp_deg,
+            exhaust_duration_deg: physical.exhaust_duration_deg,
+            exhaust_closing_ramp_deg: physical.exhaust_closing_ramp_deg,
+            exhaust_valve_diameter_m: physical.exhaust_valve_diameter_m,
+            exhaust_max_lift_m: physical.exhaust_max_lift_m,
+            exhaust_discharge_coefficient: physical.exhaust_discharge_coefficient,
+            exhaust_opening_shape: physical.exhaust_opening_shape,
+            exhaust_closing_shape: physical.exhaust_closing_shape,
+            cycle_variation: physical.cycle_variation,
+            cylinder_spread: physical.cylinder_spread,
+            cylinder_signature: physical.cylinder_signature,
+            header_lengths_m: physical.header_lengths_m,
+            exhaust_wave_speed_mps: physical.exhaust_wave_speed_mps,
+            header_reflection: physical.header_reflection,
+            use_temperature_dependent_wave_speed: physical.use_temperature_dependent_wave_speed,
+            use_physical_exhaust_excitation: physical.use_physical_exhaust_excitation,
+            exhaust_excitation_gain: physical.exhaust_excitation_gain,
+            pressure_direct_gain: mix.pressure_direct_gain,
+            crankcase_gain: mix.crankcase_gain,
+            block_gain: mix.block_gain,
+            head_gain: mix.head_gain,
+            exhaust_gain: mix.exhaust_gain,
+            turbulence_gain: mix.turbulence_gain,
+            master_gain: mix.master_gain,
+        }
+    }
 }
+
+/// Standalone physical engine geometry, combustion and gas boundary configuration (PHY-130).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PhysicalEngineConfig {
+    pub bore_m: f32,
+    pub stroke_m: f32,
+    pub rod_length_m: f32,
+    pub compression_ratio: f32,
+    pub bank_angle_deg: f32,
+    pub firing_order: [usize; 10],
+    pub combustion_start_deg: f32,
+    pub combustion_rise_deg: f32,
+    pub combustion_shape_factor: f32,
+    pub combustion_efficiency: f32,
+    pub fuel_energy_per_cycle: f32,
+    pub combustion_pressure_reference_pa: f32,
+    pub use_physical_pressure: bool,
+    pub expansion_decay_deg: f32,
+    pub exhaust_open_deg: f32,
+    pub exhaust_opening_ramp_deg: f32,
+    pub exhaust_duration_deg: f32,
+    pub exhaust_closing_ramp_deg: f32,
+    pub exhaust_valve_diameter_m: f32,
+    pub exhaust_max_lift_m: f32,
+    pub exhaust_discharge_coefficient: f32,
+    pub exhaust_opening_shape: f32,
+    pub exhaust_closing_shape: f32,
+    pub cycle_variation: f32,
+    pub cylinder_spread: f32,
+    pub cylinder_signature: [f32; 10],
+    pub header_lengths_m: [f32; 10],
+    pub exhaust_wave_speed_mps: f32,
+    pub header_reflection: f32,
+    pub use_temperature_dependent_wave_speed: bool,
+    pub use_physical_exhaust_excitation: bool,
+    pub exhaust_excitation_gain: f32,
+}
+
+impl Default for PhysicalEngineConfig {
+    fn default() -> Self {
+        EngineConfig::default().physical()
+    }
+}
+
+/// Standalone acoustic mix and structural gain configuration (PHY-130).
+#[derive(Clone, Debug, PartialEq)]
+pub struct AcousticMixConfig {
+    pub pressure_direct_gain: f32,
+    pub crankcase_gain: f32,
+    pub block_gain: f32,
+    pub head_gain: f32,
+    pub exhaust_gain: f32,
+    pub turbulence_gain: f32,
+    pub master_gain: f32,
+}
+
+impl Default for AcousticMixConfig {
+    fn default() -> Self {
+        EngineConfig::default().mix()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn physical_and_mix_subsystems_roundtrip_identically() {
+        let base = EngineConfig::default();
+        let phys = base.physical();
+        let mix = base.mix();
+        let roundtrip = EngineConfig::from_subsystems(base.sample_rate, base.seed, phys.clone(), mix.clone());
+        assert_eq!(roundtrip.physical(), phys);
+        assert_eq!(roundtrip.mix(), mix);
+        assert!(roundtrip.validate().is_ok());
+    }
+}
+

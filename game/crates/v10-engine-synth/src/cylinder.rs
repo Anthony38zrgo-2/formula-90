@@ -3,6 +3,9 @@ use crate::thermodynamics::combustion::CombustionChamber;
 use crate::thermodynamics::exhaust_runner::ExhaustRunner;
 use crate::thermodynamics::exhaust_valve::ExhaustValve;
 
+/// Poppet-valve flow effective exponent relating geometric lift fraction to turbulent discharge area.
+pub const VALVE_FLOW_AREA_EXPONENT: f32 = 1.35;
+
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CylinderFrame {
     pub pressure: f32,
@@ -141,7 +144,7 @@ impl Cylinder {
         // The pipe is acoustically excited by the change in mass-flow proxy,
         // not by a slowly varying unipolar flow. The fast but finite valve ramp
         // supplies the real blowdown edge without inventing broadband noise.
-        let exhaust_flow = pressure * valve_lift.powf(1.35);
+        let exhaust_flow = pressure * valve_lift.powf(VALVE_FLOW_AREA_EXPONENT);
         let blowdown = exhaust_flow - self.last_exhaust_flow;
         self.last_exhaust_flow = exhaust_flow;
         // PHY-052: the physical runner gas moves out of the valve as mass flow;
