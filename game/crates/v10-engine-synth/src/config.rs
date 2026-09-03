@@ -61,9 +61,6 @@ pub struct EngineConfig {
     pub exhaust_gain: f32,
     pub turbulence_gain: f32,
     pub master_gain: f32,
-    /// Physical master natural lowpass filter cutoff frequency (Hz).
-    /// Provides gentle -6 dB/octave attenuation of excessive high-frequency sizzle.
-    pub master_lowpass_hz: f32,
 }
 
 impl Default for EngineConfig {
@@ -126,7 +123,6 @@ impl Default for EngineConfig {
             exhaust_gain: 1.55,
             turbulence_gain: 0.40,
             master_gain: 7.0,
-            master_lowpass_hz: 7_500.0,
         }
     }
 }
@@ -252,11 +248,6 @@ impl EngineConfig {
         {
             return Err("mix gain outside declared safety bounds".into());
         }
-        if !self.master_lowpass_hz.is_finite()
-            || !(500.0..=24_000.0).contains(&self.master_lowpass_hz)
-        {
-            return Err("master_lowpass_hz outside supported range (500..24000 Hz)".into());
-        }
         Ok(())
     }
 
@@ -339,7 +330,6 @@ impl EngineConfig {
             exhaust_gain: self.exhaust_gain,
             turbulence_gain: self.turbulence_gain,
             master_gain: self.master_gain,
-            master_lowpass_hz: self.master_lowpass_hz,
         }
     }
 
@@ -392,7 +382,6 @@ impl EngineConfig {
             exhaust_gain: mix.exhaust_gain,
             turbulence_gain: mix.turbulence_gain,
             master_gain: mix.master_gain,
-            master_lowpass_hz: mix.master_lowpass_hz,
         }
     }
 }
@@ -450,7 +439,6 @@ pub struct AcousticMixConfig {
     pub exhaust_gain: f32,
     pub turbulence_gain: f32,
     pub master_gain: f32,
-    pub master_lowpass_hz: f32,
 }
 
 impl Default for AcousticMixConfig {

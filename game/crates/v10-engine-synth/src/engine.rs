@@ -1,4 +1,4 @@
-use crate::acoustics::{BandPassNoise, BlockHead, Collector, DcBlocker, OnePoleLowPass};
+use crate::acoustics::{BandPassNoise, BlockHead, Collector, DcBlocker};
 use crate::config::EngineConfig;
 use crate::crank::{Crankshaft, CYLINDER_COUNT};
 use crate::cylinder::Cylinder;
@@ -96,7 +96,6 @@ pub struct V10Engine {
     collectors: [Collector; 2],
     source_dc: DcBlocker,
     master_dc: DcBlocker,
-    master_lowpass: OnePoleLowPass,
     input: EngineInput,
     smoothed_energy: f32,
     turbulence_filter: BandPassNoise,
@@ -109,10 +108,6 @@ impl V10Engine {
     pub fn new(config: EngineConfig) -> Result<Self, String> {
         config.validate()?;
         let sample_rate = config.sample_rate as f32;
-        let master_lowpass = OnePoleLowPass::new(
-            config.master_lowpass_hz.clamp(100.0, sample_rate * 0.48),
-            sample_rate,
-        );
         Ok(Self {
             crank: Crankshaft::new(config.sample_rate, config.firing_order),
             cylinders: std::array::from_fn(|index| Cylinder::new(index, &config)),
@@ -132,7 +127,6 @@ impl V10Engine {
             ],
             source_dc: DcBlocker::new(16.0, sample_rate),
             master_dc: DcBlocker::new(16.0, sample_rate),
-            master_lowpass,
             input: EngineInput {
                 rpm: 0.0,
                 throttle: 0.0,
@@ -259,10 +253,9 @@ impl V10Engine {
         let turbulence = self.turbulence_filter.process(noise)
             * self.turbulence_envelope.sqrt()
             * self.config.turbulence_gain;
-        let master_unfiltered = (block_sum + exhaust + turbulence) * self.config.master_gain;
         let pre = self
             .master_dc
-            .process(self.master_lowpass.process(master_unfiltered));
+            .process((block_sum + exhaust + turbulence) * self.config.master_gain);
         self.sample_clock = self.sample_clock.wrapping_add(1);
 
         // Safety only. At nominal settings the candidate must stay below this
@@ -478,48 +471,4 @@ mod tests {
             })
             .is_err());
     }
-
-    #[test]
-    fn physical_master_lowpass_dampens_high_frequencies_without_affecting_internal_physics() {
-        let mut cfg_bright = EngineConfig::default();
-        cfg_bright.master_lowpass_hz = 18_000.0;
-        let mut eng_bright = V10Engine::new(cfg_bright).unwrap();
-        eng_bright
-            .set_input(EngineInput {
-                rpm: 12_000.0,
-                throttle: 0.9,
-                load: 0.9,
-            })
-            .unwrap();
-
-        let mut cfg_warm = EngineConfig::default();
-        cfg_warm.master_lowpass_hz = 6_000.0;
-        let mut eng_warm = V10Engine::new(cfg_warm).unwrap();
-        eng_warm
-            .set_input(EngineInput {
-                rpm: 12_000.0,
-                throttle: 0.9,
-                load: 0.9,
-            })
-            .unwrap();
-
-        for _ in 0..1_000 {
-            let f_bright = eng_bright.render_sample();
-            let f_warm = eng_warm.render_sample();
-            // Internal thermodynamics, cylinder pressures, and mass flow must be bit-identical
-            assert_eq!(
-                f_bright.cylinder_pressure[0].to_bits(),
-                f_warm.cylinder_pressure[0].to_bits()
-            );
-            assert_eq!(
-                f_bright.cylinder_mass_flow[0].to_bits(),
-                f_warm.cylinder_mass_flow[0].to_bits()
-            );
-            assert_eq!(
-                f_bright.cylinder_runner_pressure[0].to_bits(),
-                f_warm.cylinder_runner_pressure[0].to_bits()
-            );
-        }
-    }
 }
-
