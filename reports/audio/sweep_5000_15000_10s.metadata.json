@@ -1,6 +1,6 @@
 {
   "architecture": "rust-greenfield-v10",
-  "git_head": "fcdc3b9f5adc3399617b5b85d498d86540d44394",
+  "git_head": "553a7160e45bdc44717e6a000e2e44efc8eaf720",
   "source_dirty": false,
   "source_fingerprint": "unavailable",
   "sample_rate": 44100,
@@ -15,8 +15,8 @@
   "duration_s": 10.000000,
   "warmup_s": 1.000000,
   "event_count": 8292,
-  "peak": 0.971711159,
-  "rms": 0.159797363,
+  "peak": 0.643849075,
+  "rms": 0.131318916,
   "worst_limiter_reduction_db": 0.000000,
   "legacy_synth_used": false,
   "cpp_used": false,

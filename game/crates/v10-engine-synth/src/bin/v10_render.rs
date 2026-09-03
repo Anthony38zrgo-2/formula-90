@@ -435,6 +435,9 @@ fn run() -> Result<(), String> {
     if let Some(parent) = telemetry_path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
+    if telemetry_path.exists() {
+        let _ = fs::remove_file(&telemetry_path);
+    }
     let mut telemetry = BufWriter::new(File::create(&telemetry_path).map_err(|e| e.to_string())?);
     writeln!(telemetry, "sample,time_s,rpm,crank_phase_deg,cylinder,bank")
         .map_err(|e| e.to_string())?;
@@ -445,6 +448,9 @@ fn run() -> Result<(), String> {
         .map(|path| {
             if let Some(parent) = path.parent() {
                 let _ = fs::create_dir_all(parent);
+            }
+            if path.exists() {
+                let _ = fs::remove_file(path);
             }
             let file = File::create(path).map_err(|e| e.to_string())?;
             let mut writer = BufWriter::new(file);
@@ -827,6 +833,9 @@ fn run() -> Result<(), String> {
         sample_layer.is_some(),
         HYBRID_HEADROOM_GAIN,
     );
+    if metadata_path.exists() {
+        let _ = fs::remove_file(&metadata_path);
+    }
     fs::write(&metadata_path, metadata).map_err(|e| e.to_string())?;
     println!("wav={}", args.out.display());
     println!("stems={}", args.stems_dir.display());

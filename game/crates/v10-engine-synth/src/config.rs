@@ -116,11 +116,11 @@ impl Default for EngineConfig {
             // point (rpm=7499, throttle=0.72, load=0.66): proxy max peak ~0.0159
             // vs routed dmass ~0.0182 (with signature) -> gain ~0.096.
             exhaust_excitation_gain: 0.096,
-            pressure_direct_gain: 0.07,
-            crankcase_gain: 0.025,
+            pressure_direct_gain: 0.025,
+            crankcase_gain: 0.008,
             block_gain: 0.56,
             head_gain: 0.48,
-            exhaust_gain: 1.55,
+            exhaust_gain: 2.20,
             turbulence_gain: 0.40,
             master_gain: 7.0,
         }

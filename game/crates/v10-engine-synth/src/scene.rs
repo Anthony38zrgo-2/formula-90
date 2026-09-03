@@ -26,18 +26,18 @@ pub struct AcousticSceneConfig {
 impl Default for AcousticSceneConfig {
     fn default() -> Self {
         Self {
-            dry_low_gain: 0.45,
-            dry_mid_gain: 0.18,
-            dry_high_gain: 0.12,
+            dry_low_gain: 0.12,
+            dry_mid_gain: 0.32,
+            dry_high_gain: 0.14,
             metal_gain: 1.00,
-            gearbox_gain: 0.82,
+            gearbox_gain: 0.60,
             head_cover_gain: 0.70,
-            airbox_gain: 0.64,
+            airbox_gain: 0.85,
             engine_cover_gain: 0.42,
-            rear_exhaust_gain: 0.48,
-            mount_monocoque_gain: 0.12,
-            under_seat_gain: 0.09,
-            cockpit_cavity_gain: 0.16,
+            rear_exhaust_gain: 0.75,
+            mount_monocoque_gain: 0.06,
+            under_seat_gain: 0.04,
+            cockpit_cavity_gain: 0.22,
             low_mid_parallel_gain: 0.14,
             load_saturation_gain: 0.10,
             event_residual_gain: 0.055,
@@ -1181,6 +1181,7 @@ pub struct AcousticScene {
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
+    onboard_highpass: DcBlocker,
     metal_envelope: f32,
     envelope_attack: f32,
     envelope_release: f32,
@@ -1235,6 +1236,7 @@ impl AcousticScene {
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
+            onboard_highpass: DcBlocker::new(140.0, sample_rate),
             metal_envelope: 0.0,
             envelope_attack: 1.0 - (-1.0 / (0.0012 * sample_rate)).exp(),
             envelope_release: 1.0 - (-1.0 / (0.026 * sample_rate)).exp(),
@@ -1363,20 +1365,22 @@ impl AcousticScene {
             event_residual,
             cylinder_mechanical,
             cylinder_mechanical_sum,
-            output: ((engine_air
-                + metallic_structure * self.config.metal_gain * slow_scene_drift
-                + gearbox_housing * self.config.gearbox_gain * slow_scene_drift
-                + cylinder_head_covers * self.config.head_cover_gain
-                + airbox_plenum * self.config.airbox_gain
-                + engine_cover * self.config.engine_cover_gain
-                + rear_exhaust * self.config.rear_exhaust_gain
-                + mount_monocoque * self.config.mount_monocoque_gain
-                + under_seat_vibration * self.config.under_seat_gain
-                + cockpit_cavity * self.config.cockpit_cavity_gain
-                + low_mid_parallel * self.config.low_mid_parallel_gain
-                + load_saturation * self.config.load_saturation_gain)
-                + event_residual * self.config.event_residual_gain)
-                * self.config.output_gain,
+            output: self.onboard_highpass.process(
+                ((engine_air
+                    + metallic_structure * self.config.metal_gain * slow_scene_drift
+                    + gearbox_housing * self.config.gearbox_gain * slow_scene_drift
+                    + cylinder_head_covers * self.config.head_cover_gain
+                    + airbox_plenum * self.config.airbox_gain
+                    + engine_cover * self.config.engine_cover_gain
+                    + rear_exhaust * self.config.rear_exhaust_gain
+                    + mount_monocoque * self.config.mount_monocoque_gain
+                    + under_seat_vibration * self.config.under_seat_gain
+                    + cockpit_cavity * self.config.cockpit_cavity_gain
+                    + low_mid_parallel * self.config.low_mid_parallel_gain
+                    + load_saturation * self.config.load_saturation_gain)
+                    + event_residual * self.config.event_residual_gain)
+                    * self.config.output_gain,
+            ),
         }
     }
 }
