@@ -105,12 +105,17 @@ impl Gf509Runtime {
                 ThreeZoneSampleLayer::load_directory(sample_rate, path, config.sample_layer)
             })
             .transpose()?;
+        let mid_ducker = ComplementaryMidDucker::new(
+            sample_rate as f32,
+            config.sample_layer.mid_duck_depth_db,
+            config.sample_layer.mid_duck_threshold,
+        );
         Ok(Self {
             config,
             engine,
             scene,
             sample_layer,
-            mid_ducker: ComplementaryMidDucker::new(sample_rate as f32),
+            mid_ducker,
             telemetry: RuntimeTelemetry::default(),
             rendered_telemetry: RuntimeTelemetry::default(),
             interpolation_remaining: 0,
@@ -190,7 +195,9 @@ impl Gf509Runtime {
                 let (ducked_scene, _) = self
                     .mid_ducker
                     .process(scene_frame.output, sample_frame.mid_bus);
-                (ducked_scene + sample_frame.output) * GF509_HEADROOM_GAIN
+                (ducked_scene * self.config.sample_layer.physical_blend_weight
+                    + sample_frame.output * self.config.sample_layer.sample_blend_weight)
+                    * GF509_HEADROOM_GAIN
             } else {
                 scene_frame.output
             };
@@ -308,16 +315,20 @@ struct ComplementaryMidDucker {
     envelope: f32,
     attack: f32,
     release: f32,
+    threshold: f32,
+    duck_floor_gain: f32,
 }
 
 impl ComplementaryMidDucker {
-    fn new(sample_rate: f32) -> Self {
+    fn new(sample_rate: f32, depth_db: f32, threshold: f32) -> Self {
         Self {
             low: OnePoleLowPass::new(350.0, sample_rate),
             high: OnePoleLowPass::new(2_000.0, sample_rate),
             envelope: 0.0,
             attack: 1.0 - (-1.0 / (0.020 * sample_rate)).exp(),
             release: 1.0 - (-1.0 / (0.140 * sample_rate)).exp(),
+            threshold: threshold.max(0.001),
+            duck_floor_gain: 10.0f32.powf(depth_db / 20.0),
         }
     }
     #[inline]
@@ -329,8 +340,8 @@ impl ComplementaryMidDucker {
             self.release
         };
         self.envelope += rate * (detector - self.envelope);
-        let depth = (self.envelope / 0.080).clamp(0.0, 1.0);
-        let gain = 1.0 - (1.0 - 10.0f32.powf(-3.0 / 20.0)) * depth;
+        let depth = (self.envelope / self.threshold).clamp(0.0, 1.0);
+        let gain = 1.0 - (1.0 - self.duck_floor_gain) * depth;
         let below_high = self.high.process(simulation);
         let below_low = self.low.process(simulation);
         let mid = below_high - below_low;
@@ -400,4 +411,24 @@ mod tests {
         let runtime = Gf509Runtime::new(config).unwrap();
         assert_eq!(runtime.sample_rate(), 44_100);
     }
+
+    #[test]
+    fn data_driven_blend_weights_and_ducking_parameters_are_validated() {
+        let mut config = ThreeZoneSampleLayerConfig::default();
+        assert!(config.validate().is_ok());
+
+        config.physical_blend_weight = 2.5; // > 2.0
+        assert!(config.validate().is_err());
+        config.physical_blend_weight = 0.5;
+
+        config.mid_duck_depth_db = -30.0; // < -24.0
+        assert!(config.validate().is_err());
+        config.mid_duck_depth_db = -6.0;
+
+        config.mid_duck_threshold = 0.0001; // < 0.001
+        assert!(config.validate().is_err());
+        config.mid_duck_threshold = 0.1;
+        assert!(config.validate().is_ok());
+    }
 }
+

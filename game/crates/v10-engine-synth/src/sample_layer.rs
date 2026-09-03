@@ -43,6 +43,14 @@ pub struct ThreeZoneSampleLayerConfig {
     pub residual_gain_loaded: f32,
     pub max_fade_start_rpm: f32,
     pub max_full_rpm: f32,
+    /// Physical simulation blend weight (default 1.0).
+    pub physical_blend_weight: f32,
+    /// Sample layer blend weight (default 1.0).
+    pub sample_blend_weight: f32,
+    /// Maximum complementary mid-band ducking depth in dB (default -3.0 dB).
+    pub mid_duck_depth_db: f32,
+    /// Complementary mid ducker envelope detector threshold (default 0.080).
+    pub mid_duck_threshold: f32,
 }
 
 impl Default for ThreeZoneSampleLayerConfig {
@@ -54,21 +62,33 @@ impl Default for ThreeZoneSampleLayerConfig {
             residual_gain_loaded: 0.40,
             max_fade_start_rpm: 8_205.0,
             max_full_rpm: 8_730.0,
+            physical_blend_weight: 1.0,
+            sample_blend_weight: 1.0,
+            mid_duck_depth_db: -3.0,
+            mid_duck_threshold: 0.080,
         }
     }
 }
 
 impl ThreeZoneSampleLayerConfig {
-    fn validate(self) -> Result<Self, String> {
+    pub fn validate(self) -> Result<Self, String> {
         for (name, value) in [
             ("tonal_gain_closed", self.tonal_gain_closed),
             ("tonal_gain_loaded", self.tonal_gain_loaded),
             ("residual_gain_closed", self.residual_gain_closed),
             ("residual_gain_loaded", self.residual_gain_loaded),
+            ("physical_blend_weight", self.physical_blend_weight),
+            ("sample_blend_weight", self.sample_blend_weight),
         ] {
-            if !value.is_finite() || !(0.0..=1.5).contains(&value) {
-                return Err(format!("{name} outside 0..1.5: {value}"));
+            if !value.is_finite() || !(0.0..=2.0).contains(&value) {
+                return Err(format!("{name} outside 0..2.0: {value}"));
             }
+        }
+        if !self.mid_duck_depth_db.is_finite() || !(-24.0..=0.0).contains(&self.mid_duck_depth_db) {
+            return Err(format!("mid_duck_depth_db outside -24..0 dB: {}", self.mid_duck_depth_db));
+        }
+        if !self.mid_duck_threshold.is_finite() || !(0.001..=1.0).contains(&self.mid_duck_threshold) {
+            return Err(format!("mid_duck_threshold outside 0.001..1.0: {}", self.mid_duck_threshold));
         }
         if !self.max_fade_start_rpm.is_finite()
             || !self.max_full_rpm.is_finite()
