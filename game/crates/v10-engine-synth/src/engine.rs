@@ -51,9 +51,12 @@ pub struct EngineFrame {
     pub pressure_derivative: f32,
     pub pressure_derivative_a: f32,
     pub pressure_derivative_b: f32,
+    pub cylinder_pressure: [f32; CYLINDER_COUNT],
     pub cylinder_pressure_derivative: [f32; CYLINDER_COUNT],
     pub cylinder_blowdown: [f32; CYLINDER_COUNT],
     pub cylinder_headers: [f32; CYLINDER_COUNT],
+    pub cylinder_valve_lift: [f32; CYLINDER_COUNT],
+    pub cylinder_valve_area: [f32; CYLINDER_COUNT],
     /// Per-cylinder physical exhaust mass flow (kg/s) from the runner boundary.
     pub cylinder_mass_flow: [f32; CYLINDER_COUNT],
     /// Per-cylinder exhaust-runner gas pressure (Pa).
@@ -172,9 +175,12 @@ impl V10Engine {
         let mut header_a = 0.0;
         let mut header_b = 0.0;
         let mut turbulence_trigger = 0.0f32;
+        let mut cylinder_pressure = [0.0; CYLINDER_COUNT];
         let mut cylinder_pressure_derivative = [0.0; CYLINDER_COUNT];
         let mut cylinder_blowdown = [0.0; CYLINDER_COUNT];
         let mut cylinder_headers = [0.0; CYLINDER_COUNT];
+        let mut cylinder_valve_lift = [0.0; CYLINDER_COUNT];
+        let mut cylinder_valve_area = [0.0; CYLINDER_COUNT];
         let mut cylinder_mass_flow = [0.0; CYLINDER_COUNT];
         let mut cylinder_runner_pressure = [0.0; CYLINDER_COUNT];
         let mut cylinder_runner_acoustic_pressure = [0.0; CYLINDER_COUNT];
@@ -200,9 +206,12 @@ impl V10Engine {
             let header = self
                 .headers[index]
                 .process(cylinder.exhaust_excitation, cylinder.runner_temperature_k);
+            cylinder_pressure[index] = cylinder.pressure;
             cylinder_pressure_derivative[index] = cylinder.pressure_derivative;
             cylinder_blowdown[index] = cylinder.blowdown;
             cylinder_headers[index] = header;
+            cylinder_valve_lift[index] = cylinder.valve_lift;
+            cylinder_valve_area[index] = cylinder.effective_area_m2;
             cylinder_mass_flow[index] = cylinder.exhaust_mass_flow_kg_s;
             cylinder_runner_pressure[index] = cylinder.runner_pressure_pa;
             cylinder_runner_acoustic_pressure[index] = self.headers[index].acoustic_pressure();
@@ -270,9 +279,12 @@ impl V10Engine {
             pressure_derivative: derivative,
             pressure_derivative_a: derivative_a,
             pressure_derivative_b: derivative_b,
+            cylinder_pressure,
             cylinder_pressure_derivative,
             cylinder_blowdown,
             cylinder_headers,
+            cylinder_valve_lift,
+            cylinder_valve_area,
             cylinder_mass_flow,
             cylinder_runner_pressure,
             cylinder_runner_acoustic_pressure,
