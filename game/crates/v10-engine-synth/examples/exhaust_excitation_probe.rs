@@ -104,7 +104,7 @@ fn main() {
     for (name, signal) in &candidates {
         // Replay this candidate through the real acoustic chain.
         let mut headers: Vec<RunnerWaveguide> = (0..CYLINDER_COUNT)
-            .map(|c| RunnerWaveguide::new(config.header_lengths_m[c], 545.0, -0.34, sr))
+            .map(|c| RunnerWaveguide::new(config.header_lengths_m[c], 545.0, -0.34, sr, false))
             .collect();
         let mut col_a = Collector::new(sr, -3.5);
         let mut col_b = Collector::new(sr, 3.5);
@@ -127,7 +127,7 @@ fn main() {
                 } else {
                     0.0
                 };
-                let h = headers[c].process(norm);
+                let h = headers[c].process(norm, 0.0);
                 if c < 5 {
                     header_a += h;
                 } else {

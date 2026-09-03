@@ -45,6 +45,9 @@ pub struct EngineConfig {
     pub header_lengths_m: [f32; 10],
     pub exhaust_wave_speed_mps: f32,
     pub header_reflection: f32,
+    /// Derive the exhaust wave speed from the runner gas temperature
+    /// (`sqrt(gamma * R * T)`, PHY-061) instead of the fixed `exhaust_wave_speed_mps`.
+    pub use_temperature_dependent_wave_speed: bool,
     /// Use the physical runner mass-flow delta (PHY-052) as the header
     /// excitation, instead of the legacy `pressure * lift^1.35` proxy.
     pub use_physical_exhaust_excitation: bool,
@@ -106,6 +109,7 @@ impl Default for EngineConfig {
             ],
             exhaust_wave_speed_mps: 545.0,
             header_reflection: -0.34,
+            use_temperature_dependent_wave_speed: true,
             use_physical_exhaust_excitation: true,
             // Level-matched so the physical mass-flow delta lands at the same
             // acoustic amplitude as the proxy blowdown at the PHY-052 reference

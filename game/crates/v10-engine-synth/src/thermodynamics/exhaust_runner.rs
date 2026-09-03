@@ -7,9 +7,9 @@ const MOLAR_MASS_EXHAUST_KG_MOL: f32 = 0.0289;
 const GAS_CONSTANT_J_PER_MOL_K: f32 = 8.314;
 /// Ratio of specific heats for exhaust gas (5 degrees of freedom, diatomic,
 /// matching engine-sim `heatCapacityRatio(5)`).
-const GAMMA: f32 = 1.4;
+pub(crate) const GAMMA: f32 = 1.4;
 /// Specific gas constant of exhaust gas, J/(kg·K) == R_univ / M.
-const SPECIFIC_GAS_CONSTANT_J_PER_KG_K: f32 =
+pub(crate) const SPECIFIC_GAS_CONSTANT_J_PER_KG_K: f32 =
     GAS_CONSTANT_J_PER_MOL_K / MOLAR_MASS_EXHAUST_KG_MOL;
 /// Runner volume as a fraction of the acoustic header volume. Represents the
 /// near-port gas volume immediately downstream of the valve; PHY-060 folds the

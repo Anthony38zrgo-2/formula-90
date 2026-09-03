@@ -58,6 +58,8 @@ pub struct EngineFrame {
     pub cylinder_mass_flow: [f32; CYLINDER_COUNT],
     /// Per-cylinder exhaust-runner gas pressure (Pa).
     pub cylinder_runner_pressure: [f32; CYLINDER_COUNT],
+    /// Per-cylinder exhaust-runner gas temperature (K), the PHY-061 wave-speed source.
+    pub cylinder_runner_temperature_k: [f32; CYLINDER_COUNT],
     /// Per-cylinder normalised header excitation fed into the runner waveguide.
     pub cylinder_exhaust_excitation: [f32; CYLINDER_COUNT],
     pub pressure_direct: f32,
@@ -111,6 +113,7 @@ impl V10Engine {
                     config.exhaust_wave_speed_mps,
                     config.header_reflection,
                     sample_rate,
+                    config.use_temperature_dependent_wave_speed,
                 )
             }),
             collectors: [
@@ -170,6 +173,7 @@ impl V10Engine {
         let mut cylinder_headers = [0.0; CYLINDER_COUNT];
         let mut cylinder_mass_flow = [0.0; CYLINDER_COUNT];
         let mut cylinder_runner_pressure = [0.0; CYLINDER_COUNT];
+        let mut cylinder_runner_temperature_k = [0.0; CYLINDER_COUNT];
         let mut cylinder_exhaust_excitation = [0.0; CYLINDER_COUNT];
 
         for index in 0..CYLINDER_COUNT {
@@ -188,12 +192,15 @@ impl V10Engine {
             } else {
                 derivative_b += cylinder.pressure_derivative;
             }
-            let header = self.headers[index].process(cylinder.exhaust_excitation);
+            let header = self
+                .headers[index]
+                .process(cylinder.exhaust_excitation, cylinder.runner_temperature_k);
             cylinder_pressure_derivative[index] = cylinder.pressure_derivative;
             cylinder_blowdown[index] = cylinder.blowdown;
             cylinder_headers[index] = header;
             cylinder_mass_flow[index] = cylinder.exhaust_mass_flow_kg_s;
             cylinder_runner_pressure[index] = cylinder.runner_pressure_pa;
+            cylinder_runner_temperature_k[index] = cylinder.runner_temperature_k;
             cylinder_exhaust_excitation[index] = cylinder.exhaust_excitation;
             turbulence_trigger += cylinder.blowdown.abs();
             if index < 5 {
@@ -260,6 +267,7 @@ impl V10Engine {
             cylinder_headers,
             cylinder_mass_flow,
             cylinder_runner_pressure,
+            cylinder_runner_temperature_k,
             cylinder_exhaust_excitation,
             pressure_direct: structure.pressure_direct,
             crankcase: structure.crankcase,
