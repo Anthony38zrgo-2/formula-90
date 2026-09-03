@@ -16,6 +16,17 @@ use crate::thermodynamics::exhaust_runner::{GAMMA, SPECIFIC_GAS_CONSTANT_J_PER_K
 /// physical delay (a colder gas is a slower pipe and therefore a longer delay).
 const MIN_RUNNER_TEMPERATURE_K: f32 = 200.0;
 
+/// Instantaneous acoustic state of the runner waveguide.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct RunnerAcousticState {
+    /// Forward wave arriving at the collector junction (radiated travelling wave).
+    pub arrived: f32,
+    /// Superposition acoustic pressure perturbation inside the runner entry.
+    pub acoustic_pressure: f32,
+    /// Low-pass filtered reflected wave returning upstream toward the valve.
+    pub reflected: f32,
+}
+
 /// A one-dimensional wave delay line representing a single exhaust runner
 /// (primary header pipe).
 ///
@@ -40,6 +51,9 @@ pub struct RunnerWaveguide {
     length_m: f32,
     sample_rate: f32,
     temperature_dependent: bool,
+    acoustic_pressure: f32,
+    reflected_wave: f32,
+    last_arrived: f32,
 }
 
 impl RunnerWaveguide {
@@ -65,6 +79,9 @@ impl RunnerWaveguide {
             length_m,
             sample_rate,
             temperature_dependent,
+            acoustic_pressure: 0.0,
+            reflected_wave: 0.0,
+            last_arrived: 0.0,
         }
     }
 
@@ -95,8 +112,13 @@ impl RunnerWaveguide {
         let frac = read - read.floor();
         let arrived = self.delay[i0] + frac * (self.delay[i1] - self.delay[i0]);
         self.feedback_lowpass += 0.32 * (arrived - self.feedback_lowpass);
-        self.delay[self.cursor] = input + self.reflection * self.feedback_lowpass;
+        let reflected = self.reflection * self.feedback_lowpass;
+        let acoustic_pressure = input + reflected;
+        self.delay[self.cursor] = acoustic_pressure;
         self.cursor = (self.cursor + 1) % self.delay.len();
+        self.acoustic_pressure = acoustic_pressure;
+        self.reflected_wave = reflected;
+        self.last_arrived = arrived;
         arrived
     }
 
@@ -104,16 +126,43 @@ impl RunnerWaveguide {
     fn process_fixed(&mut self, input: f32) -> f32 {
         let arrived = self.delay[self.cursor];
         self.feedback_lowpass += 0.32 * (arrived - self.feedback_lowpass);
-        self.delay[self.cursor] = input + self.reflection * self.feedback_lowpass;
+        let reflected = self.reflection * self.feedback_lowpass;
+        let acoustic_pressure = input + reflected;
+        self.delay[self.cursor] = acoustic_pressure;
         self.cursor += 1;
         if self.cursor == self.delay.len() {
             self.cursor = 0;
         }
+        self.acoustic_pressure = acoustic_pressure;
+        self.reflected_wave = reflected;
+        self.last_arrived = arrived;
         arrived
     }
 
     pub fn delay_samples(&self) -> usize {
         self.delay.len()
+    }
+
+    /// Superposition acoustic pressure perturbation inside the runner entry (Pa proxy).
+    #[inline]
+    pub fn acoustic_pressure(&self) -> f32 {
+        self.acoustic_pressure
+    }
+
+    /// Low-pass filtered wave reflected from downstream boundary traveling back upstream.
+    #[inline]
+    pub fn reflected_wave(&self) -> f32 {
+        self.reflected_wave
+    }
+
+    /// Complete instantaneous acoustic state of the runner waveguide.
+    #[inline]
+    pub fn acoustic_state(&self) -> RunnerAcousticState {
+        RunnerAcousticState {
+            arrived: self.last_arrived,
+            acoustic_pressure: self.acoustic_pressure,
+            reflected: self.reflected_wave,
+        }
     }
 }
 
@@ -197,5 +246,28 @@ mod tests {
             let out = wg.process((s as f32 * 0.05).sin(), t);
             assert!(out.is_finite());
         }
+    }
+
+    #[test]
+    fn acoustic_state_tracks_pressure_and_reflected_decay() {
+        let mut wg = RunnerWaveguide::new(0.545, 545.0, -0.3, 48_000.0, true);
+        // Step a unit pulse
+        wg.process(1.0, 1000.0);
+        assert!((wg.acoustic_pressure() - 1.0).abs() < 1e-6);
+        assert_eq!(wg.reflected_wave(), 0.0);
+
+        // Run until pulse round-trips and reflections decay
+        let mut saw_reflection = false;
+        for _ in 0..5_000 {
+            wg.process(0.0, 1000.0);
+            if wg.reflected_wave().abs() > 1e-4 {
+                saw_reflection = true;
+            }
+        }
+        assert!(saw_reflection, "must observe acoustic reflection");
+        assert!(
+            wg.acoustic_pressure().abs() < 1e-6,
+            "acoustic pressure must decay to tail"
+        );
     }
 }
