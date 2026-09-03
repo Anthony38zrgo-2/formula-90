@@ -32,6 +32,28 @@ impl OnePoleLowPass {
     }
 }
 
+/// 3rd-order (-18 dB/octave) all-pole lowpass filter cascade for natural, smooth, non-resonant rolloff.
+struct ThreePoleLowPass {
+    p1: OnePoleLowPass,
+    p2: OnePoleLowPass,
+    p3: OnePoleLowPass,
+}
+
+impl ThreePoleLowPass {
+    fn new(cutoff_hz: f32, sample_rate: f32) -> Self {
+        Self {
+            p1: OnePoleLowPass::new(cutoff_hz, sample_rate),
+            p2: OnePoleLowPass::new(cutoff_hz, sample_rate),
+            p3: OnePoleLowPass::new(cutoff_hz, sample_rate),
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, input: f32) -> f32 {
+        self.p3.process(self.p2.process(self.p1.process(input)))
+    }
+}
+
 struct ComplementaryMidDucker {
     low: OnePoleLowPass,
     high: OnePoleLowPass,
@@ -440,7 +462,7 @@ fn run() -> Result<(), String> {
     let mut event_count = 0u64;
     let mut physical_master_lp = args
         .physical_master_lowpass_hz
-        .map(|cutoff| OnePoleLowPass::new(cutoff.clamp(100.0, args.sample_rate as f32 * 0.48), args.sample_rate as f32));
+        .map(|cutoff| ThreePoleLowPass::new(cutoff.clamp(100.0, args.sample_rate as f32 * 0.48), args.sample_rate as f32));
     for sample in 0..total {
         let time_s = sample as f32 / args.sample_rate as f32;
         let current_input = render_input(&args, time_s);

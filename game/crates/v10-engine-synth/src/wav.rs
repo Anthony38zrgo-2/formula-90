@@ -6,6 +6,9 @@ pub fn write_mono_pcm16(path: &Path, sample_rate: u32, samples: &[f32]) -> Resul
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
+    if path.exists() {
+        let _ = std::fs::remove_file(path);
+    }
     let mut out = BufWriter::new(File::create(path).map_err(|e| e.to_string())?);
     let data_bytes = (samples.len() * 2) as u32;
     out.write_all(b"RIFF").map_err(|e| e.to_string())?;
