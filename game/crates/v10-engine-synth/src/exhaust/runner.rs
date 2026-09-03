@@ -73,14 +73,25 @@ impl RunnerWaveguide {
         if !self.temperature_dependent {
             return self.process_fixed(input);
         }
-        let speed = speed_of_sound_mps(temperature_k.max(1.0));
-        let delay_float = (self.length_m / speed * self.sample_rate)
-            .clamp(2.0, self.delay.len() as f32 - 2.0);
+        // Floor the temperature at the buffer-sizing floor so the physical delay
+        // never exceeds the capacity that `new` reserved for the coldest gas.
+        let speed = speed_of_sound_mps(temperature_k.max(MIN_RUNNER_TEMPERATURE_K));
+        let max_delay = (self.delay.len() - 1) as f32;
+        let delay_float = (self.length_m / speed * self.sample_rate).clamp(2.0, max_delay);
+        // Fractional read position on the circular buffer. A tiny negative
+        // `cursor - delay_float` wraps to the buffer tail, but `raw + len` can
+        // round to exactly `len` at fp32 precision, so we guard it back under
+        // `len`; `i1` wraps to index 0 so the interpolation crosses the seam.
         let n = self.delay.len() as f32;
-        let read = self.cursor as f32 - delay_float;
-        let read = if read < 0.0 { read + n } else { read };
+        let mut read = self.cursor as f32 - delay_float;
+        if read < 0.0 {
+            read += n;
+        }
+        if read >= n {
+            read -= n;
+        }
         let i0 = read.floor() as usize;
-        let i1 = (i0 + 1).min(self.delay.len() - 1);
+        let i1 = (i0 + 1) % self.delay.len();
         let frac = read - read.floor();
         let arrived = self.delay[i0] + frac * (self.delay[i1] - self.delay[i0]);
         self.feedback_lowpass += 0.32 * (arrived - self.feedback_lowpass);
@@ -174,6 +185,17 @@ mod tests {
             let x = (s as f32 * 0.013).sin();
             let t = 800.0 + 400.0 * (s as f32 * 0.002).sin();
             assert_eq!(a.process(x, t).to_bits(), b.process(x, t).to_bits());
+        }
+    }
+
+    #[test]
+    fn seam_interpolation_does_not_panic_across_delay_bounds() {
+        let mut wg = RunnerWaveguide::new(0.545, 545.0, -0.3, 48_000.0, true);
+        // Sweep temperature widely across boundaries and run through buffer seam crossings
+        for s in 0..10_000 {
+            let t = 200.0 + 2000.0 * (s as f32 * 0.005).sin().abs();
+            let out = wg.process((s as f32 * 0.05).sin(), t);
+            assert!(out.is_finite());
         }
     }
 }
