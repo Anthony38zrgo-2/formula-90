@@ -248,11 +248,22 @@ impl Collector {
         }
     }
 
+    /// Process incoming waves from the 5 individual primary runners into the collector.
+    ///
+    /// Models pulse interference at the 5-in-1 junction (PHY-071):
+    /// - Individual runner pulses collide at the junction, exhibiting constructive/destructive interference.
+    /// - Nonlinear confluence resistance attenuates extreme shock spikes as pulses merge into the common volume.
+    /// - The chamber pressure integrates the net incident flow derivative and decays with acoustic leak.
+    /// - The radiated output combines the transmitted junction wave, the chamber mass pressure, and the collector modal body.
     #[inline]
-    pub fn process(&mut self, header_sum: f32) -> CollectorFrame {
-        self.chamber_pressure += 0.42 * header_sum - self.chamber_leak * self.chamber_pressure;
+    pub fn process_bank(&mut self, runners: &[f32; 5]) -> CollectorFrame {
+        let sum: f32 = runners.iter().sum();
+        let nonlinear_loss = 0.08 * sum * sum.abs();
+        let junction_input = sum - nonlinear_loss;
+
+        self.chamber_pressure += 0.42 * junction_input - self.chamber_leak * self.chamber_pressure;
         let pressure = self.chamber_pressure / (1.0 + 0.35 * self.chamber_pressure.abs());
-        let resonant = self.body.process(header_sum + pressure * 0.12);
+        let resonant = self.body.process(junction_input + pressure * 0.12);
         CollectorFrame {
             pressure,
             // The chamber contributes weight, while the arriving travelling
@@ -260,8 +271,14 @@ impl Collector {
             // whole output collapses the collector back into one firing tone.
             radiated: self
                 .dc
-                .process(header_sum * 0.62 + pressure * 0.18 + resonant),
+                .process(junction_input * 0.62 + pressure * 0.18 + resonant),
         }
+    }
+
+    #[inline]
+    pub fn process(&mut self, header_sum: f32) -> CollectorFrame {
+        let runners = [header_sum * 0.2; 5];
+        self.process_bank(&runners)
     }
 }
 
@@ -278,5 +295,28 @@ mod tests {
             assert!(last.is_finite());
         }
         assert!(last.abs() < 1.0e-10, "tail={last}");
+    }
+
+    #[test]
+    fn collector_bank_interference_produces_finite_bounded_pressure() {
+        let mut collector = Collector::new(48_000.0, 0.0);
+        let pulses = [0.1, -0.05, 0.08, -0.02, 0.04];
+        for _ in 0..1_000 {
+            let frame = collector.process_bank(&pulses);
+            assert!(frame.pressure.is_finite());
+            assert!(frame.radiated.is_finite());
+        }
+    }
+
+    #[test]
+    fn opposing_pulses_interfere_destructively_at_collector_junction() {
+        let mut c1 = Collector::new(48_000.0, 0.0);
+        let mut c2 = Collector::new(48_000.0, 0.0);
+        // Constructive: two in-phase pulses
+        let f1 = c1.process_bank(&[0.5, 0.5, 0.0, 0.0, 0.0]);
+        // Destructive: two anti-phase pulses cancel at the junction
+        let f2 = c2.process_bank(&[0.5, -0.5, 0.0, 0.0, 0.0]);
+        assert!(f1.pressure > f2.pressure, "in-phase pulses must create higher junction pressure");
+        assert!(f1.radiated.abs() > f2.radiated.abs(), "in-phase pulses must radiate higher amplitude");
     }
 }

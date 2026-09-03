@@ -167,6 +167,8 @@ impl V10Engine {
         let mut derivative = 0.0;
         let mut derivative_a = 0.0;
         let mut derivative_b = 0.0;
+        let mut runners_a = [0.0f32; 5];
+        let mut runners_b = [0.0f32; 5];
         let mut header_a = 0.0;
         let mut header_b = 0.0;
         let mut turbulence_trigger = 0.0f32;
@@ -208,8 +210,10 @@ impl V10Engine {
             cylinder_exhaust_excitation[index] = cylinder.exhaust_excitation;
             turbulence_trigger += cylinder.blowdown.abs();
             if index < 5 {
+                runners_a[index] = header;
                 header_a += header;
             } else {
+                runners_b[index - 5] = header;
                 header_b += header;
             }
         }
@@ -220,8 +224,8 @@ impl V10Engine {
             + structure.crankcase * self.config.crankcase_gain
             + structure.block * self.config.block_gain
             + structure.head * self.config.head_gain;
-        let collector_a = self.collectors[0].process(header_a);
-        let collector_b = self.collectors[1].process(header_b);
+        let collector_a = self.collectors[0].process_bank(&runners_a);
+        let collector_b = self.collectors[1].process_bank(&runners_b);
         let exhaust = (collector_a.radiated + collector_b.radiated) * self.config.exhaust_gain;
         let attack = 0.34;
         let release = 1.0 - (-1.0 / (0.0038 * sample_rate)).exp();
