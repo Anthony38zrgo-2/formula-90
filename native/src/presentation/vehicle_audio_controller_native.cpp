@@ -59,6 +59,25 @@ void VehicleAudioControllerNative::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "ENGINE_BAND_NATIVE_RPM"), "", "get_engine_band_native_rpm");
 	ClassDB::bind_method(D_METHOD("is_engine_loaded"), &VehicleAudioControllerNative::is_engine_loaded);
 	ClassDB::bind_method(D_METHOD("is_audio_active"), &VehicleAudioControllerNative::is_audio_active);
+
+	ClassDB::bind_method(D_METHOD("get_last_normalized_engine_load"), &VehicleAudioControllerNative::get_last_normalized_engine_load);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "last_normalized_engine_load"), "", "get_last_normalized_engine_load");
+	ClassDB::bind_method(D_METHOD("get_last_normalized_engine_torque"), &VehicleAudioControllerNative::get_last_normalized_engine_torque);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "last_normalized_engine_torque"), "", "get_last_normalized_engine_torque");
+	ClassDB::bind_method(D_METHOD("get_last_torque_sign"), &VehicleAudioControllerNative::get_last_torque_sign);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "last_torque_sign"), "", "get_last_torque_sign");
+	ClassDB::bind_method(D_METHOD("get_last_rpm_derivative"), &VehicleAudioControllerNative::get_last_rpm_derivative);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "last_rpm_derivative"), "", "get_last_rpm_derivative");
+	ClassDB::bind_method(D_METHOD("get_last_throttle_derivative"), &VehicleAudioControllerNative::get_last_throttle_derivative);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "last_throttle_derivative"), "", "get_last_throttle_derivative");
+	ClassDB::bind_method(D_METHOD("get_last_shift_phase"), &VehicleAudioControllerNative::get_last_shift_phase);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "last_shift_phase"), "", "get_last_shift_phase");
+	ClassDB::bind_method(D_METHOD("get_last_clutch_engagement"), &VehicleAudioControllerNative::get_last_clutch_engagement);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "last_clutch_engagement"), "", "get_last_clutch_engagement");
+	ClassDB::bind_method(D_METHOD("get_last_tc_cut_ratio"), &VehicleAudioControllerNative::get_last_tc_cut_ratio);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "last_tc_cut_ratio"), "", "get_last_tc_cut_ratio");
+	ClassDB::bind_method(D_METHOD("get_last_rev_limiter_active"), &VehicleAudioControllerNative::get_last_rev_limiter_active);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "last_rev_limiter_active"), "", "get_last_rev_limiter_active");
 }
 
 PackedFloat32Array VehicleAudioControllerNative::get_last_weights() const {
@@ -168,6 +187,7 @@ bool VehicleAudioControllerNative::load_dll() {
 	fn_create_ = (FnAudioCreate)GetProcAddress(hDll, "vehicle_audio_create");
 	fn_destroy_ = (FnAudioDestroy)GetProcAddress(hDll, "vehicle_audio_destroy");
 	fn_set_state_ = (FnAudioSetState)GetProcAddress(hDll, "vehicle_audio_set_state");
+	fn_set_telemetry_ = (FnAudioSetTelemetry)GetProcAddress(hDll, "vehicle_audio_set_telemetry");
 	fn_trigger_ = (FnAudioTrigger)GetProcAddress(hDll, "vehicle_audio_trigger");
 	fn_render_ = (FnAudioRender)GetProcAddress(hDll, "vehicle_audio_render");
 
@@ -188,7 +208,7 @@ bool VehicleAudioControllerNative::load_dll() {
 		unload_dll();
 		return false;
 	}
-	if (!fn_create_ || !fn_set_state_ || !fn_render_ || !fn_destroy_) {
+	if (!fn_create_ || (!fn_set_telemetry_ && !fn_set_state_) || !fn_render_ || !fn_destroy_) {
 		UtilityFunctions::printerr("[VehicleAudioControllerNative] Missing required exported symbols in vehicle_audio_engine.dll!");
 		unload_dll();
 		return false;
@@ -227,6 +247,7 @@ void VehicleAudioControllerNative::unload_dll() {
 	fn_create_ = nullptr;
 	fn_destroy_ = nullptr;
 	fn_set_state_ = nullptr;
+	fn_set_telemetry_ = nullptr;
 	fn_trigger_ = nullptr;
 	fn_render_ = nullptr;
 }
@@ -450,7 +471,7 @@ void VehicleAudioControllerNative::_ready() {
 	}
 }
 
-void VehicleAudioControllerNative::_physics_process(double) {
+void VehicleAudioControllerNative::_physics_process(double delta) {
 	Node *vehicle = get_node_or_null(vehicle_path_);
 	if (!vehicle) {
 		return;
@@ -465,10 +486,113 @@ void VehicleAudioControllerNative::_physics_process(double) {
 	const double idle = (idle_v.get_type() != Variant::NIL) ? (double)idle_v : (double)idle_rpm_;
 	const double maxr = (max_v.get_type() != Variant::NIL) ? (double)max_v : (double)max_rpm_;
 
+	const Variant et_v = vehicle->get("engine_torque");
+	const double engine_torque = (et_v.get_type() != Variant::NIL) ? (double)et_v : 0.0;
+
+	const Variant ct_v = vehicle->get("clutch_torque");
+	const double clutch_torque = (ct_v.get_type() != Variant::NIL) ? (double)ct_v : 0.0;
+
+	const Variant ce_v = vehicle->get("clutch_engagement");
+	const double clutch_engagement = (ce_v.get_type() != Variant::NIL) ? (double)ce_v : 1.0;
+
+	const Variant mt_v = vehicle->get("max_torque");
+	const double max_torque = (mt_v.get_type() != Variant::NIL) ? (double)mt_v : 455.0;
+
+	const Variant tc_v = vehicle->get("tc_cut_ratio");
+	const double tc_cut = (tc_v.get_type() != Variant::NIL) ? (double)tc_v : 0.0;
+
+	const Variant rl_v = vehicle->get("is_rev_limited");
+	const bool rev_limited = (rl_v.get_type() != Variant::NIL) ? (bool)rl_v : (rpm >= maxr - 50.0);
+
 	const String surface = detect_surface(vehicle);
 	const double slip = aggregate_slip(vehicle);
 
 	update_telemetry_snapshot(rpm, idle, maxr, throttle, gear, speed_kph, slip, surface);
+
+	// Temporal derivatives (EPIC E)
+	if (delta <= 0.0 || delta > 0.2 || !std::isfinite(delta) || !derivatives_initialized_) {
+		prev_rpm_ = rpm;
+		prev_throttle_ = throttle;
+		filtered_rpm_derivative_ = 0.0f;
+		filtered_throttle_derivative_ = 0.0f;
+		derivatives_initialized_ = true;
+	} else {
+		const double raw_rpm_dot = (rpm - prev_rpm_) / delta;
+		const double raw_throttle_dot = (throttle - prev_throttle_) / delta;
+		const float clamped_rpm_dot = (float)std::clamp(raw_rpm_dot, -100000.0, 100000.0);
+		const float clamped_throttle_dot = (float)std::clamp(raw_throttle_dot, -50.0, 50.0);
+
+		const float tau_rpm = 0.030f;
+		const float alpha_rpm = (float)(delta / (tau_rpm + delta));
+		filtered_rpm_derivative_ += alpha_rpm * (clamped_rpm_dot - filtered_rpm_derivative_);
+
+		const float tau_throttle = 0.020f;
+		const float alpha_throttle = (float)(delta / (tau_throttle + delta));
+		filtered_throttle_derivative_ += alpha_throttle * (clamped_throttle_dot - filtered_throttle_derivative_);
+
+		prev_rpm_ = rpm;
+		prev_throttle_ = throttle;
+	}
+
+	// Normalized torque and sign (EPIC D-01, D-02)
+	const float denom_torque = (float)(max_torque > 1e-4 ? max_torque : 455.0);
+	const float normalized_engine_torque = std::clamp((float)(engine_torque / denom_torque), -1.0f, 1.0f);
+
+	int torque_sign = 0;
+	if (normalized_engine_torque > 0.025f) {
+		torque_sign = 1;
+	} else if (normalized_engine_torque < -0.025f) {
+		torque_sign = -1;
+	}
+
+	// Coupled engine load (EPIC D-03, D-04)
+	const float max_clutch_torque_ratio = 1.6f;
+	const float clutch_capacity = denom_torque * max_clutch_torque_ratio;
+	const float coupled_load = std::clamp((float)(std::abs(clutch_torque) / std::max(clutch_capacity, 1e-4f)), 0.0f, 1.0f);
+	const float tc_delivery = 1.0f - std::clamp((float)tc_cut, 0.0f, 1.0f);
+	float normalized_engine_load = std::clamp(coupled_load * tc_delivery, 0.0f, 1.0f);
+
+	if (!std::isfinite(normalized_engine_load) || (ct_v.get_type() == Variant::NIL && et_v.get_type() != Variant::NIL)) {
+		normalized_engine_load = std::abs(normalized_engine_torque);
+	}
+
+	// Shift phase state machine (EPIC F-01..F-05)
+	if (gear != last_gear_) {
+		if (last_gear_ != 0) {
+			if (gear > last_gear_) {
+				current_shift_phase_ = SHIFT_PHASE_UPSHIFT_RECOVERY;
+				shift_recovery_timer_ = 0.065;
+				last_trigger_ = "shift_up";
+			} else {
+				current_shift_phase_ = SHIFT_PHASE_DOWNSHIFT_RECOVERY;
+				shift_recovery_timer_ = 0.080;
+				last_trigger_ = "shift_down";
+			}
+		}
+		last_gear_ = gear;
+	} else if (shift_recovery_timer_ > 0.0) {
+		shift_recovery_timer_ -= delta;
+		if (shift_recovery_timer_ <= 0.0) {
+			shift_recovery_timer_ = 0.0;
+			current_shift_phase_ = SHIFT_PHASE_NONE;
+		} else if (current_shift_phase_ == SHIFT_PHASE_DOWNSHIFT_RECOVERY) {
+			if (filtered_throttle_derivative_ > 2.0f || filtered_rpm_derivative_ > 3000.0f) {
+				current_shift_phase_ = SHIFT_PHASE_DOWNSHIFT_BLIP;
+			}
+		}
+	} else {
+		current_shift_phase_ = SHIFT_PHASE_NONE;
+	}
+
+	last_normalized_engine_load_ = normalized_engine_load;
+	last_normalized_engine_torque_ = normalized_engine_torque;
+	last_torque_sign_ = torque_sign;
+	last_rpm_derivative_ = filtered_rpm_derivative_;
+	last_throttle_derivative_ = filtered_throttle_derivative_;
+	last_shift_phase_ = current_shift_phase_;
+	last_clutch_engagement_ = (float)clutch_engagement;
+	last_tc_cut_ratio_ = (float)tc_cut;
+	last_rev_limiter_active_ = rev_limited;
 
 	if (!engine_) {
 		return;
@@ -476,16 +600,30 @@ void VehicleAudioControllerNative::_physics_process(double) {
 
 	// Push telemetry into the Rust core.
 	CharString surf = surface.utf8();
-	fn_set_state_(engine_, rpm, idle, maxr, (float)throttle, speed_kph, gear, (float)slip, surf.get_data());
+	if (fn_set_telemetry_) {
+		VehicleAudioTelemetryV3 packet = {};
+		packet.schema_version = EXPECTED_ABI_VERSION;
+		packet.struct_size = sizeof(VehicleAudioTelemetryV3);
+		packet.rpm = rpm;
+		packet.idle_rpm = idle;
+		packet.max_rpm = maxr;
+		packet.throttle = (float)throttle;
+		packet.normalized_engine_load = normalized_engine_load;
+		packet.normalized_engine_torque = normalized_engine_torque;
+		packet.rpm_derivative = filtered_rpm_derivative_;
+		packet.throttle_derivative = filtered_throttle_derivative_;
+		packet.speed_kph = speed_kph;
+		packet.slip = (float)slip;
+		packet.gear = gear;
+		packet.torque_sign = torque_sign;
+		packet.shift_phase = current_shift_phase_;
+		packet.clutch_engagement = (float)clutch_engagement;
+		packet.tc_cut_ratio = (float)tc_cut;
+		packet.rev_limiter_active = rev_limited ? 1u : 0u;
 
-	// Gear-change one-shots (auto).
-	if (gear != last_gear_) {
-		if (last_gear_ != 0) {
-			const int code = gear > last_gear_ ? 0 : 1;
-			fn_trigger_(engine_, code);
-			last_trigger_ = (code == 0) ? "shift_up" : "shift_down";
-		}
-		last_gear_ = gear;
+		fn_set_telemetry_(engine_, &packet, surf.get_data());
+	} else if (fn_set_state_) {
+		fn_set_state_(engine_, rpm, idle, maxr, (float)throttle, speed_kph, gear, (float)slip, surf.get_data());
 	}
 
 	// Render into the AudioStreamGenerator buffer.

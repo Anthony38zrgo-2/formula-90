@@ -329,6 +329,15 @@ pub struct VehicleAudioEngine {
     last_slip: f32,
     last_gear: i32,
     last_trigger: String,
+    last_normalized_engine_load: f32,
+    last_normalized_engine_torque: f32,
+    last_torque_sign: i32,
+    last_rpm_derivative: f32,
+    last_throttle_derivative: f32,
+    last_shift_phase: i32,
+    last_clutch_engagement: f32,
+    last_tc_cut_ratio: f32,
+    last_rev_limiter_active: bool,
     backfire_cooldown_samples: usize,
     variant_rng_state: u64,
 
@@ -593,6 +602,15 @@ impl VehicleAudioEngine {
             last_slip: 0.0,
             last_gear: 0,
             last_trigger: String::new(),
+            last_normalized_engine_load: 0.0,
+            last_normalized_engine_torque: 0.0,
+            last_torque_sign: 0,
+            last_rpm_derivative: 0.0,
+            last_throttle_derivative: 0.0,
+            last_shift_phase: 0,
+            last_clutch_engagement: 0.0,
+            last_tc_cut_ratio: 0.0,
+            last_rev_limiter_active: false,
             smoothed_rpm: 0.0,
             target_rpm: 0.0,
             idle_rpm: 0.0,
@@ -744,8 +762,104 @@ impl VehicleAudioEngine {
         }
     }
 
-    /// Feed the current vehicle telemetry. Computes the mix targets and fires
-    /// gear-shift one-shots on gear changes.
+    /// Feed full versioned vehicle audio telemetry.
+    pub fn set_telemetry(&mut self, telem: &crate::ffi::VehicleAudioTelemetryV3, surface: &str) {
+        let norm = if telem.max_rpm > telem.idle_rpm {
+            (((telem.rpm - telem.idle_rpm) / (telem.max_rpm - telem.idle_rpm)) as f32)
+                .clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        let egain = engine_gain(telem.throttle);
+        let skey = surface_key(surface);
+        let sgain = match skey {
+            Some(_) => {
+                self.cfg.bed_base
+                    + self.cfg.bed_slip * telem.slip.clamp(0.0, 1.0)
+                    + self.cfg.bed_speed * (telem.speed_kph.min(120.0) / 120.0) as f32
+            }
+            None => 0.0,
+        };
+
+        // RPM is stored as a target; `render` glides `smoothed_rpm` toward it per
+        // sample so pitch + band weights move continuously (no per-frame step).
+        self.target_rpm = telem.rpm;
+        self.idle_rpm = telem.idle_rpm;
+        self.max_rpm = telem.max_rpm;
+        self.cur_engine_gain = egain;
+
+        self.target_engine_gain = egain;
+        self.target_bed_gain = sgain;
+        self.bed_key = skey.map(|s| s.to_string());
+
+        if telem.gear != self.last_gear {
+            if self.last_gear != 0 {
+                let t = if telem.gear > self.last_gear {
+                    Trigger::ShiftUp
+                } else {
+                    Trigger::ShiftDown
+                };
+                self.trigger(t);
+            }
+            self.last_gear = telem.gear;
+        }
+
+        // Over-run backfire: sudden lift-off from high throttle at high RPM
+        // (> 13,500 RPM). The 1 s cooldown stops throttle pumps / rev-limiter
+        // bouncing from chaining full backfire samples back-to-back.
+        if self.last_throttle >= 0.80
+            && telem.throttle <= 0.15
+            && telem.rpm >= 13500.0
+            && self.backfire_cooldown_samples == 0
+        {
+            self.trigger(Trigger::Backfire);
+            self.backfire_cooldown_samples = (self.sample_rate as f64 * 1.0) as usize;
+            // Exhaust pop: short gain boost on the exhaust layer when a backfire
+            // fires. Duration scales with sample rate (~120 ms).
+            self.exhaust_crackle_samples = (self.sample_rate as f64 * 0.12) as usize;
+        }
+
+        if self.synth_enabled {
+            if let Some(synth) = &mut self.synth {
+                synth.update_controls(telem.rpm, telem.idle_rpm, telem.max_rpm, telem.throttle);
+            }
+        }
+        if let Some(gf509) = &mut self.gf509 {
+            let torque_sign = v10_engine_synth::TorqueSign::from_i32(telem.torque_sign)
+                .unwrap_or(v10_engine_synth::TorqueSign::Neutral);
+            let shift_phase = v10_engine_synth::ShiftPhase::from_i32(telem.shift_phase)
+                .unwrap_or(v10_engine_synth::ShiftPhase::None);
+            let _ = gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
+                rpm: telem.rpm.clamp(0.0, 25_000.0) as f32,
+                throttle: telem.throttle.clamp(0.0, 1.0),
+                normalized_engine_load: telem.normalized_engine_load.clamp(0.0, 1.0),
+                normalized_engine_torque: telem.normalized_engine_torque.clamp(-1.0, 1.0),
+                torque_sign,
+                rpm_derivative: telem.rpm_derivative,
+                throttle_derivative: telem.throttle_derivative,
+                gear: telem.gear.clamp(-1, 12) as i8,
+                shift_phase,
+                dt_seconds: 0.0,
+            });
+        }
+
+        self.last_norm = norm;
+        self.last_rpm = telem.rpm;
+        self.last_throttle = telem.throttle;
+        self.last_speed_kph = telem.speed_kph;
+        self.last_slip = telem.slip;
+        self.last_normalized_engine_load = telem.normalized_engine_load;
+        self.last_normalized_engine_torque = telem.normalized_engine_torque;
+        self.last_torque_sign = telem.torque_sign;
+        self.last_rpm_derivative = telem.rpm_derivative;
+        self.last_throttle_derivative = telem.throttle_derivative;
+        self.last_shift_phase = telem.shift_phase;
+        self.last_clutch_engagement = telem.clutch_engagement;
+        self.last_tc_cut_ratio = telem.tc_cut_ratio;
+        self.last_rev_limiter_active = telem.rev_limiter_active != 0;
+    }
+
+    /// Feed the current vehicle telemetry (legacy shim).
     #[allow(clippy::too_many_arguments)]
     pub fn set_state(
         &mut self,
@@ -758,80 +872,27 @@ impl VehicleAudioEngine {
         slip: f32,
         surface: &str,
     ) {
-        let norm = if max_rpm > idle_rpm {
-            (((rpm - idle_rpm) / (max_rpm - idle_rpm)) as f32).clamp(0.0, 1.0)
-        } else {
-            0.0
+        let telem = crate::ffi::VehicleAudioTelemetryV3 {
+            schema_version: crate::ffi::VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: std::mem::size_of::<crate::ffi::VehicleAudioTelemetryV3>() as u32,
+            rpm,
+            idle_rpm,
+            max_rpm,
+            throttle,
+            normalized_engine_load: throttle.clamp(0.0, 1.0),
+            normalized_engine_torque: 0.0,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            speed_kph,
+            slip,
+            gear,
+            torque_sign: 0,
+            shift_phase: 0,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
+            rev_limiter_active: 0,
         };
-        let egain = engine_gain(throttle);
-        let skey = surface_key(surface);
-        let sgain = match skey {
-            Some(_) => {
-                self.cfg.bed_base
-                    + self.cfg.bed_slip * slip.clamp(0.0, 1.0)
-                    + self.cfg.bed_speed * (speed_kph.min(120.0) / 120.0) as f32
-            }
-            None => 0.0,
-        };
-
-        // RPM is stored as a target; `render` glides `smoothed_rpm` toward it per
-        // sample so pitch + band weights move continuously (no per-frame step).
-        self.target_rpm = rpm;
-        self.idle_rpm = idle_rpm;
-        self.max_rpm = max_rpm;
-        self.cur_engine_gain = egain;
-
-        self.target_engine_gain = egain;
-        self.target_bed_gain = sgain;
-        self.bed_key = skey.map(|s| s.to_string());
-
-        if gear != self.last_gear {
-            if self.last_gear != 0 {
-                let t = if gear > self.last_gear {
-                    Trigger::ShiftUp
-                } else {
-                    Trigger::ShiftDown
-                };
-                self.trigger(t);
-            }
-            self.last_gear = gear;
-        }
-
-        // Over-run backfire: sudden lift-off from high throttle at high RPM
-        // (> 13,500 RPM). The 1 s cooldown stops throttle pumps / rev-limiter
-        // bouncing from chaining full backfire samples back-to-back.
-        if self.last_throttle >= 0.80
-            && throttle <= 0.15
-            && rpm >= 13500.0
-            && self.backfire_cooldown_samples == 0
-        {
-            self.trigger(Trigger::Backfire);
-            self.backfire_cooldown_samples = (self.sample_rate as f64 * 1.0) as usize;
-            // Exhaust pop: short gain boost on the exhaust layer when a backfire
-            // fires. Duration scales with sample rate (~120 ms).
-            self.exhaust_crackle_samples = (self.sample_rate as f64 * 0.12) as usize;
-        }
-
-        if self.synth_enabled {
-            if let Some(synth) = &mut self.synth {
-                synth.update_controls(rpm, idle_rpm, max_rpm, throttle);
-            }
-        }
-        if let Some(gf509) = &mut self.gf509 {
-            let _ = gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
-                rpm: rpm.clamp(0.0, 25_000.0) as f32,
-                throttle: throttle.clamp(0.0, 1.0),
-                load: throttle.clamp(0.0, 1.0),
-                gear: gear.clamp(-1, 12) as i8,
-                dt_seconds: 0.0,
-            });
-        }
-
-        self.last_norm = norm;
-        self.last_rpm = rpm;
-        self.last_throttle = throttle;
-        self.last_speed_kph = speed_kph;
-        self.last_slip = slip;
+        self.set_telemetry(&telem, surface);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -1453,14 +1514,24 @@ impl VehicleAudioEngine {
     /// load and tick duration before the next audio block.
     pub fn set_gf509_physics(&mut self, load: f32, dt_seconds: f32) -> Result<(), String> {
         if let Some(gf509) = &mut self.gf509 {
+            let torque_sign = v10_engine_synth::TorqueSign::from_i32(self.last_torque_sign)
+                .unwrap_or(v10_engine_synth::TorqueSign::Neutral);
+            let shift_phase = v10_engine_synth::ShiftPhase::from_i32(self.last_shift_phase)
+                .unwrap_or(v10_engine_synth::ShiftPhase::None);
             gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
                 rpm: self.target_rpm.clamp(0.0, 25_000.0) as f32,
                 throttle: self.last_throttle.clamp(0.0, 1.0),
-                load: load.clamp(0.0, 1.0),
+                normalized_engine_load: load.clamp(0.0, 1.0),
+                normalized_engine_torque: self.last_normalized_engine_torque.clamp(-1.0, 1.0),
+                torque_sign,
+                rpm_derivative: self.last_rpm_derivative,
+                throttle_derivative: self.last_throttle_derivative,
                 gear: self.last_gear.clamp(-1, 12) as i8,
+                shift_phase,
                 dt_seconds: dt_seconds.clamp(0.0, 1.0),
             })?;
         }
+        self.last_normalized_engine_load = load;
         Ok(())
     }
 
@@ -1492,8 +1563,53 @@ impl VehicleAudioEngine {
         self.last_throttle = 0.0;
         self.last_gear = 0;
         self.last_trigger.clear();
+        self.last_normalized_engine_load = 0.0;
+        self.last_normalized_engine_torque = 0.0;
+        self.last_torque_sign = 0;
+        self.last_rpm_derivative = 0.0;
+        self.last_throttle_derivative = 0.0;
+        self.last_shift_phase = 0;
+        self.last_clutch_engagement = 0.0;
+        self.last_tc_cut_ratio = 0.0;
+        self.last_rev_limiter_active = false;
         self.gf509_render_failed = false;
         Ok(())
+    }
+
+    pub fn last_normalized_engine_load(&self) -> f32 {
+        self.last_normalized_engine_load
+    }
+
+    pub fn last_normalized_engine_torque(&self) -> f32 {
+        self.last_normalized_engine_torque
+    }
+
+    pub fn last_torque_sign(&self) -> i32 {
+        self.last_torque_sign
+    }
+
+    pub fn last_rpm_derivative(&self) -> f32 {
+        self.last_rpm_derivative
+    }
+
+    pub fn last_throttle_derivative(&self) -> f32 {
+        self.last_throttle_derivative
+    }
+
+    pub fn last_shift_phase(&self) -> i32 {
+        self.last_shift_phase
+    }
+
+    pub fn last_clutch_engagement(&self) -> f32 {
+        self.last_clutch_engagement
+    }
+
+    pub fn last_tc_cut_ratio(&self) -> f32 {
+        self.last_tc_cut_ratio
+    }
+
+    pub fn last_rev_limiter_active(&self) -> bool {
+        self.last_rev_limiter_active
     }
 
     pub fn last_synth_energy(&self) -> f32 {
@@ -1952,6 +2068,15 @@ mod tests {
             last_slip: 0.0,
             last_gear: 0,
             last_trigger: String::new(),
+            last_normalized_engine_load: 0.0,
+            last_normalized_engine_torque: 0.0,
+            last_torque_sign: 0,
+            last_rpm_derivative: 0.0,
+            last_throttle_derivative: 0.0,
+            last_shift_phase: 0,
+            last_clutch_engagement: 0.0,
+            last_tc_cut_ratio: 0.0,
+            last_rev_limiter_active: false,
             smoothed_rpm: 0.0,
             target_rpm: 0.0,
             idle_rpm: 0.0,

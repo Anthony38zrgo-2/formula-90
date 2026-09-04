@@ -15,23 +15,99 @@ use sha2::{Digest, Sha256};
 
 pub const GF509_HEADROOM_GAIN: f32 = 0.61;
 
+#[repr(i32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum TorqueSign {
+    Negative = -1,
+    #[default]
+    Neutral = 0,
+    Positive = 1,
+}
+
+impl TorqueSign {
+    pub fn from_i32(v: i32) -> Result<Self, String> {
+        match v {
+            -1 => Ok(Self::Negative),
+            0 => Ok(Self::Neutral),
+            1 => Ok(Self::Positive),
+            _ => Err(format!("invalid torque sign: {}", v)),
+        }
+    }
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum ShiftPhase {
+    #[default]
+    None = 0,
+    UpshiftCut = 1,
+    UpshiftRecovery = 2,
+    DownshiftCut = 3,
+    DownshiftBlip = 4,
+    DownshiftRecovery = 5,
+}
+
+impl ShiftPhase {
+    pub fn from_i32(v: i32) -> Result<Self, String> {
+        match v {
+            0 => Ok(Self::None),
+            1 => Ok(Self::UpshiftCut),
+            2 => Ok(Self::UpshiftRecovery),
+            3 => Ok(Self::DownshiftCut),
+            4 => Ok(Self::DownshiftBlip),
+            5 => Ok(Self::DownshiftRecovery),
+            _ => Err(format!("invalid shift phase: {}", v)),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct RuntimeTelemetry {
     pub rpm: f32,
     pub throttle: f32,
-    pub load: f32,
+    pub normalized_engine_load: f32,
+    pub normalized_engine_torque: f32,
+    pub torque_sign: TorqueSign,
+    pub rpm_derivative: f32,
+    pub throttle_derivative: f32,
     pub gear: i8,
+    pub shift_phase: ShiftPhase,
     pub dt_seconds: f32,
 }
 
 impl RuntimeTelemetry {
-    fn validate(self) -> Result<Self, String> {
-        EngineInput {
-            rpm: self.rpm,
-            throttle: self.throttle,
-            load: self.load,
+    pub fn validate(self) -> Result<Self, String> {
+        if !self.rpm.is_finite() || !(0.0..=25_000.0).contains(&self.rpm) {
+            return Err(format!("rpm out of range: {}", self.rpm));
         }
-        .validate()?;
+        if !self.throttle.is_finite() || !(0.0..=1.0).contains(&self.throttle) {
+            return Err(format!("throttle out of range: {}", self.throttle));
+        }
+        if !self.normalized_engine_load.is_finite()
+            || !(0.0..=1.0).contains(&self.normalized_engine_load)
+        {
+            return Err(format!(
+                "normalized_engine_load out of range: {}",
+                self.normalized_engine_load
+            ));
+        }
+        if !self.normalized_engine_torque.is_finite()
+            || !(-1.0..=1.0).contains(&self.normalized_engine_torque)
+        {
+            return Err(format!(
+                "normalized_engine_torque out of range: {}",
+                self.normalized_engine_torque
+            ));
+        }
+        if !self.rpm_derivative.is_finite() {
+            return Err(format!("rpm_derivative not finite: {}", self.rpm_derivative));
+        }
+        if !self.throttle_derivative.is_finite() {
+            return Err(format!(
+                "throttle_derivative not finite: {}",
+                self.throttle_derivative
+            ));
+        }
         if !(-1..=12).contains(&self.gear) {
             return Err(format!("gear out of range: {}", self.gear));
         }
@@ -47,8 +123,13 @@ impl Default for RuntimeTelemetry {
         Self {
             rpm: 0.0,
             throttle: 0.0,
-            load: 0.0,
+            normalized_engine_load: 0.0,
+            normalized_engine_torque: 0.0,
+            torque_sign: TorqueSign::Neutral,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
             gear: 0,
+            shift_phase: ShiftPhase::None,
             dt_seconds: 0.0,
         }
     }
@@ -163,19 +244,31 @@ impl Gf509Runtime {
                     (target.rpm - self.rendered_telemetry.rpm) / remaining;
                 self.rendered_telemetry.throttle +=
                     (target.throttle - self.rendered_telemetry.throttle) / remaining;
-                self.rendered_telemetry.load +=
-                    (target.load - self.rendered_telemetry.load) / remaining;
+                self.rendered_telemetry.normalized_engine_load +=
+                    (target.normalized_engine_load - self.rendered_telemetry.normalized_engine_load)
+                        / remaining;
+                self.rendered_telemetry.normalized_engine_torque +=
+                    (target.normalized_engine_torque
+                        - self.rendered_telemetry.normalized_engine_torque)
+                        / remaining;
+                self.rendered_telemetry.rpm_derivative +=
+                    (target.rpm_derivative - self.rendered_telemetry.rpm_derivative) / remaining;
+                self.rendered_telemetry.throttle_derivative += (target.throttle_derivative
+                    - self.rendered_telemetry.throttle_derivative)
+                    / remaining;
                 self.interpolation_remaining -= 1;
             } else {
                 self.rendered_telemetry = target;
             }
+            self.rendered_telemetry.torque_sign = target.torque_sign;
             self.rendered_telemetry.gear = target.gear;
+            self.rendered_telemetry.shift_phase = target.shift_phase;
             self.rendered_telemetry.dt_seconds = target.dt_seconds;
             let interpolated = self.rendered_telemetry;
             self.engine.set_input(EngineInput {
                 rpm: interpolated.rpm,
                 throttle: interpolated.throttle,
-                load: interpolated.load,
+                load: interpolated.normalized_engine_load,
             })?;
             let engine_frame = self.engine.render_sample();
             let scene_frame = self.scene.process(&engine_frame);
@@ -186,7 +279,7 @@ impl Gf509Runtime {
                     layer.process(SampleLayerInput {
                         rpm: interpolated.rpm,
                         throttle: interpolated.throttle,
-                        load: interpolated.load,
+                        load: interpolated.normalized_engine_load,
                         crank_phase_deg: engine_frame.crank_phase_deg,
                     })
                 })
@@ -361,8 +454,13 @@ mod tests {
             .update_telemetry(RuntimeTelemetry {
                 rpm: 7_499.0,
                 throttle: 0.92,
-                load: 0.88,
+                normalized_engine_load: 0.88,
+                normalized_engine_torque: 0.75,
+                torque_sign: TorqueSign::Positive,
+                rpm_derivative: 1200.0,
+                throttle_derivative: 0.5,
                 gear: 3,
+                shift_phase: ShiftPhase::None,
                 dt_seconds: 1.0 / 120.0,
             })
             .unwrap();
@@ -429,6 +527,139 @@ mod tests {
         assert!(config.validate().is_err());
         config.mid_duck_threshold = 0.1;
         assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn runtime_telemetry_validation_rejects_out_of_range() {
+        let valid = RuntimeTelemetry {
+            rpm: 9000.0,
+            throttle: 0.8,
+            normalized_engine_load: 0.7,
+            normalized_engine_torque: 0.6,
+            torque_sign: TorqueSign::Positive,
+            rpm_derivative: 500.0,
+            throttle_derivative: 1.0,
+            gear: 4,
+            shift_phase: ShiftPhase::None,
+            dt_seconds: 0.016,
+        };
+        assert!(valid.validate().is_ok());
+
+        // Negative load rejected
+        let mut invalid = valid;
+        invalid.normalized_engine_load = -0.1;
+        assert!(invalid.validate().is_err());
+
+        // Load > 1.0 rejected
+        invalid = valid;
+        invalid.normalized_engine_load = 1.05;
+        assert!(invalid.validate().is_err());
+
+        // Torque < -1.0 rejected
+        invalid = valid;
+        invalid.normalized_engine_torque = -1.1;
+        assert!(invalid.validate().is_err());
+
+        // Torque > 1.0 rejected
+        invalid = valid;
+        invalid.normalized_engine_torque = 1.1;
+        assert!(invalid.validate().is_err());
+
+        // Non-finite derivatives rejected
+        invalid = valid;
+        invalid.rpm_derivative = f32::NAN;
+        assert!(invalid.validate().is_err());
+
+        invalid = valid;
+        invalid.throttle_derivative = f32::INFINITY;
+        assert!(invalid.validate().is_err());
+
+        // Gear range
+        invalid = valid;
+        invalid.gear = -2;
+        assert!(invalid.validate().is_err());
+        invalid.gear = 13;
+        assert!(invalid.validate().is_err());
+    }
+
+    #[test]
+    fn torque_sign_and_shift_phase_conversions() {
+        assert_eq!(TorqueSign::from_i32(-1).unwrap(), TorqueSign::Negative);
+        assert_eq!(TorqueSign::from_i32(0).unwrap(), TorqueSign::Neutral);
+        assert_eq!(TorqueSign::from_i32(1).unwrap(), TorqueSign::Positive);
+        assert!(TorqueSign::from_i32(2).is_err());
+
+        assert_eq!(ShiftPhase::from_i32(0).unwrap(), ShiftPhase::None);
+        assert_eq!(ShiftPhase::from_i32(1).unwrap(), ShiftPhase::UpshiftCut);
+        assert_eq!(ShiftPhase::from_i32(2).unwrap(), ShiftPhase::UpshiftRecovery);
+        assert_eq!(ShiftPhase::from_i32(3).unwrap(), ShiftPhase::DownshiftCut);
+        assert_eq!(ShiftPhase::from_i32(4).unwrap(), ShiftPhase::DownshiftBlip);
+        assert_eq!(ShiftPhase::from_i32(5).unwrap(), ShiftPhase::DownshiftRecovery);
+        assert!(ShiftPhase::from_i32(6).is_err());
+    }
+
+    #[test]
+    fn offline_load_scenarios_produce_measurably_different_audio() {
+        // Section 14.3 test cases:
+        // A: 15000 RPM, throttle 1.0, load 1.0, positive torque
+        // B: 15000 RPM, throttle 1.0, load 0.25, positive torque
+        // C: 15000 RPM, throttle 0.0, load 0.55, negative torque
+        // D: 15000 RPM, throttle 0.0, load 0.05, near-zero torque
+        let make_runtime = |throttle: f32, load: f32, torque: f32, t_sign: TorqueSign| -> Gf509Runtime {
+            let mut config = Gf509RuntimeConfig::default();
+            config.max_block_frames = 1024;
+            let mut rt = Gf509Runtime::new(config).unwrap();
+            rt.update_telemetry(RuntimeTelemetry {
+                rpm: 15_000.0,
+                throttle,
+                normalized_engine_load: load,
+                normalized_engine_torque: torque,
+                torque_sign: t_sign,
+                rpm_derivative: 0.0,
+                throttle_derivative: 0.0,
+                gear: 5,
+                shift_phase: ShiftPhase::None,
+                dt_seconds: 0.0,
+            }).unwrap();
+            rt
+        };
+
+        let mut rt_a = make_runtime(1.0, 1.0, 1.0, TorqueSign::Positive);
+        let mut rt_b = make_runtime(1.0, 0.25, 0.25, TorqueSign::Positive);
+        let mut rt_c = make_runtime(0.0, 0.55, -0.55, TorqueSign::Negative);
+        let mut rt_d = make_runtime(0.0, 0.05, 0.0, TorqueSign::Neutral);
+
+        let render_block = |rt: &mut Gf509Runtime| -> Vec<f32> {
+            let mut l = [0.0f32; 1024];
+            let mut r = [0.0f32; 1024];
+            // Warm up
+            for _ in 0..5 {
+                rt.render_block(&mut l, &mut r).unwrap();
+            }
+            rt.render_block(&mut l, &mut r).unwrap();
+            l.to_vec()
+        };
+
+        let out_a = render_block(&mut rt_a);
+        let out_b = render_block(&mut rt_b);
+        let out_c = render_block(&mut rt_c);
+        let out_d = render_block(&mut rt_d);
+
+        let max_diff = |s1: &[f32], s2: &[f32]| -> f32 {
+            s1.iter().zip(s2.iter()).map(|(a, b)| (a - b).abs()).fold(0.0f32, f32::max)
+        };
+
+        let diff_ab = max_diff(&out_a, &out_b);
+        let diff_ac = max_diff(&out_a, &out_c);
+        let diff_ad = max_diff(&out_a, &out_d);
+        let diff_bc = max_diff(&out_b, &out_c);
+        let diff_cd = max_diff(&out_c, &out_d);
+
+        assert!(diff_ab > 1e-4, "Scenario A and B must differ (same throttle 1.0, different load 1.0 vs 0.25): got {diff_ab}");
+        assert!(diff_ac > 1e-4, "Scenario A and C must differ: got {diff_ac}");
+        assert!(diff_ad > 1e-4, "Scenario A and D must differ: got {diff_ad}");
+        assert!(diff_bc > 1e-4, "Scenario B and C must differ: got {diff_bc}");
+        assert!(diff_cd > 1e-4, "Scenario C and D must differ (same throttle 0.0, different load/torque): got {diff_cd}");
     }
 }
 

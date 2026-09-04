@@ -8,6 +8,7 @@
     "BoxMesh", "PlaneMesh", "StandardMaterial3D", "DirectionalLight3D",
     "WorldEnvironment", "Environment", "Texture2D", "ImageTexture", "Image",
     "CanvasLayer", "VBoxContainer", "CenterContainer", "MarginContainer",
-    "AudioServer", "AudioStream", "AudioStreamWAV", "AudioStreamGenerator", "AudioStreamGeneratorPlayback", "AudioStreamPlayer3D"
+    "AudioServer", "AudioStream", "AudioStreamWAV", "AudioStreamGenerator", "AudioStreamGeneratorPlayback", "AudioStreamPlayer3D",
+    "ResourceFormatLoader", "StyleBox", "Logger", "PhysicsServer3DRenderingServerHandler"
   ]
 }

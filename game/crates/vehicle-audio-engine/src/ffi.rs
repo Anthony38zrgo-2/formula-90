@@ -11,7 +11,36 @@ use std::ffi::{c_char, c_void, CStr};
 use std::path::Path;
 
 /// ABI version. Bump on any signature/semantic change to the symbols below.
-pub const VEHICLE_AUDIO_ABI_VERSION: u32 = 2;
+pub const VEHICLE_AUDIO_ABI_VERSION: u32 = 3;
+
+/// Plain POD telemetry packet shared with C++.
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct VehicleAudioTelemetryV3 {
+    pub schema_version: u32,
+    pub struct_size: u32,
+
+    pub rpm: f64,
+    pub idle_rpm: f64,
+    pub max_rpm: f64,
+
+    pub throttle: f32,
+    pub normalized_engine_load: f32,
+    pub normalized_engine_torque: f32,
+    pub rpm_derivative: f32,
+    pub throttle_derivative: f32,
+
+    pub speed_kph: f64,
+    pub slip: f32,
+
+    pub gear: i32,
+    pub torque_sign: i32,
+    pub shift_phase: i32,
+
+    pub clutch_engagement: f32,
+    pub tc_cut_ratio: f32,
+    pub rev_limiter_active: u32,
+}
 
 /// Opaque handle = `Box<VehicleAudioEngine>` leaked via `Box::into_raw`.
 pub struct AudioHandle;
@@ -54,7 +83,39 @@ pub unsafe extern "C" fn vehicle_audio_destroy(handle: *mut c_void) {
     drop(Box::from_raw(handle as *mut VehicleAudioEngine));
 }
 
-/// Feed telemetry. See `VehicleAudioEngine::set_state`.
+/// Feed telemetry packet. See `VehicleAudioEngine::set_telemetry`.
+///
+/// # Safety
+/// `handle` must be a valid engine handle. `telemetry` must point to a valid
+/// `VehicleAudioTelemetryV3` matching `VEHICLE_AUDIO_ABI_VERSION`. `surface` must be a
+/// valid NUL-terminated C string (or null).
+#[no_mangle]
+pub unsafe extern "C" fn vehicle_audio_set_telemetry(
+    handle: *mut c_void,
+    telemetry: *const VehicleAudioTelemetryV3,
+    surface: *const c_char,
+) -> bool {
+    if handle.is_null() || telemetry.is_null() {
+        return false;
+    }
+    let telem = &*telemetry;
+    if telem.schema_version != VEHICLE_AUDIO_ABI_VERSION {
+        return false;
+    }
+    if telem.struct_size as usize != std::mem::size_of::<VehicleAudioTelemetryV3>() {
+        return false;
+    }
+    let surface = if surface.is_null() {
+        "asphalt"
+    } else {
+        CStr::from_ptr(surface).to_str().unwrap_or("asphalt")
+    };
+    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    engine.set_telemetry(telem, surface);
+    true
+}
+
+/// Feed telemetry (legacy shim). See `VehicleAudioEngine::set_state`.
 ///
 /// # Safety
 /// `handle` must be a valid engine handle. `surface` must be a valid NUL-terminated
@@ -199,4 +260,86 @@ pub unsafe extern "C" fn vehicle_audio_set_limiter_flag(handle: *mut c_void, act
 pub extern "C" fn vehicle_audio_build_sha() -> *const c_char {
     static SHA: &[u8] = concat!(env!("FORMULA90_BUILD_SHA"), "\0").as_bytes();
     SHA.as_ptr() as *const c_char
+}
+
+#[cfg(test)]
+mod layout_tests {
+    use super::*;
+    use std::mem::{offset_of, size_of};
+
+    #[test]
+    fn vehicle_audio_telemetry_v3_layout_locked() {
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, schema_version), 0);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, struct_size), 4);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, rpm), 8);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, idle_rpm), 16);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, max_rpm), 24);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, throttle), 32);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, normalized_engine_load), 36);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, normalized_engine_torque), 40);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, rpm_derivative), 44);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, throttle_derivative), 48);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, speed_kph), 56);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, slip), 64);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, gear), 68);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, torque_sign), 72);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, shift_phase), 76);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, clutch_engagement), 80);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, tc_cut_ratio), 84);
+        assert_eq!(offset_of!(VehicleAudioTelemetryV3, rev_limiter_active), 88);
+        assert_eq!(size_of::<VehicleAudioTelemetryV3>(), 96);
+    }
+
+    #[test]
+    fn telemetry_v3_validation_and_forwarding() {
+        let bank_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../sounds/banks/v10_vehicle");
+        let c_bank = std::ffi::CString::new(bank_path.to_str().unwrap()).unwrap();
+        let handle = unsafe { vehicle_audio_create(c_bank.as_ptr()) };
+        assert!(!handle.is_null());
+
+        let mut telem = VehicleAudioTelemetryV3 {
+            schema_version: VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: size_of::<VehicleAudioTelemetryV3>() as u32,
+            rpm: 12000.0,
+            idle_rpm: 4500.0,
+            max_rpm: 15000.0,
+            throttle: 0.85,
+            normalized_engine_load: 0.75,
+            normalized_engine_torque: 0.65,
+            rpm_derivative: 1500.0,
+            throttle_derivative: 2.0,
+            speed_kph: 240.0,
+            slip: 0.05,
+            gear: 5,
+            torque_sign: 1,
+            shift_phase: 0,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
+            rev_limiter_active: 0,
+        };
+
+        // Rejects mismatched schema_version
+        telem.schema_version = 999;
+        assert!(!unsafe { vehicle_audio_set_telemetry(handle, &telem, std::ptr::null()) });
+        telem.schema_version = VEHICLE_AUDIO_ABI_VERSION;
+
+        // Rejects mismatched struct_size
+        telem.struct_size = 48;
+        assert!(!unsafe { vehicle_audio_set_telemetry(handle, &telem, std::ptr::null()) });
+        telem.struct_size = size_of::<VehicleAudioTelemetryV3>() as u32;
+
+        // Valid packet is accepted
+        assert!(unsafe { vehicle_audio_set_telemetry(handle, &telem, std::ptr::null()) });
+
+        let engine = unsafe { &*(handle as *const VehicleAudioEngine) };
+        assert_eq!(engine.last_normalized_engine_load(), 0.75);
+        assert_eq!(engine.last_normalized_engine_torque(), 0.65);
+        assert_eq!(engine.last_torque_sign(), 1);
+        assert_eq!(engine.last_rpm_derivative(), 1500.0);
+        assert_eq!(engine.last_throttle_derivative(), 2.0);
+        assert_eq!(engine.last_shift_phase(), 0);
+
+        unsafe { vehicle_audio_destroy(handle) };
+    }
 }

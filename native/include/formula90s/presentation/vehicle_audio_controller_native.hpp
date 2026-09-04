@@ -24,6 +24,36 @@
 
 namespace godot {
 
+#pragma pack(push, 8)
+struct VehicleAudioTelemetryV3 {
+	uint32_t schema_version;
+	uint32_t struct_size;
+
+	double rpm;
+	double idle_rpm;
+	double max_rpm;
+
+	float throttle;
+	float normalized_engine_load;
+	float normalized_engine_torque;
+	float rpm_derivative;
+	float throttle_derivative;
+
+	double speed_kph;
+	float slip;
+
+	int32_t gear;
+	int32_t torque_sign;
+	int32_t shift_phase;
+
+	float clutch_engagement;
+	float tc_cut_ratio;
+	uint32_t rev_limiter_active;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(VehicleAudioTelemetryV3) == 96, "VehicleAudioTelemetryV3 size must be 96 bytes");
+
 /// Audio controller that drives the pure-Rust `vehicle_audio_engine` cdylib.
 ///
 /// Mirrors the physics GDExtension pattern (`f1_94_rust_vehicle.cpp`): the cdylib
@@ -37,7 +67,7 @@ class VehicleAudioControllerNative : public Node {
 	GDCLASS(VehicleAudioControllerNative, Node)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 1;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 3;
 
 	// Typedefs for the Rust C ABI.
 	typedef uint32_t (*FnAudioAbiVersion)();
@@ -45,6 +75,7 @@ public:
 	typedef void *(*FnAudioCreate)(const char *);
 	typedef void (*FnAudioDestroy)(void *);
 	typedef void (*FnAudioSetState)(void *, double, double, double, float, double, int, float, const char *);
+	typedef bool (*FnAudioSetTelemetry)(void *, const VehicleAudioTelemetryV3 *, const char *);
 	typedef void (*FnAudioTrigger)(void *, int);
 	typedef uint32_t (*FnAudioRender)(void *, float *, float *, uint32_t);
 
@@ -69,6 +100,15 @@ public:
 	float get_last_slip() const { return last_slip_; }
 	double get_last_speed_kph() const { return last_speed_kph_; }
 	float get_last_engine_gain() const { return last_engine_gain_; }
+	float get_last_normalized_engine_load() const { return last_normalized_engine_load_; }
+	float get_last_normalized_engine_torque() const { return last_normalized_engine_torque_; }
+	int get_last_torque_sign() const { return last_torque_sign_; }
+	float get_last_rpm_derivative() const { return last_rpm_derivative_; }
+	float get_last_throttle_derivative() const { return last_throttle_derivative_; }
+	int get_last_shift_phase() const { return last_shift_phase_; }
+	float get_last_clutch_engagement() const { return last_clutch_engagement_; }
+	float get_last_tc_cut_ratio() const { return last_tc_cut_ratio_; }
+	bool get_last_rev_limiter_active() const { return last_rev_limiter_active_; }
 	PackedFloat32Array get_last_weights() const;
 	PackedFloat32Array get_last_pitches() const;
 	String get_last_trigger() const { return last_trigger_; }
@@ -102,6 +142,7 @@ private:
 	FnAudioCreate fn_create_ = nullptr;
 	FnAudioDestroy fn_destroy_ = nullptr;
 	FnAudioSetState fn_set_state_ = nullptr;
+	FnAudioSetTelemetry fn_set_telemetry_ = nullptr;
 	FnAudioTrigger fn_trigger_ = nullptr;
 	FnAudioRender fn_render_ = nullptr;
 
@@ -118,6 +159,25 @@ private:
 	int last_gear_ = 0;
 	bool audio_initialized_ = false;
 
+	// Temporal derivative tracking (EPIC E)
+	double prev_rpm_ = 0.0;
+	double prev_throttle_ = 0.0;
+	float filtered_rpm_derivative_ = 0.0f;
+	float filtered_throttle_derivative_ = 0.0f;
+	bool derivatives_initialized_ = false;
+
+	// Shift phase state machine (EPIC F)
+	enum ShiftPhaseCode {
+		SHIFT_PHASE_NONE = 0,
+		SHIFT_PHASE_UPSHIFT_CUT = 1,
+		SHIFT_PHASE_UPSHIFT_RECOVERY = 2,
+		SHIFT_PHASE_DOWNSHIFT_CUT = 3,
+		SHIFT_PHASE_DOWNSHIFT_BLIP = 4,
+		SHIFT_PHASE_DOWNSHIFT_RECOVERY = 5
+	};
+	int current_shift_phase_ = SHIFT_PHASE_NONE;
+	double shift_recovery_timer_ = 0.0;
+
 	// Reused sample buffers (resized only when the frame count grows) so the
 	// per-tick render path does no allocation — keeps the DSP steady under load.
 	std::vector<float> mix_l_, mix_r_;
@@ -129,6 +189,15 @@ private:
 	float last_slip_ = 0.0f;
 	double last_speed_kph_ = 0.0;
 	float last_engine_gain_ = 0.0f;
+	float last_normalized_engine_load_ = 0.0f;
+	float last_normalized_engine_torque_ = 0.0f;
+	int last_torque_sign_ = 0;
+	float last_rpm_derivative_ = 0.0f;
+	float last_throttle_derivative_ = 0.0f;
+	int last_shift_phase_ = 0;
+	float last_clutch_engagement_ = 0.0f;
+	float last_tc_cut_ratio_ = 0.0f;
+	bool last_rev_limiter_active_ = false;
 	float last_weights_[5] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 	float last_pitches_[5] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
 	String last_trigger_ = "";

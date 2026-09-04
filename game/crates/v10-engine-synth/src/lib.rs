@@ -16,7 +16,7 @@ pub mod wav;
 pub use config::EngineConfig;
 pub use engine::{EngineFrame, EngineInput, V10Engine};
 pub use geometry::SliderCrank;
-pub use runtime::{Gf509Runtime, Gf509RuntimeConfig, RuntimeTelemetry};
+pub use runtime::{Gf509Runtime, Gf509RuntimeConfig, RuntimeTelemetry, ShiftPhase, TorqueSign};
 pub use sample_layer::{
     SampleLayerFrame, SampleLayerInput, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig,
 };
