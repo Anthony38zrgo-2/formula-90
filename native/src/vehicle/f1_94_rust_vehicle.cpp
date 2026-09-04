@@ -1,7 +1,7 @@
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
 #include "formula90s/core/f90_core.h"
-#include "formula90s/sim/f90_sim_bridge.hpp"
 #include "formula90s/core/f90_core.hpp"
+
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/file_access.hpp>
