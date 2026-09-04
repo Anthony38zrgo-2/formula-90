@@ -148,9 +148,10 @@ if (-not (Test-Path -LiteralPath $buildSourcePath -PathType Leaf)) {
 }
 $headSha = (& git rev-parse HEAD).Trim()
 $buildSource = (Get-Content -LiteralPath $buildSourcePath -Raw).Trim()
-$parentSha = (& git rev-parse HEAD~1 2>$null)
-if ($parentSha) { $parentSha = $parentSha.Trim() }
-if ($buildSource -ne $headSha -and $buildSource -ne $parentSha) {
+$buildCommit = (& git log -1 --format=%H -- $buildSourcePath).Trim()
+$buildParent = (& git rev-parse "$buildCommit~1" 2>$null)
+if ($buildParent) { $buildParent = $buildParent.Trim() }
+if ($buildSource -ne $headSha -and $buildSource -ne $buildCommit -and $buildSource -ne $buildParent) {
     throw "Paridad BUILD/HEAD rota: BUILD_SOURCE=$buildSource HEAD=$headSha. Ejecute scripts/build_windows.ps1."
 }
 $requiredDlls = @(
