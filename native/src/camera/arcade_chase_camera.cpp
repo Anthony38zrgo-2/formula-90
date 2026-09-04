@@ -139,7 +139,7 @@ void ArcadeChaseCamera::_process(double delta) {
 	const Vector3 turn_offset = right * lateral_position;
 
 	Vector3 desired = car_position - smoothed_forward * distance + longitudinal_offset + turn_offset;
-	desired.y = locked_world_y;
+	desired.y = car_position.y + height;
 	if (discontinuity) set_global_position(desired);
 	const Vector3 error = desired - get_global_position();
 	const Vector3 horizontal_error =
@@ -147,21 +147,20 @@ void ArcadeChaseCamera::_process(double delta) {
 		smoothed_forward * outside_dead_zone(error.dot(smoothed_forward), horizontal_dead_zone);
 
 	Vector3 next = get_global_position() + horizontal_error * smoothing_alpha(horizontal_smoothing, delta);
+	next.y += outside_dead_zone(error.y, vertical_dead_zone) * smoothing_alpha(vertical_smoothing, delta);
 	Vector3 lag = next - desired;
 	lag.y = 0.0;
 	const double lag_limit = Math::max(maximum_follow_lag, 0.0);
 	if (lag_limit > 0.0) lag = clamp_length(lag, lag_limit);
 	else lag = Vector3();
 	next = desired + lag;
-	next.y = locked_world_y;
 	set_global_position(next);
 
 	const double lateral_look = formula90s::camera::lateral_look_offset(smoothed_turn_amount, lateral_swing, turn_look_offset);
 	Vector3 look_desired = car_position + smoothed_forward * look_ahead + smoothed_velocity_lead + right * lateral_look;
-	look_desired.y = locked_look_y;
+	look_desired.y = car_position.y + look_height;
 	if (discontinuity) smoothed_look_target = look_desired;
 	else smoothed_look_target = smoothed_look_target.lerp(look_desired, smoothing_alpha(follow_damping, delta));
-	smoothed_look_target.y = locked_look_y;
 	look_at(smoothed_look_target, Vector3(0, 1, 0));
 	Vector3 locked_rotation = get_global_rotation();
 	locked_rotation.x = locked_pitch;
