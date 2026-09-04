@@ -23,6 +23,7 @@ compile_commands.json
 
 # C++ Build & Binary Artifacts
 *.obj
+*.obj.*
 *.o
 *.dll
 *.so
@@ -34,6 +35,9 @@ game/native/vehicle-audio-dsp/generated/
 
 # Rust build artifacts
 target/
+game/crates/target.*/
+game/.godot.*/
+
 
 # 3D Raw Source Files & Archives (3D models are committed as GLB in assets/)
 *.blend
