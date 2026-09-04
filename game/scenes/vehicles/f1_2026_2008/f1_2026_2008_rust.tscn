@@ -22,7 +22,7 @@ script = ExtResource("7_controller")
 vehicle_node = NodePath("../VehicleRigidBody")
 
 [node name="VehicleRigidBody" type="F194RustVehicle" parent="." node_paths=PackedStringArray("chassis_node", "front_left_wheel_node", "front_right_wheel_node", "rear_left_wheel_node", "rear_right_wheel_node", "ray_fl_in", "ray_fl_mid", "ray_fl_out", "ray_fr_in", "ray_fr_mid", "ray_fr_out", "ray_rl_in", "ray_rl_mid", "ray_rl_out", "ray_rr_in", "ray_rr_mid", "ray_rr_out")]
-mass = 640.0
+mass = 650.0
 gravity_scale = 0.0
 freeze = false
 collision_layer = 2

@@ -86,6 +86,43 @@ fn traction_control_inactive_without_slip() {
 }
 
 #[test]
+fn traction_control_eligibility_contract() {
+    let cfg = VehicleConfig::f1_94_canonical();
+    let reactions = [0.0; 4];
+    let spins = [0.0, 0.0, 50.0, 50.0];
+
+    // 1. Fully eligible: enabled, RWD, in gear 1, throttle 0.5
+    let mut pt = PowertrainState::new(&cfg);
+    pt.rpm = 8000.0;
+    pt.current_gear = 1;
+    let input = VehicleInput { throttle: 0.5, ..VehicleInput::default() };
+    pt.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    assert!(pt.tc_eligible, "TC must be eligible when enabled, in gear, and throttle applied");
+
+    // 2. Ineligible: TC disabled
+    let mut pt_disabled = PowertrainState::new(&cfg);
+    pt_disabled.rpm = 8000.0;
+    pt_disabled.current_gear = 1;
+    pt_disabled.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, false, true, cfg.enable_abs, 1.0 / 120.0);
+    assert!(!pt_disabled.tc_eligible, "TC must be ineligible when TC is disabled");
+
+    // 3. Ineligible: zero throttle
+    let mut pt_no_throttle = PowertrainState::new(&cfg);
+    pt_no_throttle.rpm = 8000.0;
+    pt_no_throttle.current_gear = 1;
+    let input_idle = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
+    pt_no_throttle.step_with_reaction(&cfg, &input_idle, &spins, &reactions, 15.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    assert!(!pt_no_throttle.tc_eligible, "TC must be ineligible when throttle is not applied");
+
+    // 4. Ineligible: neutral gear (0)
+    let mut pt_neutral = PowertrainState::new(&cfg);
+    pt_neutral.rpm = 8000.0;
+    pt_neutral.current_gear = 0;
+    pt_neutral.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    assert!(!pt_neutral.tc_eligible, "TC must be ineligible in neutral");
+}
+
+#[test]
 fn brake_assist_multiplies_brake_torque() {
     let mut cfg = VehicleConfig::f1_94_canonical();
     cfg.aids.brake_assist_force_multiplier = 1.5;

@@ -39,6 +39,11 @@ func _capture_baseline():
     _baseline["automatic_transmission"] = auto_trans
     if auto_trans != null:
         aids[0] = bool(auto_trans)
+    if vehicle_node != null and "aids_enabled_mask" in vehicle_node:
+        var mask: int = int(vehicle_node.aids_enabled_mask)
+        aids[1] = (mask & (1 << MASK_BIT_STABILITY)) != 0
+        aids[3] = (mask & (1 << MASK_BIT_BRAKE_ASSIST)) != 0
+        aids[4] = (mask & (1 << MASK_BIT_TC)) != 0
     _captured = true
 
 func _physics_process(_delta):
@@ -47,6 +52,8 @@ func _physics_process(_delta):
     for i in range(aids.size()):
         if Input.is_action_just_pressed("aid_%d" % (i + 1)):
             toggle(i)
+    if InputMap.has_action("Toggle Traction Control") and Input.is_action_just_pressed("Toggle Traction Control"):
+        toggle(4)
 
 func toggle(index: int):
     aids[index] = not aids[index]
@@ -150,7 +157,7 @@ func get_aid_label(index: int) -> String:
         1: return "ESTAB"
         2: return "DIRECC"
         3: return "FRENOS"
-        4: return "GRIP"
+        4: return "TC"
     return ""
 
 func get_aid_status(index: int) -> String:

@@ -96,7 +96,19 @@ func _physics_process(_delta: float) -> void:
 
 	if action_toggle_traction_control != "" and InputMap.has_action(action_toggle_traction_control):
 		if Input.is_action_just_pressed(action_toggle_traction_control):
-			if vehicle_node.has_method("get_aids_enabled_mask") and vehicle_node.has_method("set_aids_enabled_mask"):
+			var aids_ctrl: DrivingAidsController = null
+			for child in vehicle_node.get_children():
+				if child is DrivingAidsController:
+					aids_ctrl = child
+					break
+			if aids_ctrl == null and vehicle_node.get_parent():
+				for sibling in vehicle_node.get_parent().get_children():
+					if sibling is DrivingAidsController:
+						aids_ctrl = sibling
+						break
+			if aids_ctrl != null:
+				aids_ctrl.toggle(4)
+			elif vehicle_node.has_method("get_aids_enabled_mask") and vehicle_node.has_method("set_aids_enabled_mask"):
 				var mask: int = vehicle_node.get_aids_enabled_mask()
 				mask ^= 1 << 1
 				vehicle_node.set_aids_enabled_mask(mask)

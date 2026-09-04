@@ -39,6 +39,8 @@ pub struct PowertrainState {
     pub drive_torques_pre_tc: [f64; 4],
     /// Engine-side positive torque after the attack limiter (rise-cap Nm/s).
     pub engine_attack_limited_torque: f64,
+    /// Commanded driver throttle input [0, 1].
+    pub driver_throttle: f64,
 }
 
 impl PowertrainState {
@@ -67,6 +69,7 @@ impl PowertrainState {
             tc_cut_ratio_smoothed: 0.0,
             drive_torques_pre_tc: [0.0; 4],
             engine_attack_limited_torque: 0.0,
+            driver_throttle: 0.0,
         }
     }
 
@@ -233,6 +236,7 @@ impl PowertrainState {
         dt: f64,
     ) {
         let throttle = input.throttle.clamp(0.0, 1.0);
+        self.driver_throttle = throttle;
         let rpm_factor = (self.rpm / config.max_rpm.max(1.0)).clamp(0.0, 1.0);
         let curve = config.evaluate_torque_curve(rpm_factor);
         let mut positive_torque = curve * config.max_torque * throttle;
@@ -369,10 +373,19 @@ impl PowertrainState {
         self.tc_raw_cut_ratio = 0.0;
 
         let gear_index = (self.current_gear - 1) as usize;
-        if self.current_gear > 0 && gear_index < config.gear_ratios.len() {
+        let is_rwd = config.front_torque_split < 1.0;
+        let gear_valid = self.current_gear > 0
+            && gear_index < config.gear_ratios.len()
+            && gear_index < config.aids.traction_control_gear_authority.len()
+            && gear_index < config.aids.traction_control_gear_slip_target.len()
+            && gear_index < config.aids.traction_control_gear_max_cut.len();
+
+        if gear_valid {
             self.tc_gear_authority = config.aids.traction_control_gear_authority[gear_index];
             self.tc_slip_target = config.aids.traction_control_gear_slip_target[gear_index];
             self.tc_eligible = tc_enabled
+                && is_rwd
+                && self.throttle_input() > 0.01
                 && self.tc_gear_authority > 0.0
                 && self.tc_slip_target > 0.0;
         }
@@ -408,12 +421,13 @@ impl PowertrainState {
             }
         }
 
-        let max_cut = if gear_index < config.gear_ratios.len() {
+        let max_cut = if gear_valid {
             config.aids.traction_control_gear_max_cut[gear_index]
         } else {
             0.0
         };
-        let target_cut = (self.tc_raw_cut_ratio * self.tc_gear_authority)
+        let cut_gain = config.aids.traction_control_cut_gain.max(0.0);
+        let target_cut = (self.tc_raw_cut_ratio * self.tc_gear_authority * cut_gain)
             .min(max_cut)
             .clamp(0.0, 1.0 - MIN_TC_TORQUE_SCALE);
 
@@ -446,9 +460,7 @@ impl PowertrainState {
     }
 
     fn throttle_input(&self) -> f64 {
-        // Engine torque sign already encodes commanded drive; derive from stored
-        // engine_torque instead of input to avoid borrow conflicts.
-        if self.engine_torque > 0.0 { 1.0 } else { 0.0 }
+        self.driver_throttle
     }
 
     fn process_brakes(

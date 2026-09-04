@@ -994,9 +994,6 @@ double F194RustVehicle::get_default_spawn_height_value() const {
 }
 
 void F194RustVehicle::apply_runtime_config() {
-	if (!sim_ptr_ || !fn_apply_runtime_config_) {
-		return;
-	}
 	F90RuntimeConfig cfg = {};
 	cfg.vehicle_mass = vehicle_mass_;
 	cfg.front_brake_bias = front_brake_bias_;
@@ -1022,7 +1019,10 @@ void F194RustVehicle::apply_runtime_config() {
 	cfg.suspension_rear_spring_length = suspension_rear_spring_length_;
 	cfg.suspension_front_resting_ratio = suspension_front_resting_ratio_;
 	cfg.suspension_rear_resting_ratio = suspension_rear_resting_ratio_;
-	fn_apply_runtime_config_(sim_ptr_, &cfg);
+
+	if (sim_ptr_ && fn_apply_runtime_config_) {
+		fn_apply_runtime_config_(sim_ptr_, &cfg);
+	}
 	// In bridge_controlled mode the facade's core is the sim that actually runs:
 	// forward the SAME runtime config so every tunable JSON parameter keeps
 	// applying at runtime (diff preload, aids mask, aero, ...).
@@ -1054,6 +1054,7 @@ void F194RustVehicle::sync_runtime_config_from_rust() {
 		diff_clutches_ = cfg.diff_clutches;
 		diff_clutch_friction_coeff_ = cfg.diff_clutch_friction_coeff;
 		aids_enabled_mask_ = cfg.aids_enabled_mask;
+		tc_enabled_ = (cfg.aids_enabled_mask & (1u << 1)) != 0;
 		inertia_multiplier_x_ = cfg.inertia_multiplier_x;
 		inertia_multiplier_y_ = cfg.inertia_multiplier_y;
 		inertia_multiplier_z_ = cfg.inertia_multiplier_z;
@@ -1354,6 +1355,7 @@ double F194RustVehicle::get_rear_locking_differential_engage_torque() const {
 
 void F194RustVehicle::set_aids_enabled_mask(uint32_t v) {
 	aids_enabled_mask_ = v;
+	tc_enabled_ = (v & (1u << 1)) != 0;
 	apply_runtime_config();
 }
 

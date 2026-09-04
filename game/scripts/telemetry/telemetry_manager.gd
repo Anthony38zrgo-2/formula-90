@@ -65,11 +65,9 @@ func _physics_process(delta):
         return
 
     if not vehicle:
-        _search_timer += delta
-        if _search_timer >= VEHICLE_SEARCH_INTERVAL:
-            _search_timer = 0.0
-            _try_find_vehicle()
-        return
+        _try_find_vehicle()
+        if not vehicle:
+            return
     _search_timer = 0.0
 
     var current_velocity = vehicle.linear_velocity
@@ -317,7 +315,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         _csv_escape(_vehicle_script_path()), "1", _csv_escape(_setup_json),
         "%d" % int(tc_enabled), "%d" % int(tc_eligible), "%d" % int(tc_intervening),
         "%.4f" % tc_gear_authority, "%.4f" % tc_slip_target, "%.4f" % tc_raw_cut_ratio,
-        "%.4f" % tc_cut_ratio, "%.4f" % tc_cut_ratio, "%.4f" % tc_slip[2], "%.4f" % tc_slip[3]
+        "%.4f" % tc_cut_ratio, "%.4f" % (tc_cut_ratio if tc_intervening else 0.0), "%.4f" % tc_slip[2], "%.4f" % tc_slip[3]
     ])
     for value in drive_torque_pre_tc:
         base_fields.append("%.3f" % float(value))
@@ -367,14 +365,14 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
             "vehicle_node_path": str(vehicle.get_path()),
             "vehicle_scene": _vehicle_scene_path(),
             "vehicle_script": _vehicle_script_path(),
-            "engine_config": _safe_resource_path("engine_config"),
+            "engine_config": _get_active_physics_config_path() if _is_rust else _safe_resource_path("engine_config"),
             "torque_curve": _safe_resource_path("torque_curve"),
             "git_commit": OS.get_environment("FORMULA90S_GIT_COMMIT"),
             "git_branch": OS.get_environment("FORMULA90S_GIT_BRANCH")
         },
         "vehicle": {
             "runtime_class": vehicle.get_class(),
-            "configuration": ""
+            "configuration": _get_active_physics_config_path()
         },
         "chassis": _build_chassis_snapshot(),
         "underfloor": _build_underfloor_snapshot(),
@@ -384,11 +382,43 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
         "brakes": _snapshot_properties(["braking_speed", "brake_force_multiplier", "front_brake_bias", "traction_control_max_slip", "front_abs_pulse_time", "front_abs_spin_difference_threshold", "rear_abs_pulse_time", "rear_abs_spin_difference_threshold"]),
         "differential": _snapshot_properties(["front_torque_split", "variable_torque_split", "front_variable_split", "variable_split_speed", "front_locking_differential_engage_torque", "rear_locking_differential_engage_torque", "front_torque_vectoring", "rear_torque_vectoring"]),
         "suspension": _snapshot_properties(["front_spring_length", "front_resting_ratio", "front_damping_ratio", "front_bump_damp_multiplier", "front_rebound_damp_multiplier", "front_arb_ratio", "front_camber", "front_toe", "front_bump_stop_multiplier", "front_beam_axle", "rear_spring_length", "rear_resting_ratio", "rear_damping_ratio", "rear_bump_damp_multiplier", "rear_rebound_damp_multiplier", "rear_arb_ratio", "rear_camber", "rear_toe", "rear_bump_stop_multiplier", "rear_beam_axle"]),
-        "engine": _snapshot_properties(["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]),
+        "engine": _build_engine_snapshot(),
         "transmission": _build_transmission_snapshot(),
         "aerodynamics": _snapshot_properties(["coefficient_of_drag", "air_density", "frontal_area"]),
         "assists": _snapshot_properties(["enable_stability", "stability_yaw_engage_angle", "stability_yaw_strength", "stability_yaw_ground_multiplier", "stability_upright_spring", "stability_upright_damping", "automatic_transmission", "steering_slip_assist", "countersteer_assist"])
     }
+
+func _get_active_physics_config_path() -> String:
+    if vehicle != null:
+        var cfg_path = vehicle.get("physics_config_path")
+        if cfg_path is String and not cfg_path.is_empty():
+            return cfg_path
+        if vehicle.has_method("get_physics_config_path"):
+            var p: String = vehicle.call("get_physics_config_path")
+            if not p.is_empty():
+                return p
+    var f90_core = get_tree().root.find_children("*", "F90Core", true, false)
+    if f90_core.size() > 0:
+        var c_path = f90_core[0].get("config_json_path")
+        if c_path is String and not c_path.is_empty():
+            return c_path
+    return F1_94_PHYSICS_CONFIG
+
+func _build_engine_snapshot() -> Dictionary:
+    var fields: Array[String] = ["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]
+    var snapshot := _snapshot_properties(fields)
+    var config_path := _get_active_physics_config_path()
+    if _is_rust and FileAccess.file_exists(config_path):
+        var file := FileAccess.open(config_path, FileAccess.READ)
+        if file != null:
+            var parsed: Variant = JSON.parse_string(file.get_as_text())
+            if parsed is Dictionary:
+                var powertrain: Variant = parsed.get("powertrain", {})
+                if powertrain is Dictionary:
+                    for field in fields:
+                        if snapshot.get(field) == null and powertrain.has(field):
+                            snapshot[field] = powertrain[field]
+    return snapshot
 
 func _build_brake_thermal_snapshot() -> Dictionary:
     var snapshot := {
@@ -418,10 +448,11 @@ func _snapshot_properties(property_names: Array[String]) -> Dictionary:
 func _build_transmission_snapshot() -> Dictionary:
     var fields: Array[String] = ["gear_ratios", "final_drive", "reverse_ratio", "shift_time", "automatic_transmission", "automatic_time_between_shifts", "gear_inertia"]
     var snapshot := _snapshot_properties(fields)
-    if not _is_rust or not FileAccess.file_exists(F1_94_PHYSICS_CONFIG):
+    var config_path := _get_active_physics_config_path()
+    if not _is_rust or not FileAccess.file_exists(config_path):
         return snapshot
 
-    var file := FileAccess.open(F1_94_PHYSICS_CONFIG, FileAccess.READ)
+    var file := FileAccess.open(config_path, FileAccess.READ)
     if file == null:
         return snapshot
     var parsed: Variant = JSON.parse_string(file.get_as_text())
@@ -438,6 +469,18 @@ func _build_transmission_snapshot() -> Dictionary:
 func _build_chassis_snapshot() -> Dictionary:
     var snapshot := _snapshot_properties(["vehicle_mass", "front_weight_distribution", "center_of_gravity_height_offset", "inertia_multiplier"])
     snapshot["rigid_body_mass"] = vehicle.mass
+    var config_path := _get_active_physics_config_path()
+    if _is_rust and FileAccess.file_exists(config_path):
+        var file := FileAccess.open(config_path, FileAccess.READ)
+        if file != null:
+            var parsed: Variant = JSON.parse_string(file.get_as_text())
+            if parsed is Dictionary:
+                var chassis: Variant = parsed.get("chassis", {})
+                if chassis is Dictionary:
+                    if snapshot.get("vehicle_mass") == null and chassis.has("vehicle_mass"):
+                        snapshot["vehicle_mass"] = chassis["vehicle_mass"]
+                    if snapshot.get("front_weight_distribution") == null and chassis.has("front_weight_distribution"):
+                        snapshot["front_weight_distribution"] = chassis["front_weight_distribution"]
     if vehicle.front_left_wheel and vehicle.front_right_wheel and vehicle.rear_left_wheel and vehicle.rear_right_wheel:
         var front_center: Vector3 = (vehicle.front_left_wheel.position + vehicle.front_right_wheel.position) * 0.5
         var rear_center: Vector3 = (vehicle.rear_left_wheel.position + vehicle.rear_right_wheel.position) * 0.5
