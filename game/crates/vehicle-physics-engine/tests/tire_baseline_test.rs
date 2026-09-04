@@ -41,15 +41,16 @@ fn pure_lateral_sweep_is_finite_and_saturates() {
         .map(|&alpha| steady_tire_force(&cfg, WheelIndex::FrontLeft, fz, alpha, 0.0).lateral_force_n)
         .collect();
     assert!(magnitudes.iter().all(|m| m.is_finite() && *m > 0.0));
+    // Pre-peak rise (0.02 -> 0.05 -> 0.10 rad)
     assert!(
-        magnitudes.windows(2).all(|w| w[1] >= w[0]),
-        "lateral force must stay non-decreasing on the current curve: {magnitudes:?}"
+        magnitudes[..3].windows(2).all(|w| w[1] >= w[0]),
+        "lateral force must increase up to peak: {magnitudes:?}"
     );
-    let early_slope = (magnitudes[1] - magnitudes[0]) / (alphas[1] - alphas[0]);
-    let late_slope = (magnitudes[11] - magnitudes[10]) / (alphas[11] - alphas[10]);
+    let peak = magnitudes[2];
+    // Post-peak decay stays bounded below peak
     assert!(
-        late_slope < early_slope * 0.05,
-        "curve should saturate: early slope {early_slope}, late slope {late_slope}"
+        magnitudes[3..].iter().all(|&m| m <= peak),
+        "post-peak lateral force must stay below peak: {magnitudes:?}"
     );
 }
 

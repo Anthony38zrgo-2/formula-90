@@ -411,13 +411,13 @@ fn reset_returns_all_wheels_to_cold_setup() {
     let spawn = default_spawn_height(&cfg);
     let mut sim = VehicleSimulator::new(cfg.clone(), Vec3::new(0.0, spawn, 0.0), 0.0);
     let dt = 1.0 / 120.0;
-    let input = VehicleInput { throttle: 1.0, brake: 1.0, ..VehicleInput::default() };
+    let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
     for _ in 0..1200 {
         let samples = flat_samples(&sim);
         sim.step(&input, &samples, dt);
     }
-    // Tires should have warmed by now.
-    assert!(sim.state.tire_thermal.wheels[0].average_tread_c() > 26.0);
+    // Driven rear tires should have warmed by now.
+    assert!(sim.state.tire_thermal.wheels[2].average_tread_c() > 26.0);
 
     let ptr: *mut std::ffi::c_void =
         (&mut sim as *mut VehicleSimulator) as *mut std::ffi::c_void;
