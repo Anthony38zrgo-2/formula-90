@@ -11,11 +11,8 @@ game/addons/formula90s/bin/*
 game/telemetry/*
 !game/telemetry/.gdignore
 game/reports/
-game/assets/generated/jordan_1995/
-game/assets/generated/tracks/*
-!game/assets/generated/tracks/la_chutana/
-game/assets/generated/tracks/la_chutana/*
-!game/assets/generated/tracks/la_chutana/la_chutana_vegetation.glb
+game/assets/generated/
+
 blender/generated/
 blender/track_pipeline/authoring/workspace/
 compile_commands.json
