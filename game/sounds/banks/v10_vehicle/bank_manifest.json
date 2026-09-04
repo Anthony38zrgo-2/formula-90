@@ -346,28 +346,30 @@
       }
     },
     {
-      "dc_offset": 0.001017,
-      "duration_s": 0.313968,
+      "dc_offset": 0.000101,
+      "duration_s": 0.743039,
       "file": "shift_down_delayed.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -13.86,
-      "peak": 0.999969,
-      "provenance": "mono downmix of user-supplied F1 1996 sample",
+      "loudness_dbfs": -18.61,
+      "peak": 0.89,
+      "provenance": "derived from curated V10 alternative gear samples",
       "role": "shift_down_delayed",
-      "sha256": "29ab4a4e5f13a3a932b1257fd207d55d44b367d4168e11aa9fc912add9041aad",
+      "sha256": "ce7fc4e133ff520768cde4e3149fdce530ee2b6776a7ef722e99b0d2ead5c057",
       "synthesis": {
         "category": "shift",
         "processing": {
-          "delay_ms": 20,
-          "downmix": "mean_lr",
-          "source_rate": 44100,
+          "fade_in_frames": 44,
+          "fade_out_frames": 88,
+          "remove_dc": true,
+          "target_peak": 0.89,
           "target_rate": 44100
         },
-        "source_file": "source-assets/audio/replacements/f1_94/96_gear_change_down_2.wav",
-        "source_rate": 44100,
-        "source_sha256": "efaf45f46722051b7f454e421657cfe72ef7ece3412ae0cb9a7a91099106c032"
+        "promotion_recipe": "v10_curated_alt_shift_v1",
+        "source_file": "docs/audio-design/V10-curated/gear_down_alt.wav",
+        "source_rate": 22050,
+        "source_sha256": "4db8e04b40791c7b4769acca6cbdd0d8d4d767309ed8629ac8d5f10e9f684774"
       }
     },
     {
@@ -399,28 +401,30 @@
       }
     },
     {
-      "dc_offset": -0.000259,
-      "duration_s": 0.313061,
+      "dc_offset": -3.1e-05,
+      "duration_s": 0.557234,
       "file": "shift_up_delayed.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -16.96,
-      "peak": 0.889008,
-      "provenance": "mono downmix of user-supplied F1 1996 sample",
+      "loudness_dbfs": -18.19,
+      "peak": 0.89,
+      "provenance": "derived from curated V10 alternative gear samples",
       "role": "shift_up_delayed",
-      "sha256": "4db48dae127ef20149ab590cd43418abb6d6338c49716f6360fb5c01672f19c5",
+      "sha256": "76151100424f4b165dc2c5c758802fded39b7033ea285bc6299a4db824c5f17d",
       "synthesis": {
         "category": "shift",
         "processing": {
-          "delay_ms": 20,
-          "downmix": "mean_lr",
-          "source_rate": 44100,
+          "fade_in_frames": 44,
+          "fade_out_frames": 88,
+          "remove_dc": true,
+          "target_peak": 0.89,
           "target_rate": 44100
         },
-        "source_file": "source-assets/audio/replacements/f1_94/96_gear_change_up_1.wav",
-        "source_rate": 44100,
-        "source_sha256": "8332c4815bd4d26378600a5592e93bc764ec667377b912db5a43c04906470a59"
+        "promotion_recipe": "v10_curated_alt_shift_v1",
+        "source_file": "docs/audio-design/V10-curated/gear_up_alt.wav",
+        "source_rate": 22050,
+        "source_sha256": "33dbd153d7f44e1824ae15dfcc36d932c045d3a6eb9d87e3bf70c77a99f408c8"
       }
     },
     {
@@ -514,16 +518,6 @@
   ],
   "generator": "formula90s canonical bank + f1_94 replacement overlay v1",
   "pcm_bits": 16,
-  "retired_keys": [
-    "engine_high",
-    "engine_idle",
-    "engine_limiter",
-    "engine_low",
-    "engine_mid",
-    "engine_redline",
-    "engine_tc",
-    "exhaust-mic"
-  ],
   "sample_rate": 44100,
   "schema_version": 1,
   "seed": 0

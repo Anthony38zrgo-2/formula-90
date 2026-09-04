@@ -760,14 +760,14 @@
       }
     },
     "shift_down_delayed": {
-      "volume": 0.0,
+      "volume": 0.85,
       "pan": -0.15,
       "adsr": {
         "enabled": true,
         "attack_ms": 0.0,
         "decay_ms": 0.0,
-        "sustain": 1.5,
-        "release_ms": 14.0,
+        "sustain": 1.0,
+        "release_ms": 2.0,
         "curve": "linear"
       },
       "eq": {
@@ -825,14 +825,14 @@
       }
     },
     "shift_up_delayed": {
-      "volume": 0.0,
+      "volume": 0.85,
       "pan": -0.15,
       "adsr": {
         "enabled": true,
         "attack_ms": 0.0,
         "decay_ms": 0.0,
-        "sustain": 1.5,
-        "release_ms": 12.0,
+        "sustain": 1.0,
+        "release_ms": 2.0,
         "curve": "linear"
       },
       "eq": {
