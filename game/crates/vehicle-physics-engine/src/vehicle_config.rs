@@ -355,10 +355,10 @@ impl AutomaticShift {
 fn default_aids() -> AidsConfig {
     AidsConfig {
         traction_control_available: true,
-        traction_control_default_enabled: false,
+        traction_control_default_enabled: true,
         traction_control_player_selectable: true,
         traction_control_slip_threshold: 0.08,
-        traction_control_cut_gain: 1.0,
+        traction_control_cut_gain: 1.4,
         traction_control_actuator: "engine_torque".to_string(),
         traction_control_gear_authority: default_tc_gear_authority(),
         traction_control_gear_slip_target: default_tc_gear_slip_target(),
@@ -370,14 +370,14 @@ fn default_aids() -> AidsConfig {
         abs_default_enabled: false,
         abs_player_selectable: true,
 
-        stability_available: false,
-        stability_default_enabled: false,
+        stability_available: true,
+        stability_default_enabled: true,
         stability_player_selectable: true,
-        stability_yaw_engage_angle_rad: 0.01,
-        stability_yaw_strength: 5.25,
-        stability_grounded_multiplier: 2.0,
-        stability_upright_spring: 1.0,
-        stability_upright_damping: 1000.0,
+        stability_yaw_engage_angle_rad: 0.045,
+        stability_yaw_strength: 15.0,
+        stability_grounded_multiplier: 2.6,
+        stability_upright_spring: 0.0,
+        stability_upright_damping: 0.0,
 
         steering_slip_assist_default_enabled: true,
         countersteer_default_enabled: true,
@@ -2451,7 +2451,7 @@ fn default_tc_available() -> bool {
     true
 }
 fn default_tc_default() -> bool {
-    false
+    true
 }
 fn default_tc_selectable() -> bool {
     true
@@ -2460,7 +2460,7 @@ fn default_tc_slip() -> f64 {
     0.08
 }
 fn default_tc_cut_gain() -> f64 {
-    1.0
+    1.4
 }
 fn default_tc_actuator() -> String {
     "engine_torque".to_string()
@@ -2490,28 +2490,28 @@ fn default_abs_selectable() -> bool {
     true
 }
 fn default_stab_available() -> bool {
-    false
+    true
 }
 fn default_stab_default() -> bool {
-    false
+    true
 }
 fn default_stab_selectable() -> bool {
     true
 }
 fn default_stab_engage() -> f64 {
-    0.01
+    0.045
 }
 fn default_stab_yaw_strength() -> f64 {
-    5.25
+    15.0
 }
 fn default_stab_ground_mult() -> f64 {
-    2.0
+    2.6
 }
 fn default_stab_upright_spring() -> f64 {
-    1.0
+    0.0
 }
 fn default_stab_upright_damping() -> f64 {
-    1000.0
+    0.0
 }
 fn default_steer_slip_on() -> bool {
     true

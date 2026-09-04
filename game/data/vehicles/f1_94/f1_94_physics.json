@@ -492,7 +492,7 @@
     "traction_control_player_selectable": true,
 
     "traction_control_slip_threshold": 0.08,
-    "traction_control_cut_gain": 1.2,
+    "traction_control_cut_gain": 1.4,
     "traction_control_actuator": "engine_torque",
     "traction_control_gear_authority": [1.00, 0.90, 0.65, 0.45, 0.20, 0.10],
     "traction_control_gear_slip_target": [0.055, 0.065, 0.085, 0.105, 0.140, 0.180],
@@ -508,9 +508,9 @@
     "stability_default_enabled": true,
     "stability_player_selectable": true,
 
-    "stability_yaw_engage_angle_rad": 0.10,
-    "stability_yaw_strength": 9.0,
-    "stability_grounded_multiplier": 2.0,
+    "stability_yaw_engage_angle_rad": 0.045,
+    "stability_yaw_strength": 15.0,
+    "stability_grounded_multiplier": 2.6,
     "stability_upright_spring": 0.0,
     "stability_upright_damping": 0.0,
 

@@ -619,6 +619,7 @@ mod tc_tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut state = PowertrainState::new(&cfg);
         state.current_gear = gear;
+        state.driver_throttle = 1.0;
         state.clutch_torque = 100.0;
         state.engine_torque = 100.0;
         let road_speed = 20.0;
