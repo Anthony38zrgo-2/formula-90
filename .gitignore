@@ -81,6 +81,14 @@ reports/audio/
 # Local smoke-test diagnostics
 diagnostics/
 
-# Raw archives (3D models are committed as GLB in assets/)
-*.rar
+# Local agent knowledge base
+.agents/data/
+reports/
 
+# Audio design raw samples (large assets)
+docs/audio-design/F_V10_Gen3_samples/
+docs/audio-design/V10-curated/
+
+
+
+*.rar
