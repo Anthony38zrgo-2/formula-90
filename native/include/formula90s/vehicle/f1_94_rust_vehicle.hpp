@@ -18,8 +18,8 @@
 
 namespace godot {
 
-class F90SimBridge;
 class F90Core;
+
 
 // C-ABI type aliases matching formula90_physics.h
 using FfiRaycastHit = F90RaycastHit;
@@ -405,20 +405,14 @@ public:
 	// authoritative Rust core. When bridge_controlled_, _integrate_forces is skipped
 	// (the bridge sets body velocities from the core's predicted pose). ---
 	bool bridge_controlled_ = false;
-	F90SimBridge *sim_bridge_ = nullptr; // back-ref set by F90SimBridge to dispatch integrate
 
 public:
 	void set_bridge_controlled(bool p_v);
 	bool is_bridge_controlled() const { return bridge_controlled_; }
-	// When the F90SimBridge drives this vehicle, it sets this back-ref so the vehicle
-	// can delegate its physics integration step to the bridge during _integrate_forces
-	// (the context where raycasts are reliably updated in Godot).
-	void set_sim_bridge(F90SimBridge *p) { sim_bridge_ = p; }
-	// Orchestrator facade (F90Core): when set, it takes precedence over sim_bridge_.
-	// Both mean "core-driven" (bridge_controlled_), but the facade owns sim + audio
-	// with a single handshake.
+	// Orchestrator facade (F90Core): drives physics and audio with a single handshake.
 	F90Core *core_driver_ = nullptr;
 	void set_core_driver(F90Core *p) { core_driver_ = p; }
+
 
 	// Sample this vehicle's 12 RayCast3D children into the core's sample layout.
 	void collect_core_samples(CSimTriRaycastSample p_samples[4]);

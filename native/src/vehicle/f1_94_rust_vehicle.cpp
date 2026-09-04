@@ -532,17 +532,16 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) const {
 void F194RustVehicle::_integrate_forces(PhysicsDirectBodyState3D *p_state) {
 	if (bridge_controlled_) {
 		// Snapshot-server wiring: the F90Core (orchestrator facade) or the legacy
-		// F90SimBridge owns the dynamics. It samples the raycasts and steps the
+		// F90Core owns the dynamics. It samples the raycasts and steps the
 		// authoritative core inside this integrate callback (the context where
 		// force_raycast_update() is guaranteed fresh) and applies the resulting body
 		// force/torque via p_state.
 		if (core_driver_ != nullptr) {
 			core_driver_->drive_integrate(this, p_state);
-		} else if (sim_bridge_ != nullptr) {
-			sim_bridge_->drive_integrate(this, p_state);
 		}
 		return;
 	}
+
 	solve_forces_for_state(p_state);
 }
 
