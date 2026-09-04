@@ -1,0 +1,72 @@
+{
+  "contract_version": 1,
+  "track_id": "fuji76_77",
+  "primary_spawn": {
+    "source": "aiw_grid_0",
+    "heading_source": "aiw_grid_column",
+    "position_m": [
+      -297.652,
+      0.024,
+      -244.251
+    ],
+    "forward": [
+      0.005066433,
+      0.0,
+      -0.999987166
+    ],
+    "up": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "yaw_radians": -0.005066454
+  },
+  "visual_profile": {
+    "profile_version": 1,
+    "profile_id": "canonical",
+    "track_id": "fuji76_77",
+    "visibility_mask": 4294967295,
+    "excluded_instances": [
+      "POST00",
+      "POST01",
+      "POST02",
+      "POST03",
+      "POST04",
+      "POST05",
+      "POST06",
+      "POST07",
+      "POST08",
+      "POST09"
+    ]
+  },
+  "files": {
+    "fuji76_77_visual.glb": {
+      "sha256": "2700760f1c2949af7994c79f808cad2fe5158f8cc1451fcf54f5aa474c9294ad",
+      "size_bytes": 12268444
+    },
+    "fuji76_77_collision.glb": {
+      "sha256": "f3c78b07ef7f3914d8b3bc039d52df23fd68b74d884826ca991b22145408fde4",
+      "size_bytes": 967856
+    },
+    "metadata/track.json": {
+      "sha256": "bad6a75454f3151b6a1985949dbe8ca8c2133376c905750c3ec00a62adb453c0",
+      "size_bytes": 6364
+    },
+    "metadata/surfaces.json": {
+      "sha256": "3a15f3e7406bf3f884babbdecaa5f6b52e002c42d81550b65d4aab71098fd8be",
+      "size_bytes": 4140
+    },
+    "metadata/racing_line.json": {
+      "sha256": "d714be7372c5e337dc11db12f7008c2ddc7e58b8e4a217a6c71706cca5692159",
+      "size_bytes": 224372
+    },
+    "metadata/scene_manifest.json": {
+      "sha256": "3dbb5c719f3af5777d3c49092ceaa5b78d6fd8be98d88bb56d608ba4b9c05caf",
+      "size_bytes": 272881
+    },
+    "metadata/visual_profile.json": {
+      "sha256": "b817557e7c14f5c7c166f4c3a0fc203d73092c90103ac51268a9186bd2348234",
+      "size_bytes": 304
+    }
+  }
+}

@@ -1,9 +1,10 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/runtime/world_hud_compositor.tscn" id="1_compositor"]
-[ext_resource type="Resource" path="res://data/race_sessions/f1_94_la_chutana.tres" id="2_config"]
+[ext_resource type="Resource" path="res://data/race_sessions/f1_94_fuji76_77.tres" id="2_config"]
 
 [node name="VehicleTestSession" instance=ExtResource("1_compositor")]
 session_config = ExtResource("2_config")
+psx_enabled = false
 
 [node name="F90Core" type="F90Core" parent="."]

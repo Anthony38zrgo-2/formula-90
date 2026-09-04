@@ -1,0 +1,46 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://tracks/fuji76_77/fuji76_77_visual.glb" id="1_visual"]
+[ext_resource type="PackedScene" path="res://tracks/fuji76_77/fuji76_77_collision.glb" id="2_collision"]
+[ext_resource type="Script" path="res://scripts/track/imported_track_collision.gd" id="3_collision_script"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial_fuji"]
+sky_top_color = Color(0.18, 0.32, 0.52, 1)
+sky_horizon_color = Color(0.7, 0.78, 0.86, 1)
+ground_bottom_color = Color(0.08, 0.09, 0.1, 1)
+ground_horizon_color = Color(0.48, 0.52, 0.55, 1)
+
+[sub_resource type="Sky" id="Sky_fuji"]
+sky_material = SubResource("SkyMaterial_fuji")
+
+[sub_resource type="Environment" id="Environment_fuji"]
+background_mode = 2
+sky = SubResource("Sky_fuji")
+ambient_light_source = 3
+ambient_light_color = Color(0.78, 0.8, 0.84, 1)
+ambient_light_energy = 0.75
+tonemap_mode = 1
+
+[node name="Fuji7677" type="Node3D"]
+
+[node name="VehicleSpawn" type="Marker3D" parent="." groups=["vehicle_spawn"]]
+position = Vector3(-297.652, 0.024, -244.251)
+rotation = Vector3(0, -0.005066454, 0)
+
+[node name="Visual" parent="." instance=ExtResource("1_visual")]
+
+[node name="CollisionGeometry" parent="." instance=ExtResource("2_collision")]
+
+[node name="CollisionBuilder" type="Node" parent="." node_paths=PackedStringArray("collision_root")]
+script = ExtResource("3_collision_script")
+collision_root = NodePath("../CollisionGeometry")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_fuji")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, -32, 0)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.0
+shadow_enabled = true
+directional_shadow_max_distance = 120.0

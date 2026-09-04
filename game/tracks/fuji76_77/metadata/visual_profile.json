@@ -1,0 +1,18 @@
+{
+  "profile_version": 1,
+  "profile_id": "canonical",
+  "track_id": "fuji76_77",
+  "visibility_mask": 4294967295,
+  "excluded_instances": [
+    "POST00",
+    "POST01",
+    "POST02",
+    "POST03",
+    "POST04",
+    "POST05",
+    "POST06",
+    "POST07",
+    "POST08",
+    "POST09"
+  ]
+}

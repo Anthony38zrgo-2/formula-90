@@ -3,6 +3,10 @@ extends Control
 const SESSION_SCENE := preload("res://scenes/runtime/race_session.tscn")
 const UPSCALE_MODE_NATIVE_HIRES_PSX := 3
 
+## Temporary visual toggle. Keep the PSX controller and preset path intact so
+## the presentation can be re-enabled without changing the runtime topology.
+@export var psx_enabled := false
+
 # Kept for bootstrap ABI compatibility; composition now uses definitions.
 @export_file("*.tscn") var world_scene_path := ""
 @export var session_config: RaceSessionConfig
@@ -19,6 +23,11 @@ func _ready() -> void:
 	display_stage.resized.connect(_sync_native_viewport_size)
 	if psx_art != null:
 		psx_art.preset_applied.connect(_on_visual_preset_applied)
+		if psx_enabled and not psx_art.is_preset_loaded():
+			psx_art.load_preset(psx_art.get_preset_path())
+	if not psx_enabled:
+		world_presenter.material = null
+		world_presenter.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	world_presenter.texture = world_viewport.get_texture()
 	_sync_native_viewport_size()
 	call_deferred("_sync_native_viewport_size")
@@ -46,7 +55,9 @@ func _sync_native_viewport_size() -> void:
 		return
 	hud_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	debug_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	if psx_art != null and psx_art.is_preset_loaded() and psx_art.get_upscale_mode() == UPSCALE_MODE_NATIVE_HIRES_PSX:
+	if not psx_enabled or psx_art == null or not psx_art.is_preset_loaded():
+		world_viewport.size = Vector2i(maxi(1, roundi(display_size.x)), maxi(1, roundi(display_size.y)))
+	elif psx_art.get_upscale_mode() == UPSCALE_MODE_NATIVE_HIRES_PSX:
 		world_viewport.size = Vector2i(maxi(1, roundi(display_size.x)), maxi(1, roundi(display_size.y)))
 
 func _on_composition_ready(vehicle: Node, _track: Node3D, aids: DrivingAidsController) -> void:

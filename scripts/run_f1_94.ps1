@@ -30,11 +30,13 @@ $manifestPath = if ($is2026Variant) {
 } else {
     Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
 }
-$variantLabel = if ($is2026Variant) { 'F1 2026-2008 new base vehicle' } elseif ($is2009Variant) { 'F1 2009 Williams FW31 optional variant' } else { 'F1 1994 textured canonical' }
-$trackPath = Join-Path $game 'assets\generated\tracks\la_chutana\la_chutana.glb'
-$trackBuildPath = Join-Path $game 'assets\generated\tracks\la_chutana\runtime_build.json'
-$smokeScript = 'res://tests/smoke_test_f1_94_la_chutana_hud.gd'
-$smokeBackgroundScript = 'res://tests/smoke_test_mountains_3d.gd'
+$variantLabel = if ($is2026Variant) { 'F1 2026-2008 canonical vehicle' } elseif ($is2009Variant) { 'F1 2009 Williams FW31 optional variant' } else { 'F1 1994 legacy variant' }
+$vehicleId = if ($is2026Variant) { 'f1_2026_2008' } elseif ($is2009Variant) { 'f1_2009_fw31' } else { 'f1_94' }
+$trackDir = Join-Path $game 'tracks\fuji76_77'
+$trackPath = Join-Path $trackDir 'fuji76_77_visual.glb'
+$trackCollisionPath = Join-Path $trackDir 'fuji76_77_collision.glb'
+$trackBuildPath = Join-Path $trackDir 'metadata\package.json'
+$smokeScript = 'res://tests/smoke_test_f1_94_fuji76_77.gd'
 
 function Resolve-Godot([string]$ExplicitPath) {
     if ($ExplicitPath -and (Test-Path -LiteralPath $ExplicitPath -PathType Leaf)) {
@@ -48,6 +50,20 @@ function Resolve-Godot([string]$ExplicitPath) {
         return (Resolve-Path -LiteralPath $candidate).Path
     }
     throw 'Godot 4.7.1 no encontrado.'
+}
+
+function Get-Sha256Hex([string]$Path) {
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            return ([System.BitConverter]::ToString($sha256.ComputeHash($stream))).Replace('-', '')
+        } finally {
+            $sha256.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
 }
 
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Manifest de vehiculo faltante: $manifestPath" }
@@ -65,7 +81,7 @@ if ($is2026Variant) {
     $physicsRelative = ([string]$manifest.physics_profile).Replace('res://', '').Replace('/', '\')
     $physicsPath = Join-Path $game $physicsRelative
     if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2026 faltante: $physicsPath" }
-    $physicsHash = (Get-FileHash -LiteralPath $physicsPath -Algorithm SHA256).Hash
+    $physicsHash = Get-Sha256Hex $physicsPath
     if (-not $physicsHash.Equals([string]$manifest.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
         Write-Warning ('Perfil fisico 2026 modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
     }
@@ -81,7 +97,7 @@ if ($is2026Variant) {
     $physicsRelative = ([string]$manifest.runtime.physics_profile).Replace('res://', '').Replace('/', '\')
     $physicsPath = Join-Path $game $physicsRelative
     if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2009 faltante: $physicsPath" }
-    $physicsHash = (Get-FileHash -LiteralPath $physicsPath -Algorithm SHA256).Hash
+    $physicsHash = Get-Sha256Hex $physicsPath
     if (-not $physicsHash.Equals([string]$manifest.runtime.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
         Write-Warning ('Perfil fisico 2009 modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
     }
@@ -98,28 +114,26 @@ if ($is2026Variant) {
 foreach ($relativePath in $expectedAssets.Keys) {
     $assetPath = Join-Path $runtimeDir $relativePath
     if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) { throw "Asset de vehiculo faltante: $assetPath" }
-    $actualHash = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash
+    $actualHash = Get-Sha256Hex $assetPath
     if (-not $actualHash.Equals($expectedAssets[$relativePath], [StringComparison]::OrdinalIgnoreCase)) { throw "Hash inesperado para $relativePath" }
 }
 
 if (-not (Test-Path -LiteralPath $trackPath -PathType Leaf)) {
     throw "Circuito runtime faltante: $trackPath"
 }
-if (-not (Test-Path -LiteralPath $trackBuildPath -PathType Leaf)) {
-    throw "Manifest del circuito publicado faltante: $trackBuildPath. Importa el paquete generado por la fabrica."
-}
+if (-not (Test-Path -LiteralPath $trackCollisionPath -PathType Leaf)) { throw "Colision runtime faltante: $trackCollisionPath" }
+if (-not (Test-Path -LiteralPath $trackBuildPath -PathType Leaf)) { throw "Manifest del circuito faltante: $trackBuildPath" }
 $trackBuild = Get-Content -LiteralPath $trackBuildPath -Raw | ConvertFrom-Json
-if ([int]$trackBuild.schema_version -ne 3) {
-    throw "BUILD del circuito usa schema obsoleto: $($trackBuild.schema_version); se requiere 3."
+if ([int]$trackBuild.contract_version -ne 1 -or [string]$trackBuild.track_id -ne 'fuji76_77') { throw 'Contrato de Fuji ausente o incompatible.' }
+foreach ($fileEntry in $trackBuild.files.PSObject.Properties) {
+    $assetPath = Join-Path $trackDir ([string]$fileEntry.Name).Replace('/', '\')
+    if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) { throw "Archivo de paquete faltante: $assetPath" }
+    $actualHash = Get-Sha256Hex $assetPath
+    if (-not $actualHash.Equals([string]$fileEntry.Value.sha256, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Hash de paquete invalido: $($fileEntry.Name)"
+    }
 }
-if (-not $trackBuild.glb_sha256) {
-    throw 'El manifest del circuito publicado no declara glb_sha256.'
-}
-$trackHash = (Get-FileHash -LiteralPath $trackPath -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($trackHash -ne ([string]$trackBuild.glb_sha256).ToLowerInvariant()) {
-    throw 'Hash del GLB de La Chutana no coincide con el paquete publicado.'
-}
-Write-Host 'Paquete runtime de La Chutana validado.' -ForegroundColor Green
+Write-Host 'Paquete runtime de Fuji 76-77 validado.' -ForegroundColor Green
 
 $runtimeAppData = Join-Path $root '.tools\appdata'
 $runtimeLocalAppData = Join-Path $root '.tools\localappdata'
@@ -165,26 +179,14 @@ if ($SmokeAudio) {
     exit $LASTEXITCODE
 }
 if ($SmokeBackground) {
-    Write-Host 'Ejecutando smoke de background (skybox gradient + 3 capas parallax)...' -ForegroundColor Cyan
-    & $godot --headless --path $game --script $smokeBackgroundScript
+    Write-Host 'Fuji no usa skybox ni montanas externas; ejecutando smoke del circuito.' -ForegroundColor Cyan
+    & $godot --headless --path $game --script $smokeScript -- "--scene=$scene" "--vehicle-id=$vehicleId"
     exit $LASTEXITCODE
 }
 if ($Smoke) {
-    Write-Host 'Ejecutando smoke de F1-94 + La Chutana + HUD + Background...' -ForegroundColor Cyan
-    & $godot --headless --path $game --script $smokeScript
-    $hudExit = $LASTEXITCODE
-    if ($hudExit -ne 0) {
-        Write-Host "Smoke HUD fallo ($hudExit)." -ForegroundColor Red
-        exit $hudExit
-    }
-    & $godot --headless --path $game --script $smokeBackgroundScript
-    $bgExit = $LASTEXITCODE
-    if ($bgExit -ne 0) {
-        Write-Host "Smoke Background fallo ($bgExit)." -ForegroundColor Red
-        exit $bgExit
-    }
-    Write-Host 'Smoke completo: HUD + Background.' -ForegroundColor Green
-    exit 0
+    Write-Host "Ejecutando smoke de $variantLabel + Fuji 76-77 + camara + HUD..." -ForegroundColor Cyan
+    & $godot --headless --path $game --script $smokeScript -- "--scene=$scene" "--vehicle-id=$vehicleId"
+    exit $LASTEXITCODE
 }
 if ($TestPhysics) {
     Write-Host 'Ejecutando suite determinista Rust + test de integraciÃ³n Godot (12 raycasts)...' -ForegroundColor Cyan
@@ -194,8 +196,8 @@ if ($TestPhysics) {
     exit $LASTEXITCODE
 }
 if ($Parity) {
-    Write-Host 'Ejecutando test de paridad en pista La Chutana (PHY-010)...' -ForegroundColor Cyan
-    & $godot --headless --path $game --script 'res://tests/test_f1_94_la_chutana_parity.gd'
+    Write-Host 'Ejecutando smoke de paridad minima en Fuji 76-77...' -ForegroundColor Cyan
+    & $godot --headless --path $game --script $smokeScript -- "--scene=$scene" "--vehicle-id=$vehicleId"
     exit $LASTEXITCODE
 }
 if ($ValidateRuntimeOnly) {

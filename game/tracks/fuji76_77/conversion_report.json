@@ -1,0 +1,74 @@
+{
+  "track_id": "fuji76_77",
+  "source_path": "D:\\gtr2-glb-conversor\\gtr2-tracks\\Fuji76-77",
+  "overall_status": "PASS",
+  "checks": [
+    {
+      "name": "discovery_report_exists",
+      "status": "PASS"
+    },
+    {
+      "name": "aiw_racing_line_parsed",
+      "status": "PASS",
+      "waypoints": 989
+    },
+    {
+      "name": "tdf_surfaces_parsed",
+      "status": "PASS"
+    },
+    {
+      "name": "blender_scene_mesh_count",
+      "status": "PASS",
+      "count": 443
+    },
+    {
+      "name": "track_scale_plausible",
+      "status": "PASS",
+      "dimensions_m": [
+        814.359,
+        2021.323,
+        60.445
+      ]
+    },
+    {
+      "name": "visual_glb_valid",
+      "status": "PASS",
+      "size_mb": 11.7
+    },
+    {
+      "name": "collision_glb_valid",
+      "status": "PASS",
+      "size_mb": 0.92
+    },
+    {
+      "name": "collision_surfaces_normalized",
+      "status": "PASS",
+      "surface_nodes": 74
+    },
+    {
+      "name": "primary_spawn_present",
+      "status": "PASS"
+    },
+    {
+      "name": "runtime_package_manifest_exists",
+      "status": "PASS"
+    },
+    {
+      "name": "visibility_groups_preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "visual_profile_applied",
+      "status": "PASS",
+      "profile_id": "canonical",
+      "excluded_instances": 10
+    }
+  ],
+  "warnings": [],
+  "errors": [],
+  "artifacts": {
+    "visual_glb": "tracks-glb/fuji76_77/fuji76_77_visual.glb",
+    "collision_glb": "tracks-glb/fuji76_77/fuji76_77_collision.glb",
+    "metadata_dir": "tracks-glb/fuji76_77/metadata"
+  }
+}

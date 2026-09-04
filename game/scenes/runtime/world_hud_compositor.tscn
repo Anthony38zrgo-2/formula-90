@@ -3,7 +3,6 @@
 [ext_resource type="Script" path="res://scenes/runtime/world_hud_compositor.gd" id="1_compositor"]
 [ext_resource type="Resource" path="res://data/race_sessions/default.tres" id="2_config"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="3_hud"]
-[ext_resource type="Material" path="res://addons/psx_visuals_gd4/materials/mat_psx_upscale_presenter.tres" id="4_mat"]
 
 [node name="WorldHudCompositor" type="Control"]
 layout_mode = 3
@@ -18,7 +17,7 @@ session_config = ExtResource("2_config")
 
 [node name="PsxArtController" type="PsxArtController" parent="."]
 preset_path = "res://data/visuals/psx_authentic_94.json"
-auto_apply = true
+auto_apply = false
 target_viewport_path = NodePath("../WorldViewport")
 target_presenter_path = NodePath("../DisplayAspect/DisplayStage/WorldPresenter")
 override_engine_fps = true
@@ -41,7 +40,6 @@ layout_mode = 2
 mouse_filter = 2
 
 [node name="WorldPresenter" type="TextureRect" parent="DisplayAspect/DisplayStage"]
-material = ExtResource("4_mat")
 layout_mode = 1
 expand_mode = 1
 anchors_preset = 15

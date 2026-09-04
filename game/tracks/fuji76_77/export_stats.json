@@ -1,0 +1,56 @@
+{
+  "track_id": "fuji76_77",
+  "visual_profile": {
+    "profile_version": 1,
+    "profile_id": "canonical",
+    "track_id": "fuji76_77",
+    "visibility_mask": 4294967295,
+    "excluded_instances": [
+      "POST00",
+      "POST01",
+      "POST02",
+      "POST03",
+      "POST04",
+      "POST05",
+      "POST06",
+      "POST07",
+      "POST08",
+      "POST09"
+    ],
+    "source": "D:/gtr2-glb-conversor/profiles/fuji76_77/canonical.json",
+    "excluded_object_count": 10,
+    "excluded_objects": [
+      "POST00",
+      "POST01",
+      "POST02",
+      "POST03",
+      "POST04",
+      "POST05",
+      "POST06",
+      "POST07",
+      "POST08",
+      "POST09"
+    ]
+  },
+  "visual_glb": {
+    "path": "tracks-glb/fuji76_77/fuji76_77_visual.glb",
+    "exists": true,
+    "size_bytes": 12268444,
+    "object_count": 426
+  },
+  "collision_glb": {
+    "path": "tracks-glb/fuji76_77/fuji76_77_collision.glb",
+    "exists": true,
+    "size_bytes": 967856,
+    "object_count": 74,
+    "surface_counts": {
+      "road": 10,
+      "curb": 6,
+      "grass": 10,
+      "gravel": 2,
+      "sand": 2,
+      "wall": 43,
+      "metal": 1
+    }
+  }
+}

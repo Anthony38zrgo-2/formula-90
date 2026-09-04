@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/track/track_definition.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/tracks/fuji76_77/fuji76_77.tscn" id="2"]
+[ext_resource type="Resource" path="res://scenes/ui/fuji76_77_hud_map.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+id = &"fuji76_77"
+display_name = "Fuji Speedway 1976-1977"
+track_scene = ExtResource("2")
+map_data = ExtResource("3")
