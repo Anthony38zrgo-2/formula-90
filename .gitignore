@@ -70,12 +70,16 @@ context.md
 game/resources/environment/assets/*/review/*.import
 
 # Agent tooling caches
-.agents/
 .codex-target/
 .codex_tmp/
+.codex-native/
+.int07-isolated/
+.sconsign.dblite*
+reports/audio/
 
 # Local smoke-test diagnostics
 diagnostics/
 
 # Raw archives (3D models are committed as GLB in assets/)
 *.rar
+
