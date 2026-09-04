@@ -51,6 +51,8 @@ pub struct ThreeZoneSampleLayerConfig {
     pub mid_duck_depth_db: f32,
     /// Complementary mid ducker envelope detector threshold (default 0.080).
     pub mid_duck_threshold: f32,
+    /// Off-throttle overrun layer blend gain (default 0.20).
+    pub off_throttle_gain: f32,
 }
 
 impl Default for ThreeZoneSampleLayerConfig {
@@ -60,12 +62,13 @@ impl Default for ThreeZoneSampleLayerConfig {
             tonal_gain_loaded: 0.22,
             residual_gain_closed: 0.12,
             residual_gain_loaded: 0.40,
-            max_fade_start_rpm: 8_205.0,
-            max_full_rpm: 8_730.0,
+            max_fade_start_rpm: 5_970.0,
+            max_full_rpm: 8_725.0,
             physical_blend_weight: 1.0,
             sample_blend_weight: 1.0,
             mid_duck_depth_db: -3.0,
             mid_duck_threshold: 0.080,
+            off_throttle_gain: 0.20,
         }
     }
 }
@@ -79,6 +82,7 @@ impl ThreeZoneSampleLayerConfig {
             ("residual_gain_loaded", self.residual_gain_loaded),
             ("physical_blend_weight", self.physical_blend_weight),
             ("sample_blend_weight", self.sample_blend_weight),
+            ("off_throttle_gain", self.off_throttle_gain),
         ] {
             if !value.is_finite() || !(0.0..=2.0).contains(&value) {
                 return Err(format!("{name} outside 0..2.0: {value}"));
@@ -108,6 +112,7 @@ pub struct SampleLayerFrame {
     pub residual: f32,
     pub mid_bus: f32,
     pub max_rasp: f32,
+    pub off_throttle: f32,
     pub output: f32,
     pub zone_weights: [f32; ZONE_COUNT],
 }
@@ -404,6 +409,7 @@ pub struct ThreeZoneSampleLayer {
     config: ThreeZoneSampleLayerConfig,
     zones: [SampleZone; ZONE_COUNT],
     mid_processors: [ZoneMidProcessor; ZONE_COUNT],
+    off_zone: Option<SampleZone>,
     phase_aligned: bool,
 }
 
@@ -413,7 +419,7 @@ impl ThreeZoneSampleLayer {
         directory: &Path,
         config: ThreeZoneSampleLayerConfig,
     ) -> Result<Self, String> {
-        let mut metadata_paths = fs::read_dir(directory)
+        let entries = fs::read_dir(directory)
             .map_err(|error| format!("cannot read {}: {error}", directory.display()))?
             .map(|entry| {
                 entry
@@ -421,11 +427,19 @@ impl ThreeZoneSampleLayer {
                     .map_err(|error| error.to_string())
             })
             .collect::<Result<Vec<_>, _>>()?;
-        metadata_paths.retain(|path| {
+        let off_path = entries.iter().find(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
-                .is_some_and(|name| name.ends_with(".sample-layer.json"))
-        });
+                .is_some_and(|name| name.ends_with(".off-layer.json"))
+        }).cloned();
+        let mut metadata_paths: Vec<PathBuf> = entries
+            .into_iter()
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.ends_with(".sample-layer.json"))
+            })
+            .collect();
         metadata_paths.sort();
         let metadata_paths: [PathBuf; ZONE_COUNT] =
             metadata_paths.try_into().map_err(|paths: Vec<_>| {
@@ -435,12 +449,22 @@ impl ThreeZoneSampleLayer {
                     paths.len()
                 )
             })?;
-        Self::load(output_sample_rate, metadata_paths, config)
+        let off_zone = off_path.as_deref().map(SampleZone::load).transpose()?;
+        Self::load_with_off(output_sample_rate, metadata_paths, off_zone, config)
     }
 
     pub fn load(
         output_sample_rate: u32,
         metadata_paths: [PathBuf; ZONE_COUNT],
+        config: ThreeZoneSampleLayerConfig,
+    ) -> Result<Self, String> {
+        Self::load_with_off(output_sample_rate, metadata_paths, None, config)
+    }
+
+    fn load_with_off(
+        output_sample_rate: u32,
+        metadata_paths: [PathBuf; ZONE_COUNT],
+        off_zone: Option<SampleZone>,
         config: ThreeZoneSampleLayerConfig,
     ) -> Result<Self, String> {
         if !(8_000..=192_000).contains(&output_sample_rate) {
@@ -475,6 +499,7 @@ impl ThreeZoneSampleLayer {
             mid_processors: std::array::from_fn(|zone| {
                 ZoneMidProcessor::new(zone, output_sample_rate as f32)
             }),
+            off_zone,
             phase_aligned: false,
         })
     }
@@ -485,6 +510,9 @@ impl ThreeZoneSampleLayer {
         }
         for zone in &mut self.zones {
             zone.align(crank_phase_deg);
+        }
+        if let Some(off_zone) = &mut self.off_zone {
+            off_zone.align(crank_phase_deg);
         }
         self.phase_aligned = true;
         Ok(())
@@ -543,11 +571,24 @@ impl ThreeZoneSampleLayer {
         residual *= residual_gain;
         let mid_bus = tonal_mid * tonal_gain + residual_mid * residual_gain;
         let max_rasp = tonal_rasp * tonal_gain + residual_rasp * residual_gain;
+
+        let mut off_throttle_stem = 0.0;
+        if let Some(off_zone) = &mut self.off_zone {
+            let (off_tonal, off_residual) = off_zone.render(input.rpm, self.output_sample_rate);
+            let overrun = ((0.30 - input.throttle) / 0.30).clamp(0.0, 1.0)
+                * ((0.40 - input.load) / 0.40).clamp(0.0, 1.0);
+            let off_weight = overrun * self.config.off_throttle_gain;
+            tonal += off_tonal * off_weight;
+            residual += off_residual * off_weight;
+            off_throttle_stem = (off_tonal + off_residual) * off_weight;
+        }
+
         Ok(SampleLayerFrame {
             tonal,
             residual,
             mid_bus,
             max_rasp,
+            off_throttle: off_throttle_stem,
             output: tonal + residual,
             zone_weights: weights,
         })

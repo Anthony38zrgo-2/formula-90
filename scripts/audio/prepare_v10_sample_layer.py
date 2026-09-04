@@ -52,7 +52,7 @@ class PreparedSample:
     files: dict[str, str]
 
 
-def read_audio(path: Path) -> tuple[int, np.ndarray, int]:
+def read_audio(path: Path, target_sample_rate: int | None = None) -> tuple[int, np.ndarray, int]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         sample_rate, raw = wavfile.read(path)
@@ -65,6 +65,12 @@ def read_audio(path: Path) -> tuple[int, np.ndarray, int]:
     else:
         raise ValueError(f"unsupported WAV dtype {raw.dtype}: {path}")
     mono = audio if audio.ndim == 1 else np.mean(audio, axis=1)
+    if target_sample_rate is not None and target_sample_rate != sample_rate:
+        import math
+        import scipy.signal as signal
+        g = math.gcd(int(sample_rate), int(target_sample_rate))
+        mono = signal.resample_poly(mono, target_sample_rate // g, sample_rate // g)
+        sample_rate = target_sample_rate
     if len(mono) < sample_rate // 2:
         raise ValueError(f"sample must be at least 0.5 seconds long: {path}")
     if not np.all(np.isfinite(mono)):
@@ -195,8 +201,9 @@ def prepare(
     rpm_assignments: dict[str, float],
     target_peak_dbfs: float,
     loop_cycles: int | None = None,
+    target_sample_rate: int | None = None,
 ):
-    sample_rate, source, channels = read_audio(path)
+    sample_rate, source, channels = read_audio(path, target_sample_rate)
     source_dc = float(np.mean(source))
     centered = source - source_dc
     rpm, rpm_source = resolve_rpm(path, centered, sample_rate, rpm_assignments)
@@ -289,11 +296,18 @@ def main() -> int:
         type=int,
         help="Require an exact number of complete 720-degree engine cycles per loop.",
     )
+    parser.add_argument(
+        "--sample-rate",
+        type=int,
+        help="Resample input audio to this target sample rate (e.g. 44100).",
+    )
     args = parser.parse_args()
     if not math.isfinite(args.target_peak_dbfs) or not (-24.0 <= args.target_peak_dbfs <= -0.1):
         parser.error("--target-peak-dbfs must be finite and inside -24..-0.1")
     if args.loop_cycles is not None and args.loop_cycles <= 0:
         parser.error("--loop-cycles must be a positive integer")
+    if args.sample_rate is not None and args.sample_rate <= 0:
+        parser.error("--sample-rate must be a positive integer")
     try:
         rpm_assignments = parse_rpm_assignments(args.rpm)
     except ValueError as error:
@@ -310,6 +324,7 @@ def main() -> int:
             rpm_assignments,
             args.target_peak_dbfs,
             args.loop_cycles,
+            args.sample_rate,
         )
         manifest.append(asdict(metadata))
         print(

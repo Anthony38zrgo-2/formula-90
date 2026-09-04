@@ -412,6 +412,7 @@ fn run() -> Result<(), String> {
         "sample_residual",
         "sample_mid",
         "sample_max_rasp",
+        "sample_off_throttle",
         "sample_layer",
         "scene_mid_ducked",
         "hybrid_mix",
@@ -642,6 +643,7 @@ fn run() -> Result<(), String> {
         let sample_residual = sampled.map_or(0.0, |frame| frame.residual);
         let sample_mid = sampled.map_or(0.0, |frame| frame.mid_bus);
         let sample_max_rasp = sampled.map_or(0.0, |frame| frame.max_rasp);
+        let sample_off_throttle = sampled.map_or(0.0, |frame| frame.off_throttle);
         let sample_output = sampled.map_or(0.0, |frame| frame.output);
         let (scene_mid_ducked, _) = mid_ducker.process(acoustic.output, sample_mid);
         // Hybrid headroom is static and transparent. A limiter here would hide
@@ -657,6 +659,10 @@ fn run() -> Result<(), String> {
             .get_mut("sample_max_rasp")
             .unwrap()
             .push(sample_max_rasp);
+        stems
+            .get_mut("sample_off_throttle")
+            .unwrap()
+            .push(sample_off_throttle);
         stems.get_mut("sample_layer").unwrap().push(sample_output);
         stems
             .get_mut("scene_mid_ducked")
