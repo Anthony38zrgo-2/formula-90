@@ -91,73 +91,73 @@ rotation = Vector3(0, 0, 0)
 [node name="Visual" parent="VehicleRigidBody/RearRightWheel/Orientation" instance=ExtResource("4_rear")]
 
 [node name="RayCast_FL_In" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(-0.708, 0.235125, -1.75)
-target_position = Vector3(0, -0.62, 0)
+position = Vector3(-0.708, 0.2434, -1.75)
+target_position = Vector3(0, -0.63, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_FL_Mid" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(-0.854, 0.235125, -1.75)
-target_position = Vector3(0, -0.62, 0)
+position = Vector3(-0.854, 0.2434, -1.75)
+target_position = Vector3(0, -0.63, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_FL_Out" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(-1.0, 0.235125, -1.75)
-target_position = Vector3(0, -0.62, 0)
+position = Vector3(-1.0, 0.2434, -1.75)
+target_position = Vector3(0, -0.63, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_FR_In" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(0.708, 0.235125, -1.75)
-target_position = Vector3(0, -0.62, 0)
+position = Vector3(0.708, 0.2434, -1.75)
+target_position = Vector3(0, -0.63, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_FR_Mid" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(0.854, 0.235125, -1.75)
-target_position = Vector3(0, -0.62, 0)
+position = Vector3(0.854, 0.2434, -1.75)
+target_position = Vector3(0, -0.63, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_FR_Out" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(1.0, 0.235125, -1.75)
-target_position = Vector3(0, -0.62, 0)
+position = Vector3(1.0, 0.2434, -1.75)
+target_position = Vector3(0, -0.63, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_RL_In" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(-0.5982, 0.1887, 1.75)
-target_position = Vector3(0, -0.59, 0)
+position = Vector3(-0.5982, 0.1961, 1.75)
+target_position = Vector3(0, -0.60, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_RL_Mid" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(-0.795, 0.1887, 1.75)
-target_position = Vector3(0, -0.59, 0)
+position = Vector3(-0.795, 0.1961, 1.75)
+target_position = Vector3(0, -0.60, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_RL_Out" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(-0.9918, 0.1887, 1.75)
-target_position = Vector3(0, -0.59, 0)
+position = Vector3(-0.9918, 0.1961, 1.75)
+target_position = Vector3(0, -0.60, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_RR_In" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(0.5982, 0.1887, 1.75)
-target_position = Vector3(0, -0.59, 0)
+position = Vector3(0.5982, 0.1961, 1.75)
+target_position = Vector3(0, -0.60, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_RR_Mid" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(0.795, 0.1887, 1.75)
-target_position = Vector3(0, -0.59, 0)
+position = Vector3(0.795, 0.1961, 1.75)
+target_position = Vector3(0, -0.60, 0)
 collision_mask = 1
 collide_with_areas = false
 
 [node name="RayCast_RR_Out" type="RayCast3D" parent="VehicleRigidBody"]
-position = Vector3(0.9918, 0.1887, 1.75)
-target_position = Vector3(0, -0.59, 0)
+position = Vector3(0.9918, 0.1961, 1.75)
+target_position = Vector3(0, -0.60, 0)
 collision_mask = 1
 collide_with_areas = false

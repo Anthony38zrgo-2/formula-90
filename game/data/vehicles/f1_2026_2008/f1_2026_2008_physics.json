@@ -49,7 +49,7 @@
       },
       "rear_wing": {
         "area_m2": 0.95,
-        "incidence_deg": 17.0,
+        "incidence_deg": 18.0,
         "max_angle_deg": 26.0,
         "min_angle_deg": 6.0,
         "polar": [
@@ -489,7 +489,7 @@
       "coast_ramp_angle_deg": 60.0,
       "power_ramp_angle_deg": 65.0,
       "preload_nm": 90.0,
-      "slip_transition_threshold_rad_s": 1.5
+      "slip_transition_threshold_rad_s": 1.0
     },
     "final_drive": 4.25,
     "front_torque_split": 0.0,
@@ -581,7 +581,7 @@
       "damping_ratio": 0.74,
       "rebound_damp_multiplier": 1.12,
       "resting_ratio": 0.175,
-      "spring_length": 0.285,
+      "spring_length": 0.295,
       "toe": -0.0018,
       "toe_gain_rad_per_m": 0.0
     },
@@ -594,7 +594,7 @@
       "damping_ratio": 0.71,
       "rebound_damp_multiplier": 1.08,
       "resting_ratio": 0.26,
-      "spring_length": 0.255,
+      "spring_length": 0.265,
       "toe": 0.0042,
       "toe_gain_rad_per_m": 0.025
     },
