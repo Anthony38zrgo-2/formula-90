@@ -472,9 +472,9 @@
     "up": "+Y"
   },
   "geometry": {
-    "front_track": 1.445,
-    "rear_track": 1.42,
-    "wheelbase": 3.23
+    "front_track": 1.635,
+    "rear_track": 1.59,
+    "wheelbase": 3.5
   },
   "powertrain": {
     "automatic_transmission": false,
@@ -619,7 +619,7 @@
       "contact_patch": 0.34,
       "radius": 0.33,
       "wheel_mass": 23.0,
-      "width": 0.355
+      "width": 0.365
     },
     "pressure": {
       "atmospheric_pressure_kpa": 101.325,
@@ -648,7 +648,7 @@
       "contact_patch": 0.36,
       "radius": 0.33,
       "wheel_mass": 28.0,
-      "width": 0.38
+      "width": 0.41
     },
     "surfaces": {
       "Curb": {

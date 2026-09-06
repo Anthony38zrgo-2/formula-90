@@ -13,69 +13,74 @@
     "transformations_applied": true
   },
   "dimensions_m": {
-    "overall_length": 4.775,
-    "overall_width": 1.8,
+    "overall_length": 5.045000076293945,
+    "overall_width": 1.999999761581421,
     "bodywork_height_from_reference": 0.95,
-    "wheelbase": 3.23,
-    "front_track_center": 1.445,
-    "rear_track_center": 1.42,
+    "wheelbase": 3.5,
+    "front_track_center": 1.635,
+    "rear_track_center": 1.59,
     "front_tire_radius_visual": 0.33,
-    "front_tire_width_visual": 0.355,
+    "front_tire_width_visual": 0.365,
     "rear_tire_radius_visual": 0.33,
-    "rear_tire_width_visual": 0.38,
+    "rear_tire_width_visual": 0.41,
     "ground_y": -0.33,
-    "visual_ground_clearance": 0.023363
+    "visual_ground_clearance": 0.023363,
+    "overall_height_from_ground": 0.9774481225013734,
+    "front_total_width": 1.999999771118164,
+    "rear_total_width": 1.99999972820282,
+    "sidepod_body_max_width_reworked": 1.503926,
+    "flat_floor_max_width_reworked": 1.52509
   },
   "validation_datums": {
     "DATUM_VEHICLE_ORIGIN": [
       0.0,
       0.0,
-      0.0
+      -0.0
     ],
     "DATUM_FRONT_AXLE_CENTER": [
       0.0,
       0.0,
-      -1.615
+      -1.75
     ],
     "DATUM_REAR_AXLE_CENTER": [
       0.0,
       0.0,
-      1.615
+      1.75
     ],
     "JNT_WHEEL_FL": [
-      -0.7225,
+      -0.8174999952316284,
       0.0,
-      -1.615
+      -1.75
     ],
     "JNT_WHEEL_FR": [
-      0.7225,
+      0.8174999952316284,
       0.0,
-      -1.615
+      -1.75
     ],
     "JNT_WHEEL_RL": [
-      -0.71,
+      -0.7950000166893005,
       0.0,
-      1.615
+      1.75
     ],
     "JNT_WHEEL_RR": [
-      0.71,
+      0.7950000166893005,
       0.0,
-      1.615
+      1.75
     ],
     "JNT_DRIVER_HEAD": [
       0.0,
-      0.6288823741674423,
-      -0.2946024417877197
+      0.6288823485374451,
+      0.0407713210582733
     ],
     "JNT_FRONT_WING_MOUNT": [
-      7.450580596923828e-09,
+      0.0,
       -0.15783168375492096,
-      -2.456909418106079
+      -2.591909408569336
     ],
     "JNT_REAR_WING_MOUNT": [
-      -9.313225746154785e-10,
+      0.0,
       0.3431345522403717,
-      1.8965158462524414
+      2.0315158367156982
     ]
   },
   "wheel_front_datums": {
@@ -90,12 +95,12 @@
       0.0
     ],
     "DATUM_WHEEL_INBOARD_FACE": [
-      -0.1775,
+      -0.1825,
       0.0,
       0.0
     ],
     "DATUM_WHEEL_OUTBOARD_FACE": [
-      0.1775,
+      0.1825,
       0.0,
       0.0
     ],
@@ -117,12 +122,12 @@
       0.0
     ],
     "DATUM_WHEEL_INBOARD_FACE": [
-      -0.19,
+      -0.205,
       0.0,
       0.0
     ],
     "DATUM_WHEEL_OUTBOARD_FACE": [
-      0.19,
+      0.205,
       0.0,
       0.0
     ],
@@ -136,7 +141,8 @@
     "chassis": "f1_2026_2008_chassis.glb",
     "wheel_front": "f1_2026_2008_wheel_front.glb",
     "wheel_rear": "f1_2026_2008_wheel_rear.glb",
-    "source_blend": "f1_2026_2008_source.blend"
+    "source_blend": "source/f1_2026_2008_source.blend",
+    "rework_script": "source/apply_2010_cockpit_rework.py"
   },
   "hierarchy": {
     "right_side_yaw_baked": false,
@@ -148,6 +154,8 @@
   "notes": {
     "JNT_DRIVER_HEAD": "Reference-only joint included to satisfy the interface contract; this model has no driver head geometry.",
     "tyres": "Unbranded slick tyres retained deliberately; no 2008 grooves.",
-    "design": "2026 halo/chassis/aerodynamic architecture in a Ferrari F2008-inspired macro envelope."
+    "design": "3500 mm wheelbase retained; cockpit/driver package moved 360 mm rearward. Sidepod outer shell widened up to 75 mm/side and flat floor up to 70 mm/side using an RB6-inspired 2010 planform, while preserving the existing 2026/halo visual identity and rear coke-bottle taper.",
+    "source": "Editable assembly: Blender X right, Y forward, Z up; GLB uses original Godot axes.",
+    "rework": "2010 cockpit-placement + RB6-inspired width pass. Axle centers, wheel joints, suspension meshes, wing locations, materials and topology remain unchanged."
   }
 }

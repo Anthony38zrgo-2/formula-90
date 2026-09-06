@@ -1,0 +1,216 @@
+{
+  "schema": "formula90s/cockpit-rework-validation/v1",
+  "wheelbase_m": 3.5,
+  "cockpit_rearward_shift_m": 0.36,
+  "original_scene_bounds_m": [
+    [
+      -0.825,
+      -0.306637,
+      -2.825
+    ],
+    [
+      0.825,
+      0.647448,
+      2.22
+    ]
+  ],
+  "reworked_scene_bounds_m": [
+    [
+      -0.825,
+      -0.306637,
+      -2.825
+    ],
+    [
+      0.825,
+      0.647448,
+      2.22
+    ]
+  ],
+  "geometry_count_original": 29,
+  "geometry_count_reworked": 29,
+  "materials_preserved": true,
+  "embedded_images_preserved": true,
+  "changed_meshes": [
+    {
+      "name": "GEO_CHASSIS_BODY_MESH",
+      "vertices": 7613,
+      "triangles": 10744,
+      "max_vertex_delta_m": 0.43000003695487976
+    },
+    {
+      "name": "GEO_CHASSIS_CARBON3_MESH",
+      "vertices": 56,
+      "triangles": 24,
+      "max_vertex_delta_m": 0.36000002920627594
+    },
+    {
+      "name": "GEO_CHASSIS_CARBON4_MESH",
+      "vertices": 50,
+      "triangles": 64,
+      "max_vertex_delta_m": 0.42263293266296387
+    },
+    {
+      "name": "GEO_CHASSIS_CYLINDER_001_MESH",
+      "vertices": 196,
+      "triangles": 252,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_INTERIOR_MESH",
+      "vertices": 569,
+      "triangles": 792,
+      "max_vertex_delta_m": 0.36000002920627594
+    },
+    {
+      "name": "GEO_CHASSIS_LATERALCAM_MESH",
+      "vertices": 96,
+      "triangles": 72,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_MIRRORS_MESH",
+      "vertices": 665,
+      "triangles": 840,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_ONBOARDCAM_MESH",
+      "vertices": 90,
+      "triangles": 104,
+      "max_vertex_delta_m": 0.36000004410743713
+    },
+    {
+      "name": "GEO_CHASSIS_SCREEN_MESH",
+      "vertices": 32,
+      "triangles": 24,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_SEAT_MESH",
+      "vertices": 284,
+      "triangles": 212,
+      "max_vertex_delta_m": 0.36000002175569534
+    },
+    {
+      "name": "GEO_CHASSIS_SHIFTERBRAK_MESH",
+      "vertices": 167,
+      "triangles": 88,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_SHIFTERTHRO_MESH",
+      "vertices": 167,
+      "triangles": 88,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_STEER_MESH",
+      "vertices": 1322,
+      "triangles": 1752,
+      "max_vertex_delta_m": 0.36000001430511475
+    },
+    {
+      "name": "GEO_CHASSIS_STEERCOLUM_MESH",
+      "vertices": 196,
+      "triangles": 252,
+      "max_vertex_delta_m": 0.36000001430511475
+    }
+  ],
+  "unchanged_meshes": [
+    {
+      "name": "GEO_CHASSIS_ACTIVEFRONT_MESH",
+      "vertices": 338,
+      "triangles": 490,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_ACTIVEREAR_MESH",
+      "vertices": 126,
+      "triangles": 192,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_AEROPART2_MESH",
+      "vertices": 126,
+      "triangles": 192,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_AEROPART3_MESH",
+      "vertices": 200,
+      "triangles": 256,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_CARBON5_MESH",
+      "vertices": 780,
+      "triangles": 1136,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_ENDPLATE_MESH",
+      "vertices": 2008,
+      "triangles": 3712,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_EXHAUST_MESH",
+      "vertices": 379,
+      "triangles": 508,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_FLOOR_MESH",
+      "vertices": 6408,
+      "triangles": 9952,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_FRONT_SUSPENSION_MESH",
+      "vertices": 448,
+      "triangles": 224,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_FRONTSUPPORT_MESH",
+      "vertices": 468,
+      "triangles": 316,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_FRONTWING_MESH",
+      "vertices": 1036,
+      "triangles": 1656,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_REAR_SUSPENSION_MESH",
+      "vertices": 262,
+      "triangles": 136,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_REAR_WING_MESH",
+      "vertices": 652,
+      "triangles": 1104,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_REARLIGHT_MESH",
+      "vertices": 131,
+      "triangles": 128,
+      "max_vertex_delta_m": 0.0
+    },
+    {
+      "name": "GEO_CHASSIS_REARSUPPORT_MESH",
+      "vertices": 48,
+      "triangles": 24,
+      "max_vertex_delta_m": 0.0
+    }
+  ],
+  "notes": [
+    "Axle/wheel/suspension/wing meshes were not edited.",
+    "GLB was patched directly in this environment because Blender is not installed here; the included Blender script performs the equivalent edit on the source .blend.",
+    "Package final chassis also includes the subsequent RB6-inspired 2010 sidepod/floor width pass; see rb6_2010_width_rework_validation.json."
+  ]
+}

@@ -1,11 +1,11 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "schema": "formula90s/vehicle-import/v1",
   "vehicle_id": "f1_2026_2008",
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2026_2008",
   "physics_profile": "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json",
-  "physics_sha256": "52CA352C80404D35C5E0230B22F9F448652F3224A3E82614680C5E05F3DC62C3",
+  "physics_sha256": "663A224D6AE0C3C0236B1DCB1AE42484F0344F76A72502B06FC925DA7B931737",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -20,19 +20,19 @@
   "geometry_assets": {
     "chassis_gevp": {
       "path": "f1_2026_2008_chassis.glb",
-      "sha256": "6087D15E95810C1C84CBD3BB5E2982D1C3ACD0B76A95DB90A9EB91FF35439B00"
+      "sha256": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1"
     },
     "wheel_front_canonical": {
       "path": "f1_2026_2008_wheel_front.glb",
-      "sha256": "F4AA6BB00CC4AD2A56C9D853C4C6C47BCD6A44EB36DD07438A5079B43487B786"
+      "sha256": "2D7C9CAD71C23533FD4CB9D7BA17C366646A4399481F5DC9B3B8EF64638222E9"
     },
     "wheel_rear_canonical": {
       "path": "f1_2026_2008_wheel_rear.glb",
-      "sha256": "91C29B8CEBA7E6192D3A4E6ECD577897A4AA14A974BF4E844E051416596F262B"
+      "sha256": "D500DB3BFDB4396F5589218FD7C7A0F1B035EE891E45211EC43B12A0302E1D6B"
     }
   },
   "validation": {
-    "status": "PASS",
-    "note": "Second scan waived; validation_report.json already reports passed=true for chassis and both wheels."
+    "status": "REWORK_PASS",
+    "note": "2010-ish cockpit plus RB6-inspired sidepod/floor width pass. Sidepods ~1.50 m max and flat floor ~1.525 m max; 3500 mm wheelbase, axle/wheel joints, suspension and wing geometry preserved. Source .blend is the original editable base; run source/apply_2010_cockpit_rework.py in Blender to generate the reworked .blend and GLBs."
   }
 }

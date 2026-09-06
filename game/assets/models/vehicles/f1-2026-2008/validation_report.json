@@ -1,153 +1,42 @@
 {
-  "glb_native_validation": {
-    "chassis": {
-      "node_names": [
-        "DATUM_FRONT_AXLE_CENTER",
-        "DATUM_REAR_AXLE_CENTER",
-        "DATUM_VEHICLE_ORIGIN",
-        "GEO_CHASSIS_ACTIVEFRONT",
-        "GEO_CHASSIS_ACTIVEREAR",
-        "GEO_CHASSIS_AEROPART2",
-        "GEO_CHASSIS_AEROPART3",
-        "GEO_CHASSIS_BODY",
-        "GEO_CHASSIS_CARBON3",
-        "GEO_CHASSIS_CARBON4",
-        "GEO_CHASSIS_CARBON5",
-        "GEO_CHASSIS_CYLINDER_001",
-        "GEO_CHASSIS_ENDPLATE",
-        "GEO_CHASSIS_EXHAUST",
-        "GEO_CHASSIS_FLOOR",
-        "GEO_CHASSIS_FRONT_SUSPENSION",
-        "GEO_CHASSIS_FRONTSUPPORT",
-        "GEO_CHASSIS_FRONTWING",
-        "GEO_CHASSIS_INTERIOR",
-        "GEO_CHASSIS_LATERALCAM",
-        "GEO_CHASSIS_MIRRORS",
-        "GEO_CHASSIS_ONBOARDCAM",
-        "GEO_CHASSIS_REAR_SUSPENSION",
-        "GEO_CHASSIS_REAR_WING",
-        "GEO_CHASSIS_REARLIGHT",
-        "GEO_CHASSIS_REARSUPPORT",
-        "GEO_CHASSIS_SCREEN",
-        "GEO_CHASSIS_SEAT",
-        "GEO_CHASSIS_SHIFTERBRAK",
-        "GEO_CHASSIS_SHIFTERTHRO",
-        "GEO_CHASSIS_STEER",
-        "GEO_CHASSIS_STEERCOLUM",
-        "JNT_DRIVER_HEAD",
-        "JNT_FRONT_WING_MOUNT",
-        "JNT_REAR_WING_MOUNT",
-        "JNT_WHEEL_FL",
-        "JNT_WHEEL_FR",
-        "JNT_WHEEL_RL",
-        "JNT_WHEEL_RR"
-      ],
-      "material_names": [
-        "MAT_CARBON_PBR",
-        "MAT_LIVERY_YELLOW",
-        "MAT_LIVERY_RED",
-        "MAT_LIVERY_BLACK",
-        "MAT_MECHANICAL_DARK"
-      ],
-      "mesh_count": 29,
-      "primitive_count": 31,
-      "checks": {
-        "no_presentation_plane": true,
-        "geometry_prefix": true,
-        "material_prefix": true,
-        "uv0_all_primitives": true,
-        "normals_all_primitives": true,
-        "pbr_all_materials": true,
-        "identity_mesh_node_transforms": true,
-        "no_negative_scale": true,
-        "no_duplicate_mesh_nodes": true,
-        "all_chassis_datums_present": true,
-        "fixed_chassis_datums_correct": true,
-        "front_is_negative_z": true,
-        "rear_is_positive_z": true
-      },
-      "passed": true
-    },
-    "wheel_front": {
-      "node_names": [
-        "DATUM_TIRE_CONTACT_PATCH",
-        "DATUM_WHEEL_CENTER",
-        "DATUM_WHEEL_INBOARD_FACE",
-        "DATUM_WHEEL_OUTBOARD_FACE",
-        "GEO_WHEEL_HUB",
-        "GEO_WHEEL_TIRE",
-        "JNT_WHEEL_MOUNT"
-      ],
-      "material_names": [
-        "MAT_WHEEL_METAL",
-        "MAT_SLICK_RUBBER_PBR"
-      ],
-      "mesh_count": 2,
-      "primitive_count": 2,
-      "checks": {
-        "no_presentation_plane": true,
-        "geometry_prefix": true,
-        "material_prefix": true,
-        "uv0_all_primitives": true,
-        "normals_all_primitives": true,
-        "pbr_all_materials": true,
-        "identity_mesh_node_transforms": true,
-        "no_negative_scale": true,
-        "no_duplicate_mesh_nodes": true,
-        "exact_wheel_contract_names": true,
-        "wheel_center_at_origin": true,
-        "wheel_mount_at_origin": true,
-        "contact_patch_correct": true,
-        "inboard_face_correct": true,
-        "outboard_face_correct": true,
-        "wheel_axis_is_local_x": true
-      },
-      "passed": true
-    },
-    "wheel_rear": {
-      "node_names": [
-        "DATUM_TIRE_CONTACT_PATCH",
-        "DATUM_WHEEL_CENTER",
-        "DATUM_WHEEL_INBOARD_FACE",
-        "DATUM_WHEEL_OUTBOARD_FACE",
-        "GEO_WHEEL_HUB",
-        "GEO_WHEEL_TIRE",
-        "JNT_WHEEL_MOUNT"
-      ],
-      "material_names": [
-        "MAT_WHEEL_METAL",
-        "MAT_SLICK_RUBBER_PBR"
-      ],
-      "mesh_count": 2,
-      "primitive_count": 2,
-      "checks": {
-        "no_presentation_plane": true,
-        "geometry_prefix": true,
-        "material_prefix": true,
-        "uv0_all_primitives": true,
-        "normals_all_primitives": true,
-        "pbr_all_materials": true,
-        "identity_mesh_node_transforms": true,
-        "no_negative_scale": true,
-        "no_duplicate_mesh_nodes": true,
-        "exact_wheel_contract_names": true,
-        "wheel_center_at_origin": true,
-        "wheel_mount_at_origin": true,
-        "contact_patch_correct": true,
-        "inboard_face_correct": true,
-        "outboard_face_correct": true,
-        "wheel_axis_is_local_x": true
-      },
-      "passed": true
-    }
+  "schema": "formula90s/vehicle-rework-validation/v2",
+  "passed": true,
+  "scope": "Static GLB geometry and interface validation after 2010 cockpit + RB6-inspired sidepod/floor width pass.",
+  "dimensions_m": {
+    "overall_vehicle_width_with_wheels": 2.0,
+    "wheelbase": 3.5,
+    "front_track_center": 1.635,
+    "rear_track_center": 1.59,
+    "sidepod_body_max_width": 1.503926,
+    "flat_floor_max_width": 1.52509
   },
-  "global_checks": {
-    "all_assets_passed": true,
-    "metadata_schema": true,
-    "metadata_vehicle_id": true,
-    "metadata_wheelbase": true,
-    "metadata_assets_exist": true,
-    "coordinate_contract": true
+  "geometry": {
+    "mesh_count": 29,
+    "node_count": 40,
+    "body_vertices": 7613,
+    "body_triangles": 10744,
+    "floor_vertices": 6408,
+    "floor_triangles": 9952,
+    "sidepod_max_delta_each_side_m": 0.075,
+    "floor_max_delta_each_side_m": 0.07
   },
-  "passed": true
+  "checks": {
+    "glb_reload_success": true,
+    "topology_preserved": true,
+    "materials_and_embedded_textures_preserved": true,
+    "front_rear_axle_datums_preserved": true,
+    "wheel_joint_datums_preserved": true,
+    "suspension_meshes_unchanged": true,
+    "front_rear_wing_meshes_unchanged": true,
+    "wheel_assets_unchanged": true,
+    "coordinate_contract_preserved": true
+  },
+  "sha256": {
+    "f1_2026_2008_chassis.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
+    "f1_2026_2008_chassis_cockpit2010.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
+    "f1_2026_2008_chassis_cockpit2010_rb6wide.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
+    "f1_2026_2008_wheel_front.glb": "2D7C9CAD71C23533FD4CB9D7BA17C366646A4399481F5DC9B3B8EF64638222E9",
+    "f1_2026_2008_wheel_rear.glb": "D500DB3BFDB4396F5589218FD7C7A0F1B035EE891E45211EC43B12A0302E1D6B"
+  },
+  "detail_file": "rb6_2010_width_rework_validation.json"
 }

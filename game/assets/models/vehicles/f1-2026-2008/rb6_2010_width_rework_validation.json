@@ -1,0 +1,144 @@
+{
+  "schema": "formula90s/rb6-2010-width-rework-validation/v1",
+  "passed": true,
+  "reference": "2010 Red Bull RB6-inspired planform proportions; not a direct RB6 replica",
+  "targets": {
+    "sidepod_max_outboard_delta_each_side_m": 0.075,
+    "floor_max_outboard_delta_each_side_m": 0.07,
+    "wheelbase_m": 3.5,
+    "vehicle_overall_width_m": 2.0
+  },
+  "changed_meshes": [
+    {
+      "name": "GEO_CHASSIS_BODY",
+      "vertices": 7613,
+      "triangles": 10744,
+      "max_vertex_delta_m": 0.07499998807907104,
+      "mean_changed_vertex_delta_m": 0.030448084901564004,
+      "changed_vertex_count": 2624,
+      "before_half_width_m": 0.6769630312919617,
+      "after_half_width_m": 0.7519630193710327
+    },
+    {
+      "name": "GEO_CHASSIS_FLOOR",
+      "vertices": 6408,
+      "triangles": 9952,
+      "max_vertex_delta_m": 0.06999999284744263,
+      "mean_changed_vertex_delta_m": 0.03178166457648175,
+      "changed_vertex_count": 2154,
+      "before_half_width_m": 0.6925448179244995,
+      "after_half_width_m": 0.7625448107719421
+    }
+  ],
+  "preserved": {
+    "mesh_count": true,
+    "node_count": true,
+    "materials": true,
+    "embedded_textures": true,
+    "topology": true,
+    "axle_and_joint_datums": true,
+    "wheel_assets": true,
+    "front_rear_wings": true,
+    "suspension_meshes": true
+  },
+  "cross_sections": {
+    "GEO_CHASSIS_BODY": [
+      {
+        "z_start_m": -0.75,
+        "z_end_m": -0.5,
+        "width_m": 0.5364142060279846
+      },
+      {
+        "z_start_m": -0.5,
+        "z_end_m": -0.25,
+        "width_m": 1.2040588855743408
+      },
+      {
+        "z_start_m": -0.25,
+        "z_end_m": 0.0,
+        "width_m": 1.4395622611045837
+      },
+      {
+        "z_start_m": 0.0,
+        "z_end_m": 0.25,
+        "width_m": 1.5039259791374207
+      },
+      {
+        "z_start_m": 0.25,
+        "z_end_m": 0.5,
+        "width_m": 1.501514732837677
+      },
+      {
+        "z_start_m": 0.5,
+        "z_end_m": 0.75,
+        "width_m": 1.4785075783729553
+      },
+      {
+        "z_start_m": 0.75,
+        "z_end_m": 1.0,
+        "width_m": 1.4070413708686829
+      },
+      {
+        "z_start_m": 1.0,
+        "z_end_m": 1.25,
+        "width_m": 1.1298534870147705
+      },
+      {
+        "z_start_m": 1.25,
+        "z_end_m": 1.5,
+        "width_m": 0.6715706586837769
+      }
+    ],
+    "GEO_CHASSIS_FLOOR": [
+      {
+        "z_start_m": -0.75,
+        "z_end_m": -0.5,
+        "width_m": 1.472405195236206
+      },
+      {
+        "z_start_m": -0.5,
+        "z_end_m": -0.25,
+        "width_m": 1.5195223689079285
+      },
+      {
+        "z_start_m": -0.25,
+        "z_end_m": 0.0,
+        "width_m": 1.5250896215438843
+      },
+      {
+        "z_start_m": 0.0,
+        "z_end_m": 0.25,
+        "width_m": 1.5134484767913818
+      },
+      {
+        "z_start_m": 0.25,
+        "z_end_m": 0.5,
+        "width_m": 1.5073357224464417
+      },
+      {
+        "z_start_m": 0.5,
+        "z_end_m": 0.75,
+        "width_m": 1.4942117929458618
+      },
+      {
+        "z_start_m": 0.75,
+        "z_end_m": 1.0,
+        "width_m": 1.4863179922103882
+      },
+      {
+        "z_start_m": 1.0,
+        "z_end_m": 1.25,
+        "width_m": 1.4795564413070679
+      },
+      {
+        "z_start_m": 1.25,
+        "z_end_m": 1.5,
+        "width_m": 1.422303318977356
+      }
+    ]
+  },
+  "output_sha256": {
+    "f1_2026_2008_chassis_cockpit2010_rb6wide.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
+    "f1_2026_2008_chassis.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1"
+  }
+}
