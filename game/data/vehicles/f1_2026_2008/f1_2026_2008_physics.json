@@ -149,8 +149,8 @@
     "traction_control_gear_max_cut": [
       0.78,
       0.65,
-      0.45,
-      0.3,
+      0.55,
+      0.4,
       0.14,
       0.07,
       0.04
@@ -487,9 +487,9 @@
       "clutch_friction_coefficient": 0.09,
       "clutches": 6.0,
       "coast_ramp_angle_deg": 60.0,
-      "power_ramp_angle_deg": 60.0,
+      "power_ramp_angle_deg": 65.0,
       "preload_nm": 90.0,
-      "slip_transition_threshold_rad_s": 0.8
+      "slip_transition_threshold_rad_s": 1.5
     },
     "final_drive": 4.25,
     "front_torque_split": 0.0,
