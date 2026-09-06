@@ -18,11 +18,270 @@
 //!   orchestrator, keeping byte-level parity with the in-engine path.
 
 pub mod audio;
+mod audio_telemetry;
 pub mod ffi;
 pub mod frame;
 pub mod module;
 pub mod modules;
 pub mod underfloor;
+
+#[cfg(test)]
+mod aud04_integration {
+    use super::*;
+
+    #[test]
+    fn physical_signed_torque_reaches_audio_from_standalone_step() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut core = CoreFacade::new(CoreConfig {
+            bank_dir: Some(root.join("sounds/banks/v10_vehicle")),
+            config_json_path: Some(root.join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")),
+            use_canonical: false, enable_audio: true, ..CoreConfig::default()
+        }).unwrap();
+        let id = core.ensure_spawned().unwrap();
+        for _ in 0..20 {
+            let samples = core.flat_samples(id);
+            core.step_standalone(id, &game_sim::DriverInput { throttle: 0.9, ..Default::default() }, &samples, 1.0 / 120.0);
+        }
+        let ent = &core.world.entities[0];
+        let expected = (ent.sim.state.powertrain.engine_torque / ent.sim.config.max_torque).clamp(-1.0, 1.0) as f32;
+        assert!(expected.abs() > 0.01);
+        let received = core.audio.mut_engine().unwrap().last_normalized_engine_torque();
+        assert!((received - expected).abs() < 1e-6, "physical={expected}, audio={received}");
+    }
+
+    #[test]
+    fn physical_transport_matches_facade_and_gf509() {
+        use game_sim::DriverInput;
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut core = CoreFacade::new(CoreConfig {
+            bank_dir: Some(root.join("sounds/banks/v10_vehicle")),
+            config_json_path: Some(root.join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")),
+            use_canonical: false,
+            enable_audio: true,
+            ..CoreConfig::default()
+        }).unwrap();
+        let id = core.ensure_spawned().unwrap();
+        assert!(core.audio_gf509_enabled(), "GF509 must be active for AUD-04 transport");
+        for _ in 0..20 {
+            let samples = core.flat_samples(id);
+            core.step_standalone(id, &DriverInput { throttle: 0.9, ..Default::default() }, &samples, 1.0 / 120.0);
+        }
+
+        // Helper: expected acoustic packet computed manually from the
+        // authoritative powertrain fields (no call to the mapping under test).
+        let expected_from_physical = |p: &vehicle_physics_engine::PowertrainState, max_torque: f64| {
+            let torque = (p.engine_torque / max_torque.max(1.0)).clamp(-1.0, 1.0) as f32;
+            let mut load = if p.clutch_engagement > 1e-4 {
+                (p.clutch_torque.abs() / max_torque.max(1.0)).clamp(0.0, 1.0)
+            } else { 0.0 };
+            if p.engine_torque > 0.0 {
+                load *= 1.0 - p.tc_cut_ratio_smoothed.clamp(0.0, 1.0);
+            }
+            (load as f32, torque,
+             p.clutch_engagement.clamp(0.0, 1.0) as f32,
+             p.tc_cut_ratio_smoothed.clamp(0.0, 1.0) as f32,
+             p.is_rev_limited, p.shift_timer > 0.0, p.target_gear < p.current_gear)
+        };
+
+        let check_transport = |core: &mut CoreFacade, label: &str| {
+            let (powertrain, max_torque, rpm, throttle) = {
+                let ent = &core.world.entities[0];
+                (ent.sim.state.powertrain.clone(), ent.sim.config.max_torque,
+                 ent.last.as_ref().map(|t| t.rpm).unwrap_or(0.0), core.frame.throttle)
+            };
+            let (exp_load, exp_torque, exp_clutch, exp_tc, exp_limiter, exp_shifting, exp_down) =
+                expected_from_physical(&powertrain, max_torque);
+            let engine = core.audio.mut_engine().unwrap();
+            assert!((engine.last_normalized_engine_load() - exp_load).abs() < 1e-6,
+                "{label}: load physical={exp_load} audio={}", engine.last_normalized_engine_load());
+            assert!((engine.last_normalized_engine_torque() - exp_torque).abs() < 1e-6,
+                "{label}: torque physical={exp_torque} audio={}", engine.last_normalized_engine_torque());
+            assert!((engine.last_clutch_engagement() - exp_clutch).abs() < 1e-6,
+                "{label}: clutch physical={exp_clutch} audio={}", engine.last_clutch_engagement());
+            assert!((engine.last_tc_cut_ratio() - exp_tc).abs() < 1e-6,
+                "{label}: tc physical={exp_tc} audio={}", engine.last_tc_cut_ratio());
+            assert_eq!(engine.last_rev_limiter_active(), exp_limiter, "{label}: limiter");
+            // Shift phase comes from the control-rate adapter: a physical cut
+            // must surface as Cut; otherwise None or the named 40 ms Recovery.
+            let phase = engine.last_shift_phase();
+            if exp_shifting {
+                assert!(phase == 1 || phase == 3, "{label}: shifting must be Cut, got {phase}");
+                if exp_down { assert_eq!(phase, 3, "{label}: downshift cut"); }
+                else { assert_eq!(phase, 1, "{label}: upshift cut"); }
+            } else {
+                assert!(phase == 0 || phase == 2 || phase == 5,
+                    "{label}: settled must be None/Recovery, got {phase}");
+            }
+            // The packet actually consumed by GF509 (target, not mixer snapshot).
+            let gf509 = engine.gf509_telemetry().expect("{label}: GF509 telemetry missing");
+            assert!((gf509.normalized_engine_load - exp_load).abs() < 1e-6, "{label}: GF509 load");
+            assert!((gf509.normalized_engine_torque - exp_torque).abs() < 1e-6, "{label}: GF509 torque");
+            assert!((gf509.clutch_engagement - exp_clutch).abs() < 1e-6, "{label}: GF509 clutch");
+            assert!((gf509.tc_cut_ratio - exp_tc).abs() < 1e-6, "{label}: GF509 tc");
+            assert_eq!(gf509.rev_limiter_active, exp_limiter, "{label}: GF509 limiter");
+            assert!(gf509.dt_seconds > 0.0, "{label}: facade must use timed route (dt>0), got {}", gf509.dt_seconds);
+            assert!((gf509.rpm as f64 - rpm).abs() < 1.0, "{label}: GF509 rpm {rpm}");
+            assert!((gf509.throttle as f64 - throttle).abs() < 1e-6, "{label}: GF509 throttle");
+            (rpm, exp_torque, exp_load)
+        };
+
+        // Power: positive drive torque expected after full-throttle warmup.
+        for _ in 0..8 {
+            let samples = core.flat_samples(id);
+            core.step_standalone(id, &DriverInput { throttle: 0.9, ..Default::default() }, &samples, 1.0 / 120.0);
+        }
+        let (rpm_power, torque_power, _) = check_transport(&mut core, "power");
+        assert!(torque_power > 0.01, "power must deliver positive torque, got {torque_power}");
+        let mut frame = [0.0f32; 512];
+        assert_eq!(core.audio_render(&mut frame, &mut [0.0; 512], 512), 512);
+        assert!(frame.iter().all(|s| s.is_finite()));
+        let energy_power: f32 = frame.iter().map(|s| s * s).sum();
+
+        // Coast: closed throttle, retention path (throttle/load/torque split).
+        for _ in 0..8 {
+            let samples = core.flat_samples(id);
+            core.step_standalone(id, &DriverInput::default(), &samples, 1.0 / 120.0);
+        }
+        let (_, torque_coast, _) = check_transport(&mut core, "coast");
+        assert!(torque_coast <= torque_power, "coast torque {torque_coast} must not exceed power {torque_power}");
+        assert_eq!(core.audio_render(&mut frame, &mut [0.0; 512], 512), 512);
+        assert!(frame.iter().all(|s| s.is_finite()));
+        let energy_coast: f32 = frame.iter().map(|s| s * s).sum();
+        assert!((energy_power - energy_coast).abs() > 0.0, "power/coast must render different energy");
+
+        // Clutch open (coherent mapping: engagement->0 implies load->0).
+        for _ in 0..8 {
+            let samples = core.flat_samples(id);
+            core.step_standalone(id, &DriverInput { clutch: 1.0, ..Default::default() }, &samples, 1.0 / 120.0);
+        }
+        let (_, _, load_clutch) = check_transport(&mut core, "clutch_open");
+        {
+            let ent = &core.world.entities[0];
+            assert!(ent.sim.state.powertrain.clutch_engagement < 0.5,
+                "clutch input must disengage, got {}", ent.sim.state.powertrain.clutch_engagement);
+            assert_eq!(load_clutch, 0.0, "clutch open must deliver load=0");
+        }
+        assert_eq!(core.audio_render(&mut frame, &mut [0.0; 512], 512), 512);
+        assert!(frame.iter().all(|s| s.is_finite()));
+
+        // Upshift via authoritative gear_request (DriverInput shift_up is not
+        // consumed by physics; gear_request is the real contract). First settle
+        // to a stable gear with room to shift both directions.
+        let settle = |core: &mut CoreFacade, id: u32| {
+            for _ in 0..200 {
+                let timer = core.world.entities[0].sim.state.powertrain.shift_timer;
+                if timer <= 0.0 { break; }
+                let samples = core.flat_samples(id);
+                core.step_standalone(id, &DriverInput { throttle: 0.5, ..Default::default() }, &samples, 1.0 / 120.0);
+            }
+        };
+        settle(&mut core, id);
+        let max_gear = core.world.entities[0].sim.config.gear_ratios.len() as i8;
+        // Move away from the top gear so upshift then downshift are both real.
+        if core.world.entities[0].sim.state.powertrain.current_gear >= max_gear {
+            let samples = core.flat_samples(id);
+            core.step_standalone(id, &DriverInput { throttle: 0.5, gear_request: Some(max_gear - 1), ..Default::default() }, &samples, 1.0 / 120.0);
+            settle(&mut core, id);
+        }
+        let base_gear: i8 = core.world.entities[0].sim.state.powertrain.current_gear;
+        assert!(core.world.entities[0].sim.state.powertrain.shift_timer <= 0.0, "must start shifts from settled state");
+        let up_target = (base_gear + 1).min(max_gear);
+        assert!(up_target > base_gear, "need room for upshift from {base_gear} (max {max_gear})");
+        let samples = core.flat_samples(id);
+        core.step_standalone(id, &DriverInput { throttle: 0.8, gear_request: Some(up_target), ..Default::default() }, &samples, 1.0 / 120.0);
+        {
+            let p = &core.world.entities[0].sim.state.powertrain;
+            assert!(p.shift_timer > 0.0, "gear_request must open a physical cut, timer={}", p.shift_timer);
+            assert_eq!(p.target_gear, up_target);
+        }
+        let _ = check_transport(&mut core, "upshift_cut");
+        assert_eq!(core.audio_render(&mut frame, &mut [0.0; 512], 512), 512);
+        assert!(frame.iter().all(|s| s.is_finite()));
+        settle(&mut core, id);
+        assert_eq!(core.world.entities[0].sim.state.powertrain.current_gear, up_target);
+        let _ = check_transport(&mut core, "upshift_settle");
+
+        // Downshift back toward the original gear.
+        let samples = core.flat_samples(id);
+        core.step_standalone(id, &DriverInput { throttle: 0.2, gear_request: Some(base_gear), ..Default::default() }, &samples, 1.0 / 120.0);
+        {
+            let p = &core.world.entities[0].sim.state.powertrain;
+            assert!(p.shift_timer > 0.0, "downshift request must open a physical cut");
+            assert!(p.target_gear < p.current_gear, "must be a downshift");
+        }
+        let _ = check_transport(&mut core, "downshift_cut");
+        assert_eq!(core.audio_render(&mut frame, &mut [0.0; 512], 512), 512);
+        assert!(frame.iter().all(|s| s.is_finite()));
+
+        // TC toggle: aids mask flips; audio TC field still tracks physics
+        // (flat ground yields cut=0, but the transport must stay exact).
+        let tc_before = core.world.entities[0].aids.traction_control;
+        let samples = core.flat_samples(id);
+        core.step_standalone(id, &DriverInput { throttle: 0.9, toggle_traction_control: true, ..Default::default() }, &samples, 1.0 / 120.0);
+        let tc_after = core.world.entities[0].aids.traction_control;
+        assert_ne!(tc_before, tc_after, "TC toggle must flip aids state");
+        let _ = check_transport(&mut core, "tc_toggle");
+        assert_eq!(core.audio_render(&mut frame, &mut [0.0; 512], 512), 512);
+        assert!(frame.iter().all(|s| s.is_finite()));
+
+        // Limiter field tracks physics even when not engaged on flat ground;
+        // the DSP response to a true limiter is covered at fixed RPM below.
+        let _ = check_transport(&mut core, "limiter_track");
+        let _ = rpm_power; // documented: sequential physics cannot hold RPM
+        // fixed across regimes; fixed-RPM DSP separation is the next test.
+
+        core.audio.reset();
+        assert_eq!(core.audio.mut_engine().unwrap().last_normalized_engine_torque(), 0.0);
+    }
+
+    #[test]
+    fn mechanical_dsp_matrix_differs_at_fixed_rpm() {
+        use v10_engine_synth::{Gf509Runtime, Gf509RuntimeConfig, RuntimeTelemetry, ShiftPhase, TorqueSign};
+        // DSP separation at identical initial control: only the mechanical
+        // state varies, so any difference is the state's acoustic response.
+        // No productive physics is modified; this is the second half of R2.
+        fn render_fixed(base: RuntimeTelemetry) -> Vec<f32> {
+            let mut config = Gf509RuntimeConfig::default();
+            config.max_block_frames = 512;
+            let mut runtime = Gf509Runtime::new(config).unwrap();
+            runtime.update_telemetry(base).unwrap();
+            let mut left = [0.0f32; 512];
+            let mut right = [0.0f32; 512];
+            for _ in 0..10 {
+                runtime.render_block(&mut left, &mut right).unwrap();
+            }
+            runtime.render_block(&mut left, &mut right).unwrap();
+            assert!(left.iter().all(|s| s.is_finite()));
+            left.to_vec()
+        }
+        let steady = RuntimeTelemetry {
+            rpm: 10_000.0, throttle: 0.9, normalized_engine_load: 0.9,
+            normalized_engine_torque: 0.9, torque_sign: TorqueSign::Positive,
+            rpm_derivative: 0.0, throttle_derivative: 0.0, gear: 4,
+            shift_phase: ShiftPhase::None, clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0, rev_limiter_active: false, dt_seconds: 1.0 / 120.0,
+        };
+        let coast = RuntimeTelemetry {
+            throttle: 0.0, normalized_engine_load: 0.1,
+            normalized_engine_torque: -0.45, torque_sign: TorqueSign::Negative, ..steady
+        };
+        let cut = RuntimeTelemetry { shift_phase: ShiftPhase::UpshiftCut, ..steady };
+        let limiter = RuntimeTelemetry { rev_limiter_active: true, ..steady };
+        let tc = RuntimeTelemetry { tc_cut_ratio: 0.6, normalized_engine_load: 0.36, ..steady };
+        let out_steady = render_fixed(steady);
+        let out_coast = render_fixed(coast);
+        let out_cut = render_fixed(cut);
+        let out_limiter = render_fixed(limiter);
+        let out_tc = render_fixed(tc);
+        let max_diff = |a: &[f32], b: &[f32]| {
+            a.iter().zip(b.iter()).map(|(x, y)| (x - y).abs()).fold(0.0f32, f32::max)
+        };
+        assert!(max_diff(&out_steady, &out_coast) > 1e-4, "coast must differ from power at fixed RPM");
+        assert!(max_diff(&out_steady, &out_cut) > 1e-4, "cut must differ from steady at fixed RPM");
+        assert!(max_diff(&out_steady, &out_limiter) > 1e-4, "limiter must differ from steady at fixed RPM");
+        assert!(max_diff(&out_steady, &out_tc) > 1e-4, "TC texture must differ from steady at fixed RPM");
+    }
+}
 
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
@@ -228,6 +487,11 @@ impl CoreFacade {
         self.audio.synth_enabled()
     }
 
+    /// True only when the packaged GF509 continuous runtime initialized.
+    pub fn audio_gf509_enabled(&self) -> bool {
+        self.audio.gf509_enabled()
+    }
+
     /// Tri-ray samples for flat ground at the entity's current pose (headless/CLI
     /// and parity tests use these when Godot has no scene to raycast).
     pub fn flat_samples(&self, id: u32) -> [TriRaycastSample; 4] {
@@ -278,7 +542,7 @@ impl CoreFacade {
             time_ms: (self.world.time * 1000.0).round() as i64,
             ..CoreFrame::default()
         };
-        let mut engine_load = 0.0f32;
+        let mut mechanical_audio = audio_telemetry::MechanicalAudioState::default();
         self.underfloor.step(
             underfloor_sample,
             Some(&body),
@@ -343,7 +607,7 @@ impl CoreFacade {
             frame.force[1] += self.underfloor.force_world[1];
             frame.force[2] += self.underfloor.force_world[2];
             frame.throttle = input.throttle;
-            engine_load = Self::physical_engine_load(ent);
+            mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config);
         }
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
@@ -376,7 +640,7 @@ impl CoreFacade {
             underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
             self.underfloor.onset_strength as f32,
         );
-        self.finish_frame(dt, frame, surface, slip, engine_load)
+        self.finish_frame(dt, frame, surface, slip, mechanical_audio)
     }
 
     /// Advance everything one fixed step on the STANDALONE path (headless, same as
@@ -395,15 +659,15 @@ impl CoreFacade {
             time_ms: (self.world.time * 1000.0).round() as i64,
             ..CoreFrame::default()
         };
-        let mut engine_load = 0.0f32;
+        let mut mechanical_audio = audio_telemetry::MechanicalAudioState::default();
         if let Some(ent) = self.world.entities.iter().find(|e| e.id == id) {
             Self::fill_frame_from_entity(&mut frame, ent, dt);
-            engine_load = Self::physical_engine_load(ent);
+            mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config);
         }
         frame.throttle = input.throttle;
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
-        self.finish_frame(dt, frame, surface, slip, engine_load)
+        self.finish_frame(dt, frame, surface, slip, mechanical_audio)
     }
 
     /// Copy the entity's telemetry + pose/velocity into `frame` (physics-agnostic
@@ -524,14 +788,6 @@ impl CoreFacade {
         }
     }
 
-    fn physical_engine_load(ent: &game_sim::world::VehicleEntity) -> f32 {
-        let powertrain = &ent.sim.state.powertrain;
-        let config = &ent.sim.config;
-        let rpm_factor = (powertrain.rpm / config.max_rpm.max(1.0)).clamp(0.0, 1.0);
-        let available = config.evaluate_torque_curve(rpm_factor) * config.max_torque;
-        (powertrain.engine_torque.max(0.0) / available.max(1.0)).clamp(0.0, 1.0) as f32
-    }
-
     /// Shared tail of every step: drive the audio from the frame telemetry, tick the
     /// modules, publish the frame, return it.
     fn finish_frame(
@@ -540,7 +796,7 @@ impl CoreFacade {
         mut frame: CoreFrame,
         surface: SurfaceType,
         slip: f32,
-        engine_load: f32,
+        mechanical_audio: audio_telemetry::MechanicalAudioState,
     ) -> &CoreFrame {
         // --- audio driven from the SAME tick (no round-trip) ------------------
         self.audio.set_tire_scrub_state(
@@ -551,14 +807,14 @@ impl CoreFacade {
             frame.speed_kmh as f32,
             surface,
         );
-        self.audio.set_state(
+        self.audio.set_physical_state(
             frame.rpm,
             self.config.idle_rpm,
             self.config.max_rpm,
             frame.throttle as f32,
             frame.speed_kmh,
             frame.gear,
-            engine_load,
+            mechanical_audio,
             dt as f32,
             slip,
             surface,

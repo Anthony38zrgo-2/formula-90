@@ -384,6 +384,9 @@ pub struct MasterConfig {
     /// Saturation amount [0, 1].
     #[serde(default = "default_saturation")]
     pub saturation: f32,
+    /// Continuous-engine low-pass cutoff in Hz. Zero disables the filter.
+    #[serde(default)]
+    pub engine_lowpass_hz: f32,
 }
 
 fn default_limiter_threshold() -> f32 {
@@ -400,6 +403,7 @@ impl Default for MasterConfig {
             output_db: 0.0,
             limiter_threshold: 0.90,
             saturation: 0.06,
+            engine_lowpass_hz: 0.0,
         }
     }
 }
@@ -409,6 +413,7 @@ impl MasterConfig {
         self.output_db = self.output_db.clamp(-24.0, 12.0);
         self.limiter_threshold = self.limiter_threshold.clamp(0.0, 1.0);
         self.saturation = self.saturation.clamp(0.0, 1.0);
+        self.engine_lowpass_hz = self.engine_lowpass_hz.clamp(0.0, 24_000.0);
         if !self.output_db.is_finite() {
             self.output_db = 0.0;
         }
@@ -417,6 +422,9 @@ impl MasterConfig {
         }
         if !self.saturation.is_finite() {
             self.saturation = 0.12;
+        }
+        if !self.engine_lowpass_hz.is_finite() {
+            self.engine_lowpass_hz = 0.0;
         }
         self
     }
@@ -1030,7 +1038,7 @@ fn collect_unknown_keys(value: &serde_json::Value, warnings: &mut Vec<ConfigDiag
     }
     check(
         value.get("master").and_then(|v| v.as_object()),
-        &["output_db", "limiter_threshold", "saturation"],
+        &["output_db", "limiter_threshold", "saturation", "engine_lowpass_hz"],
         "$.master",
         warnings,
     );
@@ -1421,7 +1429,7 @@ mod tests {
                 "reverb_buses": {
                     "sfx_short": {"pre_delay_ms": 10, "decay_s": 0.6}
                 },
-                "master": {"output_db": -1.0}
+                "master": {"output_db": -1.0, "engine_lowpass_hz": 10000.0}
             }"#,
         );
         let cfg = SoundMixerConfig::load_from_bank_dir(&bank).sanitized();
@@ -1431,6 +1439,7 @@ mod tests {
             assert_eq!(v2.defaults.volume, 0.9);
             assert!(v2.reverb_buses.contains_key("sfx_short"));
             assert_eq!(v2.master.output_db, -1.0);
+            assert_eq!(v2.master.engine_lowpass_hz, 10_000.0);
         } else {
             panic!("Expected V2");
         }

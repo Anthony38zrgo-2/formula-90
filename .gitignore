@@ -6,6 +6,11 @@ bin/
 game/crates/vehicle-audio-engine/src/bin/*
 !game/crates/vehicle-audio-engine/src/bin/engine_sweep_render.rs
 !game/crates/vehicle-audio-engine/src/bin/va_bench.rs
+!game/crates/vehicle-audio-engine/src/bin/aud_runtime_baseline.rs
+!game/crates/formula90-core/src/bin/
+game/crates/formula90-core/src/bin/*
+!game/crates/formula90-core/src/bin/core_cli.rs
+!game/crates/formula90-core/src/bin/aud_path_bench.rs
 game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 game/telemetry/*

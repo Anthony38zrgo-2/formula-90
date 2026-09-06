@@ -483,6 +483,8 @@ fn run() -> Result<(), String> {
                     rpm: current_input.rpm,
                     throttle: current_input.throttle,
                     load: current_input.load,
+                    normalized_engine_torque: current_input.load,
+                    clutch_engagement: 1.0,
                     crank_phase_deg: frame.crank_phase_deg,
                 })
             })

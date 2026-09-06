@@ -72,6 +72,7 @@ pub struct AudioModule {
     last_slip: f32,
     last_trigger_code: i32,
     gf509_asset_dir: Option<PathBuf>,
+    telemetry_adapter: crate::audio_telemetry::AudioTelemetryAdapter,
 }
 
 impl AudioModule {
@@ -102,6 +103,7 @@ impl AudioModule {
             last_slip: 0.0,
             last_trigger_code: -1,
             gf509_asset_dir,
+            telemetry_adapter: Default::default(),
         }
     }
 
@@ -251,9 +253,15 @@ impl AudioModule {
             .map_or(false, VehicleAudioEngine::synth_enabled)
     }
 
+    pub fn gf509_enabled(&self) -> bool {
+        self.engine.as_ref().is_some_and(|engine| {
+            engine.continuous_source() == vehicle_audio_engine::ContinuousSourceKind::V10Gf509
+        })
+    }
+
     /// Push the current telemetry into the mixer. Gear-change one-shots fire inside
     /// the mixer; the facade must not re-trigger them.
-    pub fn set_state(
+    pub(crate) fn set_physical_state(
         &mut self,
         rpm: f64,
         idle_rpm: f64,
@@ -261,27 +269,19 @@ impl AudioModule {
         throttle: f32,
         speed_kph: f64,
         gear: i32,
-        engine_load: f32,
+        mechanical: crate::audio_telemetry::MechanicalAudioState,
         dt_seconds: f32,
         slip: f32,
         surface: SurfaceType,
     ) {
         self.observe(surface, slip);
+        let packet = self.telemetry_adapter.update(rpm, idle_rpm, max_rpm, throttle,
+            speed_kph, gear, slip, dt_seconds, mechanical);
         if let Some(eng) = self.engine.as_mut() {
-            let prev_tag = eng.last_trigger().to_string();
-            eng.set_state(
-                rpm,
-                idle_rpm,
-                max_rpm,
-                throttle,
-                speed_kph,
-                gear,
-                slip,
-                surface_token(surface),
-            );
-            let _ = eng.set_gf509_physics(engine_load, dt_seconds);
+            let prev_code = code_from_bank_key(eng.last_trigger());
+            eng.set_telemetry_timed(&packet, surface_token(surface), dt_seconds);
             let now_tag = eng.last_trigger();
-            self.last_trigger_code = if !now_tag.is_empty() && now_tag != prev_tag {
+            self.last_trigger_code = if !now_tag.is_empty() && code_from_bank_key(now_tag) != prev_code {
                 code_from_bank_key(now_tag)
             } else {
                 self.last_trigger_code
@@ -290,6 +290,7 @@ impl AudioModule {
     }
 
     pub fn reset(&mut self) {
+        self.telemetry_adapter = Default::default();
         if let Some(engine) = self.engine.as_mut() {
             let _ = engine.reset_audio_state();
         }

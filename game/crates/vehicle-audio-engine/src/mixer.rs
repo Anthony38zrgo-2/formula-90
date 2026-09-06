@@ -24,6 +24,38 @@ use crate::tire_scrub::{compute_tire_scrub_target, TireScrubMode};
 use std::collections::BTreeMap;
 use std::path::Path;
 
+#[derive(Clone, Copy, Debug, Default)]
+struct EngineLowPass {
+    alpha: f32,
+    left: f32,
+    right: f32,
+    enabled: bool,
+}
+
+impl EngineLowPass {
+    fn new(cutoff_hz: f32, sample_rate: u32) -> Self {
+        if cutoff_hz <= 0.0 || sample_rate == 0 {
+            return Self::default();
+        }
+        let cutoff = cutoff_hz.min(sample_rate as f32 * 0.45);
+        Self {
+            alpha: 1.0 - (-std::f32::consts::TAU * cutoff / sample_rate as f32).exp(),
+            enabled: true,
+            ..Self::default()
+        }
+    }
+
+    #[inline]
+    fn process(&mut self, left: f32, right: f32) -> (f32, f32) {
+        if !self.enabled {
+            return (left, right);
+        }
+        self.left += self.alpha * (left - self.left);
+        self.right += self.alpha * (right - self.right);
+        (self.left, self.right)
+    }
+}
+
 /// Mixing/voice configuration. Defaults mirror the F1-94 presentation layer
 /// (`vehicle_audio_controller.gd`) so the Rust core is the source of truth.
 #[derive(Clone, Copy)]
@@ -348,6 +380,7 @@ pub struct VehicleAudioEngine {
     reverb_buses: Vec<ReverbBus>,
     stereo_limiter: StereoLimiter,
     master_gain: f32,
+    engine_lowpass: EngineLowPass,
     config_generation: u64,
     config_source_hash: String,
     transition_remaining: usize,
@@ -562,6 +595,7 @@ impl VehicleAudioEngine {
             .collect();
         let stereo_limiter = StereoLimiter::new(master.limiter_threshold);
         let master_gain = 10.0_f32.powf(master.output_db / 20.0);
+        let engine_lowpass = EngineLowPass::new(master.engine_lowpass_hz, sample_rate);
 
         let exhaust_key = if bank.get("exhaust-mic").is_some() {
             "exhaust-mic".to_string()
@@ -622,6 +656,7 @@ impl VehicleAudioEngine {
             reverb_buses,
             stereo_limiter,
             master_gain,
+            engine_lowpass,
             config_generation: 1,
             config_source_hash,
             transition_remaining: 0,
@@ -720,6 +755,7 @@ impl VehicleAudioEngine {
             .collect();
         self.master_gain = 10.0_f32.powf(config.master.output_db / 20.0);
         self.stereo_limiter = StereoLimiter::new(config.master.limiter_threshold);
+        self.engine_lowpass = EngineLowPass::new(config.master.engine_lowpass_hz, self.sample_rate);
         self.cfg.exhaust = config.exhaust.to_runtime();
         self.transition_total =
             ((config.hot_reload.transition_ms as u64 * self.sample_rate as u64) / 1000) as usize;
@@ -763,7 +799,16 @@ impl VehicleAudioEngine {
     }
 
     /// Feed full versioned vehicle audio telemetry.
+    /// Legacy route: forwards `dt_seconds = 0.0` to GF509, so the runtime snaps
+    /// to the target without per-sample interpolation. Preserved for the AUD-02
+    /// baseline harness and C-ABI callers; the Rust facade must use
+    /// `set_telemetry_timed` with the real tick duration (R4 audit).
     pub fn set_telemetry(&mut self, telem: &crate::ffi::VehicleAudioTelemetryV3, surface: &str) {
+        self.set_telemetry_timed(telem, surface, 0.0);
+    }
+
+    /// Native Rust facade supplies tick duration without changing the v3 C ABI.
+    pub fn set_telemetry_timed(&mut self, telem: &crate::ffi::VehicleAudioTelemetryV3, surface: &str, dt_seconds: f32) {
         let norm = if telem.max_rpm > telem.idle_rpm {
             (((telem.rpm - telem.idle_rpm) / (telem.max_rpm - telem.idle_rpm)) as f32)
                 .clamp(0.0, 1.0)
@@ -839,7 +884,10 @@ impl VehicleAudioEngine {
                 throttle_derivative: telem.throttle_derivative,
                 gear: telem.gear.clamp(-1, 12) as i8,
                 shift_phase,
-                dt_seconds: 0.0,
+                clutch_engagement: telem.clutch_engagement,
+                tc_cut_ratio: telem.tc_cut_ratio,
+                rev_limiter_active: telem.rev_limiter_active != 0,
+                dt_seconds,
             });
         }
 
@@ -1178,8 +1226,17 @@ impl VehicleAudioEngine {
                 }
             }
 
-            let continuous_l = mixed_l;
-            let continuous_r = mixed_r;
+            // Optional C++ engine enhancement is part of the engine bus and must
+            // pass through the same filter before non-engine sources are added.
+            if cpp_gain > 0.0 {
+                let cl = self.cpp_out_l.get(i).copied().unwrap_or(0.0);
+                let cr = self.cpp_out_r.get(i).copied().unwrap_or(0.0);
+                mixed_l += scale_cpp_layer(cl, cpp_gain);
+                mixed_r += scale_cpp_layer(cr, cpp_gain);
+            }
+            let (continuous_l, continuous_r) = self.engine_lowpass.process(mixed_l, mixed_r);
+            mixed_l = continuous_l;
+            mixed_r = continuous_r;
 
             // Surface bed (loops at native rate).
             let mut bed = 0.0f32;
@@ -1303,14 +1360,6 @@ impl VehicleAudioEngine {
             if self.diagnostic_mode == DiagnosticMode::V10Only {
                 mixed_l = continuous_l;
                 mixed_r = continuous_r;
-            }
-            // Fase 4 C++ enhancement, added to the master (pre-limiter). Inert when
-            // disabled or gain 0, leaving `combustion_body` untouched.
-            if cpp_gain > 0.0 {
-                let cl = self.cpp_out_l.get(i).copied().unwrap_or(0.0);
-                let cr = self.cpp_out_r.get(i).copied().unwrap_or(0.0);
-                mixed_l += scale_cpp_layer(cl, cpp_gain);
-                mixed_r += scale_cpp_layer(cr, cpp_gain);
             }
             let saturated_l = self.limiter(mixed_l * self.master_gain);
             let saturated_r = self.limiter(mixed_r * self.master_gain);
@@ -1498,6 +1547,18 @@ impl VehicleAudioEngine {
         self.continuous_source
     }
 
+    /// Target telemetry most recently delivered to the GF509 runtime, if active.
+    /// This is the packet the synth interpolates toward — not just the mixer
+    /// snapshot — so integration tests can prove facade→GF509 transport (R2/R4).
+    pub fn gf509_telemetry(&self) -> Option<v10_engine_synth::RuntimeTelemetry> {
+        self.gf509.as_ref().map(|runtime| runtime.telemetry())
+    }
+
+    /// Interpolated GF509 state actually consumed by the last rendered sample.
+    pub fn gf509_rendered_telemetry(&self) -> Option<v10_engine_synth::RuntimeTelemetry> {
+        self.gf509.as_ref().map(|runtime| runtime.rendered_telemetry())
+    }
+
     pub fn gf509_render_failed(&self) -> bool {
         self.gf509_render_failed
     }
@@ -1529,6 +1590,9 @@ impl VehicleAudioEngine {
                 gear: self.last_gear.clamp(-1, 12) as i8,
                 shift_phase,
                 dt_seconds: dt_seconds.clamp(0.0, 1.0),
+                clutch_engagement: self.last_clutch_engagement,
+                tc_cut_ratio: self.last_tc_cut_ratio,
+                rev_limiter_active: self.last_rev_limiter_active,
             })?;
         }
         self.last_normalized_engine_load = load;
@@ -2088,6 +2152,7 @@ mod tests {
             reverb_buses: Vec::new(),
             stereo_limiter: StereoLimiter::new(0.9),
             master_gain: 1.0,
+            engine_lowpass: EngineLowPass::default(),
             config_generation: 1,
             config_source_hash: String::new(),
             transition_remaining: 0,
@@ -2698,6 +2763,47 @@ mod tests {
     }
 
     #[test]
+    fn legacy_telemetry_route_forwards_zero_dt_while_timed_interpolates() {
+        // R4 audit: the AUD-02 baseline harness uses `set_telemetry` (dt=0,
+        // snap) while the Rust facade must use `set_telemetry_timed` (dt>0,
+        // interpolated). Captures from each route are not interchangeable.
+        use crate::ffi::{VehicleAudioTelemetryV3, VEHICLE_AUDIO_ABI_VERSION};
+        let packet = |rpm: f64| VehicleAudioTelemetryV3 {
+            schema_version: VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
+            rpm, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 0.9,
+            normalized_engine_load: 0.9, normalized_engine_torque: 0.9,
+            rpm_derivative: 0.0, throttle_derivative: 0.0,
+            speed_kph: 100.0, slip: 0.0, gear: 4, torque_sign: 1,
+            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: 0.0,
+            rev_limiter_active: 0,
+        };
+        let mut legacy = engine_with_bank(silent_engine_bank());
+        legacy.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
+        legacy.set_telemetry(&packet(5_000.0), "asphalt");
+        // Legacy dt=0 snaps: target and first rendered sample coincide.
+        assert_eq!(legacy.gf509_telemetry().unwrap().dt_seconds, 0.0);
+        let mut l = vec![0.0; 8];
+        let mut r = vec![0.0; 8];
+        legacy.render(&mut l, &mut r, 8);
+        assert!((legacy.gf509_rendered_telemetry().unwrap().rpm - 5_000.0).abs() < 1e-3);
+
+        let mut timed = engine_with_bank(silent_engine_bank());
+        timed.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
+        timed.set_telemetry(&packet(5_000.0), "asphalt");
+        let mut l = vec![0.0; 8];
+        let mut r = vec![0.0; 8];
+        timed.render(&mut l, &mut r, 8);
+        // Timed route interpolates toward a far target across the tick.
+        timed.set_telemetry_timed(&packet(10_000.0), "asphalt", 1.0 / 120.0);
+        assert!((timed.gf509_telemetry().unwrap().dt_seconds - 1.0 / 120.0).abs() < 1e-6);
+        timed.render(&mut l, &mut r, 8);
+        let rendered = timed.gf509_rendered_telemetry().unwrap().rpm;
+        assert!(rendered > 5_000.0 && rendered < 10_000.0,
+            "timed route must interpolate, got {rendered}");
+    }
+
+    #[test]
     fn gf509_replaces_only_continuous_source_and_one_shots_remain() {
         let mut engine = engine_with_bank(silent_engine_bank());
         engine.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
@@ -3052,5 +3158,23 @@ mod tests {
             (0, 0),
             "callback allocated/freed Rust memory"
         );
+    }
+
+    #[test]
+    fn engine_lowpass_bypasses_at_zero_and_attenuates_nyquist() {
+        let mut bypass = EngineLowPass::new(0.0, 44_100);
+        assert_eq!(bypass.process(0.25, -0.5), (0.25, -0.5));
+
+        let mut filter = EngineLowPass::new(10_000.0, 44_100);
+        let mut peak = 0.0f32;
+        for n in 0..256 {
+            let input = if n & 1 == 0 { 1.0 } else { -1.0 };
+            let (left, right) = filter.process(input, input);
+            if n > 128 {
+                peak = peak.max(left.abs());
+                assert_eq!(left, right);
+            }
+        }
+        assert!(peak < 0.65, "10 kHz low-pass failed to attenuate Nyquist: {peak}");
     }
 }

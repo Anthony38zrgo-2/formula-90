@@ -14,10 +14,15 @@ crate-type = ["rlib", "cdylib"]
 name = "core_cli"
 path = "src/bin/core_cli.rs"
 
+[[bin]]
+name = "aud_path_bench"
+path = "src/bin/aud_path_bench.rs"
+
 [dependencies]
 vehicle_physics_engine = { path = "../vehicle-physics-engine" }
 game_sim = { path = "../game-sim" }
 vehicle_audio_engine = { path = "../vehicle-audio-engine" }
+v10-engine-synth = { path = "../v10-engine-synth" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 bincode = "1"

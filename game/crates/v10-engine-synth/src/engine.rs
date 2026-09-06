@@ -18,6 +18,18 @@ pub struct EngineInput {
     pub load: f32,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct MechanicalState {
+    /// Signed engine torque normalized to the physical maximum.
+    torque: f32,
+    clutch: f32,
+    /// Physical TC cut has already been applied to the delivered load. It is
+    /// retained here for acoustic texture only, never applied a second time.
+    tc_cut: f32,
+    limiter_active: bool,
+    shift_phase: u8,
+}
+
 impl EngineInput {
     pub fn validate(self) -> Result<Self, String> {
         if !self.rpm.is_finite() || !(0.0..=25_000.0).contains(&self.rpm) {
@@ -34,13 +46,30 @@ impl EngineInput {
 }
 
 #[inline]
+#[cfg_attr(not(test), allow(dead_code))]
 fn target_acoustic_energy(input: EngineInput) -> f32 {
+    target_acoustic_energy_with_state(input, MechanicalState::default())
+}
+
+#[inline]
+fn target_acoustic_energy_with_state(input: EngineInput, mechanical: MechanicalState) -> f32 {
     let rpm_norm = ((input.rpm - COAST_IDLE_RPM) / (COAST_MAX_RPM - COAST_IDLE_RPM))
         .clamp(0.0, 1.0);
     let coast_energy = COAST_BASE_ENERGY + COAST_RPM_ENERGY * rpm_norm;
     let powered_energy =
         0.25 * input.throttle + 0.63 * input.load * (0.35 + 0.65 * input.throttle);
-    (coast_energy + powered_energy).clamp(0.0, 1.0)
+    // A shift cut and the physical limiter suppress combustion energy. Their
+    // state is discrete and arrives from physics; no synthetic blip is made.
+    let cut_gain = match mechanical.shift_phase {
+        1 | 3 => 0.12,
+        2 | 5 => 0.72,
+        _ => 1.0,
+    };
+    let limiter_gain = if mechanical.limiter_active { 0.78 } else { 1.0 };
+    // Negative torque remains audible during retention/free-rev. The clutch
+    // scales this drag contribution without changing the delivered load.
+    let retention_energy = (-mechanical.torque).max(0.0) * mechanical.clutch * 0.08;
+    (coast_energy + powered_energy * cut_gain * limiter_gain + retention_energy).clamp(0.0, 1.0)
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -97,7 +126,15 @@ pub struct V10Engine {
     source_dc: DcBlocker,
     master_dc: DcBlocker,
     input: EngineInput,
+    mechanical: MechanicalState,
     smoothed_energy: f32,
+    /// AUD-05: one-pole energy follower coefficients. Depend only on the
+    /// sample rate, so they are precomputed at construction instead of
+    /// evaluating `exp` once per rendered sample (bit-identical formula).
+    energy_attack_alpha: f32,
+    energy_release_alpha: f32,
+    /// AUD-05: turbulence envelope release coefficient (sample-rate only).
+    turbulence_release_alpha: f32,
     turbulence_filter: BandPassNoise,
     turbulence_envelope: f32,
     noise_rng: u64,
@@ -132,7 +169,11 @@ impl V10Engine {
                 throttle: 0.0,
                 load: 0.0,
             },
+            mechanical: MechanicalState::default(),
             smoothed_energy: 0.0,
+            energy_attack_alpha: 1.0 - (-1.0 / (ENERGY_ATTACK_SECONDS * sample_rate)).exp(),
+            energy_release_alpha: 1.0 - (-1.0 / (ENERGY_RELEASE_SECONDS * sample_rate)).exp(),
+            turbulence_release_alpha: 1.0 - (-1.0 / (0.0038 * sample_rate)).exp(),
             turbulence_filter: BandPassNoise::new(460.0, 2_050.0, sample_rate),
             turbulence_envelope: 0.0,
             noise_rng: config.seed ^ 0xA17E_5EED_D15C_A11E,
@@ -146,16 +187,37 @@ impl V10Engine {
         Ok(())
     }
 
+    /// Supplies physical controls that shape synthesis. Continuous values are
+    /// interpolated by `Gf509Runtime`; discrete phase/limiter states are applied
+    /// immediately at the sample boundary.
+    #[inline]
+    pub fn set_mechanical_state(
+        &mut self,
+        torque: f32,
+        clutch: f32,
+        tc_cut: f32,
+        limiter_active: bool,
+        shift_phase: crate::runtime::ShiftPhase,
+    ) {
+        self.mechanical = MechanicalState {
+            torque: torque.clamp(-1.0, 1.0),
+            clutch: clutch.clamp(0.0, 1.0),
+            tc_cut: tc_cut.clamp(0.0, 1.0),
+            limiter_active,
+            shift_phase: shift_phase as u8,
+        };
+    }
+
     #[inline]
     pub fn render_sample(&mut self) -> EngineFrame {
         let sample_rate = self.config.sample_rate as f32;
-        let target_energy = target_acoustic_energy(self.input);
-        let tau = if target_energy > self.smoothed_energy {
-            ENERGY_ATTACK_SECONDS
+        let target_energy = target_acoustic_energy_with_state(self.input, self.mechanical);
+        // AUD-05: coefficients depend only on direction + sample rate.
+        let alpha = if target_energy > self.smoothed_energy {
+            self.energy_attack_alpha
         } else {
-            ENERGY_RELEASE_SECONDS
+            self.energy_release_alpha
         };
-        let alpha = 1.0 - (-1.0 / (tau * sample_rate)).exp();
         self.smoothed_energy += (target_energy - self.smoothed_energy) * alpha;
         // Combustion quality wanders slowly, rather than drawing a new random
         // gain every mechanical cycle. Two incommensurate rates avoid a loop.
@@ -249,7 +311,7 @@ impl V10Engine {
             + collector_b.radiated * BANK_B_ACOUSTIC_WEIGHT)
             * self.config.exhaust_gain;
         let attack = 0.34;
-        let release = 1.0 - (-1.0 / (0.0038 * sample_rate)).exp();
+        let release = self.turbulence_release_alpha;
         if turbulence_trigger > self.turbulence_envelope {
             self.turbulence_envelope += attack * (turbulence_trigger - self.turbulence_envelope);
         } else {
@@ -262,9 +324,13 @@ impl V10Engine {
         self.noise_rng = x;
         let noise_bits = x.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 40;
         let noise = noise_bits as f32 / ((1u64 << 24) - 1) as f32 * 2.0 - 1.0;
+        // TC is already represented in `input.load`; this small modulation
+        // conveys the physical cut as texture without reducing load twice.
+        let tc_texture = 1.0 + 0.12 * self.mechanical.tc_cut;
         let turbulence = self.turbulence_filter.process(noise)
             * self.turbulence_envelope.sqrt()
-            * self.config.turbulence_gain;
+            * self.config.turbulence_gain
+            * tc_texture;
         let pre = self
             .master_dc
             .process((block_sum + exhaust + turbulence) * self.config.master_gain);

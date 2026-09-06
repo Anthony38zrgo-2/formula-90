@@ -67,6 +67,7 @@ dependencies = [
  "game_sim",
  "serde",
  "serde_json",
+ "v10-engine-synth",
  "vehicle_audio_engine",
  "vehicle_physics_engine",
 ]
