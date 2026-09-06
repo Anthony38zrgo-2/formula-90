@@ -113,6 +113,16 @@ impl Default for WingAeroConfig {
     }
 }
 
+fn default_seal_asymmetry_m() -> f64 {
+    0.080
+}
+fn default_seal_roll_rad() -> f64 {
+    0.12
+}
+fn default_bottoming_factor() -> f64 {
+    0.20
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct UnderfloorAeroConfig {
@@ -126,6 +136,12 @@ pub struct UnderfloorAeroConfig {
     pub stall_attack_tau_s: f64,
     pub stall_recovery_tau_s: f64,
     pub induced_drag_ratio: f64,
+    #[serde(default = "default_seal_asymmetry_m")]
+    pub seal_asymmetry_m: f64,
+    #[serde(default = "default_seal_roll_rad")]
+    pub seal_roll_rad: f64,
+    #[serde(default = "default_bottoming_factor")]
+    pub bottoming_factor: f64,
 }
 impl Default for UnderfloorAeroConfig {
     fn default() -> Self {
@@ -140,6 +156,9 @@ impl Default for UnderfloorAeroConfig {
             stall_attack_tau_s: 0.030,
             stall_recovery_tau_s: 0.160,
             induced_drag_ratio: 0.16,
+            seal_asymmetry_m: default_seal_asymmetry_m(),
+            seal_roll_rad: default_seal_roll_rad(),
+            bottoming_factor: default_bottoming_factor(),
         }
     }
 }
@@ -306,8 +325,15 @@ impl AeroForces {
             - (env.rake_rad.to_degrees() - f.optimal_rake_deg).abs() / f.rake_window_deg.max(0.1))
         .clamp(0.15, 1.0);
         let asymmetry = (env.clearance_m[0] - env.clearance_m[1]).abs();
-        let seal_factor = (1.0 - asymmetry / 0.080 - env.roll_rad.abs() / 0.12).clamp(0.15, 1.0);
-        let contact_factor = if env.bottoming_mask != 0 { 0.20 } else { 1.0 };
+        let seal_factor = (1.0
+            - asymmetry / f.seal_asymmetry_m.max(1e-4)
+            - env.roll_rad.abs() / f.seal_roll_rad.max(1e-4))
+        .clamp(0.15, 1.0);
+        let contact_factor = if env.bottoming_mask != 0 {
+            f.bottoming_factor.clamp(0.15, 1.0)
+        } else {
+            1.0
+        };
         let target_flow = height_factor
             * rake_factor
             * seal_factor

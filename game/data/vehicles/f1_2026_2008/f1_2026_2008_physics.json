@@ -82,6 +82,7 @@
         "yaw_decay_exponent": 1.05
       },
       "underfloor": {
+        "bottoming_factor": 0.35,
         "choke_height_m": 0.014,
         "high_height_m": 0.165,
         "induced_drag_ratio": 0.13,
@@ -89,6 +90,8 @@
         "optimal_height_m": 0.052,
         "optimal_rake_deg": 0.6,
         "rake_window_deg": 3.25,
+        "seal_asymmetry_m": 0.1,
+        "seal_roll_rad": 0.15,
         "stall_attack_tau_s": 0.065,
         "stall_recovery_tau_s": 0.105,
         "yaw_decay_exponent": 1.2
