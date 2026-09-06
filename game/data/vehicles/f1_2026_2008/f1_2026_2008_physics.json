@@ -482,13 +482,13 @@
   "powertrain": {
     "automatic_transmission": false,
     "clutch_out_rpm_offset": 1100.0,
-    "constant_brake_ratio": 0.025,
+    "constant_brake_ratio": 0.02,
     "differential": {
       "clutch_friction_coefficient": 0.09,
       "clutches": 6.0,
-      "coast_ramp_angle_deg": 76.0,
+      "coast_ramp_angle_deg": 60.0,
       "power_ramp_angle_deg": 60.0,
-      "preload_nm": 55.0,
+      "preload_nm": 90.0,
       "slip_transition_threshold_rad_s": 0.8
     },
     "final_drive": 4.25,
@@ -555,7 +555,7 @@
         0.88
       ]
     ],
-    "variable_drag_ratio": 0.14
+    "variable_drag_ratio": 0.1
   },
   "profile_name": "F1 2030 Retro-V10 (3.5L NA, 900cv)",
   "schema_version": 3,
@@ -574,7 +574,7 @@
   "suspension": {
     "front": {
       "arb_ratio": 0.15,
-      "bump_damp_multiplier": 0.92,
+      "bump_damp_multiplier": 1.0,
       "bump_stop_multiplier": 2.6,
       "camber": -0.0483972,
       "camber_gain_rad_per_m": -0.02,
@@ -595,7 +595,7 @@
       "rebound_damp_multiplier": 1.08,
       "resting_ratio": 0.26,
       "spring_length": 0.255,
-      "toe": 0.0038,
+      "toe": 0.0042,
       "toe_gain_rad_per_m": 0.025
     },
     "tri_ray_spacing_ratio": 0.4
