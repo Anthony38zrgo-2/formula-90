@@ -3,8 +3,9 @@
   "passed": true,
   "reference": "2010 Red Bull RB6-inspired planform proportions; not a direct RB6 replica",
   "targets": {
-    "sidepod_max_outboard_delta_each_side_m": 0.075,
-    "floor_max_outboard_delta_each_side_m": 0.07,
+    "cockpit_rearward_shift_m": 0.3,
+    "sidepod_max_outboard_delta_each_side_m": 0.095,
+    "floor_max_outboard_delta_each_side_m": 0.09,
     "wheelbase_m": 3.5,
     "vehicle_overall_width_m": 2.0
   },
@@ -17,7 +18,7 @@
       "mean_changed_vertex_delta_m": 0.030448084901564004,
       "changed_vertex_count": 2624,
       "before_half_width_m": 0.6769630312919617,
-      "after_half_width_m": 0.7519630193710327
+      "after_half_width_m": 0.7719630193710327
     },
     {
       "name": "GEO_CHASSIS_FLOOR",
@@ -27,9 +28,20 @@
       "mean_changed_vertex_delta_m": 0.03178166457648175,
       "changed_vertex_count": 2154,
       "before_half_width_m": 0.6925448179244995,
-      "after_half_width_m": 0.7625448107719421
+      "after_half_width_m": 0.7825448107719421
     }
   ],
+  "adjustment_2026_09_06": {
+    "cockpit_forward_m": 0.06,
+    "sidepod_extra_each_side_m": 0.02,
+    "floor_extra_each_side_m": 0.02,
+    "method": "Direct incremental GLB buffer patch with the same window math as source/apply_2010_cockpit_rework.py (base recovered by fixed-point inversion, tolerance 1e-9). Hierarchy, scenes, materials, UVs and images byte-exact; only POSITION/NORMAL buffers, accessor min/max and the JNT_DRIVER_HEAD matrix changed.",
+    "incremental_max_delta_m": {
+      "GEO_CHASSIS_BODY": 0.063246,
+      "GEO_CHASSIS_FLOOR": 0.02
+    },
+    "head_datum_fix": "Committed GLB stored JNT_DRIVER_HEAD unshifted at base z=-0.319229 while metadata assumed the shifted cockpit. Datum now set to base + 0.30 m rearward (z=-0.019229), consistent with metadata and with a fresh Blender export of the reworked source."
+  },
   "preserved": {
     "mesh_count": true,
     "node_count": true,
@@ -42,103 +54,103 @@
     "suspension_meshes": true
   },
   "cross_sections": {
+    "note": "Slice widths (max_x - min_x) per GLB z-bin after the 2026-09-06 adjustment. Bins also shift slightly because the cockpit package moved 60 mm forward.",
     "GEO_CHASSIS_BODY": [
       {
         "z_start_m": -0.75,
         "z_end_m": -0.5,
-        "width_m": 0.5364142060279846
+        "width_m": 0.549189
       },
       {
         "z_start_m": -0.5,
         "z_end_m": -0.25,
-        "width_m": 1.2040588855743408
+        "width_m": 1.391543
       },
       {
         "z_start_m": -0.25,
         "z_end_m": 0.0,
-        "width_m": 1.4395622611045837
+        "width_m": 1.502526
       },
       {
         "z_start_m": 0.0,
         "z_end_m": 0.25,
-        "width_m": 1.5039259791374207
+        "width_m": 1.543926
       },
       {
         "z_start_m": 0.25,
         "z_end_m": 0.5,
-        "width_m": 1.501514732837677
+        "width_m": 1.53652
       },
       {
         "z_start_m": 0.5,
         "z_end_m": 0.75,
-        "width_m": 1.4785075783729553
+        "width_m": 1.508567
       },
       {
         "z_start_m": 0.75,
         "z_end_m": 1.0,
-        "width_m": 1.4070413708686829
+        "width_m": 1.447041
       },
       {
         "z_start_m": 1.0,
         "z_end_m": 1.25,
-        "width_m": 1.1298534870147705
+        "width_m": 0.981055
       },
       {
         "z_start_m": 1.25,
         "z_end_m": 1.5,
-        "width_m": 0.6715706586837769
+        "width_m": 0.672241
       }
     ],
     "GEO_CHASSIS_FLOOR": [
       {
         "z_start_m": -0.75,
         "z_end_m": -0.5,
-        "width_m": 1.472405195236206
+        "width_m": 1.512405
       },
       {
         "z_start_m": -0.5,
         "z_end_m": -0.25,
-        "width_m": 1.5195223689079285
+        "width_m": 1.559522
       },
       {
         "z_start_m": -0.25,
         "z_end_m": 0.0,
-        "width_m": 1.5250896215438843
+        "width_m": 1.56509
       },
       {
         "z_start_m": 0.0,
         "z_end_m": 0.25,
-        "width_m": 1.5134484767913818
+        "width_m": 1.553448
       },
       {
         "z_start_m": 0.25,
         "z_end_m": 0.5,
-        "width_m": 1.5073357224464417
+        "width_m": 1.547336
       },
       {
         "z_start_m": 0.5,
         "z_end_m": 0.75,
-        "width_m": 1.4942117929458618
+        "width_m": 1.534212
       },
       {
         "z_start_m": 0.75,
         "z_end_m": 1.0,
-        "width_m": 1.4863179922103882
+        "width_m": 1.526318
       },
       {
         "z_start_m": 1.0,
         "z_end_m": 1.25,
-        "width_m": 1.4795564413070679
+        "width_m": 1.519556
       },
       {
         "z_start_m": 1.25,
         "z_end_m": 1.5,
-        "width_m": 1.422303318977356
+        "width_m": 1.451205
       }
     ]
   },
   "output_sha256": {
-    "f1_2026_2008_chassis_cockpit2010_rb6wide.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
-    "f1_2026_2008_chassis.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1"
+    "f1_2026_2008_chassis.glb": "2D352CC4EE694216DD804BEBA4383309EC28821125EF114CF4D7C41BBE15F72F"
   }
 }

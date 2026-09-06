@@ -13,23 +13,23 @@
     "transformations_applied": true
   },
   "dimensions_m": {
-    "overall_length": 5.045000076293945,
-    "overall_width": 1.999999761581421,
+    "overall_length": 5.149307,
+    "overall_width": 0.492,
     "bodywork_height_from_reference": 0.95,
     "wheelbase": 3.5,
-    "front_track_center": 1.635,
+    "front_track_center": 1.708,
     "rear_track_center": 1.59,
     "front_tire_radius_visual": 0.33,
     "front_tire_width_visual": 0.365,
     "rear_tire_radius_visual": 0.33,
-    "rear_tire_width_visual": 0.41,
+    "rear_tire_width_visual": 0.492,
     "ground_y": -0.33,
     "visual_ground_clearance": 0.023363,
     "overall_height_from_ground": 0.9774481225013734,
-    "front_total_width": 1.999999771118164,
-    "rear_total_width": 1.99999972820282,
-    "sidepod_body_max_width_reworked": 1.503926,
-    "flat_floor_max_width_reworked": 1.52509
+    "front_total_width": 2.073,
+    "rear_total_width": 0.492,
+    "sidepod_body_max_width_reworked": 1.749,
+    "flat_floor_max_width_reworked": 1.749
   },
   "validation_datums": {
     "DATUM_VEHICLE_ORIGIN": [
@@ -48,12 +48,12 @@
       1.75
     ],
     "JNT_WHEEL_FL": [
-      -0.8174999952316284,
+      -0.854,
       0.0,
       -1.75
     ],
     "JNT_WHEEL_FR": [
-      0.8174999952316284,
+      0.854,
       0.0,
       -1.75
     ],
@@ -70,7 +70,7 @@
     "JNT_DRIVER_HEAD": [
       0.0,
       0.6288823485374451,
-      0.0407713210582733
+      -0.019228678196668625
     ],
     "JNT_FRONT_WING_MOUNT": [
       0.0,
@@ -122,12 +122,12 @@
       0.0
     ],
     "DATUM_WHEEL_INBOARD_FACE": [
-      -0.205,
+      -0.246,
       0.0,
       0.0
     ],
     "DATUM_WHEEL_OUTBOARD_FACE": [
-      0.205,
+      0.246,
       0.0,
       0.0
     ],
@@ -154,7 +154,7 @@
   "notes": {
     "JNT_DRIVER_HEAD": "Reference-only joint included to satisfy the interface contract; this model has no driver head geometry.",
     "tyres": "Unbranded slick tyres retained deliberately; no 2008 grooves.",
-    "design": "3500 mm wheelbase retained; cockpit/driver package moved 360 mm rearward. Sidepod outer shell widened up to 75 mm/side and flat floor up to 70 mm/side using an RB6-inspired 2010 planform, while preserving the existing 2026/halo visual identity and rear coke-bottle taper.",
+    "design": "3500 mm wheelbase; via delantera 1.708 m con goma 0.365 a +/-0.854 m (eje total 2.073 m); goma trasera 0.492 m (eje total 2.082 m). Pontones y fondo plano hasta semiancho 0.8745 m (1.749 m). Ala trasera completa x1.32 (cuerda 0.430 m); endplates delanteros x0.90; suspension delantera +36.5 mm/lado.",
     "source": "Editable assembly: Blender X right, Y forward, Z up; GLB uses original Godot axes.",
     "rework": "2010 cockpit-placement + RB6-inspired width pass. Axle centers, wheel joints, suspension meshes, wing locations, materials and topology remain unchanged."
   }

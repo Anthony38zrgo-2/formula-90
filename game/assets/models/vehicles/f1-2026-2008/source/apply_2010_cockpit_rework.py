@@ -2,15 +2,19 @@
 # Goal: 2010-ish cockpit placement + Red Bull RB6-inspired 2010 sidepod/floor width.
 # Run headless:
 # blender -b source/f1_2026_2008_source.blend -P source/apply_2010_cockpit_rework.py
+# NOTE (2026-09-06): Blender 5.2 re-export churns the committed GLB (extra scenes,
+# flat hierarchy without the 'world' root, KHR_texture_transform on carbon), so the
+# tracked binary is patched directly with the same math instead; keep this script's
+# constants in sync as the reproducible source of truth.
 
 import bpy
 import shutil
 from mathutils import Vector
 from pathlib import Path
 
-SHIFT = 0.36              # metres rearward, cockpit package
-SIDEPOD_OUTBOARD = 0.075  # metres per side at maximum RB6-like body width
-FLOOR_OUTBOARD = 0.070    # metres per side at maximum flat-floor width
+SHIFT = 0.30              # metres rearward, cockpit package (0.36 -> 0.30: 60 mm forward toward centre)
+SIDEPOD_OUTBOARD = 0.095  # metres per side at maximum RB6-like body width (0.075 -> 0.095: +20 mm/side)
+FLOOR_OUTBOARD = 0.090    # metres per side at maximum flat-floor width (0.070 -> 0.090: +20 mm/side)
 ROOT = Path(bpy.data.filepath).resolve().parent.parent if bpy.data.filepath else Path.cwd()
 OUT_BLEND = ROOT / "source" / "f1_2026_2008_source_cockpit2010_rb6wide.blend"
 OUT_GLB = ROOT / "f1_2026_2008_chassis_cockpit2010_rb6wide.glb"

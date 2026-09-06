@@ -1,42 +1,47 @@
 {
   "schema": "formula90s/vehicle-rework-validation/v2",
   "passed": true,
-  "scope": "Static GLB geometry and interface validation after 2010 cockpit + RB6-inspired sidepod/floor width pass.",
+  "scope": "Static GLB geometry and interface validation: body/floor a semiancho 0.8745 m, ala trasera completa x1.32, endplates delanteros x0.90, via delantera 1.708 m con suspension alargada, goma trasera 0.492 m. Parche directo de buffers POSITION/NORMAL con contenedor preservado.",
   "dimensions_m": {
-    "overall_vehicle_width_with_wheels": 2.0,
+    "overall_vehicle_width_with_wheels": 0.492,
+    "overall_vehicle_length_m": 5.149307,
     "wheelbase": 3.5,
-    "front_track_center": 1.635,
+    "front_track_center": 1.708,
     "rear_track_center": 1.59,
-    "sidepod_body_max_width": 1.503926,
-    "flat_floor_max_width": 1.52509
+    "front_axle_total_width_m": 2.073,
+    "rear_axle_total_width_m": 0.492,
+    "sidepod_body_max_width": 1.749,
+    "flat_floor_max_width": 1.749,
+    "rear_wing_chord_m": 0.43006,
+    "rear_wing_rear_edge_z_m": 2.3243,
+    "front_tire_width_m": 0.365,
+    "rear_tire_width_m": 0.492
   },
   "geometry": {
     "mesh_count": 29,
     "node_count": 40,
     "body_vertices": 7613,
-    "body_triangles": 10744,
-    "floor_vertices": 6408,
-    "floor_triangles": 9952,
-    "sidepod_max_delta_each_side_m": 0.075,
-    "floor_max_delta_each_side_m": 0.07
+    "floor_vertices": 6408
   },
   "checks": {
     "glb_reload_success": true,
     "topology_preserved": true,
     "materials_and_embedded_textures_preserved": true,
+    "hierarchy_and_scenes_preserved": true,
+    "unrelated_binary_byte_identical": true,
     "front_rear_axle_datums_preserved": true,
-    "wheel_joint_datums_preserved": true,
-    "suspension_meshes_unchanged": true,
-    "front_rear_wing_meshes_unchanged": true,
-    "wheel_assets_unchanged": true,
+    "front_wheel_joints_moved_to_new_track": true,
+    "front_suspension_lengthened": true,
+    "front_endplate_trimmed_10pct": true,
+    "rear_wing_full_span_extended_32pct": true,
+    "rear_tire_widened_20pct": true,
+    "front_tire_reverted": true,
     "coordinate_contract_preserved": true
   },
   "sha256": {
-    "f1_2026_2008_chassis.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
-    "f1_2026_2008_chassis_cockpit2010.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
-    "f1_2026_2008_chassis_cockpit2010_rb6wide.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
+    "f1_2026_2008_chassis.glb": "37A7E9BDECDAAC59D7268C6D553E18ED45CB3F8BABA7BA1A5716A3C5F72C4D1F",
     "f1_2026_2008_wheel_front.glb": "2D7C9CAD71C23533FD4CB9D7BA17C366646A4399481F5DC9B3B8EF64638222E9",
-    "f1_2026_2008_wheel_rear.glb": "D500DB3BFDB4396F5589218FD7C7A0F1B035EE891E45211EC43B12A0302E1D6B"
+    "f1_2026_2008_wheel_rear.glb": "DAC334FCB4BAF03D55531D108D3D84A72A74F0687A144E811C231A512B85D342"
   },
-  "detail_file": "rb6_2010_width_rework_validation.json"
+  "detail_file": "export_report.json"
 }

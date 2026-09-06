@@ -1,7 +1,7 @@
 {
   "schema": "formula90s/cockpit-rework-validation/v1",
   "wheelbase_m": 3.5,
-  "cockpit_rearward_shift_m": 0.36,
+  "cockpit_rearward_shift_m": 0.3,
   "original_scene_bounds_m": [
     [
       -0.825,
@@ -211,6 +211,7 @@
   "notes": [
     "Axle/wheel/suspension/wing meshes were not edited.",
     "GLB was patched directly in this environment because Blender is not installed here; the included Blender script performs the equivalent edit on the source .blend.",
-    "Package final chassis also includes the subsequent RB6-inspired 2010 sidepod/floor width pass; see rb6_2010_width_rework_validation.json."
+    "Package final chassis also includes the subsequent RB6-inspired 2010 sidepod/floor width pass; see rb6_2010_width_rework_validation.json.",
+    "2026-09-06 adjustment: cockpit moved 60 mm forward toward centre (shift 0.36 -> 0.30 m) and sidepods/floor widened +20 mm per side, via direct incremental GLB patch with the same window math. Per-mesh tables above describe the original 0.36 m pass; see rb6_2010_width_rework_validation.json adjustment_2026_09_06 for the incremental deltas."
   ]
 }

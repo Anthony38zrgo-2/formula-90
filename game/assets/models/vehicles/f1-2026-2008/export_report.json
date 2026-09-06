@@ -1,148 +1,31 @@
 {
-  "operation": "2010 cockpit placement + Red Bull RB6-inspired sidepod and flat-floor widening",
+  "operation": "Body/floor a 1.749 m + ala trasera x1.32 + endplates delanteros x0.90 + via delantera 1.708 m + goma trasera 0.492 m; parche directo de GLB",
   "mesh_stats": {
-    "GEO_CHASSIS_REARSUPPORT": {
-      "vertices": 48,
-      "triangles": 24
-    },
-    "GEO_CHASSIS_INTERIOR": {
-      "vertices": 569,
-      "triangles": 792
-    },
-    "GEO_CHASSIS_ACTIVEREAR": {
-      "vertices": 126,
-      "triangles": 192
-    },
     "GEO_CHASSIS_BODY": {
-      "vertices": 7613,
-      "triangles": 10744
-    },
-    "GEO_CHASSIS_ENDPLATE": {
-      "vertices": 2008,
-      "triangles": 3712
-    },
-    "GEO_CHASSIS_FRONT_SUSPENSION": {
-      "vertices": 448,
-      "triangles": 224
-    },
-    "GEO_CHASSIS_MIRRORS": {
-      "vertices": 665,
-      "triangles": 840
-    },
-    "GEO_CHASSIS_REAR_SUSPENSION": {
-      "vertices": 262,
-      "triangles": 136
-    },
-    "GEO_CHASSIS_SHIFTERBRAK": {
-      "vertices": 167,
-      "triangles": 88
-    },
-    "GEO_CHASSIS_SHIFTERTHRO": {
-      "vertices": 167,
-      "triangles": 88
-    },
-    "GEO_CHASSIS_CARBON3": {
-      "vertices": 56,
-      "triangles": 24
-    },
-    "GEO_CHASSIS_EXHAUST": {
-      "vertices": 379,
-      "triangles": 508
-    },
-    "GEO_CHASSIS_FRONTSUPPORT": {
-      "vertices": 468,
-      "triangles": 316
-    },
-    "GEO_CHASSIS_LATERALCAM": {
-      "vertices": 96,
-      "triangles": 72
-    },
-    "GEO_CHASSIS_REAR_WING": {
-      "vertices": 652,
-      "triangles": 1104
-    },
-    "GEO_CHASSIS_REARLIGHT": {
-      "vertices": 131,
-      "triangles": 128
-    },
-    "GEO_CHASSIS_STEER": {
-      "vertices": 1322,
-      "triangles": 1752
-    },
-    "GEO_CHASSIS_ACTIVEFRONT": {
-      "vertices": 338,
-      "triangles": 490
-    },
-    "GEO_CHASSIS_AEROPART3": {
-      "vertices": 200,
-      "triangles": 256
-    },
-    "GEO_CHASSIS_CARBON4": {
-      "vertices": 50,
-      "triangles": 64
-    },
-    "GEO_CHASSIS_CARBON5": {
-      "vertices": 780,
-      "triangles": 1136
-    },
-    "GEO_CHASSIS_FRONTWING": {
-      "vertices": 1036,
-      "triangles": 1656
-    },
-    "GEO_CHASSIS_STEERCOLUM": {
-      "vertices": 196,
-      "triangles": 252
-    },
-    "GEO_CHASSIS_AEROPART2": {
-      "vertices": 126,
-      "triangles": 192
-    },
-    "GEO_CHASSIS_ONBOARDCAM": {
-      "vertices": 90,
-      "triangles": 104
-    },
-    "GEO_CHASSIS_CYLINDER_001": {
-      "vertices": 196,
-      "triangles": 252
+      "vertices": 7613
     },
     "GEO_CHASSIS_FLOOR": {
-      "vertices": 6408,
-      "triangles": 9952
+      "vertices": 6408
     },
-    "GEO_CHASSIS_SEAT": {
-      "vertices": 284,
-      "triangles": 212
+    "GEO_CHASSIS_REAR_WING": {
+      "vertices": 652
     },
-    "GEO_CHASSIS_SCREEN": {
-      "vertices": 32,
-      "triangles": 24
+    "GEO_CHASSIS_ENDPLATE": {
+      "vertices": 2008
+    },
+    "GEO_CHASSIS_FRONT_SUSPENSION": {
+      "vertices": 448
     }
   },
-  "triangles_total": 35334,
   "files": {
-    "f1_2026_2008_chassis.glb": 4830208,
+    "f1_2026_2008_chassis.glb": 4830228,
     "f1_2026_2008_wheel_front.glb": 3367200,
-    "f1_2026_2008_wheel_rear.glb": 3419044,
-    "source/f1_2026_2008_source.blend": 24460976,
-    "textures/jordan_1997_unbranded_atlas.png": 3316274,
-    "textures/jordan_1997_body_albedo.png": 1842265,
-    "f1_2026_2008_chassis_cockpit2010.glb": 4830208,
-    "f1_2026_2008_chassis_cockpit2010_rb6wide.glb": 4830208
+    "f1_2026_2008_wheel_rear.glb": 3419016
   },
   "passed": true,
-  "rework": {
-    "sidepod_max_delta_each_side_m": 0.075,
-    "floor_max_delta_each_side_m": 0.07,
-    "sidepod_body_max_width_m": 1.503926,
-    "flat_floor_max_width_m": 1.52509,
-    "topology_preserved": true,
-    "materials_uv_textures_preserved": true
-  },
   "sha256": {
-    "f1_2026_2008_chassis.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
-    "f1_2026_2008_chassis_cockpit2010.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
-    "f1_2026_2008_chassis_cockpit2010_rb6wide.glb": "FBB258CFE529B5FC35810B2070B02EB52DFCF5A76E0560172379A9CA76EC28E1",
+    "f1_2026_2008_chassis.glb": "37A7E9BDECDAAC59D7268C6D553E18ED45CB3F8BABA7BA1A5716A3C5F72C4D1F",
     "f1_2026_2008_wheel_front.glb": "2D7C9CAD71C23533FD4CB9D7BA17C366646A4399481F5DC9B3B8EF64638222E9",
-    "f1_2026_2008_wheel_rear.glb": "D500DB3BFDB4396F5589218FD7C7A0F1B035EE891E45211EC43B12A0302E1D6B"
+    "f1_2026_2008_wheel_rear.glb": "DAC334FCB4BAF03D55531D108D3D84A72A74F0687A144E811C231A512B85D342"
   }
 }
