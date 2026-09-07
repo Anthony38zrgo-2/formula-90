@@ -24,22 +24,29 @@ use crate::tire_scrub::{compute_tire_scrub_target, TireScrubMode};
 use std::collections::BTreeMap;
 use std::path::Path;
 
+/// One-pole low-pass stages cascaded to reach the configured slope.
+/// Each stage contributes 6 dB/oct, so up to 4 stages give 24 dB/oct.
+const ENGINE_LOWPASS_MAX_STAGES: usize = 4;
+
 #[derive(Clone, Copy, Debug, Default)]
 struct EngineLowPass {
     alpha: f32,
-    left: f32,
-    right: f32,
+    left: [f32; ENGINE_LOWPASS_MAX_STAGES],
+    right: [f32; ENGINE_LOWPASS_MAX_STAGES],
+    stages: usize,
     enabled: bool,
 }
 
 impl EngineLowPass {
-    fn new(cutoff_hz: f32, sample_rate: u32) -> Self {
+    fn new(cutoff_hz: f32, sample_rate: u32, db_per_oct: f32) -> Self {
         if cutoff_hz <= 0.0 || sample_rate == 0 {
             return Self::default();
         }
         let cutoff = cutoff_hz.min(sample_rate as f32 * 0.45);
+        let stages = ((db_per_oct / 6.0).round() as usize).clamp(1, ENGINE_LOWPASS_MAX_STAGES);
         Self {
             alpha: 1.0 - (-std::f32::consts::TAU * cutoff / sample_rate as f32).exp(),
+            stages,
             enabled: true,
             ..Self::default()
         }
@@ -50,9 +57,20 @@ impl EngineLowPass {
         if !self.enabled {
             return (left, right);
         }
-        self.left += self.alpha * (left - self.left);
-        self.right += self.alpha * (right - self.right);
-        (self.left, self.right)
+        let mut out_l = left;
+        let mut out_r = right;
+        for stage in 0..self.stages {
+            self.left[stage] += self.alpha * (out_l - self.left[stage]);
+            self.right[stage] += self.alpha * (out_r - self.right[stage]);
+            out_l = self.left[stage];
+            out_r = self.right[stage];
+        }
+        (out_l, out_r)
+    }
+
+    #[cfg(test)]
+    fn stage_count(&self) -> usize {
+        self.stages
     }
 }
 
@@ -595,7 +613,7 @@ impl VehicleAudioEngine {
             .collect();
         let stereo_limiter = StereoLimiter::new(master.limiter_threshold);
         let master_gain = 10.0_f32.powf(master.output_db / 20.0);
-        let engine_lowpass = EngineLowPass::new(master.engine_lowpass_hz, sample_rate);
+        let engine_lowpass = EngineLowPass::new(master.engine_lowpass_hz, sample_rate, master.engine_lowpass_db_per_oct);
 
         let exhaust_key = if bank.get("exhaust-mic").is_some() {
             "exhaust-mic".to_string()
@@ -755,7 +773,7 @@ impl VehicleAudioEngine {
             .collect();
         self.master_gain = 10.0_f32.powf(config.master.output_db / 20.0);
         self.stereo_limiter = StereoLimiter::new(config.master.limiter_threshold);
-        self.engine_lowpass = EngineLowPass::new(config.master.engine_lowpass_hz, self.sample_rate);
+        self.engine_lowpass = EngineLowPass::new(config.master.engine_lowpass_hz, self.sample_rate, config.master.engine_lowpass_db_per_oct);
         self.cfg.exhaust = config.exhaust.to_runtime();
         self.transition_total =
             ((config.hot_reload.transition_ms as u64 * self.sample_rate as u64) / 1000) as usize;
@@ -3162,10 +3180,10 @@ mod tests {
 
     #[test]
     fn engine_lowpass_bypasses_at_zero_and_attenuates_nyquist() {
-        let mut bypass = EngineLowPass::new(0.0, 44_100);
+        let mut bypass = EngineLowPass::new(0.0, 44_100, 6.0);
         assert_eq!(bypass.process(0.25, -0.5), (0.25, -0.5));
 
-        let mut filter = EngineLowPass::new(10_000.0, 44_100);
+        let mut filter = EngineLowPass::new(10_000.0, 44_100, 6.0);
         let mut peak = 0.0f32;
         for n in 0..256 {
             let input = if n & 1 == 0 { 1.0 } else { -1.0 };
@@ -3176,5 +3194,36 @@ mod tests {
             }
         }
         assert!(peak < 0.65, "10 kHz low-pass failed to attenuate Nyquist: {peak}");
+    }
+
+    #[test]
+    fn engine_lowpass_slope_quantizes_to_cascaded_stages() {
+        assert_eq!(EngineLowPass::new(10_000.0, 44_100, 6.0).stage_count(), 1);
+        assert_eq!(EngineLowPass::new(10_000.0, 44_100, 12.0).stage_count(), 2);
+        assert_eq!(EngineLowPass::new(10_000.0, 44_100, 18.0).stage_count(), 3);
+        assert_eq!(EngineLowPass::new(10_000.0, 44_100, 24.0).stage_count(), 4);
+        // Out-of-range slopes saturate instead of breaking the cascade.
+        assert_eq!(EngineLowPass::new(10_000.0, 44_100, 96.0).stage_count(), 4);
+        assert_eq!(EngineLowPass::new(10_000.0, 44_100, 0.0).stage_count(), 1);
+    }
+
+    #[test]
+    fn engine_lowpass_24db_attenuates_more_than_6db() {
+        fn nyquist_peak(db_per_oct: f32) -> f32 {
+            let mut filter = EngineLowPass::new(10_000.0, 44_100, db_per_oct);
+            let mut peak = 0.0f32;
+            for n in 0..512 {
+                let input = if n & 1 == 0 { 1.0 } else { -1.0 };
+                let (left, _) = filter.process(input, input);
+                if n > 256 {
+                    peak = peak.max(left.abs());
+                }
+            }
+            peak
+        }
+        let peak_6 = nyquist_peak(6.0);
+        let peak_24 = nyquist_peak(24.0);
+        assert!(peak_24 < peak_6, "24 dB/oct ({peak_24}) must beat 6 dB/oct ({peak_6})");
+        assert!(peak_24 < 0.30, "24 dB/oct cascade too leaky at Nyquist: {peak_24}");
     }
 }

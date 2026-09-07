@@ -387,6 +387,11 @@ pub struct MasterConfig {
     /// Continuous-engine low-pass cutoff in Hz. Zero disables the filter.
     #[serde(default)]
     pub engine_lowpass_hz: f32,
+    /// Continuous-engine low-pass slope in dB/octave. Implemented as cascaded
+    /// one-pole stages (6 dB/oct each), so the effective value is quantized to
+    /// 6/12/18/24 and clamped to [6, 24].
+    #[serde(default = "default_engine_lowpass_db_per_oct")]
+    pub engine_lowpass_db_per_oct: f32,
 }
 
 fn default_limiter_threshold() -> f32 {
@@ -397,6 +402,10 @@ fn default_saturation() -> f32 {
     0.06
 }
 
+fn default_engine_lowpass_db_per_oct() -> f32 {
+    6.0
+}
+
 impl Default for MasterConfig {
     fn default() -> Self {
         Self {
@@ -404,6 +413,7 @@ impl Default for MasterConfig {
             limiter_threshold: 0.90,
             saturation: 0.06,
             engine_lowpass_hz: 0.0,
+            engine_lowpass_db_per_oct: 6.0,
         }
     }
 }
@@ -414,6 +424,7 @@ impl MasterConfig {
         self.limiter_threshold = self.limiter_threshold.clamp(0.0, 1.0);
         self.saturation = self.saturation.clamp(0.0, 1.0);
         self.engine_lowpass_hz = self.engine_lowpass_hz.clamp(0.0, 24_000.0);
+        self.engine_lowpass_db_per_oct = self.engine_lowpass_db_per_oct.clamp(6.0, 24.0);
         if !self.output_db.is_finite() {
             self.output_db = 0.0;
         }
@@ -425,6 +436,9 @@ impl MasterConfig {
         }
         if !self.engine_lowpass_hz.is_finite() {
             self.engine_lowpass_hz = 0.0;
+        }
+        if !self.engine_lowpass_db_per_oct.is_finite() {
+            self.engine_lowpass_db_per_oct = 6.0;
         }
         self
     }
@@ -1038,7 +1052,7 @@ fn collect_unknown_keys(value: &serde_json::Value, warnings: &mut Vec<ConfigDiag
     }
     check(
         value.get("master").and_then(|v| v.as_object()),
-        &["output_db", "limiter_threshold", "saturation", "engine_lowpass_hz"],
+        &["output_db", "limiter_threshold", "saturation", "engine_lowpass_hz", "engine_lowpass_db_per_oct"],
         "$.master",
         warnings,
     );
@@ -1429,7 +1443,7 @@ mod tests {
                 "reverb_buses": {
                     "sfx_short": {"pre_delay_ms": 10, "decay_s": 0.6}
                 },
-                "master": {"output_db": -1.0, "engine_lowpass_hz": 10000.0}
+                "master": {"output_db": -1.0, "engine_lowpass_hz": 10000.0, "engine_lowpass_db_per_oct": 24.0}
             }"#,
         );
         let cfg = SoundMixerConfig::load_from_bank_dir(&bank).sanitized();
@@ -1440,6 +1454,7 @@ mod tests {
             assert!(v2.reverb_buses.contains_key("sfx_short"));
             assert_eq!(v2.master.output_db, -1.0);
             assert_eq!(v2.master.engine_lowpass_hz, 10_000.0);
+            assert_eq!(v2.master.engine_lowpass_db_per_oct, 24.0);
         } else {
             panic!("Expected V2");
         }
@@ -1468,6 +1483,20 @@ mod tests {
             assert_eq!(v2.defaults.volume, 2.0);
             assert_eq!(v2.defaults.pan, 1.0);
             assert_eq!(v2.master.output_db, 12.0);
+            // Omitted slope falls back to the legacy single-pole default.
+            assert_eq!(v2.master.engine_lowpass_db_per_oct, 6.0);
+            let over = MasterConfig {
+                engine_lowpass_db_per_oct: 96.0,
+                ..MasterConfig::default()
+            }
+            .sanitized();
+            assert_eq!(over.engine_lowpass_db_per_oct, 24.0);
+            let under = MasterConfig {
+                engine_lowpass_db_per_oct: 1.0,
+                ..MasterConfig::default()
+            }
+            .sanitized();
+            assert_eq!(under.engine_lowpass_db_per_oct, 6.0);
         } else {
             panic!("Expected V2");
         }
