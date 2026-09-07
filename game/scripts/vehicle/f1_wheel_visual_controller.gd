@@ -347,7 +347,10 @@ func _physics_process(delta: float) -> void:
 		var contact_offset: Vector3 = _target_positions[wheel_index] - Vector3.UP * radius
 		var point_velocity := local_velocity + local_angular_velocity.cross(contact_offset)
 		var wheel_forward := Vector3.FORWARD.rotated(Vector3.UP, _target_steer[wheel_index])
-		_update_smoke(wheel_index, point_velocity.dot(wheel_forward), local_velocity.length(), delta)
+		# F90Core publishes the authoritative scalar speed while the native vehicle's
+		# cached Godot velocity can lag one bridge tick behind. Use the larger value for
+		# the visual gate so a valid lock/spin is not hidden by that stale vector.
+		_update_smoke(wheel_index, point_velocity.dot(wheel_forward), maxf(local_velocity.length(), speed_ms), delta)
 		_previous_compression_m[wheel_index] = compression
 		_previous_surface_types[wheel_index] = _surface_types[wheel_index]
 	_has_physics_sample = true
@@ -389,7 +392,12 @@ func _update_smoke(wheel_index: int, forward_speed: float, speed_ms: float, delt
 	var lockup := smoothstep(SCRUB_LOCK_SLIP.x, SCRUB_LOCK_SLIP.y, -slip_ratio)
 	var speed_gate := smoothstep(5.0, 20.0, speed_ms * 3.6)
 	var load_gain := smoothstep(150.0, 3500.0, maxf(_normal_forces[wheel_index], 0.0))
-	var eligible: bool = _valid_spin_samples[wheel_index] and load_gain > 0.0 and speed_gate > 0.0
+	var has_contact := _has_wheel_contact(wheel_index)
+	# F90Core does not mirror per-wheel normal load on every bridge path. Contact
+	# remains authoritative for airborne rejection; when load is unavailable, keep a
+	# modest visual floor so strong slip still produces visible smoke.
+	var visual_load_gain := maxf(load_gain, 0.35) if has_contact else 0.0
+	var eligible: bool = _valid_spin_samples[wheel_index] and has_contact and speed_gate > 0.0
 	var target_severity := maxf(wheelspin, lockup) * speed_gate if eligible else 0.0
 	var response_time := SCRUB_ATTACK_SECONDS if target_severity > _smoke_severity[wheel_index] else SCRUB_RELEASE_SECONDS
 	_smoke_severity[wheel_index] = lerpf(_smoke_severity[wheel_index], target_severity, 1.0 - exp(-maxf(delta, 0.0) / response_time))
@@ -410,7 +418,7 @@ func _update_smoke(wheel_index: int, forward_speed: float, speed_ms: float, delt
 		3, 5: surface_gain = 0.22
 		0: surface_gain = 1.0
 		_: surface_gain = 0.50
-	_smoke_intensity[wheel_index] = _smoke_severity[wheel_index] * load_gain * surface_gain
+	_smoke_intensity[wheel_index] = _smoke_severity[wheel_index] * visual_load_gain * surface_gain
 	# CPUParticles3D.set_amount() deactivates the whole particle pool, even
 	# when the value is unchanged. Keep it fixed and modulate opacity instead.
 	emitter.color = Color(1.0, 1.0, 1.0, _smoke_intensity[wheel_index])
@@ -420,7 +428,15 @@ func _local_body_velocity(method: StringName, fallback: Vector3) -> Vector3:
 	if vehicle.has_method(method):
 		var value: Variant = vehicle.call(method)
 		if value is Vector3 and _finite_vector(value):
-			return vehicle.global_transform.basis.orthonormalized().transposed() * value
+			var local_value: Vector3 = vehicle.global_transform.basis.orthonormalized().transposed() * value
+			if method == &"get_linear_velocity":
+				# In the F90Core bridge the scalar speed is current, but the vehicle's
+				# cached linear_velocity may still be near zero. Replace only its stale
+				# longitudinal component and preserve lateral/vertical motion.
+				var expected_forward := absf(fallback.z)
+				if expected_forward > 0.5 and absf(local_value.z) < maxf(expected_forward * 0.35, 0.25):
+					local_value.z = fallback.z
+			return local_value
 	return fallback
 
 func _read_brake_snapshot() -> Dictionary:
@@ -430,12 +446,40 @@ func _read_brake_snapshot() -> Dictionary:
 	return snapshot if snapshot is Dictionary else {}
 
 func _signed_forward_speed() -> float:
+	var body_signed := 0.0
 	if vehicle.has_method(&"get_linear_velocity"):
 		var velocity: Variant = vehicle.call(&"get_linear_velocity")
 		if velocity is Vector3 and _finite_vector(velocity):
-			return -vehicle.global_transform.basis.z.dot(velocity)
+			body_signed = -vehicle.global_transform.basis.z.dot(velocity)
+	if vehicle.has_method(&"get_speed_kmh"):
+		var reported_kmh := float(vehicle.call(&"get_speed_kmh"))
+		if is_finite(reported_kmh):
+			var reported_ms := absf(reported_kmh) / 3.6
+			var direction := -1.0 if body_signed < -0.25 else 1.0
+			if reported_ms > 0.05 or absf(body_signed) < 0.05:
+				return reported_ms * direction
+	if vehicle.has_method(&"get_linear_velocity"):
+		var velocity: Variant = vehicle.call(&"get_linear_velocity")
+		if velocity is Vector3 and _finite_vector(velocity):
+			return body_signed
 	var speed_value: Variant = vehicle.get("speed")
 	return float(speed_value) if speed_value != null and is_finite(float(speed_value)) else 0.0
+
+func _has_wheel_contact(wheel_index: int) -> bool:
+	var ray_prefixes := ["FL", "FR", "RL", "RR"]
+	var ray_found := false
+	for suffix in ["_In", "_Mid", "_Out"]:
+		var ray := vehicle.get_node_or_null("RayCast_%s%s" % [ray_prefixes[wheel_index], suffix]) as RayCast3D
+		if ray == null:
+			continue
+		ray_found = true
+		if ray.is_colliding():
+			return true
+	if ray_found:
+		return false
+	# Test fixtures and non-raycast vehicles still have enough information in
+	# suspension compression to distinguish contact from an airborne wheel.
+	return _compression_m[wheel_index] > 0.001 or _normal_forces[wheel_index] > 1.0
 
 func _steer_angle_rad() -> float:
 	if vehicle.has_method(&"get_steer_angle_rad"):

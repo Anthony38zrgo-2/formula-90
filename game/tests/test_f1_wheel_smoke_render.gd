@@ -15,6 +15,8 @@ class TelemetryVehicle extends Node3D:
 	var mild_spin := false
 	var burnout := false
 	var grounded := true
+	var stale_linear_velocity := false
+	var expose_normal_forces := true
 	var speed_ms := 20.0
 	func _ready() -> void:
 		initialized = true
@@ -23,11 +25,13 @@ class TelemetryVehicle extends Node3D:
 	func get_wheel_compressions() -> PackedFloat64Array:
 		return PackedFloat64Array([51.625, 51.625, 68.9, 68.9]) if grounded else PackedFloat64Array([0, 0, 0, 0])
 	func get_normal_forces() -> PackedFloat64Array:
-		return PackedFloat64Array([1500, 1500, 1500, 1500]) if grounded else PackedFloat64Array([0, 0, 0, 0])
+		return PackedFloat64Array([1500, 1500, 1500, 1500]) if grounded and expose_normal_forces else PackedFloat64Array([0, 0, 0, 0])
 	func get_drive_torques() -> PackedFloat64Array:
 		return PackedFloat64Array([0, 0, 500 * throttle_amount, 500 * throttle_amount])
 	func get_linear_velocity() -> Vector3:
-		return Vector3(0, 0, -speed_ms)
+		return Vector3.ZERO if stale_linear_velocity else Vector3(0, 0, -speed_ms)
+	func get_speed_kmh() -> float:
+		return speed_ms * 3.6
 	func get_steer_angle_rad() -> float:
 		return 0.0
 	func get_brake_state_snapshot() -> Dictionary:
@@ -123,6 +127,9 @@ func _run() -> void:
 		emitter.seed = 42
 		emitters.append(emitter)
 	var pool_size := emitters[0].amount
+	# Mirrors the F90Core bridge: scalar speed is current while the cached native
+	# linear velocity can lag, and normal load may be unavailable on that route.
+	vehicle.stale_linear_velocity = true
 	# Ordinary acceleration with torque, but without tire slip, must be clear.
 	vehicle.throttle_amount = 0.8
 	await _settle()
@@ -135,6 +142,7 @@ func _run() -> void:
 	_check(_bright_pixels() == 0, "Mild wheelspin must stay below the smoke threshold")
 	_check(not emitters[2].emitting and not emitters[3].emitting, "Mild rear wheelspin must not emit")
 	vehicle.mild_spin = false
+	vehicle.expose_normal_forces = false
 	vehicle.brake_amount = 1.0
 	vehicle.hard_lock = true
 	await _settle()
