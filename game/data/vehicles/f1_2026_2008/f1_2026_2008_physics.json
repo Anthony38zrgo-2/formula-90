@@ -49,7 +49,7 @@
       },
       "rear_wing": {
         "area_m2": 0.95,
-        "incidence_deg": 18.0,
+        "incidence_deg": 21.0,
         "max_angle_deg": 26.0,
         "min_angle_deg": 6.0,
         "polar": [
@@ -569,7 +569,7 @@
     "steering_exponent": 1.1,
     "steering_slip_assist": 0.14,
     "steering_speed": 4.75,
-    "steering_speed_decay": 0.035
+    "steering_speed_decay": 0.12
   },
   "suspension": {
     "front": {
@@ -580,21 +580,21 @@
       "camber_gain_rad_per_m": -0.02,
       "damping_ratio": 0.74,
       "rebound_damp_multiplier": 1.12,
-      "resting_ratio": 0.175,
-      "spring_length": 0.295,
+      "resting_ratio": 0.15,
+      "spring_length": 0.3,
       "toe": -0.0018,
       "toe_gain_rad_per_m": 0.0
     },
     "rear": {
       "arb_ratio": 0.09,
       "bump_damp_multiplier": 0.9,
-      "bump_stop_multiplier": 2.3,
+      "bump_stop_multiplier": 2.8,
       "camber": -0.029,
       "camber_gain_rad_per_m": -0.02,
       "damping_ratio": 0.71,
-      "rebound_damp_multiplier": 1.08,
-      "resting_ratio": 0.26,
-      "spring_length": 0.265,
+      "rebound_damp_multiplier": 1.35,
+      "resting_ratio": 0.22,
+      "spring_length": 0.27,
       "toe": 0.0042,
       "toe_gain_rad_per_m": 0.025
     },
