@@ -1,11 +1,13 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/vehicle/rust_vehicle_controller.gd" id="1_rust_vehicle"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_chassis.glb" id="2_chassis"]
-[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_wheel_front.glb" id="3_front"]
-[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_wheel_rear.glb" id="4_rear"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_wheel_front_spin.glb" id="3_front_spin"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_wheel_rear_spin.glb" id="4_rear_spin"]
 [ext_resource type="Script" path="res://scripts/input/vehicle_rust_input_controller.gd" id="7_controller"]
 [ext_resource type="Script" path="res://scripts/vehicle/f1_wheel_visual_controller.gd" id="8_wheel_controller"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_duct_FL.glb" id="9_duct_fl"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_duct_FR.glb" id="10_duct_fr"]
 
 [sub_resource type="BoxShape3D" id="Box_tub"]
 size = Vector3(1.35, 0.4, 3.142414861)
@@ -86,10 +88,13 @@ position = Vector3(-0.854, 0, -1.75)
 
 [node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot"]
 
+[node name="DuctStatic" type="Node3D" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot"]
+
+[node name="DuctVisual" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot/DuctStatic" instance=ExtResource("9_duct_fl")]
+
 [node name="Spinner" type="Node3D" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot"]
 
-[node name="Visual" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("3_front")]
-rotation = Vector3(0, 3.14159265, 0)
+[node name="Visual" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("3_front_spin")]
 
 [node name="FrontRightWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(0.854, 0, -1.75)
@@ -98,9 +103,13 @@ position = Vector3(0.854, 0, -1.75)
 
 [node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/FrontRightWheel/SteerPivot"]
 
+[node name="DuctStatic" type="Node3D" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot"]
+
+[node name="DuctVisual" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot/DuctStatic" instance=ExtResource("10_duct_fr")]
+
 [node name="Spinner" type="Node3D" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot"]
 
-[node name="Visual" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("3_front")]
+[node name="Visual" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("3_front_spin")]
 
 [node name="RearLeftWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(-0.795, 0, 1.75)
@@ -109,10 +118,11 @@ position = Vector3(-0.795, 0, 1.75)
 
 [node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/RearLeftWheel/SteerPivot"]
 
+[node name="DuctStatic" type="Node3D" parent="VehicleRigidBody/RearLeftWheel/SteerPivot/CamberPivot"]
+
 [node name="Spinner" type="Node3D" parent="VehicleRigidBody/RearLeftWheel/SteerPivot/CamberPivot"]
 
-[node name="Visual" parent="VehicleRigidBody/RearLeftWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("4_rear")]
-rotation = Vector3(0, 3.14159265, 0)
+[node name="Visual" parent="VehicleRigidBody/RearLeftWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("4_rear_spin")]
 
 [node name="RearRightWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(0.795, 0, 1.75)
@@ -121,9 +131,11 @@ position = Vector3(0.795, 0, 1.75)
 
 [node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/RearRightWheel/SteerPivot"]
 
+[node name="DuctStatic" type="Node3D" parent="VehicleRigidBody/RearRightWheel/SteerPivot/CamberPivot"]
+
 [node name="Spinner" type="Node3D" parent="VehicleRigidBody/RearRightWheel/SteerPivot/CamberPivot"]
 
-[node name="Visual" parent="VehicleRigidBody/RearRightWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("4_rear")]
+[node name="Visual" parent="VehicleRigidBody/RearRightWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("4_rear_spin")]
 
 [node name="RayCast_FL_In" type="RayCast3D" parent="VehicleRigidBody"]
 position = Vector3(-0.708, 0.2434, -1.75)

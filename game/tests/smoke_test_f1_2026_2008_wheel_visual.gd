@@ -35,8 +35,21 @@ func _run() -> void:
 			var camber := steer.get_node_or_null("CamberPivot") if steer != null else null
 			var spinner := camber.get_node_or_null("Spinner") if camber != null else null
 			var visual := spinner.get_node_or_null("Visual") if spinner != null else null
+			var duct_static := camber.get_node_or_null("DuctStatic") if camber != null else null
+			var duct_visual := duct_static.get_node_or_null("DuctVisual") if duct_static != null else null
 			if hub == null or steer == null or camber == null or spinner == null or visual == null:
 				_fail("Incomplete wheel visual hierarchy at %s." % wheel_name, failures)
+			if duct_static == null:
+				_fail("Missing DuctStatic brake anchor at %s." % wheel_name, failures)
+			elif spinner != null and spinner.is_ancestor_of(duct_static):
+				_fail("Brake duct must be sibling of Spinner, not spinning, at %s." % wheel_name, failures)
+			# Only the front axle models a brake scoop; rear DuctStatic stays
+			# empty by design (rear hub shells are rim and spin whole).
+			var is_front: bool = wheel_name.begins_with("Front")
+			if is_front and duct_visual == null:
+				_fail("Missing static brake scoop at %s (must not hang from Spinner)." % wheel_name, failures)
+			if not is_front and duct_static != null and duct_visual != null:
+				_fail("Rear axle models no brake scoop; unexpected DuctVisual at %s." % wheel_name, failures)
 
 		for native_path_name in [
 			"front_left_wheel_node", "front_right_wheel_node",
