@@ -608,6 +608,12 @@ impl VehicleConfig {
         }
     }
 
+    /// Canonical active vehicle profile loaded from the checked-in runtime JSON.
+    pub fn f1_2026_2008_canonical() -> Self {
+        Self::from_json_str(include_str!("../../../data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"))
+            .expect("checked-in f1_2026_2008 physics profile must be valid")
+    }
+
     /// Canonical Jordan 197 specification (legacy — aero extensions use same defaults, not validated).
     pub fn jordan_197_canonical() -> Self {
         let mut surface_friction = HashMap::new();
@@ -3479,12 +3485,12 @@ mod json_tests {
 
     #[test]
     fn golden_json_matches_canonical() {
-        let path = Path::new("data/vehicles/f1_94/f1_94_physics.json");
+        let path = Path::new("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json");
         if !path.exists() {
             return;
         }
         let loaded = VehicleConfig::from_json_path(path).unwrap();
-        let canonical = VehicleConfig::f1_94_canonical();
+        let canonical = VehicleConfig::f1_2026_2008_canonical();
         assert_eq!(loaded.vehicle_mass, canonical.vehicle_mass);
         assert_eq!(loaded.wheelbase, canonical.wheelbase);
         assert_eq!(loaded.diff_preload, canonical.diff_preload);
@@ -3553,7 +3559,7 @@ mod json_tests {
 
     #[test]
     fn golden_json_schema_2_aids_present() {
-        let path = Path::new("data/vehicles/f1_94/f1_94_physics.json");
+        let path = Path::new("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json");
         if !path.exists() {
             return;
         }
@@ -3565,15 +3571,15 @@ mod json_tests {
 
     #[test]
     fn fidelity_fields_consumed_from_json() {
-        let path = Path::new("data/vehicles/f1_94/f1_94_physics.json");
+        let path = Path::new("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json");
         if !path.exists() {
             return;
         }
         let loaded = VehicleConfig::from_json_path(path).unwrap();
-        assert!((loaded.max_clutch_torque_ratio - 1.6).abs() < 1e-9);
-        assert!((loaded.clutch_out_rpm_offset - 1000.0).abs() < 1e-9);
-        assert!((loaded.handbrake_torque_fraction - 0.4).abs() < 1e-9);
-        assert!((loaded.diff_slip_transition_threshold_rad_s - 0.5).abs() < 1e-9);
+        assert!((loaded.max_clutch_torque_ratio - 1.1).abs() < 1e-9);
+        assert!((loaded.clutch_out_rpm_offset - 1100.0).abs() < 1e-9);
+        assert!((loaded.handbrake_torque_fraction - 0.0).abs() < 1e-9);
+        assert!((loaded.diff_slip_transition_threshold_rad_s - 1.0).abs() < 1e-9);
         assert!((loaded.variable_drag_ratio - 0.10).abs() < 1e-9);
     }
 

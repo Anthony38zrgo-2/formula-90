@@ -419,7 +419,7 @@ void F194RustVehicle::_ready() {
 
 	if (fn_create_from_json_) {
 		const String json_path = physics_config_path_.is_empty()
-			? String("res://data/vehicles/f1_94/f1_94_physics.json")
+			? String("res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")
 			: physics_config_path_;
 		Ref<FileAccess> f = FileAccess::open(json_path, FileAccess::READ);
 		if (f.is_valid()) {

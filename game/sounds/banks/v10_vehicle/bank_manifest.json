@@ -129,8 +129,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/impact_hit_1.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_1.wav",
         "source_rate": 44100,
         "source_sha256": "e59cd6af9b5c0896f3b53a3ed0e5d6892914fb74a54b0123b38c95cdcde3bfc6"
       }
@@ -155,8 +155,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/impact_hit_2.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_2.wav",
         "source_rate": 44100,
         "source_sha256": "3b786278bc4a973062c08c1660d88c4a76b75fec574c03ffd339913f293d102b"
       }
@@ -181,8 +181,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/impact_hit_3.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_3.wav",
         "source_rate": 44100,
         "source_sha256": "3fd60300fdf32893570044a5e59f149d8ed1b42e4a74cc3dc97864fb7ec47995"
       }
@@ -207,8 +207,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/impact_hit_4.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_4.wav",
         "source_rate": 44100,
         "source_sha256": "6abd874896c3b925b0c8d5b9ba9cce50217e3fc43026a1c10c04f148f8233767"
       }
@@ -266,8 +266,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/int_backfire.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/int_backfire.wav",
         "source_rate": 44100,
         "source_sha256": "29fe139b70bf2f6ddbd2eaf0b6793ae015c3411844dcdbaac857ce3820c9343d"
       }
@@ -292,8 +292,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/int_backfire_2.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/int_backfire_2.wav",
         "source_rate": 44100,
         "source_sha256": "f68c49a98cf91c0f0c265dba2e41ed8a65f3351acbc51629b5cf1cbc2da74e14"
       }
@@ -339,8 +339,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/shift_down.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/shift_down.wav",
         "source_rate": 44100,
         "source_sha256": "221086556010be08a710f2f9349006ba6b7249ccdc58f5df9d55dc18bee3816c"
       }
@@ -394,8 +394,8 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/shift_up.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/shift_up.wav",
         "source_rate": 44100,
         "source_sha256": "b43367f10f4f6be6d64d14a40771acd19bd61e2ac6b27fb94834ef8e279e16c7"
       }
@@ -509,14 +509,14 @@
           "target_peak": 0.89,
           "target_rate": 44100
         },
-        "promotion_recipe": "f1_94_replacement_overlay_v1",
-        "source_file": "source-assets/audio/replacements/f1_94/tyre_scrub.wav",
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/tyre_scrub.wav",
         "source_rate": 44100,
         "source_sha256": "eb71a4b5744f7cfbdc269f3994298bc3ace9482e3bbea4d08a51638220e683f1"
       }
     }
   ],
-  "generator": "formula90s canonical bank + f1_94 replacement overlay v1",
+  "generator": "formula90s canonical bank + f1_2026_2008 replacement overlay v1",
   "pcm_bits": 16,
   "sample_rate": 44100,
   "schema_version": 1,

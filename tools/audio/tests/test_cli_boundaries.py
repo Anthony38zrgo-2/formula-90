@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from tools.audio import bank_generator, render_audio_scenario
-from tools.audio.promote_f1_94_replacement_sounds import main as legacy_promote_main
+from tools.audio.promote_vehicle_replacement_sounds import main as vehicle_promote_main
 
 
 def test_audio_write_defaults_live_under_scratch():
@@ -37,7 +37,7 @@ def test_preview_clis_reject_runtime_outputs(main, args):
     assert error.value.code == 2
 
 
-def test_legacy_promoter_requires_explicit_source_and_bank():
+def test_vehicle_promoter_requires_explicit_source_and_bank():
     with pytest.raises(SystemExit) as error:
-        legacy_promote_main([])
+        vehicle_promote_main([])
     assert error.value.code == 2

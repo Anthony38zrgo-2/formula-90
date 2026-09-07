@@ -1,10 +1,11 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
-[ext_resource type="Script" path="res://scripts/vehicle/f1_94_rust_vehicle.gd" id="1_rust_vehicle"]
+[ext_resource type="Script" path="res://scripts/vehicle/rust_vehicle_controller.gd" id="1_rust_vehicle"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_chassis.glb" id="2_chassis"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_wheel_front.glb" id="3_front"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/f1-2026-2008/f1_2026_2008_wheel_rear.glb" id="4_rear"]
-[ext_resource type="Script" path="res://scripts/input/f1_94_rust_input_controller.gd" id="7_controller"]
+[ext_resource type="Script" path="res://scripts/input/vehicle_rust_input_controller.gd" id="7_controller"]
+[ext_resource type="Script" path="res://scripts/vehicle/f1_wheel_visual_controller.gd" id="8_wheel_controller"]
 
 [sub_resource type="BoxShape3D" id="Box_tub"]
 size = Vector3(1.35, 0.4, 3.142414861)
@@ -21,7 +22,7 @@ size = Vector3(1.2, 0.32, 1.158513932)
 script = ExtResource("7_controller")
 vehicle_node = NodePath("../VehicleRigidBody")
 
-[node name="VehicleRigidBody" type="F194RustVehicle" parent="." node_paths=PackedStringArray("chassis_node", "front_left_wheel_node", "front_right_wheel_node", "rear_left_wheel_node", "rear_right_wheel_node", "ray_fl_in", "ray_fl_mid", "ray_fl_out", "ray_fr_in", "ray_fr_mid", "ray_fr_out", "ray_rl_in", "ray_rl_mid", "ray_rl_out", "ray_rr_in", "ray_rr_mid", "ray_rr_out")]
+[node name="VehicleRigidBody" type="F194RustVehicle" parent="." node_paths=PackedStringArray("chassis_node", "ray_fl_in", "ray_fl_mid", "ray_fl_out", "ray_fr_in", "ray_fr_mid", "ray_fr_out", "ray_rl_in", "ray_rl_mid", "ray_rl_out", "ray_rr_in", "ray_rr_mid", "ray_rr_out")]
 mass = 650.0
 gravity_scale = 0.0
 freeze = false
@@ -31,10 +32,6 @@ enable_player_input = true
 script = ExtResource("1_rust_vehicle")
 physics_config_path = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"
 chassis_node = NodePath("ChassisVisual")
-front_left_wheel_node = NodePath("FrontLeftWheel")
-front_right_wheel_node = NodePath("FrontRightWheel")
-rear_left_wheel_node = NodePath("RearLeftWheel")
-rear_right_wheel_node = NodePath("RearRightWheel")
 ray_fl_in = NodePath("RayCast_FL_In")
 ray_fl_mid = NodePath("RayCast_FL_Mid")
 ray_fl_out = NodePath("RayCast_FL_Out")
@@ -62,33 +59,71 @@ shape = SubResource("Box_nose")
 position = Vector3(0, 0, 1.57074303)
 shape = SubResource("Box_rear")
 
+[node name="WheelVisualController" type="Node" parent="VehicleRigidBody" node_paths=PackedStringArray("vehicle", "hub_fl", "hub_fr", "hub_rl", "hub_rr", "steer_fl", "steer_fr", "steer_rl", "steer_rr", "camber_fl", "camber_fr", "camber_rl", "camber_rr", "spinner_fl", "spinner_fr", "spinner_rl", "spinner_rr")]
+script = ExtResource("8_wheel_controller")
+vehicle = NodePath("..")
+hub_fl = NodePath("../FrontLeftWheel")
+hub_fr = NodePath("../FrontRightWheel")
+hub_rl = NodePath("../RearLeftWheel")
+hub_rr = NodePath("../RearRightWheel")
+steer_fl = NodePath("../FrontLeftWheel/SteerPivot")
+steer_fr = NodePath("../FrontRightWheel/SteerPivot")
+steer_rl = NodePath("../RearLeftWheel/SteerPivot")
+steer_rr = NodePath("../RearRightWheel/SteerPivot")
+camber_fl = NodePath("../FrontLeftWheel/SteerPivot/CamberPivot")
+camber_fr = NodePath("../FrontRightWheel/SteerPivot/CamberPivot")
+camber_rl = NodePath("../RearLeftWheel/SteerPivot/CamberPivot")
+camber_rr = NodePath("../RearRightWheel/SteerPivot/CamberPivot")
+spinner_fl = NodePath("../FrontLeftWheel/SteerPivot/CamberPivot/Spinner")
+spinner_fr = NodePath("../FrontRightWheel/SteerPivot/CamberPivot/Spinner")
+spinner_rl = NodePath("../RearLeftWheel/SteerPivot/CamberPivot/Spinner")
+spinner_rr = NodePath("../RearRightWheel/SteerPivot/CamberPivot/Spinner")
+
 [node name="FrontLeftWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(-0.854, 0, -1.75)
 
-[node name="Visual" parent="VehicleRigidBody/FrontLeftWheel" instance=ExtResource("3_front")]
+[node name="SteerPivot" type="Node3D" parent="VehicleRigidBody/FrontLeftWheel"]
+
+[node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot"]
+
+[node name="Spinner" type="Node3D" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot"]
+
+[node name="Visual" parent="VehicleRigidBody/FrontLeftWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("3_front")]
 rotation = Vector3(0, 3.14159265, 0)
 
 [node name="FrontRightWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(0.854, 0, -1.75)
 
-[node name="Orientation" type="Node3D" parent="VehicleRigidBody/FrontRightWheel"]
-rotation = Vector3(0, 0, 0)
+[node name="SteerPivot" type="Node3D" parent="VehicleRigidBody/FrontRightWheel"]
 
-[node name="Visual" parent="VehicleRigidBody/FrontRightWheel/Orientation" instance=ExtResource("3_front")]
+[node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/FrontRightWheel/SteerPivot"]
+
+[node name="Spinner" type="Node3D" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot"]
+
+[node name="Visual" parent="VehicleRigidBody/FrontRightWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("3_front")]
 
 [node name="RearLeftWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(-0.795, 0, 1.75)
 
-[node name="Visual" parent="VehicleRigidBody/RearLeftWheel" instance=ExtResource("4_rear")]
+[node name="SteerPivot" type="Node3D" parent="VehicleRigidBody/RearLeftWheel"]
+
+[node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/RearLeftWheel/SteerPivot"]
+
+[node name="Spinner" type="Node3D" parent="VehicleRigidBody/RearLeftWheel/SteerPivot/CamberPivot"]
+
+[node name="Visual" parent="VehicleRigidBody/RearLeftWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("4_rear")]
 rotation = Vector3(0, 3.14159265, 0)
 
 [node name="RearRightWheel" type="Node3D" parent="VehicleRigidBody"]
 position = Vector3(0.795, 0, 1.75)
 
-[node name="Orientation" type="Node3D" parent="VehicleRigidBody/RearRightWheel"]
-rotation = Vector3(0, 0, 0)
+[node name="SteerPivot" type="Node3D" parent="VehicleRigidBody/RearRightWheel"]
 
-[node name="Visual" parent="VehicleRigidBody/RearRightWheel/Orientation" instance=ExtResource("4_rear")]
+[node name="CamberPivot" type="Node3D" parent="VehicleRigidBody/RearRightWheel/SteerPivot"]
+
+[node name="Spinner" type="Node3D" parent="VehicleRigidBody/RearRightWheel/SteerPivot/CamberPivot"]
+
+[node name="Visual" parent="VehicleRigidBody/RearRightWheel/SteerPivot/CamberPivot/Spinner" instance=ExtResource("4_rear")]
 
 [node name="RayCast_FL_In" type="RayCast3D" parent="VehicleRigidBody"]
 position = Vector3(-0.708, 0.2434, -1.75)

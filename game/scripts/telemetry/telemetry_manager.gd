@@ -18,7 +18,7 @@ var _setup_json := ""
 const LOG_MS := 50
 const BUFFER_SIZE := 100
 const VEHICLE_SEARCH_INTERVAL := 1.0
-const F1_94_PHYSICS_CONFIG := "res://data/vehicles/f1_94/f1_94_physics.json"
+const F1_2026_2008_PHYSICS_CONFIG := "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"
 const CSV_COLUMNS := [
     "Time_ms", "Speed_kmh", "RPM", "Gear",
     "Throttle", "Brake", "Steering",
@@ -402,7 +402,7 @@ func _get_active_physics_config_path() -> String:
         var c_path = f90_core[0].get("config_json_path")
         if c_path is String and not c_path.is_empty():
             return c_path
-    return F1_94_PHYSICS_CONFIG
+    return F1_2026_2008_PHYSICS_CONFIG
 
 func _build_engine_snapshot() -> Dictionary:
     var fields: Array[String] = ["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]

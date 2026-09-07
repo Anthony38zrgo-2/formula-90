@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use vehicle_physics_engine::{AidsMask, VehicleInput};
 
 /// Raw, already-mapped driver input for one simulation tick. This mirrors the role
-/// of `f1_94_rust_input_controller.gd`: it turns device/action state into a
+/// of `vehicle_rust_input_controller.gd`: it turns device/action state into a
 /// `VehicleInput` and carries edge-triggered commands (gear shifts, aid toggles,
 /// transmission mode) that the core applies to the authoritative state.
 ///

@@ -69,7 +69,7 @@ private:
 	void *sim_ptr_ = nullptr;
 	void *dll_handle_ = nullptr;
 	bool inertia_initialized_ = false;
-	String physics_config_path_ = "res://data/vehicles/f1_94/f1_94_physics.json";
+	String physics_config_path_ = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json";
 
 	// FFI function pointers
 	FnPhysicsAbiVersion fn_abi_version_ = nullptr;

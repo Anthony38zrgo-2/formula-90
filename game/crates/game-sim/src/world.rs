@@ -296,7 +296,7 @@ mod tests {
 
     fn build_world() -> World {
         let mut w = World::new(1.0 / 120.0);
-        let cfg = VehicleConfig::f1_94_canonical();
+		let cfg = VehicleConfig::f1_2026_2008_canonical();
         let spawn = Transform3D {
             origin: Vec3::new(0.0, default_spawn_height(&cfg), 0.0),
             basis: Mat3::IDENTITY,

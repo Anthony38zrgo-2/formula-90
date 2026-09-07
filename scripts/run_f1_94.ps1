@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
-    [ValidateSet('1994', '2009', '2026')]
+    [ValidateSet('2026')]
     [string]$VehicleVariant = '2026',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
@@ -14,29 +14,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
-$is2026Variant = $VehicleVariant -eq '2026'
-$is2009Variant = $VehicleVariant -eq '2009'
-$scene = if ($is2026Variant) {
-    'res://scenes/runtime/vehicle_test_session_2026.tscn'
-} elseif ($is2009Variant) {
-    'res://scenes/runtime/vehicle_test_session_2009.tscn'
-} else {
-    'res://scenes/runtime/vehicle_test_session.tscn'
-}
-$manifestPath = if ($is2026Variant) {
-    Join-Path $game 'assets\models\vehicles\f1-2026-2008\manifest.json'
-} elseif ($is2009Variant) {
-    Join-Path $game 'assets\models\vehicles\f1_94\variants\f1_2009_fw31\manifest.json'
-} else {
-    Join-Path $game 'assets\models\vehicles\f1_94\decoupled\manifest.json'
-}
-$variantLabel = if ($is2026Variant) { 'F1 2026-2008 canonical vehicle' } elseif ($is2009Variant) { 'F1 2009 Williams FW31 optional variant' } else { 'F1 1994 legacy variant' }
-$vehicleId = if ($is2026Variant) { 'f1_2026_2008' } elseif ($is2009Variant) { 'f1_2009_fw31' } else { 'f1_94' }
+$scene = 'res://scenes/runtime/vehicle_test_session_2026.tscn'
+$manifestPath = Join-Path $game 'assets\models\vehicles\f1-2026-2008\manifest.json'
+$variantLabel = 'F1 2026-2008 canonical vehicle'
+$vehicleId = 'f1_2026_2008'
 $trackDir = Join-Path $game 'tracks\fuji76_77'
 $trackPath = Join-Path $trackDir 'fuji76_77_visual.glb'
 $trackCollisionPath = Join-Path $trackDir 'fuji76_77_collision.glb'
 $trackBuildPath = Join-Path $trackDir 'metadata\package.json'
-$smokeScript = 'res://tests/smoke_test_f1_94_fuji76_77.gd'
+$smokeScript = 'res://tests/smoke_test_f1_2026_2008_fuji76_77.gd'
 
 function Resolve-Godot([string]$ExplicitPath) {
     if ($ExplicitPath -and (Test-Path -LiteralPath $ExplicitPath -PathType Leaf)) {
@@ -69,47 +55,20 @@ function Get-Sha256Hex([string]$Path) {
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Manifest de vehiculo faltante: $manifestPath" }
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $runtimeDir = Split-Path -Parent $manifestPath
-if ($is2026Variant) {
-    if ($manifest.asset -ne 'F1_2026_2008' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
-        throw 'El manifest del F1-2026-2008 no cumple el contrato esperado.'
-    }
-    $expectedAssets = @{
-        ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
-        ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
-        ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
-    }
-    $physicsRelative = ([string]$manifest.physics_profile).Replace('res://', '').Replace('/', '\')
-    $physicsPath = Join-Path $game $physicsRelative
-    if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2026 faltante: $physicsPath" }
-    $physicsHash = Get-Sha256Hex $physicsPath
-    if (-not $physicsHash.Equals([string]$manifest.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
-        Write-Warning ('Perfil fisico 2026 modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
-    }
-} elseif ($is2009Variant) {
-    if ($manifest.variant_id -ne 'f1_2009_fw31' -or $manifest.base_vehicle_id -ne 'f1_94') {
-        throw 'El manifest de la variante 2009 no cumple el contrato esperado.'
-    }
-    $expectedAssets = @{
-        ([string]$manifest.runtime.chassis.path).Replace('/', '\') = [string]$manifest.runtime.chassis.sha256
-        ([string]$manifest.runtime.wheel_front.path).Replace('/', '\') = [string]$manifest.runtime.wheel_front.sha256
-        ([string]$manifest.runtime.wheel_rear.path).Replace('/', '\') = [string]$manifest.runtime.wheel_rear.sha256
-    }
-    $physicsRelative = ([string]$manifest.runtime.physics_profile).Replace('res://', '').Replace('/', '\')
-    $physicsPath = Join-Path $game $physicsRelative
-    if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2009 faltante: $physicsPath" }
-    $physicsHash = Get-Sha256Hex $physicsPath
-    if (-not $physicsHash.Equals([string]$manifest.runtime.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
-        Write-Warning ('Perfil fisico 2009 modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
-    }
-} else {
-    if ($manifest.asset -ne 'F1_94' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
-        throw 'El manifest desacoplado F1-94 no cumple el contrato esperado.'
-    }
-    $expectedAssets = @{
-        ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
-        ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
-        ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
-    }
+if ($manifest.asset -ne 'F1_2026_2008' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
+    throw 'El manifest del F1-2026-2008 no cumple el contrato esperado.'
+}
+$expectedAssets = @{
+    ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
+    ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
+    ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
+}
+$physicsRelative = ([string]$manifest.physics_profile).Replace('res://', '').Replace('/', '\')
+$physicsPath = Join-Path $game $physicsRelative
+if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2026 faltante: $physicsPath" }
+$physicsHash = Get-Sha256Hex $physicsPath
+if (-not $physicsHash.Equals([string]$manifest.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
+    Write-Warning ('Perfil fisico 2026 modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
 }
 foreach ($relativePath in $expectedAssets.Keys) {
     $assetPath = Join-Path $runtimeDir $relativePath
@@ -178,7 +137,7 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($SmokeAudio) {
     Write-Host "Ejecutando smoke de audio $variantLabel (v10_vehicle + GEVP)..." -ForegroundColor Cyan
-    & $godot --headless --path $game --script 'res://tests/smoke_test_f1_94_audio.gd' -- "--scene=$scene"
+    & $godot --headless --path $game --script 'res://tests/smoke_test_vehicle_audio.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }
 if ($SmokeBackground) {
@@ -195,7 +154,7 @@ if ($TestPhysics) {
     Write-Host 'Ejecutando suite determinista Rust + test de integraciÃ³n Godot (12 raycasts)...' -ForegroundColor Cyan
     & cargo test --manifest-path (Join-Path $root 'game\crates\vehicle-physics-engine\Cargo.toml')
     if ($LASTEXITCODE -ne 0) { throw "Rust vehicle physics unit tests fallaron ($LASTEXITCODE)." }
-    & $godot --headless --path $game --script 'res://tests/test_f1_94_rust_physics.gd'
+    & $godot --headless --path $game --script 'res://tests/test_f1_2026_2008_rust_physics.gd'
     exit $LASTEXITCODE
 }
 if ($Parity) {

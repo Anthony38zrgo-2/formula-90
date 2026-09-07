@@ -332,7 +332,7 @@ impl Default for CoreConfig {
             enable_audio: false,
             idle_rpm: 1000.0,
             max_rpm: 15000.0,
-            vehicle_scene: "res://scenes/vehicles/f1_94/f1_94_rust.tscn".to_string(),
+			vehicle_scene: "res://scenes/vehicles/f1_2026_2008/f1_2026_2008_rust.tscn".to_string(),
             track_scene: "res://scenes/tracks/test_field/la_chutana_track.tscn".to_string(),
             modules: Vec::new(),
             underfloor_contact: underfloor::UnderfloorContactConfig::default(),
@@ -424,7 +424,7 @@ impl CoreFacade {
                 .ok_or_else(|| CoreError::Spawn("world has no entities".to_string()));
         }
         let (id, cfg) = if self.config.use_canonical {
-            let cfg = VehicleConfig::f1_94_canonical();
+			let cfg = VehicleConfig::f1_2026_2008_canonical();
             (self.spawn(&cfg), cfg)
         } else {
             let json = self.config.config_json_path.as_ref().ok_or_else(|| {

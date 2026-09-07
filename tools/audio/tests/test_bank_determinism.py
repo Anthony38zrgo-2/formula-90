@@ -81,7 +81,7 @@ def test_bank_matches_declared_source_spec():
     """Every manifest entry maps to its declared source or synthesis recipe."""
     from tools.audio.bank_manifest import BankManifest
     from tools.audio.bank_spec import BANK_SPEC
-    from tools.audio.promote_f1_94_replacement_sounds import REPLACEMENTS
+    from tools.audio.promote_vehicle_replacement_sounds import REPLACEMENTS
 
     bank = Path("game/sounds/banks/v10_vehicle")
     manifest = BankManifest.load(bank / "bank_manifest.json")
@@ -89,7 +89,7 @@ def test_bank_matches_declared_source_spec():
     assert len(manifest.files) == len(BANK_SPEC) + 1
     for entry in manifest.files:
         key = entry.file[:-4]
-        if entry.synthesis.get("promotion_recipe") == "f1_94_replacement_overlay_v1":
+        if entry.synthesis.get("promotion_recipe") == "f1_2026_2008_replacement_overlay_v1":
             role, loop, _category = REPLACEMENTS[entry.file]
             assert entry.role == role
             assert entry.loop == loop

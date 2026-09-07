@@ -13,7 +13,7 @@ if ($List) {
     Write-Host 'FAST areas:' -ForegroundColor Cyan
     Write-Host '  Architecture  output policy and architecture helpers'
     Write-Host '  Audio         offline audio tooling tests'
-    Write-Host '  Vehicle       F1-94 runtime asset validation'
+    Write-Host '  Vehicle       f1_2026_2008 runtime asset validation'
     Write-Host '  Track         focused SVG/track compiler tests'
     Write-Host '  Runtime       canonical runtime and BUILD/HEAD validation'
     exit 0
@@ -48,15 +48,28 @@ try {
             }
             'Vehicle' {
                 Invoke-FastStep 'Vehicle' {
-                    $vehicleRoots = @(
-                        'game/assets/models/vehicles/f1_94/decoupled',
-                        'game/assets/models/vehicles/f1_94/variants/f1_2009_fw31',
-                        'game/assets/models/vehicles/f1-2026-2008'
-                    )
+                    $vehicleRoots = @('game/assets/models/vehicles/f1-2026-2008')
                     foreach ($relativeRoot in $vehicleRoots) {
                         $manifest = Join-Path $root $relativeRoot
                         if (-not (Test-Path (Join-Path $manifest 'manifest.json'))) {
                             throw "Vehicle manifest missing: $relativeRoot"
+                        }
+                    }
+                    $vehicleDataDir = Join-Path $root 'game/data/vehicles'
+                    $vehicleDefinitions = @(Get-ChildItem -LiteralPath $vehicleDataDir -Filter '*.tres' -File)
+                    if ($vehicleDefinitions.Count -ne 1 -or $vehicleDefinitions[0].Name -ne 'f1_2026_2008.tres') {
+                        throw 'Vehicle registry must contain only f1_2026_2008.tres'
+                    }
+                    foreach ($forbidden in @('f1_94', 'f1_2009_fw31')) {
+                        foreach ($relativePath in @(
+                            "game/data/vehicles/$forbidden",
+                            "game/data/vehicles/$forbidden.tres",
+                            "game/scenes/vehicles/$forbidden",
+                            "game/assets/models/vehicles/$forbidden"
+                        )) {
+                            if (Test-Path -LiteralPath (Join-Path $root $relativePath)) {
+                                throw "Forbidden vehicle path remains: $relativePath"
+                            }
                         }
                     }
                 }

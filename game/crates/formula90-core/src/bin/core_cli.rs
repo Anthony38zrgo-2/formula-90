@@ -142,7 +142,7 @@ fn main() {
         let sim_cfg = match &config_path {
             Some(p) => VehicleConfig::from_json_path(std::path::Path::new(p))
                 .expect("failed to load JSON config for parity sim"),
-            None => VehicleConfig::f1_94_canonical(),
+			None => VehicleConfig::f1_2026_2008_canonical(),
         };
         let spawn = Transform3D {
             origin: Vec3::new(0.0, default_spawn_height(&sim_cfg), 0.0),

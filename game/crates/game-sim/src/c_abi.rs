@@ -125,7 +125,7 @@ pub extern "C" fn sim_world_spawn_from_json(world: *mut c_void, json_path: *cons
     w.spawn_vehicle(
         cfg,
         spawn,
-        "res://scenes/vehicles/f1_94/f1_94_rust.tscn".to_string(),
+		"res://scenes/vehicles/f1_2026_2008/f1_2026_2008_rust.tscn".to_string(),
         "res://scenes/tracks/test_field/la_chutana_track.tscn".to_string(),
     )
 }
@@ -133,7 +133,7 @@ pub extern "C" fn sim_world_spawn_from_json(world: *mut c_void, json_path: *cons
 /// Spawn using the built-in canonical F1-94 config (no file needed). For tests.
 #[no_mangle]
 pub extern "C" fn sim_world_spawn_canonical(world: *mut c_void) -> u32 {
-    let cfg = VehicleConfig::f1_94_canonical();
+	let cfg = VehicleConfig::f1_2026_2008_canonical();
     let spawn = Transform3D {
         origin: Vec3::new(0.0, default_spawn_height(&cfg), 0.0),
         basis: Mat3::IDENTITY,
@@ -492,7 +492,7 @@ mod tests {
         assert!(!w.is_null());
         let path = CString::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../../data/vehicles/f1_94/f1_94_physics.json"
+			"/../../data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"
         ))
         .unwrap();
         let id = sim_world_spawn_from_json(w, path.as_ptr());

@@ -111,7 +111,10 @@ func _apply_high_quality_texture_filter(root: Node) -> void:
 func _apply_vehicle_shadow_caster(root: Node) -> void:
 	if root == null:
 		return
-	if root is GeometryInstance3D:
+	if root is CPUParticles3D or root is GPUParticles3D:
+		# World-space tire smoke is an effect, not solid vehicle geometry.
+		(root as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	elif root is GeometryInstance3D:
 		(root as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
 	for child in root.get_children():
 		_apply_vehicle_shadow_caster(child)
