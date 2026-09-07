@@ -290,8 +290,8 @@ use game_sim::snapshot::{EntityTelemetry, Snapshot};
 use game_sim::world::{yaw_from_transform, World};
 use serde::{Deserialize, Serialize};
 use vehicle_physics_engine::{
-    AeroEnvironment, AidsMask, BodyKinematics, Mat3, SurfaceType, Transform3D, TriRaycastSample,
-    Vec3, VehicleConfig, VehicleInput,
+    AeroEnvironment, AeroProbeMode, AidsMask, BodyKinematics, Mat3, SurfaceType, Transform3D,
+    TriRaycastSample, Vec3, VehicleConfig, VehicleInput,
 };
 
 use crate::audio::AudioModule;
@@ -515,13 +515,14 @@ impl CoreFacade {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> &CoreFrame {
-        self.step_with_underfloor(
+        self.step_with_underfloor_mode(
             id,
             body,
             input,
             aids_mask,
             samples,
             &underfloor::UnderfloorSample::default(),
+            AeroProbeMode::Disabled,
             dt,
         )
     }
@@ -534,6 +535,22 @@ impl CoreFacade {
         aids_mask: u32,
         samples: &[TriRaycastSample; 4],
         underfloor_sample: &underfloor::UnderfloorSample,
+        dt: f64,
+    ) -> &CoreFrame {
+        self.step_with_underfloor_mode(
+            id, body, input, aids_mask, samples, underfloor_sample, AeroProbeMode::Measured, dt,
+        )
+    }
+
+    fn step_with_underfloor_mode(
+        &mut self,
+        id: u32,
+        body: BodyKinematics,
+        input: &VehicleInput,
+        aids_mask: u32,
+        samples: &[TriRaycastSample; 4],
+        underfloor_sample: &underfloor::UnderfloorSample,
+        probe_mode: AeroProbeMode,
         dt: f64,
     ) -> &CoreFrame {
         let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
@@ -568,26 +585,9 @@ impl CoreFacade {
             ent.aids.steering_slip_assist = ent.sim.aids.steering_slip_assist;
             ent.aids.abs = ent.sim.aids.abs;
             ent.aids.stability = ent.sim.aids.stability;
-            // When the host underfloor probes report no valid contact (e.g. a test
-            // scene that does not raycast the floor), the floor/diffuser would run
-            // at an invalid stance and contribute ~no downforce, leaving the rears
-            // unloaded at speed (top-gear wheelspin). Fall back to a nominal
-            // environment derived from the profile's underfloor optimal stance so the
-            // floor still loads the tires.
-            let aero_environment = if aero_environment.valid_mask == 0 {
-                let uf = &ent.sim.config.aero_model.underfloor;
-                let h = uf.optimal_height_m.max(0.01);
-                AeroEnvironment {
-                    clearance_m: [h * 0.90, h * 0.90, h, h * 1.80, h * 2.80],
-                    valid_mask: 0x1f,
-                    rake_rad: uf.optimal_rake_deg.to_radians(),
-                    roll_rad: 0.0,
-                    bottoming_mask: 0,
-                    contact_confidence: 1.0,
-                }
-            } else {
-                aero_environment
-            };
+            // A missed live ray can mean airborne/out of range. Preserve that
+            // observation; only the explicit no-probe API reports Disabled.
+            ent.sim.aero_probe_mode = probe_mode;
             let (forces, telem) =
                 ent.sim
                     .solve_external_with_aero(body, input, samples, &aero_environment, dt);

@@ -410,13 +410,13 @@ fn default_aids() -> AidsConfig {
 }
 
 fn default_aero_lag_tau() -> f64 {
-    0.048
+    0.030
 }
 fn default_aero_blend_min_speed() -> f64 {
-    4.167
+    5.556
 }
 fn default_aero_blend_full_speed() -> f64 {
-    27.778
+    41.667
 }
 
 impl Default for VehicleConfig {
@@ -893,7 +893,9 @@ impl VehicleConfig {
 
     fn from_json_spec(spec: JsonVehicleSpec) -> Result<Self, String> {
         spec.validate()?;
-        Ok(spec.to_config())
+        let config = spec.to_config();
+        crate::aero::validate_aero_config(&config)?;
+        Ok(config)
     }
 }
 
@@ -2261,9 +2263,9 @@ impl Default for JsonAero {
             drag_coefficient: 0.78,
             frontal_area: 1.25,
             air_density: 1.225,
-            lag_tau_s: 0.048,
-            blend_min_speed_mps: 4.167,
-            blend_full_speed_mps: 27.778,
+            lag_tau_s: default_aero_lag_tau(),
+            blend_min_speed_mps: default_aero_blend_min_speed(),
+            blend_full_speed_mps: default_aero_blend_full_speed(),
         }
     }
 }
@@ -2277,13 +2279,13 @@ fn default_air_density() -> f64 {
     1.225
 }
 fn default_lag_tau() -> f64 {
-    0.048
+    default_aero_lag_tau()
 }
 fn default_blend_min() -> f64 {
-    4.167
+    default_aero_blend_min_speed()
 }
 fn default_blend_full() -> f64 {
-    27.778
+    default_aero_blend_full_speed()
 }
 
 // ── Driving aids (schema v2) ────────────────────────────────────────────────────

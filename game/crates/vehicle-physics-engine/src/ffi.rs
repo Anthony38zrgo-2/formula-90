@@ -10,7 +10,6 @@
 
 #![allow(clippy::not_unsafe_ptr_arg_deref)]
 
-use crate::aero::AeroEnvironment;
 use crate::simulation::*;
 use crate::types::*;
 use crate::vehicle_config::*;
@@ -622,28 +621,9 @@ pub extern "C" fn f1_94_physics_solve_forces(
     let body = BodyKinematics::from(unsafe { *body_ptr });
     let input = VehicleInput::from(unsafe { *input_ptr });
     let samples = read_samples(samples_ptr);
-    // The legacy Godot solve path does not forward live underfloor clearance
-    // probes, so the default environment leaves the floor/diffuser at a high,
-    // inefficient ride height. Feed a nominal environment derived from the
-    // profile's underfloor optimal state so the floor loads the tires as designed
-    // (this is what makes top-gear wheelspin manageable without TC).
-    let uf = &sim.config.aero_model.underfloor;
-    let h = uf.optimal_height_m.max(0.01);
-    let aero_environment = AeroEnvironment {
-        clearance_m: [
-            h * 0.90,
-            h * 0.90,
-            h,
-            h * 1.80,
-            h * 2.80,
-        ],
-        valid_mask: 0x1f,
-        rake_rad: uf.optimal_rake_deg.to_radians(),
-        roll_rad: 0.0,
-        bottoming_mask: 0,
-        contact_confidence: 1.0,
-    };
-    let (forces, telem) = sim.solve_external_with_aero(body, &input, &samples, &aero_environment, dt);
+    // This ABI has no underfloor measurements. The explicit no-probe path keeps
+    // free-air aerodynamics without manufacturing ground-effect geometry.
+    let (forces, telem) = sim.solve_external(body, &input, &samples, dt);
 
     if !out_forces.is_null() {
         unsafe {

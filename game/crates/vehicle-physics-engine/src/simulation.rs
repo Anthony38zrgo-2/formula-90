@@ -1,4 +1,4 @@
-use crate::aero::{AeroEnvironment, AeroForces};
+use crate::aero::{AeroEnvironment, AeroForces, AeroKinematics, AeroProbeMode};
 use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
 use crate::suspension::{rest_compression_m, SuspensionSystem};
@@ -163,6 +163,11 @@ pub struct VehicleSimulator {
     pub config: VehicleConfig,
     pub state: VehicleState,
     pub aids: AidsMask,
+    /// World-space ambient wind. The host may update it before each solve.
+    #[serde(default)]
+    pub wind_velocity_world: Vec3,
+    #[serde(default)]
+    pub aero_probe_mode: AeroProbeMode,
 }
 
 impl VehicleSimulator {
@@ -173,6 +178,8 @@ impl VehicleSimulator {
             config,
             state,
             aids,
+            wind_velocity_world: Vec3::ZERO,
+            aero_probe_mode: AeroProbeMode::Measured,
         }
     }
 
@@ -185,7 +192,11 @@ impl VehicleSimulator {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> TelemetryFrame {
-        let (forces, _) = self.solve_forces(input, samples, &AeroEnvironment::default(), dt);
+        let env = AeroEnvironment::unavailable();
+        let previous_mode = self.aero_probe_mode;
+        self.aero_probe_mode = AeroProbeMode::Disabled;
+        let (forces, _) = self.solve_forces(input, samples, &env, dt);
+        self.aero_probe_mode = previous_mode;
         self.integrate_standalone(forces, dt);
         self.build_telemetry_frame()
     }
@@ -199,7 +210,13 @@ impl VehicleSimulator {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> (ForceTorqueOutput, TelemetryFrame) {
-        self.solve_external_with_aero(body, input, samples, &AeroEnvironment::default(), dt)
+        let previous_mode = self.aero_probe_mode;
+        self.aero_probe_mode = AeroProbeMode::Disabled;
+        let output = self.solve_external_with_aero(
+            body, input, samples, &AeroEnvironment::unavailable(), dt,
+        );
+        self.aero_probe_mode = previous_mode;
+        output
     }
 
     /// External solve with the five-point underfloor environment supplied by the
@@ -259,9 +276,18 @@ impl VehicleSimulator {
             gear_request: input.gear_request,
         };
 
-        let pitch_rad = (-basis.z.y).clamp(-1.0, 1.0).asin();
-        st.aero
-            .step_with_environment(cfg, local_velocity, aero_environment, pitch_rad, dt);
+        st.aero.step_with_kinematics(
+            cfg,
+            &AeroKinematics {
+                velocity_m_s: local_velocity,
+                angular_velocity_rad_s: basis.inverse_transform_vector(st.angular_velocity),
+                wind_velocity_m_s: basis.inverse_transform_vector(self.wind_velocity_world),
+                center_of_mass_m: center_of_mass_local(cfg),
+                probe_mode: self.aero_probe_mode,
+            },
+            aero_environment,
+            dt,
+        );
         let vehicle_speed_ms = st.linear_velocity.length();
         let brake_duct_drag_n = st.brake_thermal.total_duct_drag_force_n(
             &cfg.brake_thermal,
@@ -355,33 +381,17 @@ impl VehicleSimulator {
         // loop and consumed by the thermal update.
         let mut wheel_lateral_slip_ms = [0.0f64; 4];
 
-        // GEVP central aerodynamic drag.
+        // Brake-duct drag remains owned by the brake thermal model. The aero
+        // solver already includes body/wing/floor drag and their moments.
         let drag_world = if st.linear_velocity.length() > 1e-6 {
-            st.linear_velocity.normalized() * -(st.aero.drag_force.abs() + brake_duct_drag_n)
+            st.linear_velocity.normalized() * -brake_duct_drag_n
         } else {
             Vec3::ZERO
         };
         total_force += drag_world;
 
-        // 3-point aerodynamic load distribution:
-        // Point 1: Front Wing / Axle (20%)
-        // Point 2: Floor / Diffuser (60%) at chassis floor center
-        // Point 3: Rear Wing / Axle (20%)
-        if st.aero.total_downforce > 0.0 {
-            let front_force = basis.transform_vector(Vec3::new(0.0, -st.aero.front_downforce, 0.0));
-            let diffuser_force =
-                basis.transform_vector(Vec3::new(0.0, -st.aero.diffuser_downforce, 0.0));
-            let rear_force = basis.transform_vector(Vec3::new(0.0, -st.aero.rear_downforce, 0.0));
-
-            let front_point = st.transform.transform_point(axle_center_local(cfg, true));
-            let diffuser_point = st.transform.transform_point(diffuser_center_local(cfg));
-            let rear_point = st.transform.transform_point(axle_center_local(cfg, false));
-
-            total_force += front_force + diffuser_force + rear_force;
-            total_torque += (front_point - cg_world).cross(front_force);
-            total_torque += (diffuser_point - cg_world).cross(diffuser_force);
-            total_torque += (rear_point - cg_world).cross(rear_force);
-        }
+        total_force += basis.transform_vector(st.aero.force_local);
+        total_torque += basis.transform_vector(st.aero.torque_local);
 
         let braking = effective_input.brake > 0.0 || effective_input.handbrake > 0.0;
         for wheel in WheelIndex::ALL {
@@ -865,15 +875,6 @@ pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> 
 
 pub fn default_spawn_height(config: &VehicleConfig) -> f64 {
     (config.front_tire_radius + config.rear_tire_radius) * 0.5
-}
-
-fn axle_center_local(config: &VehicleConfig, front: bool) -> Vec3 {
-    let z = if front {
-        -config.wheelbase * 0.5
-    } else {
-        config.wheelbase * 0.5
-    };
-    Vec3::new(0.0, 0.0, z)
 }
 
 pub fn diffuser_center_local(config: &VehicleConfig) -> Vec3 {
