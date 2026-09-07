@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "d7d8a08fca460341cf1591f508bd58be4c7d1c14",
+  "source_commit": "b17d844f5d5721482f257c2c9b3265e687bec7d8",
   "platform": "windows-x86_64",
   "configuration": [
     "template_debug"
@@ -8,53 +8,53 @@
   "artifacts": [
     {
       "path": "game/addons/formula90s/bin/formula90_core.dll",
-      "bytes": 2605056,
-      "sha256": "6fc71ea9a954b52690cd661c52917754b5ba509e1ca0e31fec4b5c5b0106addd"
+      "bytes": 3752960,
+      "sha256": "b9874f6d3f644644ffb9a099a2be088366b4449ae61df5831e2478e8395e437f"
     },
     {
       "path": "game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
-      "bytes": 2605056,
-      "sha256": "6fc71ea9a954b52690cd661c52917754b5ba509e1ca0e31fec4b5c5b0106addd"
+      "bytes": 3752960,
+      "sha256": "b9874f6d3f644644ffb9a099a2be088366b4449ae61df5831e2478e8395e437f"
     },
     {
       "path": "game/addons/formula90s/bin/game_sim.dll",
-      "bytes": 1287168,
-      "sha256": "e63f8da2b9f7a354594c470e47341213ca681bb597005ef058a91ff5f31aad3d"
+      "bytes": 1547776,
+      "sha256": "94c82e44e36557fd947258a3a63a7b3cca6d312cacad7cb809f67e0da02f4ea1"
     },
     {
       "path": "game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
-      "bytes": 1287168,
-      "sha256": "e63f8da2b9f7a354594c470e47341213ca681bb597005ef058a91ff5f31aad3d"
+      "bytes": 1547776,
+      "sha256": "94c82e44e36557fd947258a3a63a7b3cca6d312cacad7cb809f67e0da02f4ea1"
     },
     {
       "path": "game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
-      "bytes": 983552,
-      "sha256": "ca7fe9a93b060c4c580d187151339bae9407e96e421c4811a6020c1cdccf904b"
+      "bytes": 700416,
+      "sha256": "e8728708f86e9b68dd5432d3d30e4345d272b79473855b7cacf19a1e835dbbc8"
     },
     {
       "path": "game/addons/formula90s/bin/psx_art_plugin.dll",
       "bytes": 484352,
-      "sha256": "467b6ebd167aef8c23209bc8999b4c9a6ff96ccdc0edd0cade136ad56915383f"
+      "sha256": "75da36d6a4bfb333ff876c47ae03f84995c007cd75bf313bb32cf13a294a9657"
     },
     {
       "path": "game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
       "bytes": 484352,
-      "sha256": "467b6ebd167aef8c23209bc8999b4c9a6ff96ccdc0edd0cade136ad56915383f"
+      "sha256": "75da36d6a4bfb333ff876c47ae03f84995c007cd75bf313bb32cf13a294a9657"
     },
     {
       "path": "game/addons/formula90s/bin/vehicle_audio_engine.dll",
-      "bytes": 1402368,
-      "sha256": "21948d0d0342e43912faa0fba2e8a7792e9f6ade202e014f2cab7edc448140f3"
+      "bytes": 1565696,
+      "sha256": "8d7bc9743599d5b230578ac88afd0e6412e341e5c8dd5bb58655b22c815627f1"
     },
     {
       "path": "game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
-      "bytes": 1402368,
-      "sha256": "21948d0d0342e43912faa0fba2e8a7792e9f6ade202e014f2cab7edc448140f3"
+      "bytes": 1565696,
+      "sha256": "8d7bc9743599d5b230578ac88afd0e6412e341e5c8dd5bb58655b22c815627f1"
     },
     {
       "path": "game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
-      "bytes": 1233408,
-      "sha256": "717e67c8f7307a55ae5883ad5ce3bf15d747494c38aa0f3cf8fb073aa0bdc3ed"
+      "bytes": 1493504,
+      "sha256": "4adfc014babf1230b83854b6a45d97329403957ee39f15dbe533b697cdb912f0"
     }
   ]
 }
