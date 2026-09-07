@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/camera/fixed_tcam_rig.gd" id="1_tcam"]
+
+[node name="CameraRigTCam" type="Node3D"]
+top_level = true
+script = ExtResource("1_tcam")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = false
+fov = 65.0
+near = 0.05
+far = 2000.0

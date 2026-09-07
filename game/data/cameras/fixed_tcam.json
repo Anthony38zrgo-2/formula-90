@@ -1,0 +1,10 @@
+{
+  "schema": "formula90s/tcam/v1",
+  "height_offset_m": 0.7,
+  "lateral_offset_m": 0.0,
+  "longitudinal_offset_m": 0.3,
+  "pitch_deg": -5.0,
+  "fov_deg": 65.0,
+  "near_m": 0.05,
+  "far_m": 2000.0
+}

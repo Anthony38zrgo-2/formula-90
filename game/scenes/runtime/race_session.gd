@@ -4,6 +4,7 @@ extends Node3D
 signal composition_ready(vehicle: Node, track: Node3D, aids: DrivingAidsController)
 
 const CAMERA_SCENE := preload("res://scenes/runtime/arcade_chase_camera_rig.tscn")
+const TCAM_SCENE := preload("res://scenes/runtime/fixed_tcam_rig.tscn")
 const AIDS_SCRIPT := preload("res://scripts/vehicle/driving_aids.gd")
 
 @export var config: RaceSessionConfig
@@ -17,6 +18,9 @@ var background_skybox: BackgroundSkybox
 # Deprecated compatibility handle. Factory-authored tracks no longer
 # instantiate BackgroundMountains3D at runtime.
 var background_mountains_3d: BackgroundMountains3D
+var camera_rig_chase: Node3D
+var camera_rig_tcam: Node3D
+var use_tcam := false
 
 func _ready() -> void:
 	if config != null:
@@ -68,17 +72,51 @@ func _find_vehicle_spawn(track: Node) -> Marker3D:
 	return null
 
 func _add_runtime_systems() -> void:
-	var camera_rig := CAMERA_SCENE.instantiate() as Node3D
-	camera_rig.name = "CameraRig"
-	camera_rig.set("car_path", NodePath("../VehicleContainer/ActiveVehicle/VehicleRigidBody"))
-	add_child(camera_rig)
-	
+	camera_rig_chase = CAMERA_SCENE.instantiate() as Node3D
+	camera_rig_chase.name = "CameraRig"
+	camera_rig_chase.set("car_path", NodePath("../VehicleContainer/ActiveVehicle/VehicleRigidBody"))
+	add_child(camera_rig_chase)
+
+	camera_rig_tcam = TCAM_SCENE.instantiate() as Node3D
+	camera_rig_tcam.name = "CameraRigTCam"
+	camera_rig_tcam.set("car_path", NodePath("../VehicleContainer/ActiveVehicle/VehicleRigidBody"))
+	add_child(camera_rig_tcam)
+	_apply_active_camera(false)
+
 	driving_aids = AIDS_SCRIPT.new() as DrivingAidsController
 	driving_aids.name = "DrivingAids"
 	driving_aids.vehicle_node = active_vehicle
 	add_child(driving_aids)
-	
-	_setup_background(camera_rig)
+
+	_setup_background(camera_rig_chase)
+
+
+func _process(_delta: float) -> void:
+	# Polling global en vez de _unhandled_input: RaceSession vive dentro del
+	# SubViewport (WorldViewport) y los eventos de tecla no siempre se propagan
+	# a _unhandled_input de nodos embebidos. Input.is_action_just_pressed es
+	# independiente del viewport/foco (mismo patron que VehicleRustInputController).
+	if InputMap.has_action("Toggle Camera") and Input.is_action_just_pressed("Toggle Camera"):
+		toggle_camera()
+
+
+func toggle_camera() -> void:
+	_apply_active_camera(not use_tcam)
+
+
+func is_tcam_active() -> bool:
+	return use_tcam
+
+
+func _apply_active_camera(enable_tcam: bool) -> void:
+	use_tcam = enable_tcam
+	var chase_cam := _find_camera3d_recursive(camera_rig_chase) if camera_rig_chase != null else null
+	var tcam_cam := _find_camera3d_recursive(camera_rig_tcam) if camera_rig_tcam != null else null
+	if chase_cam != null:
+		chase_cam.current = not use_tcam
+	if tcam_cam != null:
+		tcam_cam.current = use_tcam
+	_rebind_background_to_active_camera()
 
 func _find_camera3d_recursive(node: Node) -> Camera3D:
 	if node is Camera3D:
@@ -137,6 +175,21 @@ func _setup_background(camera_rig: Node3D) -> void:
 		push_warning("RaceSession: No se pudo activar el BackgroundController; se conserva el fallback legacy.")
 
 
+func _rebind_background_to_active_camera() -> void:
+	var active_rig := camera_rig_tcam if use_tcam else camera_rig_chase
+	if active_rig == null:
+		return
+	var cam := active_rig.get_node_or_null("Camera3D") as Camera3D
+	if cam == null:
+		cam = _find_camera3d_recursive(active_rig)
+	if cam == null:
+		return
+	if background_skybox != null:
+		background_skybox.set_camera_source(cam)
+	if background_controller != null:
+		background_controller.set_camera_source(cam)
+
+
 func _hide_legacy_background() -> void:
 	if active_track == null:
 		return
@@ -154,7 +207,7 @@ func _clear_composition() -> void:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"DrivingAids", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
+	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -162,6 +215,9 @@ func _clear_composition() -> void:
 	active_track = null
 	active_vehicle_root = null
 	active_vehicle = null
+	camera_rig_chase = null
+	camera_rig_tcam = null
+	use_tcam = false
 	driving_aids = null
 	background_controller = null
 	background_skybox = null

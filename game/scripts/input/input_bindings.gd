@@ -31,6 +31,7 @@ const SHOW_DEBUG := "ShowDebug"
 const DEBUG_NEXT := "DebugNext"
 const DEBUG_PREVIOUS := "DebugPrevious"
 const RESET_VEHICLE := "Reset Vehicle"
+const TOGGLE_CAMERA := "Toggle Camera"
 
 
 func _init() -> void:
@@ -42,7 +43,7 @@ func _init() -> void:
 	_register(STEER_LEFT, 0.12, [key_ev(4194319), joypad_axis_ev(0, -1.0)])
 	_register(STEER_RIGHT, 0.12, [key_ev(4194321), joypad_axis_ev(0, 1.0)])
 	_register(HANDBRAKE, 0.5, [key_ev(32), joypad_button_ev(0)])
-	_register(CLUTCH, 0.5, [key_ev(67), joypad_button_ev(9)])
+	_register(CLUTCH, 0.5, [key_ev(88), joypad_button_ev(9)])
 	_register(SHIFT_UP, 0.5, [key_ev(65), joypad_button_ev(2)])
 	_register(SHIFT_DOWN, 0.5, [key_ev(90), joypad_button_ev(3)])
 	_register(AID_1, 0.2, [key_ev(49)])
@@ -58,6 +59,8 @@ func _init() -> void:
 	# Previously missing in project.godot [input]; now defined authoritatively.
 	_register(TOGGLE_TRACTION_CONTROL, 0.5, [key_ev(84), joypad_button_ev(12)])
 	_register(RESET_VEHICLE, 0.5, [key_ev(82)])
+	# Fixed T-cam toggle. C (67) previously drove Clutch; Clutch moved to X (88).
+	_register(TOGGLE_CAMERA, 0.5, [key_ev(67)])
 
 
 func _register(action: String, deadzone: float, events: Array) -> void:
