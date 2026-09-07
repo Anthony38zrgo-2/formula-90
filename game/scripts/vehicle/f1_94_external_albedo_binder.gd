@@ -26,7 +26,7 @@ func _bind_mesh(mesh_instance: MeshInstance3D) -> void:
 		return
 	var material := StandardMaterial3D.new()
 	material.albedo_texture = texture
-	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	material.metallic = 0.0
 	material.roughness = 1.0
 	material.cull_mode = BaseMaterial3D.CULL_BACK
