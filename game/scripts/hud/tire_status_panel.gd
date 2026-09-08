@@ -18,7 +18,8 @@ extends PanelContainer
 ##
 ## Every visual/layout knob is data-driven through HudConfig (hud_config.json);
 ## the whole panel can be resized/retuned by editing that JSON without touching
-## GDScript. Default scale is 50% of the compact readout (0.25).
+## GDScript. Default scale is 90% of the compact readout (0.90) at the Full-HD
+## runtime resolution, leaving the readout legible without crowding the tachometer.
 
 var _settings := HudConfig.TiresSettings.new()
 

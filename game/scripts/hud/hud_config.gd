@@ -49,7 +49,7 @@ class TiresSettings:
 	## Every visual/layout knob below is editable via hud_config.json.
 
 	var visible := true
-	var scale := 0.25
+	var scale := 0.9
 	var size := Vector2(390.0, 170.0)
 	var gap := 10.0
 	var title := "TYRES"

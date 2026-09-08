@@ -63,15 +63,15 @@ func _run() -> void:
 	elif retro_hud.get("state").gear_label != "N":
 		printerr("[FAIL] Retro HUD did not receive the standalone adapter state.")
 		failures += 1
-	elif not is_equal_approx(retro_hud.scale.x, 0.5):
-		printerr("[FAIL] Embedded Retro HUD scale was not applied from hud_config.json (expected 0.5).")
+	elif not is_equal_approx(retro_hud.scale.x, 0.68):
+		printerr("[FAIL] Embedded Retro HUD scale was not applied from hud_config.json (expected 0.68).")
 		failures += 1
 	var tire_panel := hud.get_node_or_null("TireStatusPanel") as TireStatusPanel
 	if tire_panel == null:
 		printerr("[FAIL] Runtime-created Tyres panel is missing.")
 		failures += 1
-	elif not is_equal_approx(tire_panel.scale.x, 0.25):
-		printerr("[FAIL] Tyres panel scale was not applied from hud_config.json (expected 0.25).")
+	elif not is_equal_approx(tire_panel.scale.x, 0.9):
+		printerr("[FAIL] Tyres panel scale was not applied from hud_config.json (expected 0.9).")
 		failures += 1
 	if aid_message == null or aid_message.visible:
 		printerr("[FAIL] Aid message should begin hidden until an aid state changes.")

@@ -37,11 +37,12 @@ script = ExtResource("5_tuner")
 
 [node name="Minimap" type="Control" parent="."]
 layout_mode = 0
-offset_left = 18.0
-offset_top = 104.0
-offset_right = 126.0
-offset_bottom = 232.0
+offset_left = 54.0
+offset_top = 312.0
+offset_right = 162.0
+offset_bottom = 440.0
 mouse_filter = 2
+scale = Vector2(3, 3)
 script = ExtResource("2")
 target_path = NodePath("../../VehicleController/VehicleRigidBody")
 map_data = ExtResource("3")
@@ -70,13 +71,13 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -194.0
-offset_top = -266.0
-offset_right = 159.0
-offset_bottom = 234.0
+offset_left = -260.0
+offset_top = -350.0
+offset_right = 93.0
+offset_bottom = 150.0
 grow_horizontal = 0
 grow_vertical = 0
-scale = Vector2(0.5, 0.5)
+scale = Vector2(0.68, 0.68)
 
 [node name="SpeedValue" type="Label" parent="SpeedGauge"]
 layout_mode = 0
