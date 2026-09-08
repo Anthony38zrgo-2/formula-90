@@ -433,6 +433,7 @@ pub struct VehicleAudioEngine {
     // and its output buffer is silenced until the hook is cleared.
     gf509_processing_bypassed: bool,
     diagnostics: ContinuousDiagnostics,
+    stage_diagnostics_enabled: bool,
     diagnostic_mode: DiagnosticMode,
 
     // Camera-to-vehicle listener distance (metres), forwarded to the controller
@@ -475,6 +476,22 @@ pub struct ContinuousDiagnostics {
     pub received_rpm: f32,
     pub rendered_rpm: f32,
     pub peak_pre_protection: f32,
+    /// Peak/RMS entering the master coloration stage after output trim.
+    pub master_input_peak: f32,
+    pub master_input_rms: f32,
+    /// Peak/RMS leaving master coloration and entering the linked limiter.
+    pub master_color_peak: f32,
+    pub master_color_rms: f32,
+    /// Peak/RMS leaving the linked safety limiter.
+    pub final_output_peak: f32,
+    pub final_output_rms: f32,
+    /// Maximum absolute difference introduced by the nonlinear coloration stage.
+    pub coloration_delta_peak: f32,
+    /// Positive attenuation in dB caused by the linked safety limiter.
+    pub linked_limiter_gain_reduction_db: f32,
+    pub linked_limiter_active_samples: u64,
+    pub effective_saturation: f32,
+    pub effective_limiter_threshold: f32,
     pub protection_reduction_db: f32,
     pub last_render_ns: u64,
     pub worst_render_ns: u64,
@@ -568,10 +585,6 @@ impl VehicleAudioEngine {
             SoundMixerConfig::V1(_) => mixer_cfg.gains_map(),
             SoundMixerConfig::V2(_) => BTreeMap::new(),
         };
-        let cfg = AudioConfig {
-            exhaust: mixer_cfg.exhaust_config(),
-            ..AudioConfig::default()
-        };
         let (resolved_sounds, bus_configs, master) = match &mixer_cfg {
             SoundMixerConfig::V1(_) => (
                 bank_keys
@@ -595,6 +608,12 @@ impl VehicleAudioEngine {
                 }
                 (sounds, config.reverb_buses.clone(), config.master)
             }
+        };
+        let cfg = AudioConfig {
+            saturation: master.saturation,
+            limiter_threshold: master.limiter_threshold,
+            exhaust: mixer_cfg.exhaust_config(),
+            ..AudioConfig::default()
         };
         let bus_indices: BTreeMap<String, usize> = bus_configs
             .keys()
@@ -704,6 +723,7 @@ impl VehicleAudioEngine {
             gf509_render_failed: false,
             gf509_processing_bypassed: false,
             diagnostics: ContinuousDiagnostics::default(),
+            stage_diagnostics_enabled: false,
             diagnostic_mode: DiagnosticMode::Mix,
             listener_distance: 0.0,
             lod: LodLevel::Near,
@@ -728,6 +748,7 @@ impl VehicleAudioEngine {
     }
 
     pub fn set_config(&mut self, cfg: AudioConfig) {
+        self.stereo_limiter = StereoLimiter::new(cfg.limiter_threshold);
         self.cfg = cfg;
     }
 
@@ -778,6 +799,8 @@ impl VehicleAudioEngine {
             })
             .collect();
         self.master_gain = 10.0_f32.powf(config.master.output_db / 20.0);
+        self.cfg.saturation = config.master.saturation;
+        self.cfg.limiter_threshold = config.master.limiter_threshold;
         self.stereo_limiter = StereoLimiter::new(config.master.limiter_threshold);
         self.engine_lowpass = EngineLowPass::new(config.master.engine_lowpass_hz, self.sample_rate, config.master.engine_lowpass_db_per_oct);
         self.cfg.exhaust = config.exhaust.to_runtime();
@@ -1039,6 +1062,16 @@ impl VehicleAudioEngine {
     pub fn render(&mut self, out_l: &mut [f32], out_r: &mut [f32], n: usize) {
         let render_started = std::time::Instant::now();
         let mut peak_pre_protection = 0.0f32;
+        let mut master_input_sum_sq = 0.0f64;
+        let mut master_color_sum_sq = 0.0f64;
+        let mut final_output_sum_sq = 0.0f64;
+        let mut master_input_peak = 0.0f32;
+        let mut master_color_peak = 0.0f32;
+        let mut final_output_peak = 0.0f32;
+        let mut coloration_delta_peak = 0.0f32;
+        let mut limiter_input_peak = 0.0f32;
+        let mut limiter_output_peak = 0.0f32;
+        let mut linked_limiter_active_samples = 0u64;
         enable_fast_floats();
         self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
         let sr = self.sample_rate as f64;
@@ -1396,13 +1429,31 @@ impl VehicleAudioEngine {
                 mixed_l = continuous_l;
                 mixed_r = continuous_r;
             }
-            let saturated_l = self.limiter(mixed_l * self.master_gain);
-            let saturated_r = self.limiter(mixed_r * self.master_gain);
+            let raw_l = mixed_l * self.master_gain;
+            let raw_r = mixed_r * self.master_gain;
+            let colored_l = self.coloration(raw_l);
+            let colored_r = self.coloration(raw_r);
             peak_pre_protection = peak_pre_protection
-                .max((mixed_l * self.master_gain).abs())
-                .max((mixed_r * self.master_gain).abs());
+                .max(raw_l.abs())
+                .max(raw_r.abs());
             let (mut out_left, mut out_right) =
-                self.stereo_limiter.process(saturated_l, saturated_r);
+                self.stereo_limiter.process(colored_l, colored_r);
+            if self.stage_diagnostics_enabled {
+                master_input_peak = master_input_peak.max(raw_l.abs()).max(raw_r.abs());
+                master_color_peak = master_color_peak.max(colored_l.abs()).max(colored_r.abs());
+                coloration_delta_peak = coloration_delta_peak
+                    .max((colored_l - raw_l).abs())
+                    .max((colored_r - raw_r).abs());
+                master_input_sum_sq += raw_l as f64 * raw_l as f64;
+                master_input_sum_sq += raw_r as f64 * raw_r as f64;
+                master_color_sum_sq += colored_l as f64 * colored_l as f64;
+                master_color_sum_sq += colored_r as f64 * colored_r as f64;
+                limiter_input_peak = limiter_input_peak.max(colored_l.abs()).max(colored_r.abs());
+                limiter_output_peak = limiter_output_peak.max(out_left.abs()).max(out_right.abs());
+                if colored_l.abs().max(colored_r.abs()) > self.cfg.limiter_threshold {
+                    linked_limiter_active_samples = linked_limiter_active_samples.saturating_add(1);
+                }
+            }
             if self.transition_remaining > 0 && self.transition_total > 0 {
                 let progress =
                     1.0 - self.transition_remaining as f32 / self.transition_total as f32;
@@ -1411,6 +1462,11 @@ impl VehicleAudioEngine {
                 out_right =
                     self.transition_start_r + (out_right - self.transition_start_r) * progress;
                 self.transition_remaining -= 1;
+            }
+            if self.stage_diagnostics_enabled {
+                final_output_peak = final_output_peak.max(out_left.abs()).max(out_right.abs());
+                final_output_sum_sq += out_left as f64 * out_left as f64;
+                final_output_sum_sq += out_right as f64 * out_right as f64;
             }
             self.last_output_l = out_left;
             self.last_output_r = out_right;
@@ -1430,11 +1486,40 @@ impl VehicleAudioEngine {
             |runtime| runtime.rendered_telemetry().rpm,
         );
         self.diagnostics.peak_pre_protection = peak_pre_protection;
-        self.diagnostics.protection_reduction_db = if peak_pre_protection > 1.0 {
-            -20.0 * peak_pre_protection.log10()
+        self.diagnostics.effective_saturation = self.cfg.saturation.clamp(0.0, 1.0);
+        self.diagnostics.effective_limiter_threshold = self.cfg.limiter_threshold.clamp(0.0, 1.0);
+        if self.stage_diagnostics_enabled && n > 0 {
+            let channel_samples = (n as f64 * 2.0).max(1.0);
+            self.diagnostics.master_input_peak = master_input_peak;
+            self.diagnostics.master_input_rms = (master_input_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.master_color_peak = master_color_peak;
+            self.diagnostics.master_color_rms = (master_color_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.final_output_peak = final_output_peak;
+            self.diagnostics.final_output_rms = (final_output_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.coloration_delta_peak = coloration_delta_peak;
+            self.diagnostics.linked_limiter_active_samples = linked_limiter_active_samples;
+            self.diagnostics.linked_limiter_gain_reduction_db = if limiter_input_peak > 0.0
+                && limiter_output_peak > 0.0
+                && limiter_output_peak < limiter_input_peak
+            {
+                20.0 * (limiter_input_peak / limiter_output_peak).log10()
+            } else {
+                0.0
+            };
+            self.diagnostics.protection_reduction_db =
+                self.diagnostics.linked_limiter_gain_reduction_db;
         } else {
-            0.0
-        };
+            self.diagnostics.master_input_peak = 0.0;
+            self.diagnostics.master_input_rms = 0.0;
+            self.diagnostics.master_color_peak = 0.0;
+            self.diagnostics.master_color_rms = 0.0;
+            self.diagnostics.final_output_peak = 0.0;
+            self.diagnostics.final_output_rms = 0.0;
+            self.diagnostics.coloration_delta_peak = 0.0;
+            self.diagnostics.linked_limiter_gain_reduction_db = 0.0;
+            self.diagnostics.linked_limiter_active_samples = 0;
+            self.diagnostics.protection_reduction_db = 0.0;
+        }
         self.diagnostics.last_render_ns = elapsed_ns;
         self.diagnostics.worst_render_ns = self.diagnostics.worst_render_ns.max(elapsed_ns);
         self.diagnostics.blocks = self.diagnostics.blocks.saturating_add(1);
@@ -1447,14 +1532,16 @@ impl VehicleAudioEngine {
         }
     }
 
-    /// Smooth soft-saturation limiter. The signal is driven through `tanh` (which
-    /// asymptotes gracefully, never flat-topping) and scaled to `limiter_threshold`,
-    /// so the peak can never reach ±1.0 (the DAC clip point) and transients are
-    /// compressed rather than hard-clipped. This replaces the previous `tanh` +
-    /// `clamp(±threshold)` which flat-topped loud transients (audible clipping).
-    fn limiter(&self, x: f32) -> f32 {
-        let drive = 1.0 + (self.cfg.saturation.max(0.0)) * 3.0;
-        (x * drive).tanh() * self.cfg.limiter_threshold
+    /// Master coloration. Saturation zero is an exact sample-transparent bypass;
+    /// the linked `StereoLimiter` below owns the safety ceiling independently.
+    fn coloration(&self, x: f32) -> f32 {
+        let saturation = self.cfg.saturation.clamp(0.0, 1.0);
+        if saturation == 0.0 {
+            return x;
+        }
+        let drive = 1.0 + saturation * 3.0;
+        let shaped = (x * drive).tanh();
+        x + saturation * (shaped - x)
     }
 
     // --- Telemetry accessors ---
@@ -1604,6 +1691,16 @@ impl VehicleAudioEngine {
 
     pub fn set_diagnostic_mode(&mut self, mode: DiagnosticMode) {
         self.diagnostic_mode = mode;
+    }
+
+    /// Enable stage-level peak/RMS probes for evidence captures. Disabled by
+    /// default so the normal callback does not pay for diagnostic accumulation.
+    pub fn set_stage_diagnostics_enabled(&mut self, enabled: bool) {
+        self.stage_diagnostics_enabled = enabled;
+    }
+
+    pub fn stage_diagnostics_enabled(&self) -> bool {
+        self.stage_diagnostics_enabled
     }
 
     /// Diagnostic-only processing bypass for V10-003 experiments.
@@ -2229,6 +2326,7 @@ mod tests {
             gf509_render_failed: false,
             gf509_processing_bypassed: false,
             diagnostics: ContinuousDiagnostics::default(),
+            stage_diagnostics_enabled: false,
             diagnostic_mode: DiagnosticMode::Mix,
             listener_distance: 0.0,
             lod: LodLevel::Near,
@@ -2333,6 +2431,21 @@ mod tests {
     }
 
     #[test]
+    fn master_config_reload_updates_saturation_and_linked_threshold() {
+        let mut engine = engine_with_bank(dummy_bank());
+        assert!((engine.config().saturation - 0.06).abs() < 1e-6);
+        let result = engine.apply_config_json(
+            r#"{
+                "schema_version": 2,
+                "master": {"saturation": 0.0, "limiter_threshold": 0.73}
+            }"#,
+        );
+        assert!(result.is_valid());
+        assert_eq!(engine.config().saturation, 0.0);
+        assert_eq!(engine.config().limiter_threshold, 0.73);
+    }
+
+    #[test]
     fn sustained_scrape_keeps_cursor_and_releases_smoothly() {
         let mut e = engine_with_bank(dummy_bank());
         e.set_scrape_state(true, 0.8, 30.0, 0.0);
@@ -2360,36 +2473,34 @@ mod tests {
     }
 
     #[test]
-    fn limiter_soft_clips_without_harsh_clip() {
+    fn zero_color_is_sample_transparent_and_linked_limiter_stays_active() {
+        let mut e = engine_with_bank(dummy_bank());
+        e.set_config(AudioConfig {
+            saturation: 0.0,
+            limiter_threshold: 0.9,
+            ..AudioConfig::default()
+        });
+        for x in [-20.0f32, -1.0, -0.05, 0.0, 0.05, 1.0, 20.0] {
+            assert_eq!(e.coloration(x), x, "zero color changed x={x}");
+        }
+        let (left, right) = e.stereo_limiter.process(2.0, -1.0);
+        assert!((left - 0.9).abs() < 1e-6);
+        assert!((right + 0.45).abs() < 1e-6);
+    }
+
+    #[test]
+    fn nonzero_color_changes_overload_without_owning_safety_ceiling() {
         let e = engine_with_bank(dummy_bank());
-        let ceiling = e.config().limiter_threshold;
-        let drive = 1.0 + e.config().saturation * 3.0;
-
-        // 1) Bounded: a deep overload must never exceed the ceiling (no DAC clip).
-        for x in [0.0f32, 0.5, 1.0, 2.0, 5.0, 20.0, 1000.0] {
-            let y = e.limiter(x);
-            assert!(y.abs() <= ceiling + 1e-4, "exceeded ceiling at x={x}: {y}");
-            assert!(y.is_finite(), "non-finite at x={x}");
-        }
-
-        // 2) Monotonic: a proper limiter never inverts the signal.
-        let mut prev = -1e9f32;
-        for i in 0..400usize {
-            let x = (i as f32) * 0.1 - 20.0;
-            let y = e.limiter(x);
-            assert!(y >= prev - 1e-5, "limiter not monotonic at x={x}");
-            prev = y;
-        }
-
-        // 3) Low-level transparency: quiet signals pass through with ~unity drive
-        //    gain (not squashed), proving the limiter only acts on peaks.
-        let quiet = e.limiter(0.05);
-        let expected = (0.05 * drive).tanh() * ceiling;
-        assert!(
-            (quiet - expected).abs() < 1e-4,
-            "quiet signal not transparent: {quiet} vs {expected}"
-        );
-        assert!(quiet.abs() > 0.04, "quiet signal over-attenuated: {quiet}");
+        let plain = e.coloration(2.0);
+        let mut colored = e;
+        colored.cfg.saturation = 0.5;
+        let shaped = colored.coloration(2.0);
+        assert!(shaped.is_finite());
+        assert!((shaped - plain).abs() > 1e-3);
+        assert!(shaped.abs() > 0.0);
+        let (left, right) = colored.stereo_limiter.process(shaped, -shaped);
+        assert!(left.abs() <= colored.cfg.limiter_threshold + 1e-6);
+        assert!(right.abs() <= colored.cfg.limiter_threshold + 1e-6);
     }
 
     #[test]

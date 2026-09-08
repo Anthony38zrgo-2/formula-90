@@ -8,10 +8,17 @@ game/crates/vehicle-audio-engine/src/bin/*
 !game/crates/vehicle-audio-engine/src/bin/va_bench.rs
 !game/crates/vehicle-audio-engine/src/bin/aud_runtime_baseline.rs
 !game/crates/vehicle-audio-engine/src/bin/v10_provenance_probe.rs
+!game/crates/v10-engine-synth/src/bin/
+game/crates/v10-engine-synth/src/bin/*
+!game/crates/v10-engine-synth/src/bin/v10_render.rs
+!game/crates/v10-engine-synth/src/bin/v10_boundary_regression.rs
+!game/crates/v10-engine-synth/src/bin/v10_source_bench.rs
+!game/crates/v10-engine-synth/src/bin/v10_saturation_bench.rs
 !game/crates/formula90-core/src/bin/
 game/crates/formula90-core/src/bin/*
 !game/crates/formula90-core/src/bin/core_cli.rs
 !game/crates/formula90-core/src/bin/aud_path_bench.rs
+!game/crates/formula90-core/src/bin/v10_physics_transient_capture.rs
 game/addons/formula90s/bin/*
 !game/addons/formula90s/bin/.gitkeep
 game/telemetry/*

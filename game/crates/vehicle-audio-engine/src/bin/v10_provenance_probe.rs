@@ -129,6 +129,7 @@ fn mixer_probe(
     let mut near = VehicleAudioEngine::new(bank).map_err(|e| e.to_string())?;
     near.enable_v10_gf509(assets)?;
     near.set_diagnostic_mode(DiagnosticMode::V10Only);
+    near.set_stage_diagnostics_enabled(true);
     near.set_listener_distance(5.0);
     let mut far = VehicleAudioEngine::new(bank).map_err(|e| e.to_string())?;
     far.enable_v10_gf509(assets)?;
@@ -147,6 +148,24 @@ fn mixer_probe(
     }
     let near_far_diff =
         max_abs_diff(&near_left, &far_left).max(max_abs_diff(&near_right, &far_right));
+    let near_stage = near.continuous_diagnostics();
+
+    let mut overload = VehicleAudioEngine::new(bank).map_err(|e| e.to_string())?;
+    overload.enable_v10_gf509(assets)?;
+    overload.set_diagnostic_mode(DiagnosticMode::V10Only);
+    overload.set_stage_diagnostics_enabled(true);
+    overload.set_synth_volume(2.0);
+    let overload_config = overload.apply_config_json(
+        r#"{
+            "schema_version": 2,
+            "master": {"output_db": 12.0, "saturation": 0.0, "limiter_threshold": 0.90}
+        }"#,
+    );
+    overload.set_telemetry(&input, "asphalt");
+    for _ in 0..16 {
+        overload.render(&mut near_left, &mut near_right, BLOCK);
+    }
+    let overload_stage = overload.continuous_diagnostics();
 
     let mut output_only_mute = VehicleAudioEngine::new(bank).map_err(|e| e.to_string())?;
     output_only_mute.enable_v10_gf509(assets)?;
@@ -188,6 +207,7 @@ fn mixer_probe(
         "requested_master_saturation": requested_saturation,
         "constructed_saturation_before_reload": saturation_before,
         "constructed_saturation_after_reload": saturation_after_reload,
+        "effective_limiter_threshold_after_reload": configured.config().limiter_threshold,
         "continuous_source_near": format!("{:?}", near.continuous_source()),
         "continuous_source_far": format!("{:?}", far.continuous_source()),
         "near_lod": format!("{:?}", near.synth_lod()),
@@ -195,6 +215,34 @@ fn mixer_probe(
         "settled_near_rms": rms(&near_left),
         "settled_far_rms": rms(&far_left),
         "settled_near_far_max_abs_diff": near_far_diff,
+        "stage_diagnostics": {
+            "enabled": near.stage_diagnostics_enabled(),
+            "steady": {
+                "master_input_peak": near_stage.master_input_peak,
+                "master_input_rms": near_stage.master_input_rms,
+                "master_color_peak": near_stage.master_color_peak,
+                "master_color_rms": near_stage.master_color_rms,
+                "final_output_peak": near_stage.final_output_peak,
+                "final_output_rms": near_stage.final_output_rms,
+                "coloration_delta_peak": near_stage.coloration_delta_peak,
+                "linked_limiter_gain_reduction_db": near_stage.linked_limiter_gain_reduction_db,
+                "linked_limiter_active_samples": near_stage.linked_limiter_active_samples,
+                "effective_saturation": near_stage.effective_saturation,
+                "effective_limiter_threshold": near_stage.effective_limiter_threshold,
+            },
+            "overload": {
+                "config_reload_valid": overload_config.is_valid(),
+                "master_input_peak": overload_stage.master_input_peak,
+                "master_color_peak": overload_stage.master_color_peak,
+                "final_output_peak": overload_stage.final_output_peak,
+                "coloration_delta_peak": overload_stage.coloration_delta_peak,
+                "linked_limiter_gain_reduction_db": overload_stage.linked_limiter_gain_reduction_db,
+                "linked_limiter_active_samples": overload_stage.linked_limiter_active_samples,
+                "effective_saturation": overload_stage.effective_saturation,
+                "effective_limiter_threshold": overload_stage.effective_limiter_threshold,
+            },
+            "contract": "master input -> zero-transparent coloration -> linked safety limiter -> final output",
+        },
         "gf509_render_failed_near": near.gf509_render_failed(),
         "gf509_render_failed_far": far.gf509_render_failed(),
         "experiment_modes": {
