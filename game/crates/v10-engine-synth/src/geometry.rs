@@ -5,6 +5,14 @@
 
 use crate::config::EngineConfig;
 
+/// Number of intervals in the 720° volume phase table.
+///
+/// The table is per configured slider-crank and stores 1025 `f32` values. Ten
+/// cylinders therefore reserve about 40 KiB, paid once at construction, while
+/// the audio path replaces two transcendental functions and a square root with
+/// a bounded linear interpolation.
+pub const VOLUME_TABLE_SAMPLES: usize = 1_024;
+
 #[derive(Clone, Copy, Debug)]
 pub struct SliderCrank {
     bore_m: f32,
@@ -12,6 +20,8 @@ pub struct SliderCrank {
     rod_length_m: f32,
     clearance_volume_m3: f32,
     swept_volume_m3: f32,
+    area_m2: f32,
+    volume_table_m3: [f32; VOLUME_TABLE_SAMPLES + 1],
 }
 
 impl SliderCrank {
@@ -25,13 +35,21 @@ impl SliderCrank {
         let area_m2 = std::f64::consts::PI * 0.25 * bore * bore;
         let swept_volume_m3 = (area_m2 * stroke_m as f64) as f32;
         let clearance_volume_m3 = swept_volume_m3 / (compression_ratio - 1.0);
-        Self {
+        let mut geometry = Self {
             bore_m,
             crank_radius_m,
             rod_length_m,
             clearance_volume_m3,
             swept_volume_m3,
+            area_m2: area_m2 as f32,
+            volume_table_m3: [0.0; VOLUME_TABLE_SAMPLES + 1],
+        };
+        for index in 0..=VOLUME_TABLE_SAMPLES {
+            let angle_deg = index as f32 * (720.0 / VOLUME_TABLE_SAMPLES as f32);
+            let value = geometry.instantaneous_volume_m3_exact(angle_deg);
+            geometry.volume_table_m3[index] = value;
         }
+        geometry
     }
 
     /// Build from an `EngineConfig`, which is expected to already be validated.
@@ -65,8 +83,7 @@ impl SliderCrank {
     }
 
     pub fn area_m2(&self) -> f32 {
-        let bore = self.bore_m as f64;
-        (std::f64::consts::PI * 0.25 * bore * bore) as f32
+        self.area_m2
     }
 
     /// Piston travel from TDC along the cylinder axis, in metres.
@@ -89,7 +106,19 @@ impl SliderCrank {
     /// `V = clearance + A * (stroke_variation)`, where the swept term is derived
     /// analytically from the slider-crank kinematics.
     pub fn instantaneous_volume_m3(&self, crank_angle_deg: f32) -> f32 {
-        let area = self.area_m2() as f64;
+        let phase_deg = crank_angle_deg.rem_euclid(720.0);
+        let position = phase_deg * VOLUME_TABLE_SAMPLES as f32 / 720.0;
+        let index = (position as usize).min(VOLUME_TABLE_SAMPLES - 1);
+        let fraction = position - index as f32;
+        let lower = self.volume_table_m3[index];
+        let upper = self.volume_table_m3[index + 1];
+        lower + (upper - lower) * fraction
+    }
+
+    /// Exact analytic volume retained as a reference for bounded-equivalence
+    /// tests. The real-time path uses `instantaneous_volume_m3` above.
+    pub(crate) fn instantaneous_volume_m3_exact(&self, crank_angle_deg: f32) -> f32 {
+        let area = self.area_m2 as f64;
         (self.clearance_volume_m3 as f64 + area * self.disp(tau(crank_angle_deg))) as f32
     }
 
@@ -144,8 +173,12 @@ mod tests {
     fn swept_volume_matches_analytic_geometry() {
         let s = sample();
         let swept = s.instantaneous_volume_m3(180.0) - s.instantaneous_volume_m3(0.0);
-        let expected = std::f64::consts::PI * 0.25 * BORE_M as f64 * BORE_M as f64 * STROKE_M as f64;
-        assert!((swept as f64 - expected).abs() < 1e-8, "swept {swept} expected {expected}");
+        let expected =
+            std::f64::consts::PI * 0.25 * BORE_M as f64 * BORE_M as f64 * STROKE_M as f64;
+        assert!(
+            (swept as f64 - expected).abs() < 1e-8,
+            "swept {swept} expected {expected}"
+        );
     }
 
     #[test]
@@ -173,6 +206,48 @@ mod tests {
         }
         assert!(max_v > min_v, "expected ordered volume extremes");
         assert!(min_v > 0.0);
+    }
+
+    #[test]
+    fn phase_table_error_stays_within_declared_bound() {
+        let s = sample();
+        let mut max_error = 0.0f32;
+        for i in 0..=20_000 {
+            let angle = i as f32 * 0.037;
+            let exact = s.instantaneous_volume_m3_exact(angle);
+            let table = s.instantaneous_volume_m3(angle);
+            max_error = max_error.max((table - exact).abs());
+        }
+        assert!(
+            max_error <= 1.0e-8,
+            "phase-table volume error {max_error:e} m³ exceeds 1.0e-8 m³"
+        );
+    }
+
+    #[test]
+    fn phase_table_wraps_and_supports_geometry_extremes() {
+        let geometries = [
+            SliderCrank::new(0.075, 0.030, 0.100, 8.0),
+            SliderCrank::new(0.110, 0.055, 0.190, 18.0),
+            SliderCrank::new(0.090, 0.050, 0.010, 10.0),
+        ];
+        for geometry in geometries {
+            assert_eq!(
+                geometry.instantaneous_volume_m3(0.0),
+                geometry.instantaneous_volume_m3(720.0)
+            );
+            for i in 0..=4_000 {
+                let angle = i as f32 * 0.181;
+                let exact = geometry.instantaneous_volume_m3_exact(angle);
+                let table = geometry.instantaneous_volume_m3(angle);
+                assert!(exact.is_finite() && exact > 0.0);
+                assert!(table.is_finite() && table > 0.0);
+                assert!(
+                    (table - exact).abs() <= 1.0e-8,
+                    "angle {angle}: {table} vs {exact}"
+                );
+            }
+        }
     }
 
     #[test]

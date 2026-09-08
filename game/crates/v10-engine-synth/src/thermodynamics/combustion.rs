@@ -233,6 +233,86 @@ mod tests {
         CombustionChamber::new(&EngineConfig::default())
     }
 
+    fn exact_cold_charge_state(chamber: &CombustionChamber, angle_deg: f32) -> GasState {
+        let volume = chamber.geometry.instantaneous_volume_m3_exact(angle_deg);
+        chamber.polytrope.state_at(&chamber.charge, volume)
+    }
+
+    fn exact_expansion_state(
+        chamber: &CombustionChamber,
+        angle_deg: f32,
+        energy: f32,
+    ) -> (GasState, f32, f32) {
+        let cold = exact_cold_charge_state(chamber, angle_deg);
+        let deg_past_ignition = angle_deg - chamber.ignition_deg;
+        let burn_fraction = chamber.burn_fraction(deg_past_ignition);
+        let heat_j = chamber.fuel_energy_j * chamber.efficiency * energy * burn_fraction;
+        let temperature_k = cold.temperature_k + heat_j / (chamber.charge.mass_kg * CV_AIR);
+        let pressure_pa = ideal_gas_pressure(chamber.charge.mass_kg, temperature_k, cold.volume_m3);
+        (
+            GasState::new(
+                pressure_pa,
+                temperature_k,
+                chamber.charge.mass_kg,
+                cold.volume_m3,
+            ),
+            burn_fraction,
+            chamber.heat_release_rate_per_deg(deg_past_ignition, energy),
+        )
+    }
+
+    fn exact_frame(chamber: &CombustionChamber, age_deg: f32, energy: f32) -> CombustionFrame {
+        let angle = age_deg.rem_euclid(FOUR_STROKE_CYCLE_DEG);
+        if angle < EXPANSION_END_DEG {
+            let (state, burn_fraction, heat_release_rate_w) =
+                exact_expansion_state(chamber, angle, energy);
+            return CombustionFrame {
+                pressure_pa: state.pressure_pa,
+                temperature_k: state.temperature_k,
+                burn_fraction,
+                phase: ChamberPhase::Expansion,
+                heat_release_rate_w,
+            };
+        }
+        if angle < EXHAUST_END_DEG {
+            let (at_bdc, _, _) = exact_expansion_state(chamber, EXPANSION_END_DEG, energy);
+            let exhaust_progress = CombustionChamber::smoothstep(
+                (angle - EXPANSION_END_DEG) / (EXHAUST_END_DEG - EXPANSION_END_DEG),
+            );
+            return CombustionFrame {
+                pressure_pa: at_bdc.pressure_pa
+                    + (EXHAUST_PRESSURE_PA - at_bdc.pressure_pa) * exhaust_progress,
+                temperature_k: at_bdc.temperature_k
+                    + (EXHAUST_TEMPERATURE_K - at_bdc.temperature_k) * exhaust_progress,
+                burn_fraction: chamber.burn_fraction(EXPANSION_END_DEG - chamber.ignition_deg),
+                phase: ChamberPhase::Exhaust,
+                heat_release_rate_w: 0.0,
+            };
+        }
+        if angle < INTAKE_END_DEG {
+            let intake_progress = CombustionChamber::smoothstep(
+                (angle - EXHAUST_END_DEG) / (INTAKE_END_DEG - EXHAUST_END_DEG),
+            );
+            return CombustionFrame {
+                pressure_pa: EXHAUST_PRESSURE_PA
+                    + (INTAKE_MANIFOLD_PRESSURE_PA - EXHAUST_PRESSURE_PA) * intake_progress,
+                temperature_k: EXHAUST_TEMPERATURE_K
+                    + (INTAKE_TEMPERATURE_K - EXHAUST_TEMPERATURE_K) * intake_progress,
+                burn_fraction: 0.0,
+                phase: ChamberPhase::Intake,
+                heat_release_rate_w: 0.0,
+            };
+        }
+        let state = exact_cold_charge_state(chamber, angle);
+        CombustionFrame {
+            pressure_pa: state.pressure_pa,
+            temperature_k: state.temperature_k,
+            burn_fraction: 0.0,
+            phase: ChamberPhase::Compression,
+            heat_release_rate_w: 0.0,
+        }
+    }
+
     #[test]
     fn burn_fraction_starts_zero_and_reaches_completeness() {
         let c = chamber();
@@ -339,6 +419,72 @@ mod tests {
             .state_at(&c.charge, c.geometry.instantaneous_volume_m3(-20.0));
         assert!((pre.temperature_k - comp.temperature_k).abs() < 1.0e-2);
         assert!((pre.burn_fraction).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn phase_table_matches_corrected_chamber_at_steady_and_transient_points() {
+        let c = chamber();
+        let points = [
+            (0.0, 0.0),
+            (8.3, 0.25),
+            (27.7, 0.82),
+            (91.4, 1.0),
+            (179.7, 0.64),
+            (180.1, 0.64),
+            (271.3, 0.64),
+            (359.9, 0.64),
+            (421.7, 0.18),
+            (539.8, 0.18),
+            (612.2, 0.18),
+            (719.9, 0.92),
+            (720.0, 0.92),
+            (1_439.9, 0.37),
+        ];
+        for (angle, energy) in points {
+            let optimized = c.frame(angle, energy);
+            let reference = exact_frame(&c, angle, energy);
+            assert_eq!(optimized.phase, reference.phase, "phase at {angle}°");
+            assert_eq!(
+                optimized.burn_fraction, reference.burn_fraction,
+                "burn at {angle}°"
+            );
+            assert_eq!(optimized.heat_release_rate_w, reference.heat_release_rate_w);
+            let pressure_relative = (optimized.pressure_pa - reference.pressure_pa).abs()
+                / reference.pressure_pa.max(1.0);
+            let temperature_relative = (optimized.temperature_k - reference.temperature_k).abs()
+                / reference.temperature_k.max(1.0);
+            assert!(
+                pressure_relative <= 2.0e-3,
+                "pressure relative error {pressure_relative:e} at {angle}°"
+            );
+            assert!(
+                temperature_relative <= 2.0e-4,
+                "temperature relative error {temperature_relative:e} at {angle}°"
+            );
+        }
+    }
+
+    #[test]
+    fn corrected_chamber_energy_response_is_affine_but_not_promoted_to_a_table() {
+        let c = chamber();
+        for angle in [0.0, 8.3, 91.4, 179.7, 180.1, 271.3, 421.7, 612.2, 719.9] {
+            let zero = c.frame(angle, 0.0);
+            let half = c.frame(angle, 0.5);
+            let full = c.frame(angle, 1.0);
+            let expected_pressure = (zero.pressure_pa + full.pressure_pa) * 0.5;
+            let expected_temperature = (zero.temperature_k + full.temperature_k) * 0.5;
+            assert!(
+                (half.pressure_pa - expected_pressure).abs()
+                    <= expected_pressure.abs().max(1.0) * 2.0e-6,
+                "pressure energy response is not affine at {angle}°"
+            );
+            assert!(
+                (half.temperature_k - expected_temperature).abs()
+                    <= expected_temperature.abs().max(1.0) * 2.0e-6,
+                "temperature energy response is not affine at {angle}°"
+            );
+            assert_eq!(half.phase, full.phase);
+        }
     }
 
     #[test]
