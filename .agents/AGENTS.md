@@ -1,7 +1,7 @@
 # Formula-90 Agent Protocol
 
 AUTHORITY: `.agents/AGENTS.md`
-JSON SOT: `game/data/vehicles/f1_94/f1_94_physics.json` is the single authoritative source of truth for F1-94 tuning — it always wins over code defaults, canonical fallbacks, and scene values.
+JSON SOT: `game/data/vehicles/f1_2026_2008/f1_2026_2008_physics.json` is the single authoritative source of truth for the active vehicle tuning — it always wins over code defaults, canonical fallbacks, and scene values.
 INVARIANT: Fail Faster, Adapt Faster — cheapest falsification before mutation.
 
 PIPELINE:
