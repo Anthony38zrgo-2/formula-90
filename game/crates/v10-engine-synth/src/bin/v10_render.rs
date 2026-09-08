@@ -102,6 +102,7 @@ struct Args {
     out: PathBuf,
     stems_dir: PathBuf,
     acoustic_scene: bool,
+    excise_load_saturation: bool,
     sample_layer_dir: Option<PathBuf>,
     sweep_end_rpm: Option<f32>,
     hold_before_lift: bool,
@@ -136,6 +137,7 @@ fn parse_args() -> Result<Args, String> {
         out: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm.wav"),
         stems_dir: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm_stems"),
         acoustic_scene: false,
+        excise_load_saturation: false,
         sample_layer_dir: None,
         sweep_end_rpm: None,
         hold_before_lift: false,
@@ -160,6 +162,7 @@ fn parse_args() -> Result<Args, String> {
                     PathBuf::from(parse_value::<String>(&raw, &mut i, "--stems-dir")?)
             }
             "--acoustic-scene" => parsed.acoustic_scene = true,
+            "--excise-load-saturation" => parsed.excise_load_saturation = true,
             "--sample-layer-dir" => {
                 parsed.sample_layer_dir = Some(PathBuf::from(parse_value::<String>(
                     &raw,
@@ -364,6 +367,7 @@ fn run() -> Result<(), String> {
     };
     let mut engine = V10Engine::new(config.clone())?;
     let mut scene = AcousticScene::new(args.sample_rate as f32, AcousticSceneConfig::default())?;
+    scene.set_load_saturation_excised(args.excise_load_saturation);
     let mut sample_layer = args
         .sample_layer_dir
         .as_ref()
@@ -874,6 +878,7 @@ fn run() -> Result<(), String> {
             "  \"faust_used\": false,\n",
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
+            "  \"load_saturation_excised\": {},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
             "  \"chamber_cycle_model\": \"bounded_720deg_four_stroke_fresh_charge\",\n",
             "  \"chamber_phase_contract\": \"expansion_0_180,exhaust_180_360,intake_360_540,compression_540_720\",\n",
@@ -902,6 +907,7 @@ fn run() -> Result<(), String> {
         worst_reduction,
         args.acoustic_scene,
         sample_layer.is_some(),
+        args.excise_load_saturation,
         HYBRID_HEADROOM_GAIN,
     );
     if metadata_path.exists() {

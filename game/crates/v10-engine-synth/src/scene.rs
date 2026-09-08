@@ -1172,6 +1172,10 @@ pub struct AcousticScene {
     cockpit_cavity: CockpitCavity,
     low_mid_parallel: LowMidParallelCompressor,
     load_saturation: LoadDependentSaturation,
+    /// Diagnostic-only V10-018 graph excision. The default is false; when
+    /// enabled, the load-dependent saturation branch is not evaluated while
+    /// the parallel compressor and every other scene path remain active.
+    load_saturation_excised: bool,
     event_residual: EventResidual,
     cylinder_paths: [CylinderMechanicalPath; CYLINDER_COUNT],
     metal_order_notch: TrackingOrderNotch,
@@ -1225,6 +1229,7 @@ impl AcousticScene {
             cockpit_cavity: CockpitCavity::new(sample_rate),
             low_mid_parallel: LowMidParallelCompressor::new(sample_rate),
             load_saturation: LoadDependentSaturation::new(sample_rate),
+            load_saturation_excised: false,
             event_residual: EventResidual::new(sample_rate),
             cylinder_paths: std::array::from_fn(|index| {
                 CylinderMechanicalPath::new(index, sample_rate)
@@ -1245,6 +1250,13 @@ impl AcousticScene {
             firing_frequency_hz: 0.0,
             sample_clock: 0,
         })
+    }
+
+    /// Enable or disable the isolated V10-018 load-saturation graph
+    /// excision. This is a diagnostic experiment hook; default rendering is
+    /// unchanged. Call it at a scene boundary, not from an audio callback.
+    pub fn set_load_saturation_excised(&mut self, excised: bool) {
+        self.load_saturation_excised = excised;
     }
 
     #[inline]
@@ -1331,11 +1343,15 @@ impl AcousticScene {
             .parallel_order_notch
             .process(structural_low_mid_bus, self.firing_frequency_hz);
         let low_mid_parallel = self.low_mid_parallel.process(parallel_input);
-        let load_saturation = self.load_saturation.process(
-            parallel_input * 0.66 + low_mid_parallel * 0.24,
-            engine.throttle,
-            engine.load,
-        );
+        let load_saturation = if self.load_saturation_excised {
+            0.0
+        } else {
+            self.load_saturation.process(
+                parallel_input * 0.66 + low_mid_parallel * 0.24,
+                engine.throttle,
+                engine.load,
+            )
+        };
         let event_residual = self.event_residual.process(engine);
         let time = self.sample_clock as f32 / self.sample_rate;
         self.sample_clock = self.sample_clock.wrapping_add(1);
@@ -1435,5 +1451,35 @@ mod tests {
             heard |= output != 0.0;
         }
         assert!(heard);
+    }
+
+    #[test]
+    fn load_saturation_excision_preserves_parallel_compressor_path() {
+        let mut full = AcousticScene::new(48_000.0, AcousticSceneConfig::default()).unwrap();
+        let mut excised = AcousticScene::new(48_000.0, AcousticSceneConfig::default()).unwrap();
+        excised.set_load_saturation_excised(true);
+        let source = EngineFrame {
+            master: 0.42,
+            pressure_derivative: 0.18,
+            crank_phase_deg: 30.0,
+            throttle: 0.75,
+            load: 0.85,
+            ..EngineFrame::default()
+        };
+        let mut observed_full_saturation = false;
+        for sample in 0..2_000 {
+            let mut frame = source;
+            frame.crank_phase_deg = sample as f32 * 1.7;
+            frame.master = 0.42 + 0.18 * (sample as f32 * 0.021).sin();
+            let full_frame = full.process(&frame);
+            let excised_frame = excised.process(&frame);
+            assert_eq!(excised_frame.load_saturation, 0.0);
+            assert_eq!(full_frame.low_mid_parallel, excised_frame.low_mid_parallel);
+            observed_full_saturation |= full_frame.load_saturation.abs() > 1.0e-8;
+        }
+        assert!(
+            observed_full_saturation,
+            "probe did not excite load saturation"
+        );
     }
 }
