@@ -1,5 +1,5 @@
 use crate::config::EngineConfig;
-use crate::thermodynamics::combustion::CombustionChamber;
+use crate::thermodynamics::combustion::{ChamberPhase, CombustionChamber};
 use crate::thermodynamics::exhaust_runner::ExhaustRunner;
 use crate::thermodynamics::exhaust_valve::ExhaustValve;
 
@@ -10,6 +10,13 @@ pub const VALVE_FLOW_AREA_EXPONENT: f32 = 1.35;
 pub struct CylinderFrame {
     pub pressure: f32,
     pub pressure_derivative: f32,
+    /// Absolute chamber pressure (Pa) from the bounded four-stroke model.
+    pub chamber_pressure_pa: f32,
+    /// Chamber bulk temperature (K) from the bounded four-stroke model.
+    pub chamber_temperature_k: f32,
+    /// Heat-release diagnostic in the model's Joules-per-crank-degree units.
+    pub chamber_heat_release_rate: f32,
+    pub chamber_phase: ChamberPhase,
     pub blowdown: f32,
     pub valve_lift: f32,
     /// Effective exhaust port area (m²) from the physical valve model.
@@ -102,9 +109,11 @@ impl Cylinder {
         // also exposes the chamber pressure/temperature used to drive the
         // exhaust valve's pressure differential; the legacy handcrafted path has
         // no such state, so it reports a null chamber state.
+        let chamber_frame = config
+            .use_physical_pressure
+            .then(|| self.chamber.frame(self.age_deg, energy));
         let (pressure, chamber_pressure_pa, chamber_temperature_k) =
-            if config.use_physical_pressure {
-                let frame = self.chamber.frame(self.age_deg, energy);
+            if let Some(frame) = chamber_frame {
                 (
                     frame.pressure_pa / config.combustion_pressure_reference_pa,
                     frame.pressure_pa,
@@ -119,6 +128,18 @@ impl Cylinder {
                 ) * energy;
                 (p, 0.0, 0.0)
             };
+        let chamber_frame = chamber_frame.unwrap_or_else(|| {
+            // Legacy compatibility mode has no gas-state authority. Keep the
+            // diagnostic explicit instead of presenting proxy values as
+            // thermodynamic measurements.
+            crate::thermodynamics::combustion::CombustionFrame {
+                pressure_pa: 0.0,
+                temperature_k: 0.0,
+                burn_fraction: 0.0,
+                phase: ChamberPhase::Expansion,
+                heat_release_rate_w: 0.0,
+            }
+        });
         let pressure = pressure * self.cycle_gain * self.fixed_gain;
         let pressure_derivative = pressure - self.last_pressure;
         self.last_pressure = pressure;
@@ -164,6 +185,10 @@ impl Cylinder {
         CylinderFrame {
             pressure,
             pressure_derivative,
+            chamber_pressure_pa,
+            chamber_temperature_k,
+            chamber_heat_release_rate: chamber_frame.heat_release_rate_w,
+            chamber_phase: chamber_frame.phase,
             blowdown,
             valve_lift,
             effective_area_m2,

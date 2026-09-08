@@ -429,6 +429,9 @@ pub struct VehicleAudioEngine {
     gf509_block_l: Vec<f32>,
     gf509_block_r: Vec<f32>,
     gf509_render_failed: bool,
+    // Diagnostic-only experiment hook. When enabled, GF509 state is frozen
+    // and its output buffer is silenced until the hook is cleared.
+    gf509_processing_bypassed: bool,
     diagnostics: ContinuousDiagnostics,
     diagnostic_mode: DiagnosticMode,
 
@@ -476,6 +479,8 @@ pub struct ContinuousDiagnostics {
     pub last_render_ns: u64,
     pub worst_render_ns: u64,
     pub blocks: u64,
+    pub gf509_render_calls: u64,
+    pub gf509_bypass_blocks: u64,
     pub underruns: u64,
     pub asset_or_render_errors: u64,
 }
@@ -697,6 +702,7 @@ impl VehicleAudioEngine {
             gf509_block_l: vec![0.0; MAX_CPP_BLOCK],
             gf509_block_r: vec![0.0; MAX_CPP_BLOCK],
             gf509_render_failed: false,
+            gf509_processing_bypassed: false,
             diagnostics: ContinuousDiagnostics::default(),
             diagnostic_mode: DiagnosticMode::Mix,
             listener_distance: 0.0,
@@ -1060,9 +1066,12 @@ impl VehicleAudioEngine {
         let mut synth_prerendered = false;
         let gf509_active = self.continuous_source == ContinuousSourceKind::V10Gf509
             && self.gf509.is_some()
+            && !self.gf509_processing_bypassed
             && n <= MAX_CPP_BLOCK;
         self.gf509_render_failed = false;
         if gf509_active {
+            self.diagnostics.gf509_render_calls =
+                self.diagnostics.gf509_render_calls.saturating_add(1);
             if let Some(gf509) = &mut self.gf509 {
                 if gf509
                     .render_block(&mut self.gf509_block_l[..n], &mut self.gf509_block_r[..n])
@@ -1073,6 +1082,14 @@ impl VehicleAudioEngine {
                     self.gf509_block_r[..n].fill(0.0);
                 }
             }
+        } else if self.continuous_source == ContinuousSourceKind::V10Gf509
+            && self.gf509_processing_bypassed
+        {
+            self.diagnostics.gf509_bypass_blocks =
+                self.diagnostics.gf509_bypass_blocks.saturating_add(1);
+            let clear_n = n.min(MAX_CPP_BLOCK);
+            self.gf509_block_l[..clear_n].fill(0.0);
+            self.gf509_block_r[..clear_n].fill(0.0);
         }
         if cpp_active {
             let block_rpm = self.smoothed_rpm as f32;
@@ -1587,6 +1604,23 @@ impl VehicleAudioEngine {
 
     pub fn set_diagnostic_mode(&mut self, mode: DiagnosticMode) {
         self.diagnostic_mode = mode;
+    }
+
+    /// Diagnostic-only processing bypass for V10-003 experiments.
+    ///
+    /// The GF509 runtime state is frozen while bypassed and resumes from the
+    /// same state when cleared. This is intentionally narrower than a graph
+    /// framework and does not change the default render path.
+    pub fn set_gf509_processing_bypass(&mut self, bypassed: bool) {
+        self.gf509_processing_bypassed = bypassed;
+        if bypassed {
+            self.gf509_block_l.fill(0.0);
+            self.gf509_block_r.fill(0.0);
+        }
+    }
+
+    pub fn gf509_processing_bypassed(&self) -> bool {
+        self.gf509_processing_bypassed
     }
 
     /// Replace the provisional control-only load with the authoritative physics
@@ -2193,6 +2227,7 @@ mod tests {
             gf509_block_l: vec![0.0; MAX_CPP_BLOCK],
             gf509_block_r: vec![0.0; MAX_CPP_BLOCK],
             gf509_render_failed: false,
+            gf509_processing_bypassed: false,
             diagnostics: ContinuousDiagnostics::default(),
             diagnostic_mode: DiagnosticMode::Mix,
             listener_distance: 0.0,

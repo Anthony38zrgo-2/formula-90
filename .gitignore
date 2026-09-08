@@ -7,6 +7,7 @@ game/crates/vehicle-audio-engine/src/bin/*
 !game/crates/vehicle-audio-engine/src/bin/engine_sweep_render.rs
 !game/crates/vehicle-audio-engine/src/bin/va_bench.rs
 !game/crates/vehicle-audio-engine/src/bin/aud_runtime_baseline.rs
+!game/crates/vehicle-audio-engine/src/bin/v10_provenance_probe.rs
 !game/crates/formula90-core/src/bin/
 game/crates/formula90-core/src/bin/*
 !game/crates/formula90-core/src/bin/core_cli.rs

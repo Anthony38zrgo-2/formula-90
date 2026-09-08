@@ -26,6 +26,6 @@ pub use scene::{
     LowMidParallelCompressor, MetallicStructure, RearExhaustCapture, UnderSeatVibration,
 };
 pub use thermodynamics::{
-    CombustionChamber, CombustionFrame, ExhaustRunner, ExhaustValve, GasState, PolytropicProcess,
-    RunnerState,
+    ChamberPhase, CombustionChamber, CombustionFrame, ExhaustRunner, ExhaustValve, GasState,
+    PolytropicProcess, RunnerState,
 };

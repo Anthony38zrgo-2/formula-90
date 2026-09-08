@@ -11,8 +11,16 @@
 
 use crate::config::EngineConfig;
 use crate::geometry::SliderCrank;
-use crate::thermodynamics::gas::{GasState, CV_AIR, R_SPECIFIC_AIR};
+use crate::thermodynamics::gas::{ideal_gas_pressure, GasState, CV_AIR, R_SPECIFIC_AIR};
 use crate::thermodynamics::polytrope::PolytropicProcess;
+
+const FOUR_STROKE_CYCLE_DEG: f32 = 720.0;
+const EXPANSION_END_DEG: f32 = 180.0;
+const EXHAUST_END_DEG: f32 = 360.0;
+const INTAKE_END_DEG: f32 = 540.0;
+const EXHAUST_PRESSURE_PA: f32 = 101_325.0;
+const EXHAUST_TEMPERATURE_K: f32 = 1_000.0;
+const INTAKE_MANIFOLD_PRESSURE_PA: f32 = 101_325.0;
 
 /// Wiebe completeness factor `a`; `X_end = 1 - exp(-a)`.
 pub const WIEBE_A: f32 = 5.0;
@@ -23,15 +31,39 @@ pub const INTAKE_PRESSURE_PA: f32 = 101_325.0;
 /// Intake manifold temperature, K.
 pub const INTAKE_TEMPERATURE_K: f32 = 300.0;
 
+/// Explicit four-stroke phase after the firing TDC at angle zero.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u8)]
+pub enum ChamberPhase {
+    Expansion = 0,
+    Exhaust = 1,
+    Intake = 2,
+    Compression = 3,
+}
+
+impl Default for ChamberPhase {
+    fn default() -> Self {
+        Self::Expansion
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct CombustionFrame {
     pub pressure_pa: f32,
     pub temperature_k: f32,
     pub burn_fraction: f32,
+    pub phase: ChamberPhase,
     pub heat_release_rate_w: f32,
 }
 
-/// A single-zone combustion chamber driven by Wiebe heat release.
+/// A bounded single-zone combustion chamber driven by a 720-degree cycle.
+///
+/// The model is deliberately a small real-time approximation, not a CFD or a
+/// complete mass/energy solver.  The charge is renewed at the start of the
+/// compression stroke; heat release is only present in the firing/expansion
+/// phase; exhaust and intake use bounded prescribed boundary states.  This
+/// prevents the old model from carrying burned energy into a second hot
+/// compression while keeping the pressure source deterministic and cheap.
 #[derive(Clone, Copy, Debug)]
 pub struct CombustionChamber {
     ignition_deg: f32,
@@ -94,28 +126,101 @@ impl CombustionChamber {
         WIEBE_A * m1 / self.burn_duration_deg * u.powf(self.shape_factor) * outer
     }
 
+    #[inline]
+    fn smoothstep(value: f32) -> f32 {
+        let t = value.clamp(0.0, 1.0);
+        t * t * (3.0 - 2.0 * t)
+    }
+
+    /// Cold charge state at a phase angle.  The charge is always referenced to
+    /// the fresh intake state at BDC, so compression after intake cannot reuse
+    /// the burned state from the previous expansion stroke.
+    fn cold_charge_state(&self, angle_deg: f32) -> GasState {
+        let volume = self.geometry.instantaneous_volume_m3(angle_deg);
+        self.polytrope.state_at(&self.charge, volume)
+    }
+
+    /// Combustion/expansion state while the exhaust valve is still closed.
+    fn expansion_state(&self, angle_deg: f32, energy: f32) -> (GasState, f32, f32) {
+        let cold = self.cold_charge_state(angle_deg);
+        let deg_past_ignition = angle_deg - self.ignition_deg;
+        let burn_fraction = self.burn_fraction(deg_past_ignition);
+        let heat_j = self.fuel_energy_j * self.efficiency * energy * burn_fraction;
+        let temperature_k = cold.temperature_k + heat_j / (self.charge.mass_kg * CV_AIR);
+        let pressure_pa = ideal_gas_pressure(self.charge.mass_kg, temperature_k, cold.volume_m3);
+        (
+            GasState::new(
+                pressure_pa,
+                temperature_k,
+                self.charge.mass_kg,
+                cold.volume_m3,
+            ),
+            burn_fraction,
+            self.heat_release_rate_per_deg(deg_past_ignition, energy),
+        )
+    }
+
     /// Combustion state at `age_deg` past firing (TDC at `age = 0`).
     ///
-    /// Pressure is `P = m * R * T / V` where the temperature is the polytropic
-    /// compression temperature plus the heat-released energy divided by
-    /// `m * cv`. This reduces exactly to the compression state at zero heat.
+    /// Angle zero and 720 degrees are the same firing TDC.  The four phases
+    /// are explicit: 0..180 expansion/combustion, 180..360 exhaust, 360..540
+    /// intake, and 540..720 compression.  Exhaust/intake are bounded boundary
+    /// approximations; they intentionally do not claim full thermodynamic
+    /// conservation.  The important invariant is that fresh charge is used
+    /// for every compression stroke and the cycle closes continuously.
+    ///
+    /// Pressure is ideal-gas pressure for the compression/combustion envelope;
+    /// the exhaust and intake boundary states remain finite and bounded.
     pub fn frame(&self, age_deg: f32, energy: f32) -> CombustionFrame {
-        let volume = self.geometry.instantaneous_volume_m3(age_deg);
-        let comp = self
-            .polytrope
-            .state_at(&self.charge, volume);
-        let deg_past_ignition = age_deg - self.ignition_deg;
-        let frac = self.burn_fraction(deg_past_ignition);
-        let heat_j = self.fuel_energy_j * self.efficiency * energy * frac;
-        let temperature_k =
-            comp.temperature_k + heat_j / (self.charge.mass_kg * CV_AIR);
-        let frac_clamped = (deg_past_ignition as f32).max(0.0);
-        let rate = self.heat_release_rate_per_deg(frac_clamped, energy);
+        let angle = age_deg.rem_euclid(FOUR_STROKE_CYCLE_DEG);
+        if angle < EXPANSION_END_DEG {
+            let (state, burn_fraction, heat_release_rate_w) = self.expansion_state(angle, energy);
+            return CombustionFrame {
+                pressure_pa: state.pressure_pa,
+                temperature_k: state.temperature_k,
+                burn_fraction,
+                phase: ChamberPhase::Expansion,
+                heat_release_rate_w,
+            };
+        }
+
+        if angle < EXHAUST_END_DEG {
+            let (at_bdc, _, _) = self.expansion_state(EXPANSION_END_DEG, energy);
+            let exhaust_progress = Self::smoothstep(
+                (angle - EXPANSION_END_DEG) / (EXHAUST_END_DEG - EXPANSION_END_DEG),
+            );
+            return CombustionFrame {
+                pressure_pa: at_bdc.pressure_pa
+                    + (EXHAUST_PRESSURE_PA - at_bdc.pressure_pa) * exhaust_progress,
+                temperature_k: at_bdc.temperature_k
+                    + (EXHAUST_TEMPERATURE_K - at_bdc.temperature_k) * exhaust_progress,
+                burn_fraction: self.burn_fraction(EXPANSION_END_DEG - self.ignition_deg),
+                phase: ChamberPhase::Exhaust,
+                heat_release_rate_w: 0.0,
+            };
+        }
+
+        if angle < INTAKE_END_DEG {
+            let intake_progress =
+                Self::smoothstep((angle - EXHAUST_END_DEG) / (INTAKE_END_DEG - EXHAUST_END_DEG));
+            return CombustionFrame {
+                pressure_pa: EXHAUST_PRESSURE_PA
+                    + (INTAKE_MANIFOLD_PRESSURE_PA - EXHAUST_PRESSURE_PA) * intake_progress,
+                temperature_k: EXHAUST_TEMPERATURE_K
+                    + (INTAKE_TEMPERATURE_K - EXHAUST_TEMPERATURE_K) * intake_progress,
+                burn_fraction: 0.0,
+                phase: ChamberPhase::Intake,
+                heat_release_rate_w: 0.0,
+            };
+        }
+
+        let state = self.cold_charge_state(angle);
         CombustionFrame {
-            pressure_pa: self.charge.mass_kg * R_SPECIFIC_AIR * temperature_k / volume,
-            temperature_k,
-            burn_fraction: frac,
-            heat_release_rate_w: rate,
+            pressure_pa: state.pressure_pa,
+            temperature_k: state.temperature_k,
+            burn_fraction: 0.0,
+            phase: ChamberPhase::Compression,
+            heat_release_rate_w: 0.0,
         }
     }
 }
@@ -149,7 +254,10 @@ mod tests {
         // Compression-only baseline at the same angle.
         assert!(high.pressure_pa >= comp.pressure_pa);
         assert!(high.temperature_k > comp.temperature_k);
-        assert!(high.pressure_pa > low.pressure_pa, "more energy -> more pressure");
+        assert!(
+            high.pressure_pa > low.pressure_pa,
+            "more energy -> more pressure"
+        );
     }
 
     #[test]
@@ -184,7 +292,42 @@ mod tests {
             min = min.min(f.pressure_pa);
         }
         assert!(peak > min);
-        assert!(peak < 5.0e7, "peak pressure must stay within physical bounds");
+        assert!(
+            peak < 5.0e7,
+            "peak pressure must stay within physical bounds"
+        );
+    }
+
+    #[test]
+    fn fresh_charge_prevents_second_hot_compression() {
+        let c = chamber();
+        let firing_tdc = c.frame(0.0, 1.0);
+        let exhaust_tdc = c.frame(360.0, 1.0);
+        let next_firing_tdc = c.frame(720.0, 1.0);
+
+        assert_eq!(firing_tdc.phase, ChamberPhase::Expansion);
+        assert_eq!(exhaust_tdc.phase, ChamberPhase::Intake);
+        assert!(
+            exhaust_tdc.pressure_pa < firing_tdc.pressure_pa * 0.1,
+            "exhaust TDC must not recompress the burned charge: {} vs {}",
+            exhaust_tdc.pressure_pa,
+            firing_tdc.pressure_pa
+        );
+        assert!(
+            (next_firing_tdc.pressure_pa - firing_tdc.pressure_pa).abs() < 1.0,
+            "cycle boundary must reuse fresh compression state"
+        );
+    }
+
+    #[test]
+    fn motored_cycle_has_compression_without_heat_release() {
+        let c = chamber();
+        let motored = c.frame(0.0, 0.0);
+        let loaded = c.frame(0.0, 1.0);
+        assert_eq!(motored.burn_fraction, 0.0);
+        assert_eq!(motored.heat_release_rate_w, 0.0);
+        assert!(motored.pressure_pa > EXHAUST_PRESSURE_PA);
+        assert!(loaded.pressure_pa >= motored.pressure_pa);
     }
 
     #[test]

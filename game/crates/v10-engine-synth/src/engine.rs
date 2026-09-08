@@ -53,11 +53,10 @@ fn target_acoustic_energy(input: EngineInput) -> f32 {
 
 #[inline]
 fn target_acoustic_energy_with_state(input: EngineInput, mechanical: MechanicalState) -> f32 {
-    let rpm_norm = ((input.rpm - COAST_IDLE_RPM) / (COAST_MAX_RPM - COAST_IDLE_RPM))
-        .clamp(0.0, 1.0);
+    let rpm_norm =
+        ((input.rpm - COAST_IDLE_RPM) / (COAST_MAX_RPM - COAST_IDLE_RPM)).clamp(0.0, 1.0);
     let coast_energy = COAST_BASE_ENERGY + COAST_RPM_ENERGY * rpm_norm;
-    let powered_energy =
-        0.25 * input.throttle + 0.63 * input.load * (0.35 + 0.65 * input.throttle);
+    let powered_energy = 0.25 * input.throttle + 0.63 * input.load * (0.35 + 0.65 * input.throttle);
     // A shift cut and the physical limiter suppress combustion energy. Their
     // state is discrete and arrives from physics; no synthetic blip is made.
     let cut_gain = match mechanical.shift_phase {
@@ -82,6 +81,10 @@ pub struct EngineFrame {
     pub pressure_derivative_b: f32,
     pub cylinder_pressure: [f32; CYLINDER_COUNT],
     pub cylinder_pressure_derivative: [f32; CYLINDER_COUNT],
+    pub cylinder_chamber_pressure_pa: [f32; CYLINDER_COUNT],
+    pub cylinder_chamber_temperature_k: [f32; CYLINDER_COUNT],
+    pub cylinder_chamber_heat_release_rate: [f32; CYLINDER_COUNT],
+    pub cylinder_chamber_phase: [u8; CYLINDER_COUNT],
     pub cylinder_blowdown: [f32; CYLINDER_COUNT],
     pub cylinder_headers: [f32; CYLINDER_COUNT],
     pub cylinder_valve_lift: [f32; CYLINDER_COUNT],
@@ -239,6 +242,10 @@ impl V10Engine {
         let mut turbulence_trigger = 0.0f32;
         let mut cylinder_pressure = [0.0; CYLINDER_COUNT];
         let mut cylinder_pressure_derivative = [0.0; CYLINDER_COUNT];
+        let mut cylinder_chamber_pressure_pa = [0.0; CYLINDER_COUNT];
+        let mut cylinder_chamber_temperature_k = [0.0; CYLINDER_COUNT];
+        let mut cylinder_chamber_heat_release_rate = [0.0; CYLINDER_COUNT];
+        let mut cylinder_chamber_phase = [0u8; CYLINDER_COUNT];
         let mut cylinder_blowdown = [0.0; CYLINDER_COUNT];
         let mut cylinder_headers = [0.0; CYLINDER_COUNT];
         let mut cylinder_valve_lift = [0.0; CYLINDER_COUNT];
@@ -265,11 +272,14 @@ impl V10Engine {
                 pressure_b += cylinder.pressure;
                 derivative_b += cylinder.pressure_derivative;
             }
-            let header = self
-                .headers[index]
+            let header = self.headers[index]
                 .process(cylinder.exhaust_excitation, cylinder.runner_temperature_k);
             cylinder_pressure[index] = cylinder.pressure;
             cylinder_pressure_derivative[index] = cylinder.pressure_derivative;
+            cylinder_chamber_pressure_pa[index] = cylinder.chamber_pressure_pa;
+            cylinder_chamber_temperature_k[index] = cylinder.chamber_temperature_k;
+            cylinder_chamber_heat_release_rate[index] = cylinder.chamber_heat_release_rate;
+            cylinder_chamber_phase[index] = cylinder.chamber_phase as u8;
             cylinder_blowdown[index] = cylinder.blowdown;
             cylinder_headers[index] = header;
             cylinder_valve_lift[index] = cylinder.valve_lift;
@@ -300,7 +310,9 @@ impl V10Engine {
             .source_dc
             .process(derivative_a * BANK_A_ACOUSTIC_WEIGHT + derivative_b * BANK_B_ACOUSTIC_WEIGHT);
         let structural_pressure = pressure_a * 1.10 + pressure_b * 0.90;
-        let structure = self.block_head.process(structural_pressure, structural_derivative);
+        let structure = self
+            .block_head
+            .process(structural_pressure, structural_derivative);
         let block_sum = structure.pressure_direct * self.config.pressure_direct_gain
             + structure.crankcase * self.config.crankcase_gain
             + structure.block * self.config.block_gain
@@ -359,6 +371,10 @@ impl V10Engine {
             pressure_derivative_b: derivative_b,
             cylinder_pressure,
             cylinder_pressure_derivative,
+            cylinder_chamber_pressure_pa,
+            cylinder_chamber_temperature_k,
+            cylinder_chamber_heat_release_rate,
+            cylinder_chamber_phase,
             cylinder_blowdown,
             cylinder_headers,
             cylinder_valve_lift,

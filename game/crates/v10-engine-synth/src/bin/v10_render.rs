@@ -104,6 +104,7 @@ struct Args {
     acoustic_scene: bool,
     sample_layer_dir: Option<PathBuf>,
     sweep_end_rpm: Option<f32>,
+    hold_before_lift: bool,
     accel_seconds: f32,
     coast_end_rpm: f32,
     physical_telemetry_csv: Option<PathBuf>,
@@ -137,6 +138,7 @@ fn parse_args() -> Result<Args, String> {
         acoustic_scene: false,
         sample_layer_dir: None,
         sweep_end_rpm: None,
+        hold_before_lift: false,
         accel_seconds: 7.0,
         coast_end_rpm: 6_500.0,
         physical_telemetry_csv: None,
@@ -168,6 +170,7 @@ fn parse_args() -> Result<Args, String> {
             "--sweep-end-rpm" => {
                 parsed.sweep_end_rpm = Some(parse_value(&raw, &mut i, "--sweep-end-rpm")?)
             }
+            "--hold-before-lift" => parsed.hold_before_lift = true,
             "--accel-seconds" => {
                 parsed.accel_seconds = parse_value(&raw, &mut i, "--accel-seconds")?
             }
@@ -182,7 +185,8 @@ fn parse_args() -> Result<Args, String> {
                 )?))
             }
             "--physical-master-lowpass-hz" => {
-                parsed.physical_master_lowpass_hz = Some(parse_value(&raw, &mut i, "--physical-master-lowpass-hz")?)
+                parsed.physical_master_lowpass_hz =
+                    Some(parse_value(&raw, &mut i, "--physical-master-lowpass-hz")?)
             }
             "--no-physical-master-lowpass" => {
                 parsed.physical_master_lowpass_hz = None;
@@ -223,6 +227,9 @@ fn parse_args() -> Result<Args, String> {
         }
         .validate()?;
     }
+    if parsed.hold_before_lift && parsed.sweep_end_rpm.is_none() {
+        return Err("--hold-before-lift requires --sweep-end-rpm".into());
+    }
     Ok(parsed)
 }
 
@@ -234,6 +241,25 @@ fn render_input(args: &Args, time_s: f32) -> EngineInput {
             load: args.load,
         };
     };
+    if args.hold_before_lift {
+        let coast_end_rpm = end_rpm;
+        if time_s < args.accel_seconds {
+            return EngineInput {
+                rpm: args.rpm,
+                throttle: args.throttle,
+                load: args.load,
+            };
+        }
+        let coast_duration = (args.seconds - args.accel_seconds).max(1.0e-6);
+        let t = ((time_s - args.accel_seconds) / coast_duration).clamp(0.0, 1.0);
+        let rpm_decay = 1.0 - (1.0 - t).powf(1.55);
+        let lift = (-t / 0.035).exp();
+        return EngineInput {
+            rpm: args.rpm + (coast_end_rpm - args.rpm) * rpm_decay,
+            throttle: 0.035 + (args.throttle - 0.035) * lift,
+            load: 0.10 + (args.load - 0.10) * (-t / 0.12).exp(),
+        };
+    }
     if time_s < args.accel_seconds {
         let t = (time_s / args.accel_seconds).clamp(0.0, 1.0);
         // Smoothstep avoids an acceleration discontinuity at either endpoint.
@@ -266,14 +292,21 @@ fn git_head() -> String {
         .unwrap_or_else(|| "unknown".into())
 }
 
-const SOURCE_PATHS: [&str; 8] = [
+const SOURCE_PATHS: [&str; 15] = [
     "game/crates/v10-engine-synth/src/acoustics.rs",
     "game/crates/v10-engine-synth/src/config.rs",
     "game/crates/v10-engine-synth/src/crank.rs",
     "game/crates/v10-engine-synth/src/cylinder.rs",
     "game/crates/v10-engine-synth/src/engine.rs",
+    "game/crates/v10-engine-synth/src/geometry.rs",
+    "game/crates/v10-engine-synth/src/thermodynamics/combustion.rs",
+    "game/crates/v10-engine-synth/src/thermodynamics/gas.rs",
+    "game/crates/v10-engine-synth/src/thermodynamics/polytrope.rs",
+    "game/crates/v10-engine-synth/src/thermodynamics/exhaust_runner.rs",
+    "game/crates/v10-engine-synth/src/thermodynamics/exhaust_valve.rs",
     "game/crates/v10-engine-synth/src/sample_layer.rs",
     "game/crates/v10-engine-synth/src/scene.rs",
+    "game/crates/v10-engine-synth/src/runtime.rs",
     "game/crates/v10-engine-synth/src/bin/v10_render.rs",
 ];
 
@@ -418,6 +451,9 @@ fn run() -> Result<(), String> {
         "hybrid_mix",
         // PHY-140 physical diagnostic stems
         "cylinder_pressure",
+        "chamber_temperature",
+        "chamber_heat_release",
+        "chamber_phase",
         "combustion_heat_release",
         "valve_area",
         "mass_flow",
@@ -457,7 +493,7 @@ fn run() -> Result<(), String> {
             let mut writer = BufWriter::new(file);
             writeln!(
                 writer,
-                "sample,time_s,rpm,crank_phase_deg,cylinder_id,volume_m3,pressure_pa,temperature_k,valve_lift,valve_area_m2,mass_flow_kg_s,runner_pressure_pa,runner_acoustic_pa,collector_pressure_a,collector_pressure_b"
+                "sample,time_s,rpm,crank_phase_deg,cylinder_id,chamber_pressure_pa,chamber_temperature_k,heat_release_rate,phase,valve_lift,valve_area_m2,mass_flow_kg_s,runner_pressure_pa,runner_temperature_k,runner_acoustic_pa,collector_pressure_a,collector_pressure_b"
             ).map_err(|e| e.to_string())?;
             Ok::<_, String>(writer)
         })
@@ -467,9 +503,12 @@ fn run() -> Result<(), String> {
     let mut sum_sq = 0.0f64;
     let mut worst_reduction = 0.0f32;
     let mut event_count = 0u64;
-    let mut physical_master_lp = args
-        .physical_master_lowpass_hz
-        .map(|cutoff| ThreePoleLowPass::new(cutoff.clamp(100.0, args.sample_rate as f32 * 0.48), args.sample_rate as f32));
+    let mut physical_master_lp = args.physical_master_lowpass_hz.map(|cutoff| {
+        ThreePoleLowPass::new(
+            cutoff.clamp(100.0, args.sample_rate as f32 * 0.48),
+            args.sample_rate as f32,
+        )
+    });
     for sample in 0..total {
         let time_s = sample as f32 / args.sample_rate as f32;
         let current_input = render_input(&args, time_s);
@@ -674,7 +713,19 @@ fn run() -> Result<(), String> {
         stems
             .get_mut("cylinder_pressure")
             .unwrap()
-            .push(frame.combustion_source);
+            .push(frame.cylinder_chamber_pressure_pa.iter().sum::<f32>() / 10.0);
+        stems
+            .get_mut("chamber_temperature")
+            .unwrap()
+            .push(frame.cylinder_chamber_temperature_k.iter().sum::<f32>() / 10.0);
+        stems
+            .get_mut("chamber_heat_release")
+            .unwrap()
+            .push(frame.cylinder_chamber_heat_release_rate.iter().sum::<f32>() / 10.0);
+        stems
+            .get_mut("chamber_phase")
+            .unwrap()
+            .push(frame.cylinder_chamber_phase[0] as f32);
         stems
             .get_mut("combustion_heat_release")
             .unwrap()
@@ -704,31 +755,27 @@ fn run() -> Result<(), String> {
             .get_mut("physical_master")
             .unwrap()
             .push(filtered_physical_master);
-        stems
-            .get_mut("sample_master")
-            .unwrap()
-            .push(sample_output);
-        stems
-            .get_mut("hybrid_master")
-            .unwrap()
-            .push(hybrid);
+        stems.get_mut("sample_master").unwrap().push(sample_output);
+        stems.get_mut("hybrid_master").unwrap().push(hybrid);
 
         if let Some(writer) = phys_telemetry.as_mut() {
             writeln!(
                 writer,
-                "{sample},{time_s:.6},{rpm:.2},{crank_phase_deg:.2},{cyl},{vol:.8e},{press:.4e},{temp:.2},{lift:.6},{area:.6e},{flow:.6e},{runner_p:.4e},{acoustic_p:.6e},{col_a:.4e},{col_b:.4e}",
+                "{sample},{time_s:.6},{rpm:.2},{crank_phase_deg:.2},{cyl},{chamber_p:.4e},{chamber_t:.2},{heat:.6e},{phase},{lift:.6},{area:.6e},{flow:.6e},{runner_p:.4e},{runner_t:.2},{acoustic_p:.6e},{col_a:.4e},{col_b:.4e}",
                 sample = sample,
                 time_s = time_s,
                 rpm = current_input.rpm,
                 crank_phase_deg = frame.crank_phase_deg,
                 cyl = 0,
-                vol = config.clearance_volume_m3(),
-                press = frame.cylinder_pressure[0],
-                temp = frame.cylinder_runner_temperature_k[0],
+                chamber_p = frame.cylinder_chamber_pressure_pa[0],
+                chamber_t = frame.cylinder_chamber_temperature_k[0],
+                heat = frame.cylinder_chamber_heat_release_rate[0],
+                phase = frame.cylinder_chamber_phase[0],
                 lift = frame.cylinder_valve_lift[0],
                 area = frame.cylinder_valve_area[0],
                 flow = frame.cylinder_mass_flow[0],
                 runner_p = frame.cylinder_runner_pressure[0],
+                runner_t = frame.cylinder_runner_temperature_k[0],
                 acoustic_p = frame.cylinder_runner_acoustic_pressure[0],
                 col_a = frame.collector_pressure_a,
                 col_b = frame.collector_pressure_b,
@@ -782,12 +829,23 @@ fn run() -> Result<(), String> {
 
     let rms = (sum_sq / total as f64).sqrt();
     let metadata_path = args.out.with_extension("metadata.json");
-    let profile = if args.sweep_end_rpm.is_some() {
+    let profile = if args.hold_before_lift {
+        "lift_coast_hold"
+    } else if args.sweep_end_rpm.is_some() {
         "sweep_lift_coast"
     } else {
         "steady"
     };
-    let peak_rpm = args.sweep_end_rpm.unwrap_or(args.rpm);
+    let peak_rpm = if args.hold_before_lift {
+        args.rpm.max(args.sweep_end_rpm.unwrap_or(args.rpm))
+    } else {
+        args.sweep_end_rpm.unwrap_or(args.rpm)
+    };
+    let metadata_coast_end_rpm = if args.hold_before_lift {
+        args.sweep_end_rpm.unwrap_or(args.coast_end_rpm)
+    } else {
+        args.coast_end_rpm
+    };
     let metadata = format!(
         concat!(
             "{{\n",
@@ -801,6 +859,7 @@ fn run() -> Result<(), String> {
             "  \"rpm\": {:.3},\n",
             "  \"peak_rpm\": {:.3},\n",
             "  \"coast_end_rpm\": {:.3},\n",
+            "  \"hold_before_lift\": {},\n",
             "  \"accel_seconds\": {:.6},\n",
             "  \"throttle\": {:.6},\n",
             "  \"load\": {:.6},\n",
@@ -816,6 +875,9 @@ fn run() -> Result<(), String> {
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
+            "  \"chamber_cycle_model\": \"bounded_720deg_four_stroke_fresh_charge\",\n",
+            "  \"chamber_phase_contract\": \"expansion_0_180,exhaust_180_360,intake_360_540,compression_540_720\",\n",
+            "  \"firing_order\": [0,5,1,6,2,7,3,8,4,9],\n",
             "  \"sample_mid_architecture\": \"zone-specific post gains + base head-cover order-5 notch + deeper max residual compression/saturation + max rasp at +2.5 dB + reduced engine/scene drift + perceptual max crossfade 10000-13750 RPM\"\n",
             "}}\n"
         ),
@@ -827,7 +889,8 @@ fn run() -> Result<(), String> {
         profile,
         args.rpm,
         peak_rpm,
-        args.coast_end_rpm,
+        metadata_coast_end_rpm,
+        args.hold_before_lift,
         args.accel_seconds,
         args.throttle,
         args.load,
