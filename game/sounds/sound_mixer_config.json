@@ -760,14 +760,14 @@
       }
     },
     "shift_down_delayed": {
-      "volume": 0.85,
+      "volume": 0.75,
       "pan": -0.15,
       "adsr": {
         "enabled": true,
-        "attack_ms": 0.0,
+        "attack_ms": 0.5,
         "decay_ms": 0.0,
-        "sustain": 1.0,
-        "release_ms": 2.0,
+        "sustain": 0.1,
+        "release_ms": 0.1,
         "curve": "linear"
       },
       "eq": {
@@ -787,7 +787,7 @@
       "reverb": {
         "enabled": false,
         "bus": "mechanical_small",
-        "send_db": -120.0
+        "send_db": -40.0
       }
     },
     "shift_up": {
@@ -825,14 +825,14 @@
       }
     },
     "shift_up_delayed": {
-      "volume": 0.85,
+      "volume": 0.75,
       "pan": -0.15,
       "adsr": {
         "enabled": true,
-        "attack_ms": 0.0,
+        "attack_ms": 0.4,
         "decay_ms": 0.0,
-        "sustain": 1.0,
-        "release_ms": 2.0,
+        "sustain": 0.2,
+        "release_ms": 0.1,
         "curve": "linear"
       },
       "eq": {
@@ -852,7 +852,7 @@
       "reverb": {
         "enabled": false,
         "bus": "mechanical_small",
-        "send_db": -120.0
+        "send_db": -40.0
       }
     },
     "tyre_scrub": {
@@ -1008,7 +1008,7 @@
       "low_cut_hz": 150.0,
       "high_cut_hz": 6000.0,
       "stereo_width": 0.40,
-      "wet_db": -10.0
+      "wet_db": -60.0
     },
     "impact_short": {
       "enabled": true,
@@ -1049,11 +1049,11 @@
     "crackle_gain": 0.1
   },
   "master": {
-    "output_db": 0.0,
-    "limiter_threshold": 0.9,
-    "saturation": 0.12,
-    "engine_lowpass_hz": 6500.0,
-    "engine_lowpass_db_per_oct": 24.0
+    "output_db": 1,
+    "limiter_threshold": 0.85,
+    "saturation": 0.2,
+    "engine_lowpass_hz": 20950.0,
+    "engine_lowpass_db_per_oct": 2.0
   },
   "hot_reload": {
     "enabled": false,
