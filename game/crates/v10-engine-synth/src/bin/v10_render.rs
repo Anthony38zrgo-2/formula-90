@@ -111,6 +111,9 @@ struct Args {
     physical_telemetry_csv: Option<PathBuf>,
     physical_master_lowpass_hz: Option<f32>,
     no_mid_duck: bool,
+    no_sample_rasp: bool,
+    sample_residual_scale: f32,
+    sample_residual_gain: Option<f32>,
     scene_gains: Vec<(String, f32)>,
 }
 
@@ -148,6 +151,9 @@ fn parse_args() -> Result<Args, String> {
         physical_telemetry_csv: None,
         physical_master_lowpass_hz: Some(2_500.0),
         no_mid_duck: false,
+        no_sample_rasp: false,
+        sample_residual_scale: 1.0,
+        sample_residual_gain: None,
         scene_gains: Vec::new(),
     };
     let mut i = 0;
@@ -199,6 +205,15 @@ fn parse_args() -> Result<Args, String> {
                 parsed.physical_master_lowpass_hz = None;
             }
             "--no-mid-duck" => parsed.no_mid_duck = true,
+            "--no-sample-rasp" => parsed.no_sample_rasp = true,
+            "--sample-residual-scale" => {
+                parsed.sample_residual_scale =
+                    parse_value(&raw, &mut i, "--sample-residual-scale")?
+            }
+            "--sample-residual-gain" => {
+                parsed.sample_residual_gain =
+                    Some(parse_value(&raw, &mut i, "--sample-residual-gain")?)
+            }
             "--scene-gain" => {
                 let spec = parse_value::<String>(&raw, &mut i, "--scene-gain")?;
                 let (name, value) = spec.split_once('=').ok_or_else(|| {
@@ -418,7 +433,17 @@ fn run() -> Result<(), String> {
             ThreeZoneSampleLayer::load_directory(
                 args.sample_rate,
                 directory,
-                ThreeZoneSampleLayerConfig::default(),
+                ThreeZoneSampleLayerConfig {
+                    disable_sample_rasp: args.no_sample_rasp,
+                    residual_gain_scale: args.sample_residual_scale,
+                    residual_gain_closed: args.sample_residual_gain.unwrap_or(
+                        ThreeZoneSampleLayerConfig::default().residual_gain_closed,
+                    ),
+                    residual_gain_loaded: args.sample_residual_gain.unwrap_or(
+                        ThreeZoneSampleLayerConfig::default().residual_gain_loaded,
+                    ),
+                    ..ThreeZoneSampleLayerConfig::default()
+                },
             )
         })
         .transpose()?;
@@ -972,6 +997,9 @@ fn run() -> Result<(), String> {
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
             "  \"mid_duck_disabled\": {},\n",
+            "  \"sample_rasp_disabled\": {},\n",
+            "  \"sample_residual_scale\": {},\n",
+            "  \"sample_residual_gain\": \"{}\",\n",
             "  \"scene_gain_overrides\": \"{}\",\n",
             "  \"sample_layer_bank\": \"{}\",\n",
             "  \"sample_layer_source_weights\": \"{}\",\n",
@@ -1008,6 +1036,11 @@ fn run() -> Result<(), String> {
         args.acoustic_scene,
         sample_layer.is_some(),
         args.no_mid_duck,
+        args.no_sample_rasp,
+        args.sample_residual_scale,
+        args.sample_residual_gain
+            .map(|gain| format!("{gain}"))
+            .unwrap_or_else(|| "load-blended".to_string()),
         scene_gain_overrides,
         sample_layer_bank,
         sample_layer_source_weights,

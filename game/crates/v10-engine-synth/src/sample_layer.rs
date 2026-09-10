@@ -106,6 +106,14 @@ pub struct ThreeZoneSampleLayerConfig {
     /// through `use_tabled_sinc=false`; this option only controls the new
     /// ratio-aware table.
     pub pitch_up_antialias: bool,
+    /// Diagnostic mute: disables the top-zone rasp boost (+2.5 dB baked into
+    /// the shaped tonal/residual plus the max_rasp stem). Rasp terms go to
+    /// zero and the stem reports 0. Default false preserves behavior.
+    pub disable_sample_rasp: bool,
+    /// Diagnostic trim: linear multiplier on the load-blended residual gain
+    /// (default 1.0). Lets an A/B test how much of the character is loop
+    /// hiss vs tone without touching the prepared stems.
+    pub residual_gain_scale: f32,
 }
 
 impl Default for ThreeZoneSampleLayerConfig {
@@ -126,6 +134,8 @@ impl Default for ThreeZoneSampleLayerConfig {
             suspend_margin_rpm: 500.0,
             use_tabled_sinc: true,
             pitch_up_antialias: true,
+            disable_sample_rasp: false,
+            residual_gain_scale: 1.0,
         }
     }
 }
@@ -153,6 +163,13 @@ impl ThreeZoneSampleLayerConfig {
         }
         if !self.suspend_margin_rpm.is_finite() || !(0.0..=5_000.0).contains(&self.suspend_margin_rpm) {
             return Err(format!("suspend_margin_rpm outside 0..5000: {}", self.suspend_margin_rpm));
+        }
+        if !self.residual_gain_scale.is_finite() || !(0.0..=2.0).contains(&self.residual_gain_scale)
+        {
+            return Err(format!(
+                "residual_gain_scale outside 0..2.0: {}",
+                self.residual_gain_scale
+            ));
         }
         if !self.max_fade_start_rpm.is_finite()
             || !self.max_full_rpm.is_finite()
@@ -266,7 +283,7 @@ struct ZoneMidProcessor {
 }
 
 impl ZoneMidProcessor {
-    fn new(zone: usize, sample_rate: f32) -> Self {
+    fn new(zone: usize, sample_rate: f32, rasp_enabled: bool) -> Self {
         let (
             low_hz,
             high_hz,
@@ -281,6 +298,7 @@ impl ZoneMidProcessor {
             1 => (350.0, 1_800.0, 1.5, 3.0, 0.0, 0.0, 2.5, 3.5),
             _ => (500.0, 2_500.0, 0.75, 2.5, 0.30, 2.5, 2.5, 3.0),
         };
+        let rasp_db = if rasp_enabled { rasp_db } else { 0.0 };
         Self {
             tonal_low: OnePoleLowPass::new(low_hz, sample_rate),
             tonal_high: OnePoleLowPass::new(high_hz, sample_rate),
@@ -757,7 +775,11 @@ impl ThreeZoneSampleLayer {
                         variant_position: 0,
                         variant_total: 1,
                     }],
-                    processor: ZoneMidProcessor::new(index, output_sample_rate as f32),
+                    processor: ZoneMidProcessor::new(
+                        index,
+                        output_sample_rate as f32,
+                        !config.disable_sample_rasp,
+                    ),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 }
             })
@@ -775,7 +797,7 @@ impl ThreeZoneSampleLayer {
                         variant_position: 0,
                         variant_total: 1,
                     }],
-                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32),
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 }
             })
@@ -861,8 +883,11 @@ impl ThreeZoneSampleLayer {
             } else {
                 1
             };
-            zone.processor =
-                ZoneMidProcessor::new(processor_kind, output_sample_rate as f32);
+            zone.processor = ZoneMidProcessor::new(
+                processor_kind,
+                output_sample_rate as f32,
+                !config.disable_sample_rasp,
+            );
         }
         let mut labels = Vec::new();
         for zone in &zones {
@@ -1026,7 +1051,7 @@ impl ThreeZoneSampleLayer {
                 zones.push(OnZone {
                     anchor,
                     members: run,
-                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32),
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 });
             } else {
@@ -1034,7 +1059,7 @@ impl ThreeZoneSampleLayer {
                 zones.push(OnZone {
                     anchor,
                     members: vec![first],
-                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32),
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 });
             }
@@ -1282,8 +1307,9 @@ impl ThreeZoneSampleLayer {
         let charge = input.load * (0.35 + 0.65 * input.throttle);
         let tonal_gain = self.config.tonal_gain_closed
             + (self.config.tonal_gain_loaded - self.config.tonal_gain_closed) * charge;
-        let residual_gain = self.config.residual_gain_closed
-            + (self.config.residual_gain_loaded - self.config.residual_gain_closed) * charge;
+        let residual_gain = (self.config.residual_gain_closed
+            + (self.config.residual_gain_loaded - self.config.residual_gain_closed) * charge)
+            * self.config.residual_gain_scale;
         tonal *= tonal_gain;
         residual *= residual_gain;
         let mid_bus = tonal_mid * tonal_gain + residual_mid * residual_gain;
@@ -1420,8 +1446,9 @@ impl ThreeZoneSampleLayer {
         let charge = input.load * (0.35 + 0.65 * input.throttle);
         let tonal_gain = self.config.tonal_gain_closed
             + (self.config.tonal_gain_loaded - self.config.tonal_gain_closed) * charge;
-        let residual_gain = self.config.residual_gain_closed
-            + (self.config.residual_gain_loaded - self.config.residual_gain_closed) * charge;
+        let residual_gain = (self.config.residual_gain_closed
+            + (self.config.residual_gain_loaded - self.config.residual_gain_closed) * charge)
+            * self.config.residual_gain_scale;
         tonal *= tonal_gain;
         residual *= residual_gain;
         let mid_bus = tonal_mid * tonal_gain + residual_mid * residual_gain;
@@ -2721,6 +2748,80 @@ mod tests {
         assert!(
             max_step_suspended <= max_step_reference * 1.5,
             "suspended max step {max_step_suspended} vs reference {max_step_reference}: click?"
+        );
+    }
+
+    #[test]
+    fn residual_gain_scale_halves_residual_stem() {
+        use std::path::Path;
+        let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_experimental");
+        let input = SampleLayerInput {
+            rpm: 12_000.0,
+            throttle: 0.95,
+            load: 0.9,
+            normalized_engine_torque: 0.9,
+            clutch_engagement: 1.0,
+            crank_phase_deg: 0.0,
+        };
+        let mut full = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig::default(),
+        )
+        .unwrap();
+        let mut half = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig {
+                residual_gain_scale: 0.5,
+                ..ThreeZoneSampleLayerConfig::default()
+            },
+        )
+        .unwrap();
+        let loud = full.process(input).unwrap();
+        let quiet = half.process(input).unwrap();
+        assert!((quiet.residual - loud.residual * 0.5).abs() < 1e-6);
+        assert!((quiet.tonal - loud.tonal).abs() < 1e-6, "tonal must not move");
+    }
+
+    #[test]
+    fn disable_sample_rasp_zeroes_rasp_stem_and_terms() {
+        // Rasp lives only on the top zone (+2.5 dB). With the mute, the stem
+        // must read exactly zero and the mix must change only through the
+        // removed rasp terms (finite, audible).
+        use std::path::Path;
+        let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_experimental");
+        let input = SampleLayerInput {
+            rpm: 15_000.0,
+            throttle: 0.95,
+            load: 0.9,
+            normalized_engine_torque: 0.9,
+            clutch_engagement: 1.0,
+            crank_phase_deg: 0.0,
+        };
+        let mut with_rasp = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig::default(),
+        )
+        .unwrap();
+        let mut muted = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig {
+                disable_sample_rasp: true,
+                ..ThreeZoneSampleLayerConfig::default()
+            },
+        )
+        .unwrap();
+        let loud = with_rasp.process(input).unwrap();
+        let quiet = muted.process(input).unwrap();
+        assert!(loud.output.is_finite() && quiet.output.is_finite());
+        assert!(loud.max_rasp.abs() > 1e-6, "top zone must rasp at 15k rpm");
+        assert_eq!(quiet.max_rasp, 0.0);
+        assert!(
+            (loud.output - quiet.output).abs() > 1e-6,
+            "rasp mute must change the mix"
         );
     }
 
