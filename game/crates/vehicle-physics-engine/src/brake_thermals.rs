@@ -215,8 +215,7 @@ impl BrakeAxleThermalConfig {
         let exposed_area = (area * 2.0 * ventilation_multiplier).max(0.0);
         let airflow_scale = self.installation_airflow_scale.max(0.0);
         let natural_total = profile.natural_h_w_m2_k * exposed_area * airflow_scale;
-        let forced_total =
-            profile.forced_h_at_reference_w_m2_k * exposed_area * airflow_scale;
+        let forced_total = profile.forced_h_at_reference_w_m2_k * exposed_area * airflow_scale;
         ResolvedBrakeAxleThermalConfig {
             rotor_capacity_j_k: total_capacity.max(1.0),
             rotor_natural_w_k: natural_total,
@@ -483,7 +482,8 @@ impl BrakeThermalSystem {
         let q_rim_air = h_rim_air * (st.rim_c - input.ambient_temperature_c);
 
         let rotor_net_w = rotor_heat_w - q_rotor_rim - q_rotor_air;
-        let rim_net_w = rim_direct_heat_w + q_rotor_rim - q_rim_to_carcass - q_rim_to_gas - q_rim_air;
+        let rim_net_w =
+            rim_direct_heat_w + q_rotor_rim - q_rim_to_carcass - q_rim_to_gas - q_rim_air;
 
         let rotor_capacity = resolved.rotor_capacity_j_k.max(100.0);
         let rim_capacity = axle.rim_heat_capacity_j_k.max(200.0);
@@ -840,7 +840,12 @@ mod tests {
         // Compact lumped rotor (1500 J/K) trails the rim by a clear margin on
         // this 0.25 s burst; the exact split with the old surface capacity
         // calibration was 20+, now roughly 18 K.
-        assert!(w.disc_c - w.rim_c > 12.0, "disc={} rim={}", w.disc_c, w.rim_c);
+        assert!(
+            w.disc_c - w.rim_c > 12.0,
+            "disc={} rim={}",
+            w.disc_c,
+            w.rim_c
+        );
     }
 
     #[test]
@@ -873,9 +878,13 @@ mod tests {
         }
         let w = system.wheels[0];
         let rotor_capacity = cfg.front.resolve().rotor_capacity_j_k;
-        let stored = (w.disc_c - 25.0) * rotor_capacity + (w.rim_c - 25.0) * cfg.front.rim_heat_capacity_j_k;
+        let stored =
+            (w.disc_c - 25.0) * rotor_capacity + (w.rim_c - 25.0) * cfg.front.rim_heat_capacity_j_k;
         let generated = 1_000.0 * 80.0 * cfg.braking_heat_fraction * (ticks as f64) * dt;
-        assert!((stored / generated - 1.0).abs() < 0.05, "stored={stored} generated={generated}");
+        assert!(
+            (stored / generated - 1.0).abs() < 0.05,
+            "stored={stored} generated={generated}"
+        );
     }
 
     #[test]

@@ -1049,7 +1049,7 @@
     "crackle_gain": 0.1
   },
   "master": {
-    "output_db": 1,
+    "output_db": 1.0,
     "limiter_threshold": 0.85,
     "saturation": 0.2,
     "engine_lowpass_hz": 20950.0,
