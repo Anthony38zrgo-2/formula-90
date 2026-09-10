@@ -161,6 +161,10 @@ pub struct Gf509RuntimeConfig {
     pub sample_layer: ThreeZoneSampleLayerConfig,
     /// Prepared sample directory. `None` is the procedural-only INT-01 mode.
     pub sample_layer_directory: Option<PathBuf>,
+    /// When true, the acoustic scene passes through unducked
+    /// (`scene_mid_ducked == scene`). Default false preserves the
+    /// complementary mid-duck behavior.
+    pub disable_mid_duck: bool,
     pub max_block_frames: usize,
 }
 
@@ -171,6 +175,7 @@ impl Default for Gf509RuntimeConfig {
             scene: AcousticSceneConfig::default(),
             sample_layer: ThreeZoneSampleLayerConfig::default(),
             sample_layer_directory: None,
+            disable_mid_duck: false,
             max_block_frames: 4096,
         }
     }
@@ -351,9 +356,14 @@ impl Gf509Runtime {
                 })
                 .transpose()?;
             let output = if let Some(sample_frame) = sample_frame {
-                let (ducked_scene, _) = self
-                    .mid_ducker
-                    .process(scene_frame.output, sample_frame.mid_bus);
+                let ducked_scene = if self.config.disable_mid_duck {
+                    scene_frame.output
+                } else {
+                    let (ducked, _) = self
+                        .mid_ducker
+                        .process(scene_frame.output, sample_frame.mid_bus);
+                    ducked
+                };
                 (ducked_scene * self.config.sample_layer.physical_blend_weight
                     + sample_frame.output * self.config.sample_layer.sample_blend_weight)
                     * GF509_HEADROOM_GAIN
@@ -401,6 +411,15 @@ fn validate_asset_manifest(directory: &Path, output_sample_rate: u32) -> Result<
     let path = directory.join("manifest.json");
     let raw = fs::read_to_string(&path)
         .map_err(|error| format!("cannot read GF509 manifest {}: {error}", path.display()))?;
+    let peek: serde_json::Value = serde_json::from_str(&raw)
+        .map_err(|error| format!("invalid GF509 manifest {}: {error}", path.display()))?;
+    let schema = peek
+        .get("schema_version")
+        .and_then(|value| value.as_u64())
+        .unwrap_or(0);
+    if schema == 2 {
+        return validate_experimental_manifest(directory, output_sample_rate, &raw);
+    }
     let manifest: AssetManifest = serde_json::from_str(&raw)
         .map_err(|error| format!("invalid GF509 manifest {}: {error}", path.display()))?;
     if manifest.schema_version != 1 || manifest.key != "v10_gf509" {
@@ -435,6 +454,121 @@ fn validate_asset_manifest(directory: &Path, output_sample_rate: u32) -> Result<
         }
         verify_sha256(&directory.join(&entry.tonal), &entry.tonal_sha256)?;
         verify_sha256(&directory.join(&entry.residual), &entry.residual_sha256)?;
+    }
+    Ok(())
+}
+
+#[derive(Deserialize)]
+struct ExperimentalVariant {
+    group: String,
+    position: usize,
+    count: usize,
+}
+
+#[derive(Deserialize)]
+struct ExperimentalEntry {
+    key: String,
+    role: String,
+    metadata: String,
+    native_rpm: f32,
+    sample_rate: u32,
+    channels: u16,
+    loop_frames: usize,
+    tonal: String,
+    tonal_sha256: String,
+    residual: String,
+    residual_sha256: String,
+    variant: Option<ExperimentalVariant>,
+}
+
+#[derive(Deserialize)]
+struct ExperimentalManifest {
+    schema_version: u32,
+    key: String,
+    output_gain: f32,
+    samples: Vec<ExperimentalEntry>,
+    off_samples: Vec<ExperimentalEntry>,
+}
+
+/// Schema-2 F2002 experimental bank: fail-closed validation. Any load
+/// failure must abort with a clear message; silent fallback is forbidden.
+fn validate_experimental_manifest(
+    directory: &Path,
+    output_sample_rate: u32,
+    raw: &str,
+) -> Result<(), String> {
+    let manifest: ExperimentalManifest = serde_json::from_str(raw)
+        .map_err(|error| format!("invalid experimental manifest: {error}"))?;
+    if manifest.schema_version != 2 || manifest.key != "v10_f2002_experimental" {
+        return Err("experimental manifest schema/key mismatch".into());
+    }
+    if (manifest.output_gain - GF509_HEADROOM_GAIN).abs() > f32::EPSILON {
+        return Err("experimental manifest output gain does not match 0.61".into());
+    }
+    if manifest.samples.is_empty() || manifest.off_samples.is_empty() {
+        return Err("experimental manifest needs ON and OFF collections".into());
+    }
+    for entry in manifest.samples.iter().chain(manifest.off_samples.iter()) {
+        let expected_role = if manifest.samples.iter().any(|sample| sample.key == entry.key) {
+            "on"
+        } else {
+            "off"
+        };
+        if entry.role != expected_role
+            || !entry.native_rpm.is_finite()
+            || entry.sample_rate != output_sample_rate
+            || entry.channels != 1
+            || entry.loop_frames < 32
+        {
+            return Err(format!("invalid experimental manifest entry: {}", entry.key));
+        }
+        for name in [&entry.metadata, &entry.tonal, &entry.residual] {
+            let candidate = Path::new(name);
+            if candidate.is_absolute() || candidate.components().count() != 1 {
+                return Err(format!("experimental asset path must be a local filename: {name}"));
+            }
+            if !directory.join(name).is_file() {
+                return Err(format!("missing experimental asset: {name}"));
+            }
+        }
+        verify_sha256(&directory.join(&entry.tonal), &entry.tonal_sha256)?;
+        verify_sha256(&directory.join(&entry.residual), &entry.residual_sha256)?;
+        if let Some(variant) = &entry.variant {
+            if variant.count < 2
+                || variant.position >= variant.count
+                || variant.group.is_empty()
+            {
+                return Err(format!(
+                    "invalid variant record for experimental entry: {}",
+                    entry.key
+                ));
+            }
+        }
+    }
+    // Variant groups must be complete and consistent per role collection.
+    for collection in [&manifest.samples, &manifest.off_samples] {
+        let mut groups: std::collections::BTreeMap<&str, Vec<(&str, usize, usize)>> =
+            std::collections::BTreeMap::new();
+        for entry in collection {
+            if let Some(variant) = &entry.variant {
+                groups.entry(variant.group.as_str()).or_default().push((
+                    entry.key.as_str(),
+                    variant.position,
+                    variant.count,
+                ));
+            }
+        }
+        for (group, members) in &groups {
+            if members.iter().any(|(_, _, count)| *count != members.len()) {
+                return Err(format!("experimental variant group {group} is incomplete"));
+            }
+            let mut positions: Vec<usize> =
+                members.iter().map(|(_, position, _)| *position).collect();
+            positions.sort_unstable();
+            if positions != (0..members.len()).collect::<Vec<_>>() {
+                return Err(format!("experimental variant group {group} positions invalid"));
+            }
+        }
     }
     Ok(())
 }
@@ -911,6 +1045,73 @@ mod tests {
             energy += left.iter().map(|sample| sample * sample).sum::<f32>();
         }
         (energy / (blocks * left.len()) as f32).sqrt()
+    }
+
+    #[test]
+    fn disable_mid_duck_passes_scene_through_unducked() {
+        // The opt-out must change the mix (duck engages at full load) while
+        // staying finite; default behavior is untouched by construction.
+        use std::path::Path;
+        let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_gf509");
+        let telemetry = RuntimeTelemetry {
+            rpm: 8_000.0,
+            throttle: 0.95,
+            normalized_engine_load: 0.9,
+            normalized_engine_torque: 0.85,
+            torque_sign: TorqueSign::Positive,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            gear: 4,
+            shift_phase: ShiftPhase::None,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
+            rev_limiter_active: false,
+            dt_seconds: 0.0,
+        };
+        let mut enabled = Gf509Runtime::new(Gf509RuntimeConfig {
+            sample_layer_directory: Some(bank.clone()),
+            max_block_frames: 512,
+            ..Gf509RuntimeConfig {
+                engine: EngineConfig {
+                    sample_rate: 44_100,
+                    ..EngineConfig::default()
+                },
+                ..Gf509RuntimeConfig::default()
+            }
+        })
+        .unwrap();
+        let mut disabled = Gf509Runtime::new(Gf509RuntimeConfig {
+            sample_layer_directory: Some(bank),
+            disable_mid_duck: true,
+            max_block_frames: 512,
+            ..Gf509RuntimeConfig {
+                engine: EngineConfig {
+                    sample_rate: 44_100,
+                    ..EngineConfig::default()
+                },
+                ..Gf509RuntimeConfig::default()
+            }
+        })
+        .unwrap();
+        enabled.update_telemetry(telemetry).unwrap();
+        disabled.update_telemetry(telemetry).unwrap();
+        let mut diff = 0.0f32;
+        for _ in 0..8 {
+            let mut le = [0.0; 512];
+            let mut re = [0.0; 512];
+            let mut ld = [0.0; 512];
+            let mut rd = [0.0; 512];
+            enabled.render_block(&mut le, &mut re).unwrap();
+            disabled.render_block(&mut ld, &mut rd).unwrap();
+            assert!(ld.iter().all(|sample| sample.is_finite()));
+            diff = diff.max(
+                le.iter()
+                    .zip(ld.iter())
+                    .map(|(a, b)| (a - b).abs())
+                    .fold(0.0f32, f32::max),
+            );
+        }
+        assert!(diff > 1e-6, "duck bypass must change the mix, diff {diff}");
     }
 
     #[test]

@@ -110,6 +110,8 @@ struct Args {
     coast_end_rpm: f32,
     physical_telemetry_csv: Option<PathBuf>,
     physical_master_lowpass_hz: Option<f32>,
+    no_mid_duck: bool,
+    scene_gains: Vec<(String, f32)>,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -145,6 +147,8 @@ fn parse_args() -> Result<Args, String> {
         coast_end_rpm: 6_500.0,
         physical_telemetry_csv: None,
         physical_master_lowpass_hz: Some(2_500.0),
+        no_mid_duck: false,
+        scene_gains: Vec::new(),
     };
     let mut i = 0;
     while i < raw.len() {
@@ -193,6 +197,17 @@ fn parse_args() -> Result<Args, String> {
             }
             "--no-physical-master-lowpass" => {
                 parsed.physical_master_lowpass_hz = None;
+            }
+            "--no-mid-duck" => parsed.no_mid_duck = true,
+            "--scene-gain" => {
+                let spec = parse_value::<String>(&raw, &mut i, "--scene-gain")?;
+                let (name, value) = spec.split_once('=').ok_or_else(|| {
+                    "expected --scene-gain <branch>=<value>, e.g. --scene-gain gearbox=0".to_string()
+                })?;
+                let gain: f32 = value
+                    .parse()
+                    .map_err(|_| format!("invalid scene gain value: {value}"))?;
+                parsed.scene_gains.push((name.to_string(), gain));
             }
             unknown => return Err(format!("unknown argument: {unknown}")),
         }
@@ -366,7 +381,35 @@ fn run() -> Result<(), String> {
         ..EngineConfig::default()
     };
     let mut engine = V10Engine::new(config.clone())?;
-    let mut scene = AcousticScene::new(args.sample_rate as f32, AcousticSceneConfig::default())?;
+    let mut scene_config = AcousticSceneConfig::default();
+    for (name, gain) in &args.scene_gains {
+        let slot = match name.as_str() {
+            "dry_low" => &mut scene_config.dry_low_gain,
+            "dry_mid" => &mut scene_config.dry_mid_gain,
+            "dry_high" => &mut scene_config.dry_high_gain,
+            "metal" => &mut scene_config.metal_gain,
+            "gearbox" => &mut scene_config.gearbox_gain,
+            "head_cover" => &mut scene_config.head_cover_gain,
+            "airbox" => &mut scene_config.airbox_gain,
+            "engine_cover" => &mut scene_config.engine_cover_gain,
+            "rear_exhaust" => &mut scene_config.rear_exhaust_gain,
+            "mount_monocoque" => &mut scene_config.mount_monocoque_gain,
+            "under_seat" => &mut scene_config.under_seat_gain,
+            "cockpit_cavity" => &mut scene_config.cockpit_cavity_gain,
+            "low_mid_parallel" => &mut scene_config.low_mid_parallel_gain,
+            "load_saturation" => &mut scene_config.load_saturation_gain,
+            "event_residual" => &mut scene_config.event_residual_gain,
+            _ => return Err(format!("unknown scene branch: {name}")),
+        };
+        *slot = *gain;
+    }
+    let scene_gain_overrides = args
+        .scene_gains
+        .iter()
+        .map(|(name, gain)| format!("{name}={gain}"))
+        .collect::<Vec<_>>()
+        .join(",");
+    let mut scene = AcousticScene::new(args.sample_rate as f32, scene_config)?;
     scene.set_load_saturation_excised(args.excise_load_saturation);
     let mut sample_layer = args
         .sample_layer_dir
@@ -505,6 +548,16 @@ fn run() -> Result<(), String> {
 
     let mut peak = 0.0f32;
     let mut sum_sq = 0.0f64;
+    // F2K evidence: per-source accumulated weights plus sampled-layer
+    // component energy, all from this same render.
+    let source_labels: Vec<String> = sample_layer
+        .as_ref()
+        .map(|layer| layer.source_labels().to_vec())
+        .unwrap_or_default();
+    let mut source_weight_sums = vec![0.0f64; source_labels.len()];
+    let mut sample_tonal_sq = 0.0f64;
+    let mut sample_residual_sq = 0.0f64;
+    let mut sample_off_sq = 0.0f64;
     let mut worst_reduction = 0.0f32;
     let mut event_count = 0u64;
     let mut physical_master_lp = args.physical_master_lowpass_hz.map(|cutoff| {
@@ -522,11 +575,23 @@ fn run() -> Result<(), String> {
         let sampled = sample_layer
             .as_mut()
             .map(|layer| {
+                // Imposed evaluation trajectory (not physics braking): the
+                // sweep prescribes RPM/throttle/load offline, so retention
+                // signals are derived from the same prescribed controls.
+                // Accel (throttle open) carries positive torque equal to the
+                // prescribed load; coast (throttle closing) carries negative
+                // torque proportional to the lift depth. Clutch stays engaged
+                // through the lift-and-coast. No lift read-position jump.
+                let retention_torque = if current_input.throttle > 0.30 {
+                    current_input.load
+                } else {
+                    -((0.30 - current_input.throttle) / 0.30) * 0.6
+                };
                 layer.process(SampleLayerInput {
                     rpm: current_input.rpm,
                     throttle: current_input.throttle,
                     load: current_input.load,
-                    normalized_engine_torque: current_input.load,
+                    normalized_engine_torque: retention_torque,
                     clutch_engagement: 1.0,
                     crank_phase_deg: frame.crank_phase_deg,
                 })
@@ -684,13 +749,25 @@ fn run() -> Result<(), String> {
                 .push(acoustic.cylinder_mechanical[index]);
         }
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
-        let sample_tonal = sampled.map_or(0.0, |frame| frame.tonal);
-        let sample_residual = sampled.map_or(0.0, |frame| frame.residual);
-        let sample_mid = sampled.map_or(0.0, |frame| frame.mid_bus);
-        let sample_max_rasp = sampled.map_or(0.0, |frame| frame.max_rasp);
-        let sample_off_throttle = sampled.map_or(0.0, |frame| frame.off_throttle);
-        let sample_output = sampled.map_or(0.0, |frame| frame.output);
-        let (scene_mid_ducked, _) = mid_ducker.process(acoustic.output, sample_mid);
+        let sample_tonal = sampled.as_ref().map_or(0.0, |frame| frame.tonal);
+        let sample_residual = sampled.as_ref().map_or(0.0, |frame| frame.residual);
+        let sample_mid = sampled.as_ref().map_or(0.0, |frame| frame.mid_bus);
+        let sample_max_rasp = sampled.as_ref().map_or(0.0, |frame| frame.max_rasp);
+        let sample_off_throttle = sampled.as_ref().map_or(0.0, |frame| frame.off_throttle);
+        let sample_output = sampled.as_ref().map_or(0.0, |frame| frame.output);
+        if let Some(frame) = sampled {
+            for (slot, weight) in source_weight_sums.iter_mut().zip(frame.zone_weights.iter()) {
+                *slot += *weight as f64;
+            }
+            sample_tonal_sq += (frame.tonal * frame.tonal) as f64;
+            sample_residual_sq += (frame.residual * frame.residual) as f64;
+            sample_off_sq += (frame.off_throttle * frame.off_throttle) as f64;
+        }
+        let (scene_mid_ducked, _) = if args.no_mid_duck {
+            (acoustic.output, 1.0)
+        } else {
+            mid_ducker.process(acoustic.output, sample_mid)
+        };
         // Hybrid headroom is static and transparent. A limiter here would hide
         // gain errors and make the sample layer part of the sound design.
         let hybrid = (scene_mid_ducked + sample_output) * HYBRID_HEADROOM_GAIN;
@@ -832,6 +909,22 @@ fn run() -> Result<(), String> {
     }
 
     let rms = (sum_sq / total as f64).sqrt();
+    let sample_layer_bank = args
+        .sample_layer_dir
+        .as_ref()
+        .and_then(|path| path.file_name())
+        .and_then(|name| name.to_str())
+        .unwrap_or("none")
+        .to_string();
+    let sample_layer_source_weights = source_labels
+        .iter()
+        .zip(source_weight_sums.iter())
+        .map(|(label, sum)| format!("{label}={:.6}", sum / total as f64))
+        .collect::<Vec<_>>()
+        .join(",");
+    let sample_tonal_rms = (sample_tonal_sq / total as f64).sqrt();
+    let sample_residual_rms = (sample_residual_sq / total as f64).sqrt();
+    let sample_off_rms = (sample_off_sq / total as f64).sqrt();
     let metadata_path = args.out.with_extension("metadata.json");
     let profile = if args.hold_before_lift {
         "lift_coast_hold"
@@ -878,6 +971,13 @@ fn run() -> Result<(), String> {
             "  \"faust_used\": false,\n",
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
+            "  \"mid_duck_disabled\": {},\n",
+            "  \"scene_gain_overrides\": \"{}\",\n",
+            "  \"sample_layer_bank\": \"{}\",\n",
+            "  \"sample_layer_source_weights\": \"{}\",\n",
+            "  \"sample_tonal_rms\": {:.9},\n",
+            "  \"sample_residual_rms\": {:.9},\n",
+            "  \"sample_off_rms\": {:.9},\n",
             "  \"load_saturation_excised\": {},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
             "  \"chamber_cycle_model\": \"bounded_720deg_four_stroke_fresh_charge\",\n",
@@ -907,6 +1007,13 @@ fn run() -> Result<(), String> {
         worst_reduction,
         args.acoustic_scene,
         sample_layer.is_some(),
+        args.no_mid_duck,
+        scene_gain_overrides,
+        sample_layer_bank,
+        sample_layer_source_weights,
+        sample_tonal_rms,
+        sample_residual_rms,
+        sample_off_rms,
         args.excise_load_saturation,
         HYBRID_HEADROOM_GAIN,
     );

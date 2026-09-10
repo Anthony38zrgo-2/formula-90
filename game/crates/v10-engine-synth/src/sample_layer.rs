@@ -166,7 +166,7 @@ impl ThreeZoneSampleLayerConfig {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct SampleLayerFrame {
     pub tonal: f32,
     pub residual: f32,
@@ -174,7 +174,11 @@ pub struct SampleLayerFrame {
     pub max_rasp: f32,
     pub off_throttle: f32,
     pub output: f32,
-    pub zone_weights: [f32; ZONE_COUNT],
+    /// Per-source crossfade weights, aligned with `source_labels()`.
+    /// ON sources first (zone weight x variant weight), then OFF sources
+    /// (retention weight x variant weight). Diagnostic; the audio path uses
+    /// the same values through the local computation.
+    pub zone_weights: Vec<f32>,
 }
 
 struct OnePoleLowPass {
@@ -383,6 +387,62 @@ struct PreparedMetadata {
     files: PreparedFiles,
 }
 
+/// Schema-2 experimental manifest (`manifest.json` with
+/// `"schema_version": 2`, `"key": "v10_f2002_experimental"`). Roles come
+/// from this manifest, never from filename suffixes.
+#[derive(Deserialize)]
+struct ManifestVariant {
+    group: String,
+    position: usize,
+    count: usize,
+}
+
+#[derive(Deserialize)]
+struct ManifestSample {
+    key: String,
+    role: String,
+    metadata: String,
+    native_rpm: f32,
+    sample_rate: u32,
+    channels: u16,
+    loop_frames: usize,
+    tonal: String,
+    tonal_sha256: String,
+    residual: String,
+    residual_sha256: String,
+    variant: Option<ManifestVariant>,
+}
+
+#[derive(Deserialize)]
+struct ManifestSchema2 {
+    schema_version: u32,
+    key: String,
+    output_gain: f32,
+    samples: Vec<ManifestSample>,
+    off_samples: Vec<ManifestSample>,
+}
+
+struct ZoneMember {
+    key: String,
+    zone: SampleZone,
+    variant_group: Option<String>,
+    variant_position: usize,
+    variant_total: usize,
+}
+
+struct OnZone {
+    /// Mean of member anchors; defines crossfade geometry. Each member
+    /// keeps its own anchor for its playback rate.
+    anchor: f32,
+    members: Vec<ZoneMember>,
+    /// Zone DSP. Meaningful for ON zones only; OFF zones render dry and
+    /// this processor is never used.
+    processor: ZoneMidProcessor,
+    /// Variant-interpolation span for grouped members
+    /// ([lo, hi] in RPM, equal-power). Unused for single members.
+    variant_span: (f32, f32),
+}
+
 struct SampleZone {
     rpm_anchor: f32,
     firing_phase_deg: f32,
@@ -558,9 +618,19 @@ impl SampleZone {
 pub struct ThreeZoneSampleLayer {
     output_sample_rate: u32,
     config: ThreeZoneSampleLayerConfig,
-    zones: [SampleZone; ZONE_COUNT],
-    mid_processors: [ZoneMidProcessor; ZONE_COUNT],
-    off_zone: Option<SampleZone>,
+    /// ON zones in anchor order. Legacy schema-1 banks hold exactly three
+    /// single-member zones; schema-2 banks hold N zones with variant groups.
+    zones: Vec<OnZone>,
+    /// OFF zones in anchor order (empty when the bank carries no OFF layer).
+    /// OFF members render dry; their `processor` is never used.
+    off_zones: Vec<OnZone>,
+    /// True for legacy schema-1 banks: exact original 3-zone curves and
+    /// suspension geometry. False enables the generalized neighbor-blend
+    /// curves for schema-2 banks.
+    legacy_three_zone: bool,
+    /// Diagnostic labels aligned with `SampleLayerFrame.zone_weights`:
+    /// `"on:<key>"` for every ON source, then `"off:<key>"` for OFF sources.
+    source_labels: Vec<String>,
     phase_aligned: bool,
     /// AUD-06: count of suspended (cursor-only) zone renders since construction.
     /// Control-thread diagnostic for measuring skipped work; written only on the
@@ -584,6 +654,25 @@ impl ThreeZoneSampleLayer {
         directory: &Path,
         config: ThreeZoneSampleLayerConfig,
     ) -> Result<Self, String> {
+        let manifest_path = directory.join("manifest.json");
+        if manifest_path.is_file() {
+            let raw = fs::read_to_string(&manifest_path).map_err(|error| {
+                format!("cannot read {}: {error}", manifest_path.display())
+            })?;
+            // Peek at the schema version without committing to a shape.
+            let peek: serde_json::Value = serde_json::from_str(&raw).map_err(|error| {
+                format!("invalid {}: {error}", manifest_path.display())
+            })?;
+            let schema = peek
+                .get("schema_version")
+                .and_then(|value| value.as_u64())
+                .unwrap_or(0);
+            if schema == 2 {
+                return Self::load_schema2(output_sample_rate, directory, config);
+            }
+            // Any other manifest.json (schema 1 GF509 banks carry one too)
+            // falls through to the legacy suffix discovery below.
+        }
         let entries = fs::read_dir(directory)
             .map_err(|error| format!("cannot read {}: {error}", directory.display()))?
             .map(|entry| {
@@ -654,22 +743,348 @@ impl ThreeZoneSampleLayer {
         {
             return Err("max-zone crossfade window must stay between med and max anchors".into());
         }
-        let zones: [SampleZone; ZONE_COUNT] = loaded
-            .try_into()
-            .map_err(|_| "ThreeZoneSampleLayer requires exactly three zones".to_string())?;
+        let zones: Vec<OnZone> = loaded
+            .into_iter()
+            .enumerate()
+            .map(|(index, zone)| {
+                let key = format!("legacy-{index}");
+                OnZone {
+                    anchor: zone.rpm_anchor,
+                    members: vec![ZoneMember {
+                        key: key.clone(),
+                        zone,
+                        variant_group: None,
+                        variant_position: 0,
+                        variant_total: 1,
+                    }],
+                    processor: ZoneMidProcessor::new(index, output_sample_rate as f32),
+                    variant_span: (f32::NEG_INFINITY, f32::INFINITY),
+                }
+            })
+            .collect();
+        let off_zones = off_zone
+            .into_iter()
+            .map(|zone| {
+                let anchor = zone.rpm_anchor;
+                OnZone {
+                    anchor,
+                    members: vec![ZoneMember {
+                        key: "legacy-off".to_string(),
+                        zone,
+                        variant_group: None,
+                        variant_position: 0,
+                        variant_total: 1,
+                    }],
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32),
+                    variant_span: (f32::NEG_INFINITY, f32::INFINITY),
+                }
+            })
+            .collect();
+        Self::finish(
+            output_sample_rate,
+            config,
+            zones,
+            off_zones,
+            true,
+            vec![
+                "on:legacy-0".to_string(),
+                "on:legacy-1".to_string(),
+                "on:legacy-2".to_string(),
+                "off:legacy-off".to_string(),
+            ],
+        )
+    }
+
+    /// Schema-2 experimental bank: roles and variant groups come from the
+    /// manifest, never from filename suffixes.
+    fn load_schema2(
+        output_sample_rate: u32,
+        directory: &Path,
+        config: ThreeZoneSampleLayerConfig,
+    ) -> Result<Self, String> {
+        if !(8_000..=192_000).contains(&output_sample_rate) {
+            return Err(format!(
+                "sample-layer output rate out of range: {output_sample_rate}"
+            ));
+        }
+        let config = config.validate()?;
+        let manifest_path = directory.join("manifest.json");
+        let raw = fs::read_to_string(&manifest_path)
+            .map_err(|error| format!("cannot read {}: {error}", manifest_path.display()))?;
+        let manifest: ManifestSchema2 = serde_json::from_str(&raw)
+            .map_err(|error| format!("invalid {}: {error}", manifest_path.display()))?;
+        if manifest.schema_version != 2 || manifest.key != "v10_f2002_experimental" {
+            return Err("sample-layer schema-2 manifest key/version mismatch".into());
+        }
+        if (manifest.output_gain - 0.61).abs() > f32::EPSILON {
+            return Err("schema-2 manifest output gain does not match 0.61".into());
+        }
+        if manifest.samples.is_empty() {
+            return Err("schema-2 manifest carries no ON samples".into());
+        }
+        if manifest.off_samples.is_empty() {
+            return Err("schema-2 manifest carries no OFF samples".into());
+        }
+        let mut on_members = Self::load_manifest_members(
+            directory,
+            &manifest.samples,
+            "on",
+            output_sample_rate,
+        )?;
+        let mut off_members = Self::load_manifest_members(
+            directory,
+            &manifest.off_samples,
+            "off",
+            output_sample_rate,
+        )?;
+        on_members.sort_by(|left: &ZoneMember, right: &ZoneMember| {
+            left.zone.rpm_anchor.total_cmp(&right.zone.rpm_anchor)
+        });
+        off_members.sort_by(|left: &ZoneMember, right: &ZoneMember| {
+            left.zone.rpm_anchor.total_cmp(&right.zone.rpm_anchor)
+        });
+        let mut zones = Self::group_members(
+            on_members,
+            output_sample_rate,
+            true,
+            &config,
+        )?;
+        let off_zones = Self::group_members(off_members, output_sample_rate, false, &config)?;
+        // DSP assignment by function: low -> low processor, intermediates ->
+        // med, top -> max. The max rasp boost must not leak onto every source.
+        let last = zones.len() - 1;
+        for (index, zone) in zones.iter_mut().enumerate() {
+            let processor_kind = if index == 0 {
+                0
+            } else if index == last {
+                2
+            } else {
+                1
+            };
+            zone.processor =
+                ZoneMidProcessor::new(processor_kind, output_sample_rate as f32);
+        }
+        let mut labels = Vec::new();
+        for zone in &zones {
+            for member in &zone.members {
+                labels.push(format!("on:{}", member.key));
+            }
+        }
+        for zone in &off_zones {
+            for member in &zone.members {
+                labels.push(format!("off:{}", member.key));
+            }
+        }
+        Self::finish(
+            output_sample_rate,
+            config,
+            zones,
+            off_zones,
+            false,
+            labels,
+        )
+    }
+
+    fn load_manifest_members(
+        directory: &Path,
+        entries: &[ManifestSample],
+        role: &str,
+        output_sample_rate: u32,
+    ) -> Result<Vec<ZoneMember>, String> {
+        let mut members = Vec::with_capacity(entries.len());
+        for entry in entries {
+            if entry.role != role {
+                return Err(format!(
+                    "schema-2 entry {} declares role {}, expected {role}",
+                    entry.key, entry.role
+                ));
+            }
+            if !entry.native_rpm.is_finite()
+                || !(1_000.0..=25_000.0).contains(&entry.native_rpm)
+            {
+                return Err(format!("schema-2 entry {} has an invalid anchor", entry.key));
+            }
+            if entry.sample_rate != output_sample_rate
+                || entry.channels != 1
+                || entry.loop_frames < 32
+            {
+                return Err(format!(
+                    "schema-2 entry {} has incompatible format metadata",
+                    entry.key
+                ));
+            }
+            for name in [&entry.metadata, &entry.tonal, &entry.residual] {
+                let candidate = Path::new(name);
+                if candidate.is_absolute() || candidate.components().count() != 1 {
+                    return Err(format!("schema-2 asset path must be local: {name}"));
+                }
+                if !directory.join(name).is_file() {
+                    return Err(format!("schema-2 asset missing: {name}"));
+                }
+            }
+            verify_file_sha256(&directory.join(&entry.tonal), &entry.tonal_sha256)?;
+            verify_file_sha256(&directory.join(&entry.residual), &entry.residual_sha256)?;
+            let zone = SampleZone::load(&directory.join(&entry.metadata))?;
+            if (zone.rpm_anchor - entry.native_rpm).abs() > 1.0 {
+                return Err(format!(
+                    "schema-2 entry {} anchor mismatch: manifest {} vs prepared {}",
+                    entry.key, entry.native_rpm, zone.rpm_anchor
+                ));
+            }
+            let (variant_group, variant_position, variant_total) = match &entry.variant {
+                None => (None, 0, 1),
+                Some(variant) => {
+                    if variant.count < 2
+                        || variant.position >= variant.count
+                        || variant.group.is_empty()
+                    {
+                        return Err(format!(
+                            "schema-2 entry {} has an invalid variant record",
+                            entry.key
+                        ));
+                    }
+                    (
+                        Some(variant.group.clone()),
+                        variant.position,
+                        variant.count,
+                    )
+                }
+            };
+            members.push(ZoneMember {
+                key: entry.key.clone(),
+                zone,
+                variant_group,
+                variant_position,
+                variant_total,
+            });
+        }
+        Ok(members)
+    }
+
+    /// Sorts members (already anchor-sorted) into zones. Variant-group members
+    /// must form one contiguous run; every other member becomes a solo zone.
+    /// Crossfade geometry uses the member-anchor mean; playback rates always
+    /// use each member's own anchor.
+    fn group_members(
+        members: Vec<ZoneMember>,
+        output_sample_rate: u32,
+        is_on: bool,
+        config: &ThreeZoneSampleLayerConfig,
+    ) -> Result<Vec<OnZone>, String> {
+        let _ = config;
+        if members.is_empty() {
+            return Err("schema-2 role collection is empty".into());
+        }
+        // Validate variant records before grouping.
+        {
+            let mut seen: std::collections::BTreeMap<String, Vec<usize>> =
+                std::collections::BTreeMap::new();
+            for (index, member) in members.iter().enumerate() {
+                if let Some(group) = &member.variant_group {
+                    seen.entry(group.clone()).or_default().push(index);
+                } else if member.variant_total != 1 || member.variant_position != 0 {
+                    return Err(format!("member {} has an inconsistent solo record", member.key));
+                }
+            }
+            for (group, indices) in &seen {
+                let first = members
+                    .iter()
+                    .find(|member| member.variant_group.as_deref() == Some(group.as_str()))
+                    .expect("group must exist");
+                if indices.len() != first.variant_total {
+                    return Err(format!("variant group {group} is incomplete"));
+                }
+                let positions: std::collections::BTreeSet<usize> = indices
+                    .iter()
+                    .map(|&index| members[index].variant_position)
+                    .collect();
+                if positions.len() != indices.len()
+                    || *positions.iter().next().unwrap() != 0
+                    || *positions.iter().next_back().unwrap() != indices.len() - 1
+                {
+                    return Err(format!("variant group {group} positions are not 0..count"));
+                }
+                if indices.windows(2).any(|pair| pair[1] != pair[0] + 1) {
+                    return Err(format!("variant group {group} members are not contiguous"));
+                }
+            }
+        }
+        let mut zones: Vec<OnZone> = Vec::new();
+        // Rebuild by draining through a queue (avoids partial moves).
+        let mut queue: std::collections::VecDeque<ZoneMember> = members.into();
+        while let Some(first) = queue.pop_front() {
+            if let Some(group) = first.variant_group.clone() {
+                let mut run = vec![first];
+                while queue
+                    .front()
+                    .is_some_and(|member| member.variant_group.as_deref() == Some(group.as_str()))
+                {
+                    run.push(queue.pop_front().expect("front checked"));
+                }
+                let anchor =
+                    run.iter().map(|member| member.zone.rpm_anchor).sum::<f32>() / run.len() as f32;
+                zones.push(OnZone {
+                    anchor,
+                    members: run,
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32),
+                    variant_span: (f32::NEG_INFINITY, f32::INFINITY),
+                });
+            } else {
+                let anchor = first.zone.rpm_anchor;
+                zones.push(OnZone {
+                    anchor,
+                    members: vec![first],
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32),
+                    variant_span: (f32::NEG_INFINITY, f32::INFINITY),
+                });
+            }
+        }
+        // Guard against degenerate geometry (equal anchors inside a group are
+        // fine; equal zone anchors are not).
+        let anchors: Vec<f32> = zones.iter().map(|zone| zone.anchor).collect();
+        if anchors.windows(2).any(|pair| pair[1] - pair[0] < 1.0e-3) {
+            return Err("schema-2 zone anchors must be distinct and ordered".into());
+        }
+        // Variant-interpolation spans: the full group span between neighbor
+        // midpoints, extended by half a gap at the collection edges.
+        let bounds = zone_boundaries(&anchors);
+        for (zone_index, zone) in zones.iter_mut().enumerate() {
+            let (lo, hi) = bounds[zone_index];
+            zone.variant_span = (lo, hi);
+        }
+        // Silence unused role flag (DSP kind is assigned by the caller for ON;
+        // OFF zones share the OnZone shape without a processor use).
+        let _ = is_on;
+        Ok(zones)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn finish(
+        output_sample_rate: u32,
+        config: ThreeZoneSampleLayerConfig,
+        zones: Vec<OnZone>,
+        off_zones: Vec<OnZone>,
+        legacy_three_zone: bool,
+        source_labels: Vec<String>,
+    ) -> Result<Self, String> {
         let aa_ratio_max = zones
             .iter()
-            .map(|zone| zone.max_rate(output_sample_rate))
-            .chain(off_zone.iter().map(|zone| zone.max_rate(output_sample_rate)))
+            .flat_map(|zone| zone.members.iter())
+            .map(|member| member.zone.max_rate(output_sample_rate))
+            .chain(
+                off_zones
+                    .iter()
+                    .flat_map(|zone| zone.members.iter())
+                    .map(|member| member.zone.max_rate(output_sample_rate)),
+            )
             .fold(1.0, f64::max);
         Ok(Self {
             output_sample_rate,
             config,
             zones,
-            mid_processors: std::array::from_fn(|zone| {
-                ZoneMidProcessor::new(zone, output_sample_rate as f32)
-            }),
-            off_zone,
+            off_zones,
+            legacy_three_zone,
+            source_labels,
             phase_aligned: false,
             suspended_zone_samples: 0,
             tabled_narrow: build_sinc_table(SINC_TABLE_PHASES, SINC_RADIUS),
@@ -690,18 +1105,35 @@ impl ThreeZoneSampleLayer {
             return Err("sample-layer crank phase must be finite".into());
         }
         for zone in &mut self.zones {
-            zone.align(crank_phase_deg);
+            for member in &mut zone.members {
+                member.zone.align(crank_phase_deg);
+            }
         }
-        if let Some(off_zone) = &mut self.off_zone {
-            off_zone.align(crank_phase_deg);
+        for zone in &mut self.off_zones {
+            for member in &mut zone.members {
+                member.zone.align(crank_phase_deg);
+            }
         }
         self.off_smoothed = 0.0;
         self.phase_aligned = true;
         Ok(())
     }
 
-    pub fn rpm_anchors(&self) -> [f32; ZONE_COUNT] {
-        std::array::from_fn(|index| self.zones[index].rpm_anchor)
+    pub fn rpm_anchors(&self) -> Vec<f32> {
+        self.zones.iter().map(|zone| zone.anchor).collect()
+    }
+
+    /// Diagnostic labels aligned with `SampleLayerFrame.zone_weights`.
+    pub fn source_labels(&self) -> &[String] {
+        &self.source_labels
+    }
+
+    /// Number of OFF sources (members across all OFF zones).
+    pub fn off_source_count(&self) -> usize {
+        self.off_zones
+            .iter()
+            .map(|zone| zone.members.len())
+            .sum()
     }
 
     /// AUD-06 diagnostic: zone renders skipped (cursor advanced, no DSP) since
@@ -710,15 +1142,71 @@ impl ThreeZoneSampleLayer {
         self.suspended_zone_samples
     }
 
+    /// Resamples one member through the configured kernel path and advances
+    /// its cursor. Split out so ON and OFF collections share one authority.
+    #[inline]
+    fn render_member(
+        member: &mut ZoneMember,
+        rpm: f32,
+        output_sample_rate: u32,
+        tabled: bool,
+        antialias: bool,
+        tabled_narrow: &[f32],
+        aa_table: &[f32],
+        aa_ratio_max: f64,
+    ) -> (f32, f32) {
+        let zone = &mut member.zone;
+        if !tabled {
+            return zone.render(rpm, output_sample_rate);
+        }
+        let rate = zone.rate(rpm, output_sample_rate);
+        // AUD-07: the antialias kernel is applied inside the resampler,
+        // before the output sample is produced. The ratio-aware table is
+        // selected continuously, so there is no post-resample LP state
+        // and no transient when a ratio crosses one.
+        if antialias && rate > 1.0 {
+            zone.render_antialiased_tabled(
+                rate,
+                aa_table,
+                SINC_TABLE_PHASES,
+                AA_RATIO_LEVELS,
+                aa_ratio_max,
+                -AA_SINC_RADIUS + 1,
+                AA_SINC_TAPS,
+            )
+        } else {
+            zone.render_tabled(
+                rate,
+                tabled_narrow,
+                SINC_TABLE_PHASES,
+                -SINC_RADIUS + 1,
+                (2 * SINC_RADIUS) as usize,
+            )
+        }
+    }
+
     #[inline]
     pub fn process(&mut self, input: SampleLayerInput) -> Result<SampleLayerFrame, String> {
         let input = input.validate()?;
         if !self.phase_aligned {
             self.reset_phase(input.crank_phase_deg)?;
         }
+        if self.legacy_three_zone {
+            return self.process_legacy(input);
+        }
+        self.process_multi(input)
+    }
+
+    /// Exact legacy behavior for schema-1 GF509 banks: original 3-zone
+    /// curves, suspension geometry and single OFF stem.
+    fn process_legacy(&mut self, input: SampleLayerInput) -> Result<SampleLayerFrame, String> {
+        let anchors = self.rpm_anchors();
+        let legacy: [f32; ZONE_COUNT] = anchors
+            .try_into()
+            .map_err(|_| "legacy bank requires exactly three ON zones".to_string())?;
         let weights = zone_weights(
             input.rpm,
-            self.rpm_anchors(),
+            legacy,
             self.config.max_fade_start_rpm,
             self.config.max_full_rpm,
         );
@@ -733,10 +1221,11 @@ impl ThreeZoneSampleLayer {
         let margin = self.config.suspend_margin_rpm;
         let tabled = self.config.use_tabled_sinc;
         let antialias = self.config.pitch_up_antialias;
-        let anchors = self.rpm_anchors();
         let fade_start = self.config.max_fade_start_rpm;
         let fade_full = self.config.max_full_rpm;
-        for (index, (zone, weight)) in self.zones.iter_mut().zip(weights).enumerate() {
+        let mut frame_weights = vec![0.0f32; self.source_labels.len()];
+        for (index, zone) in self.zones.iter_mut().enumerate() {
+            let weight = weights[index];
             // AUD-06 (fix.txt): suspend only in deep silence — zero weight AND
             // the RPM a full margin outside every crossfade this zone takes
             // part in. Zones approaching a fade keep rendering so their filters
@@ -744,46 +1233,31 @@ impl ThreeZoneSampleLayer {
             // suppresses any residual. Cursor always advances (phase).
             let deep_silence = weight == 0.0
                 && match index {
-                    0 => input.rpm > anchors[1] + margin,
+                    0 => input.rpm > legacy[1] + margin,
                     1 => {
-                        input.rpm < anchors[0] - margin
-                            || (input.rpm > anchors[1] + margin
+                        input.rpm < legacy[0] - margin
+                            || (input.rpm > legacy[1] + margin
                                 && input.rpm < fade_start - margin)
                             || input.rpm > fade_full + margin
                     }
                     _ => input.rpm < fade_start - margin,
                 };
+            let member = &mut zone.members[0];
             if suspend && deep_silence {
-                zone.advance(input.rpm, output_sample_rate);
+                member.zone.advance(input.rpm, output_sample_rate);
                 self.suspended_zone_samples += 1;
                 continue;
             }
-            let rate = zone.rate(input.rpm, output_sample_rate);
-            // AUD-07: the antialias kernel is applied inside the resampler,
-            // before the output sample is produced. The ratio-aware table is
-            // selected continuously, so there is no post-resample LP state
-            // and no transient when a ratio crosses one.
-            let (zone_tonal, zone_residual) = if !tabled {
-                zone.render(input.rpm, output_sample_rate)
-            } else if antialias && rate > 1.0 {
-                zone.render_antialiased_tabled(
-                    rate,
-                    &self.aa_table,
-                    SINC_TABLE_PHASES,
-                    AA_RATIO_LEVELS,
-                    self.aa_ratio_max,
-                    -AA_SINC_RADIUS + 1,
-                    AA_SINC_TAPS,
-                )
-            } else {
-                zone.render_tabled(
-                    rate,
-                    &self.tabled_narrow,
-                    SINC_TABLE_PHASES,
-                    -SINC_RADIUS + 1,
-                    (2 * SINC_RADIUS) as usize,
-                )
-            };
+            let (zone_tonal, zone_residual) = Self::render_member(
+                member,
+                input.rpm,
+                output_sample_rate,
+                tabled,
+                antialias,
+                &self.tabled_narrow,
+                &self.aa_table,
+                self.aa_ratio_max,
+            );
             let (
                 zone_tonal,
                 zone_residual,
@@ -791,11 +1265,150 @@ impl ThreeZoneSampleLayer {
                 zone_residual_mid,
                 zone_tonal_rasp,
                 zone_residual_rasp,
-            ) = self.mid_processors[index].process(
+            ) = zone.processor.process(
                 zone_tonal,
                 zone_residual,
                 input.rpm,
                 self.output_sample_rate as f32,
+            );
+            tonal += zone_tonal * weight;
+            residual += zone_residual * weight;
+            tonal_mid += zone_tonal_mid * weight;
+            residual_mid += zone_residual_mid * weight;
+            tonal_rasp += zone_tonal_rasp * weight;
+            residual_rasp += zone_residual_rasp * weight;
+            frame_weights[index] = weight;
+        }
+        let charge = input.load * (0.35 + 0.65 * input.throttle);
+        let tonal_gain = self.config.tonal_gain_closed
+            + (self.config.tonal_gain_loaded - self.config.tonal_gain_closed) * charge;
+        let residual_gain = self.config.residual_gain_closed
+            + (self.config.residual_gain_loaded - self.config.residual_gain_closed) * charge;
+        tonal *= tonal_gain;
+        residual *= residual_gain;
+        let mid_bus = tonal_mid * tonal_gain + residual_mid * residual_gain;
+        let max_rasp = tonal_rasp * tonal_gain + residual_rasp * residual_gain;
+
+        let mut off_throttle_stem = 0.0;
+        if let Some(off_zone) = self.off_zones.first_mut() {
+            let off_weight = off_throttle_weight(input, self.config.off_throttle_gain);
+            // fix.txt: slew the weight itself (32 samples) so a 0 -> audible
+            // jump on a throttle slam cannot click against filter state.
+            // Steady weights pass through untouched after the slew.
+            let target = off_weight;
+            let delta = (target - self.off_smoothed).clamp(-1.0 / 32.0, 1.0 / 32.0);
+            self.off_smoothed += delta;
+            let off_weight = self.off_smoothed;
+            // AUD-06: same suspension for the off stem (stateless beyond its
+            // cursor, so reactivation is exact).
+            let member = &mut off_zone.members[0];
+            let (off_tonal, off_residual) = if suspend && off_weight == 0.0 {
+                member.zone.advance(input.rpm, output_sample_rate);
+                self.suspended_zone_samples += 1;
+                (0.0, 0.0)
+            } else {
+                Self::render_member(
+                    member,
+                    input.rpm,
+                    output_sample_rate,
+                    tabled,
+                    antialias,
+                    &self.tabled_narrow,
+                    &self.aa_table,
+                    self.aa_ratio_max,
+                )
+            };
+            tonal += off_tonal * off_weight;
+            residual += off_residual * off_weight;
+            off_throttle_stem = (off_tonal + off_residual) * off_weight;
+            if let Some(slot) = frame_weights.get_mut(self.zones.len()) {
+                *slot = off_weight;
+            }
+        }
+
+        Ok(SampleLayerFrame {
+            tonal,
+            residual,
+            mid_bus,
+            max_rasp,
+            off_throttle: off_throttle_stem,
+            output: tonal + residual,
+            zone_weights: frame_weights,
+        })
+    }
+
+    /// Generalized schema-2 behavior: N ON zones with variant groups and M
+    /// OFF zones. Same gains, ducking contract (via mid_bus), suspension
+    /// policy and headroom handling as the legacy path; only the bank
+    /// geometry and its distribution change.
+    fn process_multi(&mut self, input: SampleLayerInput) -> Result<SampleLayerFrame, String> {
+        let anchors = self.rpm_anchors();
+        let zone_weights = multi_zone_weights(input.rpm, &anchors);
+        let mut tonal = 0.0;
+        let mut residual = 0.0;
+        let mut tonal_mid = 0.0;
+        let mut residual_mid = 0.0;
+        let mut tonal_rasp = 0.0;
+        let mut residual_rasp = 0.0;
+        let output_sample_rate = self.output_sample_rate;
+        let output_sample_rate_f32 = self.output_sample_rate as f32;
+        let suspend = self.config.suspend_inaudible_zones;
+        let margin = self.config.suspend_margin_rpm;
+        let tabled = self.config.use_tabled_sinc;
+        let antialias = self.config.pitch_up_antialias;
+        let bounds = zone_boundaries(&anchors);
+        let mut frame_weights = vec![0.0f32; self.source_labels.len()];
+        let mut weight_cursor = 0usize;
+        for (index, zone) in self.zones.iter_mut().enumerate() {
+            let weight = zone_weights[index];
+            let (span_lo, span_hi) = bounds[index];
+            // Generalized deep silence: zero weight AND the RPM a full margin
+            // outside every crossfade this zone takes part in.
+            let deep_silence = weight == 0.0
+                && (input.rpm < span_lo - margin || input.rpm > span_hi + margin);
+            // Variant interpolation over the group span: deterministic,
+            // power-normalized, continuous cursors per member.
+            let variant_weights = variant_weights(input.rpm, zone);
+            if suspend && deep_silence {
+                for member in &mut zone.members {
+                    member.zone.advance(input.rpm, output_sample_rate);
+                    self.suspended_zone_samples += 1;
+                }
+                weight_cursor += zone.members.len();
+                continue;
+            }
+            let mut mixed_tonal = 0.0;
+            let mut mixed_residual = 0.0;
+            for (member, variant_weight) in
+                zone.members.iter_mut().zip(variant_weights.iter())
+            {
+                let (member_tonal, member_residual) = Self::render_member(
+                    member,
+                    input.rpm,
+                    output_sample_rate,
+                    tabled,
+                    antialias,
+                    &self.tabled_narrow,
+                    &self.aa_table,
+                    self.aa_ratio_max,
+                );
+                mixed_tonal += member_tonal * variant_weight;
+                mixed_residual += member_residual * variant_weight;
+                frame_weights[weight_cursor] = weight * variant_weight;
+                weight_cursor += 1;
+            }
+            let (
+                zone_tonal,
+                zone_residual,
+                zone_tonal_mid,
+                zone_residual_mid,
+                zone_tonal_rasp,
+                zone_residual_rasp,
+            ) = zone.processor.process(
+                mixed_tonal,
+                mixed_residual,
+                input.rpm,
+                output_sample_rate_f32,
             );
             tonal += zone_tonal * weight;
             residual += zone_residual * weight;
@@ -814,50 +1427,53 @@ impl ThreeZoneSampleLayer {
         let mid_bus = tonal_mid * tonal_gain + residual_mid * residual_gain;
         let max_rasp = tonal_rasp * tonal_gain + residual_rasp * residual_gain;
 
+        // Independent OFF selection over its own anchors, with the existing
+        // retention weight, throttle smoothing and no lift discontinuity.
         let mut off_throttle_stem = 0.0;
-        if let Some(off_zone) = &mut self.off_zone {
-            let off_weight = off_throttle_weight(input, self.config.off_throttle_gain);
-            // fix.txt: slew the weight itself (32 samples) so a 0 -> audible
-            // jump on a throttle slam cannot click against filter state.
-            // Steady weights pass through untouched after the slew.
-            let target = off_weight;
+        if !self.off_zones.is_empty() {
+            let off_anchors: Vec<f32> =
+                self.off_zones.iter().map(|zone| zone.anchor).collect();
+            let off_zone_weights = multi_zone_weights(input.rpm, &off_anchors);
+            let target = off_throttle_weight(input, self.config.off_throttle_gain);
             let delta = (target - self.off_smoothed).clamp(-1.0 / 32.0, 1.0 / 32.0);
             self.off_smoothed += delta;
             let off_weight = self.off_smoothed;
-            // AUD-06: same suspension for the off stem (stateless beyond its
-            // cursor, so reactivation is exact).
-            let (off_tonal, off_residual) = if suspend && off_weight == 0.0 {
-                off_zone.advance(input.rpm, output_sample_rate);
-                self.suspended_zone_samples += 1;
-                (0.0, 0.0)
-            } else if !tabled {
-                off_zone.render(input.rpm, output_sample_rate)
-            } else {
-                let rate = off_zone.rate(input.rpm, output_sample_rate);
-                let (raw_tonal, raw_residual) = if antialias && rate > 1.0 {
-                    off_zone.render_antialiased_tabled(
-                        rate,
-                        &self.aa_table,
-                        SINC_TABLE_PHASES,
-                        AA_RATIO_LEVELS,
-                        self.aa_ratio_max,
-                        -AA_SINC_RADIUS + 1,
-                        AA_SINC_TAPS,
-                    )
-                } else {
-                    off_zone.render_tabled(
-                        rate,
+            let mut mixed_tonal = 0.0;
+            let mut mixed_residual = 0.0;
+            for (zone, zone_weight) in
+                self.off_zones.iter_mut().zip(off_zone_weights.iter())
+            {
+                let variant_weights = variant_weights(input.rpm, zone);
+                if suspend && off_weight == 0.0 {
+                    for member in &mut zone.members {
+                        member.zone.advance(input.rpm, output_sample_rate);
+                        self.suspended_zone_samples += 1;
+                    }
+                    weight_cursor += zone.members.len();
+                    continue;
+                }
+                for (member, variant_weight) in
+                    zone.members.iter_mut().zip(variant_weights.iter())
+                {
+                    let (member_tonal, member_residual) = Self::render_member(
+                        member,
+                        input.rpm,
+                        output_sample_rate,
+                        tabled,
+                        antialias,
                         &self.tabled_narrow,
-                        SINC_TABLE_PHASES,
-                        -SINC_RADIUS + 1,
-                        (2 * SINC_RADIUS) as usize,
-                    )
-                };
-                (raw_tonal, raw_residual)
-            };
-            tonal += off_tonal * off_weight;
-            residual += off_residual * off_weight;
-            off_throttle_stem = (off_tonal + off_residual) * off_weight;
+                        &self.aa_table,
+                        self.aa_ratio_max,
+                    );
+                    mixed_tonal += member_tonal * zone_weight * variant_weight;
+                    mixed_residual += member_residual * zone_weight * variant_weight;
+                    frame_weights[weight_cursor] = off_weight * zone_weight * variant_weight;
+                    weight_cursor += 1;
+                }
+            }
+            tonal += mixed_tonal * off_weight;
+            residual += mixed_residual * off_weight;
+            off_throttle_stem = (mixed_tonal + mixed_residual) * off_weight;
         }
 
         Ok(SampleLayerFrame {
@@ -867,7 +1483,7 @@ impl ThreeZoneSampleLayer {
             max_rasp,
             off_throttle: off_throttle_stem,
             output: tonal + residual,
-            zone_weights: weights,
+            zone_weights: frame_weights,
         })
     }
 }
@@ -886,9 +1502,99 @@ fn off_throttle_weight(input: SampleLayerInput, gain: f32) -> f32 {    let overr
     overrun * low_load_engaged.max(retention) * gain
 }
 
+fn verify_file_sha256(path: &Path, expected: &str) -> Result<(), String> {
+    use sha2::{Digest, Sha256};
+    let bytes = fs::read(path)
+        .map_err(|error| format!("cannot read sample asset {}: {error}", path.display()))?;
+    let actual = format!("{:x}", Sha256::digest(&bytes));
+    if actual != *expected {
+        return Err(format!("sample asset hash mismatch: {}", path.display()));
+    }
+    Ok(())
+}
+
+/// Crossfade boundaries for N sorted zone anchors: zone `i` blends with its
+/// neighbors over `[bounds[i].0, bounds[i].1]`, where interior edges are
+/// neighbor midpoints and collection edges extend half a gap outward.
+fn zone_boundaries(anchors: &[f32]) -> Vec<(f32, f32)> {
+    let count = anchors.len();
+    let mut bounds = Vec::with_capacity(count);
+    for index in 0..count {
+        let lo = if index == 0 {
+            if count > 1 {
+                anchors[0] - (anchors[1] - anchors[0]) * 0.5
+            } else {
+                f32::NEG_INFINITY
+            }
+        } else {
+            (anchors[index - 1] + anchors[index]) * 0.5
+        };
+        let hi = if index + 1 == count {
+            if count > 1 {
+                anchors[count - 1] + (anchors[count - 1] - anchors[count - 2]) * 0.5
+            } else {
+                f32::INFINITY
+            }
+        } else {
+            (anchors[index] + anchors[index + 1]) * 0.5
+        };
+        bounds.push((lo, hi));
+    }
+    bounds
+}
+
+/// Generalized neighbor equal-power crossfade over N sorted zone anchors.
+/// Below the first or above the last anchor the extreme zone holds.
+fn multi_zone_weights(rpm: f32, anchors: &[f32]) -> Vec<f32> {
+    let count = anchors.len();
+    let mut weights = vec![0.0f32; count];
+    if count == 0 {
+        return weights;
+    }
+    if count == 1 || rpm <= anchors[0] {
+        weights[0] = 1.0;
+        return weights;
+    }
+    if rpm >= anchors[count - 1] {
+        weights[count - 1] = 1.0;
+        return weights;
+    }
+    for index in 0..count - 1 {
+        if rpm >= anchors[index] && rpm < anchors[index + 1] {
+            let span = (anchors[index + 1] - anchors[index]).max(1.0e-3);
+            let t = ((rpm - anchors[index]) / span).clamp(0.0, 1.0);
+            let theta = t * std::f32::consts::FRAC_PI_2;
+            weights[index] = theta.cos();
+            weights[index + 1] = theta.sin();
+            return weights;
+        }
+    }
+    weights[count - 1] = 1.0;
+    weights
+}
+
+/// Variant interpolation inside one zone over its span: deterministic,
+/// power-normalized equal-power chain. Solo members return weight 1.
+/// Members keep continuous cursors and their own anchor rates.
+fn variant_weights(rpm: f32, zone: &OnZone) -> Vec<f32> {
+    let count = zone.members.len();
+    if count == 1 {
+        return vec![1.0];
+    }
+    let (lo, hi) = zone.variant_span;
+    let span = (hi - lo).max(1.0e-3);
+    let t = ((rpm - lo) / span).clamp(0.0, 1.0) * (count - 1) as f32;
+    let segment = (t.floor() as usize).min(count - 2);
+    let frac = t - segment as f32;
+    let theta = frac * std::f32::consts::FRAC_PI_2;
+    let mut weights = vec![0.0f32; count];
+    weights[segment] = theta.cos();
+    weights[segment + 1] = theta.sin();
+    weights
+}
+
 #[inline]
-fn zone_weights(
-    rpm: f32,
+fn zone_weights(    rpm: f32,
     anchors: [f32; ZONE_COUNT],
     max_fade_start_rpm: f32,
     max_full_rpm: f32,
@@ -1878,7 +2584,10 @@ mod tests {
             },
         )
         .unwrap();
-        assert!(suspended.off_zone.is_some(), "bank must carry an off stem");
+        assert!(
+            suspended.off_source_count() > 0,
+            "bank must carry an off stem"
+        );
         let anchors = reference.rpm_anchors();
         let rpm_lo = (anchors[0] - 2_000.0).max(1_000.0);
         let rpm_hi = anchors[2] + 1_000.0;
@@ -1942,14 +2651,29 @@ mod tests {
             }
             previous_reference = out_reference;
             previous_suspended = out_suspended;
-            let weights = zone_weights(
+            let weights = multi_zone_weights(input.rpm, &anchors);
+            // Legacy reference curve check on the packaged bank: the
+            // generalized blend must agree with the legacy curve to within
+            // the fade-window fit (a few RPM at the med/max edge).
+            let legacy_anchors: [f32; ZONE_COUNT] = anchors
+                .clone()
+                .try_into()
+                .expect("packaged bank has three anchors");
+            let legacy_weights = zone_weights(
                 input.rpm,
-                anchors,
+                legacy_anchors,
                 base_config.max_fade_start_rpm,
                 base_config.max_full_rpm,
             );
-            for (seen, weight) in zone_weights_seen_zero.iter_mut().zip(weights) {
-                *seen |= weight == 0.0;
+            for (seen, weight) in zone_weights_seen_zero.iter_mut().zip(weights.iter()) {
+                *seen |= *weight == 0.0;
+            }
+            for (general, legacy) in weights.iter().zip(legacy_weights) {
+                assert!(
+                    (general - legacy).abs() < 0.02,
+                    "rpm {}: multi {general} vs legacy {legacy}",
+                    input.rpm
+                );
             }
         }
         assert!(
@@ -1966,15 +2690,25 @@ mod tests {
         );
         // Phase continuity: every cursor (zones + off stem) bit-identical.
         for index in 0..ZONE_COUNT {
-            assert_eq!(
-                reference.zones[index].cursor.to_bits(),
-                suspended.zones[index].cursor.to_bits(),
-                "zone {index} cursor drifted while suspended"
-            );
+            for member in 0..reference.zones[index].members.len() {
+                assert_eq!(
+                    reference.zones[index].members[member].zone.cursor.to_bits(),
+                    suspended.zones[index].members[member].zone.cursor.to_bits(),
+                    "zone {index} member {member} cursor drifted while suspended"
+                );
+            }
         }
         assert_eq!(
-            reference.off_zone.as_ref().map(|zone| zone.cursor.to_bits()),
-            suspended.off_zone.as_ref().map(|zone| zone.cursor.to_bits()),
+            reference
+                .off_zones
+                .iter()
+                .map(|zone| zone.members[0].zone.cursor.to_bits())
+                .collect::<Vec<_>>(),
+            suspended
+                .off_zones
+                .iter()
+                .map(|zone| zone.members[0].zone.cursor.to_bits())
+                .collect::<Vec<_>>(),
             "off-stem cursor drifted while suspended"
         );
         // fix.txt measured 2026-09-05 on this sweep: transient 0.0039 with a
@@ -1988,5 +2722,78 @@ mod tests {
             max_step_suspended <= max_step_reference * 1.5,
             "suspended max step {max_step_suspended} vs reference {max_step_reference}: click?"
         );
+    }
+
+    #[test]
+    fn experimental_schema2_bank_covers_sweep_with_all_sources() {
+        // F2K integration: the prepared F2002 bank loads by manifest roles,
+        // renders finite audible audio over the 5k->18k->5k evaluation
+        // trajectory, carries OFF energy in the coast, and gives every one
+        // of the 12 sources nonzero weight somewhere on the trajectory.
+        use std::path::Path;
+        let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_experimental");
+        let mut layer = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig::default(),
+        )
+        .unwrap();
+        assert!(!layer.legacy_three_zone, "experimental bank must use multi curves");
+        assert_eq!(layer.source_labels().len(), 12);
+        assert_eq!(layer.off_source_count(), 5);
+        let mut accumulated = vec![0.0f32; layer.source_labels().len()];
+        let mut peak = 0.0f32;
+        let mut off_energy_coast = 0.0f64;
+        let mut off_samples = 0u64;
+        // 0-7 s accel 5000->18000 loaded, 7-10 s coast 18000->5000 lift.
+        let steps = 30_000usize;
+        for i in 0..steps {
+            let time_s = i as f32 / steps as f32 * 10.0;
+            let (rpm, throttle, load, torque) = if time_s < 7.0 {
+                let t = time_s / 7.0;
+                let shaped = t * t * (3.0 - 2.0 * t);
+                (5_000.0 + 13_000.0 * shaped, 0.95, 0.90, 0.90)
+            } else {
+                let t = (time_s - 7.0) / 3.0;
+                let decay = 1.0 - (1.0 - t).powf(1.55);
+                let lift = (-t / 0.035).exp();
+                (
+                    18_000.0 - 13_000.0 * decay,
+                    0.035 + (0.95 - 0.035) * lift,
+                    0.10 + (0.90 - 0.10) * (-t / 0.12).exp(),
+                    -0.53,
+                )
+            };
+            let frame = layer
+                .process(SampleLayerInput {
+                    rpm,
+                    throttle,
+                    load,
+                    normalized_engine_torque: torque,
+                    clutch_engagement: 1.0,
+                    crank_phase_deg: 0.0,
+                })
+                .unwrap();
+            assert!(frame.output.is_finite(), "sample {i}");
+            assert!(frame.tonal.is_finite() && frame.residual.is_finite());
+            peak = peak.max(frame.output.abs());
+            for (slot, weight) in accumulated.iter_mut().zip(frame.zone_weights.iter()) {
+                *slot += weight;
+            }
+            if time_s >= 7.5 {
+                off_energy_coast += (frame.off_throttle * frame.off_throttle) as f64;
+                off_samples += 1;
+            }
+        }
+        assert!(peak > 1e-4, "sweep must stay audible, peak {peak}");
+        assert!(peak <= 1.0, "sweep must stay under PCM ceiling, peak {peak}");
+        let off_rms = (off_energy_coast / off_samples as f64).sqrt();
+        assert!(off_rms > 1e-5, "OFF stem must carry coast energy, rms {off_rms}");
+        for (label, total) in layer.source_labels().iter().zip(accumulated.iter()) {
+            assert!(
+                *total > 0.0,
+                "source {label} never weighted on the trajectory"
+            );
+        }
     }
 }
