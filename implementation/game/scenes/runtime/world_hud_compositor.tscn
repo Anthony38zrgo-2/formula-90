@@ -1,0 +1,68 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/runtime/world_hud_compositor.gd" id="1_compositor"]
+[ext_resource type="Resource" path="res://data/race_sessions/default.tres" id="2_config"]
+[ext_resource type="PackedScene" path="res://scenes/ui/debug_hud.tscn" id="3_hud"]
+[ext_resource type="Material" path="res://addons/psx_visuals_gd4/materials/mat_psx_upscale_presenter.tres" id="4_mat"]
+
+[node name="WorldHudCompositor" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_compositor")
+session_config = ExtResource("2_config")
+
+[node name="PsxArtController" type="PsxArtController" parent="."]
+preset_path = "res://data/visuals/psx_authentic_94.json"
+auto_apply = true
+target_viewport_path = NodePath("../WorldViewport")
+target_presenter_path = NodePath("../DisplayAspect/DisplayStage/WorldPresenter")
+override_engine_fps = true
+
+[node name="DisplayAspect" type="AspectRatioContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+ratio = 1.7777778
+stretch_mode = 2
+alignment_horizontal = 1
+alignment_vertical = 1
+mouse_filter = 2
+
+[node name="DisplayStage" type="Control" parent="DisplayAspect"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="WorldPresenter" type="TextureRect" parent="DisplayAspect/DisplayStage"]
+material = ExtResource("4_mat")
+layout_mode = 1
+expand_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="WorldViewport" type="SubViewport" parent="."]
+size = Vector2i(320, 240)
+msaa_3d = 1
+render_target_update_mode = 4
+
+[node name="HudLayer" type="Control" parent="DisplayAspect/DisplayStage"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DebugHud" parent="DisplayAspect/DisplayStage/HudLayer" instance=ExtResource("3_hud")]
