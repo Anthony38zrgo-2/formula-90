@@ -1,0 +1,761 @@
+{
+  "aero": {
+    "air_density": 1.225,
+    "blend_full_speed_mps": 41.667,
+    "blend_min_speed_mps": 5.556,
+    "drag_coefficient": 0.08,
+    "frontal_area": 1.25,
+    "lag_tau_s": 0.03,
+    "model": {
+      "front_wing": {
+        "area_m2": 0.58,
+        "incidence_deg": 11.0,
+        "max_angle_deg": 20.0,
+        "min_angle_deg": 4.0,
+        "polar": [
+          {
+            "angle_deg": 4.0,
+            "cd": 0.05,
+            "cl": 0.3
+          },
+          {
+            "angle_deg": 8.0,
+            "cd": 0.075,
+            "cl": 0.55
+          },
+          {
+            "angle_deg": 12.0,
+            "cd": 0.11,
+            "cl": 0.8
+          },
+          {
+            "angle_deg": 16.0,
+            "cd": 0.165,
+            "cl": 0.95
+          },
+          {
+            "angle_deg": 20.0,
+            "cd": 0.245,
+            "cl": 0.88
+          }
+        ],
+        "yaw_decay_exponent": 1.1
+      },
+      "limits": {
+        "hard_max_downforce_n": 10800.0,
+        "hard_max_load_ratio": 1.85,
+        "profile": "f1_1994_post_safety",
+        "soft_max_load_ratio": 1.65
+      },
+      "rear_wing": {
+        "area_m2": 0.95,
+        "incidence_deg": 18.0,
+        "max_angle_deg": 26.0,
+        "min_angle_deg": 6.0,
+        "polar": [
+          {
+            "angle_deg": 6.0,
+            "cd": 0.07,
+            "cl": 0.4
+          },
+          {
+            "angle_deg": 10.0,
+            "cd": 0.1,
+            "cl": 0.7
+          },
+          {
+            "angle_deg": 16.0,
+            "cd": 0.16,
+            "cl": 1.0
+          },
+          {
+            "angle_deg": 21.0,
+            "cd": 0.24,
+            "cl": 1.15
+          },
+          {
+            "angle_deg": 26.0,
+            "cd": 0.34,
+            "cl": 1.05
+          }
+        ],
+        "yaw_decay_exponent": 1.05
+      },
+      "underfloor": {
+        "bottoming_factor": 0.35,
+        "choke_height_m": 0.014,
+        "high_height_m": 0.165,
+        "induced_drag_ratio": 0.13,
+        "lift_area_m2": 1.58,
+        "optimal_height_m": 0.052,
+        "optimal_rake_deg": 0.6,
+        "rake_window_deg": 3.25,
+        "seal_asymmetry_m": 0.1,
+        "seal_roll_rad": 0.15,
+        "stall_attack_tau_s": 0.065,
+        "stall_recovery_tau_s": 0.105,
+        "yaw_decay_exponent": 1.2
+      }
+    }
+  },
+  "aids": {
+    "abs_available": true,
+    "abs_default_enabled": false,
+    "abs_player_selectable": true,
+    "auto_clutch_default_enabled": true,
+    "auto_clutch_player_selectable": false,
+    "brake_assist_available": false,
+    "brake_assist_default_enabled": false,
+    "brake_assist_force_multiplier": 1.0,
+    "brake_assist_player_selectable": false,
+    "countersteer_default_enabled": false,
+    "handbrake_abs_interlock": false,
+    "handbrake_clutch_coupling": false,
+    "handbrake_rear_only": false,
+    "input_smoothing_brake_rate": 14.0,
+    "input_smoothing_enabled": true,
+    "input_smoothing_steering_rate": 7.0,
+    "input_smoothing_throttle_rate": 4.0,
+    "launch_control_available": false,
+    "launch_control_clutch_release_rate_per_s": 2.0,
+    "launch_control_default_enabled": false,
+    "launch_control_player_selectable": false,
+    "launch_control_target_rpm": 0.0,
+    "launch_control_throttle_limit": 1.0,
+    "stability_available": true,
+    "stability_default_enabled": false,
+    "stability_grounded_multiplier": 2.0,
+    "stability_player_selectable": true,
+    "stability_upright_damping": 0.0,
+    "stability_upright_spring": 0.0,
+    "stability_yaw_engage_angle_rad": 0.1,
+    "stability_yaw_strength": 9.0,
+    "steering_assist_player_selectable": true,
+    "steering_slip_assist_default_enabled": false,
+    "traction_control_actuator": "engine_torque",
+    "traction_control_attack_rate": 34.0,
+    "traction_control_available": true,
+    "traction_control_cut_gain": 1.2,
+    "traction_control_default_enabled": false,
+    "traction_control_gear_authority": [
+      1.0,
+      0.9,
+      0.65,
+      0.45,
+      0.2,
+      0.1
+    ],
+    "traction_control_gear_max_cut": [
+      0.78,
+      0.65,
+      0.55,
+      0.4,
+      0.14,
+      0.07
+    ],
+    "traction_control_gear_slip_target": [
+      0.055,
+      0.065,
+      0.085,
+      0.105,
+      0.14,
+      0.18
+    ],
+    "traction_control_player_selectable": true,
+    "traction_control_release_rate": 18.0,
+    "traction_control_slip_threshold": 0.08
+  },
+  "audio": {
+    "continuous_source": "v10_gf509",
+    "cpp_dsp": {
+      "enabled": false,
+      "gain": 0.12
+    },
+    "gf509": {
+      "diagnostic_mode": "mix",
+      "fallback_to_legacy_on_initialization_error": true,
+      "gain": 1.0,
+      "manifest": "audio/v10_gf509/manifest.json",
+      "schema_version": 1
+    },
+    "powertrain_synthesis": {
+      "aspiration": "naturally_aspirated",
+      "bank_count": 2,
+      "combustion": {
+        "body_cutoff_hz": 3200.0,
+        "combustion_attack_deg": 4.0,
+        "combustion_decay_deg": 48.0,
+        "cycle_variation": 0.15,
+        "cylinder_variation": 0.1,
+        "exhaust_blowdown_attack_deg": 12.0,
+        "exhaust_blowdown_decay_deg": 150.0,
+        "exhaust_open_offset_deg": 18.0,
+        "intake_event_width_deg": 90.0,
+        "intake_open_offset_deg": 36.0,
+        "irregularity": 0.012,
+        "pressure_derivative_mix": 0.45,
+        "scavenging_ratio": 0.38,
+        "seed": 4500
+      },
+      "combustion_voices": {
+        "edge_enabled": false,
+        "edge_gain": 0.18
+      },
+      "cpu_budget": {
+        "far_percent": 2.0,
+        "near_percent": 5.0
+      },
+      "cycle": "four_stroke",
+      "distance_levels": {
+        "dsp": {
+          "coeff_update_steps": 1,
+          "far_coeff_update_steps": 8,
+          "far_resonator_scale": 0.0,
+          "mid_resonator_scale": 0.6,
+          "near_resonator_scale": 1.0,
+          "organic_jitter_scale": 1.0
+        },
+        "far_max_m": 200.0,
+        "hysteresis_ratio": 0.1,
+        "mid_max_m": 80.0,
+        "near_max_m": 25.0
+      },
+      "enabled": true,
+      "energy": {
+        "attack_smoothing_s": 0.02,
+        "idle_combustion_gain": 0.35,
+        "load_smoothing_s": 0.03,
+        "release_smoothing_s": 0.12,
+        "throttle_response": 1.0,
+        "torque_curve_weight": 1.0
+      },
+      "even_firing": true,
+      "exhaust": {
+        "collector": {
+          "damping_hz": 1800.0,
+          "effective_length_m": 1.45,
+          "reflection_gain": 0.35
+        },
+        "collector_resonances": [
+          {
+            "frequency_hz": 190.0,
+            "gain_db": 4.0,
+            "q": 4.0
+          },
+          {
+            "frequency_hz": 380.0,
+            "gain_db": 1.0,
+            "q": 2.5
+          }
+        ],
+        "damping": 0.5,
+        "effective_sound_speed_mps": 343.0,
+        "enabled": false,
+        "headers": [
+          {
+            "damping": 0.08,
+            "gain": 1.0,
+            "length_m": 0.78
+          },
+          {
+            "damping": 0.08,
+            "gain": 1.0,
+            "length_m": 0.81
+          },
+          {
+            "damping": 0.08,
+            "gain": 0.99,
+            "length_m": 0.84
+          },
+          {
+            "damping": 0.08,
+            "gain": 0.99,
+            "length_m": 0.87
+          },
+          {
+            "damping": 0.08,
+            "gain": 0.98,
+            "length_m": 0.9
+          }
+        ],
+        "pulse_gain": 1.0,
+        "saturation": 0.15
+      },
+      "half_block": {
+        "decorrelation": 0.0,
+        "delay_s": 0.0,
+        "gain": 0.98,
+        "phase_offset_deg": 72.0,
+        "timbre_diff": 0.0
+      },
+      "intake": {
+        "enabled": false,
+        "noise_gain": 0.02,
+        "pulse_gain": 0.45,
+        "resonances": [
+          {
+            "frequency_hz": 320.0,
+            "gain_db": 3.0,
+            "q": 2.0
+          },
+          {
+            "frequency_hz": 640.0,
+            "gain_db": 1.5,
+            "q": 3.0
+          }
+        ],
+        "throttle_follow": 0.8
+      },
+      "limiter": {
+        "attack_ms": 2.0,
+        "cut_shape": "soft",
+        "release_ms": 60.0,
+        "threshold_rpm_ratio": 0.995
+      },
+      "modular": {
+        "attack_deg": 3.0,
+        "decay_deg": 90.0,
+        "enabled": false,
+        "gain": 0.15,
+        "jitter_deg": 2.0,
+        "rpm_full_ratio": 0.95,
+        "rpm_start_ratio": 0.3,
+        "sustain": 0.0,
+        "voices": [
+          {
+            "enabled": false,
+            "frequency_factor": 0.5,
+            "gain": 0.3,
+            "highpass_hz": 300.0,
+            "lowpass_hz": 3500.0,
+            "waveform": "saw"
+          },
+          {
+            "enabled": false,
+            "frequency_factor": 1.25,
+            "gain": 0.12,
+            "highpass_hz": 1200.0,
+            "lowpass_hz": 5000.0,
+            "waveform": "square"
+          },
+          {
+            "enabled": false,
+            "frequency_factor": 1.0,
+            "gain": 0.08,
+            "highpass_hz": 3500.0,
+            "lowpass_hz": 9000.0,
+            "waveform": "noise"
+          },
+          {
+            "enabled": false,
+            "frequency_factor": 7.0,
+            "gain": 0.035,
+            "highpass_hz": 7000.0,
+            "lowpass_hz": 11000.0,
+            "waveform": "saw"
+          }
+        ]
+      },
+      "physically_simulated_cylinders": 5,
+      "rasp": {
+        "enabled": false,
+        "gain": 0.72,
+        "highpass_hz": 2500.0,
+        "input_gain": 1.0,
+        "lowpass_hz": 7000.0,
+        "rpm_full_ratio": 0.9,
+        "rpm_start_ratio": 0.25,
+        "saturation": 0.5
+      },
+      "schema_version": 1,
+      "synthesis_model": "half_block_5_four_stroke",
+      "tc": {
+        "attack_ms": 8.0,
+        "min_cut_threshold": 0.02,
+        "release_ms": 120.0,
+        "suppress_gain": 0.55
+      },
+      "total_cylinders": 10
+    }
+  },
+  "brakes": {
+    "abs_pulse_time": 0.03,
+    "abs_spin_diff_threshold": 12.0,
+    "enable_abs": false,
+    "front_brake_bias": 0.56,
+    "max_brake_torque": 3000.0,
+    "thermal": {
+      "braking_heat_fraction": 0.97,
+      "cold_efficiency": 0.78,
+      "critical_temperature_c": 1100.0,
+      "fade_start_temperature_c": 900.0,
+      "front": {
+        "cooling_profile": "open_wheel_ducted",
+        "installation_airflow_scale": 0.7,
+        "model": "scaled_two_node_v1",
+        "rim_base_air_w_k": 7.0,
+        "rim_heat_capacity_j_k": 4200.0,
+        "rim_to_tire_carcass_w_k": 55.0,
+        "rim_to_tire_gas_w_k": 38.0,
+        "rotor_inner_diameter_m": 0.105,
+        "rotor_mass_kg": 1.35,
+        "rotor_material": "carbon_carbon",
+        "rotor_outer_diameter_m": 0.278,
+        "rotor_to_rim_w_k": 40.05769230769231,
+        "rotor_ventilation": "vented",
+        "thermal_mass_scale": 1.0
+      },
+      "front_duct": {
+        "air_specific_heat_j_kg_k": 1005.0,
+        "area_response_exponent": 1.15,
+        "cooling_flow_exponent": 0.8,
+        "cooling_reference_speed_ms": 50.0,
+        "discharge_coefficient": 0.72,
+        "drag_coefficient": 0.2,
+        "heat_exchanger_ua_w_k": 400.0,
+        "max_inlet_area_m2_per_wheel": 0.006,
+        "minimum_cooling_flow_ratio": 0.12,
+        "opening": 0.02,
+        "pressure_recovery": 0.65,
+        "rotor_cooling_fraction": 0.873
+      },
+      "initial_temperature_c": 25.0,
+      "minimum_fade_efficiency": 0.58,
+      "optimal_max_temperature_c": 800.0,
+      "optimal_min_temperature_c": 400.0,
+      "rear": {
+        "cooling_profile": "open_wheel_ducted",
+        "installation_airflow_scale": 0.85,
+        "model": "scaled_two_node_v1",
+        "rim_base_air_w_k": 10.0,
+        "rim_heat_capacity_j_k": 6000.0,
+        "rim_to_tire_carcass_w_k": 18.0,
+        "rim_to_tire_gas_w_k": 12.0,
+        "rotor_inner_diameter_m": 0.1,
+        "rotor_mass_kg": 1.8,
+        "rotor_material": "carbon_carbon",
+        "rotor_outer_diameter_m": 0.25,
+        "rotor_to_rim_w_k": 33.62962962962963,
+        "rotor_ventilation": "vented",
+        "thermal_mass_scale": 1.0
+      },
+      "rear_duct": {
+        "air_specific_heat_j_kg_k": 1005.0,
+        "area_response_exponent": 1.15,
+        "cooling_flow_exponent": 0.8,
+        "cooling_reference_speed_ms": 50.0,
+        "discharge_coefficient": 0.72,
+        "drag_coefficient": 0.1,
+        "heat_exchanger_ua_w_k": 400.0,
+        "max_inlet_area_m2_per_wheel": 0.005,
+        "minimum_cooling_flow_ratio": 0.12,
+        "opening": 0.04,
+        "pressure_recovery": 0.65,
+        "rotor_cooling_fraction": 0.873
+      }
+    }
+  },
+  "chassis": {
+    "center_of_gravity_height_offset": -0.12,
+    "front_weight_distribution": 0.45,
+    "inertia_multipliers": {
+      "x": 1.05,
+      "y": 1.22,
+      "z": 1.05
+    },
+    "vehicle_mass": 600.0,
+    "vehicle_name": "F1 2030 V10 3.5L NA (900cv)"
+  },
+  "coordinate_contract": {
+    "forward": "-Z",
+    "right": "+X",
+    "up": "+Y"
+  },
+  "geometry": {
+    "front_track": 1.506,
+    "rear_track": 1.432,
+    "wheelbase": 2.95
+  },
+  "powertrain": {
+    "automatic_transmission": false,
+    "clutch_out_rpm_offset": 1100.0,
+    "constant_brake_ratio": 0.02,
+    "differential": {
+      "clutch_friction_coefficient": 0.09,
+      "clutches": 6.0,
+      "coast_ramp_angle_deg": 60.0,
+      "power_ramp_angle_deg": 65.0,
+      "preload_nm": 75.0,
+      "slip_transition_threshold_rad_s": 1.0
+    },
+    "final_drive": 4.25,
+    "front_torque_split": 0.0,
+    "gear_inertia": 0.014,
+    "gear_ratios": [
+      3.45,
+      2.75,
+      2.3,
+      1.95,
+      1.68,
+      1.46
+    ],
+    "handbrake_torque_fraction": 0.0,
+    "idle_disengagement_hysteresis_rpm": 150.0,
+    "idle_rpm": 4500.0,
+    "max_clutch_torque_ratio": 1.1,
+    "max_rpm": 18000.0,
+    "max_torque": 400.0,
+    "motor_moment": 0.07,
+    "reverse_ratio": 4.2,
+    "shift_time": 0.05,
+    "torque_attack_rate_nm_s": 1100.0,
+    "torque_curve": [
+      [
+        0.0,
+        0.1
+      ],
+      [
+        0.25,
+        0.28
+      ],
+      [
+        0.4,
+        0.55
+      ],
+      [
+        0.52,
+        0.77
+      ],
+      [
+        0.64,
+        0.92
+      ],
+      [
+        0.74,
+        1.0
+      ],
+      [
+        0.82,
+        0.99
+      ],
+      [
+        0.9,
+        0.96
+      ],
+      [
+        0.96,
+        0.92
+      ],
+      [
+        1.0,
+        0.88
+      ]
+    ],
+    "variable_drag_ratio": 0.1
+  },
+  "profile_name": "F1 2030 V10 3.5L NA (900cv)",
+  "schema_version": 3,
+  "steering": {
+    "ackermann": 0.2,
+    "countersteer_assist": 0.0,
+    "countersteer_speed": 6.85,
+    "front_steering_ratio": 1.0,
+    "max_steering_angle": 0.4363,
+    "rear_steering_ratio": 0.0,
+    "steering_exponent": 1.1,
+    "steering_slip_assist": 0.0,
+    "steering_speed": 4.75,
+    "steering_speed_decay": 0.12
+  },
+  "suspension": {
+    "front": {
+      "arb_ratio": 0.15,
+      "bump_damp_multiplier": 1.0,
+      "bump_stop_multiplier": 2.6,
+      "camber": -0.0483972,
+      "camber_gain_rad_per_m": -0.02,
+      "damping_ratio": 0.74,
+      "rebound_damp_multiplier": 1.12,
+      "resting_ratio": 0.15,
+      "spring_length": 0.3,
+      "toe": -0.0018,
+      "toe_gain_rad_per_m": 0.0
+    },
+    "rear": {
+      "arb_ratio": 0.09,
+      "bump_damp_multiplier": 0.9,
+      "bump_stop_multiplier": 2.8,
+      "camber": -0.029,
+      "camber_gain_rad_per_m": -0.02,
+      "damping_ratio": 0.71,
+      "rebound_damp_multiplier": 1.35,
+      "resting_ratio": 0.22,
+      "spring_length": 0.27,
+      "toe": 0.0042,
+      "toe_gain_rad_per_m": 0.025
+    },
+    "tri_ray_spacing_ratio": 0.4
+  },
+  "tires": {
+    "airborne_spin_decay_torque": 1.0,
+    "contact_patch": 0.35,
+    "force_model": {
+      "front": {
+        "lateral_peak_slip_angle_rad": 0.1,
+        "lateral_slide_mu_ratio": 0.95,
+        "longitudinal_peak_slip_ratio": 0.12,
+        "longitudinal_slide_mu_ratio": 0.95
+      },
+      "rear": {
+        "lateral_peak_slip_angle_rad": 0.1,
+        "lateral_slide_mu_ratio": 0.95,
+        "longitudinal_peak_slip_ratio": 0.12,
+        "longitudinal_slide_mu_ratio": 0.95
+      }
+    },
+    "front": {
+      "airborne_spin_decay_torque": 1.0,
+      "contact_patch": 0.32,
+      "radius": 0.33,
+      "wheel_mass": 21.0,
+      "width": 0.33
+    },
+    "pressure": {
+      "atmospheric_pressure_kpa": 101.325,
+      "cold_kpa_gauge": {
+        "FL": 80.0,
+        "FR": 80.0,
+        "RL": 80.0,
+        "RR": 80.0
+      },
+      "reference_hot_kpa_gauge": {
+        "FL": 145.0,
+        "FR": 145.0,
+        "RL": 140.0,
+        "RR": 140.0
+      },
+      "reference_temperature_c": 25.0,
+      "units": "kPa_gauge"
+    },
+    "pressure_mechanics": {
+      "compliance_sensitivity": 0.72,
+      "response_sensitivity": -0.18,
+      "rolling_resistance_sensitivity": -0.35
+    },
+    "rear": {
+      "airborne_spin_decay_torque": 1.0,
+      "contact_patch": 0.4,
+      "radius": 0.33,
+      "wheel_mass": 28.0,
+      "width": 0.42
+    },
+    "surfaces": {
+      "Curb": {
+        "friction": 2.05,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.56,
+        "rolling_resistance": 1.5,
+        "stiffness": 5.9
+      },
+      "Dirt": {
+        "friction": 1.2,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.42,
+        "rolling_resistance": 2.4,
+        "stiffness": 0.45
+      },
+      "Grass": {
+        "friction": 0.75,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.35,
+        "rolling_resistance": 4.2,
+        "stiffness": 0.35
+      },
+      "Gravel": {
+        "friction": 1.0,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.4,
+        "rolling_resistance": 3.0,
+        "stiffness": 0.45
+      },
+      "Road": {
+        "friction": 2.7,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.95,
+        "rolling_resistance": 1.0,
+        "stiffness": 7.2
+      }
+    },
+    "thermal": {
+      "ambient_fallback_c": 25.0,
+      "carcass_heat_capacity_j_k": 5300.0,
+      "carcass_hysteresis_efficiency": 1.0,
+      "carcass_to_air_w_k": 3.5,
+      "carcass_to_gas_w_k": 50.0,
+      "front": {
+        "ambient_fallback_c": 25.0,
+        "carcass_heat_capacity_j_k": 5300.0,
+        "carcass_hysteresis_efficiency": 1.0,
+        "carcass_to_air_w_k": 3.5,
+        "carcass_to_gas_w_k": 50.0,
+        "gas_heat_capacity_j_k": 750.0,
+        "initial_temperature_c": 25.0,
+        "lateral_tread_conductance_w_k": 24.0,
+        "maximum_pressure_kpa_gauge": 260.0,
+        "minimum_pressure_kpa_gauge": 55.0,
+        "optimal_carcass_temperature_c": 80.0,
+        "optimal_tread_temperature_c": 95.0,
+        "optimal_tread_window_c": 12.0,
+        "overheat_tread_temperature_c": 120.0,
+        "road_conductance_w_k": 60.0,
+        "slip_heat_efficiency": 1.0,
+        "track_fallback_c": 35.0,
+        "tread_to_air_w_k": 4.5,
+        "tread_to_carcass_w_k": 75.0,
+        "tread_zone_heat_capacity_j_k": 2100.0,
+        "volume_deflection_gain": 0.04
+      },
+      "gas_heat_capacity_j_k": 750.0,
+      "initial_temperature_c": 25.0,
+      "lateral_tread_conductance_w_k": 24.0,
+      "maximum_pressure_kpa_gauge": 260.0,
+      "minimum_pressure_kpa_gauge": 55.0,
+      "optimal_carcass_temperature_c": 80.0,
+      "optimal_tread_temperature_c": 95.0,
+      "optimal_tread_window_c": 12.0,
+      "overheat_tread_temperature_c": 120.0,
+      "rear": {
+        "ambient_fallback_c": 25.0,
+        "carcass_heat_capacity_j_k": 12500.0,
+        "carcass_hysteresis_efficiency": 0.72,
+        "carcass_to_air_w_k": 12.0,
+        "carcass_to_gas_w_k": 22.0,
+        "gas_heat_capacity_j_k": 1800.0,
+        "initial_temperature_c": 25.0,
+        "lateral_tread_conductance_w_k": 22.0,
+        "maximum_pressure_kpa_gauge": 260.0,
+        "minimum_pressure_kpa_gauge": 55.0,
+        "optimal_carcass_temperature_c": 80.0,
+        "optimal_tread_temperature_c": 95.0,
+        "optimal_tread_window_c": 12.0,
+        "overheat_tread_temperature_c": 120.0,
+        "road_conductance_w_k": 62.0,
+        "slip_heat_efficiency": 0.72,
+        "track_fallback_c": 35.0,
+        "tread_to_air_w_k": 24.0,
+        "tread_to_carcass_w_k": 58.0,
+        "tread_zone_heat_capacity_j_k": 5200.0,
+        "volume_deflection_gain": 0.04
+      },
+      "road_conductance_w_k": 60.0,
+      "slip_heat_efficiency": 1.0,
+      "track_fallback_c": 35.0,
+      "tread_to_air_w_k": 4.5,
+      "tread_to_carcass_w_k": 75.0,
+      "tread_zone_heat_capacity_j_k": 2100.0,
+      "volume_deflection_gain": 0.04
+    }
+  },
+  "units": "SI",
+  "vehicle_id": "f1_2030_v10"
+}

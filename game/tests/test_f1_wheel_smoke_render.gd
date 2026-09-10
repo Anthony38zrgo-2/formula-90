@@ -112,7 +112,7 @@ func _run() -> void:
 	var vehicle := TelemetryVehicle.new()
 	var controller := Node.new()
 	controller.set_script(controller_script)
-	controller.set("physics_config_path", source_root.path_join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"))
+	controller.set("physics_config_path", source_root.path_join("data/vehicles/f1_2030/f1_2030_v10_physics.json"))
 	vehicle.add_child(controller)
 	for index in range(4):
 		var hub := Node3D.new()

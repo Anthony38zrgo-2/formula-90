@@ -80,7 +80,12 @@ func _run() -> void:
 	var vehicle := TelemetryVehicle.new()
 	var controller := Node.new()
 	controller.set_script(controller_script)
-	controller.set("physics_config_path", _source_root.path_join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"))
+	# Keep this shared-controller fixture independent of vehicle JSON changes.
+	controller.set("physics_config_path", "")
+	controller.set("front_spring_length", 0.295)
+	controller.set("front_resting_ratio", 0.175)
+	controller.set("rear_spring_length", 0.265)
+	controller.set("rear_resting_ratio", 0.26)
 	vehicle.add_child(controller)
 	for index in range(4):
 		var hub := Node3D.new()
@@ -131,6 +136,8 @@ func _run() -> void:
 	var late_controller := Node.new()
 	late_controller.set_script(controller_script)
 	late_controller.set("physics_config_path", controller.get("physics_config_path"))
+	for property in ["front_spring_length", "front_resting_ratio", "rear_spring_length", "rear_resting_ratio"]:
+		late_controller.set(property, controller.get(property))
 	vehicle.add_child(late_controller)
 	late_controller.set_process(false)
 	late_controller.set_physics_process(false)

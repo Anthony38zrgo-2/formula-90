@@ -2,7 +2,7 @@ extends SceneTree
 
 # Canonical audio smoke. The runtime owns audio through F90Core; the old
 # VehicleAudio scene is legacy and is intentionally not used here.
-const DEFAULT_SCENE_PATH := "res://scenes/runtime/vehicle_test_session_2026.tscn"
+const DEFAULT_SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
 
 func _scene_path() -> String:
 	for argument in OS.get_cmdline_user_args():

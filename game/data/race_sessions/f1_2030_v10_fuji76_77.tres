@@ -1,7 +1,7 @@
 [gd_resource type="Resource" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/runtime/race_session_config.gd" id="1"]
-[ext_resource type="Resource" path="res://data/vehicles/f1_2026_2008.tres" id="2"]
+[ext_resource type="Resource" path="res://data/vehicles/f1_2030_v10.tres" id="2"]
 [ext_resource type="Resource" path="res://data/tracks/fuji76_77.tres" id="3"]
 
 [resource]

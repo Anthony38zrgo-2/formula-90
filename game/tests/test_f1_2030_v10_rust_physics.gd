@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SCENE_PATH := "res://scenes/vehicles/f1_2026_2008/f1_2026_2008_rust.tscn"
+const SCENE_PATH := "res://scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn"
 
 func _init() -> void:
 	call_deferred("_run_test")
@@ -11,11 +11,11 @@ func _fail(msg: String, failures: Array[String]) -> void:
 
 func _run_test() -> void:
 	var failures: Array[String] = []
-	print("=== Running F1 2026-2008 Rust Physics Integration Test ===")
+	print("=== Running F1 2030 V10 Rust Physics Integration Test ===")
 	
 	var packed = load(SCENE_PATH) as PackedScene
 	if packed == null:
-		_fail("Could not load f1_2026_2008_rust.tscn", failures)
+		_fail("Could not load f1_2030_v10_rust.tscn", failures)
 		quit(1)
 		return
 	
@@ -74,8 +74,8 @@ func _run_test() -> void:
 		_fail("Engine RPM did not increase above idle (RPM=%.0f)" % rpm, failures)
 	
 	if failures.size() == 0:
-		print("=== F1 2026-2008 Rust Physics Integration Test: PASSED ===")
+		print("=== F1 2030 V10 Rust Physics Integration Test: PASSED ===")
 		quit(0)
 	else:
-		printerr("=== F1 2026-2008 Rust Physics Integration Test: FAILED (%d errors) ===" % failures.size())
+		printerr("=== F1 2030 V10 Rust Physics Integration Test: FAILED (%d errors) ===" % failures.size())
 		quit(1)

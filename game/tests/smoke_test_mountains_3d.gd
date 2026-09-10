@@ -3,7 +3,7 @@ extends SceneTree
 ## Smoke test: factory-authored mountain integration with La Chutana.
 ## Near/Far must come exclusively from the published track GLB.
 
-const SESSION_SCENE_PATH := "res://scenes/runtime/vehicle_test_session_2026.tscn"
+const SESSION_SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
 var _failures: Array[String] = []
 
 func _init():

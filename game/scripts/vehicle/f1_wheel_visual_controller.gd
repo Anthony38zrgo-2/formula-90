@@ -1,7 +1,7 @@
 class_name F1WheelVisualController
 extends Node
 
-## Visual wheel controller for the F1-2026-2008.
+## Shared visual wheel controller for Formula-90 open-wheel vehicles.
 ##
 ## The physics extension remains the only suspension authority. This node only
 ## consumes compression/telemetry and drives the visual hierarchy:
@@ -12,7 +12,7 @@ extends Node
 ## as the single visual owner.
 
 @export var vehicle: Node3D
-@export var physics_config_path: String = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"
+@export_file("*.json") var physics_config_path: String = ""
 
 @export var hub_fl: Node3D
 @export var hub_fr: Node3D
@@ -101,6 +101,8 @@ const SCRUB_RELEASE_SECONDS := 0.160
 func _ready() -> void:
 	if vehicle == null:
 		vehicle = get_parent() as Node3D
+	if physics_config_path.is_empty() and vehicle != null and vehicle.has_method(&"get_physics_config_path"):
+		physics_config_path = String(vehicle.call(&"get_physics_config_path"))
 	_load_physics_specs()
 	_resolve_nodes()
 	_init_smoke_emitters()
@@ -199,6 +201,9 @@ func _refresh_physics_anchors() -> void:
 			# never a wheel anchor on this car; accepting it hides all four meshes
 			# inside the chassis at x=z=0.
 			if not queried_anchor.is_zero_approx():
+				# VehicleConfig::wheel_anchor_local already includes spring_length *
+				# (1 - resting_ratio): it is the upper ray origin, not the wheel center.
+				# _physics_process subtracts spring length and adds compression once.
 				_base_anchors[wheel_index] = queried_anchor
 
 func _node_from(parent_node: Variant, child_name: String) -> Node3D:

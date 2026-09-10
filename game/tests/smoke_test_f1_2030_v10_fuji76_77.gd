@@ -1,7 +1,8 @@
 extends SceneTree
 
-const DEFAULT_SCENE_PATH := "res://scenes/runtime/vehicle_test_session_2026.tscn"
-const DEFAULT_VEHICLE_ID := "f1_2026_2008"
+const DEFAULT_SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
+const DEFAULT_VEHICLE_ID := "f1_2030_v10"
+const EXPECTED_TCAM_CONFIG := "res://data/cameras/f1_2030_v10_tcam.json"
 const EXPECTED_SPAWN := Vector3(-297.652, 0.024, -244.251)
 const REQUIRED_GROUPS := [&"Road", &"Curb", &"Grass", &"Gravel", &"Sand", &"Wall", &"Metal"]
 
@@ -36,8 +37,10 @@ func _run() -> void:
 	var track := compositor.find_child("ActiveTrack", true, false) as Node3D
 	var vehicle_root := compositor.find_child("ActiveVehicle", true, false) as Node3D
 	var vehicle := compositor.find_child("VehicleRigidBody", true, false) as RigidBody3D
+	var race_session := compositor.find_child("RaceSession", true, false)
 	var camera_rig := compositor.find_child("CameraRig", true, false) as Node3D
 	var camera := compositor.find_child("Camera3D", true, false) as Camera3D
+	var tcam_rig := compositor.find_child("CameraRigTCam", true, false) as Node3D
 	var minimap := compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/Minimap")
 	if track == null or vehicle == null:
 		_fail("Fuji track or vehicle was not composed.", failures)
@@ -49,6 +52,25 @@ func _run() -> void:
 		_fail("Expected vehicle '%s' is not the active model." % expected_vehicle_id, failures)
 	if camera_rig == null or camera == null or not camera.current:
 		_fail("Canonical chase camera is missing or inactive.", failures)
+	if tcam_rig == null:
+		_fail("Vehicle-specific T-cam rig is missing.", failures)
+	elif String(tcam_rig.get("config_path")) != EXPECTED_TCAM_CONFIG:
+		_fail("T-cam does not use the F1 2030 V10 configuration.", failures)
+	else:
+		var tcam_camera := tcam_rig.find_child("Camera3D", true, false) as Camera3D
+		if tcam_camera == null:
+			_fail("Vehicle-specific T-cam camera is missing.", failures)
+		else:
+			if race_session == null or not race_session.has_method("toggle_camera"):
+				_fail("RaceSession cannot toggle the vehicle cameras.", failures)
+			else:
+				race_session.call("toggle_camera")
+			await process_frame
+			if not tcam_camera.current or camera.current:
+				_fail("T-cam cannot become the active camera.", failures)
+			if race_session != null and race_session.has_method("toggle_camera"):
+				race_session.call("toggle_camera")
+			await process_frame
 
 	for group in REQUIRED_GROUPS:
 		var found := false

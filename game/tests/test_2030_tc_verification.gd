@@ -1,6 +1,6 @@
 extends SceneTree
 
-const SCENE_PATH := "res://scenes/runtime/vehicle_test_session_2026.tscn"
+const SCENE_PATH := "res://scenes/runtime/vehicle_test_session.tscn"
 
 func _init() -> void:
 	call_deferred("_run")
@@ -68,13 +68,13 @@ func _run() -> void:
 	var veh_cfg_path: String = str(veh_info.get("configuration", ""))
 	assert(not engine_cfg_path.is_empty(), "engine_config no debe estar vacio")
 	assert(not veh_cfg_path.is_empty(), "vehicle.configuration no debe estar vacio")
-	assert(engine_cfg_path.contains("f1_2026_2008_physics.json"), "engine_config debe apuntar al JSON 2030/2026")
-	assert(float(chassis.get("vehicle_mass", 0.0)) == 650.0 or vehicle.mass == 650.0, "Masa debe ser 650 kg")
-	assert(float(engine.get("max_torque", 0.0)) == 410.0, "Torque maximo debe ser 410 Nm")
-	assert(float(engine.get("max_rpm", 0.0)) == 17500.0, "RPM maxima debe ser 17500 rpm")
+	assert(engine_cfg_path.contains("f1_2030_v10_physics.json"), "engine_config debe apuntar al JSON f1_2030_v10")
+	assert(float(chassis.get("vehicle_mass", 0.0)) == 630.0 and vehicle.mass == 630.0, "Masa del perfil f1_2030_v10 debe ser 630 kg")
+	assert(float(engine.get("max_torque", 0.0)) == 400.0, "Torque maximo del perfil f1_2030_v10 debe ser 400 Nm")
+	assert(float(engine.get("max_rpm", 0.0)) == 18000.0, "RPM maxima del perfil f1_2030_v10 debe ser 18000 rpm")
 	assert(float(trans.get("final_drive", 0.0)) == 4.25, "Final Drive debe ser 4.25")
 	var ratios: Array = trans.get("gear_ratios", [])
-	assert(ratios.size() == 7, "Debe tener 7 marchas")
+	assert(ratios.size() == 6, "El perfil f1_2030_v10 debe tener 6 marchas")
 	print("[PASS] Verificación 5: Perfil 2030 y Setup_JSON validados con éxito!")
 
 	# --- VERIFICACIÓN 1: ENLACE UI -> RUNTIME DEL TC ---

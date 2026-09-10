@@ -80,6 +80,8 @@ func _add_runtime_systems() -> void:
 	camera_rig_tcam = TCAM_SCENE.instantiate() as Node3D
 	camera_rig_tcam.name = "CameraRigTCam"
 	camera_rig_tcam.set("car_path", NodePath("../VehicleContainer/ActiveVehicle/VehicleRigidBody"))
+	if not config.selected_vehicle.tcam_config_path.is_empty():
+		camera_rig_tcam.set("config_path", config.selected_vehicle.tcam_config_path)
 	add_child(camera_rig_tcam)
 	_apply_active_camera(false)
 

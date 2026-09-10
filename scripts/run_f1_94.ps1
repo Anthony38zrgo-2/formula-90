@@ -1,8 +1,6 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
-    [ValidateSet('2026')]
-    [string]$VehicleVariant = '2026',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
     [switch]$SmokeAudio,
@@ -14,15 +12,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
-$scene = 'res://scenes/runtime/vehicle_test_session_2026.tscn'
-$manifestPath = Join-Path $game 'assets\models\vehicles\f1-2026-2008\manifest.json'
-$variantLabel = 'F1 2026-2008 canonical vehicle'
-$vehicleId = 'f1_2026_2008'
+$scene = 'res://scenes/runtime/vehicle_test_session.tscn'
+$manifestPath = Join-Path $game 'assets\models\vehicles\f1-2030\manifest.json'
+$variantLabel = 'F1 2030 V10 canonical vehicle'
+$vehicleId = 'f1_2030_v10'
 $trackDir = Join-Path $game 'tracks\fuji76_77'
 $trackPath = Join-Path $trackDir 'fuji76_77_visual.glb'
 $trackCollisionPath = Join-Path $trackDir 'fuji76_77_collision.glb'
 $trackBuildPath = Join-Path $trackDir 'metadata\package.json'
-$smokeScript = 'res://tests/smoke_test_f1_2026_2008_fuji76_77.gd'
+$smokeScript = 'res://tests/smoke_test_f1_2030_v10_fuji76_77.gd'
 
 function Resolve-Godot([string]$ExplicitPath) {
     if ($ExplicitPath -and (Test-Path -LiteralPath $ExplicitPath -PathType Leaf)) {
@@ -55,20 +53,22 @@ function Get-Sha256Hex([string]$Path) {
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Manifest de vehiculo faltante: $manifestPath" }
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $runtimeDir = Split-Path -Parent $manifestPath
-if ($manifest.asset -ne 'F1_2026_2008' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
-    throw 'El manifest del F1-2026-2008 no cumple el contrato esperado.'
+if ($manifest.vehicle_id -ne $vehicleId -or $manifest.asset -ne 'F1_2030_V10' -or $manifest.standard -ne 'Formula-90 GEVP decoupled visual asset') {
+    throw 'El manifest del F1 2030 V10 no cumple el contrato esperado.'
 }
-$expectedAssets = @{
-    ([string]$manifest.geometry_assets.chassis_gevp.path).Replace('/', '\') = [string]$manifest.geometry_assets.chassis_gevp.sha256
-    ([string]$manifest.geometry_assets.wheel_front_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_front_canonical.sha256
-    ([string]$manifest.geometry_assets.wheel_rear_canonical.path).Replace('/', '\') = [string]$manifest.geometry_assets.wheel_rear_canonical.sha256
+$expectedAssets = @{}
+foreach ($assetEntry in $manifest.geometry_assets.PSObject.Properties) {
+    $relative = ([string]$assetEntry.Value.path).Replace('/', '\')
+    if ($expectedAssets.ContainsKey($relative)) { throw "Asset duplicado en manifest: $relative" }
+    $expectedAssets[$relative] = [string]$assetEntry.Value.sha256
 }
+if ($expectedAssets.Count -ne 5) { throw "El F1 2030 V10 debe declarar exactamente 5 GLB; encontrados: $($expectedAssets.Count)" }
 $physicsRelative = ([string]$manifest.physics_profile).Replace('res://', '').Replace('/', '\')
 $physicsPath = Join-Path $game $physicsRelative
-if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico 2026 faltante: $physicsPath" }
+if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico de $vehicleId faltante: $physicsPath" }
 $physicsHash = Get-Sha256Hex $physicsPath
 if (-not $physicsHash.Equals([string]$manifest.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
-    Write-Warning ('Perfil fisico 2026 modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
+    Write-Warning ('Perfil fisico modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
 }
 foreach ($relativePath in $expectedAssets.Keys) {
     $assetPath = Join-Path $runtimeDir $relativePath
@@ -154,7 +154,7 @@ if ($TestPhysics) {
     Write-Host 'Ejecutando suite determinista Rust + test de integraciÃ³n Godot (12 raycasts)...' -ForegroundColor Cyan
     & cargo test --manifest-path (Join-Path $root 'game\crates\vehicle-physics-engine\Cargo.toml')
     if ($LASTEXITCODE -ne 0) { throw "Rust vehicle physics unit tests fallaron ($LASTEXITCODE)." }
-    & $godot --headless --path $game --script 'res://tests/test_f1_2026_2008_rust_physics.gd'
+    & $godot --headless --path $game --script 'res://tests/test_f1_2030_v10_rust_physics.gd'
     exit $LASTEXITCODE
 }
 if ($Parity) {
