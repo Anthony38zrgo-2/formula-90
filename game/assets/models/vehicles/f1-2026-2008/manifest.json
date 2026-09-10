@@ -20,7 +20,7 @@
   "geometry_assets": {
     "chassis_gevp": {
       "path": "f1_2026_2008_chassis.glb",
-      "sha256": "37A7E9BDECDAAC59D7268C6D553E18ED45CB3F8BABA7BA1A5716A3C5F72C4D1F"
+      "sha256": "92B35BFA7C833E2A5052207613621A4E38F60071C90698D415773008134DCD98"
     },
     "wheel_front_canonical": {
       "path": "f1_2026_2008_wheel_front.glb",
