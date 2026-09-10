@@ -1,0 +1,333 @@
+{
+  "operation": "Export f1_2030_v10 as chassis plus four independent wheel GLBs",
+  "passed": true,
+  "files": {
+    "chassis": {
+      "path": "f1_2030_v10_chassis.glb",
+      "sha256": "69703FB232D6666A7CE3F794A9586F157A065B7CC499471457BF77063EA63196",
+      "size_bytes": 23162396
+    },
+    "wheel_FL": {
+      "path": "f1_2030_v10_wheel_FL.glb",
+      "sha256": "2F888550449764F56C97C8DB20FD68A277D0C63C5C9E2063A981BD23B687742D",
+      "size_bytes": 1446916
+    },
+    "wheel_FR": {
+      "path": "f1_2030_v10_wheel_FR.glb",
+      "sha256": "6A0E9960DFC1008764B4193744CC3932C173268C141626EAD29758379AF144E3",
+      "size_bytes": 1454616
+    },
+    "wheel_RL": {
+      "path": "f1_2030_v10_wheel_RL.glb",
+      "sha256": "27676BF78DF92D38228CB07DC8009E554D321887532FFFF2F33ECA401B042C27",
+      "size_bytes": 1438020
+    },
+    "wheel_RR": {
+      "path": "f1_2030_v10_wheel_RR.glb",
+      "sha256": "C195B82FE90CF20D00974D890B431605DDB328537C43641FB6684081F71A0BF0",
+      "size_bytes": 1438348
+    }
+  },
+  "mesh_stats": {
+    "chassis": {
+      "GEO_CHASSIS_ACTIVEFRONT": {
+        "vertices": 288,
+        "polygons": 490
+      },
+      "GEO_CHASSIS_ACTIVEREAR": {
+        "vertices": 126,
+        "polygons": 192
+      },
+      "GEO_CHASSIS_AERO2": {
+        "vertices": 896,
+        "polygons": 448
+      },
+      "GEO_CHASSIS_AEROPART1": {
+        "vertices": 1460,
+        "polygons": 2656
+      },
+      "GEO_CHASSIS_AEROPART2": {
+        "vertices": 126,
+        "polygons": 192
+      },
+      "GEO_CHASSIS_AEROPART3": {
+        "vertices": 160,
+        "polygons": 256
+      },
+      "GEO_CHASSIS_BODY": {
+        "vertices": 8401,
+        "polygons": 14726
+      },
+      "GEO_CHASSIS_CARBON3": {
+        "vertices": 25,
+        "polygons": 24
+      },
+      "GEO_CHASSIS_CARBON4": {
+        "vertices": 50,
+        "polygons": 64
+      },
+      "GEO_CHASSIS_CARBON5": {
+        "vertices": 1212,
+        "polygons": 1210
+      },
+      "GEO_CHASSIS_CYLINDER_001": {
+        "vertices": 196,
+        "polygons": 252
+      },
+      "GEO_CHASSIS_ENDPLATE": {
+        "vertices": 2008,
+        "polygons": 3712
+      },
+      "GEO_CHASSIS_FLOOR": {
+        "vertices": 4991,
+        "polygons": 9952
+      },
+      "GEO_CHASSIS_FRONTSUPPORT": {
+        "vertices": 400,
+        "polygons": 322
+      },
+      "GEO_CHASSIS_FRONTWING": {
+        "vertices": 972,
+        "polygons": 1656
+      },
+      "GEO_CHASSIS_FRONT_SUSPENSION": {
+        "vertices": 432,
+        "polygons": 224
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "vertices": 499,
+        "polygons": 792
+      },
+      "GEO_CHASSIS_LATERALCAM": {
+        "vertices": 40,
+        "polygons": 72
+      },
+      "GEO_CHASSIS_MIRRORS": {
+        "vertices": 665,
+        "polygons": 840
+      },
+      "GEO_CHASSIS_ONBOARDCAM": {
+        "vertices": 78,
+        "polygons": 104
+      },
+      "GEO_CHASSIS_REARLIGHT": {
+        "vertices": 79,
+        "polygons": 128
+      },
+      "GEO_CHASSIS_REARSUPPORT": {
+        "vertices": 48,
+        "polygons": 24
+      },
+      "GEO_CHASSIS_REAR_SUSPENSION": {
+        "vertices": 252,
+        "polygons": 136
+      },
+      "GEO_CHASSIS_REAR_WING": {
+        "vertices": 652,
+        "polygons": 1104
+      },
+      "GEO_CHASSIS_SCREEN": {
+        "vertices": 32,
+        "polygons": 24
+      },
+      "GEO_CHASSIS_SEAT": {
+        "vertices": 248,
+        "polygons": 212
+      },
+      "GEO_CHASSIS_SHIFTERBRAK": {
+        "vertices": 152,
+        "polygons": 88
+      },
+      "GEO_CHASSIS_SHIFTERTHRO": {
+        "vertices": 152,
+        "polygons": 88
+      },
+      "GEO_CHASSIS_STEER": {
+        "vertices": 980,
+        "polygons": 1752
+      },
+      "GEO_CHASSIS_STEERCOLUM": {
+        "vertices": 196,
+        "polygons": 252
+      }
+    },
+    "wheel_FL": {
+      "GEO_WHEEL_FRONT_L_NUT_02": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_FRONT_L_NUT_05": {
+        "vertices": 108,
+        "polygons": 36
+      },
+      "GEO_WHEEL_FRONT_L_RIM_01": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_FRONT_L_RIM_03": {
+        "vertices": 900,
+        "polygons": 300
+      },
+      "GEO_WHEEL_FRONT_L_RIM_04": {
+        "vertices": 3168,
+        "polygons": 1056
+      },
+      "GEO_WHEEL_FRONT_L_RIM_06": {
+        "vertices": 468,
+        "polygons": 156
+      },
+      "GEO_WHEEL_FRONT_L_TIRE": {
+        "vertices": 2880,
+        "polygons": 960
+      },
+      "visual_groups": {
+        "spin": [
+          "GEO_WHEEL_FRONT_L_NUT_02",
+          "GEO_WHEEL_FRONT_L_RIM_01",
+          "GEO_WHEEL_FRONT_L_RIM_03",
+          "GEO_WHEEL_FRONT_L_RIM_04",
+          "GEO_WHEEL_FRONT_L_TIRE"
+        ],
+        "static_brake": [
+          "GEO_WHEEL_FRONT_L_NUT_05",
+          "GEO_WHEEL_FRONT_L_RIM_06"
+        ]
+      }
+    },
+    "wheel_FR": {
+      "GEO_WHEEL_FRONT_R_NUT_02": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_FRONT_R_NUT_05": {
+        "vertices": 108,
+        "polygons": 36
+      },
+      "GEO_WHEEL_FRONT_R_RIM_01": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_FRONT_R_RIM_03": {
+        "vertices": 900,
+        "polygons": 300
+      },
+      "GEO_WHEEL_FRONT_R_RIM_04": {
+        "vertices": 3168,
+        "polygons": 1056
+      },
+      "GEO_WHEEL_FRONT_R_RIM_06": {
+        "vertices": 468,
+        "polygons": 156
+      },
+      "GEO_WHEEL_FRONT_R_TIRE": {
+        "vertices": 2880,
+        "polygons": 960
+      },
+      "visual_groups": {
+        "spin": [
+          "GEO_WHEEL_FRONT_R_NUT_02",
+          "GEO_WHEEL_FRONT_R_RIM_01",
+          "GEO_WHEEL_FRONT_R_RIM_03",
+          "GEO_WHEEL_FRONT_R_RIM_04",
+          "GEO_WHEEL_FRONT_R_TIRE"
+        ],
+        "static_brake": [
+          "GEO_WHEEL_FRONT_R_NUT_05",
+          "GEO_WHEEL_FRONT_R_RIM_06"
+        ]
+      }
+    },
+    "wheel_RL": {
+      "GEO_WHEEL_REAR_L_NUT_02": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_REAR_L_NUT_05": {
+        "vertices": 108,
+        "polygons": 36
+      },
+      "GEO_WHEEL_REAR_L_RIM_01": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_REAR_L_RIM_03": {
+        "vertices": 900,
+        "polygons": 300
+      },
+      "GEO_WHEEL_REAR_L_RIM_04": {
+        "vertices": 3168,
+        "polygons": 1056
+      },
+      "GEO_WHEEL_REAR_L_RIM_06": {
+        "vertices": 468,
+        "polygons": 156
+      },
+      "GEO_WHEEL_REAR_L_TIRE": {
+        "vertices": 2880,
+        "polygons": 960
+      },
+      "visual_groups": {
+        "spin": [
+          "GEO_WHEEL_REAR_L_NUT_02",
+          "GEO_WHEEL_REAR_L_RIM_01",
+          "GEO_WHEEL_REAR_L_RIM_03",
+          "GEO_WHEEL_REAR_L_RIM_04",
+          "GEO_WHEEL_REAR_L_TIRE"
+        ],
+        "static_brake": [
+          "GEO_WHEEL_REAR_L_NUT_05",
+          "GEO_WHEEL_REAR_L_RIM_06"
+        ]
+      }
+    },
+    "wheel_RR": {
+      "GEO_WHEEL_REAR_R_NUT_02": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_REAR_R_NUT_05": {
+        "vertices": 108,
+        "polygons": 36
+      },
+      "GEO_WHEEL_REAR_R_RIM_01": {
+        "vertices": 360,
+        "polygons": 120
+      },
+      "GEO_WHEEL_REAR_R_RIM_03": {
+        "vertices": 900,
+        "polygons": 300
+      },
+      "GEO_WHEEL_REAR_R_RIM_04": {
+        "vertices": 3168,
+        "polygons": 1056
+      },
+      "GEO_WHEEL_REAR_R_RIM_06": {
+        "vertices": 468,
+        "polygons": 156
+      },
+      "GEO_WHEEL_REAR_R_TIRE": {
+        "vertices": 2880,
+        "polygons": 960
+      },
+      "visual_groups": {
+        "spin": [
+          "GEO_WHEEL_REAR_R_NUT_02",
+          "GEO_WHEEL_REAR_R_RIM_01",
+          "GEO_WHEEL_REAR_R_RIM_03",
+          "GEO_WHEEL_REAR_R_RIM_04",
+          "GEO_WHEEL_REAR_R_TIRE"
+        ],
+        "static_brake": [
+          "GEO_WHEEL_REAR_R_NUT_05",
+          "GEO_WHEEL_REAR_R_RIM_06"
+        ]
+      }
+    }
+  },
+  "authored_alignment": {
+    "front_track": 1.5059999227523804,
+    "rear_track": 1.4319999814033508,
+    "wheelbase": 2.950000286102295,
+    "chassis_vertical_offset": 0.10500002279877663
+  }
+}

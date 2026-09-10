@@ -1,0 +1,2 @@
+# Editable Blender sources are not runtime assets. Godot consumes the five GLBs
+# exported into the parent directory.
