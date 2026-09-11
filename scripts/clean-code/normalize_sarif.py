@@ -293,6 +293,17 @@ def load_suppressions(repo_root: Path) -> dict:
     return doc.get("suppressions") or {}
 
 
+def stable_key(finding: dict) -> str:
+    return "|".join(
+        [
+            str(finding.get("tool", "")),
+            str(finding.get("rule", "")),
+            str(finding.get("file", "")),
+            str(finding.get("message", "")),
+        ]
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", required=True)
@@ -340,7 +351,7 @@ def main() -> int:
     suppressions = load_suppressions(repo_root)
     suppressed = 0
     for finding in findings:
-        entry = suppressions.get(finding["fingerprint"])
+        entry = suppressions.get(finding["fingerprint"]) or suppressions.get(stable_key(finding))
         if entry:
             finding["status"] = "suppressed"
             finding["suppression_reason"] = entry.get("reason", "")
