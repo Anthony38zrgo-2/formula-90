@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 //! va_bench — release-mode CPU budget benchmark for the procedural audio core.
 //!
 //! Renders deterministic scenarios through `VehicleAudioEngine` with the

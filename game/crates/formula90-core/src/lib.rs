@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 //! Formula-90 orchestrator facade — `formula90_core`.
 //!
 //! Single runtime controller that Godot talks to. It owns three layers:

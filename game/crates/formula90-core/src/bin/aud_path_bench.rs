@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 //! AUD-03 release benchmark for GF509, mixer, and the real facade route.
 
 use std::alloc::{GlobalAlloc, Layout, System};

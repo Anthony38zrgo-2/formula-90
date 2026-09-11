@@ -59,7 +59,8 @@ pub unsafe extern "C" fn vehicle_audio_create(bank_dir: *const c_char) -> *mut c
     if bank_dir.is_null() {
         return std::ptr::null_mut();
     }
-    let cstr = match CStr::from_ptr(bank_dir).to_str() {
+    // SAFETY: `bank_dir` is non-null (checked above) and, per `# Safety`, points to a valid NUL-terminated C string.
+    let cstr = match unsafe { CStr::from_ptr(bank_dir) }.to_str() {
         Ok(s) => s,
         Err(_) => return std::ptr::null_mut(),
     };
@@ -80,7 +81,9 @@ pub unsafe extern "C" fn vehicle_audio_destroy(handle: *mut c_void) {
     if handle.is_null() {
         return;
     }
-    drop(Box::from_raw(handle as *mut VehicleAudioEngine));
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, was returned by
+    // `vehicle_audio_create` and not freed yet, so it is a valid `Box<VehicleAudioEngine>`.
+    drop(unsafe { Box::from_raw(handle as *mut VehicleAudioEngine) });
 }
 
 /// Feed telemetry packet. See `VehicleAudioEngine::set_telemetry`.
@@ -98,7 +101,9 @@ pub unsafe extern "C" fn vehicle_audio_set_telemetry(
     if handle.is_null() || telemetry.is_null() {
         return false;
     }
-    let telem = &*telemetry;
+    // SAFETY: `telemetry` is non-null (checked above) and, per `# Safety`, points to a
+    // valid `VehicleAudioTelemetryV3` with matching version/size (checked below).
+    let telem = unsafe { &*telemetry };
     if telem.schema_version != VEHICLE_AUDIO_ABI_VERSION {
         return false;
     }
@@ -108,9 +113,12 @@ pub unsafe extern "C" fn vehicle_audio_set_telemetry(
     let surface = if surface.is_null() {
         "asphalt"
     } else {
-        CStr::from_ptr(surface).to_str().unwrap_or("asphalt")
+        // SAFETY: `surface` is non-null here and, per `# Safety`, points to a valid
+        // NUL-terminated C string (or null, handled above).
+        unsafe { CStr::from_ptr(surface) }.to_str().unwrap_or("asphalt")
     };
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &mut *(handle as *mut VehicleAudioEngine) };
     engine.set_telemetry(telem, surface);
     true
 }
@@ -138,9 +146,12 @@ pub unsafe extern "C" fn vehicle_audio_set_state(
     let surface = if surface.is_null() {
         "asphalt"
     } else {
-        CStr::from_ptr(surface).to_str().unwrap_or("asphalt")
+        // SAFETY: `surface` is non-null here and, per `# Safety`, points to a valid
+        // NUL-terminated C string (or null, handled above).
+        unsafe { CStr::from_ptr(surface) }.to_str().unwrap_or("asphalt")
     };
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &mut *(handle as *mut VehicleAudioEngine) };
     engine.set_state(
         rpm, idle_rpm, max_rpm, throttle, speed_kph, gear, slip, surface,
     );
@@ -170,7 +181,8 @@ pub unsafe extern "C" fn vehicle_audio_trigger(handle: *mut c_void, code: i32) {
         10 => Trigger::Scrape,
         _ => return,
     };
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &mut *(handle as *mut VehicleAudioEngine) };
     engine.trigger(trigger);
 }
 
@@ -190,9 +202,15 @@ pub unsafe extern "C" fn vehicle_audio_render(
         return 0;
     }
     let n = n as usize;
-    let l = std::slice::from_raw_parts_mut(out_l, n);
-    let r = std::slice::from_raw_parts_mut(out_r, n);
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `out_l`/`out_r` are non-null (checked above) and, per `# Safety`, each
+    // points to at least `n` writable `f32`s; `handle` is a valid engine handle.
+    let (l, r, engine) = unsafe {
+        (
+            std::slice::from_raw_parts_mut(out_l, n),
+            std::slice::from_raw_parts_mut(out_r, n),
+            &mut *(handle as *mut VehicleAudioEngine),
+        )
+    };
     engine.render(l, r, n);
     n as u32
 }
@@ -212,7 +230,8 @@ pub unsafe extern "C" fn vehicle_audio_set_listener_distance(handle: *mut c_void
     if handle.is_null() {
         return;
     }
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &mut *(handle as *mut VehicleAudioEngine) };
     engine.set_listener_distance(distance_m);
 }
 
@@ -225,7 +244,8 @@ pub unsafe extern "C" fn vehicle_audio_listener_distance(handle: *mut c_void) ->
     if handle.is_null() {
         return 0.0;
     }
-    let engine = &*(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &*(handle as *mut VehicleAudioEngine) };
     engine.listener_distance()
 }
 
@@ -238,7 +258,8 @@ pub unsafe extern "C" fn vehicle_audio_set_tc_cut(handle: *mut c_void, cut_ratio
     if handle.is_null() {
         return;
     }
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &mut *(handle as *mut VehicleAudioEngine) };
     engine.set_tc_cut(cut_ratio);
 }
 
@@ -251,7 +272,8 @@ pub unsafe extern "C" fn vehicle_audio_set_limiter_flag(handle: *mut c_void, act
     if handle.is_null() {
         return;
     }
-    let engine = &mut *(handle as *mut VehicleAudioEngine);
+    // SAFETY: `handle` is non-null (checked above) and, per `# Safety`, is a valid engine handle.
+    let engine = unsafe { &mut *(handle as *mut VehicleAudioEngine) };
     engine.set_limiter_flag(active);
 }
 

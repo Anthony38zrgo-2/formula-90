@@ -269,7 +269,8 @@ pub unsafe extern "C" fn f90_core_create(
         write_error(err_buf, err_len, "opts_json is null");
         return std::ptr::null_mut();
     }
-    let s = match CStr::from_ptr(opts_json).to_str() {
+    // SAFETY: `opts_json` is non-null (checked above) and, per `# Safety`, points to a valid NUL-terminated string.
+    let s = match unsafe { CStr::from_ptr(opts_json) }.to_str() {
         Ok(s) => s,
         Err(_) => {
             write_error(err_buf, err_len, "opts_json is not valid UTF-8");
@@ -311,7 +312,9 @@ pub unsafe extern "C" fn f90_core_destroy(h: *mut c_void) {
     if h.is_null() {
         return;
     }
-    drop(Box::from_raw(h as *mut CoreFacade));
+    // SAFETY: `h` is non-null (checked above) and, per `# Safety`, is an unreleased
+    // handle from `f90_core_create`.
+    drop(unsafe { Box::from_raw(h as *mut CoreFacade) });
 }
 
 /// Spawn the primary entity (if not spawned yet) and return its id (0 on error).
@@ -348,7 +351,8 @@ pub unsafe extern "C" fn f90_core_apply_runtime_config(
     if config.is_null() {
         return false;
     }
-    facade_mut(h).apply_runtime_config(id, &*config)
+    // SAFETY: `config` is non-null (checked above) and, per `# Safety`, points to a valid config.
+    facade_mut(h).apply_runtime_config(id, unsafe { &*config })
 }
 
 /// Orchestrated step: physics solve + module ticks + audio state update, writing
@@ -592,8 +596,14 @@ pub unsafe extern "C" fn f90_core_audio_render(
         return 0;
     }
     let n = n as usize;
-    let l = std::slice::from_raw_parts_mut(out_l, n);
-    let r = std::slice::from_raw_parts_mut(out_r, n);
+    // SAFETY: `out_l`/`out_r` are non-null (checked above) and, per `# Safety`, each
+    // points to at least `n` writable `f32`s.
+    let (l, r) = unsafe {
+        (
+            std::slice::from_raw_parts_mut(out_l, n),
+            std::slice::from_raw_parts_mut(out_r, n),
+        )
+    };
     facade_mut(h).audio_render(l, r, n) as u32
 }
 

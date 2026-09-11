@@ -73,7 +73,8 @@ pub unsafe extern "C" fn psx_art_parse_preset(
         return -1;
     }
 
-    let c_str = CStr::from_ptr(json_ptr);
+    // SAFETY: `json_ptr` is non-null (checked above) and, per `# Safety`, points to a valid NUL-terminated C string.
+    let c_str = unsafe { CStr::from_ptr(json_ptr) };
     let json_str = match c_str.to_str() {
         Ok(s) => s,
         Err(_) => return -2,
@@ -95,7 +96,9 @@ pub unsafe extern "C" fn psx_art_parse_preset(
                 DitherMatrixType::Bayer8x8 => 3,
             };
 
-            *out_config = CPsxArtConfig {
+            // SAFETY: `out_config` is non-null (checked above) and, per `# Safety`, points to a writable `CPsxArtConfig`.
+            unsafe {
+                *out_config = CPsxArtConfig {
                 internal_width: preset.display.internal_width,
                 internal_height: preset.display.internal_height,
                 upscale_mode: upscale_mode_u32,
@@ -116,7 +119,8 @@ pub unsafe extern "C" fn psx_art_parse_preset(
                 scanlines_enabled: preset.crt_effects.scanlines_enabled,
                 scanline_opacity: preset.crt_effects.scanline_opacity,
                 composite_bleed: preset.crt_effects.composite_bleed,
-            };
+                };
+            }
             0
         }
         Err(crate::preset::PresetError::JsonParse(_)) => -3,
@@ -154,8 +158,12 @@ pub unsafe extern "C" fn psx_art_get_dither_matrix(
         return -2;
     }
 
-    std::ptr::copy_nonoverlapping(matrix.as_ptr(), out_buffer, matrix.len());
-    *out_len = matrix.len();
+    // SAFETY: both pointers are non-null (checked above) and `matrix.len() <= max_len`
+    // (checked above); caller guarantees `out_buffer`/`out_len` are valid for writes.
+    unsafe {
+        std::ptr::copy_nonoverlapping(matrix.as_ptr(), out_buffer, matrix.len());
+        *out_len = matrix.len();
+    }
     0
 }
 

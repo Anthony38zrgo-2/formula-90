@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 //! Formula-90 vehicle audio runtime core (pure Rust).
 //!
 //! Consumes the approved `v10_vehicle` sample bank and produces deterministic

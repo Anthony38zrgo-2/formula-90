@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 //! Formula-90 background/skybox runtime core (pure Rust).
 //!
 //! Deterministic preset validation, parallax math, pixel-size calculation,

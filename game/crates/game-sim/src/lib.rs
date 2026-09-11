@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 pub mod c_abi;
 pub mod input;
 pub mod snapshot;

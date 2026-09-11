@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![forbid(unsafe_code)]
 
 pub const ABI_VERSION: u32 = 2;
 pub const MAX_BLOCK_SAMPLES: u32 = 4096;

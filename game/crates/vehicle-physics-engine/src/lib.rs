@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 pub mod aero;
 pub mod bin_support;
 pub mod brake_thermals;

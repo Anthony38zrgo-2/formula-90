@@ -1,3 +1,4 @@
+#![deny(unsafe_op_in_unsafe_fn)]
 //! Formula-90 PSX/Retro Art Engine Core (pure Rust).
 //!
 //! Deterministic visual preset parsing, validation, dithering LUT generation,
