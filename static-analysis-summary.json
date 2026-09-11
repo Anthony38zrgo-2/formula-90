@@ -1,20 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": "final",
-  "generated_at": "2026-09-11T11:56:53.116640+00:00",
+  "run_id": "post-warnings",
+  "generated_at": "2026-09-11T12:37:14.821221+00:00",
   "branch": "main-clean",
-  "head": "64dab296ece6a1ea1509f54213c036ade5c867d2",
+  "head": "24445d64e7402b35cbb8e060d6fe2d9094ac41f6",
   "repository_root": "D:\\Formula90s",
   "totals": {
-    "findings": 1010,
+    "findings": 814,
     "suppressed": 4,
-    "open": 1006,
+    "open": 810,
     "by_tool": {
       "cargo-audit": 1,
       "cargo-crap": 70,
       "cargo-deny": 13,
       "cargo-geiger": 5,
-      "clang-tidy": 458,
+      "clang-tidy": 262,
       "clippy": 144,
       "cppcheck": 41,
       "semgrep": 278
@@ -24,14 +24,14 @@
       "unsafe": 5,
       "warnings": 535,
       "complexity": 70,
-      "maintainability": 397
+      "maintainability": 201
     },
     "by_severity": {
       "error": 3,
-      "warning": 1007
+      "warning": 811
     },
     "by_status": {
-      "open": 1006,
+      "open": 810,
       "suppressed": 4
     }
   },
@@ -76,7 +76,7 @@
       "version": "LLVM (http://llvm.org/):",
       "status": "ok",
       "command": "D:\\Formula90s\\.tools\\llvm\\LLVM\\bin\\clang-tidy.exe --checks=-*,bugprone-*,clang-analyzer-*,performance-*,portability-*,readability-*,-readability-magic-numbers,-readability-identifier-length <native + vehicle-audio-dsp>",
-      "findings": 458
+      "findings": 262
     },
     {
       "name": "cppcheck",
@@ -114,11 +114,11 @@
       "category": "vulnerabilities",
       "priority": 2,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 267,
+      "line": 273,
       "message": "Array 'lref' is filled incompletely. Did you forget to multiply the size given to 'memcpy()' with 'sizeof(*lref)'?",
-      "fingerprint": "db0d3aaa803c8a26",
+      "fingerprint": "0513f6dcc170d32c",
       "status": "suppressed",
-      "suppression_reason": "Falso positivo: el memcpy de `lref` en test_main.cpp:267 copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11."
+      "suppression_reason": "Falso positivo: el memcpy de `lref` en test_main.cpp copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11."
     },
     {
       "tool": "cppcheck",
@@ -127,11 +127,11 @@
       "category": "vulnerabilities",
       "priority": 2,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 268,
+      "line": 274,
       "message": "Array 'rref' is filled incompletely. Did you forget to multiply the size given to 'memcpy()' with 'sizeof(*rref)'?",
-      "fingerprint": "f672d6df59674bb8",
+      "fingerprint": "6ea5c4201abe1c0d",
       "status": "suppressed",
-      "suppression_reason": "Falso positivo: el memcpy de `rref` en test_main.cpp:268 copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11."
+      "suppression_reason": "Falso positivo: el memcpy de `rref` en test_main.cpp copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11."
     },
     {
       "tool": "cargo-geiger",
@@ -452,9 +452,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 159,
+      "line": 163,
       "message": "2 adjacent parameters of 'saturated_fraction' of convertible types are easily swapped by mistake",
-      "fingerprint": "f3c88d83fa582797",
+      "fingerprint": "5753daaab2cd2213",
       "status": "open"
     },
     {
@@ -464,9 +464,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 172,
+      "line": 178,
       "message": "comparing object representation of type 'float' which does not have a unique object representation; consider comparing the values manually",
-      "fingerprint": "fe7bef18d7cc16fb",
+      "fingerprint": "d642c18f335c77d8",
       "status": "open"
     },
     {
@@ -476,9 +476,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 181,
+      "line": 187,
       "message": "2 adjacent parameters of 'render_to_l' of similar type ('uint32_t') are easily swapped by mistake",
-      "fingerprint": "cba453e2ab8c7a94",
+      "fingerprint": "56133db983fc5916",
       "status": "open"
     },
     {
@@ -488,9 +488,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 283,
+      "line": 289,
       "message": "comparing object representation of type 'float' which does not have a unique object representation; consider comparing the values manually",
-      "fingerprint": "369cc26aca663794",
+      "fingerprint": "f676caecbf852a08",
       "status": "open"
     },
     {
@@ -500,9 +500,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 287,
+      "line": 293,
       "message": "comparing object representation of type 'float' which does not have a unique object representation; consider comparing the values manually",
-      "fingerprint": "59af54086db665f4",
+      "fingerprint": "ebc65dc31ab23421",
       "status": "open"
     },
     {
@@ -512,9 +512,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 495,
+      "line": 515,
       "message": "narrowing conversion from 'uint32_t' (aka 'unsigned int') to 'float'",
-      "fingerprint": "93b079a3b40b6441",
+      "fingerprint": "97efa6803705e6f8",
       "status": "open"
     },
     {
@@ -536,21 +536,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 53,
+      "line": 55,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "0b7d4075bb199902",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "bugprone-narrowing-conversions",
-      "severity": "warning",
-      "category": "warnings",
-      "priority": 4,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 54,
-      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "f351467cdebbe5e2",
+      "fingerprint": "07c1e1ed5d69c84d",
       "status": "open"
     },
     {
@@ -572,9 +560,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 57,
+      "line": 58,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "c9761b1133e15dfc",
+      "fingerprint": "f1e9e538aee17da7",
       "status": "open"
     },
     {
@@ -584,9 +572,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 94,
+      "line": 59,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "89a0be6d2bb6a9ac",
+      "fingerprint": "e7840b0e085a7dd9",
       "status": "open"
     },
     {
@@ -596,9 +584,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 105,
+      "line": 100,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "838eff065e32a9cd",
+      "fingerprint": "ee4356053c570aba",
       "status": "open"
     },
     {
@@ -608,9 +596,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 116,
+      "line": 111,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "c308b338da78859a",
+      "fingerprint": "ad485d5bdbd323af",
       "status": "open"
     },
     {
@@ -620,9 +608,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 117,
+      "line": 123,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "42c269d80bcbcea9",
+      "fingerprint": "d132500c396618f8",
       "status": "open"
     },
     {
@@ -632,9 +620,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 119,
+      "line": 124,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "de071f42bf107be6",
+      "fingerprint": "7e48b52cd64601f0",
       "status": "open"
     },
     {
@@ -644,9 +632,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 137,
+      "line": 126,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "c2ab14c5b791e714",
+      "fingerprint": "a9758123504f4ae4",
       "status": "open"
     },
     {
@@ -656,45 +644,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 139,
+      "line": 145,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "2c1340f7c3923d06",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "bugprone-narrowing-conversions",
-      "severity": "warning",
-      "category": "warnings",
-      "priority": 4,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 141,
-      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "88c3fe0ff30d1581",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "bugprone-narrowing-conversions",
-      "severity": "warning",
-      "category": "warnings",
-      "priority": 4,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 142,
-      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "f70289e5245baba3",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "bugprone-narrowing-conversions",
-      "severity": "warning",
-      "category": "warnings",
-      "priority": 4,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 146,
-      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "33364032feaed6f9",
+      "fingerprint": "2049a549f02d2ee0",
       "status": "open"
     },
     {
@@ -740,6 +692,42 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
+      "line": 156,
+      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
+      "fingerprint": "62aeffadab97172d",
+      "status": "open"
+    },
+    {
+      "tool": "clang-tidy",
+      "rule": "bugprone-narrowing-conversions",
+      "severity": "warning",
+      "category": "warnings",
+      "priority": 4,
+      "file": "native/src/camera/arcade_chase_camera.cpp",
+      "line": 157,
+      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
+      "fingerprint": "8e16233227d95f31",
+      "status": "open"
+    },
+    {
+      "tool": "clang-tidy",
+      "rule": "bugprone-narrowing-conversions",
+      "severity": "warning",
+      "category": "warnings",
+      "priority": 4,
+      "file": "native/src/camera/arcade_chase_camera.cpp",
+      "line": 159,
+      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
+      "fingerprint": "73aaad9bcf14e665",
+      "status": "open"
+    },
+    {
+      "tool": "clang-tidy",
+      "rule": "bugprone-narrowing-conversions",
+      "severity": "warning",
+      "category": "warnings",
+      "priority": 4,
+      "file": "native/src/camera/arcade_chase_camera.cpp",
       "line": 160,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
       "fingerprint": "931eb86a794c6e6c",
@@ -752,9 +740,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 161,
+      "line": 173,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "d8de85d38d7e6b86",
+      "fingerprint": "87a4dad3082c88c7",
       "status": "open"
     },
     {
@@ -764,9 +752,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 163,
+      "line": 174,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "98621e661bd2aa24",
+      "fingerprint": "85ee554e23dba7f0",
       "status": "open"
     },
     {
@@ -776,9 +764,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 166,
+      "line": 178,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "c305fe2f5dc296e8",
+      "fingerprint": "1fcabd9360d9a719",
       "status": "open"
     },
     {
@@ -788,9 +776,21 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 171,
+      "line": 182,
+      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
+      "fingerprint": "9297fb875b7004d6",
+      "status": "open"
+    },
+    {
+      "tool": "clang-tidy",
+      "rule": "bugprone-narrowing-conversions",
+      "severity": "warning",
+      "category": "warnings",
+      "priority": 4,
+      "file": "native/src/camera/arcade_chase_camera.cpp",
+      "line": 187,
       "message": "narrowing conversion from 'double' to 'float'",
-      "fingerprint": "7e8e9cc96db8168c",
+      "fingerprint": "8772d13f5c3d961f",
       "status": "open"
     },
     {
@@ -800,9 +800,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 491,
+      "line": 513,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "564c11a403714664",
+      "fingerprint": "70d2e83ed93b6e9c",
       "status": "open"
     },
     {
@@ -812,9 +812,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 492,
+      "line": 514,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "d656668d9e8ff98a",
+      "fingerprint": "1e131cc3fcd374d7",
       "status": "open"
     },
     {
@@ -884,9 +884,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 671,
+      "line": 701,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "ed200ad280270823",
+      "fingerprint": "7b75fce8807511fd",
       "status": "open"
     },
     {
@@ -896,9 +896,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 672,
+      "line": 702,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "62eed041e1d1f11c",
+      "fingerprint": "72075f8811634619",
       "status": "open"
     },
     {
@@ -908,9 +908,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 837,
+      "line": 867,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "9181a3da28eb155a",
+      "fingerprint": "eb387176184ded4b",
       "status": "open"
     },
     {
@@ -920,9 +920,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 848,
+      "line": 878,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "d6b152c183e043f0",
+      "fingerprint": "984ed172396eed56",
       "status": "open"
     },
     {
@@ -932,9 +932,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 952,
+      "line": 994,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "640a8c32eb98a57a",
+      "fingerprint": "1c6a23773346d6db",
       "status": "open"
     },
     {
@@ -944,9 +944,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 964,
+      "line": 1006,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "e4f7b6b38bc08ebd",
+      "fingerprint": "75002879576bb014",
       "status": "open"
     },
     {
@@ -956,9 +956,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1057,
+      "line": 1099,
       "message": "use of a signed integer operand with a binary bitwise operator",
-      "fingerprint": "c4f51fcbdb90e02f",
+      "fingerprint": "eee6efb37ef54180",
       "status": "open"
     },
     {
@@ -968,9 +968,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1245,
+      "line": 1287,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "11b09e2b7ada3dc9",
+      "fingerprint": "fb19c4d6f9269f64",
       "status": "open"
     },
     {
@@ -980,9 +980,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1358,
+      "line": 1400,
       "message": "use of a signed integer operand with a binary bitwise operator",
-      "fingerprint": "27e7ad677b859f51",
+      "fingerprint": "3be1a32539cdb4ee",
       "status": "open"
     },
     {
@@ -992,9 +992,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1460,
+      "line": 1516,
       "message": "2 adjacent parameters of 'apply_core_motion' of similar type ('const Vector3 &') are easily swapped by mistake",
-      "fingerprint": "e4cc5c4da0ac6b2e",
+      "fingerprint": "adbd27b4412978d3",
       "status": "open"
     },
     {
@@ -1004,9 +1004,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1466,
+      "line": 1522,
       "message": "6 adjacent parameters of 'set_core_tire_telemetry' of similar type ('const double *') are easily swapped by mistake",
-      "fingerprint": "5e8012827ee3d3f9",
+      "fingerprint": "7edc2cb7e8114fb2",
       "status": "open"
     },
     {
@@ -1016,9 +1016,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1483,
+      "line": 1539,
       "message": "5 adjacent parameters of 'set_core_brake_telemetry' of similar type ('const double *') are easily swapped by mistake",
-      "fingerprint": "9e46387605177a36",
+      "fingerprint": "7a7fdf561d9425d5",
       "status": "open"
     },
     {
@@ -1028,9 +1028,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1488,
+      "line": 1544,
       "message": "4 adjacent parameters of 'set_core_brake_telemetry' of similar type ('double') are easily swapped by mistake",
-      "fingerprint": "03be6f86bbdfb8ea",
+      "fingerprint": "e6e6f6e9c5d12a6d",
       "status": "open"
     },
     {
@@ -1040,33 +1040,21 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1581,
+      "line": 1639,
       "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "52e41ecbb632d126",
+      "fingerprint": "6de4325bf63ec5c9",
       "status": "open"
     },
     {
       "tool": "clang-tidy",
       "rule": "bugprone-narrowing-conversions",
-      "severity": "warning",
-      "category": "warnings",
-      "priority": 4,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1582,
-      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
-      "fingerprint": "528348e8ca30d88a",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "bugprone-easily-swappable-parameters",
       "severity": "warning",
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
       "line": 1640,
-      "message": "5 adjacent parameters of 'set_core_brake_energy_telemetry' of similar type ('const double *') are easily swapped by mistake",
-      "fingerprint": "4fc6c8fae8c4e300",
+      "message": "narrowing conversion from 'double' to 'real_t' (aka 'float')",
+      "fingerprint": "2bbc9b0d648ba26a",
       "status": "open"
     },
     {
@@ -1076,9 +1064,21 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1655,
+      "line": 1704,
+      "message": "5 adjacent parameters of 'set_core_brake_energy_telemetry' of similar type ('const double *') are easily swapped by mistake",
+      "fingerprint": "b0370c15908b993a",
+      "status": "open"
+    },
+    {
+      "tool": "clang-tidy",
+      "rule": "bugprone-easily-swappable-parameters",
+      "severity": "warning",
+      "category": "warnings",
+      "priority": 4,
+      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
+      "line": 1719,
       "message": "2 adjacent parameters of 'set_core_brake_cooling_telemetry' of similar type ('const double *') are easily swapped by mistake",
-      "fingerprint": "ab439cb5899fd706",
+      "fingerprint": "c4f8f3111cc6d0df",
       "status": "open"
     },
     {
@@ -2828,9 +2828,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 256,
+      "line": 278,
       "message": "C-style pointer casting",
-      "fingerprint": "1483ae94e1b17523",
+      "fingerprint": "70ce080541372ce0",
       "status": "open"
     },
     {
@@ -2840,9 +2840,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 258,
+      "line": 280,
       "message": "C-style pointer casting",
-      "fingerprint": "a6c8f26f3dec03bc",
+      "fingerprint": "087bf9dfc19ddc52",
       "status": "open"
     },
     {
@@ -2852,9 +2852,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 259,
+      "line": 281,
       "message": "C-style pointer casting",
-      "fingerprint": "85cc0c77f49777c6",
+      "fingerprint": "8d71382d4c845cda",
       "status": "open"
     },
     {
@@ -2864,9 +2864,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 260,
+      "line": 282,
       "message": "C-style pointer casting",
-      "fingerprint": "530fa4bb8eb64c43",
+      "fingerprint": "3049751a8101c1e2",
       "status": "open"
     },
     {
@@ -2876,9 +2876,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 261,
+      "line": 283,
       "message": "C-style pointer casting",
-      "fingerprint": "0c91c8e5184d7504",
+      "fingerprint": "1d53cc942849ed5c",
       "status": "open"
     },
     {
@@ -2888,9 +2888,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 262,
+      "line": 284,
       "message": "C-style pointer casting",
-      "fingerprint": "f152a063e44a4e5f",
+      "fingerprint": "6ce0ef683fc84bb5",
       "status": "open"
     },
     {
@@ -2900,9 +2900,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 263,
+      "line": 285,
       "message": "C-style pointer casting",
-      "fingerprint": "b2759d887600f69f",
+      "fingerprint": "8fc75e8b2abed19a",
       "status": "open"
     },
     {
@@ -2912,9 +2912,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 264,
+      "line": 286,
       "message": "C-style pointer casting",
-      "fingerprint": "090e4392989a095f",
+      "fingerprint": "cb1a16f3be8d402b",
       "status": "open"
     },
     {
@@ -2924,9 +2924,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 265,
+      "line": 287,
       "message": "C-style pointer casting",
-      "fingerprint": "9ac5fc973e0696e4",
+      "fingerprint": "70f60ba15bdb42f2",
       "status": "open"
     },
     {
@@ -2936,9 +2936,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 266,
+      "line": 288,
       "message": "C-style pointer casting",
-      "fingerprint": "f4e4e9d1fe3dabe8",
+      "fingerprint": "6b540625cea19a83",
       "status": "open"
     },
     {
@@ -2948,9 +2948,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 267,
+      "line": 289,
       "message": "C-style pointer casting",
-      "fingerprint": "1a137ae8e3d9a015",
+      "fingerprint": "630accc2994d0308",
       "status": "open"
     },
     {
@@ -2960,9 +2960,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 268,
+      "line": 290,
       "message": "C-style pointer casting",
-      "fingerprint": "db58d079d286dceb",
+      "fingerprint": "eb0de9336446d85a",
       "status": "open"
     },
     {
@@ -2972,9 +2972,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 269,
+      "line": 291,
       "message": "C-style pointer casting",
-      "fingerprint": "b9716556ef0a566e",
+      "fingerprint": "0b22fae250cfca29",
       "status": "open"
     },
     {
@@ -2984,9 +2984,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/core/f90_core.cpp",
-      "line": 388,
+      "line": 410,
       "message": "C-style pointer casting",
-      "fingerprint": "16c235f39edca93a",
+      "fingerprint": "00c44731664fa50c",
       "status": "open"
     },
     {
@@ -3272,9 +3272,9 @@
       "category": "warnings",
       "priority": 4,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 884,
+      "line": 920,
       "message": "Variable 'ray' can be declared as pointer to const",
-      "fingerprint": "b0bee1c80b67089e",
+      "fingerprint": "22d7a43bd117b7b3",
       "status": "open"
     },
     {
@@ -7480,78 +7480,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 26,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "0a9d3ad470bab647",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 40,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "d012edca0a2a002b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 43,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "85f2378fce7f47e2",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 46,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "3184bccd79a4db8c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 49,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "1a21e3fa7558bde2",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 52,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a997f75b2ad65a8d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-avoid-nested-conditional-operator",
       "severity": "warning",
       "category": "maintainability",
@@ -7564,18 +7492,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 54,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "3f0630a5edbab441",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-avoid-nested-conditional-operator",
       "severity": "warning",
       "category": "maintainability",
@@ -7584,18 +7500,6 @@
       "line": 58,
       "message": "conditional operator is used as sub-expression of parent conditional operator, refrain from using nested conditional operators",
       "fingerprint": "008117413979f9cb",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/c_api.cpp",
-      "line": 58,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "5de1f2b3a51b663b",
       "status": "open"
     },
     {
@@ -7732,54 +7636,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 28,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "6bd266ff7c72e9d5",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 38,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "6ad7e2428dfd8981",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 39,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "7453c180ad4d454a",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 40,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a4cf906d5172bed4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-avoid-nested-conditional-operator",
       "severity": "warning",
       "category": "maintainability",
@@ -7804,18 +7660,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 79,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "0f4efe9b68c7a182",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-function-cognitive-complexity",
       "severity": "warning",
       "category": "maintainability",
@@ -7824,66 +7668,6 @@
       "line": 84,
       "message": "function 'process' has cognitive complexity of 52 (threshold 25)",
       "fingerprint": "f97250728be4cd04",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 92,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "7482fcbbed1dd50d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 97,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "b5606d383a890137",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 142,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "7b8cd763482cb2fa",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 146,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2e5f80de678a37bb",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 147,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "57f6a029a18d7a42",
       "status": "open"
     },
     {
@@ -7900,114 +7684,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 160,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a0b6d2dcf45037ec",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 166,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "1339570b79b779c9",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 167,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "5aac1982d728e951",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 167,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "fa32217876aea543",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 168,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "ed25414a105a7276",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 171,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "639342616f9e6a71",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 173,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "ae5e8fa43d1e5ba9",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 178,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2fbdbdf0bf798f3d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 180,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "5d2726e950eaa3f1",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-implicit-bool-conversion",
       "severity": "warning",
       "category": "maintainability",
@@ -8016,114 +7692,6 @@
       "line": 193,
       "message": "implicit conversion 'class post_combustion *' -> 'bool'",
       "fingerprint": "fc3acc1cf5dbb5e6",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 198,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "e037b567e9103cf5",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 199,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "799b18f4255cddaf",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 202,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "17392b05fa5e4f37",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 203,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "948f8f082ffb8c0b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 204,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "79b6e9860710f17b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 205,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "9980bbc8067b40cd",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 207,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "5b809d885238a9d5",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 208,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "e56cfadff1787c9b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/src/dsp_instance.cpp",
-      "line": 210,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "666a939415df891b",
       "status": "open"
     },
     {
@@ -8188,174 +7756,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 29,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "5299abeebc453a9d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 30,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "5f5cfea4c32c35f1",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 31,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "05de3e01a878211d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 37,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "85b23e9dc8b422f0",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 38,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2aba94cc4bda603c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 39,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "373eef1bf061d149",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 40,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "19a0a131bdb3b89b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 41,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "b81e530ecb88a2f1",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 52,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "6076cd995011dfeb",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 57,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2e0308348a9e69a6",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 58,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "99103b5ea34c34ad",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 59,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "481b5301b8be73c5",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 77,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "521abdf407010435",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 91,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "f5e0260da4affa95",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-isolate-declaration",
       "severity": "warning",
       "category": "maintainability",
@@ -8368,86 +7768,14 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 120,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "bc2a824a3f964c75",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 124,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "58155d9131cd0b1a",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 124,
-      "message": "'*' has higher precedence than '-'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "7f99fbf6c5410c18",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 146,
-      "message": "statement should be inside braces",
-      "fingerprint": "3f71485b6fa7ef71",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 154,
-      "message": "statement should be inside braces",
-      "fingerprint": "46d8e5031ec95a56",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-use-std-min-max",
       "severity": "warning",
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 154,
+      "line": 156,
       "message": "use `std::max` instead of `>`",
-      "fingerprint": "d1385214b8ddb07a",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 160,
-      "message": "statement should be inside braces",
-      "fingerprint": "38c242f4a2a367de",
+      "fingerprint": "adad65fac6e9fa54",
       "status": "open"
     },
     {
@@ -8457,285 +7785,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 207,
-      "message": "function 'main' has cognitive complexity of 49 (threshold 25)",
-      "fingerprint": "bf50f71de824ec09",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
       "line": 213,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "9efd4686379f6398",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 246,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "857f34d27a1d5d29",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 247,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a9a8442e1f179a36",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 258,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "083a11e567f00bc4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 294,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2146ded1a35dfc43",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 303,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "258739fa1bf4b09e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 311,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "ffa709ecd87eeedc",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 312,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a82618ae8801b483",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 332,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "e24b429dfe6c85cd",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 334,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "cfaad6609ba88d6d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 342,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "d1e0432d92c77475",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 368,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "855ba2e11364204f",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 376,
-      "message": "statement should be inside braces",
-      "fingerprint": "6248701118694f6f",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 376,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "4ca2314ac086d79c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 379,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a4f5dd80bec58850",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 387,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "3aa8162fe302c70a",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 388,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "8ef014c5200fd96e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 396,
-      "message": "statement should be inside braces",
-      "fingerprint": "8a99464f2a3826f3",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 396,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "da4bdd1bcb2ec675",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 399,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "6932f35a0cada401",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 408,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "bff576fb002f8383",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 411,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "64cabf1d7cb84fff",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 413,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "c12a9df97f1d8c53",
+      "message": "function 'main' has cognitive complexity of 49 (threshold 25)",
+      "fingerprint": "18a0afa54a7d31aa",
       "status": "open"
     },
     {
@@ -8745,33 +7797,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 425,
+      "line": 435,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "d3c2782d059cb04a",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 425,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "c1e61360d02464c3",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 427,
-      "message": "statement should be inside braces",
-      "fingerprint": "0931649be8c9c9a0",
+      "fingerprint": "553520765e308d1c",
       "status": "open"
     },
     {
@@ -8781,21 +7809,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 427,
+      "line": 437,
       "message": "use `std::max` instead of `>`",
-      "fingerprint": "63c4ce9717ffc5a2",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 428,
-      "message": "statement should be inside braces",
-      "fingerprint": "6513e7b18a7c1299",
+      "fingerprint": "e10e0aa472678b19",
       "status": "open"
     },
     {
@@ -8805,189 +7821,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 428,
+      "line": 440,
       "message": "use `std::max` instead of `>`",
-      "fingerprint": "870e36673fa96c32",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 431,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "4343b654498de1fe",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 439,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "f6e69892755f507b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 447,
-      "message": "statement should be inside braces",
-      "fingerprint": "154ef84eeb24a529",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 447,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "54efb262733e7fe8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 450,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "29affe97590fea6c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 459,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "fcf2dc13b67f34e5",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 468,
-      "message": "statement should be inside braces",
-      "fingerprint": "829fc14cbb720f3b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 468,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "3f114e61761a3cba",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 471,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "dd38ca799ddfb88c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 476,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "21318986e1e65fb4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 485,
-      "message": "statement should be inside braces",
-      "fingerprint": "3258d4cd90652db4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 485,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "3890d17718600a6c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 488,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "86a47c288167b685",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 495,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "844b63a04ca3a2c2",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 495,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "f7cd2f238e55edc3",
+      "fingerprint": "d61bde74b71fe09e",
       "status": "open"
     },
     {
@@ -8997,9 +7833,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 499,
+      "line": 519,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "7edd7e283dd69217",
+      "fingerprint": "e08c0ab34a75e653",
       "status": "open"
     },
     {
@@ -9009,45 +7845,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 504,
+      "line": 524,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "5975e03f440d6519",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 523,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "f9c148beef976607",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 538,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "830542f779355432",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 540,
-      "message": "statement should be inside braces",
-      "fingerprint": "1f2fe8778baef72a",
+      "fingerprint": "d053550e5129d5ea",
       "status": "open"
     },
     {
@@ -9057,117 +7857,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 540,
+      "line": 560,
       "message": "use `std::max` instead of `>`",
-      "fingerprint": "27766ee53df1063f",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 542,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "0073f6153d0dc89f",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 551,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "4bb5f46a29aa0f67",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 585,
-      "message": "statement should be inside braces",
-      "fingerprint": "2e5ea7e81741ad0e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 597,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "8f7a27caa030cd0e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 597,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "61555f57255a5619",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 598,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "36e5500b3f3b339e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 622,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "d6f1b9d6fb4eea6e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 622,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "7382fb8eabc479ca",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 623,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "d5b90dd0ffe884b1",
+      "fingerprint": "accc1e2d7bbe3e0d",
       "status": "open"
     },
     {
@@ -9177,117 +7869,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 642,
+      "line": 666,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "1081755164b3af3c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 648,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "5b6e283b1602d801",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 648,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "d8654a663903d85b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 649,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "1280ce614679b575",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 652,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "761c238332751d75",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 652,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "f284841bbe6327b0",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "game/native/vehicle-audio-dsp/tests/test_main.cpp",
-      "line": 653,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "1f765363fb5c4e1f",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 44,
-      "message": "statement should be inside braces",
-      "fingerprint": "2d318a796e148916",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 70,
-      "message": "statement should be inside braces",
-      "fingerprint": "ec063349d3731cf8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 72,
-      "message": "statement should be inside braces",
-      "fingerprint": "ca8d1d3ade1ab451",
+      "fingerprint": "3aec935ee90abeaf",
       "status": "open"
     },
     {
@@ -9297,105 +7881,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 72,
+      "line": 76,
       "message": "implicit conversion 'Camera3D *' -> 'bool'",
-      "fingerprint": "d5165200e61b6b6b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 104,
-      "message": "statement should be inside braces",
-      "fingerprint": "ff6df403f5edbac8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 124,
-      "message": "statement should be inside braces",
-      "fingerprint": "aafa860d41044637",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 143,
-      "message": "statement should be inside braces",
-      "fingerprint": "de347f7731ee3094",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 154,
-      "message": "statement should be inside braces",
-      "fingerprint": "63e7adb85e614ae3",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 155,
-      "message": "statement should be inside braces",
-      "fingerprint": "29ebd0a78ed5e6a9",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 162,
-      "message": "statement should be inside braces",
-      "fingerprint": "520855b068667997",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 163,
-      "message": "statement should be inside braces",
-      "fingerprint": "273ad603d97ed144",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/camera/arcade_chase_camera.cpp",
-      "line": 170,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "28b56e2fc787f720",
+      "fingerprint": "c43352803ac2c40d",
       "status": "open"
     },
     {
@@ -9412,146 +7900,14 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 148,
-      "message": "statement should be inside braces",
-      "fingerprint": "c7118f77c40aac28",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 149,
-      "message": "statement should be inside braces",
-      "fingerprint": "1c60de3215622b27",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 150,
-      "message": "statement should be inside braces",
-      "fingerprint": "e5032bccece3ce2c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 151,
-      "message": "statement should be inside braces",
-      "fingerprint": "873a6a178ac379df",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 152,
-      "message": "statement should be inside braces",
-      "fingerprint": "8ee694eb3bc67316",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 153,
-      "message": "statement should be inside braces",
-      "fingerprint": "e465469bf6bf7f7b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 154,
-      "message": "statement should be inside braces",
-      "fingerprint": "d72d6acbf0af0c73",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 155,
-      "message": "statement should be inside braces",
-      "fingerprint": "63c5ea34ac2fe797",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 156,
-      "message": "statement should be inside braces",
-      "fingerprint": "e6708ab31c3e1929",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 157,
-      "message": "statement should be inside braces",
-      "fingerprint": "6b1b06f1f56f3809",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 158,
-      "message": "statement should be inside braces",
-      "fingerprint": "3c12cbb7de76d097",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-implicit-bool-conversion",
       "severity": "warning",
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 189,
+      "line": 211,
       "message": "implicit conversion 'FnCoreAudioTrigger' (aka 'bool (*)(void *, int)') -> 'bool'",
-      "fingerprint": "c8d65ffab5389450",
+      "fingerprint": "217940c4f344dc16",
       "status": "open"
     },
     {
@@ -9561,9 +7917,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 189,
+      "line": 211,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "ecba41eb1a1ad696",
+      "fingerprint": "c004f01e55b6969b",
       "status": "open"
     },
     {
@@ -9573,9 +7929,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 196,
+      "line": 218,
       "message": "implicit conversion 'FnCoreReset' (aka 'void (*)(void *, double, double, double, double)') -> 'bool'",
-      "fingerprint": "c84e609e37037f2c",
+      "fingerprint": "38c58604b2c90663",
       "status": "open"
     },
     {
@@ -9585,9 +7941,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 196,
+      "line": 218,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "94b035dc5785d55d",
+      "fingerprint": "864f12cc63bba2f4",
       "status": "open"
     },
     {
@@ -9597,9 +7953,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 200,
+      "line": 222,
       "message": "implicit conversion 'F194RustVehicle *' -> 'bool'",
-      "fingerprint": "25ae30ebdfa91738",
+      "fingerprint": "4644b03a6b18c2d1",
       "status": "open"
     },
     {
@@ -9609,9 +7965,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 203,
+      "line": 225,
       "message": "implicit conversion 'F194RustVehicle *' -> 'bool'",
-      "fingerprint": "ae68e6de5cc98491",
+      "fingerprint": "823b351451a62c01",
       "status": "open"
     },
     {
@@ -9621,9 +7977,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 245,
+      "line": 267,
       "message": "implicit conversion 'ProjectSettings *' -> 'bool'",
-      "fingerprint": "2af157e74b99825a",
+      "fingerprint": "961365367b6922c0",
       "status": "open"
     },
     {
@@ -9633,9 +7989,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 247,
+      "line": 269,
       "message": "implicit conversion 'HMODULE' (aka 'struct HINSTANCE__ *') -> 'bool'",
-      "fingerprint": "516fdd336347a188",
+      "fingerprint": "aa6175f38f676739",
       "status": "open"
     },
     {
@@ -9645,9 +8001,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 252,
+      "line": 274,
       "message": "implicit conversion 'HMODULE' (aka 'struct HINSTANCE__ *') -> 'bool'",
-      "fingerprint": "348bbe17b81a9724",
+      "fingerprint": "dc1e67674bac1eaf",
       "status": "open"
     },
     {
@@ -9657,9 +8013,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 271,
+      "line": 293,
       "message": "implicit conversion 'FnCoreAbiVersion' (aka 'unsigned int (*)()') -> 'bool'",
-      "fingerprint": "db2d5806ddb7fc82",
+      "fingerprint": "be57d238998e1b80",
       "status": "open"
     },
     {
@@ -9669,9 +8025,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 272,
+      "line": 294,
       "message": "implicit conversion 'FnCoreBuildSha' (aka 'const char *(*)()') -> 'bool'",
-      "fingerprint": "f120a0dc28c6f503",
+      "fingerprint": "2db12974faee0276",
       "status": "open"
     },
     {
@@ -9681,9 +8037,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 288,
+      "line": 310,
       "message": "implicit conversion 'FnCoreCreate' (aka 'void *(*)(const char *, unsigned char *, unsigned int)') -> 'bool'",
-      "fingerprint": "85889e0d688e5594",
+      "fingerprint": "9949413e6f0ae5c0",
       "status": "open"
     },
     {
@@ -9693,9 +8049,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 288,
+      "line": 310,
       "message": "implicit conversion 'FnCoreDestroy' (aka 'void (*)(void *)') -> 'bool'",
-      "fingerprint": "46315421173b3d4d",
+      "fingerprint": "96c6eada35911f1c",
       "status": "open"
     },
     {
@@ -9705,9 +8061,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 288,
+      "line": 310,
       "message": "implicit conversion 'FnCoreSpawn' (aka 'unsigned int (*)(void *)') -> 'bool'",
-      "fingerprint": "f8843ed7268669fc",
+      "fingerprint": "7150cd5111068975",
       "status": "open"
     },
     {
@@ -9717,9 +8073,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 288,
+      "line": 310,
       "message": "implicit conversion 'FnCoreStep' (aka 'void (*)(void *, unsigned int, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, double, signed char, unsigned int, double, const struct CSimTriRaycastSample *, const struct F90UnderfloorSample *, struct F90CoreFrameOut *)') -> 'bool'",
-      "fingerprint": "62a0c7e7dd67a16a",
+      "fingerprint": "f600324399ccfb53",
       "status": "open"
     },
     {
@@ -9729,9 +8085,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 301,
+      "line": 323,
       "message": "implicit conversion 'FnCoreDestroy' (aka 'void (*)(void *)') -> 'bool'",
-      "fingerprint": "26e3e4873d390233",
+      "fingerprint": "eefe20352e9cb5ed",
       "status": "open"
     },
     {
@@ -9741,9 +8097,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 301,
+      "line": 323,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "c00ddcab43c9f4ab",
+      "fingerprint": "07105a4c531b31c5",
       "status": "open"
     },
     {
@@ -9753,9 +8109,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 307,
+      "line": 329,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "e54b3849fd45ecd3",
+      "fingerprint": "077907ea2418bc5f",
       "status": "open"
     },
     {
@@ -9765,9 +8121,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 331,
+      "line": 353,
       "message": "implicit conversion 'FnCoreReset' (aka 'void (*)(void *, double, double, double, double)') -> 'bool'",
-      "fingerprint": "d2a5182a5b651464",
+      "fingerprint": "8a5c3c7ff08e7607",
       "status": "open"
     },
     {
@@ -9777,9 +8133,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 331,
+      "line": 353,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "3b68632a4d1f3fe3",
+      "fingerprint": "66632dbb2e77d8f4",
       "status": "open"
     },
     {
@@ -9789,9 +8145,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 337,
+      "line": 359,
       "message": "implicit conversion 'FnCoreApplyRuntimeConfig' (aka 'bool (*)(void *, unsigned int, const struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "006b69ddfb61ca77",
+      "fingerprint": "ca6bab912156b2a7",
       "status": "open"
     },
     {
@@ -9801,9 +8157,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 337,
+      "line": 359,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "a3b0a0d97cb732e1",
+      "fingerprint": "71e2c87e26d4a847",
       "status": "open"
     },
     {
@@ -9813,9 +8169,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 355,
+      "line": 377,
       "message": "implicit conversion 'ProjectSettings *' -> 'bool'",
-      "fingerprint": "4464431d82f8cfa5",
+      "fingerprint": "bb243039b999d37c",
       "status": "open"
     },
     {
@@ -9825,9 +8181,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 356,
+      "line": 378,
       "message": "implicit conversion 'ProjectSettings *' -> 'bool'",
-      "fingerprint": "880357c7f419152a",
+      "fingerprint": "03e0a27624496fe5",
       "status": "open"
     },
     {
@@ -9837,9 +8193,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 387,
+      "line": 409,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "fb2ff707bb37729a",
+      "fingerprint": "b585aa6cd751d515",
       "status": "open"
     },
     {
@@ -9849,9 +8205,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 412,
+      "line": 434,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "7c82b044798809ed",
+      "fingerprint": "32a2a6f446c06cf3",
       "status": "open"
     },
     {
@@ -9861,9 +8217,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 464,
+      "line": 486,
       "message": "redundant explicit casting to the same type 'uint32_t' (aka 'unsigned int') as the sub-expression, remove this casting",
-      "fingerprint": "f3b3a6901a5b465d",
+      "fingerprint": "0004e350cad3cdb4",
       "status": "open"
     },
     {
@@ -9873,9 +8229,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 562,
+      "line": 584,
       "message": "function 'process_collision_audio' has cognitive complexity of 36 (threshold 25)",
-      "fingerprint": "2bc1500d3095f983",
+      "fingerprint": "4cd5eb148fb74d1c",
       "status": "open"
     },
     {
@@ -9885,9 +8241,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 563,
+      "line": 585,
       "message": "implicit conversion 'PhysicsDirectBodyState3D *' -> 'bool'",
-      "fingerprint": "2aecb0eae9e7241e",
+      "fingerprint": "1a1ab8c3f94e98c6",
       "status": "open"
     },
     {
@@ -9897,33 +8253,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 580,
+      "line": 602,
       "message": "redundant explicit casting to the same type 'float' as the sub-expression, remove this casting",
-      "fingerprint": "ff8c54b8b4e2ebb4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 581,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "4050e947ae72085d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 582,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2b9984c807917c4e",
+      "fingerprint": "488004344af369c3",
       "status": "open"
     },
     {
@@ -9933,9 +8265,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 589,
+      "line": 611,
       "message": "implicit conversion 'Node *' -> 'bool'",
-      "fingerprint": "6338a5a834810340",
+      "fingerprint": "94f9a97a0a18ec28",
       "status": "open"
     },
     {
@@ -9945,21 +8277,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 591,
+      "line": 613,
       "message": "implicit conversion 'Node *' -> 'bool'",
-      "fingerprint": "03d14799d0355d06",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 595,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "f00c9592a527ad7a",
+      "fingerprint": "5ab8796c6355e9da",
       "status": "open"
     },
     {
@@ -9969,69 +8289,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 599,
+      "line": 621,
       "message": "do not use 'else' after 'break'",
-      "fingerprint": "ea8d9a33edbbe2f1",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 599,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "64c2218d69313ef0",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 610,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "167cd99958892cd5",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 611,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "0cd600359bbd295d",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 613,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "e7c67dc5fd23d590",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 615,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "2de76723c29c7349",
+      "fingerprint": "62d938a29cfc50d7",
       "status": "open"
     },
     {
@@ -10041,9 +8301,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 638,
+      "line": 660,
       "message": "implicit conversion 'F194RustVehicle *' -> 'bool'",
-      "fingerprint": "3c0accfaf2b9c23a",
+      "fingerprint": "5511496c99f9cb2a",
       "status": "open"
     },
     {
@@ -10053,9 +8313,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 642,
+      "line": 664,
       "message": "implicit conversion 'Viewport *' -> 'bool'",
-      "fingerprint": "769808940f4ef92c",
+      "fingerprint": "54738eb35cd229b9",
       "status": "open"
     },
     {
@@ -10065,21 +8325,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 646,
+      "line": 668,
       "message": "implicit conversion 'Camera3D *' -> 'bool'",
-      "fingerprint": "157a31f553d24d69",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-math-missing-parentheses",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 652,
-      "message": "'*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations",
-      "fingerprint": "a4c648f78ed097dd",
+      "fingerprint": "16f280c1bbb68134",
       "status": "open"
     },
     {
@@ -10089,9 +8337,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 659,
+      "line": 681,
       "message": "implicit conversion 'FnCoreAudioSetAmbient' (aka 'void (*)(void *, float, float, int)') -> 'bool'",
-      "fingerprint": "ff279a7aad7f0f6f",
+      "fingerprint": "1734dad7d1049f05",
       "status": "open"
     },
     {
@@ -10101,9 +8349,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 659,
+      "line": 681,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "bd9b2a7b0fccc358",
+      "fingerprint": "3b429cb97c6c701c",
       "status": "open"
     },
     {
@@ -10113,9 +8361,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 666,
+      "line": 688,
       "message": "implicit conversion 'Object *' -> 'bool'",
-      "fingerprint": "ce40317ae74e318c",
+      "fingerprint": "ed9818e4ea5d39ce",
       "status": "open"
     },
     {
@@ -10125,9 +8373,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 669,
+      "line": 691,
       "message": "implicit conversion 'Node *' -> 'bool'",
-      "fingerprint": "f945a84901c183ab",
+      "fingerprint": "f70d86c67d339c29",
       "status": "open"
     },
     {
@@ -10137,9 +8385,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 682,
+      "line": 704,
       "message": "method 'ensure_vehicle_bus' can be made static",
-      "fingerprint": "5f4823e38d37403b",
+      "fingerprint": "203e37727ad87551",
       "status": "open"
     },
     {
@@ -10149,21 +8397,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 687,
+      "line": 709,
       "message": "implicit conversion 'AudioServer *' -> 'bool'",
-      "fingerprint": "104f7232e6cf4604",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/f90_core.cpp",
-      "line": 715,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "e07b7d659b69bb13",
+      "fingerprint": "d7e90c488c8f171c",
       "status": "open"
     },
     {
@@ -10173,9 +8409,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 721,
+      "line": 743,
       "message": "implicit conversion 'Object *' -> 'bool'",
-      "fingerprint": "71ba74a6d37de9d9",
+      "fingerprint": "ba36911e6f5a4780",
       "status": "open"
     },
     {
@@ -10185,9 +8421,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/core/f90_core.cpp",
-      "line": 770,
+      "line": 792,
       "message": "implicit conversion 'FnCoreAudioReadouts' (aka 'void (*)(void *, struct F90CoreFrameOut *)') -> 'bool'",
-      "fingerprint": "26258df9b137d0d0",
+      "fingerprint": "f6be29d142217fb1",
       "status": "open"
     },
     {
@@ -10212,18 +8448,6 @@
       "line": 11,
       "message": "implicit conversion 'Node *' -> 'bool'",
       "fingerprint": "47dd53fdd94a91d0",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/core/game_bootstrap.cpp",
-      "line": 14,
-      "message": "statement should be inside braces",
-      "fingerprint": "f5c9b08f656ec568",
       "status": "open"
     },
     {
@@ -10312,102 +8536,6 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 214,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "7bf13eab3e1cbd98",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 215,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "8643c853d11bc8b2",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 223,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "9f32cf7175c0c154",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 224,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "458a6457795c53f2",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 225,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "7963c93a6a22bef8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 226,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "a0c54363c5d73306",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 229,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "af5f98fa2b6f8239",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/presentation/psx_art_controller.cpp",
-      "line": 230,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "97a6822ccfdd8584",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-implicit-bool-conversion",
       "severity": "warning",
       "category": "maintainability",
@@ -10440,18 +8568,6 @@
       "line": 250,
       "message": "implicit conversion 'Control *' -> 'bool'",
       "fingerprint": "a0f18ebaac047913",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/register_types.cpp",
-      "line": 12,
-      "message": "statement should be inside braces",
-      "fingerprint": "8c0c60e2cc580a36",
       "status": "open"
     },
     {
@@ -10960,194 +9076,14 @@
     },
     {
       "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 511,
-      "message": "statement should be inside braces",
-      "fingerprint": "134fe77f49cb7e18",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 512,
-      "message": "statement should be inside braces",
-      "fingerprint": "1e7c57a8bd7bcfc7",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 513,
-      "message": "statement should be inside braces",
-      "fingerprint": "075133c099985a30",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 514,
-      "message": "statement should be inside braces",
-      "fingerprint": "9c105b8cb8be7c97",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 515,
-      "message": "statement should be inside braces",
-      "fingerprint": "953a6f22151015b0",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 516,
-      "message": "statement should be inside braces",
-      "fingerprint": "366badca84404a14",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 517,
-      "message": "statement should be inside braces",
-      "fingerprint": "4c08d31a3ae6c0f8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 518,
-      "message": "statement should be inside braces",
-      "fingerprint": "d9010bd5fd586106",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 522,
-      "message": "statement should be inside braces",
-      "fingerprint": "0cf2036844671d35",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 523,
-      "message": "statement should be inside braces",
-      "fingerprint": "3b5baa7d12ed1ea6",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 524,
-      "message": "statement should be inside braces",
-      "fingerprint": "56131a7c7d9fef8c",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 525,
-      "message": "statement should be inside braces",
-      "fingerprint": "fdea31830622b4dd",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 526,
-      "message": "statement should be inside braces",
-      "fingerprint": "1645044416b6bd06",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 527,
-      "message": "statement should be inside braces",
-      "fingerprint": "50efcd53a6688093",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 528,
-      "message": "statement should be inside braces",
-      "fingerprint": "53b25b4108425cf8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
       "rule": "readability-function-cognitive-complexity",
       "severity": "warning",
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 549,
+      "line": 579,
       "message": "function 'solve_forces_for_state' has cognitive complexity of 37 (threshold 25)",
-      "fingerprint": "a9a2a9c1e6232709",
+      "fingerprint": "bd0f8ba6da3c57b8",
       "status": "open"
     },
     {
@@ -11157,9 +9093,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 553,
+      "line": 583,
       "message": "implicit conversion 'FnPhysicsSolveForces' (aka 'void (*)(void *, const struct F90BodyKinematics *, const struct F90VehicleInput *, const struct F90TriRaycastSample *, double, struct F90ForceTorqueOutput *, struct F90TelemetryOutput *)') -> 'bool'",
-      "fingerprint": "9ec8b81dd4a81f9d",
+      "fingerprint": "2060d0f3202e7be9",
       "status": "open"
     },
     {
@@ -11169,9 +9105,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 553,
+      "line": 583,
       "message": "implicit conversion 'PhysicsDirectBodyState3D *' -> 'bool'",
-      "fingerprint": "1f1c5f72db8322d0",
+      "fingerprint": "3733f8ac27d17749",
       "status": "open"
     },
     {
@@ -11181,45 +9117,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 553,
+      "line": 583,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "adabbe29668e133b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 560,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "1b15aeecd9d13949",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 561,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "96639a9915b117a0",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 567,
-      "message": "floating point literal has suffix 'f', which is not uppercase",
-      "fingerprint": "81dced059155e14d",
+      "fingerprint": "b105d4c77a436d1c",
       "status": "open"
     },
     {
@@ -11229,21 +9129,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 570,
+      "line": 600,
       "message": "implicit conversion 'PhysicsServer3D *' -> 'bool'",
-      "fingerprint": "9d0c1fa9d1d65ae8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 722,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "0572d8daf7750beb",
+      "fingerprint": "ecb787a2744841bc",
       "status": "open"
     },
     {
@@ -11253,81 +9141,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 824,
+      "line": 854,
       "message": "implicit conversion 'Node3D *' -> 'bool'",
-      "fingerprint": "5702e718cc02115b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 855,
-      "message": "statement should be inside braces",
-      "fingerprint": "830b6cd582c31de3",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 862,
-      "message": "statement should be inside braces",
-      "fingerprint": "2f6939301800d11b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 869,
-      "message": "statement should be inside braces",
-      "fingerprint": "f8f96efd272b5968",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 902,
-      "message": "statement should be inside braces",
-      "fingerprint": "d61bcf974080c103",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 910,
-      "message": "statement should be inside braces",
-      "fingerprint": "25c8c03c32363ab4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 937,
-      "message": "statement should be inside braces",
-      "fingerprint": "db7cdbdb1cf9e591",
+      "fingerprint": "419e213e9e6f0bdc",
       "status": "open"
     },
     {
@@ -11337,9 +9153,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 942,
+      "line": 984,
       "message": "implicit conversion 'FnPhysicsGetVehicleMass' (aka 'double (*)(void *)') -> 'bool'",
-      "fingerprint": "758abf60d65214be",
+      "fingerprint": "61041deeb6b77227",
       "status": "open"
     },
     {
@@ -11349,9 +9165,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 942,
+      "line": 984,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "aaa2d0452059bce7",
+      "fingerprint": "14e31b708d2072e8",
       "status": "open"
     },
     {
@@ -11361,9 +9177,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 949,
+      "line": 991,
       "message": "implicit conversion 'FnPhysicsGetCenterOfMassLocal' (aka 'void (*)(void *, double *, double *, double *)') -> 'bool'",
-      "fingerprint": "b9bae6802367c34e",
+      "fingerprint": "0068b6a819b34ddd",
       "status": "open"
     },
     {
@@ -11373,9 +9189,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 949,
+      "line": 991,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "939920e4aeb34047",
+      "fingerprint": "c4cee83b6c1358f4",
       "status": "open"
     },
     {
@@ -11385,9 +9201,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 950,
+      "line": 992,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "2bb514bdf058be4c",
+      "fingerprint": "669bda64bff53df3",
       "status": "open"
     },
     {
@@ -11397,9 +9213,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 961,
+      "line": 1003,
       "message": "implicit conversion 'FnPhysicsGetWheelAnchorLocal' (aka 'void (*)(void *, unsigned int, double *, double *, double *)') -> 'bool'",
-      "fingerprint": "43fbba7cba1b445b",
+      "fingerprint": "d33a1df9c57b7ed0",
       "status": "open"
     },
     {
@@ -11409,9 +9225,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 961,
+      "line": 1003,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "a2ae3377664b6af7",
+      "fingerprint": "c242acd13b1ffa7b",
       "status": "open"
     },
     {
@@ -11421,9 +9237,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 962,
+      "line": 1004,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "942203ab08a36806",
+      "fingerprint": "376517844edd6366",
       "status": "open"
     },
     {
@@ -11433,9 +9249,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 973,
+      "line": 1015,
       "message": "implicit conversion 'FnPhysicsGetTriRaySpan' (aka 'double (*)(void *, unsigned int)') -> 'bool'",
-      "fingerprint": "6c4490604369eebd",
+      "fingerprint": "9e7d14dae3b6303b",
       "status": "open"
     },
     {
@@ -11445,9 +9261,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 973,
+      "line": 1015,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "ea2ba3806faa2a28",
+      "fingerprint": "f9bc6de48889d7bd",
       "status": "open"
     },
     {
@@ -11457,9 +9273,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 983,
+      "line": 1025,
       "message": "implicit conversion 'FnPhysicsGetRayLength' (aka 'double (*)(void *, unsigned int)') -> 'bool'",
-      "fingerprint": "bc9c5d649c1e3fb2",
+      "fingerprint": "018539bd5e4eb907",
       "status": "open"
     },
     {
@@ -11469,9 +9285,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 983,
+      "line": 1025,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "feb9b3fa687194b0",
+      "fingerprint": "3201d6d00db42dad",
       "status": "open"
     },
     {
@@ -11481,9 +9297,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 990,
+      "line": 1032,
       "message": "implicit conversion 'FnPhysicsGetDefaultSpawnHeight' (aka 'double (*)(void *)') -> 'bool'",
-      "fingerprint": "e22e959afc9004f7",
+      "fingerprint": "6b107de755c9bfaf",
       "status": "open"
     },
     {
@@ -11493,9 +9309,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 990,
+      "line": 1032,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "fca90bdfc98fce75",
+      "fingerprint": "07b1397a68231da0",
       "status": "open"
     },
     {
@@ -11505,9 +9321,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1023,
+      "line": 1065,
       "message": "implicit conversion 'FnPhysicsApplyRuntimeConfig' (aka 'bool (*)(void *, const struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "4e04968312e775aa",
+      "fingerprint": "2fb6195abdd6e4b2",
       "status": "open"
     },
     {
@@ -11517,9 +9333,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1023,
+      "line": 1065,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "cc498ea977eae406",
+      "fingerprint": "ff1323b7be6ad208",
       "status": "open"
     },
     {
@@ -11529,9 +9345,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1035,
+      "line": 1077,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "f87c95454c0c4779",
+      "fingerprint": "6bc61a7af8db7ac4",
       "status": "open"
     },
     {
@@ -11541,21 +9357,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1035,
+      "line": 1077,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "2c250b119a9074c6",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1057,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "c028a1c29b881822",
+      "fingerprint": "99a9f01d8a66ab57",
       "status": "open"
     },
     {
@@ -11565,9 +9369,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1076,
+      "line": 1118,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "55e6e2cee024f3b9",
+      "fingerprint": "b50497764a5a2cec",
       "status": "open"
     },
     {
@@ -11577,9 +9381,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1076,
+      "line": 1118,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "4ac4c3368cded8c5",
+      "fingerprint": "677d44f39f82e585",
       "status": "open"
     },
     {
@@ -11589,9 +9393,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1091,
+      "line": 1133,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "704527c4798a578d",
+      "fingerprint": "28d709a0ab3115b5",
       "status": "open"
     },
     {
@@ -11601,9 +9405,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1091,
+      "line": 1133,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "d162102a2cdef83e",
+      "fingerprint": "02a3616d560466b7",
       "status": "open"
     },
     {
@@ -11613,9 +9417,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1106,
+      "line": 1148,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "ad9559666ba7cf02",
+      "fingerprint": "462a5516863c66f0",
       "status": "open"
     },
     {
@@ -11625,9 +9429,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1106,
+      "line": 1148,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "5a9ed11e0ee06218",
+      "fingerprint": "3fad71a4174e47c0",
       "status": "open"
     },
     {
@@ -11637,9 +9441,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1121,
+      "line": 1163,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "994f64d411d6f8a9",
+      "fingerprint": "32307e655ec350eb",
       "status": "open"
     },
     {
@@ -11649,9 +9453,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1121,
+      "line": 1163,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "bfc2f778b0ca9877",
+      "fingerprint": "24b7e1270cf651b1",
       "status": "open"
     },
     {
@@ -11661,9 +9465,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1136,
+      "line": 1178,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "c632234c796ff183",
+      "fingerprint": "5e2513974174c996",
       "status": "open"
     },
     {
@@ -11673,9 +9477,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1136,
+      "line": 1178,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "db9ea561054359cf",
+      "fingerprint": "8c2e15473d1f1244",
       "status": "open"
     },
     {
@@ -11685,9 +9489,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1151,
+      "line": 1193,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "69cabbb5d070dd84",
+      "fingerprint": "c8f1f5bc84d667cb",
       "status": "open"
     },
     {
@@ -11697,9 +9501,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1151,
+      "line": 1193,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "0abc0c7b122cfaef",
+      "fingerprint": "a5bc627e19547ea0",
       "status": "open"
     },
     {
@@ -11709,9 +9513,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1166,
+      "line": 1208,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "2c43b46db3dba067",
+      "fingerprint": "3559eebd89b2167c",
       "status": "open"
     },
     {
@@ -11721,9 +9525,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1166,
+      "line": 1208,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "187f5a374b190f04",
+      "fingerprint": "e18e5b8abefa9809",
       "status": "open"
     },
     {
@@ -11733,9 +9537,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1181,
+      "line": 1223,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "7b01a9e813f75461",
+      "fingerprint": "fa806b7b8651bff1",
       "status": "open"
     },
     {
@@ -11745,9 +9549,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1181,
+      "line": 1223,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "223207182e5b8313",
+      "fingerprint": "b5515fd63ed724e2",
       "status": "open"
     },
     {
@@ -11757,9 +9561,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1196,
+      "line": 1238,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "4601aca55292f5fd",
+      "fingerprint": "4013de99403db56f",
       "status": "open"
     },
     {
@@ -11769,9 +9573,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1196,
+      "line": 1238,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "5d1055242136ae14",
+      "fingerprint": "d361cbd2bb1f60b7",
       "status": "open"
     },
     {
@@ -11781,9 +9585,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1211,
+      "line": 1253,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "ee5072556e843b39",
+      "fingerprint": "31a1b6f275fcb263",
       "status": "open"
     },
     {
@@ -11793,9 +9597,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1211,
+      "line": 1253,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "b814126d82f1c4b9",
+      "fingerprint": "a0a2e03b4df263a4",
       "status": "open"
     },
     {
@@ -11805,9 +9609,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1226,
+      "line": 1268,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "bd89b42221bf5432",
+      "fingerprint": "ea4b8537930f0413",
       "status": "open"
     },
     {
@@ -11817,9 +9621,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1226,
+      "line": 1268,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "01a58ed65776e167",
+      "fingerprint": "42f628a6ebf7dae0",
       "status": "open"
     },
     {
@@ -11829,9 +9633,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1236,
+      "line": 1278,
       "message": "implicit conversion 'FnPhysicsReset' (aka 'void (*)(void *, double, double, double, double)') -> 'bool'",
-      "fingerprint": "51015c24ea011cc9",
+      "fingerprint": "cb4b2bdaf43a7093",
       "status": "open"
     },
     {
@@ -11841,9 +9645,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1236,
+      "line": 1278,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "26e22df866689c2d",
+      "fingerprint": "62fff77af7a988f5",
       "status": "open"
     },
     {
@@ -11853,9 +9657,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1272,
+      "line": 1314,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "4236bb1849fafccc",
+      "fingerprint": "b336ecb10ddb7cc0",
       "status": "open"
     },
     {
@@ -11865,9 +9669,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1272,
+      "line": 1314,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "857eec779f189c3d",
+      "fingerprint": "51400966d346e978",
       "status": "open"
     },
     {
@@ -11877,9 +9681,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1287,
+      "line": 1329,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "5f60cece912837f3",
+      "fingerprint": "56be07c4112791f0",
       "status": "open"
     },
     {
@@ -11889,9 +9693,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1287,
+      "line": 1329,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "9683282eed522892",
+      "fingerprint": "c18907b01be9f55d",
       "status": "open"
     },
     {
@@ -11901,9 +9705,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1302,
+      "line": 1344,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "1f9355fdd2e93d42",
+      "fingerprint": "4b6062c87002acb2",
       "status": "open"
     },
     {
@@ -11913,9 +9717,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1302,
+      "line": 1344,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "23977839510501b3",
+      "fingerprint": "e74ed04a4fbf55b8",
       "status": "open"
     },
     {
@@ -11925,9 +9729,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1317,
+      "line": 1359,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "63bc247a579283d6",
+      "fingerprint": "83edebb22a23a73d",
       "status": "open"
     },
     {
@@ -11937,9 +9741,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1317,
+      "line": 1359,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "48b01b588e0a36fb",
+      "fingerprint": "483dd492f83f1939",
       "status": "open"
     },
     {
@@ -11949,9 +9753,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1332,
+      "line": 1374,
       "message": "implicit conversion 'FnPhysicsGetRuntimeConfig' (aka 'bool (*)(void *, struct F90RuntimeConfig *)') -> 'bool'",
-      "fingerprint": "b1b6decfa54faa94",
+      "fingerprint": "f96151891a0247e9",
       "status": "open"
     },
     {
@@ -11961,21 +9765,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1332,
+      "line": 1374,
       "message": "implicit conversion 'void *' -> 'bool'",
-      "fingerprint": "a1eaab1d6031ff92",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-uppercase-literal-suffix",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1358,
-      "message": "integer literal has suffix 'u', which is not uppercase",
-      "fingerprint": "4570d077c59e1a94",
+      "fingerprint": "396d83c4bbbde3ae",
       "status": "open"
     },
     {
@@ -11985,9 +9777,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1383,
+      "line": 1425,
       "message": "conditional operator is used as sub-expression of parent conditional operator, refrain from using nested conditional operators",
-      "fingerprint": "c18270b281be3865",
+      "fingerprint": "cef3a43c11c272e5",
       "status": "open"
     },
     {
@@ -11997,21 +9789,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1391,
+      "line": 1433,
       "message": "implicit conversion 'RayCast3D *' -> 'bool'",
-      "fingerprint": "490b08089c7385d8",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1415,
-      "message": "statement should be inside braces",
-      "fingerprint": "000f42cf322f8d62",
+      "fingerprint": "1692286ecdc4e41d",
       "status": "open"
     },
     {
@@ -12021,21 +9801,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1415,
+      "line": 1457,
       "message": "implicit conversion 'F90UnderfloorSample *' (aka 'struct F90UnderfloorSample *') -> 'bool'",
-      "fingerprint": "b40259f0d5810f71",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1422,
-      "message": "statement should be inside braces",
-      "fingerprint": "b824aa9f9d55274d",
+      "fingerprint": "0af0020911804c15",
       "status": "open"
     },
     {
@@ -12045,45 +9813,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1422,
+      "line": 1466,
       "message": "implicit conversion 'RayCast3D *' -> 'bool'",
-      "fingerprint": "c9b306383cd7ebe4",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1424,
-      "message": "statement should be inside braces",
-      "fingerprint": "9c787753bf4eb1c9",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1427,
-      "message": "statement should be inside braces",
-      "fingerprint": "49ed331694ca7bcf",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1435,
-      "message": "statement should be inside braces",
-      "fingerprint": "56afd7bed185f4ca",
+      "fingerprint": "5e3ae7b736a1f688",
       "status": "open"
     },
     {
@@ -12093,45 +9825,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1435,
+      "line": 1485,
       "message": "implicit conversion 'PhysicsDirectBodyState3D *' -> 'bool'",
-      "fingerprint": "3b14278bde5778ce",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1442,
-      "message": "statement should be inside braces",
-      "fingerprint": "0fb5d0d582f3c0df",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1445,
-      "message": "statement should be inside braces",
-      "fingerprint": "f33b439f67b8ce0e",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1554,
-      "message": "statement should be inside braces",
-      "fingerprint": "4349c026e0af61a0",
+      "fingerprint": "95c959c8d8c8d6ff",
       "status": "open"
     },
     {
@@ -12141,9 +9837,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1566,
+      "line": 1624,
       "message": "multiple declarations in a single statement reduces readability",
-      "fingerprint": "fafbe664ff1b157a",
+      "fingerprint": "be0b93678015357b",
       "status": "open"
     },
     {
@@ -12153,33 +9849,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1591,
+      "line": 1649,
       "message": "initializer list should have a trailing comma",
-      "fingerprint": "b2bee845c9484f29",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1593,
-      "message": "statement should be inside braces",
-      "fingerprint": "120f94ace140f299",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1599,
-      "message": "statement should be inside braces",
-      "fingerprint": "012c4ccf8b8c24aa",
+      "fingerprint": "2df2c98ffd37a2b3",
       "status": "open"
     },
     {
@@ -12189,33 +9861,9 @@
       "category": "maintainability",
       "priority": 7,
       "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1634,
+      "line": 1696,
       "message": "initializer list should have a trailing comma",
-      "fingerprint": "44943a552b21ef5b",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1636,
-      "message": "statement should be inside braces",
-      "fingerprint": "c004afaf99ca74ab",
-      "status": "open"
-    },
-    {
-      "tool": "clang-tidy",
-      "rule": "readability-braces-around-statements",
-      "severity": "warning",
-      "category": "maintainability",
-      "priority": 7,
-      "file": "native/src/vehicle/f1_94_rust_vehicle.cpp",
-      "line": 1698,
-      "message": "statement should be inside braces",
-      "fingerprint": "cdbeaff1d35695e7",
+      "fingerprint": "701d8960a7d1c80b",
       "status": "open"
     }
   ]
