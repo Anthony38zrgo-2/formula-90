@@ -770,13 +770,13 @@ impl AcousticScene {
             cylinder_mechanical,
             cylinder_mechanical_sum,
             output: self.onboard_highpass.process(
-                ((engine_air
+                (engine_air
                     + metallic_structure * self.config.metal_gain * slow_scene_drift
                     + airbox_plenum * self.config.airbox_gain
                     + engine_cover * self.config.engine_cover_gain
                     + mount_monocoque * self.config.mount_monocoque_gain
                     + under_seat_vibration * self.config.under_seat_gain)
-                    * self.config.output_gain),
+                    * self.config.output_gain,
             ),
         }
     }

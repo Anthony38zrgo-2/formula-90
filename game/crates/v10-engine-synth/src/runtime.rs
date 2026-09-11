@@ -161,10 +161,6 @@ pub struct Gf509RuntimeConfig {
     pub sample_layer: ThreeZoneSampleLayerConfig,
     /// Prepared sample directory. `None` is the procedural-only INT-01 mode.
     pub sample_layer_directory: Option<PathBuf>,
-    /// When true, the acoustic scene passes through unducked
-    /// (`scene_mid_ducked == scene`). Default false preserves the
-    /// complementary mid-duck behavior.
-    pub disable_mid_duck: bool,
     pub max_block_frames: usize,
 }
 
@@ -175,7 +171,6 @@ impl Default for Gf509RuntimeConfig {
             scene: AcousticSceneConfig::default(),
             sample_layer: ThreeZoneSampleLayerConfig::default(),
             sample_layer_directory: None,
-            disable_mid_duck: false,
             max_block_frames: 4096,
         }
     }
@@ -186,7 +181,6 @@ pub struct Gf509Runtime {
     engine: V10Engine,
     scene: AcousticScene,
     sample_layer: Option<ThreeZoneSampleLayer>,
-    mid_ducker: ComplementaryMidDucker,
     telemetry: RuntimeTelemetry,
     rendered_telemetry: RuntimeTelemetry,
     interpolation_remaining: usize,
@@ -217,17 +211,11 @@ impl Gf509Runtime {
                 ThreeZoneSampleLayer::load_directory(sample_rate, path, config.sample_layer)
             })
             .transpose()?;
-        let mid_ducker = ComplementaryMidDucker::new(
-            sample_rate as f32,
-            config.sample_layer.mid_duck_depth_db,
-            config.sample_layer.mid_duck_threshold,
-        );
         Ok(Self {
             config,
             engine,
             scene,
             sample_layer,
-            mid_ducker,
             telemetry: RuntimeTelemetry::default(),
             rendered_telemetry: RuntimeTelemetry::default(),
             interpolation_remaining: 0,
@@ -356,15 +344,7 @@ impl Gf509Runtime {
                 })
                 .transpose()?;
             let output = if let Some(sample_frame) = sample_frame {
-                let ducked_scene = if self.config.disable_mid_duck {
-                    scene_frame.output
-                } else {
-                    let (ducked, _) = self
-                        .mid_ducker
-                        .process(scene_frame.output, sample_frame.mid_bus);
-                    ducked
-                };
-                (ducked_scene * self.config.sample_layer.physical_blend_weight
+                (scene_frame.output * self.config.sample_layer.physical_blend_weight
                     + sample_frame.output * self.config.sample_layer.sample_blend_weight)
                     * GF509_HEADROOM_GAIN
             } else {
@@ -583,65 +563,6 @@ fn verify_sha256(path: &Path, expected: &str) -> Result<(), String> {
     Ok(())
 }
 
-struct OnePoleLowPass {
-    alpha: f32,
-    state: f32,
-}
-
-impl OnePoleLowPass {
-    fn new(cutoff_hz: f32, sample_rate: f32) -> Self {
-        Self {
-            alpha: 1.0 - (-std::f32::consts::TAU * cutoff_hz / sample_rate).exp(),
-            state: 0.0,
-        }
-    }
-    #[inline]
-    fn process(&mut self, input: f32) -> f32 {
-        self.state += self.alpha * (input - self.state);
-        self.state
-    }
-}
-
-struct ComplementaryMidDucker {
-    low: OnePoleLowPass,
-    high: OnePoleLowPass,
-    envelope: f32,
-    attack: f32,
-    release: f32,
-    threshold: f32,
-    duck_floor_gain: f32,
-}
-
-impl ComplementaryMidDucker {
-    fn new(sample_rate: f32, depth_db: f32, threshold: f32) -> Self {
-        Self {
-            low: OnePoleLowPass::new(350.0, sample_rate),
-            high: OnePoleLowPass::new(2_000.0, sample_rate),
-            envelope: 0.0,
-            attack: 1.0 - (-1.0 / (0.020 * sample_rate)).exp(),
-            release: 1.0 - (-1.0 / (0.140 * sample_rate)).exp(),
-            threshold: threshold.max(0.001),
-            duck_floor_gain: 10.0f32.powf(depth_db / 20.0),
-        }
-    }
-    #[inline]
-    fn process(&mut self, simulation: f32, sample_mid: f32) -> (f32, f32) {
-        let detector = sample_mid.abs();
-        let rate = if detector > self.envelope {
-            self.attack
-        } else {
-            self.release
-        };
-        self.envelope += rate * (detector - self.envelope);
-        let depth = (self.envelope / self.threshold).clamp(0.0, 1.0);
-        let gain = 1.0 - (1.0 - self.duck_floor_gain) * depth;
-        let below_high = self.high.process(simulation);
-        let below_low = self.low.process(simulation);
-        let mid = below_high - below_low;
-        (simulation + mid * (gain - 1.0), gain)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -782,16 +703,14 @@ mod tests {
     }
 
     #[test]
-    fn ratio_aware_antialias_route_stays_finite_and_bounded() {
-        // AUD-07 full-route smoke: with the ratio-aware kernel engaged, an RPM sweep
-        // crossing ratio 1.0 regions must render finite audio under the PCM
-        // ceiling. Audibility of the top-end change stays behind the human gate.
+    fn pitch_sweep_stays_finite_and_bounded() {
+        // Full-route smoke: an RPM sweep crossing pitch-up ratios must render
+        // finite audio under the PCM ceiling.
         let mut config = Gf509RuntimeConfig::default();
         config.engine.sample_rate = 44_100;
         config.max_block_frames = 512;
         config.sample_layer_directory =
             Some(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_gf509"));
-        config.sample_layer.pitch_up_antialias = true;
         let mut runtime = Gf509Runtime::new(config).unwrap();
         let mut left = [0.0f32; 512];
         let mut right = [0.0f32; 512];
@@ -830,21 +749,13 @@ mod tests {
     }
 
     #[test]
-    fn data_driven_blend_weights_and_ducking_parameters_are_validated() {
+    fn data_driven_blend_weights_are_validated() {
         let mut config = ThreeZoneSampleLayerConfig::default();
         assert!(config.validate().is_ok());
 
         config.physical_blend_weight = 2.5; // > 2.0
         assert!(config.validate().is_err());
         config.physical_blend_weight = 0.5;
-
-        config.mid_duck_depth_db = -30.0; // < -24.0
-        assert!(config.validate().is_err());
-        config.mid_duck_depth_db = -6.0;
-
-        config.mid_duck_threshold = 0.0001; // < 0.001
-        assert!(config.validate().is_err());
-        config.mid_duck_threshold = 0.1;
         assert!(config.validate().is_ok());
     }
 
@@ -1045,73 +956,6 @@ mod tests {
             energy += left.iter().map(|sample| sample * sample).sum::<f32>();
         }
         (energy / (blocks * left.len()) as f32).sqrt()
-    }
-
-    #[test]
-    fn disable_mid_duck_passes_scene_through_unducked() {
-        // The opt-out must change the mix (duck engages at full load) while
-        // staying finite; default behavior is untouched by construction.
-        use std::path::Path;
-        let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_gf509");
-        let telemetry = RuntimeTelemetry {
-            rpm: 8_000.0,
-            throttle: 0.95,
-            normalized_engine_load: 0.9,
-            normalized_engine_torque: 0.85,
-            torque_sign: TorqueSign::Positive,
-            rpm_derivative: 0.0,
-            throttle_derivative: 0.0,
-            gear: 4,
-            shift_phase: ShiftPhase::None,
-            clutch_engagement: 1.0,
-            tc_cut_ratio: 0.0,
-            rev_limiter_active: false,
-            dt_seconds: 0.0,
-        };
-        let mut enabled = Gf509Runtime::new(Gf509RuntimeConfig {
-            sample_layer_directory: Some(bank.clone()),
-            max_block_frames: 512,
-            ..Gf509RuntimeConfig {
-                engine: EngineConfig {
-                    sample_rate: 44_100,
-                    ..EngineConfig::default()
-                },
-                ..Gf509RuntimeConfig::default()
-            }
-        })
-        .unwrap();
-        let mut disabled = Gf509Runtime::new(Gf509RuntimeConfig {
-            sample_layer_directory: Some(bank),
-            disable_mid_duck: true,
-            max_block_frames: 512,
-            ..Gf509RuntimeConfig {
-                engine: EngineConfig {
-                    sample_rate: 44_100,
-                    ..EngineConfig::default()
-                },
-                ..Gf509RuntimeConfig::default()
-            }
-        })
-        .unwrap();
-        enabled.update_telemetry(telemetry).unwrap();
-        disabled.update_telemetry(telemetry).unwrap();
-        let mut diff = 0.0f32;
-        for _ in 0..8 {
-            let mut le = [0.0; 512];
-            let mut re = [0.0; 512];
-            let mut ld = [0.0; 512];
-            let mut rd = [0.0; 512];
-            enabled.render_block(&mut le, &mut re).unwrap();
-            disabled.render_block(&mut ld, &mut rd).unwrap();
-            assert!(ld.iter().all(|sample| sample.is_finite()));
-            diff = diff.max(
-                le.iter()
-                    .zip(ld.iter())
-                    .map(|(a, b)| (a - b).abs())
-                    .fold(0.0f32, f32::max),
-            );
-        }
-        assert!(diff > 1e-6, "duck bypass must change the mix, diff {diff}");
     }
 
     #[test]

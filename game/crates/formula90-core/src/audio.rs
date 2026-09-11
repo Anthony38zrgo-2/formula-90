@@ -238,10 +238,6 @@ impl AudioModule {
                 // shipped GF509 behavior exactly.
                 let mut tuning = vehicle_audio_engine::V10LayerTuning::default();
                 if let Some(section) = gf509_section {
-                    tuning.disable_mid_duck = section
-                        .get("disable_mid_duck")
-                        .and_then(serde_json::Value::as_bool)
-                        .unwrap_or(false);
                     tuning.disable_sample_rasp = section
                         .get("disable_sample_rasp")
                         .and_then(serde_json::Value::as_bool)
@@ -250,9 +246,6 @@ impl AudioModule {
                         .get("residual_gain_scale")
                         .and_then(serde_json::Value::as_f64)
                         .map(|value| value as f32);
-                    tuning.pitch_up_antialias = section
-                        .get("pitch_up_antialias")
-                        .and_then(serde_json::Value::as_bool);
                     if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object())
                     {
                         for (branch, gain) in gains {

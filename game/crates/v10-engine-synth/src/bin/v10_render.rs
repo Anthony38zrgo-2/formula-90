@@ -54,43 +54,6 @@ impl ThreePoleLowPass {
     }
 }
 
-struct ComplementaryMidDucker {
-    low: OnePoleLowPass,
-    high: OnePoleLowPass,
-    envelope: f32,
-    attack: f32,
-    release: f32,
-}
-
-impl ComplementaryMidDucker {
-    fn new(sample_rate: f32) -> Self {
-        Self {
-            low: OnePoleLowPass::new(350.0, sample_rate),
-            high: OnePoleLowPass::new(2_000.0, sample_rate),
-            envelope: 0.0,
-            attack: 1.0 - (-1.0 / (0.020 * sample_rate)).exp(),
-            release: 1.0 - (-1.0 / (0.140 * sample_rate)).exp(),
-        }
-    }
-
-    #[inline]
-    fn process(&mut self, simulation: f32, sample_mid: f32) -> (f32, f32) {
-        let detector = sample_mid.abs();
-        let rate = if detector > self.envelope {
-            self.attack
-        } else {
-            self.release
-        };
-        self.envelope += rate * (detector - self.envelope);
-        let depth = (self.envelope / 0.080).clamp(0.0, 1.0);
-        let gain = 1.0 - (1.0 - 10.0f32.powf(-0.8 / 20.0)) * depth;
-        let below_high = self.high.process(simulation);
-        let below_low = self.low.process(simulation);
-        let mid = below_high - below_low;
-        (simulation + mid * (gain - 1.0), gain)
-    }
-}
-
 struct Args {
     rpm: f32,
     seconds: f32,
@@ -109,9 +72,7 @@ struct Args {
     coast_end_rpm: f32,
     physical_telemetry_csv: Option<PathBuf>,
     physical_master_lowpass_hz: Option<f32>,
-    no_mid_duck: bool,
     no_sample_rasp: bool,
-    no_pitch_antialias: bool,
     sample_residual_scale: f32,
     sample_residual_gain: Option<f32>,
     scene_gains: Vec<(String, f32)>,
@@ -149,9 +110,7 @@ fn parse_args() -> Result<Args, String> {
         coast_end_rpm: 6_500.0,
         physical_telemetry_csv: None,
         physical_master_lowpass_hz: Some(2_500.0),
-        no_mid_duck: false,
         no_sample_rasp: false,
-        no_pitch_antialias: false,
         sample_residual_scale: 1.0,
         sample_residual_gain: None,
         scene_gains: Vec::new(),
@@ -203,9 +162,7 @@ fn parse_args() -> Result<Args, String> {
             "--no-physical-master-lowpass" => {
                 parsed.physical_master_lowpass_hz = None;
             }
-            "--no-mid-duck" => parsed.no_mid_duck = true,
             "--no-sample-rasp" => parsed.no_sample_rasp = true,
-            "--no-pitch-antialias" => parsed.no_pitch_antialias = true,
             "--sample-residual-scale" => {
                 parsed.sample_residual_scale =
                     parse_value(&raw, &mut i, "--sample-residual-scale")?
@@ -427,7 +384,6 @@ fn run() -> Result<(), String> {
                 directory,
                 ThreeZoneSampleLayerConfig {
                     disable_sample_rasp: args.no_sample_rasp,
-                    pitch_up_antialias: !args.no_pitch_antialias,
                     residual_gain_scale: args.sample_residual_scale,
                     residual_gain_closed: args.sample_residual_gain.unwrap_or(
                         ThreeZoneSampleLayerConfig::default().residual_gain_closed,
@@ -440,7 +396,6 @@ fn run() -> Result<(), String> {
             )
         })
         .transpose()?;
-    let mut mid_ducker = ComplementaryMidDucker::new(args.sample_rate as f32);
     engine.set_input(EngineInput {
         rpm: args.rpm,
         throttle: args.throttle,
@@ -497,11 +452,9 @@ fn run() -> Result<(), String> {
         "scene_mix",
         "sample_tonal",
         "sample_residual",
-        "sample_mid",
         "sample_max_rasp",
         "sample_off_throttle",
         "sample_layer",
-        "scene_mid_ducked",
         "hybrid_mix",
         // PHY-140 physical diagnostic stems
         "cylinder_pressure",
@@ -714,7 +667,6 @@ fn run() -> Result<(), String> {
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
         let sample_tonal = sampled.as_ref().map_or(0.0, |frame| frame.tonal);
         let sample_residual = sampled.as_ref().map_or(0.0, |frame| frame.residual);
-        let sample_mid = sampled.as_ref().map_or(0.0, |frame| frame.mid_bus);
         let sample_max_rasp = sampled.as_ref().map_or(0.0, |frame| frame.max_rasp);
         let sample_off_throttle = sampled.as_ref().map_or(0.0, |frame| frame.off_throttle);
         let sample_output = sampled.as_ref().map_or(0.0, |frame| frame.output);
@@ -726,20 +678,14 @@ fn run() -> Result<(), String> {
             sample_residual_sq += (frame.residual * frame.residual) as f64;
             sample_off_sq += (frame.off_throttle * frame.off_throttle) as f64;
         }
-        let (scene_mid_ducked, _) = if args.no_mid_duck {
-            (acoustic.output, 1.0)
-        } else {
-            mid_ducker.process(acoustic.output, sample_mid)
-        };
         // Hybrid headroom is static and transparent. A limiter here would hide
         // gain errors and make the sample layer part of the sound design.
-        let hybrid = (scene_mid_ducked + sample_output) * HYBRID_HEADROOM_GAIN;
+        let hybrid = (acoustic.output + sample_output) * HYBRID_HEADROOM_GAIN;
         stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
         stems
             .get_mut("sample_residual")
             .unwrap()
             .push(sample_residual);
-        stems.get_mut("sample_mid").unwrap().push(sample_mid);
         stems
             .get_mut("sample_max_rasp")
             .unwrap()
@@ -749,10 +695,6 @@ fn run() -> Result<(), String> {
             .unwrap()
             .push(sample_off_throttle);
         stems.get_mut("sample_layer").unwrap().push(sample_output);
-        stems
-            .get_mut("scene_mid_ducked")
-            .unwrap()
-            .push(scene_mid_ducked);
         stems.get_mut("hybrid_mix").unwrap().push(hybrid);
         stems
             .get_mut("cylinder_pressure")
@@ -934,7 +876,6 @@ fn run() -> Result<(), String> {
             "  \"faust_used\": false,\n",
             "  \"acoustic_scene_used\": {},\n",
             "  \"sample_layer_used\": {},\n",
-            "  \"mid_duck_disabled\": {},\n",
             "  \"sample_rasp_disabled\": {},\n",
             "  \"sample_residual_scale\": {},\n",
             "  \"sample_residual_gain\": \"{}\",\n",
@@ -972,7 +913,6 @@ fn run() -> Result<(), String> {
         worst_reduction,
         args.acoustic_scene,
         sample_layer.is_some(),
-        args.no_mid_duck,
         args.no_sample_rasp,
         args.sample_residual_scale,
         args.sample_residual_gain

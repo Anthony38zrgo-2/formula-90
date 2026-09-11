@@ -177,9 +177,7 @@
       "gain": 1.0,
       "manifest": "audio/v10_f2002_experimental/manifest.json",
       "schema_version": 2,
-      "disable_mid_duck": true,
       "disable_sample_rasp": false,
-      "pitch_up_antialias": false,
       "scene_gains": {
         "under_seat": 0.475,
         "mount_monocoque": 0.59375,
