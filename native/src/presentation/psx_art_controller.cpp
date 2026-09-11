@@ -9,6 +9,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/color.hpp>
 #include <algorithm>
+#include <utility>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -133,7 +134,7 @@ bool PsxArtController::load_dll() {
 		CharString cs = global_path.utf8();
 		hDll = LoadLibraryA(cs.get_data());
 		if (hDll) {
-			loaded_path = global_path;
+			loaded_path = std::move(global_path);
 			break;
 		}
 	}

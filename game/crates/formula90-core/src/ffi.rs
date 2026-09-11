@@ -6,6 +6,7 @@
 //!
 //! Extension rule: adding a module only adds additive `f90_core_module_<name>_*`
 //! symbols — the core loop and this ABI are stable.
+#![allow(clippy::not_unsafe_ptr_arg_deref)] // Limite ABI C: los punteros llegan del bridge Godot y se validan en la entrada.
 
 use std::ffi::{c_char, c_void, CStr};
 use std::path::PathBuf;

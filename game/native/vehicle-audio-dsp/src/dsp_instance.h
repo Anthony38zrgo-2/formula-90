@@ -23,6 +23,9 @@ public:
     explicit Instance(const f90_dsp_config& cfg) noexcept;
     ~Instance() noexcept;
 
+    Instance(const Instance&) = delete;
+    Instance& operator=(const Instance&) = delete;
+
     int32_t process(const f90_dsp_event_block& ev, const f90_dsp_controls& ctl,
                     float* out_left, float* out_right, uint32_t frames) noexcept;
     void reset() noexcept;

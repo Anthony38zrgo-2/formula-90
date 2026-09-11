@@ -161,7 +161,7 @@ mod tests {
         // Clouds: parallax_x = 0.28, distance = -500
         let clouds = make_layer(0.28, 0.0, -500.0, 0.0, 0.0, false);
 
-        let camera = make_camera(0.5236, 0.0); // ~30 degrees
+        let camera = make_camera(std::f64::consts::FRAC_PI_6, 0.0); // ~30 degrees
 
         let (far_x, _) = compute_parallax(&far, &camera, 0.0);
         let (near_x, _) = compute_parallax(&near, &camera, 0.0);

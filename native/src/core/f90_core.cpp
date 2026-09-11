@@ -11,6 +11,7 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/input.hpp>
 #include <cmath>
+#include <utility>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -244,7 +245,7 @@ bool F90Core::load_dll() {
 		String global_p = ps ? ps->globalize_path(p) : p;
 		hDll = LoadLibraryW((LPCWSTR)global_p.utf16().get_data());
 		if (hDll) {
-			loaded_path = global_p;
+			loaded_path = std::move(global_p);
 			break;
 		}
 	}

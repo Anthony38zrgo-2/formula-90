@@ -10,6 +10,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <cmath>
+#include <utility>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -252,7 +253,7 @@ bool F194RustVehicle::load_rust_dll() {
 		String global_p = ps ? ps->globalize_path(p) : p;
 		hDll = LoadLibraryW((LPCWSTR)global_p.utf16().get_data());
 		if (hDll) {
-			loaded_path = global_p;
+			loaded_path = std::move(global_p);
 			break;
 		}
 	}

@@ -9,7 +9,8 @@
 //!   reads the resulting pose/telemetry and reflects it in Godot. This is the
 //!   snapshot-server model: ONE simulator, no divergence with the headless path.
 //! - Flat-ground samples are used here for the bridge's vehicle; feeding real
-//! tri-ray samples is a later, in-engine-specific extension (same `World::step`).
+//!   tri-ray samples is a later, in-engine-specific extension (same `World::step`).
+#![allow(clippy::not_unsafe_ptr_arg_deref)] // Limite ABI C: los punteros llegan del bridge Godot y se validan en la entrada.
 use std::boxed::Box;
 use std::ffi::{c_char, CStr};
 use std::os::raw::c_void;
