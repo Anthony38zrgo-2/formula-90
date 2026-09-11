@@ -1696,17 +1696,10 @@ impl VehicleAudioEngine {
                 "dry_mid" => &mut config.scene.dry_mid_gain,
                 "dry_high" => &mut config.scene.dry_high_gain,
                 "metal" => &mut config.scene.metal_gain,
-                "gearbox" => &mut config.scene.gearbox_gain,
-                "head_cover" => &mut config.scene.head_cover_gain,
                 "airbox" => &mut config.scene.airbox_gain,
                 "engine_cover" => &mut config.scene.engine_cover_gain,
-                "rear_exhaust" => &mut config.scene.rear_exhaust_gain,
                 "mount_monocoque" => &mut config.scene.mount_monocoque_gain,
                 "under_seat" => &mut config.scene.under_seat_gain,
-                "cockpit_cavity" => &mut config.scene.cockpit_cavity_gain,
-                "low_mid_parallel" => &mut config.scene.low_mid_parallel_gain,
-                "load_saturation" => &mut config.scene.load_saturation_gain,
-                "event_residual" => &mut config.scene.event_residual_gain,
                 _ => return Err(format!("unknown scene branch: {name}")),
             };
             *slot = *gain;
@@ -3050,7 +3043,7 @@ mod tests {
         let mut tuning = V10LayerTuning::default();
         tuning.disable_mid_duck = true;
         tuning.pitch_up_antialias = Some(false);
-        tuning.scene_gains.push(("gearbox".to_string(), 0.0));
+        tuning.scene_gains.push(("metal".to_string(), 0.0));
         engine
             .enable_v10_layer(&packaged_gf509_assets(), &tuning)
             .unwrap();

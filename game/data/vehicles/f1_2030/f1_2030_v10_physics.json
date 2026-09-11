@@ -181,13 +181,6 @@
       "disable_sample_rasp": false,
       "pitch_up_antialias": false,
       "scene_gains": {
-        "event_residual": 0.0,
-        "gearbox": 0.0,
-        "rear_exhaust": 0.0,
-        "head_cover": 0.0,
-        "load_saturation": 0.0,
-        "low_mid_parallel": 0.0,
-        "cockpit_cavity": 0.0,
         "under_seat": 0.475,
         "mount_monocoque": 0.59375,
         "engine_cover": 0.4788,

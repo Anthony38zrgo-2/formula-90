@@ -102,7 +102,6 @@ struct Args {
     out: PathBuf,
     stems_dir: PathBuf,
     acoustic_scene: bool,
-    excise_load_saturation: bool,
     sample_layer_dir: Option<PathBuf>,
     sweep_end_rpm: Option<f32>,
     hold_before_lift: bool,
@@ -143,7 +142,6 @@ fn parse_args() -> Result<Args, String> {
         out: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm.wav"),
         stems_dir: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm_stems"),
         acoustic_scene: false,
-        excise_load_saturation: false,
         sample_layer_dir: None,
         sweep_end_rpm: None,
         hold_before_lift: false,
@@ -174,7 +172,6 @@ fn parse_args() -> Result<Args, String> {
                     PathBuf::from(parse_value::<String>(&raw, &mut i, "--stems-dir")?)
             }
             "--acoustic-scene" => parsed.acoustic_scene = true,
-            "--excise-load-saturation" => parsed.excise_load_saturation = true,
             "--sample-layer-dir" => {
                 parsed.sample_layer_dir = Some(PathBuf::from(parse_value::<String>(
                     &raw,
@@ -220,7 +217,7 @@ fn parse_args() -> Result<Args, String> {
             "--scene-gain" => {
                 let spec = parse_value::<String>(&raw, &mut i, "--scene-gain")?;
                 let (name, value) = spec.split_once('=').ok_or_else(|| {
-                    "expected --scene-gain <branch>=<value>, e.g. --scene-gain gearbox=0".to_string()
+                    "expected --scene-gain <branch>=<value>, e.g. --scene-gain metal=0.9".to_string()
                 })?;
                 let gain: f32 = value
                     .parse()
@@ -406,17 +403,10 @@ fn run() -> Result<(), String> {
             "dry_mid" => &mut scene_config.dry_mid_gain,
             "dry_high" => &mut scene_config.dry_high_gain,
             "metal" => &mut scene_config.metal_gain,
-            "gearbox" => &mut scene_config.gearbox_gain,
-            "head_cover" => &mut scene_config.head_cover_gain,
             "airbox" => &mut scene_config.airbox_gain,
             "engine_cover" => &mut scene_config.engine_cover_gain,
-            "rear_exhaust" => &mut scene_config.rear_exhaust_gain,
             "mount_monocoque" => &mut scene_config.mount_monocoque_gain,
             "under_seat" => &mut scene_config.under_seat_gain,
-            "cockpit_cavity" => &mut scene_config.cockpit_cavity_gain,
-            "low_mid_parallel" => &mut scene_config.low_mid_parallel_gain,
-            "load_saturation" => &mut scene_config.load_saturation_gain,
-            "event_residual" => &mut scene_config.event_residual_gain,
             _ => return Err(format!("unknown scene branch: {name}")),
         };
         *slot = *gain;
@@ -428,7 +418,6 @@ fn run() -> Result<(), String> {
         .collect::<Vec<_>>()
         .join(",");
     let mut scene = AcousticScene::new(args.sample_rate as f32, scene_config)?;
-    scene.set_load_saturation_excised(args.excise_load_saturation);
     let mut sample_layer = args
         .sample_layer_dir
         .as_ref()
@@ -488,23 +477,12 @@ fn run() -> Result<(), String> {
         "engine_dry",
         "engine_air",
         "metallic_structure",
-        "gearbox_housing",
-        "head_cover_a",
-        "head_cover_b",
-        "cylinder_head_covers",
         "airbox_plenum",
         "engine_cover",
-        "rear_exhaust_a",
-        "rear_exhaust_b",
-        "rear_exhaust",
         "engine_mounts",
         "monocoque_seat",
         "mount_monocoque",
         "under_seat_vibration",
-        "cockpit_cavity",
-        "low_mid_parallel",
-        "load_saturation",
-        "event_residual",
         "cylinder_mechanical_sum",
         "cylinder_mechanical_0",
         "cylinder_mechanical_1",
@@ -688,22 +666,6 @@ fn run() -> Result<(), String> {
             .unwrap()
             .push(acoustic.metallic_structure);
         stems
-            .get_mut("gearbox_housing")
-            .unwrap()
-            .push(acoustic.gearbox_housing);
-        stems
-            .get_mut("head_cover_a")
-            .unwrap()
-            .push(acoustic.head_cover_a);
-        stems
-            .get_mut("head_cover_b")
-            .unwrap()
-            .push(acoustic.head_cover_b);
-        stems
-            .get_mut("cylinder_head_covers")
-            .unwrap()
-            .push(acoustic.cylinder_head_covers);
-        stems
             .get_mut("airbox_plenum")
             .unwrap()
             .push(acoustic.airbox_plenum);
@@ -711,18 +673,6 @@ fn run() -> Result<(), String> {
             .get_mut("engine_cover")
             .unwrap()
             .push(acoustic.engine_cover);
-        stems
-            .get_mut("rear_exhaust_a")
-            .unwrap()
-            .push(acoustic.rear_exhaust_a);
-        stems
-            .get_mut("rear_exhaust_b")
-            .unwrap()
-            .push(acoustic.rear_exhaust_b);
-        stems
-            .get_mut("rear_exhaust")
-            .unwrap()
-            .push(acoustic.rear_exhaust);
         stems
             .get_mut("engine_mounts")
             .unwrap()
@@ -739,22 +689,6 @@ fn run() -> Result<(), String> {
             .get_mut("under_seat_vibration")
             .unwrap()
             .push(acoustic.under_seat_vibration);
-        stems
-            .get_mut("cockpit_cavity")
-            .unwrap()
-            .push(acoustic.cockpit_cavity);
-        stems
-            .get_mut("low_mid_parallel")
-            .unwrap()
-            .push(acoustic.low_mid_parallel);
-        stems
-            .get_mut("load_saturation")
-            .unwrap()
-            .push(acoustic.load_saturation);
-        stems
-            .get_mut("event_residual")
-            .unwrap()
-            .push(acoustic.event_residual);
         stems
             .get_mut("cylinder_mechanical_sum")
             .unwrap()
@@ -1010,12 +944,11 @@ fn run() -> Result<(), String> {
             "  \"sample_tonal_rms\": {:.9},\n",
             "  \"sample_residual_rms\": {:.9},\n",
             "  \"sample_off_rms\": {:.9},\n",
-            "  \"load_saturation_excised\": {},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
             "  \"chamber_cycle_model\": \"bounded_720deg_four_stroke_fresh_charge\",\n",
             "  \"chamber_phase_contract\": \"expansion_0_180,exhaust_180_360,intake_360_540,compression_540_720\",\n",
             "  \"firing_order\": [0,5,1,6,2,7,3,8,4,9],\n",
-            "  \"sample_mid_architecture\": \"zone-specific post gains + base head-cover order-5 notch + deeper max residual compression/saturation + max rasp at +2.5 dB + reduced engine/scene drift + perceptual max crossfade 10000-13750 RPM\"\n",
+            "  \"sample_mid_architecture\": \"zone-specific post gains + deeper max residual compression/saturation + max rasp at +2.5 dB + reduced engine/scene drift + perceptual max crossfade 10000-13750 RPM\"\n",
             "}}\n"
         ),
         git_head(),
@@ -1051,7 +984,6 @@ fn run() -> Result<(), String> {
         sample_tonal_rms,
         sample_residual_rms,
         sample_off_rms,
-        args.excise_load_saturation,
         HYBRID_HEADROOM_GAIN,
     );
     if metadata_path.exists() {
