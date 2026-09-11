@@ -145,17 +145,39 @@ const char *F90Core::trigger_name(int code) {
 }
 
 int F90Core::trigger_code(const String &name) {
-	if (name == "shift_up") return 0;
-	if (name == "shift_down") return 1;
-	if (name == "engine_backfire") return 2;
-	if (name == "impact_hit_1") return 3;
-	if (name == "impact_hit_2") return 4;
-	if (name == "impact_hit_3") return 5;
-	if (name == "impact_hit_4") return 6;
-	if (name == "impact_barrier") return 7;
-	if (name == "impact_cone") return 8;
-	if (name == "engine_fire") return 9;
-	if (name == "scrape") return 10;
+	if (name == "shift_up") {
+		return 0;
+	}
+	if (name == "shift_down") {
+		return 1;
+	}
+	if (name == "engine_backfire") {
+		return 2;
+	}
+	if (name == "impact_hit_1") {
+		return 3;
+	}
+	if (name == "impact_hit_2") {
+		return 4;
+	}
+	if (name == "impact_hit_3") {
+		return 5;
+	}
+	if (name == "impact_hit_4") {
+		return 6;
+	}
+	if (name == "impact_barrier") {
+		return 7;
+	}
+	if (name == "impact_cone") {
+		return 8;
+	}
+	if (name == "engine_fire") {
+		return 9;
+	}
+	if (name == "scrape") {
+		return 10;
+	}
 	return -1;
 }
 

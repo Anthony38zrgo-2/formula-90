@@ -11,4 +11,4 @@ void GameBootstrap::replace_content(const String &path){ Node *old=get_node_or_n
 void GameBootstrap::show_menu(){replace_content(menu_scene_path);Node *menu=get_node_or_null("Content");if(menu){menu->connect("start_requested",Callable(this,"start_game"));menu->connect("quit_requested",Callable(this,"quit_game"));}}
 void GameBootstrap::start_game(){replace_content(world_compositor_scene_path);}
 void GameBootstrap::quit_game(){get_tree()->quit();}
-void GameBootstrap::_process(double delta){if(get_node_or_null("Content/PlayerCar")&&Input::get_singleton()->is_action_just_pressed("ui_back_to_menu"))show_menu();}
+void GameBootstrap::_process(double delta){if(get_node_or_null("Content/PlayerCar")&&Input::get_singleton()->is_action_just_pressed("ui_back_to_menu")) {show_menu();}}

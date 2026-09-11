@@ -143,7 +143,9 @@ static double total_energy(const float* x, int n) {
 
 
 static double rms(const float* x, int n) {
-    if (n <= 0) return 0.0;
+    if (n <= 0) {
+        return 0.0;
+    }
     return std::sqrt(total_energy(x, n) / static_cast<double>(n));
 }
 
@@ -151,13 +153,17 @@ static double max_abs(const float* x, int n) {
     double m = 0.0;
     for (int i = 0; i < n; ++i) {
         const double a = std::fabs(static_cast<double>(x[i]));
-        if (a > m) m = a;
+        if (a > m) {
+            m = a;
+        }
     }
     return m;
 }
 
 static double saturated_fraction(const float* x, int n, double threshold) {
-    if (n <= 0) return 0.0;
+    if (n <= 0) {
+        return 0.0;
+    }
     int saturated = 0;
     for (int i = 0; i < n; ++i) {
         if (std::fabs(static_cast<double>(x[i])) >= threshold) {
@@ -373,7 +379,9 @@ int main() {
         check(f90_dsp_process(ht, &b, &c, l, r, 256) == F90_DSP_OK, "temporal process offset17");
         bool pre_zero = true;
         for (uint32_t i = 0; i < 17; ++i) {
-            if (l[i] != 0.0F || r[i] != 0.0F) pre_zero = false;
+            if (l[i] != 0.0F || r[i] != 0.0F) {
+                pre_zero = false;
+            }
         }
         check(pre_zero, "temporal offset17 samples 0..16 zero");
         check(l[17] != 0.0F || r[17] != 0.0F, "temporal offset17 sample 17 affected");
@@ -393,7 +401,9 @@ int main() {
         check(f90_dsp_process(ht, &b, &c, l, r, 256) == F90_DSP_OK, "temporal process 17and93");
         bool pre_zero = true;
         for (uint32_t i = 0; i < 17; ++i) {
-            if (l[i] != 0.0F || r[i] != 0.0F) pre_zero = false;
+            if (l[i] != 0.0F || r[i] != 0.0F) {
+                pre_zero = false;
+            }
         }
         check(pre_zero, "temporal 17and93 samples 0..16 zero");
         check((l[17] != 0.0F || r[17] != 0.0F) && (l[93] != 0.0F || r[93] != 0.0F),
@@ -424,8 +434,12 @@ int main() {
         f90_dsp_process(ht, &b2, &c, l2b, r2b, 1024);
         float max1 = 0.0F, max2 = 0.0F;
         for (uint32_t i = 0; i < 1024; ++i) {
-            if (std::fabs(l1[i]) > max1) max1 = std::fabs(l1[i]);
-            if (std::fabs(l2b[i]) > max2) max2 = std::fabs(l2b[i]);
+            if (std::fabs(l1[i]) > max1) {
+                max1 = std::fabs(l1[i]);
+            }
+            if (std::fabs(l2b[i]) > max2) {
+                max2 = std::fabs(l2b[i]);
+            }
         }
         check(!buffers_zero(l2b, r2b, 1024), "temporal bothbanks produce signal");
         check(max2 > max1 * 1.5F, "temporal bothbanks louder than one");
@@ -444,7 +458,9 @@ int main() {
         check(f90_dsp_process(ht, &b, &c, l, r, 256) == F90_DSP_OK, "temporal process last");
         bool pre = true;
         for (uint32_t i = 0; i < 255; ++i) {
-            if (l[i] != 0.0F || r[i] != 0.0F) pre = false;
+            if (l[i] != 0.0F || r[i] != 0.0F) {
+                pre = false;
+            }
         }
         check(pre, "temporal last samples 0..254 zero");
         check(l[255] != 0.0F || r[255] != 0.0F, "temporal last sample affected");
@@ -465,7 +481,9 @@ int main() {
               "temporal nextblock b1");
         bool pre1 = true;
         for (uint32_t i = 0; i < 1000; ++i) {
-            if (l1b[i] != 0.0F) pre1 = false;
+            if (l1b[i] != 0.0F) {
+                pre1 = false;
+            }
         }
         check(pre1, "temporal nextblock b1 samples 0..999 zero");
         check(l1b[1000] != 0.0F, "temporal nextblock b1 event at 1000");
@@ -482,7 +500,9 @@ int main() {
               "temporal nextblock b2");
         bool pre2 = true;
         for (uint32_t i = 0; i < 5; ++i) {
-            if (l2b[i] != 0.0F) pre2 = false;
+            if (l2b[i] != 0.0F) {
+                pre2 = false;
+            }
         }
         check(pre2, "temporal nextblock b2 samples 0..4 zero");
         check(l2b[5] != 0.0F, "temporal nextblock b2 event at 5");
@@ -537,7 +557,9 @@ int main() {
               "temporal bypass b2 empty");
         float mx = 0.0F;
         for (uint32_t i = 0; i < 1024; ++i) {
-            if (std::fabs(l2b[i]) > mx) mx = std::fabs(l2b[i]);
+            if (std::fabs(l2b[i]) > mx) {
+                mx = std::fabs(l2b[i]);
+            }
         }
         check(mx < 0.05F, "temporal bypass no stale attack");
         f90_dsp_destroy(ht);
@@ -582,7 +604,9 @@ int main() {
         for (int b = 0; b < 4; ++b) {
             fpnone.stream_block_id += 1;
             f90_dsp_process(fph, &fpnone, &fc, fL, fR, 1024);
-            if (!buffers_zero(fL, fR, 1024)) silent = false;
+            if (!buffers_zero(fL, fR, 1024)) {
+                silent = false;
+            }
         }
         check(silent, "fase5 no-event exact silence");
         f90_dsp_destroy(fph);

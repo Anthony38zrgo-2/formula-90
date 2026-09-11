@@ -508,24 +508,54 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) const {
 	}
 	Node *node = Object::cast_to<Node>(collider);
 	if (node) {
-		if (node->is_in_group("Curb") || node->is_in_group("curb") || node->is_in_group("Kerb") || node->is_in_group("kerb")) return 1;
-		if (node->is_in_group("Dirt") || node->is_in_group("dirt")) return 2;
-		if (node->is_in_group("Grass") || node->is_in_group("grass") || node->is_in_group("Cesped") || node->is_in_group("cesped")) return 3;
-		if (node->is_in_group("Gravel") || node->is_in_group("gravel") || node->is_in_group("Grava") || node->is_in_group("grava")) return 4;
-		if (node->is_in_group("Sand") || node->is_in_group("sand") || node->is_in_group("Arena") || node->is_in_group("arena")) return 5;
-		if (node->is_in_group("Wall") || node->is_in_group("wall") || node->is_in_group("Barrier") || node->is_in_group("barrier") || node->is_in_group("Guardrail") || node->is_in_group("guardrail")) return 6;
-		if (node->is_in_group("Metal") || node->is_in_group("metal")) return 7;
-		if (node->is_in_group("Road") || node->is_in_group("road") || node->is_in_group("Track") || node->is_in_group("track") || node->is_in_group("Asphalt") || node->is_in_group("asphalt")) return 0;
+		if (node->is_in_group("Curb") || node->is_in_group("curb") || node->is_in_group("Kerb") || node->is_in_group("kerb")) {
+			return 1;
+		}
+		if (node->is_in_group("Dirt") || node->is_in_group("dirt")) {
+			return 2;
+		}
+		if (node->is_in_group("Grass") || node->is_in_group("grass") || node->is_in_group("Cesped") || node->is_in_group("cesped")) {
+			return 3;
+		}
+		if (node->is_in_group("Gravel") || node->is_in_group("gravel") || node->is_in_group("Grava") || node->is_in_group("grava")) {
+			return 4;
+		}
+		if (node->is_in_group("Sand") || node->is_in_group("sand") || node->is_in_group("Arena") || node->is_in_group("arena")) {
+			return 5;
+		}
+		if (node->is_in_group("Wall") || node->is_in_group("wall") || node->is_in_group("Barrier") || node->is_in_group("barrier") || node->is_in_group("Guardrail") || node->is_in_group("guardrail")) {
+			return 6;
+		}
+		if (node->is_in_group("Metal") || node->is_in_group("metal")) {
+			return 7;
+		}
+		if (node->is_in_group("Road") || node->is_in_group("road") || node->is_in_group("Track") || node->is_in_group("track") || node->is_in_group("Asphalt") || node->is_in_group("asphalt")) {
+			return 0;
+		}
 
 		// Fallback check by name
 		String name = node->get_name().to_lower();
-		if (name.contains("curb") || name.contains("kerb") || name.contains("piano")) return 1;
-		if (name.contains("dirt")) return 2;
-		if (name.contains("grass") || name.contains("cesped")) return 3;
-		if (name.contains("gravel") || name.contains("grava")) return 4;
-		if (name.contains("sand") || name.contains("arena")) return 5;
-		if (name.contains("wall") || name.contains("guardrail") || name.contains("barrier")) return 6;
-		if (name.contains("metal")) return 7;
+		if (name.contains("curb") || name.contains("kerb") || name.contains("piano")) {
+			return 1;
+		}
+		if (name.contains("dirt")) {
+			return 2;
+		}
+		if (name.contains("grass") || name.contains("cesped")) {
+			return 3;
+		}
+		if (name.contains("gravel") || name.contains("grava")) {
+			return 4;
+		}
+		if (name.contains("sand") || name.contains("arena")) {
+			return 5;
+		}
+		if (name.contains("wall") || name.contains("guardrail") || name.contains("barrier")) {
+			return 6;
+		}
+		if (name.contains("metal")) {
+			return 7;
+		}
 	}
 	return 0; // Default Road
 }
@@ -852,21 +882,27 @@ void F194RustVehicle::update_wheel_visuals(double delta) {
 PackedFloat64Array F194RustVehicle::get_wheel_compressions() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
-	for (int i = 0; i < 4; ++i) arr[i] = wheel_compressions_[i];
+	for (int i = 0; i < 4; ++i) {
+		arr[i] = wheel_compressions_[i];
+	}
 	return arr;
 }
 
 PackedFloat64Array F194RustVehicle::get_wheel_spins() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
-	for (int i = 0; i < 4; ++i) arr[i] = wheel_spins_[i];
+	for (int i = 0; i < 4; ++i) {
+		arr[i] = wheel_spins_[i];
+	}
 	return arr;
 }
 
 PackedFloat64Array F194RustVehicle::get_wheel_slips() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
-	for (int i = 0; i < 4; ++i) arr[i] = wheel_slips_[i];
+	for (int i = 0; i < 4; ++i) {
+		arr[i] = wheel_slips_[i];
+	}
 	return arr;
 }
 
@@ -899,7 +935,9 @@ PackedInt64Array F194RustVehicle::get_wheel_surface_types() const {
 PackedFloat64Array F194RustVehicle::get_drive_torques() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
-	for (int i = 0; i < 4; ++i) arr[i] = wheel_drive_torques_[i];
+	for (int i = 0; i < 4; ++i) {
+		arr[i] = wheel_drive_torques_[i];
+	}
 	return arr;
 }
 
@@ -907,7 +945,9 @@ Dictionary F194RustVehicle::get_powertrain_state_snapshot() const {
 	Dictionary out;
 	PackedFloat64Array torques;
 	torques.resize(4);
-	for (int i = 0; i < 4; ++i) torques[i] = wheel_drive_torques_[i];
+	for (int i = 0; i < 4; ++i) {
+		torques[i] = wheel_drive_torques_[i];
+	}
 	out["wheel_drive_torque_nm"] = torques;
 	PackedFloat64Array pre_tc_torques;
 	PackedFloat64Array tc_slips;
@@ -934,7 +974,9 @@ Dictionary F194RustVehicle::get_powertrain_state_snapshot() const {
 PackedFloat64Array F194RustVehicle::get_normal_forces() const {
 	PackedFloat64Array arr;
 	arr.resize(4);
-	for (int i = 0; i < 4; ++i) arr[i] = wheel_normal_forces_[i];
+	for (int i = 0; i < 4; ++i) {
+		arr[i] = wheel_normal_forces_[i];
+	}
 	return arr;
 }
 
@@ -1412,19 +1454,27 @@ void F194RustVehicle::collect_core_samples(CSimTriRaycastSample p_samples[4]) {
 }
 
 void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, PhysicsDirectBodyState3D *p_state) {
-	if (!p_sample) return;
+	if (!p_sample) {
+		return;
+	}
 	*p_sample = {};
 	for (int i = 0; i < 5; ++i) {
 		RayCast3D *ray = underfloor_raycasts_[i];
 		F90UnderfloorRayHit &hit = p_sample->rays[i];
 		hit.clearance_m = 0.35;
 		hit.normal_y = 1.0;
-		if (!ray) continue;
+		if (!ray) {
+			continue;
+		}
 		ray->force_raycast_update();
-		if (!ray->is_colliding()) continue;
+		if (!ray->is_colliding()) {
+			continue;
+		}
 		const Vector3 point = ray->get_collision_point();
 		Vector3 normal = ray->get_collision_normal();
-		if (normal.is_finite() && normal.length_squared() > 1e-6) normal.normalize();
+		if (normal.is_finite() && normal.length_squared() > 1e-6) {
+			normal.normalize();
+		}
 		hit.valid = 1.0;
 		hit.clearance_m = (point - ray->get_global_position()).length();
 		hit.point_x = point.x; hit.point_y = point.y; hit.point_z = point.z;
@@ -1432,17 +1482,23 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
 		hit.surface_code = (double)detect_surface_type(ray);
 	}
 
-	if (!p_state) return;
+	if (!p_state) {
+		return;
+	}
 	const Vector3 body_velocity = p_state->get_linear_velocity();
 	double strongest_impulse = 0.0;
 	for (int i = 0; i < p_state->get_contact_count(); ++i) {
 		const Vector3 local_position = p_state->get_contact_local_position(i);
 		const Vector3 local_normal = p_state->get_contact_local_normal(i);
 		// Collision proxies bottom at roughly -0.16..-0.20 m. Reject side/nose hits.
-		if (local_position.y > -0.12 || local_normal.y < 0.55) continue;
+		if (local_position.y > -0.12 || local_normal.y < 0.55) {
+			continue;
+		}
 		const Vector3 impulse = p_state->get_contact_impulse(i);
 		const double impulse_magnitude = impulse.length();
-		if (p_sample->rigid_confirmed > 0.5 && impulse_magnitude <= strongest_impulse) continue;
+		if (p_sample->rigid_confirmed > 0.5 && impulse_magnitude <= strongest_impulse) {
+			continue;
+		}
 		strongest_impulse = impulse_magnitude;
 		const Vector3 collider_velocity = p_state->get_contact_collider_velocity_at_position(i);
 		const Vector3 relative_velocity = body_velocity - collider_velocity;
@@ -1551,7 +1607,9 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	Dictionary out;
 	out["schema_version"] = 1;
 	Dictionary clearances;
-	for (int i = 0; i < 5; ++i) clearances[String(NAMES[i])] = underfloor_clearance_m_[i];
+	for (int i = 0; i < 5; ++i) {
+		clearances[String(NAMES[i])] = underfloor_clearance_m_[i];
+	}
 	out["clearance_m"] = clearances;
 	out["valid_mask"] = (int64_t)underfloor_valid_mask_;
 	out["scrape_phase"] = underfloor_scrape_phase_;
@@ -1590,13 +1648,17 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 		"floor_seal_factor", "diffuser_stall_factor",
 		"global_limit_factor", "load_ratio", "balance_front"
 	};
-	for (int i = 0; i < 17; ++i) aero[String(AERO_NAMES[i])] = aero_telemetry_[i];
+	for (int i = 0; i < 17; ++i) {
+		aero[String(AERO_NAMES[i])] = aero_telemetry_[i];
+	}
 	out["aero"] = aero;
 	return out;
 }
 
 void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_frame) {
-	for (int i = 0; i < 5; ++i) underfloor_clearance_m_[i] = p_frame.underfloor_clearance_m[i];
+	for (int i = 0; i < 5; ++i) {
+		underfloor_clearance_m_[i] = p_frame.underfloor_clearance_m[i];
+	}
 	underfloor_valid_mask_ = p_frame.underfloor_valid_mask;
 	underfloor_scrape_phase_ = p_frame.underfloor_scrape_phase;
 	underfloor_min_clearance_m_ = p_frame.underfloor_min_clearance_m;
@@ -1633,7 +1695,9 @@ void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_fra
 		p_frame.aero_global_limit_factor, p_frame.aero_load_ratio,
 		p_frame.aero_balance_front
 	};
-	for (int i = 0; i < 17; ++i) aero_telemetry_[i] = aero_values[i];
+	for (int i = 0; i < 17; ++i) {
+		aero_telemetry_[i] = aero_values[i];
+	}
 }
 
 void F194RustVehicle::set_core_brake_energy_telemetry(
@@ -1695,7 +1759,9 @@ void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, dou
 }
 
 void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_frame) {
-	for (int i = 0; i < 4; ++i) wheel_drive_torques_[i] = p_frame.wheel_drive_torque_nm[i];
+	for (int i = 0; i < 4; ++i) {
+		wheel_drive_torques_[i] = p_frame.wheel_drive_torque_nm[i];
+	}
 	for (int i = 0; i < 4; ++i) {
 		wheel_drive_torques_pre_tc_[i] = p_frame.wheel_drive_torque_pre_tc_nm[i];
 		tc_slip_ratio_[i] = p_frame.tc_slip_ratio[i];

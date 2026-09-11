@@ -9,7 +9,9 @@
 #include <godot_cpp/godot.hpp>
 using namespace godot;
 void initialize_formula90s_module(ModuleInitializationLevel level) {
-	if (level != MODULE_INITIALIZATION_LEVEL_SCENE) return;
+	if (level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+		return;
+	}
 	GDREGISTER_CLASS(GameBootstrap);
 	GDREGISTER_CLASS(ArcadeChaseCamera);
 	GDREGISTER_CLASS(MainMenuController);

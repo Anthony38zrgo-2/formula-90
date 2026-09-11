@@ -41,7 +41,9 @@ void ArcadeChaseCamera::_bind_methods() {
 
 void ArcadeChaseCamera::_ready() {
 	car_adapter = VehicleAdapter(get_node_or_null(car_path));
-	if (!car_adapter.is_valid()) return;
+	if (!car_adapter.is_valid()) {
+		return;
+	}
 
 	const Transform3D pose = car_adapter.get_global_transform();
 	Vector3 forward = -pose.basis.get_column(2);
@@ -67,9 +69,13 @@ void ArcadeChaseCamera::_ready() {
 }
 
 void ArcadeChaseCamera::_process(double delta) {
-	if (!car_adapter.is_valid() || delta <= 0.0) return;
+	if (!car_adapter.is_valid() || delta <= 0.0) {
+		return;
+	}
 	Camera3D *camera = Object::cast_to<Camera3D>(get_node_or_null("Camera3D"));
-	if (!camera) return;
+	if (!camera) {
+		return;
+	}
 
 	const Transform3D visual_pose = car_adapter.get_global_transform();
 	Vector3 physical_forward = -visual_pose.basis.get_column(2);
@@ -101,8 +107,9 @@ void ArcadeChaseCamera::_process(double delta) {
 
 	const Vector3 current_world_velocity = horizontal_velocity;
 	Vector3 world_acceleration;
-	if (acceleration_initialized && delta > 0.000001)
+	if (acceleration_initialized && delta > 0.000001) {
 		world_acceleration = (current_world_velocity - previous_world_velocity) / delta;
+	}
 	previous_world_velocity = current_world_velocity;
 	acceleration_initialized = true;
 
@@ -121,9 +128,10 @@ void ArcadeChaseCamera::_process(double delta) {
 		-filtered_acceleration.dot(smoothed_forward) * Math::max(inertia_strength, 0.0), -dynamic_limit, dynamic_limit);
 	if (inertia_initialized) {
 		const double impulse_delta = inertia_source - previous_longitudinal_source;
-		if (Math::abs(impulse_delta) > 0.005)
+		if (Math::abs(impulse_delta) > 0.005) {
 			smoothed_longitudinal_inertia = Math::clamp(
 				smoothed_longitudinal_inertia + impulse_delta, -dynamic_limit, dynamic_limit);
+		}
 	} else {
 		inertia_initialized = true;
 	}
@@ -140,7 +148,9 @@ void ArcadeChaseCamera::_process(double delta) {
 
 	Vector3 desired = car_position - smoothed_forward * distance + longitudinal_offset + turn_offset;
 	desired.y = car_position.y + height;
-	if (discontinuity) set_global_position(desired);
+	if (discontinuity) {
+		set_global_position(desired);
+	}
 	const Vector3 error = desired - get_global_position();
 	const Vector3 horizontal_error =
 		right * outside_dead_zone(error.dot(right), horizontal_dead_zone) +
@@ -151,16 +161,22 @@ void ArcadeChaseCamera::_process(double delta) {
 	Vector3 lag = next - desired;
 	lag.y = 0.0;
 	const double lag_limit = Math::max(maximum_follow_lag, 0.0);
-	if (lag_limit > 0.0) lag = clamp_length(lag, lag_limit);
-	else lag = Vector3();
+	if (lag_limit > 0.0) {
+		lag = clamp_length(lag, lag_limit);
+	} else {
+		lag = Vector3();
+	}
 	next = desired + lag;
 	set_global_position(next);
 
 	const double lateral_look = formula90s::camera::lateral_look_offset(smoothed_turn_amount, lateral_swing, turn_look_offset);
 	Vector3 look_desired = car_position + smoothed_forward * look_ahead + smoothed_velocity_lead + right * lateral_look;
 	look_desired.y = car_position.y + look_height;
-	if (discontinuity) smoothed_look_target = look_desired;
-	else smoothed_look_target = smoothed_look_target.lerp(look_desired, smoothing_alpha(follow_damping, delta));
+	if (discontinuity) {
+		smoothed_look_target = look_desired;
+	} else {
+		smoothed_look_target = smoothed_look_target.lerp(look_desired, smoothing_alpha(follow_damping, delta));
+	}
 	look_at(smoothed_look_target, Vector3(0, 1, 0));
 	Vector3 locked_rotation = get_global_rotation();
 	locked_rotation.x = locked_pitch;
