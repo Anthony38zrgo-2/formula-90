@@ -11,7 +11,8 @@
 use crate::bank::{BankError, VehicleSoundBank};
 use crate::config::{ConfigLoadResult, ExhaustConfig, SoundConfig, SoundMixerConfig};
 use crate::dsp::{
-    adsr::Adsr, eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
+    adsr::Adsr, biquad::Biquad,
+    eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
     tube::Tube,
 };
 use crate::dsp_contract::EventBuilder;
@@ -131,15 +132,26 @@ impl Default for AudioConfig {
 }
 
 /// A one-shot voice (gear shifts, impacts) drawn from the bank.
+///
+/// Shift voices (`shift_up`/`shift_down`) carry two fixed treatments, set on
+/// every trigger: a 200 Hz highpass (biquad state lives here so each hit
+/// starts clean) and, for `shift_down` only, a short linear attack ramp that
+/// keeps stacked downshifts from clicking. The delayed shift companions were
+/// removed: only the main up/down voices exist, so nothing is spent on them.
 struct OneShot {
     trigger: Trigger,
     key: String,
     cursor: usize,
-    delay_remaining: usize,
     active: bool,
+    attack_remaining: usize,
+    attack_total: usize,
+    hp: Option<Biquad>,
 }
 
-const SHIFT_COMPANION_DELAY_MS: usize = 20;
+/// Highpass applied to both shift voices: removes low-frequency thump.
+const SHIFT_HP_HZ: f32 = 200.0;
+/// Extra attack on gear-down only: softens stacked-shift harshness.
+const SHIFT_DOWN_ATTACK_MS: usize = 5;
 
 struct VoiceStrip {
     config: SoundConfig,
@@ -544,24 +556,10 @@ impl VehicleAudioEngine {
                     trigger: t,
                     key,
                     cursor: 0,
-                    delay_remaining: 0,
                     active: false,
-                });
-            }
-        }
-        // Exterior gear samples layer with, rather than replace, the existing
-        // shift voices. Their delay is applied in the sample domain below.
-        for (trigger, key) in [
-            (Trigger::ShiftUp, "shift_up_delayed"),
-            (Trigger::ShiftDown, "shift_down_delayed"),
-        ] {
-            if bank.get(key).is_some() {
-                one_shots.push(OneShot {
-                    trigger,
-                    key: key.to_string(),
-                    cursor: 0,
-                    delay_remaining: 0,
-                    active: false,
+                    attack_remaining: 0,
+                    attack_total: 0,
+                    hp: None,
                 });
             }
         }
@@ -576,8 +574,10 @@ impl VehicleAudioEngine {
                 trigger: Trigger::Backfire,
                 key: sample.key.clone(),
                 cursor: 0,
-                delay_remaining: 0,
                 active: false,
+                attack_remaining: 0,
+                attack_total: 0,
+                hp: None,
             });
         }
 
@@ -1033,13 +1033,12 @@ impl VehicleAudioEngine {
     }
 
     /// Fire one deterministic pseudo-random variant for the requested one-shot.
+    /// Shift triggers use only the main up/down voices (the delayed companions
+    /// no longer exist) and arm their fixed per-hit treatments: 200 Hz
+    /// highpass on both, plus a short attack ramp on gear-down.
     pub fn trigger(&mut self, t: Trigger) {
         self.last_trigger = t.bank_key().to_string();
-        let variant_count = self
-            .one_shots
-            .iter()
-            .filter(|o| o.trigger == t && !o.key.ends_with("_delayed"))
-            .count();
+        let variant_count = self.one_shots.iter().filter(|o| o.trigger == t).count();
         if variant_count == 0 {
             return;
         }
@@ -1051,22 +1050,22 @@ impl VehicleAudioEngine {
         let mut ordinal = 0usize;
         for o in self.one_shots.iter_mut() {
             if o.trigger == t {
-                let is_companion = o.key.ends_with("_delayed");
-                o.active = is_companion || ordinal == selected;
+                o.active = ordinal == selected;
                 if o.active {
                     o.cursor = 0;
-                    o.delay_remaining = if is_companion {
-                        self.sample_rate as usize * SHIFT_COMPANION_DELAY_MS / 1000
+                    let is_shift = matches!(t, Trigger::ShiftUp | Trigger::ShiftDown);
+                    o.hp = is_shift.then(|| Biquad::highpass(self.sample_rate as f32, SHIFT_HP_HZ));
+                    o.attack_total = if t == Trigger::ShiftDown {
+                        self.sample_rate as usize * SHIFT_DOWN_ATTACK_MS / 1000
                     } else {
                         0
                     };
+                    o.attack_remaining = o.attack_total;
                     if let Some(strip) = self.strips.get_mut(&o.key) {
                         strip.note_on();
                     }
                 }
-                if !is_companion {
-                    ordinal += 1;
-                }
+                ordinal += 1;
             }
         }
     }
@@ -1392,10 +1391,6 @@ impl VehicleAudioEngine {
                 if !o.active {
                     continue;
                 }
-                if o.delay_remaining > 0 {
-                    o.delay_remaining -= 1;
-                    continue;
-                }
                 if let Some(sample) = self.bank.get(&o.key) {
                     let len = sample.pcm.len();
                     if len == 0 {
@@ -1417,7 +1412,19 @@ impl VehicleAudioEngine {
                         .get(o.key.as_str())
                         .copied()
                         .unwrap_or(1.0);
-                    let source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                    let mut source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                    // Gear-down attack ramp: linear fade-in so stacked shifts
+                    // cannot start on a discontinuity.
+                    if o.attack_total > 0 && o.attack_remaining > 0 {
+                        let done =
+                            (o.attack_total - o.attack_remaining) as f32 / o.attack_total as f32;
+                        source *= done;
+                        o.attack_remaining -= 1;
+                    }
+                    // Shift highpass at 200 Hz: removes low thump before the strip.
+                    if let Some(hp) = o.hp.as_mut() {
+                        source = hp.process(source);
+                    }
                     mix_through_strip(
                         &mut self.strips,
                         &mut self.reverb_buses,
@@ -2399,22 +2406,28 @@ mod tests {
             trigger: Trigger::ShiftUp,
             key: "shift_up".to_string(),
             cursor: 0,
-            delay_remaining: 0,
             active: false,
+            attack_remaining: 0,
+            attack_total: 0,
+            hp: None,
         });
         e.one_shots.push(OneShot {
             trigger: Trigger::Backfire,
             key: "int_backfire".to_string(),
             cursor: 0,
-            delay_remaining: 0,
             active: false,
+            attack_remaining: 0,
+            attack_total: 0,
+            hp: None,
         });
         e.one_shots.push(OneShot {
             trigger: Trigger::Backfire,
             key: "int_backfire_2".to_string(),
             cursor: 0,
-            delay_remaining: 0,
             active: false,
+            attack_remaining: 0,
+            attack_total: 0,
+            hp: None,
         });
         e
     }
@@ -2576,43 +2589,91 @@ mod tests {
     }
 
     #[test]
-    fn shift_companion_starts_exactly_twenty_ms_late() {
+    fn shift_companions_are_gone_only_main_up_down_fire() {
+        // The delayed/panned-left companions were removed in code: even with
+        // the bank samples present, no delayed voice may exist or activate.
         let mut e = engine_with_bank(silent_engine_bank());
-        let mut delayed_sample = e.bank.samples["shift_up"].clone();
-        delayed_sample.key = "shift_up_delayed".to_string();
-        e.bank
-            .samples
-            .insert("shift_up_delayed".to_string(), delayed_sample);
-        e.one_shots.push(OneShot {
-            trigger: Trigger::ShiftUp,
-            key: "shift_up_delayed".to_string(),
-            cursor: 0,
-            delay_remaining: 0,
-            active: false,
-        });
-
+        for key in ["shift_up_delayed", "shift_down_delayed"] {
+            let mut sample = e.bank.samples["shift_up"].clone();
+            sample.key = key.to_string();
+            e.bank.samples.insert(key.to_string(), sample);
+        }
+        assert!(
+            e.one_shots.iter().all(|voice| !voice.key.ends_with("_delayed")),
+            "no delayed companion voice may be constructed"
+        );
         e.trigger(Trigger::ShiftUp);
-        let delay_frames = e.sample_rate as usize * SHIFT_COMPANION_DELAY_MS / 1000;
-        let mut left = vec![0.0; delay_frames];
-        let mut right = vec![0.0; delay_frames];
-        e.render(&mut left, &mut right, delay_frames);
-
-        let delayed = e
+        let active: Vec<&str> = e
             .one_shots
             .iter()
-            .find(|voice| voice.key == "shift_up_delayed")
-            .unwrap();
-        assert!(delayed.active);
-        assert_eq!(delayed.delay_remaining, 0);
-        assert_eq!(delayed.cursor, 0, "companion must not advance before 20 ms");
+            .filter(|voice| voice.active)
+            .map(|voice| voice.key.as_str())
+            .collect();
+        assert_eq!(active, vec!["shift_up"]);
+    }
 
-        e.render(&mut [0.0], &mut [0.0], 1);
-        let delayed = e
+    #[test]
+    fn shift_down_attack_ramps_from_zero_up_has_none() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        let mut down = e.bank.samples["shift_up"].clone();
+        down.key = "shift_down".to_string();
+        e.bank.samples.insert("shift_down".to_string(), down);
+        // Re-register: construction already ran, so push the down voice the
+        // same way `new` would.
+        e.one_shots.push(OneShot {
+            trigger: Trigger::ShiftDown,
+            key: "shift_down".to_string(),
+            cursor: 0,
+            active: false,
+            attack_remaining: 0,
+            attack_total: 0,
+            hp: None,
+        });
+        e.trigger(Trigger::ShiftDown);
+        let voice = e
             .one_shots
             .iter()
-            .find(|voice| voice.key == "shift_up_delayed")
+            .find(|voice| voice.key == "shift_down")
             .unwrap();
-        assert_eq!(delayed.cursor, 1, "companion must start on frame 882");
+        let expected = e.sample_rate as usize * SHIFT_DOWN_ATTACK_MS / 1000;
+        assert!(expected > 0);
+        assert_eq!(voice.attack_total, expected);
+        assert_eq!(voice.attack_remaining, expected);
+        let mut l = vec![0.0; 10];
+        let mut r = vec![0.0; 10];
+        e.render(&mut l, &mut r, 10);
+        let voice = e
+            .one_shots
+            .iter()
+            .find(|voice| voice.key == "shift_down")
+            .unwrap();
+        assert_eq!(voice.attack_remaining, expected - 10);
+        e.trigger(Trigger::ShiftUp);
+        let voice = e
+            .one_shots
+            .iter()
+            .find(|voice| voice.key == "shift_up")
+            .unwrap();
+        assert_eq!(voice.attack_total, 0);
+        assert_eq!(voice.attack_remaining, 0);
+        assert!(voice.hp.is_some(), "shift_up keeps the 200 Hz highpass");
+    }
+
+    #[test]
+    fn shift_highpass_blocks_dc() {
+        let mut e = engine_with_bank(silent_engine_bank());
+        e.trigger(Trigger::ShiftUp);
+        let voice = e
+            .one_shots
+            .iter_mut()
+            .find(|voice| voice.key == "shift_up")
+            .unwrap();
+        let hp = voice.hp.as_mut().expect("shift voice must carry HP");
+        let mut out = 0.0;
+        for _ in 0..300 {
+            out = hp.process(1.0);
+        }
+        assert!(out.abs() < 0.01, "200 Hz HP must block DC, tail={out}");
     }
 
     #[test]
