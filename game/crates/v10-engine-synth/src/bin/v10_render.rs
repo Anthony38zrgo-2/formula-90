@@ -112,6 +112,7 @@ struct Args {
     physical_master_lowpass_hz: Option<f32>,
     no_mid_duck: bool,
     no_sample_rasp: bool,
+    no_pitch_antialias: bool,
     sample_residual_scale: f32,
     sample_residual_gain: Option<f32>,
     scene_gains: Vec<(String, f32)>,
@@ -152,6 +153,7 @@ fn parse_args() -> Result<Args, String> {
         physical_master_lowpass_hz: Some(2_500.0),
         no_mid_duck: false,
         no_sample_rasp: false,
+        no_pitch_antialias: false,
         sample_residual_scale: 1.0,
         sample_residual_gain: None,
         scene_gains: Vec::new(),
@@ -206,6 +208,7 @@ fn parse_args() -> Result<Args, String> {
             }
             "--no-mid-duck" => parsed.no_mid_duck = true,
             "--no-sample-rasp" => parsed.no_sample_rasp = true,
+            "--no-pitch-antialias" => parsed.no_pitch_antialias = true,
             "--sample-residual-scale" => {
                 parsed.sample_residual_scale =
                     parse_value(&raw, &mut i, "--sample-residual-scale")?
@@ -435,6 +438,7 @@ fn run() -> Result<(), String> {
                 directory,
                 ThreeZoneSampleLayerConfig {
                     disable_sample_rasp: args.no_sample_rasp,
+                    pitch_up_antialias: !args.no_pitch_antialias,
                     residual_gain_scale: args.sample_residual_scale,
                     residual_gain_closed: args.sample_residual_gain.unwrap_or(
                         ThreeZoneSampleLayerConfig::default().residual_gain_closed,

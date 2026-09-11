@@ -1408,6 +1408,20 @@ impl ThreeZoneSampleLayer {
             for (member, variant_weight) in
                 zone.members.iter_mut().zip(variant_weights.iter())
             {
+                // Exact skip on the variant factor only: a zero-variant member
+                // contributes nothing to the zone mix (so shared DSP state is
+                // unaffected) and its only state is the cursor, which still
+                // advances (phase). The zone factor must NOT gate the skip: a
+                // zero-weight zone inside the margin still renders for filter
+                // tracking, and that needs the full member mix.
+                if *variant_weight == 0.0 {
+                    member.zone.advance(input.rpm, output_sample_rate);
+                    self.suspended_zone_samples += 1;
+                    frame_weights[weight_cursor] = 0.0;
+                    weight_cursor += 1;
+                    continue;
+                }
+                let member_weight = weight * variant_weight;
                 let (member_tonal, member_residual) = Self::render_member(
                     member,
                     input.rpm,
@@ -1420,7 +1434,7 @@ impl ThreeZoneSampleLayer {
                 );
                 mixed_tonal += member_tonal * variant_weight;
                 mixed_residual += member_residual * variant_weight;
-                frame_weights[weight_cursor] = weight * variant_weight;
+                frame_weights[weight_cursor] = member_weight;
                 weight_cursor += 1;
             }
             let (
@@ -1482,6 +1496,17 @@ impl ThreeZoneSampleLayer {
                 for (member, variant_weight) in
                     zone.members.iter_mut().zip(variant_weights.iter())
                 {
+                    let member_weight = off_weight * zone_weight * variant_weight;
+                    if member_weight == 0.0 {
+                        // Exact skip: OFF members render dry with no shared
+                        // state, so a zero-weight member is pure waste; the
+                        // cursor still advances (phase).
+                        member.zone.advance(input.rpm, output_sample_rate);
+                        self.suspended_zone_samples += 1;
+                        frame_weights[weight_cursor] = 0.0;
+                        weight_cursor += 1;
+                        continue;
+                    }
                     let (member_tonal, member_residual) = Self::render_member(
                         member,
                         input.rpm,
@@ -1494,7 +1519,7 @@ impl ThreeZoneSampleLayer {
                     );
                     mixed_tonal += member_tonal * zone_weight * variant_weight;
                     mixed_residual += member_residual * zone_weight * variant_weight;
-                    frame_weights[weight_cursor] = off_weight * zone_weight * variant_weight;
+                    frame_weights[weight_cursor] = member_weight;
                     weight_cursor += 1;
                 }
             }
@@ -2748,6 +2773,100 @@ mod tests {
         assert!(
             max_step_suspended <= max_step_reference * 1.5,
             "suspended max step {max_step_suspended} vs reference {max_step_reference}: click?"
+        );
+    }
+
+    #[test]
+    fn zero_weight_member_skip_is_bit_exact() {
+        // The perf skip (cursor advance instead of resample for zero-weight
+        // members) must not change a single output bit of the frame it
+        // applies to. Single fresh frames isolate the skip: zone-level
+        // suspension only affects future DSP state (pre-existing AUD-06
+        // tracking policy, untouched here), never the current frame, since
+        // skipped zones contribute exactly 0 either way.
+        use std::path::Path;
+        let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_experimental");
+        // Anchors, variant-span edges, midpoints, extremes, coast retention.
+        let rpms = [
+            4_000.0, 4_579.5, 5_000.0, 5_500.0, 6_366.0, 6_543.0, 6_720.0, 7_300.0, 7_888.5,
+            8_153.0, 8_418.0, 8_443.5, 8_469.0, 8_710.5, 8_952.0, 10_000.0, 12_000.0,
+            15_000.0, 18_000.0, 20_000.0,
+        ];
+        for rpm in rpms {
+            for (throttle, load, torque) in
+                [(0.95, 0.90, 0.90), (0.035, 0.10, -0.53), (0.0, 0.0, -0.2)]
+            {
+                let mut tracking = ThreeZoneSampleLayer::load_directory(
+                    44_100,
+                    &bank,
+                    ThreeZoneSampleLayerConfig::default(),
+                )
+                .unwrap();
+                let mut reference = ThreeZoneSampleLayer::load_directory(
+                    44_100,
+                    &bank,
+                    ThreeZoneSampleLayerConfig {
+                        suspend_inaudible_zones: false,
+                        ..ThreeZoneSampleLayerConfig::default()
+                    },
+                )
+                .unwrap();
+                let input = SampleLayerInput {
+                    rpm,
+                    throttle,
+                    load,
+                    normalized_engine_torque: torque,
+                    clutch_engagement: 1.0,
+                    crank_phase_deg: 0.0,
+                };
+                let a = tracking.process(input).unwrap();
+                let b = reference.process(input).unwrap();
+                for (x, y, what) in [
+                    (a.tonal, b.tonal, "tonal"),
+                    (a.residual, b.residual, "residual"),
+                    (a.mid_bus, b.mid_bus, "mid"),
+                    (a.max_rasp, b.max_rasp, "rasp"),
+                    (a.off_throttle, b.off_throttle, "off"),
+                    (a.output, b.output, "output"),
+                ] {
+                    assert_eq!(
+                        x.to_bits(),
+                        y.to_bits(),
+                        "{what} drifted at rpm {rpm} thr {throttle}"
+                    );
+                }
+            }
+        }
+        // The skip path must actually trigger on a sweep (else the test is vacuous).
+        let mut layer = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig::default(),
+        )
+        .unwrap();
+        for i in 0..4_410 {
+            let time_s = i as f32 / 441.0;
+            let (rpm, throttle, load, torque) = if time_s < 7.0 {
+                let t = time_s / 7.0;
+                (5_000.0 + 13_000.0 * t * t * (3.0 - 2.0 * t), 0.95, 0.90, 0.90)
+            } else {
+                let t = (time_s - 7.0) / 3.0;
+                (18_000.0 - 13_000.0 * (1.0 - (1.0 - t).powf(1.55)), 0.035, 0.10, -0.53)
+            };
+            layer
+                .process(SampleLayerInput {
+                    rpm,
+                    throttle,
+                    load,
+                    normalized_engine_torque: torque,
+                    clutch_engagement: 1.0,
+                    crank_phase_deg: 0.0,
+                })
+                .unwrap();
+        }
+        assert!(
+            layer.suspended_zone_samples() > 0,
+            "skip path must actually trigger"
         );
     }
 

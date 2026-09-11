@@ -510,6 +510,10 @@ pub struct V10LayerTuning {
     pub disable_mid_duck: bool,
     pub disable_sample_rasp: bool,
     pub residual_gain_scale: Option<f32>,
+    /// Override for the layer pitch-up antialias package. `None` keeps the
+    /// default (on). `Some(false)` selects the radius-4 tabled kernel at all
+    /// ratios: much cheaper, but images fold back at ratios above 1.
+    pub pitch_up_antialias: Option<bool>,
     pub scene_gains: Vec<(String, f32)>,
 }
 
@@ -1675,6 +1679,9 @@ impl VehicleAudioEngine {
         config.sample_layer.disable_sample_rasp = tuning.disable_sample_rasp;
         if let Some(scale) = tuning.residual_gain_scale {
             config.sample_layer.residual_gain_scale = scale;
+        }
+        if let Some(antialias) = tuning.pitch_up_antialias {
+            config.sample_layer.pitch_up_antialias = antialias;
         }
         for (name, gain) in &tuning.scene_gains {
             let slot = match name.as_str() {
@@ -2981,6 +2988,7 @@ mod tests {
         let mut engine = engine_with_bank(silent_engine_bank());
         let mut tuning = V10LayerTuning::default();
         tuning.disable_mid_duck = true;
+        tuning.pitch_up_antialias = Some(false);
         tuning.scene_gains.push(("gearbox".to_string(), 0.0));
         engine
             .enable_v10_layer(&packaged_gf509_assets(), &tuning)

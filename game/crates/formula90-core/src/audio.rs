@@ -250,6 +250,9 @@ impl AudioModule {
                         .get("residual_gain_scale")
                         .and_then(serde_json::Value::as_f64)
                         .map(|value| value as f32);
+                    tuning.pitch_up_antialias = section
+                        .get("pitch_up_antialias")
+                        .and_then(serde_json::Value::as_bool);
                     if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object())
                     {
                         for (branch, gain) in gains {
