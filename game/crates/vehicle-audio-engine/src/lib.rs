@@ -36,7 +36,8 @@ pub use bank::{BankError, Sample, VehicleSoundBank};
 pub use config::{SoundMixerConfig, MIXER_CONFIG_FILENAME};
 pub use ffi::{vehicle_audio_abi_version, VEHICLE_AUDIO_ABI_VERSION};
 pub use mixer::{
-    AudioConfig, ContinuousDiagnostics, ContinuousSourceKind, DiagnosticMode, VehicleAudioEngine,
+    AudioConfig, ContinuousDiagnostics, ContinuousSourceKind, DiagnosticMode, V10LayerTuning,
+    VehicleAudioEngine,
 };
 pub use powertrain::AudioPowertrainSynthesis;
 pub use state::{engine_weights, mix, EngineBandProfile, Mix, Trigger, VehicleAudioState};

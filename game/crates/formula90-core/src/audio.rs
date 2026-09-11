@@ -71,7 +71,9 @@ pub struct AudioModule {
     last_surface: SurfaceType,
     last_slip: f32,
     last_trigger_code: i32,
-    gf509_asset_dir: Option<PathBuf>,
+    /// Game directory root, used to resolve the V10 bank manifest declared
+    /// by the vehicle profile (`audio.gf509.manifest`).
+    game_root: Option<PathBuf>,
     telemetry_adapter: crate::audio_telemetry::AudioTelemetryAdapter,
 }
 
@@ -79,11 +81,11 @@ impl AudioModule {
     /// Build the audio subsystem. If `enabled` and the bank fails to load, the
     /// module degrades to telemetry-only (health flag) — it never fails the facade.
     pub fn new(bank_dir: Option<&Path>, enabled: bool) -> Self {
-        let gf509_asset_dir = bank_dir.and_then(|dir| {
+        let game_root = bank_dir.and_then(|dir| {
             dir.parent()?
                 .parent()?
                 .parent()
-                .map(|game| game.join("audio/v10_gf509"))
+                .map(|game| game.to_path_buf())
         });
         let engine = if enabled {
             match bank_dir {
@@ -102,7 +104,7 @@ impl AudioModule {
             last_surface: SurfaceType::Road,
             last_slip: 0.0,
             last_trigger_code: -1,
-            gf509_asset_dir,
+            game_root,
             telemetry_adapter: Default::default(),
         }
     }
@@ -205,14 +207,13 @@ impl AudioModule {
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("legacy");
             if source == "v10_gf509" {
-                let gf509_gain = audio
-                    .get("gf509")
+                let gf509_section = audio.get("gf509");
+                let gf509_gain = gf509_section
                     .and_then(|value| value.get("gain"))
                     .and_then(serde_json::Value::as_f64)
                     .unwrap_or(1.0) as f32;
                 eng.set_synth_volume(gf509_gain);
-                let diagnostic_mode = audio
-                    .get("gf509")
+                let diagnostic_mode = gf509_section
                     .and_then(|value| value.get("diagnostic_mode"))
                     .and_then(serde_json::Value::as_str)
                     .unwrap_or("mix");
@@ -221,9 +222,46 @@ impl AudioModule {
                     "events_only" => vehicle_audio_engine::DiagnosticMode::EventsOnly,
                     _ => vehicle_audio_engine::DiagnosticMode::Mix,
                 });
-                match self.gf509_asset_dir.as_deref() {
+                // Bank directory comes from the profile manifest (schema 1 GF509
+                // and schema 2 experimental banks both validate inside the
+                // runtime). Missing manifest falls back to the packaged GF509.
+                let manifest_rel = gf509_section
+                    .and_then(|value| value.get("manifest"))
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("audio/v10_gf509/manifest.json");
+                let bank_directory = self.game_root.as_deref().and_then(|game| {
+                    game.join(manifest_rel)
+                        .parent()
+                        .map(|parent| parent.to_path_buf())
+                });
+                // Optional per-profile layer tuning. Absent keys reproduce
+                // shipped GF509 behavior exactly.
+                let mut tuning = vehicle_audio_engine::V10LayerTuning::default();
+                if let Some(section) = gf509_section {
+                    tuning.disable_mid_duck = section
+                        .get("disable_mid_duck")
+                        .and_then(serde_json::Value::as_bool)
+                        .unwrap_or(false);
+                    tuning.disable_sample_rasp = section
+                        .get("disable_sample_rasp")
+                        .and_then(serde_json::Value::as_bool)
+                        .unwrap_or(false);
+                    tuning.residual_gain_scale = section
+                        .get("residual_gain_scale")
+                        .and_then(serde_json::Value::as_f64)
+                        .map(|value| value as f32);
+                    if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object())
+                    {
+                        for (branch, gain) in gains {
+                            if let Some(gain) = gain.as_f64() {
+                                tuning.scene_gains.push((branch.clone(), gain as f32));
+                            }
+                        }
+                    }
+                }
+                match bank_directory.as_deref() {
                     Some(directory) => {
-                        if let Err(error) = eng.enable_v10_gf509(directory) {
+                        if let Err(error) = eng.enable_v10_layer(directory, &tuning) {
                             eprintln!(
                                 "[formula90_core] GF509 initialization failed; using legacy: {error}"
                             );

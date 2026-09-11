@@ -502,6 +502,17 @@ pub struct ContinuousDiagnostics {
     pub asset_or_render_errors: u64,
 }
 
+/// Optional per-profile tuning for the V10 sample/scene layer, carried from
+/// the vehicle `audio.gf509` JSON section. `Default` reproduces shipped GF509
+/// behavior exactly (no mutes, ducking on, rasp on, residual unscaled).
+#[derive(Clone, Debug, Default)]
+pub struct V10LayerTuning {
+    pub disable_mid_duck: bool,
+    pub disable_sample_rasp: bool,
+    pub residual_gain_scale: Option<f32>,
+    pub scene_gains: Vec<(String, f32)>,
+}
+
 impl VehicleAudioEngine {
     /// Load the bank and build the mixer. `bank_dir` must contain `bank_manifest.json`.
     pub fn new(bank_dir: &Path) -> Result<Self, BankError> {
@@ -1642,11 +1653,50 @@ impl VehicleAudioEngine {
 
     /// Select the packaged GF509 continuous source. Initialization failures
     /// explicitly retain the legacy source; render failures never switch source.
+    /// A default tuning reproduces shipped GF509 behavior exactly.
     pub fn enable_v10_gf509(&mut self, asset_directory: &Path) -> Result<(), String> {
+        self.enable_v10_layer(asset_directory, &V10LayerTuning::default())
+    }
+
+    /// Select a V10 sample/scene bank with per-profile tuning (scene branch
+    /// gains, mid-duck/rasp opt-outs, residual trim). An all-default tuning
+    /// reproduces shipped GF509 behavior exactly; unknown branch names fail
+    /// closed here, before any audio renders.
+    pub fn enable_v10_layer(
+        &mut self,
+        asset_directory: &Path,
+        tuning: &V10LayerTuning,
+    ) -> Result<(), String> {
         let mut config = v10_engine_synth::Gf509RuntimeConfig::default();
         config.engine.sample_rate = self.sample_rate;
         config.sample_layer_directory = Some(asset_directory.to_path_buf());
         config.max_block_frames = MAX_CPP_BLOCK;
+        config.disable_mid_duck = tuning.disable_mid_duck;
+        config.sample_layer.disable_sample_rasp = tuning.disable_sample_rasp;
+        if let Some(scale) = tuning.residual_gain_scale {
+            config.sample_layer.residual_gain_scale = scale;
+        }
+        for (name, gain) in &tuning.scene_gains {
+            let slot = match name.as_str() {
+                "dry_low" => &mut config.scene.dry_low_gain,
+                "dry_mid" => &mut config.scene.dry_mid_gain,
+                "dry_high" => &mut config.scene.dry_high_gain,
+                "metal" => &mut config.scene.metal_gain,
+                "gearbox" => &mut config.scene.gearbox_gain,
+                "head_cover" => &mut config.scene.head_cover_gain,
+                "airbox" => &mut config.scene.airbox_gain,
+                "engine_cover" => &mut config.scene.engine_cover_gain,
+                "rear_exhaust" => &mut config.scene.rear_exhaust_gain,
+                "mount_monocoque" => &mut config.scene.mount_monocoque_gain,
+                "under_seat" => &mut config.scene.under_seat_gain,
+                "cockpit_cavity" => &mut config.scene.cockpit_cavity_gain,
+                "low_mid_parallel" => &mut config.scene.low_mid_parallel_gain,
+                "load_saturation" => &mut config.scene.load_saturation_gain,
+                "event_residual" => &mut config.scene.event_residual_gain,
+                _ => return Err(format!("unknown scene branch: {name}")),
+            };
+            *slot = *gain;
+        }
         match v10_engine_synth::Gf509Runtime::new(config) {
             Ok(runtime) => {
                 self.gf509 = Some(runtime);
@@ -2924,6 +2974,23 @@ mod tests {
             .enable_v10_gf509(std::path::Path::new("definitely-missing-gf509-assets"))
             .is_err());
         assert_eq!(engine.continuous_source(), ContinuousSourceKind::Legacy);
+    }
+
+    #[test]
+    fn v10_layer_tuning_applies_and_rejects_unknown_branch() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        let mut tuning = V10LayerTuning::default();
+        tuning.disable_mid_duck = true;
+        tuning.scene_gains.push(("gearbox".to_string(), 0.0));
+        engine
+            .enable_v10_layer(&packaged_gf509_assets(), &tuning)
+            .unwrap();
+        assert_eq!(engine.continuous_source(), ContinuousSourceKind::V10Gf509);
+        let mut bad = V10LayerTuning::default();
+        bad.scene_gains.push(("not_a_branch".to_string(), 0.0));
+        assert!(engine
+            .enable_v10_layer(&packaged_gf509_assets(), &bad)
+            .is_err());
     }
 
     #[test]

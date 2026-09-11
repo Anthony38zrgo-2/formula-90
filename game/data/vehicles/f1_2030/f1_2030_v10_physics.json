@@ -175,8 +175,24 @@
       "diagnostic_mode": "mix",
       "fallback_to_legacy_on_initialization_error": true,
       "gain": 1.0,
-      "manifest": "audio/v10_gf509/manifest.json",
-      "schema_version": 1
+      "manifest": "audio/v10_f2002_experimental/manifest.json",
+      "schema_version": 2,
+      "disable_mid_duck": true,
+      "disable_sample_rasp": false,
+      "scene_gains": {
+        "event_residual": 0.0,
+        "gearbox": 0.0,
+        "rear_exhaust": 0.0,
+        "head_cover": 0.0,
+        "load_saturation": 0.0,
+        "low_mid_parallel": 0.0,
+        "cockpit_cavity": 0.0,
+        "under_seat": 0.475,
+        "mount_monocoque": 0.59375,
+        "engine_cover": 0.4788,
+        "metal": 0.855,
+        "airbox": 0.75
+      }
     },
     "powertrain_synthesis": {
       "aspiration": "naturally_aspirated",
