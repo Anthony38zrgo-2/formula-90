@@ -1,0 +1,26 @@
+{
+  "suppressions": {
+    "0c603f210f1c6394": {
+      "reason": "RUSTSEC-2025-0141: bincode 1.3.3 sin mantenimiento, no es una vulnerabilidad explotable. Migracion de codec registrada como CLEAN-01 en docs/clean-code/BACKLOG.md. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-01"
+    },
+    "dfd8c1b10d69c883": {
+      "reason": "cargo-deny a:unmaintained sobre bincode 1.3.3: mismo caso que RUSTSEC-2025-0141, migracion registrada como CLEAN-01. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-01"
+    },
+    "db0d3aaa803c8a26": {
+      "reason": "Falso positivo: el memcpy de `lref` en test_main.cpp:267 copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11"
+    },
+    "f672d6df59674bb8": {
+      "reason": "Falso positivo: el memcpy de `rref` en test_main.cpp:268 copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11"
+    }
+  }
+}

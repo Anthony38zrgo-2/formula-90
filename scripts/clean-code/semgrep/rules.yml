@@ -1,0 +1,43 @@
+rules:
+  - id: formula90s-rust-todo-unimplemented
+    languages: [rust]
+    severity: WARNING
+    message: >-
+      Marcador `todo!`/`unimplemented!` presente en codigo. Resolverlo o
+      convertirlo en un error explicito antes del release.
+    pattern-either:
+      - pattern: todo!(...)
+      - pattern: unimplemented!(...)
+    paths:
+      exclude:
+        - "**/tests/**"
+        - "**/benches/**"
+        - "**/examples/**"
+
+  - id: formula90s-rust-unwrap-expect
+    languages: [rust]
+    severity: WARNING
+    message: >-
+      `unwrap()`/`expect()` puede producir un panic en runtime. Preferir
+      manejo explicito de Result/Option en codigo de produccion.
+    patterns:
+      - pattern-either:
+          - pattern: $X.unwrap()
+          - pattern: $X.expect(...)
+    paths:
+      exclude:
+        - "**/tests/**"
+        - "**/benches/**"
+        - "**/examples/**"
+
+  - id: formula90s-cpp-using-namespace-in-header
+    languages: [cpp]
+    severity: INFO
+    message: >-
+      `using namespace` en un header contamina el espacio de nombres de todo
+      el que lo incluya. Usar nombres cualificados o alias dentro de un scope.
+    paths:
+      include:
+        - "**/*.h"
+        - "**/*.hpp"
+    pattern: using namespace $NS;
