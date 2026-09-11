@@ -26,19 +26,19 @@ static f90_dsp_config make_config() {
     cfg.simulated_cylinders = 5;
     cfg.bank_count = 2;
     cfg.flags = 0;
-    cfg.half_block_offset_deg = 72.0f;
-    cfg.idle_rpm = 1000.0f;
-    cfg.max_rpm = 15000.0f;
+    cfg.half_block_offset_deg = 72.0F;
+    cfg.idle_rpm = 1000.0F;
+    cfg.max_rpm = 15000.0F;
     return cfg;
 }
 
 static f90_dsp_controls make_controls() {
     f90_dsp_controls ctl{};
-    ctl.rpm = 12000.0f;
-    ctl.throttle = 0.8f;
-    ctl.load = 0.7f;
-    ctl.tc_cut = 0.4f;
-    ctl.master_gain = 1.0f;
+    ctl.rpm = 12000.0F;
+    ctl.throttle = 0.8F;
+    ctl.load = 0.7F;
+    ctl.tc_cut = 0.4F;
+    ctl.master_gain = 1.0F;
     ctl.lod = 0;
     ctl.bypass = 0;
     return ctl;
@@ -49,14 +49,14 @@ static f90_dsp_event make_event(uint32_t offset, uint8_t cylinder, float pressur
     e.sample_offset = offset;
     e.cylinder = cylinder;
     e.bank = 0;
-    e.crank_phase_deg = 0.0f;
+    e.crank_phase_deg = 0.0F;
     e.pressure = pressure;
     // ABI v2 is physical: pressure_derivative is pressure-units/second.
     // Use the same order of magnitude as the real V10 runtime instead of tiny
     // normalized values that would hide unit-contract regressions.
-    e.pressure_derivative = pressure * 30000.0f;
-    e.energy = 1.0f;
-    e.cycle_variation = 0.0f;
+    e.pressure_derivative = pressure * 30000.0F;
+    e.energy = 1.0F;
+    e.cycle_variation = 0.0F;
     return e;
 }
 
@@ -74,7 +74,7 @@ static f90_dsp_event_block make_block(f90_dsp_event* events, uint32_t count, uin
 
 static bool buffers_zero(const float* a, const float* b, uint32_t n) {
     for (uint32_t i = 0; i < n; ++i) {
-        if (a[i] != 0.0f || b[i] != 0.0f) {
+        if (a[i] != 0.0F || b[i] != 0.0F) {
             return false;
         }
     }
@@ -88,7 +88,7 @@ static void render_seq(f90_dsp_handle h, const f90_dsp_event* events, uint32_t c
     f90_dsp_controls c = make_controls();
     uint32_t base = 0;
     while (base < total) {
-        uint32_t bs = (total - base) > 1024u ? 1024u : (total - base);
+        uint32_t bs = (total - base) > 1024U ? 1024U : (total - base);
         f90_dsp_event be[F90_DSP_MAX_EVENTS_PER_BLOCK];
         uint32_t n = 0;
         for (uint32_t i = 0; i < count && i < F90_DSP_MAX_EVENTS_PER_BLOCK; ++i) {
@@ -117,11 +117,11 @@ static double goertzel_energy(const float* x, int n, double freq, double sr) {
     const double coeff = 2.0 * cw;
     double s1 = 0.0, s2 = 0.0;
     for (int i = 0; i < n; ++i) {
-        const double s0 = static_cast<double>(x[i]) + coeff * s1 - s2;
+        const double s0 = static_cast<double>(x[i]) + (coeff * s1) - s2;
         s2 = s1;
         s1 = s0;
     }
-    return s1 * s1 + s2 * s2 - coeff * s1 * s2;
+    return (s1 * s1) + (s2 * s2) - (coeff * s1 * s2);
 }
 
 static double band_energy(const float* x, int n, double sr, double f0, double f1) {
@@ -210,7 +210,7 @@ int main() {
     const f90_dsp_config cfg = make_config();
     check(sizeof(f90_dsp_config) == 24, "sizeof config 24");
     check(sizeof(f90_dsp_event) == 32, "sizeof event 32");
-    check(sizeof(f90_dsp_event_block) == 16 + 512 * 32, "sizeof event_block 16400");
+    check(sizeof(f90_dsp_event_block) == 16 + (512 * 32), "sizeof event_block 16400");
     check(sizeof(f90_dsp_controls) == 24, "sizeof controls 24");
     check(sizeof(f90_dsp_diagnostics) == 40, "sizeof diagnostics 40");
     check(alignof(f90_dsp_event_block) == 8, "alignof event_block 8");
@@ -243,8 +243,8 @@ int main() {
     check(f90_dsp_create(&cfg, &h) == F90_DSP_OK, "create ok");
 
     f90_dsp_event evs[2];
-    evs[0] = make_event(100, 0, 0.5f);
-    evs[1] = make_event(300, 1, 0.5f);
+    evs[0] = make_event(100, 0, 0.5F);
+    evs[1] = make_event(300, 1, 0.5F);
     f90_dsp_event_block blk = make_block(evs, 2, 1024);
     f90_dsp_controls ctl = make_controls();
     float left[4096];
@@ -255,7 +255,7 @@ int main() {
     check(buffers_bit_equal(left, right, 1024), "dual-mono exact");
 
     f90_dsp_event bank1_evs[1];
-    bank1_evs[0] = make_event(500, 2, 0.5f);
+    bank1_evs[0] = make_event(500, 2, 0.5F);
     bank1_evs[0].bank = 1;
     f90_dsp_event_block bank1_blk = make_block(bank1_evs, 1, 1024);
     float bl[4096];
@@ -291,7 +291,7 @@ int main() {
     big.block_samples = 1024;
     big.event_count = F90_DSP_MAX_EVENTS_PER_BLOCK + 1;
     for (uint32_t i = 0; i < F90_DSP_MAX_EVENTS_PER_BLOCK; ++i) {
-        big.events[i] = make_event(i * 2, static_cast<uint8_t>(i % 5), 0.2f);
+        big.events[i] = make_event(i * 2, static_cast<uint8_t>(i % 5), 0.2F);
     }
     check(f90_dsp_process(h, &big, &ctl, left, right, 1024) == F90_DSP_ERR_EVENT_OVERFLOW, "overflow rc");
     f90_dsp_diagnostics diag{};
@@ -300,7 +300,7 @@ int main() {
     check(diag.events_dropped >= 1, "overflow dropped counted");
 
     f90_dsp_event oob_evs[1];
-    oob_evs[0] = make_event(5000, 0, 0.5f);
+    oob_evs[0] = make_event(5000, 0, 0.5F);
     f90_dsp_event_block oob_blk = make_block(oob_evs, 1, 1024);
     check(f90_dsp_reset(h) == F90_DSP_OK, "reset before failure paths");
     check(f90_dsp_process(h, &oob_blk, &ctl, left, right, 1024) == F90_DSP_ERR_INVALID_STATE,
@@ -308,8 +308,8 @@ int main() {
     check(buffers_zero(left, right, 1024), "out-of-range silence");
 
     f90_dsp_event bad_evs[2];
-    bad_evs[0] = make_event(500, 0, 0.5f);
-    bad_evs[1] = make_event(200, 1, 0.5f);
+    bad_evs[0] = make_event(500, 0, 0.5F);
+    bad_evs[1] = make_event(200, 1, 0.5F);
     f90_dsp_event_block bad_blk = make_block(bad_evs, 2, 1024);
     check(f90_dsp_process(h, &bad_blk, &ctl, left, right, 1024) == F90_DSP_ERR_INVALID_STATE, "non-monotonic rc");
     check(buffers_zero(left, right, 1024), "non-monotonic silence");
@@ -329,9 +329,9 @@ int main() {
     // ABI v2 ordering is the complete tuple, not sample_offset alone.
     f90_dsp_reset(h);
     f90_dsp_event tuple_bad[2];
-    tuple_bad[0] = make_event(20, 4, 0.5f);
+    tuple_bad[0] = make_event(20, 4, 0.5F);
     tuple_bad[0].bank = 1;
-    tuple_bad[1] = make_event(20, 0, 0.5f);
+    tuple_bad[1] = make_event(20, 0, 0.5F);
     tuple_bad[1].bank = 0;
     f90_dsp_event_block tuple_bad_block = make_block(tuple_bad, 2, 128);
     check(f90_dsp_process(h, &tuple_bad_block, &ctl, left, right, 128) == F90_DSP_ERR_INVALID_STATE,
@@ -339,7 +339,7 @@ int main() {
 
     f90_dsp_reset(h);
     f90_dsp_event nonfinite_event[1];
-    nonfinite_event[0] = make_event(20, 0, 0.5f);
+    nonfinite_event[0] = make_event(20, 0, 0.5F);
     nonfinite_event[0].energy = std::numeric_limits<float>::infinity();
     f90_dsp_event_block nonfinite_block = make_block(nonfinite_event, 1, 128);
     check(f90_dsp_process(h, &nonfinite_block, &ctl, left, right, 128) == F90_DSP_ERR_NONFINITE_INPUT,
@@ -365,7 +365,7 @@ int main() {
         f90_dsp_handle ht = nullptr;
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create offset17");
         f90_dsp_event e[1];
-        e[0] = make_event(17, 0, 0.5f);
+        e[0] = make_event(17, 0, 0.5F);
         f90_dsp_event_block b = make_block(e, 1, 256);
         float l[512];
         float r[512];
@@ -373,10 +373,10 @@ int main() {
         check(f90_dsp_process(ht, &b, &c, l, r, 256) == F90_DSP_OK, "temporal process offset17");
         bool pre_zero = true;
         for (uint32_t i = 0; i < 17; ++i) {
-            if (l[i] != 0.0f || r[i] != 0.0f) pre_zero = false;
+            if (l[i] != 0.0F || r[i] != 0.0F) pre_zero = false;
         }
         check(pre_zero, "temporal offset17 samples 0..16 zero");
-        check(l[17] != 0.0f || r[17] != 0.0f, "temporal offset17 sample 17 affected");
+        check(l[17] != 0.0F || r[17] != 0.0F, "temporal offset17 sample 17 affected");
         f90_dsp_destroy(ht);
     }
     // 2. Eventos en offsets 17 y 93: ambos disparan en su sitio.
@@ -384,8 +384,8 @@ int main() {
         f90_dsp_handle ht = nullptr;
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create 17and93");
         f90_dsp_event e[2];
-        e[0] = make_event(17, 0, 0.5f);
-        e[1] = make_event(93, 1, 0.5f);
+        e[0] = make_event(17, 0, 0.5F);
+        e[1] = make_event(93, 1, 0.5F);
         f90_dsp_event_block b = make_block(e, 2, 256);
         float l[512];
         float r[512];
@@ -393,10 +393,10 @@ int main() {
         check(f90_dsp_process(ht, &b, &c, l, r, 256) == F90_DSP_OK, "temporal process 17and93");
         bool pre_zero = true;
         for (uint32_t i = 0; i < 17; ++i) {
-            if (l[i] != 0.0f || r[i] != 0.0f) pre_zero = false;
+            if (l[i] != 0.0F || r[i] != 0.0F) pre_zero = false;
         }
         check(pre_zero, "temporal 17and93 samples 0..16 zero");
-        check((l[17] != 0.0f || r[17] != 0.0f) && (l[93] != 0.0f || r[93] != 0.0f),
+        check((l[17] != 0.0F || r[17] != 0.0F) && (l[93] != 0.0F || r[93] != 0.0F),
               "temporal 17and93 both offsets fire");
         f90_dsp_destroy(ht);
     }
@@ -405,12 +405,12 @@ int main() {
         f90_dsp_handle ht = nullptr;
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create bothbanks");
         f90_dsp_event one[1];
-        one[0] = make_event(50, 0, 0.5f);
+        one[0] = make_event(50, 0, 0.5F);
         one[0].bank = 0;
         f90_dsp_event both[2];
-        both[0] = make_event(50, 0, 0.5f);
+        both[0] = make_event(50, 0, 0.5F);
         both[0].bank = 0;
-        both[1] = make_event(50, 0, 0.5f);
+        both[1] = make_event(50, 0, 0.5F);
         both[1].bank = 1;
         float l1[1024];
         float r1[1024];
@@ -422,13 +422,13 @@ int main() {
         f90_dsp_reset(ht);
         f90_dsp_event_block b2 = make_block(both, 2, 1024);
         f90_dsp_process(ht, &b2, &c, l2b, r2b, 1024);
-        float max1 = 0.0f, max2 = 0.0f;
+        float max1 = 0.0F, max2 = 0.0F;
         for (uint32_t i = 0; i < 1024; ++i) {
             if (std::fabs(l1[i]) > max1) max1 = std::fabs(l1[i]);
             if (std::fabs(l2b[i]) > max2) max2 = std::fabs(l2b[i]);
         }
         check(!buffers_zero(l2b, r2b, 1024), "temporal bothbanks produce signal");
-        check(max2 > max1 * 1.5f, "temporal bothbanks louder than one");
+        check(max2 > max1 * 1.5F, "temporal bothbanks louder than one");
         f90_dsp_destroy(ht);
     }
     // 4. Evento en el ultimo sample: no aparece al inicio.
@@ -436,7 +436,7 @@ int main() {
         f90_dsp_handle ht = nullptr;
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create last");
         f90_dsp_event e[1];
-        e[0] = make_event(255, 0, 0.5f);
+        e[0] = make_event(255, 0, 0.5F);
         f90_dsp_event_block b = make_block(e, 1, 256);
         float l[512];
         float r[512];
@@ -444,10 +444,10 @@ int main() {
         check(f90_dsp_process(ht, &b, &c, l, r, 256) == F90_DSP_OK, "temporal process last");
         bool pre = true;
         for (uint32_t i = 0; i < 255; ++i) {
-            if (l[i] != 0.0f || r[i] != 0.0f) pre = false;
+            if (l[i] != 0.0F || r[i] != 0.0F) pre = false;
         }
         check(pre, "temporal last samples 0..254 zero");
-        check(l[255] != 0.0f || r[255] != 0.0f, "temporal last sample affected");
+        check(l[255] != 0.0F || r[255] != 0.0F, "temporal last sample affected");
         f90_dsp_destroy(ht);
     }
     // 5. Banco B en el bloque siguiente: no se pierde ni se desfasa.
@@ -456,7 +456,7 @@ int main() {
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create nextblock");
         f90_dsp_controls c = make_controls();
         f90_dsp_event e1[1];
-        e1[0] = make_event(1000, 0, 0.5f);
+        e1[0] = make_event(1000, 0, 0.5F);
         e1[0].bank = 1;
         float l1b[2048];
         float r1b[2048];
@@ -465,15 +465,15 @@ int main() {
               "temporal nextblock b1");
         bool pre1 = true;
         for (uint32_t i = 0; i < 1000; ++i) {
-            if (l1b[i] != 0.0f) pre1 = false;
+            if (l1b[i] != 0.0F) pre1 = false;
         }
         check(pre1, "temporal nextblock b1 samples 0..999 zero");
-        check(l1b[1000] != 0.0f, "temporal nextblock b1 event at 1000");
+        check(l1b[1000] != 0.0F, "temporal nextblock b1 event at 1000");
         // Isolate block2: clear the ringing tail from block1 so we can verify a
         // deferred bank-B event is placed at its own offset (not lost, not at 0).
         check(f90_dsp_reset(ht) == F90_DSP_OK, "temporal nextblock reset");
         f90_dsp_event e2[1];
-        e2[0] = make_event(5, 0, 0.5f);
+        e2[0] = make_event(5, 0, 0.5F);
         e2[0].bank = 1;
         float l2b[2048];
         float r2b[2048];
@@ -482,17 +482,17 @@ int main() {
               "temporal nextblock b2");
         bool pre2 = true;
         for (uint32_t i = 0; i < 5; ++i) {
-            if (l2b[i] != 0.0f) pre2 = false;
+            if (l2b[i] != 0.0F) pre2 = false;
         }
         check(pre2, "temporal nextblock b2 samples 0..4 zero");
-        check(l2b[5] != 0.0f, "temporal nextblock b2 event at 5");
+        check(l2b[5] != 0.0F, "temporal nextblock b2 event at 5");
         f90_dsp_destroy(ht);
     }
     // 6. Particionar 2048 como 2048 / 2x1024 / 4x512 / 8x256 da igual salida.
     {
         f90_dsp_event seq[12];
         for (uint32_t i = 0; i < 12; ++i) {
-            seq[i] = make_event(80 + i * 160, static_cast<uint8_t>(i % 5), 0.4f + 0.1f * (i % 3));
+            seq[i] = make_event(80 + (i * 160), static_cast<uint8_t>(i % 5), 0.4F + (0.1F * (i % 3)));
             seq[i].bank = static_cast<uint8_t>(i % 2);
         }
         const uint32_t total = 2048;
@@ -520,7 +520,7 @@ int main() {
         f90_dsp_handle ht = nullptr;
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create bypass");
         f90_dsp_event e[1];
-        e[0] = make_event(50, 0, 0.5f);
+        e[0] = make_event(50, 0, 0.5F);
         f90_dsp_controls cb = make_controls();
         cb.bypass = 1;
         float l[1024];
@@ -535,11 +535,11 @@ int main() {
         float r2b[1024];
         check(f90_dsp_process(ht, &empty, &c2, l2b, r2b, 1024) == F90_DSP_OK,
               "temporal bypass b2 empty");
-        float mx = 0.0f;
+        float mx = 0.0F;
         for (uint32_t i = 0; i < 1024; ++i) {
             if (std::fabs(l2b[i]) > mx) mx = std::fabs(l2b[i]);
         }
-        check(mx < 0.05f, "temporal bypass no stale attack");
+        check(mx < 0.05F, "temporal bypass no stale attack");
         f90_dsp_destroy(ht);
     }
     // 8. Sesion larga: sin violaciones RT ni salida no finita.
@@ -548,7 +548,7 @@ int main() {
         check(f90_dsp_create(&cfg, &ht) == F90_DSP_OK, "temporal create long");
         f90_dsp_controls c = make_controls();
         f90_dsp_event e[1];
-        e[0] = make_event(10, 0, 0.5f);
+        e[0] = make_event(10, 0, 0.5F);
         float l[2048];
         float r[2048];
         bool ok = true;
@@ -594,8 +594,8 @@ int main() {
         check(f90_dsp_create(&cfg, &fph) == F90_DSP_OK, "fase5 create events");
         f90_dsp_event fevs[24];
         for (uint32_t i = 0; i < 24; ++i) {
-            fevs[i] = make_event(100 + i * 80, static_cast<uint8_t>(i % 5), 0.5f);
-            fevs[i].pressure_derivative = 15000.0f;
+            fevs[i] = make_event(100 + (i * 80), static_cast<uint8_t>(i % 5), 0.5F);
+            fevs[i].pressure_derivative = 15000.0F;
             fevs[i].bank = static_cast<uint8_t>(i % 2);
         }
         float fL[4096];
@@ -619,8 +619,8 @@ int main() {
         check(f90_dsp_create(&cfg, &fh) == F90_DSP_OK, "fase5 create dynamics");
         f90_dsp_event ev[96];
         for (uint32_t i = 0; i < 96; ++i) {
-            ev[i] = make_event(20 + i * 42, static_cast<uint8_t>(i % 5), 0.9f);
-            ev[i].pressure_derivative = 27000.0f;
+            ev[i] = make_event(20 + (i * 42), static_cast<uint8_t>(i % 5), 0.9F);
+            ev[i].pressure_derivative = 27000.0F;
             ev[i].bank = static_cast<uint8_t>(i % 2);
         }
         float l[8192];
@@ -645,12 +645,12 @@ int main() {
         f90_dsp_event fhiEvs[256];
         f90_dsp_event fidleEvs[64];
         for (uint32_t i = 0; i < 256; ++i) {
-            fhiEvs[i] = make_event(20 + i * 16, static_cast<uint8_t>(i % 5), 0.8f);
-            fhiEvs[i].pressure_derivative = 27000.0f;
+            fhiEvs[i] = make_event(20 + (i * 16), static_cast<uint8_t>(i % 5), 0.8F);
+            fhiEvs[i].pressure_derivative = 27000.0F;
         }
         for (uint32_t i = 0; i < 64; ++i) {
-            fidleEvs[i] = make_event(20 + i * 64, static_cast<uint8_t>(i % 5), 0.2f);
-            fidleEvs[i].pressure_derivative = 6000.0f;
+            fidleEvs[i] = make_event(20 + (i * 64), static_cast<uint8_t>(i % 5), 0.2F);
+            fidleEvs[i].pressure_derivative = 6000.0F;
         }
         float fLhi[8192];
         float fRhi[8192];

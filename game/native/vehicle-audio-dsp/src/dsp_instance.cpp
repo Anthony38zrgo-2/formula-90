@@ -25,7 +25,7 @@ std::atomic<uint64_t> g_free_count{0};
 // Denormal flush threshold (kept from Fase 3): values below this are forced to
 // exactly zero so tails do not leave subnormal noise. Deterministic, so it does
 // not affect bit-equality across block sizes.
-constexpr float kFlushThreshold = 1.0e-30f;
+constexpr float kFlushThreshold = 1.0e-30F;
 
 // ABI v2 intentionally transports pressure_derivative in physical
 // pressure-units/second. Faust, however, consumes an audio-rate excitation.
@@ -35,9 +35,9 @@ constexpr float kFlushThreshold = 1.0e-30f;
 // validated sweep. 30k therefore maps to ~1.0 acoustic excitation. Values above
 // the model envelope are bounded so malformed/experimental profiles cannot drive
 // the modal bank into permanent saturation.
-constexpr float kPressureDerivativeReferencePerSecond = 30000.0f;
-constexpr float kMaxNormalizedEventExcitation = 1.5f;
-constexpr float kMaxSummedExcitation = 2.5f;
+constexpr float kPressureDerivativeReferencePerSecond = 30000.0F;
+constexpr float kMaxNormalizedEventExcitation = 1.5F;
+constexpr float kMaxSummedExcitation = 2.5F;
 
 inline float clampf(float value, float lo, float hi) noexcept {
     return value < lo ? lo : (value > hi ? hi : value);
@@ -76,7 +76,7 @@ Instance::~Instance() noexcept {
 }
 
 void Instance::count_violation() {
-    if (diag_.rt_violations < 0xFFFFFFFFu) {
+    if (diag_.rt_violations < 0xFFFFFFFFU) {
         diag_.rt_violations += 1;
     }
 }
@@ -89,12 +89,12 @@ int32_t Instance::process(const f90_dsp_event_block& ev, const f90_dsp_controls&
     if (ev.event_count > F90_DSP_MAX_EVENTS_PER_BLOCK) {
         diag_.events_dropped += ev.event_count - F90_DSP_MAX_EVENTS_PER_BLOCK;
         diag_.last_error_code = F90_DSP_ERR_EVENT_OVERFLOW;
-        for (uint32_t f = 0; f < frames; ++f) { out_left[f] = 0.0f; out_right[f] = 0.0f; }
+        for (uint32_t f = 0; f < frames; ++f) { out_left[f] = 0.0F; out_right[f] = 0.0F; }
         return F90_DSP_ERR_EVENT_OVERFLOW;
     }
     if (has_stream_block_id_ && ev.stream_block_id <= last_stream_block_id_) {
         diag_.last_error_code = F90_DSP_ERR_INVALID_STATE;
-        for (uint32_t f = 0; f < frames; ++f) { out_left[f] = 0.0f; out_right[f] = 0.0f; }
+        for (uint32_t f = 0; f < frames; ++f) { out_left[f] = 0.0F; out_right[f] = 0.0F; }
         return F90_DSP_ERR_INVALID_STATE;
     }
     const uint32_t used = ev.event_count;
@@ -139,12 +139,12 @@ int32_t Instance::process(const f90_dsp_event_block& ev, const f90_dsp_controls&
 
     if (invalid) {
         rc = nonfinite_event ? F90_DSP_ERR_NONFINITE_INPUT : F90_DSP_ERR_INVALID_STATE;
-        if (nonfinite_event && diag_.nonfinite_inputs < 0xFFFFFFFFu) {
+        if (nonfinite_event && diag_.nonfinite_inputs < 0xFFFFFFFFU) {
             diag_.nonfinite_inputs += 1;
         }
         for (uint32_t f = 0; f < frames; ++f) {
-            out_left[f] = 0.0f;
-            out_right[f] = 0.0f;
+            out_left[f] = 0.0F;
+            out_right[f] = 0.0F;
         }
         diag_.last_error_code = static_cast<uint32_t>(rc);
         diag_.blocks_processed += 1;
@@ -157,27 +157,27 @@ int32_t Instance::process(const f90_dsp_event_block& ev, const f90_dsp_controls&
     // Rust is the temporal authority: every event (both banks) carries its exact
     // sample_offset. The DLL only triggers what it receives, exactly at
     // sample_offset (Fase 2.1/3.1/3.2).
-    const float master_gain = ctl.master_gain < 0.0f ? 0.0f : (ctl.master_gain > 4.0f ? 4.0f : ctl.master_gain);
+    const float master_gain = ctl.master_gain < 0.0F ? 0.0F : (ctl.master_gain > 4.0F ? 4.0F : ctl.master_gain);
     const bool bypass = ctl.bypass != 0;
     // Event derivative already contains the physical event amplitude. `load`
     // therefore acts only as a secondary acoustic/timbre control; multiplying by
     // raw throttle here would square the load response and collapse the layer on
     // lift-off. Keep a floor so coast/idle events retain their resonant tail.
-    const float load = clampf(ctl.load, 0.0f, 1.0f);
-    const float level = 0.55f + 0.45f * load;
-    const float intake = 0.0f;
+    const float load = clampf(ctl.load, 0.0F, 1.0F);
+    const float level = 0.55F + (0.45F * load);
+    const float intake = 0.0F;
 
     // Per-frame Faust I/O buffers (1 sample each).
-    float in_buf[3] = {0.0f, level, intake};
+    float in_buf[3] = {0.0F, level, intake};
     float* in_ptrs[3] = {&in_buf[0], &in_buf[1], &in_buf[2]};
-    float out_buf = 0.0f;
+    float out_buf = 0.0F;
     float* out_ptrs[1] = {&out_buf};
 
     uint32_t ei = 0;
     for (uint32_t f = 0; f < frames; ++f) {
-        float exc = 0.0f;
+        float exc = 0.0F;
         while (ei < valid_count && offsets[ei] == f) {
-            if (diag_.events_received < 0xFFFFFFFFu) {
+            if (diag_.events_received < 0xFFFFFFFFU) {
                 diag_.events_received += 1;
             }
             exc += derivs[ei];
@@ -195,19 +195,19 @@ int32_t Instance::process(const f90_dsp_event_block& ev, const f90_dsp_controls&
         }
         float y = out_buf;
         if (!std::isfinite(y)) {
-            y = 0.0f;
-            if (diag_.nonfinite_outputs < 0xFFFFFFFFu) {
+            y = 0.0F;
+            if (diag_.nonfinite_outputs < 0xFFFFFFFFU) {
                 diag_.nonfinite_outputs += 1;
             }
-        } else if (y > 1.0f) {
-            y = 1.0f;
-        } else if (y < -1.0f) {
-            y = -1.0f;
+        } else if (y > 1.0F) {
+            y = 1.0F;
+        } else if (y < -1.0F) {
+            y = -1.0F;
         }
-        if (y != 0.0f && std::fabs(y) < kFlushThreshold) {
-            y = 0.0f;
+        if (y != 0.0F && std::fabs(y) < kFlushThreshold) {
+            y = 0.0F;
         }
-        const float g = bypass ? 0.0f : y * master_gain;
+        const float g = bypass ? 0.0F : y * master_gain;
         // Dual-mono: the single Faust output is written to BOTH channels
         // identically (Fase 3 dual-mono invariant).
         out_left[f] = g;

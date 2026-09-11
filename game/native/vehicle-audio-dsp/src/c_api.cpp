@@ -23,7 +23,7 @@ f90dsp::Instance* as_instance(f90_dsp_handle h) {
 }
 
 float clamp01(float v) {
-    return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v);
+    return v < 0.0F ? 0.0F : (v > 1.0F ? 1.0F : v);
 }
 
 bool sanitize_controls(const f90_dsp_controls& in, f90_dsp_controls& out) {
@@ -37,25 +37,25 @@ bool sanitize_controls(const f90_dsp_controls& in, f90_dsp_controls& out) {
                            !std::isfinite(load) || !std::isfinite(tc_cut) ||
                            !std::isfinite(master_gain);
     if (!std::isfinite(rpm)) {
-        out.rpm = 0.0f;
+        out.rpm = 0.0F;
     }
     if (!std::isfinite(throttle)) {
-        out.throttle = 0.0f;
+        out.throttle = 0.0F;
     }
     if (!std::isfinite(load)) {
-        out.load = 0.0f;
+        out.load = 0.0F;
     }
     if (!std::isfinite(tc_cut)) {
-        out.tc_cut = 0.0f;
+        out.tc_cut = 0.0F;
     }
     if (!std::isfinite(master_gain)) {
-        out.master_gain = 0.0f;
+        out.master_gain = 0.0F;
     }
-    out.rpm = out.rpm < 0.0f ? 0.0f : (out.rpm > 1.0e5f ? 1.0e5f : out.rpm);
+    out.rpm = out.rpm < 0.0F ? 0.0F : (out.rpm > 1.0e5F ? 1.0e5F : out.rpm);
     out.throttle = clamp01(out.throttle);
     out.load = clamp01(out.load);
     out.tc_cut = clamp01(out.tc_cut);
-    out.master_gain = out.master_gain < 0.0f ? 0.0f : (out.master_gain > 4.0f ? 4.0f : out.master_gain);
+    out.master_gain = out.master_gain < 0.0F ? 0.0F : (out.master_gain > 4.0F ? 4.0F : out.master_gain);
     return nonfinite;
 }
 

@@ -557,14 +557,14 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	// Synchronize Godot rigid-body inertia once (P1-F)
 	if (!inertia_initialized_) {
 		Vector3 inv_i = p_state->get_inverse_inertia();
-		if (inv_i.x > 0.0f && inv_i.y > 0.0f && inv_i.z > 0.0f && std::isfinite(inv_i.x) && std::isfinite(inv_i.y) && std::isfinite(inv_i.z)) {
-			Vector3 base_inertia(1.0f / inv_i.x, 1.0f / inv_i.y, 1.0f / inv_i.z);
+		if (inv_i.x > 0.0F && inv_i.y > 0.0F && inv_i.z > 0.0F && std::isfinite(inv_i.x) && std::isfinite(inv_i.y) && std::isfinite(inv_i.z)) {
+			Vector3 base_inertia(1.0F / inv_i.x, 1.0F / inv_i.y, 1.0F / inv_i.z);
 			Vector3 configured_inertia(
 				base_inertia.x * (float)inertia_multiplier_x_,
 				base_inertia.y * (float)inertia_multiplier_y_,
 				base_inertia.z * (float)inertia_multiplier_z_
 			);
-			if (configured_inertia.x > 0.0f && configured_inertia.y > 0.0f && configured_inertia.z > 0.0f &&
+			if (configured_inertia.x > 0.0F && configured_inertia.y > 0.0F && configured_inertia.z > 0.0F &&
 				std::isfinite(configured_inertia.x) && std::isfinite(configured_inertia.y) && std::isfinite(configured_inertia.z)) {
 				PhysicsServer3D *ps = PhysicsServer3D::get_singleton();
 				if (ps) {
@@ -719,7 +719,7 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 		wheel_drive_torques_pre_tc_[i] = telem.drive_torque_pre_tc_nm[i];
 		tc_slip_ratio_[i] = telem.tc_slip_ratio[i];
 	}
-	tc_enabled_ = (telem.aids_enabled_mask & 2u) != 0;
+	tc_enabled_ = (telem.aids_enabled_mask & 2U) != 0;
 	tc_eligible_ = telem.tc_eligible;
 	tc_intervening_ = telem.tc_active;
 	tc_gear_authority_ = telem.tc_gear_authority;
@@ -1054,7 +1054,7 @@ void F194RustVehicle::sync_runtime_config_from_rust() {
 		diff_clutches_ = cfg.diff_clutches;
 		diff_clutch_friction_coeff_ = cfg.diff_clutch_friction_coeff;
 		aids_enabled_mask_ = cfg.aids_enabled_mask;
-		tc_enabled_ = (cfg.aids_enabled_mask & (1u << 1)) != 0;
+		tc_enabled_ = (cfg.aids_enabled_mask & (1U << 1)) != 0;
 		inertia_multiplier_x_ = cfg.inertia_multiplier_x;
 		inertia_multiplier_y_ = cfg.inertia_multiplier_y;
 		inertia_multiplier_z_ = cfg.inertia_multiplier_z;
@@ -1355,7 +1355,7 @@ double F194RustVehicle::get_rear_locking_differential_engage_torque() const {
 
 void F194RustVehicle::set_aids_enabled_mask(uint32_t v) {
 	aids_enabled_mask_ = v;
-	tc_enabled_ = (v & (1u << 1)) != 0;
+	tc_enabled_ = (v & (1U << 1)) != 0;
 	apply_runtime_config();
 }
 

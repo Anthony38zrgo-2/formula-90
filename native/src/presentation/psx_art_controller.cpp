@@ -211,8 +211,8 @@ bool PsxArtController::apply_preset() {
 	Object *rs = Engine::get_singleton()->get_singleton("RenderingServer");
 	if (rs) {
 		int safe_bit_depth = std::clamp((int)current_config_.bit_depth, 1, 8);
-		float safe_snap = std::max(current_config_.vertex_snap_distance, 0.0f);
-		float safe_affine = std::clamp(current_config_.affine_texture_strength, 0.0f, 1.0f);
+		float safe_snap = std::max(current_config_.vertex_snap_distance, 0.0F);
+		float safe_affine = std::clamp(current_config_.affine_texture_strength, 0.0F, 1.0F);
 
 		// 1. Maintain 100% backward compatibility with existing shaders & global uniforms
 		rs->call("global_shader_parameter_set", "psx_bit_depth", safe_bit_depth);
@@ -220,14 +220,14 @@ bool PsxArtController::apply_preset() {
 		rs->call("global_shader_parameter_set", "psx_affine_strength", safe_affine);
 
 		Color fog_col(
-			std::clamp(current_config_.fog_color[0], 0.0f, 1.0f),
-			std::clamp(current_config_.fog_color[1], 0.0f, 1.0f),
-			std::clamp(current_config_.fog_color[2], 0.0f, 1.0f),
-			std::clamp(current_config_.fog_color[3], 0.0f, 1.0f)
+			std::clamp(current_config_.fog_color[0], 0.0F, 1.0F),
+			std::clamp(current_config_.fog_color[1], 0.0F, 1.0F),
+			std::clamp(current_config_.fog_color[2], 0.0F, 1.0F),
+			std::clamp(current_config_.fog_color[3], 0.0F, 1.0F)
 		);
 		rs->call("global_shader_parameter_set", "psx_fog_color", fog_col);
-		rs->call("global_shader_parameter_set", "psx_fog_near", std::max(current_config_.fog_near, 0.0f));
-		rs->call("global_shader_parameter_set", "psx_fog_far", std::max(current_config_.fog_far, 0.1f));
+		rs->call("global_shader_parameter_set", "psx_fog_near", std::max(current_config_.fog_near, 0.0F));
+		rs->call("global_shader_parameter_set", "psx_fog_far", std::max(current_config_.fog_far, 0.1F));
 	}
 
 	// 2. Adjust Viewport resolution

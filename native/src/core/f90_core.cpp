@@ -578,8 +578,8 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 			Vector3 impulse = state->get_contact_impulse(i);
 
 			float normal_impact = (float)std::abs(rel_vel.dot(normal));
-			if (impulse.length_squared() > 0.0f) {
-				normal_impact = std::max(normal_impact, (float)impulse.length() * 0.1f);
+			if (impulse.length_squared() > 0.0F) {
+				normal_impact = std::max(normal_impact, (float)impulse.length() * 0.1F);
 			}
 			float tang_speed = (rel_vel - normal * rel_vel.dot(normal)).length();
 
@@ -592,11 +592,11 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 				col_node->is_in_group("DynamicObstacle") || col_node->is_in_group("Obstacle"));
 
 			if (is_barrier) {
-				if (normal_impact > 3.0f) {
+				if (normal_impact > 3.0F) {
 					trigger("impact_barrier");
 					collision_cooldown_ = 0.20;
 					break;
-				} else if (tang_speed > 4.0f) {
+				} else if (tang_speed > 4.0F) {
 					trigger("scrape");
 					collision_cooldown_ = 0.15;
 					break;
@@ -607,12 +607,12 @@ void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodySta
 				break;
 			} else {
 				// General collision (body hit or obstacle)
-				if (normal_impact > 3.0f) {
-					if (normal_impact < 8.0f) {
+				if (normal_impact > 3.0F) {
+					if (normal_impact < 8.0F) {
 						trigger("impact_hit_1");
-					} else if (normal_impact < 15.0f) {
+					} else if (normal_impact < 15.0F) {
 						trigger("impact_hit_2");
-					} else if (normal_impact < 25.0f) {
+					} else if (normal_impact < 25.0F) {
 						trigger("impact_hit_3");
 					} else {
 						trigger("impact_hit_4");
@@ -649,7 +649,7 @@ void F90Core::update_listener_distance(double delta) {
 	const double dx = cam->get_global_transform().get_origin().x - cached_veh_->get_global_transform().get_origin().x;
 	const double dy = cam->get_global_transform().get_origin().y - cached_veh_->get_global_transform().get_origin().y;
 	const double dz = cam->get_global_transform().get_origin().z - cached_veh_->get_global_transform().get_origin().z;
-	const double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+	const double dist = std::sqrt((dx * dx) + (dy * dy) + (dz * dz));
 	// One-pole toward the target with ~0.1 s time constant (frame-rate independent).
 	const double alpha = delta > 0.0 ? 1.0 - std::exp(-delta / 0.1) : 0.0;
 	listener_distance_smoothed_ += (dist - listener_distance_smoothed_) * alpha;
@@ -712,7 +712,7 @@ void F90Core::create_audio_nodes() {
 	generator_.instantiate();
 	generator_->set_mix_rate_mode(AudioStreamGenerator::MIX_RATE_CUSTOM);
 	generator_->set_mix_rate(44100);
-	generator_->set_buffer_length(0.06f);
+	generator_->set_buffer_length(0.06F);
 
 	// Non-positional player (no AudioListener3D in the project): instantiate
 	// AudioStreamPlayer generically (godot-cpp lacks a wrapper here) like the legacy

@@ -167,6 +167,6 @@ void ArcadeChaseCamera::_process(double delta) {
 	locked_rotation.z = 0.0;
 	set_global_rotation(locked_rotation);
 
-	const double fov_target = base_fov + speed_fov_gain * Math::clamp(car_adapter.get_speed() * 3.6 / 285.0, 0.0, 1.0);
+	const double fov_target = base_fov + (speed_fov_gain * Math::clamp(car_adapter.get_speed() * 3.6 / 285.0, 0.0, 1.0));
 	camera->set_fov(Math::lerp(double(camera->get_fov()), fov_target, smoothing_alpha(follow_damping, delta)));
 }
