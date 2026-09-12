@@ -1421,7 +1421,16 @@ mod tests {
             );
             bottoming.step_with_environment(&cfg, velocity, &hit, 0.0, 1.0 / 120.0);
         }
-        assert!(bottoming.diffuser_downforce < clear.diffuser_downforce * 0.45);
+        // The floor is two elements (front/rear). One bottoming probe collapses the
+        // front element, so the combined diffuser load drops clearly (to ~58% of the
+        // clear case) while the wings are untouched.
+        assert!(clear.diffuser_downforce > 0.0);
+        assert!(
+            bottoming.diffuser_downforce < clear.diffuser_downforce * 0.65,
+            "localized bottoming must collapse the floor: {} vs {}",
+            bottoming.diffuser_downforce,
+            clear.diffuser_downforce
+        );
         assert!((bottoming.front_wing_cl - clear.front_wing_cl).abs() < 1e-9);
         assert!((bottoming.rear_wing_cl - clear.rear_wing_cl).abs() < 1e-9);
     }
@@ -1451,8 +1460,10 @@ mod tests {
         let b = step_floor(&expanded, 200);
         assert_eq!(a.diffuser_downforce, b.diffuser_downforce);
         assert_eq!(a.diffuser_stall_factor, b.diffuser_stall_factor);
+        // Rake is reconstructed from the probe plane, so tilt the front/rear heights
+        // (mean height preserved) to raise the rake and check the floor responds.
         let mut raked = base;
-        raked.rake_rad = 0.35f64.to_radians();
+        raked.clearance_m = [0.06, 0.06, 0.06, 0.065, 0.065];
         let r = step_floor(&raked, 200);
         assert!((r.diffuser_downforce - a.diffuser_downforce).abs() > 1.0);
     }

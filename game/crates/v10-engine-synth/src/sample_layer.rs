@@ -1088,23 +1088,44 @@ impl ThreeZoneSampleLayer {
 
     #[inline]
     pub fn process(&mut self, input: SampleLayerInput) -> Result<SampleLayerFrame, String> {
+        let mut frame = SampleLayerFrame::default();
+        self.process_into(input, &mut frame)?;
+        Ok(frame)
+    }
+
+    /// Allocation-free variant of [`Self::process`]: fills a caller-owned frame so
+    /// the audio callback can reuse one buffer instead of allocating per sample.
+    #[inline]
+    pub fn process_into(
+        &mut self,
+        input: SampleLayerInput,
+        out: &mut SampleLayerFrame,
+    ) -> Result<(), String> {
         let input = input.validate()?;
         if !self.phase_aligned {
             self.reset_phase(input.crank_phase_deg)?;
         }
         if self.legacy_three_zone {
-            return self.process_legacy(input);
+            return self.process_legacy_into(input, out);
         }
-        self.process_multi(input)
+        *out = self.process_multi(input)?;
+        Ok(())
     }
 
     /// Exact legacy behavior for schema-1 GF509 banks: original 3-zone
     /// curves, suspension geometry and single OFF stem.
-    fn process_legacy(&mut self, input: SampleLayerInput) -> Result<SampleLayerFrame, String> {
-        let anchors = self.rpm_anchors();
-        let legacy: [f32; ZONE_COUNT] = anchors
-            .try_into()
-            .map_err(|_| "legacy bank requires exactly three ON zones".to_string())?;
+    fn process_legacy_into(
+        &mut self,
+        input: SampleLayerInput,
+        out: &mut SampleLayerFrame,
+    ) -> Result<(), String> {
+        if self.zones.len() != ZONE_COUNT {
+            return Err("legacy bank requires exactly three ON zones".to_string());
+        }
+        let mut legacy = [0.0f32; ZONE_COUNT];
+        for (slot, zone) in legacy.iter_mut().zip(self.zones.iter()) {
+            *slot = zone.anchor;
+        }
         let weights = zone_weights(
             input.rpm,
             legacy,
@@ -1121,7 +1142,9 @@ impl ThreeZoneSampleLayer {
         let tabled = self.config.use_tabled_sinc;
         let fade_start = self.config.max_fade_start_rpm;
         let fade_full = self.config.max_full_rpm;
-        let mut frame_weights = vec![0.0f32; self.source_labels.len()];
+        let label_count = self.source_labels.len();
+        out.zone_weights.clear();
+        out.zone_weights.resize(label_count, 0.0);
         for (index, zone) in self.zones.iter_mut().enumerate() {
             let weight = weights[index];
             // AUD-06 (fix.txt): suspend only in deep silence — zero weight AND
@@ -1159,7 +1182,7 @@ impl ThreeZoneSampleLayer {
             residual += zone_residual * weight;
             tonal_rasp += zone_tonal_rasp * weight;
             residual_rasp += zone_residual_rasp * weight;
-            frame_weights[index] = weight;
+            out.zone_weights[index] = weight;
         }
         let charge = input.load * (0.35 + 0.65 * input.throttle);
         let tonal_gain = self.config.tonal_gain_closed
@@ -1200,19 +1223,18 @@ impl ThreeZoneSampleLayer {
             tonal += off_tonal * off_weight;
             residual += off_residual * off_weight;
             off_throttle_stem = (off_tonal + off_residual) * off_weight;
-            if let Some(slot) = frame_weights.get_mut(self.zones.len()) {
+            let off_index = self.zones.len();
+            if let Some(slot) = out.zone_weights.get_mut(off_index) {
                 *slot = off_weight;
             }
         }
 
-        Ok(SampleLayerFrame {
-            tonal,
-            residual,
-            max_rasp,
-            off_throttle: off_throttle_stem,
-            output: tonal + residual,
-            zone_weights: frame_weights,
-        })
+        out.tonal = tonal;
+        out.residual = residual;
+        out.max_rasp = max_rasp;
+        out.off_throttle = off_throttle_stem;
+        out.output = tonal + residual;
+        Ok(())
     }
 
     /// Generalized schema-2 behavior: N ON zones with variant groups and M

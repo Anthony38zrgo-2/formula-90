@@ -96,29 +96,32 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
   de alta complejidad: `EngineConfig::validate` (cc56), `JsonVehicleSpec::validate`
   (cc57), `AeroModelConfig::validate` (cc53) y `apply_runtime_config_to_sim` (cc46),
   en helpers de cc <= 25.
-- Resultado: 42 -> 39 findings.
-- Bloqueo identificado: la mayoria de los 39 restantes tienen 0% de cobertura
-  porque los binarios de test de `vehicle-physics-engine` (aero) y
-  `vehicle-audio-engine` (alloc) fallan, y `cargo llvm-cov` no registra su
-  cobertura. Con 0% de cobertura, cualquier funcion con cc > 5 supera el umbral,
-  por lo que dividir mas no basta: hay que arreglar esos tests primero (CLEAN-11).
-- Restan ademas 4 funciones con cc > 30 en rutas calientes (`mixer::render` cc72,
+- Resultado: 42 -> **24** findings (4 validadores divididos + desbloqueo de
+  cobertura via CLEAN-11).
+- Restan 24: 4 con cc > 30 en rutas calientes (`mixer::render` cc72,
   `AudioPowertrainSynthesis::validate` cc41, `PowertrainState::process_shift` cc38,
-  `AeroForces::step_with_kinematics` cc34) que requieren division con verificacion
-  de paridad fisica.
+  `AeroForces::step_with_kinematics` cc34), funciones FFI `no_mangle` que
+  `llvm-cov` no instrumenta (`f90_core_*`, `vehicle_audio_*`, `f1_94_*`), y
+  validadores con cobertura parcial que requieren mas tests o division.
 - Criterio de cierre: sin findings cargo-crap en `src/` de produccion.
 
 ## CLEAN-11 — Arreglar tests que bloquean la cobertura
 
-- Los binarios de test `vehicle-physics-engine --lib` (aero:
-  `localized_bottoming_collapses_floor_before_wings`, `floor_ignores_probe_5_and_responds_to_rake`)
-  y `vehicle-audio-engine --lib` (`gf509_render_has_zero_rust_allocations`) fallan,
-  y `cargo llvm-cov` no registra su cobertura. Eso mantiene en 0% decenas de
-  funciones y bloquea el cierre de CLEAN-10 (y la senal de cobertura en general).
-- Trabajo: determinar si son expectativas desactualizadas o regresiones reales
-  (aero/bottoming y asignaciones en render) y corregir.
-- Criterio de cierre: `cargo test --workspace` sin fallos en esos binarios y
-  cobertura registrada para vehicle-physics-engine/vehicle-audio-engine.
+- Estado: **cerrado** (2026-09-11).
+- `vehicle-physics-engine --lib` (aero): expectativas desactualizadas respecto al
+  modelo por elementos. El bottoming localizado (un probe) solo colapsa el elemento
+  delantero del suelo (total ~58% del caso limpio, no <45%), y el rake se
+  reconstruye desde el plano de los probes, no desde `AeroEnvironment.rake_rad`
+  (campo que el modelo ya no lee). Tests actualizados para reflejar el modelo.
+- `vehicle-audio-engine --lib` (alloc): **regresion real**. `ThreeZoneSampleLayer`
+  asignaba `rpm_anchors()` y un `Vec` de pesos por muestra en la ruta legacy,
+  rompiendo el contrato zero-alloc del callback. Se anadio
+  `process_into(&mut SampleLayerFrame)` sin asignaciones (buffer reutilizado en
+  `Gf509Runtime`) y se elimino el `Vec` de anchors.
+- Efecto: `cargo llvm-cov` ya registra la cobertura de ambos crates; cargo-crap
+  pasa de 39 a 24 findings.
+- Pendiente ajeno: `aero_test` (4 fallos de integracion) y `facade_parity` (3)
+  siguen fallando; no bloquean la cobertura de los crates y quedan fuera de este item.
 
 
 ## CLEAN-06 — cppcheck cstyleCast

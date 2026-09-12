@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::{fs, path::Path};
 
 use crate::{
-    AcousticScene, AcousticSceneConfig, EngineConfig, EngineInput, SampleLayerInput,
+    AcousticScene, AcousticSceneConfig, EngineConfig, EngineInput, SampleLayerFrame, SampleLayerInput,
     ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
 };
 use serde::Deserialize;
@@ -181,6 +181,9 @@ pub struct Gf509Runtime {
     engine: V10Engine,
     scene: AcousticScene,
     sample_layer: Option<ThreeZoneSampleLayer>,
+    /// Reused per-sample sample-layer output. Keeps the audio callback
+    /// allocation-free by avoiding a fresh `SampleLayerFrame` per sample.
+    sample_frame: SampleLayerFrame,
     telemetry: RuntimeTelemetry,
     rendered_telemetry: RuntimeTelemetry,
     interpolation_remaining: usize,
@@ -216,6 +219,7 @@ impl Gf509Runtime {
             engine,
             scene,
             sample_layer,
+            sample_frame: SampleLayerFrame::default(),
             telemetry: RuntimeTelemetry::default(),
             rendered_telemetry: RuntimeTelemetry::default(),
             interpolation_remaining: 0,
@@ -329,23 +333,25 @@ impl Gf509Runtime {
             );
             let engine_frame = self.engine.render_sample();
             let scene_frame = self.scene.process(&engine_frame);
-            let sample_frame = self
-                .sample_layer
-                .as_mut()
-                .map(|layer| {
-                    layer.process(SampleLayerInput {
+            let sample_frame = if let Some(layer) = self.sample_layer.as_mut() {
+                layer.process_into(
+                    SampleLayerInput {
                         rpm: interpolated.rpm,
                         throttle: interpolated.throttle,
                         load: interpolated.normalized_engine_load,
                         normalized_engine_torque: interpolated.normalized_engine_torque,
                         clutch_engagement: interpolated.clutch_engagement,
                         crank_phase_deg: engine_frame.crank_phase_deg,
-                    })
-                })
-                .transpose()?;
+                    },
+                    &mut self.sample_frame,
+                )?;
+                Some(self.sample_frame.output)
+            } else {
+                None
+            };
             let output = if let Some(sample_frame) = sample_frame {
                 (scene_frame.output * self.config.sample_layer.physical_blend_weight
-                    + sample_frame.output * self.config.sample_layer.sample_blend_weight)
+                    + sample_frame * self.config.sample_layer.sample_blend_weight)
                     * GF509_HEADROOM_GAIN
             } else {
                 scene_frame.output
