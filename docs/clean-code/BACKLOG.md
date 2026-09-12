@@ -4,6 +4,25 @@ Origen: limpieza basada en `static-analysis-summary.json` (run `baseline`,
 HEAD `64dab296ece6a1ea1509f54213c036ade5c867d2`).
 Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
+## Estado (2026-09-11)
+
+- **Cerrados:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06,
+  CLEAN-07, CLEAN-08, CLEAN-11.
+- **Parcial — falta completar:** CLEAN-10 (complejidad). cargo-crap bajo de 70 a
+  **24 findings**. Resta:
+  1. dividir 4 funciones con cc > 30 en rutas calientes (`mixer::render` cc72,
+     `AudioPowertrainSynthesis::validate` cc41, `PowertrainState::process_shift`
+     cc38, `AeroForces::step_with_kinematics` cc34) con verificacion de paridad fisica;
+  2. cubrir o justificar las funciones FFI `#[no_mangle]` que `llvm-cov` no
+     instrumenta (`f90_core_*`, `vehicle_audio_*`, `f1_94_*`, `sim_world_solve_external`);
+  3. subir cobertura o dividir los validadores con cobertura parcial
+     (`VehicleSoundBank::load`, `validate_brake_duct`, `validate_aero_config`,
+     `validate_layer`, `enable_synth_from_profile`, `load_manifest_members`,
+     `SampleZone::load`, `trigger_from_code`, `validate_experimental_manifest`).
+- **Abierto:** CLEAN-09 (192 `unwrap`/`expect` WARNING en `src/` de produccion).
+- **Ajeno a estos items (no bloquea cobertura):** `aero_test` (4 fallos de
+  integracion) y `facade_parity` (3) siguen fallando.
+
 ## CLEAN-01 — Migrar bincode 1.3.3 (RUSTSEC-2025-0141)
 
 - Estado: **cerrado** (2026-09-11). El codec se migro de `bincode 1.3.3` a
