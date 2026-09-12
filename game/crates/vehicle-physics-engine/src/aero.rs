@@ -1467,4 +1467,46 @@ mod tests {
         let r = step_floor(&raked, 200);
         assert!((r.diffuser_downforce - a.diffuser_downforce).abs() > 1.0);
     }
+
+    #[test]
+    fn underfloor_map_axes_require_2_to_16_increasing_positive_heights() {
+        let good_axis = vec![0.01, 0.05, 0.10];
+        let valid = GroundEffectMap {
+            front_heights_m: good_axis.clone(),
+            rear_heights_m: good_axis.clone(),
+            cells: (0..9)
+                .map(|_| GroundEffectCell {
+                    load_factor: 1.0,
+                    pressure_shift_m: 0.0,
+                })
+                .collect(),
+        };
+        assert!(AeroModelConfig::validate_underfloor_map_axes(&valid).is_ok());
+
+        let with_front = |front: Vec<f64>| GroundEffectMap {
+            front_heights_m: front,
+            ..valid.clone()
+        };
+        // Too few / too many samples.
+        assert!(AeroModelConfig::validate_underfloor_map_axes(&with_front(vec![0.05])).is_err());
+        let too_many: Vec<f64> = (0..17).map(|i| 0.01 * (i as f64 + 1.0)).collect();
+        assert!(AeroModelConfig::validate_underfloor_map_axes(&with_front(too_many)).is_err());
+        // Non-positive, non-finite and non-increasing heights all fail.
+        assert!(
+            AeroModelConfig::validate_underfloor_map_axes(&with_front(vec![0.0, 0.05])).is_err()
+        );
+        assert!(
+            AeroModelConfig::validate_underfloor_map_axes(&with_front(vec![0.01, f64::NAN]))
+                .is_err()
+        );
+        assert!(
+            AeroModelConfig::validate_underfloor_map_axes(&with_front(vec![0.05, 0.01])).is_err()
+        );
+        // The rear axis is validated independently of the front axis.
+        let bad_rear = GroundEffectMap {
+            rear_heights_m: vec![0.10, 0.05, 0.01],
+            ..valid.clone()
+        };
+        assert!(AeroModelConfig::validate_underfloor_map_axes(&bad_rear).is_err());
+    }
 }

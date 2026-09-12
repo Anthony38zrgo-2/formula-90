@@ -485,6 +485,27 @@ fn validate_experimental_manifest(
 ) -> Result<(), String> {
     let manifest: ExperimentalManifest = serde_json::from_str(raw)
         .map_err(|error| format!("invalid experimental manifest: {error}"))?;
+    validate_experimental_header(&manifest)?;
+
+    for entry in manifest.samples.iter().chain(manifest.off_samples.iter()) {
+        let expected_role = if manifest
+            .samples
+            .iter()
+            .any(|sample| sample.key == entry.key)
+        {
+            "on"
+        } else {
+            "off"
+        };
+        validate_experimental_entry(entry, directory, output_sample_rate, expected_role)?;
+    }
+
+    validate_experimental_variants(&manifest.samples)?;
+    validate_experimental_variants(&manifest.off_samples)?;
+    Ok(())
+}
+
+fn validate_experimental_header(manifest: &ExperimentalManifest) -> Result<(), String> {
     if manifest.schema_version != 2 || manifest.key != "v10_f2002_experimental" {
         return Err("experimental manifest schema/key mismatch".into());
     }
@@ -494,66 +515,73 @@ fn validate_experimental_manifest(
     if manifest.samples.is_empty() || manifest.off_samples.is_empty() {
         return Err("experimental manifest needs ON and OFF collections".into());
     }
-    for entry in manifest.samples.iter().chain(manifest.off_samples.iter()) {
-        let expected_role = if manifest.samples.iter().any(|sample| sample.key == entry.key) {
-            "on"
-        } else {
-            "off"
-        };
-        if entry.role != expected_role
-            || !entry.native_rpm.is_finite()
-            || entry.sample_rate != output_sample_rate
-            || entry.channels != 1
-            || entry.loop_frames < 32
-        {
-            return Err(format!("invalid experimental manifest entry: {}", entry.key));
+    Ok(())
+}
+
+fn validate_experimental_entry(
+    entry: &ExperimentalEntry,
+    directory: &Path,
+    output_sample_rate: u32,
+    expected_role: &str,
+) -> Result<(), String> {
+    if entry.role != expected_role
+        || !entry.native_rpm.is_finite()
+        || entry.sample_rate != output_sample_rate
+        || entry.channels != 1
+        || entry.loop_frames < 32
+    {
+        return Err(format!(
+            "invalid experimental manifest entry: {}",
+            entry.key
+        ));
+    }
+    for name in [&entry.metadata, &entry.tonal, &entry.residual] {
+        let candidate = Path::new(name);
+        if candidate.is_absolute() || candidate.components().count() != 1 {
+            return Err(format!(
+                "experimental asset path must be a local filename: {name}"
+            ));
         }
-        for name in [&entry.metadata, &entry.tonal, &entry.residual] {
-            let candidate = Path::new(name);
-            if candidate.is_absolute() || candidate.components().count() != 1 {
-                return Err(format!("experimental asset path must be a local filename: {name}"));
-            }
-            if !directory.join(name).is_file() {
-                return Err(format!("missing experimental asset: {name}"));
-            }
-        }
-        verify_sha256(&directory.join(&entry.tonal), &entry.tonal_sha256)?;
-        verify_sha256(&directory.join(&entry.residual), &entry.residual_sha256)?;
-        if let Some(variant) = &entry.variant {
-            if variant.count < 2
-                || variant.position >= variant.count
-                || variant.group.is_empty()
-            {
-                return Err(format!(
-                    "invalid variant record for experimental entry: {}",
-                    entry.key
-                ));
-            }
+        if !directory.join(name).is_file() {
+            return Err(format!("missing experimental asset: {name}"));
         }
     }
-    // Variant groups must be complete and consistent per role collection.
-    for collection in [&manifest.samples, &manifest.off_samples] {
-        let mut groups: std::collections::BTreeMap<&str, Vec<(&str, usize, usize)>> =
-            std::collections::BTreeMap::new();
-        for entry in collection {
-            if let Some(variant) = &entry.variant {
-                groups.entry(variant.group.as_str()).or_default().push((
-                    entry.key.as_str(),
-                    variant.position,
-                    variant.count,
-                ));
-            }
+    verify_sha256(&directory.join(&entry.tonal), &entry.tonal_sha256)?;
+    verify_sha256(&directory.join(&entry.residual), &entry.residual_sha256)?;
+    if let Some(variant) = &entry.variant {
+        if variant.count < 2 || variant.position >= variant.count || variant.group.is_empty() {
+            return Err(format!(
+                "invalid variant record for experimental entry: {}",
+                entry.key
+            ));
         }
-        for (group, members) in &groups {
-            if members.iter().any(|(_, _, count)| *count != members.len()) {
-                return Err(format!("experimental variant group {group} is incomplete"));
-            }
-            let mut positions: Vec<usize> =
-                members.iter().map(|(_, position, _)| *position).collect();
-            positions.sort_unstable();
-            if positions != (0..members.len()).collect::<Vec<_>>() {
-                return Err(format!("experimental variant group {group} positions invalid"));
-            }
+    }
+    Ok(())
+}
+
+/// Variant groups must be complete and consistent within one role collection.
+fn validate_experimental_variants(collection: &[ExperimentalEntry]) -> Result<(), String> {
+    let mut groups: std::collections::BTreeMap<&str, Vec<(&str, usize, usize)>> =
+        std::collections::BTreeMap::new();
+    for entry in collection {
+        if let Some(variant) = &entry.variant {
+            groups.entry(variant.group.as_str()).or_default().push((
+                entry.key.as_str(),
+                variant.position,
+                variant.count,
+            ));
+        }
+    }
+    for (group, members) in &groups {
+        if members.iter().any(|(_, _, count)| *count != members.len()) {
+            return Err(format!("experimental variant group {group} is incomplete"));
+        }
+        let mut positions: Vec<usize> = members.iter().map(|(_, position, _)| *position).collect();
+        positions.sort_unstable();
+        if positions != (0..members.len()).collect::<Vec<_>>() {
+            return Err(format!(
+                "experimental variant group {group} positions invalid"
+            ));
         }
     }
     Ok(())
@@ -572,6 +600,7 @@ fn verify_sha256(path: &Path, expected: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     fn running_runtime(max_block_frames: usize) -> Gf509Runtime {
         let mut config = Gf509RuntimeConfig::default();
@@ -1045,5 +1074,165 @@ mod tests {
         assert!(diff_ad > 1e-4, "Scenario A and D must differ: got {diff_ad}");
         assert!(diff_bc > 1e-4, "Scenario B and C must differ: got {diff_bc}");
         assert!(diff_cd > 1e-4, "Scenario C and D must differ (same throttle 0.0, different load/torque): got {diff_cd}");
+    }
+
+    struct ExperimentalDir(std::path::PathBuf);
+    impl Drop for ExperimentalDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn experimental_dir(label: &str) -> ExperimentalDir {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("f90_exp_manifest_{label}_{unique}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        ExperimentalDir(dir)
+    }
+
+    fn write_asset(dir: &Path, name: &str, bytes: &[u8]) -> String {
+        std::fs::write(dir.join(name), bytes).unwrap();
+        format!("{:x}", Sha256::digest(bytes))
+    }
+
+    fn experimental_entry(
+        dir: &Path,
+        key: &str,
+        role: &str,
+        sample_rate: u32,
+    ) -> serde_json::Value {
+        let metadata = format!("{key}_meta.json");
+        let tonal = format!("{key}_tonal.pcm");
+        let residual = format!("{key}_residual.pcm");
+        write_asset(dir, &metadata, b"{}");
+        let tonal_sha = write_asset(dir, &tonal, format!("{key}-tonal").as_bytes());
+        let residual_sha = write_asset(dir, &residual, format!("{key}-residual").as_bytes());
+        json!({
+            "key": key,
+            "role": role,
+            "metadata": metadata,
+            "native_rpm": 8000.0,
+            "sample_rate": sample_rate,
+            "channels": 1,
+            "loop_frames": 128,
+            "tonal": tonal,
+            "tonal_sha256": tonal_sha,
+            "residual": residual,
+            "residual_sha256": residual_sha,
+        })
+    }
+
+    fn experimental_manifest_value(dir: &Path, sample_rate: u32) -> serde_json::Value {
+        json!({
+            "schema_version": 2,
+            "key": "v10_f2002_experimental",
+            "output_gain": GF509_HEADROOM_GAIN,
+            "samples": [experimental_entry(dir, "on_low", "on", sample_rate)],
+            "off_samples": [experimental_entry(dir, "off_low", "off", sample_rate)],
+        })
+    }
+
+    /// Writes the manifest next to the assets and validates through the
+    /// schema-dispatching entry point.
+    fn validate_value(
+        dir: &Path,
+        sample_rate: u32,
+        value: &serde_json::Value,
+    ) -> Result<(), String> {
+        std::fs::write(dir.join("manifest.json"), value.to_string()).unwrap();
+        validate_asset_manifest(dir, sample_rate)
+    }
+
+    #[test]
+    fn experimental_manifest_accepts_complete_bank() {
+        let guard = experimental_dir("valid");
+        let value = experimental_manifest_value(&guard.0, 44_100);
+        assert!(validate_value(&guard.0, 44_100, &value).is_ok());
+    }
+
+    #[test]
+    fn experimental_manifest_rejects_header_and_entry_defects() {
+        let guard = experimental_dir("defects");
+        let dir = &guard.0;
+        let valid = experimental_manifest_value(dir, 44_100);
+
+        let mut bad = valid.clone();
+        bad["key"] = json!("wrong");
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["output_gain"] = json!(0.5);
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"] = json!([]);
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["role"] = json!("off");
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["native_rpm"] = json!(1e40);
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["sample_rate"] = json!(22_050);
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["channels"] = json!(2);
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["loop_frames"] = json!(8);
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["metadata"] = json!("../escape.json");
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["metadata"] = json!("absent.json");
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+
+        let mut bad = valid.clone();
+        bad["samples"][0]["tonal_sha256"] = json!("00");
+        assert!(validate_value(dir, 44_100, &bad).is_err());
+    }
+
+    #[test]
+    fn experimental_manifest_variants_must_be_complete_and_ordered() {
+        let guard = experimental_dir("variants");
+        let dir = &guard.0;
+
+        let mut value = experimental_manifest_value(dir, 44_100);
+        value["samples"][0]["variant"] = json!({"group": "rpm", "position": 0, "count": 2});
+        let mut second = experimental_entry(dir, "on_high", "on", 44_100);
+        second["variant"] = json!({"group": "rpm", "position": 1, "count": 2});
+        value["samples"].as_array_mut().unwrap().push(second);
+        assert!(validate_value(dir, 44_100, &value).is_ok());
+
+        // A declared count larger than the actual membership is incomplete.
+        let mut incomplete = value.clone();
+        incomplete["samples"][0]["variant"]["count"] = json!(3);
+        assert!(validate_value(dir, 44_100, &incomplete).is_err());
+
+        // Duplicate positions do not form the required 0..n ordering.
+        let mut duplicate = value.clone();
+        duplicate["samples"][1]["variant"]["position"] = json!(0);
+        assert!(validate_value(dir, 44_100, &duplicate).is_err());
+
+        // An empty group name or count below two is an invalid record.
+        let mut bad_record = value.clone();
+        bad_record["samples"][0]["variant"]["group"] = json!("");
+        assert!(validate_value(dir, 44_100, &bad_record).is_err());
+
+        let mut bad_record = value.clone();
+        bad_record["samples"][0]["variant"]["count"] = json!(1);
+        assert!(validate_value(dir, 44_100, &bad_record).is_err());
     }
 }

@@ -1710,4 +1710,56 @@ mod tests {
         )
         .is_valid());
     }
+
+    #[test]
+    fn merge_with_defaults_inherits_untouched_fields() {
+        let defaults = SoundConfig {
+            volume: 0.7,
+            pan: -0.4,
+            adsr: AdsrConfig {
+                enabled: true,
+                attack_ms: 12.0,
+                ..AdsrConfig::default()
+            },
+            eq: EqConfig {
+                enabled: true,
+                q: 2.5,
+                ..EqConfig::default()
+            },
+            reverb: ReverbSendConfig {
+                enabled: true,
+                bus: "sfx_short".to_string(),
+                send_db: -3.0,
+            },
+        };
+
+        // Every field at its "inherit" sentinel takes the default wholesale.
+        let inherited = SoundConfig::default().merge_with_defaults(&defaults);
+        assert_eq!(inherited, defaults);
+
+        // Explicit non-sentinel scalars win over the defaults.
+        let explicit = SoundConfig {
+            volume: 0.2,
+            pan: 0.5,
+            ..defaults.clone()
+        }
+        .merge_with_defaults(&defaults);
+        assert_eq!(explicit.volume, 0.2);
+        assert_eq!(explicit.pan, 0.5);
+        assert_eq!(explicit.adsr, defaults.adsr);
+
+        // A disabled child block inherits the default instead of its own values.
+        let merged = SoundConfig {
+            adsr: AdsrConfig {
+                enabled: false,
+                attack_ms: 99.0,
+                ..AdsrConfig::default()
+            },
+            ..SoundConfig::default()
+        }
+        .merge_with_defaults(&defaults);
+        assert_eq!(merged.adsr, defaults.adsr);
+        assert_eq!(merged.eq, defaults.eq);
+        assert_eq!(merged.reverb, defaults.reverb);
+    }
 }

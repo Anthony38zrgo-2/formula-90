@@ -8,9 +8,9 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 - **Cerrados:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06,
   CLEAN-07, CLEAN-08, CLEAN-11.
-- **Parcial — falta completar:** CLEAN-10 (complejidad). cargo-crap en HEAD
-  `5e173557` bajo de 70 a **15 findings** reales, tras la calibracion de la
-  frontera ABI y tooling (Sprint 0, ver CLEAN-10). Resta:
+- **Parcial — falta completar:** CLEAN-10 (complejidad). cargo-crap bajo de 70 a
+  **15 findings** reales (Sprint 0, HEAD `5e173557`) y luego a **12** (Sprint 1).
+  Resta:
   1. dividir 4 funciones con cc > 30 en rutas calientes (`mixer::render` cc72,
      `AudioPowertrainSynthesis::validate` cc41, `PowertrainState::process_shift`
      cc38, `AeroForces::step_with_kinematics` cc34) con verificacion de paridad fisica;
@@ -18,9 +18,7 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
      (`VehicleSoundBank::load` cc30, `validate_brake_duct` cc26, `validate_layer`
      cc24, `load_manifest_members` cc21, `enable_synth_from_profile` cc19,
      `validate_aero_config` cc17, `SampleZone::load` cc15, `trigger_from_code`
-     cc13, `validate_experimental_manifest` cc30);
-  3. cubrir los dos helpers cc6 sin cobertura (`SoundConfig::merge_with_defaults`,
-     `AeroModelConfig::validate_underfloor_map_axes`).
+     cc13).
 - **Abierto:** CLEAN-09 (197 `unwrap`/`expect` WARNING en `src/` de produccion;
   incluye 5 en modulos inline `#[cfg(test)]`, ver CLEAN-09).
 - **Frontera ABI y tooling:** las funciones `#[no_mangle]` (`f90_core_*`,
@@ -141,9 +139,15 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
   los bins de calibracion. Se excluyeron por nombre de funcion y por archivo en
   `game/crates/.cargo-crap.toml` (aprobado 2026-09-12); ver CLEAN-12 para el
   artefacto de cobertura rlib/cdylib.
-- Resultado: 42 -> 24 (CLEAN-05..11) -> **15** reales (Sprint 0). De los 15:
-  4 rutas calientes cc > 30, 9 validadores/loaders con cobertura parcial y 2
-  helpers cc6 sin cobertura.
+- Sprint 1 — cobertura y division (2026-09-12): tests para los dos helpers cc6
+  (`SoundConfig::merge_with_defaults`, `AeroModelConfig::validate_underfloor_map_axes`)
+  y division de `validate_experimental_manifest` (cc30) en
+  `validate_experimental_header` / `validate_experimental_entry` /
+  `validate_experimental_variants`, con tests que cubren el bank schema-2 valido
+  y las rutas de rechazo (header, entradas, variantes).
+- Resultado: 42 -> 24 (CLEAN-05..11) -> **15** reales (Sprint 0) -> **12**
+  (Sprint 1). De los 12: 4 rutas calientes cc > 30 y 8 validadores/loaders con
+  cobertura parcial.
 - Criterio de cierre: sin findings cargo-crap en `src/` de produccion.
 
 ## CLEAN-11 — Arreglar tests que bloquean la cobertura

@@ -109,3 +109,22 @@ game-sim) se reprodujeron en un worktree limpio en HEAD: pre-existentes.
   cobertura parcial y 2 helpers cc6 sin cobertura.
 - Los cambios de este sprint son solo politica de analisis y documentacion; no
   alteran binarios, por lo que no requieren republish del runtime.
+
+## Addendum 2026-09-12 — Sprint 1: cobertura + division (CLEAN-10)
+
+- Tests de cobertura para los dos helpers cc6 sin cobertura:
+  `SoundConfig::merge_with_defaults` (`vehicle-audio-engine/src/config.rs`) y
+  `AeroModelConfig::validate_underfloor_map_axes`
+  (`vehicle-physics-engine/src/aero.rs`, cubre eje valido, <2 y >16 puntos,
+  no positivo, no finito, no creciente y eje trasero).
+- Division de `validate_experimental_manifest` (cc30) en
+  `validate_experimental_header`, `validate_experimental_entry` y
+  `validate_experimental_variants` (`v10-engine-synth/src/runtime.rs`),
+  preservando el orden y los mensajes exactos. Tests nuevos: bank schema-2
+  valido, y rechazo de header, entradas (rol/RPM/sample rate/canales/frames/
+  ruta/missing/hash) y variantes (incompletas, posiciones duplicadas, registro
+  invalido).
+- Verificacion: `cargo test --lib` de los 3 crates afectados en verde
+  (97 + 224 + 100, 1 ignored).
+- Resultado: CLEAN-10 pasa de **15 a 12** findings reales (`resolved=3`,
+  `new=0`). Cambio de codigo de produccion -> requiere republish del runtime.
