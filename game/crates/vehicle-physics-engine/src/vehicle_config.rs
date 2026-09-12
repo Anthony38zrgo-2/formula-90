@@ -3458,6 +3458,24 @@ mod json_tests {
     use super::*;
 
     #[test]
+    fn surface_type_name_covers_all_variants() {
+        for st in [
+            SurfaceType::Road,
+            SurfaceType::Curb,
+            SurfaceType::Dirt,
+            SurfaceType::Grass,
+            SurfaceType::Gravel,
+            SurfaceType::Sand,
+            SurfaceType::Wall,
+            SurfaceType::Metal,
+        ] {
+            let name = surface_type_name(st);
+            assert!(!name.is_empty());
+            assert_eq!(name, format!("{st:?}"));
+        }
+    }
+
+    #[test]
     fn round_trip_preserves_all_fields() {
         let original = VehicleConfig::f1_94_canonical();
         let json_val = original.to_json_value();

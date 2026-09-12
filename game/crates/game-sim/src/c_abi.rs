@@ -500,6 +500,20 @@ mod tests {
     use std::ffi::CString;
 
     #[test]
+    fn surface_from_u32_maps_every_code() {
+        use SurfaceType::*;
+        assert_eq!(surface_from_u32(0), Road);
+        assert_eq!(surface_from_u32(1), Curb);
+        assert_eq!(surface_from_u32(2), Dirt);
+        assert_eq!(surface_from_u32(3), Grass);
+        assert_eq!(surface_from_u32(4), Gravel);
+        assert_eq!(surface_from_u32(5), Sand);
+        assert_eq!(surface_from_u32(6), Wall);
+        assert_eq!(surface_from_u32(7), Metal);
+        assert_eq!(surface_from_u32(99), Road);
+    }
+
+    #[test]
     fn c_abi_roundtrip() {
         let w = sim_world_create(1.0 / 120.0);
         assert!(!w.is_null());

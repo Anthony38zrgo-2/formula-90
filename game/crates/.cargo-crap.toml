@@ -1,0 +1,8 @@
+# cargo-crap policy for the Formula-90 workspace.
+#
+# Binaries and build scripts are tooling, not library units: `cargo llvm-cov`
+# runs the test binaries, so their `main`/CLI helpers never execute and always
+# show 0% coverage. Their CRAP score is therefore meaningless as a quality gate.
+# Same context split as the semgrep `unwrap/expect` tooling rule (CLEAN-03).
+threshold = 30.0
+allow = ["**/src/bin/**", "**/build.rs"]

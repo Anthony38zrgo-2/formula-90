@@ -74,9 +74,33 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-05 — Complejidad (cargo-crap)
 
-- 70 funciones sobre umbral; top en bins (`core_cli::main` 380,
-  `v10_physics_transient_capture::main` 380) y FFI sin cobertura.
-- Trabajo: tests para bins/FFI o division de funciones segun valor.
+- Estado: **cerrado** (2026-09-11) con calibracion por contexto + cobertura parcial.
+- Politica: `game/crates/.cargo-crap.toml` excluye tooling (`**/src/bin/**`,
+  `**/build.rs`) del informe. Los binarios y build scripts no se ejecutan bajo
+  `cargo llvm-cov`, asi que su CRAP (0% cobertura) no es senal de calidad. Misma
+  separacion por contexto que la regla semgrep de CLEAN-03.
+- Cobertura: tests nuevos para el ABI C (`formula90-core::ffi`: create/spawn/step/
+  snapshot/audio/destroy + `parse_opts`/`surface_from_u32`) y helpers puros
+  (`game_sim::c_abi::surface_from_u32`, `vehicle_config::surface_type_name`,
+  `wav::write_mono_pcm16`).
+- Resultado: 70 findings -> **42** (24 tooling + 4 por cobertura). Los 42 restantes
+  son funciones de complejidad ciclomatica > 30 que exigen division; quedan como
+  CLEAN-10.
+- Nota: los tests de `vehicle-physics-engine` y `vehicle-audio-engine` no registran
+  cobertura porque sus binarios de test fallan (aero/alloc), pendiente de corregir
+  esos fallos.
+
+## CLEAN-10 — Dividir funciones de alta complejidad (cargo-crap)
+
+- 42 funciones con CRAP > 30 en `src/` de produccion. Top: `mixer::render` (cc72),
+  `JsonVehicleSpec::validate` (cc57), `EngineConfig::validate` (cc56),
+  `AeroModelConfig::validate` (cc53), `apply_runtime_config_to_sim` (cc46),
+  `AudioPowertrainSynthesis::validate` (cc41), `PowertrainState::process_shift`
+  (cc38), `AeroForces::step_with_kinematics` (cc34), `validate_experimental_manifest`
+  (cc30), etc.
+- Trabajo: dividir por responsabilidad (validacion por bloques, render por etapas)
+  y anadir cobertura; verificar paridad fisica tras cada division.
+- Criterio de cierre: sin findings cargo-crap en `src/` de produccion.
 
 ## CLEAN-06 — cppcheck cstyleCast
 

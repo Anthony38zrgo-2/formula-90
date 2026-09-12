@@ -839,3 +839,118 @@ mod layout_tests {
         assert_eq!(size_of::<F90TriRaycastSample>(), 216);
     }
 }
+
+#[cfg(test)]
+mod abi_tests {
+    use super::*;
+    use std::ffi::CString;
+
+    fn flat_samples() -> [F90TriRaycastSample; 4] {
+        let hit = game_sim::c_abi::CSimRaycastHit {
+            is_colliding: true,
+            distance: 0.3,
+            nx: 0.0,
+            ny: 1.0,
+            nz: 0.0,
+            surface: 0,
+            ..Default::default()
+        };
+        [F90TriRaycastSample {
+            inner: hit,
+            center: hit,
+            outer: hit,
+        }; 4]
+    }
+
+    #[test]
+    fn surface_from_u32_maps_every_code() {
+        use vehicle_physics_engine::SurfaceType::*;
+        assert_eq!(surface_from_u32(0), Road);
+        assert_eq!(surface_from_u32(1), Curb);
+        assert_eq!(surface_from_u32(2), Dirt);
+        assert_eq!(surface_from_u32(3), Grass);
+        assert_eq!(surface_from_u32(4), Gravel);
+        assert_eq!(surface_from_u32(5), Sand);
+        assert_eq!(surface_from_u32(6), Wall);
+        assert_eq!(surface_from_u32(7), Metal);
+        assert_eq!(surface_from_u32(99), Road);
+    }
+
+    #[test]
+    fn parse_opts_applies_overrides_and_rejects_bad_json() {
+        let defaults = parse_opts("{}").expect("empty opts");
+        assert!(defaults.use_canonical);
+
+        let cfg = parse_opts(
+            r#"{"fixed_dt":0.01,"enable_audio":false,"idle_rpm":2000.0,"max_rpm":9000.0,"modules":["weather"],"vehicle_scene":"v","track_scene":"t"}"#,
+        )
+        .expect("valid opts");
+        assert_eq!(cfg.fixed_dt, 0.01);
+        assert_eq!(cfg.idle_rpm, 2000.0);
+        assert_eq!(cfg.max_rpm, 9000.0);
+        assert_eq!(cfg.modules, vec!["weather".to_string()]);
+        assert_eq!(cfg.vehicle_scene, "v");
+        assert_eq!(cfg.track_scene, "t");
+        assert!(parse_opts("{ not json").is_err());
+    }
+
+    #[test]
+    fn abi_lifecycle_covers_core_entrypoints() {
+        let opts = CString::new(r#"{"use_canonical":true}"#).unwrap();
+        let mut err = [0u8; 256];
+        let h = unsafe { f90_core_create(opts.as_ptr(), err.as_mut_ptr(), err.len() as u32) };
+        assert!(!h.is_null(), "create failed: {}", String::from_utf8_lossy(&err));
+
+        // Null/bad inputs hit the early-return guards.
+        assert!(unsafe { f90_core_create(std::ptr::null(), err.as_mut_ptr(), err.len() as u32) }.is_null());
+        let h2 = unsafe { f90_core_create(opts.as_ptr(), std::ptr::null_mut(), 0) };
+        assert!(!h2.is_null());
+        unsafe { f90_core_destroy(h2) };
+
+        let id = f90_core_spawn(h);
+        assert_ne!(id, 0, "spawn must succeed");
+
+        let samples = flat_samples();
+        let mut out = F90CoreFrameOut::default();
+        for _ in 0..4 {
+            unsafe {
+                f90_core_step(
+                    h, id, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                    0.0, 0.0, 0.0, 0.0, 1, 0, 1.0 / 120.0, samples.as_ptr(), std::ptr::null_mut(),
+                    &mut out,
+                )
+            };
+        }
+        assert!(out.speed_kmh.is_finite());
+
+        // Snapshot: size query, too-small buffer, and full write.
+        let mut len = 0u32;
+        let needed = f90_core_snapshot(h, std::ptr::null_mut(), 0, &mut len);
+        assert!(needed > 0);
+        assert_eq!(needed, len);
+        let mut buf = vec![0u8; needed as usize];
+        assert_eq!(f90_core_snapshot(h, buf.as_mut_ptr(), needed, &mut len), 0);
+        assert_eq!(f90_core_snapshot(h, std::ptr::null_mut(), 0, std::ptr::null_mut()), 0);
+
+        // Audio downlink/readouts (audio disabled -> no-op but exercised).
+        let mut aout = F90CoreFrameOut::default();
+        f90_core_audio_readouts(h, &mut aout);
+        let _ = f90_core_audio_set_ambient(h, 12.0, 0.0, false);
+        let _ = f90_core_audio_trigger(h, 0);
+        let mut l = vec![0f32; 64];
+        let mut r = vec![0f32; 64];
+        assert_eq!(
+            unsafe { f90_core_audio_render(h, l.as_mut_ptr(), r.as_mut_ptr(), 64) },
+            0
+        );
+
+        // Runtime config path (all-zero config is rejected, but the entrypoint runs).
+        let cfg: vehicle_physics_engine::FfiRuntimeConfig = unsafe { std::mem::zeroed() };
+        let _ = unsafe { f90_core_apply_runtime_config(h, id, &cfg) };
+        assert!(!unsafe { f90_core_apply_runtime_config(h, id, std::ptr::null()) });
+
+        f90_core_reset(h, 0.0, 0.3, 0.0, 0.0);
+        unsafe { f90_core_destroy(h) };
+        unsafe { f90_core_destroy(std::ptr::null_mut()) };
+    }
+}
