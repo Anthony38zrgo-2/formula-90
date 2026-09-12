@@ -15,14 +15,20 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-02 — Auditoria de `unsafe` (cargo-geiger)
 
-- Hallazgos (agregados por crate): vehicle-physics 1261 usos, formula90-core 473,
-  vehicle-audio 337, game-sim 330, psx-art 75.
-- Sitios reales `unsafe {`/`unsafe fn`: ~76 lineas (audio 25, physics 24,
-  formula90-core 17, game-sim 10) mas el ABI de psx.
-- Trabajo: revisar cada bloque, anotar `SAFETY:`, considerar
-  `#![deny(unsafe_op_in_unsafe_fn)]` y `#![forbid(unsafe_code)]` en modulos sin FFI.
-- Criterio de cierre: cada bloque `unsafe` con justificacion y sin hallazgos geiger
-  pendientes (o agregado aceptado explicitamente).
+- Hallazgos originales (agregados por crate): vehicle-physics 1261 usos,
+  formula90-core 473, vehicle-audio 337, game-sim 330, psx-art 75.
+- Estado: **cerrado** (2026-09-11). Los bloques `unsafe` de `src/` quedaron
+  documentados con comentarios `SAFETY:`; los crates con FFI aplican
+  `#![deny(unsafe_op_in_unsafe_fn)]` (vehicle-physics-engine, vehicle-audio-engine,
+  game-sim, formula90-core, psx-art-pluggin) y los crates puros
+  `#![forbid(unsafe_code)]` (skybox-engine, dsp-abi-check; v10-engine-synth ya lo
+  tenia). Los 5 findings de cargo-geiger se cerraron por agregado aceptado
+  explicitamente en `scripts/clean-code/suppressions.json` (clave estable
+  `tool|rule|file`, no depende del conteo que embebe el mensaje).
+- Commits: `c9a05b16` (lints), `a678013e` (comentarios `SAFETY:`).
+- Criterio de cierre cumplido: cada bloque `unsafe` con justificacion y sin
+  hallazgos geiger pendientes (agregado aceptado explicitamente).
+
 
 ## CLEAN-03 — Calibrar regla semgrep unwrap/expect
 

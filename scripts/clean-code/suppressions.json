@@ -21,6 +21,36 @@
       "reason": "Falso positivo: el memcpy de `rref` en test_main.cpp copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11.",
       "approved_by": "human",
       "date": "2026-09-11"
+    },
+    "cargo-geiger|geiger/formula90_core|game/crates/formula90-core/Cargo.toml": {
+      "reason": "Auditoria CLEAN-02: los 474 usos de `unsafe` (exprs=457, functions=13, item_impls=1, methods=3) estan confinados al ABI C (`src/ffi.rs`) con bloques `unsafe` y comentarios `SAFETY:` documentados; el crate aplica `#![deny(unsafe_op_in_unsafe_fn)]`. Conteo agregado aceptado explicitamente. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-02"
+    },
+    "cargo-geiger|geiger/game_sim|game/crates/game-sim/Cargo.toml": {
+      "reason": "Auditoria CLEAN-02: los 330 usos de `unsafe` (exprs=317, functions=13) estan confinados al ABI C (`src/c_abi.rs`) con bloques `unsafe` y comentarios `SAFETY:` documentados; el crate aplica `#![deny(unsafe_op_in_unsafe_fn)]`. Conteo agregado aceptado explicitamente. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-02"
+    },
+    "cargo-geiger|geiger/psx_art_plugin|game/crates/psx-art-pluggin/Cargo.toml": {
+      "reason": "Auditoria CLEAN-02: los 75 usos de `unsafe` (exprs=72, functions=3) estan confinados al ABI C (`src/c_abi.rs`) con bloques `unsafe` y comentarios `SAFETY:` documentados; el crate aplica `#![deny(unsafe_op_in_unsafe_fn)]`. Conteo agregado aceptado explicitamente. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-02"
+    },
+    "cargo-geiger|geiger/vehicle_audio_engine|game/crates/vehicle-audio-engine/Cargo.toml": {
+      "reason": "Auditoria CLEAN-02: los 338 usos de `unsafe` (exprs=323, functions=12, item_impls=1, methods=2) estan confinados al ABI C (`src/ffi.rs`), al cargador Win32/DSP (`src/dsp_runtime.rs`) y al allocator de test, con bloques `unsafe` y comentarios `SAFETY:` documentados; el crate aplica `#![deny(unsafe_op_in_unsafe_fn)]`. Conteo agregado aceptado explicitamente. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-02"
+    },
+    "cargo-geiger|geiger/vehicle_physics_engine|game/crates/vehicle-physics-engine/Cargo.toml": {
+      "reason": "Auditoria CLEAN-02: los 1261 usos de `unsafe` (exprs=1244, functions=17) estan confinados al ABI C (`src/ffi.rs`) con bloques `unsafe` y comentarios `SAFETY:` documentados; el crate aplica `#![deny(unsafe_op_in_unsafe_fn)]`. Conteo agregado aceptado explicitamente. Aprobado por humano el 2026-09-11.",
+      "approved_by": "human",
+      "date": "2026-09-11",
+      "backlog": "CLEAN-02"
     }
   }
 }

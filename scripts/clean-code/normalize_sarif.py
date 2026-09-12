@@ -304,6 +304,18 @@ def stable_key(finding: dict) -> str:
     )
 
 
+def rule_key(finding: dict) -> str:
+    # Fallback for rules whose message embeds volatile metrics (e.g. cargo-geiger
+    # counts). Keyed by tool|rule|file so the suppression survives count drift.
+    return "|".join(
+        [
+            str(finding.get("tool", "")),
+            str(finding.get("rule", "")),
+            str(finding.get("file", "")),
+        ]
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", required=True)
@@ -351,7 +363,11 @@ def main() -> int:
     suppressions = load_suppressions(repo_root)
     suppressed = 0
     for finding in findings:
-        entry = suppressions.get(finding["fingerprint"]) or suppressions.get(stable_key(finding))
+        entry = (
+            suppressions.get(finding["fingerprint"])
+            or suppressions.get(stable_key(finding))
+            or suppressions.get(rule_key(finding))
+        )
         if entry:
             finding["status"] = "suppressed"
             finding["suppression_reason"] = entry.get("reason", "")
