@@ -6,12 +6,19 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-01 — Migrar bincode 1.3.3 (RUSTSEC-2025-0141)
 
-- Hallazgos: `cargo-audit RUSTSEC-2025-0141` y `cargo-deny a:unmaintained`.
-- Estado: suprimidos con justificacion (`scripts/clean-code/suppressions.json`) por
-  decision humana del 2026-09-11; no es vulnerabilidad explotable.
-- Trabajo: evaluar reemplazo del codec (bincode 2.x, postcard, etc.), impacto en
-  snapshots serializados (`f90_core_snapshot`), tests de paridad y Cargo.lock.
-- Criterio de cierre: la supresion se retira y ambos findings desaparecen del informe.
+- Estado: **cerrado** (2026-09-11). El codec se migro de `bincode 1.3.3` a
+  `postcard 1.1` (alternativa recomendada por el propio advisory). RUSTSEC-2025-0141
+  marca como no mantenido todo el proyecto bincode (`patched = []`), incluido 2.x,
+  por lo que la salida es otro codec serde-compatible.
+- Cambios: `Snapshot::to_bytes`/`from_bytes` (game-sim) y
+  `FacadeSnapshot::to_bytes`/`from_bytes` (formula90-core) usan
+  `postcard::to_allocvec`/`from_bytes`; stubs de modulos y `tests/modules.rs`
+  actualizados. Las supresiones de CLEAN-01 se retiraron de `suppressions.json`.
+- Impacto: el formato de bytes cambia; no hay consumidor externo (Godot usa C
+  structs, no decodifica el blob) ni golden files de snapshot. Los tests de
+  paridad comparan ambas rutas con el mismo codec, asi que siguen siendo validos.
+- Verificacion: `cargo tree -i bincode` no encuentra el paquete; `cargo-audit` y
+  `cargo-deny` ya no reportan RUSTSEC-2025-0141 / `a:unmaintained`.
 
 ## CLEAN-02 — Auditoria de `unsafe` (cargo-geiger)
 

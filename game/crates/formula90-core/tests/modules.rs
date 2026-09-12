@@ -39,11 +39,11 @@ fn registered_modules_appear_in_snapshot() {
     for (name, payload) in &snap.modules {
         match name.as_str() {
             "weather" => {
-                let st: WeatherState = bincode::deserialize(payload).expect("decode weather");
+                let st: WeatherState = postcard::from_bytes(payload).expect("decode weather");
                 assert!(st.clock_ms > 0, "weather module observed the core clock");
             }
             "ai" => {
-                let st: AiDirective = bincode::deserialize(payload).expect("decode ai");
+                let st: AiDirective = postcard::from_bytes(payload).expect("decode ai");
                 assert!(st.clock_ms > 0, "ai module observed the core clock");
             }
             other => panic!("unexpected module '{other}'"),
@@ -73,7 +73,7 @@ fn reset_restores_modules_to_pristine() {
     let snap_after_reset = facade.facade_snapshot();
     for (name, payload) in &snap_after_reset.modules {
         if name == "weather" {
-            let st: WeatherState = bincode::deserialize(payload).expect("decode weather");
+            let st: WeatherState = postcard::from_bytes(payload).expect("decode weather");
             // No tick since reset, but the module was reset to pristine (clock 0).
             assert_eq!(st.clock_ms, 0, "reset must restore module state");
         }

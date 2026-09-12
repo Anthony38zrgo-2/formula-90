@@ -359,7 +359,7 @@ impl std::fmt::Display for CoreError {
 impl std::error::Error for CoreError {}
 
 /// Serialized orchestrated snapshot = authoritative sim snapshot + per-module
-/// contributions. Ship these bytes to a mirror (bincode), e.g. headless parity.
+/// contributions. Ship these bytes to a mirror (postcard), e.g. headless parity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FacadeSnapshot {
     pub core: Snapshot,
@@ -367,12 +367,12 @@ pub struct FacadeSnapshot {
 }
 
 impl FacadeSnapshot {
-    pub fn to_bytes(&self) -> Result<Vec<u8>, bincode::Error> {
-        bincode::serialize(self)
+    pub fn to_bytes(&self) -> Result<Vec<u8>, postcard::Error> {
+        postcard::to_allocvec(self)
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, bincode::Error> {
-        bincode::deserialize(bytes)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, postcard::Error> {
+        postcard::from_bytes(bytes)
     }
 }
 

@@ -3,7 +3,7 @@
 //! Exercises the EXACT same orchestrator the in-engine `F90Core` node drives, but
 //! without Godot: loads a vehicle config, spawns it, runs a fixed-timestep launch,
 //! prints telemetry + audio readouts, and writes the final `FacadeSnapshot` as a
-//! bincode blob. `--parity-sim` also runs a pure `game_sim` world and asserts the
+//! postcard blob. `--parity-sim` also runs a pure `game_sim` world and asserts the
 //! inner core snapshots are byte-identical (standalone path parity).
 
 use std::env;

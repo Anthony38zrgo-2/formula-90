@@ -667,7 +667,7 @@ pub extern "C" fn f90_core_audio_readouts(h: *mut c_void, out: *mut F90CoreFrame
     }
 }
 
-/// Serialize the orchestrated snapshot (bincode) into `out`. Returns bytes needed;
+/// Serialize the orchestrated snapshot (postcard) into `out`. Returns bytes needed;
 /// 0 on success with `out_len` set. If the buffer is too small, returns the needed
 /// size and leaves the buffer untouched.
 /// # Safety

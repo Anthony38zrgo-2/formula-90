@@ -2,10 +2,9 @@
 //!
 //! Real implementation will be its own crate (`game/ai/engine`) registered here.
 //! For now it is a deterministic no-op observing the latest orchestrated frame and
-//! emitting a tiny bincode payload (planned: directive outputs the C++/GDScript loop
+//! emitting a tiny postcard payload (planned: directive outputs the C++/GDScript loop
 //! applies on top of driver input).
 
-use bincode;
 use serde::{Deserialize, Serialize};
 
 use crate::module::{ModuleCtx, ModuleError, SimModule};
@@ -56,7 +55,7 @@ impl SimModule for AiStub {
     }
 
     fn snapshot(&self) -> Vec<u8> {
-        bincode::serialize(&self.state).unwrap_or_default()
+        postcard::to_allocvec(&self.state).unwrap_or_default()
     }
 
     fn reset(&mut self) {

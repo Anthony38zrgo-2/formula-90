@@ -2,9 +2,8 @@
 //!
 //! Real implementation will be its own crate (`game/weather/engine`) registered here.
 //! For now it is a deterministic no-op: it records the core clock and emits a tiny
-//! bincode payload. It must never read the wall clock (determinism contract).
+//! postcard payload. It must never read the wall clock (determinism contract).
 
-use bincode;
 use serde::{Deserialize, Serialize};
 
 use crate::module::{ModuleCtx, ModuleError, SimModule};
@@ -55,7 +54,7 @@ impl SimModule for WeatherStub {
     }
 
     fn snapshot(&self) -> Vec<u8> {
-        bincode::serialize(&self.state).unwrap_or_default()
+        postcard::to_allocvec(&self.state).unwrap_or_default()
     }
 
     fn reset(&mut self) {

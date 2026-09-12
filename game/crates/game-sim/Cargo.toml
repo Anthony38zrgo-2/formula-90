@@ -18,4 +18,4 @@ path = "src/bin/game_cli.rs"
 [dependencies]
 vehicle_physics_engine = { path = "../vehicle-physics-engine" }
 serde = { version = "1", features = ["derive"] }
-bincode = "1"
+postcard = { version = "1", default-features = false, features = ["alloc"] }
