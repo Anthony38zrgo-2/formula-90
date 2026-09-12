@@ -32,8 +32,24 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-03 — Calibrar regla semgrep unwrap/expect
 
-- 278 findings `formula90s-rust-unwrap-expect`; muchos en bins, benches y tests.
-- Trabajo: dividir la regla por contexto (produccion vs tooling) y decidir politica.
+- Estado: **cerrado** (2026-09-11). La regla se dividio por contexto:
+  `formula90s-rust-unwrap-expect` (WARNING) ahora excluye `**/bin/**` y
+  `**/build.rs` ademas de tests/benches/examples; la nueva
+  `formula90s-rust-unwrap-expect-tooling` (INFO) cubre bins y build scripts.
+- Politica: `unwrap()`/`expect()` es fail-fast aceptable en binarios, build
+  scripts y tooling (informativo); en `src/` de produccion se mantiene como
+  WARNING. Tras el split: 192 findings de produccion (WARNING) y 86 de tooling
+  (INFO/note).
+- Seguimiento: los 192 de produccion quedan como CLEAN-09.
+
+## CLEAN-09 — Reducir unwrap/expect en codigo de produccion
+
+- 192 findings `formula90s-rust-unwrap-expect` (WARNING) en `src/` no-tooling.
+- Trabajo: sustituir por manejo explicito de Result/Option donde el panic no
+  sea infalible; los casos demostrablemente infalibles pueden documentarse con
+  `expect("razon")`.
+- Criterio de cierre: sin findings WARNING de la regla de produccion (o
+  justificados uno a uno).
 
 ## CLEAN-04 — Licencias y metadatos de dependencias
 

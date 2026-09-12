@@ -29,6 +29,27 @@ rules:
         - "**/tests/**"
         - "**/benches/**"
         - "**/examples/**"
+        - "**/bin/**"
+        - "**/build.rs"
+
+  - id: formula90s-rust-unwrap-expect-tooling
+    languages: [rust]
+    severity: INFO
+    message: >-
+      `unwrap()`/`expect()` en binarios, build scripts y tooling: fail-fast
+      aceptable. Informativo; no se exige manejo explicito en este contexto.
+    patterns:
+      - pattern-either:
+          - pattern: $X.unwrap()
+          - pattern: $X.expect(...)
+    paths:
+      include:
+        - "**/bin/**"
+        - "**/build.rs"
+      exclude:
+        - "**/tests/**"
+        - "**/benches/**"
+        - "**/examples/**"
 
   - id: formula90s-cpp-using-namespace-in-header
     languages: [cpp]
