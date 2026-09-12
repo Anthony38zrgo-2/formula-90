@@ -18,6 +18,3 @@ sha2 = "0.10"
 v10-engine-synth = { path = "../v10-engine-synth" }
 
 [dev-dependencies]
-
-[profile.release]
-lto = true

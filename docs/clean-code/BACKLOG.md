@@ -66,5 +66,10 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-08 — Warning de arranque en cargo (perfiles)
 
-- `cargo` avisa: "profiles for the non root package will be ignored" en varios
-  crates del workspace. Mover `[profile.*]` al manifest raiz si aplica.
+- `cargo` avisaba "profiles for the non root package will be ignored" (5 crates).
+- Estado: **cerrado** (2026-09-11). Los `[profile.release]` de
+  vehicle-physics-engine, formula90-core, psx-art-pluggin, skybox-engine y
+  vehicle-audio-engine se consolidaron en `game/crates/Cargo.toml`
+  (`lto = true`, `opt-level = 3`). Al aplicarse por fin, el release del workspace
+  usa LTO (antes los perfiles por crate se ignoraban). `cargo build --workspace
+  --release` validado.
