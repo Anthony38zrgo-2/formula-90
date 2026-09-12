@@ -89,3 +89,23 @@ game-sim) se reprodujeron en un worktree limpio en HEAD: pre-existentes.
   target-dir, `cargo clean -p` por paquete, `--no-deps` y `CARGO_INCREMENTAL=0`.
 - Las supresiones usan clave estable (tool|regla|archivo|mensaje) para no
   romperse con desplazamientos de linea.
+
+## Addendum 2026-09-12 — Sprint 0: re-baseline + calibracion
+
+- HEAD de referencia: `5e173557` (rama `main-clean`), arbol limpio.
+- Re-baseline cargo-crap: **24** findings, identico a `clean11-crap`
+  (`resolved=0 new=0`). El fix de audio CLEAN-11 (`c83ddf97`) no altero el gate.
+- Re-baseline semgrep: **283** findings (197 produccion + 86 tooling), frente a
+  278 en `clean03-semgrep` (`new=5`, `moved=89`). Los 5 nuevos estan en modulos
+  inline `#[cfg(test)]` dentro de `src/`, no en codigo de produccion.
+- Calibracion cargo-crap (`game/crates/.cargo-crap.toml`, aprobada 2026-09-12):
+  se excluyo por nombre de funcion la frontera ABI `#[no_mangle]`
+  (`f90_core_*`, `sim_world_*`, `f1_94_*`, `vehicle_audio_*`) y por archivo
+  `**/src/bin_support.rs`. Causa raiz documentada en CLEAN-12: doble
+  instanciacion rlib/cdylib en `lcov` (cdylib `FNDA:0` frente a la copia rlib
+  con hits).
+- Resultado: CLEAN-10 pasa de **24 a 15** findings reales (`resolved=9`,
+  `new=0`); los 15 son 4 rutas calientes cc>30, 9 validadores/loaders con
+  cobertura parcial y 2 helpers cc6 sin cobertura.
+- Los cambios de este sprint son solo politica de analisis y documentacion; no
+  alteran binarios, por lo que no requieren republish del runtime.

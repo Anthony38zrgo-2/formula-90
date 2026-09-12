@@ -4,24 +4,32 @@ Origen: limpieza basada en `static-analysis-summary.json` (run `baseline`,
 HEAD `64dab296ece6a1ea1509f54213c036ade5c867d2`).
 Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
-## Estado (2026-09-11)
+## Estado (2026-09-12)
 
 - **Cerrados:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06,
   CLEAN-07, CLEAN-08, CLEAN-11.
-- **Parcial — falta completar:** CLEAN-10 (complejidad). cargo-crap bajo de 70 a
-  **24 findings**. Resta:
+- **Parcial — falta completar:** CLEAN-10 (complejidad). cargo-crap en HEAD
+  `5e173557` bajo de 70 a **15 findings** reales, tras la calibracion de la
+  frontera ABI y tooling (Sprint 0, ver CLEAN-10). Resta:
   1. dividir 4 funciones con cc > 30 en rutas calientes (`mixer::render` cc72,
      `AudioPowertrainSynthesis::validate` cc41, `PowertrainState::process_shift`
      cc38, `AeroForces::step_with_kinematics` cc34) con verificacion de paridad fisica;
-  2. cubrir o justificar las funciones FFI `#[no_mangle]` que `llvm-cov` no
-     instrumenta (`f90_core_*`, `vehicle_audio_*`, `f1_94_*`, `sim_world_solve_external`);
-  3. subir cobertura o dividir los validadores con cobertura parcial
-     (`VehicleSoundBank::load`, `validate_brake_duct`, `validate_aero_config`,
-     `validate_layer`, `enable_synth_from_profile`, `load_manifest_members`,
-     `SampleZone::load`, `trigger_from_code`, `validate_experimental_manifest`).
-- **Abierto:** CLEAN-09 (192 `unwrap`/`expect` WARNING en `src/` de produccion).
+  2. subir cobertura o dividir los validadores con cobertura parcial
+     (`VehicleSoundBank::load` cc30, `validate_brake_duct` cc26, `validate_layer`
+     cc24, `load_manifest_members` cc21, `enable_synth_from_profile` cc19,
+     `validate_aero_config` cc17, `SampleZone::load` cc15, `trigger_from_code`
+     cc13, `validate_experimental_manifest` cc30);
+  3. cubrir los dos helpers cc6 sin cobertura (`SoundConfig::merge_with_defaults`,
+     `AeroModelConfig::validate_underfloor_map_axes`).
+- **Abierto:** CLEAN-09 (197 `unwrap`/`expect` WARNING en `src/` de produccion;
+  incluye 5 en modulos inline `#[cfg(test)]`, ver CLEAN-09).
+- **Frontera ABI y tooling:** las funciones `#[no_mangle]` (`f90_core_*`,
+  `vehicle_audio_*`, `f1_94_*`, `sim_world_*`) y `bin_support.rs` quedaron
+  excluidas del gate cargo-crap por politica aprobada (CLEAN-10); su 0% es un
+  artefacto de atribucion de cobertura, no complejidad (CLEAN-12).
 - **Ajeno a estos items (no bloquea cobertura):** `aero_test` (4 fallos de
-  integracion) y `facade_parity` (3) siguen fallando.
+  integracion) y `facade_parity` (3) siguen fallando; `llvm-cov` corre con
+  `--ignore-run-fail`.
 
 ## CLEAN-01 — Migrar bincode 1.3.3 (RUSTSEC-2025-0141)
 
@@ -70,7 +78,15 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-09 — Reducir unwrap/expect en codigo de produccion
 
-- 192 findings `formula90s-rust-unwrap-expect` (WARNING) en `src/` no-tooling.
+- Re-baseline en HEAD `5e173557` (2026-09-12): **197 findings**
+  `formula90s-rust-unwrap-expect` (WARNING) en `src/` no-tooling, mas 86
+  `...-tooling` (INFO). Distribucion por crate: v10-engine-synth 95,
+  vehicle-audio-engine 56, vehicle-physics-engine 29, skybox-engine 27,
+  formula90-core 17, game-sim 3.
+- Calibracion pendiente: 5 de los 197 estan dentro de modulos inline
+  `#[cfg(test)]` (`formula90-core/src/ffi.rs`, `v10-engine-synth/src/wav.rs`).
+  La regla excluye `**/tests/**` por ruta pero no los modulos `#[cfg(test)]`
+  dentro de `src/`; evaluar si merecen una regla/severidad propias (CLEAN-03).
 - Trabajo: sustituir por manejo explicito de Result/Option donde el panic no
   sea infalible; los casos demostrablemente infalibles pueden documentarse con
   `expect("razon")`.
@@ -111,17 +127,23 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-10 — Dividir funciones de alta complejidad (cargo-crap)
 
-- Estado: **parcial** (2026-09-11). Se dividieron por responsabilidad 4 validadores
-  de alta complejidad: `EngineConfig::validate` (cc56), `JsonVehicleSpec::validate`
-  (cc57), `AeroModelConfig::validate` (cc53) y `apply_runtime_config_to_sim` (cc46),
-  en helpers de cc <= 25.
-- Resultado: 42 -> **24** findings (4 validadores divididos + desbloqueo de
-  cobertura via CLEAN-11).
-- Restan 24: 4 con cc > 30 en rutas calientes (`mixer::render` cc72,
-  `AudioPowertrainSynthesis::validate` cc41, `PowertrainState::process_shift` cc38,
-  `AeroForces::step_with_kinematics` cc34), funciones FFI `no_mangle` que
-  `llvm-cov` no instrumenta (`f90_core_*`, `vehicle_audio_*`, `f1_94_*`), y
-  validadores con cobertura parcial que requieren mas tests o division.
+- Estado: **parcial** (2026-09-12, re-baselinado en HEAD `5e173557`).
+- Divididos por responsabilidad 4 validadores de alta complejidad:
+  `EngineConfig::validate` (cc56), `JsonVehicleSpec::validate` (cc57),
+  `AeroModelConfig::validate` (cc53) y `apply_runtime_config_to_sim` (cc46), en
+  helpers de cc <= 25.
+- Sprint 0 — calibracion de falsos positivos: los 8 FFI `#[no_mangle]` con
+  cobertura 0% no eran deuda de codigo. Cada crate compila como
+  `["rlib", "cdylib"]`; `cargo llvm-cov` registra dos instanciaciones del modulo
+  (`formula90-core/src/ffi.rs`: las copias `CslR8...` del cdylib dan `FNDA:0` y
+  las `Cs35CT...` del rlib con hits). cargo-crap puntuaba la copia exportada sin
+  manglar del cdylib. `bin_support.rs` (`godot_project_version`) es tooling de
+  los bins de calibracion. Se excluyeron por nombre de funcion y por archivo en
+  `game/crates/.cargo-crap.toml` (aprobado 2026-09-12); ver CLEAN-12 para el
+  artefacto de cobertura rlib/cdylib.
+- Resultado: 42 -> 24 (CLEAN-05..11) -> **15** reales (Sprint 0). De los 15:
+  4 rutas calientes cc > 30, 9 validadores/loaders con cobertura parcial y 2
+  helpers cc6 sin cobertura.
 - Criterio de cierre: sin findings cargo-crap en `src/` de produccion.
 
 ## CLEAN-11 — Arreglar tests que bloquean la cobertura
@@ -173,3 +195,22 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
   (`lto = true`, `opt-level = 3`). Al aplicarse por fin, el release del workspace
   usa LTO (antes los perfiles por crate se ignoraban). `cargo build --workspace
   --release` validado.
+
+## CLEAN-12 — Artefacto de cobertura rlib/cdylib en llvm-cov
+
+- Estado: **abierto** (2026-09-12).
+- Sintoma: en los crates con `crate-type = ["rlib", "cdylib"]`, `cargo llvm-cov
+  --workspace` emite dos instanciaciones del mismo modulo en `lcov.info`. Las
+  funciones `#[no_mangle] pub extern "C"` aparecen con `FNDA:0` (copia exportada
+  del cdylib) aunque la copia manglada del rlib registre hits, porque los tests
+  enlazan el rlib. Evidencia: `formula90-core/src/ffi.rs` (`f90_core_*` FNDA:0
+  frente a `_RNvNtCs35CT...ffi...` con FNDA:1/5/...); `lcov` genera un solo
+  bloque `SF:` por archivo, por lo que las cuentas compiten.
+- Impacto: el CRAP del perimetro ABI queda inflado (0% artificial) y penaliza el
+  gate. Se mitigo con la politica de `allow` (CLEAN-10), pero el artefacto sigue
+  afectando a cualquier metrica de cobertura por funcion sobre el ABI.
+- Trabajo: evaluar instrumentar solo el rlib en la corrida de cobertura, o
+  filtrar las copias del cdylib durante la normalizacion del LCOV. Verificar sin
+  enmascarar cobertura real del resto de `ffi.rs`/`c_abi.rs`.
+- Criterio de cierre: `lcov` no reporta doble instanciacion para estos modulos y
+  la politica de `allow` de CLEAN-10 puede retirarse.

@@ -4,5 +4,27 @@
 # runs the test binaries, so their `main`/CLI helpers never execute and always
 # show 0% coverage. Their CRAP score is therefore meaningless as a quality gate.
 # Same context split as the semgrep `unwrap/expect` tooling rule (CLEAN-03).
+#
+# `bin_support.rs` is tooling too: metadata helpers used only by the
+# calibration binaries (physics_cli, tire_sweep), so it is never executed by
+# the test binaries.
+#
+# The ABI boundary (`#[no_mangle] pub extern "C"`) is excluded by function name.
+# The workspace crates build as ["rlib", "cdylib"]; `cargo llvm-cov` records two
+# module instantiations, and the exported unmangled copy of the cdylib shows
+# FNDA:0 even though unit tests exercise the rlib copy (verified in lcov.info
+# for `formula90-core/src/ffi.rs`: f90_core_* FNDA:0 vs the mangled rlib
+# functions with hits). CRAP for these functions is a coverage-attribution
+# artifact, not code complexity; their cyclomatic complexity is 6-14 and the
+# tests exist (e.g. `abi_lifecycle_covers_core_entrypoints`). Policy approved
+# on 2026-09-12.
 threshold = 30.0
-allow = ["**/src/bin/**", "**/build.rs"]
+allow = [
+  "**/src/bin/**",
+  "**/build.rs",
+  "**/src/bin_support.rs",
+  "f90_core_*",
+  "sim_world_*",
+  "f1_94_*",
+  "vehicle_audio_*",
+]
