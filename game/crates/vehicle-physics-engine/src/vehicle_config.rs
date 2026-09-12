@@ -2741,6 +2741,24 @@ fn validate_brake_duct(name: &str, c: &BrakeDuctAxleConfig) -> Result<(), String
 
 impl JsonVehicleSpec {
     fn validate(&self) -> Result<(), String> {
+        self.validate_core()?;
+        self.validate_tires()?;
+        self.validate_suspension_geometry()?;
+        let brake_thermal = self
+            .brakes
+            .thermal
+            .as_ref()
+            .map(JsonBrakeThermal::to_config)
+            .unwrap_or_default();
+        validate_brake_thermal(&brake_thermal)?;
+        self.validate_aids()?;
+        if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
+            return Err("Spring lengths must be positive".to_string());
+        }
+        Ok(())
+    }
+
+    fn validate_core(&self) -> Result<(), String> {
         if self.schema_version != 1 && self.schema_version != 2 && self.schema_version != 3 {
             return Err(format!(
                 "Unsupported schema_version: {}",
@@ -2762,6 +2780,17 @@ impl JsonVehicleSpec {
         if self.tires.front.radius <= 0.0 || self.tires.rear.radius <= 0.0 {
             return Err("Tire radii must be positive".to_string());
         }
+        Ok(())
+    }
+
+    fn validate_tires(&self) -> Result<(), String> {
+        self.validate_tire_pressure()?;
+        self.validate_tire_thermal()?;
+        self.validate_tire_force_model()?;
+        self.validate_tire_pressure_mechanics()
+    }
+
+    fn validate_tire_pressure(&self) -> Result<(), String> {
         if let Some(p) = &self.tires.pressure {
             for (name, v) in p
                 .cold_kpa_gauge
@@ -2784,6 +2813,10 @@ impl JsonVehicleSpec {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn validate_tire_thermal(&self) -> Result<(), String> {
         if let Some(t) = &self.tires.thermal {
             for (name, profile) in [
                 ("shared", t),
@@ -2799,6 +2832,10 @@ impl JsonVehicleSpec {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn validate_tire_force_model(&self) -> Result<(), String> {
         if let Some(fm) = &self.tires.force_model {
             for (name, profile) in [("front", &fm.front), ("rear", &fm.rear)] {
                 for (field, value) in [
@@ -2840,6 +2877,10 @@ impl JsonVehicleSpec {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn validate_tire_pressure_mechanics(&self) -> Result<(), String> {
         if let Some(pm) = &self.tires.pressure_mechanics {
             for (field, value) in [
                 ("compliance_sensitivity", pm.compliance_sensitivity),
@@ -2851,6 +2892,10 @@ impl JsonVehicleSpec {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn validate_suspension_geometry(&self) -> Result<(), String> {
         for (name, axle) in [("front", &self.suspension.front), ("rear", &self.suspension.rear)] {
             for (field, value) in [
                 ("camber_gain_rad_per_m", axle.camber_gain_rad_per_m),
@@ -2865,13 +2910,10 @@ impl JsonVehicleSpec {
                 }
             }
         }
-        let brake_thermal = self
-            .brakes
-            .thermal
-            .as_ref()
-            .map(JsonBrakeThermal::to_config)
-            .unwrap_or_default();
-        validate_brake_thermal(&brake_thermal)?;
+        Ok(())
+    }
+
+    fn validate_aids(&self) -> Result<(), String> {
         let gear_count = self.powertrain.gear_ratios.len();
         if self.aids.traction_control_gear_authority.len() != gear_count
             || self.aids.traction_control_gear_slip_target.len() != gear_count
@@ -2907,9 +2949,6 @@ impl JsonVehicleSpec {
             || self.aids.traction_control_release_rate <= 0.0
         {
             return Err("aids TC attack/release rates must be positive and finite".to_string());
-        }
-        if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
-            return Err("Spring lengths must be positive".to_string());
         }
         Ok(())
     }

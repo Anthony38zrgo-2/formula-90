@@ -115,6 +115,13 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
 /// (`formula90_core`), so every tunable JSON parameter stays usable at runtime on
 /// BOTH integration paths. Sanitizes each field like the original FFI.
 pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) -> bool {
+    apply_chassis_config(sim, cfg);
+    apply_drivetrain_config(sim, cfg);
+    sim.aids = AidsMask::from_bits(cfg.aids_enabled_mask);
+    true
+}
+
+fn apply_chassis_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.vehicle_mass.is_finite() && cfg.vehicle_mass > 0.0 {
         sim.config.vehicle_mass = cfg.vehicle_mass;
     }
@@ -149,7 +156,14 @@ pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeC
         sim.config.countersteer_speed = cfg.countersteer_speed;
     }
     sim.config.automatic_transmission = cfg.automatic_transmission;
+}
 
+fn apply_drivetrain_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
+    apply_differential_config(sim, cfg);
+    apply_inertia_and_suspension_config(sim, cfg);
+}
+
+fn apply_differential_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.diff_preload.is_finite() && cfg.diff_preload > 0.0 {
         sim.config.diff_preload = cfg.diff_preload;
     }
@@ -165,6 +179,9 @@ pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeC
     if cfg.diff_clutch_friction_coeff.is_finite() && cfg.diff_clutch_friction_coeff >= 0.0 {
         sim.config.diff_clutch_friction_coeff = cfg.diff_clutch_friction_coeff;
     }
+}
+
+fn apply_inertia_and_suspension_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.inertia_multiplier_x.is_finite() && cfg.inertia_multiplier_x > 0.0 {
         sim.config.inertia_multipliers.x = cfg.inertia_multiplier_x;
     }
@@ -186,8 +203,6 @@ pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeC
     if cfg.suspension_rear_resting_ratio.is_finite() && cfg.suspension_rear_resting_ratio > 0.0 {
         sim.config.rear_resting_ratio = cfg.suspension_rear_resting_ratio;
     }
-    sim.aids = AidsMask::from_bits(cfg.aids_enabled_mask);
-    true
 }
 
 #[no_mangle]

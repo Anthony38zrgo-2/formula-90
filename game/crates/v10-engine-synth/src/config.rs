@@ -129,6 +129,13 @@ impl Default for EngineConfig {
 
 impl EngineConfig {
     pub fn validate(&self) -> Result<(), String> {
+        self.validate_geometry()?;
+        self.validate_combustion()?;
+        self.validate_exhaust()?;
+        self.validate_gains()
+    }
+
+    fn validate_geometry(&self) -> Result<(), String> {
         if !(8_000..=192_000).contains(&self.sample_rate) {
             return Err(format!("sample_rate out of range: {}", self.sample_rate));
         }
@@ -157,6 +164,10 @@ impl EngineConfig {
             }
             seen[cylinder] = true;
         }
+        Ok(())
+    }
+
+    fn validate_combustion(&self) -> Result<(), String> {
         if !(20.0..=160.0).contains(&self.combustion_rise_deg) {
             return Err("combustion_rise_deg outside physical experiment bounds".into());
         }
@@ -175,6 +186,15 @@ impl EngineConfig {
         if !(30.0..=260.0).contains(&self.expansion_decay_deg) {
             return Err("expansion_decay_deg outside physical experiment bounds".into());
         }
+        Ok(())
+    }
+
+    fn validate_exhaust(&self) -> Result<(), String> {
+        self.validate_exhaust_timing()?;
+        self.validate_exhaust_wave()
+    }
+
+    fn validate_exhaust_timing(&self) -> Result<(), String> {
         if !(60.0..=240.0).contains(&self.exhaust_open_deg) {
             return Err("exhaust_open_deg outside physical experiment bounds".into());
         }
@@ -209,6 +229,10 @@ impl EngineConfig {
                 return Err(format!("{name} outside supported range (must be > 0)"));
             }
         }
+        Ok(())
+    }
+
+    fn validate_exhaust_wave(&self) -> Result<(), String> {
         if !(0.0..=0.15).contains(&self.cycle_variation)
             || !(0.0..=0.10).contains(&self.cylinder_spread)
         {
@@ -238,6 +262,10 @@ impl EngineConfig {
         {
             return Err("exhaust excitation gain outside declared safety bounds".into());
         }
+        Ok(())
+    }
+
+    fn validate_gains(&self) -> Result<(), String> {
         if !(0.0..=2.0).contains(&self.pressure_direct_gain)
             || !(0.0..=2.0).contains(&self.crankcase_gain)
             || !(0.0..=2.0).contains(&self.block_gain)

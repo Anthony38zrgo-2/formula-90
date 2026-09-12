@@ -1167,6 +1167,12 @@ pub fn validate_aero_config(c: &VehicleConfig) -> Result<(), String> {
 
 impl AeroModelConfig {
     pub fn validate(&self) -> Result<(), String> {
+        self.validate_wings()?;
+        self.validate_underfloor()?;
+        self.validate_limits_and_body()
+    }
+
+    fn validate_wings(&self) -> Result<(), String> {
         for (name, wing) in [
             ("front_wing", &self.front_wing),
             ("rear_wing", &self.rear_wing),
@@ -1220,6 +1226,16 @@ impl AeroModelConfig {
                 ));
             }
         }
+        Ok(())
+    }
+
+    fn validate_underfloor(&self) -> Result<(), String> {
+        self.validate_underfloor_scalars()?;
+        self.validate_underfloor_geometry()?;
+        self.validate_underfloor_map()
+    }
+
+    fn validate_underfloor_scalars(&self) -> Result<(), String> {
         let f = &self.underfloor;
         for value in [
             f.lift_area_m2,
@@ -1253,6 +1269,11 @@ impl AeroModelConfig {
                 );
             }
         }
+        Ok(())
+    }
+
+    fn validate_underfloor_geometry(&self) -> Result<(), String> {
+        let f = &self.underfloor;
         if f.choke_height_m >= f.optimal_height_m
             || f.optimal_height_m >= f.high_height_m
             || !f.optimal_rake_deg.is_finite()
@@ -1273,32 +1294,53 @@ impl AeroModelConfig {
                 );
             }
         }
+        Ok(())
+    }
+
+    fn validate_underfloor_map(&self) -> Result<(), String> {
+        let f = &self.underfloor;
         if let Some(map) = &f.map {
-            for axis in [&map.front_heights_m, &map.rear_heights_m] {
-                if axis.len() < 2
-                    || axis.len() > 16
-                    || axis.iter().any(|h| !h.is_finite() || *h <= 0.0)
-                    || axis.windows(2).any(|h| h[1] <= h[0])
-                {
-                    return Err(
-                        "aero.underfloor.map: each axis needs 2..16 increasing positive heights"
-                            .into(),
-                    );
-                }
-            }
-            if map.cells.len() != map.front_heights_m.len() * map.rear_heights_m.len()
-                || map.cells.iter().any(|cell| {
-                    !cell.load_factor.is_finite()
-                        || !(0.0..=4.0).contains(&cell.load_factor)
-                        || !cell.pressure_shift_m.is_finite()
-                        || cell.pressure_shift_m.abs() > f.max_pressure_shift_m
-                })
+            Self::validate_underfloor_map_axes(map)?;
+            Self::validate_underfloor_map_cells(map, f.max_pressure_shift_m)?;
+        }
+        Ok(())
+    }
+
+    fn validate_underfloor_map_axes(map: &GroundEffectMap) -> Result<(), String> {
+        for axis in [&map.front_heights_m, &map.rear_heights_m] {
+            if axis.len() < 2
+                || axis.len() > 16
+                || axis.iter().any(|h| !h.is_finite() || *h <= 0.0)
+                || axis.windows(2).any(|h| h[1] <= h[0])
             {
                 return Err(
-                    "aero.underfloor.map: wrong cell count or load/pressure outside bounds".into(),
+                    "aero.underfloor.map: each axis needs 2..16 increasing positive heights".into(),
                 );
             }
         }
+        Ok(())
+    }
+
+    fn validate_underfloor_map_cells(
+        map: &GroundEffectMap,
+        max_pressure_shift_m: f64,
+    ) -> Result<(), String> {
+        if map.cells.len() != map.front_heights_m.len() * map.rear_heights_m.len()
+            || map.cells.iter().any(|cell| {
+                !cell.load_factor.is_finite()
+                    || !(0.0..=4.0).contains(&cell.load_factor)
+                    || !cell.pressure_shift_m.is_finite()
+                    || cell.pressure_shift_m.abs() > max_pressure_shift_m
+            })
+        {
+            return Err(
+                "aero.underfloor.map: wrong cell count or load/pressure outside bounds".into(),
+            );
+        }
+        Ok(())
+    }
+
+    fn validate_limits_and_body(&self) -> Result<(), String> {
         for value in [
             self.limits.soft_max_load_ratio,
             self.limits.hard_max_load_ratio,

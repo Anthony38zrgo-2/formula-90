@@ -92,15 +92,34 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-10 — Dividir funciones de alta complejidad (cargo-crap)
 
-- 42 funciones con CRAP > 30 en `src/` de produccion. Top: `mixer::render` (cc72),
-  `JsonVehicleSpec::validate` (cc57), `EngineConfig::validate` (cc56),
-  `AeroModelConfig::validate` (cc53), `apply_runtime_config_to_sim` (cc46),
-  `AudioPowertrainSynthesis::validate` (cc41), `PowertrainState::process_shift`
-  (cc38), `AeroForces::step_with_kinematics` (cc34), `validate_experimental_manifest`
-  (cc30), etc.
-- Trabajo: dividir por responsabilidad (validacion por bloques, render por etapas)
-  y anadir cobertura; verificar paridad fisica tras cada division.
+- Estado: **parcial** (2026-09-11). Se dividieron por responsabilidad 4 validadores
+  de alta complejidad: `EngineConfig::validate` (cc56), `JsonVehicleSpec::validate`
+  (cc57), `AeroModelConfig::validate` (cc53) y `apply_runtime_config_to_sim` (cc46),
+  en helpers de cc <= 25.
+- Resultado: 42 -> 39 findings.
+- Bloqueo identificado: la mayoria de los 39 restantes tienen 0% de cobertura
+  porque los binarios de test de `vehicle-physics-engine` (aero) y
+  `vehicle-audio-engine` (alloc) fallan, y `cargo llvm-cov` no registra su
+  cobertura. Con 0% de cobertura, cualquier funcion con cc > 5 supera el umbral,
+  por lo que dividir mas no basta: hay que arreglar esos tests primero (CLEAN-11).
+- Restan ademas 4 funciones con cc > 30 en rutas calientes (`mixer::render` cc72,
+  `AudioPowertrainSynthesis::validate` cc41, `PowertrainState::process_shift` cc38,
+  `AeroForces::step_with_kinematics` cc34) que requieren division con verificacion
+  de paridad fisica.
 - Criterio de cierre: sin findings cargo-crap en `src/` de produccion.
+
+## CLEAN-11 — Arreglar tests que bloquean la cobertura
+
+- Los binarios de test `vehicle-physics-engine --lib` (aero:
+  `localized_bottoming_collapses_floor_before_wings`, `floor_ignores_probe_5_and_responds_to_rake`)
+  y `vehicle-audio-engine --lib` (`gf509_render_has_zero_rust_allocations`) fallan,
+  y `cargo llvm-cov` no registra su cobertura. Eso mantiene en 0% decenas de
+  funciones y bloquea el cierre de CLEAN-10 (y la senal de cobertura en general).
+- Trabajo: determinar si son expectativas desactualizadas o regresiones reales
+  (aero/bottoming y asignaciones en render) y corregir.
+- Criterio de cierre: `cargo test --workspace` sin fallos en esos binarios y
+  cobertura registrada para vehicle-physics-engine/vehicle-audio-engine.
+
 
 ## CLEAN-06 — cppcheck cstyleCast
 
