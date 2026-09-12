@@ -55,9 +55,14 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-07 — Test pre-existente roto en game-sim
 
-- `cargo test -p game-sim --lib c_abi_roundtrip` falla con
-  "TC active during launch" (`game-sim/src/c_abi.rs:513`), anterior a esta limpieza.
-- Trabajo: determinar si es expectativa desactualizada o regresion de traction control.
+- `cargo test -p game-sim --lib c_abi_roundtrip` fallaba con "TC active during
+  launch" (`game-sim/src/c_abi.rs`), anterior a esta limpieza.
+- Diagnostico: expectativa desactualizada. El perfil `f1_2026_2008` trae
+  `traction_control_default_enabled: false`, asi que `AidsMask::from_config`
+  desactiva TC; el test asumia TC activo por defecto. No es regresion del solver:
+  con TC habilitado, `tc_active` se enciende.
+- Estado: **cerrado** (2026-09-11). El test habilita TC una vez via el toggle
+  edge-triggered y verifica que la telemetria `tc_active` se enciende.
 
 ## CLEAN-08 — Warning de arranque en cargo (perfiles)
 

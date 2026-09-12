@@ -508,21 +508,28 @@ mod tests {
 			"/../../data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"
         ))
         .unwrap();
-        let id = sim_world_spawn_from_json(w, path.as_ptr());
-        assert!(id != 0, "spawn must succeed");
-        for _ in 0..120 {
-            sim_world_set_input(w, id, 1.0, 0.0, 0.0, 0.0, 0.0, 1, false);
-            sim_world_step(w);
-        }
-        let mut pose = CSimPose::default();
-        sim_world_pose(w, id, &mut pose);
-        // Flat ground, straight launch: must have moved forward (z), no large lateral.
-        assert!(pose.z < -1.0, "vehicle should accelerate forward");
-        assert!(pose.x.abs() < 0.5, "no significant lateral drift on straight launch");
-        let mut tel = CSimTelemetry::default();
-        sim_world_telemetry(w, id, &mut tel);
-        assert!(tel.speed_kmh > 0.0, "telemetry speed > 0 after launch");
-        assert!(tel.tc_active == 1.0, "TC active during launch");
-        sim_world_destroy(w);
+    let id = sim_world_spawn_from_json(w, path.as_ptr());
+    assert!(id != 0, "spawn must succeed");
+    // The f1_2026_2008 profile ships with TC disabled by default
+    // (`traction_control_default_enabled: false`). Enable it once via the
+    // edge-triggered toggle so the TC telemetry path is exercised end-to-end.
+    let mut tc_seen = false;
+    for step in 0..120 {
+        sim_world_set_input(w, id, 1.0, 0.0, 0.0, 0.0, 0.0, 1, step == 0);
+        sim_world_step(w);
+        let mut t = CSimTelemetry::default();
+        sim_world_telemetry(w, id, &mut t);
+        tc_seen |= t.tc_active == 1.0;
+    }
+    let mut pose = CSimPose::default();
+    sim_world_pose(w, id, &mut pose);
+    // Flat ground, straight launch: must have moved forward (z), no large lateral.
+    assert!(pose.z < -1.0, "vehicle should accelerate forward");
+    assert!(pose.x.abs() < 0.5, "no significant lateral drift on straight launch");
+    let mut tel = CSimTelemetry::default();
+    sim_world_telemetry(w, id, &mut tel);
+    assert!(tel.speed_kmh > 0.0, "telemetry speed > 0 after launch");
+    assert!(tc_seen, "TC must engage at least once when enabled under full-throttle launch");
+    sim_world_destroy(w);
     }
 }
