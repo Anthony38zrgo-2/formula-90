@@ -263,25 +263,25 @@ bool F194RustVehicle::load_rust_dll() {
 		return false;
 	}
 
-	dll_handle_ = (void *)hDll;
+	dll_handle_ = reinterpret_cast<void *>(hDll);
 
-	fn_abi_version_ = (FnPhysicsAbiVersion)GetProcAddress(hDll, "f1_94_physics_abi_version");
-	fn_build_sha_ = (FnPhysicsBuildSha)GetProcAddress(hDll, "f1_94_physics_build_sha");
-	fn_get_runtime_config_ = (FnPhysicsGetRuntimeConfig)GetProcAddress(hDll, "f1_94_physics_get_runtime_config");
-	fn_apply_runtime_config_ = (FnPhysicsApplyRuntimeConfig)GetProcAddress(hDll, "f1_94_physics_apply_runtime_config");
-	fn_create_default_ = (FnPhysicsCreateDefault)GetProcAddress(hDll, "f1_94_physics_create_default");
-	fn_create_from_json_ = (FnPhysicsCreateFromJson)GetProcAddress(hDll, "f1_94_physics_create_from_json");
-	fn_create_with_pos_ = (FnPhysicsCreateWithPos)GetProcAddress(hDll, "f1_94_physics_create_with_pos");
-	fn_reset_ = (FnPhysicsReset)GetProcAddress(hDll, "f1_94_physics_reset");
-	fn_solve_forces_ = (FnPhysicsSolveForces)GetProcAddress(hDll, "f1_94_physics_solve_forces");
-	fn_step_ = (FnPhysicsStep)GetProcAddress(hDll, "f1_94_physics_step");
-	fn_get_anchor_ = (FnPhysicsGetWheelAnchorLocal)GetProcAddress(hDll, "f1_94_physics_get_wheel_anchor_local");
-	fn_get_tri_span_ = (FnPhysicsGetTriRaySpan)GetProcAddress(hDll, "f1_94_physics_get_tri_ray_span");
-	fn_get_ray_length_ = (FnPhysicsGetRayLength)GetProcAddress(hDll, "f1_94_physics_get_ray_length");
-	fn_get_vehicle_mass_ = (FnPhysicsGetVehicleMass)GetProcAddress(hDll, "f1_94_physics_get_vehicle_mass");
-	fn_get_default_spawn_height_ = (FnPhysicsGetDefaultSpawnHeight)GetProcAddress(hDll, "f1_94_physics_get_default_spawn_height");
-	fn_get_center_of_mass_local_ = (FnPhysicsGetCenterOfMassLocal)GetProcAddress(hDll, "f1_94_physics_get_center_of_mass_local");
-	fn_destroy_ = (FnPhysicsDestroy)GetProcAddress(hDll, "f1_94_physics_destroy");
+	fn_abi_version_ = reinterpret_cast<FnPhysicsAbiVersion>(GetProcAddress(hDll, "f1_94_physics_abi_version"));
+	fn_build_sha_ = reinterpret_cast<FnPhysicsBuildSha>(GetProcAddress(hDll, "f1_94_physics_build_sha"));
+	fn_get_runtime_config_ = reinterpret_cast<FnPhysicsGetRuntimeConfig>(GetProcAddress(hDll, "f1_94_physics_get_runtime_config"));
+	fn_apply_runtime_config_ = reinterpret_cast<FnPhysicsApplyRuntimeConfig>(GetProcAddress(hDll, "f1_94_physics_apply_runtime_config"));
+	fn_create_default_ = reinterpret_cast<FnPhysicsCreateDefault>(GetProcAddress(hDll, "f1_94_physics_create_default"));
+	fn_create_from_json_ = reinterpret_cast<FnPhysicsCreateFromJson>(GetProcAddress(hDll, "f1_94_physics_create_from_json"));
+	fn_create_with_pos_ = reinterpret_cast<FnPhysicsCreateWithPos>(GetProcAddress(hDll, "f1_94_physics_create_with_pos"));
+	fn_reset_ = reinterpret_cast<FnPhysicsReset>(GetProcAddress(hDll, "f1_94_physics_reset"));
+	fn_solve_forces_ = reinterpret_cast<FnPhysicsSolveForces>(GetProcAddress(hDll, "f1_94_physics_solve_forces"));
+	fn_step_ = reinterpret_cast<FnPhysicsStep>(GetProcAddress(hDll, "f1_94_physics_step"));
+	fn_get_anchor_ = reinterpret_cast<FnPhysicsGetWheelAnchorLocal>(GetProcAddress(hDll, "f1_94_physics_get_wheel_anchor_local"));
+	fn_get_tri_span_ = reinterpret_cast<FnPhysicsGetTriRaySpan>(GetProcAddress(hDll, "f1_94_physics_get_tri_ray_span"));
+	fn_get_ray_length_ = reinterpret_cast<FnPhysicsGetRayLength>(GetProcAddress(hDll, "f1_94_physics_get_ray_length"));
+	fn_get_vehicle_mass_ = reinterpret_cast<FnPhysicsGetVehicleMass>(GetProcAddress(hDll, "f1_94_physics_get_vehicle_mass"));
+	fn_get_default_spawn_height_ = reinterpret_cast<FnPhysicsGetDefaultSpawnHeight>(GetProcAddress(hDll, "f1_94_physics_get_default_spawn_height"));
+	fn_get_center_of_mass_local_ = reinterpret_cast<FnPhysicsGetCenterOfMassLocal>(GetProcAddress(hDll, "f1_94_physics_get_center_of_mass_local"));
+	fn_destroy_ = reinterpret_cast<FnPhysicsDestroy>(GetProcAddress(hDll, "f1_94_physics_destroy"));
 
 	uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	const char *build_sha = fn_build_sha_ ? fn_build_sha_() : "unknown";
@@ -437,7 +437,7 @@ void F194RustVehicle::_ready() {
 					sim_ptr_ = json_sim;
 					UtilityFunctions::print(String("[F194RustVehicle] Loaded physics from JSON: ") + json_path);
 				} else {
-					String err_msg = String(err_buf[0] ? (const char *)err_buf : "unknown error");
+					String err_msg = String(err_buf[0] ? reinterpret_cast<const char *>(err_buf) : "unknown error");
 					UtilityFunctions::printerr(String("[F194RustVehicle] CRITICAL JSON PARSE ERROR: ") + err_msg + ". Falling back to default canonical configuration.");
 				}
 			}

@@ -57,8 +57,13 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-06 — cppcheck cstyleCast
 
-- 37 conversiones C-style en C++ propio.
-- Trabajo: decidir refactor a casts nombrados o supresion justificada por lote.
+- Estado: **cerrado** (2026-09-11). Las 37 conversiones C-style se refactorizaron a
+  casts nombrados `reinterpret_cast<...>` en `native/src/core/f90_core.cpp` (14),
+  `native/src/vehicle/f1_94_rust_vehicle.cpp` (19) y
+  `native/src/presentation/psx_art_controller.cpp` (4). Son casts de punteros ABI
+  (`GetProcAddress` -> funcion tipada, `HMODULE` -> `void *`, buffer -> `const char *`),
+  por lo que `reinterpret_cast` es el cast correcto.
+- Verificacion: SCons compila los 3 archivos; cppcheck ya no reporta `cstyleCast`.
 
 ## CLEAN-07 — Test pre-existente roto en game-sim
 

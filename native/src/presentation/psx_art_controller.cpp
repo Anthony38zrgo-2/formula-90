@@ -144,10 +144,10 @@ bool PsxArtController::load_dll() {
 		return false;
 	}
 
-	dll_handle_ = (void *)hDll;
-	fn_parse_preset_ = (FnPsxArtParsePreset)GetProcAddress(hDll, "psx_art_parse_preset");
-	fn_get_dither_ = (FnPsxArtGetDitherMatrix)GetProcAddress(hDll, "psx_art_get_dither_matrix");
-	fn_version_ = (FnPsxArtVersion)GetProcAddress(hDll, "psx_art_version");
+	dll_handle_ = reinterpret_cast<void *>(hDll);
+	fn_parse_preset_ = reinterpret_cast<FnPsxArtParsePreset>(GetProcAddress(hDll, "psx_art_parse_preset"));
+	fn_get_dither_ = reinterpret_cast<FnPsxArtGetDitherMatrix>(GetProcAddress(hDll, "psx_art_get_dither_matrix"));
+	fn_version_ = reinterpret_cast<FnPsxArtVersion>(GetProcAddress(hDll, "psx_art_version"));
 
 	if (!fn_parse_preset_) {
 		UtilityFunctions::printerr("[PsxArtController] Missing psx_art_parse_preset symbol in DLL!");

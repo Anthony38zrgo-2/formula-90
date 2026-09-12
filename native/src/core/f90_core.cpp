@@ -275,20 +275,20 @@ bool F90Core::load_dll() {
 		UtilityFunctions::printerr("[F90Core] Failed to load formula90_core.dll from all candidates!");
 		return false;
 	}
-	dll_handle_ = (void *)hDll;
+	dll_handle_ = reinterpret_cast<void *>(hDll);
 
-	fn_abi_version_ = (FnCoreAbiVersion)GetProcAddress(hDll, "f90_core_abi_version");
-	fn_build_sha_ = (FnCoreBuildSha)GetProcAddress(hDll, "f90_core_build_sha");
-	fn_create_ = (FnCoreCreate)GetProcAddress(hDll, "f90_core_create");
-	fn_destroy_ = (FnCoreDestroy)GetProcAddress(hDll, "f90_core_destroy");
-	fn_spawn_ = (FnCoreSpawn)GetProcAddress(hDll, "f90_core_spawn");
-	fn_reset_ = (FnCoreReset)GetProcAddress(hDll, "f90_core_reset");
-	fn_apply_runtime_config_ = (FnCoreApplyRuntimeConfig)GetProcAddress(hDll, "f90_core_apply_runtime_config");
-	fn_step_ = (FnCoreStep)GetProcAddress(hDll, "f90_core_step");
-	fn_audio_render_ = (FnCoreAudioRender)GetProcAddress(hDll, "f90_core_audio_render");
-	fn_audio_trigger_ = (FnCoreAudioTrigger)GetProcAddress(hDll, "f90_core_audio_trigger");
-	fn_audio_readouts_ = (FnCoreAudioReadouts)GetProcAddress(hDll, "f90_core_audio_readouts");
-	fn_audio_set_ambient_ = (FnCoreAudioSetAmbient)GetProcAddress(hDll, "f90_core_audio_set_ambient");
+	fn_abi_version_ = reinterpret_cast<FnCoreAbiVersion>(GetProcAddress(hDll, "f90_core_abi_version"));
+	fn_build_sha_ = reinterpret_cast<FnCoreBuildSha>(GetProcAddress(hDll, "f90_core_build_sha"));
+	fn_create_ = reinterpret_cast<FnCoreCreate>(GetProcAddress(hDll, "f90_core_create"));
+	fn_destroy_ = reinterpret_cast<FnCoreDestroy>(GetProcAddress(hDll, "f90_core_destroy"));
+	fn_spawn_ = reinterpret_cast<FnCoreSpawn>(GetProcAddress(hDll, "f90_core_spawn"));
+	fn_reset_ = reinterpret_cast<FnCoreReset>(GetProcAddress(hDll, "f90_core_reset"));
+	fn_apply_runtime_config_ = reinterpret_cast<FnCoreApplyRuntimeConfig>(GetProcAddress(hDll, "f90_core_apply_runtime_config"));
+	fn_step_ = reinterpret_cast<FnCoreStep>(GetProcAddress(hDll, "f90_core_step"));
+	fn_audio_render_ = reinterpret_cast<FnCoreAudioRender>(GetProcAddress(hDll, "f90_core_audio_render"));
+	fn_audio_trigger_ = reinterpret_cast<FnCoreAudioTrigger>(GetProcAddress(hDll, "f90_core_audio_trigger"));
+	fn_audio_readouts_ = reinterpret_cast<FnCoreAudioReadouts>(GetProcAddress(hDll, "f90_core_audio_readouts"));
+	fn_audio_set_ambient_ = reinterpret_cast<FnCoreAudioSetAmbient>(GetProcAddress(hDll, "f90_core_audio_set_ambient"));
 
 	const uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	const String core_build_sha = fn_build_sha_ ? String(fn_build_sha_()) : String("unknown");
@@ -407,7 +407,7 @@ void F90Core::_ready() {
 	uint8_t err_buf[256] = { 0 };
 	core_ = fn_create_(cs.get_data(), err_buf, sizeof(err_buf));
 	if (!core_) {
-		UtilityFunctions::printerr(String("[F90Core] f90_core_create failed: ") + String((const char *)err_buf));
+		UtilityFunctions::printerr(String("[F90Core] f90_core_create failed: ") + String(reinterpret_cast<const char *>(err_buf)));
 		return;
 	}
 	entity_id_ = fn_spawn_(core_);
