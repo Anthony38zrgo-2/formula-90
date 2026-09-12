@@ -3,7 +3,8 @@ name = "vehicle_audio_engine"
 version = "0.1.0"
 edition = "2021"
 description = "Formula-90 vehicle audio runtime core: deterministic mix state + sound bank loader + GEVP adapter (pure Rust, no Godot deps in the core)."
-license = "proprietary"
+license = "LicenseRef-Proprietary"
+publish = false
 
 [lib]
 name = "vehicle_audio_engine"
@@ -13,7 +14,7 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-thiserror = "1"
+thiserror = "2"
 sha2 = "0.10"
 v10-engine-synth = { path = "../v10-engine-synth" }
 

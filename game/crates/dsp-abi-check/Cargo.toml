@@ -2,6 +2,8 @@
 name = "dsp-abi-check"
 version = "0.1.0"
 edition = "2021"
+license = "LicenseRef-Proprietary"
+publish = false
 
 [lib]
 path = "src/lib.rs"

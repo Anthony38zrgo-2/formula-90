@@ -37,10 +37,17 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-04 — Licencias y metadatos de dependencias
 
-- cargo-deny: 8 crates propios sin `license`/`publish=false`, 1 `l:parse-error`
-  SPDX, 1 `b:duplicate` (`syn` 2.0 y 3.0).
-- Trabajo: definir licencia de los crates del workspace y revisar el origen del
-  parse error y del duplicado.
+- Estado: **cerrado** (2026-09-11).
+- Licencias: `license = "proprietary"` no es SPDX valido (originaba `l:parse-error`
+  y `l:unlicensed`). Se sustituyo por `license = "LicenseRef-Proprietary"` y se
+  agrego `publish = false` en los 8 crates del workspace; con `[licenses.private]
+  ignore = true` de `deny.toml`, cargo-deny los trata como privados. Los crates
+  `dsp-abi-check` y `v10-engine-synth` no tenian campo de licencia (`l:no-license-field`).
+- Duplicado `syn`: `thiserror 1.0` usaba syn 2 mientras `serde_derive` usa syn 3.
+  Se subio `thiserror` a 2.0 (que usa syn 3) en los 4 crates que lo usan; el grafo
+  queda con una sola version de syn (3.0.3).
+- Verificacion: `cargo-deny` deja solo el finding `a:unmaintained` de bincode
+  (CLEAN-01, suprimido).
 
 ## CLEAN-05 — Complejidad (cargo-crap)
 

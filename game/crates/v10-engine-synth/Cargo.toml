@@ -2,6 +2,8 @@
 name = "v10-engine-synth"
 version = "0.1.0"
 edition = "2021"
+license = "LicenseRef-Proprietary"
+publish = false
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

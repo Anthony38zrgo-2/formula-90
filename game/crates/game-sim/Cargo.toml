@@ -3,7 +3,8 @@ name = "game_sim"
 version = "0.1.0"
 edition = "2021"
 description = "Formula-90 authoritative Rust simulation core (snapshot-server model): owns world/scene graph, vehicles, aids and session; emits serializable snapshots for a thin Godot mirror."
-license = "proprietary"
+license = "LicenseRef-Proprietary"
+publish = false
 
 [lib]
 name = "game_sim"
