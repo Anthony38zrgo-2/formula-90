@@ -322,6 +322,8 @@ fn enable_fast_floats() {
             return;
         }
         let mut mxcsr: u32 = 0;
+        // SAFETY: `stmxcsr` stores MXCSR into the valid, aligned stack `mxcsr`; no other
+        // memory is touched (nostack/preserves_flags).
         unsafe {
             core::arch::asm!(
                 "stmxcsr [{0}]",
@@ -330,6 +332,8 @@ fn enable_fast_floats() {
             );
         }
         mxcsr |= 0x8000 | 0x0040;
+        // SAFETY: `ldmxcsr` loads MXCSR from the valid, aligned stack `mxcsr`; no other
+        // memory is touched (nostack/preserves_flags).
         unsafe {
             core::arch::asm!(
                 "ldmxcsr [{0}]",

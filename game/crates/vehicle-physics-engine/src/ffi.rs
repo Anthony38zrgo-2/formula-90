@@ -76,7 +76,9 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
     if sim_ptr.is_null() || out_config.is_null() {
         return false;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
+    // SAFETY: `out_config` is non-null (checked above) and points to a writable `FfiRuntimeConfig`.
     unsafe {
         *out_config = FfiRuntimeConfig {
             vehicle_mass: sim.config.vehicle_mass,
@@ -196,7 +198,9 @@ pub extern "C" fn f1_94_physics_apply_runtime_config(
     if sim_ptr.is_null() || config_ptr.is_null() {
         return false;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
+    // SAFETY: `config_ptr` is non-null (checked above) and points to a valid `FfiRuntimeConfig`.
     apply_runtime_config_to_sim(sim, unsafe { &*config_ptr })
 }
 
@@ -530,6 +534,8 @@ pub extern "C" fn f1_94_physics_create_from_json(
         write_error(error_buffer, error_buffer_len, "null or empty JSON input");
         return std::ptr::null_mut();
     }
+    // SAFETY: `json_ptr` is non-null and `json_len > 0` (checked above); the caller guarantees
+    // a readable buffer of `json_len` bytes.
     let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
     let json_str = match std::str::from_utf8(json_bytes) {
         Ok(s) => s,
@@ -564,6 +570,8 @@ fn write_error(buf: *mut u8, buf_len: u32, msg: &str) {
     }
     let bytes = msg.as_bytes();
     let copy_len = bytes.len().min(buf_len as usize - 1);
+    // SAFETY: `buf` is non-null and `buf_len > 0` (checked above); `copy_len` is clamped to
+    // `buf_len - 1`, so the copy and the NUL terminator stay in bounds.
     unsafe {
         std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, copy_len);
         *buf.add(copy_len) = 0;
@@ -597,6 +605,7 @@ pub extern "C" fn f1_94_physics_reset(
     if sim_ptr.is_null() {
         return;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
     *sim = VehicleSimulator::new(sim.config.clone(), Vec3::new(pos_x, pos_y, pos_z), yaw_rad);
 }
@@ -617,6 +626,8 @@ pub extern "C" fn f1_94_physics_solve_forces(
         return;
     }
 
+    // SAFETY: all four pointers are non-null (checked above); per the C ABI contract
+    // `sim_ptr` is a live `VehicleSimulator` and `body_ptr`/`input_ptr` point to valid PODs.
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
     let body = BodyKinematics::from(unsafe { *body_ptr });
     let input = VehicleInput::from(unsafe { *input_ptr });
@@ -626,6 +637,7 @@ pub extern "C" fn f1_94_physics_solve_forces(
     let (forces, telem) = sim.solve_external(body, &input, &samples, dt);
 
     if !out_forces.is_null() {
+        // SAFETY: `out_forces` is non-null (checked above) and points to a writable `FfiForceTorqueOutput`.
         unsafe {
             *out_forces = forces.into();
         }
@@ -645,6 +657,8 @@ pub extern "C" fn f1_94_physics_step(
     if sim_ptr.is_null() || input_ptr.is_null() || samples_ptr.is_null() {
         return;
     }
+    // SAFETY: `sim_ptr` and `input_ptr` are non-null (checked above); per the C ABI contract
+    // `sim_ptr` is a live `VehicleSimulator` and `input_ptr` points to a valid POD.
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
     let input = VehicleInput::from(unsafe { *input_ptr });
     let samples = read_samples(samples_ptr);
@@ -663,9 +677,11 @@ pub extern "C" fn f1_94_physics_get_wheel_anchor_local(
     if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() {
         return;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     let anchor = sim.config.wheel_anchor_local(wheel);
+    // SAFETY: `out_x`/`out_y`/`out_z` are non-null (checked above) and point to writable `f64`s.
     unsafe {
         *out_x = anchor.x;
         *out_y = anchor.y;
@@ -679,6 +695,7 @@ pub extern "C" fn f1_94_physics_get_tri_ray_span(sim_ptr: *const c_void, wheel_i
     if sim_ptr.is_null() {
         return 0.12;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     let tire_w = if wheel.is_front() {
@@ -694,6 +711,7 @@ pub extern "C" fn f1_94_physics_get_default_spawn_height(sim_ptr: *const c_void)
     if sim_ptr.is_null() {
         return default_spawn_height(&VehicleConfig::f1_94_canonical());
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     default_spawn_height(&sim.config)
 }
@@ -708,8 +726,10 @@ pub extern "C" fn f1_94_physics_get_center_of_mass_local(
     if sim_ptr.is_null() || out_x.is_null() || out_y.is_null() || out_z.is_null() {
         return;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let cg = center_of_mass_local(&sim.config);
+    // SAFETY: `out_x`/`out_y`/`out_z` are non-null (checked above) and point to writable `f64`s.
     unsafe {
         *out_x = cg.x;
         *out_y = cg.y;
@@ -722,6 +742,7 @@ pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx
     if sim_ptr.is_null() {
         return 0.6;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     if wheel.is_front() {
@@ -736,6 +757,7 @@ pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 
     if sim_ptr.is_null() {
         return VehicleConfig::f1_94_canonical().vehicle_mass;
     }
+    // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     sim.config.vehicle_mass
 }
@@ -743,6 +765,8 @@ pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 
 #[no_mangle]
 pub extern "C" fn f1_94_physics_destroy(sim_ptr: *mut c_void) {
     if !sim_ptr.is_null() {
+        // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, is an
+        // unreleased pointer from `f1_94_physics_create_*`.
         unsafe {
             drop(Box::from_raw(sim_ptr as *mut VehicleSimulator));
         }
@@ -750,6 +774,7 @@ pub extern "C" fn f1_94_physics_destroy(sim_ptr: *mut c_void) {
 }
 
 fn read_samples(samples_ptr: *const FfiTriRaycastSample) -> [TriRaycastSample; 4] {
+    // SAFETY: callers guarantee `samples_ptr` points to 4 valid `FfiTriRaycastSample` (Inner/Center/Outer x4).
     let ffi_samples = unsafe { std::slice::from_raw_parts(samples_ptr, 4) };
     [
         ffi_samples[0].into(),
@@ -768,6 +793,7 @@ fn write_telemetry(
         return;
     }
     let q = sim.state.orientation;
+    // SAFETY: `out` is non-null (checked above) and points to a writable `FfiTelemetryOutput`.
     unsafe {
         *out = FfiTelemetryOutput {
             sim_time: sim.state.sim_time,

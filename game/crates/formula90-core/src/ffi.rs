@@ -191,6 +191,8 @@ fn write_error(buf: *mut u8, len: u32, msg: &str) {
     }
     let bytes = msg.as_bytes();
     let copy = bytes.len().min(len as usize - 1);
+    // SAFETY: `buf` is non-null and `len > 0` (checked above); `copy` is clamped to `len - 1`,
+    // so the copy and the NUL terminator stay in bounds.
     unsafe {
         std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, copy);
         *buf.add(copy) = 0;
@@ -295,11 +297,13 @@ pub unsafe extern "C" fn f90_core_create(
 
 fn facade_mut(h: *mut c_void) -> &'static mut CoreFacade {
     debug_assert!(!h.is_null());
+    // SAFETY: callers guarantee `h` is a live `Box<CoreFacade>` handle from `f90_core_create`.
     unsafe { &mut *(h as *mut CoreFacade) }
 }
 
 fn facade_ref(h: *mut c_void) -> &'static CoreFacade {
     debug_assert!(!h.is_null());
+    // SAFETY: callers guarantee `h` is a live `Box<CoreFacade>` handle from `f90_core_create`.
     unsafe { &*(h as *const CoreFacade) }
 }
 
@@ -393,6 +397,7 @@ pub unsafe extern "C" fn f90_core_step(
     if samples.is_null() {
         return;
     }
+    // SAFETY: `samples` is non-null (checked above) and points to 4 valid `F90TriRaycastSample`.
     let slice = unsafe { std::slice::from_raw_parts(samples, 4) };
     let mut rust_samples: [TriRaycastSample; 4] = [TriRaycastSample::default(); 4];
     for (i, s) in slice.iter().enumerate() {
@@ -426,6 +431,7 @@ pub unsafe extern "C" fn f90_core_step(
     let rust_underfloor = if underfloor.is_null() {
         UnderfloorSample::default()
     } else {
+        // SAFETY: `underfloor` is non-null (checked above) and points to a valid `F90UnderfloorSample`.
         let src = unsafe { &*underfloor };
         let mut result = UnderfloorSample::default();
         for (i, ray) in src.rays.iter().enumerate() {
@@ -456,6 +462,7 @@ pub unsafe extern "C" fn f90_core_step(
     );
     if !out.is_null() {
         let a = frame.audio;
+        // SAFETY: `out` is non-null (checked above) and points to a writable `F90CoreFrameOut`.
         unsafe {
             *out = F90CoreFrameOut {
                 force_x: frame.force[0],
@@ -643,6 +650,7 @@ pub extern "C" fn f90_core_audio_readouts(h: *mut c_void, out: *mut F90CoreFrame
         return;
     }
     let a: AudioReadouts = facade_mut(h).audio_readouts();
+    // SAFETY: `out` is non-null (checked above) and points to a writable `F90CoreFrameOut`.
     unsafe {
         let o = &mut *out;
         o.surface_code = a.surface_code as i32;
@@ -679,15 +687,19 @@ pub extern "C" fn f90_core_snapshot(
         Ok(b) => b,
         Err(e) => {
             eprintln!("[f90_core] snapshot serialize failed: {e}");
+            // SAFETY: `out_len` is non-null (checked above) and points to a writable `u32`.
             unsafe { *out_len = 0 };
             return 0;
         }
     };
     let needed = bytes.len() as u32;
+    // SAFETY: `out_len` is non-null (checked above) and points to a writable `u32`.
     unsafe {
         *out_len = needed;
     }
     if cap >= needed && !out.is_null() {
+        // SAFETY: `out` is non-null and `cap >= needed == bytes.len()` (checked above), so the
+        // destination has room for the whole snapshot.
         unsafe {
             std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
         }

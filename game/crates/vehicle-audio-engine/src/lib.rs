@@ -64,6 +64,7 @@ pub(crate) mod allocation_probe {
                     ALLOCS.fetch_add(1, Ordering::Relaxed);
                 }
             });
+            // SAFETY: delegates to the system allocator with the caller-provided valid `layout`.
             unsafe { System.alloc(layout) }
         }
         unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
@@ -72,6 +73,7 @@ pub(crate) mod allocation_probe {
                     FREES.fetch_add(1, Ordering::Relaxed);
                 }
             });
+            // SAFETY: `ptr`/`layout` come from a prior `alloc` on this allocator, as required by `GlobalAlloc`.
             unsafe { System.dealloc(ptr, layout) }
         }
     }

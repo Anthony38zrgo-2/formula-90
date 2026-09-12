@@ -80,11 +80,13 @@ pub struct CSimTelemetry {
 
 fn world_mut(ptr: *mut c_void) -> &'static mut World {
     debug_assert!(!ptr.is_null());
+    // SAFETY: callers guarantee `ptr` is a live `Box<World>` handle created by `sim_world_create`.
     unsafe { &mut *(ptr as *mut World) }
 }
 
 fn world_ref(ptr: *mut c_void) -> &'static World {
     debug_assert!(!ptr.is_null());
+    // SAFETY: callers guarantee `ptr` is a live `Box<World>` handle created by `sim_world_create`.
     unsafe { &*(ptr as *const World) }
 }
 
@@ -99,6 +101,7 @@ pub extern "C" fn sim_world_destroy(world: *mut c_void) {
     if world.is_null() {
         return;
     }
+    // SAFETY: `world` is non-null (checked above) and was returned by `sim_world_create`.
     unsafe {
         let _ = Box::from_raw(world as *mut World);
     }
@@ -111,6 +114,7 @@ pub extern "C" fn sim_world_spawn_from_json(world: *mut c_void, json_path: *cons
     if json_path.is_null() {
         return 0;
     }
+    // SAFETY: `json_path` is non-null (checked above) and, per the C ABI contract, points to a valid NUL-terminated C string.
     let cstr = unsafe { CStr::from_ptr(json_path) };
     let Ok(path_str) = cstr.to_str() else {
         return 0;
@@ -202,6 +206,7 @@ pub extern "C" fn sim_world_pose(world: *mut c_void, id: u32, out: *mut CSimPose
             z: tf.origin.z,
             yaw: yaw_from_transform(tf),
         };
+        // SAFETY: `out` is non-null (checked above) and points to a writable `CSimPose`.
         unsafe {
             *out = pose;
         }
@@ -232,6 +237,7 @@ pub extern "C" fn sim_world_telemetry(world: *mut c_void, id: u32, out: *mut CSi
             tc_active: if t.tc_active { 1.0 } else { 0.0 },
             drive_torque: t.drive_torque,
         };
+        // SAFETY: `out` is non-null (checked above) and points to a writable `CSimTelemetry`.
         unsafe {
             *out = telem;
         }
@@ -261,6 +267,8 @@ pub extern "C" fn sim_world_flat_samples(
                 outer: to_c_hit(&s.outer),
             });
         }
+        // SAFETY: `out` is non-null (checked above) and points to at least `buf.len()` writable
+        // `CSimTriRaycastSample` slots (the caller passes an array of 4).
         unsafe {
             std::ptr::copy_nonoverlapping(buf.as_ptr(), out, buf.len());
         }
@@ -364,6 +372,7 @@ pub extern "C" fn sim_world_step_with_samples(
     if samples.is_null() {
         return;
     }
+    // SAFETY: `samples` is non-null (checked above) and points to 4 valid `CSimTriRaycastSample`.
     let slice = unsafe { std::slice::from_raw_parts(samples, 4) };
     let mut rust_samples: [TriRaycastSample; 4] = [TriRaycastSample::default(); 4];
     for (i, s) in slice.iter().enumerate() {
@@ -430,6 +439,7 @@ pub extern "C" fn sim_world_solve_external(
     if samples.is_null() || out_force.is_null() || out_torque.is_null() {
         return;
     }
+    // SAFETY: `samples` is non-null (checked above) and points to 4 valid `CSimTriRaycastSample`.
     let slice = unsafe { std::slice::from_raw_parts(samples, 4) };
     let mut rust_samples: [TriRaycastSample; 4] = [TriRaycastSample::default(); 4];
     for (i, s) in slice.iter().enumerate() {
@@ -469,6 +479,8 @@ pub extern "C" fn sim_world_solve_external(
         };
         let (forces, telem) = ent.sim.solve_external(body, &inp.to_vehicle_input(), &rust_samples, dt);
         ent.last = Some(telem);
+        // SAFETY: `out_force`/`out_torque` are non-null (checked above) and point to at least
+        // 3 writable `f64`s each.
         unsafe {
             let f = std::slice::from_raw_parts_mut(out_force, 3);
             let t = std::slice::from_raw_parts_mut(out_torque, 3);

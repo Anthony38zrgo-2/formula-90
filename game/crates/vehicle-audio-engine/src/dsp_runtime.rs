@@ -237,6 +237,10 @@ impl DspRuntime {
     #[cfg(windows)]
     fn load_windows(path: &Path) -> Result<Self, DspRuntimeError> {
         use std::os::windows::ffi::OsStrExt;
+        // SAFETY: Win32 DLL loading. `wide` is a valid NUL-terminated UTF-16 path; symbols are
+        // resolved from the freshly loaded module and transmuted to the matching
+        // `unsafe extern "C"` fn pointer types declared in `Fns`. On every error path the
+        // library is freed before returning.
         unsafe {
             let wide: Vec<u16> = std::ffi::OsStr::new(path)
                 .encode_wide()
@@ -344,11 +348,15 @@ impl DspRuntime {
 
     /// Reported ABI version (for diagnostics/tests).
     pub fn abi_version(&self) -> u32 {
+        // SAFETY: `self.fns.abi_version` was resolved from the loaded DSP module and the
+        // module is kept alive by `self.library` for the lifetime of `self`.
         unsafe { (self.fns.abi_version)() }
     }
 
     /// The 40-byte build source string the DLL was compiled from.
     pub fn build_source(&self) -> &str {
+        // SAFETY: `build_source` returns a pointer into the DSP module's static build string
+        // (NUL-terminated); the module outlives `self`. The null case is handled.
         unsafe {
             let p = (self.fns.build_source)();
             if p.is_null() {
@@ -361,6 +369,8 @@ impl DspRuntime {
     /// Validate an arbitrary expected build source against the loaded DLL.
     pub fn check_build_source(&self, expected: &str) -> i32 {
         if let Ok(c) = CString::new(expected) {
+            // SAFETY: `c` is a valid NUL-terminated C string; the fn pointer was resolved from
+            // the loaded DSP module kept alive by `self.library`.
             unsafe { (self.fns.check_build)(c.as_ptr()) }
         } else {
             -1
@@ -368,6 +378,8 @@ impl DspRuntime {
     }
 
     pub fn reset(&mut self) {
+        // SAFETY: `self.handle` is a live instance created by the DSP module (or null, which
+        // the module tolerates) and the module is kept alive by `self.library`.
         unsafe {
             (self.fns.reset)(self.handle);
         }
@@ -378,6 +390,8 @@ impl DspRuntime {
             struct_size: 40,
             ..CDiagnostics::default()
         };
+        // SAFETY: `self.handle` is a live instance; `d` is a stack `CDiagnostics` matching the
+        // C layout, written by the DSP module whose code is kept alive by `self.library`.
         unsafe {
             (self.fns.get_diag)(self.handle, &mut d);
         }
@@ -438,6 +452,9 @@ impl DspRuntime {
             reserved1: 0,
         };
 
+        // SAFETY: `self.handle` is a live instance; `self.c_block`/`self.c_controls` are
+        // `repr(C)` structs matching the DSP ABI, and `l_buf`/`r_buf` hold at least `frames`
+        // writable samples. The module code is kept alive by `self.library`.
         let rc = unsafe {
             (self.fns.process)(
                 self.handle,
@@ -481,12 +498,16 @@ impl Drop for DspRuntime {
         // (partial init) and clear both pointers so a double-drop on unwind is
         // impossible.
         if !self.handle.is_null() {
+            // SAFETY: `self.handle` is a live instance created by the DSP module; it is
+            // destroyed exactly once and cleared immediately after.
             unsafe {
                 (self.fns.destroy)(self.handle);
             }
             self.handle = std::ptr::null_mut();
         }
         if !self.library.is_null() {
+            // SAFETY: `self.library` is a module handle returned by `LoadLibraryW`, freed
+            // exactly once and cleared immediately after.
             unsafe {
                 FreeLibrary(self.library);
             }

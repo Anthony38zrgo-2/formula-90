@@ -317,6 +317,7 @@ mod layout_tests {
         let bank_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../sounds/banks/v10_vehicle");
         let c_bank = std::ffi::CString::new(bank_path.to_str().unwrap()).unwrap();
+        // SAFETY: `c_bank` is a valid NUL-terminated C string and the handle is used only here.
         let handle = unsafe { vehicle_audio_create(c_bank.as_ptr()) };
         assert!(!handle.is_null());
 
@@ -343,17 +344,21 @@ mod layout_tests {
 
         // Rejects mismatched schema_version
         telem.schema_version = 999;
+        // SAFETY: `handle` is the live engine created above; `telem` is a valid packet.
         assert!(!unsafe { vehicle_audio_set_telemetry(handle, &telem, std::ptr::null()) });
         telem.schema_version = VEHICLE_AUDIO_ABI_VERSION;
 
         // Rejects mismatched struct_size
         telem.struct_size = 48;
+        // SAFETY: `handle` is the live engine created above; `telem` is a valid packet.
         assert!(!unsafe { vehicle_audio_set_telemetry(handle, &telem, std::ptr::null()) });
         telem.struct_size = size_of::<VehicleAudioTelemetryV3>() as u32;
 
         // Valid packet is accepted
+        // SAFETY: `handle` is the live engine created above; `telem` is a valid packet.
         assert!(unsafe { vehicle_audio_set_telemetry(handle, &telem, std::ptr::null()) });
 
+        // SAFETY: `handle` is the live engine created above.
         let engine = unsafe { &*(handle as *const VehicleAudioEngine) };
         assert_eq!(engine.last_normalized_engine_load(), 0.75);
         assert_eq!(engine.last_normalized_engine_torque(), 0.65);
@@ -362,6 +367,7 @@ mod layout_tests {
         assert_eq!(engine.last_throttle_derivative(), 2.0);
         assert_eq!(engine.last_shift_phase(), 0);
 
+        // SAFETY: `handle` was created above and is destroyed exactly once here.
         unsafe { vehicle_audio_destroy(handle) };
     }
 }
