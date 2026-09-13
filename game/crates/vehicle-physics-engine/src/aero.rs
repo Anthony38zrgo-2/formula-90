@@ -613,6 +613,55 @@ impl AeroEnvironment {
     }
 }
 
+/// Factores de suelo derivados de la geometria medida y el mapa de suelo
+/// (CLEAN-10). `ground_factor` combina altura, rake, sello y confianza.
+#[derive(Debug, Clone, Copy)]
+struct GroundFactors {
+    height_factor: f64,
+    rake_factor: f64,
+    seal_factor: f64,
+    confidence: f64,
+    ground_factor: f64,
+}
+
+/// Acumula las cargas de alas + suelo sobre el drag del cuerpo (CLEAN-10).
+#[allow(clippy::too_many_arguments)]
+fn accumulate_element_loads(
+    fw: ElementLoad,
+    floor_loads: [ElementLoad; 2],
+    rw: ElementLoad,
+    body_drag: Vec3,
+    body_point: Vec3,
+    center_of_mass: Vec3,
+    limit_factor: f64,
+) -> (Vec3, Vec3, Vec3, f64, Vec3) {
+    let mut force = body_drag;
+    let mut torque = (body_point - center_of_mass).cross(body_drag);
+    let mut drag_vector = body_drag;
+    let mut drag_magnitude = body_drag.length();
+    let mut pressure_sum = Vec3::ZERO;
+    for (index, element) in [fw, floor_loads[0], floor_loads[1], rw]
+        .into_iter()
+        .enumerate()
+    {
+        // Floor drag is induced by its actual limited load. Wing polar CD
+        // remains a measured coefficient; the gameplay cap is not a new polar.
+        let drag = element.drag
+            * if index == 1 || index == 2 {
+                limit_factor
+            } else {
+                1.0
+            };
+        let applied = element.lift * limit_factor + drag;
+        force += applied;
+        torque += (element.position - center_of_mass).cross(applied);
+        drag_vector += drag;
+        drag_magnitude += drag.length();
+        pressure_sum += element.position * (element.downforce() * limit_factor);
+    }
+    (force, torque, drag_vector, drag_magnitude, pressure_sum)
+}
+
 impl AeroForces {
     pub fn zero() -> Self {
         Self {
@@ -686,14 +735,7 @@ impl AeroForces {
         // Configuration is also validated on JSON load. Recheck here because the
         // public Rust config is mutable (live setup changes); valid checks allocate
         // nothing and maps have bounded dimensions.
-        if !dt.is_finite()
-            || dt <= 0.0
-            || !finite_vec(k.velocity_m_s)
-            || !finite_vec(k.angular_velocity_rad_s)
-            || !finite_vec(k.wind_velocity_m_s)
-            || !finite_vec(k.center_of_mass_m)
-            || validate_aero_config(config).is_err()
-        {
+        if self.input_valid(config, k, dt) {
             *self = Self::zero();
             self.invalid_input = true;
             return;
@@ -737,6 +779,134 @@ impl AeroForces {
             dt,
         );
 
+        let ground_factors = self.update_ground_state(k, env, floor, dt);
+        let ground = self.state.last_ground;
+        let bottom = env.bottoming_mask & 0x1f;
+        let bottom_severity = [
+            0.25 * f64::from((bottom & 1 != 0) as u8)
+                + 0.25 * f64::from((bottom & 2 != 0) as u8)
+                + 0.50 * f64::from((bottom & 4 != 0) as u8),
+            0.75 * f64::from((bottom & 8 != 0) as u8) + 0.25 * f64::from((bottom & 16 != 0) as u8),
+        ];
+        let heights = [ground.front_height_m, ground.rear_height_m];
+        let floor_loads = self.compute_floor_loads(
+            config,
+            k,
+            floor,
+            floor_point,
+            heights,
+            bottom_severity,
+            ground_factors.ground_factor,
+            dt,
+        );
+
+        let raw = fw.downforce()
+            + rw.downforce()
+            + floor_loads[0].downforce()
+            + floor_loads[1].downforce();
+        let weight = config.vehicle_mass * 9.81;
+        let hard = (weight * m.limits.hard_max_load_ratio).min(m.limits.hard_max_downforce_n);
+        let soft = (weight * m.limits.soft_max_load_ratio).min(hard);
+        let limited = soft_limit(raw, soft, hard);
+        let limit_factor = if raw > 1e-8 { limited / raw } else { 1.0 };
+
+        let mut body_drag_area = config.coefficient_of_drag * config.frontal_area;
+        if m.body.drag_coefficient_scope == DragCoefficientScope::WholeVehicleReference {
+            let fw_cd = polar_at(&m.front_wing.polar, m.front_wing.incidence_deg).1;
+            let rw_cd = polar_at(&m.rear_wing.polar, m.rear_wing.incidence_deg).1;
+            let reference_elements = m.front_wing.area_m2 * fw_cd
+                + m.rear_wing.area_m2 * rw_cd
+                + (floor.free_air_lift_area_m2 + floor.lift_area_m2) * floor.induced_drag_ratio;
+            body_drag_area = (body_drag_area - reference_elements).max(0.0);
+        }
+        let body_drag = Vec3::new(
+            -body_air.q * m.body.side_drag_area_m2 * body_air.direction.x,
+            -body_air.q * m.body.vertical_drag_area_m2 * body_air.direction.y,
+            -body_air.q * body_drag_area * body_air.direction.z,
+        );
+        let (force, torque, drag_vector, drag_magnitude, pressure_sum) =
+            accumulate_element_loads(
+                fw,
+                floor_loads,
+                rw,
+                body_drag,
+                body_point,
+                k.center_of_mass_m,
+                limit_factor,
+            );
+        self.front_downforce = fw.downforce() * limit_factor;
+        self.diffuser_downforce =
+            (floor_loads[0].downforce() + floor_loads[1].downforce()) * limit_factor;
+        self.rear_downforce = rw.downforce() * limit_factor;
+        // Keep the published hard bound exact even if summing rounded element
+        // products differs from the limited total by a floating-point ulp.
+        self.total_downforce = limited;
+        self.force_local = force;
+        self.torque_local = torque;
+        self.drag_force_local = drag_vector;
+        self.drag_force = drag_magnitude;
+        self.center_of_pressure_local = if self.total_downforce > 1e-8 {
+            pressure_sum / self.total_downforce
+        } else {
+            floor_point
+        };
+        let axle_load = -force.y;
+        let moment_at_origin = torque + k.center_of_mass_m.cross(force);
+        self.front_axle_downforce =
+            (0.5 * config.wheelbase * axle_load - moment_at_origin.x) / config.wheelbase;
+        self.rear_axle_downforce = axle_load - self.front_axle_downforce;
+        self.balance_front = if axle_load > 1e-8 {
+            self.front_axle_downforce / axle_load
+        } else {
+            0.5
+        };
+        self.effective_cl = if body_air.q * config.frontal_area > 1e-8 {
+            self.total_downforce / (body_air.q * config.frontal_area)
+        } else {
+            0.0
+        };
+        self.yaw_decay_factor = body_air.cos_yaw;
+        self.blend_factor = body_air.blend;
+        self.front_wing_angle_deg = fw_angle;
+        self.rear_wing_angle_deg = rw_angle;
+        self.front_wing_cl = self.state.front_wing.cl;
+        self.rear_wing_cl = self.state.rear_wing.cl;
+        self.floor_height_factor = ground_factors.height_factor;
+        self.floor_rake_factor = ground_factors.rake_factor;
+        self.floor_seal_factor = ground_factors.seal_factor;
+        self.diffuser_stall_factor =
+            0.5 * (self.state.floor_attachment[0] + self.state.floor_attachment[1]);
+        self.raw_downforce = raw;
+        self.global_limit_factor = limit_factor;
+        self.load_ratio = self.total_downforce / weight;
+        self.ground_confidence = ground_factors.confidence;
+        self.invalid_input = false;
+        if self.output_invalid(force, torque) {
+            *self = Self::zero();
+            self.invalid_input = true;
+        }
+    }
+
+    /// Validez de la entrada de cinematica + config (CLEAN-10).
+    fn input_valid(&self, config: &VehicleConfig, k: &AeroKinematics, dt: f64) -> bool {
+        !dt.is_finite()
+            || dt <= 0.0
+            || !finite_vec(k.velocity_m_s)
+            || !finite_vec(k.angular_velocity_rad_s)
+            || !finite_vec(k.wind_velocity_m_s)
+            || !finite_vec(k.center_of_mass_m)
+            || validate_aero_config(config).is_err()
+    }
+
+    /// Estado de suelo medido + factores de altura/rake/sello y relajacion de
+    /// presion (CLEAN-10).
+    fn update_ground_state(
+        &mut self,
+        k: &AeroKinematics,
+        env: &AeroEnvironment,
+        floor: &UnderfloorAeroConfig,
+        dt: f64,
+    ) -> GroundFactors {
         let mut measured = env.geometry(k.probe_mode);
         if self.state.has_ground_sample && measured.valid_probe_mask & 3 != 3 {
             // Missing one side must not instantly restore a previously lost seal.
@@ -794,26 +964,39 @@ impl AeroForces {
             dt,
             floor.pressure_response_tau_s,
         );
-
-        let bottom = env.bottoming_mask & 0x1f;
-        let bottom_severity = [
-            0.25 * f64::from((bottom & 1 != 0) as u8)
-                + 0.25 * f64::from((bottom & 2 != 0) as u8)
-                + 0.50 * f64::from((bottom & 4 != 0) as u8),
-            0.75 * f64::from((bottom & 8 != 0) as u8) + 0.25 * f64::from((bottom & 16 != 0) as u8),
-        ];
-        let heights = [ground.front_height_m, ground.rear_height_m];
-        let mut floor_loads = [ElementLoad {
-            position: floor_point,
-            lift: Vec3::ZERO,
-            drag: Vec3::ZERO,
-        }; 2];
         let confidence = if self.state.has_ground_sample {
             self.state.ground_confidence.clamp(0.0, 1.0)
         } else {
             0.0
         };
         let ground_factor = height_factor * rake_factor * seal_factor * confidence;
+        GroundFactors {
+            height_factor,
+            rake_factor,
+            seal_factor,
+            confidence,
+            ground_factor,
+        }
+    }
+
+    /// Cargas de suelo por elemento (delantera y trasera) con histéresis de
+    /// separación (CLEAN-10).
+    fn compute_floor_loads(
+        &mut self,
+        config: &VehicleConfig,
+        k: &AeroKinematics,
+        floor: &UnderfloorAeroConfig,
+        floor_point: Vec3,
+        heights: [f64; 2],
+        bottom_severity: [f64; 2],
+        ground_factor: f64,
+        dt: f64,
+    ) -> [ElementLoad; 2] {
+        let mut floor_loads = [ElementLoad {
+            position: floor_point,
+            lift: Vec3::ZERO,
+            drag: Vec3::ZERO,
+        }; 2];
         for i in 0..2 {
             // Separate entry/recovery thresholds give explicit, bounded hysteresis.
             if heights[i] <= floor.choke_height_m || bottom_severity[i] > 0.0 {
@@ -855,112 +1038,18 @@ impl AeroForces {
                 drag: -air.direction * (lift.length() * floor.induced_drag_ratio),
             };
         }
+        floor_loads
+    }
 
-        let raw = fw.downforce()
-            + rw.downforce()
-            + floor_loads[0].downforce()
-            + floor_loads[1].downforce();
-        let weight = config.vehicle_mass * 9.81;
-        let hard = (weight * m.limits.hard_max_load_ratio).min(m.limits.hard_max_downforce_n);
-        let soft = (weight * m.limits.soft_max_load_ratio).min(hard);
-        let limited = soft_limit(raw, soft, hard);
-        let limit_factor = if raw > 1e-8 { limited / raw } else { 1.0 };
-
-        let mut body_drag_area = config.coefficient_of_drag * config.frontal_area;
-        if m.body.drag_coefficient_scope == DragCoefficientScope::WholeVehicleReference {
-            let fw_cd = polar_at(&m.front_wing.polar, m.front_wing.incidence_deg).1;
-            let rw_cd = polar_at(&m.rear_wing.polar, m.rear_wing.incidence_deg).1;
-            let reference_elements = m.front_wing.area_m2 * fw_cd
-                + m.rear_wing.area_m2 * rw_cd
-                + (floor.free_air_lift_area_m2 + floor.lift_area_m2) * floor.induced_drag_ratio;
-            body_drag_area = (body_drag_area - reference_elements).max(0.0);
-        }
-        let body_drag = Vec3::new(
-            -body_air.q * m.body.side_drag_area_m2 * body_air.direction.x,
-            -body_air.q * m.body.vertical_drag_area_m2 * body_air.direction.y,
-            -body_air.q * body_drag_area * body_air.direction.z,
-        );
-        let mut force = body_drag;
-        let mut torque = (body_point - k.center_of_mass_m).cross(body_drag);
-        let mut drag_vector = body_drag;
-        let mut drag_magnitude = body_drag.length();
-        let mut pressure_sum = Vec3::ZERO;
-        for (index, element) in [fw, floor_loads[0], floor_loads[1], rw]
-            .into_iter()
-            .enumerate()
-        {
-            // Floor drag is induced by its actual limited load. Wing polar CD
-            // remains a measured coefficient; the gameplay cap is not a new polar.
-            let drag = element.drag
-                * if index == 1 || index == 2 {
-                    limit_factor
-                } else {
-                    1.0
-                };
-            let applied = element.lift * limit_factor + drag;
-            force += applied;
-            torque += (element.position - k.center_of_mass_m).cross(applied);
-            drag_vector += drag;
-            drag_magnitude += drag.length();
-            pressure_sum += element.position * (element.downforce() * limit_factor);
-        }
-        self.front_downforce = fw.downforce() * limit_factor;
-        self.diffuser_downforce =
-            (floor_loads[0].downforce() + floor_loads[1].downforce()) * limit_factor;
-        self.rear_downforce = rw.downforce() * limit_factor;
-        // Keep the published hard bound exact even if summing rounded element
-        // products differs from the limited total by a floating-point ulp.
-        self.total_downforce = limited;
-        self.force_local = force;
-        self.torque_local = torque;
-        self.drag_force_local = drag_vector;
-        self.drag_force = drag_magnitude;
-        self.center_of_pressure_local = if self.total_downforce > 1e-8 {
-            pressure_sum / self.total_downforce
-        } else {
-            floor_point
-        };
-        let axle_load = -force.y;
-        let moment_at_origin = torque + k.center_of_mass_m.cross(force);
-        self.front_axle_downforce =
-            (0.5 * config.wheelbase * axle_load - moment_at_origin.x) / config.wheelbase;
-        self.rear_axle_downforce = axle_load - self.front_axle_downforce;
-        self.balance_front = if axle_load > 1e-8 {
-            self.front_axle_downforce / axle_load
-        } else {
-            0.5
-        };
-        self.effective_cl = if body_air.q * config.frontal_area > 1e-8 {
-            self.total_downforce / (body_air.q * config.frontal_area)
-        } else {
-            0.0
-        };
-        self.yaw_decay_factor = body_air.cos_yaw;
-        self.blend_factor = body_air.blend;
-        self.front_wing_angle_deg = fw_angle;
-        self.rear_wing_angle_deg = rw_angle;
-        self.front_wing_cl = self.state.front_wing.cl;
-        self.rear_wing_cl = self.state.rear_wing.cl;
-        self.floor_height_factor = height_factor;
-        self.floor_rake_factor = rake_factor;
-        self.floor_seal_factor = seal_factor;
-        self.diffuser_stall_factor =
-            0.5 * (self.state.floor_attachment[0] + self.state.floor_attachment[1]);
-        self.raw_downforce = raw;
-        self.global_limit_factor = limit_factor;
-        self.load_ratio = self.total_downforce / weight;
-        self.ground_confidence = confidence;
-        self.invalid_input = false;
-        if !finite_vec(force)
+    /// Validez del resultado publicado (CLEAN-10).
+    fn output_invalid(&self, force: Vec3, torque: Vec3) -> bool {
+        !finite_vec(force)
             || !finite_vec(torque)
             || !self.total_downforce.is_finite()
             || !self.drag_force.is_finite()
             || !self.balance_front.is_finite()
-        {
-            *self = Self::zero();
-            self.invalid_input = true;
-        }
     }
+
 }
 
 fn wing_load(

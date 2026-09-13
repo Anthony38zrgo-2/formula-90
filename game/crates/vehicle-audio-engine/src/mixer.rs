@@ -528,6 +528,37 @@ pub struct V10LayerTuning {
     pub scene_gains: Vec<(String, f32)>,
 }
 
+#[derive(Default)]
+struct RenderMetrics {
+    peak_pre_protection: f32,
+    master_input_sum_sq: f64,
+    master_color_sum_sq: f64,
+    final_output_sum_sq: f64,
+    master_input_peak: f32,
+    master_color_peak: f32,
+    final_output_peak: f32,
+    coloration_delta_peak: f32,
+    limiter_input_peak: f32,
+    limiter_output_peak: f32,
+    linked_limiter_active_samples: u64,
+}
+
+/// Estado derivado una vez por bloque en `VehicleAudioEngine::render` (los
+/// coeficientes de suavizado dependen solo de la tasa de muestreo).
+struct BlockRenderState {
+    rpm_alpha: f64,
+    eg_attack_alpha: f64,
+    eg_release_alpha: f64,
+    bg_attack_alpha: f64,
+    bg_release_alpha: f64,
+    scrape_attack_alpha: f64,
+    scrape_release_alpha: f64,
+    tyre_attack_alpha: f64,
+    tyre_release_alpha: f64,
+    cpp_gain: f32,
+    synth_prerendered: bool,
+}
+
 impl VehicleAudioEngine {
     /// Load the bank and build the mixer. `bank_dir` must contain `bank_manifest.json`.
     pub fn new(bank_dir: &Path) -> Result<Self, BankError> {
@@ -1074,19 +1105,35 @@ impl VehicleAudioEngine {
     /// gains are smoothed per-sample, and a tanh soft-clip limiter catches peaks.
     pub fn render(&mut self, out_l: &mut [f32], out_r: &mut [f32], n: usize) {
         let render_started = std::time::Instant::now();
-        let mut peak_pre_protection = 0.0f32;
-        let mut master_input_sum_sq = 0.0f64;
-        let mut master_color_sum_sq = 0.0f64;
-        let mut final_output_sum_sq = 0.0f64;
-        let mut master_input_peak = 0.0f32;
-        let mut master_color_peak = 0.0f32;
-        let mut final_output_peak = 0.0f32;
-        let mut coloration_delta_peak = 0.0f32;
-        let mut limiter_input_peak = 0.0f32;
-        let mut limiter_output_peak = 0.0f32;
-        let mut linked_limiter_active_samples = 0u64;
+        let mut metrics = RenderMetrics::default();
         enable_fast_floats();
         self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
+        let state = self.prepare_block_engine(n);
+        for i in 0..n {
+            for bus in &mut self.reverb_buses {
+                bus.input_l = 0.0;
+                bus.input_r = 0.0;
+            }
+            let (eg, bg) = self.smooth_block_gains(&state);
+            let (engine_l, engine_r) =
+                self.mix_engine_source(i, eg, state.cpp_gain, state.synth_prerendered);
+            let (mut mixed_l, mut mixed_r) = (engine_l, engine_r);
+            (mixed_l, mixed_r) = self.mix_aux_voices(mixed_l, mixed_r, bg);
+            self.mix_one_shots(&mut mixed_l, &mut mixed_r);
+            self.mix_reverb(&mut mixed_l, &mut mixed_r);
+            if self.diagnostic_mode == DiagnosticMode::V10Only {
+                mixed_l = engine_l;
+                mixed_r = engine_r;
+            }
+            self.finish_sample(mixed_l, mixed_r, &mut metrics, out_l, out_r, i);
+        }
+        self.finalize_block_diagnostics(render_started, n, &metrics);
+    }
+
+    /// Prepara el bloque: coeficientes de suavizado invariantes y render de las
+    /// fuentes de motor opcionales (GF509 y capa C++). Devuelve el estado que
+    /// el lazo de muestras consume (CLEAN-10).
+    fn prepare_block_engine(&mut self, n: usize) -> BlockRenderState {
         let sr = self.sample_rate as f64;
         let rpm_alpha = 1.0 - (-1.0 / (sr * RPM_SMOOTH_TAU)).exp();
         // All smoothing time constants are invariant for the whole render
@@ -1187,317 +1234,351 @@ impl VehicleAudioEngine {
                 }
             }
         }
+        BlockRenderState {
+            rpm_alpha,
+            eg_attack_alpha,
+            eg_release_alpha,
+            bg_attack_alpha,
+            bg_release_alpha,
+            scrape_attack_alpha,
+            scrape_release_alpha,
+            tyre_attack_alpha,
+            tyre_release_alpha,
+            cpp_gain,
+            synth_prerendered,
+        }
+    }
 
-        for i in 0..n {
-            let mut mixed_l = 0.0f32;
-            let mut mixed_r = 0.0f32;
-            for bus in &mut self.reverb_buses {
-                bus.input_l = 0.0;
-                bus.input_r = 0.0;
-            }
-            // Smooth RPM so pitch + band weights glide continuously (no per-frame
-            // step -> no zipper/warble at RPM changes).
-            self.smoothed_rpm += (self.target_rpm - self.smoothed_rpm) * rpm_alpha;
+    /// Suaviza RPM y las ganancias de engine/bed/scrape/tyre (CLEAN-10).
+    #[inline]
+    fn smooth_block_gains(&mut self, state: &BlockRenderState) -> (f32, f32) {
+        self.smoothed_rpm += (self.target_rpm - self.smoothed_rpm) * state.rpm_alpha;
+        let eg_alpha = if self.target_engine_gain > self.smoothed_engine_gain {
+            state.eg_attack_alpha
+        } else {
+            state.eg_release_alpha
+        };
+        let eg = self.smoothed_engine_gain
+            + (self.target_engine_gain - self.smoothed_engine_gain) * eg_alpha as f32;
+        self.smoothed_engine_gain = eg;
+        let bg_alpha = if self.target_bed_gain > self.smoothed_bed_gain {
+            state.bg_attack_alpha
+        } else {
+            state.bg_release_alpha
+        };
+        let bg = self.smoothed_bed_gain
+            + (self.target_bed_gain - self.smoothed_bed_gain) * bg_alpha as f32;
+        self.smoothed_bed_gain = bg;
+        let scrape_alpha = if self.target_scrape_gain > self.smoothed_scrape_gain {
+            state.scrape_attack_alpha
+        } else {
+            state.scrape_release_alpha
+        };
+        self.smoothed_scrape_gain +=
+            (self.target_scrape_gain - self.smoothed_scrape_gain) * scrape_alpha as f32;
+        let tyre_alpha = if self.target_tyre_scrub_gain > self.smoothed_tyre_scrub_gain {
+            state.tyre_attack_alpha
+        } else {
+            state.tyre_release_alpha
+        };
+        self.smoothed_tyre_scrub_gain +=
+            (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
+        (eg, bg)
+    }
 
-            // Per-sample gain smoothing (attack/release time constants). The
-            // one-pole alpha depends only on the constant sample rate and the
-            // fixed attack/release taus, so both directions are precomputed once
-            // per block instead of calling `exp` four times per sample. The
-            // four-per-sample `exp` (2048/block) dominated the always-on single-core
-            // budget, so hoisting is bit-identical but removes it from the loop.
-            let eg_alpha = if self.target_engine_gain > self.smoothed_engine_gain {
-                eg_attack_alpha
+    /// Mezcla la fuente de motor continua (GF509 / synth procedimental / pesos de
+    /// banda retirados) y aplica el lowpass del bus de motor. Devuelve el par
+    /// post-lowpass (se usa tambien como senal "solo motor" para V10Only).
+    #[inline]
+    fn mix_engine_source(&mut self, i: usize, eg: f32, cpp_gain: f32, synth_prerendered: bool) -> (f32, f32) {
+        let mut mixed_l = 0.0f32;
+        let mut mixed_r = 0.0f32;
+        if self.diagnostic_mode != DiagnosticMode::EventsOnly
+            && self.continuous_source == ContinuousSourceKind::V10Gf509
+        {
+            let gain = continuous_output_gain(
+                self.continuous_source,
+                eg,
+                self.cfg.engine_headroom,
+                self.synth_volume,
+            );
+            mixed_l += self.gf509_block_l.get(i).copied().unwrap_or(0.0) * gain;
+            mixed_r += self.gf509_block_r.get(i).copied().unwrap_or(0.0) * gain;
+            self.cur_weights.iter_mut().for_each(|weight| *weight = 0.0);
+            self.cur_weights[0] = 1.0;
+            self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
+        } else if self.diagnostic_mode != DiagnosticMode::EventsOnly && self.synth_enabled {
+            let (synth_l, synth_r) = if self.lod == LodLevel::Virtual {
+                // Virtual: no audible frames. Only advance the mechanical phase
+                // accumulator ring (cheap, keeps re-entry phase-coherent).
+                if let Some(synth) = &mut self.synth {
+                    synth.update_phase();
+                }
+                (0.0, 0.0)
             } else {
-                eg_release_alpha
-            };
-            let eg = self.smoothed_engine_gain
-                + (self.target_engine_gain - self.smoothed_engine_gain) * eg_alpha as f32;
-            self.smoothed_engine_gain = eg;
-
-            let bg_alpha = if self.target_bed_gain > self.smoothed_bed_gain {
-                bg_attack_alpha
-            } else {
-                bg_release_alpha
-            };
-            let bg = self.smoothed_bed_gain
-                + (self.target_bed_gain - self.smoothed_bed_gain) * bg_alpha as f32;
-            self.smoothed_bed_gain = bg;
-
-            let scrape_alpha = if self.target_scrape_gain > self.smoothed_scrape_gain {
-                scrape_attack_alpha
-            } else {
-                scrape_release_alpha
-            };
-            self.smoothed_scrape_gain +=
-                (self.target_scrape_gain - self.smoothed_scrape_gain) * scrape_alpha as f32;
-
-            let tyre_alpha = if self.target_tyre_scrub_gain > self.smoothed_tyre_scrub_gain {
-                tyre_attack_alpha
-            } else {
-                tyre_release_alpha
-            };
-            self.smoothed_tyre_scrub_gain +=
-                (self.target_tyre_scrub_gain - self.smoothed_tyre_scrub_gain) * tyre_alpha as f32;
-
-            if self.diagnostic_mode != DiagnosticMode::EventsOnly
-                && self.continuous_source == ContinuousSourceKind::V10Gf509
-            {
-                let gain = continuous_output_gain(
-                    self.continuous_source,
-                    eg,
-                    self.cfg.engine_headroom,
-                    self.synth_volume,
-                );
-                mixed_l += self.gf509_block_l.get(i).copied().unwrap_or(0.0) * gain;
-                mixed_r += self.gf509_block_r.get(i).copied().unwrap_or(0.0) * gain;
-                self.cur_weights.iter_mut().for_each(|weight| *weight = 0.0);
-                self.cur_weights[0] = 1.0;
-                self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
-            } else if self.diagnostic_mode != DiagnosticMode::EventsOnly && self.synth_enabled {
-                let (synth_l, synth_r) = if self.lod == LodLevel::Virtual {
-                    // Virtual: no audible frames. Only advance the mechanical phase
-                    // accumulator ring (cheap, keeps re-entry phase-coherent).
-                    if let Some(synth) = &mut self.synth {
-                        synth.update_phase();
-                    }
-                    (0.0, 0.0)
+                if synth_prerendered {
+                    (self.synth_block_l[i], self.synth_block_r[i])
                 } else {
-                    if synth_prerendered {
-                        (self.synth_block_l[i], self.synth_block_r[i])
-                    } else {
-                        self.synth
-                            .as_mut()
-                            .map_or((0.0, 0.0), |s| s.render_stereo())
-                    }
-                };
-                let gain = continuous_output_gain(
-                    self.continuous_source,
-                    eg,
-                    self.cfg.engine_headroom,
-                    self.synth_volume,
-                );
-                // The procedural engine is strictly dual-mono (synth_l ==
-                // synth_r bit for bit). No pan law is applied here: an
-                // equal-power centre would shave ~3.01 dB off each channel and
-                // reintroduce a channel difference, so the mono signal is summed
-                // at unity.
-                mixed_l += synth_l * gain;
-                mixed_r += synth_r * gain;
-                self.last_synth_energy = self.synth.as_ref().map_or(0.0, |s| s.energy());
-                self.cur_weights.iter_mut().for_each(|w| *w = 0.0);
-                self.cur_weights[0] = 1.0;
-                self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
+                    self.synth
+                        .as_mut()
+                        .map_or((0.0, 0.0), |s| s.render_stereo())
+                }
+            };
+            let gain = continuous_output_gain(
+                self.continuous_source,
+                eg,
+                self.cfg.engine_headroom,
+                self.synth_volume,
+            );
+            // The procedural engine is strictly dual-mono (synth_l ==
+            // synth_r bit for bit). No pan law is applied here: an
+            // equal-power centre would shave ~3.01 dB off each channel and
+            // reintroduce a channel difference, so the mono signal is summed
+            // at unity.
+            mixed_l += synth_l * gain;
+            mixed_r += synth_r * gain;
+            self.last_synth_energy = self.synth.as_ref().map_or(0.0, |s| s.energy());
+            self.cur_weights.iter_mut().for_each(|w| *w = 0.0);
+            self.cur_weights[0] = 1.0;
+            self.cur_pitches[0] = (self.smoothed_rpm * 5.0 / 120.0) as f32;
+        } else {
+            // The sampled engine bands and exhaust microphone layer are retired
+            // (see bank::RETIRED_KEYS); the procedural synth (above) is the engine
+            // source. Keep the band telemetry (weights/pitches) so consumers still
+            // see a glide, but emit no sampled engine/exhaust audio.
+            let norm = if self.max_rpm > self.idle_rpm {
+                (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
+                    .clamp(0.0, 1.0)
             } else {
-                // The sampled engine bands and exhaust microphone layer are retired
-                // (see bank::RETIRED_KEYS); the procedural synth (above) is the engine
-                // source. Keep the band telemetry (weights/pitches) so consumers still
-                // see a glide, but emit no sampled engine/exhaust audio.
-                let norm = if self.max_rpm > self.idle_rpm {
-                    (((self.smoothed_rpm - self.idle_rpm) / (self.max_rpm - self.idle_rpm)) as f32)
-                        .clamp(0.0, 1.0)
-                } else {
-                    0.0
-                };
-                let weights = engine_weights(norm, &self.engine_bands);
-                for (wi, w) in weights.iter().enumerate() {
-                    self.cur_weights[wi] = *w;
-                }
-                for (band, pitch) in self.engine_bands.iter().zip(self.cur_pitches.iter_mut()) {
-                    *pitch = engine_pitch_scale(self.smoothed_rpm, band);
-                }
+                0.0
+            };
+            let weights = engine_weights(norm, &self.engine_bands);
+            for (wi, w) in weights.iter().enumerate() {
+                self.cur_weights[wi] = *w;
             }
+            for (band, pitch) in self.engine_bands.iter().zip(self.cur_pitches.iter_mut()) {
+                *pitch = engine_pitch_scale(self.smoothed_rpm, band);
+            }
+        }
+        // Optional C++ engine enhancement is part of the engine bus and must
+        // pass through the same filter before non-engine sources are added.
+        if cpp_gain > 0.0 {
+            let cl = self.cpp_out_l.get(i).copied().unwrap_or(0.0);
+            let cr = self.cpp_out_r.get(i).copied().unwrap_or(0.0);
+            mixed_l += scale_cpp_layer(cl, cpp_gain);
+            mixed_r += scale_cpp_layer(cr, cpp_gain);
+        }
+        self.engine_lowpass.process(mixed_l, mixed_r)
+    }
 
-            // Optional C++ engine enhancement is part of the engine bus and must
-            // pass through the same filter before non-engine sources are added.
-            if cpp_gain > 0.0 {
-                let cl = self.cpp_out_l.get(i).copied().unwrap_or(0.0);
-                let cr = self.cpp_out_r.get(i).copied().unwrap_or(0.0);
-                mixed_l += scale_cpp_layer(cl, cpp_gain);
-                mixed_r += scale_cpp_layer(cr, cpp_gain);
+    /// Anade las voces auxiliares continuas (surface bed, tyre scrub y scrape
+    /// sostenido) al bus de motor (CLEAN-10).
+    #[inline]
+    fn mix_aux_voices(&mut self, mut mixed_l: f32, mut mixed_r: f32, bg: f32) -> (f32, f32) {
+        // Surface bed (loops at native rate).
+        let mut bed = 0.0f32;
+        if let Some(bk) = &self.bed_key {
+            if let Some(sample) = self.bank.get(bk) {
+                let s = read_looped(&sample.pcm, &mut self.bed_cursor, 1.0);
+                bed = s * bg * self.sample_gain(bk);
             }
-            let (continuous_l, continuous_r) = self.engine_lowpass.process(mixed_l, mixed_r);
-            mixed_l = continuous_l;
-            mixed_r = continuous_r;
+        }
+        if let Some(key) = self.bed_key.as_deref() {
+            mix_through_strip(
+                &mut self.strips,
+                &mut self.reverb_buses,
+                key,
+                bed,
+                &mut mixed_l,
+                &mut mixed_r,
+            );
+        }
 
-            // Surface bed (loops at native rate).
-            let mut bed = 0.0f32;
-            if let Some(bk) = &self.bed_key {
-                if let Some(sample) = self.bank.get(bk) {
-                    let s = read_looped(&sample.pcm, &mut self.bed_cursor, 1.0);
-                    bed = s * bg * self.sample_gain(bk);
-                }
+        // Continuous tyre scrub from lateral slide, wheelspin or wheel lock.
+        let mut tyre_scrub = 0.0f32;
+        if self.smoothed_tyre_scrub_gain > 1e-5 {
+            if let Some(sample) = self.bank.get("tyre_scrub") {
+                tyre_scrub = read_looped(
+                    &sample.pcm,
+                    &mut self.tyre_scrub_cursor,
+                    self.tyre_scrub_pitch,
+                ) * self.smoothed_tyre_scrub_gain
+                    * self.sample_gain("tyre_scrub");
             }
-            if let Some(key) = self.bed_key.as_deref() {
+        }
+        mix_through_strip(
+            &mut self.strips,
+            &mut self.reverb_buses,
+            "tyre_scrub",
+            tyre_scrub,
+            &mut mixed_l,
+            &mut mixed_r,
+        );
+
+        // Sustained underfloor voice. The middle 50% of the existing scrape
+        // sample is used as its stable body; a short seam crossfade prevents
+        // the procedural attack/tail from repeating at every wrap.
+        let mut scrape = 0.0f32;
+        if self.smoothed_scrape_gain > 1e-5 {
+            if let Some(sample) = self.bank.get("impact_scrape") {
+                scrape = read_region_looped(
+                    &sample.pcm,
+                    &mut self.scrape_cursor,
+                    self.scrape_pitch,
+                    0.25,
+                    0.75,
+                    0.035,
+                ) * self.smoothed_scrape_gain
+                    * self.sample_gain("impact_scrape");
+            }
+        }
+        mix_through_strip(
+            &mut self.strips,
+            &mut self.reverb_buses,
+            "impact_scrape",
+            scrape,
+            &mut mixed_l,
+            &mut mixed_r,
+        );
+        (mixed_l, mixed_r)
+    }
+
+    /// Mezcla las one-shots activas (short envelopes, ataque y highpass por
+    /// sample) en el bus (CLEAN-10).
+    #[inline]
+    fn mix_one_shots(&mut self, mixed_l: &mut f32, mixed_r: &mut f32) {
+        for o in self.one_shots.iter_mut() {
+            if !o.active {
+                continue;
+            }
+            if let Some(sample) = self.bank.get(&o.key) {
+                let len = sample.pcm.len();
+                if len == 0 {
+                    o.active = false;
+                    continue;
+                }
+                let idx = o.cursor.min(len - 1);
+                if len.saturating_sub(o.cursor) == ONE_SHOT_ENV_SAMPLES {
+                    if let Some(strip) = self.strips.get_mut(&o.key) {
+                        strip.note_off();
+                    }
+                }
+                let s = sample.pcm[idx] as f32 / 32768.0;
+                // Field-level lookup: `one_shots` is mutably borrowed by the
+                // loop, so `self.sample_gain(..)` (a whole-&self borrow) is
+                // rejected; per_sample_gain is a disjoint field.
+                let os_gain = self
+                    .per_sample_gain
+                    .get(o.key.as_str())
+                    .copied()
+                    .unwrap_or(1.0);
+                let mut source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                // Gear-down attack ramp: linear fade-in so stacked shifts
+                // cannot start on a discontinuity.
+                if o.attack_total > 0 && o.attack_remaining > 0 {
+                    let done =
+                        (o.attack_total - o.attack_remaining) as f32 / o.attack_total as f32;
+                    source *= done;
+                    o.attack_remaining -= 1;
+                }
+                // Shift highpass at 200 Hz: removes low thump before the strip.
+                if let Some(hp) = o.hp.as_mut() {
+                    source = hp.process(source);
+                }
                 mix_through_strip(
                     &mut self.strips,
                     &mut self.reverb_buses,
-                    key,
-                    bed,
-                    &mut mixed_l,
-                    &mut mixed_r,
+                    &o.key,
+                    source,
+                    mixed_l,
+                    mixed_r,
                 );
-            }
-
-            // Continuous tyre scrub from lateral slide, wheelspin or wheel lock.
-            let mut tyre_scrub = 0.0f32;
-            if self.smoothed_tyre_scrub_gain > 1e-5 {
-                if let Some(sample) = self.bank.get("tyre_scrub") {
-                    tyre_scrub = read_looped(
-                        &sample.pcm,
-                        &mut self.tyre_scrub_cursor,
-                        self.tyre_scrub_pitch,
-                    ) * self.smoothed_tyre_scrub_gain
-                        * self.sample_gain("tyre_scrub");
-                }
-            }
-            mix_through_strip(
-                &mut self.strips,
-                &mut self.reverb_buses,
-                "tyre_scrub",
-                tyre_scrub,
-                &mut mixed_l,
-                &mut mixed_r,
-            );
-
-            // Sustained underfloor voice. The middle 50% of the existing scrape
-            // sample is used as its stable body; a short seam crossfade prevents
-            // the procedural attack/tail from repeating at every wrap.
-            let mut scrape = 0.0f32;
-            if self.smoothed_scrape_gain > 1e-5 {
-                if let Some(sample) = self.bank.get("impact_scrape") {
-                    scrape = read_region_looped(
-                        &sample.pcm,
-                        &mut self.scrape_cursor,
-                        self.scrape_pitch,
-                        0.25,
-                        0.75,
-                        0.035,
-                    ) * self.smoothed_scrape_gain
-                        * self.sample_gain("impact_scrape");
-                }
-            }
-            mix_through_strip(
-                &mut self.strips,
-                &mut self.reverb_buses,
-                "impact_scrape",
-                scrape,
-                &mut mixed_l,
-                &mut mixed_r,
-            );
-
-            // One-shots (non-looping, short envelope).
-            for o in self.one_shots.iter_mut() {
-                if !o.active {
-                    continue;
-                }
-                if let Some(sample) = self.bank.get(&o.key) {
-                    let len = sample.pcm.len();
-                    if len == 0 {
-                        o.active = false;
-                        continue;
-                    }
-                    let idx = o.cursor.min(len - 1);
-                    if len.saturating_sub(o.cursor) == ONE_SHOT_ENV_SAMPLES {
-                        if let Some(strip) = self.strips.get_mut(&o.key) {
-                            strip.note_off();
-                        }
-                    }
-                    let s = sample.pcm[idx] as f32 / 32768.0;
-                    // Field-level lookup: `one_shots` is mutably borrowed by the
-                    // loop, so `self.sample_gain(..)` (a whole-&self borrow) is
-                    // rejected; per_sample_gain is a disjoint field.
-                    let os_gain = self
-                        .per_sample_gain
-                        .get(o.key.as_str())
-                        .copied()
-                        .unwrap_or(1.0);
-                    let mut source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
-                    // Gear-down attack ramp: linear fade-in so stacked shifts
-                    // cannot start on a discontinuity.
-                    if o.attack_total > 0 && o.attack_remaining > 0 {
-                        let done =
-                            (o.attack_total - o.attack_remaining) as f32 / o.attack_total as f32;
-                        source *= done;
-                        o.attack_remaining -= 1;
-                    }
-                    // Shift highpass at 200 Hz: removes low thump before the strip.
-                    if let Some(hp) = o.hp.as_mut() {
-                        source = hp.process(source);
-                    }
-                    mix_through_strip(
-                        &mut self.strips,
-                        &mut self.reverb_buses,
-                        &o.key,
-                        source,
-                        &mut mixed_l,
-                        &mut mixed_r,
-                    );
-                    o.cursor += 1;
-                    if o.cursor >= len {
-                        o.active = false;
-                    }
-                } else {
+                o.cursor += 1;
+                if o.cursor >= len {
                     o.active = false;
                 }
-            }
-
-            for bus in &mut self.reverb_buses {
-                let (wet_l, wet_r) = bus.processor.process(bus.input_l, bus.input_r);
-                mixed_l += wet_l;
-                mixed_r += wet_r;
-            }
-            if self.diagnostic_mode == DiagnosticMode::V10Only {
-                mixed_l = continuous_l;
-                mixed_r = continuous_r;
-            }
-            let raw_l = mixed_l * self.master_gain;
-            let raw_r = mixed_r * self.master_gain;
-            let colored_l = self.coloration(raw_l);
-            let colored_r = self.coloration(raw_r);
-            peak_pre_protection = peak_pre_protection
-                .max(raw_l.abs())
-                .max(raw_r.abs());
-            let (mut out_left, mut out_right) =
-                self.stereo_limiter.process(colored_l, colored_r);
-            if self.stage_diagnostics_enabled {
-                master_input_peak = master_input_peak.max(raw_l.abs()).max(raw_r.abs());
-                master_color_peak = master_color_peak.max(colored_l.abs()).max(colored_r.abs());
-                coloration_delta_peak = coloration_delta_peak
-                    .max((colored_l - raw_l).abs())
-                    .max((colored_r - raw_r).abs());
-                master_input_sum_sq += raw_l as f64 * raw_l as f64;
-                master_input_sum_sq += raw_r as f64 * raw_r as f64;
-                master_color_sum_sq += colored_l as f64 * colored_l as f64;
-                master_color_sum_sq += colored_r as f64 * colored_r as f64;
-                limiter_input_peak = limiter_input_peak.max(colored_l.abs()).max(colored_r.abs());
-                limiter_output_peak = limiter_output_peak.max(out_left.abs()).max(out_right.abs());
-                if colored_l.abs().max(colored_r.abs()) > self.cfg.limiter_threshold {
-                    linked_limiter_active_samples = linked_limiter_active_samples.saturating_add(1);
-                }
-            }
-            if self.transition_remaining > 0 && self.transition_total > 0 {
-                let progress =
-                    1.0 - self.transition_remaining as f32 / self.transition_total as f32;
-                out_left =
-                    self.transition_start_l + (out_left - self.transition_start_l) * progress;
-                out_right =
-                    self.transition_start_r + (out_right - self.transition_start_r) * progress;
-                self.transition_remaining -= 1;
-            }
-            if self.stage_diagnostics_enabled {
-                final_output_peak = final_output_peak.max(out_left.abs()).max(out_right.abs());
-                final_output_sum_sq += out_left as f64 * out_left as f64;
-                final_output_sum_sq += out_right as f64 * out_right as f64;
-            }
-            self.last_output_l = out_left;
-            self.last_output_r = out_right;
-            if i < out_l.len() {
-                out_l[i] = out_left;
-            }
-            if i < out_r.len() {
-                out_r[i] = out_right;
+            } else {
+                o.active = false;
             }
         }
+    }
+
+    /// Procesa los buses de reverb (CLEAN-10).
+    #[inline]
+    fn mix_reverb(&mut self, mixed_l: &mut f32, mixed_r: &mut f32) {
+        for bus in &mut self.reverb_buses {
+            let (wet_l, wet_r) = bus.processor.process(bus.input_l, bus.input_r);
+            *mixed_l += wet_l;
+            *mixed_r += wet_r;
+        }
+    }
+
+    /// Coloreado + limiter + fundido de transicion + escritura de salida y
+    /// acumulacion de metricas por muestra (CLEAN-10).
+    #[inline]
+    fn finish_sample(
+        &mut self,
+        mixed_l: f32,
+        mixed_r: f32,
+        metrics: &mut RenderMetrics,
+        out_l: &mut [f32],
+        out_r: &mut [f32],
+        i: usize,
+    ) {
+        let raw_l = mixed_l * self.master_gain;
+        let raw_r = mixed_r * self.master_gain;
+        let colored_l = self.coloration(raw_l);
+        let colored_r = self.coloration(raw_r);
+        metrics.peak_pre_protection = metrics
+            .peak_pre_protection
+            .max(raw_l.abs())
+            .max(raw_r.abs());
+        let (mut out_left, mut out_right) = self.stereo_limiter.process(colored_l, colored_r);
+        if self.stage_diagnostics_enabled {
+            metrics.master_input_peak = metrics.master_input_peak.max(raw_l.abs()).max(raw_r.abs());
+            metrics.master_color_peak = metrics.master_color_peak.max(colored_l.abs()).max(colored_r.abs());
+            metrics.coloration_delta_peak = metrics
+                .coloration_delta_peak
+                .max((colored_l - raw_l).abs())
+                .max((colored_r - raw_r).abs());
+            metrics.master_input_sum_sq += raw_l as f64 * raw_l as f64;
+            metrics.master_input_sum_sq += raw_r as f64 * raw_r as f64;
+            metrics.master_color_sum_sq += colored_l as f64 * colored_l as f64;
+            metrics.master_color_sum_sq += colored_r as f64 * colored_r as f64;
+            metrics.limiter_input_peak = metrics.limiter_input_peak.max(colored_l.abs()).max(colored_r.abs());
+            metrics.limiter_output_peak = metrics.limiter_output_peak.max(out_left.abs()).max(out_right.abs());
+            if colored_l.abs().max(colored_r.abs()) > self.cfg.limiter_threshold {
+                metrics.linked_limiter_active_samples =
+                    metrics.linked_limiter_active_samples.saturating_add(1);
+            }
+        }
+        if self.transition_remaining > 0 && self.transition_total > 0 {
+            let progress =
+                1.0 - self.transition_remaining as f32 / self.transition_total as f32;
+            out_left =
+                self.transition_start_l + (out_left - self.transition_start_l) * progress;
+            out_right =
+                self.transition_start_r + (out_right - self.transition_start_r) * progress;
+            self.transition_remaining -= 1;
+        }
+        if self.stage_diagnostics_enabled {
+            metrics.final_output_peak = metrics.final_output_peak.max(out_left.abs()).max(out_right.abs());
+            metrics.final_output_sum_sq += out_left as f64 * out_left as f64;
+            metrics.final_output_sum_sq += out_right as f64 * out_right as f64;
+        }
+        self.last_output_l = out_left;
+        self.last_output_r = out_right;
+        if i < out_l.len() {
+            out_l[i] = out_left;
+        }
+        if i < out_r.len() {
+            out_r[i] = out_right;
+        }
+    }
+
+    /// Calcula las diagnosticas de bloque a partir de las metricas acumuladas
+    /// en el lazo (CLEAN-10).
+    fn finalize_block_diagnostics(&mut self, render_started: std::time::Instant, n: usize, metrics: &RenderMetrics) {
         let elapsed_ns = render_started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
         let deadline_ns = n as u64 * 1_000_000_000u64 / self.sample_rate.max(1) as u64;
         self.diagnostics.source = u8::from(self.continuous_source == ContinuousSourceKind::V10Gf509);
@@ -1506,24 +1587,24 @@ impl VehicleAudioEngine {
             self.smoothed_rpm as f32,
             |runtime| runtime.rendered_telemetry().rpm,
         );
-        self.diagnostics.peak_pre_protection = peak_pre_protection;
+        self.diagnostics.peak_pre_protection = metrics.peak_pre_protection;
         self.diagnostics.effective_saturation = self.cfg.saturation.clamp(0.0, 1.0);
         self.diagnostics.effective_limiter_threshold = self.cfg.limiter_threshold.clamp(0.0, 1.0);
         if self.stage_diagnostics_enabled && n > 0 {
             let channel_samples = (n as f64 * 2.0).max(1.0);
-            self.diagnostics.master_input_peak = master_input_peak;
-            self.diagnostics.master_input_rms = (master_input_sum_sq / channel_samples).sqrt() as f32;
-            self.diagnostics.master_color_peak = master_color_peak;
-            self.diagnostics.master_color_rms = (master_color_sum_sq / channel_samples).sqrt() as f32;
-            self.diagnostics.final_output_peak = final_output_peak;
-            self.diagnostics.final_output_rms = (final_output_sum_sq / channel_samples).sqrt() as f32;
-            self.diagnostics.coloration_delta_peak = coloration_delta_peak;
-            self.diagnostics.linked_limiter_active_samples = linked_limiter_active_samples;
-            self.diagnostics.linked_limiter_gain_reduction_db = if limiter_input_peak > 0.0
-                && limiter_output_peak > 0.0
-                && limiter_output_peak < limiter_input_peak
+            self.diagnostics.master_input_peak = metrics.master_input_peak;
+            self.diagnostics.master_input_rms = (metrics.master_input_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.master_color_peak = metrics.master_color_peak;
+            self.diagnostics.master_color_rms = (metrics.master_color_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.final_output_peak = metrics.final_output_peak;
+            self.diagnostics.final_output_rms = (metrics.final_output_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.coloration_delta_peak = metrics.coloration_delta_peak;
+            self.diagnostics.linked_limiter_active_samples = metrics.linked_limiter_active_samples;
+            self.diagnostics.linked_limiter_gain_reduction_db = if metrics.limiter_input_peak > 0.0
+                && metrics.limiter_output_peak > 0.0
+                && metrics.limiter_output_peak < metrics.limiter_input_peak
             {
-                20.0 * (limiter_input_peak / limiter_output_peak).log10()
+                20.0 * (metrics.limiter_input_peak / metrics.limiter_output_peak).log10()
             } else {
                 0.0
             };
@@ -1552,6 +1633,7 @@ impl VehicleAudioEngine {
                 self.diagnostics.asset_or_render_errors.saturating_add(1);
         }
     }
+
 
     /// Master coloration. Saturation zero is an exact sample-transparent bypass;
     /// the linked `StereoLimiter` below owns the safety ceiling independently.

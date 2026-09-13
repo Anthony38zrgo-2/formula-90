@@ -861,6 +861,19 @@ impl AudioPowertrainSynthesis {
     /// per offending field; an empty vector means the contract is usable.
     pub fn validate(&self) -> Vec<ConfigDiagnostic> {
         let mut diags = Vec::new();
+        self.validate_core_invariants(&mut diags);
+        self.validate_firing(&mut diags);
+        self.validate_combustion_energy(&mut diags);
+        self.validate_exhaust(&mut diags);
+        self.validate_half_block_rasp(&mut diags);
+        self.validate_modular(&mut diags);
+        self.validate_limiter_tc(&mut diags);
+        self.validate_distance_levels(&mut diags);
+        self.validate_cpu_budget(&mut diags);
+        diags
+    }
+
+    fn validate_core_invariants(&self, diags: &mut Vec<ConfigDiagnostic>) {
         let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         if self.schema_version != 1 {
@@ -891,11 +904,13 @@ impl AudioPowertrainSynthesis {
                 message: "must be 2 for half_block_5_four_stroke model".into(),
             });
         }
+    }
 
+    fn validate_firing(&self, diags: &mut Vec<ConfigDiagnostic>) {
         if let Some(order) = &self.firing_order {
             if order.len() != self.total_cylinders as usize {
                 diags.push(ConfigDiagnostic {
-                    path: path("firing_order"),
+                    path: format!("{PROFILE_SECTION}.firing_order"),
                     message: format!(
                         "must list one entry per cylinder; total_cylinders is {} but got {}",
                         self.total_cylinders,
@@ -926,10 +941,9 @@ impl AudioPowertrainSynthesis {
         if let Some(phases) = &self.firing_phases_deg {
             if phases.len() != self.physically_simulated_cylinders as usize {
                 diags.push(ConfigDiagnostic {
-                    path: path("firing_phases_deg"),
+                    path: format!("{PROFILE_SECTION}.firing_phases_deg"),
                     message: format!(
-                        "must list one phase per simulated cylinder; \
-                         physically_simulated_cylinders is {} but got {}",
+                        "must list one phase per simulated cylinder;                          physically_simulated_cylinders is {} but got {}",
                         self.physically_simulated_cylinders,
                         phases.len()
                     ),
@@ -938,7 +952,7 @@ impl AudioPowertrainSynthesis {
             let mut previous: Option<f32> = None;
             for (index, &phase) in phases.iter().enumerate() {
                 let phase_path = format!("{PROFILE_SECTION}.firing_phases_deg[{index}]");
-                if !check_finite(&mut diags, phase_path.clone(), phase) {
+                if !check_finite(diags, phase_path.clone(), phase) {
                     previous = Some(phase);
                     continue;
                 }
@@ -961,93 +975,97 @@ impl AudioPowertrainSynthesis {
                 previous = Some(phase);
             }
         }
+    }
+
+    fn validate_combustion_energy(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.irregularity"),
             self.combustion.irregularity,
             0.0,
             0.25,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.body_cutoff_hz"),
             self.combustion.body_cutoff_hz,
             200.0,
             8000.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.scavenging_ratio"),
             self.combustion.scavenging_ratio,
             0.0,
             0.9,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.cylinder_variation"),
             self.combustion.cylinder_variation,
             0.0,
             0.25,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.cycle_variation"),
             self.combustion.cycle_variation,
             0.0,
             0.25,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.pressure_derivative_mix"),
             self.combustion.pressure_derivative_mix,
             0.0,
             1.0,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("combustion.combustion_attack_deg"),
             self.combustion.combustion_attack_deg,
             0.0,
             720.0,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("combustion.combustion_decay_deg"),
             self.combustion.combustion_decay_deg,
             0.0,
             720.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.exhaust_open_offset_deg"),
             self.combustion.exhaust_open_offset_deg,
             0.0,
             720.0,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("combustion.exhaust_blowdown_attack_deg"),
             self.combustion.exhaust_blowdown_attack_deg,
             0.0,
             720.0,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("combustion.exhaust_blowdown_decay_deg"),
             self.combustion.exhaust_blowdown_decay_deg,
             0.0,
             720.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion.intake_open_offset_deg"),
             self.combustion.intake_open_offset_deg,
             0.0,
             720.0,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("combustion.intake_event_width_deg"),
             self.combustion.intake_event_width_deg,
             0.0,
@@ -1055,42 +1073,42 @@ impl AudioPowertrainSynthesis {
         );
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("energy.torque_curve_weight"),
             self.energy.torque_curve_weight,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("energy.throttle_response"),
             self.energy.throttle_response,
             0.1,
             2.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("energy.idle_combustion_gain"),
             self.energy.idle_combustion_gain,
             0.0,
             0.5,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("energy.attack_smoothing_s"),
             self.energy.attack_smoothing_s,
             0.0,
             0.5,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("energy.release_smoothing_s"),
             self.energy.release_smoothing_s,
             0.0,
             2.0,
         );
         check_range_open_low(
-            &mut diags,
+            diags,
             path("energy.load_smoothing_s"),
             self.energy.load_smoothing_s,
             0.0,
@@ -1098,55 +1116,59 @@ impl AudioPowertrainSynthesis {
         );
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("intake.noise_gain"),
             self.intake.noise_gain,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("intake.pulse_gain"),
             self.intake.pulse_gain,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("intake.throttle_follow"),
             self.intake.throttle_follow,
             0.0,
             1.0,
         );
         check_resonances(
-            &mut diags,
+            diags,
             "audio.powertrain_synthesis.intake.resonances",
             &self.intake.resonances,
         );
+    }
+
+    fn validate_exhaust(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.pulse_gain"),
             self.exhaust.pulse_gain,
             0.0,
             2.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.saturation"),
             self.exhaust.saturation,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.damping"),
             self.exhaust.damping,
             0.0,
             0.99,
         );
         check_resonances(
-            &mut diags,
+            diags,
             "audio.powertrain_synthesis.exhaust.collector_resonances",
             &self.exhaust.collector_resonances,
         );
@@ -1157,28 +1179,28 @@ impl AudioPowertrainSynthesis {
             });
         }
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.effective_sound_speed_mps"),
             self.exhaust.effective_sound_speed_mps,
             1.0,
             1000.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.collector.effective_length_m"),
             self.exhaust.collector.effective_length_m,
             0.001,
             20.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.collector.reflection_gain"),
             self.exhaust.collector.reflection_gain,
             -0.99,
             0.99,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("exhaust.collector.damping_hz"),
             self.exhaust.collector.damping_hz,
             0.0,
@@ -1186,58 +1208,62 @@ impl AudioPowertrainSynthesis {
         );
         for (index, header) in self.exhaust.headers.iter().enumerate() {
             check_range_closed(
-                &mut diags,
+                diags,
                 format!("audio.powertrain_synthesis.exhaust.headers[{index}].length_m"),
                 header.length_m,
                 0.001,
                 20.0,
             );
             check_range_closed(
-                &mut diags,
+                diags,
                 format!("audio.powertrain_synthesis.exhaust.headers[{index}].gain"),
                 header.gain,
                 -4.0,
                 4.0,
             );
             check_range_closed(
-                &mut diags,
+                diags,
                 format!("audio.powertrain_synthesis.exhaust.headers[{index}].damping"),
                 header.damping,
                 0.0,
                 1.0,
             );
         }
+    }
+
+    fn validate_half_block_rasp(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("half_block.phase_offset_deg"),
             self.half_block.phase_offset_deg,
             0.0,
             720.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("half_block.delay_s"),
             self.half_block.delay_s,
             0.0,
             0.05,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("half_block.decorrelation"),
             self.half_block.decorrelation,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("half_block.gain"),
             self.half_block.gain,
             0.0,
             2.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("half_block.timbre_diff"),
             self.half_block.timbre_diff,
             0.0,
@@ -1245,50 +1271,50 @@ impl AudioPowertrainSynthesis {
         );
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("combustion_voices.edge_gain"),
             self.combustion_voices.edge_gain,
             0.0,
             2.0,
         );
-        check_range_closed(&mut diags, path("rasp.gain"), self.rasp.gain, 0.0, 2.0);
+        check_range_closed(diags, path("rasp.gain"), self.rasp.gain, 0.0, 2.0);
         check_range_closed(
-            &mut diags,
+            diags,
             path("rasp.highpass_hz"),
             self.rasp.highpass_hz,
             200.0,
             20000.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("rasp.lowpass_hz"),
             self.rasp.lowpass_hz,
             200.0,
             20000.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("rasp.saturation"),
             self.rasp.saturation,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("rasp.rpm_start_ratio"),
             self.rasp.rpm_start_ratio,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("rasp.rpm_full_ratio"),
             self.rasp.rpm_full_ratio,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("rasp.input_gain"),
             self.rasp.input_gain,
             0.0,
@@ -1300,51 +1326,55 @@ impl AudioPowertrainSynthesis {
                 message: "rasp.lowpass_hz must be greater than rasp.highpass_hz".into(),
             });
         }
+    }
+
+    fn validate_modular(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.gain"),
             self.modular.gain,
             0.0,
             2.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.attack_deg"),
             self.modular.attack_deg,
             0.5,
             36.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.decay_deg"),
             self.modular.decay_deg,
             1.0,
             143.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.sustain"),
             self.modular.sustain,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.jitter_deg"),
             self.modular.jitter_deg,
             0.0,
             8.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.rpm_start_ratio"),
             self.modular.rpm_start_ratio,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("modular.rpm_full_ratio"),
             self.modular.rpm_full_ratio,
             0.0,
@@ -1360,22 +1390,22 @@ impl AudioPowertrainSynthesis {
         for (index, voice) in self.modular.voices.iter().enumerate() {
             let vp = |field: &str| format!("{PROFILE_SECTION}.modular.voices[{index}].{field}");
             check_range_closed(
-                &mut diags,
+                diags,
                 vp("frequency_factor"),
                 voice.frequency_factor,
                 0.05,
                 40.0,
             );
-            check_range_closed(&mut diags, vp("gain"), voice.gain, 0.0, 1.0);
+            check_range_closed(diags, vp("gain"), voice.gain, 0.0, 1.0);
             check_range_closed(
-                &mut diags,
+                diags,
                 vp("highpass_hz"),
                 voice.highpass_hz,
                 20.0,
                 20000.0,
             );
             check_range_closed(
-                &mut diags,
+                diags,
                 vp("lowpass_hz"),
                 voice.lowpass_hz,
                 20.0,
@@ -1388,23 +1418,27 @@ impl AudioPowertrainSynthesis {
                 });
             }
         }
+    }
+
+    fn validate_limiter_tc(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("limiter.threshold_rpm_ratio"),
             self.limiter.threshold_rpm_ratio,
             0.90,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("limiter.attack_ms"),
             self.limiter.attack_ms,
             0.0,
             100.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("limiter.release_ms"),
             self.limiter.release_ms,
             1.0,
@@ -1412,40 +1446,44 @@ impl AudioPowertrainSynthesis {
         );
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("tc.suppress_gain"),
             self.tc.suppress_gain,
             0.0,
             1.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("tc.attack_ms"),
             self.tc.attack_ms,
             0.0,
             200.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("tc.release_ms"),
             self.tc.release_ms,
             1.0,
             1000.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("tc.min_cut_threshold"),
             self.tc.min_cut_threshold,
             0.0,
             1.0,
         );
+    }
+
+    fn validate_distance_levels(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         let near = self.distance_levels.near_max_m;
         let mid = self.distance_levels.mid_max_m;
         let far = self.distance_levels.far_max_m;
-        let near_finite = check_finite(&mut diags, path("distance_levels.near_max_m"), near);
-        let mid_finite = check_finite(&mut diags, path("distance_levels.mid_max_m"), mid);
-        let far_finite = check_finite(&mut diags, path("distance_levels.far_max_m"), far);
+        let near_finite = check_finite(diags, path("distance_levels.near_max_m"), near);
+        let mid_finite = check_finite(diags, path("distance_levels.mid_max_m"), mid);
+        let far_finite = check_finite(diags, path("distance_levels.far_max_m"), far);
         if near_finite && !(near > 0.0) {
             diags.push(ConfigDiagnostic {
                 path: path("distance_levels.near_max_m"),
@@ -1483,22 +1521,26 @@ impl AudioPowertrainSynthesis {
             });
         }
         check_range_open_low(
-            &mut diags,
+            diags,
             path("distance_levels.hysteresis_ratio"),
             self.distance_levels.hysteresis_ratio,
             0.0,
             0.5,
         );
+    }
+
+    fn validate_cpu_budget(&self, diags: &mut Vec<ConfigDiagnostic>) {
+        let path = |field: &str| format!("{PROFILE_SECTION}.{field}");
 
         check_range_closed(
-            &mut diags,
+            diags,
             path("cpu_budget.near_percent"),
             self.cpu_budget.near_percent,
             0.5,
             20.0,
         );
         check_range_closed(
-            &mut diags,
+            diags,
             path("cpu_budget.far_percent"),
             self.cpu_budget.far_percent,
             0.2,
@@ -1510,9 +1552,8 @@ impl AudioPowertrainSynthesis {
                 message: "must be less than or equal to near_percent".into(),
             });
         }
-
-        diags
     }
+
 }
 
 #[cfg(test)]
@@ -1757,3 +1798,4 @@ mod tests {
             .any(|d| d.path.ends_with("exhaust_open_offset_deg")));
     }
 }
+

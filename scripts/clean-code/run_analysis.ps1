@@ -229,13 +229,25 @@ function Invoke-Geiger {
 
 # ---------------------------------------------------------------- cargo-crap (via llvm-cov)
 function Invoke-Crap {
+    $lcovTests = Join-Path $rawDir 'lcov-tests.info'
+    $lcovLib = Join-Path $rawDir 'lcov-lib.info'
     $lcov = Join-Path $rawDir 'lcov.info'
-    $covArgs = @('llvm-cov', '--manifest-path', $workspaceManifest, '--workspace', '--lcov', '--output-path', $lcov, '--ignore-run-fail')
-    $cov = Invoke-NativeCapture -FilePath $cargo -Arguments $covArgs -WorkingDirectory (Split-Path -Parent $workspaceManifest)
-    Save-Text -Path (Join-Path $rawDir 'llvm-cov.stderr.txt') -Content $cov.StdErr
-    if ($cov.ExitCode -ne 0 -or -not (Test-Path $lcov)) { throw "cargo llvm-cov fallo ($($cov.ExitCode))" }
+    # CLEAN-12: `--tests` (lib + bins + integracion) carga dos instanciaciones del
+    # mismo modulo en crates ["rlib","cdylib"] (el rlib no-test que enlazan los
+    # bins colapsa a 0 los contadores de las funciones `#[no_mangle]`). La pasada
+    # `--lib` produce la instanciacion de test con hits reales del ABI. merge_lcov.py
+    # combina ambas: cobertura de integracion de la pasada --tests + counts ABI de
+    # la pasada --lib + dedup de la doble instanciacion.
+    $covTests = Invoke-NativeCapture -FilePath $cargo -Arguments @('llvm-cov', '--manifest-path', $workspaceManifest, '--workspace', '--tests', '--lcov', '--output-path', $lcovTests, '--ignore-run-fail') -WorkingDirectory (Split-Path -Parent $workspaceManifest)
+    Save-Text -Path (Join-Path $rawDir 'llvm-cov-tests.stderr.txt') -Content $covTests.StdErr
+    if ($covTests.ExitCode -ne 0 -or -not (Test-Path $lcovTests)) { throw "cargo llvm-cov --tests fallo ($($covTests.ExitCode))" }
+    $covLib = Invoke-NativeCapture -FilePath $cargo -Arguments @('llvm-cov', '--manifest-path', $workspaceManifest, '--workspace', '--lib', '--lcov', '--output-path', $lcovLib, '--ignore-run-fail') -WorkingDirectory (Split-Path -Parent $workspaceManifest)
+    Save-Text -Path (Join-Path $rawDir 'llvm-cov-lib.stderr.txt') -Content $covLib.StdErr
+    if ($covLib.ExitCode -ne 0 -or -not (Test-Path $lcovLib)) { throw "cargo llvm-cov --lib fallo ($($covLib.ExitCode))" }
+    $merge = & $python (Join-Path $PSScriptRoot 'merge_lcov.py') --lcov $lcovTests --abi $lcovLib --output $lcov
+    if ($LASTEXITCODE -ne 0) { throw "merge_lcov.py fallo ($LASTEXITCODE): $merge" }
+    $script:currentCommand = "cargo llvm-cov --workspace --tests/--lib + merge_lcov.py; cargo crap --workspace --lcov lcov.info --format sarif"
     $crapArgs = @('crap', '--workspace', '--lcov', $lcov, '--format', 'sarif')
-    $script:currentCommand = "$cargo crap --workspace --lcov lcov.info --format sarif"
     $r = Invoke-NativeCapture -FilePath $cargo -Arguments $crapArgs -WorkingDirectory (Split-Path -Parent $workspaceManifest)
     Save-Text -Path (Join-Path $rawDir 'crap.stderr.txt') -Content $r.StdErr
     $json = Get-LeadingJson -Preferred $r.StdOut -Fallback $r.StdErr
