@@ -293,7 +293,7 @@ fn read_wav_mono16(path: &Path) -> Result<Vec<i16>, BankError> {
     let mut data: Vec<u8> = Vec::new();
     while pos + 8 <= bytes.len() {
         let chunk_id = &bytes[pos..pos + 4];
-        let size = u32::from_le_bytes(bytes[pos + 4..pos + 8].try_into().unwrap()) as usize;
+        let size = u32::from_le_bytes([bytes[pos + 4], bytes[pos + 5], bytes[pos + 6], bytes[pos + 7]]) as usize;
         if chunk_id == b"fmt " {
             if pos + 24 > bytes.len() {
                 return Err(BankError::InvalidWav(
@@ -301,9 +301,9 @@ fn read_wav_mono16(path: &Path) -> Result<Vec<i16>, BankError> {
                     "truncated fmt".into(),
                 ));
             }
-            channels = u16::from_le_bytes(bytes[pos + 10..pos + 12].try_into().unwrap());
-            sample_rate = u32::from_le_bytes(bytes[pos + 12..pos + 16].try_into().unwrap());
-            bits = u16::from_le_bytes(bytes[pos + 22..pos + 24].try_into().unwrap());
+            channels = u16::from_le_bytes([bytes[pos + 10], bytes[pos + 11]]);
+            sample_rate = u32::from_le_bytes([bytes[pos + 12], bytes[pos + 13], bytes[pos + 14], bytes[pos + 15]]);
+            bits = u16::from_le_bytes([bytes[pos + 22], bytes[pos + 23]]);
         } else if chunk_id == b"data" {
             let start = pos + 8;
             let end = (start + size).min(bytes.len());

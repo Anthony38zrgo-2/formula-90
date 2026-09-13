@@ -233,7 +233,7 @@ pub fn replay(
             .engine_weights
             .iter()
             .enumerate()
-            .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+            .max_by(|a, b| a.1.total_cmp(b.1))
             .map(|(i, _)| i)
             .unwrap_or(0);
         let crossfade = mix.engine_weights.iter().filter(|&&w| w > 0.1).count() >= 2;
@@ -416,7 +416,7 @@ pub fn synth_summary(frames: &[SynthFrame]) -> SynthSummary {
     let mut carga_min = f32::INFINITY;
     let mut carga_sum = 0.0f32;
     let mut coste: Vec<f64> = frames.iter().map(|f| f.coste).collect();
-    coste.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    coste.sort_by(f64::total_cmp);
     let mut underruns = 0u32;
     let mut virtualized = 0u32;
     let mut limiter_cuts = 0usize;

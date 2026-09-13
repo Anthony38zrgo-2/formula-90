@@ -927,10 +927,12 @@ impl ThreeZoneSampleLayer {
                 }
             }
             for (group, indices) in &seen {
-                let first = members
+                let Some(first) = members
                     .iter()
                     .find(|member| member.variant_group.as_deref() == Some(group.as_str()))
-                    .expect("group must exist");
+                else {
+                    return Err(format!("variant group {group} has no members"));
+                };
                 if indices.len() != first.variant_total {
                     return Err(format!("variant group {group} is incomplete"));
                 }
@@ -939,8 +941,7 @@ impl ThreeZoneSampleLayer {
                     .map(|&index| members[index].variant_position)
                     .collect();
                 if positions.len() != indices.len()
-                    || *positions.iter().next().unwrap() != 0
-                    || *positions.iter().next_back().unwrap() != indices.len() - 1
+                    || !positions.iter().copied().eq(0..indices.len())
                 {
                     return Err(format!("variant group {group} positions are not 0..count"));
                 }
@@ -959,7 +960,10 @@ impl ThreeZoneSampleLayer {
                     .front()
                     .is_some_and(|member| member.variant_group.as_deref() == Some(group.as_str()))
                 {
-                    run.push(queue.pop_front().expect("front checked"));
+                    match queue.pop_front() {
+                        Some(member) => run.push(member),
+                        None => break,
+                    }
                 }
                 let anchor =
                     run.iter().map(|member| member.zone.rpm_anchor).sum::<f32>() / run.len() as f32;
@@ -1655,7 +1659,7 @@ fn read_mono_pcm16(path: &Path) -> Result<Pcm16Wav, String> {
     let mut data = None;
     while cursor + 8 <= bytes.len() {
         let id = &bytes[cursor..cursor + 4];
-        let size = u32::from_le_bytes(bytes[cursor + 4..cursor + 8].try_into().unwrap()) as usize;
+        let size = u32::from_le_bytes([bytes[cursor + 4], bytes[cursor + 5], bytes[cursor + 6], bytes[cursor + 7]]) as usize;
         let start = cursor + 8;
         let end = start
             .checked_add(size)
@@ -1663,10 +1667,10 @@ fn read_mono_pcm16(path: &Path) -> Result<Pcm16Wav, String> {
             .ok_or_else(|| format!("truncated WAV chunk in {}", path.display()))?;
         if id == b"fmt " && size >= 16 {
             format = Some((
-                u16::from_le_bytes(bytes[start..start + 2].try_into().unwrap()),
-                u16::from_le_bytes(bytes[start + 2..start + 4].try_into().unwrap()),
-                u32::from_le_bytes(bytes[start + 4..start + 8].try_into().unwrap()),
-                u16::from_le_bytes(bytes[start + 14..start + 16].try_into().unwrap()),
+                u16::from_le_bytes([bytes[start], bytes[start + 1]]),
+                u16::from_le_bytes([bytes[start + 2], bytes[start + 3]]),
+                u32::from_le_bytes([bytes[start + 4], bytes[start + 5], bytes[start + 6], bytes[start + 7]]),
+                u16::from_le_bytes([bytes[start + 14], bytes[start + 15]]),
             ));
         } else if id == b"data" {
             data = Some(&bytes[start..end]);

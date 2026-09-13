@@ -304,6 +304,223 @@ def stable_key(finding: dict) -> str:
     )
 
 
+def line_key(finding: dict) -> str:
+    # Per-instance key for suppressions that must not cover the whole file
+    # (e.g. semgrep unwrap/expect, whose message is constant per rule).
+    return "|".join(
+        [
+            str(finding.get("tool", "")),
+            str(finding.get("rule", "")),
+            str(finding.get("file", "")),
+            str(finding.get("line", "")),
+        ]
+    )
+
+
+# ---------------------------------------------------------------------------
+# Alcance de modulos inline `#[cfg(test)]` (Rust)
+#
+# Semgrep excluye `**/tests/**` por ruta pero no los modulos `#[cfg(test)]`
+# embebidos en `src/`. Las reglas rust de produccion (unwrap/expect,
+# todo/unimplemented) son WARNING dentro de esos modulos aunque solo se
+# compilan en builds de test. Como semgrep no puede expresar esa exclusion
+# por patron (su soporte Rust no abarca cuerpos de `mod`), la calibracion se
+# aplica aqui, en el normalizador: un hallazgo semgrep localizado dentro de un
+# modulo inline `#[cfg(test)]` se reclasifica a maintainability/note (misma
+# separacion por contexto que la regla tooling de CLEAN-03). Un lexer
+# single-pass enmascara strings/comentarios para no contar sus llaves.
+# ---------------------------------------------------------------------------
+
+def _rust_non_code_mask(lines: list[str]) -> list[str]:
+    """Devuelve las lineas con todo el contenido de strings, char literals y
+    comentarios en blanco, preservando el numero de linea de los tokens de
+    codigo (los literales multilinea no colapsan lineas)."""
+    out = [list(line) for line in lines]
+    n = len(lines)
+    i = 0
+    while i < n:
+        line = lines[i]
+        j = 0
+        m = len(line)
+        while j < m:
+            c = line[j]
+            if c == "/" and j + 1 < m and line[j + 1] == "/":
+                for k in range(j, m):
+                    out[i][k] = " "
+                break
+            if c == "/" and j + 1 < m and line[j + 1] == "*":
+                depth = 1
+                out[i][j] = out[i][j + 1] = " "
+                j += 2
+                while depth > 0 and i < n:
+                    while j < m:
+                        if line[j] == "/" and j + 1 < m and line[j + 1] == "*":
+                            depth += 1
+                            out[i][j] = out[i][j + 1] = " "
+                            j += 2
+                        elif line[j] == "*" and j + 1 < m and line[j + 1] == "/":
+                            depth -= 1
+                            out[i][j] = out[i][j + 1] = " "
+                            j += 2
+                        else:
+                            out[i][j] = " "
+                            j += 1
+                        if depth == 0:
+                            break
+                    if depth > 0:
+                        i += 1
+                        line = lines[i]
+                        j = 0
+                        m = len(line)
+                continue
+            if c == '"':
+                # string raw?  r#"..."# o br#"..."#  (los # van ANTES de la comilla)
+                hashes = 0
+                k = j - 1
+                while k >= 0 and line[k] == "#":
+                    hashes += 1
+                    k -= 1
+                if hashes > 0 and k >= 0 and line[k] in "rb":
+                    while k < j:
+                        out[i][k] = " "
+                        k += 1
+                    close = j + 1
+                    while i < n:
+                        while close < m:
+                            if line[close] == '"':
+                                h = close + 1
+                                cnt = 0
+                                while h < m and line[h] == "#" and cnt < hashes:
+                                    cnt += 1
+                                    h += 1
+                                if cnt == hashes:
+                                    for t in range(close, h):
+                                        out[i][t] = " "
+                                    close = h
+                                    break
+                            close += 1
+                        if close < m or i >= n - 1:
+                            break
+                        i += 1
+                        line = lines[i]
+                        close = 0
+                        m = len(line)
+                    j = close
+                    continue
+                out[i][j] = " "
+                j += 1
+                while j < m:
+                    if line[j] == "\\":
+                        out[i][j] = " "
+                        if j + 1 < m:
+                            out[i][j + 1] = " "
+                        j += 2
+                        continue
+                    if line[j] == '"':
+                        out[i][j] = " "
+                        j += 1
+                        break
+                    out[i][j] = " "
+                    j += 1
+                continue
+            if c == "'":
+                # char literal ('x', '\n', '\u{...}') o lifetime ('a)? solo
+                # el primero consume; un lifetime se deja como codigo.
+                is_char = False
+                if j + 1 < m and line[j + 1] == "\\":
+                    is_char = True
+                elif j + 2 < m and line[j + 1] != "'" and line[j + 2] == "'":
+                    is_char = True
+                if not is_char:
+                    j += 1
+                    continue
+                out[i][j] = " "
+                j += 1
+                while j < m:
+                    if line[j] == "\\":
+                        out[i][j] = " "
+                        if j + 1 < m:
+                            out[i][j + 1] = " "
+                        j += 2
+                        continue
+                    if line[j] == "'":
+                        out[i][j] = " "
+                        j += 1
+                        break
+                    out[i][j] = " "
+                    j += 1
+                continue
+            j += 1
+        i += 1
+    return ["".join(chars) for chars in out]
+
+
+def _rust_test_module_spans(text: str) -> list:
+    """Intervalos [start, end] (1-indexed, inclusivos) de los modulos inline
+    `#[cfg(test)]`. Solo se considera un span si el atributo va seguido de un
+    item `mod`; si el cierre de llaves no se encuentra antes de EOF, el span
+    se extiende hasta el final del archivo (conservador: evita marcar codigo
+    posterior como test)."""
+    lines = text.splitlines()
+    masked = _rust_non_code_mask(lines)
+    n = len(lines)
+    spans = []
+    i = 0
+    while i < n:
+        if masked[i].strip() == "#[cfg(test)]":
+            j = i + 1
+            while j < n and not masked[j].strip():
+                j += 1
+            if j >= n:
+                i += 1
+                continue
+            header = masked[j].strip()
+            if not re.match(r"mod\s+\w+\s*\{?\s*$", header):
+                i += 1
+                continue
+            depth = masked[j].count("{") - masked[j].count("}")
+            k = j + 1
+            while depth > 0 and k < n:
+                depth += masked[k].count("{") - masked[k].count("}")
+                if depth <= 0:
+                    break
+                k += 1
+            if k >= n and depth > 0:
+                k = n - 1
+            spans.append((i + 1, k + 1))
+            i = k + 1
+        else:
+            i += 1
+    return spans
+
+
+def _classify_inline_test_modules(findings: list, repo_root: Path) -> int:
+    """Reclasifica hallazgos semgrep dentro de modulos inline `#[cfg(test)]`
+    a maintainability/note. Devuelve cuantos se reclasificaron."""
+    by_file = {}
+    for finding in findings:
+        if finding["tool"] == "semgrep":
+            by_file.setdefault(finding["file"], []).append(finding)
+    cache = {}
+    reclassified = 0
+    for file, items in by_file.items():
+        path = repo_root / file
+        if not path.is_file():
+            continue
+        if file not in cache:
+            try:
+                cache[file] = _rust_test_module_spans(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError):
+                cache[file] = []
+        for finding in items:
+            if any(start <= finding["line"] <= end for start, end in cache[file]):
+                finding["category"] = "maintainability"
+                finding["severity"] = "note"
+                finding["test_scope"] = True
+                reclassified += 1
+    return reclassified
+
+
 def rule_key(finding: dict) -> str:
     # Fallback for rules whose message embeds volatile metrics (e.g. cargo-geiger
     # counts). Keyed by tool|rule|file so the suppression survives count drift.
@@ -365,6 +582,7 @@ def main() -> int:
     for finding in findings:
         entry = (
             suppressions.get(finding["fingerprint"])
+            or suppressions.get(line_key(finding))
             or suppressions.get(stable_key(finding))
             or suppressions.get(rule_key(finding))
         )
@@ -372,6 +590,10 @@ def main() -> int:
             finding["status"] = "suppressed"
             finding["suppression_reason"] = entry.get("reason", "")
             suppressed += 1
+
+    reclassified = _classify_inline_test_modules(findings, repo_root)
+    if reclassified:
+        print(f"Inline #[cfg(test)] modules: {reclassified} findings reclassified to maintainability/note")
 
     tool_status = {}
     status_path = run_dir / "tool-status.json"

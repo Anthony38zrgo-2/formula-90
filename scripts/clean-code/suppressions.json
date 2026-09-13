@@ -1,5 +1,11 @@
 {
   "suppressions": {
+    "semgrep|scripts.clean-code.semgrep.formula90s-rust-unwrap-expect|game/crates/vehicle-physics-engine/src/vehicle_config.rs|613": {
+      "reason": "CLEAN-09: caso demostrablemente infalible documentado con expect(\"checked-in f1_2026_2008 physics profile must be valid\"). El JSON se embebe en build via include_str! y el perfil canonical se valida en tests; un perfil invalido rompe el build de tests, no puede fallar en runtime. Aprobado por humano el 2026-09-12.",
+      "approved_by": "human",
+      "date": "2026-09-12",
+      "backlog": "CLEAN-09"
+    },
     "cppcheck|incompleteArrayFill|game/native/vehicle-audio-dsp/tests/test_main.cpp|Array 'lref' is filled incompletely. Did you forget to multiply the size given to 'memcpy()' with 'sizeof(*lref)'?": {
       "reason": "Falso positivo: el memcpy de `lref` en test_main.cpp copia intencionalmente solo 1024 frames (el buffer es de 4096) y la comparacion posterior usa 1024. Aprobado por humano el 2026-09-11.",
       "approved_by": "human",

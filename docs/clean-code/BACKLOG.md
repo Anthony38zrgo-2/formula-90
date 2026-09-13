@@ -7,7 +7,7 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 ## Estado (2026-09-12)
 
 - **Cerrados:** CLEAN-01, CLEAN-02, CLEAN-03, CLEAN-04, CLEAN-05, CLEAN-06,
-  CLEAN-07, CLEAN-08, CLEAN-11.
+  CLEAN-07, CLEAN-08, CLEAN-09, CLEAN-11.
 - **Parcial — falta completar:** CLEAN-10 (complejidad). cargo-crap bajo de 70 a
   **15 findings** reales (Sprint 0, HEAD `5e173557`) y luego a **12** (Sprint 1).
   Resta:
@@ -19,8 +19,7 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
      cc24, `load_manifest_members` cc21, `enable_synth_from_profile` cc19,
      `validate_aero_config` cc17, `SampleZone::load` cc15, `trigger_from_code`
      cc13).
-- **Abierto:** CLEAN-09 (197 `unwrap`/`expect` WARNING en `src/` de produccion;
-  incluye 5 en modulos inline `#[cfg(test)]`, ver CLEAN-09).
+- **Abierto:** CLEAN-12 (artefacto de cobertura rlib/cdylib en llvm-cov).
 - **Frontera ABI y tooling:** las funciones `#[no_mangle]` (`f90_core_*`,
   `vehicle_audio_*`, `f1_94_*`, `sim_world_*`) y `bin_support.rs` quedaron
   excluidas del gate cargo-crap por politica aprobada (CLEAN-10); su 0% es un
@@ -76,20 +75,53 @@ Detalle del triage: `reports/static-analysis/baseline/TRIAGE.md`.
 
 ## CLEAN-09 — Reducir unwrap/expect en codigo de produccion
 
-- Re-baseline en HEAD `5e173557` (2026-09-12): **197 findings**
-  `formula90s-rust-unwrap-expect` (WARNING) en `src/` no-tooling, mas 86
-  `...-tooling` (INFO). Distribucion por crate: v10-engine-synth 95,
-  vehicle-audio-engine 56, vehicle-physics-engine 29, skybox-engine 27,
-  formula90-core 17, game-sim 3.
-- Calibracion pendiente: 5 de los 197 estan dentro de modulos inline
-  `#[cfg(test)]` (`formula90-core/src/ffi.rs`, `v10-engine-synth/src/wav.rs`).
-  La regla excluye `**/tests/**` por ruta pero no los modulos `#[cfg(test)]`
-  dentro de `src/`; evaluar si merecen una regla/severidad propias (CLEAN-03).
-- Trabajo: sustituir por manejo explicito de Result/Option donde el panic no
-  sea infalible; los casos demostrablemente infalibles pueden documentarse con
-  `expect("razon")`.
-- Criterio de cierre: sin findings WARNING de la regla de produccion (o
-  justificados uno a uno).
+- Estado: **cerrado** (2026-09-12, HEAD `c7a9bb72`).
+- Re-baseline previo en HEAD `5e173557` (2026-09-12): **197 findings**
+  `formula90s-rust-unwrap-expect` (WARNING) en `src/` no-tooling. Re-baseline en
+  `c7a9bb72` (run `clean09-rebaseline2`): **202** (el delta es del split
+  CLEAN-10). Distribucion por crate: v10-engine-synth 84, vehicle-audio-engine
+  41, vehicle-physics-engine 27, skybox-engine 26, formula90-core 16,
+  game-sim 3.
+- **Calibracion de alcance (seguimiento de CLEAN-03):** de los 202, **183
+  estaban dentro de modulos inline `#[cfg(test)]`** de `src/` (semgrep excluye
+  `**/tests/**` por ruta pero no los modulos `#[cfg(test)]` embebidos; el
+  conteo de "5" del primer re-baseline era un subconteo). Semgrep no puede
+  expresar esa exclusion por patron (su soporte Rust no cubre cuerpos de
+  `mod`), asi que la calibracion se aplico en `normalize_sarif.py`: un lexer
+  single-pass (strings raw/multilinea, char literals con lifetimes, comentarios)
+  calcula los spans de los modulos `#[cfg(test)] mod` y reclasifica esos
+  hallazgos semgrep a maintainability/note. Misma separacion por contexto que
+  la regla tooling (INFO). Evidencia: run `clean09-fix1` reclasifica 183.
+- **Trabajo (19 findings de produccion reales, tras calibracion):**
+  1. `bank.rs` y `sample_layer::read_mono_pcm16` (9): los
+     `slice.try_into().unwrap()` de chunks WAV (tamano garantizado por el
+     control de flujo) se sustituyeron por construccion directa de arrays
+     `[b[i], b[i+1], ...]`, eliminando el panic sin cambiar semantica.
+  2. `telemetry.rs` (2): `partial_cmp().unwrap()` en pesos/costes de
+     telemetria sustituido por `total_cmp()` (nunca devuelve None, sin NaN).
+  3. `scene.rs` (1): `max().unwrap()` sobre el array fijo de 3 taps ->
+     `unwrap_or(0)`.
+  4. `formula90-core/lib.rs` (2): `RwLock::write()/read().expect("poisoned")`
+     -> `unwrap_or_else(|p| p.into_inner())`. La recuperacion es sound: el
+     valor publicado es un `Arc<CoreFrame>` completo construido antes del lock
+     y no hay codigo panickeable entre lock y store (un solo escritor).
+  5. `sample_layer::group_members` (4): `.find(...).expect("group must
+     exist")` -> `let-else` con `Err` explicito; `next()/next_back().unwrap()`
+     sobre el `BTreeSet` -> `positions.iter().copied().eq(0..indices.len())`;
+     `pop_front().expect("front checked")` -> `match` con `None => break`
+     (infallible sin panic).
+  6. `vehicle_config::f1_2026_2008_canonical` (1): se conserva el
+     `expect("checked-in f1_2026_2008 physics profile must be valid")` — caso
+     demostrablemente infalible (JSON embebido con `include_str!`, perfil
+     validado por tests) — justificado uno a uno en `suppressions.json`
+     (nueva clave por instancia `tool|rule|file|line` en `normalize_sarif.py`,
+     para no suprimir el archivo entero).
+- Verificacion: `cargo test --lib` de vehicle-audio-engine (224), v10-engine
+  -synth (97) y formula90-core (15) en verde; run `clean09-fix1`: 0 warnings
+  abiertos de la regla de produccion (queda 1 warning, suprimido y
+  justificado).
+- Criterio de cierre cumplido: sin findings WARNING abiertos de la regla de
+  produccion (el unico restante esta justificado uno a uno).
 
 ## CLEAN-04 — Licencias y metadatos de dependencias
 

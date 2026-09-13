@@ -841,13 +841,13 @@ impl CoreFacade {
             .collect();
 
         self.frame = frame.clone();
-        *self.latest.write().expect("latest RwLock poisoned") = Arc::new(frame);
+        *self.latest.write().unwrap_or_else(|poisoned| poisoned.into_inner()) = Arc::new(frame);
         &self.frame
     }
 
     /// Latest published frame (immutable view for any thread).
     pub fn latest_frame(&self) -> Arc<CoreFrame> {
-        self.latest.read().expect("latest RwLock poisoned").clone()
+        self.latest.read().unwrap_or_else(|poisoned| poisoned.into_inner()).clone()
     }
 
     /// Render `n` stereo audio frames into `out_l`/`out_r` (0 on no mixer).

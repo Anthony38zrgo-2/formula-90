@@ -457,7 +457,7 @@ impl AirPath {
     fn new(sample_rate: f32) -> Self {
         let tap = |milliseconds: f32| (milliseconds * 0.001 * sample_rate).round() as usize;
         let taps = [(tap(2.11), 0.56), (tap(3.91), 0.28), (tap(6.31), 0.13)];
-        let maximum = taps.iter().map(|&(delay, _)| delay).max().unwrap();
+        let maximum = taps.iter().map(|&(delay, _)| delay).max().unwrap_or(0);
         Self {
             delay: vec![0.0; maximum + 1],
             cursor: 0,
