@@ -69,3 +69,26 @@ Start validation at 120 physics ticks/s or higher. The internal vertical solver 
 7. Increase wheel mass temporarily: wheel-hop/contact tracking should become visibly slower.
 8. Straight-line static camber: left/right camber thrust should cancel approximately.
 9. Corner entry: aligning torque should build and then fall as front slip saturates.
+
+## Visual suspension linkage (2026-09-12)
+
+A purely **visual** kinematic layer simulates the linkage so the chassis →
+suspension → wheel assembly stays connected and animated. It does **not** alter
+the forces above.
+
+- Hardpoints live in the physics JSON under `suspension.geometry` (per corner:
+  `UPPER_WISHBONE`, `LOWER_WISHBONE`, `PUSHROD`, `TRACKROD`, `UPRIGHT`,
+  `ROCKER`, `DRIVESHAFT`; `DRIVESHAFT` rear only, `FR`/`RR` may use
+  `mirror_of`). The Rust parser accepts the block as parser-only
+  (`deny_unknown_fields` still rejects typos) and never consumes it for forces.
+- `SuspensionGeometry` (`game/scripts/vehicle/suspension_geometry.gd`) solves
+  the mechanism with a position-based solver: wishbone arm radii and the upright
+  triangle stay rigid; only the vertical hub component tracks the telemetry
+  compression; the mechanism owns the lateral track change.
+- `SuspensionLinkVisual` (`suspension_link_visual.gd`) builds the procedural
+  rods/boxes per wheel and hides the baked `GEO_CHASSIS_*_SUSPENSION` meshes.
+- `f1_wheel_visual_controller.gd` drives the solver each frame and lets the
+  mechanism own the wheel centre while geometry is enabled.
+
+See `implementation/F1_2030_SUSPENSION_GEOMETRY_BACKLOG.md` for the full
+contract and validation evidence.

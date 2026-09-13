@@ -1,5 +1,14 @@
 # Changelog
 
+## F1 2030 Suspension Geometry - 2026-09-12
+
+- Añadida simulación visual de la geometría de suspensión del F1 2030 V10: `UPPER_WISHBONE`, `LOWER_WISHBONE`, `PUSHROD`, `TRACKROD`, `UPRIGHT`, `ROCKER` y `DRIVESHAFT` por rueda.
+- Hardpoints declarados en `f1_2030_v10_physics.json` (`suspension.geometry`, parser-only en Rust, `mirror_of` para FR/RR).
+- `SuspensionGeometry` resuelve el mecanismo por posición (brazos rígidos, triángulo de upright cerrado, recorrido guiado por la telemetría 1-DOF).
+- `SuspensionLinkVisual` construye las piezas proceduralmente y oculta la suspensión horneada del GLB del chasis.
+- El ensamblaje chasis → suspensión → rueda queda animado por la física (wishbone FL ~75 mm y upright ~57 mm bajo frenada).
+- Tests deterministas de invariantes y runtime; runtime Windows republicado.
+
 ## V10 3D - 2026-08-05
 
 - Reemplazado el `DirectionalVehicleSprite` del jugador por un GLB 3D real sin modificar handling ni transmisión.

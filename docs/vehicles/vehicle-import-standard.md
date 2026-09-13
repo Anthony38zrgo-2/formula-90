@@ -75,6 +75,16 @@ Para suspensión se requieren los pares `JNT_SUSP_FL_CHASSIS` /
 `JNT_SUSP_FL_HUB`, `FR`, `RL` y `RR`. Cuando sea posible, cada brazo debe
 identificar también sus extremos `INNER` y `OUTER`.
 
+### Geometría visual de suspensión declarativa
+
+Los vehículos con física data-driven pueden declarar el mecanismo de suspensión
+(`UPPER_WISHBONE`, `LOWER_WISHBONE`, `PUSHROD`, `TRACKROD`, `UPRIGHT`, `ROCKER`,
+`DRIVESHAFT`) en el JSON de física bajo `suspension.geometry` en lugar de (o en
+adición a) los nodos `JNT_*`. Cada esquina usa hardpoints en coordenadas de
+chasis (metros, `+X` derecha, `+Y` arriba, `-Z` delante); `FR`/`RR` pueden
+reutilizar el lado espejo con `mirror_of`. Ver
+`implementation/F1_2030_SUSPENSION_GEOMETRY_BACKLOG.md`.
+
 ## Ruedas y GEVP
 
 - El paquete runtime estándar contiene una rueda delantera y una rueda trasera compartibles.
