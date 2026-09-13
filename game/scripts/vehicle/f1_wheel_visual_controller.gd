@@ -205,6 +205,8 @@ func _resolve_nodes() -> void:
 		_base_anchors[wheel_index] = hub.position + Vector3.UP * (spring_length - rest_compression)
 
 func _refresh_physics_anchors() -> void:
+	if hide_baked_suspension and _suspension_geometry != null:
+		_hide_baked_suspension()
 	if not vehicle.has_method(&"get_wheel_anchor_local"):
 		return
 	for wheel_index in range(4):
@@ -234,10 +236,10 @@ func _setup_suspension_geometry() -> void:
 	var links := SuspensionLinkVisual.new()
 	links.name = "SuspensionLinkVisual"
 	links.setup(geometry)
-	vehicle.add_child(links)
 	_suspension_links = links
-	if hide_baked_suspension:
-		_hide_baked_suspension()
+	# The vehicle may still be instantiating its own children during _ready; add
+	# deferred so the chassis assembly is safely parented.
+	vehicle.add_child.call_deferred(links)
 
 func _hide_baked_suspension() -> void:
 	for child in vehicle.get_children():

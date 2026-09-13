@@ -61,7 +61,15 @@ func setup(geometry: SuspensionGeometry) -> void:
 		_trackrod.append(_make_rod_node(root, "TRACKROD", _rod_material, 0.012))
 		_pushrod.append(_make_rod_node(root, "PUSHROD", _rod_material, 0.016))
 		_damper.append(_make_rod_node(root, "DAMPER", _shaft_material, 0.018))
-		_driveshaft.append(_make_rod_node(root, "DRIVESHAFT", _shaft_material, 0.012, true))
+		if _geometry.is_valid(wheel_index) and _geometry.get_corner(wheel_index).get("has_driveshaft", false):
+			_driveshaft.append(_make_rod_node(root, "DRIVESHAFT", _shaft_material, 0.012, true))
+		else:
+			# Placeholder keeps per-wheel array indexing stable.
+			var placeholder := MeshInstance3D.new()
+			placeholder.name = "DRIVESHAFT"
+			placeholder.visible = false
+			root.add_child(placeholder)
+			_driveshaft.append(placeholder)
 		_rocker.append(_make_box_node(root, "ROCKER", _rocker_material, Vector3(0.09, 0.03, 0.045)))
 		_upright.append(_make_box_node(root, "UPRIGHT", _arm_material, Vector3(0.10, 0.24, 0.08)))
 
