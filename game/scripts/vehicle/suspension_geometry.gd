@@ -17,8 +17,8 @@ const WHEEL_KEYS := ["FL", "FR", "RL", "RR"]
 const PBD_ITERATIONS := 48
 const PBD_HUB_WEIGHT := 0.25
 const PBD_FINAL_PASSES := 80
-const TRACKROD_RACK_GAIN := 0.13
 
+var visual_meshes_path: String = ""
 var _corners: Array = []
 var _axles: Array = []
 
@@ -53,14 +53,19 @@ static func _axle_params(axle: Variant) -> Dictionary:
 	var result := {
 		"spring_length": 0.3,
 		"resting_ratio": 0.15,
+		"camber": 0.0,
+		"toe": 0.0,
 	}
 	if axle is Dictionary:
 		result["spring_length"] = float(axle.get("spring_length", result["spring_length"]))
 		result["resting_ratio"] = float(axle.get("resting_ratio", result["resting_ratio"]))
+		result["camber"] = float(axle.get("camber", 0.0))
+		result["toe"] = float(axle.get("toe", 0.0))
 	return result
 
 
 func _init(geometry: Dictionary, axles: Dictionary) -> void:
+	visual_meshes_path = String(geometry.get("_visual_meshes", ""))
 	_axles = [
 		axles.get("front", {}),
 		axles.get("front", {}),
@@ -79,6 +84,13 @@ func _init(geometry: Dictionary, axles: Dictionary) -> void:
 				continue
 			raw = _mirror_dict(base)
 		_corners.append(_build_corner(raw, _axles[wheel_index]))
+	# Determine the connected, reachable travel interval once, never stretch a
+	# rigid member to force incompatible telemetry through the authored linkage.
+	for i in range(4):
+		if is_valid(i):
+			_corners[i]["travel_min"] = _travel_limit(i, 0.0)
+			_corners[i]["travel_max"] = _travel_limit(i, _corners[i]["spring_len"])
+
 
 
 func is_valid(wheel_index: int) -> bool:
@@ -96,7 +108,7 @@ func get_corner(wheel_index: int) -> Dictionary:
 
 ## Re-centre a corner's mechanism on the controller's actual rest hub (native
 ## anchor minus spring travel). All hardpoints translate rigidly, so arm radii,
-## triangle edges and the pushrod ratio are preserved.
+## triangle edges and the pushrod attachment are preserved.
 func align_hub(wheel_index: int, hub_rest: Vector3) -> void:
 	var corner: Dictionary = _corners[wheel_index]
 	if corner.is_empty() or not hub_rest.is_finite():
@@ -116,16 +128,55 @@ func align_hub(wheel_index: int, hub_rest: Vector3) -> void:
 	corner["u_center"] = _closest_point_on_axis(corner["ubj_rest"], corner["uw_if"], corner["u_dir"])
 	corner["l_radius"] = (corner["lbj_rest"] - corner["l_center"]).length()
 	corner["u_radius"] = (corner["ubj_rest"] - corner["u_center"]).length()
-	var l_mid: Vector3 = (corner["lw_if"] + corner["lw_ir"]) * 0.5
-	var len_lb: float = (corner["lbj_rest"] - l_mid).length()
-	if len_lb > 1e-6:
-		corner["t_pushrod"] = clampf((corner["lbj_rest"] - corner["pushrod_outer_rest"]).length() / len_lb, 0.0, 1.0)
+
 
 
 ## Solve the linkage for one wheel. Returns a Dictionary with element endpoints,
 ## the solved upright frame, the driveshaft spin and diagnostic residuals.
 ## Returns an empty Dictionary when the corner has no valid geometry.
-func solve(wheel_index: int, compression_m: float, steer_rad: float, camber_rad: float, spin_rad: float) -> Dictionary:
+func solve(wheel_index: int, compression_m: float, steer_rad: float, _camber_rad: float, spin_rad: float) -> Dictionary:
+	if not is_valid(wheel_index):
+		return {}
+	var c: Dictionary = _corners[wheel_index]
+	var requested := compression_m if is_finite(compression_m) else float(c["spring_len"]) * float(c["resting_ratio"])
+	var travel := clampf(requested, c["travel_min"], c["travel_max"])
+	var pose := _solve_pose(wheel_index, travel, steer_rad, spin_rad)
+	pose["travel_limited"] = absf(travel - requested) > 0.000001
+	pose["requested_compression"] = requested
+	pose["solved_compression"] = travel
+	return pose
+
+
+func _travel_limit(wheel: int, endpoint: float) -> float:
+	var c: Dictionary = _corners[wheel]
+	var rest: float = c["spring_len"] * c["resting_ratio"]
+	var good := rest
+	for step in range(1, 33):
+		var candidate := lerpf(rest, endpoint, float(step) / 32.0)
+		if _reachable(_solve_pose(wheel, candidate, 0.0, 0.0)):
+			good = candidate
+			continue
+		var bad := candidate
+		for iteration in range(16):
+			var middle := (good + bad) * 0.5
+			if _reachable(_solve_pose(wheel, middle, 0.0, 0.0)):
+				good = middle
+			else:
+				bad = middle
+		return good
+	return good
+
+
+func _reachable(pose: Dictionary) -> bool:
+	if pose.is_empty() or pose["rocker_clamped"] or pose["steering_clamped"]:
+		return false
+	for key in ["lower_radius", "upper_radius", "tri_lu", "tri_lh", "tri_uh", "pushrod", "trackrod"]:
+		if pose["residuals"][key] > 0.0001:
+			return false
+	return pose["residuals"]["hub"] < 0.001
+
+
+func _solve_pose(wheel_index: int, compression_m: float, steer_rad: float, spin_rad: float) -> Dictionary:
 	var corner: Dictionary = _corners[wheel_index]
 	if not corner.get("valid", false):
 		return {}
@@ -153,7 +204,7 @@ func solve(wheel_index: int, compression_m: float, steer_rad: float, camber_rad:
 		# change (real scrub/track variation), so the arms can stay perfectly rigid.
 		hub.y += (hub_target.y - hub.y) * PBD_HUB_WEIGHT
 
-	# Constraint-only refinement with the hub pulled only on Y: removes the
+	# Constraint-only refinement: removes the
 	# residual left by the last hub pull so the linkage closes exactly.
 	for i in range(PBD_FINAL_PASSES):
 		lbj = _project_circle(lbj, corner["l_center"], corner["l_dir"], corner["l_radius"])
@@ -166,31 +217,29 @@ func solve(wheel_index: int, compression_m: float, steer_rad: float, camber_rad:
 	if not (lbj.is_finite() and ubj.is_finite() and hub.is_finite()):
 		return {}
 
-	var y_axis := (ubj - lbj).normalized()
-	if y_axis.length() < 1e-6:
-		y_axis = Vector3.UP
-	var x_axis := y_axis.cross(Vector3(0.0, 0.0, 1.0)).normalized()
-	if x_axis.length() < 1e-6:
-		x_axis = y_axis.cross(Vector3.RIGHT).normalized()
-	if x_axis.length() < 1e-6:
-		x_axis = Vector3.RIGHT
-	var z_axis := x_axis.cross(y_axis).normalized()
+	# Transport the authored rigid upright using its triangle, then rotate the
+	# whole body (including the offset hub) about the ball-joint kingpin.
+	var transport := _triangle_frame(lbj, ubj, hub) * _triangle_frame(
+		corner["lbj_rest"], corner["ubj_rest"], corner["hub_center"]).transposed()
+	var kingpin := (ubj - lbj).normalized()
+	var outer_unsteered: Vector3 = lbj + transport * (corner["trackrod_outer"] - corner["lbj_rest"])
+	var rack: Vector3 = corner["trackrod_inner"]
+	if wheel_index < 2:
+		rack.x += _rack_displacement(steer_rad)
+	var steering := _circle_link(lbj, kingpin, outer_unsteered, rack, corner["L_trackrod"], steer_rad)
+	var steer_rotation := Basis(kingpin, float(steering["angle"]))
+	var upright_basis := (steer_rotation * transport).orthonormalized()
+	hub = lbj + steer_rotation * (hub - lbj)
+	var steer_arm: Vector3 = lbj + upright_basis * (corner["trackrod_outer"] - corner["lbj_rest"])
+	# Camber/toe are fixed bearing alignment. Travel camber and bump steer come
+	# from the linkage, never a second animated rotation of the wheel bearing.
+	var side := 1.0 if wheel_index % 2 == 0 else -1.0
+	var wheel_basis := upright_basis * Basis(Vector3.UP, float(corner["toe"]) * side) * Basis(Vector3.BACK, float(corner["camber"]) * side)
 
-	# Steering rotates the upright about the kingpin axis; camber follows in the
-	# steered frame about the longitudinal axis (matches the wheel visual pivot).
-	x_axis = x_axis.rotated(y_axis, steer_rad)
-	z_axis = z_axis.rotated(y_axis, steer_rad)
-	x_axis = x_axis.rotated(z_axis, camber_rad)
-	var upright_basis := Basis(x_axis, y_axis, z_axis)
-
-	# Trackrod: rack translates laterally with steer; the rod telescopes.
-	var steer_arm: Vector3 = hub + upright_basis * (corner["trackrod_outer"] - corner["hub_center"])
-	var rack: Vector3 = corner["trackrod_inner"] + Vector3(steer_rad * TRACKROD_RACK_GAIN, 0.0, 0.0)
-
-	# Pushrod outer end rides on the lower wishbone between LBJ and the inboard
-	# midpoint; the rocker solve keeps the pushrod length rigid.
-	var l_mid: Vector3 = (corner["lw_if"] + corner["lw_ir"]) * 0.5
-	var pushrod_outer: Vector3 = lbj + (l_mid - lbj) * corner["t_pushrod"]
+	# Preserve the full authored attachment, including offset from the arm plane.
+	var mount_upper: bool = corner["pushrod_mount"] == "upper"
+	var mount_pose := _arm_pose(corner["uw_if"], corner["u_dir"], corner["ubj_rest"], ubj) if mount_upper else _arm_pose(corner["lw_if"], corner["l_dir"], corner["lbj_rest"], lbj)
+	var pushrod_outer: Vector3 = mount_pose * corner["pushrod_outer_rest"]
 
 	var rocker_solved := _rocker_solve(corner, pushrod_outer)
 	var rocker_end: Vector3 = rocker_solved["point"]
@@ -198,9 +247,13 @@ func solve(wheel_index: int, compression_m: float, steer_rad: float, camber_rad:
 	var damper_end: Vector3 = corner["rocker_pivot"] + (corner["damper_arm_rest"] - corner["rocker_pivot"]).rotated(corner["rocker_axis"], rocker_angle)
 
 	var driveshaft := {}
+	var driveshaft_pose := Transform3D.IDENTITY
 	if corner.get("has_driveshaft", false):
-		var ds_outer: Vector3 = hub + upright_basis * (corner["ds_outer_rest"] - corner["hub_center"])
-		driveshaft = {"inner": corner["ds_inner"], "outer": ds_outer, "spin": spin_rad}
+		var ds_outer: Vector3 = lbj + upright_basis * (corner["ds_outer_rest"] - corner["lbj_rest"])
+		driveshaft_pose = _link_pose(corner["ds_inner"], corner["ds_outer_rest"], corner["ds_inner"], ds_outer)
+		var shaft_axis: Vector3 = (ds_outer - corner["ds_inner"]).normalized()
+		var shaft_spin := -spin_rad * signf(shaft_axis.dot(wheel_basis.x))
+		driveshaft = {"inner": corner["ds_inner"], "outer": ds_outer, "spin": shaft_spin}
 
 	var residuals := {
 		"hub": absf(hub.y - hub_target.y),
@@ -211,23 +264,44 @@ func solve(wheel_index: int, compression_m: float, steer_rad: float, camber_rad:
 		"tri_lh": absf((lbj - hub).length() - corner["d_lh"]),
 		"tri_uh": absf((ubj - hub).length() - corner["d_uh"]),
 		"pushrod": absf((rocker_end - pushrod_outer).length() - corner["L_pushrod"]),
+		"trackrod": absf((rack - steer_arm).length() - corner["L_trackrod"]),
 	}
 
 	return {
 		"present": true,
+		"lower_pose": _arm_pose(corner["lw_if"], corner["l_dir"], corner["lbj_rest"], lbj),
+		"upper_pose": _arm_pose(corner["uw_if"], corner["u_dir"], corner["ubj_rest"], ubj),
+		"pushrod_pose": _link_pose(corner["pushrod_outer_rest"], corner["rocker_arm_rest"], pushrod_outer, rocker_end),
+		"trackrod_pose": _link_pose(corner["trackrod_inner"], corner["trackrod_outer"], rack, steer_arm),
 		"hub": hub,
 		"hub_target": hub_target,
 		"upright_origin": hub,
 		"upright_basis": upright_basis,
+		"wheel_basis": wheel_basis,
+		"steering_clamped": steering["clamped"],
+		"rocker_clamped": rocker_solved["clamped"],
 		"lower": [corner["lw_if"], corner["lw_ir"], lbj],
 		"upper": [corner["uw_if"], corner["uw_ir"], ubj],
 		"trackrod": [rack, steer_arm],
 		"pushrod": [pushrod_outer, rocker_end],
-		"rocker": {"origin": corner["rocker_pivot"], "basis": _rocker_basis(corner, rocker_end, damper_end)},
+		"rocker": {"origin": corner["rocker_pivot"], "basis": Basis(corner["rocker_axis"], rocker_angle), "pushrod": rocker_end, "damper": damper_end},
 		"damper": [corner["damper_chassis"], damper_end],
 		"driveshaft": driveshaft,
+		"driveshaft_pose": driveshaft_pose,
+		"pushrod_mount": corner["pushrod_mount"],
 		"residuals": residuals,
 	}
+
+
+func _arm_pose(pivot: Vector3, axis: Vector3, rest: Vector3, solved: Vector3) -> Transform3D:
+	var center := _closest_point_on_axis(rest, pivot, axis)
+	var rotation := Basis(axis, _signed_angle(rest - center, solved - center, axis))
+	return Transform3D(rotation, pivot - rotation * pivot)
+
+
+func _link_pose(rest_a: Vector3, rest_b: Vector3, a: Vector3, b: Vector3) -> Transform3D:
+	var rotation := Basis(Quaternion((rest_b - rest_a).normalized(), (b - a).normalized()))
+	return Transform3D(rotation, a - rotation * rest_a)
 
 
 func _build_corner(raw: Dictionary, axle: Dictionary) -> Dictionary:
@@ -260,8 +334,6 @@ func _build_corner(raw: Dictionary, axle: Dictionary) -> Dictionary:
 	var pushrod_outer_rest := _vec(raw.get("pushrod", {}).get("outer", []))
 	if pushrod_outer_rest.is_zero_approx():
 		pushrod_outer_rest = l_mid
-	var len_lb := (lbj_rest - l_mid).length()
-	var t_pushrod := 0.0 if len_lb < 1e-6 else clampf((lbj_rest - pushrod_outer_rest).length() / len_lb, 0.0, 1.0)
 
 	var rocker: Variant = raw.get("rocker", {})
 	var rocker_pivot := _vec(rocker.get("pivot", []))
@@ -292,10 +364,14 @@ func _build_corner(raw: Dictionary, axle: Dictionary) -> Dictionary:
 		"uw_if": uw_if, "uw_ir": uw_ir, "ubj_rest": ubj_rest,
 		"u_dir": u_dir, "u_center": u_center, "u_radius": u_radius,
 		"d_lh": d_lh, "d_uh": d_uh, "d_lu": d_lu,
-		"t_pushrod": t_pushrod, "pushrod_outer_rest": pushrod_outer_rest,
+		"pushrod_outer_rest": pushrod_outer_rest,
+		"pushrod_mount": String(raw.get("pushrod", {}).get("attachment", "lower")),
 		"rocker_pivot": rocker_pivot, "rocker_axis": rocker_axis,
 		"rocker_arm_rest": rocker_arm_rest, "damper_arm_rest": damper_arm_rest,
 		"L_pushrod": L_pushrod,
+		"L_trackrod": trackrod_inner.distance_to(trackrod_outer),
+		"camber": float(axle.get("camber", 0.0)),
+		"toe": float(axle.get("toe", 0.0)),
 		"trackrod_inner": trackrod_inner, "trackrod_outer": trackrod_outer,
 		"damper_chassis": damper_chassis,
 		"has_driveshaft": has_driveshaft,
@@ -364,10 +440,6 @@ func _project_circle(p: Vector3, center: Vector3, axis: Vector3, radius: float) 
 	return center + v_perp.normalized() * radius
 
 
-func _nearest_on_circle(pivot: Vector3, axis: Vector3, radius: float, p: Vector3) -> Vector3:
-	return _project_circle(p, pivot, axis, radius)
-
-
 func _perp(axis: Vector3) -> Vector3:
 	var u := axis.cross(Vector3.UP)
 	if u.length() < 1e-6:
@@ -384,55 +456,59 @@ func _closest_point_on_axis(p: Vector3, axis_point: Vector3, axis_dir: Vector3) 
 
 
 func _rocker_solve(corner: Dictionary, pushrod_outer: Vector3) -> Dictionary:
-	var pivot: Vector3 = corner["rocker_pivot"]
-	var axis: Vector3 = corner["rocker_axis"]
-	var arm_rest: Vector3 = corner["rocker_arm_rest"]
-	var radius := (arm_rest - pivot).length()
-	var L: float = corner["L_pushrod"]
+	return _circle_link(corner["rocker_pivot"], corner["rocker_axis"], corner["rocker_arm_rest"], pushrod_outer, corner["L_pushrod"], 0.0)
 
-	var rest_dir := (arm_rest - pivot).normalized()
+
+## Intersection of a rotating attachment circle and a fixed-length link sphere.
+## Keep the axial offset. On unreachable input, stay on the circle and report it.
+func _circle_link(pivot: Vector3, axis: Vector3, rest: Vector3, other: Vector3, length: float, preferred: float) -> Dictionary:
+	var center := pivot + axis * (rest - pivot).dot(axis)
+	var radial := rest - center
+	var radius := radial.length()
 	if radius < 1e-9:
-		return {"point": pushrod_outer, "angle": 0.0, "clamped": true}
-
-	var v := pushrod_outer - pivot
-	var v_along := v.dot(axis)
-	var v_perp := v - axis * v_along
-	var d_perp := v_perp.length()
-	var m2 := L * L - v_along * v_along
-
-	if m2 < 0.0 or d_perp < 1e-9:
-		var nearest := _nearest_on_circle(pivot, axis, radius, pushrod_outer)
-		return {"point": nearest, "angle": _signed_angle(rest_dir, (nearest - pivot).normalized(), axis), "clamped": true}
-
-	var m := sqrt(m2)
-	var u := v_perp.normalized()
-	var a := (radius * radius - m * m + d_perp * d_perp) / (2.0 * d_perp)
-	var h2 := radius * radius - a * a
-	var h := sqrt(maxf(h2, 0.0))
-	var u_perp := axis.cross(u).normalized()
-
-	var q1 := pivot + u * a + u_perp * h
-	var q2 := pivot + u * a - u_perp * h
-	var best: Vector3 = q1
-	var best_dot := -2.0
-	for q in [q1, q2]:
-		var qv: Vector3 = q
-		var q_dir: Vector3 = (qv - pivot).normalized()
-		var dot: float = q_dir.dot(rest_dir)
-		if dot > best_dot:
-			best_dot = dot
-			best = qv
-	var angle := _signed_angle(rest_dir, (best - pivot).normalized(), axis)
-	return {"point": best, "angle": angle, "clamped": h2 < 1e-9}
+		return {"point": rest, "angle": 0.0, "clamped": true}
+	var offset := other - center
+	var axial := offset.dot(axis)
+	var planar := offset - axis * axial
+	var distance := planar.length()
+	if distance < 1e-9:
+		return {"point": rest, "angle": 0.0, "clamped": true}
+	var cosine := (radius * radius + offset.length_squared() - length * length) / (2.0 * radius * distance)
+	var clamped := absf(cosine) > 1.0
+	var base := _signed_angle(radial, planar, axis)
+	var spread := acos(clampf(cosine, -1.0, 1.0))
+	var first := wrapf(base + spread, -PI, PI)
+	var second := wrapf(base - spread, -PI, PI)
+	var angle := first if absf(angle_difference(preferred, first)) < absf(angle_difference(preferred, second)) else second
+	return {"point": center + radial.rotated(axis, angle), "angle": angle, "clamped": clamped}
 
 
-func _rocker_basis(corner: Dictionary, rocker_end: Vector3, damper_end: Vector3) -> Basis:
-	var x := (damper_end - rocker_end).normalized()
-	if x.length() < 1e-6:
-		x = _perp(corner["rocker_axis"])
-	var y: Vector3 = corner["rocker_axis"].normalized()
-	var z := x.cross(y).normalized()
-	return Basis(x, y, z)
+func _triangle_frame(lower: Vector3, upper: Vector3, hub: Vector3) -> Basis:
+	var y := (upper - lower).normalized()
+	var x := (hub - lower) - y * (hub - lower).dot(y)
+	x = x.normalized()
+	return Basis(x, y, x.cross(y)).orthonormalized()
+
+
+## One rack displacement shared by both front corners, calibrated from the
+## authored rest geometry rather than an unrelated meters/radian constant.
+func _rack_displacement(steer: float) -> float:
+	var total := 0.0
+	var count := 0
+	for i in range(2):
+		if not is_valid(i):
+			continue
+		var c: Dictionary = _corners[i]
+		var axis: Vector3 = (c["ubj_rest"] - c["lbj_rest"]).normalized()
+		var outer: Vector3 = c["lbj_rest"] + (c["trackrod_outer"] - c["lbj_rest"]).rotated(axis, steer)
+		var inner: Vector3 = c["trackrod_inner"]
+		var offset := outer - inner
+		var length: float = c["L_trackrod"]
+		var dx := sqrt(maxf(0.0, length * length - offset.y * offset.y - offset.z * offset.z))
+		var side: float = signf(c["trackrod_inner"].x - c["trackrod_outer"].x)
+		total += outer.x + side * dx - inner.x
+		count += 1
+	return total / maxf(float(count), 1.0)
 
 
 func _signed_angle(a: Vector3, b: Vector3, axis: Vector3) -> float:

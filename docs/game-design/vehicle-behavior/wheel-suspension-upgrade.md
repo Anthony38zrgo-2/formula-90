@@ -86,9 +86,14 @@ the forces above.
   triangle stay rigid; only the vertical hub component tracks the telemetry
   compression; the mechanism owns the lateral track change.
 - `SuspensionLinkVisual` (`suspension_link_visual.gd`) builds the procedural
-  rods/boxes per wheel and hides the baked `GEO_CHASSIS_*_SUSPENSION` meshes.
+  attachment-based upright/rocker plates, cylindrical links, joints and
+  two-piece dampers, and hides the baked `GEO_CHASSIS_*_SUSPENSION` meshes.
 - `f1_wheel_visual_controller.gd` drives the solver each frame and lets the
-  mechanism own the wheel centre while geometry is enabled.
+  mechanism own the wheel centre and bearing orientation while geometry is
+  enabled. Input travel is smoothed once before the shared pose is solved.
+  Static camber/toe are bearing alignment; dynamic camber and bump steer follow
+  the linkage. Visual travel outside its reachable interval is limited and
+  reported; it does not alter the physical solver.
 
 See `implementation/F1_2030_SUSPENSION_GEOMETRY_BACKLOG.md` for the full
 contract and validation evidence.

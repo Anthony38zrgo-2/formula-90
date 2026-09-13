@@ -96,6 +96,9 @@ var _time_accum: float = 0.0
 var _visual_initialized: bool = false
 var _has_physics_sample: bool = false
 
+var _render_compression: Array = [0.0, 0.0, 0.0, 0.0]
+var _render_steer: float = 0.0
+
 var _suspension_geometry: SuspensionGeometry = null
 var _suspension_links: SuspensionLinkVisual = null
 var _suspension_solved: Array = [{}, {}, {}, {}]
@@ -232,6 +235,9 @@ func _setup_suspension_geometry() -> void:
 	var geometry := SuspensionGeometry.from_json_path(physics_config_path)
 	if geometry == null:
 		return
+	for wheel_index in range(4):
+		if not geometry.is_valid(wheel_index):
+			return
 	_suspension_geometry = geometry
 	var links := SuspensionLinkVisual.new()
 	links.name = "SuspensionLinkVisual"
@@ -254,15 +260,19 @@ func _recursive_hide_suspension(node: Node) -> void:
 	for child in node.get_children():
 		_recursive_hide_suspension(child)
 
-func _update_suspension_links() -> void:
+func _update_suspension_links(blend: float) -> void:
 	if _suspension_geometry == null or _suspension_links == null:
 		return
+	_render_steer = lerpf(_render_steer, _target_steer[0] - _toe(0), blend)
 	for wheel_index in range(4):
 		if _suspension_geometry.is_valid(wheel_index):
+			var corner := _suspension_geometry.get_corner(wheel_index)
+			var travel := clampf(_compression_m[wheel_index], corner["travel_min"], corner["travel_max"])
+			_render_compression[wheel_index] = lerpf(_render_compression[wheel_index], travel, blend)
 			var data := _suspension_geometry.solve(
 				wheel_index,
-				_compression_m[wheel_index],
-				_target_steer[wheel_index] if wheel_index < 2 else 0.0,
+				_render_compression[wheel_index],
+				_render_steer if wheel_index < 2 else 0.0,
 				_target_camber[wheel_index],
 				_wheel_angles[wheel_index]
 			)
@@ -428,8 +438,8 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not _has_physics_sample:
 		return
-	_update_suspension_links()
 	var blend := 1.0 if not _visual_initialized else (1.0 - exp(-delta * 32.0))
+	_update_suspension_links(blend)
 	for wheel_index in range(4):
 		var hub: Node3D = _hubs[wheel_index] as Node3D
 		if hub == null:
@@ -440,7 +450,18 @@ func _process(delta: float) -> void:
 			# The mechanism owns the wheel centre once geometry is enabled: the
 			# whole chassis -> suspension -> wheel assembly stays connected and
 			# develops the real lateral track change.
-			target_position = solved["hub"]
+			# All parts use one pose, solved AFTER smoothing the input travel.
+			hub.position = solved["hub"]
+			var steering_node: Node3D = _steer_pivots[wheel_index] as Node3D
+			var camber_node: Node3D = _camber_pivots[wheel_index] as Node3D
+			if steering_node != null:
+				steering_node.basis = solved["wheel_basis"]
+			if camber_node != null:
+				camber_node.basis = Basis.IDENTITY
+			var spinning_node: Node3D = _spinners[wheel_index] as Node3D
+			if spinning_node != null:
+				spinning_node.rotation.x = -_wheel_angles[wheel_index]
+			continue
 		hub.position = hub.position.lerp(target_position, blend)
 		var steer_pivot: Node3D = _steer_pivots[wheel_index] as Node3D
 		if steer_pivot != null:
