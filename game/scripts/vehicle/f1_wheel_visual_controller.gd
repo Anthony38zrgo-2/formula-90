@@ -39,6 +39,14 @@ extends Node
 @export_range(0.05, 0.95, 0.01) var smoke_severity_on: float = 0.60
 @export_range(0.0, 0.90, 0.01) var smoke_severity_off: float = 0.45
 
+@export_group("Suspension geometry")
+## Drives the procedural linkage (wishbones/pushrod/trackrod/upright/rocker/
+## driveshaft) from the same physics JSON `suspension.geometry` block.
+@export var enable_suspension_geometry: bool = true
+## Hides the baked GEO_CHASSIS_*_SUSPENSION meshes from the chassis GLB so the
+## procedural arms do not double up.
+@export var hide_baked_suspension: bool = true
+
 var front_spring_length: float = 0.295
 var front_resting_ratio: float = 0.175
 var front_camber_base: float = -0.0483972
@@ -88,6 +96,10 @@ var _time_accum: float = 0.0
 var _visual_initialized: bool = false
 var _has_physics_sample: bool = false
 
+var _suspension_geometry: SuspensionGeometry = null
+var _suspension_links: SuspensionLinkVisual = null
+var _suspension_solved: Array = [{}, {}, {}, {}]
+
 const WHEEL_KEYS := ["FL", "FR", "RL", "RR"]
 const KERB_SURFACE_CODE := 1
 const MAX_CAMBER_VISUAL_RAD := 0.0872665
@@ -106,6 +118,7 @@ func _ready() -> void:
 	_load_physics_specs()
 	_resolve_nodes()
 	_init_smoke_emitters()
+	_setup_suspension_geometry()
 	if vehicle != null:
 		# Children become ready before F194RustVehicle initializes its solver.
 		# Keep the scene layout until the parent can supply real anchors.
@@ -205,6 +218,56 @@ func _refresh_physics_anchors() -> void:
 				# (1 - resting_ratio): it is the upper ray origin, not the wheel center.
 				# _physics_process subtracts spring length and adds compression once.
 				_base_anchors[wheel_index] = queried_anchor
+				if _suspension_geometry != null:
+					var rest_hub: Vector3 = queried_anchor - Vector3.UP * (_spring_length(wheel_index) - _resting_ratio(wheel_index) * _spring_length(wheel_index))
+					_suspension_geometry.align_hub(wheel_index, rest_hub)
+
+func _setup_suspension_geometry() -> void:
+	if not enable_suspension_geometry:
+		return
+	if vehicle == null or physics_config_path.is_empty() or not FileAccess.file_exists(physics_config_path):
+		return
+	var geometry := SuspensionGeometry.from_json_path(physics_config_path)
+	if geometry == null:
+		return
+	_suspension_geometry = geometry
+	var links := SuspensionLinkVisual.new()
+	links.name = "SuspensionLinkVisual"
+	links.setup(geometry)
+	vehicle.add_child(links)
+	_suspension_links = links
+	if hide_baked_suspension:
+		_hide_baked_suspension()
+
+func _hide_baked_suspension() -> void:
+	for child in vehicle.get_children():
+		if child is Node3D:
+			_recursive_hide_suspension(child)
+
+func _recursive_hide_suspension(node: Node) -> void:
+	if node is Node3D:
+		var node_name: String = node.name
+		if node_name.begins_with("GEO_CHASSIS_FRONT_SUSPENSION") or node_name.begins_with("GEO_CHASSIS_REAR_SUSPENSION"):
+			(node as Node3D).visible = false
+	for child in node.get_children():
+		_recursive_hide_suspension(child)
+
+func _update_suspension_links() -> void:
+	if _suspension_geometry == null or _suspension_links == null:
+		return
+	for wheel_index in range(4):
+		if _suspension_geometry.is_valid(wheel_index):
+			var data := _suspension_geometry.solve(
+				wheel_index,
+				_compression_m[wheel_index],
+				_target_steer[wheel_index] if wheel_index < 2 else 0.0,
+				_target_camber[wheel_index],
+				_wheel_angles[wheel_index]
+			)
+			_suspension_solved[wheel_index] = data
+			_suspension_links.update_wheel(wheel_index, data)
+		else:
+			_suspension_solved[wheel_index] = {}
 
 func _node_from(parent_node: Variant, child_name: String) -> Node3D:
 	if parent_node is Node:
@@ -363,12 +426,20 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not _has_physics_sample:
 		return
+	_update_suspension_links()
 	var blend := 1.0 if not _visual_initialized else (1.0 - exp(-delta * 32.0))
 	for wheel_index in range(4):
 		var hub: Node3D = _hubs[wheel_index] as Node3D
 		if hub == null:
 			continue
-		hub.position = hub.position.lerp(_target_positions[wheel_index], blend)
+		var target_position: Vector3 = _target_positions[wheel_index]
+		var solved: Dictionary = _suspension_solved[wheel_index]
+		if solved.get("present", false):
+			# The mechanism owns the wheel centre once geometry is enabled: the
+			# whole chassis -> suspension -> wheel assembly stays connected and
+			# develops the real lateral track change.
+			target_position = solved["hub"]
+		hub.position = hub.position.lerp(target_position, blend)
 		var steer_pivot: Node3D = _steer_pivots[wheel_index] as Node3D
 		if steer_pivot != null:
 			var steer_pitch: float = _target_steer[wheel_index] * sin(caster_angle_rad) * 0.5 if wheel_index < 2 else 0.0

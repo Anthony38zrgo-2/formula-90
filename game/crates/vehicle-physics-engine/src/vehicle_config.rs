@@ -1323,6 +1323,12 @@ struct JsonSuspension {
     rear: JsonSuspensionAxle,
     #[serde(default = "default_tri_ray")]
     tri_ray_spacing_ratio: f64,
+    /// Parser-only visual suspension geometry (per-corner hardpoints for
+    /// UPPER_WISHBONE / LOWER_WISHBONE / PUSHROD / TRACKROD / UPRIGHT / ROCKER /
+    /// DRIVESHAFT). Consumed exclusively by the GDScript visual kinematic layer;
+    /// it never reaches runtime forces and is not part of the force model.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    geometry: Option<serde_json::Value>,
 }
 fn default_tri_ray() -> f64 {
     0.40
@@ -3316,6 +3322,9 @@ impl JsonVehicleSpec {
                     toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.rear_toe_gain_rad_per_m),
                 },
                 tri_ray_spacing_ratio: cfg.tri_ray_spacing_ratio,
+                // Visual-only geometry is not part of the force config; it is
+                // never re-emitted by to_json_value.
+                geometry: None,
             },
             tires: JsonTires {
                 front: JsonTireAxle {
@@ -3612,6 +3621,33 @@ mod json_tests {
         let json_suspension =
             r#"{"schema_version": 2, "suspension": {"front": {"spring_len": 0.25}}}"#;
         assert!(VehicleConfig::from_json_str(json_suspension).is_err());
+    }
+
+    #[test]
+    fn suspension_geometry_parser_only_accepted_and_ignored() {
+        let json = r#"{
+            "schema_version": 3,
+            "suspension": {
+                "front": {"spring_length": 0.3, "resting_ratio": 0.15},
+                "geometry": {
+                    "FL": {
+                        "hub_center": [-0.753, 0.0, -1.475],
+                        "lower_wishbone": {
+                            "inner_front": [-0.50, 0.06, -1.35],
+                            "inner_rear": [-0.52, 0.06, -1.70],
+                            "outer": [-0.68, -0.04, -1.475]
+                        }
+                    }
+                }
+            }
+        }"#;
+        let cfg = VehicleConfig::from_json_str(json).unwrap();
+        // Geometry is visual-only: it must not disturb any force-facing config value.
+        assert!((cfg.front_spring_length - 0.3).abs() < 1e-9);
+        assert!((cfg.front_resting_ratio - 0.15).abs() < 1e-9);
+        // And it must not leak into the serialized force config round-trip.
+        let re_emitted = cfg.to_json_value();
+        assert!(re_emitted.get("suspension").is_some());
     }
 
     #[test]

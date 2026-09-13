@@ -602,7 +602,78 @@
       "toe": 0.0042,
       "toe_gain_rad_per_m": 0.025
     },
-    "tri_ray_spacing_ratio": 0.4
+    "tri_ray_spacing_ratio": 0.4,
+    "geometry": {
+      "_comment": "Visual kinematic hardpoints (chassis-local, meters, +X right +Y up -Z front). Consumed only by the GDScript suspension-geometry layer (UPPER_WISHBONE/LOWER_WISHBONE/PUSHROD/TRACKROD/UPRIGHT/ROCKER/DRIVESHAFT). FR/RR reuse the mirrored FL/RL base.",
+      "FL": {
+        "hub_center": [-0.753, 0.0, -1.475],
+        "lower_wishbone": {
+          "inner_front": [-0.45, 0.04, -1.30],
+          "inner_rear": [-0.48, 0.04, -1.72],
+          "outer": [-0.66, -0.05, -1.475]
+        },
+        "upper_wishbone": {
+          "inner_front": [-0.46, 0.26, -1.40],
+          "inner_rear": [-0.44, 0.26, -1.70],
+          "outer": [-0.64, 0.18, -1.475]
+        },
+        "trackrod": {
+          "inner": [-0.35, 0.10, -1.62],
+          "outer": [-0.72, -0.02, -1.56]
+        },
+        "pushrod": {
+          "outer": [-0.60, -0.02, -1.50]
+        },
+        "rocker": {
+          "pivot": [-0.43, 0.30, -1.30],
+          "axis": [1.0, 0.0, 0.0],
+          "pushrod_arm": [-0.47, 0.24, -1.33],
+          "damper_arm": [-0.38, 0.27, -1.26]
+        },
+        "damper": {
+          "chassis": [-0.55, 0.16, -1.12]
+        }
+      },
+      "FR": {
+        "mirror_of": "FL"
+      },
+      "RL": {
+        "hub_center": [-0.716, 0.0, 1.475],
+        "lower_wishbone": {
+          "inner_front": [-0.46, 0.04, 1.30],
+          "inner_rear": [-0.48, 0.04, 1.72],
+          "outer": [-0.64, -0.05, 1.475]
+        },
+        "upper_wishbone": {
+          "inner_front": [-0.46, 0.24, 1.36],
+          "inner_rear": [-0.44, 0.24, 1.70],
+          "outer": [-0.60, 0.16, 1.475]
+        },
+        "trackrod": {
+          "inner": [-0.38, 0.14, 1.66],
+          "outer": [-0.68, 0.0, 1.56]
+        },
+        "pushrod": {
+          "outer": [-0.58, -0.01, 1.50]
+        },
+        "rocker": {
+          "pivot": [-0.42, 0.28, 1.55],
+          "axis": [1.0, 0.0, 0.0],
+          "pushrod_arm": [-0.46, 0.22, 1.52],
+          "damper_arm": [-0.36, 0.25, 1.58]
+        },
+        "damper": {
+          "chassis": [-0.56, 0.20, 1.35]
+        },
+        "driveshaft": {
+          "inner": [-0.30, 0.05, 1.42],
+          "outer": [-0.716, 0.0, 1.475]
+        }
+      },
+      "RR": {
+        "mirror_of": "RL"
+      }
+    }
   },
   "tires": {
     "airborne_spin_decay_torque": 1.0,
