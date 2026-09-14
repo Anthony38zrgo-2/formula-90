@@ -222,6 +222,13 @@ pub struct TireForceProfile {
     /// is back inside the envelope. Larger than `slip_loss_tau_s` models the
     /// slower, progressive grip recovery (GRIP-02). `0.0` disables recovery lag.
     pub slip_recovery_tau_s: f64,
+    /// Fraction of the lateral peak slip angle consumed by full longitudinal
+    /// demand (combined-slip peak migration, GRIP-04). `0.0` keeps independent
+    /// axes.
+    pub combined_lateral_peak_migration: f64,
+    /// Fraction of the longitudinal peak slip ratio consumed by full lateral
+    /// demand. `0.0` keeps independent axes.
+    pub combined_longitudinal_peak_migration: f64,
 }
 impl Default for TireForceProfile {
     fn default() -> Self {
@@ -238,6 +245,9 @@ impl Default for TireForceProfile {
             // Legacy parity: zero taus make the sliding memory instant.
             slip_loss_tau_s: 0.0,
             slip_recovery_tau_s: 0.0,
+            // Legacy parity: no combined-slip peak migration by default.
+            combined_lateral_peak_migration: 0.0,
+            combined_longitudinal_peak_migration: 0.0,
         }
     }
 }
@@ -1512,6 +1522,10 @@ struct JsonTireForceProfile {
     slip_loss_tau_s: f64,
     #[serde(default = "default_slip_tau_s")]
     slip_recovery_tau_s: f64,
+    #[serde(default = "default_peak_migration")]
+    combined_lateral_peak_migration: f64,
+    #[serde(default = "default_peak_migration")]
+    combined_longitudinal_peak_migration: f64,
 }
 impl Default for JsonTireForceProfile {
     fn default() -> Self {
@@ -1524,6 +1538,8 @@ impl Default for JsonTireForceProfile {
             falloff_sharpness: default_falloff_sharpness(),
             slip_loss_tau_s: default_slip_tau_s(),
             slip_recovery_tau_s: default_slip_tau_s(),
+            combined_lateral_peak_migration: default_peak_migration(),
+            combined_longitudinal_peak_migration: default_peak_migration(),
         }
     }
 }
@@ -1548,6 +1564,10 @@ fn default_falloff_sharpness() -> f64 {
 }
 fn default_slip_tau_s() -> f64 {
     // 0.0 = legacy instant sliding memory. GRIP-02 opts in through the profile.
+    0.0
+}
+fn default_peak_migration() -> f64 {
+    // 0.0 = independent axes. GRIP-04 opts in through the profile.
     0.0
 }
 
@@ -2918,6 +2938,14 @@ impl JsonVehicleSpec {
                     ("falloff_sharpness", profile.falloff_sharpness),
                     ("slip_loss_tau_s", profile.slip_loss_tau_s),
                     ("slip_recovery_tau_s", profile.slip_recovery_tau_s),
+                    (
+                        "combined_lateral_peak_migration",
+                        profile.combined_lateral_peak_migration,
+                    ),
+                    (
+                        "combined_longitudinal_peak_migration",
+                        profile.combined_longitudinal_peak_migration,
+                    ),
                 ] {
                     if !value.is_finite() {
                         return Err(format!(
@@ -2968,6 +2996,16 @@ impl JsonVehicleSpec {
                 if !(0.0..=2.0).contains(&profile.slip_recovery_tau_s) {
                     return Err(format!(
                         "tires.force_model.{name}.slip_recovery_tau_s must be in [0.0,2.0]"
+                    ));
+                }
+                if !(0.0..=0.9).contains(&profile.combined_lateral_peak_migration) {
+                    return Err(format!(
+                        "tires.force_model.{name}.combined_lateral_peak_migration must be in [0.0,0.9]"
+                    ));
+                }
+                if !(0.0..=0.9).contains(&profile.combined_longitudinal_peak_migration) {
+                    return Err(format!(
+                        "tires.force_model.{name}.combined_longitudinal_peak_migration must be in [0.0,0.9]"
                     ));
                 }
             }
@@ -3184,6 +3222,9 @@ impl JsonVehicleSpec {
                     falloff_sharpness: fm.front.falloff_sharpness,
                     slip_loss_tau_s: fm.front.slip_loss_tau_s,
                     slip_recovery_tau_s: fm.front.slip_recovery_tau_s,
+                    combined_lateral_peak_migration: fm.front.combined_lateral_peak_migration,
+                    combined_longitudinal_peak_migration: fm.front
+                        .combined_longitudinal_peak_migration,
                 })
                 .unwrap_or_default(),
             rear_tire_force: self
@@ -3199,6 +3240,9 @@ impl JsonVehicleSpec {
                     falloff_sharpness: fm.rear.falloff_sharpness,
                     slip_loss_tau_s: fm.rear.slip_loss_tau_s,
                     slip_recovery_tau_s: fm.rear.slip_recovery_tau_s,
+                    combined_lateral_peak_migration: fm.rear.combined_lateral_peak_migration,
+                    combined_longitudinal_peak_migration: fm.rear
+                        .combined_longitudinal_peak_migration,
                 })
                 .unwrap_or_default(),
             pressure_mechanics: self
@@ -3485,6 +3529,12 @@ impl JsonVehicleSpec {
                         falloff_sharpness: cfg.front_tire_force.falloff_sharpness,
                         slip_loss_tau_s: cfg.front_tire_force.slip_loss_tau_s,
                         slip_recovery_tau_s: cfg.front_tire_force.slip_recovery_tau_s,
+                        combined_lateral_peak_migration: cfg
+                            .front_tire_force
+                            .combined_lateral_peak_migration,
+                        combined_longitudinal_peak_migration: cfg
+                            .front_tire_force
+                            .combined_longitudinal_peak_migration,
                     },
                     rear: JsonTireForceProfile {
                         lateral_peak_slip_angle_rad: cfg.rear_tire_force.lateral_peak_slip_angle_rad,
@@ -3495,6 +3545,12 @@ impl JsonVehicleSpec {
                         falloff_sharpness: cfg.rear_tire_force.falloff_sharpness,
                         slip_loss_tau_s: cfg.rear_tire_force.slip_loss_tau_s,
                         slip_recovery_tau_s: cfg.rear_tire_force.slip_recovery_tau_s,
+                        combined_lateral_peak_migration: cfg
+                            .rear_tire_force
+                            .combined_lateral_peak_migration,
+                        combined_longitudinal_peak_migration: cfg
+                            .rear_tire_force
+                            .combined_longitudinal_peak_migration,
                     },
                 }),
                 pressure_mechanics: (cfg.schema_version >= 3).then(|| JsonPressureMechanics {
@@ -4258,6 +4314,8 @@ mod json_tests {
                 falloff_sharpness: 2.0,
                 slip_loss_tau_s: 0.0,
                 slip_recovery_tau_s: 0.0,
+                combined_lateral_peak_migration: 0.0,
+                combined_longitudinal_peak_migration: 0.0,
             }
         );
         assert_eq!(cfg.rear_tire_force, cfg.front_tire_force);

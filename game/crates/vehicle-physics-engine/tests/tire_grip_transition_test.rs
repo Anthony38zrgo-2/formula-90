@@ -30,6 +30,7 @@ struct WheelRun {
     mu: f64,
     demand: f64,
     utilization: f64,
+    lat_peak: f64,
 }
 
 fn run_wheel(
@@ -46,7 +47,13 @@ fn run_wheel(
     let radius = tires.wheels[wheel as usize]
         .effective_rolling_radius
         .max(0.05);
-    tires.wheels[wheel as usize].spin = FORWARD_SPEED * (1.0 + kappa) / radius;
+    // Exact target slip: the solver normalizes by max(|v|, |wheel speed|).
+    let wheel_speed = if kappa >= 0.0 {
+        FORWARD_SPEED / (1.0 - kappa)
+    } else {
+        FORWARD_SPEED * (1.0 + kappa)
+    };
+    tires.wheels[wheel as usize].spin = wheel_speed / radius;
     let vel = Vec3::new(-(alpha.tan()) * FORWARD_SPEED, 0.0, -FORWARD_SPEED);
     for _ in 0..ticks {
         tires.process_wheel_forces(
@@ -72,6 +79,7 @@ fn run_wheel(
             * s.mechanical_modifiers.grip_scale.clamp(0.05, 2.0),
         demand: s.combined_demand,
         utilization: s.combined_utilization,
+        lat_peak: s.effective_lateral_peak_slip_rad,
     }
 }
 
@@ -172,9 +180,65 @@ fn f1_2030_profile_declares_grip_transition_parameters() {
     assert!((front.slip_recovery_tau_s - 0.25).abs() < 1e-12);
     assert!((front.lateral_slide_mu_ratio - 0.88).abs() < 1e-12);
     assert!((front.longitudinal_slide_mu_ratio - 0.88).abs() < 1e-12);
+    assert!((front.combined_lateral_peak_migration - 0.35).abs() < 1e-12);
+    assert!((front.combined_longitudinal_peak_migration - 0.25).abs() < 1e-12);
     assert_eq!(cfg.rear_tire_force, front);
     assert!((cfg.wheel_lock_blend_spin_rad_s - 8.0).abs() < 1e-12);
     assert!((cfg.wheel_lock_stick_tau_s - 0.02).abs() < 1e-12);
+}
+
+#[test]
+fn f1_2030_combined_peak_migration_is_progressive() {
+    let base = f1_2030_config();
+    let mut no_mig = base.clone();
+    no_mig.front_tire_force.combined_lateral_peak_migration = 0.0;
+    no_mig.front_tire_force.combined_longitudinal_peak_migration = 0.0;
+    no_mig.rear_tire_force = no_mig.front_tire_force;
+    let wheel = WheelIndex::FrontLeft;
+    let fz = reference_load_n(&base, wheel);
+    let dt = 1.0 / 120.0;
+
+    // Pure lateral demand leaves the migration idle.
+    let pure = run_wheel(&base, wheel, fz, 0.10, 0.0, 60, dt);
+    let pure_ref = run_wheel(&no_mig, wheel, fz, 0.10, 0.0, 60, dt);
+    assert!((pure.lat_peak - 0.10).abs() < 1e-12);
+    assert!((pure.fy - pure_ref.fy).abs() < 1e-9);
+
+    // Full longitudinal demand shrinks the lateral peak to its migrated value
+    // and both axes deliver less force than the unmigrated envelope.
+    let combined = run_wheel(&base, wheel, fz, 0.10, 0.12, 60, dt);
+    let combined_ref = run_wheel(&no_mig, wheel, fz, 0.10, 0.12, 60, dt);
+    assert!(
+        (combined.lat_peak - 0.10 * (1.0 - 0.35)).abs() < 1e-9,
+        "lateral peak must migrate under full longitudinal demand: {}",
+        combined.lat_peak
+    );
+    assert!(
+        combined.fy.abs() < combined_ref.fy.abs() * 0.95,
+        "migrated lateral force must be lower: {} vs {}",
+        combined.fy,
+        combined_ref.fy
+    );
+    assert!(
+        combined.fx.abs() < combined_ref.fx.abs() * 0.99,
+        "migrated longitudinal force must be lower: {} vs {}",
+        combined.fx,
+        combined_ref.fx
+    );
+
+    // The migrated lateral peak shrinks monotonically with longitudinal demand.
+    let mut prev_peak = f64::INFINITY;
+    for k in 0..=6 {
+        let kappa = 0.02 * k as f64;
+        let run = run_wheel(&base, wheel, fz, 0.10, kappa, 60, dt);
+        assert!(
+            run.lat_peak <= prev_peak + 1e-12,
+            "migrated lateral peak must shrink monotonically (kappa={kappa}): {} vs {prev_peak}",
+            run.lat_peak
+        );
+        prev_peak = run.lat_peak;
+    }
+    assert!((prev_peak - 0.065).abs() < 1e-9);
 }
 
 #[test]
@@ -477,6 +541,10 @@ fn f1_2030_zero_taus_reproduce_pure_axes_under_asymmetric_slip() {
     for profile in [&mut cfg.front_tire_force, &mut cfg.rear_tire_force] {
         profile.slip_loss_tau_s = 0.0;
         profile.slip_recovery_tau_s = 0.0;
+        // GRIP-04 migration is intentionally disabled here: this test isolates
+        // the sliding memory, and migration is expected to couple the axes.
+        profile.combined_lateral_peak_migration = 0.0;
+        profile.combined_longitudinal_peak_migration = 0.0;
     }
     let wheel = WheelIndex::FrontLeft;
     let fz = reference_load_n(&cfg, wheel);

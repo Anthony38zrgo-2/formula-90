@@ -75,6 +75,12 @@ pub struct WheelTireState {
     pub post_peak_decay_lat: f64,
     #[serde(default)]
     pub post_peak_decay_lon: f64,
+    /// GRIP-04 combined-slip peak migration diagnostics: the peaks actually used
+    /// this tick after the opposite axis' demand shrank them.
+    #[serde(default)]
+    pub effective_lateral_peak_slip_rad: f64,
+    #[serde(default)]
+    pub effective_longitudinal_peak_slip_ratio: f64,
 
     // Mechanical coupling supplied by suspension.rs each tick.
     #[serde(default)]
@@ -123,6 +129,8 @@ impl WheelTireState {
             tire_regime: 0,
             post_peak_decay_lat: 0.0,
             post_peak_decay_lon: 0.0,
+            effective_lateral_peak_slip_rad: 0.0,
+            effective_longitudinal_peak_slip_ratio: 0.0,
             camber_rad: 0.0,
             tire_deflection_m: 0.0,
             contact_fraction: 1.0,
@@ -446,19 +454,56 @@ impl TireSystem {
         let alpha_with_camber = state.effective_slip_angle_rad
             + signed_camber * tuning.camber_thrust_gain;
 
-        // TIRE-101 / GRIP-02: pure-slip curve evaluation lives outside combined-slip
-        // projection. Both axes share the same compact envelope machinery with
-        // independent peaks and report their post-peak decay weight.
-        let lat_response = pure_curve_coefficient(
+        // TIRE-101 / GRIP-02 / GRIP-04: pure-slip curve evaluation lives outside
+        // combined-slip projection. Base responses first measure each axis' demand,
+        // then the opposite axis' peak is migrated (combined-slip peak migration)
+        // and the curves are re-evaluated before the budget, so the axes still
+        // report their own post-peak decay weight.
+        let lat_base = pure_curve_coefficient(
             alpha_with_camber.abs(),
             profile.lateral_peak_slip_angle_rad,
             profile.lateral_slide_mu_ratio,
             rise_gamma,
             profile.falloff_sharpness,
         );
-        let lon_response = pure_curve_coefficient(
+        let lon_base = pure_curve_coefficient(
             state.effective_slip_ratio.abs(),
             profile.longitudinal_peak_slip_ratio,
+            profile.longitudinal_slide_mu_ratio,
+            rise_gamma,
+            profile.falloff_sharpness,
+        );
+        // Slip-based demand keeps the migration monotone in slip: once the axis
+        // reaches its nominal peak the peak shift stays at full strength instead
+        // of recovering as the force curve decays.
+        let lateral_demand = (alpha_with_camber.abs()
+            / profile.lateral_peak_slip_angle_rad.max(1e-6))
+        .clamp(0.0, 1.0);
+        let longitudinal_demand = (state.effective_slip_ratio.abs()
+            / profile.longitudinal_peak_slip_ratio.max(1e-6))
+        .clamp(0.0, 1.0);
+        let lateral_peak = profile.lateral_peak_slip_angle_rad
+            * (1.0
+                - profile.combined_lateral_peak_migration.clamp(0.0, 0.9)
+                    * longitudinal_demand)
+                .max(0.1);
+        let longitudinal_peak = profile.longitudinal_peak_slip_ratio
+            * (1.0
+                - profile.combined_longitudinal_peak_migration.clamp(0.0, 0.9)
+                    * lateral_demand)
+                .max(0.1);
+        state.effective_lateral_peak_slip_rad = lateral_peak;
+        state.effective_longitudinal_peak_slip_ratio = longitudinal_peak;
+        let lat_response = pure_curve_coefficient(
+            alpha_with_camber.abs(),
+            lateral_peak,
+            profile.lateral_slide_mu_ratio,
+            rise_gamma,
+            profile.falloff_sharpness,
+        );
+        let lon_response = pure_curve_coefficient(
+            state.effective_slip_ratio.abs(),
+            longitudinal_peak,
             profile.longitudinal_slide_mu_ratio,
             rise_gamma,
             profile.falloff_sharpness,
@@ -514,16 +559,25 @@ impl TireSystem {
         // C1 band that never exceeds the budget; the slight early easing near the
         // knee is the price of keeping C1 and the cap simultaneously. Width 0
         // keeps legacy behaviour exact.
-        let nx = (fx_candidate.abs() / fx_max).clamp(0.0, 1.0);
-        let ny = (fy_candidate.abs() / fy_max).clamp(0.0, 1.0);
-        let demand = (nx * nx + ny * ny).sqrt();
+        // GRIP-04: the budget demand is the larger of the nominal and migrated
+        // envelopes. When migration lowers the coefficients the nominal envelope
+        // binds, so the migrated tire delivers less force instead of freeing
+        // headroom to boost the opposite axis; when migration raises them (peak
+        // shifted toward the current slip) the migrated envelope binds and the cap
+        // is still respected.
+        let base_norm = (lon_base.force_coefficient * lon_base.force_coefficient
+            + lat_base.force_coefficient * lat_base.force_coefficient)
+            .sqrt();
+        let migrated_norm =
+            (lon_coefficient * lon_coefficient + lat_coefficient * lat_coefficient).sqrt();
+        let demand = base_norm.max(migrated_norm);
         let budget_scale = combined_budget_scale(demand, profile.budget_blend_width);
         let (mut fx, fy) = (fx_candidate * budget_scale, fy_candidate * budget_scale);
         // Demand and effective utilization stay separate: the demand can exceed 1
         // (up to sqrt(2)), while the traction actually delivered is always inside
         // the shared budget.
         state.combined_demand = demand;
-        state.combined_utilization = (demand * budget_scale).clamp(0.0, 1.0);
+        state.combined_utilization = (migrated_norm * budget_scale).clamp(0.0, 1.0);
 
         // TIRE-103: saturation state derives from utilization and post-peak regime
         // instead of fixed slip-threshold decisions.
@@ -944,6 +998,8 @@ mod tests {
             falloff_sharpness: 2.0,
             slip_loss_tau_s: 0.0,
             slip_recovery_tau_s: 0.0,
+            combined_lateral_peak_migration: 0.0,
+            combined_longitudinal_peak_migration: 0.0,
         }
     }
 
@@ -1194,6 +1250,8 @@ mod tests {
             falloff_sharpness: 2.0,
             slip_loss_tau_s: loss_tau,
             slip_recovery_tau_s: recovery_tau,
+            combined_lateral_peak_migration: 0.0,
+            combined_longitudinal_peak_migration: 0.0,
         }
     }
 
@@ -1364,17 +1422,25 @@ mod tests {
         alpha: f64,
         kappa: f64,
         ticks: usize,
-    ) -> (f64, f64) {
+    ) -> (f64, f64, f64, f64) {
         let mut cfg = VehicleConfig::f1_94_canonical();
         cfg.front_tire_force = profile;
         cfg.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let dt = 1.0 / 120.0;
-        let radius = cfg.front_tire_radius.max(0.05);
         let mut tires = TireSystem::new(&cfg);
         tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
-        tires.wheels[wheel as usize].spin = 20.0 * (1.0 + kappa) / radius;
+        let radius = tires.wheels[wheel as usize]
+            .effective_rolling_radius
+            .max(0.05);
+        // Exact target slip: the solver normalizes by max(|v|, |wheel speed|).
+        let wheel_speed = if kappa >= 0.0 {
+            20.0 / (1.0 - kappa)
+        } else {
+            20.0 * (1.0 + kappa)
+        };
+        tires.wheels[wheel as usize].spin = wheel_speed / radius;
         let vel = Vec3::new(-(alpha.tan()) * 20.0, 0.0, -20.0);
         for _ in 0..ticks {
             tires.process_wheel_forces(
@@ -1382,7 +1448,12 @@ mod tests {
             );
         }
         let s = &tires.wheels[wheel as usize];
-        (s.longitudinal_force, s.lateral_force)
+        (
+            s.longitudinal_force,
+            s.lateral_force,
+            s.effective_lateral_peak_slip_rad,
+            s.effective_longitudinal_peak_slip_ratio,
+        )
     }
 
     #[test]
@@ -1393,8 +1464,8 @@ mod tests {
         // the same as with no lateral slip. The sliding memory must not leak.
         for (loss, recovery) in [(0.0, 0.0), (0.06, 0.30)] {
             let profile = grip02_profile(loss, recovery, 0.8);
-            let (fx_asym, fy_asym) = run_open_loop_force(profile, 0.30, 0.03, 120);
-            let (fx_sym, fy_sym) = run_open_loop_force(profile, 0.0, 0.03, 120);
+            let (fx_asym, fy_asym, _, _) = run_open_loop_force(profile, 0.30, 0.01, 120);
+            let (fx_sym, fy_sym, _, _) = run_open_loop_force(profile, 0.0, 0.01, 120);
             assert!(
                 (fx_asym - fx_sym).abs() <= fx_sym.abs().max(1.0) * 1e-9,
                 "lateral slide must not alter longitudinal force (taus=({loss},{recovery})): {fx_asym} vs {fx_sym}"
@@ -1407,8 +1478,8 @@ mod tests {
         // demand, also kept below the budget knee.
         for (loss, recovery) in [(0.0, 0.0), (0.06, 0.30)] {
             let profile = grip02_profile(loss, recovery, 0.8);
-            let (_, fy_pre) = run_open_loop_force(profile, 0.01, 0.2, 120);
-            let (_, fy_ref) = run_open_loop_force(profile, 0.01, 0.0, 120);
+            let (_, fy_pre, _, _) = run_open_loop_force(profile, 0.01, 0.2, 120);
+            let (_, fy_ref, _, _) = run_open_loop_force(profile, 0.01, 0.0, 120);
             assert!(
                 (fy_pre - fy_ref).abs() <= fy_ref.abs().max(1.0) * 1e-9,
                 "longitudinal slide must not alter lateral force (taus=({loss},{recovery})): {fy_pre} vs {fy_ref}"
@@ -1452,6 +1523,87 @@ mod tests {
         assert!(
             (rec120 - rec240).abs() < 0.03,
             "recovery t90 must be dt-independent: {rec120} vs {rec240}"
+        );
+    }
+
+    // ── GRIP-04 combined-slip peak migration tests ─────────────────────────────
+
+    #[test]
+    fn combined_peak_migration_shifts_only_the_loaded_axis() {
+        let base = curve_profile();
+        let migrated = TireForceProfile {
+            combined_lateral_peak_migration: 0.5,
+            combined_longitudinal_peak_migration: 0.5,
+            ..base
+        };
+
+        // Pure lateral demand carries no longitudinal demand: peak untouched.
+        let pure_lat_hard = run_open_loop_force(base, 0.10, 0.0, 120);
+        let pure_lat_soft = run_open_loop_force(migrated, 0.10, 0.0, 120);
+        assert_eq!(pure_lat_hard.0, pure_lat_soft.0);
+        assert_eq!(pure_lat_hard.1, pure_lat_soft.1);
+        assert!(
+            (pure_lat_soft.2 - base.lateral_peak_slip_angle_rad).abs() < 1e-15,
+            "pure lateral demand must not migrate its own peak"
+        );
+
+        // Pure longitudinal demand behaves the same way on its own axis.
+        let pure_lon_hard = run_open_loop_force(base, 0.0, 0.12, 120);
+        let pure_lon_soft = run_open_loop_force(migrated, 0.0, 0.12, 120);
+        assert_eq!(pure_lon_hard.0, pure_lon_soft.0);
+        assert_eq!(pure_lon_soft.3, base.longitudinal_peak_slip_ratio);
+
+        // Combined demand shrinks the opposite peak on both axes.
+        let comb_hard = run_open_loop_force(base, 0.10, 0.12, 120);
+        let comb_soft = run_open_loop_force(migrated, 0.10, 0.12, 120);
+        assert!(
+            comb_soft.2 < base.lateral_peak_slip_angle_rad * 0.75,
+            "lateral peak must migrate under longitudinal demand: {}",
+            comb_soft.2
+        );
+        assert!(
+            comb_soft.3 < base.longitudinal_peak_slip_ratio * 0.75,
+            "longitudinal peak must migrate under lateral demand: {}",
+            comb_soft.3
+        );
+        assert!(
+            comb_soft.1.abs() < comb_hard.1.abs() * 0.98,
+            "migrated lateral force must be lower: {} vs {}",
+            comb_soft.1,
+            comb_hard.1
+        );
+        assert!(
+            comb_soft.0.abs() < comb_hard.0.abs() * 0.98,
+            "migrated longitudinal force must be lower: {} vs {}",
+            comb_soft.0,
+            comb_hard.0
+        );
+    }
+
+    #[test]
+    fn combined_peak_migration_is_continuous_across_kappa() {
+        let profile = TireForceProfile {
+            combined_lateral_peak_migration: 0.5,
+            combined_longitudinal_peak_migration: 0.0,
+            ..curve_profile()
+        };
+        let mut prev_peak = profile.lateral_peak_slip_angle_rad;
+        for i in 0..=30 {
+            let kappa = i as f64 * 0.01;
+            let (_, _, lat_peak, _) = run_open_loop_force(profile, 0.10, kappa, 120);
+            assert!(
+                lat_peak <= prev_peak + 1e-12,
+                "migrated lateral peak must shrink monotonically (kappa={kappa}): {lat_peak} vs {prev_peak}"
+            );
+            assert!(
+                (lat_peak - prev_peak).abs() < 0.02,
+                "migrated lateral peak must change continuously (kappa={kappa}): {lat_peak} vs {prev_peak}"
+            );
+            prev_peak = lat_peak;
+        }
+        assert!(
+            prev_peak < profile.lateral_peak_slip_angle_rad * 0.8,
+            "full longitudinal demand must shrink the lateral peak: {prev_peak}"
         );
     }
 
