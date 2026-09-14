@@ -69,8 +69,14 @@ pub struct TelemetryFrame {
     pub aero_rear_downforce_n: f64,
     pub aero_drag_n: f64,
     // --- TIRE-100/103 combined-slip diagnostics ---
+    /// Raw combined-slip demand before the budget scale (may exceed 1).
+    pub wheel_combined_demand: [f64; 4],
+    /// Effective traction utilization after the budget scale (always <= 1).
     pub wheel_combined_utilization: [f64; 4],
     pub wheel_tire_regime: [i32; 4],
+    /// GRIP-02 sliding-memory state per wheel and axis (0 gripping .. 1 sliding).
+    pub wheel_post_peak_decay_lat: [f64; 4],
+    pub wheel_post_peak_decay_lon: [f64; 4],
     // --- SUSP-300 camber kinematics (FL/FR/RL/RR order) ---
     pub wheel_kinematic_camber_rad: [f64; 4],
     pub wheel_effective_camber_rad: [f64; 4],
@@ -220,6 +226,10 @@ impl TelemetryFrame {
         "AeroFloor_N",
         "AeroRear_N",
         "AeroDrag_N",
+        "FL_CombinedDemand",
+        "FR_CombinedDemand",
+        "RL_CombinedDemand",
+        "RR_CombinedDemand",
         "FL_CombinedUtil",
         "FR_CombinedUtil",
         "RL_CombinedUtil",
@@ -228,6 +238,14 @@ impl TelemetryFrame {
         "FR_TireRegime",
         "RL_TireRegime",
         "RR_TireRegime",
+        "FL_SlideMemLat",
+        "FR_SlideMemLat",
+        "RL_SlideMemLat",
+        "RR_SlideMemLat",
+        "FL_SlideMemLon",
+        "FR_SlideMemLon",
+        "RL_SlideMemLon",
+        "RR_SlideMemLon",
         "FL_KinCamber_Rad",
         "FR_KinCamber_Rad",
         "RL_KinCamber_Rad",
@@ -335,11 +353,26 @@ impl TelemetryFrame {
             format!("{:.3}", self.aero_drag_n),
         ]);
         fields.extend(
+            self.wheel_combined_demand
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
             self.wheel_combined_utilization
                 .iter()
                 .map(|v| format!("{v:.5}")),
         );
         fields.extend(self.wheel_tire_regime.iter().map(|v| v.to_string()));
+        fields.extend(
+            self.wheel_post_peak_decay_lat
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_post_peak_decay_lon
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
         fields.extend(
             self.wheel_kinematic_camber_rad
                 .iter()

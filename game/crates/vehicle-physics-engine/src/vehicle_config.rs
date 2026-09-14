@@ -138,6 +138,15 @@ pub struct VehicleConfig {
     pub enable_abs: bool,
     pub abs_pulse_time: f64,
     pub abs_spin_diff_threshold: f64,
+    /// GRIP-03: wheel-spin band (rad/s) where brake torque fades linearly to
+    /// zero and sticking is regularized. `0.0` keeps the legacy hard stick.
+    #[serde(default)]
+    pub wheel_lock_blend_spin_rad_s: f64,
+    /// GRIP-03: time constant (s) of the extra stiction pull that parks the wheel
+    /// once the brake can hold the unbraked torque. `0.0` means the implicit
+    /// band damping alone parks it.
+    #[serde(default)]
+    pub wheel_lock_stick_tau_s: f64,
 
     // Auto-clutch / launch (previously hardcoded in powertrain)
     pub max_clutch_torque_ratio: f64,
@@ -198,6 +207,21 @@ pub struct TireForceProfile {
     pub longitudinal_peak_slip_ratio: f64,
     pub lateral_slide_mu_ratio: f64,
     pub longitudinal_slide_mu_ratio: f64,
+    /// Half-width of the C1 blend band around the combined-slip budget knee
+    /// (GRIP-01). `0.0` reproduces the legacy hard clip exactly; a positive value
+    /// spreads the transition over `utilization in [1 - w, 1 + w]` and keeps the
+    /// applied force inside the shared budget at all times.
+    pub budget_blend_width: f64,
+    /// Sharpness of the post-peak decay `d = sharpness * (u - 1)` (GRIP-02).
+    /// `2.0` matches the legacy internal constant.
+    pub falloff_sharpness: f64,
+    /// Time constant (s) for the sliding-memory state to follow a rising
+    /// post-peak demand. `0.0` disables the loss-side lag (legacy instant decay).
+    pub slip_loss_tau_s: f64,
+    /// Time constant (s) for the sliding-memory state to release once the tire
+    /// is back inside the envelope. Larger than `slip_loss_tau_s` models the
+    /// slower, progressive grip recovery (GRIP-02). `0.0` disables recovery lag.
+    pub slip_recovery_tau_s: f64,
 }
 impl Default for TireForceProfile {
     fn default() -> Self {
@@ -208,6 +232,12 @@ impl Default for TireForceProfile {
             // TIRE-200 introduces an explicit post-peak decay via profile values.
             lateral_slide_mu_ratio: 1.0,
             longitudinal_slide_mu_ratio: 1.0,
+            // Legacy parity: profiles that never opt in keep the exact hard clip.
+            budget_blend_width: 0.0,
+            falloff_sharpness: 2.0,
+            // Legacy parity: zero taus make the sliding memory instant.
+            slip_loss_tau_s: 0.0,
+            slip_recovery_tau_s: 0.0,
         }
     }
 }
@@ -573,6 +603,8 @@ impl VehicleConfig {
             enable_abs: false,
             abs_pulse_time: 0.03,
             abs_spin_diff_threshold: 12.0,
+            wheel_lock_blend_spin_rad_s: 0.0,
+            wheel_lock_stick_tau_s: 0.0,
 
             // Auto-clutch / launch (previously hardcoded in powertrain)
             max_clutch_torque_ratio: 1.6,
@@ -745,6 +777,8 @@ impl VehicleConfig {
             enable_abs: false,
             abs_pulse_time: 0.03,
             abs_spin_diff_threshold: 12.0,
+            wheel_lock_blend_spin_rad_s: 0.0,
+            wheel_lock_stick_tau_s: 0.0,
 
             // Auto-clutch / launch (previously hardcoded in powertrain)
             max_clutch_torque_ratio: 1.6,
@@ -1470,6 +1504,14 @@ struct JsonTireForceProfile {
     lateral_slide_mu_ratio: f64,
     #[serde(default = "default_slide_mu_ratio")]
     longitudinal_slide_mu_ratio: f64,
+    #[serde(default = "default_budget_blend_width")]
+    budget_blend_width: f64,
+    #[serde(default = "default_falloff_sharpness")]
+    falloff_sharpness: f64,
+    #[serde(default = "default_slip_tau_s")]
+    slip_loss_tau_s: f64,
+    #[serde(default = "default_slip_tau_s")]
+    slip_recovery_tau_s: f64,
 }
 impl Default for JsonTireForceProfile {
     fn default() -> Self {
@@ -1478,6 +1520,10 @@ impl Default for JsonTireForceProfile {
             longitudinal_peak_slip_ratio: default_peak_slip_ratio(),
             lateral_slide_mu_ratio: default_slide_mu_ratio(),
             longitudinal_slide_mu_ratio: default_slide_mu_ratio(),
+            budget_blend_width: default_budget_blend_width(),
+            falloff_sharpness: default_falloff_sharpness(),
+            slip_loss_tau_s: default_slip_tau_s(),
+            slip_recovery_tau_s: default_slip_tau_s(),
         }
     }
 }
@@ -1491,6 +1537,18 @@ fn default_slide_mu_ratio() -> f64 {
     // 1.0 = no post-peak drop (matches current saturating tanh baseline).
     // TIRE-200 introduces an explicit post-peak decay via profile values.
     1.0
+}
+fn default_budget_blend_width() -> f64 {
+    // 0.0 = legacy hard clip. GRIP-01 opts in through the active profile.
+    0.0
+}
+fn default_falloff_sharpness() -> f64 {
+    // 2.0 = legacy internal post-peak falloff constant.
+    2.0
+}
+fn default_slip_tau_s() -> f64 {
+    // 0.0 = legacy instant sliding memory. GRIP-02 opts in through the profile.
+    0.0
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1877,6 +1935,10 @@ struct JsonBrakes {
     #[serde(default = "default_abs_thresh")]
     abs_spin_diff_threshold: f64,
     #[serde(default)]
+    wheel_lock_blend_spin_rad_s: Option<f64>,
+    #[serde(default)]
+    wheel_lock_stick_tau_s: Option<f64>,
+    #[serde(default)]
     thermal: Option<JsonBrakeThermal>,
 }
 impl Default for JsonBrakes {
@@ -1887,6 +1949,8 @@ impl Default for JsonBrakes {
             enable_abs: false,
             abs_pulse_time: default_abs_pulse(),
             abs_spin_diff_threshold: default_abs_thresh(),
+            wheel_lock_blend_spin_rad_s: None,
+            wheel_lock_stick_tau_s: None,
             thermal: None,
         }
     }
@@ -2757,6 +2821,7 @@ impl JsonVehicleSpec {
             .map(JsonBrakeThermal::to_config)
             .unwrap_or_default();
         validate_brake_thermal(&brake_thermal)?;
+        self.validate_wheel_lock()?;
         self.validate_aids()?;
         if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
             return Err("Spring lengths must be positive".to_string());
@@ -2849,6 +2914,10 @@ impl JsonVehicleSpec {
                     ("longitudinal_peak_slip_ratio", profile.longitudinal_peak_slip_ratio),
                     ("lateral_slide_mu_ratio", profile.lateral_slide_mu_ratio),
                     ("longitudinal_slide_mu_ratio", profile.longitudinal_slide_mu_ratio),
+                    ("budget_blend_width", profile.budget_blend_width),
+                    ("falloff_sharpness", profile.falloff_sharpness),
+                    ("slip_loss_tau_s", profile.slip_loss_tau_s),
+                    ("slip_recovery_tau_s", profile.slip_recovery_tau_s),
                 ] {
                     if !value.is_finite() {
                         return Err(format!(
@@ -2881,6 +2950,40 @@ impl JsonVehicleSpec {
                         "tires.force_model.{name}.longitudinal_slide_mu_ratio must be in [0.10,1.0]"
                     ));
                 }
+                if !(0.0..=0.5).contains(&profile.budget_blend_width) {
+                    return Err(format!(
+                        "tires.force_model.{name}.budget_blend_width must be in [0.0,0.5]"
+                    ));
+                }
+                if !(0.5..=8.0).contains(&profile.falloff_sharpness) {
+                    return Err(format!(
+                        "tires.force_model.{name}.falloff_sharpness must be in [0.5,8.0]"
+                    ));
+                }
+                if !(0.0..=2.0).contains(&profile.slip_loss_tau_s) {
+                    return Err(format!(
+                        "tires.force_model.{name}.slip_loss_tau_s must be in [0.0,2.0]"
+                    ));
+                }
+                if !(0.0..=2.0).contains(&profile.slip_recovery_tau_s) {
+                    return Err(format!(
+                        "tires.force_model.{name}.slip_recovery_tau_s must be in [0.0,2.0]"
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_wheel_lock(&self) -> Result<(), String> {
+        if let Some(blend) = self.brakes.wheel_lock_blend_spin_rad_s {
+            if !blend.is_finite() || !(0.0..=200.0).contains(&blend) {
+                return Err("brakes.wheel_lock_blend_spin_rad_s must be in [0,200]".to_string());
+            }
+        }
+        if let Some(tau) = self.brakes.wheel_lock_stick_tau_s {
+            if !tau.is_finite() || !(0.0..=1.0).contains(&tau) {
+                return Err("brakes.wheel_lock_stick_tau_s must be in [0,1]".to_string());
             }
         }
         Ok(())
@@ -3077,6 +3180,10 @@ impl JsonVehicleSpec {
                     longitudinal_peak_slip_ratio: fm.front.longitudinal_peak_slip_ratio,
                     lateral_slide_mu_ratio: fm.front.lateral_slide_mu_ratio,
                     longitudinal_slide_mu_ratio: fm.front.longitudinal_slide_mu_ratio,
+                    budget_blend_width: fm.front.budget_blend_width,
+                    falloff_sharpness: fm.front.falloff_sharpness,
+                    slip_loss_tau_s: fm.front.slip_loss_tau_s,
+                    slip_recovery_tau_s: fm.front.slip_recovery_tau_s,
                 })
                 .unwrap_or_default(),
             rear_tire_force: self
@@ -3088,6 +3195,10 @@ impl JsonVehicleSpec {
                     longitudinal_peak_slip_ratio: fm.rear.longitudinal_peak_slip_ratio,
                     lateral_slide_mu_ratio: fm.rear.lateral_slide_mu_ratio,
                     longitudinal_slide_mu_ratio: fm.rear.longitudinal_slide_mu_ratio,
+                    budget_blend_width: fm.rear.budget_blend_width,
+                    falloff_sharpness: fm.rear.falloff_sharpness,
+                    slip_loss_tau_s: fm.rear.slip_loss_tau_s,
+                    slip_recovery_tau_s: fm.rear.slip_recovery_tau_s,
                 })
                 .unwrap_or_default(),
             pressure_mechanics: self
@@ -3115,6 +3226,8 @@ impl JsonVehicleSpec {
             enable_abs: self.brakes.enable_abs,
             abs_pulse_time: self.brakes.abs_pulse_time,
             abs_spin_diff_threshold: self.brakes.abs_spin_diff_threshold,
+            wheel_lock_blend_spin_rad_s: self.brakes.wheel_lock_blend_spin_rad_s.unwrap_or(0.0),
+            wheel_lock_stick_tau_s: self.brakes.wheel_lock_stick_tau_s.unwrap_or(0.0),
             surface_friction,
             surface_stiffness,
             surface_rolling_resistance,
@@ -3368,12 +3481,20 @@ impl JsonVehicleSpec {
                         longitudinal_peak_slip_ratio: cfg.front_tire_force.longitudinal_peak_slip_ratio,
                         lateral_slide_mu_ratio: cfg.front_tire_force.lateral_slide_mu_ratio,
                         longitudinal_slide_mu_ratio: cfg.front_tire_force.longitudinal_slide_mu_ratio,
+                        budget_blend_width: cfg.front_tire_force.budget_blend_width,
+                        falloff_sharpness: cfg.front_tire_force.falloff_sharpness,
+                        slip_loss_tau_s: cfg.front_tire_force.slip_loss_tau_s,
+                        slip_recovery_tau_s: cfg.front_tire_force.slip_recovery_tau_s,
                     },
                     rear: JsonTireForceProfile {
                         lateral_peak_slip_angle_rad: cfg.rear_tire_force.lateral_peak_slip_angle_rad,
                         longitudinal_peak_slip_ratio: cfg.rear_tire_force.longitudinal_peak_slip_ratio,
                         lateral_slide_mu_ratio: cfg.rear_tire_force.lateral_slide_mu_ratio,
                         longitudinal_slide_mu_ratio: cfg.rear_tire_force.longitudinal_slide_mu_ratio,
+                        budget_blend_width: cfg.rear_tire_force.budget_blend_width,
+                        falloff_sharpness: cfg.rear_tire_force.falloff_sharpness,
+                        slip_loss_tau_s: cfg.rear_tire_force.slip_loss_tau_s,
+                        slip_recovery_tau_s: cfg.rear_tire_force.slip_recovery_tau_s,
                     },
                 }),
                 pressure_mechanics: (cfg.schema_version >= 3).then(|| JsonPressureMechanics {
@@ -3388,6 +3509,10 @@ impl JsonVehicleSpec {
                 enable_abs: cfg.enable_abs,
                 abs_pulse_time: cfg.abs_pulse_time,
                 abs_spin_diff_threshold: cfg.abs_spin_diff_threshold,
+                wheel_lock_blend_spin_rad_s: (cfg.schema_version >= 3)
+                    .then_some(cfg.wheel_lock_blend_spin_rad_s),
+                wheel_lock_stick_tau_s: (cfg.schema_version >= 3)
+                    .then_some(cfg.wheel_lock_stick_tau_s),
                 thermal: Some(JsonBrakeThermal::from_config(&cfg.brake_thermal)),
             },
             aero: JsonAero {
@@ -4031,7 +4156,11 @@ mod json_tests {
                         "lateral_peak_slip_angle_rad": 0.18,
                         "longitudinal_peak_slip_ratio": 0.14,
                         "lateral_slide_mu_ratio": 0.92,
-                        "longitudinal_slide_mu_ratio": 0.88
+                        "longitudinal_slide_mu_ratio": 0.88,
+                        "budget_blend_width": 0.12,
+                        "falloff_sharpness": 1.5,
+                        "slip_loss_tau_s": 0.04,
+                        "slip_recovery_tau_s": 0.22
                     },
                     "rear": {
                         "lateral_peak_slip_angle_rad": 0.21,
@@ -4081,6 +4210,10 @@ mod json_tests {
         assert_eq!(cfg.front_tire_force.longitudinal_peak_slip_ratio, 0.14);
         assert_eq!(cfg.front_tire_force.lateral_slide_mu_ratio, 0.92);
         assert_eq!(cfg.front_tire_force.longitudinal_slide_mu_ratio, 0.88);
+        assert_eq!(cfg.front_tire_force.budget_blend_width, 0.12);
+        assert_eq!(cfg.front_tire_force.falloff_sharpness, 1.5);
+        assert_eq!(cfg.front_tire_force.slip_loss_tau_s, 0.04);
+        assert_eq!(cfg.front_tire_force.slip_recovery_tau_s, 0.22);
         assert_eq!(cfg.rear_tire_force.lateral_peak_slip_angle_rad, 0.21);
         assert_eq!(cfg.rear_tire_force.longitudinal_peak_slip_ratio, 0.16);
         assert_eq!(cfg.rear_tire_force.lateral_slide_mu_ratio, 0.95);
@@ -4102,6 +4235,8 @@ mod json_tests {
         .expect("v3 round trip must validate");
         assert_eq!(round_trip.schema_version, 3);
         assert_eq!(round_trip.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
+        assert_eq!(round_trip.front_tire_force.falloff_sharpness, 1.5);
+        assert_eq!(round_trip.front_tire_force.slip_recovery_tau_s, 0.22);
         assert_eq!(round_trip.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
         assert_eq!(round_trip.pressure_mechanics.compliance_sensitivity, 0.72);
         assert_eq!(round_trip.front_camber_gain_rad_per_m, -0.021);
@@ -4119,6 +4254,10 @@ mod json_tests {
                 longitudinal_peak_slip_ratio: 0.12,
                 lateral_slide_mu_ratio: 1.0,
                 longitudinal_slide_mu_ratio: 1.0,
+                budget_blend_width: 0.0,
+                falloff_sharpness: 2.0,
+                slip_loss_tau_s: 0.0,
+                slip_recovery_tau_s: 0.0,
             }
         );
         assert_eq!(cfg.rear_tire_force, cfg.front_tire_force);
@@ -4138,12 +4277,36 @@ mod json_tests {
             r#"{"schema_version": 3, "tires": {"force_model": {"front": {"longitudinal_peak_slip_ratio": 1.6}}}}"#,
             r#"{"schema_version": 3, "tires": {"force_model": {"front": {"lateral_slide_mu_ratio": 0.05}}}}"#,
             r#"{"schema_version": 3, "tires": {"force_model": {"rear": {"longitudinal_slide_mu_ratio": 1.2}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"falloff_sharpness": 0.1}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"falloff_sharpness": 9.0}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"slip_loss_tau_s": -0.1}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"rear": {"slip_recovery_tau_s": 3.0}}}}"#,
         ] {
             assert!(
                 VehicleConfig::from_json_str(bad).is_err(),
                 "must reject: {bad}"
             );
         }
+    }
+
+    #[test]
+    fn wheel_lock_parameters_are_validated() {
+        for bad in [
+            r#"{"schema_version": 3, "brakes": {"wheel_lock_blend_spin_rad_s": -1.0}}"#,
+            r#"{"schema_version": 3, "brakes": {"wheel_lock_blend_spin_rad_s": 500.0}}"#,
+            r#"{"schema_version": 3, "brakes": {"wheel_lock_stick_tau_s": 2.0}}"#,
+        ] {
+            assert!(
+                VehicleConfig::from_json_str(bad).is_err(),
+                "must reject: {bad}"
+            );
+        }
+        let ok = VehicleConfig::from_json_str(
+            r#"{"schema_version": 3, "brakes": {"wheel_lock_blend_spin_rad_s": 8.0, "wheel_lock_stick_tau_s": 0.02}}"#,
+        )
+        .expect("valid wheel lock parameters must parse");
+        assert_eq!(ok.wheel_lock_blend_spin_rad_s, 8.0);
+        assert_eq!(ok.wheel_lock_stick_tau_s, 0.02);
     }
 
     #[test]

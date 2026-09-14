@@ -839,10 +839,19 @@ impl VehicleSimulator {
             aero_floor_downforce_n: st.aero.diffuser_downforce,
             aero_rear_downforce_n: st.aero.rear_downforce,
             aero_drag_n: st.aero.drag_force,
+            wheel_combined_demand: std::array::from_fn(|i| {
+                st.tires.wheels[i].combined_demand
+            }),
             wheel_combined_utilization: std::array::from_fn(|i| {
                 st.tires.wheels[i].combined_utilization
             }),
             wheel_tire_regime: std::array::from_fn(|i| st.tires.wheels[i].tire_regime),
+            wheel_post_peak_decay_lat: std::array::from_fn(|i| {
+                st.tires.wheels[i].post_peak_decay_lat
+            }),
+            wheel_post_peak_decay_lon: std::array::from_fn(|i| {
+                st.tires.wheels[i].post_peak_decay_lon
+            }),
             wheel_kinematic_camber_rad: std::array::from_fn(|i| {
                 st.suspension.wheels[i].kinematic_camber_rad
             }),
