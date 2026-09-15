@@ -683,12 +683,16 @@
   "tires": {
     "airborne_spin_decay_torque": 1.0,
     "contact_patch": 0.35,
+    "surface_transition_tau_s": 0.08,
     "force_model": {
       "front": {
         "budget_blend_width": 0.1,
         "combined_lateral_peak_migration": 0.35,
         "combined_longitudinal_peak_migration": 0.25,
+        "contact_ramp_tau_s": 0.06,
         "falloff_sharpness": 2.0,
+        "min_relaxation_tau_s": 0.035,
+        "relaxation_recovery_scale": 1.6,
         "lateral_peak_slip_angle_rad": 0.1,
         "lateral_slide_mu_ratio": 0.88,
         "longitudinal_peak_slip_ratio": 0.12,
@@ -700,7 +704,10 @@
         "budget_blend_width": 0.1,
         "combined_lateral_peak_migration": 0.35,
         "combined_longitudinal_peak_migration": 0.25,
+        "contact_ramp_tau_s": 0.06,
         "falloff_sharpness": 2.0,
+        "min_relaxation_tau_s": 0.035,
+        "relaxation_recovery_scale": 1.6,
         "lateral_peak_slip_angle_rad": 0.1,
         "lateral_slide_mu_ratio": 0.88,
         "longitudinal_peak_slip_ratio": 0.12,

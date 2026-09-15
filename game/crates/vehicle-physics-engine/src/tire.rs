@@ -81,6 +81,10 @@ pub struct WheelTireState {
     pub effective_lateral_peak_slip_rad: f64,
     #[serde(default)]
     pub effective_longitudinal_peak_slip_ratio: f64,
+    /// GRIP-06 contact blend in `0..=1`: ramps tire force in and out when a wheel
+    /// loses or regains load. `1` is legacy full contact.
+    #[serde(default = "default_contact_blend")]
+    pub contact_blend: f64,
 
     // Mechanical coupling supplied by suspension.rs each tick.
     #[serde(default)]
@@ -131,6 +135,7 @@ impl WheelTireState {
             post_peak_decay_lon: 0.0,
             effective_lateral_peak_slip_rad: 0.0,
             effective_longitudinal_peak_slip_ratio: 0.0,
+            contact_blend: 1.0,
             camber_rad: 0.0,
             tire_deflection_m: 0.0,
             contact_fraction: 1.0,
@@ -345,8 +350,25 @@ impl TireSystem {
         let state = &mut self.wheels[wheel as usize];
         let dt = dt.max(1e-5);
         let tuning = WheelMechanicalTuning::for_wheel(config, wheel);
+        let profile = tire_force_profile(config, wheel);
 
-        if normal_force_n <= 1e-4 || state.contact_fraction <= 0.0 {
+        // GRIP-06: contact blend. With tau = 0.0 the blend snaps (legacy hard
+        // switch); with a positive tau the wheel ramps force in when it regains
+        // load and out when it lifts, so kerbs and crests no longer cut or
+        // reapply tire force in a single frame.
+        let loaded = normal_force_n > 1e-4 && state.contact_fraction > 0.0;
+        let ramp_tau = profile.contact_ramp_tau_s.clamp(0.0, 1.0);
+        if ramp_tau <= 1e-9 {
+            state.contact_blend = if loaded { 1.0 } else { 0.0 };
+        } else {
+            let target = if loaded { 1.0 } else { 0.0 };
+            let relax = 1.0 - (-dt / ramp_tau).exp();
+            state.contact_blend = (state.contact_blend
+                + (target - state.contact_blend) * relax)
+                .clamp(0.0, 1.0);
+        }
+
+        if !loaded && state.contact_blend <= 1e-6 {
             let decay = (-dt / 0.08).exp();
             state.slip_angle_rad = 0.0;
             state.slip_ratio = 0.0;
@@ -364,7 +386,7 @@ impl TireSystem {
             state.tire_regime = 0;
             // GRIP-02: an unloaded tire is not sliding; release both memories
             // with the profile recovery tau so landing does not inherit a slide.
-            let recovery_tau = tire_force_profile(config, wheel).slip_recovery_tau_s;
+            let recovery_tau = profile.slip_recovery_tau_s;
             let release = if recovery_tau <= 1e-6 {
                 0.0
             } else {
@@ -409,12 +431,32 @@ impl TireSystem {
         let relaxation_length = tuning.relaxation_length_m
             * patch_ratio.sqrt()
             * modifiers.relaxation_length_scale;
-        let relaxation_tau = relaxation_length / planar_speed.max(4.0);
-        let relax = 1.0 - (-dt / relaxation_tau.max(1e-4)).exp();
+        // GRIP-05: distance-based relaxation with a configurable minimum time
+        // constant (readable transients at speed) and an asymmetric recovery
+        // scale so the carcass releases slip slower than it builds it. `0.0`
+        // and `1.0` keep the legacy behaviour exact.
+        let relaxation_tau = (relaxation_length / planar_speed.max(4.0))
+            .max(profile.min_relaxation_tau_s.clamp(0.0, 0.5));
+        let recovery_scale = profile.relaxation_recovery_scale.clamp(0.1, 5.0);
+        let lat_recovering =
+            state.effective_slip_angle_rad.abs() > target_alpha.abs();
+        let lon_recovering = state.effective_slip_ratio.abs() > target_kappa.abs();
+        let lat_tau = if lat_recovering {
+            relaxation_tau * recovery_scale
+        } else {
+            relaxation_tau
+        };
+        let lon_tau = if lon_recovering {
+            relaxation_tau * recovery_scale
+        } else {
+            relaxation_tau
+        };
+        let lat_relax = 1.0 - (-dt / lat_tau.max(1e-4)).exp();
+        let lon_relax = 1.0 - (-dt / lon_tau.max(1e-4)).exp();
         state.effective_slip_angle_rad +=
-            (target_alpha - state.effective_slip_angle_rad) * relax;
+            (target_alpha - state.effective_slip_angle_rad) * lat_relax;
         state.effective_slip_ratio +=
-            (target_kappa - state.effective_slip_ratio) * relax;
+            (target_kappa - state.effective_slip_ratio) * lon_relax;
 
         let fz = normal_force_n.max(0.0);
         // TIRE-600: braking no longer multiplies mu. Peak tire capacity comes only from
@@ -441,8 +483,6 @@ impl TireSystem {
         // configured peak slip / slide-ratio relationship of the pure-slip envelope.
         let rise_gamma = (2.0 * stiffness_scale * patch_stiffness_scale * modifiers.force_stiffness_scale)
             .clamp(1.2, 4.0);
-
-        let profile = tire_force_profile(config, wheel);
 
         // Config camber is expressed with the same sign on both sides. Mirror the right
         // side so static camber thrust is symmetric and cancels on a straight, flat road.
@@ -577,7 +617,8 @@ impl TireSystem {
         // (up to sqrt(2)), while the traction actually delivered is always inside
         // the shared budget.
         state.combined_demand = demand;
-        state.combined_utilization = (migrated_norm * budget_scale).clamp(0.0, 1.0);
+        state.combined_utilization =
+            (migrated_norm * budget_scale * state.contact_blend).clamp(0.0, 1.0);
 
         // TIRE-103: saturation state derives from utilization and post-peak regime
         // instead of fixed slip-threshold decisions.
@@ -598,8 +639,11 @@ impl TireSystem {
             fx -= state.rolling_resistance * v_forward.signum();
         }
 
-        state.lateral_force = finite_or_zero(fy);
-        state.longitudinal_force = finite_or_zero(fx);
+        // GRIP-06: ramp the whole contact patch force with the blend state.
+        let contact_blend = state.contact_blend;
+        state.rolling_resistance *= contact_blend;
+        state.lateral_force = finite_or_zero(fy * contact_blend);
+        state.longitudinal_force = finite_or_zero(fx * contact_blend);
 
         // TIRE-104: pneumatic-trail collapse depends on lateral saturation/post-peak
         // state and longitudinal utilization, not a fixed absolute slip-angle decay.
@@ -774,6 +818,10 @@ pub fn combined_budget_scale(utilization: f64, blend_width: f64) -> f64 {
     // Hermite: p0 = 1.0, m0 = 0.0 (constant branch below the band).
     let value = h00 + h10 * h * 0.0 + h01 * p1 + h11 * h * m1;
     value.clamp(p1, 1.0)
+}
+
+fn default_contact_blend() -> f64 {
+    1.0
 }
 
 pub fn is_driven(config: &VehicleConfig, wheel: WheelIndex) -> bool {
@@ -1000,6 +1048,9 @@ mod tests {
             slip_recovery_tau_s: 0.0,
             combined_lateral_peak_migration: 0.0,
             combined_longitudinal_peak_migration: 0.0,
+            min_relaxation_tau_s: 0.0,
+            relaxation_recovery_scale: 1.0,
+            contact_ramp_tau_s: 0.0,
         }
     }
 
@@ -1252,6 +1303,9 @@ mod tests {
             slip_recovery_tau_s: recovery_tau,
             combined_lateral_peak_migration: 0.0,
             combined_longitudinal_peak_migration: 0.0,
+            min_relaxation_tau_s: 0.0,
+            relaxation_recovery_scale: 1.0,
+            contact_ramp_tau_s: 0.0,
         }
     }
 
@@ -1604,6 +1658,240 @@ mod tests {
         assert!(
             prev_peak < profile.lateral_peak_slip_angle_rad * 0.8,
             "full longitudinal demand must shrink the lateral peak: {prev_peak}"
+        );
+    }
+
+    // ── GRIP-05 relaxation asymmetry tests ─────────────────────────────────────
+
+    fn run_relaxation_trace(
+        profile: TireForceProfile,
+        speed: f64,
+        phases: &[(f64, usize)],
+        dt: f64,
+    ) -> Vec<(f64, f64)> {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.front_tire_force = profile;
+        cfg.rear_tire_force = profile;
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let mut tires = TireSystem::new(&cfg);
+        tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+        let radius = tires.wheels[wheel as usize]
+            .effective_rolling_radius
+            .max(0.05);
+        tires.wheels[wheel as usize].spin = speed / radius;
+        let mut out = Vec::new();
+        for &(alpha, ticks) in phases {
+            let vel = Vec3::new(-(alpha.tan()) * speed, 0.0, -speed);
+            for _ in 0..ticks {
+                tires.process_wheel_forces(
+                    &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+                );
+                let s = &tires.wheels[wheel as usize];
+                out.push((s.effective_slip_angle_rad, s.lateral_force));
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn relaxation_min_tau_bounds_high_speed_build() {
+        let base = curve_profile();
+        let bounded = TireForceProfile {
+            min_relaxation_tau_s: 0.05,
+            ..base
+        };
+        let dt = 1.0 / 120.0;
+        let phases = [(0.10, 40)];
+
+        // High speed: the distance-based tau is far below the minimum, so the
+        // bounded profile builds slip (and force) slower.
+        let fast = run_relaxation_trace(base, 65.0, &phases, dt);
+        let fast_bounded = run_relaxation_trace(bounded, 65.0, &phases, dt);
+        assert!(
+            fast_bounded[4].0 < fast[4].0 * 0.9,
+            "min tau must slow the high-speed build: {} vs {}",
+            fast_bounded[4].0,
+            fast[4].0
+        );
+        assert!(fast_bounded[39].0 < fast[39].0);
+
+        // Low speed: the distance-based tau already exceeds the minimum, so the
+        // traces must be identical.
+        let slow = run_relaxation_trace(base, 5.0, &phases, dt);
+        let slow_bounded = run_relaxation_trace(bounded, 5.0, &phases, dt);
+        for (a, b) in slow.iter().zip(slow_bounded.iter()) {
+            assert_eq!(a.0, b.0);
+            assert_eq!(a.1, b.1);
+        }
+    }
+
+    #[test]
+    fn relaxation_recovery_is_slower_than_build() {
+        let base = curve_profile();
+        let asymmetric = TireForceProfile {
+            relaxation_recovery_scale: 2.0,
+            ..base
+        };
+        let dt = 1.0 / 120.0;
+        let phases = [(0.10, 60), (0.0, 60)];
+        let symmetric = run_relaxation_trace(base, 20.0, &phases, dt);
+        let slow_release = run_relaxation_trace(asymmetric, 20.0, &phases, dt);
+
+        // Build phase is identical: the scale only applies while releasing.
+        for i in 0..60 {
+            assert_eq!(symmetric[i].0, slow_release[i].0);
+        }
+        // Recovery is slower with the asymmetric profile.
+        assert!(
+            slow_release[70].0 > symmetric[70].0 * 1.1,
+            "asymmetric recovery must lag: {} vs {}",
+            slow_release[70].0,
+            symmetric[70].0
+        );
+        let recover_ticks = |seq: &[(f64, f64)]| {
+            (60..120)
+                .find(|&i| seq[i].0.abs() < seq[59].0.abs() * 0.1)
+                .unwrap_or(120)
+                - 60
+        };
+        assert!(
+            recover_ticks(&slow_release) > recover_ticks(&symmetric),
+            "recovery must take longer: {} vs {}",
+            recover_ticks(&slow_release),
+            recover_ticks(&symmetric)
+        );
+    }
+
+    #[test]
+    fn relaxation_remains_continuous_and_frequency_consistent() {
+        let profile = TireForceProfile {
+            min_relaxation_tau_s: 0.05,
+            relaxation_recovery_scale: 2.0,
+            ..curve_profile()
+        };
+        let seq = run_relaxation_trace(profile, 65.0, &[(0.10, 60), (0.0, 60)], 1.0 / 120.0);
+        for pair in seq.windows(2) {
+            assert!(
+                (pair[1].0 - pair[0].0).abs() < 0.03,
+                "effective slip must not jump: {} -> {}",
+                pair[0].0,
+                pair[1].0
+            );
+        }
+
+        let seq240 = run_relaxation_trace(profile, 65.0, &[(0.10, 120), (0.0, 120)], 1.0 / 240.0);
+        let at_half_a_120 = seq[29].0;
+        let at_half_a_240 = seq240[59].0;
+        assert!(
+            (at_half_a_120 - at_half_a_240).abs() < 0.005,
+            "build must be dt-independent: {at_half_a_120} vs {at_half_a_240}"
+        );
+        let at_half_b_120 = seq[89].0;
+        let at_half_b_240 = seq240[179].0;
+        assert!(
+            (at_half_b_120 - at_half_b_240).abs() < 0.005,
+            "recovery must be dt-independent: {at_half_b_120} vs {at_half_b_240}"
+        );
+    }
+
+    // ── GRIP-06 contact blend tests ────────────────────────────────────────────
+
+    fn run_landing_force(
+        profile: TireForceProfile,
+        initial_blend: f64,
+        ticks: usize,
+        dt: f64,
+    ) -> (f64, f64) {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.front_tire_force = profile;
+        cfg.rear_tire_force = profile;
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let mut tires = TireSystem::new(&cfg);
+        tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+        let radius = tires.wheels[wheel as usize]
+            .effective_rolling_radius
+            .max(0.05);
+        tires.wheels[wheel as usize].spin = 20.0 / radius;
+        tires.wheels[wheel as usize].contact_blend = initial_blend;
+        let alpha = 0.10_f64;
+        let vel = Vec3::new(-(alpha.tan()) * 20.0, 0.0, -20.0);
+        for _ in 0..ticks {
+            tires.process_wheel_forces(
+                &cfg, wheel, fz, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+            );
+        }
+        let s = &tires.wheels[wheel as usize];
+        (s.lateral_force.abs(), s.contact_blend)
+    }
+
+    #[test]
+    fn contact_blend_ramps_force_when_load_returns() {
+        let ramped = TireForceProfile {
+            contact_ramp_tau_s: 0.06,
+            ..curve_profile()
+        };
+        let legacy = curve_profile();
+        let dt = 1.0 / 120.0;
+
+        let (one_tick, blend_one) = run_landing_force(ramped, 0.0, 1, dt);
+        let (legacy_tick, _) = run_landing_force(legacy, 0.0, 1, dt);
+        let (steady, _) = run_landing_force(ramped, 0.0, 120, dt);
+
+        assert!(
+            one_tick < steady * 0.25,
+            "first tick must ramp the force: {one_tick} vs {steady}"
+        );
+        assert!(
+            one_tick < legacy_tick,
+            "ramped force must stay below the hard switch: {one_tick} vs {legacy_tick}"
+        );
+        assert!((blend_one - 0.132).abs() < 0.02, "one tick blend: {blend_one}");
+        let (converged, _) = run_landing_force(ramped, 0.0, 35, dt);
+        assert!(
+            converged > steady * 0.9,
+            "four time constants must converge: {converged} vs {steady}"
+        );
+    }
+
+    #[test]
+    fn contact_blend_is_legacy_with_zero_tau() {
+        let legacy = curve_profile();
+        let dt = 1.0 / 120.0;
+        let (_, blend) = run_landing_force(legacy, 0.0, 1, dt);
+        assert_eq!(blend, 1.0, "zero tau must snap to full contact when loaded");
+
+        // Unloaded wheel: blend snaps to zero and the legay branch zeroes forces.
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.front_tire_force = legacy;
+        cfg.rear_tire_force = legacy;
+        let wheel = WheelIndex::FrontLeft;
+        let fz = static_wheel_load(&cfg, wheel);
+        let mut tires = TireSystem::new(&cfg);
+        tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
+        tires.wheels[wheel as usize].contact_blend = 1.0;
+        let vel = Vec3::new(0.0, 0.0, -20.0);
+        tires.process_wheel_forces(
+            &cfg, wheel, 0.0, SurfaceType::Road, 2.9, 8.75, 1.0, false, vel, dt,
+        );
+        let s = &tires.wheels[wheel as usize];
+        assert_eq!(s.contact_blend, 0.0);
+        assert_eq!(s.lateral_force, 0.0);
+        assert_eq!(s.longitudinal_force, 0.0);
+    }
+
+    #[test]
+    fn contact_blend_is_frequency_consistent() {
+        let profile = TireForceProfile {
+            contact_ramp_tau_s: 0.06,
+            ..curve_profile()
+        };
+        let (force_120, _) = run_landing_force(profile, 0.0, 18, 1.0 / 120.0);
+        let (force_240, _) = run_landing_force(profile, 0.0, 36, 1.0 / 240.0);
+        assert!(
+            (force_120 - force_240).abs() < force_120.max(force_240) * 0.15,
+            "contact ramp must be dt-independent: {force_120} vs {force_240}"
         );
     }
 

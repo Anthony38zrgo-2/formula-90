@@ -85,6 +85,16 @@ pub struct WheelSuspensionState {
     /// Internal initialization guard prevents a startup drop when the car is spawned on ground.
     #[serde(default)]
     mechanical_initialized: bool,
+    /// GRIP-06: first-order filtered surface values (tau from
+    /// `surface_transition_tau_s`) so kerb/grass crossings ramp instead of stepping.
+    #[serde(default)]
+    surface_filter_initialized: bool,
+    #[serde(default)]
+    filtered_surface_friction: f64,
+    #[serde(default)]
+    filtered_surface_stiffness: f64,
+    #[serde(default)]
+    filtered_surface_rolling_resistance: f64,
 }
 
 impl WheelSuspensionState {
@@ -133,8 +143,64 @@ impl WheelSuspensionState {
             tire_deflection_velocity_m_s: 0.0,
             tire_vertical_force: static_force,
             mechanical_initialized: false,
+            // Start at the Road values so the filter has no startup transient and
+            // tau = 0.0 remains an exact pass-through.
+            surface_filter_initialized: true,
+            filtered_surface_friction: surface_value(
+                &config.surface_friction,
+                SurfaceType::Road,
+                1.0,
+            ),
+            filtered_surface_stiffness: surface_value(
+                &config.surface_stiffness,
+                SurfaceType::Road,
+                5.0,
+            ),
+            filtered_surface_rolling_resistance: surface_value(
+                &config.surface_rolling_resistance,
+                SurfaceType::Road,
+                1.0,
+            ),
         }
     }
+}
+
+/// GRIP-06: apply the per-wheel surface filter. With `tau = 0.0` this is an exact
+/// pass-through; with a positive tau the effective friction/stiffness/rolling
+/// values ease toward the raw blended sample, so kerb and grass transitions are
+/// no longer single-frame steps.
+fn filter_surface_values(
+    config: &VehicleConfig,
+    state: &mut WheelSuspensionState,
+    raw_friction: f64,
+    raw_stiffness: f64,
+    raw_rolling: f64,
+    dt: f64,
+) {
+    let tau = config.surface_transition_tau_s.max(0.0);
+    if tau <= 1e-9 {
+        state.filtered_surface_friction = raw_friction;
+        state.filtered_surface_stiffness = raw_stiffness;
+        state.filtered_surface_rolling_resistance = raw_rolling;
+        state.surface_filter_initialized = true;
+    } else {
+        if !state.surface_filter_initialized {
+            state.filtered_surface_friction = raw_friction;
+            state.filtered_surface_stiffness = raw_stiffness;
+            state.filtered_surface_rolling_resistance = raw_rolling;
+            state.surface_filter_initialized = true;
+        }
+        let alpha = 1.0 - (-dt / tau).exp();
+        state.filtered_surface_friction +=
+            (raw_friction - state.filtered_surface_friction) * alpha;
+        state.filtered_surface_stiffness +=
+            (raw_stiffness - state.filtered_surface_stiffness) * alpha;
+        state.filtered_surface_rolling_resistance +=
+            (raw_rolling - state.filtered_surface_rolling_resistance) * alpha;
+    }
+    state.effective_friction = state.filtered_surface_friction;
+    state.effective_stiffness = state.filtered_surface_stiffness;
+    state.effective_rolling_resistance = state.filtered_surface_rolling_resistance;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -253,14 +319,13 @@ impl SuspensionSystem {
             state.effective_normal = Vec3::UP;
             state.effective_contact_point = Vec3::ZERO;
             state.effective_surface = SurfaceType::Road;
-            state.effective_friction =
-                surface_value(&config.surface_friction, SurfaceType::Road, 1.0);
-            state.effective_stiffness =
-                surface_value(&config.surface_stiffness, SurfaceType::Road, 5.0);
-            state.effective_rolling_resistance = surface_value(
-                &config.surface_rolling_resistance,
-                SurfaceType::Road,
-                1.0,
+            filter_surface_values(
+                config,
+                state,
+                surface_value(&config.surface_friction, SurfaceType::Road, 1.0),
+                surface_value(&config.surface_stiffness, SurfaceType::Road, 5.0),
+                surface_value(&config.surface_rolling_resistance, SurfaceType::Road, 1.0),
+                dt,
             );
             // No road plane: effective camber equals the wheel-kinematic camber derived
             // from the current suspension travel. Continuous with the contact branch
@@ -278,12 +343,14 @@ impl SuspensionSystem {
         state.effective_normal = sample.weighted_normal();
         state.effective_contact_point = weighted_point(sample);
         state.effective_surface = dominant_surface(sample);
-        state.effective_friction =
-            blended_surface(sample, &config.surface_friction, 1.0);
-        state.effective_stiffness =
-            blended_surface(sample, &config.surface_stiffness, 5.0);
-        state.effective_rolling_resistance =
-            blended_surface(sample, &config.surface_rolling_resistance, 1.0);
+        filter_surface_values(
+            config,
+            state,
+            blended_surface(sample, &config.surface_friction, 1.0),
+            blended_surface(sample, &config.surface_stiffness, 5.0),
+            blended_surface(sample, &config.surface_rolling_resistance, 1.0),
+            dt,
+        );
 
         let base_camber = camber(config, wheel);
         let travel_delta_m =
@@ -723,6 +790,37 @@ mod tests {
         assert_eq!(before, 0.0);
         assert!(near > 0.0);
         assert!(over > near);
+    }
+
+    #[test]
+    fn surface_filter_ramps_and_respects_zero_tau() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        let wheel = WheelIndex::FrontLeft;
+
+        // tau = 0.0 is an exact pass-through.
+        cfg.surface_transition_tau_s = 0.0;
+        let mut pass = WheelSuspensionState::new(&cfg, wheel);
+        filter_surface_values(&cfg, &mut pass, 0.5, 2.0, 2.0, 1.0 / 120.0);
+        assert_eq!(pass.effective_friction, 0.5);
+        assert_eq!(pass.effective_stiffness, 2.0);
+        assert_eq!(pass.effective_rolling_resistance, 2.0);
+
+        // A positive tau eases from the current values toward the raw sample.
+        cfg.surface_transition_tau_s = 0.08;
+        let mut filtered = WheelSuspensionState::new(&cfg, wheel);
+        let start = filtered.effective_friction;
+        assert!(start > 0.5, "test assumes the road value is above grass");
+        filter_surface_values(&cfg, &mut filtered, 0.5, 2.0, 2.0, 1.0 / 120.0);
+        assert!(filtered.effective_friction < start);
+        assert!(
+            filtered.effective_friction > 0.5,
+            "one tick must not jump to the raw value: {}",
+            filtered.effective_friction
+        );
+        for _ in 0..60 {
+            filter_surface_values(&cfg, &mut filtered, 0.5, 2.0, 2.0, 1.0 / 120.0);
+        }
+        assert!((filtered.effective_friction - 0.5).abs() < 0.02);
     }
 
     #[test]

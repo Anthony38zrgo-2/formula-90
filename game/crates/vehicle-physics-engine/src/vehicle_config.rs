@@ -168,6 +168,11 @@ pub struct VehicleConfig {
     pub surface_stiffness: HashMap<SurfaceType, f64>,
     pub surface_rolling_resistance: HashMap<SurfaceType, f64>,
     pub surface_longitudinal_grip_ratio: HashMap<SurfaceType, f64>,
+    /// GRIP-06: first-order filter tau (s) for the per-wheel effective surface
+    /// friction/stiffness/rolling values, so kerb and grass crossings are
+    /// gradual. `0.0` keeps instantaneous surface steps (legacy).
+    #[serde(default)]
+    pub surface_transition_tau_s: f64,
 
     // Driving aids (canonical model + policy). Runtime enablement is held
     // separately in the simulator's aids_enabled_mask, not here.
@@ -229,6 +234,17 @@ pub struct TireForceProfile {
     /// Fraction of the longitudinal peak slip ratio consumed by full lateral
     /// demand. `0.0` keeps independent axes.
     pub combined_longitudinal_peak_migration: f64,
+    /// Lower bound (s) for the carcass relaxation time constant (GRIP-05), so
+    /// high-speed transients stay readable. `0.0` keeps pure distance-based tau.
+    pub min_relaxation_tau_s: f64,
+    /// Multiplier applied to the relaxation tau while an axis releases slip
+    /// (effective slip above target), modelling slower grip recovery. `1.0`
+    /// keeps the legacy symmetric relaxation.
+    pub relaxation_recovery_scale: f64,
+    /// Time constant (s) for the contact blend that ramps tire forces in and out
+    /// when a wheel loses or regains load (GRIP-06). `0.0` keeps the legacy hard
+    /// contact switch.
+    pub contact_ramp_tau_s: f64,
 }
 impl Default for TireForceProfile {
     fn default() -> Self {
@@ -248,6 +264,11 @@ impl Default for TireForceProfile {
             // Legacy parity: no combined-slip peak migration by default.
             combined_lateral_peak_migration: 0.0,
             combined_longitudinal_peak_migration: 0.0,
+            // Legacy parity: pure distance-based, symmetric relaxation.
+            min_relaxation_tau_s: 0.0,
+            relaxation_recovery_scale: 1.0,
+            // Legacy parity: hard contact switch.
+            contact_ramp_tau_s: 0.0,
         }
     }
 }
@@ -633,6 +654,7 @@ impl VehicleConfig {
             surface_stiffness: surface_stiffness.clone(),
             surface_rolling_resistance: surface_rolling_resistance.clone(),
             surface_longitudinal_grip_ratio: surface_longitudinal_grip_ratio.clone(),
+            surface_transition_tau_s: 0.0,
 
             // Driving aids
             aids: default_aids(),
@@ -807,6 +829,7 @@ impl VehicleConfig {
             surface_stiffness,
             surface_rolling_resistance,
             surface_longitudinal_grip_ratio: HashMap::new(),
+            surface_transition_tau_s: 0.0,
 
             // Driving aids
             aids: default_aids(),
@@ -1465,6 +1488,9 @@ struct JsonTires {
     /// Schema v3: consolidated pressure mechanics sensitivities (THERM-700). Absent -> parser-only defaults.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pressure_mechanics: Option<JsonPressureMechanics>,
+    /// Schema v3: temporal filter for per-wheel surface values (GRIP-06).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    surface_transition_tau_s: Option<f64>,
 }
 impl Default for JsonTires {
     fn default() -> Self {
@@ -1479,6 +1505,7 @@ impl Default for JsonTires {
             thermal: None,
             force_model: None,
             pressure_mechanics: None,
+            surface_transition_tau_s: None,
         }
     }
 }
@@ -1526,6 +1553,12 @@ struct JsonTireForceProfile {
     combined_lateral_peak_migration: f64,
     #[serde(default = "default_peak_migration")]
     combined_longitudinal_peak_migration: f64,
+    #[serde(default = "default_min_relaxation_tau")]
+    min_relaxation_tau_s: f64,
+    #[serde(default = "default_relaxation_recovery_scale")]
+    relaxation_recovery_scale: f64,
+    #[serde(default = "default_contact_ramp_tau")]
+    contact_ramp_tau_s: f64,
 }
 impl Default for JsonTireForceProfile {
     fn default() -> Self {
@@ -1540,6 +1573,9 @@ impl Default for JsonTireForceProfile {
             slip_recovery_tau_s: default_slip_tau_s(),
             combined_lateral_peak_migration: default_peak_migration(),
             combined_longitudinal_peak_migration: default_peak_migration(),
+            min_relaxation_tau_s: default_min_relaxation_tau(),
+            relaxation_recovery_scale: default_relaxation_recovery_scale(),
+            contact_ramp_tau_s: default_contact_ramp_tau(),
         }
     }
 }
@@ -1568,6 +1604,22 @@ fn default_slip_tau_s() -> f64 {
 }
 fn default_peak_migration() -> f64 {
     // 0.0 = independent axes. GRIP-04 opts in through the profile.
+    0.0
+}
+fn default_min_relaxation_tau() -> f64 {
+    // 0.0 = pure distance-based tau. GRIP-05 opts in through the profile.
+    0.0
+}
+fn default_relaxation_recovery_scale() -> f64 {
+    // 1.0 = symmetric relaxation (legacy).
+    1.0
+}
+fn default_contact_ramp_tau() -> f64 {
+    // 0.0 = legacy hard contact switch. GRIP-06 opts in through the profile.
+    0.0
+}
+fn default_surface_transition_tau() -> f64 {
+    // 0.0 = legacy instantaneous surface steps. GRIP-06 opts in through the profile.
     0.0
 }
 
@@ -2927,6 +2979,11 @@ impl JsonVehicleSpec {
     }
 
     fn validate_tire_force_model(&self) -> Result<(), String> {
+        if let Some(tau) = self.tires.surface_transition_tau_s {
+            if !tau.is_finite() || !(0.0..=1.0).contains(&tau) {
+                return Err("tires.surface_transition_tau_s must be in [0.0,1.0]".to_string());
+            }
+        }
         if let Some(fm) = &self.tires.force_model {
             for (name, profile) in [("front", &fm.front), ("rear", &fm.rear)] {
                 for (field, value) in [
@@ -2946,6 +3003,12 @@ impl JsonVehicleSpec {
                         "combined_longitudinal_peak_migration",
                         profile.combined_longitudinal_peak_migration,
                     ),
+                    ("min_relaxation_tau_s", profile.min_relaxation_tau_s),
+                    (
+                        "relaxation_recovery_scale",
+                        profile.relaxation_recovery_scale,
+                    ),
+                    ("contact_ramp_tau_s", profile.contact_ramp_tau_s),
                 ] {
                     if !value.is_finite() {
                         return Err(format!(
@@ -3006,6 +3069,21 @@ impl JsonVehicleSpec {
                 if !(0.0..=0.9).contains(&profile.combined_longitudinal_peak_migration) {
                     return Err(format!(
                         "tires.force_model.{name}.combined_longitudinal_peak_migration must be in [0.0,0.9]"
+                    ));
+                }
+                if !(0.0..=0.5).contains(&profile.min_relaxation_tau_s) {
+                    return Err(format!(
+                        "tires.force_model.{name}.min_relaxation_tau_s must be in [0.0,0.5]"
+                    ));
+                }
+                if !(0.1..=5.0).contains(&profile.relaxation_recovery_scale) {
+                    return Err(format!(
+                        "tires.force_model.{name}.relaxation_recovery_scale must be in [0.1,5.0]"
+                    ));
+                }
+                if !(0.0..=1.0).contains(&profile.contact_ramp_tau_s) {
+                    return Err(format!(
+                        "tires.force_model.{name}.contact_ramp_tau_s must be in [0.0,1.0]"
                     ));
                 }
             }
@@ -3225,6 +3303,9 @@ impl JsonVehicleSpec {
                     combined_lateral_peak_migration: fm.front.combined_lateral_peak_migration,
                     combined_longitudinal_peak_migration: fm.front
                         .combined_longitudinal_peak_migration,
+                    min_relaxation_tau_s: fm.front.min_relaxation_tau_s,
+                    relaxation_recovery_scale: fm.front.relaxation_recovery_scale,
+                    contact_ramp_tau_s: fm.front.contact_ramp_tau_s,
                 })
                 .unwrap_or_default(),
             rear_tire_force: self
@@ -3243,6 +3324,9 @@ impl JsonVehicleSpec {
                     combined_lateral_peak_migration: fm.rear.combined_lateral_peak_migration,
                     combined_longitudinal_peak_migration: fm.rear
                         .combined_longitudinal_peak_migration,
+                    min_relaxation_tau_s: fm.rear.min_relaxation_tau_s,
+                    relaxation_recovery_scale: fm.rear.relaxation_recovery_scale,
+                    contact_ramp_tau_s: fm.rear.contact_ramp_tau_s,
                 })
                 .unwrap_or_default(),
             pressure_mechanics: self
@@ -3300,6 +3384,7 @@ impl JsonVehicleSpec {
             surface_longitudinal_grip_ratio: build_surface_assist_map(&self.tires.surfaces, |e| {
                 e.longitudinal_grip_ratio
             }),
+            surface_transition_tau_s: self.tires.surface_transition_tau_s.unwrap_or(0.0),
 
             // Driving aids
             aids: AidsConfig {
@@ -3509,6 +3594,8 @@ impl JsonVehicleSpec {
                 braking_grip_multiplier: (cfg.schema_version < 3).then_some(1.0),
                 airborne_spin_decay_torque: cfg.front_airborne_decay,
                 surfaces,
+                surface_transition_tau_s: (cfg.schema_version >= 3)
+                    .then_some(cfg.surface_transition_tau_s),
                 pressure: Some(JsonTirePressure {
                     units: Some("kPa_gauge".to_string()),
                     cold_kpa_gauge: Some(wheel_name_map(cfg.tire_pressure.cold_kpa_gauge)),
@@ -3535,6 +3622,9 @@ impl JsonVehicleSpec {
                         combined_longitudinal_peak_migration: cfg
                             .front_tire_force
                             .combined_longitudinal_peak_migration,
+                        min_relaxation_tau_s: cfg.front_tire_force.min_relaxation_tau_s,
+                        relaxation_recovery_scale: cfg.front_tire_force.relaxation_recovery_scale,
+                        contact_ramp_tau_s: cfg.front_tire_force.contact_ramp_tau_s,
                     },
                     rear: JsonTireForceProfile {
                         lateral_peak_slip_angle_rad: cfg.rear_tire_force.lateral_peak_slip_angle_rad,
@@ -3551,6 +3641,9 @@ impl JsonVehicleSpec {
                         combined_longitudinal_peak_migration: cfg
                             .rear_tire_force
                             .combined_longitudinal_peak_migration,
+                        min_relaxation_tau_s: cfg.rear_tire_force.min_relaxation_tau_s,
+                        relaxation_recovery_scale: cfg.rear_tire_force.relaxation_recovery_scale,
+                        contact_ramp_tau_s: cfg.rear_tire_force.contact_ramp_tau_s,
                     },
                 }),
                 pressure_mechanics: (cfg.schema_version >= 3).then(|| JsonPressureMechanics {
@@ -4316,6 +4409,9 @@ mod json_tests {
                 slip_recovery_tau_s: 0.0,
                 combined_lateral_peak_migration: 0.0,
                 combined_longitudinal_peak_migration: 0.0,
+                min_relaxation_tau_s: 0.0,
+                relaxation_recovery_scale: 1.0,
+                contact_ramp_tau_s: 0.0,
             }
         );
         assert_eq!(cfg.rear_tire_force, cfg.front_tire_force);
@@ -4365,6 +4461,47 @@ mod json_tests {
         .expect("valid wheel lock parameters must parse");
         assert_eq!(ok.wheel_lock_blend_spin_rad_s, 8.0);
         assert_eq!(ok.wheel_lock_stick_tau_s, 0.02);
+    }
+
+    #[test]
+    fn relaxation_parameters_are_validated() {
+        for bad in [
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"min_relaxation_tau_s": 0.8}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"relaxation_recovery_scale": 0.01}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"relaxation_recovery_scale": 9.0}}}}"#,
+        ] {
+            assert!(
+                VehicleConfig::from_json_str(bad).is_err(),
+                "must reject: {bad}"
+            );
+        }
+        let ok = VehicleConfig::from_json_str(
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"min_relaxation_tau_s": 0.035, "relaxation_recovery_scale": 1.6}}}}"#,
+        )
+        .expect("valid relaxation parameters must parse");
+        assert_eq!(ok.front_tire_force.min_relaxation_tau_s, 0.035);
+        assert_eq!(ok.front_tire_force.relaxation_recovery_scale, 1.6);
+    }
+
+    #[test]
+    fn contact_and_surface_ramp_parameters_are_validated() {
+        for bad in [
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"contact_ramp_tau_s": 2.0}}}}"#,
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"contact_ramp_tau_s": -0.5}}}}"#,
+            r#"{"schema_version": 3, "tires": {"surface_transition_tau_s": 2.0}}"#,
+            r#"{"schema_version": 3, "tires": {"surface_transition_tau_s": -0.1}}"#,
+        ] {
+            assert!(
+                VehicleConfig::from_json_str(bad).is_err(),
+                "must reject: {bad}"
+            );
+        }
+        let ok = VehicleConfig::from_json_str(
+            r#"{"schema_version": 3, "tires": {"force_model": {"front": {"contact_ramp_tau_s": 0.06}}, "surface_transition_tau_s": 0.08}}"#,
+        )
+        .expect("valid ramp parameters must parse");
+        assert_eq!(ok.front_tire_force.contact_ramp_tau_s, 0.06);
+        assert_eq!(ok.surface_transition_tau_s, 0.08);
     }
 
     #[test]

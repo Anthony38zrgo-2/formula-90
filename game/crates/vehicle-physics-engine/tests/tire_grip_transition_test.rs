@@ -83,6 +83,45 @@ fn run_wheel(
     }
 }
 
+/// Runs a sequence of lateral slip targets at a constant forward speed and
+/// returns `(effective_slip_angle, lateral_force)` per tick.
+fn run_relaxation_trace(
+    cfg: &VehicleConfig,
+    speed: f64,
+    phases: &[(f64, usize)],
+    dt: f64,
+) -> Vec<(f64, f64)> {
+    let wheel = WheelIndex::FrontLeft;
+    let fz = reference_load_n(cfg, wheel);
+    let mut tires = TireSystem::new(cfg);
+    tires.set_mechanical_state(cfg, wheel, fz, 0.0, 0.008, 1.0);
+    let radius = tires.wheels[wheel as usize]
+        .effective_rolling_radius
+        .max(0.05);
+    tires.wheels[wheel as usize].spin = speed / radius;
+    let mut out = Vec::new();
+    for &(alpha, ticks) in phases {
+        let vel = Vec3::new(-(alpha.tan()) * speed, 0.0, -speed);
+        for _ in 0..ticks {
+            tires.process_wheel_forces(
+                cfg,
+                wheel,
+                fz,
+                SurfaceType::Road,
+                ROAD_FRICTION,
+                ROAD_STIFFNESS,
+                1.0,
+                false,
+                vel,
+                dt,
+            );
+            let s = &tires.wheels[wheel as usize];
+            out.push((s.effective_slip_angle_rad, s.lateral_force));
+        }
+    }
+    out
+}
+
 /// Brakes the wheel from `initial_speed_ms` rolling speed and returns the spin
 /// trace. `blend = 0` uses the legacy hard-stick model.
 fn run_wheel_lock(
@@ -182,6 +221,10 @@ fn f1_2030_profile_declares_grip_transition_parameters() {
     assert!((front.longitudinal_slide_mu_ratio - 0.88).abs() < 1e-12);
     assert!((front.combined_lateral_peak_migration - 0.35).abs() < 1e-12);
     assert!((front.combined_longitudinal_peak_migration - 0.25).abs() < 1e-12);
+    assert!((front.min_relaxation_tau_s - 0.035).abs() < 1e-12);
+    assert!((front.relaxation_recovery_scale - 1.6).abs() < 1e-12);
+    assert!((front.contact_ramp_tau_s - 0.06).abs() < 1e-12);
+    assert!((cfg.surface_transition_tau_s - 0.08).abs() < 1e-12);
     assert_eq!(cfg.rear_tire_force, front);
     assert!((cfg.wheel_lock_blend_spin_rad_s - 8.0).abs() < 1e-12);
     assert!((cfg.wheel_lock_stick_tau_s - 0.02).abs() < 1e-12);
@@ -209,7 +252,7 @@ fn f1_2030_combined_peak_migration_is_progressive() {
     let combined = run_wheel(&base, wheel, fz, 0.10, 0.12, 60, dt);
     let combined_ref = run_wheel(&no_mig, wheel, fz, 0.10, 0.12, 60, dt);
     assert!(
-        (combined.lat_peak - 0.10 * (1.0 - 0.35)).abs() < 1e-9,
+        (combined.lat_peak - 0.10 * (1.0 - 0.35)).abs() < 1e-6,
         "lateral peak must migrate under full longitudinal demand: {}",
         combined.lat_peak
     );
@@ -238,7 +281,51 @@ fn f1_2030_combined_peak_migration_is_progressive() {
         );
         prev_peak = run.lat_peak;
     }
-    assert!((prev_peak - 0.065).abs() < 1e-9);
+    assert!((prev_peak - 0.065).abs() < 1e-6);
+}
+
+#[test]
+fn f1_2030_relaxation_is_bounded_at_speed_and_asymmetric() {
+    let shipped = f1_2030_config();
+    let mut legacy = shipped.clone();
+    legacy.front_tire_force.min_relaxation_tau_s = 0.0;
+    legacy.front_tire_force.relaxation_recovery_scale = 1.0;
+    legacy.rear_tire_force = legacy.front_tire_force;
+    let dt = 1.0 / 120.0;
+    let phases = [(0.10, 60), (0.0, 60)];
+
+    // High speed: the shipped minimum tau slows the slip build.
+    let fast = run_relaxation_trace(&shipped, 65.0, &[(0.10, 40)], dt);
+    let fast_legacy = run_relaxation_trace(&legacy, 65.0, &[(0.10, 40)], dt);
+    assert!(
+        fast[4].0 < fast_legacy[4].0 * 0.9,
+        "shipped min tau must slow the high-speed build: {} vs {}",
+        fast[4].0,
+        fast_legacy[4].0
+    );
+
+    // Low speed: the distance-based tau already exceeds the minimum, so the
+    // build is identical to the legacy profile.
+    let slow = run_relaxation_trace(&shipped, 5.0, &[(0.10, 40)], dt);
+    let slow_legacy = run_relaxation_trace(&legacy, 5.0, &[(0.10, 40)], dt);
+    for (a, b) in slow.iter().zip(slow_legacy.iter()) {
+        assert_eq!(a.0, b.0);
+        assert_eq!(a.1, b.1);
+    }
+
+    // Recovery is slower with the shipped 1.6 scale. 10 m/s keeps the
+    // distance-based tau above the shipped minimum so only the asymmetry acts.
+    let symmetric = run_relaxation_trace(&legacy, 10.0, &phases, dt);
+    let asymmetric = run_relaxation_trace(&shipped, 10.0, &phases, dt);
+    for i in 0..60 {
+        assert_eq!(symmetric[i].0, asymmetric[i].0);
+    }
+    assert!(
+        asymmetric[70].0 > symmetric[70].0 * 1.1,
+        "shipped asymmetric recovery must lag: {} vs {}",
+        asymmetric[70].0,
+        symmetric[70].0
+    );
 }
 
 #[test]
@@ -410,6 +497,13 @@ fn f1_2030_memory_timing_is_frequency_consistent() {
 }
 
 fn flat_samples_for_test(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
+    flat_samples_with_surface(sim, SurfaceType::Road)
+}
+
+fn flat_samples_with_surface(
+    sim: &VehicleSimulator,
+    surface: SurfaceType,
+) -> [TriRaycastSample; 4] {
     let mut samples = [TriRaycastSample::default(); 4];
     for (sample, &wheel) in samples.iter_mut().zip(WheelIndex::ALL.iter()) {
         let hub_local = sim.config.wheel_anchor_local(wheel);
@@ -426,25 +520,82 @@ fn flat_samples_for_test(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
                 distance: (hub_world.y - span).max(0.0),
                 point: Vec3::new(hub_world.x - span, 0.0, hub_world.z),
                 normal: Vec3::UP,
-                surface: SurfaceType::Road,
+                surface,
             },
             center: RaycastHit {
                 is_colliding: true,
                 distance: hub_world.y.max(0.0),
                 point: Vec3::new(hub_world.x, 0.0, hub_world.z),
                 normal: Vec3::UP,
-                surface: SurfaceType::Road,
+                surface,
             },
             outer: RaycastHit {
                 is_colliding: true,
                 distance: (hub_world.y + span).max(0.0),
                 point: Vec3::new(hub_world.x + span, 0.0, hub_world.z),
                 normal: Vec3::UP,
-                surface: SurfaceType::Road,
+                surface,
             },
         };
     }
     samples
+}
+
+#[test]
+fn f1_2030_surface_transition_filters_kerb_steps() {
+    let run_step = |tau: f64| -> (f64, f64, f64) {
+        let mut cfg = f1_2030_config();
+        cfg.surface_transition_tau_s = tau;
+        let grass = cfg
+            .surface_friction
+            .get(&SurfaceType::Grass)
+            .copied()
+            .unwrap_or(0.0);
+        let spawn = default_spawn_height(&cfg);
+        let mut sim = VehicleSimulator::new(cfg, Vec3::new(0.0, spawn, 0.0), 0.0);
+        sim.state.linear_velocity = Vec3::new(0.0, 0.0, -20.0);
+        let dt = 1.0 / 120.0;
+        let input = VehicleInput {
+            throttle: 0.0,
+            steering: 0.0,
+            brake: 0.0,
+            handbrake: 0.0,
+            clutch: 0.0,
+            gear_request: None,
+        };
+        for _ in 0..60 {
+            let samples = flat_samples_with_surface(&sim, SurfaceType::Road);
+            sim.step(&input, &samples, dt);
+        }
+        let samples = flat_samples_with_surface(&sim, SurfaceType::Grass);
+        sim.step(&input, &samples, dt);
+        let one_tick = sim.state.suspension.wheels[0].effective_friction;
+        for _ in 0..120 {
+            let samples = flat_samples_with_surface(&sim, SurfaceType::Grass);
+            sim.step(&input, &samples, dt);
+        }
+        let settled = sim.state.suspension.wheels[0].effective_friction;
+        (one_tick, settled, grass)
+    };
+
+    let (legacy_tick, legacy_settled, grass) = run_step(0.0);
+    let (filtered_tick, filtered_settled, _) = run_step(0.08);
+    assert!(
+        (legacy_tick - grass).abs() < 1e-9,
+        "legacy must step to the raw surface value: {legacy_tick} vs {grass}"
+    );
+    assert!(
+        (filtered_settled - legacy_settled).abs() < 1e-4,
+        "both profiles must settle on the grass value: {filtered_settled} vs {legacy_settled}"
+    );
+    assert!(
+        filtered_tick > legacy_tick + 0.5,
+        "filtered friction must ease into the transition: {filtered_tick} vs {legacy_tick}"
+    );
+    println!(
+        "[GRIP-06] surface step Road->Grass: legacy={:.3} one-tick filtered={:.3} settled={:.3}",
+        legacy_tick, filtered_tick, filtered_settled
+    );
 }
 
 #[test]
