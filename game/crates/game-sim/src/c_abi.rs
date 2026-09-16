@@ -171,11 +171,7 @@ pub extern "C" fn sim_world_set_input(
             steer,
             handbrake,
             clutch,
-            gear_request: if gear_request < -1 {
-                None
-            } else {
-                Some(gear_request)
-            },
+            gear_request: gear_request_from_abi(gear_request),
             toggle_traction_control: toggle_tc,
             shift_up: false,
             shift_down: false,
@@ -312,6 +308,18 @@ fn from_c_hit(h: &CSimRaycastHit) -> RaycastHit {
     }
 }
 
+/// Maps the C-ABI gear sentinel to the solver contract documented in
+/// `vehicle_physics_engine::ffi`: `-2` (or below) = no change, `-1` = Reverse,
+/// `0` = Neutral, `1..=max` = forward gear. Treating `0` as "no change" made
+/// Neutral unreachable, which blocked the 1 -> N -> R manual shift sequence.
+fn gear_request_from_abi(v: i8) -> Option<i8> {
+    if v < -1 {
+        None
+    } else {
+        Some(v)
+    }
+}
+
 /// Seed an entity's transform from the engine's resolved pose (velocity-drive loop).
 #[no_mangle]
 pub extern "C" fn sim_world_set_pose(
@@ -388,11 +396,7 @@ pub extern "C" fn sim_world_step_with_samples(
         steer,
         handbrake,
         clutch,
-        gear_request: if gear_request == 0 {
-            None
-        } else {
-            Some(gear_request)
-        },
+        gear_request: gear_request_from_abi(gear_request),
         toggle_traction_control: toggle_tc,
         shift_up: false,
         shift_down: false,
@@ -455,11 +459,7 @@ pub extern "C" fn sim_world_solve_external(
         steer,
         handbrake,
         clutch,
-        gear_request: if gear_request == 0 {
-            None
-        } else {
-            Some(gear_request)
-        },
+        gear_request: gear_request_from_abi(gear_request),
         toggle_traction_control: toggle_tc,
         shift_up: false,
         shift_down: false,
@@ -511,6 +511,20 @@ mod tests {
         assert_eq!(surface_from_u32(6), Wall);
         assert_eq!(surface_from_u32(7), Metal);
         assert_eq!(surface_from_u32(99), Road);
+    }
+
+    #[test]
+    fn gear_request_sentinel_maps_neutral_and_reverse() {
+        assert_eq!(gear_request_from_abi(-2), None, "-2 must mean no change");
+        assert_eq!(gear_request_from_abi(-1), Some(-1), "-1 must select Reverse");
+        assert_eq!(
+            gear_request_from_abi(0),
+            Some(0),
+            "0 must select Neutral (was broken: 0 mapped to no-change)"
+        );
+        for gear in 1..=6 {
+            assert_eq!(gear_request_from_abi(gear), Some(gear));
+        }
     }
 
     #[test]

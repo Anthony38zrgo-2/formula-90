@@ -425,11 +425,7 @@ pub unsafe extern "C" fn f90_core_step(
         brake,
         handbrake,
         clutch,
-        gear_request: if gear_request == 0 {
-            None
-        } else {
-            Some(gear_request)
-        },
+        gear_request: gear_request_from_abi(gear_request),
     };
     let rust_underfloor = if underfloor.is_null() {
         UnderfloorSample::default()
@@ -737,6 +733,18 @@ fn from_c_hit(h: &game_sim::c_abi::CSimRaycastHit) -> vehicle_physics_engine::Ra
     }
 }
 
+/// Maps the `f90_core_step` gear sentinel to the solver contract documented in
+/// `vehicle_physics_engine::ffi`: `-2` (or below) = no change, `-1` = Reverse,
+/// `0` = Neutral, `1..=max` = forward gear. Treating `0` as "no change" made
+/// Neutral unreachable, which blocked the 1 -> N -> R manual shift sequence.
+fn gear_request_from_abi(v: i8) -> Option<i8> {
+    if v < -1 {
+        None
+    } else {
+        Some(v)
+    }
+}
+
 #[cfg(test)]
 mod layout_tests {
     use super::*;
@@ -962,5 +970,52 @@ mod abi_tests {
         f90_core_reset(h, 0.0, 0.3, 0.0, 0.0);
         unsafe { f90_core_destroy(h) };
         unsafe { f90_core_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn gear_request_sentinel_maps_neutral_and_reverse() {
+        // Contract (vehicle_physics_engine::ffi): -2/below = no change,
+        // -1 = Reverse, 0 = Neutral, 1.. = forward gear.
+        assert_eq!(gear_request_from_abi(-2), None, "-2 must mean no change");
+        assert_eq!(gear_request_from_abi(-3), None, "below -2 must mean no change");
+        assert_eq!(gear_request_from_abi(-1), Some(-1), "-1 must select Reverse");
+        assert_eq!(
+            gear_request_from_abi(0),
+            Some(0),
+            "0 must select Neutral (was broken: 0 mapped to no-change)"
+        );
+        for gear in 1..=6 {
+            assert_eq!(gear_request_from_abi(gear), Some(gear));
+        }
+    }
+
+    #[test]
+    fn f90_core_step_gear_sentinel_reaches_neutral_then_reverse() {
+        let opts = CString::new(r#"{"use_canonical":true,"enable_audio":false}"#).unwrap();
+        let mut err = [0u8; 256];
+        let h = unsafe { f90_core_create(opts.as_ptr(), err.as_mut_ptr(), err.len() as u32) };
+        assert!(!h.is_null(), "create failed: {}", String::from_utf8_lossy(&err));
+        let id = f90_core_spawn(h);
+        assert_ne!(id, 0, "spawn must succeed");
+
+        let samples = flat_samples();
+        let mut out = F90CoreFrameOut::default();
+        let mut step_with_gear = |gear_request: i8| {
+            for _ in 0..120 {
+                unsafe {
+                    f90_core_step(
+                        h, id, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0, 0.0, gear_request, 0, 1.0 / 120.0, samples.as_ptr(),
+                        std::ptr::null_mut(), &mut out,
+                    )
+                };
+            }
+            out.gear
+        };
+
+        assert_eq!(step_with_gear(0), 0, "gear_request=0 must reach Neutral");
+        assert_eq!(step_with_gear(-1), -1, "gear_request=-1 must reach Reverse");
+
+        unsafe { f90_core_destroy(h) };
     }
 }
