@@ -15,7 +15,7 @@ never incorporated, reverted or overwritten by this track.
 | 04 | Spring/damper/stops via virtual work | ✅ human (`af6dcfd2`) | `suspension_geometric_forces_test` 6/6 (analytic, tangent, dissipation, equilibrium, push/pull, stops) |
 | 05 | Reactions + chassis dynamics | ✅ human (`767232ae`+`09d186f6`) | `suspension_loads` 3/3 + `suspension_chassis_reactions_test` 5/5 (symmetry, transfer, ARB torque, hanging, energy) |
 | 06 | Wheel orientation/trajectory/contact | ✅ tests | `suspension_geometric_tire_test` 4/4 (rest statics, continuity/mirror, toe 1:1, legacy untouched) |
-| 07 | Unified snapshot + visuals | ✅ tests + review (tables not connected in-engine) | `suspension_table` parity (hub ≤1 mm, angle ≤4 mrad), `build_geo_table` example, `suspension_table.gd` reader exists but has **no consumer**: `f1_2030_v10_tables.json` is never loaded and `f1_wheel_visual_controller.gd` still solves `SuspensionGeometry` (PBD) per physics frame |
+| 07 | Unified snapshot + visuals | ✅ tests + review (tables still not consumed) | `suspension_table` parity (hub ≤1 mm, angle ≤4 mrad) + `build_geo_table`; the visual linkage (`SuspensionGeometry`) now consumes `suspension.geometry_physical.corners` via an adapter (single source with physics, legacy fallback kept) — `test_f1_2030_suspension_geometry_physical.gd` pins hardpoint equality, transverse rocker axis, rest closure and travel containment; `f1_2030_v10_tables.json` is still not loaded |
 | 08 | Telemetry + comparative bench | ✅ report (numbers corrected by SUS-GEO-11) | `suspension_bench` example + `docs/suspension_bench.md`: r sweeps, tangent ±35–40 %, c·r², push/pull Δ=0.0 exact, mechanism µs + whole-tick before/after in §7 |
 | 09 | F1 2030 migration + calibration | ✅ tests | `suspension_f1_2030_geometric_test` 6/6 on audited hardpoints; legacy file/scene untouched; tables checked in (see 07: not consumed) |
 | 10 | Final validation + A/B + retro | ⏳ human A/B (protocol §3) | scripted A/B test below + this matrix |
@@ -51,7 +51,8 @@ DLLs/caches), `BUILD` matches `HEAD`, Fuji contract v1.
    `physics_config_path` at `f1_2030_v10_geometric.json` (+ tables path for
    `suspension_table.gd` hookup: sample hub/upright per wheel from q/rack).
    **Status:** the tables hookup is NOT implemented; the visual controller
-   still uses `SuspensionGeometry` (PBD). Do not read step 2 as done for the
+   still solves `SuspensionGeometry` (PBD) per frame, now fed by
+   `suspension.geometry_physical.corners`. Do not read step 2 as done for the
    tables path.
 3. Run `run_f1_94.ps1` sessions A (legacy) / B (geometric), blinded order,
    same driver/track/Fuji: slow ramp, kerb strikes, high-speed sweeps.
@@ -83,14 +84,22 @@ DLLs/caches), `BUILD` matches `HEAD`, Fuji contract v1.
   prepare per-wheel envelopes once, reuse the exact final pose solve. Scripted
   equivalence (bit-identical traces) proved zero behaviour change, so no
   calibration retuning was needed.
+- **Sprint G (visual single-source):** telemetry showed the physics aligned
+  (L-R +0.06/+0.07 mm) while the rendered rocker/damper came from a different
+  legacy mechanism (`geometry` vs `geometry_physical`, 90° rocker-axis
+  mismatch, 97–111 mm endpoint error). The visual solver now prefers the
+  physical corners with a legacy fallback; a pre-existing wheel-visual smoke
+  tolerance (±10 mm vs the real 13.6 mm rear droop recession) was corrected
+  with measured justification.
 - **Process:** transient `Edit`/`WriteFile` failures on large files cost many
   cycles; python-via-file + small spans worked. Debug-build PBD dominates
   test time — keep sim-level tick counts minimal, helper-level asserts first.
 - **Debt carried:** shipped vertical-axis rocker stays blocked (correctly);
   rear test rockers in 02/03/04 fixtures are digressive (documented, 09 uses
   healthy arms); `aero_test` 4 pre-existing failures; GDScript parse-check is
-  green in this environment (Godot 4.7.1 available); controller hookup to the
-  pose tables + human A/B still pending.
+  green in this environment (Godot 4.7.1 available); visuals now share the
+  physical hardpoints, but the pose tables remain unconsumed and the human A/B
+  is still pending.
 
 ## 5. Human A/B verdict
 

@@ -160,6 +160,25 @@ Runtime session physics monitor (`Performance.TIME_PHYSICS_PROCESS`):
   frame. The tables are generated/validated data, **not** an active runtime
   path; earlier "unified pose" wording must not be read as in-engine integration.
 
+### Follow-up: visual linkage single-source (visual misalignment fix)
+
+The visual solver used to read the authored `suspension.geometry` block while
+physics used `suspension.geometry_physical.corners`. For the F1 2030 profile
+these are different mechanisms: front rocker axis `[0,1,0]` (visual) vs
+`[1,0,0]` (physics) — 90° apart — with rocker arms 55/49.5 mm vs 80/70 mm,
+different arm directions and front damper chassis 0.28 m lower; solving both
+at the same travel put `rocker_end`/`damper_end` 97–111 mm apart.
+
+`SuspensionGeometry.from_json_dict` now prefers the physical corners (single
+source; `rod` → `pushrod` + `attachment`, `mirror_of` and `_visual_meshes`
+preserved) and falls back whole to the legacy block when no physical geometry
+exists. Telemetry had already shown the physics side aligned (straight-line
+L-R asymmetry +0.06/+0.07 mm at speed, ±0.01 mm at rest); the misalignment was
+purely visual. `smoke_test_f1_2030_v10_wheel_visual.gd` had a stale ±10 mm
+planar tolerance and was already red at HEAD: the real rear hub recedes
+~13.6 mm at full droop, so the check now uses a documented 20 mm detachment
+guard instead of the design axle box.
+
 ### Known pre-existing failures (not attributed to this fix)
 
 - `aero_test`: 4 cases fail before and after (`test_aerodynamic_lag_exponential_decay`,

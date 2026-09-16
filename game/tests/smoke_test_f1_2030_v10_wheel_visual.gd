@@ -4,6 +4,11 @@ const VEHICLE_SCENE := "res://scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn"
 const WHEELS := ["FrontLeftWheel", "FrontRightWheel", "RearLeftWheel", "RearRightWheel"]
 const CENTERS := [Vector3(-0.753, 0, -1.475), Vector3(0.753, 0, -1.475), Vector3(-0.716, 0, 1.475), Vector3(0.716, 0, 1.475)]
 const WIDTHS := [0.33, 0.33, 0.42, 0.42]
+# The audited linkage intentionally scrubs/recedes with travel: the rear hub
+# moves ~13.6 mm rearward at full droop (front ~1.3 mm). This planar check only
+# guards gross detachment (e.g., all meshes collapsing to x=z=0), so it must
+# accept the real mechanism trajectory while staying far below the chassis size.
+const AXLE_PLANAR_TOLERANCE_M := 0.02
 
 func _init() -> void:
 	call_deferred("_run")
@@ -90,7 +95,7 @@ func _run() -> void:
 				var spinner := visual.get_node("SpinVisual") as Node3D
 				var brake_static := visual.get_node("BrakeStatic") as Node3D
 				var planar_error := Vector2(hub.position.x - CENTERS[index].x, hub.position.z - CENTERS[index].z).length()
-				if planar_error > 0.01:
+				if planar_error > AXLE_PLANAR_TOLERANCE_M:
 					_fail("Wheel moved off its axle: %s at %s." % [WHEELS[index], hub.position], failures)
 				var anchor: Vector3 = vehicle.call("get_wheel_anchor_local", index)
 				var spring: float = controller.get("front_spring_length" if index < 2 else "rear_spring_length")

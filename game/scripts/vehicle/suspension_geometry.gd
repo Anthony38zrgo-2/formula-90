@@ -5,10 +5,13 @@ extends RefCounted
 ##
 ## Authority model: the Rust 1-DOF solver remains the only suspension physics.
 ## This class solves the *linkage* (UPPER_WISHBONE / LOWER_WISHBONE / PUSHROD /
-## TRACKROD / UPRIGHT / ROCKER / DRIVESHAFT) from a per-corner hardpoint table
-## declared in the vehicle physics JSON under `suspension.geometry`. The wheel
-## centre (telemetry compression) drives the mechanism as a soft target; a small
-## position-based solver keeps the arms rigid and the upright triangle closed.
+## TRACKROD / UPRIGHT / ROCKER / DRIVESHAFT) from the audited per-corner
+## hardpoint table. The physical profile (`suspension.geometry_physical.corners`,
+## the exact mechanism the Rust solver drives) is the single source of truth;
+## profiles without it fall back to their authored `suspension.geometry` block.
+## The wheel centre (telemetry compression) drives the mechanism as a soft
+## target; a small position-based solver keeps the arms rigid and the upright
+## triangle closed.
 ##
 ## Pure RefCounted: no scene dependency, fully deterministic and unit-testable.
 
@@ -27,14 +30,54 @@ static func from_json_dict(json: Dictionary) -> SuspensionGeometry:
 	var suspension: Variant = json.get("suspension", {})
 	if not suspension is Dictionary:
 		return null
-	var geometry: Variant = suspension.get("geometry", {})
-	if not geometry is Dictionary or geometry.is_empty():
+	var geometry := _geometry_source(suspension)
+	if geometry.is_empty():
 		return null
 	var axles := {
 		"front": _axle_params(suspension.get("front", {})),
 		"rear": _axle_params(suspension.get("rear", {})),
 	}
 	return SuspensionGeometry.new(geometry, axles)
+
+
+## Single authoritative hardpoint source: prefer the audited physical corners
+## (same mechanism the Rust solver drives) so visuals cannot drift from physics.
+## `rod` is normalised to the visual `pushrod` key (outer + attachment) and the
+## legacy `_visual_meshes` metadata is preserved. A partial physical block falls
+## back whole to the authored legacy linkage; mechanisms are never mixed.
+static func _geometry_source(suspension: Dictionary) -> Dictionary:
+	var legacy: Variant = suspension.get("geometry", {})
+	var legacy_dict: Dictionary = legacy if legacy is Dictionary else {}
+	var physical: Variant = suspension.get("geometry_physical", {})
+	if physical is Dictionary:
+		var corners: Variant = physical.get("corners", {})
+		if corners is Dictionary and not corners.is_empty():
+			var merged := {}
+			for wheel_key in WHEEL_KEYS:
+				var raw: Variant = corners.get(wheel_key, {})
+				if not raw is Dictionary or raw.is_empty():
+					merged = {}
+					break
+				merged[wheel_key] = _normalize_physical_corner(raw)
+			if not merged.is_empty():
+				if legacy_dict.has("_visual_meshes"):
+					merged["_visual_meshes"] = legacy_dict["_visual_meshes"]
+				return merged
+	return legacy_dict.duplicate(true)
+
+
+static func _normalize_physical_corner(raw: Dictionary) -> Dictionary:
+	var corner: Dictionary = raw.duplicate(true)
+	corner.erase("provenance")
+	if not corner.has("pushrod"):
+		var rod: Variant = corner.get("rod", {})
+		if rod is Dictionary and rod.has("outer"):
+			corner["pushrod"] = {
+				"outer": rod["outer"],
+				"attachment": rod.get("attachment", "lower"),
+			}
+	corner.erase("rod")
+	return corner
 
 
 static func from_json_path(path: String) -> SuspensionGeometry:
