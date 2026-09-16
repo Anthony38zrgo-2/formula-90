@@ -94,6 +94,8 @@ pub struct KinematicSolution {
     pub pushrod_outer: Vec3,
     /// Damper piston attachment after rocker rotation.
     pub damper_end: Vec3,
+    /// Track-rod outer joint after kingpin steering (for chassis loads).
+    pub trackrod_outer: Vec3,
     pub travel_limited: bool,
     pub requested_travel: f64,
     pub solved_travel: f64,
@@ -449,7 +451,6 @@ fn solve_raw(
         derived.l_trackrod,
         0.0,
     );
-    let _ = steer_point;
     let steer_rot = Mat3::from_axis_angle(kingpin, steer_angle);
     let upright_basis = orthonormalize(mat_mul(&steer_rot, &transport));
     hub = lbj + steer_rot.transform_vector(hub - lbj);
@@ -486,6 +487,7 @@ fn solve_raw(
         rocker_end,
         pushrod_outer,
         damper_end,
+        trackrod_outer: steer_point,
         travel_limited: false,
         requested_travel: q,
         solved_travel: q,
