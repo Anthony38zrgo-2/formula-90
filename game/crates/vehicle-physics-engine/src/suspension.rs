@@ -134,6 +134,31 @@ pub struct WheelSuspensionState {
     /// Worst link residual of the last kinematics solve (m).
     #[serde(default)]
     pub geometric_max_residual_m: f64,
+    // --- SUS-GEO-05 chassis reaction diagnostics (legacy: zeroed) ---
+    /// Vertical load through the element path (rod+damper+rocker) (N).
+    #[serde(default)]
+    pub load_path_element_n: f64,
+    /// Vertical load through the wishbone legs (N).
+    #[serde(default)]
+    pub load_path_wishbone_n: f64,
+    /// Vertical load through trackrod (+driveshaft) (N).
+    #[serde(default)]
+    pub load_path_other_n: f64,
+    /// Whole-wheel balance residual |G - (F_c + W - m a)| (N).
+    #[serde(default)]
+    pub balance_residual_n: f64,
+    /// |rod upright-side - rod rocker-side| (N).
+    #[serde(default)]
+    pub rod_mismatch_n: f64,
+    /// Link solve fell back to damped least squares.
+    #[serde(default)]
+    pub link_singular: bool,
+    /// Spring stored energy 1/2 k total^2 (J, analytic).
+    #[serde(default)]
+    pub spring_energy_j: f64,
+    /// Damper dissipated energy accumulated ∫F_d v_s dt (J, >= 0).
+    #[serde(default)]
+    pub damper_dissipated_j: f64,
 }
 
 impl WheelSuspensionState {
@@ -208,6 +233,14 @@ impl WheelSuspensionState {
             rod_axial_force_n: 0.0,
             geometric_clamped: false,
             geometric_max_residual_m: 0.0,
+            load_path_element_n: 0.0,
+            load_path_wishbone_n: 0.0,
+            load_path_other_n: 0.0,
+            balance_residual_n: 0.0,
+            rod_mismatch_n: 0.0,
+            link_singular: false,
+            spring_energy_j: 0.0,
+            damper_dissipated_j: 0.0,
         }
     }
 }
@@ -253,6 +286,30 @@ fn filter_surface_values(
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuspensionSystem {
     pub wheels: [WheelSuspensionState; 4],
+    // --- SUS-GEO-05 body-mode diagnostics (metres for travels) ---
+    #[serde(default)]
+    pub heave_m: f64,
+    #[serde(default)]
+    pub roll_m: f64,
+    #[serde(default)]
+    pub pitch_m: f64,
+    #[serde(default)]
+    pub warp_m: f64,
+    /// Diagnostic roll-centre heights, chassis-local Y (m). 0 when legacy.
+    #[serde(default)]
+    pub rc_front_m: f64,
+    #[serde(default)]
+    pub rc_rear_m: f64,
+    /// Per-axle lateral load transfer (right minus left, N).
+    #[serde(default)]
+    pub transfer_front_n: f64,
+    #[serde(default)]
+    pub transfer_rear_n: f64,
+    /// ARB stored energy per axle (J).
+    #[serde(default)]
+    pub arb_energy_front_j: f64,
+    #[serde(default)]
+    pub arb_energy_rear_j: f64,
 }
 
 impl SuspensionSystem {
@@ -264,6 +321,16 @@ impl SuspensionSystem {
                 WheelSuspensionState::new(config, WheelIndex::RearLeft),
                 WheelSuspensionState::new(config, WheelIndex::RearRight),
             ],
+            heave_m: 0.0,
+            roll_m: 0.0,
+            pitch_m: 0.0,
+            warp_m: 0.0,
+            rc_front_m: 0.0,
+            rc_rear_m: 0.0,
+            transfer_front_n: 0.0,
+            transfer_rear_n: 0.0,
+            arb_energy_front_j: 0.0,
+            arb_energy_rear_j: 0.0,
         }
     }
 
@@ -302,6 +369,75 @@ impl SuspensionSystem {
         self.solve_force(config, WheelIndex::FrontRight, modifiers[1], compressions_m[0], dt);
         self.solve_force(config, WheelIndex::RearLeft, modifiers[2], compressions_m[3], dt);
         self.solve_force(config, WheelIndex::RearRight, modifiers[3], compressions_m[2], dt);
+        self.update_body_modes(config);
+    }
+
+    /// SUS-GEO-05: total damper-dissipated energy over the four circuits (J).
+    pub fn damper_dissipated_total(&self) -> f64 {
+        self.wheels.iter().map(|w| w.damper_dissipated_j).sum()
+    }
+
+    /// SUS-GEO-05: modal decomposition of wheel travels + per-axle transfers.
+    /// Pure diagnostics (no force impact); RC heights geometric-only.
+    fn update_body_modes(&mut self, config: &VehicleConfig) {        let rest = |w: WheelIndex| rest_compression_m(config, w);
+        let q = [
+            self.wheels[0].suspension_compression_m - rest(WheelIndex::FrontLeft),
+            self.wheels[1].suspension_compression_m - rest(WheelIndex::FrontRight),
+            self.wheels[2].suspension_compression_m - rest(WheelIndex::RearLeft),
+            self.wheels[3].suspension_compression_m - rest(WheelIndex::RearRight),
+        ];
+        let modes = crate::suspension_loads::body_modes(q);
+        self.heave_m = modes.heave_m;
+        self.roll_m = modes.roll_m;
+        self.pitch_m = modes.pitch_m;
+        self.warp_m = modes.warp_m;
+        let fz = [
+            self.wheels[0].total_normal_force,
+            self.wheels[1].total_normal_force,
+            self.wheels[2].total_normal_force,
+            self.wheels[3].total_normal_force,
+        ];
+        self.transfer_front_n = fz[1] - fz[0];
+        self.transfer_rear_n = fz[3] - fz[2];
+        if let Some(geo) = config.geometric_suspension.as_ref() {
+            if matches!(
+                config.suspension_model,
+                crate::suspension_geo_config::SuspensionModelKind::Geometric
+            ) {
+                self.rc_front_m =
+                    crate::suspension_loads::roll_centre_height(&geo.corners.fl, &geo.corners.fr, config.front_track * 0.5)
+                        .unwrap_or(0.0);
+                self.rc_rear_m =
+                    crate::suspension_loads::roll_centre_height(&geo.corners.rl, &geo.corners.rr, config.rear_track * 0.5)
+                        .unwrap_or(0.0);
+                let dq_f = q[0] - q[1];
+                let dq_r = q[2] - q[3];
+                // k_rest per axle from the tangent at rest (cheap: use current
+                // tangent at small travel, else fall back to element*1).
+                self.arb_energy_front_j = crate::suspension_loads::arb_energy(
+                    geo,
+                    true,
+                    dq_f,
+                    self.wheels[0].tangent_wheel_rate_n_per_m.max(1.0),
+                );
+                self.arb_energy_rear_j = crate::suspension_loads::arb_energy(
+                    geo,
+                    false,
+                    dq_r,
+                    self.wheels[2].tangent_wheel_rate_n_per_m.max(1.0),
+                );
+            } else {
+                self.rc_front_m = 0.0;
+                self.rc_rear_m = 0.0;
+                self.arb_energy_front_j = 0.0;
+                self.arb_energy_rear_j = 0.0;
+            }
+        } else {
+            self.rc_front_m = 0.0;
+            self.rc_rear_m = 0.0;
+            self.arb_energy_front_j = 0.0;
+            self.arb_energy_rear_j = 0.0;
+        }
     }
 
     fn sample_contact(
@@ -601,6 +737,18 @@ impl SuspensionSystem {
         state.rod_axial_force_n = 0.0;
         state.geometric_clamped = false;
         state.geometric_max_residual_m = 0.0;
+        state.load_path_element_n = 0.0;
+        state.load_path_wishbone_n = 0.0;
+        state.load_path_other_n = 0.0;
+        state.balance_residual_n = 0.0;
+        state.rod_mismatch_n = 0.0;
+        state.link_singular = false;
+        // Energy audit (both modes): analytic spring storage + dissipated.
+        state.spring_energy_j = 0.5 * spring_k.max(0.0) * x.max(0.0) * x.max(0.0);
+        let dp = state.damping_force * v * dt;
+        if dp.is_finite() && dp > 0.0 {
+            state.damper_dissipated_j += dp;
+        }
     }
 
     /// SUS-GEO-04 geometric path: explicit spring/damper via kinematics and
@@ -807,7 +955,6 @@ impl SuspensionSystem {
             axle.spring_rate_N_per_m * total_fin
         };
         let tangent = axle.spring_rate_N_per_m * r_fin * r_fin + f_s_fin * drdq;
-        let _ = axle;
 
         state.previous_compression_mm = previous_compression * 1000.0;
         state.suspension_compression_m = finite_or_zero(x);
@@ -832,6 +979,18 @@ impl SuspensionSystem {
         state.rod_axial_force_n = finite_or_zero(rod_fin);
         state.geometric_clamped = clamped_fin || stop.1 || clamped_tick;
         state.geometric_max_residual_m = finite_or_zero(resid_fin);
+        // Energy audit: analytic spring storage from total deflection,
+        // dissipated damper energy accumulated (F_d * v >= 0 by construction).
+        let total_def = (axle.spring_free_length_m - axle.spring_installed_length_m) + s_fin;
+        state.spring_energy_j = if total_def > 0.0 {
+            0.5 * axle.spring_rate_N_per_m * total_def * total_def
+        } else {
+            0.0
+        };
+        let dp = state.damping_force * v * dt;
+        if dp.is_finite() && dp > 0.0 {
+            state.damper_dissipated_j += dp;
+        }
         state.tire_deflection_m = finite_or_zero(tire_deflection);
         state.tire_deflection_velocity_m_s = finite_or_zero(tire_deflection_velocity);
         state.tire_vertical_force = finite_or_zero(tire_force).max(0.0);

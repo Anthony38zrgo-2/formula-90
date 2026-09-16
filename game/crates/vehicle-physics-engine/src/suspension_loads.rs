@@ -377,8 +377,9 @@ fn gauss_jordan(a: &[Vec<f64>], b: &[f64]) -> Option<Vec<f64>> {
 /// Full per-wheel reaction set ON the chassis.
 /// Inputs in chassis-local metres/newtons; `contact_force` ON the wheel at
 /// `contact_point` (zero when airborne); `contact_couple` (aligning torque,
-/// free vector, zero when airborne); `unsprung_weight_n` (+);
-/// `unsprung_inertia_n` (signed, + = upward m*a on the wheel).
+/// free vector, zero when airborne).
+/// `unsprung_mass_kg` / `unsprung_accel_m_s2` (vertical filter state, + up):
+/// weight and virtual inertia enter the upright equilibrium explicitly.
 /// `element_force_n`: spring+damper compression (+) from SUS-GEO-04 along
 /// `damper_dir` (unit, arm minus chassis). `rod_reference_n`: rocker-side rod
 /// tension (+) from SUS-GEO-04, cross-check only (rod_mismatch_n).
@@ -390,22 +391,24 @@ pub fn reactions(
     contact_force: Vec3,
     contact_point: Vec3,
     contact_couple: Vec3,
-    unsprung_weight_n: f64,
-    unsprung_inertia_n: f64,
+    unsprung_mass_kg: f64,
+    unsprung_accel_m_s2: f64,
     element_force_n: f64,
     damper_dir: Vec3,
     rocker_pivot: Vec3,
     damper_chassis: Vec3,
     rod_reference_n: f64,
 ) -> (Vec<AnchorReaction>, WheelLoadPaths) {
-    // Upright equilibrium (all links incl. rod as unknowns):
-    //   S_links + F_c + W - m a = 0  (force)
+    // Upright Newton (all links incl. rod as unknowns):
+    //   S_links + F_c + Wgrav = m*a  (force; Wgrav=(0,-mg,0), a=(0,a,0))
     //   M_links + (C - W) x F_c + T_align = 0  (moment about W)
-    let w = Vec3::new(0.0, -unsprung_weight_n + unsprung_inertia_n, 0.0);
+    let g = 9.80665;
+    let w_grav = Vec3::new(0.0, -unsprung_mass_kg * g, 0.0);
+    let inertia = Vec3::new(0.0, unsprung_mass_kg * unsprung_accel_m_s2, 0.0);
     let target_f = Vec3::new(
-        -contact_force.x - w.x,
-        -contact_force.y - w.y,
-        -contact_force.z - w.z,
+        inertia.x - contact_force.x - w_grav.x,
+        inertia.y - contact_force.y - w_grav.y,
+        inertia.z - contact_force.z - w_grav.z,
     );
     let rc = contact_point - frame.wheel_center;
     let mc = rc.cross(contact_force) + contact_couple;
@@ -510,14 +513,19 @@ pub fn reactions(
     let elem_y = r_pivot.y + r_damper.y;
     let total_y = wish_y + other_y + elem_y;
     let inv = if total_y.abs() > 1e-9 { 1.0 / total_y } else { 0.0 };
-    // Balance check: the chassis reactions must equal the external load
-    // (whole-system equilibrium: G = F_c + W - m a). Residual ~ solve error.
+    // Balance check: returned reactions are forces ON the chassis, which must
+    // equal F_c + Wgrav - m*a (the support the body feels). Residual ~ solve
+    // error (evidence for task 9, never hidden).
     let mut sum = Vec3::ZERO;
     for r in &out {
         sum = sum + r.force;
     }
-    let wvec = Vec3::new(0.0, -unsprung_weight_n + unsprung_inertia_n, 0.0);
-    let bal = (sum - contact_force - wvec).length();
+    let expect = Vec3::new(
+        inertia.x - contact_force.x - w_grav.x,
+        inertia.y - contact_force.y - w_grav.y,
+        inertia.z - contact_force.z - w_grav.z,
+    );
+    let bal = (sum + expect).length();
     let rod_mm = if rod_reference_n.is_finite() {
         (rod_solved - rod_reference_n).abs()
     } else {
@@ -620,6 +628,170 @@ pub fn arb_energy(
     0.5 * k.max(0.0) * dq * dq
 }
 
+/// Steered track-rod outer joint: rotate the rest offset about the current
+/// kingpin (ubj - lbj) by `steer_rad`, anchored at the solved lbj.
+pub fn steered_trackrod_outer(
+    sol_lbj: Vec3,
+    sol_ubj: Vec3,
+    rest_outer: Vec3,
+    rest_lbj: Vec3,
+    steer_rad: f64,
+) -> Vec3 {
+    let mut kingpin = sol_ubj - sol_lbj;
+    if kingpin.length_squared() < 1e-18 || !steer_rad.is_finite() {
+        return sol_lbj + (rest_outer - rest_lbj);
+    }
+    kingpin = kingpin.normalized();
+    sol_lbj + crate::types::Mat3::from_axis_angle(kingpin, steer_rad)
+        .transform_vector(rest_outer - rest_lbj)
+}
+
+/// Driveshaft outer joint rigid with the upright (the plunge joint absorbs
+/// the residual in reality; documented approximation, task 9).
+pub fn shaft_outer_at_pose(hub: Vec3, hub_rest: Vec3, shaft_outer_rest: Vec3) -> Vec3 {
+    hub + (shaft_outer_rest - hub_rest)
+}
+
+/// Body wrench from anchor reactions: force sum + moment about `cg_local`.
+pub fn anchor_wrench(list: &[AnchorReaction], cg_local: Vec3) -> (Vec3, Vec3) {
+    let mut f = Vec3::ZERO;
+    let mut m = Vec3::ZERO;
+    for r in list {
+        f = f + r.force;
+        m = m + (r.position - cg_local).cross(r.force);
+    }
+    (f, m)
+}
+
+/// Full geometric per-wheel body contribution (plain inputs, no borrows).
+/// Replaces the contact-patch force/torque with anchor reactions in
+/// geometric mode. Airborne (`grounded=false`) still distributes the hanging
+/// unsprung weight (pass zero contact/couple; point ignored).
+#[allow(clippy::too_many_arguments)]
+pub fn geometric_wheel_wrench(
+    geo: &GeometricSuspensionConfig,
+    wheel: crate::types::WheelIndex,
+    travel_q: f64,
+    steer_rad: f64,
+    contact_force_world: Vec3,
+    contact_point_world: Vec3,
+    align_couple_world: Vec3,
+    grounded: bool,
+    unsprung_mass_kg: f64,
+    unsprung_accel_m_s2: f64,
+    spring_wheel_n: f64,
+    damper_wheel_n: f64,
+    aux_wheel_n: f64,
+    motion_ratio: f64,
+    rod_reference_n: f64,
+    body: crate::types::Transform3D,
+    cg_local: Vec3,
+) -> GeoWheelWrench {
+    let corner = geo.corners.get(wheel);
+    let is_front = wheel.is_front();
+    let q = if travel_q.is_finite() { travel_q } else { 0.0 };
+    let sol = match crate::suspension_kinematics::solve_corner(
+        corner, q, 0.0, is_front, 0.0, 0.0, 1.0,
+    ) {
+        Some(s) => s,
+        None => {
+            return GeoWheelWrench {
+                force_world: Vec3::ZERO,
+                torque_world: Vec3::ZERO,
+                paths: WheelLoadPaths {
+                    balance_residual_n: f64::INFINITY,
+                    singular: true,
+                    ..Default::default()
+                },
+                elem_y_n: 0.0,
+                wish_y_n: 0.0,
+                other_y_n: 0.0,
+            };
+        }
+    };
+    let steered = steered_trackrod_outer(
+        sol.lbj,
+        sol.ubj,
+        corner.trackrod_outer,
+        corner.lower.outer,
+        steer_rad,
+    );
+    let shaft = if wheel.is_rear() {
+        Some(shaft_outer_at_pose(
+            sol.hub,
+            corner.hub_center,
+            corner.driveshaft_outer.unwrap_or(corner.hub_center),
+        ))
+    } else {
+        None
+    };
+    let frame = link_frame(corner, &sol, steered, shaft);
+    let (f_local, p_local, c_local) = if grounded {
+        (
+            body.basis.inverse_transform_vector(contact_force_world),
+            body.inverse_transform_point(contact_point_world),
+            body.basis.inverse_transform_vector(align_couple_world),
+        )
+    } else {
+        (Vec3::ZERO, sol.hub, Vec3::ZERO)
+    };
+    // Element path from the SUS-GEO-04 wheel forces (back to element).
+    // aux_wheel_n carries the ARB + stop wheel forces, which act through the
+    // rocker in F1 drop-link/stop layouts (documented assumption).
+    let f_elem = if motion_ratio.is_finite() && motion_ratio > 0.05 {
+        (spring_wheel_n + damper_wheel_n + aux_wheel_n) / motion_ratio
+    } else {
+        spring_wheel_n + damper_wheel_n + aux_wheel_n
+    };
+    let damper_dir = sol.damper_end - corner.damper_chassis;
+    let (list, paths) = reactions(
+        &frame,
+        f_local,
+        p_local,
+        c_local,
+        unsprung_mass_kg.max(0.0),
+        if unsprung_accel_m_s2.is_finite() {
+            unsprung_accel_m_s2
+        } else {
+            0.0
+        },
+        f_elem,
+        damper_dir,
+        corner.rocker_pivot,
+        corner.damper_chassis,
+        rod_reference_n,
+    );
+    let (f_body_local, m_body_local) = anchor_wrench(&list, cg_local);
+    let mut elem_y = 0.0;
+    let mut wish_y = 0.0;
+    let mut other_y = 0.0;
+    for r in &list {
+        match r.kind {
+            0..=3 => wish_y += r.force.y,
+            4 | 5 => other_y += r.force.y,
+            _ => elem_y += r.force.y,
+        }
+    }
+    GeoWheelWrench {
+        force_world: body.basis.transform_vector(f_body_local),
+        torque_world: body.basis.transform_vector(m_body_local),
+        paths,
+        elem_y_n: elem_y,
+        wish_y_n: wish_y,
+        other_y_n: other_y,
+    }
+}
+
+/// Output of [`geometric_wheel_wrench`].
+pub struct GeoWheelWrench {
+    pub force_world: Vec3,
+    pub torque_world: Vec3,
+    pub paths: WheelLoadPaths,
+    pub elem_y_n: f64,
+    pub wish_y_n: f64,
+    pub other_y_n: f64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -691,7 +863,7 @@ mod tests {
             contact,
             contact_pt,
             Vec3::ZERO,
-            21.0 * 9.80665,
+            21.0,
             0.0,
             0.0,
             Vec3::UP,
