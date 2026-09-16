@@ -3,6 +3,10 @@ use crate::brake_thermals::{
     BrakeAxleThermalConfig, BrakeCoolingProfile, BrakeDuctAxleConfig, BrakeRotorMaterial,
     BrakeRotorVentilation, BrakeThermalConfig, BrakeThermalModelKind,
 };
+use crate::suspension_geo_config::{
+    default_suspension_model_version, geometric_from_json_value, geometric_to_json_value,
+    GeometricSuspensionConfig, SuspensionModelKind,
+};
 use crate::tire_thermals::{
     PressureMechanicsSensitivity, TirePressureConfig, TireThermalAxleConfig, TireThermalConfig,
 };
@@ -203,6 +207,15 @@ pub struct VehicleConfig {
     /// vehicle-audio-engine `powertrain` module).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub audio: Option<serde_json::Value>,
+    /// SUS-GEO-02 model selector. Absent means legacy 1-DOF.
+    #[serde(default)]
+    pub suspension_model: SuspensionModelKind,
+    /// SUS-GEO-02 model version. Must be 1.
+    #[serde(default = "default_suspension_model_version")]
+    pub suspension_model_version: u32,
+    /// SUS-GEO-02 physical geometry. Required for Geometric, None for Legacy.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub geometric_suspension: Option<GeometricSuspensionConfig>,
 }
 
 /// Schema v3 steady tire force curve (parser-only until TIRE-100/TIRE-200).
@@ -569,6 +582,9 @@ impl VehicleConfig {
             automatic_shift: AutomaticShift::default(),
             gear_inertia: default_gear_inertia(),
             audio: None,
+            suspension_model: SuspensionModelKind::Legacy1Dof,
+            suspension_model_version: default_suspension_model_version(),
+            geometric_suspension: None,
             front_torque_split: 0.0,
 
             // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
@@ -744,6 +760,9 @@ impl VehicleConfig {
             automatic_shift: AutomaticShift::default(),
             gear_inertia: default_gear_inertia(),
             audio: None,
+            suspension_model: SuspensionModelKind::Legacy1Dof,
+            suspension_model_version: default_suspension_model_version(),
+            geometric_suspension: None,
             front_torque_split: 0.0, // RWD
 
             // Differential (Salisbury Clutch-Pack LSD)
@@ -1381,7 +1400,7 @@ fn default_slip_threshold() -> f64 {
     0.5
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct JsonSuspension {
     #[serde(default)]
@@ -1396,6 +1415,31 @@ struct JsonSuspension {
     /// it never reaches runtime forces and is not part of the force model.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     geometry: Option<serde_json::Value>,
+    /// SUS-GEO-02 model selector: "legacy_1dof" (default) or "geometric".
+    #[serde(default = "default_suspension_model_name")]
+    model: String,
+    /// SUS-GEO-02 model version. Must be 1.
+    #[serde(default = "default_suspension_model_version")]
+    model_version: u32,
+    /// SUS-GEO-02 physical geometry + elements. Required for geometric.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    geometry_physical: Option<serde_json::Value>,
+}
+impl Default for JsonSuspension {
+    fn default() -> Self {
+        Self {
+            front: JsonSuspensionAxle::default(),
+            rear: JsonSuspensionAxle::default(),
+            tri_ray_spacing_ratio: default_tri_ray(),
+            geometry: None,
+            model: default_suspension_model_name(),
+            model_version: default_suspension_model_version(),
+            geometry_physical: None,
+        }
+    }
+}
+fn default_suspension_model_name() -> String {
+    "legacy_1dof".to_string()
 }
 fn default_tri_ray() -> f64 {
     0.40
@@ -3135,6 +3179,38 @@ impl JsonVehicleSpec {
                 }
             }
         }
+        // SUS-GEO-02: explicit model selector, no silent fallback.
+        let model = SuspensionModelKind::from_str_name(self.suspension.model.as_str()).ok_or_else(|| {
+            format!(
+                "suspension.model must be legacy_1dof|geometric (got {})",
+                self.suspension.model
+            )
+        })?;
+        if self.suspension.model_version != default_suspension_model_version() {
+            return Err(format!(
+                "suspension.model_version must be {} (got {})",
+                default_suspension_model_version(),
+                self.suspension.model_version
+            ));
+        }
+        match model {
+            SuspensionModelKind::Legacy1Dof => {
+                if self.suspension.geometry_physical.is_some() {
+                    return Err(
+                        "suspension.geometry_physical must be absent for legacy_1dof (set suspension.model=geometric to activate)"
+                            .to_string(),
+                    );
+                }
+            }
+            SuspensionModelKind::Geometric => {
+                let v = self.suspension.geometry_physical.as_ref().ok_or_else(|| {
+                    "suspension.geometry_physical is required for geometric (no silent fallback to legacy)"
+                        .to_string()
+                })?;
+                // Full physical validation with wheel+field diagnostics.
+                geometric_from_json_value(v)?;
+            }
+        }
         Ok(())
     }
 
@@ -3438,6 +3514,14 @@ impl JsonVehicleSpec {
                 input_smoothing_brake_rate: self.aids.input_smoothing_brake_rate,
             },
             audio: self.audio.clone(),
+            suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
+                .unwrap_or(SuspensionModelKind::Legacy1Dof),
+            suspension_model_version: self.suspension.model_version,
+            geometric_suspension: self
+                .suspension
+                .geometry_physical
+                .as_ref()
+                .map(|v| geometric_from_json_value(v).expect("validated geometry_physical must parse")),
         }
     }
 
@@ -3567,6 +3651,12 @@ impl JsonVehicleSpec {
                 // Visual-only geometry is not part of the force config; it is
                 // never re-emitted by to_json_value.
                 geometry: None,
+                model: cfg.suspension_model.as_str_name().to_string(),
+                model_version: cfg.suspension_model_version,
+                geometry_physical: cfg
+                    .geometric_suspension
+                    .as_ref()
+                    .map(geometric_to_json_value),
             },
             tires: JsonTires {
                 front: JsonTireAxle {
