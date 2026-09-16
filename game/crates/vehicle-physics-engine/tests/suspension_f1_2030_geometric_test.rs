@@ -128,6 +128,73 @@ fn f1_geometric_settles_at_design() {
 }
 
 #[test]
+fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
+    // Objective A/B (scripted, blind-capable): same static stance, sane
+    // dynamic differences from geometry (progressivity), no NaN anywhere.
+    let legacy =
+        VehicleConfig::from_json_str(&std::fs::read_to_string(legacy_path()).unwrap()).unwrap();
+    let geo =
+        VehicleConfig::from_json_str(&std::fs::read_to_string(geo_path()).unwrap()).unwrap();
+    let dt = 1.0 / 120.0;
+    let mk = |d: f64| TriRaycastSample {
+        inner: flat_hit(d),
+        center: flat_hit(d),
+        outer: flat_hit(d),
+    };
+    let stat = |cfg: &VehicleConfig, wheel: WheelIndex| {
+        let m = cfg.mass_over_wheel(wheel) * 9.80665;
+        let k = WheelMechanicalTuning::for_wheel(cfg, wheel).tire_vertical_stiffness_n_m;
+        m / k
+    };
+    let road = |cfg: &VehicleConfig| {
+        let rf = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius
+            - stat(cfg, WheelIndex::FrontLeft);
+        let rr = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius
+            - stat(cfg, WheelIndex::RearLeft);
+        [mk(rf), mk(rf), mk(rr), mk(rr)]
+    };
+    // Static stance: both must carry static loads (same car).
+    let mut sl = SuspensionSystem::new(&legacy);
+    let mut sg = SuspensionSystem::new(&geo);
+    for _ in 0..80 {
+        let rl = road(&legacy);
+        let rg = road(&geo);
+        sl.step(&legacy, &rl, dt);
+        sg.step(&geo, &rg, dt);
+    }
+    for wheel in WheelIndex::ALL {
+        let load = legacy.mass_over_wheel(wheel) * 9.80665;
+        let fl = sl.wheels[wheel as usize].total_normal_force;
+        let fg = sg.wheels[wheel as usize].total_normal_force;
+        assert!((fl - load).abs() < load * 0.05, "legacy static {wheel:?}");
+        assert!((fg - load).abs() < load * 0.05, "geo static {wheel:?}");
+        assert!((fl - fg).abs() < load * 0.05, "static match {wheel:?}");
+    }
+    // 20 mm front step: peaks differ (geometry matters) but stay sane.
+    let mut peak_l = 0.0f64;
+    let mut peak_g = 0.0f64;
+    for _ in 0..60 {
+        let mut rl = road(&legacy);
+        let mut rg = road(&geo);
+        for i in 0..2 {
+            rl[i] = mk(rl[i].center.distance - 0.020);
+            rg[i] = mk(rg[i].center.distance - 0.020);
+        }
+        sl.step(&legacy, &rl, dt);
+        sg.step(&geo, &rg, dt);
+        peak_l = peak_l.max(sl.wheels[0].total_normal_force);
+        peak_g = peak_g.max(sg.wheels[0].total_normal_force);
+        for w in 0..4 {
+            assert!(sl.wheels[w].total_normal_force.is_finite());
+            assert!(sg.wheels[w].total_normal_force.is_finite());
+        }
+    }
+    let rel = (peak_g - peak_l).abs() / peak_l;
+    assert!(rel > 0.005, "geometry must matter, rel={rel}");
+    assert!(rel < 0.50, "same car sanity, rel={rel}");
+}
+
+#[test]
 fn godot_scene_still_points_at_legacy() {
     // Activation is opt-in: the shipped scene keeps the legacy profile until a
     // human validates the geometric one in-engine (SUS-GEO-10 A/B).
