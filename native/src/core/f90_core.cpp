@@ -759,7 +759,10 @@ void F90Core::create_audio_nodes() {
 }
 
 void F90Core::pump_audio() {
-	if (!audio_initialized_ || audio_player_ == nullptr || core_ == nullptr || fn_audio_render_ == nullptr) {
+	// enable_audio_ is honored at call time (not just at _ready): setting it
+	// false after initialization stops the per-frame pump immediately, the same
+	// runtime-disable contract the visual suspension controller follows.
+	if (!enable_audio_ || !audio_initialized_ || audio_player_ == nullptr || core_ == nullptr || fn_audio_render_ == nullptr) {
 		return;
 	}
 	// Lazy playback: the player may not have yielded its stream playback yet.
@@ -769,9 +772,18 @@ void F90Core::pump_audio() {
 			return;
 		}
 	}
-	const int frames = (int)audio_playback_->call("get_frames_available");
+	int frames = (int)audio_playback_->call("get_frames_available");
 	if (frames <= 0) {
 		return;
+	}
+	// SUS-GEO-12: bound the per-frame render demand. The mixer renders exactly
+	// the samples the playback asks for, so at a low render FPS the pump cost
+	// grows with the frame time and throttles the loop it feeds (feedback:
+	// lower fps -> more samples per pump -> still lower fps). Capping the batch
+	// bounds the _process cost and spills the remainder to the next frame; the
+	// audio content and latency are unchanged.
+	if (frames > kPumpBudgetFrames) {
+		frames = kPumpBudgetFrames;
 	}
 	if ((int)mix_l_.size() < frames) {
 		mix_l_.resize(frames);

@@ -116,6 +116,9 @@ var _suspension_geometry: SuspensionGeometry = null
 var _suspension_links: SuspensionLinkVisual = null
 var _suspension_solved: Array = [{}, {}, {}, {}]
 var _hidden_baked_nodes: Array = []
+## SUS-GEO-12 pose reuse: inputs (travel, steer, geometry revision) of the last
+## solved pose per wheel; a solve is skipped while they stay inside epsilon.
+var _solved_inputs: Array = [null, null, null, null]
 
 const WHEEL_KEYS := ["FL", "FR", "RL", "RR"]
 const KERB_SURFACE_CODE := 1
@@ -271,10 +274,12 @@ func _setup_suspension_geometry() -> void:
 func _apply_geometry_switch(enabled: bool) -> void:
 	if enabled:
 		_hidden_baked_nodes.clear()
+		_solved_inputs = [null, null, null, null]
 		_setup_suspension_geometry()
 		return
 	_suspension_geometry = null
 	_suspension_solved = [{}, {}, {}, {}]
+	_solved_inputs = [null, null, null, null]
 	_render_compression = [0.0, 0.0, 0.0, 0.0]
 	if _suspension_links != null:
 		_suspension_links.queue_free()
@@ -302,19 +307,33 @@ func _update_suspension_links(blend: float) -> void:
 	if _suspension_geometry == null or _suspension_links == null:
 		return
 	_render_steer = lerpf(_render_steer, _target_steer[0] - _toe(0), blend)
+	var revision: int = _suspension_geometry.revision
 	for wheel_index in range(4):
 		if _suspension_geometry.is_valid(wheel_index):
 			var corner := _suspension_geometry.get_corner(wheel_index)
 			var travel := clampf(_compression_m[wheel_index], corner["travel_min"], corner["travel_max"])
 			_render_compression[wheel_index] = lerpf(_render_compression[wheel_index], travel, blend)
+			var steer := _render_steer if wheel_index < 2 else 0.0
+			# SUS-GEO-12 pose reuse: the PBD solve is deterministic, so while the
+			# inputs stay inside epsilon the previous pose is exact. Skipping the
+			# redundant solve removes the per-frame linkage cost at idle/straight.
+			var last: Variant = _solved_inputs[wheel_index]
+			var last_travel: float = float(last[0]) if last != null else INF
+			var last_steer: float = float(last[1]) if last != null else INF
+			var last_revision: int = int(last[2]) if last != null else -1
+			if last != null and last_revision == revision \
+					and absf(_render_compression[wheel_index] - last_travel) < 1e-5 \
+					and absf(steer - last_steer) < 1e-5:
+				continue
 			var data := _suspension_geometry.solve(
 				wheel_index,
 				_render_compression[wheel_index],
-				_render_steer if wheel_index < 2 else 0.0,
+				steer,
 				_target_camber[wheel_index],
 				_wheel_angles[wheel_index]
 			)
 			linkage_solve_count += 1
+			_solved_inputs[wheel_index] = [_render_compression[wheel_index], steer, revision]
 			_suspension_solved[wheel_index] = data
 			_suspension_links.update_wheel(wheel_index, data)
 		else:

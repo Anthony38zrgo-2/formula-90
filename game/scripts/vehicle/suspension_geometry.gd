@@ -25,6 +25,11 @@ var visual_meshes_path: String = ""
 var _corners: Array = []
 var _axles: Array = []
 
+## Bumped by align_hub() so pose consumers can detect geometry edits and
+## invalidate any cached pose (the runtime anchor refresh aligns corners once
+## the native solver reports its real rest hubs).
+var revision: int = 0
+
 
 static func from_json_dict(json: Dictionary) -> SuspensionGeometry:
 	var suspension: Variant = json.get("suspension", {})
@@ -159,6 +164,7 @@ func align_hub(wheel_index: int, hub_rest: Vector3) -> void:
 	var delta: Vector3 = hub_rest - corner["hub_center"]
 	if delta.length() < 1e-6:
 		return
+	revision += 1
 	for key in [
 		"hub_center", "lw_if", "lw_ir", "lbj_rest", "uw_if", "uw_ir", "ubj_rest",
 		"trackrod_inner", "trackrod_outer", "damper_chassis", "ds_inner",

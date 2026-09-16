@@ -107,6 +107,10 @@ class F90Core : public Node3D {
 
 public:
 	static constexpr uint32_t EXPECTED_ABI_VERSION = 13;
+	/// SUS-GEO-12: max samples rendered per _process pump; the remainder is
+	/// rendered on the next frame (bounds the per-frame DSP cost in debug
+	/// builds where the synthesiser runs ~10x slower than release).
+	static constexpr int kPumpBudgetFrames = 1024;
 
 	F90Core();
 	~F90Core() override;
