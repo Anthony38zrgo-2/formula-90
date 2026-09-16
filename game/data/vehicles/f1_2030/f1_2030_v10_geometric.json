@@ -812,11 +812,11 @@
     "geometry_physical": {
       "version": 1,
       "front": {
-        "spring_rate_N_per_m": 128896.32607058037,
-        "spring_free_length_m": 0.28149875,
+        "spring_rate_N_per_m": 45059.8,
+        "spring_free_length_m": 0.29504772,
         "spring_installed_length_m": 0.26,
-        "damper_bump_Ns_per_m": 12922.548575296849,
-        "damper_rebound_Ns_per_m": 14473.254404332472,
+        "damper_bump_Ns_per_m": 4194.147872,
+        "damper_rebound_Ns_per_m": 4697.445617,
         "damper_knee_m_per_s": 0.127,
         "damper_fast_factor": 0.5,
         "wheel_droop_m": 0.04,
@@ -928,19 +928,19 @@
             "damper_arm": [
               -0.162718,
               0.2204355,
-              -1.5262085
+              -1.3
             ]
           },
           "damper": {
             "chassis": [
               -0.162718,
-              0.5004355,
-              -1.5462085
+              0.02,
+              -1.24
             ]
           },
           "provenance": {
             "origin": "measured",
-            "note": "F1-2030 blend hardpoints (wishbones/trackrod/hub); rocker/damper reconstructed to a transverse trailing layout (shipped vertical-axis rocker cannot transmit vertical travel, r<0)."
+            "note": "F1-2030 blend hardpoints (wishbones/trackrod/hub); rocker/damper reconstructed as a transverse trailing bar (the shipped vertical-axis rocker cannot transmit vertical travel, r<0). Damper arm re-aimed aft with the chassis mount low in the monocoque nose so the element stays inside the bodywork: measured nose top envelope 0.251 m at z=-1.50 rising to 0.308 m at z=-1.00 caps any compress-above mount at the 0.2204 m pivot height; the aft arm moves down on bump so the low mount compresses correctly (r0=0.8386, r>=0.672 across the envelope). Spring/damper rates recomputed to preserve the shipped rest tangent wheel rate (38974.8 N/m) and static stance."
           }
         },
         "FR": {
