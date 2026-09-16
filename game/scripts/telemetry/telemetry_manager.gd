@@ -18,7 +18,7 @@ var _setup_json := ""
 const LOG_MS := 50
 const BUFFER_SIZE := 100
 const VEHICLE_SEARCH_INTERVAL := 1.0
-const DEFAULT_PHYSICS_CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
+const DEFAULT_PHYSICS_CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
 const CSV_COLUMNS := [
     "Time_ms", "Speed_kmh", "RPM", "Gear",
     "Throttle", "Brake", "Steering",

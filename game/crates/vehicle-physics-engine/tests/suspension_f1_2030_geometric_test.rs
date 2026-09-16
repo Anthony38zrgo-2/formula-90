@@ -195,14 +195,19 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
 }
 
 #[test]
-fn godot_scene_still_points_at_legacy() {
-    // Activation is opt-in: the shipped scene keeps the legacy profile until a
-    // human validates the geometric one in-engine (SUS-GEO-10 A/B).
+fn godot_scene_points_at_geometric_by_default() {
+    // Geometric is the default profile: the shipped scene, session, vehicle
+    // resource and manifest all point at it; the legacy file stays alongside
+    // as the identifiable reference (covered by the legacy test above).
     let tscn = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn");
     let text = std::fs::read_to_string(tscn).unwrap();
-    assert!(text.contains("f1_2030_v10_physics.json"));
-    assert!(!text.contains("geometric"));
+    assert!(text.contains("f1_2030_v10_geometric.json"));
+    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
+        "../../assets/models/vehicles/f1-2030/manifest.json",
+    );
+    let manifest_text = std::fs::read_to_string(manifest).unwrap();
+    assert!(manifest_text.contains("f1_2030_v10_geometric.json"));
 }
 
 #[test]

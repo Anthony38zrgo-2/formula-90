@@ -32,8 +32,10 @@ present before, untouched to keep commits atomic).
 - 20 mm front step: peak ΔFz differs (>0.5 %, geometry matters) but stays
   sane (<50 %, same car). No NaN on any channel.
 
-## 3. Human (subjective) A/B protocol — PENDING a Godot host
+## 3. Human (subjective) A/B protocol — geometric is default since activation
 
+The geometric profile ships as the default (`f1_2030_v10_geometric.json` in
+scene/session/resource/manifest); legacy stays as the reference file.
 Preconditions: clean rebuild per AGENTS.md (same-branch sources, no reused
 DLLs/caches), `BUILD` matches `HEAD`, Fuji contract v1.
 1. Back up the dirty worktree files if still present; do not mix with this track.
