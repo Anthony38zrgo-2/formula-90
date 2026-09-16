@@ -19,12 +19,26 @@ func _init() -> void:
 
 func _argument(prefix: String, fallback: String) -> String:
 	for argument in OS.get_cmdline_user_args():
-		if argument.begins_with(prefix):
-			return argument.trim_prefix(prefix)
+		if argument == prefix:
+			return ""
+		if argument.begins_with(prefix + "="):
+			return argument.trim_prefix(prefix + "=")
 	return fallback
 
-## SUS-GEO-11 attribution: set `--no-visual-suspension` to measure the physics
-## DLL without the GDScript linkage solver (visual controller) in the frame.
+## Boolean CLI flag: `--key` and `--key=true|1` enable, `--key=false|0`
+## disables, absent disables.
+func _flag(key: String) -> bool:
+	for argument in OS.get_cmdline_user_args():
+		if argument == key:
+			return true
+		if argument.begins_with(key + "="):
+			var value := argument.trim_prefix(key + "=").to_lower()
+			return value == "true" or value == "1"
+	return false
+
+## SUS-GEO-12 attribution: set `--no-visual-suspension` (or `=true`) to measure
+## the physics DLL without the GDScript linkage solver (visual controller) in
+## the frame. A counter diagnostic proves zero linkage solves while disabled.
 func _disable_visual_suspension(node: Node) -> int:
 	var disabled := 0
 	for child in node.get_children():
@@ -33,6 +47,14 @@ func _disable_visual_suspension(node: Node) -> int:
 			disabled += 1
 		disabled += _disable_visual_suspension(child)
 	return disabled
+
+func _linkage_solve_count(node: Node) -> int:
+	var total := 0
+	if node.get("linkage_solve_count") != null:
+		total += int(node.get("linkage_solve_count"))
+	for child in node.get_children():
+		total += _linkage_solve_count(child)
+	return total
 
 func _stats(samples_ms: Array, samples_fps: Array) -> Dictionary:
 	var sorted_ms := samples_ms.duplicate()
@@ -93,17 +115,26 @@ func _run() -> void:
 		quit(1)
 		return
 	vehicle.set("enable_player_input", false)
-	var no_visual := _argument("--no-visual-suspension", "false") == "true"
+	var no_visual := _flag("--no-visual-suspension")
 	if no_visual:
 		var disabled := _disable_visual_suspension(compositor)
 		print("[PERF] visual suspension controllers disabled: %d" % disabled)
+		if disabled == 0:
+			failures.append("--no-visual-suspension disabled no controller")
 
 	for _frame in WARMUP_FRAMES:
 		await physics_frame
 
 	var phase_frames := int(_argument("--frames=", str(IDLE_FRAMES)))
+	var solves_before := _linkage_solve_count(compositor)
 	var idle := await _measure(vehicle, phase_frames, false)
 	var drive := await _measure(vehicle, phase_frames, true)
+	var solves_after := _linkage_solve_count(compositor)
+	print("[PERF] linkage_solves before=%d after=%d (disabled=%s)" % [solves_before, solves_after, str(no_visual)])
+	if no_visual and solves_after != solves_before:
+		failures.append("linkage solving continued while visual suspension disabled (%d extra solves)" % (solves_after - solves_before))
+	if not no_visual and solves_after <= solves_before:
+		failures.append("linkage solving never ran with visual suspension enabled")
 	print("[PERF] idle monitor_ms avg=%.3f p50=%.3f p95=%.3f max=%.3f | tick_ms avg=%.3f p95=%.3f max=%.3f | fps=%.1f" % [
 		idle["avg_ms"], idle["p50_ms"], idle["p95_ms"], idle["max_ms"],
 		idle["wall_avg_ms"], idle["wall_p95_ms"], idle["wall_max_ms"], idle["avg_fps"],

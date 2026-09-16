@@ -42,10 +42,23 @@ extends Node
 @export_group("Suspension geometry")
 ## Drives the procedural linkage (wishbones/pushrod/trackrod/upright/rocker/
 ## driveshaft) from the same physics JSON `suspension.geometry` block.
-@export var enable_suspension_geometry: bool = true
+## Toggling off after initialization tears the visual solver down (stops every
+## linkage solve, restores the baked suspension meshes and the fallback wheel
+## path); toggling on rebuilds it from the physics config.
+@export var enable_suspension_geometry: bool = true:
+	set(value):
+		var changed: bool = value != enable_suspension_geometry
+		enable_suspension_geometry = value
+		if changed:
+			_apply_geometry_switch(value)
 ## Hides the baked GEO_CHASSIS_*_SUSPENSION meshes from the chassis GLB so the
 ## procedural arms do not double up.
 @export var hide_baked_suspension: bool = true
+
+## SUS-GEO-12 attribution diagnostic: number of linkage pose solves issued by
+## this controller since ready. The perf smoke asserts it stays flat while the
+## visual solver is disabled and grows while enabled.
+var linkage_solve_count: int = 0
 
 var front_spring_length: float = 0.295
 var front_resting_ratio: float = 0.175
@@ -102,6 +115,7 @@ var _render_steer: float = 0.0
 var _suspension_geometry: SuspensionGeometry = null
 var _suspension_links: SuspensionLinkVisual = null
 var _suspension_solved: Array = [{}, {}, {}, {}]
+var _hidden_baked_nodes: Array = []
 
 const WHEEL_KEYS := ["FL", "FR", "RL", "RR"]
 const KERB_SURFACE_CODE := 1
@@ -246,17 +260,41 @@ func _setup_suspension_geometry() -> void:
 	# The vehicle may still be instantiating its own children during _ready; add
 	# deferred so the chassis assembly is safely parented.
 	vehicle.add_child.call_deferred(links)
+	if vehicle.is_node_ready():
+		if hide_baked_suspension:
+			_hide_baked_suspension()
+	else:
+		vehicle.ready.connect(_hide_baked_suspension, CONNECT_ONE_SHOT)
+
+## Runtime geometry switch: tearing the solver down must also stop the per
+## frame linkage solves and restore the baked meshes for the fallback path.
+func _apply_geometry_switch(enabled: bool) -> void:
+	if enabled:
+		_hidden_baked_nodes.clear()
+		_setup_suspension_geometry()
+		return
+	_suspension_geometry = null
+	_suspension_solved = [{}, {}, {}, {}]
+	_render_compression = [0.0, 0.0, 0.0, 0.0]
+	if _suspension_links != null:
+		_suspension_links.queue_free()
+		_suspension_links = null
+	for node in _hidden_baked_nodes:
+		if is_instance_valid(node):
+			node.visible = true
+	_hidden_baked_nodes.clear()
 
 func _hide_baked_suspension() -> void:
+	_hidden_baked_nodes.clear()
 	for child in vehicle.get_children():
-		if child is Node3D:
-			_recursive_hide_suspension(child)
+		_recursive_hide_suspension(child)
 
 func _recursive_hide_suspension(node: Node) -> void:
 	if node is Node3D:
 		var node_name: String = node.name
 		if node_name.begins_with("GEO_CHASSIS_FRONT_SUSPENSION") or node_name.begins_with("GEO_CHASSIS_REAR_SUSPENSION"):
 			(node as Node3D).visible = false
+			_hidden_baked_nodes.append(node)
 	for child in node.get_children():
 		_recursive_hide_suspension(child)
 
@@ -276,6 +314,7 @@ func _update_suspension_links(blend: float) -> void:
 				_target_camber[wheel_index],
 				_wheel_angles[wheel_index]
 			)
+			linkage_solve_count += 1
 			_suspension_solved[wheel_index] = data
 			_suspension_links.update_wheel(wheel_index, data)
 		else:
