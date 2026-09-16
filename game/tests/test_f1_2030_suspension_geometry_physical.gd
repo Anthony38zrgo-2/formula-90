@@ -8,6 +8,14 @@ extends SceneTree
 
 const GEOMETRIC_JSON := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
 const LEGACY_JSON := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
+const MESHES_JSON := "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json"
+
+## Measured f1_2030.blend monocoque/nose top envelope in chassis-local metres
+## (5 cm z bins, GEO_CHASSIS_BODY/INTERIOR/FLOOR/STEERCOLUM vertices, read-only
+## Blender dump). Piecewise-linear top height and half width per z anchor.
+const NOSE_ENVELOPE_Z := [-1.70, -1.50, -1.30, -1.15, -1.00, -0.85]
+const NOSE_ENVELOPE_TOP := [0.218, 0.251, 0.277, 0.296, 0.308, 0.312]
+const NOSE_ENVELOPE_HALF_WIDTH := [0.176, 0.188, 0.202, 0.216, 0.228, 0.238]
 
 var failures: Array[String] = []
 
@@ -56,6 +64,90 @@ func _vec3(raw: Variant) -> Vector3:
 func _same_vec(a: Vector3, b: Vector3) -> bool:
 	return a.distance_to(b) < 1e-9
 
+func _nose_top(z: float) -> float:
+	var zz := clampf(z, NOSE_ENVELOPE_Z[0], NOSE_ENVELOPE_Z[NOSE_ENVELOPE_Z.size() - 1])
+	for i in range(NOSE_ENVELOPE_Z.size() - 1):
+		if zz <= NOSE_ENVELOPE_Z[i + 1]:
+			var t: float = (zz - NOSE_ENVELOPE_Z[i]) / (NOSE_ENVELOPE_Z[i + 1] - NOSE_ENVELOPE_Z[i])
+			return lerpf(NOSE_ENVELOPE_TOP[i], NOSE_ENVELOPE_TOP[i + 1], t)
+	return NOSE_ENVELOPE_TOP[NOSE_ENVELOPE_TOP.size() - 1]
+
+func _nose_half_width(z: float) -> float:
+	var zz := clampf(z, NOSE_ENVELOPE_Z[0], NOSE_ENVELOPE_Z[NOSE_ENVELOPE_Z.size() - 1])
+	for i in range(NOSE_ENVELOPE_Z.size() - 1):
+		if zz <= NOSE_ENVELOPE_Z[i + 1]:
+			var t: float = (zz - NOSE_ENVELOPE_Z[i]) / (NOSE_ENVELOPE_Z[i + 1] - NOSE_ENVELOPE_Z[i])
+			return lerpf(NOSE_ENVELOPE_HALF_WIDTH[i], NOSE_ENVELOPE_HALF_WIDTH[i + 1], t)
+	return NOSE_ENVELOPE_HALF_WIDTH[NOSE_ENVELOPE_HALF_WIDTH.size() - 1]
+
+## Chassis-side suspension hardpoints must stay inside the measured nose
+## envelope (packaging regression for the SUS-GEO-12 protrusion fix).
+func check_packaging(corners: Dictionary, tag_prefix: String) -> void:
+	for wheel in ["FL", "FR"]:
+		var phys: Dictionary = corners.get(wheel, {})
+		if phys.is_empty() or phys.has("mirror_of"):
+			continue
+		var rocker: Dictionary = phys.get("rocker", {})
+		var damper: Dictionary = phys.get("damper", {})
+		for point_name in ["rocker.pivot", "rocker.pushrod_arm", "rocker.damper_arm", "damper.chassis"]:
+			var parts: PackedStringArray = point_name.split(".")
+			var point: Variant = phys.get(parts[0], {}).get(parts[1], null)
+			if point is Array and point.size() >= 3:
+				var v := _vec3(point)
+				var top := _nose_top(v.z)
+				var width := _nose_half_width(v.z)
+				check(v.y <= top - 0.01, "%s%s lies above the measured nose top (%.3f > %.3f at z=%.3f)" % [tag_prefix, point_name, v.y, top, v.z])
+				check(absf(v.x) <= width - 0.01, "%s%s lies outside the measured nose width (|%.3f| > %.3f at z=%.3f)" % [tag_prefix, point_name, v.x, width, v.z])
+
+## The authored meshes must land on the physical hardpoints: for the FL/FR
+## pushrod, the blade's end-ring centroids must coincide with the rod outer
+## hardpoint and the rocker arm rest (rendered-attachment regression).
+func check_rendered_pushrod_endpoints(meshes_root: Dictionary, geometry: SuspensionGeometry) -> void:
+	var meshes: Dictionary = meshes_root.get("corners", {})
+	for wheel in range(2):
+		var key: String = SuspensionGeometry.WHEEL_KEYS[wheel]
+		var role: Dictionary = meshes.get(key, {}).get("pushrod", {})
+		if role.is_empty():
+			check(false, "%s pushrod authored mesh missing" % key)
+			continue
+		var c := geometry.get_corner(wheel)
+		var axis: Vector3 = (c["rocker_arm_rest"] - c["pushrod_outer_rest"]).normalized()
+		var length: float = c["pushrod_outer_rest"].distance_to(c["rocker_arm_rest"])
+		var tip: Array = []
+		var base: Array = []
+		for vertex in role["vertices"]:
+			var v := _vec3(vertex)
+			var axial: float = (v - c["pushrod_outer_rest"]).dot(axis)
+			if axial > length - 0.02:
+				tip.append(v)
+			elif axial < 0.02:
+				base.append(v)
+		check(tip.size() >= 4, "%s pushrod tip ring not found" % key)
+		check(base.size() >= 4, "%s pushrod base ring not found" % key)
+		if tip.is_empty() or base.is_empty():
+			continue
+		var tip_centroid := Vector3.ZERO
+		for v in tip:
+			tip_centroid += v
+		tip_centroid /= float(tip.size())
+		var base_centroid := Vector3.ZERO
+		for v in base:
+			base_centroid += v
+		base_centroid /= float(base.size())
+		check(tip_centroid.distance_to(c["rocker_arm_rest"]) < 0.002, "%s pushrod blade tip is %.1f mm from the physical rocker arm" % [key, tip_centroid.distance_to(c["rocker_arm_rest"]) * 1000.0])
+		check(base_centroid.distance_to(c["pushrod_outer_rest"]) < 0.002, "%s pushrod blade base is %.1f mm from the rod outer hardpoint" % [key, base_centroid.distance_to(c["pushrod_outer_rest"]) * 1000.0])
+		# Across the whole validated travel the posed blade tip must ride on
+		# the solved rocker end (the rest-to-current mapping is rigid; a mesh
+		# built for different endpoints would drift).
+		var rest: float = float(c["spring_len"]) * float(c["resting_ratio"])
+		for travel in [c["travel_min"], rest, c["travel_max"]]:
+			var pose := geometry.solve(wheel, travel, 0.0, 0.0, 0.0)
+			if pose.is_empty():
+				check(false, "%s travel pose empty at %.4f" % [key, travel])
+				continue
+			var posed_tip: Vector3 = pose["pushrod_pose"] * tip_centroid
+			check(posed_tip.distance_to(pose["pushrod"][1]) < 0.004, "%s posed pushrod tip is %.1f mm from the solved rocker end at travel %.4f" % [key, posed_tip.distance_to(pose["pushrod"][1]) * 1000.0, travel])
+
 func run() -> void:
 	var geo_json := _load_json(GEOMETRIC_JSON)
 	if geo_json.is_empty():
@@ -71,6 +163,12 @@ func run() -> void:
 
 	var suspension: Dictionary = geo_json["suspension"]
 	var corners: Dictionary = suspension["geometry_physical"]["corners"]
+	var meshes_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(MESHES_JSON))
+	check(meshes_parsed is Dictionary, "Could not parse the authored suspension meshes")
+	check_packaging(corners, "physical ")
+	if geometry != null and meshes_parsed is Dictionary:
+		check_rendered_pushrod_endpoints(meshes_parsed, geometry)
+
 	var axle_keys := ["front", "front", "rear", "rear"]
 	for wheel in range(4):
 		var key: String = SuspensionGeometry.WHEEL_KEYS[wheel]
