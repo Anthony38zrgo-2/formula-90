@@ -159,6 +159,19 @@ pub struct WheelSuspensionState {
     /// Damper dissipated energy accumulated ∫F_d v_s dt (J, >= 0).
     #[serde(default)]
     pub damper_dissipated_j: f64,
+    // --- SUS-GEO-06 wheel pose from linkage (legacy: zeros, gains rule) ---
+    /// Total kinematic camber from statics + linkage (rad, previous tick).
+    #[serde(default)]
+    pub geometric_camber_rad: f64,
+    /// Total toe from statics + linkage bump-steer (rad, previous tick).
+    #[serde(default)]
+    pub geometric_toe_rad: f64,
+    /// Hub lateral offset vs design hub_center (m, previous tick).
+    #[serde(default)]
+    pub hub_lateral_m: f64,
+    /// Hub longitudinal offset vs design hub_center (m, previous tick).
+    #[serde(default)]
+    pub hub_long_m: f64,
 }
 
 impl WheelSuspensionState {
@@ -241,6 +254,10 @@ impl WheelSuspensionState {
             link_singular: false,
             spring_energy_j: 0.0,
             damper_dissipated_j: 0.0,
+            geometric_camber_rad: camber(config, wheel),
+            geometric_toe_rad: if wheel.is_front() { config.front_toe } else { config.rear_toe },
+            hub_lateral_m: 0.0,
+            hub_long_m: 0.0,
         }
     }
 }
@@ -515,8 +532,13 @@ impl SuspensionSystem {
             // because the compression state itself is continuous.
             let travel_delta_m = state.suspension_compression_m
                 - spring_len * resting_ratio(config, wheel);
-            let kinematic_camber =
-                camber(config, wheel) + camber_gain(config, wheel) * travel_delta_m;
+            // SUS-GEO-06: linkage camber replaces the linear gain in
+            // geometric mode (previous-tick pose, filter-consistent).
+            let kinematic_camber = if is_geometric(config) {
+                state.geometric_camber_rad
+            } else {
+                camber(config, wheel) + camber_gain(config, wheel) * travel_delta_m
+            };
             state.kinematic_camber_rad = kinematic_camber;
             state.dynamic_camber = kinematic_camber;
             state.effective_contact_camber_rad = kinematic_camber;
@@ -525,6 +547,12 @@ impl SuspensionSystem {
 
         state.effective_normal = sample.weighted_normal();
         state.effective_contact_point = weighted_point(sample);
+        // SUS-GEO-06: hub lateral/longitudinal trajectory rides the contact
+        // patch (previous-tick offsets, mm-cm scale, filter-consistent).
+        if is_geometric(config) {
+            state.effective_contact_point = state.effective_contact_point
+                + Vec3::new(state.hub_lateral_m, 0.0, state.hub_long_m);
+        }
         state.effective_surface = dominant_surface(sample);
         filter_surface_values(
             config,
@@ -538,7 +566,12 @@ impl SuspensionSystem {
         let base_camber = camber(config, wheel);
         let travel_delta_m =
             state.suspension_compression_m - spring_len * resting_ratio(config, wheel);
-        let kinematic_camber = base_camber + camber_gain(config, wheel) * travel_delta_m;
+        // SUS-GEO-06: linkage camber replaces the linear gain in geometric mode.
+        let kinematic_camber = if is_geometric(config) {
+            state.geometric_camber_rad
+        } else {
+            base_camber + camber_gain(config, wheel) * travel_delta_m
+        };
         state.kinematic_camber_rad = kinematic_camber;
         let span = tire_width(config, wheel) * config.tri_ray_spacing_ratio * 2.0;
         if sample.inner.is_colliding && sample.outer.is_colliding && span > 1e-6 {
@@ -737,11 +770,16 @@ impl SuspensionSystem {
         state.rod_axial_force_n = 0.0;
         state.geometric_clamped = false;
         state.geometric_max_residual_m = 0.0;
+        state.geometric_camber_rad = 0.0;
+        state.geometric_toe_rad = 0.0;
+        state.hub_lateral_m = 0.0;
+        state.hub_long_m = 0.0;
         state.load_path_element_n = 0.0;
         state.load_path_wishbone_n = 0.0;
         state.load_path_other_n = 0.0;
         state.balance_residual_n = 0.0;
         state.rod_mismatch_n = 0.0;
+        state.link_singular = false;
         state.link_singular = false;
         // Energy audit (both modes): analytic spring storage + dissipated.
         state.spring_energy_j = 0.5 * spring_k.max(0.0) * x.max(0.0) * x.max(0.0);
@@ -955,6 +993,34 @@ impl SuspensionSystem {
             axle.spring_rate_N_per_m * total_fin
         };
         let tangent = axle.spring_rate_N_per_m * r_fin * r_fin + f_s_fin * drdq;
+        // SUS-GEO-06: linkage pose from one extra solve per tick (substeps
+        // reuse the tick-start linearization; sample_contact/steering consume
+        // these previous-tick values, consistent with the filter structure).
+        let side = if wheel.is_left() { 1.0 } else { -1.0 };
+        let (link_camber, link_toe, hub_lat, hub_long) = {
+            let corner = geo.corners.get(wheel);
+            match crate::suspension_kinematics::solve_corner(
+                corner, q, 0.0, wheel.is_front(), 0.0, 0.0, side,
+            ) {
+                Some(sol) => {
+                    let cl = side * sol.upright_basis.x.y.clamp(-1.0, 1.0).asin();
+                    let tl = side * sol.upright_basis.z.x.clamp(-1.0, 1.0).asin();
+                    let hl = sol.hub.x - corner.hub_center.x;
+                    let hlo = sol.hub.z - corner.hub_center.z;
+                    (cl, tl, hl, hlo)
+                }
+                None => (0.0, 0.0, 0.0, 0.0),
+            }
+        };
+        let static_toe = if wheel.is_front() {
+            config.front_toe
+        } else {
+            config.rear_toe
+        };
+        state.geometric_camber_rad = camber(config, wheel) + link_camber;
+        state.geometric_toe_rad = static_toe + link_toe;
+        state.hub_lateral_m = finite_or_zero(hub_lat);
+        state.hub_long_m = finite_or_zero(hub_long);
 
         state.previous_compression_mm = previous_compression * 1000.0;
         state.suspension_compression_m = finite_or_zero(x);
@@ -1383,6 +1449,14 @@ fn camber_gain(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
 /// the camber/toe gain terms. Positive delta = bump, negative delta = rebound.
 pub fn rest_compression_m(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     spring_length(config, wheel) * resting_ratio(config, wheel)
+}
+
+/// SUS-GEO-06: true when the validated geometric path drives this wheel.
+fn is_geometric(config: &VehicleConfig) -> bool {
+    matches!(
+        config.suspension_model,
+        crate::suspension_geo_config::SuspensionModelKind::Geometric
+    ) && config.geometric_suspension.is_some()
 }
 
 fn ray_compression(hit: &RaycastHit, max_ray_length: f64) -> f64 {

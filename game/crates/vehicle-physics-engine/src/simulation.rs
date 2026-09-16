@@ -407,8 +407,16 @@ impl VehicleSimulator {
             let i = wheel as usize;
             let travel_delta_m = st.suspension.wheels[i].suspension_compression_m
                 - rest_compression_m(cfg, wheel);
-            let steer_angle =
-                steering_angle_for_wheel(cfg, wheel, st.steer_input_smoothed, travel_delta_m);
+            let steer_angle = if is_geo {
+                steering_angle_for_wheel_geo(
+                    cfg,
+                    wheel,
+                    st.steer_input_smoothed,
+                    st.suspension.wheels[i].geometric_toe_rad,
+                )
+            } else {
+                steering_angle_for_wheel(cfg, wheel, st.steer_input_smoothed, travel_delta_m)
+            };
             st.tires.wheels[i].steer_angle_rad = steer_angle;
 
             let contact_point = st.suspension.wheels[i].effective_contact_point;
@@ -1060,6 +1068,51 @@ pub fn steering_angle_for_wheel(
         -geometric_ackermann
     };
     let toe = effective_toe_rad(config, wheel, travel_delta_m);
+    let signed_toe = if wheel.is_left() { -toe } else { toe };
+    config.max_steering_angle
+        * (input + (1.0 - (input * 0.5 * std::f64::consts::PI).cos()) * ackermann)
+        + signed_toe
+}
+
+/// SUS-GEO-06: steering with linkage bump-toe. Identical input/ackermann
+/// mapping to `steering_angle_for_wheel`; the travel term is the total
+/// linkage toe (statics + bump-steer, axle-frame convention like
+/// `effective_toe_rad`, mirrored per side here) instead of gain*travel.
+pub fn steering_angle_for_wheel_geo(
+    config: &VehicleConfig,
+    wheel: WheelIndex,
+    steering: f64,
+    geo_toe_total_rad: f64,
+) -> f64 {
+    let ratio = if wheel.is_front() {
+        config.front_steering_ratio
+    } else {
+        config.rear_steering_ratio
+    };
+    let input = steering.signum() * steering.abs().powf(config.steering_exponent) * ratio;
+    let track = if wheel.is_front() {
+        config.front_track
+    } else {
+        config.rear_track
+    };
+    let tan_max = config.max_steering_angle.tan();
+    let denominator = config.wheelbase - track * 0.5 * tan_max;
+    let geometric_ackermann = if config.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
+    {
+        ((config.wheelbase * tan_max) / denominator).atan() / config.max_steering_angle - 1.0
+    } else {
+        config.ackermann
+    };
+    let ackermann = if wheel.is_left() {
+        geometric_ackermann
+    } else {
+        -geometric_ackermann
+    };
+    let toe = if geo_toe_total_rad.is_finite() {
+        geo_toe_total_rad.clamp(-MAX_EFFECTIVE_TOE_RAD, MAX_EFFECTIVE_TOE_RAD)
+    } else {
+        0.0
+    };
     let signed_toe = if wheel.is_left() { -toe } else { toe };
     config.max_steering_angle
         * (input + (1.0 - (input * 0.5 * std::f64::consts::PI).cos()) * ackermann)
