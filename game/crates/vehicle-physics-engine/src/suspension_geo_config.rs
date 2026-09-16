@@ -174,6 +174,14 @@ pub struct AxlePhysicalElements {
     /// Damper length limits m (min < max, both > 0).
     pub damper_min_m: f64,
     pub damper_max_m: f64,
+    /// Progressive bump-stop multiplier (>= 0). Multiplies the wheel tangent
+    /// rate in the soft-stop region, mirroring the legacy shape explicitly.
+    #[serde(default = "default_bump_stop_mult")]
+    pub bump_stop_mult: f64,
+}
+
+fn default_bump_stop_mult() -> f64 {
+    2.6
 }
 
 impl Default for AxlePhysicalElements {
@@ -190,6 +198,7 @@ impl Default for AxlePhysicalElements {
             wheel_bump_m: 0.10,
             damper_min_m: 0.15,
             damper_max_m: 0.40,
+            bump_stop_mult: default_bump_stop_mult(),
         }
     }
 }
@@ -309,6 +318,7 @@ fn validate_axle(name: &str, a: &AxlePhysicalElements) -> Result<(), String> {
         ("wheel_bump_m", a.wheel_bump_m),
         ("damper_min_m", a.damper_min_m),
         ("damper_max_m", a.damper_max_m),
+        ("bump_stop_mult", a.bump_stop_mult),
     ] {
         if !v.is_finite() {
             return Err(format!(
@@ -354,6 +364,11 @@ fn validate_axle(name: &str, a: &AxlePhysicalElements) -> Result<(), String> {
     if !(a.damper_min_m > 0.0 && a.damper_max_m > a.damper_min_m) {
         return Err(format!(
             "suspension.geometry_physical.{name}.damper_min_m must be > 0 and < damper_max_m"
+        ));
+    }
+    if !a.bump_stop_mult.is_finite() || a.bump_stop_mult < 0.0 {
+        return Err(format!(
+            "suspension.geometry_physical.{name}.bump_stop_mult must be finite and >= 0"
         ));
     }
     Ok(())
@@ -754,6 +769,8 @@ struct JsonAxlePhysical {
     wheel_bump_m: f64,
     damper_min_m: f64,
     damper_max_m: f64,
+    #[serde(default = "default_bump_stop_mult")]
+    bump_stop_mult: f64,
 }
 
 fn default_knee() -> f64 {
@@ -932,6 +949,7 @@ fn axle_from_json(name: &str, j: &JsonAxlePhysical) -> Result<AxlePhysicalElemen
         wheel_bump_m: j.wheel_bump_m,
         damper_min_m: j.damper_min_m,
         damper_max_m: j.damper_max_m,
+        bump_stop_mult: j.bump_stop_mult,
     };
     validate_axle(name, &a)?;
     Ok(a)
@@ -1175,6 +1193,7 @@ pub fn geometric_to_json_value(cfg: &GeometricSuspensionConfig) -> serde_json::V
             "wheel_bump_m": cfg.front.wheel_bump_m,
             "damper_min_m": cfg.front.damper_min_m,
             "damper_max_m": cfg.front.damper_max_m,
+            "bump_stop_mult": cfg.front.bump_stop_mult,
         },
         "rear": {
             "spring_rate_N_per_m": cfg.rear.spring_rate_N_per_m,
@@ -1188,6 +1207,7 @@ pub fn geometric_to_json_value(cfg: &GeometricSuspensionConfig) -> serde_json::V
             "wheel_bump_m": cfg.rear.wheel_bump_m,
             "damper_min_m": cfg.rear.damper_min_m,
             "damper_max_m": cfg.rear.damper_max_m,
+            "bump_stop_mult": cfg.rear.bump_stop_mult,
         },
         "front_arb": arb_to_json(&cfg.front_arb),
         "rear_arb": arb_to_json(&cfg.rear_arb),

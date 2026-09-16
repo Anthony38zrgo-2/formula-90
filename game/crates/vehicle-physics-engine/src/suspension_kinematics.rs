@@ -88,6 +88,12 @@ pub struct KinematicSolution {
     pub steering_clamped: bool,
     pub damper_length: f64,
     pub damper_compression: f64,
+    /// Rocker push-rod attachment after rotation (for rod-force moments).
+    pub rocker_end: Vec3,
+    /// Wishbone-side rod attachment after arm rotation.
+    pub pushrod_outer: Vec3,
+    /// Damper piston attachment after rocker rotation.
+    pub damper_end: Vec3,
     pub travel_limited: bool,
     pub requested_travel: f64,
     pub solved_travel: f64,
@@ -477,6 +483,9 @@ fn solve_raw(
         steering_clamped,
         damper_length,
         damper_compression,
+        rocker_end,
+        pushrod_outer,
+        damper_end,
         travel_limited: false,
         requested_travel: q,
         solved_travel: q,
