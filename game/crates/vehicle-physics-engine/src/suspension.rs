@@ -300,9 +300,57 @@ fn filter_surface_values(
     state.effective_rolling_resistance = state.filtered_surface_rolling_resistance;
 }
 
+/// SUS-GEO-11: per-wheel data that depends only on the validated geometry
+/// (hardpoints, droop/bump, zero direction). It used to be re-derived by
+/// `travel_envelope` from inside every substep (9 searches per wheel and tick);
+/// it is now built once per configuration and reused by stops and integration.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PreparedWheelEnvelope {
+    pub q_min: f64,
+    pub q_max: f64,
+    /// Rest wheel rate k_s * r0^2 used by the explicit ARB/stop approximation.
+    pub k_wheel_rest_n_per_m: f64,
+}
+
+/// SUS-GEO-11: prepared envelopes for the four corners (see [`PreparedWheelEnvelope`]).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PreparedGeometricSuspension {
+    pub wheels: [PreparedWheelEnvelope; 4],
+}
+
+impl PreparedGeometricSuspension {
+    /// Build from the validated geometry. Uses the same zero-direction
+    /// (`rack = 0`) contract as the previous in-loop searches.
+    pub fn build(geo: &GeometricSuspensionConfig) -> Self {
+        let mut wheels = [PreparedWheelEnvelope {
+            q_min: 0.0,
+            q_max: 0.0,
+            k_wheel_rest_n_per_m: 1.0,
+        }; 4];
+        for wheel in WheelIndex::ALL {
+            let (q_min, q_max) = geometric_q_limits(geo, wheel);
+            wheels[wheel as usize] = PreparedWheelEnvelope {
+                q_min,
+                q_max,
+                k_wheel_rest_n_per_m: geometric_k_wheel_rest(geo, wheel).max(1.0),
+            };
+        }
+        Self { wheels }
+    }
+
+    #[inline]
+    pub fn for_wheel(&self, wheel: WheelIndex) -> PreparedWheelEnvelope {
+        self.wheels[wheel as usize]
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuspensionSystem {
     pub wheels: [WheelSuspensionState; 4],
+    /// SUS-GEO-11: rebuilt on construction/reset or explicit invalidation;
+    /// never touched per substep (serde-skipped state snapshot detail).
+    #[serde(skip)]
+    geometric_prepared: Option<PreparedGeometricSuspension>,
     // --- SUS-GEO-05 body-mode diagnostics (metres for travels) ---
     #[serde(default)]
     pub heave_m: f64,
@@ -331,6 +379,7 @@ pub struct SuspensionSystem {
 
 impl SuspensionSystem {
     pub fn new(config: &VehicleConfig) -> Self {
+        let geometric_prepared = Self::prepare_geometric(config);
         Self {
             wheels: [
                 WheelSuspensionState::new(config, WheelIndex::FrontLeft),
@@ -338,6 +387,7 @@ impl SuspensionSystem {
                 WheelSuspensionState::new(config, WheelIndex::RearLeft),
                 WheelSuspensionState::new(config, WheelIndex::RearRight),
             ],
+            geometric_prepared,
             heave_m: 0.0,
             roll_m: 0.0,
             pitch_m: 0.0,
@@ -348,6 +398,39 @@ impl SuspensionSystem {
             transfer_rear_n: 0.0,
             arb_energy_front_j: 0.0,
             arb_energy_rear_j: 0.0,
+        }
+    }
+
+    /// SUS-GEO-11: prepared envelopes derived only from
+    /// `VehicleConfig::geometric_suspension` (hardpoints + droop/bump).
+    fn prepare_geometric(config: &VehicleConfig) -> Option<PreparedGeometricSuspension> {
+        if !matches!(config.suspension_model, SuspensionModelKind::Geometric) {
+            return None;
+        }
+        config
+            .geometric_suspension
+            .as_ref()
+            .map(PreparedGeometricSuspension::build)
+    }
+
+    /// SUS-GEO-11: prepared per-wheel envelopes (None in legacy mode).
+    pub fn prepared_geometric(&self) -> Option<&PreparedGeometricSuspension> {
+        self.geometric_prepared.as_ref()
+    }
+
+    /// SUS-GEO-11: explicit invalidation hook for a caller that replaces
+    /// `VehicleConfig::geometric_suspension` in place. No runtime path mutates
+    /// the geometric configuration today; a new `SuspensionSystem` (sim
+    /// create/reset) rebuilds it anyway. Never called per tick/substep.
+    pub fn rebuild_geometric_prepared(&mut self, config: &VehicleConfig) {
+        self.geometric_prepared = Self::prepare_geometric(config);
+    }
+
+    /// SUS-GEO-11: one-time repair for states deserialized without prepared
+    /// data (serde-skipped). Never a per-substep cost.
+    fn ensure_geometric_prepared(&mut self, config: &VehicleConfig) {
+        if self.geometric_prepared.is_none() {
+            self.geometric_prepared = Self::prepare_geometric(config);
         }
     }
 
@@ -598,6 +681,7 @@ impl SuspensionSystem {
         let is_geo = matches!(config.suspension_model, SuspensionModelKind::Geometric)
             && config.geometric_suspension.is_some();
         if is_geo {
+            self.ensure_geometric_prepared(config);
             self.solve_force_geometric(config, wheel, modifiers, opposite_compression_m, dt);
         } else {
             self.solve_force_legacy(config, wheel, modifiers, opposite_compression_m, dt);
@@ -812,6 +896,18 @@ impl SuspensionSystem {
         let spring_len = spring_length(config, wheel);
         let rest_legacy = spring_len * resting_ratio(config, wheel);
         let axle = geo.axle(wheel);
+        // SUS-GEO-11: geometry-only envelope prepared once per configuration.
+        // Fallback recomputes the same values if the state arrived without
+        // prepared data (defensive; `solve_force` ensures it beforehand).
+        let prepared = self
+            .geometric_prepared
+            .as_ref()
+            .map(|p| p.for_wheel(wheel))
+            .unwrap_or_else(|| PreparedWheelEnvelope {
+                q_min: geometric_q_limits(geo, wheel).0,
+                q_max: geometric_q_limits(geo, wheel).1,
+                k_wheel_rest_n_per_m: geometric_k_wheel_rest(geo, wheel).max(1.0),
+            });
         let state = &mut self.wheels[wheel as usize];
         let previous_compression = state.suspension_compression_m;
         let mut x = state.suspension_compression_m;
@@ -819,8 +915,8 @@ impl SuspensionSystem {
 
         // Wheel travel from design (hub_center): q = x - rest_legacy.
         let q_of = |xx: f64| xx - rest_legacy;
-        // Rest wheel rate for ARB/stops explicit approximation.
-        let k_wheel_rest = geometric_k_wheel_rest(geo, wheel).max(1.0);
+        // Rest wheel rate for ARB/stops explicit approximation (prepared).
+        let k_wheel_rest = prepared.k_wheel_rest_n_per_m;
         let q_opp = opposite_compression_m - rest_legacy;
         // Tick-start linearization (SUS-GEO-03 cost study): one exact solve +
         // Jacobian at q0; substeps use s ≈ s0 + r0*(q-q0), vs = r0*v. The
@@ -896,7 +992,7 @@ impl SuspensionSystem {
                 elem_bad = bad;
             }
             let stop =
-                geometric_stop_force(geo, wheel, x, rest_legacy, last_s, last_r, tuning);
+                geometric_stop_force(geo, wheel, x, rest_legacy, prepared, last_s, last_r, tuning);
             bottom_force = stop.0;
             clamped_tick = elem_bad || stop.1;
             // Invalid mechanism at current q (wrong-sign ratio, degenerate):
@@ -952,9 +1048,9 @@ impl SuspensionSystem {
             v += acceleration * h;
             x += v * h;
 
-            // Geometric travel limits (wheel + damper + mechanism), with a
-            // small measurable overtravel like legacy.
-            let (x_min, x_max) = geometric_travel_bounds(geo, wheel, rest_legacy);
+            // Geometric travel limits (wheel + damper + mechanism), prepared
+            // from the configuration; small measurable overtravel like legacy.
+            let (x_min, x_max) = geometric_travel_bounds(prepared, rest_legacy);
             let over = tuning.hard_stop_overtravel_m;
             if x < x_min - over {
                 x = x_min - over;
@@ -972,11 +1068,12 @@ impl SuspensionSystem {
         // Final telemetry evaluation (exact re-solve at settled q; tangent via
         // tick secant to avoid 4 extra solves per wheel per tick).
         let q = q_of(x);
-        let (sf, df, s_fin, r_fin, rod_fin, clamped_fin, resid_fin) =
+        let (sf, df, s_fin, r_fin, rod_fin, clamped_fin, resid_fin, sol_fin) =
             geometric_wheel_forces(geo, wheel, q, v);
         spring_force = sf;
         damping_force = df;
-        let stop = geometric_stop_force(geo, wheel, x, rest_legacy, s_fin, r_fin, tuning);
+        let stop =
+            geometric_stop_force(geo, wheel, x, rest_legacy, prepared, s_fin, r_fin, tuning);
         bottom_force = stop.0;
         let arb_now = geometric_arb_force(geo, wheel, q, q_opp, k_wheel_rest);
         let dq = q - q0;
@@ -993,24 +1090,21 @@ impl SuspensionSystem {
             axle.spring_rate_N_per_m * total_fin
         };
         let tangent = axle.spring_rate_N_per_m * r_fin * r_fin + f_s_fin * drdq;
-        // SUS-GEO-06: linkage pose from one extra solve per tick (substeps
-        // reuse the tick-start linearization; sample_contact/steering consume
-        // these previous-tick values, consistent with the filter structure).
-        let side = if wheel.is_left() { 1.0 } else { -1.0 };
-        let (link_camber, link_toe, hub_lat, hub_long) = {
-            let corner = geo.corners.get(wheel);
-            match crate::suspension_kinematics::solve_corner(
-                corner, q, 0.0, wheel.is_front(), 0.0, 0.0, side,
-            ) {
-                Some(sol) => {
-                    let cl = side * sol.upright_basis.x.y.clamp(-1.0, 1.0).asin();
-                    let tl = side * sol.upright_basis.z.x.clamp(-1.0, 1.0).asin();
-                    let hl = sol.hub.x - corner.hub_center.x;
-                    let hlo = sol.hub.z - corner.hub_center.z;
-                    (cl, tl, hl, hlo)
-                }
-                None => (0.0, 0.0, 0.0, 0.0),
+        // SUS-GEO-06/11: linkage pose reuses the exact solve already performed
+        // by `geometric_wheel_forces` at the same q (identical inputs: rack 0,
+        // static alignment 0, side 1.0; only `wheel_basis` depends on side, and
+        // camber/toe/hub are extracted from the side-independent `upright_basis`).
+        let (link_camber, link_toe, hub_lat, hub_long) = match sol_fin.as_ref() {
+            Some(sol) => {
+                let corner = geo.corners.get(wheel);
+                let side = if wheel.is_left() { 1.0 } else { -1.0 };
+                let cl = side * sol.upright_basis.x.y.clamp(-1.0, 1.0).asin();
+                let tl = side * sol.upright_basis.z.x.clamp(-1.0, 1.0).asin();
+                let hl = sol.hub.x - corner.hub_center.x;
+                let hlo = sol.hub.z - corner.hub_center.z;
+                (cl, tl, hl, hlo)
             }
+            None => (0.0, 0.0, 0.0, 0.0),
         };
         let static_toe = if wheel.is_front() {
             config.front_toe
@@ -1098,14 +1192,9 @@ fn geometric_q_limits(geo: &GeometricSuspensionConfig, wheel: WheelIndex) -> (f6
     (lo, hi)
 }
 
-/// Travel bounds in legacy x units (x = rest_legacy + q).
-fn geometric_travel_bounds(
-    geo: &GeometricSuspensionConfig,
-    wheel: WheelIndex,
-    rest_legacy: f64,
-) -> (f64, f64) {
-    let (lo, hi) = geometric_q_limits(geo, wheel);
-    (rest_legacy + lo, rest_legacy + hi)
+/// Travel bounds in legacy x units (x = rest_legacy + q) from prepared limits.
+fn geometric_travel_bounds(prepared: PreparedWheelEnvelope, rest_legacy: f64) -> (f64, f64) {
+    (rest_legacy + prepared.q_min, rest_legacy + prepared.q_max)
 }
 
 /// Digressive viscous element with explicit bump/rebound rates (no inferred
@@ -1134,7 +1223,9 @@ fn geometric_damper_element(
     }
 }
 
-/// Core SUS-GEO-04 mapping: (F_spring_wheel, F_damper_wheel, s, r, rod, clamped, resid).
+/// Core SUS-GEO-04 mapping: (F_spring_wheel, F_damper_wheel, s, r, rod, clamped,
+/// resid, solution). The exact `KinematicSolution` is returned so callers can
+/// reuse the same pose (SUS-GEO-11) instead of solving the mechanism again.
 /// Virtual work: F_wheel = F_element * r. Spring cannot pull (unseat at 0).
 /// Wrong-sign (r <= 0), degenerate or clamped solves flag invalid and yield
 /// zero element forces so no grip is fabricated; the caller applies hard
@@ -1144,25 +1235,54 @@ fn geometric_wheel_forces(
     wheel: WheelIndex,
     q: f64,
     v: f64,
-) -> (f64, f64, f64, f64, f64, bool, f64) {
+) -> (
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    bool,
+    f64,
+    Option<crate::suspension_kinematics::KinematicSolution>,
+) {
     let corner = geo.corners.get(wheel);
     let axle = geo.axle(wheel);
     let q = if q.is_finite() { q } else { 0.0 };
     let v = if v.is_finite() { v } else { 0.0 };
     let sol = match solve_corner(corner, q, 0.0, wheel.is_front(), 0.0, 0.0, 1.0) {
         Some(s) => s,
-        None => return (0.0, 0.0, 0.0, 0.0, 0.0, true, f64::INFINITY),
+        None => return (0.0, 0.0, 0.0, 0.0, 0.0, true, f64::INFINITY, None),
     };
     let jac = match jacobian(corner, q, 0.0, wheel.is_front()) {
         Some(j) => j,
-        None => return (0.0, 0.0, sol.damper_compression, 0.0, 0.0, true, sol.residuals.max_link()),
+        None => {
+            return (
+                0.0,
+                0.0,
+                sol.damper_compression,
+                0.0,
+                0.0,
+                true,
+                sol.residuals.max_link(),
+                Some(sol),
+            )
+        }
     };
     let r = jac.motion_ratio;
     let resid = sol.residuals.max_link().max(sol.residuals.hub_y);
     let mut clamped = sol.rocker_clamped || sol.steering_clamped || !sol.converged;
     if !r.is_finite() || r <= 0.0 {
         // Wrong-sign/degenerate ratio: invalid for forces, do not fabricate.
-        return (0.0, 0.0, sol.damper_compression, r, 0.0, true, resid);
+        return (
+            0.0,
+            0.0,
+            sol.damper_compression,
+            r,
+            0.0,
+            true,
+            resid,
+            Some(sol),
+        );
     }
     let s = sol.damper_compression;
     // Spring cannot pull: total deflection from free must stay >= 0.
@@ -1179,7 +1299,7 @@ fn geometric_wheel_forces(
     let rod = rod_force_from_solution(corner, &sol, f_s + f_d);
     let (rod_val, rod_sing) = rod;
     clamped = clamped || rod_sing;
-    (f_s * r, f_d * r, s, r, rod_val, clamped, resid)
+    (f_s * r, f_d * r, s, r, rod_val, clamped, resid, Some(sol))
 }
 
 /// Moment equilibrium about the rocker axis. dir_damper points from chassis
@@ -1244,19 +1364,22 @@ fn geometric_arb_force(
 
 /// Physical stops: progressive wheel bump-stop + hard damper-stroke stops +
 /// mechanism-clamped travel stops. Returns (force_wheel, clamped_flag).
+/// The reachable limits come from the prepared per-wheel envelope; this
+/// function never searches the mechanism.
+#[allow(clippy::too_many_arguments)]
 fn geometric_stop_force(
     geo: &GeometricSuspensionConfig,
     wheel: WheelIndex,
     x: f64,
     rest_legacy: f64,
+    prepared: PreparedWheelEnvelope,
     s: f64,
     r: f64,
     tuning: WheelMechanicalTuning,
 ) -> (f64, bool) {
     let axle = geo.axle(wheel);
-    let (q_lo, q_hi) = geometric_q_limits(geo, wheel);
-    let x_min = rest_legacy + q_lo;
-    let x_max = rest_legacy + q_hi;
+    let x_min = rest_legacy + prepared.q_min;
+    let x_max = rest_legacy + prepared.q_max;
     let k_rest =
         (axle.spring_rate_N_per_m * r.max(0.0) * r.max(0.0)).max(1.0);
     let mult = axle.bump_stop_mult.max(0.0);
@@ -1912,5 +2035,197 @@ mod tests {
             suspension.wheels[0].kinematic_camber_rad < cfg.front_camber,
             "negative gain on a bump must shift camber toward negative"
         );
+    }
+
+    // --- SUS-GEO-11: prepared envelopes, invalidation and pose reuse ---
+
+    fn f1_2030_geometric_config() -> VehicleConfig {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+        VehicleConfig::from_json_str(&std::fs::read_to_string(path).unwrap()).unwrap()
+    }
+
+    /// Settled-flat samples at the static stance (same helper shape used by the
+    /// integration suite) so the geometric path is exercised with valid contact.
+    fn settled_flat_samples(cfg: &VehicleConfig) -> [TriRaycastSample; 4] {
+        let stat = |wheel: WheelIndex| {
+            static_wheel_load(cfg, wheel)
+                / WheelMechanicalTuning::for_wheel(cfg, wheel).tire_vertical_stiffness_n_m
+        };
+        let mk = |d: f64| TriRaycastSample {
+            inner: flat_hit(d),
+            center: flat_hit(d),
+            outer: flat_hit(d),
+        };
+        let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio)
+            + cfg.front_tire_radius
+            - stat(WheelIndex::FrontLeft);
+        let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio)
+            + cfg.rear_tire_radius
+            - stat(WheelIndex::RearLeft);
+        [mk(rest_f), mk(rest_f), mk(rest_r), mk(rest_r)]
+    }
+
+    fn direct_q_limits(geo: &GeometricSuspensionConfig, wheel: WheelIndex) -> (f64, f64) {
+        let axle = geo.axle(wheel);
+        let (lo, hi) = crate::suspension_kinematics::travel_envelope(
+            geo.corners.get(wheel),
+            axle.wheel_droop_m,
+            axle.wheel_bump_m,
+            0.0,
+            wheel.is_front(),
+        );
+        (
+            lo.max(-axle.wheel_droop_m).min(0.0),
+            hi.min(axle.wheel_bump_m).max(0.0),
+        )
+    }
+
+    #[test]
+    fn prepared_envelopes_match_direct_search_and_hot_flow_does_not_search() {
+        use crate::suspension_kinematics::counters;
+
+        let cfg = f1_2030_geometric_config();
+        let geo = cfg.geometric_suspension.as_ref().unwrap();
+
+        counters::reset();
+        let mut sus = SuspensionSystem::new(&cfg);
+        assert_eq!(
+            counters::travel_envelope_calls(),
+            WheelIndex::ALL.len() as u64,
+            "preparation must search each wheel envelope exactly once"
+        );
+
+        let prepared = sus.prepared_geometric().expect("prepared data");
+        for wheel in WheelIndex::ALL {
+            let p = prepared.for_wheel(wheel);
+            let (lo, hi) = direct_q_limits(geo, wheel);
+            assert_eq!(
+                p.q_min.to_bits(),
+                lo.to_bits(),
+                "{wheel:?} prepared q_min must match the direct search exactly"
+            );
+            assert_eq!(
+                p.q_max.to_bits(),
+                hi.to_bits(),
+                "{wheel:?} prepared q_max must match the direct search exactly"
+            );
+            let j = jacobian(geo.corners.get(wheel), 0.0, 0.0, wheel.is_front()).unwrap();
+            let expected_k =
+                (geo.axle(wheel).spring_rate_N_per_m * j.motion_ratio * j.motion_ratio).max(1.0);
+            assert_eq!(
+                p.k_wheel_rest_n_per_m.to_bits(),
+                expected_k.to_bits(),
+                "{wheel:?} prepared k_wheel_rest must match the rest Jacobian exactly"
+            );
+        }
+
+        // Stable geometric stepping must not touch the envelope search again.
+        let samples = settled_flat_samples(&cfg);
+        counters::reset();
+        for _ in 0..60 {
+            sus.step(&cfg, &samples, 1.0 / 120.0);
+        }
+        assert_eq!(
+            counters::travel_envelope_calls(),
+            0,
+            "stable per-substep flow must not search the mechanical envelope"
+        );
+        assert_eq!(
+            counters::solve_corner_calls(),
+            60 * 24,
+            "stable geometric tick must use 6 exact solves per wheel (24 per tick)"
+        );
+    }
+
+    #[test]
+    fn prepared_rebuilds_when_geometry_inputs_change() {
+        let mut cfg = f1_2030_geometric_config();
+        let before = SuspensionSystem::new(&cfg)
+            .prepared_geometric()
+            .unwrap()
+            .for_wheel(WheelIndex::FrontLeft);
+
+        // Halve the front bump travel: the prepared envelope must follow the
+        // new configuration, not the cached original.
+        cfg.geometric_suspension.as_mut().unwrap().front.wheel_bump_m *= 0.5;
+        let after = SuspensionSystem::new(&cfg)
+            .prepared_geometric()
+            .unwrap()
+            .for_wheel(WheelIndex::FrontLeft);
+        let geo = cfg.geometric_suspension.as_ref().unwrap();
+        let (lo, hi) = direct_q_limits(geo, WheelIndex::FrontLeft);
+        assert_eq!(after.q_min.to_bits(), lo.to_bits());
+        assert_eq!(after.q_max.to_bits(), hi.to_bits());
+        assert!(
+            after.q_max < before.q_max,
+            "changing bump travel must change the prepared limit"
+        );
+
+        // Explicit invalidation hook rebuilds from the current configuration.
+        let mut sus = SuspensionSystem::new(&f1_2030_geometric_config());
+        sus.rebuild_geometric_prepared(&cfg);
+        let rebuilt = sus
+            .prepared_geometric()
+            .unwrap()
+            .for_wheel(WheelIndex::FrontLeft);
+        assert_eq!(rebuilt.q_max.to_bits(), after.q_max.to_bits());
+    }
+
+    #[test]
+    fn legacy_profile_carries_no_prepared_geometry() {
+        use crate::suspension_kinematics::counters;
+
+        let cfg = VehicleConfig::f1_94_canonical();
+        let mut sus = SuspensionSystem::new(&cfg);
+        assert!(sus.prepared_geometric().is_none());
+
+        let samples = settled_flat_samples(&cfg);
+        counters::reset();
+        for _ in 0..10 {
+            sus.step(&cfg, &samples, 1.0 / 120.0);
+        }
+        assert_eq!(counters::travel_envelope_calls(), 0);
+    }
+
+    #[test]
+    fn geometric_pose_matches_explicit_solve_after_step() {
+        let cfg = f1_2030_geometric_config();
+        let mut sus = SuspensionSystem::new(&cfg);
+        let samples = settled_flat_samples(&cfg);
+        let dt = 1.0 / 120.0;
+        for _ in 0..40 {
+            sus.step(&cfg, &samples, dt);
+        }
+        let geo = cfg.geometric_suspension.as_ref().unwrap();
+        for wheel in WheelIndex::ALL {
+            let st = &sus.wheels[wheel as usize];
+            let q = st.suspension_compression_m - rest_compression_m(&cfg, wheel);
+            let corner = geo.corners.get(wheel);
+            let sol = solve_corner(corner, q, 0.0, wheel.is_front(), 0.0, 0.0, 1.0).unwrap();
+            let side = if wheel.is_left() { 1.0 } else { -1.0 };
+            let cl = side * sol.upright_basis.x.y.clamp(-1.0, 1.0).asin();
+            let tl = side * sol.upright_basis.z.x.clamp(-1.0, 1.0).asin();
+            let expected_camber = camber(&cfg, wheel) + cl;
+            let expected_toe = if wheel.is_front() {
+                cfg.front_toe
+            } else {
+                cfg.rear_toe
+            } + tl;
+            assert!(
+                (st.geometric_camber_rad - expected_camber).abs() < 1e-12,
+                "{wheel:?} reused pose camber must match the explicit solve"
+            );
+            assert!(
+                (st.geometric_toe_rad - expected_toe).abs() < 1e-12,
+                "{wheel:?} reused pose toe must match the explicit solve"
+            );
+            assert!(
+                (st.hub_lateral_m - finite_or_zero(sol.hub.x - corner.hub_center.x)).abs() < 1e-12
+            );
+            assert!(
+                (st.hub_long_m - finite_or_zero(sol.hub.z - corner.hub_center.z)).abs() < 1e-12
+            );
+        }
     }
 }

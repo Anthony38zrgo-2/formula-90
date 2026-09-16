@@ -34,6 +34,40 @@ pub const RESID_TOL_M: f64 = 1e-4;
 pub const HUB_TOL_M: f64 = 1e-3;
 pub const JAC_EPS_M: f64 = 1e-6;
 
+/// SUS-GEO-11 test-only counters proving the stable stepping flow no longer
+/// searches the reachable envelope. Compiled out of production builds.
+/// Thread-local so parallel `cargo test` cases cannot contaminate each other.
+#[cfg(test)]
+pub(crate) mod counters {
+    use std::cell::Cell;
+
+    thread_local! {
+        static TRAVEL_ENVELOPE_CALLS: Cell<u64> = const { Cell::new(0) };
+        static SOLVE_CORNER_CALLS: Cell<u64> = const { Cell::new(0) };
+    }
+
+    pub fn reset() {
+        TRAVEL_ENVELOPE_CALLS.with(|c| c.set(0));
+        SOLVE_CORNER_CALLS.with(|c| c.set(0));
+    }
+
+    pub fn travel_envelope_calls() -> u64 {
+        TRAVEL_ENVELOPE_CALLS.with(Cell::get)
+    }
+
+    pub fn solve_corner_calls() -> u64 {
+        SOLVE_CORNER_CALLS.with(Cell::get)
+    }
+
+    pub fn bump_envelope() {
+        TRAVEL_ENVELOPE_CALLS.with(|c| c.set(c.get() + 1));
+    }
+
+    pub fn bump_solve_corner() {
+        SOLVE_CORNER_CALLS.with(|c| c.set(c.get() + 1));
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct KinematicResiduals {
     pub hub_y: f64,
@@ -570,6 +604,8 @@ pub fn solve_corner(
     static_toe: f64,
     side: f64,
 ) -> Option<KinematicSolution> {
+    #[cfg(test)]
+    counters::bump_solve_corner();
     let derived = derive(corner)?;
     solve_raw(
         corner,
@@ -614,6 +650,8 @@ pub fn travel_envelope(
     rack_m: f64,
     is_front: bool,
 ) -> (f64, f64) {
+    #[cfg(test)]
+    counters::bump_envelope();
     let lo = -droop.abs();
     let hi = bump.abs();
     let min = bisect_limit(corner, 0.0, lo, rack_m, is_front);

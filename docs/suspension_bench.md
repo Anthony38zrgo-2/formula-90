@@ -47,11 +47,20 @@ while the travel response is geometric.
 Relabelling pushrod↔pullrod without touching geometry: max hub/damper
 delta over the full sweep = **0.0 m exact**. No artificial grip by label.
 
-## 5. Cost per tick (release, this machine)
+## 5. Cost per tick (release, this machine) — corrected for the real flow
 
+**Correction (SUS-GEO-11):** the original 0.3–0.5 ms figure below counted the
+mechanism solves only (~6/wheel) and missed the 9 `travel_envelope` searches
+per wheel and tick performed by the shipped flow (stops + travel bounds inside
+every substep). Measured with the full FFI tick, the shipped geometric profile
+cost **89.8 ms/tick in debug and 26.5 ms/tick in release** at 120 Hz, which is
+the performance regression fixed by SUS-GEO-11 (§7).
+
+Original mechanism-only numbers, kept for the record:
 - `solve_corner`: ~11 µs; `jacobian` (2 solves): ~22 µs.
-- Suspension tick ≈ 6 solves/wheel → ~70 µs/wheel; anchor wrench +1 solve.
-- 4 wheels ≈ 0.3–0.5 ms/tick at 120 Hz (~5 % of a frame budget).
+- Mechanism-only tick ≈ 6 solves/wheel → ~70 µs/wheel; anchor wrench +1 solve.
+- 4 wheels ≈ 0.3–0.5 ms/tick at 120 Hz — **does not include the envelope
+  searches of the shipped path; do not use as a whole-tick estimate**.
 - Debug builds are ~10–20× slower (PBD iterations unoptimized); CI timing
   uses small tick counts for that reason. No HOST/GPU cost (pure Rust).
 
@@ -72,3 +81,88 @@ delta over the full sweep = **0.0 m exact**. No artificial grip by label.
    intuition holds and the F·dr/dq term stays a correction, not the rate.
 3. Keep matched preload (equilibrium at design) + legacy ARB ratios as the
    starting calibration, then tune from telemetry (SUS-GEO-10 A/B).
+
+## 7. SUS-GEO-11 — hot-path fix: prepared envelopes (F1 2030 geometric)
+
+### Root cause
+
+`solve_force_geometric` re-derived the reachable travel envelope from inside
+every substep: `geometric_stop_force` and `geometric_travel_bounds` each called
+`geometric_q_limits → travel_envelope → 2 × bisect_limit`, up to 48 full
+`solve_corner` calls (128 PBD iterations each) per limit. With 4 substeps at
+120 Hz that is 9 searches/wheel/tick (36/vehicle) plus the exact start/final
+solves. The envelope depends only on hardpoints + droop/bump at zero direction,
+so the work was invariant per configuration.
+
+### Fix
+
+- `PreparedGeometricSuspension` (`suspension.rs`): per-wheel `q_min`, `q_max`
+  and `k_wheel_rest_n_per_m`, built once per `SuspensionSystem` (sim
+  create/reset) from the validated zero-direction geometry.
+- Stops and travel bounds consume the prepared limits; the stable per-substep
+  flow performs **0 envelope searches**.
+- Linkage pose reuse: the exact solve from `geometric_wheel_forces` feeds
+  camber/toe/hub telemetry instead of a second identical `solve_corner`
+  (same inputs, side-independent upright basis).
+- Invalidation: `SuspensionSystem::new` / explicit
+  `rebuild_geometric_prepared`; no runtime path mutates
+  `VehicleConfig::geometric_suspension`, no per-substep hashing or cloning.
+
+### Whole-tick measurements (FFI, ctypes probe, same machine/profiles)
+
+`probe.py` (TEMP audit tool): `create_from_json` + `solve_forces` at 1/120 s,
+5 warmup ticks + 5 × 20-tick batches, medians. Build `d6dc82be` sources;
+binaries archived with SHA256 (fixed debug `1ad0614f…`, release `50a4fba6…`).
+
+| profile | build | before (ms/tick) | after (ms/tick) | speedup |
+|---|---|---|---|---|
+| legacy `f1_2030_v10_physics` | debug | 0.0405 | 0.0403 | — |
+| legacy `f1_2030_v10_physics` | release | 0.00703 | 0.00709 | — |
+| geometric `f1_2030_v10_geometric` | debug | 89.79 | **1.176** | 76× |
+| geometric `f1_2030_v10_geometric` | release | 26.51 | **0.329** | 80× |
+
+- Budget: 8.33 ms at 120 Hz; internal target 0.5 ms release / 2 ms debug — met.
+- Creation cost grows by the one-time preparation: ~1.9→11.7 ms debug,
+  ~0.5→3.8 ms release.
+- Per-tick exact solves after the fix: 6/wheel (24/vehicle); envelope searches
+  0 (asserted by the `#[cfg(test)]` counters in `suspension_kinematics.rs`).
+- Equivalence: 640-tick force traces (rest, 40 mm one-wheel bump, 160 mm drop
+  with contact loss, recuperation) are **bit-identical** before/after in debug
+  and release; the final force vectors match at all 17 digits.
+- Memory: private bytes flat over 20 000 ticks release (10 809 344 B) and
+  5 000 ticks debug (10 895 360 B); no continuous growth observed.
+
+### In-engine (Godot 4.7.1, RTX 3050, debug template)
+
+Runtime session physics monitor (`Performance.TIME_PHYSICS_PROCESS`):
+
+| state | before | after |
+|---|---|---|
+| idle | ~103 ms/frame (1.1 FPS) | 2.6–5.5 ms |
+| driving | ~104 ms/frame (1.1 FPS) | 2.6–5.5 ms |
+
+- Tick pacing after the fix: `physics_frame` wall avg ≈ 8.33 ms (120 Hz) in
+  headless and windowed runs; headless FPS 123–134.
+- Isolated vehicle scene (no F90Core): monitor 2.4 ms idle / 4.6 ms driving.
+- Windowed FPS in this session (18–23) is render/DWM-bound (physics monitor
+  ≤ 4 ms), not physics-bound; interactive FPS belongs to the human gate.
+- `game/tests/smoke_test_f1_2030_v10_perf.gd` reproduces the runtime numbers:
+  `godot --headless --path game --script res://tests/smoke_test_f1_2030_v10_perf.gd`
+  (options `--frames=N`, `--no-visual-suspension=true` for attribution).
+
+### Tables / visual controller status (unchanged by this fix)
+
+- `suspension_table.rs` has no runtime consumers: the only user is the
+  `build_geo_table` example; `f1_2030_v10_tables.json` is not loaded by the
+  game.
+- `SuspensionTable` (GDScript) is never instantiated; `f1_wheel_visual_controller.gd`
+  still solves the visual linkage with `SuspensionGeometry` (PBD) per physics
+  frame. The tables are generated/validated data, **not** an active runtime
+  path; earlier "unified pose" wording must not be read as in-engine integration.
+
+### Known pre-existing failures (not attributed to this fix)
+
+- `aero_test`: 4 cases fail before and after (`test_aerodynamic_lag_exponential_decay`,
+  `test_reverse_and_zero_velocity_gives_no_downforce`,
+  `test_aero_distribution_and_balance_from_elements`,
+  `test_wing_cl_speed_independent_no_flex`).
