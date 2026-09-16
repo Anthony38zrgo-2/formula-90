@@ -631,6 +631,8 @@ impl CoreFacade {
         frame.underfloor_bottoming_torque = self.underfloor.torque_world;
         frame.underfloor_dissipated_energy_j = self.underfloor.dissipated_energy_j;
         frame.underfloor_rigid_contact_blend = self.underfloor.rigid_contact_blend;
+        frame.underfloor_rigid_local_y = self.underfloor.rigid_local_position[1];
+        frame.underfloor_rigid_normal_impulse_ns = self.underfloor.rigid_normal_impulse_ns;
         let scrape_active = matches!(
             self.underfloor.scrape_phase,
             underfloor::ScrapePhase::Impact | underfloor::ScrapePhase::Scraping

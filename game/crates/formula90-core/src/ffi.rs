@@ -183,6 +183,9 @@ pub struct F90CoreFrameOut {
     pub tc_slip_ratio: [f64; 4],
     pub wheel_drive_torque_pre_tc_nm: [f64; 4],
     pub pre_tc_drive_power_w: f64,
+    // Append-only ABI 13 underfloor rigid-contact diagnostics.
+    pub underfloor_rigid_local_y: f64,
+    pub underfloor_rigid_normal_impulse_ns: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -581,6 +584,8 @@ pub unsafe extern "C" fn f90_core_step(
                 tc_slip_ratio: frame.tc_slip_ratio,
                 wheel_drive_torque_pre_tc_nm: frame.wheel_drive_torque_pre_tc_nm,
                 pre_tc_drive_power_w: frame.pre_tc_drive_power_w,
+                underfloor_rigid_local_y: frame.underfloor_rigid_local_y,
+                underfloor_rigid_normal_impulse_ns: frame.underfloor_rigid_normal_impulse_ns,
             };
         }
     }
@@ -826,7 +831,12 @@ mod layout_tests {
             1544
         );
         assert_eq!(offset_of!(F90CoreFrameOut, pre_tc_drive_power_w), 1576);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1584);
+        assert_eq!(offset_of!(F90CoreFrameOut, underfloor_rigid_local_y), 1584);
+        assert_eq!(
+            offset_of!(F90CoreFrameOut, underfloor_rigid_normal_impulse_ns),
+            1592
+        );
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1600);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

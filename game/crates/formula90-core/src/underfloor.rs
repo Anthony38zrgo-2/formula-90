@@ -68,12 +68,17 @@ impl Default for UnderfloorContactConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            approach_clearance_m: 0.020,
-            activation_clearance_m: 0.008,
-            release_clearance_m: 0.016,
-            linear_rate_n_m: 450_000.0,
-            progressive_rate_n_m2: 40_000_000.0,
-            damping_n_s_m: 12_000.0,
+            // The rigid collision proxies bottom at local y = -0.16..-0.20 while
+            // the probes sit at -0.165..-0.205, so the first proxy touches when
+            // the probe clearance is still ~25 mm. Engage the progressive spring
+            // there so the floor loads before the rigid contacts start to
+            // chatter; rates are softened accordingly.
+            approach_clearance_m: 0.035,
+            activation_clearance_m: 0.025,
+            release_clearance_m: 0.050,
+            linear_rate_n_m: 180_000.0,
+            progressive_rate_n_m2: 10_000_000.0,
+            damping_n_s_m: 8_000.0,
             max_force_per_probe_n: 12_000.0,
             rigid_contact_spring_scale: 0.25,
             normal_min_y: 0.55,
@@ -106,7 +111,14 @@ pub struct UnderfloorState {
     pub force_center_local: [f64; 3],
     pub dissipated_energy_j: f64,
     pub rigid_contact_blend: f64,
+    /// Last latched rigid-contact diagnostics (probe-local Y, impulse and
+    /// tangential speed), kept across debounce frames for telemetry.
+    pub rigid_local_position: [f64; 3],
+    pub rigid_normal_impulse_ns: f64,
+    pub rigid_tangential_speed_m_s: f64,
     hold_s: f64,
+    /// Debounce hold for the raw (frame-flickering) rigid contact flag.
+    rigid_hold_s: f64,
     initialized: bool,
 }
 
@@ -136,7 +148,11 @@ impl Default for UnderfloorState {
             force_center_local: [0.0; 3],
             dissipated_energy_j: 0.0,
             rigid_contact_blend: 0.0,
+            rigid_local_position: [0.0; 3],
+            rigid_normal_impulse_ns: 0.0,
+            rigid_tangential_speed_m_s: 0.0,
             hold_s: 0.0,
+            rigid_hold_s: 0.0,
             initialized: false,
         }
     }
@@ -199,7 +215,27 @@ impl UnderfloorState {
             / 1.65)
             .atan();
 
-        self.step_bottoming(sample, body, config, dt);
+        // The host reports raw floor contacts that flicker frame-to-frame while
+        // the body rides a few millimetres off the ground. Latch them with a
+        // hold so confidence, phase and scrape intensity stay stable instead of
+        // pulsing at frame rate.
+        const RIGID_HOLD_SECONDS: f64 = 0.080;
+        let rigid_confirmed = sample.rigid_contact.confirmed;
+        if rigid_confirmed {
+            self.rigid_hold_s = RIGID_HOLD_SECONDS;
+        } else {
+            self.rigid_hold_s = (self.rigid_hold_s - dt).max(0.0);
+        }
+        let rigid_latched = rigid_confirmed || self.rigid_hold_s > 0.0;
+        if rigid_confirmed {
+            // Keep the last confirmed diagnostics across the hold so telemetry
+            // does not blank out between flickering contact frames.
+            self.rigid_local_position = sample.rigid_contact.local_position;
+            self.rigid_normal_impulse_ns = sample.rigid_contact.normal_impulse_ns;
+            self.rigid_tangential_speed_m_s = sample.rigid_contact.tangential_speed_m_s;
+        }
+
+        self.step_bottoming(sample, body, config, dt, rigid_latched);
 
         let close_rays = self
             .filtered_clearance_m
@@ -208,18 +244,13 @@ impl UnderfloorState {
             .filter(|(i, v)| self.valid_mask & (1 << i) != 0 && **v <= CONTACT_ENTER)
             .count();
         let geometry_confidence = (close_rays as f64 / 2.0).clamp(0.0, 1.0);
-        self.contact_confidence = geometry_confidence.max(if sample.rigid_contact.confirmed {
-            1.0
-        } else {
-            0.0
-        });
+        self.contact_confidence = geometry_confidence.max(if rigid_latched { 1.0 } else { 0.0 });
         let previous_phase = self.scrape_phase;
         let approaching = self.minimum_clearance_m <= PROXIMITY_ENTER;
-        let contact_now = sample.rigid_contact.confirmed
+        let contact_now = rigid_latched
             || self.active_probe_mask != 0
             || (self.minimum_clearance_m <= CONTACT_ENTER && close_rays >= 2);
-        let separating =
-            self.minimum_clearance_m >= CONTACT_EXIT && !sample.rigid_contact.confirmed;
+        let separating = self.minimum_clearance_m >= CONTACT_EXIT && !rigid_latched;
         let approach_speed = self
             .clearance_velocity_m_s
             .iter()
@@ -235,7 +266,7 @@ impl UnderfloorState {
             ) {
                 self.scrape_phase = ScrapePhase::Impact;
                 self.onset_strength = (approach_speed / 1.5
-                    + sample.rigid_contact.normal_impulse_ns / 1200.0)
+                    + self.rigid_normal_impulse_ns / 1200.0)
                     .clamp(0.0, 1.0);
             } else {
                 self.scrape_phase = ScrapePhase::Scraping;
@@ -253,10 +284,13 @@ impl UnderfloorState {
             self.scrape_phase = ScrapePhase::Clear;
         }
 
-        let speed_factor = (sample.rigid_contact.tangential_speed_m_s / 35.0).clamp(0.0, 1.0);
+        let speed_factor = (self.rigid_tangential_speed_m_s / 35.0).clamp(0.0, 1.0);
+        // The latched release band is wider than CONTACT_EXIT, so normalize the
+        // clearance factor by the configured release distance.
+        let clearance_span = config.release_clearance_m.max(CONTACT_EXIT);
         let clearance_factor =
-            ((CONTACT_EXIT - self.minimum_clearance_m) / CONTACT_EXIT).clamp(0.0, 1.0);
-        let impulse_factor = (sample.rigid_contact.normal_impulse_ns / 900.0).clamp(0.0, 1.0);
+            ((clearance_span - self.minimum_clearance_m) / clearance_span).clamp(0.0, 1.0);
+        let impulse_factor = (self.rigid_normal_impulse_ns / 900.0).clamp(0.0, 1.0);
         let force_factor = (self.total_normal_force_n / 18_000.0).clamp(0.0, 1.0);
         let target = if matches!(
             self.scrape_phase,
@@ -288,6 +322,7 @@ impl UnderfloorState {
         body: Option<&BodyKinematics>,
         config: &UnderfloorContactConfig,
         dt: f64,
+        rigid_latched: bool,
     ) {
         const LOCAL_POSITIONS: [[f64; 3]; 5] = [
             [-0.45, -0.205, -0.90],
@@ -302,11 +337,7 @@ impl UnderfloorState {
         self.force_world = [0.0; 3];
         self.torque_world = [0.0; 3];
         self.force_center_local = [0.0; 3];
-        let target_blend = if sample.rigid_contact.confirmed {
-            1.0
-        } else {
-            0.0
-        };
+        let target_blend = if rigid_latched { 1.0 } else { 0.0 };
         let blend_tau = if target_blend > self.rigid_contact_blend {
             0.020
         } else {
@@ -379,7 +410,7 @@ impl UnderfloorState {
                 } else {
                     BottomingPhase::Clear
                 }
-            } else if sample.rigid_contact.confirmed && compression > 0.0 {
+            } else if rigid_latched && compression > 0.0 {
                 BottomingPhase::RigidContact
             } else if compression > 0.0 {
                 BottomingPhase::Loaded
@@ -471,6 +502,46 @@ mod tests {
         assert!(state.torque_world[2] < 0.0);
         assert_eq!(state.active_probe_mask, 1);
         assert_eq!(state.scrape_phase, ScrapePhase::Impact);
+    }
+
+    #[test]
+    fn rigid_contact_latches_across_frame_flicker() {
+        let cfg = UnderfloorContactConfig::default();
+        let mut state = UnderfloorState::default();
+        // Clearance is above the spring band: only the rigid flag can drive
+        // contact, which isolates the debounce latch.
+        let mut sample = flat_sample(0.030);
+        sample.rigid_contact.confirmed = true;
+        sample.rigid_contact.local_position = [0.0, -0.18, 0.0];
+        sample.rigid_contact.normal_impulse_ns = 500.0;
+        state.step(&sample, None, &cfg, 1.0 / 120.0);
+        assert!(state.contact_confidence > 0.99);
+        assert_eq!(state.scrape_phase, ScrapePhase::Impact);
+        assert!(state.rigid_normal_impulse_ns > 0.0);
+        assert!(state.total_normal_force_n == 0.0);
+
+        // The raw flag clears on the next frame; the hold must keep the contact
+        // stable for several frames instead of toggling at frame rate.
+        let clear = flat_sample(0.030);
+        state.step(&clear, None, &cfg, 1.0 / 120.0);
+        assert!(
+            state.contact_confidence > 0.99,
+            "latch must hold confidence: {}",
+            state.contact_confidence
+        );
+        assert!(
+            state.rigid_normal_impulse_ns > 0.0,
+            "latched diagnostics must persist"
+        );
+
+        for _ in 0..12 {
+            state.step(&clear, None, &cfg, 1.0 / 120.0);
+        }
+        assert!(
+            state.contact_confidence < 0.01,
+            "latch must release after the hold window: {}",
+            state.contact_confidence
+        );
     }
 
     #[test]

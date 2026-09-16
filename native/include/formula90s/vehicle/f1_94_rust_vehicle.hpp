@@ -200,6 +200,16 @@ private:
 	double underfloor_bottoming_torque_[3] = {};
 	double underfloor_dissipated_energy_j_ = 0.0;
 	double underfloor_rigid_contact_blend_ = 0.0;
+	double underfloor_rigid_local_y_ = 0.0;
+	double underfloor_rigid_normal_impulse_ns_ = 0.0;
+	// Frame-level debounce for the raw floor contact list: the collision proxies
+	// flicker while the body rides a few millimetres off the ground.
+	int underfloor_rigid_enter_streak_ = 0;
+	int underfloor_rigid_release_streak_ = 0;
+	bool underfloor_rigid_latched_ = false;
+	double underfloor_rigid_local_[3] = {};
+	double underfloor_rigid_impulse_ns_ = 0.0;
+	double underfloor_rigid_tangent_m_s_ = 0.0;
 	double aero_telemetry_[17] = {};
 
 	bool load_rust_dll();

@@ -120,6 +120,9 @@ typedef struct F90CoreFrameOut {
     double tc_slip_ratio[4];
     double wheel_drive_torque_pre_tc_nm[4];
     double pre_tc_drive_power_w;
+    // Append-only ABI 13 underfloor rigid-contact diagnostics.
+    double underfloor_rigid_local_y;
+    double underfloor_rigid_normal_impulse_ns;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

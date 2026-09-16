@@ -1486,7 +1486,12 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
 		return;
 	}
 	const Vector3 body_velocity = p_state->get_linear_velocity();
+	constexpr int RIGID_ENTER_FRAMES = 2;
+	constexpr int RIGID_RELEASE_FRAMES = 4;
+	// Near-floor chatter produces tiny impulses; only real loads count.
+	constexpr double RIGID_MIN_IMPULSE_NS = 8.0;
 	double strongest_impulse = 0.0;
+	bool raw_confirmed = false;
 	for (int i = 0; i < p_state->get_contact_count(); ++i) {
 		const Vector3 local_position = p_state->get_contact_local_position(i);
 		const Vector3 local_normal = p_state->get_contact_local_normal(i);
@@ -1496,7 +1501,10 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
 		}
 		const Vector3 impulse = p_state->get_contact_impulse(i);
 		const double impulse_magnitude = impulse.length();
-		if (p_sample->rigid_confirmed > 0.5 && impulse_magnitude <= strongest_impulse) {
+		if (impulse_magnitude < RIGID_MIN_IMPULSE_NS) {
+			continue;
+		}
+		if (raw_confirmed && impulse_magnitude <= strongest_impulse) {
 			continue;
 		}
 		strongest_impulse = impulse_magnitude;
@@ -1504,12 +1512,41 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
 		const Vector3 relative_velocity = body_velocity - collider_velocity;
 		const Vector3 world_normal = p_state->get_transform().basis.xform(local_normal);
 		const Vector3 tangent = relative_velocity - world_normal * relative_velocity.dot(world_normal);
+		raw_confirmed = true;
+		underfloor_rigid_local_[0] = local_position.x;
+		underfloor_rigid_local_[1] = local_position.y;
+		underfloor_rigid_local_[2] = local_position.z;
+		underfloor_rigid_impulse_ns_ = impulse_magnitude;
+		underfloor_rigid_tangent_m_s_ = tangent.length();
+	}
+
+	// Debounce: confirm only after consecutive contact frames and release after a
+	// short run of clear frames, so the host cannot toggle at frame rate.
+	if (raw_confirmed) {
+		if (underfloor_rigid_enter_streak_ < RIGID_ENTER_FRAMES) {
+			underfloor_rigid_enter_streak_++;
+		}
+		underfloor_rigid_release_streak_ = 0;
+	} else {
+		if (underfloor_rigid_release_streak_ < RIGID_RELEASE_FRAMES) {
+			underfloor_rigid_release_streak_++;
+		}
+		underfloor_rigid_enter_streak_ = 0;
+	}
+	if (underfloor_rigid_latched_) {
+		if (underfloor_rigid_release_streak_ >= RIGID_RELEASE_FRAMES) {
+			underfloor_rigid_latched_ = false;
+		}
+	} else if (underfloor_rigid_enter_streak_ >= RIGID_ENTER_FRAMES) {
+		underfloor_rigid_latched_ = true;
+	}
+	if (underfloor_rigid_latched_) {
 		p_sample->rigid_confirmed = 1.0;
-		p_sample->rigid_local_x = local_position.x;
-		p_sample->rigid_local_y = local_position.y;
-		p_sample->rigid_local_z = local_position.z;
-		p_sample->rigid_normal_impulse_ns = impulse_magnitude;
-		p_sample->rigid_tangential_speed_m_s = tangent.length();
+		p_sample->rigid_local_x = underfloor_rigid_local_[0];
+		p_sample->rigid_local_y = underfloor_rigid_local_[1];
+		p_sample->rigid_local_z = underfloor_rigid_local_[2];
+		p_sample->rigid_normal_impulse_ns = underfloor_rigid_impulse_ns_;
+		p_sample->rigid_tangential_speed_m_s = underfloor_rigid_tangent_m_s_;
 	}
 }
 
@@ -1640,6 +1677,8 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	out["bottoming_torque_nm"] = Vector3(underfloor_bottoming_torque_[0], underfloor_bottoming_torque_[1], underfloor_bottoming_torque_[2]);
 	out["dissipated_energy_j"] = underfloor_dissipated_energy_j_;
 	out["rigid_contact_blend"] = underfloor_rigid_contact_blend_;
+	out["rigid_local_y"] = underfloor_rigid_local_y_;
+	out["rigid_normal_impulse_ns"] = underfloor_rigid_normal_impulse_ns_;
 	Dictionary aero;
 	static const char *AERO_NAMES[17] = {
 		"total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n",
@@ -1684,6 +1723,8 @@ void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_fra
 	}
 	underfloor_dissipated_energy_j_ = p_frame.underfloor_dissipated_energy_j;
 	underfloor_rigid_contact_blend_ = p_frame.underfloor_rigid_contact_blend;
+	underfloor_rigid_local_y_ = p_frame.underfloor_rigid_local_y;
+	underfloor_rigid_normal_impulse_ns_ = p_frame.underfloor_rigid_normal_impulse_ns;
 	const double aero_values[17] = {
 		p_frame.aero_total_downforce_n, p_frame.aero_raw_downforce_n,
 		p_frame.aero_front_downforce_n, p_frame.aero_floor_downforce_n,

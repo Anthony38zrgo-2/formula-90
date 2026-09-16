@@ -91,7 +91,9 @@ static_assert(offsetof(F90CoreFrameOut, tc_gear_authority) == 1488);
 static_assert(offsetof(F90CoreFrameOut, tc_slip_ratio) == 1512);
 static_assert(offsetof(F90CoreFrameOut, wheel_drive_torque_pre_tc_nm) == 1544);
 static_assert(offsetof(F90CoreFrameOut, pre_tc_drive_power_w) == 1576);
-static_assert(sizeof(F90CoreFrameOut) == 1584);
+static_assert(offsetof(F90CoreFrameOut, underfloor_rigid_local_y) == 1584);
+static_assert(offsetof(F90CoreFrameOut, underfloor_rigid_normal_impulse_ns) == 1592);
+static_assert(sizeof(F90CoreFrameOut) == 1600);
 
 /// The orchestrator node. Loads the SINGLE `formula90_core.dll` facade (one
 /// handshake / one ABI version), owns the sim + audio, drives the vehicle inside

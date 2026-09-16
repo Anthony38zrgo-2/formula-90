@@ -187,6 +187,10 @@ pub struct CoreFrame {
     pub underfloor_bottoming_torque: [f64; 3],
     pub underfloor_dissipated_energy_j: f64,
     pub underfloor_rigid_contact_blend: f64,
+    /// Latched rigid-contact diagnostics: local Y of the confirmed contact and
+    /// its normal impulse (GRIP-06 chatter debounce evidence).
+    pub underfloor_rigid_local_y: f64,
+    pub underfloor_rigid_normal_impulse_ns: f64,
     // Element-level aerodynamics diagnostics.
     pub aero_total_downforce_n: f64,
     pub aero_raw_downforce_n: f64,
@@ -298,6 +302,8 @@ impl Default for CoreFrame {
             underfloor_bottoming_torque: [0.0; 3],
             underfloor_dissipated_energy_j: 0.0,
             underfloor_rigid_contact_blend: 0.0,
+            underfloor_rigid_local_y: 0.0,
+            underfloor_rigid_normal_impulse_ns: 0.0,
             aero_total_downforce_n: 0.0,
             aero_raw_downforce_n: 0.0,
             aero_front_downforce_n: 0.0,

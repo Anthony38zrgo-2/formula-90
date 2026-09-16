@@ -22,7 +22,7 @@ const DEFAULT_PHYSICS_CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_physics
 const CSV_COLUMNS := [
     "Time_ms", "Speed_kmh", "RPM", "Gear",
     "Throttle", "Brake", "Steering",
-    "Lat_G", "Long_G",
+    "Lat_G", "Long_G", "YawRate_RadS",
     "FL_Comp", "FR_Comp", "RL_Comp", "RR_Comp",
     "Front_Slip", "Rear_Slip",
     "Session_Id", "Session_Timestamp_UTC", "Physics_Hz",
@@ -50,9 +50,10 @@ const CSV_COLUMNS := [
     "UF_FL_Force_N", "UF_FR_Force_N", "UF_Center_Force_N", "UF_DiffuserThroat_Force_N", "UF_DiffuserExit_Force_N",
     "UF_FL_BottomingPhase", "UF_FR_BottomingPhase", "UF_Center_BottomingPhase", "UF_DiffuserThroat_BottomingPhase", "UF_DiffuserExit_BottomingPhase",
     "UF_ActiveProbeMask", "UF_TotalNormalForce_N", "UF_MaxProbeForce_N", "UF_DissipatedEnergy_J", "UF_RigidContactBlend",
+    "UF_RigidLocalY_m", "UF_RigidImpulse_Ns",
     "Aero_TotalDownforce_N", "Aero_RawDownforce_N", "Aero_FrontDownforce_N", "Aero_FloorDownforce_N", "Aero_RearDownforce_N", "Aero_Drag_N",
     "Aero_FrontWingAngle_deg", "Aero_RearWingAngle_deg", "Aero_FrontWing_CL", "Aero_RearWing_CL",
-    "Aero_FloorHeightFactor", "Aero_FloorRakeFactor", "Aero_FloorSealFactor", "Aero_DiffuserExpansion_deg", "Aero_DiffuserStallFactor",
+    "Aero_FloorHeightFactor", "Aero_FloorRakeFactor", "Aero_FloorSealFactor", "Aero_DiffuserStallFactor",
     "Aero_GlobalLimitFactor", "Aero_LoadRatio", "Aero_BalanceFront"
 ]
 
@@ -140,12 +141,16 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
 
     var lat_g := 0.0
     var long_g := 0.0
+    var yaw_rate_rad_s := 0.0
     if _prev_velocity_time > 0:
         var elapsed = max((now_msec - _prev_velocity_time) / 1000.0, 0.001)
         var accel = (current_velocity - _prev_velocity) / elapsed
         var local_accel = vehicle.global_transform.basis.inverse() * accel
         lat_g = local_accel.x / 9.81
         long_g = -local_accel.z / 9.81
+    var angular_velocity: Variant = vehicle.get("angular_velocity")
+    if angular_velocity is Vector3:
+        yaw_rate_rad_s = (vehicle.global_transform.basis.inverse() * angular_velocity).y
     _prev_velocity = current_velocity
     _prev_velocity_time = now_msec
 
@@ -222,7 +227,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var thermal: Array = []
     for _field in range(40):
         thermal.append(0.0)
-    var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0]
+    var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     var aero_fields: Array = []
     aero_fields.resize(17)
     aero_fields.fill(0.0)
@@ -297,6 +302,8 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                 underfloor_fields[37] = float(underfloor.get("max_probe_force_n", 0.0))
                 underfloor_fields[38] = float(underfloor.get("dissipated_energy_j", 0.0))
                 underfloor_fields[39] = float(underfloor.get("rigid_contact_blend", 0.0))
+                underfloor_fields[40] = float(underfloor.get("rigid_local_y", 0.0))
+                underfloor_fields[41] = float(underfloor.get("rigid_normal_impulse_ns", 0.0))
                 var aero_value: Variant = underfloor.get("aero", {})
                 if aero_value is Dictionary:
                     var aero: Dictionary = aero_value
@@ -307,7 +314,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var base_fields := PackedStringArray([
         "%d" % now_msec, "%.1f" % speed_kmh, "%d" % rpm, "%d" % gear,
         "%.3f" % throttle, "%.3f" % brake_amt, "%.3f" % steering,
-        "%.3f" % lat_g, "%.3f" % long_g,
+        "%.3f" % lat_g, "%.3f" % long_g, "%.4f" % yaw_rate_rad_s,
         "%.1f" % fl_comp, "%.1f" % fr_comp, "%.1f" % rl_comp, "%.1f" % rr_comp,
         "%.3f" % front_slip, "%.3f" % rear_slip,
         _csv_escape(_session_id), _csv_escape(_session_timestamp_utc), "%d" % Engine.physics_ticks_per_second,
@@ -330,6 +337,12 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         base_fields.append("%.3f" % float(spin_post[i]))
         base_fields.append("%.3f" % float(brake_power[i]))
         base_fields.append("%.3f" % float(brake_energy[i]))
+    # Guard: every block appended above must have a matching header column.
+    var field_count := base_fields.size() + thermal.size() + resolved.size() + underfloor_fields.size() + aero_fields.size()
+    assert(
+        field_count == CSV_COLUMNS.size(),
+        "[TelemetryManager] column/field mismatch: header=%d fields=%d" % [CSV_COLUMNS.size(), field_count]
+    )
     return ",".join(base_fields) + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
 
 func _thermal_csv_fields(values: Array) -> PackedStringArray:
