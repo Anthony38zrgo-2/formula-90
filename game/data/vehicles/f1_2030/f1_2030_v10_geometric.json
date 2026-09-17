@@ -806,7 +806,17 @@
       "RR": {
         "mirror_of": "RL"
       },
-      "_visual_meshes": "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json"
+      "_visual_meshes": "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json",
+      "_visual_packaging": {
+        "front": {
+          "pivot": [0.13, 0.10, -1.25],
+          "pushrod_arm": [0.13, 0.10, -1.35],
+          "damper_arm": [0.13, 0.07, -1.16],
+          "damper_chassis": [0.13, -0.02, -1.13],
+          "joint_radius": 0.008,
+          "pushrod_section_scale": 0.55
+        }
+      }
     },
     "model": "geometric",
     "model_version": 1,

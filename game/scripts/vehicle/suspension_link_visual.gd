@@ -21,6 +21,7 @@ var _driveshaft: Array = []
 var _rocker: Array = []
 var _upright: Array = []
 var _joints: Array = []
+var _visual_corners: Array = []
 
 var _rod_material: Material
 var _arm_material: Material
@@ -48,6 +49,7 @@ func setup(geometry: SuspensionGeometry) -> void:
 	_upright.clear()
 	_joints.clear()
 	_source_parts.clear()
+	_visual_corners.clear()
 	var source_data := {}
 	if not geometry.visual_meshes_path.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(geometry.visual_meshes_path))
@@ -55,6 +57,14 @@ func setup(geometry: SuspensionGeometry) -> void:
 			source_data = parsed.get("corners", {})
 
 	for wheel_index in range(4):
+		var corner := _geometry.get_corner(wheel_index).duplicate()
+		var packaging: Dictionary = geometry.visual_packaging.get("front", {}) if wheel_index < 2 else {}
+		if not packaging.is_empty():
+			for pair in [["pivot", "rocker_pivot"], ["pushrod_arm", "rocker_arm_rest"], ["damper_arm", "damper_arm_rest"], ["damper_chassis", "damper_chassis"]]:
+				var value: Array = packaging[pair[0]]
+				corner[pair[1]] = Vector3(float(value[0]) * (-1.0 if wheel_index == 0 else 1.0), value[1], value[2])
+			corner["L_pushrod"] = corner["pushrod_outer_rest"].distance_to(corner["rocker_arm_rest"])
+		_visual_corners.append(corner)
 		var root := Node3D.new()
 		root.name = "Susp_%s" % WHEEL_KEYS[wheel_index]
 		root.visible = false
@@ -67,7 +77,18 @@ func setup(geometry: SuspensionGeometry) -> void:
 			surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 			for index in meshes[role]["indices"]:
 				var vertex: Array = meshes[role]["vertices"][int(index)]
-				surface.add_vertex(Vector3(vertex[0], vertex[1], vertex[2]))
+				var point := Vector3(vertex[0], vertex[1], vertex[2])
+				if role == "pushrod" and not packaging.is_empty():
+					# Resize once in the rest frame. Animation remains rigid.
+					var source := geometry.get_corner(wheel_index)
+					var origin: Vector3 = source["pushrod_outer_rest"]
+					var old_axis: Vector3 = source["rocker_arm_rest"] - origin
+					var new_axis: Vector3 = corner["rocker_arm_rest"] - origin
+					var along := (point - origin).dot(old_axis.normalized())
+					var radial := point - origin - old_axis.normalized() * along
+					var rotation := Basis(Quaternion(old_axis.normalized(), new_axis.normalized()))
+					point = origin + new_axis * (along / old_axis.length()) + rotation * radial * float(packaging["pushrod_section_scale"])
+				surface.add_vertex(point)
 			surface.generate_normals()
 			part.mesh = surface.commit()
 			part.material_override = _arm_material
@@ -99,8 +120,8 @@ func setup(geometry: SuspensionGeometry) -> void:
 		var damper := Node3D.new()
 		damper.name = "DAMPER"
 		root.add_child(damper)
-		_make_rod_node(damper, "Body", _arm_material, 0.040)
-		_make_rod_node(damper, "Piston", _shaft_material, 0.014)
+		_make_rod_node(damper, "Body", _arm_material, 0.024 if not packaging.is_empty() else 0.040)
+		_make_rod_node(damper, "Piston", _shaft_material, 0.010 if not packaging.is_empty() else 0.014)
 		_damper.append(damper)
 		if _geometry.is_valid(wheel_index) and _geometry.get_corner(wheel_index).get("has_driveshaft", false):
 			_driveshaft.append(_make_rod_node(root, "DRIVESHAFT", _shaft_material, 0.012, true))
@@ -111,7 +132,6 @@ func setup(geometry: SuspensionGeometry) -> void:
 			placeholder.visible = false
 			root.add_child(placeholder)
 			_driveshaft.append(placeholder)
-		var corner := geometry.get_corner(wheel_index)
 		if not geometry.is_valid(wheel_index):
 			root.visible = false
 			_rocker.append(null)
@@ -119,7 +139,7 @@ func setup(geometry: SuspensionGeometry) -> void:
 			_joints.append([])
 			continue
 		var pivot: Vector3 = corner["rocker_pivot"]
-		_rocker.append(_make_plate(root, "ROCKER", [Vector3.ZERO, corner["rocker_arm_rest"] - pivot, corner["damper_arm_rest"] - pivot], 0.012, _rocker_material))
+		_rocker.append(_make_plate(root, "ROCKER", [Vector3.ZERO, corner["rocker_arm_rest"] - pivot, corner["damper_arm_rest"] - pivot], 0.006 if not packaging.is_empty() else 0.012, _rocker_material))
 		var hub: Vector3 = corner["hub_center"]
 		var upright := _make_plate(root, "UPRIGHT", [Vector3.ZERO, corner["lbj_rest"] - hub, corner["ubj_rest"] - hub], 0.024, _arm_material)
 		var steering_arm := _make_rod_node(upright, "SteeringArm", _arm_material, 0.026)
@@ -134,8 +154,8 @@ func setup(geometry: SuspensionGeometry) -> void:
 			var joint := MeshInstance3D.new()
 			joint.name = "Joint_%02d" % joint_index
 			var sphere := SphereMesh.new()
-			sphere.radius = 0.018
-			sphere.height = 0.036
+			sphere.radius = float(packaging.get("joint_radius", 0.018))
+			sphere.height = sphere.radius * 2.0
 			sphere.radial_segments = 12
 			sphere.rings = 6
 			joint.mesh = sphere
@@ -160,6 +180,7 @@ func set_links_visible(enabled: bool) -> void:
 func update_wheel(wheel_index: int, data: Dictionary) -> void:
 	if data.is_empty() or not data.get("present", false):
 		return
+	data = visual_pose(wheel_index, data)
 
 	(_wishbone_lower[wheel_index].get_parent() as Node3D).visible = true
 	var authored: Dictionary = _source_parts[wheel_index]
@@ -193,7 +214,7 @@ func update_wheel(wheel_index: int, data: Dictionary) -> void:
 	_trackrod[wheel_index].visible = not authored.has("trackrod")
 	_pushrod[wheel_index].visible = not authored.has("pushrod")
 	var damper: Array = data["damper"]
-	var corner := _geometry.get_corner(wheel_index)
+	var corner: Dictionary = _visual_corners[wheel_index]
 	var rest_length: float = (corner["damper_chassis"] - corner["damper_arm_rest"]).length()
 	var direction: Vector3 = (damper[1] - damper[0]).normalized()
 	# Fixed body and piston lengths; only their overlap changes with travel.
@@ -213,6 +234,27 @@ func update_wheel(wheel_index: int, data: Dictionary) -> void:
 	if data.has("driveshaft") and not (data["driveshaft"] is Dictionary and data["driveshaft"].is_empty()):
 		var ds: Dictionary = data["driveshaft"]
 		_set_rod(_driveshaft[wheel_index], ds["inner"], ds["outer"], float(ds["spin"]), true)
+
+
+## Cosmetic inboard mechanism only: wheel, wishbones and native forces retain
+## their physical geometry. Solve the smaller lever with a fixed-length rod,
+## rather than scaling animated links or moving their wheel-side attachment.
+func visual_pose(wheel_index: int, physical_pose: Dictionary) -> Dictionary:
+	if wheel_index >= 2 or not _geometry.visual_packaging.has("front"):
+		return physical_pose
+	var corner: Dictionary = _visual_corners[wheel_index]
+	var outer: Vector3 = physical_pose["pushrod"][0]
+	var solved := _geometry._rocker_solve(corner, outer)
+	var basis := Basis(corner["rocker_axis"], float(solved["angle"]))
+	var pivot: Vector3 = corner["rocker_pivot"]
+	var damper_end: Vector3 = pivot + basis * (corner["damper_arm_rest"] - pivot)
+	var pose := physical_pose.duplicate()
+	pose["pushrod"] = [outer, solved["point"]]
+	pose["pushrod_pose"] = _geometry._link_pose(corner["pushrod_outer_rest"], corner["rocker_arm_rest"], outer, solved["point"])
+	pose["rocker"] = {"origin": pivot, "basis": basis, "pushrod": solved["point"], "damper": damper_end}
+	pose["damper"] = [corner["damper_chassis"], damper_end]
+	pose["rocker_clamped"] = solved["clamped"]
+	return pose
 
 
 func _make_rod_node(parent: Node, name: String, material: Material, radius: float, flat: bool = false) -> MeshInstance3D:

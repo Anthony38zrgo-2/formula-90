@@ -22,6 +22,7 @@ const PBD_HUB_WEIGHT := 0.25
 const PBD_FINAL_PASSES := 80
 
 var visual_meshes_path: String = ""
+var visual_packaging: Dictionary = {}
 var _corners: Array = []
 var _axles: Array = []
 
@@ -67,6 +68,8 @@ static func _geometry_source(suspension: Dictionary) -> Dictionary:
 			if not merged.is_empty():
 				if legacy_dict.has("_visual_meshes"):
 					merged["_visual_meshes"] = legacy_dict["_visual_meshes"]
+				if legacy_dict.has("_visual_packaging"):
+					merged["_visual_packaging"] = legacy_dict["_visual_packaging"]
 				return merged
 	return legacy_dict.duplicate(true)
 
@@ -114,6 +117,7 @@ static func _axle_params(axle: Variant) -> Dictionary:
 
 func _init(geometry: Dictionary, axles: Dictionary) -> void:
 	visual_meshes_path = String(geometry.get("_visual_meshes", ""))
+	visual_packaging = geometry.get("_visual_packaging", {})
 	_axles = [
 		axles.get("front", {}),
 		axles.get("front", {}),
