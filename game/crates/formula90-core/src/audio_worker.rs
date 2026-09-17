@@ -26,14 +26,19 @@ use crate::frame::AudioReadouts;
 
 /// Default ring depth: half a second of stereo frames absorbs long frame hitches.
 pub const DEFAULT_RING_CAPACITY_FRAMES: usize = 22_050;
-/// Refill target: the worker keeps the ring near this occupancy (0.1 s).
-pub const DEFAULT_HIGH_WATER_FRAMES: usize = 4_410;
+/// Refill target until the host sets a frame-aware one (the host overrides this
+/// every `_process`); kept small on purpose so a never-configured worker still
+/// adds little latency.
+pub const DEFAULT_HIGH_WATER_FRAMES: usize = 1_024;
 /// DSP block size; small enough to interleave with control updates.
 pub const DEFAULT_CHUNK_FRAMES: usize = 1_024;
 /// Per-iteration catch-up ceiling.
 pub const DEFAULT_MAX_BATCH_FRAMES: usize = 2_048;
-/// Worker wake period; the ring absorbs the jitter.
-pub const DEFAULT_PERIOD: Duration = Duration::from_millis(5);
+/// Worker wake period. Kept short because each iteration also spends the render
+/// time for whatever it tops up: in debug a 1.5-frame top-up is ~5 ms of DSP, so
+/// a 5 ms sleep made the cycle (~11 ms) longer than a rendered frame and the
+/// host could pull twice between refills (measured starvation at 110 FPS).
+pub const DEFAULT_PERIOD: Duration = Duration::from_millis(1);
 /// Bounded telemetry queue (1024 packets ~= 8.5 s at 120 Hz).
 pub const DEFAULT_QUEUE_CAPACITY: usize = 1_024;
 /// Bounded command queue (triggers/ambient/reset).
@@ -276,6 +281,10 @@ pub struct AudioWorker {
     ring: SpscRing,
     counters: WorkerCounters,
     stop: AtomicBool,
+    /// Steady-state ring occupancy target in frames. The host lowers/raises it
+    /// from the measured frame demand so the extra latency over the inline path
+    /// stays at roughly one frame instead of a fixed 0.1 s.
+    target_frames: AtomicUsize,
     config: AudioWorkerConfig,
     healthy: bool,
     synth_enabled: bool,
@@ -303,6 +312,7 @@ impl AudioWorker {
             ring: SpscRing::new(config.ring_capacity_frames),
             counters: WorkerCounters::default(),
             stop: AtomicBool::new(false),
+            target_frames: AtomicUsize::new(config.high_water_frames),
             config,
             healthy,
             synth_enabled,
@@ -369,6 +379,19 @@ impl AudioWorker {
         self.config.ring_capacity_frames
     }
 
+    /// Set the steady-state ring occupancy target (frames). Called by the host
+    /// every rendered frame with the measured frame demand; clamped so it can
+    /// never starve (below 256 frames) or exceed half the ring.
+    pub fn set_target(&self, frames: usize) {
+        let ceiling = (self.config.ring_capacity_frames / 2).max(256);
+        let clamped = frames.clamp(256, ceiling);
+        self.target_frames.store(clamped, Ordering::Relaxed);
+    }
+
+    pub fn target_frames(&self) -> usize {
+        self.target_frames.load(Ordering::Relaxed)
+    }
+
     pub fn stats(&self) -> AudioWorkerStats {
         AudioWorkerStats {
             produced_frames: self.counters.produced_frames.load(Ordering::Relaxed),
@@ -381,7 +404,7 @@ impl AudioWorker {
             iterations: self.counters.iterations.load(Ordering::Relaxed),
             ring_frames: self.ring_frames() as u32,
             ring_capacity_frames: self.config.ring_capacity_frames as u32,
-            high_water_frames: self.config.high_water_frames as u32,
+            high_water_frames: self.target_frames() as u32,
             healthy: u32::from(self.healthy),
         }
     }
@@ -495,8 +518,7 @@ impl AudioWorker {
         while !stop() {
             let available = self.ring.available_frames();
             let want = self
-                .config
-                .high_water_frames
+                .target_frames()
                 .saturating_sub(available)
                 .min(self.config.max_batch_frames);
             let produced = self.pump_once(want);
@@ -505,7 +527,13 @@ impl AudioWorker {
                     .starved_iterations
                     .fetch_add(1, Ordering::Relaxed);
             }
-            std::thread::sleep(self.config.period);
+            // Refill BEFORE sleeping: the host drains on rendered frames, which
+            // can be shorter than this loop's work+sleep cycle. Sleeping while
+            // below target let two host pulls land between refills and starved
+            // the generator (measured 213 skips at 115 FPS in debug).
+            if want == 0 || produced == 0 || self.ring.available_frames() >= self.target_frames() {
+                std::thread::sleep(self.config.period);
+            }
         }
         // Flush any control data still queued so shutdown leaves no pending work.
         self.pump_once(0);

@@ -738,6 +738,21 @@ pub unsafe extern "C" fn f90_core_audio_worker_pull(
     facade_mut(h).audio_render(l, r, n) as u32
 }
 
+/// Set the worker's steady-state ring occupancy target (frames). The host calls
+/// this every rendered frame with `ceil(rate * delta)` so the added latency
+/// tracks the frame demand instead of a fixed 0.1 s backlog.
+/// # Safety
+/// `h` must be a valid facade handle.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_worker_set_target(h: *mut c_void, frames: u32) {
+    if h.is_null() {
+        return;
+    }
+    if let Some(worker) = facade_mut(h).audio_worker() {
+        worker.set_target(frames as usize);
+    }
+}
+
 /// Copy the worker counters into `out`. Returns false when no worker is active.
 /// # Safety
 /// `h` must be a valid facade handle; `out` must point to a writable

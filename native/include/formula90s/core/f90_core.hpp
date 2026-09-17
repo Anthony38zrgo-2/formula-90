@@ -123,6 +123,9 @@ public:
 	static constexpr int kPumpCatchUpFrames = 256;
 	/// Hard per-pump ceiling to bound worst-case `_process` cost after a hitch.
 	static constexpr int kPumpMaxBatchFrames = 8192;
+	/// Extra frames of generator pre-buffer on top of one frame's demand. Keeps
+	/// the pipeline continuous without stacking a fixed backlog (latency).
+	static constexpr int kGenHeadroomFrames = 128;
 	/// Floor so delta mode never issues many tiny render batches.
 	static constexpr int kPumpMinBatchFrames = 128;
 
@@ -168,6 +171,11 @@ public:
 	/// 0 = normal, 1 = above normal (default), 2 = highest thread priority.
 	void set_audio_worker_priority(int v) { audio_worker_priority_ = v; }
 	int get_audio_worker_priority() const { return audio_worker_priority_; }
+	/// Per-stage audio pre-buffer target in milliseconds (runtime tunable).
+	/// Total listener latency is ~2x this (worker ring + generator). Lower =
+	/// tighter sync, higher = absorbs longer frame hitches without dropouts.
+	void set_audio_latency_ms(int v) { audio_latency_ms_ = v < 1 ? 1 : (v > 200 ? 200 : v); }
+	int get_audio_latency_ms() const { return audio_latency_ms_; }
 	bool is_audio_worker_active() const { return audio_worker_active_; }
 	/// Worker counters/affinity snapshot for diagnostics (schema in f90_core.h).
 	Dictionary get_audio_worker_stats() const;
@@ -180,6 +188,9 @@ public:
 	int64_t get_audio_skips() const { return audio_skips_; }
 	/// RMS of the most recently pushed PCM block (0.0 == silence).
 	float get_audio_output_rms() const { return audio_output_rms_; }
+	/// Generator pre-buffer occupancy in frames (listener delay beyond the driver).
+	int get_audio_gen_occupancy() const { return audio_gen_occupancy_; }
+	int get_audio_gen_capacity() const { return audio_gen_capacity_; }
 	/// push_buffer calls rejected by a full generator buffer since the last reset.
 	int64_t get_audio_push_rejections() const { return audio_push_rejections_; }
 	int get_audio_mix_rate() const { return kAudioMixRate; }
@@ -244,7 +255,9 @@ private:
 	void start_audio_worker();
 	void stop_audio_worker();
 	/// Pull the worker ring and push it in ONE batched call (no DSP here).
-	void pump_audio_worker();
+	/// `delta` sizes the ring/generator occupancy targets so buffering tracks
+	/// the rendered frame time instead of adding a fixed backlog.
+	void pump_audio_worker(double delta);
 	/// Discard whatever the ring accumulated while audio was disabled.
 	void flush_audio_worker_ring();
 	/// Resolve the worker's logical processor (-1 auto -> best P-core).
@@ -277,6 +290,7 @@ private:
 	FnCoreAudioWorkerRun fn_audio_worker_run_ = nullptr;
 	FnCoreAudioWorkerPull fn_audio_worker_pull_ = nullptr;
 	FnCoreAudioWorkerStatsGet fn_audio_worker_stats_get_ = nullptr;
+	FnCoreAudioWorkerSetTarget fn_audio_worker_set_target_ = nullptr;
 
 	double fixed_dt_ = 1.0 / 120.0;
 	String config_json_path_ = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json";
@@ -313,7 +327,7 @@ private:
 	int64_t audio_skips_ = 0;
 	float audio_output_rms_ = 0.0f;
 	int64_t audio_push_rejections_ = 0;
-	double audio_buffer_length_ = 0.1;
+	double audio_buffer_length_ = 0.06;
 
 	// Dedicated audio worker state. `audio_worker_stop_` is written by the main
 	// thread and polled by the worker thread through the FFI run loop.
@@ -327,8 +341,24 @@ private:
 	std::atomic<uint32_t> audio_worker_core_observed_{ 0xFFFFFFFFu };
 	std::atomic<int64_t> audio_worker_affinity_mask_{ 0 };
 	std::atomic<int64_t> audio_worker_thread_id_{ 0 };
+	bool audio_worker_timer_raised_ = false;
+	int audio_latency_ms_ = 25;
 	F90AudioWorkerStats audio_worker_stats_ = {};
 	std::vector<float> worker_l_, worker_r_;
+	// Measured generator ring: capacity (max free space seen when empty) and the
+	// last observed occupancy. Used to hold the pre-buffer at the frame target.
+	int audio_gen_capacity_ = 0;
+	int audio_gen_occupancy_ = 0;
+	// Pump accounting: distinguishes "the host asked for less than the mixer
+	// consumed" (need too small) from "the worker ring could not supply" (unmet).
+	int64_t audio_need_total_ = 0;
+	int64_t audio_need_zero_calls_ = 0;
+	int64_t audio_pull_unmet_frames_ = 0;
+	int64_t audio_pump_entries_ = 0;
+	int64_t audio_pump_no_room_ = 0;
+	/// Frames the mixer is expected to consume before the next push (leaky
+	/// integrator that keeps the generator's pre-buffer bounded).
+	int64_t audio_push_deficit_ = 0;
 	double collision_cooldown_ = 0.0;
 	void process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt);
 	/// Smooth the camera-to-vehicle distance with a ~0.1 s one-pole in `_process`.

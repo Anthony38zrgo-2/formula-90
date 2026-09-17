@@ -60,6 +60,9 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_audio_worker_priority", "v"), &F90Core::set_audio_worker_priority);
 	ClassDB::bind_method(D_METHOD("get_audio_worker_priority"), &F90Core::get_audio_worker_priority);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_worker_priority", PROPERTY_HINT_RANGE, "0,2,1"), "set_audio_worker_priority", "get_audio_worker_priority");
+	ClassDB::bind_method(D_METHOD("set_audio_latency_ms", "v"), &F90Core::set_audio_latency_ms);
+	ClassDB::bind_method(D_METHOD("get_audio_latency_ms"), &F90Core::get_audio_latency_ms);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_latency_ms", PROPERTY_HINT_RANGE, "1,200,1"), "set_audio_latency_ms", "get_audio_latency_ms");
 	ClassDB::bind_method(D_METHOD("is_audio_worker_active"), &F90Core::is_audio_worker_active);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "audio_worker_active"), "", "is_audio_worker_active");
 	ClassDB::bind_method(D_METHOD("get_audio_worker_stats"), &F90Core::get_audio_worker_stats);
@@ -119,6 +122,10 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_audio_buffer_length"), &F90Core::get_audio_buffer_length);
 	ClassDB::bind_method(D_METHOD("get_audio_output_rms"), &F90Core::get_audio_output_rms);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "audio_output_rms"), "", "get_audio_output_rms");
+	ClassDB::bind_method(D_METHOD("get_audio_gen_occupancy"), &F90Core::get_audio_gen_occupancy);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_gen_occupancy"), "", "get_audio_gen_occupancy");
+	ClassDB::bind_method(D_METHOD("get_audio_gen_capacity"), &F90Core::get_audio_gen_capacity);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_gen_capacity"), "", "get_audio_gen_capacity");
 	ClassDB::bind_method(D_METHOD("get_audio_push_rejections"), &F90Core::get_audio_push_rejections);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_push_rejections"), "", "get_audio_push_rejections");
 	ClassDB::bind_method(D_METHOD("reset_audio_stats"), &F90Core::reset_audio_stats);
@@ -352,6 +359,7 @@ bool F90Core::load_dll() {
 	fn_audio_worker_run_ = reinterpret_cast<FnCoreAudioWorkerRun>(GetProcAddress(hDll, "f90_core_audio_worker_run"));
 	fn_audio_worker_pull_ = reinterpret_cast<FnCoreAudioWorkerPull>(GetProcAddress(hDll, "f90_core_audio_worker_pull"));
 	fn_audio_worker_stats_get_ = reinterpret_cast<FnCoreAudioWorkerStatsGet>(GetProcAddress(hDll, "f90_core_audio_worker_stats"));
+	fn_audio_worker_set_target_ = reinterpret_cast<FnCoreAudioWorkerSetTarget>(GetProcAddress(hDll, "f90_core_audio_worker_set_target"));
 
 	const uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	const String core_build_sha = fn_build_sha_ ? String(fn_build_sha_()) : String("unknown");
@@ -414,6 +422,7 @@ void F90Core::unload_dll() {
 	fn_audio_worker_run_ = nullptr;
 	fn_audio_worker_pull_ = nullptr;
 	fn_audio_worker_stats_get_ = nullptr;
+	fn_audio_worker_set_target_ = nullptr;
 }
 
 static String json_escape(const String &s) {
@@ -729,7 +738,7 @@ void F90Core::_process(double delta) {
 	update_listener_distance(delta);
 	set_audio_ambient(tc_cut_ratio_, limiter_active_);
 	if (audio_worker_active_) {
-		pump_audio_worker();
+		pump_audio_worker(delta);
 	} else {
 		pump_audio(delta);
 	}
@@ -949,6 +958,11 @@ void F90Core::reset_audio_stats() {
 	audio_skips_ = 0;
 	audio_output_rms_ = 0.0f;
 	audio_push_rejections_ = 0;
+	audio_gen_occupancy_ = 0;
+	audio_need_total_ = 0;
+	audio_need_zero_calls_ = 0;
+	audio_pull_unmet_frames_ = 0;
+	audio_push_deficit_ = 0;
 }
 
 // -------- dedicated audio worker (phase 2) ----------------------------------------
@@ -1042,6 +1056,18 @@ void F90Core::configure_audio_worker_thread(int core_index) {
 		priority = THREAD_PRIORITY_HIGHEST;
 	}
 	SetThreadPriority(GetCurrentThread(), priority);
+	// Raise the system timer resolution: without it `sleep(5ms)` rounds up to the
+	// ~15.6 ms scheduler tick and the ring cannot be refilled once per rendered
+	// frame, which starves the generator (measured: produced/s 31k at 108 FPS).
+	HMODULE winmm = LoadLibraryW(L"winmm.dll");
+	if (winmm != nullptr) {
+		typedef UINT(WINAPI * TimeBeginPeriod_t)(UINT);
+		TimeBeginPeriod_t time_begin = reinterpret_cast<TimeBeginPeriod_t>(GetProcAddress(winmm, "timeBeginPeriod"));
+		if (time_begin != nullptr) {
+			time_begin(1);
+			audio_worker_timer_raised_ = true;
+		}
+	}
 	// MMCSS "Pro Audio" keeps the mixer in the real-time audio scheduling class;
 	// avrt.dll ships with Windows (dynamic load, no link-time dependency).
 	HMODULE avrt = LoadLibraryW(L"avrt.dll");
@@ -1104,11 +1130,24 @@ void F90Core::stop_audio_worker() {
 	if (audio_worker_thread_.joinable()) {
 		audio_worker_thread_.join();
 	}
+#ifdef _WIN32
+	if (audio_worker_timer_raised_) {
+		HMODULE winmm = LoadLibraryW(L"winmm.dll");
+		if (winmm != nullptr) {
+			typedef UINT(WINAPI * TimeEndPeriod_t)(UINT);
+			TimeEndPeriod_t time_end = reinterpret_cast<TimeEndPeriod_t>(GetProcAddress(winmm, "timeEndPeriod"));
+			if (time_end != nullptr) {
+				time_end(1);
+			}
+		}
+		audio_worker_timer_raised_ = false;
+	}
+#endif
 	audio_worker_active_ = false;
 	audio_worker_handle_ = nullptr;
 }
 
-void F90Core::pump_audio_worker() {
+void F90Core::pump_audio_worker(double delta) {
 	if (!enable_audio_ || core_ == nullptr || audio_player_ == nullptr ||
 			fn_audio_worker_pull_ == nullptr || fn_audio_worker_stats_get_ == nullptr) {
 		return;
@@ -1120,26 +1159,83 @@ void F90Core::pump_audio_worker() {
 			return;
 		}
 	}
+	audio_pump_entries_ += 1;
 	int available = (int)audio_playback_->call("get_frames_available");
 	audio_last_available_ = available;
 	if (available > audio_max_available_) {
 		audio_max_available_ = available;
 	}
 	if (available <= 0) {
+		audio_pump_no_room_ += 1;
 		return;
 	}
-	// Bound the main-thread copy; the worker ring can hold more than one frame's
-	// worth after a hitch.
-	if (available > kPumpMaxBatchFrames) {
-		available = kPumpMaxBatchFrames;
+	const int configured = (int)std::ceil(audio_buffer_length_ * (double)kAudioMixRate);
+	if (audio_gen_capacity_ < configured) {
+		audio_gen_capacity_ = configured;
 	}
-	if ((int)worker_l_.size() < available) {
-		worker_l_.resize(available);
-		worker_r_.resize(available);
+	if (available > audio_gen_capacity_) {
+		audio_gen_capacity_ = available;
 	}
-	const uint32_t pulled = fn_audio_worker_pull_(core_, worker_l_.data(), worker_r_.data(), (uint32_t)available);
+	audio_gen_occupancy_ = audio_gen_capacity_ - available;
+	if (audio_gen_occupancy_ < 0) {
+		audio_gen_occupancy_ = 0;
+	}
+
+	// Low-latency transfer law: accumulate exactly what the mixer will consume
+	// this frame, spend it on the next push, and cap the backlog at ~two frames.
+	// This never stacks the fixed 0.1 s pre-buffer that made the listener ~0.2 s
+	// behind the image, and needs no capacity/occupancy calibration.
+	const int frame_demand = (int)std::ceil((double)kAudioMixRate * delta);
+	audio_need_total_ += frame_demand;
+	audio_push_deficit_ += frame_demand;
+	// One frame + margin is all the generator needs to bridge a transfer; more
+	// is pure added latency.
+	// Per-stage target: at least one frame + margin (so the transfer is always
+	// servable) and at least the user-tuned `audio_latency_ms`. The same value
+	// caps the generator backlog, so total listener latency is ~2x the stage.
+	const int64_t latency_frames = (int64_t)audio_latency_ms_ * kAudioMixRate / 1000;
+	int64_t stage = (int64_t)frame_demand + kGenHeadroomFrames;
+	if (stage < latency_frames) {
+		stage = latency_frames;
+	}
+	if (stage > kPumpMaxBatchFrames) {
+		stage = kPumpMaxBatchFrames;
+	}
+	if (stage < kPumpMinBatchFrames) {
+		stage = kPumpMinBatchFrames;
+	}
+	if (audio_push_deficit_ > stage) {
+		audio_push_deficit_ = stage;
+	}
+	int need = (int)(audio_push_deficit_ < (int64_t)available ? audio_push_deficit_ : (int64_t)available);
+	// Feedback: if the generator drifted above the stage target, stop feeding
+	// until it drains back. Without this the occupancy random-walks upward and
+	// the measured latency stops tracking `audio_latency_ms`.
+	if (audio_gen_occupancy_ > (int)stage) {
+		need -= audio_gen_occupancy_ - (int)stage;
+	}
+	if (need <= 0) {
+		audio_need_zero_calls_ += 1;
+		return;
+	}
+	// The worker ring mirrors the generator stage so the transfer is servable.
+	if (fn_audio_worker_set_target_ != nullptr) {
+		fn_audio_worker_set_target_(core_, (uint32_t)stage);
+	}
+	if ((int)worker_l_.size() < need) {
+		worker_l_.resize(need);
+		worker_r_.resize(need);
+	}
+	const uint32_t pulled = fn_audio_worker_pull_(core_, worker_l_.data(), worker_r_.data(), (uint32_t)need);
 	if (pulled == 0) {
 		return;
+	}
+	audio_push_deficit_ -= (int64_t)pulled;
+	if (audio_push_deficit_ < 0) {
+		audio_push_deficit_ = 0;
+	}
+	if ((int)pulled < need) {
+		audio_pull_unmet_frames_ += (int64_t)(need - (int)pulled);
 	}
 	push_audio_batch(worker_l_.data(), worker_r_.data(), (int)pulled);
 	audio_pump_calls_ += 1;
@@ -1176,5 +1272,10 @@ Dictionary F90Core::get_audio_worker_stats() const {
 	d["healthy"] = audio_worker_stats_.healthy != 0;
 	d["output_rms"] = audio_output_rms_;
 	d["push_rejections"] = audio_push_rejections_;
+	d["demand_frames"] = audio_need_total_;
+	d["need_zero_calls"] = audio_need_zero_calls_;
+	d["pull_unmet_frames"] = audio_pull_unmet_frames_;
+	d["pump_entries"] = audio_pump_entries_;
+	d["pump_no_room"] = audio_pump_no_room_;
 	return d;
 }

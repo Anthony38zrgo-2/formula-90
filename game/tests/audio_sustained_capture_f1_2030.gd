@@ -83,6 +83,12 @@ func _worker_delta(before: Dictionary, after: Dictionary) -> Dictionary:
 		"packets_applied": int(after.get("packets_applied", 0)) - int(before.get("packets_applied", 0)),
 		"packets_dropped": int(after.get("packets_dropped", 0)) - int(before.get("packets_dropped", 0)),
 		"render_usec_total": int(after.get("render_usec_total", 0)) - int(before.get("render_usec_total", 0)),
+		"iterations": int(after.get("iterations", 0)) - int(before.get("iterations", 0)),
+		"demand_frames": int(after.get("demand_frames", 0)) - int(before.get("demand_frames", 0)),
+		"need_zero_calls": int(after.get("need_zero_calls", 0)) - int(before.get("need_zero_calls", 0)),
+		"pull_unmet_frames": int(after.get("pull_unmet_frames", 0)) - int(before.get("pull_unmet_frames", 0)),
+		"pump_entries": int(after.get("pump_entries", 0)) - int(before.get("pump_entries", 0)),
+		"pump_no_room": int(after.get("pump_no_room", 0)) - int(before.get("pump_no_room", 0)),
 		"ring_frames": int(after.get("ring_frames", 0)),
 		"high_water_frames": int(after.get("high_water_frames", 0)),
 	}
@@ -96,8 +102,8 @@ func _capture(core: Node, vehicle: Node, mode: int, max_fps: int, window_frames:
 		await process_frame
 	# Read the live generator skip counter before zeroing the other counters.
 	var skips_before := int(core.call("get_audio_skips"))
-	var worker_before := _worker_snapshot(core)
 	core.call("reset_audio_stats")
+	var worker_before := _worker_snapshot(core)
 	var frame_ms: Array = []
 	var start_usec := Time.get_ticks_usec()
 	for frame_index in window_frames:
@@ -117,12 +123,20 @@ func _capture(core: Node, vehicle: Node, mode: int, max_fps: int, window_frames:
 	var worker := _worker_delta(worker_before, _worker_snapshot(core))
 	var output_rms := float(core.call("get_audio_output_rms"))
 	var push_rejections := int(core.call("get_audio_push_rejections"))
+	var gen_occupancy := int(core.call("get_audio_gen_occupancy"))
+	var gen_capacity := int(core.call("get_audio_gen_capacity"))
+	var ring_frames := int(worker.get("ring_frames", 0))
+	# Buffered audio the listener is behind the sim by (worker ring + generator).
+	var latency_ms := (float(ring_frames) + float(gen_occupancy)) / float(mix_rate) * 1000.0
 	frame_ms.sort()
 	var produced_per_s := float(pushed) / elapsed_s
 	return {
 		"worker": worker,
 		"output_rms": output_rms,
 		"push_rejections": push_rejections,
+		"gen_occupancy": gen_occupancy,
+		"gen_capacity": gen_capacity,
+		"latency_ms": latency_ms,
 		"mode": mode,
 		"max_fps": max_fps,
 		"window_frames": window_frames,
@@ -218,6 +232,11 @@ func _run() -> void:
 	if _flag("--toggle-check"):
 		await _toggle_check(core)
 
+	var latency_ms := int(_argument("--latency-ms", "0"))
+	if latency_ms > 0:
+		core.set("audio_latency_ms", latency_ms)
+		print("[AUDCAP] audio_latency_ms=%d (per stage)" % latency_ms)
+
 	var window_frames := int(_argument("--frames", "600"))
 	var throttle := float(_argument("--throttle", "0.0"))
 	var stall_ms := int(_argument("--stall-ms", "0"))
@@ -235,12 +254,22 @@ func _run() -> void:
 				stats["max_available"], stats["skips_delta"], stats["skips_total"],
 				stats["output_rms"], stats["push_rejections"],
 				stats["frame_ms_p50"], stats["frame_ms_p95"], stats["frame_ms_max"]]
+			line += " | latency=%.1fms (ring=%d gen=%d/%d)" % [
+				stats["latency_ms"], int(stats["worker"].get("ring_frames", 0)),
+				stats["gen_occupancy"], stats["gen_capacity"]]
 			var worker: Dictionary = stats.get("worker", {})
 			if not worker.is_empty():
 				var worker_produced_per_s: float = float(worker.get("produced_frames", 0)) / float(stats["elapsed_s"])
 				var worker_cpu_percent: float = float(worker.get("render_usec_total", 0)) / 1_000_000.0 / float(stats["elapsed_s"]) * 100.0
-				line += " | worker core=%d aff=0x%X produced/s=%.0f render_cpu=%.1f%% starved=%d drops=%d ring=%d/%d" % [
+				var worker_iterations_per_s: float = float(worker.get("iterations", 0)) / float(stats["elapsed_s"])
+				var demand_per_s: float = float(worker.get("demand_frames", 0)) / float(stats["elapsed_s"])
+				var unmet_per_s: float = float(worker.get("pull_unmet_frames", 0)) / float(stats["elapsed_s"])
+				line += " | worker core=%d aff=0x%X produced/s=%.0f iter/s=%.0f demand/s=%.0f unmet/s=%.0f need0=%d entries/s=%.0f noroom/s=%.0f render_cpu=%.1f%% starved=%d drops=%d ring=%d/%d" % [
 					worker.get("core", -1), worker.get("affinity_mask", 0), worker_produced_per_s,
+					worker_iterations_per_s, demand_per_s, unmet_per_s,
+					worker.get("need_zero_calls", 0),
+					float(worker.get("pump_entries", 0)) / float(stats["elapsed_s"]),
+					float(worker.get("pump_no_room", 0)) / float(stats["elapsed_s"]),
 					worker_cpu_percent, worker.get("starved_iterations", 0),
 					worker.get("packets_dropped", 0), worker.get("ring_frames", 0),
 					worker.get("high_water_frames", 0)]

@@ -183,6 +183,7 @@ typedef const void *(*FnCoreAudioWorkerHandle)(void *core);
 typedef void (*FnCoreAudioWorkerRun)(const void *worker, const volatile uint32_t *stop);
 typedef uint32_t (*FnCoreAudioWorkerPull)(void *core, float *out_l, float *out_r, uint32_t n);
 typedef bool (*FnCoreAudioWorkerStatsGet)(void *core, F90AudioWorkerStats *out);
+typedef void (*FnCoreAudioWorkerSetTarget)(void *core, uint32_t frames);
 
 #ifdef __cplusplus
 }
