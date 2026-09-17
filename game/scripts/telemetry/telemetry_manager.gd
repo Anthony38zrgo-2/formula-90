@@ -32,6 +32,7 @@ const CSV_COLUMNS := [
     "RL_TCSlip", "RR_TCSlip",
     "FL_DriveTorquePreTC_Nm", "FR_DriveTorquePreTC_Nm", "RL_DriveTorquePreTC_Nm", "RR_DriveTorquePreTC_Nm",
     "FL_DriveTorque_Nm", "FR_DriveTorque_Nm", "RL_DriveTorque_Nm", "RR_DriveTorque_Nm", "DriveTorque_Nm", "PreTCDrivePower_W", "NetDrivePower_W",
+    "Aids_Mask", "Stability_Enabled",
     "FL_BrakeTorque_Nm", "FL_SpinPre_RadS", "FL_SpinPost_RadS", "FL_BrakePower_W", "FL_BrakeEnergy_J",
     "FR_BrakeTorque_Nm", "FR_SpinPre_RadS", "FR_SpinPost_RadS", "FR_BrakePower_W", "FR_BrakeEnergy_J",
     "RL_BrakeTorque_Nm", "RL_SpinPre_RadS", "RL_SpinPost_RadS", "RL_BrakePower_W", "RL_BrakeEnergy_J",
@@ -172,6 +173,13 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var drive_torque: Array = [0.0, 0.0, 0.0, 0.0]
     var pre_tc_drive_power_w := 0.0
     var net_drive_power_w := 0.0
+    var aids_mask := -1
+    var stability_enabled := false
+    if _is_rust:
+        var mask_value: Variant = vehicle.get("aids_enabled_mask")
+        if mask_value is int or mask_value is float:
+            aids_mask = int(mask_value)
+            stability_enabled = (aids_mask & (1 << 2)) != 0
 
     if _is_rust:
         var comp = vehicle.get_wheel_compressions()
@@ -331,6 +339,8 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     base_fields.append("%.3f" % (float(drive_torque[0]) + float(drive_torque[1]) + float(drive_torque[2]) + float(drive_torque[3])))
     base_fields.append("%.3f" % pre_tc_drive_power_w)
     base_fields.append("%.3f" % net_drive_power_w)
+    base_fields.append("%d" % aids_mask)
+    base_fields.append("1" if stability_enabled else "0")
     for i in range(4):
         base_fields.append("%.3f" % float(brake_torque[i]))
         base_fields.append("%.3f" % float(spin_pre[i]))
@@ -398,7 +408,7 @@ func _build_setup_snapshot(telemetry_filename: String) -> Dictionary:
         "engine": _build_engine_snapshot(),
         "transmission": _build_transmission_snapshot(),
         "aerodynamics": _snapshot_properties(["coefficient_of_drag", "air_density", "frontal_area"]),
-        "assists": _snapshot_properties(["enable_stability", "stability_yaw_engage_angle", "stability_yaw_strength", "stability_yaw_ground_multiplier", "stability_upright_spring", "stability_upright_damping", "automatic_transmission", "steering_slip_assist", "countersteer_assist"])
+        "assists": _build_assists_snapshot()
     }
 
 func _get_active_physics_config_path() -> String:
@@ -523,6 +533,61 @@ func _vehicle_script_path() -> String:
 
 func _resource_path(resource: Resource) -> String:
     return resource.resource_path if resource else ""
+
+# Aid state for the setup snapshot. The Rust route is authoritative through
+# `aids_enabled_mask` (bit0=ABS, bit1=TC, bit2=stability, bit3=slip assist,
+# bit4=countersteer, bit5=auto-clutch, bit6=launch, bit7=brake-assist). The
+# legacy C++ tunable mirrors (`enable_stability`, `stability_yaw_strength`) are
+# NOT read by the Rust solver, so they must never be reported as runtime state.
+func _build_assists_snapshot() -> Dictionary:
+    var snapshot := _snapshot_properties(["automatic_transmission"])
+    var mask_value: Variant = vehicle.get("aids_enabled_mask") if _is_rust else null
+    if mask_value is int or mask_value is float:
+        var mask := int(mask_value)
+        snapshot["aids_enabled_mask"] = mask
+        snapshot["abs_enabled"] = (mask & (1 << 0)) != 0
+        snapshot["traction_control_enabled"] = (mask & (1 << 1)) != 0
+        snapshot["stability_enabled"] = (mask & (1 << 2)) != 0
+        snapshot["steering_slip_assist_enabled"] = (mask & (1 << 3)) != 0
+        snapshot["countersteer_enabled"] = (mask & (1 << 4)) != 0
+        snapshot["auto_clutch_enabled"] = (mask & (1 << 5)) != 0
+        snapshot["launch_control_enabled"] = (mask & (1 << 6)) != 0
+        snapshot["brake_assist_enabled"] = (mask & (1 << 7)) != 0
+        snapshot["enable_stability"] = snapshot["stability_enabled"]
+        _merge_aids_profile_tuning(snapshot)
+    else:
+        for property_name in ["enable_stability", "stability_yaw_engage_angle", "stability_yaw_strength", "stability_yaw_ground_multiplier", "stability_upright_spring", "stability_upright_damping", "steering_slip_assist", "countersteer_assist"]:
+            snapshot[property_name] = vehicle.get(property_name)
+    return snapshot
+
+# The Rust solver reads the stability tuning from the active profile JSON at
+# load time; report those values instead of the stale C++ property mirrors.
+func _merge_aids_profile_tuning(snapshot: Dictionary) -> void:
+    var config_path := _get_active_physics_config_path()
+    if not FileAccess.file_exists(config_path):
+        return
+    var file := FileAccess.open(config_path, FileAccess.READ)
+    if file == null:
+        return
+    var parsed: Variant = JSON.parse_string(file.get_as_text())
+    file.close()
+    if not parsed is Dictionary:
+        return
+    var aids: Variant = (parsed as Dictionary).get("aids", {})
+    if not aids is Dictionary:
+        return
+    var aids_config: Dictionary = aids
+    var mapping := {
+        "stability_yaw_engage_angle": "stability_yaw_engage_angle_rad",
+        "stability_yaw_strength": "stability_yaw_strength",
+        "stability_yaw_ground_multiplier": "stability_grounded_multiplier",
+        "stability_upright_spring": "stability_upright_spring",
+        "stability_upright_damping": "stability_upright_damping"
+    }
+    for key in mapping:
+        var source_key: String = mapping[key]
+        if aids_config.has(source_key):
+            snapshot[key] = aids_config[source_key]
 
 # Reads a vehicle property that may not exist on both routes (GEVP `Vehicle` vs
 # Rust `F194RustVehicle`) and returns its resource path, or "" when absent.
