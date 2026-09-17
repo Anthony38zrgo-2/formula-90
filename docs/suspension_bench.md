@@ -330,3 +330,34 @@ separately; no blended numbers.
 Commits: `2364dbbe` (worker+FFI), `ceccfbd2` (host thread), `8c7054c9`
 (publish), `1c8520e1` (captures), `b202b187` (release QA). Pending: human
 listening gate; Issue B still open.
+
+### 8.5 Regression found by listening: stale sibling DLL silenced the runtime
+
+After the release QA experiment the user reported "no audio". Objective
+evidence: the windowed probe showed `pump/s=0`, `max_avail=0` and (after adding
+the meter) `rms=0.0000` — the pump never ran at all, in **both** worker and
+inline modes, so this was not a worker bug.
+
+Root cause: the release build left
+`formula90_core.windows.template_release.x86_64.dll` (stamp `1c8520e1`) in
+`bin`. The loader prefers `template_release`; it loaded that stale file, its
+BUILD no longer matched `res://BUILD_SOURCE` (`d4632fc3`) and `load_dll` fataled
+on the **first** candidate, so the facade never came up.
+
+Fix (`7e06cffe`, published `35c34862`):
+
+- `load_dll` validates ABI + BUILD **per candidate** and skips mismatched ones
+  (`[F90Core] skipped stale candidate: ... (ABI=.. BUILD=..)`), fataling only
+  when no candidate matches. Verified by planting a `c755b8d3` release sibling:
+  it is skipped and the current debug DLL loads with `rms=0.07`.
+- `run_release_runtime.ps1` removes the QA-only `*template_release*` artifacts
+  and restores the tracked debug publish + `BUILD_SOURCE` to HEAD after every
+  run, so a release experiment can no longer leave stale shadows.
+- New diagnostics: `push_audio_batch()` records the pushed-block RMS and
+  `push_buffer` rejections (`get_audio_output_rms`, `audio_push_rejections`,
+  mirrored in `audio_worker_stats` and printed by `audio_sustained_capture`).
+
+Healthy windowed baseline after the fix (worker on, core 3): `rms≈0.07`,
+0 push rejections, 0 ring skips, produced/s ≈ 44.1 kHz. The lesson matches the
+AGENTS rebuild rule: never mix configurations' artifacts; prefer/validate per
+candidate instead of trusting the first file that loads.

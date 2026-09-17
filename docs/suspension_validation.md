@@ -128,6 +128,12 @@ Reproduced in this session.
   151 FPS (process p50 6.5 ms), 0 new ring skips, PCM parity bit-exact. Release
   measured with the QA runner: worker 119.7 FPS at 16 % of one core. **Human
   listening gate pending.**
+- **Regression (silence) found after the release QA experiment:** a stale
+  `formula90_core...template_release.dll` shadowed the debug build and the
+  loader fataled on the first mismatch (`pump/s=0`, `rms=0`). Fixed in
+  `7e06cffe` (per-candidate ABI/BUILD validation + release-QA artifact cleanup)
+  and published as `35c34862`; verified with a planted stale sibling and a
+  windowed `rms≈0.07` baseline. Details in `docs/suspension_bench.md` §8.5.
 - **Issue B (visual pose cache / driveshaft spin):** still open; not addressed.
 - **Known pre-existing test failures:** `facade_parity` 3 cases
   (`facade_applies_full_aids_mask_each_step`,
