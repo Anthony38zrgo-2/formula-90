@@ -121,11 +121,13 @@ Reproduced in this session.
   green and the runtime now starts on a provenance-consistent build.
 - **Matrix row 11 (hot path):** unchanged; the prepared-envelope optimization is
   preserved and no static envelope search returned to the substep path.
-- **Issue A (audio starvation):** fixed by the `audio_pump_mode` delta budget;
-  baseline vs fixed numbers, stall behaviour and the disable/re-enable check are
-  in `docs/suspension_bench.md` §8.3. Debug build verified in the windowed
-  runtime; release verified through the headless bench only. **Human listening
-  gate pending.**
+- **Issue A (audio starvation):** fixed in two layers. `audio_pump_mode` (delta
+  budget) stopped the underproduction; the dedicated-core worker
+  (`2364dbbe`/`ceccfbd2`, §8.4) moved the DSP off the render thread. Debug
+  windowed A/B accelerating: inline pump 27 FPS (process p50 33 ms) vs worker
+  151 FPS (process p50 6.5 ms), 0 new ring skips, PCM parity bit-exact. Release
+  measured with the QA runner: worker 119.7 FPS at 16 % of one core. **Human
+  listening gate pending.**
 - **Issue B (visual pose cache / driveshaft spin):** still open; not addressed.
 - **Known pre-existing test failures:** `facade_parity` 3 cases
   (`facade_applies_full_aids_mask_each_step`,

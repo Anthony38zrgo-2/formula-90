@@ -276,3 +276,57 @@ Limitations / open: only the **debug** binary was rebuilt here; release audio
 was measured through the headless bench, not the full runtime. Issue B (visual
 pose cache omitting driveshaft spin) is not addressed in this section. No
 human listening verdict has been recorded.
+
+### 8.4 Dedicated-core audio worker (phases 1–2)
+
+The delta budget fixed underproduction but left the required DSP on the render
+thread, where in debug it is a fixed ~42 % of one core and still scales the
+frame (lower FPS -> larger delta -> more samples per pump). The worker removes
+that coupling: the mixer moves to its own OS thread.
+
+- **Design.** Rust `AudioWorker` (`game/crates/formula90-core/src/audio_worker.rs`)
+  exclusively owns the `AudioModule`. Telemetry packets and trigger/ambient/reset
+  commands cross threads in bounded mutex queues (in order — gear one-shots can
+  never be skipped); PCM crosses through a lock-free SPSC ring (worker writes,
+  host drains); counters are atomics. `F90Core` creates the OS thread, joins it
+  in `_exit_tree`/`unload_dll`, and `_process` only drains the ring and issues one
+  batched `push_buffer` (no DSP). `audio_worker_enabled=false` falls back to the
+  unchanged inline pump (`audio_pump_mode`).
+- **Thread policy.** Affinity to the resolved logical processor (auto prefers a
+  P-core's highest index; `audio_worker_core` overrides), above-normal priority
+  (`audio_worker_priority`) and MMCSS "Pro Audio" via dynamically loaded
+  avrt.dll. Note: the process-mask reservation from the plan is not implementable
+  as written — Windows intersects process and thread affinity, so excluding the
+  core from the process mask would also evict the worker. Isolation is therefore
+  pin + priority, not hard exclusion.
+- **Correctness.** PCM parity test: 400 telemetry ticks rendered through the
+  worker are bit-identical to the inline pump; ring wrap, command survival and an
+  end-to-end FFI lifecycle (real thread, pull>0, healthy, 0 drops, clean join)
+  are covered by `cargo test -p formula90_core`. Diagnostic switches
+  `--no-audio-worker` (and the fixed init-time ordering of `--no-audio`) were
+  added to both windowed captures.
+
+Debug, 400 frames accelerating (`--throttle=0.7`, geometry ON):
+
+| config | fps | frame p50 | process p50 | fps buckets |
+|---|---|---|---|---|
+| inline pump (worker off) | 27 | 39.3 ms | 33.0 ms | 28.4 → 27.5/18.5 (unstable) |
+| worker on | 151 | 7.1 ms | 6.5 ms | 127 → 150 (flat) |
+| no audio | 138 | 7.3 ms | 7.7 ms | 127 → 150 (flat) |
+
+Worker ON sustained sweep (WASAPI, 44.1 kHz): 44046–44113 samples/s with **0 new
+ring skips, 0 starved iterations, 0 dropped packets** at native/30/20 FPS caps;
+core 3 (affinity mask 0x8); worker CPU 62–65 % of one core in debug. Stalls:
+60 ms and 150 ms absorbed with 0 new skips; 300 ms exceeds the 0.1 s generator
+buffer (44 skips). Runtime gate: on=53, off=0, re-enabled=36 (PASS).
+
+Release (QA runner `scripts/run_release_runtime.ps1`, which swaps the
+`windows.editor.*` entries to the template_release extension and restores the
+file hash-verified): worker on 119.7 FPS at **16 %** of one core, 0 skips;
+worker off 114.2 FPS with 1.66–7.8 ms/pump inline (release DSP is ~4x cheaper,
+so the inline fallback is viable there). Debug and release are reported
+separately; no blended numbers.
+
+Commits: `2364dbbe` (worker+FFI), `ceccfbd2` (host thread), `8c7054c9`
+(publish), `1c8520e1` (captures), `b202b187` (release QA). Pending: human
+listening gate; Issue B still open.
