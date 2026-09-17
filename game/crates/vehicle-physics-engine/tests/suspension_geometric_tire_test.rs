@@ -302,3 +302,104 @@ fn legacy_gain_path_untouched() {
         assert_eq!(st.hub_lateral_m, 0.0);
     }
 }
+
+/// The checked-in F1 2030 V10 geometric profile (real hardpoints).
+fn f1_2030_geometric_config() -> VehicleConfig {
+    VehicleConfig::from_json_str(include_str!(
+        "../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+    ))
+    .expect("checked-in f1_2030_v10_geometric.json must be valid")
+}
+
+#[test]
+fn f1_2030_linkage_pose_sweep_is_sane_and_mirrored() {
+    // The telemetry shows the rear axle operating between design rest (q = 0)
+    // and ~+55 mm bump under aero load and power squat, with the bump stop in
+    // play from ~+50 mm. The synthetic sweep above only covers 15 mm, so this
+    // test sweeps the REAL profile hardpoints across the full travel envelope
+    // to rule out large bump-steer or camber swings exactly where the car lives.
+    let cfg = f1_2030_geometric_config();
+    let geo = cfg
+        .geometric_suspension
+        .as_ref()
+        .expect("geometric suspension present");
+
+    for (axle, is_front, corners) in [
+        ("front", true, [WheelIndex::FrontLeft, WheelIndex::FrontRight]),
+        ("rear", false, [WheelIndex::RearLeft, WheelIndex::RearRight]),
+    ] {
+        let mut max_toe_change: f64 = 0.0;
+        let mut max_camber_change: f64 = 0.0;
+        let mut max_hub_lat: f64 = 0.0;
+        let mut max_hub_long: f64 = 0.0;
+        let mut max_lr_toe_delta: f64 = 0.0;
+        let mut max_lr_camber_delta: f64 = 0.0;
+        let mut max_lr_hub_lat_sum: f64 = 0.0;
+
+        for step in 0..=19 {
+            let q = -0.040 + step as f64 * 0.005; // -40 mm droop .. +55 mm bump
+            let mut poses = [0.0f64; 8];
+            for (slot, wheel) in corners.into_iter().enumerate() {
+                let corner = geo.corners.get(wheel);
+                let sol = solve_corner(corner, q, 0.0, is_front, 0.0, 0.0, 1.0)
+                    .expect("linkage must solve inside the travel envelope");
+                let side = if wheel.is_left() { 1.0 } else { -1.0 };
+                let link_camber = side * sol.upright_basis.x.y.clamp(-1.0, 1.0).asin();
+                let link_toe = side * sol.upright_basis.z.x.clamp(-1.0, 1.0).asin();
+                let hub_lat = sol.hub.x - corner.hub_center.x;
+                let hub_long = sol.hub.z - corner.hub_center.z;
+                assert!(
+                    link_camber.is_finite() && link_toe.is_finite(),
+                    "non-finite {axle} pose at q={q:.3}"
+                );
+                let base = slot * 4;
+                poses[base] = link_toe;
+                poses[base + 1] = link_camber;
+                poses[base + 2] = hub_lat;
+                poses[base + 3] = hub_long;
+                max_toe_change = max_toe_change.max(link_toe.abs());
+                max_camber_change = max_camber_change.max(link_camber.abs());
+                max_hub_lat = max_hub_lat.max(hub_lat.abs());
+                max_hub_long = max_hub_long.max(hub_long.abs());
+            }
+            // Mirrored corners must produce mirrored poses at the same travel.
+            max_lr_toe_delta = max_lr_toe_delta.max((poses[0] - poses[4]).abs());
+            max_lr_camber_delta = max_lr_camber_delta.max((poses[1] - poses[5]).abs());
+            max_lr_hub_lat_sum = max_lr_hub_lat_sum.max((poses[2] + poses[6]).abs());
+        }
+
+        println!(
+            "f1_2030 {axle} linkage sweep: |toe|max={:.4} rad ({:.2} deg) |camber|max={:.4} rad ({:.2} deg) |hubLat|max={:.1} mm |hubLong|max={:.1} mm L/R dToe={:.4} dCam={:.4}",
+            max_toe_change,
+            max_toe_change.to_degrees(),
+            max_camber_change,
+            max_camber_change.to_degrees(),
+            max_hub_lat * 1000.0,
+            max_hub_long * 1000.0,
+            max_lr_toe_delta,
+            max_lr_camber_delta,
+        );
+
+        assert!(max_hub_lat < 0.02 && max_hub_long < 0.02);
+        assert!(max_lr_toe_delta < 1e-9, "{axle} toe must mirror L/R");
+        assert!(max_lr_camber_delta < 1e-9, "{axle} camber must mirror L/R");
+        assert!(max_lr_hub_lat_sum < 1e-9, "{axle} hub lateral must mirror L/R");
+
+        // Regression bounds for the working range. The rear profile shipped with
+        // a trackrod inner 70 mm too high, producing up to 7.1 deg of bump steer
+        // (clamped to 2.9 deg at the wheel) that steered the rear axle under
+        // squat/aero load. Keep the linkage near zero over the full envelope.
+        let toe_bound = if is_front { 0.002 } else { 0.010 };
+        assert!(
+            max_toe_change < toe_bound,
+            "{axle} bump-steer excessive over real travel: {:.3} deg (bound {:.3})",
+            max_toe_change.to_degrees(),
+            toe_bound.to_degrees()
+        );
+        assert!(
+            max_camber_change < 0.02,
+            "{axle} camber swing excessive over real travel: {:.3} deg",
+            max_camber_change.to_degrees()
+        );
+    }
+}

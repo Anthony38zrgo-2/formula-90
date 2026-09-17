@@ -878,4 +878,81 @@ mod tests {
         assert!((share_sum - 1.0).abs() < 0.02, "shares sum {share_sum}");
         assert!(!paths.singular);
     }
+
+    /// The geometric wrench transmits through linkage anchors, so the applied
+    /// moment intentionally differs from the legacy contact-patch application.
+    /// What must hold is mirror consistency: a symmetric drive load on RL+RR may
+    /// produce pitch, but never net yaw or roll. Without this guard a bad
+    /// hardpoint could convert engine torque into free yaw with no test failing
+    /// (the F1 2030 rear trackrod shipped with a 70 mm mount error doing exactly
+    /// that through bump steer).
+    #[test]
+    fn f1_2030_symmetric_rear_load_has_no_net_yaw_or_roll() {
+        let cfg = crate::vehicle_config::VehicleConfig::from_json_str(include_str!(
+            "../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+        ))
+        .expect("checked-in f1_2030 profile must be valid");
+        let geo = cfg
+            .geometric_suspension
+            .as_ref()
+            .expect("geometry_physical present");
+        let body = crate::types::Transform3D::IDENTITY;
+        let cg = crate::simulation::center_of_mass_local(&cfg);
+
+        let cases: [(&str, Vec3); 2] = [
+            ("drive Fx", Vec3::new(0.0, 0.0, -3000.0)),
+            ("vertical Fz", Vec3::new(0.0, 5000.0, 0.0)),
+        ];
+        for (name, force) in cases {
+            for q in [-0.030, 0.0, 0.045] {
+                let mut net = Vec3::ZERO;
+                for wheel in [crate::types::WheelIndex::RearLeft, crate::types::WheelIndex::RearRight]
+                {
+                    let corner = geo.corners.get(wheel);
+                    let sol = crate::suspension_kinematics::solve_corner(
+                        corner, q, 0.0, false, 0.0, 0.0, 1.0,
+                    )
+                    .expect("rear linkage solves inside travel");
+                    let contact = sol.hub - Vec3::new(0.0, cfg.rear_tire_radius, 0.0);
+                    let wrench = geometric_wheel_wrench(
+                        geo,
+                        wheel,
+                        q,
+                        0.0,
+                        force,
+                        contact,
+                        Vec3::ZERO,
+                        true,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0,
+                        0.0,
+                        body,
+                        cg,
+                    );
+                    assert!(
+                        wrench.force_world.length_squared().is_finite()
+                            && wrench.torque_world.length_squared().is_finite(),
+                        "{name} q={q}: non-finite wrench"
+                    );
+                    let residual = (wrench.force_world - force).length();
+                    assert!(residual < 5.0, "{name} q={q}: force residual {residual:.2} N");
+                    net = net + wrench.torque_world;
+                }
+                assert!(
+                    net.y.abs() < 5.0,
+                    "{name} q={q}: symmetric rear load produces net yaw {:.2} Nm",
+                    net.y
+                );
+                assert!(
+                    net.z.abs() < 5.0,
+                    "{name} q={q}: symmetric rear load produces net roll {:.2} Nm",
+                    net.z
+                );
+            }
+        }
+    }
 }
