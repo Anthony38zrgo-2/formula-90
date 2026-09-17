@@ -811,3 +811,70 @@ mod engine_torque_attack_tests {
         assert_eq!(state.engine_attack_limited_torque, 0.0);
     }
 }
+
+#[cfg(test)]
+mod differential_tests {
+    use super::*;
+
+    fn f1_2030_config() -> VehicleConfig {
+        VehicleConfig::from_json_str(include_str!(
+            "../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+        ))
+        .expect("checked-in f1_2030 profile must be valid")
+    }
+
+    fn cross_torque(cfg: &VehicleConfig, axle_torque: f64, delta_omega: f64) -> f64 {
+        let (left, right) = solve_salisbury_differential(
+            axle_torque,
+            delta_omega,
+            0.0,
+            cfg.diff_preload,
+            cfg.diff_power_ramp_angle_deg,
+            cfg.diff_coast_ramp_angle_deg,
+            cfg.diff_clutches,
+            cfg.diff_clutch_friction_coeff,
+            cfg.diff_slip_transition_threshold_rad_s,
+        );
+        ((right - left) * 0.5).abs()
+    }
+
+    /// The shipped profile must keep the LSD progressive: the previous 1.0 rad/s
+    /// transition threshold reached full lock with only ~0.33 m/s of wheel-speed
+    /// difference, so under power the axle behaved like a spool and every
+    /// one-wheel spin produced a large cross-torque yaw moment. Telemetry showed
+    /// cross-torques pinned at the lock capacity (up to ~910 Nm) on track.
+    #[test]
+    fn f1_2030_differential_is_progressive_not_instant_lock() {
+        let cfg = f1_2030_config();
+        let threshold = cfg.diff_slip_transition_threshold_rad_s;
+        assert!(
+            threshold >= 4.0,
+            "shipped LSD threshold must stay progressive, got {threshold} rad/s"
+        );
+
+        let axle_torque = 3695.0; // telemetry: gear-2 full-throttle axle torque
+        let at_rest = cross_torque(&cfg, axle_torque, 0.0);
+        assert!(at_rest < 1e-9, "no cross torque at equal wheel speeds");
+
+        let tiny = cross_torque(&cfg, axle_torque, 1.0);
+        let mid = cross_torque(&cfg, axle_torque, threshold * 0.5);
+        let full = cross_torque(&cfg, axle_torque, threshold);
+        assert!(
+            tiny < 0.35 * full,
+            "lock must ramp with slip difference (1 rad/s: {tiny:.0} Nm vs full {full:.0} Nm)"
+        );
+        assert!(
+            tiny < mid && mid < full,
+            "lock must be monotone with slip difference"
+        );
+        let clamped = cross_torque(&cfg, axle_torque, threshold * 4.0);
+        assert!(
+            (clamped - full).abs() < 1e-6,
+            "lock must saturate at the transition threshold"
+        );
+        assert!(
+            full <= axle_torque * 0.5 + cfg.diff_preload + 1e-9,
+            "lock cannot exceed half the axle torque + preload"
+        );
+    }
+}

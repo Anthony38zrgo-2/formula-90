@@ -497,7 +497,7 @@
       "coast_ramp_angle_deg": 60.0,
       "power_ramp_angle_deg": 65.0,
       "preload_nm": 75.0,
-      "slip_transition_threshold_rad_s": 1.0
+      "slip_transition_threshold_rad_s": 5.0
     },
     "final_drive": 4.25,
     "front_torque_split": 0.0,
@@ -803,7 +803,7 @@
         "carcass_to_air_w_k": 3.5,
         "carcass_to_gas_w_k": 50.0,
         "gas_heat_capacity_j_k": 750.0,
-        "initial_temperature_c": 25.0,
+        "initial_temperature_c": 70.0,
         "lateral_tread_conductance_w_k": 24.0,
         "maximum_pressure_kpa_gauge": 260.0,
         "minimum_pressure_kpa_gauge": 55.0,
@@ -820,7 +820,7 @@
         "volume_deflection_gain": 0.04
       },
       "gas_heat_capacity_j_k": 750.0,
-      "initial_temperature_c": 25.0,
+      "initial_temperature_c": 70.0,
       "lateral_tread_conductance_w_k": 24.0,
       "maximum_pressure_kpa_gauge": 260.0,
       "minimum_pressure_kpa_gauge": 55.0,
@@ -835,7 +835,7 @@
         "carcass_to_air_w_k": 12.0,
         "carcass_to_gas_w_k": 22.0,
         "gas_heat_capacity_j_k": 1800.0,
-        "initial_temperature_c": 25.0,
+        "initial_temperature_c": 70.0,
         "lateral_tread_conductance_w_k": 22.0,
         "maximum_pressure_kpa_gauge": 260.0,
         "minimum_pressure_kpa_gauge": 55.0,
