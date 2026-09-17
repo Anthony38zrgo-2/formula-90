@@ -1,5 +1,7 @@
 use std::f32::consts::TAU;
 
+use crate::config::CollectorGeometry;
+
 #[derive(Clone)]
 pub struct DcBlocker {
     x1: f32,
@@ -11,6 +13,7 @@ pub struct DcBlocker {
 pub struct OnePoleLowPass {
     alpha: f32,
     state: f32,
+    bypassed: bool,
 }
 
 pub struct BandPassNoise {
@@ -41,11 +44,25 @@ impl OnePoleLowPass {
         Self {
             alpha: 1.0 - (-TAU * cutoff_hz / sample_rate).exp(),
             state: 0.0,
+            bypassed: false,
+        }
+    }
+
+    /// Transparent instance: `process` returns the input unchanged. Used to
+    /// disable a stage explicitly without changing its call site.
+    pub fn bypassed() -> Self {
+        Self {
+            alpha: 1.0,
+            state: 0.0,
+            bypassed: true,
         }
     }
 
     #[inline]
     pub fn process(&mut self, input: f32) -> f32 {
+        if self.bypassed {
+            return input;
+        }
         self.state += self.alpha * (input - self.state);
         self.state
     }
@@ -213,6 +230,13 @@ impl BlockHead {
 pub const COLLECTOR_CONFLUENCE_LOSS_COEFF: f32 = 0.08;
 /// Inflow coupling coefficient from runner incident pulses to collector chamber pressure.
 pub const COLLECTOR_CHAMBER_INFLOW_COEFF: f32 = 0.42;
+/// Unflanged-pipe radiation mass end correction as a fraction of the tailpipe
+/// radius, used by the geometric collector model.
+pub const COLLECTOR_END_CORRECTION_RADIUS_FACTOR: f32 = 0.61;
+/// Derived-mode cap for the geometric collector bank.
+const COLLECTOR_MAX_MODES: usize = 12;
+/// Highest derived collector mode considered before the sample-rate guard.
+const COLLECTOR_MAX_MODE_HZ: f32 = 6_000.0;
 
 pub struct Collector {
     body: ModalBank,
@@ -250,6 +274,69 @@ impl Collector {
             // Roughly 3.5 ms pressure relaxation. The chamber integrates the
             // flow derivative arriving from the headers and leaks toward zero.
             chamber_leak: 1.0 - (-1.0 / (0.0035 * sample_rate)).exp(),
+        }
+    }
+
+    /// Build a collector whose resonances and chamber relaxation are derived
+    /// from declared physical geometry (EXH-03).
+    ///
+    /// Assumptions, all declared rather than measured:
+    /// - the 5-in-1 junction is a lumped chamber that breathes through a
+    ///   straight unflanged tailpipe (radiation end correction `0.61 * r`),
+    /// - the fundamental is the Helmholtz resonance of chamber + tailpipe mass;
+    ///   higher modes are the odd quarter-wave harmonics of the tailpipe,
+    /// - mode decay times follow a declared energy loss per cycle
+    ///   (`tau = 2 / (loss * f)`), and the chamber pressure relaxes with the
+    ///   Helmholtz decay time,
+    /// - the open end radiates into still air: no muffler, catalyst or
+    ///   downstream restriction is modelled.
+    pub fn from_geometry(
+        sample_rate: f32,
+        bank_offset: f32,
+        geometry: &CollectorGeometry,
+    ) -> Self {
+        let speed = geometry.wave_speed_mps();
+        let length = geometry.effective_outlet_length_m();
+        let helmholtz = geometry.helmholtz_hz();
+        let loss = geometry.loss_fraction_per_cycle;
+        let radius = geometry.outlet_diameter_m * 0.5;
+        // ka = 1 for the open end: above this the opening radiates
+        // directionally and modal coupling rolls off.
+        let ka_one_hz = speed / (TAU * radius).max(1.0e-6);
+        let mode_limit = COLLECTOR_MAX_MODE_HZ.min(sample_rate * 0.48);
+
+        let mut frequencies = vec![helmholtz];
+        let mut index = 1.0;
+        loop {
+            let harmonic = (2.0 * index - 1.0) * speed / (4.0 * length);
+            if harmonic >= mode_limit || frequencies.len() >= COLLECTOR_MAX_MODES {
+                break;
+            }
+            if (harmonic - helmholtz).abs() > helmholtz * 0.05 {
+                frequencies.push(harmonic);
+            }
+            index += 1.0;
+        }
+        frequencies.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let spec: Vec<(f32, f32, f32)> = frequencies
+            .iter()
+            .map(|&frequency| {
+                // Fixed small per-bank detune, mirroring the legacy convention
+                // of a bank-dependent mode shift.
+                let frequency = (frequency + bank_offset).max(1.0);
+                let decay = (2.0 / (loss * frequency)).clamp(0.0006, 1.5);
+                let gain = geometry.mode_coupling / (1.0 + (frequency / ka_one_hz).powi(2));
+                (frequency, decay, gain)
+            })
+            .collect();
+
+        let decay_time = (2.0 / (loss * helmholtz)).clamp(0.0006, 1.5);
+        Self {
+            body: ModalBank::new(&spec, sample_rate),
+            dc: DcBlocker::new(18.0, sample_rate),
+            chamber_pressure: 0.0,
+            chamber_leak: 1.0 - (-1.0 / (decay_time * sample_rate)).exp(),
         }
     }
 
@@ -323,5 +410,66 @@ mod tests {
         let f2 = c2.process_bank(&[0.5, -0.5, 0.0, 0.0, 0.0]);
         assert!(f1.pressure > f2.pressure, "in-phase pulses must create higher junction pressure");
         assert!(f1.radiated.abs() > f2.radiated.abs(), "in-phase pulses must radiate higher amplitude");
+    }
+
+    fn geometry() -> CollectorGeometry {
+        CollectorGeometry {
+            volume_l: 2.5,
+            outlet_length_m: 0.35,
+            outlet_diameter_m: 0.09,
+            gas_temperature_k: 1_000.0,
+            loss_fraction_per_cycle: 0.5,
+            mode_coupling: 0.6,
+        }
+    }
+
+    #[test]
+    fn geometric_collector_resonance_follows_declared_geometry() {
+        let base = geometry();
+        let fundamental = base.helmholtz_hz();
+        let mut larger = base.clone();
+        larger.volume_l = 5.0;
+        let mut longer = base.clone();
+        longer.outlet_length_m = 0.70;
+        let mut hotter = base.clone();
+        hotter.gas_temperature_k = 1_400.0;
+        let mut wider = base.clone();
+        wider.outlet_diameter_m = 0.15;
+        assert!(larger.helmholtz_hz() < fundamental);
+        assert!(longer.helmholtz_hz() < fundamental);
+        assert!(hotter.helmholtz_hz() > fundamental);
+        assert!(wider.helmholtz_hz() > fundamental);
+        assert!(base.validate(48_000).is_ok());
+    }
+
+    #[test]
+    fn geometric_collector_impulse_stays_finite_and_decays() {
+        let mut collector = Collector::from_geometry(48_000.0, -3.5, &geometry());
+        let mut peak = 0.0f32;
+        let tail_start = 48_000 * 2 - 4_800;
+        let mut tail_peak = 0.0f32;
+        for sample in 0..(48_000 * 2) {
+            let frame =
+                collector.process_bank(&[if sample == 0 { 1.0 } else { 0.0 }, 0.0, 0.0, 0.0, 0.0]);
+            assert!(frame.pressure.is_finite() && frame.radiated.is_finite());
+            peak = peak.max(frame.radiated.abs());
+            if sample >= tail_start {
+                tail_peak = tail_peak.max(frame.radiated.abs());
+            }
+        }
+        assert!(peak > 0.0);
+        assert!(
+            tail_peak < peak * 1.0e-3,
+            "collector tail must decay: {tail_peak} vs {peak}"
+        );
+    }
+
+    #[test]
+    fn bypassed_lowpass_is_transparent() {
+        let mut filter = OnePoleLowPass::bypassed();
+        for sample in 0..32 {
+            let input = sample as f32 * 0.25 - 3.0;
+            assert_eq!(filter.process(input), input);
+        }
     }
 }

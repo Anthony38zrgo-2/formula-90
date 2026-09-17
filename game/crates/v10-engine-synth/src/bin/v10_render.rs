@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 
 use v10_engine_synth::wav::write_mono_pcm16;
 use v10_engine_synth::{
-    AcousticScene, AcousticSceneConfig, EngineConfig, EngineFrame, EngineInput, SampleLayerInput,
-    ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
+    AcousticScene, AcousticSceneConfig, CollectorGeometry, EngineConfig, EngineFrame, EngineInput,
+    SampleLayerInput, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
 };
 
 const HYBRID_HEADROOM_GAIN: f32 = 0.61;
@@ -62,6 +62,15 @@ struct Args {
     load: f32,
     sample_rate: u32,
     seed: u64,
+    header_length_scale: f32,
+    exhaust_gain: Option<f32>,
+    collector_geometry: bool,
+    collector_volume_l: f32,
+    collector_outlet_length_m: f32,
+    collector_outlet_diameter_m: f32,
+    collector_gas_temperature_k: f32,
+    collector_loss_fraction: f32,
+    collector_mode_coupling: f32,
     out: PathBuf,
     stems_dir: PathBuf,
     acoustic_scene: bool,
@@ -76,6 +85,8 @@ struct Args {
     sample_residual_scale: f32,
     sample_residual_gain: Option<f32>,
     scene_gains: Vec<(String, f32)>,
+    metal_lowpass_hz: Option<f32>,
+    cover_lowpass_hz: Option<f32>,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -100,6 +111,15 @@ fn parse_args() -> Result<Args, String> {
         load: 0.78,
         sample_rate: 48_000,
         seed: 0xF090_0010,
+        header_length_scale: 1.0,
+        exhaust_gain: None,
+        collector_geometry: false,
+        collector_volume_l: 2.5,
+        collector_outlet_length_m: 0.35,
+        collector_outlet_diameter_m: 0.09,
+        collector_gas_temperature_k: 1_000.0,
+        collector_loss_fraction: 0.5,
+        collector_mode_coupling: 0.6,
         out: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm.wav"),
         stems_dir: PathBuf::from("reports/audio/rust-greenfield/gf310_5000rpm_stems"),
         acoustic_scene: false,
@@ -114,6 +134,8 @@ fn parse_args() -> Result<Args, String> {
         sample_residual_scale: 1.0,
         sample_residual_gain: None,
         scene_gains: Vec::new(),
+        metal_lowpass_hz: None,
+        cover_lowpass_hz: None,
     };
     let mut i = 0;
     while i < raw.len() {
@@ -125,6 +147,37 @@ fn parse_args() -> Result<Args, String> {
             "--load" => parsed.load = parse_value(&raw, &mut i, "--load")?,
             "--sample-rate" => parsed.sample_rate = parse_value(&raw, &mut i, "--sample-rate")?,
             "--seed" => parsed.seed = parse_value(&raw, &mut i, "--seed")?,
+            "--header-length-scale" => {
+                parsed.header_length_scale =
+                    parse_value(&raw, &mut i, "--header-length-scale")?
+            }
+            "--exhaust-gain" => {
+                parsed.exhaust_gain = Some(parse_value(&raw, &mut i, "--exhaust-gain")?)
+            }
+            "--collector-geometry" => parsed.collector_geometry = true,
+            "--collector-volume-l" => {
+                parsed.collector_volume_l = parse_value(&raw, &mut i, "--collector-volume-l")?
+            }
+            "--collector-outlet-length-m" => {
+                parsed.collector_outlet_length_m =
+                    parse_value(&raw, &mut i, "--collector-outlet-length-m")?
+            }
+            "--collector-outlet-diameter-m" => {
+                parsed.collector_outlet_diameter_m =
+                    parse_value(&raw, &mut i, "--collector-outlet-diameter-m")?
+            }
+            "--collector-gas-temperature-k" => {
+                parsed.collector_gas_temperature_k =
+                    parse_value(&raw, &mut i, "--collector-gas-temperature-k")?
+            }
+            "--collector-loss-fraction" => {
+                parsed.collector_loss_fraction =
+                    parse_value(&raw, &mut i, "--collector-loss-fraction")?
+            }
+            "--collector-mode-coupling" => {
+                parsed.collector_mode_coupling =
+                    parse_value(&raw, &mut i, "--collector-mode-coupling")?
+            }
             "--out" => parsed.out = PathBuf::from(parse_value::<String>(&raw, &mut i, "--out")?),
             "--stems-dir" => {
                 parsed.stems_dir =
@@ -170,6 +223,12 @@ fn parse_args() -> Result<Args, String> {
             "--sample-residual-gain" => {
                 parsed.sample_residual_gain =
                     Some(parse_value(&raw, &mut i, "--sample-residual-gain")?)
+            }
+            "--metal-lowpass-hz" => {
+                parsed.metal_lowpass_hz = Some(parse_value(&raw, &mut i, "--metal-lowpass-hz")?)
+            }
+            "--cover-lowpass-hz" => {
+                parsed.cover_lowpass_hz = Some(parse_value(&raw, &mut i, "--cover-lowpass-hz")?)
             }
             "--scene-gain" => {
                 let spec = parse_value::<String>(&raw, &mut i, "--scene-gain")?;
@@ -272,6 +331,28 @@ fn render_input(args: &Args, time_s: f32) -> EngineInput {
     }
 }
 
+fn exhaust_gain_label(args: &Args) -> String {
+    match args.exhaust_gain {
+        Some(gain) => format!("{gain:.6}"),
+        None => "baseline".into(),
+    }
+}
+
+fn collector_geometry_label(args: &Args) -> String {
+    if !args.collector_geometry {
+        return "off".into();
+    }
+    format!(
+        "volume_l={:.4},outlet_length_m={:.4},outlet_diameter_m={:.4},gas_temperature_k={:.1},loss_fraction_per_cycle={:.4},mode_coupling={:.4}",
+        args.collector_volume_l,
+        args.collector_outlet_length_m,
+        args.collector_outlet_diameter_m,
+        args.collector_gas_temperature_k,
+        args.collector_loss_fraction,
+        args.collector_mode_coupling,
+    )
+}
+
 fn git_head() -> String {
     std::process::Command::new("git")
         .args(["rev-parse", "HEAD"])
@@ -347,33 +428,59 @@ fn main() {
 
 fn run() -> Result<(), String> {
     let args = parse_args()?;
-    let config = EngineConfig {
+    let mut config = EngineConfig {
         sample_rate: args.sample_rate,
         seed: args.seed,
+        header_length_scale: args.header_length_scale,
+        collector_geometry: args.collector_geometry.then(|| CollectorGeometry {
+            volume_l: args.collector_volume_l,
+            outlet_length_m: args.collector_outlet_length_m,
+            outlet_diameter_m: args.collector_outlet_diameter_m,
+            gas_temperature_k: args.collector_gas_temperature_k,
+            loss_fraction_per_cycle: args.collector_loss_fraction,
+            mode_coupling: args.collector_mode_coupling,
+        }),
         ..EngineConfig::default()
     };
+    if let Some(gain) = args.exhaust_gain {
+        config.exhaust_gain = gain;
+    }
     let mut engine = V10Engine::new(config.clone())?;
     let mut scene_config = AcousticSceneConfig::default();
+    if let Some(hz) = args.metal_lowpass_hz {
+        scene_config.metal_panel_lowpass_hz = hz;
+    }
+    if let Some(hz) = args.cover_lowpass_hz {
+        scene_config.cover_radiation_lowpass_hz = hz;
+    }
     for (name, gain) in &args.scene_gains {
         let slot = match name.as_str() {
             "dry_low" => &mut scene_config.dry_low_gain,
             "dry_mid" => &mut scene_config.dry_mid_gain,
             "dry_high" => &mut scene_config.dry_high_gain,
+            "engine_air" => &mut scene_config.engine_air_gain,
             "metal" => &mut scene_config.metal_gain,
             "airbox" => &mut scene_config.airbox_gain,
             "engine_cover" => &mut scene_config.engine_cover_gain,
             "mount_monocoque" => &mut scene_config.mount_monocoque_gain,
             "under_seat" => &mut scene_config.under_seat_gain,
+            "output" => &mut scene_config.output_gain,
             _ => return Err(format!("unknown scene branch: {name}")),
         };
         *slot = *gain;
     }
-    let scene_gain_overrides = args
+    let mut scene_gain_overrides = args
         .scene_gains
         .iter()
         .map(|(name, gain)| format!("{name}={gain}"))
         .collect::<Vec<_>>()
         .join(",");
+    if let Some(hz) = args.metal_lowpass_hz {
+        scene_gain_overrides.push_str(&format!(",metal_lowpass_hz={hz}"));
+    }
+    if let Some(hz) = args.cover_lowpass_hz {
+        scene_gain_overrides.push_str(&format!(",cover_lowpass_hz={hz}"));
+    }
     let mut scene = AcousticScene::new(args.sample_rate as f32, scene_config)?;
     let mut sample_layer = args
         .sample_layer_dir
@@ -857,6 +964,9 @@ fn run() -> Result<(), String> {
             "  \"source_fingerprint\": \"{}\",\n",
             "  \"sample_rate\": {},\n",
             "  \"seed\": {},\n",
+            "  \"header_length_scale\": {:.6},\n",
+            "  \"exhaust_gain\": \"{}\",\n",
+            "  \"collector_geometry\": \"{}\",\n",
             "  \"profile\": \"{}\",\n",
             "  \"rpm\": {:.3},\n",
             "  \"peak_rpm\": {:.3},\n",
@@ -897,6 +1007,9 @@ fn run() -> Result<(), String> {
         source_fingerprint(),
         args.sample_rate,
         args.seed,
+        args.header_length_scale,
+        exhaust_gain_label(&args),
+        collector_geometry_label(&args),
         profile,
         args.rpm,
         peak_rpm,

@@ -154,17 +154,23 @@ impl V10Engine {
             block_head: BlockHead::new(sample_rate),
             headers: std::array::from_fn(|index| {
                 RunnerWaveguide::new(
-                    config.header_lengths_m[index],
+                    config.effective_header_lengths_m()[index],
                     config.exhaust_wave_speed_mps,
                     config.header_reflection,
                     sample_rate,
                     config.use_temperature_dependent_wave_speed,
                 )
             }),
-            collectors: [
-                Collector::new(sample_rate, -3.5),
-                Collector::new(sample_rate, 3.5),
-            ],
+            collectors: match &config.collector_geometry {
+                Some(geometry) => [
+                    Collector::from_geometry(sample_rate, -3.5, geometry),
+                    Collector::from_geometry(sample_rate, 3.5, geometry),
+                ],
+                None => [
+                    Collector::new(sample_rate, -3.5),
+                    Collector::new(sample_rate, 3.5),
+                ],
+            },
             source_dc: DcBlocker::new(16.0, sample_rate),
             master_dc: DcBlocker::new(16.0, sample_rate),
             input: EngineInput {

@@ -47,6 +47,83 @@ fn bed_code(token: &str) -> u8 {
     }
 }
 
+/// Translate the profile `audio.gf509` section into explicit layer tuning.
+/// Absent keys reproduce shipped GF509 behavior exactly; geometry keys select
+/// an exhaust candidate only when the profile declares them.
+fn v10_layer_tuning_from_section(
+    section: Option<&serde_json::Value>,
+) -> Result<vehicle_audio_engine::V10LayerTuning, String> {
+    let mut tuning = vehicle_audio_engine::V10LayerTuning::default();
+    let Some(section) = section else {
+        return Ok(tuning);
+    };
+    tuning.disable_sample_rasp = section
+        .get("disable_sample_rasp")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    tuning.residual_gain_scale = section
+        .get("residual_gain_scale")
+        .and_then(serde_json::Value::as_f64)
+        .map(|value| value as f32);
+    if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object()) {
+        for (branch, gain) in gains {
+            if let Some(gain) = gain.as_f64() {
+                tuning.scene_gains.push((branch.clone(), gain as f32));
+            }
+        }
+    }
+    if let Some(scale) = section.get("header_length_scale").and_then(serde_json::Value::as_f64) {
+        tuned_scalar(&mut tuning.header_length_scale, "header_length_scale", scale)?;
+    }
+    if let Some(hz) = section
+        .get("metal_panel_lowpass_hz")
+        .and_then(serde_json::Value::as_f64)
+    {
+        tuned_scalar(
+            &mut tuning.metal_panel_lowpass_hz,
+            "metal_panel_lowpass_hz",
+            hz,
+        )?;
+    }
+    if let Some(hz) = section
+        .get("cover_radiation_lowpass_hz")
+        .and_then(serde_json::Value::as_f64)
+    {
+        tuned_scalar(
+            &mut tuning.cover_radiation_lowpass_hz,
+            "cover_radiation_lowpass_hz",
+            hz,
+        )?;
+    }
+    if let Some(geometry) = section.get("collector_geometry").filter(|value| !value.is_null()) {
+        let field = |name: &str| -> Result<f32, String> {
+            geometry
+                .get(name)
+                .and_then(serde_json::Value::as_f64)
+                .map(|value| value as f32)
+                .ok_or_else(|| format!("collector_geometry.{name} missing or not a number"))
+        };
+        tuning.collector_geometry = Some(v10_engine_synth::CollectorGeometry {
+            volume_l: field("volume_l")?,
+            outlet_length_m: field("outlet_length_m")?,
+            outlet_diameter_m: field("outlet_diameter_m")?,
+            gas_temperature_k: field("gas_temperature_k")?,
+            loss_fraction_per_cycle: field("loss_fraction_per_cycle")?,
+            mode_coupling: field("mode_coupling")?,
+        });
+    }
+    Ok(tuning)
+}
+
+fn tuned_scalar(slot: &mut Option<f32>, name: &str, value: f64) -> Result<(), String> {
+    let value = value as f32;
+    if !value.is_finite() {
+        return Err(format!("{name} is not finite"));
+    }
+    *slot = Some(value);
+    Ok(())
+}
+
 /// Legacy one-shot code table (mirrors `VehicleAudioControllerNative::trigger_code`).
 fn code_from_bank_key(key: &str) -> i32 {
     match key {
@@ -237,25 +314,15 @@ impl AudioModule {
                 });
                 // Optional per-profile layer tuning. Absent keys reproduce
                 // shipped GF509 behavior exactly.
-                let mut tuning = vehicle_audio_engine::V10LayerTuning::default();
-                if let Some(section) = gf509_section {
-                    tuning.disable_sample_rasp = section
-                        .get("disable_sample_rasp")
-                        .and_then(serde_json::Value::as_bool)
-                        .unwrap_or(false);
-                    tuning.residual_gain_scale = section
-                        .get("residual_gain_scale")
-                        .and_then(serde_json::Value::as_f64)
-                        .map(|value| value as f32);
-                    if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object())
-                    {
-                        for (branch, gain) in gains {
-                            if let Some(gain) = gain.as_f64() {
-                                tuning.scene_gains.push((branch.clone(), gain as f32));
-                            }
-                        }
+                let tuning = match v10_layer_tuning_from_section(gf509_section) {
+                    Ok(tuning) => tuning,
+                    Err(error) => {
+                        eprintln!(
+                            "[formula90_core] GF509 tuning invalid; using baseline geometry: {error}"
+                        );
+                        vehicle_audio_engine::V10LayerTuning::default()
                     }
-                }
+                };
                 match bank_directory.as_deref() {
                     Some(directory) => {
                         if let Err(error) = eng.enable_v10_layer(directory, &tuning) {
@@ -493,5 +560,60 @@ fn trigger_from_code(code: i32) -> Option<Trigger> {
         9 => Some(Trigger::Fire),
         10 => Some(Trigger::Scrape),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn absent_gf509_section_keeps_baseline_geometry() {
+        let tuning = v10_layer_tuning_from_section(None).unwrap();
+        assert!(tuning.header_length_scale.is_none());
+        assert!(tuning.collector_geometry.is_none());
+        assert!(tuning.scene_gains.is_empty());
+    }
+
+    #[test]
+    fn geometry_keys_are_transported_explicitly() {
+        let section = serde_json::json!({
+            "scene_gains": { "metal": 0.855 },
+            "header_length_scale": 1.5,
+            "collector_geometry": {
+                "volume_l": 2.5,
+                "outlet_length_m": 0.35,
+                "outlet_diameter_m": 0.09,
+                "gas_temperature_k": 1000.0,
+                "loss_fraction_per_cycle": 0.5,
+                "mode_coupling": 0.6
+            }
+        });
+        let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
+        assert_eq!(tuning.header_length_scale, Some(1.5));
+        let geometry = tuning.collector_geometry.unwrap();
+        assert_eq!(geometry.volume_l, 2.5);
+        assert_eq!(geometry.outlet_diameter_m, 0.09);
+    }
+
+    #[test]
+    fn incomplete_collector_geometry_is_rejected() {
+        let section = serde_json::json!({
+            "collector_geometry": { "volume_l": 2.5 }
+        });
+        assert!(v10_layer_tuning_from_section(Some(&section)).is_err());
+    }
+
+    #[test]
+    fn scene_filter_keys_are_transported_explicitly() {
+        let section = serde_json::json!({
+            "scene_gains": { "engine_air": 0.841, "metal": 0.0 },
+            "metal_panel_lowpass_hz": 1_000_000.0,
+            "cover_radiation_lowpass_hz": 1_000_000.0
+        });
+        let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
+        assert_eq!(tuning.metal_panel_lowpass_hz, Some(1_000_000.0));
+        assert_eq!(tuning.cover_radiation_lowpass_hz, Some(1_000_000.0));
+        assert!(tuning.scene_gains.contains(&("engine_air".to_string(), 0.841)));
     }
 }

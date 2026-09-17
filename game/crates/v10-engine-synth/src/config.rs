@@ -43,6 +43,11 @@ pub struct EngineConfig {
     pub cylinder_spread: f32,
     pub cylinder_signature: [f32; 10],
     pub header_lengths_m: [f32; 10],
+    /// Uniform multiplier applied to `header_lengths_m` for an explicitly
+    /// selected exhaust-geometry candidate. 1.0 reproduces the declared
+    /// lengths exactly; the scale keeps the experiment reversible instead of
+    /// silently replacing the shared default.
+    pub header_length_scale: f32,
     pub exhaust_wave_speed_mps: f32,
     pub header_reflection: f32,
     /// Derive the exhaust wave speed from the runner gas temperature
@@ -51,6 +56,10 @@ pub struct EngineConfig {
     /// Use the physical runner mass-flow delta (PHY-052) as the header
     /// excitation, instead of the legacy `pressure * lift^1.35` proxy.
     pub use_physical_exhaust_excitation: bool,
+    /// Optional physical 5-in-1 collector geometry (EXH-03). `None` keeps the
+    /// legacy reduced-order modal collector bit-for-bit; `Some` derives the
+    /// collector resonances and chamber relaxation from the declared geometry.
+    pub collector_geometry: Option<CollectorGeometry>,
     /// Level-matching gain from normalised runner mass-flow delta to the
     /// acoustic excitation amplitude (measured in PHY-052).
     pub exhaust_excitation_gain: f32,
@@ -107,10 +116,12 @@ impl Default for EngineConfig {
             header_lengths_m: [
                 0.535, 0.557, 0.548, 0.571, 0.562, 0.541, 0.566, 0.552, 0.578, 0.559,
             ],
+            header_length_scale: 1.0,
             exhaust_wave_speed_mps: 545.0,
             header_reflection: -0.34,
             use_temperature_dependent_wave_speed: true,
             use_physical_exhaust_excitation: true,
+            collector_geometry: None,
             // Level-matched so the physical mass-flow delta lands at the same
             // acoustic amplitude as the proxy blowdown at the PHY-052 reference
             // point (rpm=7499, throttle=0.72, load=0.66): proxy max peak ~0.0159
@@ -191,7 +202,15 @@ impl EngineConfig {
 
     fn validate_exhaust(&self) -> Result<(), String> {
         self.validate_exhaust_timing()?;
-        self.validate_exhaust_wave()
+        self.validate_exhaust_wave()?;
+        self.validate_collector()
+    }
+
+    fn validate_collector(&self) -> Result<(), String> {
+        let Some(geometry) = &self.collector_geometry else {
+            return Ok(());
+        };
+        geometry.validate(self.sample_rate)
     }
 
     fn validate_exhaust_timing(&self) -> Result<(), String> {
@@ -255,6 +274,18 @@ impl EngineConfig {
         {
             return Err("header length outside supported range".into());
         }
+        if !self.header_length_scale.is_finite()
+            || !(0.4..=2.0).contains(&self.header_length_scale)
+        {
+            return Err("header length scale outside supported range".into());
+        }
+        if self
+            .effective_header_lengths_m()
+            .iter()
+            .any(|&x| !(0.2..=1.5).contains(&x))
+        {
+            return Err("effective header length outside supported range".into());
+        }
         if self.header_reflection.abs() >= 0.75 {
             return Err("header reflection must remain safely below unity".into());
         }
@@ -310,6 +341,12 @@ impl EngineConfig {
         self.cylinder_displacement_liters() * crate::crank::CYLINDER_COUNT as f32
     }
 
+    /// Header lengths after the explicitly selected geometry-candidate scale.
+    pub fn effective_header_lengths_m(&self) -> [f32; 10] {
+        self.header_lengths_m
+            .map(|length| length * self.header_length_scale)
+    }
+
     /// Extract the dedicated physical engine configuration (PHY-130).
     pub fn physical(&self) -> PhysicalEngineConfig {
         PhysicalEngineConfig {
@@ -340,10 +377,12 @@ impl EngineConfig {
             cylinder_spread: self.cylinder_spread,
             cylinder_signature: self.cylinder_signature,
             header_lengths_m: self.header_lengths_m,
+            header_length_scale: self.header_length_scale,
             exhaust_wave_speed_mps: self.exhaust_wave_speed_mps,
             header_reflection: self.header_reflection,
             use_temperature_dependent_wave_speed: self.use_temperature_dependent_wave_speed,
             use_physical_exhaust_excitation: self.use_physical_exhaust_excitation,
+            collector_geometry: self.collector_geometry.clone(),
             exhaust_excitation_gain: self.exhaust_excitation_gain,
         }
     }
@@ -398,10 +437,12 @@ impl EngineConfig {
             cylinder_spread: physical.cylinder_spread,
             cylinder_signature: physical.cylinder_signature,
             header_lengths_m: physical.header_lengths_m,
+            header_length_scale: physical.header_length_scale,
             exhaust_wave_speed_mps: physical.exhaust_wave_speed_mps,
             header_reflection: physical.header_reflection,
             use_temperature_dependent_wave_speed: physical.use_temperature_dependent_wave_speed,
             use_physical_exhaust_excitation: physical.use_physical_exhaust_excitation,
+            collector_geometry: physical.collector_geometry.clone(),
             exhaust_excitation_gain: physical.exhaust_excitation_gain,
             pressure_direct_gain: mix.pressure_direct_gain,
             crankcase_gain: mix.crankcase_gain,
@@ -411,6 +452,86 @@ impl EngineConfig {
             turbulence_gain: mix.turbulence_gain,
             master_gain: mix.master_gain,
         }
+    }
+}
+
+/// Declared 5-in-1 collector geometry for the reduced-order physical collector
+/// (EXH-03). Every value is a design assumption for the experiment, not a
+/// measurement of the real car: the model treats the 5-in-1 junction as a
+/// lumped chamber of `volume_l` that breathes through a straight tailpipe of
+/// `outlet_length_m` and `outlet_diameter_m`, radiating from an unflanged open
+/// end into still air at the declared design temperature.
+#[derive(Clone, Debug, PartialEq)]
+pub struct CollectorGeometry {
+    /// Lumped chamber volume per bank (L).
+    pub volume_l: f32,
+    /// Straight tailpipe length from the junction to the open end (m).
+    pub outlet_length_m: f32,
+    /// Tailpipe diameter (m).
+    pub outlet_diameter_m: f32,
+    /// Design gas temperature for the collector wave speed (K).
+    pub gas_temperature_k: f32,
+    /// Fraction of modal energy lost per cycle, used to derive mode decay
+    /// times (`tau = 2 / (loss * f)`).
+    pub loss_fraction_per_cycle: f32,
+    /// Modal excitation coupling into the radiated collector mix.
+    pub mode_coupling: f32,
+}
+
+impl CollectorGeometry {
+    pub fn validate(&self, sample_rate: u32) -> Result<(), String> {
+        if !self.volume_l.is_finite() || !(0.5..=10.0).contains(&self.volume_l) {
+            return Err("collector volume outside declared range".into());
+        }
+        if !self.outlet_length_m.is_finite() || !(0.05..=1.5).contains(&self.outlet_length_m) {
+            return Err("collector outlet length outside declared range".into());
+        }
+        if !self.outlet_diameter_m.is_finite() || !(0.02..=0.30).contains(&self.outlet_diameter_m) {
+            return Err("collector outlet diameter outside declared range".into());
+        }
+        if !self.gas_temperature_k.is_finite() || !(300.0..=1_800.0).contains(&self.gas_temperature_k)
+        {
+            return Err("collector gas temperature outside declared range".into());
+        }
+        if !self.loss_fraction_per_cycle.is_finite()
+            || !(0.05..=0.9).contains(&self.loss_fraction_per_cycle)
+        {
+            return Err("collector loss fraction outside declared range".into());
+        }
+        if !self.mode_coupling.is_finite() || !(0.0..=2.0).contains(&self.mode_coupling) {
+            return Err("collector mode coupling outside declared range".into());
+        }
+        let helmholtz = self.helmholtz_hz();
+        if !helmholtz.is_finite() || !(1.0..=sample_rate as f32 * 0.48).contains(&helmholtz) {
+            return Err("collector Helmholtz resonance outside the audio band".into());
+        }
+        Ok(())
+    }
+
+    /// Speed of sound at the declared collector gas temperature (m/s).
+    pub fn wave_speed_mps(&self) -> f32 {
+        (crate::thermodynamics::exhaust_runner::GAMMA
+            * crate::thermodynamics::exhaust_runner::SPECIFIC_GAS_CONSTANT_J_PER_KG_K
+            * self.gas_temperature_k)
+            .sqrt()
+    }
+
+    /// Effective tailpipe length including the unflanged-end radiation mass
+    /// correction `0.61 * r` (m).
+    pub fn effective_outlet_length_m(&self) -> f32 {
+        let radius = self.outlet_diameter_m * 0.5;
+        self.outlet_length_m + crate::acoustics::COLLECTOR_END_CORRECTION_RADIUS_FACTOR * radius
+    }
+
+    /// Helmholtz resonance of the chamber volume breathing through the
+    /// tailpipe mass (Hz).
+    pub fn helmholtz_hz(&self) -> f32 {
+        use std::f32::consts::{PI, TAU};
+        let volume_m3 = self.volume_l * 1.0e-3;
+        let radius = self.outlet_diameter_m * 0.5;
+        let area = PI * radius * radius;
+        let length = self.effective_outlet_length_m();
+        self.wave_speed_mps() / TAU * (area / (volume_m3 * length)).sqrt()
     }
 }
 
@@ -444,10 +565,12 @@ pub struct PhysicalEngineConfig {
     pub cylinder_spread: f32,
     pub cylinder_signature: [f32; 10],
     pub header_lengths_m: [f32; 10],
+    pub header_length_scale: f32,
     pub exhaust_wave_speed_mps: f32,
     pub header_reflection: f32,
     pub use_temperature_dependent_wave_speed: bool,
     pub use_physical_exhaust_excitation: bool,
+    pub collector_geometry: Option<CollectorGeometry>,
     pub exhaust_excitation_gain: f32,
 }
 
@@ -488,6 +611,67 @@ mod tests {
         assert_eq!(roundtrip.physical(), phys);
         assert_eq!(roundtrip.mix(), mix);
         assert!(roundtrip.validate().is_ok());
+    }
+
+    #[test]
+    fn header_length_scale_defaults_to_declared_geometry() {
+        let config = EngineConfig::default();
+        assert_eq!(config.header_length_scale, 1.0);
+        assert_eq!(config.effective_header_lengths_m(), config.header_lengths_m);
+    }
+
+    #[test]
+    fn header_length_scale_scales_every_primary_uniformly() {
+        let mut config = EngineConfig::default();
+        config.header_length_scale = 1.5;
+        let scaled = config.effective_header_lengths_m();
+        for (scaled_length, declared) in scaled.iter().zip(config.header_lengths_m.iter()) {
+            assert!((scaled_length / declared - 1.5).abs() < 1.0e-6);
+        }
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn header_length_scale_rejects_out_of_range_values_and_effective_lengths() {
+        let mut config = EngineConfig::default();
+        config.header_length_scale = 0.0;
+        assert!(config.validate().is_err());
+        config.header_length_scale = 2.5;
+        assert!(config.validate().is_err());
+        config.header_length_scale = 2.0;
+        config.header_lengths_m[0] = 1.0;
+        assert!(config.validate().is_err());
+    }
+
+    fn collector_geometry() -> CollectorGeometry {
+        CollectorGeometry {
+            volume_l: 2.5,
+            outlet_length_m: 0.35,
+            outlet_diameter_m: 0.09,
+            gas_temperature_k: 1_000.0,
+            loss_fraction_per_cycle: 0.5,
+            mode_coupling: 0.6,
+        }
+    }
+
+    #[test]
+    fn collector_geometry_defaults_to_legacy_and_validates_candidates() {
+        let mut config = EngineConfig::default();
+        assert!(config.collector_geometry.is_none());
+        assert!(config.validate().is_ok());
+
+        config.collector_geometry = Some(collector_geometry());
+        assert!(config.validate().is_ok());
+
+        let mut invalid = collector_geometry();
+        invalid.volume_l = 0.0;
+        config.collector_geometry = Some(invalid);
+        assert!(config.validate().is_err());
+
+        let mut invalid = collector_geometry();
+        invalid.loss_fraction_per_cycle = 0.0;
+        config.collector_geometry = Some(invalid);
+        assert!(config.validate().is_err());
     }
 }
 

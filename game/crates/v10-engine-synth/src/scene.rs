@@ -8,12 +8,31 @@ pub struct AcousticSceneConfig {
     pub dry_low_gain: f32,
     pub dry_mid_gain: f32,
     pub dry_high_gain: f32,
+    /// Gain on the air-propagated dry branch in the scene mix (default 1.0).
+    pub engine_air_gain: f32,
     pub metal_gain: f32,
     pub airbox_gain: f32,
     pub engine_cover_gain: f32,
     pub mount_monocoque_gain: f32,
     pub under_seat_gain: f32,
     pub output_gain: f32,
+    /// One-pole lowpass on the thin-panel branch of the metallic structure (Hz).
+    /// A value at or above `0.48 * sample_rate` disables (bypasses) the filter.
+    pub metal_panel_lowpass_hz: f32,
+    /// One-pole lowpass on the engine-cover radiation (Hz). A value at or above
+    /// `0.48 * sample_rate` disables (bypasses) the filter.
+    pub cover_radiation_lowpass_hz: f32,
+}
+
+/// Build a one-pole lowpass, or a transparent passthrough when the requested
+/// cutoff reaches the Nyquist guard: an explicit, reversible way to disable a
+/// filter stage for diagnostics.
+fn lowpass_or_bypass(cutoff_hz: f32, sample_rate: f32) -> OnePoleLowPass {
+    if cutoff_hz >= sample_rate * 0.48 {
+        OnePoleLowPass::bypassed()
+    } else {
+        OnePoleLowPass::new(cutoff_hz, sample_rate)
+    }
 }
 
 impl Default for AcousticSceneConfig {
@@ -22,12 +41,15 @@ impl Default for AcousticSceneConfig {
             dry_low_gain: 0.18,
             dry_mid_gain: 0.46,
             dry_high_gain: 0.14,
+            engine_air_gain: 1.0,
             metal_gain: 1.00,
             airbox_gain: 0.85,
             engine_cover_gain: 0.42,
             mount_monocoque_gain: 0.06,
             under_seat_gain: 0.04,
             output_gain: 2.90,
+            metal_panel_lowpass_hz: 6_200.0,
+            cover_radiation_lowpass_hz: 6_400.0,
         }
     }
 }
@@ -328,7 +350,7 @@ impl EngineMountMonocoque {
 }
 
 impl EngineCover {
-    pub fn new(sample_rate: f32) -> Self {
+    pub fn new(sample_rate: f32, radiation_lowpass_hz: f32) -> Self {
         // Panel radiation faces the cockpit microphone ~0.45 m away.
         let delay_samples = (0.001309 * sample_rate).round().max(1.0) as usize;
         Self {
@@ -356,7 +378,7 @@ impl EngineCover {
             propagation_delay: vec![0.0; delay_samples + 1],
             delay_cursor: 0,
             dc: DcBlocker::new(420.0, sample_rate),
-            radiation_lowpass: OnePoleLowPass::new(6_400.0, sample_rate),
+            radiation_lowpass: lowpass_or_bypass(radiation_lowpass_hz, sample_rate),
         }
     }
 
@@ -504,7 +526,7 @@ pub struct MetallicStructure {
 }
 
 impl MetallicStructure {
-    pub fn new(sample_rate: f32) -> Self {
+    pub fn new(sample_rate: f32, panel_lowpass_hz: f32) -> Self {
         let delay = |milliseconds: f32| {
             vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
         };
@@ -560,7 +582,7 @@ impl MetallicStructure {
                 ],
                 sample_rate,
             ),
-            panel_lowpass: OnePoleLowPass::new(6_200.0, sample_rate),
+            panel_lowpass: lowpass_or_bypass(panel_lowpass_hz, sample_rate),
             panel_highpass: DcBlocker::new(1_650.0, sample_rate),
             dc: DcBlocker::new(45.0, sample_rate),
             cast_delay: delay(3.036),
@@ -662,20 +684,23 @@ impl AcousticScene {
         if !(0.0..=1.5).contains(&config.dry_low_gain)
             || !(0.0..=1.5).contains(&config.dry_mid_gain)
             || !(0.0..=1.5).contains(&config.dry_high_gain)
+            || !(0.0..=1.5).contains(&config.engine_air_gain)
             || !(0.0..=1.5).contains(&config.metal_gain)
             || !(0.0..=1.5).contains(&config.airbox_gain)
             || !(0.0..=1.5).contains(&config.engine_cover_gain)
             || !(0.0..=1.5).contains(&config.mount_monocoque_gain)
             || !(0.0..=1.5).contains(&config.under_seat_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
+            || !(100.0..=1_000_000.0).contains(&config.metal_panel_lowpass_hz)
+            || !(100.0..=1_000_000.0).contains(&config.cover_radiation_lowpass_hz)
         {
             return Err("acoustic scene gain outside supported range".into());
         }
         Ok(Self {
             config,
-            metal: MetallicStructure::new(sample_rate),
+            metal: MetallicStructure::new(sample_rate, config.metal_panel_lowpass_hz),
             airbox: AirboxPlenum::new(sample_rate),
-            engine_cover: EngineCover::new(sample_rate),
+            engine_cover: EngineCover::new(sample_rate, config.cover_radiation_lowpass_hz),
             mount_monocoque: EngineMountMonocoque::new(sample_rate),
             under_seat: UnderSeatVibration::new(sample_rate),
             cylinder_paths: std::array::from_fn(|index| {
@@ -770,7 +795,7 @@ impl AcousticScene {
             cylinder_mechanical,
             cylinder_mechanical_sum,
             output: self.onboard_highpass.process(
-                (engine_air
+                (engine_air * self.config.engine_air_gain
                     + metallic_structure * self.config.metal_gain * slow_scene_drift
                     + airbox_plenum * self.config.airbox_gain
                     + engine_cover * self.config.engine_cover_gain
@@ -804,12 +829,14 @@ mod tests {
                 dry_low_gain: 1.0,
                 dry_mid_gain: 1.0,
                 dry_high_gain: 1.0,
+                engine_air_gain: 1.0,
                 metal_gain: 0.0,
                 airbox_gain: 0.0,
                 engine_cover_gain: 0.0,
                 mount_monocoque_gain: 0.0,
                 under_seat_gain: 0.0,
                 output_gain: 1.0,
+                ..AcousticSceneConfig::default()
             },
         )
         .unwrap();
@@ -825,5 +852,43 @@ mod tests {
             heard |= output != 0.0;
         }
         assert!(heard);
+    }
+
+    #[test]
+    fn engine_air_gain_scales_only_the_air_branch() {
+        let base = AcousticSceneConfig {
+            metal_gain: 0.0,
+            airbox_gain: 0.0,
+            engine_cover_gain: 0.0,
+            mount_monocoque_gain: 0.0,
+            under_seat_gain: 0.0,
+            output_gain: 1.0,
+            ..AcousticSceneConfig::default()
+        };
+        let mut reference = AcousticScene::new(48_000.0, base).unwrap();
+        let mut louder = AcousticScene::new(
+            48_000.0,
+            AcousticSceneConfig {
+                engine_air_gain: 1.5,
+                ..base
+            },
+        )
+        .unwrap();
+        let source = EngineFrame {
+            master: 0.25,
+            ..EngineFrame::default()
+        };
+        let mut reference_air = 0.0;
+        let mut reference_out = 0.0;
+        let mut louder_out = 0.0;
+        for _ in 0..4_800 {
+            let reference_frame = reference.process(&source);
+            let louder_frame = louder.process(&source);
+            reference_air = reference_frame.engine_air;
+            reference_out = reference_frame.output;
+            louder_out = louder_frame.output;
+        }
+        assert!(reference_air.abs() > 1.0e-6);
+        assert!((louder_out / reference_out - 1.5).abs() < 1.0e-3);
     }
 }

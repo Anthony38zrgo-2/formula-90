@@ -46,7 +46,7 @@ pub struct ExhaustRunner {
 
 impl ExhaustRunner {
     pub fn new(config: &EngineConfig, index: usize) -> Self {
-        let header_length_m = config.header_lengths_m[index];
+        let header_length_m = config.effective_header_lengths_m()[index];
         let volume_m3 =
             config.bore_area_m2() * header_length_m * RUNNER_VOLUME_FRACTION_OF_HEADER;
         Self {
@@ -275,5 +275,19 @@ mod tests {
             relaxed < pressurized * 0.5,
             "runner must relax toward the outlet: {relaxed} vs {pressurized}"
         );
+    }
+
+    #[test]
+    fn longer_primary_volume_damps_equal_blowdown_more() {
+        let mut config = EngineConfig::default();
+        config.header_length_scale = 1.5;
+        let mut base = runner();
+        let mut scaled = ExhaustRunner::new(&config, 0);
+        let dt = 1.0 / 48_000.0;
+        for _ in 0..200 {
+            base.step(0.01, dt, 1_500.0);
+            scaled.step(0.01, dt, 1_500.0);
+        }
+        assert!(base.state().pressure_pa > scaled.state().pressure_pa);
     }
 }

@@ -520,12 +520,25 @@ pub struct ContinuousDiagnostics {
 
 /// Optional per-profile tuning for the V10 sample/scene layer, carried from
 /// the vehicle `audio.gf509` JSON section. `Default` reproduces shipped GF509
-/// behavior exactly (no mutes, ducking on, rasp on, residual unscaled).
+/// behavior exactly (no mutes, ducking on, rasp on, residual unscaled, declared
+/// baseline exhaust geometry).
 #[derive(Clone, Debug, Default)]
 pub struct V10LayerTuning {
     pub disable_sample_rasp: bool,
     pub residual_gain_scale: Option<f32>,
     pub scene_gains: Vec<(String, f32)>,
+    /// Uniform primary-length multiplier for the explicit exhaust-geometry
+    /// candidate; `None` keeps the declared baseline lengths.
+    pub header_length_scale: Option<f32>,
+    /// Explicit physical collector geometry; `None` keeps the legacy
+    /// reduced-order modal collector.
+    pub collector_geometry: Option<v10_engine_synth::CollectorGeometry>,
+    /// Optional metallic-panel lowpass override (Hz); values at or above
+    /// `0.48 * sample_rate` bypass the filter.
+    pub metal_panel_lowpass_hz: Option<f32>,
+    /// Optional engine-cover radiation lowpass override (Hz); values at or
+    /// above `0.48 * sample_rate` bypass the filter.
+    pub cover_radiation_lowpass_hz: Option<f32>,
 }
 
 #[derive(Default)]
@@ -1772,14 +1785,28 @@ impl VehicleAudioEngine {
                 "dry_low" => &mut config.scene.dry_low_gain,
                 "dry_mid" => &mut config.scene.dry_mid_gain,
                 "dry_high" => &mut config.scene.dry_high_gain,
+                "engine_air" => &mut config.scene.engine_air_gain,
                 "metal" => &mut config.scene.metal_gain,
                 "airbox" => &mut config.scene.airbox_gain,
                 "engine_cover" => &mut config.scene.engine_cover_gain,
                 "mount_monocoque" => &mut config.scene.mount_monocoque_gain,
                 "under_seat" => &mut config.scene.under_seat_gain,
+                "output" => &mut config.scene.output_gain,
                 _ => return Err(format!("unknown scene branch: {name}")),
             };
             *slot = *gain;
+        }
+        if let Some(scale) = tuning.header_length_scale {
+            config.engine.header_length_scale = scale;
+        }
+        if let Some(geometry) = &tuning.collector_geometry {
+            config.engine.collector_geometry = Some(geometry.clone());
+        }
+        if let Some(hz) = tuning.metal_panel_lowpass_hz {
+            config.scene.metal_panel_lowpass_hz = hz;
+        }
+        if let Some(hz) = tuning.cover_radiation_lowpass_hz {
+            config.scene.cover_radiation_lowpass_hz = hz;
         }
         match v10_engine_synth::Gf509Runtime::new(config) {
             Ok(runtime) => {
@@ -3128,6 +3155,39 @@ mod tests {
         assert!(engine
             .enable_v10_layer(&packaged_gf509_assets(), &bad)
             .is_err());
+    }
+
+    #[test]
+    fn v10_geometry_tuning_applies_and_invalid_geometry_is_rejected() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        let mut tuning = V10LayerTuning::default();
+        tuning.header_length_scale = Some(1.5);
+        tuning.collector_geometry = Some(v10_engine_synth::CollectorGeometry {
+            volume_l: 2.5,
+            outlet_length_m: 0.35,
+            outlet_diameter_m: 0.09,
+            gas_temperature_k: 1_000.0,
+            loss_fraction_per_cycle: 0.5,
+            mode_coupling: 0.6,
+        });
+        engine
+            .enable_v10_layer(&packaged_gf509_assets(), &tuning)
+            .unwrap();
+        assert_eq!(engine.continuous_source(), ContinuousSourceKind::V10Gf509);
+
+        let mut bad = V10LayerTuning::default();
+        bad.collector_geometry = Some(v10_engine_synth::CollectorGeometry {
+            volume_l: 0.0,
+            outlet_length_m: 0.35,
+            outlet_diameter_m: 0.09,
+            gas_temperature_k: 1_000.0,
+            loss_fraction_per_cycle: 0.5,
+            mode_coupling: 0.6,
+        });
+        assert!(engine
+            .enable_v10_layer(&packaged_gf509_assets(), &bad)
+            .is_err());
+        assert_eq!(engine.continuous_source(), ContinuousSourceKind::Legacy);
     }
 
     #[test]

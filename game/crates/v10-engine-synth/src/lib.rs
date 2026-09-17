@@ -13,7 +13,7 @@ pub mod scene;
 pub mod thermodynamics;
 pub mod wav;
 
-pub use config::EngineConfig;
+pub use config::{CollectorGeometry, EngineConfig};
 pub use engine::{EngineFrame, EngineInput, V10Engine};
 pub use geometry::SliderCrank;
 pub use runtime::{Gf509Runtime, Gf509RuntimeConfig, RuntimeTelemetry, ShiftPhase, TorqueSign};
