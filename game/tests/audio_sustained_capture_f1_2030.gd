@@ -62,6 +62,31 @@ func _percentile(sorted_values: Array, fraction: float) -> float:
 	var index := int(round(float(sorted_values.size() - 1) * fraction))
 	return sorted_values[index]
 
+## Snapshot the dedicated-worker counters (empty when the worker is not active).
+func _worker_snapshot(core: Node) -> Dictionary:
+	var stats: Variant = core.call("get_audio_worker_stats")
+	return stats if stats is Dictionary else {}
+
+## Delta between two worker snapshots (cumulative counters become window values).
+func _worker_delta(before: Dictionary, after: Dictionary) -> Dictionary:
+	if after.is_empty():
+		return {}
+	return {
+		"active": after.get("active", false),
+		"core": int(after.get("core", -1)),
+		"thread_id": int(after.get("thread_id", 0)),
+		"affinity_mask": int(after.get("affinity_mask", 0)),
+		"healthy": after.get("healthy", false),
+		"produced_frames": int(after.get("produced_frames", 0)) - int(before.get("produced_frames", 0)),
+		"consumed_frames": int(after.get("consumed_frames", 0)) - int(before.get("consumed_frames", 0)),
+		"starved_iterations": int(after.get("starved_iterations", 0)) - int(before.get("starved_iterations", 0)),
+		"packets_applied": int(after.get("packets_applied", 0)) - int(before.get("packets_applied", 0)),
+		"packets_dropped": int(after.get("packets_dropped", 0)) - int(before.get("packets_dropped", 0)),
+		"render_usec_total": int(after.get("render_usec_total", 0)) - int(before.get("render_usec_total", 0)),
+		"ring_frames": int(after.get("ring_frames", 0)),
+		"high_water_frames": int(after.get("high_water_frames", 0)),
+	}
+
 ## Run one sustained window for a given scheduler mode and frame-rate cap.
 func _capture(core: Node, vehicle: Node, mode: int, max_fps: int, window_frames: int, throttle: float, stall_ms: int) -> Dictionary:
 	Engine.max_fps = max_fps
@@ -71,6 +96,7 @@ func _capture(core: Node, vehicle: Node, mode: int, max_fps: int, window_frames:
 		await process_frame
 	# Read the live generator skip counter before zeroing the other counters.
 	var skips_before := int(core.call("get_audio_skips"))
+	var worker_before := _worker_snapshot(core)
 	core.call("reset_audio_stats")
 	var frame_ms: Array = []
 	var start_usec := Time.get_ticks_usec()
@@ -88,9 +114,11 @@ func _capture(core: Node, vehicle: Node, mode: int, max_fps: int, window_frames:
 	var render_us := int(core.call("get_audio_render_usec_total"))
 	var skips_after := int(core.call("get_audio_skips"))
 	var mix_rate := int(core.call("get_audio_mix_rate"))
+	var worker := _worker_delta(worker_before, _worker_snapshot(core))
 	frame_ms.sort()
 	var produced_per_s := float(pushed) / elapsed_s
 	return {
+		"worker": worker,
 		"mode": mode,
 		"max_fps": max_fps,
 		"window_frames": window_frames,
@@ -147,6 +175,12 @@ func _run() -> void:
 		quit(1)
 		return
 	var compositor := packed.instantiate()
+	# Worker configuration is init-time: it must land before _ready starts the thread.
+	if _flag("--no-audio-worker"):
+		var core_pre := compositor.get_node_or_null("F90Core")
+		if core_pre != null:
+			core_pre.set("audio_worker_enabled", false)
+			print("[AUDCAP] F90Core audio_worker_enabled=false (before _ready)")
 	root.add_child(compositor)
 	for _frame in 10:
 		await process_frame
@@ -191,11 +225,21 @@ func _run() -> void:
 		for max_fps in max_fps_list:
 			var stats := await _capture(core, vehicle, mode, max_fps, window_frames, throttle, stall_ms)
 			results.append(stats)
-			print("[AUDCAP] mode=%d max_fps=%-3d fps=%.1f pump/s=%.1f produced/s=%.0f deficit/s=%.0f render_ms=%.3f max_avail=%d skips_delta=%d skips_total=%d frame_ms p50=%.2f p95=%.2f max=%.2f" % [
+			var line := "[AUDCAP] mode=%d max_fps=%-3d fps=%.1f pump/s=%.1f produced/s=%.0f deficit/s=%.0f render_ms=%.3f max_avail=%d skips_delta=%d skips_total=%d frame_ms p50=%.2f p95=%.2f max=%.2f" % [
 				stats["mode"], stats["max_fps"], stats["fps"], stats["pump_per_s"],
 				stats["produced_per_s"], stats["deficit_per_s"], stats["render_ms_avg"],
 				stats["max_available"], stats["skips_delta"], stats["skips_total"],
-				stats["frame_ms_p50"], stats["frame_ms_p95"], stats["frame_ms_max"]])
+				stats["frame_ms_p50"], stats["frame_ms_p95"], stats["frame_ms_max"]]
+			var worker: Dictionary = stats.get("worker", {})
+			if not worker.is_empty():
+				var worker_produced_per_s: float = float(worker.get("produced_frames", 0)) / float(stats["elapsed_s"])
+				var worker_cpu_percent: float = float(worker.get("render_usec_total", 0)) / 1_000_000.0 / float(stats["elapsed_s"]) * 100.0
+				line += " | worker core=%d aff=0x%X produced/s=%.0f render_cpu=%.1f%% starved=%d drops=%d ring=%d/%d" % [
+					worker.get("core", -1), worker.get("affinity_mask", 0), worker_produced_per_s,
+					worker_cpu_percent, worker.get("starved_iterations", 0),
+					worker.get("packets_dropped", 0), worker.get("ring_frames", 0),
+					worker.get("high_water_frames", 0)]
+			print(line)
 
 	var out_path := _argument("--out", "")
 	if not out_path.is_empty():

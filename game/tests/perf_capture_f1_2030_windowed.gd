@@ -206,6 +206,30 @@ func _run() -> void:
 		quit(1)
 		return
 	var compositor := packed.instantiate()
+
+	# Attribution switches are INIT-TIME: `enable_audio` skips the generator/player
+	# creation and `audio_worker_enabled` gates the worker thread, both decided in
+	# `_ready`. They must land before the scene enters the tree.
+	var no_visual := _flag("--no-visual-suspension")
+	var solves_before := 0
+	if no_visual:
+		var disabled := _disable_visual_suspension(compositor)
+		print("[CAPTURE] visual suspension controllers disabled: %d" % disabled)
+		solves_before = _linkage_solve_count(compositor)
+	var no_audio := _flag("--no-audio")
+	var no_audio_worker := _flag("--no-audio-worker")
+	if no_audio or no_audio_worker:
+		var core_pre := compositor.get_node_or_null("F90Core")
+		if core_pre != null:
+			if no_audio:
+				core_pre.set("enable_audio", false)
+				print("[CAPTURE] F90Core enable_audio=false (before _ready)")
+			if no_audio_worker:
+				core_pre.set("audio_worker_enabled", false)
+				print("[CAPTURE] F90Core audio_worker_enabled=false (before _ready)")
+		else:
+			printerr("[CAPTURE][FAIL] F90Core node not found for audio attribution")
+
 	root.add_child(compositor)
 	for _frame in 8:
 		await process_frame
@@ -215,24 +239,6 @@ func _run() -> void:
 		quit(1)
 		return
 	vehicle.set("enable_player_input", false)
-
-	var no_visual := _flag("--no-visual-suspension")
-	var solves_before := 0
-	if no_visual:
-		var disabled := _disable_visual_suspension(compositor)
-		print("[CAPTURE] visual suspension controllers disabled: %d" % disabled)
-		solves_before = _linkage_solve_count(compositor)
-
-	# Audio attribution: F90Core owns the audio pump in _process; disabling
-	# before add_child skips the generator/player creation entirely.
-	var no_audio := _flag("--no-audio")
-	if no_audio:
-		var core := compositor.get_node_or_null("F90Core")
-		if core != null:
-			core.set("enable_audio", false)
-			print("[CAPTURE] F90Core enable_audio=false (before _ready)")
-		else:
-			printerr("[CAPTURE][FAIL] F90Core node not found for audio attribution")
 
 	# VSync off: frame deltas must expose the render cost, not the refresh clamp.
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
