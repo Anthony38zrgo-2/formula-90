@@ -11,12 +11,15 @@
 #include <godot_cpp/classes/physics_direct_body_state3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/viewport.hpp>
+#include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/variant/packed_float32_array.hpp>
 #include <godot_cpp/variant/packed_float64_array.hpp>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace godot {
@@ -147,11 +150,27 @@ public:
 	String get_target_vehicle_path() const { return target_vehicle_path_; }
 	void set_debug_throttle(double v) { debug_throttle_ = v; }
 	double get_debug_throttle() const { return debug_throttle_; }
-	void set_enable_audio(bool v) { enable_audio_ = v; }
+	/// Runtime gate: disabling stops production immediately; re-enabling flushes
+	/// any stale worker backlog so audio resumes at the live cursor.
+	void set_enable_audio(bool v);
 	bool get_enable_audio() const { return enable_audio_; }
 	/// 0 = legacy fixed cap (kPumpBudgetFrames), 1 = elapsed-delta budget.
 	void set_audio_pump_mode(int v) { audio_pump_mode_ = v; }
 	int get_audio_pump_mode() const { return audio_pump_mode_; }
+	/// Dedicated-core audio worker: the mixer runs on its own OS thread (pinned +
+	/// above-normal priority + MMCSS "Pro Audio") instead of the render thread.
+	/// Init-time only; falls back to the inline pump when unavailable.
+	void set_audio_worker_enabled(bool v) { audio_worker_enabled_ = v; }
+	bool get_audio_worker_enabled() const { return audio_worker_enabled_; }
+	/// Logical processor for the worker (-1 = auto: best P-core, highest index).
+	void set_audio_worker_core(int v) { audio_worker_core_ = v; }
+	int get_audio_worker_core() const { return audio_worker_core_; }
+	/// 0 = normal, 1 = above normal (default), 2 = highest thread priority.
+	void set_audio_worker_priority(int v) { audio_worker_priority_ = v; }
+	int get_audio_worker_priority() const { return audio_worker_priority_; }
+	bool is_audio_worker_active() const { return audio_worker_active_; }
+	/// Worker counters/affinity snapshot for diagnostics (schema in f90_core.h).
+	Dictionary get_audio_worker_stats() const;
 	// Audio pump diagnostics (cumulative; see reset_audio_stats()).
 	int64_t get_audio_pump_calls() const { return audio_pump_calls_; }
 	int64_t get_audio_frames_pushed() const { return audio_frames_pushed_; }
@@ -215,6 +234,17 @@ private:
 	void create_audio_nodes();
 	/// Render the scheduled frames from the mixer and push them in ONE batched call.
 	void pump_audio(double delta);
+	// --- dedicated audio worker (phase 2) ---------------------------------------
+	void start_audio_worker();
+	void stop_audio_worker();
+	/// Pull the worker ring and push it in ONE batched call (no DSP here).
+	void pump_audio_worker();
+	/// Discard whatever the ring accumulated while audio was disabled.
+	void flush_audio_worker_ring();
+	/// Resolve the worker's logical processor (-1 auto -> best P-core).
+	int resolve_audio_core() const;
+	/// Affinity/priority/MMCSS setup that must run ON the worker thread.
+	void configure_audio_worker_thread(int core_index);
 	static int trigger_code(const String &name);
 	static const char *trigger_name(int code);
 	F90CoreFrameOut frame_ = {};
@@ -236,6 +266,11 @@ private:
 	FnCoreAudioTrigger fn_audio_trigger_ = nullptr;
 	FnCoreAudioReadouts fn_audio_readouts_ = nullptr;
 	FnCoreAudioSetAmbient fn_audio_set_ambient_ = nullptr;
+	FnCoreAudioWorkerStart fn_audio_worker_start_ = nullptr;
+	FnCoreAudioWorkerHandle fn_audio_worker_handle_ = nullptr;
+	FnCoreAudioWorkerRun fn_audio_worker_run_ = nullptr;
+	FnCoreAudioWorkerPull fn_audio_worker_pull_ = nullptr;
+	FnCoreAudioWorkerStatsGet fn_audio_worker_stats_get_ = nullptr;
 
 	double fixed_dt_ = 1.0 / 120.0;
 	String config_json_path_ = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json";
@@ -271,6 +306,21 @@ private:
 	int64_t audio_render_usec_total_ = 0;
 	int64_t audio_skips_ = 0;
 	double audio_buffer_length_ = 0.1;
+
+	// Dedicated audio worker state. `audio_worker_stop_` is written by the main
+	// thread and polled by the worker thread through the FFI run loop.
+	bool audio_worker_enabled_ = true;
+	int audio_worker_core_ = -1;
+	int audio_worker_priority_ = 1;
+	bool audio_worker_active_ = false;
+	void *audio_worker_handle_ = nullptr;
+	std::atomic<uint32_t> audio_worker_stop_{ 0 };
+	std::thread audio_worker_thread_;
+	std::atomic<uint32_t> audio_worker_core_observed_{ 0xFFFFFFFFu };
+	std::atomic<int64_t> audio_worker_affinity_mask_{ 0 };
+	std::atomic<int64_t> audio_worker_thread_id_{ 0 };
+	F90AudioWorkerStats audio_worker_stats_ = {};
+	std::vector<float> worker_l_, worker_r_;
 	double collision_cooldown_ = 0.0;
 	void process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt);
 	/// Smooth the camera-to-vehicle distance with a ~0.1 s one-pole in `_process`.

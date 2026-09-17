@@ -51,6 +51,19 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_audio_pump_mode", "v"), &F90Core::set_audio_pump_mode);
 	ClassDB::bind_method(D_METHOD("get_audio_pump_mode"), &F90Core::get_audio_pump_mode);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_pump_mode", PROPERTY_HINT_RANGE, "0,1,1"), "set_audio_pump_mode", "get_audio_pump_mode");
+	ClassDB::bind_method(D_METHOD("set_audio_worker_enabled", "v"), &F90Core::set_audio_worker_enabled);
+	ClassDB::bind_method(D_METHOD("get_audio_worker_enabled"), &F90Core::get_audio_worker_enabled);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "audio_worker_enabled"), "set_audio_worker_enabled", "get_audio_worker_enabled");
+	ClassDB::bind_method(D_METHOD("set_audio_worker_core", "v"), &F90Core::set_audio_worker_core);
+	ClassDB::bind_method(D_METHOD("get_audio_worker_core"), &F90Core::get_audio_worker_core);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_worker_core", PROPERTY_HINT_RANGE, "-1,63,1"), "set_audio_worker_core", "get_audio_worker_core");
+	ClassDB::bind_method(D_METHOD("set_audio_worker_priority", "v"), &F90Core::set_audio_worker_priority);
+	ClassDB::bind_method(D_METHOD("get_audio_worker_priority"), &F90Core::get_audio_worker_priority);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_worker_priority", PROPERTY_HINT_RANGE, "0,2,1"), "set_audio_worker_priority", "get_audio_worker_priority");
+	ClassDB::bind_method(D_METHOD("is_audio_worker_active"), &F90Core::is_audio_worker_active);
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "audio_worker_active"), "", "is_audio_worker_active");
+	ClassDB::bind_method(D_METHOD("get_audio_worker_stats"), &F90Core::get_audio_worker_stats);
+	ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "audio_worker_stats"), "", "get_audio_worker_stats");
 	ClassDB::bind_method(D_METHOD("set_bank_dir", "p"), &F90Core::set_bank_dir);
 	ClassDB::bind_method(D_METHOD("get_bank_dir"), &F90Core::get_bank_dir);
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "bank_dir"), "set_bank_dir", "get_bank_dir");
@@ -304,6 +317,11 @@ bool F90Core::load_dll() {
 	fn_audio_trigger_ = reinterpret_cast<FnCoreAudioTrigger>(GetProcAddress(hDll, "f90_core_audio_trigger"));
 	fn_audio_readouts_ = reinterpret_cast<FnCoreAudioReadouts>(GetProcAddress(hDll, "f90_core_audio_readouts"));
 	fn_audio_set_ambient_ = reinterpret_cast<FnCoreAudioSetAmbient>(GetProcAddress(hDll, "f90_core_audio_set_ambient"));
+	fn_audio_worker_start_ = reinterpret_cast<FnCoreAudioWorkerStart>(GetProcAddress(hDll, "f90_core_audio_worker_start"));
+	fn_audio_worker_handle_ = reinterpret_cast<FnCoreAudioWorkerHandle>(GetProcAddress(hDll, "f90_core_audio_worker_handle"));
+	fn_audio_worker_run_ = reinterpret_cast<FnCoreAudioWorkerRun>(GetProcAddress(hDll, "f90_core_audio_worker_run"));
+	fn_audio_worker_pull_ = reinterpret_cast<FnCoreAudioWorkerPull>(GetProcAddress(hDll, "f90_core_audio_worker_pull"));
+	fn_audio_worker_stats_get_ = reinterpret_cast<FnCoreAudioWorkerStatsGet>(GetProcAddress(hDll, "f90_core_audio_worker_stats"));
 
 	const uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	const String core_build_sha = fn_build_sha_ ? String(fn_build_sha_()) : String("unknown");
@@ -335,6 +353,9 @@ bool F90Core::load_dll() {
 }
 
 void F90Core::unload_dll() {
+	// The worker calls into the façade DLL; it must be joined before the core is
+	// destroyed and the module unloaded.
+	stop_audio_worker();
 	if (core_ && fn_destroy_) {
 		fn_destroy_(core_);
 		core_ = nullptr;
@@ -358,6 +379,11 @@ void F90Core::unload_dll() {
 	fn_audio_trigger_ = nullptr;
 	fn_audio_readouts_ = nullptr;
 	fn_audio_set_ambient_ = nullptr;
+	fn_audio_worker_start_ = nullptr;
+	fn_audio_worker_handle_ = nullptr;
+	fn_audio_worker_run_ = nullptr;
+	fn_audio_worker_pull_ = nullptr;
+	fn_audio_worker_stats_get_ = nullptr;
 }
 
 static String json_escape(const String &s) {
@@ -439,7 +465,11 @@ void F90Core::_ready() {
 		ensure_vehicle_bus();
 		create_audio_nodes();
 	}
+	// Phase 2: move the mixer DSP off the render thread when the loaded facade
+	// exposes the worker ABI. Falls back to the inline pump automatically.
+	start_audio_worker();
 	UtilityFunctions::print(String("[F90Core] facade ready (entity=") + String::num(entity_id_) +
+		", audio_worker=" + String(audio_worker_active_ ? "on" : "off") +
 		", audio=" + String(enable_audio_ ? "on" : "off") +
 		", audio_initialized=" + String(audio_initialized_ ? "true" : "false") +
 		", modules=" + modules_json + ")");
@@ -668,7 +698,11 @@ void F90Core::_process(double delta) {
 	}
 	update_listener_distance(delta);
 	set_audio_ambient(tc_cut_ratio_, limiter_active_);
-	pump_audio(delta);
+	if (audio_worker_active_) {
+		pump_audio_worker();
+	} else {
+		pump_audio(delta);
+	}
 }
 
 void F90Core::update_listener_distance(double delta) {
@@ -700,6 +734,7 @@ void F90Core::set_audio_ambient(float tc_cut_ratio, bool limiter_active) {
 }
 
 void F90Core::_exit_tree() {
+	stop_audio_worker();
 	if (audio_player_) {
 		audio_player_->call("stop");
 		Node *pn = Object::cast_to<Node>(audio_player_);
@@ -863,4 +898,235 @@ void F90Core::reset_audio_stats() {
 	audio_max_available_ = 0;
 	audio_render_usec_total_ = 0;
 	audio_skips_ = 0;
+}
+
+// -------- dedicated audio worker (phase 2) ----------------------------------------
+
+void F90Core::set_enable_audio(bool v) {
+	if (v == enable_audio_) {
+		return;
+	}
+	enable_audio_ = v;
+	if (v && audio_worker_active_) {
+		// The ring holds pre-disable audio while the gate is off; drop it so
+		// re-enabling resumes at the live cursor instead of a stale burst.
+		flush_audio_worker_ring();
+	}
+}
+
+void F90Core::flush_audio_worker_ring() {
+	if (!audio_worker_active_ || core_ == nullptr || fn_audio_worker_pull_ == nullptr) {
+		return;
+	}
+	float discard_l[1024];
+	float discard_r[1024];
+	for (int i = 0; i < 64; ++i) {
+		if (fn_audio_worker_pull_(core_, discard_l, discard_r, 1024) == 0) {
+			break;
+		}
+	}
+}
+
+int F90Core::resolve_audio_core() const {
+	if (audio_worker_core_ >= 0) {
+		return audio_worker_core_;
+	}
+#ifdef _WIN32
+	// Prefer a P-core (highest efficiency class) and its highest logical index so
+	// the audio thread avoids sharing an SMT sibling with the render thread.
+	DWORD length = 0;
+	GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &length);
+	if (length > 0) {
+		std::vector<uint8_t> buffer(length, 0);
+		if (GetLogicalProcessorInformationEx(RelationProcessorCore,
+					reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(buffer.data()), &length)) {
+			int best_class = -1;
+			int best_lp = -1;
+			const uint8_t *cursor = buffer.data();
+			const uint8_t *end = buffer.data() + length;
+			while (cursor < end) {
+				const auto *info = reinterpret_cast<const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *>(cursor);
+				if (info->Relationship == RelationProcessorCore) {
+					const int cls = (int)info->Processor.EfficiencyClass;
+					for (WORD group_index = 0; group_index < info->Processor.GroupCount; ++group_index) {
+						const KAFFINITY mask = info->Processor.GroupMask[group_index].Mask;
+						if (mask == 0) {
+							continue;
+						}
+						int bit = (int)(sizeof(KAFFINITY) * 8) - 1;
+						while (bit >= 0 && (mask & ((KAFFINITY)1 << bit)) == 0) {
+							--bit;
+						}
+						if (bit < 0) {
+							continue;
+						}
+						const int lp = (int)info->Processor.GroupMask[group_index].Group * 64 + bit;
+						if (cls > best_class || (cls == best_class && lp > best_lp)) {
+							best_class = cls;
+							best_lp = lp;
+						}
+					}
+				}
+				cursor += info->Size;
+			}
+			if (best_lp >= 0) {
+				return best_lp;
+			}
+		}
+	}
+	const DWORD total = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+	return total > 0 ? (int)(total - 1) : 0;
+#else
+	return 0;
+#endif
+}
+
+void F90Core::configure_audio_worker_thread(int core_index) {
+#ifdef _WIN32
+	audio_worker_thread_id_.store((int64_t)GetCurrentThreadId(), std::memory_order_relaxed);
+	int priority = THREAD_PRIORITY_ABOVE_NORMAL;
+	if (audio_worker_priority_ <= 0) {
+		priority = THREAD_PRIORITY_NORMAL;
+	} else if (audio_worker_priority_ >= 2) {
+		priority = THREAD_PRIORITY_HIGHEST;
+	}
+	SetThreadPriority(GetCurrentThread(), priority);
+	// MMCSS "Pro Audio" keeps the mixer in the real-time audio scheduling class;
+	// avrt.dll ships with Windows (dynamic load, no link-time dependency).
+	HMODULE avrt = LoadLibraryW(L"avrt.dll");
+	if (avrt != nullptr) {
+		typedef HANDLE(WINAPI * AvSetMmThreadCharacteristicsW_t)(LPCWSTR, LPDWORD);
+		AvSetMmThreadCharacteristicsW_t av_set =
+				reinterpret_cast<AvSetMmThreadCharacteristicsW_t>(GetProcAddress(avrt, "AvSetMmThreadCharacteristicsW"));
+		if (av_set != nullptr) {
+			DWORD task_index = 0;
+			av_set(L"Pro Audio", &task_index);
+		}
+	}
+	if (core_index >= 0 && core_index < 64) {
+		const DWORD_PTR mask = ((DWORD_PTR)1) << core_index;
+		if (SetThreadAffinityMask(GetCurrentThread(), mask) != 0) {
+			audio_worker_affinity_mask_.store((int64_t)mask, std::memory_order_relaxed);
+			audio_worker_core_observed_.store((uint32_t)core_index, std::memory_order_relaxed);
+		}
+	}
+	if (audio_worker_affinity_mask_.load(std::memory_order_relaxed) == 0) {
+		audio_worker_core_observed_.store((uint32_t)GetCurrentProcessorNumber(), std::memory_order_relaxed);
+	}
+#else
+	(void)core_index;
+#endif
+}
+
+void F90Core::start_audio_worker() {
+	if (!audio_worker_enabled_ || audio_worker_active_ || !audio_initialized_) {
+		return;
+	}
+	if (core_ == nullptr || fn_audio_worker_start_ == nullptr || fn_audio_worker_handle_ == nullptr ||
+			fn_audio_worker_run_ == nullptr) {
+		return;
+	}
+	if (!fn_audio_worker_start_(core_)) {
+		return;
+	}
+	audio_worker_handle_ = const_cast<void *>(fn_audio_worker_handle_(core_));
+	if (audio_worker_handle_ == nullptr) {
+		return;
+	}
+	audio_worker_stop_.store(0, std::memory_order_release);
+	const int core_index = resolve_audio_core();
+	audio_worker_thread_ = std::thread([this, core_index]() {
+		configure_audio_worker_thread(core_index);
+		fn_audio_worker_run_(audio_worker_handle_,
+				reinterpret_cast<const volatile uint32_t *>(&audio_worker_stop_));
+	});
+	audio_worker_active_ = true;
+	// Affinity/thread id settle on the worker thread; read them from
+	// `audio_worker_stats` once the worker has started up.
+	UtilityFunctions::print(String("[F90Core] audio worker started (requested_core=") + String::num_int64(core_index) + ")");
+}
+
+void F90Core::stop_audio_worker() {
+	if (audio_worker_active_) {
+		audio_worker_stop_.store(1, std::memory_order_release);
+	}
+	if (audio_worker_thread_.joinable()) {
+		audio_worker_thread_.join();
+	}
+	audio_worker_active_ = false;
+	audio_worker_handle_ = nullptr;
+}
+
+void F90Core::pump_audio_worker() {
+	if (!enable_audio_ || core_ == nullptr || audio_player_ == nullptr ||
+			fn_audio_worker_pull_ == nullptr || fn_audio_worker_stats_get_ == nullptr) {
+		return;
+	}
+	// Lazy playback: the player may not have yielded its stream playback yet.
+	if (audio_playback_ == nullptr) {
+		audio_playback_ = audio_player_->call("get_stream_playback");
+		if (audio_playback_ == nullptr) {
+			return;
+		}
+	}
+	int available = (int)audio_playback_->call("get_frames_available");
+	audio_last_available_ = available;
+	if (available > audio_max_available_) {
+		audio_max_available_ = available;
+	}
+	if (available <= 0) {
+		return;
+	}
+	// Bound the main-thread copy; the worker ring can hold more than one frame's
+	// worth after a hitch.
+	if (available > kPumpMaxBatchFrames) {
+		available = kPumpMaxBatchFrames;
+	}
+	if ((int)worker_l_.size() < available) {
+		worker_l_.resize(available);
+		worker_r_.resize(available);
+	}
+	const uint32_t pulled = fn_audio_worker_pull_(core_, worker_l_.data(), worker_r_.data(), (uint32_t)available);
+	if (pulled == 0) {
+		return;
+	}
+	PackedVector2Array batch;
+	batch.resize((int)pulled);
+	for (uint32_t i = 0; i < pulled; ++i) {
+		batch.set((int)i, Vector2(worker_l_[i], worker_r_[i]));
+	}
+	audio_playback_->call("push_buffer", batch);
+	audio_pump_calls_ += 1;
+	audio_frames_pushed_ += (int64_t)pulled;
+	if (audio_playback_->has_method("get_skips")) {
+		audio_skips_ = (int64_t)(int)audio_playback_->call("get_skips");
+	}
+	if (fn_audio_readouts_) {
+		fn_audio_readouts_(core_, &frame_);
+	}
+	fn_audio_worker_stats_get_(core_, &audio_worker_stats_);
+}
+
+Dictionary F90Core::get_audio_worker_stats() const {
+	Dictionary d;
+	d["active"] = audio_worker_active_;
+	d["enabled"] = audio_worker_enabled_;
+	d["requested_core"] = audio_worker_core_;
+	d["core"] = (int64_t)audio_worker_core_observed_.load(std::memory_order_relaxed);
+	d["thread_id"] = audio_worker_thread_id_.load(std::memory_order_relaxed);
+	d["affinity_mask"] = audio_worker_affinity_mask_.load(std::memory_order_relaxed);
+	d["priority"] = audio_worker_priority_;
+	d["produced_frames"] = (int64_t)audio_worker_stats_.produced_frames;
+	d["consumed_frames"] = (int64_t)audio_worker_stats_.consumed_frames;
+	d["starved_iterations"] = (int64_t)audio_worker_stats_.starved_iterations;
+	d["packets_applied"] = (int64_t)audio_worker_stats_.packets_applied;
+	d["packets_dropped"] = (int64_t)audio_worker_stats_.packets_dropped;
+	d["commands_applied"] = (int64_t)audio_worker_stats_.commands_applied;
+	d["render_usec_total"] = (int64_t)audio_worker_stats_.render_usec_total;
+	d["iterations"] = (int64_t)audio_worker_stats_.iterations;
+	d["ring_frames"] = (int64_t)audio_worker_stats_.ring_frames;
+	d["ring_capacity_frames"] = (int64_t)audio_worker_stats_.ring_capacity_frames;
+	d["high_water_frames"] = (int64_t)audio_worker_stats_.high_water_frames;
+	d["healthy"] = audio_worker_stats_.healthy != 0;
+	return d;
 }
