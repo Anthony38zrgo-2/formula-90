@@ -16,6 +16,7 @@ use vehicle_physics_engine::{
     BodyKinematics, Quat, Transform3D, TriRaycastSample, Vec3, VehicleInput,
 };
 
+use crate::audio_worker::{AudioWorker, AudioWorkerStats};
 use crate::frame::AudioReadouts;
 use crate::underfloor::{UnderfloorRayHit, UnderfloorRigidContact, UnderfloorSample};
 use crate::{CoreConfig, CoreFacade};
@@ -668,6 +669,98 @@ pub extern "C" fn f90_core_audio_readouts(h: *mut c_void, out: *mut F90CoreFrame
     }
 }
 
+/// Start the dedicated audio worker: the mixer moves off the render thread. The
+/// host creates and pins the OS thread that calls `f90_core_audio_worker_run`.
+/// Returns false when the mixer is unavailable or a worker already owns it (the
+/// inline pump remains the fallback).
+/// # Safety
+/// `h` must be a valid facade handle.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_worker_start(h: *mut c_void) -> bool {
+    if h.is_null() {
+        return false;
+    }
+    facade_mut(h).start_audio_worker()
+}
+
+/// Stable pointer to the started worker (null when the inline pump is in charge).
+/// Valid while the facade lives; the host must join its thread before destroy.
+/// # Safety
+/// `h` must be a valid facade handle.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_worker_handle(h: *mut c_void) -> *const c_void {
+    if h.is_null() {
+        return std::ptr::null();
+    }
+    facade_mut(h).audio_worker_ptr() as *const c_void
+}
+
+/// Blocking worker loop for the dedicated thread. `stop` is polled (non-zero
+/// exits); the host owns its storage (a `std::atomic<uint32_t>`). Returns after
+/// flushing pending control data.
+/// # Safety
+/// `handle` must come from `f90_core_audio_worker_handle` and stay valid for the
+/// whole call; `stop` must point to a readable, host-written `u32`.
+#[no_mangle]
+pub unsafe extern "C" fn f90_core_audio_worker_run(handle: *const c_void, stop: *const u32) {
+    if handle.is_null() || stop.is_null() {
+        return;
+    }
+    // SAFETY: the host guarantees the handle outlives this blocking call (it joins
+    // the thread before destroying the facade) and that `stop` is readable.
+    let worker = unsafe { &*(handle as *const AudioWorker) };
+    worker.run_until(|| unsafe { std::ptr::read_volatile(stop) } != 0);
+}
+
+/// Drain up to `n` stereo frames produced by the worker. Returns frames written
+/// (0 when no worker is active or the ring is empty).
+/// # Safety
+/// `h` must be a valid facade handle; `out_l`/`out_r` must each point to at least
+/// `n` writable `f32`s.
+#[no_mangle]
+pub unsafe extern "C" fn f90_core_audio_worker_pull(
+    h: *mut c_void,
+    out_l: *mut f32,
+    out_r: *mut f32,
+    n: u32,
+) -> u32 {
+    if h.is_null() || out_l.is_null() || out_r.is_null() {
+        return 0;
+    }
+    let n = n as usize;
+    // SAFETY: per `# Safety`, each pointer has room for `n` writable `f32`s.
+    let (l, r) = unsafe {
+        (
+            std::slice::from_raw_parts_mut(out_l, n),
+            std::slice::from_raw_parts_mut(out_r, n),
+        )
+    };
+    facade_mut(h).audio_render(l, r, n) as u32
+}
+
+/// Copy the worker counters into `out`. Returns false when no worker is active.
+/// # Safety
+/// `h` must be a valid facade handle; `out` must point to a writable
+/// `AudioWorkerStats`.
+#[no_mangle]
+pub unsafe extern "C" fn f90_core_audio_worker_stats(
+    h: *mut c_void,
+    out: *mut AudioWorkerStats,
+) -> bool {
+    if h.is_null() || out.is_null() {
+        return false;
+    }
+    let facade = facade_mut(h);
+    match facade.audio_worker() {
+        Some(worker) => {
+            // SAFETY: `out` is non-null (checked above) and writable per `# Safety`.
+            unsafe { *out = worker.stats() };
+            true
+        }
+        None => false,
+    }
+}
+
 /// Serialize the orchestrated snapshot (postcard) into `out`. Returns bytes needed;
 /// 0 on success with `out_len` set. If the buffer is too small, returns the needed
 /// size and leaves the buffer untouched.
@@ -970,6 +1063,79 @@ mod abi_tests {
         f90_core_reset(h, 0.0, 0.3, 0.0, 0.0);
         unsafe { f90_core_destroy(h) };
         unsafe { f90_core_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn audio_worker_ffi_lifecycle_produces_pcm() {
+        use std::sync::atomic::{AtomicU32, Ordering};
+
+        let bank = crate::audio_worker::packaged_bank_dir();
+        if !bank.exists() {
+            eprintln!("[ffi] bank missing; skipping worker lifecycle test");
+            return;
+        }
+        let profile = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+        let opts_json = serde_json::json!({
+            "bank_dir": bank.to_string_lossy().replace('\\', "/"),
+            "config_json_path": profile.to_string_lossy().replace('\\', "/"),
+            "enable_audio": true,
+        })
+        .to_string();
+        let opts = CString::new(opts_json).unwrap();
+        let mut err = [0u8; 256];
+        let h = unsafe { f90_core_create(opts.as_ptr(), err.as_mut_ptr(), err.len() as u32) };
+        assert!(!h.is_null(), "create failed: {}", String::from_utf8_lossy(&err));
+        let id = f90_core_spawn(h);
+        assert_ne!(id, 0, "spawn must succeed");
+
+        if !f90_core_audio_worker_start(h) {
+            eprintln!("[ffi] worker start refused (mixer unavailable); skipping");
+            unsafe { f90_core_destroy(h) };
+            return;
+        }
+        let handle = f90_core_audio_worker_handle(h);
+        assert!(!handle.is_null(), "started worker must expose a handle");
+        let handle_addr = handle as usize;
+
+        let stop = AtomicU32::new(0);
+        let stop_addr = &stop as *const AtomicU32 as usize;
+        let worker_thread = std::thread::spawn(move || unsafe {
+            f90_core_audio_worker_run(
+                handle_addr as *const c_void,
+                stop_addr as *const u32,
+            );
+        });
+
+        let samples = flat_samples();
+        let mut out = F90CoreFrameOut::default();
+        for _ in 0..60 {
+            unsafe {
+                f90_core_step(
+                    h, id, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                    0.0, 0.0, 0.0, 0.0, 1, 0, 1.0 / 120.0, samples.as_ptr(), std::ptr::null_mut(),
+                    &mut out,
+                )
+            };
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
+        std::thread::sleep(std::time::Duration::from_millis(250));
+
+        let mut l = vec![0f32; 4_096];
+        let mut r = vec![0f32; 4_096];
+        let pulled = unsafe { f90_core_audio_worker_pull(h, l.as_mut_ptr(), r.as_mut_ptr(), 4_096) };
+        assert!(pulled > 0, "worker must have produced PCM for the pull");
+
+        let mut stats = AudioWorkerStats::default();
+        assert!(unsafe { f90_core_audio_worker_stats(h, &mut stats) });
+        assert_eq!(stats.healthy, 1);
+        assert!(stats.produced_frames > 0);
+        assert!(stats.packets_applied > 0, "steps must reach the worker");
+        assert_eq!(stats.packets_dropped, 0);
+
+        stop.store(1, Ordering::Release);
+        worker_thread.join().expect("worker thread must join");
+        unsafe { f90_core_destroy(h) };
     }
 
     #[test]

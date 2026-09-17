@@ -19,6 +19,7 @@
 //!   orchestrator, keeping byte-level parity with the in-engine path.
 
 pub mod audio;
+pub mod audio_worker;
 mod audio_telemetry;
 pub mod ffi;
 pub mod frame;
@@ -381,6 +382,10 @@ pub struct CoreFacade {
     world: World,
     config: CoreConfig,
     audio: AudioModule,
+    /// When present, it owns the real mixer and the host runs [`audio_worker::AudioWorker::run`]
+    /// on a dedicated thread. `audio` then holds the inert placeholder. Kept in an
+    /// `Arc` so the host can hold a stable raw pointer for the blocking run loop.
+    audio_worker: Option<Arc<audio_worker::AudioWorker>>,
     registry: ModuleRegistry,
     frame: CoreFrame,
     latest: RwLock<Arc<CoreFrame>>,
@@ -406,6 +411,7 @@ impl CoreFacade {
             world,
             config,
             audio,
+            audio_worker: None,
             registry,
             frame: CoreFrame::default(),
             latest: RwLock::new(Arc::new(CoreFrame::default())),
@@ -479,18 +485,55 @@ impl CoreFacade {
             .collect()
     }
 
+    /// Whether the mixer is usable, on either route (inline pump or worker).
     pub fn audio_healthy(&self) -> bool {
-        self.audio.healthy()
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.healthy(),
+            None => self.audio.healthy(),
+        }
     }
 
     /// Whether the procedural powertrain synth is driving the engine path.
     pub fn audio_synth_enabled(&self) -> bool {
-        self.audio.synth_enabled()
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.synth_enabled(),
+            None => self.audio.synth_enabled(),
+        }
     }
 
     /// True only when the packaged GF509 continuous runtime initialized.
     pub fn audio_gf509_enabled(&self) -> bool {
-        self.audio.gf509_enabled()
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.gf509_enabled(),
+            None => self.audio.gf509_enabled(),
+        }
+    }
+
+    /// Move the loaded mixer onto a dedicated audio worker. Returns false when the
+    /// mixer is unavailable or a worker already owns it; the inline pump remains
+    /// the fallback in that case.
+    pub fn start_audio_worker(&mut self) -> bool {
+        if self.audio_worker.is_some() || !self.audio.healthy() {
+            return false;
+        }
+        let module = std::mem::replace(&mut self.audio, AudioModule::new(None, false));
+        let worker = audio_worker::AudioWorker::new(module, audio_worker::AudioWorkerConfig::default());
+        self.audio_worker = Some(Arc::new(worker));
+        true
+    }
+
+    /// Worker handle for the host thread (spawn/join + PCM drain live in C++).
+    pub fn audio_worker(&self) -> Option<&audio_worker::AudioWorker> {
+        self.audio_worker.as_deref()
+    }
+
+    /// Stable raw pointer to the worker for the blocking run loop. Valid while the
+    /// facade lives and a worker was started; null otherwise.
+    pub fn audio_worker_ptr(&self) -> *const audio_worker::AudioWorker {
+        match self.audio_worker.as_ref() {
+            Some(worker) => Arc::as_ptr(worker),
+            None => std::ptr::null(),
+        }
     }
 
     /// Tri-ray samples for flat ground at the entity's current pose (headless/CLI
@@ -637,13 +680,14 @@ impl CoreFacade {
             self.underfloor.scrape_phase,
             underfloor::ScrapePhase::Impact | underfloor::ScrapePhase::Scraping
         );
-        self.audio.set_scrape_state(
-            scrape_active,
-            self.underfloor.scrape_intensity as f32,
-            underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
-            self.underfloor.onset_strength as f32,
-        );
-        self.finish_frame(dt, frame, surface, slip, mechanical_audio)
+        let scrape = audio_worker::AudioScrapeStep {
+            present: true,
+            active: scrape_active,
+            intensity: self.underfloor.scrape_intensity as f32,
+            speed_m_s: underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
+            onset_strength: self.underfloor.onset_strength as f32,
+        };
+        self.finish_frame(dt, frame, surface, slip, mechanical_audio, scrape)
     }
 
     /// Advance everything one fixed step on the STANDALONE path (headless, same as
@@ -670,7 +714,14 @@ impl CoreFacade {
         frame.throttle = input.throttle;
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
-        self.finish_frame(dt, frame, surface, slip, mechanical_audio)
+        self.finish_frame(
+            dt,
+            frame,
+            surface,
+            slip,
+            mechanical_audio,
+            audio_worker::AudioScrapeStep::default(),
+        )
     }
 
     /// Copy the entity's telemetry + pose/velocity into `frame` (physics-agnostic
@@ -800,29 +851,34 @@ impl CoreFacade {
         surface: SurfaceType,
         slip: f32,
         mechanical_audio: audio_telemetry::MechanicalAudioState,
+        scrape: audio_worker::AudioScrapeStep,
     ) -> &CoreFrame {
         // --- audio driven from the SAME tick (no round-trip) ------------------
-        self.audio.set_tire_scrub_state(
-            frame.wheel_slip_ratio.map(|v| v as f32),
-            frame.wheel_slip_angle_rad.map(|v| v as f32),
-            frame.wheel_contact_fraction.map(|v| v as f32),
-            frame.wheel_normal_force_n.map(|v| v as f32),
-            frame.speed_kmh as f32,
-            surface,
-        );
-        self.audio.set_physical_state(
-            frame.rpm,
-            self.config.idle_rpm,
-            self.config.max_rpm,
-            frame.throttle as f32,
-            frame.speed_kmh,
-            frame.gear,
-            mechanical_audio,
-            dt as f32,
+        // ONE packet definition feeds both routes: the dedicated-core worker queue
+        // or the inline pump fallback. The two stay sample-identical by construction.
+        let packet = audio_worker::AudioStepPacket {
+            surface: audio_worker::surface_kind(surface),
+            rpm: frame.rpm,
+            idle_rpm: self.config.idle_rpm,
+            max_rpm: self.config.max_rpm,
+            throttle: frame.throttle as f32,
+            speed_kph: frame.speed_kmh,
+            gear: frame.gear,
             slip,
-            surface,
-        );
-        frame.audio = self.audio.readouts();
+            dt: dt as f32,
+            mechanical: mechanical_audio,
+            scrub_slip_ratio: frame.wheel_slip_ratio.map(|v| v as f32),
+            scrub_slip_angle: frame.wheel_slip_angle_rad.map(|v| v as f32),
+            scrub_contact_fraction: frame.wheel_contact_fraction.map(|v| v as f32),
+            scrub_normal_force: frame.wheel_normal_force_n.map(|v| v as f32),
+            scrub_speed_kph: frame.speed_kmh as f32,
+            scrape,
+        };
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.push_step(packet),
+            None => self.audio.apply_step_packet(&packet),
+        }
+        frame.audio = self.current_audio_readouts();
 
         // --- modules tick (deterministic, core clock only) --------------------
         {
@@ -852,14 +908,24 @@ impl CoreFacade {
         self.latest.read().unwrap_or_else(|poisoned| poisoned.into_inner()).clone()
     }
 
-    /// Render `n` stereo audio frames into `out_l`/`out_r` (0 on no mixer).
+    /// Render `n` stereo audio frames into `out_l`/`out_r` (0 on no mixer). With a
+    /// worker active this drains the worker ring instead of rendering inline.
     pub fn audio_render(&mut self, out_l: &mut [f32], out_r: &mut [f32], n: usize) -> usize {
-        self.audio.render(out_l, out_r, n)
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.pull(out_l, out_r, n),
+            None => self.audio.render(out_l, out_r, n),
+        }
     }
 
     /// Fire a named one-shot by legacy code (0..10). Returns true if consumed.
     pub fn audio_trigger(&mut self, code: i32) -> bool {
-        self.audio.trigger_code(code)
+        match self.audio_worker.as_ref() {
+            Some(worker) => {
+                worker.push_command(audio_worker::AudioCommand::Trigger(code));
+                worker.healthy()
+            }
+            None => self.audio.trigger_code(code),
+        }
     }
 
     /// Apply the listener/ambient downlink. Returns true when the mixer is present.
@@ -869,12 +935,31 @@ impl CoreFacade {
         tc_cut_ratio: f32,
         limiter_active: bool,
     ) -> bool {
-        self.audio
-            .set_ambient(distance_m, tc_cut_ratio, limiter_active)
+        match self.audio_worker.as_ref() {
+            Some(worker) => {
+                worker.push_command(audio_worker::AudioCommand::Ambient {
+                    distance_m,
+                    tc_cut_ratio,
+                    limiter_active,
+                });
+                worker.healthy()
+            }
+            None => self
+                .audio
+                .set_ambient(distance_m, tc_cut_ratio, limiter_active),
+        }
     }
 
     pub fn audio_readouts(&mut self) -> frame::AudioReadouts {
-        self.audio.readouts()
+        self.current_audio_readouts()
+    }
+
+    /// Readouts from whichever route owns the mixer.
+    fn current_audio_readouts(&mut self) -> frame::AudioReadouts {
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.readouts(),
+            None => self.audio.readouts(),
+        }
     }
 
     /// Authoritative sim snapshot (game_sim) — used for byte parity with `game_sim`.
@@ -902,8 +987,13 @@ impl CoreFacade {
         }
         self.registry.reset_all();
         self.underfloor.reset();
-        self.audio.set_scrape_state(false, 0.0, 0.0, 0.0);
-        self.audio.reset();
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.push_command(audio_worker::AudioCommand::Reset),
+            None => {
+                self.audio.set_scrape_state(false, 0.0, 0.0, 0.0);
+                self.audio.reset();
+            }
+        }
     }
 
     /// Apply a runtime-tunable config (mirror of the legacy `FfiRuntimeConfig`) to

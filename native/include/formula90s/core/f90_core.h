@@ -160,6 +160,30 @@ typedef void (*FnCoreAudioReadouts)(void *core, F90CoreFrameOut *out);
 typedef void (*FnCoreAudioSetAmbient)(void *core, float distance_m, float tc_cut_ratio, int32_t limiter_active);
 typedef uint32_t (*FnCoreSnapshot)(void *core, uint8_t *out, uint32_t cap, uint32_t *out_len);
 
+// Dedicated audio worker: the mixer DSP moves off the render thread onto an OS
+// thread the host creates, pins and owns. MUST mirror `AudioWorkerStats` in
+// `game/crates/formula90-core/src/audio_worker.rs` (repr(C)).
+typedef struct F90AudioWorkerStats {
+    uint64_t produced_frames;
+    uint64_t consumed_frames;
+    uint64_t starved_iterations;
+    uint64_t packets_applied;
+    uint64_t packets_dropped;
+    uint64_t commands_applied;
+    uint64_t render_usec_total;
+    uint64_t iterations;
+    uint32_t ring_frames;
+    uint32_t ring_capacity_frames;
+    uint32_t high_water_frames;
+    uint32_t healthy;
+} F90AudioWorkerStats;
+
+typedef bool (*FnCoreAudioWorkerStart)(void *core);
+typedef const void *(*FnCoreAudioWorkerHandle)(void *core);
+typedef void (*FnCoreAudioWorkerRun)(const void *worker, const volatile uint32_t *stop);
+typedef uint32_t (*FnCoreAudioWorkerPull)(void *core, float *out_l, float *out_r, uint32_t n);
+typedef bool (*FnCoreAudioWorkerStatsGet)(void *core, F90AudioWorkerStats *out);
+
 #ifdef __cplusplus
 }
 #endif

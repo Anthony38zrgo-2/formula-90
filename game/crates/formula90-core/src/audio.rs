@@ -12,6 +12,7 @@ use vehicle_audio_engine::Trigger;
 use vehicle_audio_engine::VehicleAudioEngine;
 use vehicle_physics_engine::SurfaceType;
 
+use crate::audio_worker::{surface_from_kind, AudioStepPacket};
 use crate::frame::{
     AudioReadouts, BED_GRASS, BED_NONE, BED_RUMBLE, BED_SAND, SURFACE_ASPHALT, SURFACE_GRASS,
     SURFACE_RUMBLE, SURFACE_SAND,
@@ -418,6 +419,41 @@ impl AudioModule {
         if let Some(eng) = self.engine.as_mut() {
             eng.set_scrape_state(active, intensity, speed_m_s, onset_strength);
         }
+    }
+
+    /// Apply one physics-tick [`AudioStepPacket`] in the same order the
+    /// render-thread fallback uses (scrape -> tire scrub -> physical), so the
+    /// worker route and the inline route stay sample-identical.
+    pub(crate) fn apply_step_packet(&mut self, packet: &AudioStepPacket) {
+        if packet.scrape.present {
+            self.set_scrape_state(
+                packet.scrape.active,
+                packet.scrape.intensity,
+                packet.scrape.speed_m_s,
+                packet.scrape.onset_strength,
+            );
+        }
+        let surface = surface_from_kind(packet.surface);
+        self.set_tire_scrub_state(
+            packet.scrub_slip_ratio,
+            packet.scrub_slip_angle,
+            packet.scrub_contact_fraction,
+            packet.scrub_normal_force,
+            packet.scrub_speed_kph,
+            surface,
+        );
+        self.set_physical_state(
+            packet.rpm,
+            packet.idle_rpm,
+            packet.max_rpm,
+            packet.throttle,
+            packet.speed_kph,
+            packet.gear,
+            packet.mechanical,
+            packet.dt,
+            packet.slip,
+            surface,
+        );
     }
 
     #[allow(clippy::too_many_arguments)]
