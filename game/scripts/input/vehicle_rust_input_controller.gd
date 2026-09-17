@@ -96,22 +96,7 @@ func _physics_process(_delta: float) -> void:
 
 	if action_toggle_traction_control != "" and InputMap.has_action(action_toggle_traction_control):
 		if Input.is_action_just_pressed(action_toggle_traction_control):
-			var aids_ctrl: DrivingAidsController = null
-			for child in vehicle_node.get_children():
-				if child is DrivingAidsController:
-					aids_ctrl = child
-					break
-			if aids_ctrl == null and vehicle_node.get_parent():
-				for sibling in vehicle_node.get_parent().get_children():
-					if sibling is DrivingAidsController:
-						aids_ctrl = sibling
-						break
-			if aids_ctrl != null:
-				aids_ctrl.toggle(4)
-			elif vehicle_node.has_method("get_aids_enabled_mask") and vehicle_node.has_method("set_aids_enabled_mask"):
-				var mask: int = vehicle_node.get_aids_enabled_mask()
-				mask ^= 1 << 1
-				vehicle_node.set_aids_enabled_mask(mask)
+			_toggle_traction_control()
 
 	if action_reset_vehicle != "" and InputMap.has_action(action_reset_vehicle):
 		if Input.is_action_just_pressed(action_reset_vehicle):
@@ -155,6 +140,24 @@ func _physics_process(_delta: float) -> void:
 	vehicle_node.set_clutch_amount(clutch_val)
 	if next_gear != -2:
 		vehicle_node.set_gear_request(next_gear)
+
+
+func _toggle_traction_control() -> void:
+	# Single owner for the toggle action: delegate to the session's
+	# DrivingAidsController so its HUD-facing state stays in sync. Only when no
+	# controller exists do we flip the mask directly (deterministic
+	# read-modify-write, never a blind XOR that a second listener could cancel).
+	var aids_ctrl := get_tree().get_first_node_in_group("driving_aids") as DrivingAidsController
+	if aids_ctrl != null:
+		aids_ctrl.toggle(4)
+		return
+	if vehicle_node.has_method("get_aids_enabled_mask") and vehicle_node.has_method("set_aids_enabled_mask"):
+		var mask: int = vehicle_node.get_aids_enabled_mask()
+		if (mask & (1 << 1)) != 0:
+			mask &= ~(1 << 1)
+		else:
+			mask |= 1 << 1
+		vehicle_node.set_aids_enabled_mask(mask)
 
 
 func _resolve_max_gear() -> void:

@@ -22,6 +22,7 @@ const MASK_BIT_STABILITY := 2
 const MASK_BIT_BRAKE_ASSIST := 7
 
 func _ready():
+    add_to_group("driving_aids")
     if vehicle_node:
         _capture_baseline()
         _apply_aids()
@@ -52,8 +53,6 @@ func _physics_process(_delta):
     for i in range(aids.size()):
         if Input.is_action_just_pressed("aid_%d" % (i + 1)):
             toggle(i)
-    if InputMap.has_action("Toggle Traction Control") and Input.is_action_just_pressed("Toggle Traction Control"):
-        toggle(4)
 
 func toggle(index: int):
     aids[index] = not aids[index]
