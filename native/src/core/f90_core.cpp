@@ -117,6 +117,10 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_audio_skips"), &F90Core::get_audio_skips);
 	ClassDB::bind_method(D_METHOD("get_audio_mix_rate"), &F90Core::get_audio_mix_rate);
 	ClassDB::bind_method(D_METHOD("get_audio_buffer_length"), &F90Core::get_audio_buffer_length);
+	ClassDB::bind_method(D_METHOD("get_audio_output_rms"), &F90Core::get_audio_output_rms);
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "audio_output_rms"), "", "get_audio_output_rms");
+	ClassDB::bind_method(D_METHOD("get_audio_push_rejections"), &F90Core::get_audio_push_rejections);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_push_rejections"), "", "get_audio_push_rejections");
 	ClassDB::bind_method(D_METHOD("reset_audio_stats"), &F90Core::reset_audio_stats);
 
 	// --- actions ----------------------------------------------------------------
@@ -290,18 +294,44 @@ bool F90Core::load_dll() {
 	HMODULE hDll = nullptr;
 	ProjectSettings *ps = ProjectSettings::get_singleton();
 	String loaded_path = "";
+	Array rejected;
 	for (int i = 0; i < candidates.size(); ++i) {
-		String p = candidates[i];
-		String global_p = ps ? ps->globalize_path(p) : p;
-		hDll = LoadLibraryW((LPCWSTR)global_p.utf16().get_data());
-		if (hDll) {
-			loaded_path = std::move(global_p);
-			break;
+		const String p = candidates[i];
+		const String global_p = ps ? ps->globalize_path(p) : p;
+		HMODULE candidate = LoadLibraryW((LPCWSTR)global_p.utf16().get_data());
+		if (candidate == nullptr) {
+			continue;
 		}
+		// Validate ABI + BUILD BEFORE accepting. A stale sibling configuration
+		// (e.g. a leftover template_release next to the current template_debug)
+		// is skipped and reported; only "no candidate matches" is fatal. Fataling
+		// on the first mismatched sibling made the whole runtime (including audio)
+		// silently dead when a stale DLL shadowed a valid one.
+		FnCoreAbiVersion candidate_abi = reinterpret_cast<FnCoreAbiVersion>(GetProcAddress(candidate, "f90_core_abi_version"));
+		FnCoreBuildSha candidate_sha = reinterpret_cast<FnCoreBuildSha>(GetProcAddress(candidate, "f90_core_build_sha"));
+		const uint32_t candidate_abi_ver = candidate_abi ? candidate_abi() : 0;
+		const String candidate_build = candidate_sha ? String(candidate_sha()) : String("unknown");
+		if (candidate_abi_ver != EXPECTED_ABI_VERSION || candidate_build != recorded_source_sha || candidate_build == "unknown") {
+			rejected.append(global_p + String(" (ABI=") + String::num_int64(candidate_abi_ver) +
+					String(" BUILD=") + candidate_build + String(")"));
+			FreeLibrary(candidate);
+			continue;
+		}
+		hDll = candidate;
+		loaded_path = global_p;
+		break;
 	}
 	if (!hDll) {
-		UtilityFunctions::printerr("[F90Core] Failed to load formula90_core.dll from all candidates!");
+		String rejected_text = "";
+		for (int i = 0; i < rejected.size(); ++i) {
+			rejected_text += (i == 0 ? String("") : String(", ")) + String(rejected[i]);
+		}
+		UtilityFunctions::printerr(String("[F90Core] FATAL: no formula90_core.dll candidate matches BUILD ") +
+			recorded_source_sha + String(". Rejected: ") + rejected_text);
 		return false;
+	}
+	for (int i = 0; i < rejected.size(); ++i) {
+		UtilityFunctions::print(String("[F90Core] skipped stale candidate: ") + String(rejected[i]));
 	}
 	dll_handle_ = reinterpret_cast<void *>(hDll);
 
@@ -810,6 +840,32 @@ void F90Core::create_audio_nodes() {
 	audio_initialized_ = true;
 }
 
+bool F90Core::push_audio_batch(const float *left, const float *right, int frames) {
+	if (frames <= 0 || left == nullptr || right == nullptr) {
+		return false;
+	}
+	// ONE batched Variant call per pump instead of one per sample. The Rust mixer
+	// is sample-accurate; this only removes the per-sample dispatch overhead.
+	PackedVector2Array batch;
+	batch.resize(frames);
+	double sum_squares = 0.0;
+	for (int i = 0; i < frames; ++i) {
+		const float l = left[i];
+		const float r = right[i];
+		sum_squares += (double)l * (double)l + (double)r * (double)r;
+		batch.set(i, Vector2(l, r));
+	}
+	audio_output_rms_ = (float)std::sqrt(sum_squares / (double)(frames * 2));
+	if (audio_playback_ == nullptr) {
+		return false;
+	}
+	const bool accepted = (bool)audio_playback_->call("push_buffer", batch);
+	if (!accepted) {
+		audio_push_rejections_ += 1;
+	}
+	return accepted;
+}
+
 void F90Core::pump_audio(double delta) {
 	// enable_audio_ is honored at call time (not just at _ready): setting it
 	// false after initialization stops the per-frame pump immediately, the same
@@ -871,14 +927,7 @@ void F90Core::pump_audio(double delta) {
 			std::chrono::steady_clock::now() - render_start)
 										.count();
 
-	// ONE batched Variant call per pump instead of one per sample. The Rust mixer
-	// is sample-accurate; this only removes the per-sample dispatch overhead.
-	PackedVector2Array batch;
-	batch.resize(frames);
-	for (int i = 0; i < frames; ++i) {
-		batch.set(i, Vector2(mix_l_[i], mix_r_[i]));
-	}
-	audio_playback_->call("push_buffer", batch);
+	push_audio_batch(mix_l_.data(), mix_r_.data(), frames);
 	audio_pump_calls_ += 1;
 	audio_frames_pushed_ += frames;
 	if (audio_playback_->has_method("get_skips")) {
@@ -898,6 +947,8 @@ void F90Core::reset_audio_stats() {
 	audio_max_available_ = 0;
 	audio_render_usec_total_ = 0;
 	audio_skips_ = 0;
+	audio_output_rms_ = 0.0f;
+	audio_push_rejections_ = 0;
 }
 
 // -------- dedicated audio worker (phase 2) ----------------------------------------
@@ -1090,12 +1141,7 @@ void F90Core::pump_audio_worker() {
 	if (pulled == 0) {
 		return;
 	}
-	PackedVector2Array batch;
-	batch.resize((int)pulled);
-	for (uint32_t i = 0; i < pulled; ++i) {
-		batch.set((int)i, Vector2(worker_l_[i], worker_r_[i]));
-	}
-	audio_playback_->call("push_buffer", batch);
+	push_audio_batch(worker_l_.data(), worker_r_.data(), (int)pulled);
 	audio_pump_calls_ += 1;
 	audio_frames_pushed_ += (int64_t)pulled;
 	if (audio_playback_->has_method("get_skips")) {
@@ -1128,5 +1174,7 @@ Dictionary F90Core::get_audio_worker_stats() const {
 	d["ring_capacity_frames"] = (int64_t)audio_worker_stats_.ring_capacity_frames;
 	d["high_water_frames"] = (int64_t)audio_worker_stats_.high_water_frames;
 	d["healthy"] = audio_worker_stats_.healthy != 0;
+	d["output_rms"] = audio_output_rms_;
+	d["push_rejections"] = audio_push_rejections_;
 	return d;
 }

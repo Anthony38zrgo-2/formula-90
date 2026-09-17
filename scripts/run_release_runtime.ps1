@@ -58,5 +58,27 @@ finally {
         throw "FATAL: formula90s.gdextension was not restored (hash mismatch). Original saved to $bak. Original hash=$originalHash current=$restoredHash"
     }
     Write-Host "release-runtime: .gdextension restored (hash verified)" -ForegroundColor Green
+
+    # Release artifacts are QA-only and MUST NOT survive the run: both the
+    # GDExtension loader and F90Core prefer template_release, so a stale release
+    # DLL shadows the committed debug one and the runtime rejects its BUILD
+    # (observed: total audio silence). Remove them and restore the tracked debug
+    # publish + BUILD_SOURCE to HEAD.
+    Get-ChildItem -Path $bin -Filter '*template_release*' -File -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
+    Push-Location $root
+    try {
+        & git checkout -- game/addons/formula90s/bin game/BUILD_SOURCE 2>&1 | Out-Null
+        $dirty = (& git status --porcelain -- game/addons/formula90s/bin game/BUILD_SOURCE) | Out-String
+        if ($dirty.Trim().Length -gt 0) {
+            Write-Warning "release-runtime: bin/BUILD_SOURCE still dirty after restore:`n$dirty"
+        }
+        else {
+            Write-Host "release-runtime: release artifacts removed; debug publish restored" -ForegroundColor Green
+        }
+    }
+    finally {
+        Pop-Location
+    }
 }
 exit $exit

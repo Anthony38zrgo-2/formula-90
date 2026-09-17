@@ -178,6 +178,10 @@ public:
 	int get_audio_max_available() const { return audio_max_available_; }
 	int64_t get_audio_render_usec_total() const { return audio_render_usec_total_; }
 	int64_t get_audio_skips() const { return audio_skips_; }
+	/// RMS of the most recently pushed PCM block (0.0 == silence).
+	float get_audio_output_rms() const { return audio_output_rms_; }
+	/// push_buffer calls rejected by a full generator buffer since the last reset.
+	int64_t get_audio_push_rejections() const { return audio_push_rejections_; }
 	int get_audio_mix_rate() const { return kAudioMixRate; }
 	double get_audio_buffer_length() const { return audio_buffer_length_; }
 	void reset_audio_stats();
@@ -234,6 +238,8 @@ private:
 	void create_audio_nodes();
 	/// Render the scheduled frames from the mixer and push them in ONE batched call.
 	void pump_audio(double delta);
+	/// Push one stereo block to the generator; records RMS + rejection counter.
+	bool push_audio_batch(const float *left, const float *right, int frames);
 	// --- dedicated audio worker (phase 2) ---------------------------------------
 	void start_audio_worker();
 	void stop_audio_worker();
@@ -305,6 +311,8 @@ private:
 	int audio_max_available_ = 0;
 	int64_t audio_render_usec_total_ = 0;
 	int64_t audio_skips_ = 0;
+	float audio_output_rms_ = 0.0f;
+	int64_t audio_push_rejections_ = 0;
 	double audio_buffer_length_ = 0.1;
 
 	// Dedicated audio worker state. `audio_worker_stop_` is written by the main

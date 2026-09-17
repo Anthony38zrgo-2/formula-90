@@ -115,10 +115,14 @@ func _capture(core: Node, vehicle: Node, mode: int, max_fps: int, window_frames:
 	var skips_after := int(core.call("get_audio_skips"))
 	var mix_rate := int(core.call("get_audio_mix_rate"))
 	var worker := _worker_delta(worker_before, _worker_snapshot(core))
+	var output_rms := float(core.call("get_audio_output_rms"))
+	var push_rejections := int(core.call("get_audio_push_rejections"))
 	frame_ms.sort()
 	var produced_per_s := float(pushed) / elapsed_s
 	return {
 		"worker": worker,
+		"output_rms": output_rms,
+		"push_rejections": push_rejections,
 		"mode": mode,
 		"max_fps": max_fps,
 		"window_frames": window_frames,
@@ -225,10 +229,11 @@ func _run() -> void:
 		for max_fps in max_fps_list:
 			var stats := await _capture(core, vehicle, mode, max_fps, window_frames, throttle, stall_ms)
 			results.append(stats)
-			var line := "[AUDCAP] mode=%d max_fps=%-3d fps=%.1f pump/s=%.1f produced/s=%.0f deficit/s=%.0f render_ms=%.3f max_avail=%d skips_delta=%d skips_total=%d frame_ms p50=%.2f p95=%.2f max=%.2f" % [
+			var line := "[AUDCAP] mode=%d max_fps=%-3d fps=%.1f pump/s=%.1f produced/s=%.0f deficit/s=%.0f render_ms=%.3f max_avail=%d skips_delta=%d skips_total=%d rms=%.4f rej=%d frame_ms p50=%.2f p95=%.2f max=%.2f" % [
 				stats["mode"], stats["max_fps"], stats["fps"], stats["pump_per_s"],
 				stats["produced_per_s"], stats["deficit_per_s"], stats["render_ms_avg"],
 				stats["max_available"], stats["skips_delta"], stats["skips_total"],
+				stats["output_rms"], stats["push_rejections"],
 				stats["frame_ms_p50"], stats["frame_ms_p95"], stats["frame_ms_max"]]
 			var worker: Dictionary = stats.get("worker", {})
 			if not worker.is_empty():
