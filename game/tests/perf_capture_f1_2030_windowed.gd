@@ -260,6 +260,11 @@ func _run() -> void:
 	var frame_ms: Array = []
 	var physics_ms: Array = []
 	var process_ms: Array = []
+	# Per-second FPS buckets expose sustained drift (the aggregate percentiles
+	# above hide a monotonic degradation over the window).
+	var fps_buckets: Array = []
+	var bucket_start_usec := Time.get_ticks_usec()
+	var bucket_frames := 0
 	for _frame in measure_frames:
 		if throttle > 0.0 and vehicle.get("throttle_amount") != null:
 			vehicle.set("throttle_amount", throttle)
@@ -268,6 +273,16 @@ func _run() -> void:
 		frame_ms.append(float(Time.get_ticks_usec() - before_usec) / 1000.0)
 		physics_ms.append(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0)
 		process_ms.append(Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0)
+		bucket_frames += 1
+		var bucket_usec := Time.get_ticks_usec() - bucket_start_usec
+		if bucket_usec >= 1_000_000:
+			fps_buckets.append(float(bucket_frames) * 1_000_000.0 / float(bucket_usec))
+			bucket_start_usec = Time.get_ticks_usec()
+			bucket_frames = 0
+	if bucket_frames > 0:
+		var tail_usec := Time.get_ticks_usec() - bucket_start_usec
+		if tail_usec > 0:
+			fps_buckets.append(float(bucket_frames) * 1_000_000.0 / float(tail_usec))
 
 	var frame := _percentiles(frame_ms)
 	var physics := _percentiles(physics_ms)
@@ -277,6 +292,10 @@ func _run() -> void:
 	print("[CAPTURE] frame_ms %s | fps=%.1f" % [_fmt(frame), fps])
 	print("[CAPTURE] physics_monitor_ms %s" % _fmt(physics))
 	print("[CAPTURE] process_monitor_ms %s" % _fmt(process))
+	var bucket_labels: Array = []
+	for bucket_index in fps_buckets.size():
+		bucket_labels.append("%ds=%.1f" % [bucket_index + 1, fps_buckets[bucket_index]])
+	print("[CAPTURE] fps_buckets %s" % " ".join(bucket_labels))
 	print("[CAPTURE] draw_calls=%d objects=%d primitives=%d" % [
 		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 		RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
@@ -298,6 +317,7 @@ func _run() -> void:
 			"physics_monitor_ms": physics,
 			"process_monitor_ms": process,
 			"fps": fps,
+			"fps_buckets": fps_buckets,
 			"draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
 			"objects": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME),
 			"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
