@@ -10,7 +10,9 @@
 #include <godot_cpp/variant/quaternion.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <utility>
 
 #ifdef _WIN32
@@ -46,7 +48,9 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_enable_audio", "v"), &F90Core::set_enable_audio);
 	ClassDB::bind_method(D_METHOD("get_enable_audio"), &F90Core::get_enable_audio);
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "enable_audio"), "set_enable_audio", "get_enable_audio");
-
+	ClassDB::bind_method(D_METHOD("set_audio_pump_mode", "v"), &F90Core::set_audio_pump_mode);
+	ClassDB::bind_method(D_METHOD("get_audio_pump_mode"), &F90Core::get_audio_pump_mode);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_pump_mode", PROPERTY_HINT_RANGE, "0,1,1"), "set_audio_pump_mode", "get_audio_pump_mode");
 	ClassDB::bind_method(D_METHOD("set_bank_dir", "p"), &F90Core::set_bank_dir);
 	ClassDB::bind_method(D_METHOD("get_bank_dir"), &F90Core::get_bank_dir);
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "bank_dir"), "set_bank_dir", "get_bank_dir");
@@ -90,6 +94,17 @@ void F90Core::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::PACKED_FLOAT64_ARRAY, "engine_band_native_rpm"), "", "get_engine_band_native_rpm");
 	ClassDB::bind_method(D_METHOD("is_engine_loaded"), &F90Core::is_engine_loaded);
 	ClassDB::bind_method(D_METHOD("is_audio_active"), &F90Core::is_audio_active);
+
+	// --- audio pump diagnostics -------------------------------------------------
+	ClassDB::bind_method(D_METHOD("get_audio_pump_calls"), &F90Core::get_audio_pump_calls);
+	ClassDB::bind_method(D_METHOD("get_audio_frames_pushed"), &F90Core::get_audio_frames_pushed);
+	ClassDB::bind_method(D_METHOD("get_audio_last_available"), &F90Core::get_audio_last_available);
+	ClassDB::bind_method(D_METHOD("get_audio_max_available"), &F90Core::get_audio_max_available);
+	ClassDB::bind_method(D_METHOD("get_audio_render_usec_total"), &F90Core::get_audio_render_usec_total);
+	ClassDB::bind_method(D_METHOD("get_audio_skips"), &F90Core::get_audio_skips);
+	ClassDB::bind_method(D_METHOD("get_audio_mix_rate"), &F90Core::get_audio_mix_rate);
+	ClassDB::bind_method(D_METHOD("get_audio_buffer_length"), &F90Core::get_audio_buffer_length);
+	ClassDB::bind_method(D_METHOD("reset_audio_stats"), &F90Core::reset_audio_stats);
 
 	// --- actions ----------------------------------------------------------------
 	ClassDB::bind_method(D_METHOD("trigger", "name"), &F90Core::trigger);
@@ -653,7 +668,7 @@ void F90Core::_process(double delta) {
 	}
 	update_listener_distance(delta);
 	set_audio_ambient(tc_cut_ratio_, limiter_active_);
-	pump_audio();
+	pump_audio(delta);
 }
 
 void F90Core::update_listener_distance(double delta) {
@@ -733,8 +748,10 @@ void F90Core::create_audio_nodes() {
 	}
 	generator_.instantiate();
 	generator_->set_mix_rate_mode(AudioStreamGenerator::MIX_RATE_CUSTOM);
-	generator_->set_mix_rate(44100);
-	generator_->set_buffer_length(0.06F);
+	generator_->set_mix_rate(kAudioMixRate);
+	// A slightly deeper ring absorbs render stalls without the pump having to
+	// spike a huge batch on recovery.
+	generator_->set_buffer_length((float)audio_buffer_length_);
 
 	// Non-positional player (no AudioListener3D in the project): instantiate
 	// AudioStreamPlayer generically (godot-cpp lacks a wrapper here) like the legacy
@@ -758,7 +775,7 @@ void F90Core::create_audio_nodes() {
 	audio_initialized_ = true;
 }
 
-void F90Core::pump_audio() {
+void F90Core::pump_audio(double delta) {
 	// enable_audio_ is honored at call time (not just at _ready): setting it
 	// false after initialization stops the per-frame pump immediately, the same
 	// runtime-disable contract the visual suspension controller follows.
@@ -772,24 +789,52 @@ void F90Core::pump_audio() {
 			return;
 		}
 	}
-	int frames = (int)audio_playback_->call("get_frames_available");
+	const int available = (int)audio_playback_->call("get_frames_available");
+	audio_last_available_ = available;
+	if (available > audio_max_available_) {
+		audio_max_available_ = available;
+	}
+	if (available <= 0) {
+		return;
+	}
+
+	int frames;
+	if (audio_pump_mode_ == 0) {
+		// Legacy fixed cap: bounds the per-call DSP but underproduces whenever
+		// the rendered frame rate drops below kAudioMixRate / kPumpBudgetFrames
+		// (~43.07 FPS), which drains the ring and inserts underrun silence.
+		frames = available;
+		if (frames > kPumpBudgetFrames) {
+			frames = kPumpBudgetFrames;
+		}
+	} else {
+		// Delta budget: replace exactly what the mixer consumed during the last
+		// rendered frame (kAudioMixRate * delta) plus a bounded catch-up, so
+		// production never falls below the steady-state consumption rate while a
+		// single pump stays bounded by kPumpMaxBatchFrames. `available` still
+		// caps the batch to the free space in the generator ring.
+		int demand = (int)std::ceil((double)kAudioMixRate * delta) + kPumpCatchUpFrames;
+		if (demand < kPumpMinBatchFrames) {
+			demand = kPumpMinBatchFrames;
+		}
+		if (demand > kPumpMaxBatchFrames) {
+			demand = kPumpMaxBatchFrames;
+		}
+		frames = available < demand ? available : demand;
+	}
 	if (frames <= 0) {
 		return;
 	}
-	// SUS-GEO-12: bound the per-frame render demand. The mixer renders exactly
-	// the samples the playback asks for, so at a low render FPS the pump cost
-	// grows with the frame time and throttles the loop it feeds (feedback:
-	// lower fps -> more samples per pump -> still lower fps). Capping the batch
-	// bounds the _process cost and spills the remainder to the next frame; the
-	// audio content and latency are unchanged.
-	if (frames > kPumpBudgetFrames) {
-		frames = kPumpBudgetFrames;
-	}
+
 	if ((int)mix_l_.size() < frames) {
 		mix_l_.resize(frames);
 		mix_r_.resize(frames);
 	}
+	const auto render_start = std::chrono::steady_clock::now();
 	fn_audio_render_(core_, mix_l_.data(), mix_r_.data(), (uint32_t)frames);
+	audio_render_usec_total_ += (int64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+			std::chrono::steady_clock::now() - render_start)
+										.count();
 
 	// ONE batched Variant call per pump instead of one per sample. The Rust mixer
 	// is sample-accurate; this only removes the per-sample dispatch overhead.
@@ -799,9 +844,23 @@ void F90Core::pump_audio() {
 		batch.set(i, Vector2(mix_l_[i], mix_r_[i]));
 	}
 	audio_playback_->call("push_buffer", batch);
+	audio_pump_calls_ += 1;
+	audio_frames_pushed_ += frames;
+	if (audio_playback_->has_method("get_skips")) {
+		audio_skips_ = (int64_t)(int)audio_playback_->call("get_skips");
+	}
 
 	// Refresh presentation readouts (band weights ride the render).
 	if (fn_audio_readouts_) {
 		fn_audio_readouts_(core_, &frame_);
 	}
+}
+
+void F90Core::reset_audio_stats() {
+	audio_pump_calls_ = 0;
+	audio_frames_pushed_ = 0;
+	audio_last_available_ = 0;
+	audio_max_available_ = 0;
+	audio_render_usec_total_ = 0;
+	audio_skips_ = 0;
 }

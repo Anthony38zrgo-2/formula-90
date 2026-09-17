@@ -15,6 +15,7 @@
 #include <godot_cpp/variant/packed_float64_array.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -107,10 +108,20 @@ class F90Core : public Node3D {
 
 public:
 	static constexpr uint32_t EXPECTED_ABI_VERSION = 13;
-	/// SUS-GEO-12: max samples rendered per _process pump; the remainder is
-	/// rendered on the next frame (bounds the per-frame DSP cost in debug
-	/// builds where the synthesiser runs ~10x slower than release).
+	/// Audio output rate driven by the AudioStreamGenerator (Hz).
+	static constexpr int kAudioMixRate = 44100;
+	/// Legacy fixed per-pump sample cap. Kept only for the `audio_pump_mode == 0`
+	/// diagnostic comparison; it underproduces below kAudioMixRate / cap FPS.
 	static constexpr int kPumpBudgetFrames = 1024;
+	/// Delta-budget scheduler (`audio_pump_mode == 1`): render the samples the
+	/// mixer consumed during the last frame (ceil(rate * delta)) plus this
+	/// catch-up allowance so a drained buffer can refill without ever falling
+	/// below the steady-state consumption rate.
+	static constexpr int kPumpCatchUpFrames = 256;
+	/// Hard per-pump ceiling to bound worst-case `_process` cost after a hitch.
+	static constexpr int kPumpMaxBatchFrames = 8192;
+	/// Floor so delta mode never issues many tiny render batches.
+	static constexpr int kPumpMinBatchFrames = 128;
 
 	F90Core();
 	~F90Core() override;
@@ -138,6 +149,19 @@ public:
 	double get_debug_throttle() const { return debug_throttle_; }
 	void set_enable_audio(bool v) { enable_audio_ = v; }
 	bool get_enable_audio() const { return enable_audio_; }
+	/// 0 = legacy fixed cap (kPumpBudgetFrames), 1 = elapsed-delta budget.
+	void set_audio_pump_mode(int v) { audio_pump_mode_ = v; }
+	int get_audio_pump_mode() const { return audio_pump_mode_; }
+	// Audio pump diagnostics (cumulative; see reset_audio_stats()).
+	int64_t get_audio_pump_calls() const { return audio_pump_calls_; }
+	int64_t get_audio_frames_pushed() const { return audio_frames_pushed_; }
+	int get_audio_last_available() const { return audio_last_available_; }
+	int get_audio_max_available() const { return audio_max_available_; }
+	int64_t get_audio_render_usec_total() const { return audio_render_usec_total_; }
+	int64_t get_audio_skips() const { return audio_skips_; }
+	int get_audio_mix_rate() const { return kAudioMixRate; }
+	double get_audio_buffer_length() const { return audio_buffer_length_; }
+	void reset_audio_stats();
 	void set_bank_dir(const String &p) { bank_dir_res_ = p; }
 	String get_bank_dir() const { return bank_dir_res_; }
 	void set_modules(const String &p) { modules_ = p; }
@@ -189,8 +213,8 @@ private:
 	F194RustVehicle *find_first_vehicle(Node *from);
 	void ensure_vehicle_bus();
 	void create_audio_nodes();
-	/// Render available frames from the mixer and push them in ONE batched call.
-	void pump_audio();
+	/// Render the scheduled frames from the mixer and push them in ONE batched call.
+	void pump_audio(double delta);
 	static int trigger_code(const String &name);
 	static const char *trigger_name(int code);
 	F90CoreFrameOut frame_ = {};
@@ -238,6 +262,15 @@ private:
 	Object *audio_playback_ = nullptr;
 	bool audio_initialized_ = false;
 	std::vector<float> mix_l_, mix_r_;
+	// Audio pump scheduler + diagnostics.
+	int audio_pump_mode_ = 1;
+	int64_t audio_pump_calls_ = 0;
+	int64_t audio_frames_pushed_ = 0;
+	int audio_last_available_ = 0;
+	int audio_max_available_ = 0;
+	int64_t audio_render_usec_total_ = 0;
+	int64_t audio_skips_ = 0;
+	double audio_buffer_length_ = 0.1;
 	double collision_cooldown_ = 0.0;
 	void process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt);
 	/// Smooth the camera-to-vehicle distance with a ~0.1 s one-pole in `_process`.
