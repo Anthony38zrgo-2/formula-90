@@ -185,3 +185,94 @@ guard instead of the design axle box.
   `test_reverse_and_zero_velocity_gives_no_downforce`,
   `test_aero_distribution_and_balance_from_elements`,
   `test_wing_cl_speed_independent_no_flex`).
+
+## 8. Post-handoff: packaging/visual fixes, provenance, and the audio stall
+
+This section was added after the SUS-GEO handoff; unless stated otherwise the
+numbers below were **reproduced in this session** (source inspection + rebuilt
+binaries + windowed runtime), not copied from commit messages.
+
+### 8.1 Provenance restored (blocker cleared)
+
+At handoff, `game/BUILD_SOURCE` held `c755b8d3` while HEAD was `49006e61`, the
+installed DLLs disagreed with each other and with `target/debug`, and the
+pre-existing Rust gear-sentinel edit was uncommitted. Resolution on
+`main-clean`, atomic commits:
+
+| commit | change |
+|---|---|
+| `2df6d94e` | `fix(gearbox)`: map the C-ABI gear sentinel so N/R are reachable (uncommitted dirt from before the handoff, isolated before touching suspension/audio) |
+| `d0619fb6` | `chore(godot)`: register UID for `perf_capture_f1_2030_windowed.gd` |
+| `b09e94f7` | `build`: republish Windows runtime for `d0619fb6` |
+| `e3c52406` | `fix(audio)`: delta-budget pump scheduler + counters (see §8.3) |
+| `a374e431` | `build`: republish Windows runtime for `e3c52406` |
+
+Current state: HEAD `a374e431`, `BUILD_SOURCE` = `e3c52406` (publish parent,
+accepted by `run_f1_94.ps1`). Stamped artifacts embed `e3c52406`
+(`formula90_core`, `vehicle_audio_engine`, `libformula90s`, `f90_audio_dsp`);
+`game_sim`/`vehicle_physics_engine`/`psx_art_plugin` carry no embedded stamp and
+are outputs of the same clean build. `run_f1_94.ps1 -ValidateRuntimeOnly` →
+`Paridad BUILD/HEAD validada: a374e431`. Rebuild used a clean
+Cargo/SCons/`.godot` wipe (no cross-branch caches).
+
+Known ambient quirk (not a source bug): `scripts/build_windows.ps1` sets
+`$ErrorActionPreference='Continue'` and prints "copiada" after `Copy-Item`,
+which can fail transiently with "user-mapped section open" (AV/first-run lock)
+and leave a stale `bin` copy; the publish above re-synced every Rust pair from
+`target/debug` and verified `bare == template_debug`.
+
+### 8.2 Suspension visual fixes (commit-reported, not re-verified visually here)
+
+`87d08c4d` (nose damper packaging), `b661283b` (front blade re-anchor),
+`c755b8d3` (runtime visual-disable switch) and `49006e61` (audio cap + pose
+cache) are in the tree. Their visual result (damper inside the nose, blade
+attachment through travel/steering) still needs the human cockpit/exterior
+gate; only the solver/regression tests were inspected here.
+
+### 8.3 Audio scheduling (Issue A) — measured and fixed
+
+Architecture: `F90Core::_process` calls `pump_audio`, which asks the
+`AudioStreamGeneratorPlayback` (`WASAPI`, 44.1 kHz, buffer now 0.1 s) for free
+frames, renders them through the Rust mixer and pushes one batched buffer.
+
+Baseline defect: the `SUS-GEO-12` fixed cap `kPumpBudgetFrames = 1024` bounds
+per-pump DSP but caps production at `1024 · render_FPS` samples/s, which is
+**below** the 44100 Hz consumption whenever render FPS < ~43.07.
+
+Mixer cost, headless bench (`gf509_rt_bench`, this machine; deadline = 1024
+frames at 44.1 kHz):
+
+| config | 1024-frame median | per-sample | CPU for 44.1 kHz |
+|---|---|---|---|
+| debug | 9.76 ms | ~9.5 µs | ~420 ms/s (~42 %) |
+| release | 2.08 ms | ~2.0 µs | ~90 ms/s (~9 %) |
+
+Windowed runtime, `game/tests/audio_sustained_capture_f1_2030.gd`, 300-frame
+windows (mode 0 = legacy cap, mode 1 = delta budget):
+
+| mode | max_fps | fps | produced/s | deficit/s | new ring skips |
+|---|---|---|---|---|---|
+| 0 | native | 45.1 | 44103 | −3 | 148 |
+| 0 | 30 | 30.0 | 30720 | 13380 | 1545 |
+| 0 | 20 | 20.0 | 20481 | 23619 | 5412 |
+| 1 | native | 46.2 | 44122 | −22 | 0 |
+| 1 | 30 | 30.0 | 44107 | −7 | 0 |
+| 1 | 20 | 20.0 | 44067 | 33 | 0 |
+
+Fix: `audio_pump_mode` (default 1). Mode 1 renders
+`ceil(44100 · delta) + 256` frames, clamped to the ring's free space and a
+hard ceiling, so production never falls below the steady-state consumption
+rate while a single pump stays bounded. Per-pump cost is higher in debug at
+low FPS (~18.6 ms at 30 FPS, ~27.8 ms at 20 FPS; ~2 µs/sample) because the
+required DSP work is proportional to samples consumed — the cap never removed
+that work, it only underproduced. Mode 0 is retained for diagnostics.
+
+Stalls (windowed, buffer 0.1 s): 60 ms hitch → 0 new skips in both modes;
+150 ms hitch → 6/14 skips (exceeds the ring; only a larger buffer/latency would
+absorb it). Runtime gate: `enable_audio=false` stops the pump (0 calls/60
+frames), re-enabling resumes it (60 calls/60 frames) — `toggle check: PASS`.
+
+Limitations / open: only the **debug** binary was rebuilt here; release audio
+was measured through the headless bench, not the full runtime. Issue B (visual
+pose cache omitting driveshaft spin) is not addressed in this section. No
+human listening verdict has been recorded.

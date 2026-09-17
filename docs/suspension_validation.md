@@ -104,3 +104,31 @@ DLLs/caches), `BUILD` matches `HEAD`, Fuji contract v1.
 ## 5. Human A/B verdict
 
 _Pending — fill after §3 runs._
+
+## 6. Post-handoff status (provenance + Issue A audio)
+
+Reproduced in this session.
+
+- **Pre-existing dirt resolved separately.** The gear-sentinel edit in
+  `formula90-core/src/ffi.rs` + `game-sim/src/c_abi.rs` (backed up byte-exact in
+  `stash@{0}`) was isolated into `2df6d94e` before any suspension/audio change;
+  it was not folded into a suspension commit. Provenance chain on `main-clean`:
+  `2df6d94e` → `d0619fb6` (UID) → `b09e94f7` (publish) → `e3c52406` (audio fix)
+  → `a374e431` (publish). HEAD `a374e431`, `BUILD_SOURCE` `e3c52406`, stamped
+  binaries embed `e3c52406`; `run_f1_94.ps1 -ValidateRuntimeOnly` reports
+  `Paridad BUILD/HEAD validada: a374e431`.
+- **Matrix row 10 (final validation):** still ⏳ human A/B; scripted A/B (§2) is
+  green and the runtime now starts on a provenance-consistent build.
+- **Matrix row 11 (hot path):** unchanged; the prepared-envelope optimization is
+  preserved and no static envelope search returned to the substep path.
+- **Issue A (audio starvation):** fixed by the `audio_pump_mode` delta budget;
+  baseline vs fixed numbers, stall behaviour and the disable/re-enable check are
+  in `docs/suspension_bench.md` §8.3. Debug build verified in the windowed
+  runtime; release verified through the headless bench only. **Human listening
+  gate pending.**
+- **Issue B (visual pose cache / driveshaft spin):** still open; not addressed.
+- **Known pre-existing test failures:** `facade_parity` 3 cases
+  (`facade_applies_full_aids_mask_each_step`,
+  `facade_standalone_matches_game_sim_byte_exactly`,
+  `modules_do_not_perturb_physics_parity`) fail on clean HEAD, unrelated to the
+  gear-sentinel fix; plus the 4 `aero_test` cases from §1.
