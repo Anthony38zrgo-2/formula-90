@@ -123,7 +123,7 @@
     "launch_control_target_rpm": 0.0,
     "launch_control_throttle_limit": 1.0,
     "stability_available": true,
-    "stability_default_enabled": false,
+    "stability_default_enabled": true,
     "stability_grounded_multiplier": 2.0,
     "stability_player_selectable": true,
     "stability_upright_damping": 0.0,
