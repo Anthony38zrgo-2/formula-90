@@ -27,7 +27,8 @@ func _run() -> void:
 			failures.append("minimap marker did not move")
 		session.driving_aids.toggle(1)
 		await process_frame
-		if not aid_message.visible or aid_message.text != "AYUDA ESTAB ACTIVADA":
+		var aid_state := "ACTIVADA" if session.driving_aids.is_aid_enabled(1) else "DESACTIVADA"
+		if not aid_message.visible or aid_message.text != "AYUDA ESTAB %s" % aid_state:
 			failures.append("aid notification missing")
 	compositor.queue_free()
 	if failures.is_empty():
