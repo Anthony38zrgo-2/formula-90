@@ -622,7 +622,14 @@ pub extern "C" fn f1_94_physics_reset(
     }
     // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &mut *(sim_ptr as *mut VehicleSimulator) };
-    *sim = VehicleSimulator::new(sim.config.clone(), Vec3::new(pos_x, pos_y, pos_z), yaw_rad);
+    // Runtime aid choices survive a reset: the mask is session policy, not part
+    // of the physical state being recreated. Without this the standalone path
+    // silently re-enabled profile defaults after Reset Vehicle while the HUD and
+    // the vehicle's cached mask kept the player's selection.
+    let config = sim.config.clone();
+    let aids = sim.aids;
+    *sim = VehicleSimulator::new(config, Vec3::new(pos_x, pos_y, pos_z), yaw_rad);
+    sim.aids = aids;
 }
 
 /// Recommended API for Godot. Rust does NOT integrate the body and does NOT include gravity.
@@ -1009,5 +1016,28 @@ mod layout_tests {
         assert_eq!(offset_of!(FfiTelemetryOutput, pre_tc_drive_power_w), 1104);
         assert_eq!(offset_of!(FfiTelemetryOutput, net_drive_power_w), 1112);
         assert_eq!(size_of::<FfiTelemetryOutput>(), 1120);
+    }
+
+    #[test]
+    fn ffi_reset_preserves_runtime_aids_mask() {
+        let mut sim = Box::new(VehicleSimulator::new(
+            VehicleConfig::f1_94_canonical(),
+            Vec3::ZERO,
+            0.0,
+        ));
+        // Stability ON, TC OFF: the exact mask the player selected at runtime.
+        sim.aids = AidsMask::from_bits(1 << 2);
+        let ptr = sim.as_mut() as *mut VehicleSimulator as *mut c_void;
+        // SAFETY: `ptr` points to the live boxed simulator for the call.
+        f1_94_physics_reset(ptr, 1.0, 2.0, 3.0, 0.5);
+        assert!(
+            sim.aids.stability,
+            "reset must preserve the runtime stability selection"
+        );
+        assert!(
+            !sim.aids.traction_control,
+            "reset must not re-enable TC from profile defaults"
+        );
+        assert_eq!(sim.state.transform.origin.x, 1.0);
     }
 }
