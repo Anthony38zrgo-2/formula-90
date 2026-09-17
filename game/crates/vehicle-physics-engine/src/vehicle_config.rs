@@ -320,6 +320,11 @@ pub struct AidsConfig {
     pub stability_player_selectable: bool,
     pub stability_yaw_engage_angle_rad: f64,
     pub stability_yaw_strength: f64,
+    /// Lateral acceleration envelope (m/s^2) that bounds the reference yaw rate
+    /// `v*tan(delta)/L`. Without it a full-lock command at speed implies a
+    /// kinematic yaw no tire can hold and the aid stays idle while the rear
+    /// slides (power-on oversteer).
+    pub stability_reference_lateral_accel_m_s2: f64,
     pub stability_grounded_multiplier: f64,
     pub stability_upright_spring: f64,
     pub stability_upright_damping: f64,
@@ -449,6 +454,7 @@ fn default_aids() -> AidsConfig {
         stability_player_selectable: true,
         stability_yaw_engage_angle_rad: 0.045,
         stability_yaw_strength: 15.0,
+        stability_reference_lateral_accel_m_s2: 21.0,
         stability_grounded_multiplier: 2.6,
         stability_upright_spring: 0.0,
         stability_upright_damping: 0.0,
@@ -2528,6 +2534,8 @@ struct JsonAids {
     stability_yaw_engage_angle_rad: f64,
     #[serde(default = "default_stab_yaw_strength")]
     stability_yaw_strength: f64,
+    #[serde(default = "default_stab_ref_ay")]
+    stability_reference_lateral_accel_m_s2: f64,
     #[serde(default = "default_stab_ground_mult")]
     stability_grounded_multiplier: f64,
     #[serde(default = "default_stab_upright_spring")]
@@ -2613,6 +2621,7 @@ impl Default for JsonAids {
             stability_player_selectable: default_stab_selectable(),
             stability_yaw_engage_angle_rad: default_stab_engage(),
             stability_yaw_strength: default_stab_yaw_strength(),
+            stability_reference_lateral_accel_m_s2: default_stab_ref_ay(),
             stability_grounded_multiplier: default_stab_ground_mult(),
             stability_upright_spring: default_stab_upright_spring(),
             stability_upright_damping: default_stab_upright_damping(),
@@ -2697,6 +2706,9 @@ fn default_stab_engage() -> f64 {
 }
 fn default_stab_yaw_strength() -> f64 {
     15.0
+}
+fn default_stab_ref_ay() -> f64 {
+    21.0
 }
 fn default_stab_ground_mult() -> f64 {
     2.6
@@ -3483,6 +3495,9 @@ impl JsonVehicleSpec {
                 stability_player_selectable: self.aids.stability_player_selectable,
                 stability_yaw_engage_angle_rad: self.aids.stability_yaw_engage_angle_rad,
                 stability_yaw_strength: self.aids.stability_yaw_strength,
+                stability_reference_lateral_accel_m_s2: self
+                    .aids
+                    .stability_reference_lateral_accel_m_s2,
                 stability_grounded_multiplier: self.aids.stability_grounded_multiplier,
                 stability_upright_spring: self.aids.stability_upright_spring,
                 stability_upright_damping: self.aids.stability_upright_damping,
@@ -3790,6 +3805,9 @@ impl JsonVehicleSpec {
                 stability_player_selectable: cfg.aids.stability_player_selectable,
                 stability_yaw_engage_angle_rad: cfg.aids.stability_yaw_engage_angle_rad,
                 stability_yaw_strength: cfg.aids.stability_yaw_strength,
+                stability_reference_lateral_accel_m_s2: cfg
+                    .aids
+                    .stability_reference_lateral_accel_m_s2,
                 stability_grounded_multiplier: cfg.aids.stability_grounded_multiplier,
                 stability_upright_spring: cfg.aids.stability_upright_spring,
                 stability_upright_damping: cfg.aids.stability_upright_damping,

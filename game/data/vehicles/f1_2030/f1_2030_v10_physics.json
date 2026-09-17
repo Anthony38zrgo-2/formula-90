@@ -130,6 +130,7 @@
     "stability_upright_spring": 0.0,
     "stability_yaw_engage_angle_rad": 0.1,
     "stability_yaw_strength": 9.0,
+    "stability_reference_lateral_accel_m_s2": 21.0,
     "steering_assist_player_selectable": true,
     "steering_slip_assist_default_enabled": false,
     "traction_control_actuator": "engine_torque",

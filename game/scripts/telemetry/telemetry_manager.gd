@@ -580,6 +580,7 @@ func _merge_aids_profile_tuning(snapshot: Dictionary) -> void:
     var mapping := {
         "stability_yaw_engage_angle": "stability_yaw_engage_angle_rad",
         "stability_yaw_strength": "stability_yaw_strength",
+        "stability_reference_lateral_accel_m_s2": "stability_reference_lateral_accel_m_s2",
         "stability_yaw_ground_multiplier": "stability_grounded_multiplier",
         "stability_upright_spring": "stability_upright_spring",
         "stability_upright_damping": "stability_upright_damping"

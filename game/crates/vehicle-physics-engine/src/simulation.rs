@@ -716,13 +716,24 @@ impl VehicleSimulator {
             - rest_compression_m(cfg, WheelIndex::FrontLeft);
         let steer =
             steering_angle_for_wheel(cfg, WheelIndex::FrontLeft, st.steer_input_smoothed, fl_travel);
-        let target_yaw = forward_speed * steer.tan() / cfg.wheelbase.max(1e-3);
+        // Reference yaw from the steering command, bounded by the lateral-accel
+        // envelope the profile declares. A full-lock command at speed implies a
+        // kinematic yaw far beyond tire capability; without the bound the "excess"
+        // below is always negative in fast corners and the aid stays idle while
+        // the rear steps out under torque (power-on oversteer).
+        let ay_max = cfg.aids.stability_reference_lateral_accel_m_s2;
+        let kinematic_yaw = forward_speed * steer.tan() / cfg.wheelbase.max(1e-3);
+        let target_yaw = if ay_max.is_finite() && ay_max > 0.0 {
+            let cap = ay_max / forward_speed.max(1.0);
+            kinematic_yaw.clamp(-cap, cap)
+        } else {
+            kinematic_yaw
+        };
 
-        // True stability limiter: only counter rotation that EXCEEDS the yaw the
-        // steering commands (plus a small margin). We never push the car toward the
-        // kinematic target, so a straight / near-straight line at speed (where the
-        // commanded yaw can be large from even a tiny steer) is left alone instead
-        // of being force-yawed into a snap under throttle.
+        // True stability limiter: only counter rotation that EXCEEDS the reachable
+        // yaw the steering commands (plus a small margin). We never push the car
+        // toward the reference target, so a straight / near-straight line at speed
+        // is left alone instead of being force-yawed into a snap under throttle.
         let engage = cfg.aids.stability_yaw_engage_angle_rad.max(1e-4);
         let over = yaw_rate.abs() - target_yaw.abs() - engage;
         if over <= 0.0 {
@@ -1267,6 +1278,59 @@ mod tests {
         assert!(
             t.length() < 1e-9,
             "must not force yaw on a straight with a small steer command"
+        );
+    }
+
+    #[test]
+    fn stability_yaw_torque_engages_when_reference_is_unreachable() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.aids.stability_available = true;
+        cfg.aids.stability_default_enabled = true;
+        cfg.aids.stability_yaw_engage_angle_rad = 0.10;
+        cfg.aids.stability_yaw_strength = 5.0;
+        cfg.aids.stability_grounded_multiplier = 1.0;
+        cfg.aids.stability_reference_lateral_accel_m_s2 = 21.0;
+
+        let mut sim = VehicleSimulator::new(cfg, Vec3::ZERO, 0.0);
+        // Fast corner with full lock: the kinematic target (~7 rad/s) is far
+        // beyond the 21 m/s^2 envelope (~0.45 rad/s), so a 1.2 rad/s yaw is
+        // genuine excess and must be countered.
+        sim.state.linear_velocity = Vec3::new(0.0, 0.0, -47.0);
+        sim.state.steer_input_smoothed = 1.0;
+        sim.state.angular_velocity = Vec3::new(0.0, 1.2, 0.0);
+
+        let t = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
+        assert!(
+            t.y < 0.0,
+            "unreachable kinematic reference must engage the stability torque"
+        );
+        assert!(
+            t.x.abs() < 1e-9 && t.z.abs() < 1e-9,
+            "torque is pure yaw"
+        );
+    }
+
+    #[test]
+    fn stability_yaw_torque_leaves_yaw_inside_bounded_reference_alone() {
+        let mut cfg = VehicleConfig::f1_94_canonical();
+        cfg.aids.stability_available = true;
+        cfg.aids.stability_default_enabled = true;
+        cfg.aids.stability_yaw_engage_angle_rad = 0.10;
+        cfg.aids.stability_yaw_strength = 5.0;
+        cfg.aids.stability_grounded_multiplier = 1.0;
+        cfg.aids.stability_reference_lateral_accel_m_s2 = 21.0;
+
+        let mut sim = VehicleSimulator::new(cfg, Vec3::ZERO, 0.0);
+        // 20 m/s and full lock: the bounded reference is ~1.05 rad/s, so a
+        // 0.5 rad/s yaw sits inside the reachable envelope and stays untouched.
+        sim.state.linear_velocity = Vec3::new(0.0, 0.0, -20.0);
+        sim.state.steer_input_smoothed = 1.0;
+        sim.state.angular_velocity = Vec3::new(0.0, 0.5, 0.0);
+
+        let t = VehicleSimulator::stability_yaw_torque(&sim.config, &sim.state);
+        assert!(
+            t.length() < 1e-9,
+            "yaw inside the bounded reference must not be corrected"
         );
     }
 }
