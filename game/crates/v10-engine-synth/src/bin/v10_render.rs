@@ -4,13 +4,119 @@ use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+use v10_engine_synth::runtime::blend_hybrid;
 use v10_engine_synth::wav::write_mono_pcm16;
 use v10_engine_synth::{
     AcousticScene, AcousticSceneConfig, CollectorGeometry, EngineConfig, EngineFrame, EngineInput,
-    SampleLayerInput, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
+    SampleLayerInput, ShiftPhase, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
 };
 
 const HYBRID_HEADROOM_GAIN: f32 = 0.61;
+
+/// Audition timings for `--shift-sequence`. Mirrors the acoustic telemetry
+/// adapter: cut, optional downshift blip, then recovery.
+const SHIFT_CUT_SECONDS: f32 = 0.250;
+const SHIFT_BLIP_SECONDS: f32 = 0.120;
+const SHIFT_RECOVERY_SECONDS: f32 = 0.040;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ShiftDirection {
+    Up,
+    Down,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct ShiftEvent {
+    time_s: f32,
+    direction: ShiftDirection,
+}
+
+/// Parses `--shift-sequence "u@2.5,d@7.2"`; events must be strictly ascending.
+fn parse_shift_sequence(spec: &str) -> Result<Vec<ShiftEvent>, String> {
+    let mut events: Vec<ShiftEvent> = Vec::new();
+    for part in spec
+        .split(',')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+    {
+        let (token, time) = part
+            .split_once('@')
+            .ok_or_else(|| format!("expected <u|d>@<seconds>: {part}"))?;
+        let direction = match token.trim() {
+            "u" => ShiftDirection::Up,
+            "d" => ShiftDirection::Down,
+            other => return Err(format!("unknown shift direction: {other}")),
+        };
+        let time_s: f32 = time
+            .trim()
+            .parse()
+            .map_err(|_| format!("invalid shift time: {part}"))?;
+        if !time_s.is_finite() || time_s < 0.0 {
+            return Err(format!("shift time out of range: {part}"));
+        }
+        if events.last().is_some_and(|last| time_s <= last.time_s) {
+            return Err(format!("shift times must be strictly ascending: {part}"));
+        }
+        events.push(ShiftEvent { time_s, direction });
+    }
+    Ok(events)
+}
+
+fn validate_shift_sequence(events: &[ShiftEvent], seconds: f32) -> Result<(), String> {
+    if let Some(last) = events.last() {
+        if last.time_s >= seconds {
+            return Err("--shift-sequence events must start within --seconds".into());
+        }
+    }
+    Ok(())
+}
+
+/// Phase for the latest event that has started; later events take precedence.
+fn shift_phase_at(events: &[ShiftEvent], time_s: f32) -> ShiftPhase {
+    let Some(event) = events.iter().rev().find(|event| time_s >= event.time_s) else {
+        return ShiftPhase::None;
+    };
+    let elapsed = time_s - event.time_s;
+    if elapsed < SHIFT_CUT_SECONDS {
+        return match event.direction {
+            ShiftDirection::Up => ShiftPhase::UpshiftCut,
+            ShiftDirection::Down => ShiftPhase::DownshiftCut,
+        };
+    }
+    let blip_end = SHIFT_CUT_SECONDS
+        + if event.direction == ShiftDirection::Down {
+            SHIFT_BLIP_SECONDS
+        } else {
+            0.0
+        };
+    if elapsed < blip_end {
+        return ShiftPhase::DownshiftBlip;
+    }
+    if elapsed < blip_end + SHIFT_RECOVERY_SECONDS {
+        return match event.direction {
+            ShiftDirection::Up => ShiftPhase::UpshiftRecovery,
+            ShiftDirection::Down => ShiftPhase::DownshiftRecovery,
+        };
+    }
+    ShiftPhase::None
+}
+
+fn shift_sequence_label(events: &[ShiftEvent]) -> String {
+    if events.is_empty() {
+        return "none".into();
+    }
+    events
+        .iter()
+        .map(|event| {
+            let token = match event.direction {
+                ShiftDirection::Up => "u",
+                ShiftDirection::Down => "d",
+            };
+            format!("{token}@{:.3}", event.time_s)
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
 
 struct OnePoleLowPass {
     alpha: f32,
@@ -89,6 +195,7 @@ struct Args {
     sample_zone_trim_db: Vec<f32>,
     scene_gains: Vec<(String, f32)>,
     cover_lowpass_hz: Option<f32>,
+    shift_sequence: Vec<ShiftEvent>,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -140,6 +247,7 @@ fn parse_args() -> Result<Args, String> {
         sample_zone_trim_db: Vec::new(),
         scene_gains: Vec::new(),
         cover_lowpass_hz: None,
+        shift_sequence: Vec::new(),
     };
     let mut i = 0;
     while i < raw.len() {
@@ -260,6 +368,10 @@ fn parse_args() -> Result<Args, String> {
                     .map_err(|_| format!("invalid scene gain value: {value}"))?;
                 parsed.scene_gains.push((name.to_string(), gain));
             }
+            "--shift-sequence" => {
+                let spec = parse_value::<String>(&raw, &mut i, "--shift-sequence")?;
+                parsed.shift_sequence = parse_shift_sequence(&spec)?;
+            }
             unknown => return Err(format!("unknown argument: {unknown}")),
         }
         i += 1;
@@ -299,6 +411,7 @@ fn parse_args() -> Result<Args, String> {
     if parsed.hold_before_lift && parsed.sweep_end_rpm.is_none() {
         return Err("--hold-before-lift requires --sweep-end-rpm".into());
     }
+    validate_shift_sequence(&parsed.shift_sequence, parsed.seconds)?;
     Ok(parsed)
 }
 
@@ -680,6 +793,20 @@ fn run() -> Result<(), String> {
         let time_s = sample as f32 / args.sample_rate as f32;
         let current_input = render_input(&args, time_s);
         engine.set_input(current_input)?;
+        // Mechanical engagement is identical with and without a shift
+        // sequence: only the phase differs, so A/B isolates the gesture.
+        let retention_torque = if current_input.throttle > 0.30 {
+            current_input.load
+        } else {
+            -((0.30 - current_input.throttle) / 0.30) * 0.6
+        };
+        engine.set_mechanical_state(
+            retention_torque,
+            1.0,
+            0.0,
+            false,
+            shift_phase_at(&args.shift_sequence, time_s),
+        );
         let frame: EngineFrame = engine.render_sample();
         let acoustic = scene.process(&frame);
         let sampled = sample_layer
@@ -818,10 +945,15 @@ fn run() -> Result<(), String> {
         }
         // Hybrid headroom is static and transparent. A limiter here would hide
         // gain errors and make the sample layer part of the sound design.
-        // The blend weights mirror Gf509Runtime: scene * physical + sample * sample.
-        let hybrid = (acoustic.output * physical_blend_weight
-            + sample_output * sample_blend_weight)
-            * HYBRID_HEADROOM_GAIN;
+        // The blend mirrors Gf509Runtime: the sample layer follows the same
+        // synthesized shift gesture as the procedural side.
+        let hybrid = blend_hybrid(
+            acoustic.output,
+            sample_layer.is_some().then_some(sample_output),
+            physical_blend_weight,
+            sample_blend_weight,
+            engine.shift_gesture_gain(),
+        );
         stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
         stems
             .get_mut("sample_residual")
@@ -1011,6 +1143,7 @@ fn run() -> Result<(), String> {
             "  \"load\": {:.6},\n",
             "  \"duration_s\": {:.6},\n",
             "  \"warmup_s\": {:.6},\n",
+            "  \"shift_sequence\": \"{}\",\n",
             "  \"event_count\": {},\n",
             "  \"peak\": {:.9},\n",
             "  \"rms\": {:.9},\n",
@@ -1055,6 +1188,7 @@ fn run() -> Result<(), String> {
         args.load,
         args.seconds,
         args.warmup,
+        shift_sequence_label(&args.shift_sequence),
         event_count,
         peak,
         rms,
@@ -1087,3 +1221,68 @@ fn run() -> Result<(), String> {
 
 #[allow(dead_code)]
 fn _assert_path(_: &Path) {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_shift_sequence_events() {
+        let events = parse_shift_sequence("u@2.5, d@7.2").unwrap();
+        assert_eq!(events.len(), 2);
+        assert_eq!(
+            events[0],
+            ShiftEvent {
+                time_s: 2.5,
+                direction: ShiftDirection::Up
+            }
+        );
+        assert_eq!(
+            events[1],
+            ShiftEvent {
+                time_s: 7.2,
+                direction: ShiftDirection::Down
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_malformed_shift_sequence() {
+        assert!(parse_shift_sequence("u2.5").is_err());
+        assert!(parse_shift_sequence("x@1.0").is_err());
+        assert!(parse_shift_sequence("u@nope").is_err());
+        assert!(parse_shift_sequence("u@-1.0").is_err());
+        assert!(parse_shift_sequence("u@3.0,u@2.0").is_err());
+        assert!(parse_shift_sequence("u@2.0,d@2.0").is_err());
+    }
+
+    #[test]
+    fn shift_events_must_fit_inside_the_render_duration() {
+        let events = parse_shift_sequence("u@2.5").unwrap();
+        assert!(validate_shift_sequence(&events, 6.0).is_ok());
+        assert!(validate_shift_sequence(&events, 2.5).is_err());
+        assert!(validate_shift_sequence(&[], 2.5).is_ok());
+    }
+
+    #[test]
+    fn phase_schedule_matches_cut_blip_recovery() {
+        let events = parse_shift_sequence("u@1.0,d@5.0").unwrap();
+        assert_eq!(shift_phase_at(&events, 0.5), ShiftPhase::None);
+        assert_eq!(shift_phase_at(&events, 1.0), ShiftPhase::UpshiftCut);
+        assert_eq!(shift_phase_at(&events, 1.24), ShiftPhase::UpshiftCut);
+        assert_eq!(shift_phase_at(&events, 1.26), ShiftPhase::UpshiftRecovery);
+        assert_eq!(shift_phase_at(&events, 1.30), ShiftPhase::None);
+        assert_eq!(shift_phase_at(&events, 5.1), ShiftPhase::DownshiftCut);
+        assert_eq!(shift_phase_at(&events, 5.24), ShiftPhase::DownshiftCut);
+        assert_eq!(shift_phase_at(&events, 5.26), ShiftPhase::DownshiftBlip);
+        assert_eq!(shift_phase_at(&events, 5.39), ShiftPhase::DownshiftRecovery);
+        assert_eq!(shift_phase_at(&events, 5.50), ShiftPhase::None);
+    }
+
+    #[test]
+    fn shift_sequence_label_round_trips() {
+        assert_eq!(shift_sequence_label(&[]), "none");
+        let events = parse_shift_sequence("u@2.5,d@7.25").unwrap();
+        assert_eq!(shift_sequence_label(&events), "u@2.500,d@7.250");
+    }
+}
