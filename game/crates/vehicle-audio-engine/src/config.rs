@@ -483,6 +483,89 @@ impl HotReloadConfig {
     }
 }
 
+/// One RPM band of the shift one-shot window: a slice of the sample starting
+/// `start_s` seconds in and `length_s` seconds long, with crossfaded edges.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+pub struct ShiftWindowBandConfig {
+    #[serde(default)]
+    pub start_s: f32,
+    #[serde(default = "default_shift_window_length_s")]
+    pub length_s: f32,
+}
+
+/// Optional RPM-windowed playback for the shift one-shots. Absent (`None`)
+/// plays the whole sample, which is the legacy behavior. `low_rpm`/`high_rpm`
+/// are absolute engine RPM boundaries; bands are low (< low_rpm), mid, high
+/// (> high_rpm). `fade_ms` is applied on both window edges.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+pub struct ShiftWindowConfig {
+    #[serde(default = "default_shift_low_rpm")]
+    pub low_rpm: f32,
+    #[serde(default = "default_shift_high_rpm")]
+    pub high_rpm: f32,
+    #[serde(default = "default_shift_fade_ms")]
+    pub fade_ms: f32,
+    #[serde(default)]
+    pub low: ShiftWindowBandConfig,
+    #[serde(default)]
+    pub mid: ShiftWindowBandConfig,
+    #[serde(default)]
+    pub high: ShiftWindowBandConfig,
+}
+
+fn default_shift_low_rpm() -> f32 {
+    7_000.0
+}
+
+fn default_shift_high_rpm() -> f32 {
+    11_000.0
+}
+
+fn default_shift_fade_ms() -> f32 {
+    8.0
+}
+
+fn default_shift_window_length_s() -> f32 {
+    1.0
+}
+
+impl ShiftWindowBandConfig {
+    pub fn sanitized(self) -> Self {
+        let mut out = self;
+        if !out.start_s.is_finite() {
+            out.start_s = 0.0;
+        }
+        if !out.length_s.is_finite() {
+            out.length_s = default_shift_window_length_s();
+        }
+        out.start_s = out.start_s.clamp(0.0, 2.0);
+        out.length_s = out.length_s.clamp(0.001, 2.0);
+        out
+    }
+}
+
+impl ShiftWindowConfig {
+    pub fn sanitized(self) -> Self {
+        let mut out = self;
+        if !out.low_rpm.is_finite() {
+            out.low_rpm = default_shift_low_rpm();
+        }
+        if !out.high_rpm.is_finite() {
+            out.high_rpm = default_shift_high_rpm();
+        }
+        if !out.fade_ms.is_finite() {
+            out.fade_ms = default_shift_fade_ms();
+        }
+        out.low_rpm = out.low_rpm.clamp(0.0, 25_000.0);
+        out.high_rpm = out.high_rpm.clamp(out.low_rpm, 25_000.0);
+        out.fade_ms = out.fade_ms.clamp(0.0, 20.0);
+        out.low = out.low.sanitized();
+        out.mid = out.mid.sanitized();
+        out.high = out.high.sanitized();
+        out
+    }
+}
+
 /// Per-sound DSP configuration (volume, pan, ADSR, EQ, reverb send).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SoundConfig {
@@ -501,6 +584,9 @@ pub struct SoundConfig {
     /// Reverb send to a shared bus.
     #[serde(default)]
     pub reverb: ReverbSendConfig,
+    /// Optional RPM-windowed slice for shift one-shots. `None` = full sample.
+    #[serde(default)]
+    pub window: Option<ShiftWindowConfig>,
 }
 
 fn default_volume() -> f32 {
@@ -516,6 +602,7 @@ pub struct RawSoundConfig {
     pub adsr: Option<RawAdsrConfig>,
     pub eq: Option<RawEqConfig>,
     pub reverb: Option<RawReverbSendConfig>,
+    pub window: Option<ShiftWindowConfig>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -628,6 +715,9 @@ impl RawSoundConfig {
                 out.reverb.send_db = value;
             }
         }
+        if let Some(window) = self.window {
+            out.window = Some(window.sanitized());
+        }
         out.sanitized()
     }
 }
@@ -640,6 +730,7 @@ impl Default for SoundConfig {
             adsr: AdsrConfig::default(),
             eq: EqConfig::default(),
             reverb: ReverbSendConfig::default(),
+            window: None,
         }
     }
 }
@@ -675,6 +766,7 @@ impl SoundConfig {
             } else {
                 defaults.reverb.clone()
             },
+            window: self.window.or(defaults.window),
         }
     }
 
@@ -690,6 +782,7 @@ impl SoundConfig {
         self.adsr = self.adsr.sanitized();
         self.eq = self.eq.sanitized();
         self.reverb = self.reverb.sanitized();
+        self.window = self.window.map(ShiftWindowConfig::sanitized);
         self
     }
 }
@@ -1014,7 +1107,7 @@ fn collect_unknown_keys(value: &serde_json::Value, warnings: &mut Vec<ConfigDiag
     }
     check(
         value.get("defaults").and_then(|v| v.as_object()),
-        &["volume", "pan", "adsr", "eq", "reverb"],
+        &["volume", "pan", "adsr", "eq", "reverb", "window"],
         "$.defaults",
         warnings,
     );
@@ -1024,7 +1117,7 @@ fn collect_unknown_keys(value: &serde_json::Value, warnings: &mut Vec<ConfigDiag
             let path = format!("$.sounds.{key}");
             check(
                 sound.as_object(),
-                &["volume", "pan", "adsr", "eq", "reverb"],
+                &["volume", "pan", "adsr", "eq", "reverb", "window"],
                 &path,
                 warnings,
             );
@@ -1131,6 +1224,23 @@ fn check_sound_children<F>(
         &format!("{path}.reverb"),
         warnings,
     );
+    check(
+        sound.get("window").and_then(|v| v.as_object()),
+        &["low_rpm", "high_rpm", "fade_ms", "low", "mid", "high"],
+        &format!("{path}.window"),
+        warnings,
+    );
+    for band in ["low", "mid", "high"] {
+        check(
+            sound
+                .get("window")
+                .and_then(|v| v.get(band))
+                .and_then(|v| v.as_object()),
+            &["start_s", "length_s"],
+            &format!("{path}.window.{band}"),
+            warnings,
+        );
+    }
 }
 
 fn collect_range_diagnostics(
@@ -1644,6 +1754,81 @@ mod tests {
     }
 
     #[test]
+    fn v2_shift_window_resolves_without_warnings() {
+        let result = resolve_config_json(
+            r#"{
+            "schema_version": 2,
+            "sounds": {
+                "shift_up": {
+                    "volume": 0.85,
+                    "pan": 0.0,
+                    "window": {
+                        "low_rpm": 7000.0,
+                        "high_rpm": 11000.0,
+                        "fade_ms": 8.0,
+                        "low": {"start_s": 0.0, "length_s": 0.55},
+                        "mid": {"start_s": 0.02, "length_s": 0.45},
+                        "high": {"start_s": 0.05, "length_s": 0.35}
+                    }
+                }
+            }
+        }"#,
+            &["shift_up".into()],
+        );
+        assert!(result.is_valid(), "{:?}", result.errors);
+        assert!(result.warnings.is_empty(), "{:?}", result.warnings);
+        let SoundMixerConfig::V2(config) = result.resolved else {
+            panic!("expected v2")
+        };
+        let window = config.sounds["shift_up"].window.expect("window table");
+        assert_eq!(window.low_rpm, 7_000.0);
+        assert_eq!(window.high_rpm, 11_000.0);
+        assert_eq!(window.fade_ms, 8.0);
+        assert_eq!(
+            window.high,
+            ShiftWindowBandConfig {
+                start_s: 0.05,
+                length_s: 0.35
+            }
+        );
+    }
+
+    #[test]
+    fn v2_shift_window_sanitizes_and_reports_unknown_children() {
+        let result = resolve_config_json(
+            r#"{
+            "schema_version": 2,
+            "sounds": {
+                "shift_down": {
+                    "window": {
+                        "low_rpm": 12000.0,
+                        "high_rpm": 8000.0,
+                        "fade_ms": 99.0,
+                        "low": {"start_s": -3.0, "length_s": 0.0},
+                        "mystery": 1.0
+                    }
+                }
+            }
+        }"#,
+            &["shift_down".into()],
+        );
+        assert!(result.is_valid(), "{:?}", result.errors);
+        assert!(result
+            .warnings
+            .iter()
+            .any(|d| d.path == "$.sounds.shift_down.window.mystery"));
+        let SoundMixerConfig::V2(config) = result.resolved else {
+            panic!("expected v2")
+        };
+        let window = config.sounds["shift_down"].window.expect("window table");
+        assert_eq!(window.low_rpm, 12_000.0);
+        assert_eq!(window.high_rpm, 12_000.0, "high must clamp to low");
+        assert_eq!(window.fade_ms, 20.0);
+        assert_eq!(window.low.start_s, 0.0);
+        assert_eq!(window.low.length_s, 0.001);
+    }
+
+    #[test]
     fn invalid_candidate_preserves_last_valid_snapshot() {
         let mut store = ConfigSnapshotStore::default();
         let first = store.try_update(
@@ -1731,6 +1916,11 @@ mod tests {
                 bus: "sfx_short".to_string(),
                 send_db: -3.0,
             },
+            window: Some(ShiftWindowConfig {
+                low_rpm: 6_500.0,
+                high_rpm: 10_500.0,
+                ..ShiftWindowConfig::default()
+            }),
         };
 
         // Every field at its "inherit" sentinel takes the default wholesale.
@@ -1747,6 +1937,7 @@ mod tests {
         assert_eq!(explicit.volume, 0.2);
         assert_eq!(explicit.pan, 0.5);
         assert_eq!(explicit.adsr, defaults.adsr);
+        assert_eq!(explicit.window, defaults.window);
 
         // A disabled child block inherits the default instead of its own values.
         let merged = SoundConfig {
@@ -1761,5 +1952,6 @@ mod tests {
         assert_eq!(merged.adsr, defaults.adsr);
         assert_eq!(merged.eq, defaults.eq);
         assert_eq!(merged.reverb, defaults.reverb);
+        assert_eq!(merged.window, defaults.window);
     }
 }

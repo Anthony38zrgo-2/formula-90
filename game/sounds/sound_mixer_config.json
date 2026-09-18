@@ -727,7 +727,7 @@
     },
     "shift_down": {
       "volume": 0.85,
-      "pan": 0.1,
+      "pan": 0.0,
       "adsr": {
         "enabled": true,
         "attack_ms": 0.0,
@@ -757,6 +757,14 @@
         "enabled": true,
         "bus": "mechanical_small",
         "send_db": -18.0
+      },
+      "window": {
+        "low_rpm": 7000.0,
+        "high_rpm": 11000.0,
+        "fade_ms": 8.0,
+        "low": { "start_s": 0.0, "length_s": 0.55 },
+        "mid": { "start_s": 0.02, "length_s": 0.45 },
+        "high": { "start_s": 0.05, "length_s": 0.35 }
       }
     },
     "shift_down_delayed": {
@@ -792,7 +800,7 @@
     },
     "shift_up": {
       "volume": 0.85,
-      "pan": 0.1,
+      "pan": 0.0,
       "adsr": {
         "enabled": true,
         "attack_ms": 0.0,
@@ -822,6 +830,14 @@
         "enabled": true,
         "bus": "mechanical_small",
         "send_db": -18.0
+      },
+      "window": {
+        "low_rpm": 7000.0,
+        "high_rpm": 11000.0,
+        "fade_ms": 8.0,
+        "low": { "start_s": 0.0, "length_s": 0.55 },
+        "mid": { "start_s": 0.02, "length_s": 0.45 },
+        "high": { "start_s": 0.05, "length_s": 0.35 }
       }
     },
     "shift_up_delayed": {

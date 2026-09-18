@@ -146,6 +146,81 @@ struct OneShot {
     attack_remaining: usize,
     attack_total: usize,
     hp: Option<Biquad>,
+    /// Optional RPM-windowed slice selected at trigger time. `None` plays the
+    /// whole sample (legacy behavior).
+    windows: Option<ShiftWindows>,
+    start_offset: usize,
+    window_len: usize,
+    fade_samples: usize,
+}
+
+/// Resolved window slice for one RPM band, in bank sample frames.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ShiftWindowBand {
+    start: usize,
+    length: usize,
+}
+
+/// Resolved RPM -> window table for a shift voice. Built once from the
+/// `SoundConfig.window` section; selection is O(1) at trigger time.
+#[derive(Clone, Copy, Debug)]
+struct ShiftWindows {
+    low_rpm: f32,
+    high_rpm: f32,
+    fade_samples: usize,
+    low: ShiftWindowBand,
+    mid: ShiftWindowBand,
+    high: ShiftWindowBand,
+}
+
+impl ShiftWindows {
+    fn from_config(config: crate::config::ShiftWindowConfig, sample_rate: u32) -> Self {
+        let rate = sample_rate as f32;
+        let band = |band: crate::config::ShiftWindowBandConfig| ShiftWindowBand {
+            start: (band.start_s * rate).round().max(0.0) as usize,
+            length: (band.length_s * rate).round().max(1.0) as usize,
+        };
+        Self {
+            low_rpm: config.low_rpm,
+            high_rpm: config.high_rpm,
+            fade_samples: (config.fade_ms * rate / 1000.0).round().max(0.0) as usize,
+            low: band(config.low),
+            mid: band(config.mid),
+            high: band(config.high),
+        }
+    }
+
+    #[inline]
+    fn band(&self, rpm: f64) -> ShiftWindowBand {
+        let rpm = rpm as f32;
+        if rpm < self.low_rpm {
+            self.low
+        } else if rpm <= self.high_rpm {
+            self.mid
+        } else {
+            self.high
+        }
+    }
+}
+
+/// Resolves the playback slice for a trigger. Without a table the whole sample
+/// plays with the legacy 256-sample edge envelope.
+fn select_shift_window(
+    windows: Option<&ShiftWindows>,
+    rpm: f64,
+    len: usize,
+) -> (usize, usize, usize) {
+    if len == 0 {
+        return (0, 0, 0);
+    }
+    let Some(windows) = windows else {
+        return (0, len, ONE_SHOT_ENV_SAMPLES);
+    };
+    let band = windows.band(rpm);
+    let start = band.start.min(len - 1);
+    let length = band.length.max(1).min(len - start);
+    let fade = windows.fade_samples.min(length / 2);
+    (start, length, fade)
 }
 
 /// Highpass applied to both shift voices: removes low-frequency thump.
@@ -606,6 +681,10 @@ impl VehicleAudioEngine {
                     attack_remaining: 0,
                     attack_total: 0,
                     hp: None,
+                    windows: None,
+                    start_offset: 0,
+                    window_len: 0,
+                    fade_samples: 0,
                 });
             }
         }
@@ -624,6 +703,10 @@ impl VehicleAudioEngine {
                 attack_remaining: 0,
                 attack_total: 0,
                 hp: None,
+                windows: None,
+                start_offset: 0,
+                window_len: 0,
+                fade_samples: 0,
             });
         }
 
@@ -676,6 +759,15 @@ impl VehicleAudioEngine {
             exhaust: mixer_cfg.exhaust_config(),
             ..AudioConfig::default()
         };
+        // RPM window tables for shift one-shots, resolved once at build time.
+        for one_shot in &mut one_shots {
+            if let Some(window) = resolved_sounds
+                .get(&one_shot.key)
+                .and_then(|config| config.window)
+            {
+                one_shot.windows = Some(ShiftWindows::from_config(window, sample_rate));
+            }
+        }
         let bus_indices: BTreeMap<String, usize> = bus_configs
             .keys()
             .enumerate()
@@ -952,7 +1044,7 @@ impl VehicleAudioEngine {
                 } else {
                     Trigger::ShiftDown
                 };
-                self.trigger(t);
+                self.trigger_at_rpm(t, telem.rpm);
             }
             self.last_gear = telem.gear;
         }
@@ -1081,8 +1173,16 @@ impl VehicleAudioEngine {
     /// Fire one deterministic pseudo-random variant for the requested one-shot.
     /// Shift triggers use only the main up/down voices (the delayed companions
     /// no longer exist) and arm their fixed per-hit treatments: 200 Hz
-    /// highpass on both, plus a short attack ramp on gear-down.
+    /// highpass on both, plus a short attack ramp on gear-down. Uses the last
+    /// target RPM for window selection; callers with the physical RPM at hand
+    /// should use [`Self::trigger_at_rpm`].
     pub fn trigger(&mut self, t: Trigger) {
+        self.trigger_at_rpm(t, self.target_rpm);
+    }
+
+    /// Fire a one-shot with the RPM at trigger time. Shift voices with an RPM
+    /// window table play only the slice for that band, with crossfaded edges.
+    pub fn trigger_at_rpm(&mut self, t: Trigger, rpm: f64) {
         self.last_trigger = t.bank_key().to_string();
         let variant_count = self.one_shots.iter().filter(|o| o.trigger == t).count();
         if variant_count == 0 {
@@ -1099,6 +1199,12 @@ impl VehicleAudioEngine {
                 o.active = ordinal == selected;
                 if o.active {
                     o.cursor = 0;
+                    let len = self.bank.get(&o.key).map_or(0, |sample| sample.pcm.len());
+                    let (start, window_len, fade) =
+                        select_shift_window(o.windows.as_ref(), rpm, len);
+                    o.start_offset = start;
+                    o.window_len = window_len;
+                    o.fade_samples = fade;
                     let is_shift = matches!(t, Trigger::ShiftUp | Trigger::ShiftDown);
                     o.hp = is_shift.then(|| Biquad::highpass(self.sample_rate as f32, SHIFT_HP_HZ));
                     o.attack_total = if t == Trigger::ShiftDown {
@@ -1473,8 +1579,8 @@ impl VehicleAudioEngine {
                     o.active = false;
                     continue;
                 }
-                let idx = o.cursor.min(len - 1);
-                if len.saturating_sub(o.cursor) == ONE_SHOT_ENV_SAMPLES {
+                let idx = (o.start_offset + o.cursor).min(len - 1);
+                if o.window_len.saturating_sub(o.cursor) == ONE_SHOT_ENV_SAMPLES {
                     if let Some(strip) = self.strips.get_mut(&o.key) {
                         strip.note_off();
                     }
@@ -1488,7 +1594,10 @@ impl VehicleAudioEngine {
                     .get(o.key.as_str())
                     .copied()
                     .unwrap_or(1.0);
-                let mut source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, len);
+                let mut source = s
+                    * os_gain
+                    * self.cfg.shift_gain
+                    * one_shot_env(o.cursor, o.window_len, o.fade_samples);
                 // Gear-down attack ramp: linear fade-in so stacked shifts
                 // cannot start on a discontinuity.
                 if o.attack_total > 0 && o.attack_remaining > 0 {
@@ -1510,7 +1619,7 @@ impl VehicleAudioEngine {
                     mixed_r,
                 );
                 o.cursor += 1;
-                if o.cursor >= len {
+                if o.cursor >= o.window_len {
                     o.active = false;
                 }
             } else {
@@ -2232,10 +2341,15 @@ fn read_region_looped(
     value
 }
 
-/// Linear fade-in/out envelope (0..1) for one-shots.
-fn one_shot_env(cursor: usize, len: usize) -> f32 {
-    let attack = (cursor as f32 / ONE_SHOT_ENV_SAMPLES as f32).min(1.0);
-    let tail = ((len - cursor) as f32 / ONE_SHOT_ENV_SAMPLES as f32).min(1.0);
+/// Linear fade-in/out envelope (0..1) for one-shots. `fade` is the edge length
+/// in samples; full-length voices use `ONE_SHOT_ENV_SAMPLES`, windowed shift
+/// voices use their configured fade. A zero fade plays flat.
+fn one_shot_env(cursor: usize, len: usize, fade: usize) -> f32 {
+    if fade == 0 {
+        return 1.0;
+    }
+    let attack = (cursor as f32 / fade as f32).min(1.0);
+    let tail = (len.saturating_sub(cursor) as f32 / fade as f32).min(1.0);
     attack * tail
 }
 
@@ -2517,6 +2631,10 @@ mod tests {
             attack_remaining: 0,
             attack_total: 0,
             hp: None,
+            windows: None,
+            start_offset: 0,
+            window_len: 0,
+            fade_samples: 0,
         });
         e.one_shots.push(OneShot {
             trigger: Trigger::Backfire,
@@ -2526,6 +2644,10 @@ mod tests {
             attack_remaining: 0,
             attack_total: 0,
             hp: None,
+            windows: None,
+            start_offset: 0,
+            window_len: 0,
+            fade_samples: 0,
         });
         e.one_shots.push(OneShot {
             trigger: Trigger::Backfire,
@@ -2535,6 +2657,10 @@ mod tests {
             attack_remaining: 0,
             attack_total: 0,
             hp: None,
+            windows: None,
+            start_offset: 0,
+            window_len: 0,
+            fade_samples: 0,
         });
         e
     }
@@ -2735,6 +2861,10 @@ mod tests {
             attack_remaining: 0,
             attack_total: 0,
             hp: None,
+            windows: None,
+            start_offset: 0,
+            window_len: 0,
+            fade_samples: 0,
         });
         e.trigger(Trigger::ShiftDown);
         let voice = e
@@ -2781,6 +2911,172 @@ mod tests {
             out = hp.process(1.0);
         }
         assert!(out.abs() < 0.01, "200 Hz HP must block DC, tail={out}");
+    }
+
+    fn long_shift_bank() -> VehicleAudioEngine {
+        let mut e = engine_with_bank(silent_engine_bank());
+        e.bank.samples.get_mut("shift_up").unwrap().pcm = vec![0i16; 44_100];
+        e
+    }
+
+    fn shift_windows_fixture() -> ShiftWindows {
+        ShiftWindows {
+            low_rpm: 7_000.0,
+            high_rpm: 11_000.0,
+            fade_samples: 353,
+            low: ShiftWindowBand {
+                start: 0,
+                length: 24_255,
+            },
+            mid: ShiftWindowBand {
+                start: 882,
+                length: 19_845,
+            },
+            high: ShiftWindowBand {
+                start: 2_205,
+                length: 15_435,
+            },
+        }
+    }
+
+    fn shift_voice(e: &VehicleAudioEngine) -> &OneShot {
+        e.one_shots
+            .iter()
+            .find(|voice| voice.key == "shift_up")
+            .unwrap()
+    }
+
+    #[test]
+    fn shift_window_config_resolves_to_bank_frames() {
+        let config = crate::config::ShiftWindowConfig {
+            low_rpm: 7_000.0,
+            high_rpm: 11_000.0,
+            fade_ms: 8.0,
+            low: crate::config::ShiftWindowBandConfig {
+                start_s: 0.0,
+                length_s: 0.55,
+            },
+            mid: crate::config::ShiftWindowBandConfig {
+                start_s: 0.02,
+                length_s: 0.45,
+            },
+            high: crate::config::ShiftWindowBandConfig {
+                start_s: 0.05,
+                length_s: 0.35,
+            },
+        };
+        let windows = ShiftWindows::from_config(config, 44_100);
+        assert_eq!(
+            windows.low,
+            ShiftWindowBand {
+                start: 0,
+                length: 24_255
+            }
+        );
+        assert_eq!(
+            windows.mid,
+            ShiftWindowBand {
+                start: 882,
+                length: 19_845
+            }
+        );
+        assert_eq!(
+            windows.high,
+            ShiftWindowBand {
+                start: 2_205,
+                length: 15_435
+            }
+        );
+        assert_eq!(windows.fade_samples, 353);
+        assert_eq!(windows.band(6_999.0), windows.low);
+        assert_eq!(windows.band(7_000.0), windows.mid);
+        assert_eq!(windows.band(11_000.0), windows.mid);
+        assert_eq!(windows.band(11_001.0), windows.high);
+    }
+
+    #[test]
+    fn shift_window_band_selection_follows_rpm() {
+        let mut e = long_shift_bank();
+        e.one_shots
+            .iter_mut()
+            .find(|voice| voice.key == "shift_up")
+            .unwrap()
+            .windows = Some(shift_windows_fixture());
+        e.trigger_at_rpm(Trigger::ShiftUp, 5_000.0);
+        let voice = shift_voice(&e);
+        assert_eq!((voice.start_offset, voice.window_len), (0, 24_255));
+        e.trigger_at_rpm(Trigger::ShiftUp, 9_000.0);
+        let voice = shift_voice(&e);
+        assert_eq!((voice.start_offset, voice.window_len), (882, 19_845));
+        assert_eq!(voice.fade_samples, 353);
+        e.trigger_at_rpm(Trigger::ShiftUp, 12_000.0);
+        let voice = shift_voice(&e);
+        assert_eq!((voice.start_offset, voice.window_len), (2_205, 15_435));
+    }
+
+    #[test]
+    fn trigger_uses_the_last_target_rpm_for_window_selection() {
+        let mut e = long_shift_bank();
+        e.one_shots
+            .iter_mut()
+            .find(|voice| voice.key == "shift_up")
+            .unwrap()
+            .windows = Some(shift_windows_fixture());
+        e.set_state(12_000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        e.trigger(Trigger::ShiftUp);
+        let voice = shift_voice(&e);
+        assert_eq!((voice.start_offset, voice.window_len), (2_205, 15_435));
+    }
+
+    #[test]
+    fn shift_without_window_config_plays_the_full_sample() {
+        let mut e = long_shift_bank();
+        e.trigger_at_rpm(Trigger::ShiftUp, 12_000.0);
+        let voice = shift_voice(&e);
+        assert_eq!(voice.start_offset, 0);
+        assert_eq!(voice.window_len, 44_100);
+        assert_eq!(voice.fade_samples, ONE_SHOT_ENV_SAMPLES);
+    }
+
+    #[test]
+    fn window_edges_fade_and_playback_stops_at_window_end() {
+        assert_eq!(one_shot_env(0, 1_000, 100), 0.0);
+        assert!((one_shot_env(50, 1_000, 100) - 0.5).abs() < 1e-6);
+        assert_eq!(one_shot_env(500, 1_000, 100), 1.0);
+        assert!((one_shot_env(950, 1_000, 100) - 0.5).abs() < 1e-6);
+        assert_eq!(one_shot_env(0, 1_000, 0), 1.0);
+
+        let mut e = long_shift_bank();
+        {
+            let voice = e
+                .one_shots
+                .iter_mut()
+                .find(|voice| voice.key == "shift_up")
+                .unwrap();
+            voice.windows = Some(ShiftWindows {
+                fade_samples: 10,
+                low: ShiftWindowBand {
+                    start: 100,
+                    length: 500,
+                },
+                mid: ShiftWindowBand {
+                    start: 100,
+                    length: 500,
+                },
+                high: ShiftWindowBand {
+                    start: 100,
+                    length: 500,
+                },
+                ..shift_windows_fixture()
+            });
+        }
+        e.trigger_at_rpm(Trigger::ShiftUp, 5_000.0);
+        let mut l = vec![0.0f32; 640];
+        let mut r = vec![0.0f32; 640];
+        e.render(&mut l, &mut r, 640);
+        let voice = shift_voice(&e);
+        assert!(!voice.active, "windowed voice must stop at window end");
+        assert_eq!(voice.cursor, 500);
     }
 
     #[test]
