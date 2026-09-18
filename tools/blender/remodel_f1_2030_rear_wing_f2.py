@@ -16,9 +16,9 @@ from mathutils.bvhtree import BVHTree
 
 
 TARGETS = {
-    # The upper movable flap carries the stronger F2-style arch.
-    "GEO_CHASSIS_ACTIVEREAR": 0.145,
-    # The main plane follows it with a slightly shallower crown.
+    # Both planes share the same crown so the closed flap follows the main
+    # plane without opening an artificial center gap.
+    "GEO_CHASSIS_ACTIVEREAR": 0.115,
     "GEO_CHASSIS_AEROPART2": 0.115,
 }
 SUPPORT_NAME = "GEO_CHASSIS_REARSUPPORT"
