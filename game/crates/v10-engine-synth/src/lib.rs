@@ -21,8 +21,7 @@ pub use sample_layer::{
     SampleLayerFrame, SampleLayerInput, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig,
 };
 pub use scene::{
-    AcousticFrame, AcousticScene, AcousticSceneConfig, AirboxPlenum, EngineCover,
-    EngineMountMonocoque, MetallicStructure, UnderSeatVibration,
+    AcousticFrame, AcousticScene, AcousticSceneConfig, EngineCover, EngineMountMonocoque,
 };
 pub use thermodynamics::{
     ChamberPhase, CombustionChamber, CombustionFrame, ExhaustRunner, ExhaustValve, GasState,

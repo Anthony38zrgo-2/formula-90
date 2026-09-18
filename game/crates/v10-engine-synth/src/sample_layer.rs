@@ -95,6 +95,10 @@ pub struct ThreeZoneSampleLayerConfig {
     /// (default 1.0). Lets an A/B test how much of the character is loop
     /// hiss vs tone without touching the prepared stems.
     pub residual_gain_scale: f32,
+    /// Per-zone tonal trim in dB, indexed by ON zone order (low anchor first).
+    /// All zeros preserves shipped behavior; used to flatten the procedural
+    /// vs sample balance across RPM.
+    pub zone_trim_db: [f32; 8],
 }
 
 impl Default for ThreeZoneSampleLayerConfig {
@@ -114,6 +118,7 @@ impl Default for ThreeZoneSampleLayerConfig {
             use_tabled_sinc: true,
             disable_sample_rasp: false,
             residual_gain_scale: 1.0,
+            zone_trim_db: [0.0; 8],
         }
     }
 }
@@ -142,6 +147,11 @@ impl ThreeZoneSampleLayerConfig {
                 "residual_gain_scale outside 0..2.0: {}",
                 self.residual_gain_scale
             ));
+        }
+        for (index, trim) in self.zone_trim_db.iter().enumerate() {
+            if !trim.is_finite() || !(-12.0..=12.0).contains(trim) {
+                return Err(format!("zone_trim_db[{index}] outside -12..12 dB: {trim}"));
+            }
         }
         if !self.max_fade_start_rpm.is_finite()
             || !self.max_full_rpm.is_finite()
@@ -250,11 +260,12 @@ struct ZoneMidProcessor {
     rasp_gain: f32,
     zone_tonal_gain: f32,
     zone_residual_gain: f32,
+    zone_trim_gain: f32,
     order_five_notch: TrackingNotch,
 }
 
 impl ZoneMidProcessor {
-    fn new(zone: usize, sample_rate: f32, rasp_enabled: bool) -> Self {
+    fn new(zone: usize, sample_rate: f32, rasp_enabled: bool, zone_trim_db: f32) -> Self {
         let (
             low_hz,
             high_hz,
@@ -292,6 +303,7 @@ impl ZoneMidProcessor {
             rasp_gain: 10.0f32.powf(rasp_db / 20.0),
             zone_tonal_gain: 10.0f32.powf(zone_tonal_db / 20.0),
             zone_residual_gain: 10.0f32.powf(zone_residual_db / 20.0),
+            zone_trim_gain: 10.0f32.powf(zone_trim_db / 20.0),
             order_five_notch: TrackingNotch::new(),
         }
     }
@@ -342,15 +354,15 @@ impl ZoneMidProcessor {
         let residual_shaped =
             residual - residual_band + processed_band + residual_rasp * (self.rasp_gain - 1.0);
         (
-            tonal_shaped * self.zone_tonal_gain,
-            residual_shaped * self.zone_residual_gain,
+            tonal_shaped * self.zone_tonal_gain * self.zone_trim_gain,
+            residual_shaped * self.zone_residual_gain * self.zone_trim_gain,
             if self.rasp_gain > 1.0 {
-                tonal_rasp * self.rasp_gain * self.zone_tonal_gain
+                tonal_rasp * self.rasp_gain * self.zone_tonal_gain * self.zone_trim_gain
             } else {
                 0.0
             },
             if self.rasp_gain > 1.0 {
-                residual_rasp * self.rasp_gain * self.zone_residual_gain
+                residual_rasp * self.rasp_gain * self.zone_residual_gain * self.zone_trim_gain
             } else {
                 0.0
             },
@@ -694,6 +706,7 @@ impl ThreeZoneSampleLayer {
                         index,
                         output_sample_rate as f32,
                         !config.disable_sample_rasp,
+                        config.zone_trim_db[index.min(7)],
                     ),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 }
@@ -712,7 +725,7 @@ impl ThreeZoneSampleLayer {
                         variant_position: 0,
                         variant_total: 1,
                     }],
-                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true),
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true, 0.0),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 }
             })
@@ -802,6 +815,7 @@ impl ThreeZoneSampleLayer {
                 processor_kind,
                 output_sample_rate as f32,
                 !config.disable_sample_rasp,
+                config.zone_trim_db[index.min(7)],
             );
         }
         let mut labels = Vec::new();
@@ -970,7 +984,7 @@ impl ThreeZoneSampleLayer {
                 zones.push(OnZone {
                     anchor,
                     members: run,
-                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true),
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true, 0.0),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 });
             } else {
@@ -978,7 +992,7 @@ impl ThreeZoneSampleLayer {
                 zones.push(OnZone {
                     anchor,
                     members: vec![first],
-                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true),
+                    processor: ZoneMidProcessor::new(1, output_sample_rate as f32, true, 0.0),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 });
             }
@@ -1699,6 +1713,22 @@ fn read_mono_pcm16(path: &Path) -> Result<Pcm16Wav, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn zone_tonal_trims_validate_and_default_to_baseline() {
+        let config = ThreeZoneSampleLayerConfig::default();
+        assert_eq!(config.zone_trim_db, [0.0; 8]);
+        assert!(config.validate().is_ok());
+
+        let mut invalid = config;
+        invalid.zone_trim_db[3] = 13.0;
+        assert!(invalid.validate().is_err());
+
+        let mut valid = config;
+        valid.zone_trim_db[0] = 2.0;
+        valid.zone_trim_db[5] = -6.0;
+        assert!(valid.validate().is_ok());
+    }
 
     #[test]
     fn crossfades_have_constant_power() {

@@ -84,8 +84,10 @@ struct Args {
     no_sample_rasp: bool,
     sample_residual_scale: f32,
     sample_residual_gain: Option<f32>,
+    sample_blend_weight: Option<f32>,
+    physical_blend_weight: Option<f32>,
+    sample_zone_trim_db: Vec<f32>,
     scene_gains: Vec<(String, f32)>,
-    metal_lowpass_hz: Option<f32>,
     cover_lowpass_hz: Option<f32>,
 }
 
@@ -133,8 +135,10 @@ fn parse_args() -> Result<Args, String> {
         no_sample_rasp: false,
         sample_residual_scale: 1.0,
         sample_residual_gain: None,
+        sample_blend_weight: None,
+        physical_blend_weight: None,
+        sample_zone_trim_db: Vec::new(),
         scene_gains: Vec::new(),
-        metal_lowpass_hz: None,
         cover_lowpass_hz: None,
     };
     let mut i = 0;
@@ -224,8 +228,24 @@ fn parse_args() -> Result<Args, String> {
                 parsed.sample_residual_gain =
                     Some(parse_value(&raw, &mut i, "--sample-residual-gain")?)
             }
-            "--metal-lowpass-hz" => {
-                parsed.metal_lowpass_hz = Some(parse_value(&raw, &mut i, "--metal-lowpass-hz")?)
+            "--sample-blend-weight" => {
+                parsed.sample_blend_weight =
+                    Some(parse_value(&raw, &mut i, "--sample-blend-weight")?)
+            }
+            "--physical-blend-weight" => {
+                parsed.physical_blend_weight =
+                    Some(parse_value(&raw, &mut i, "--physical-blend-weight")?)
+            }
+            "--sample-zone-trim-db" => {
+                let spec = parse_value::<String>(&raw, &mut i, "--sample-zone-trim-db")?;
+                parsed.sample_zone_trim_db = spec
+                    .split(',')
+                    .map(|part| {
+                        part.trim()
+                            .parse::<f32>()
+                            .map_err(|_| format!("invalid zone tonal trim: {part}"))
+                    })
+                    .collect::<Result<Vec<f32>, String>>()?;
             }
             "--cover-lowpass-hz" => {
                 parsed.cover_lowpass_hz = Some(parse_value(&raw, &mut i, "--cover-lowpass-hz")?)
@@ -447,9 +467,6 @@ fn run() -> Result<(), String> {
     }
     let mut engine = V10Engine::new(config.clone())?;
     let mut scene_config = AcousticSceneConfig::default();
-    if let Some(hz) = args.metal_lowpass_hz {
-        scene_config.metal_panel_lowpass_hz = hz;
-    }
     if let Some(hz) = args.cover_lowpass_hz {
         scene_config.cover_radiation_lowpass_hz = hz;
     }
@@ -459,11 +476,8 @@ fn run() -> Result<(), String> {
             "dry_mid" => &mut scene_config.dry_mid_gain,
             "dry_high" => &mut scene_config.dry_high_gain,
             "engine_air" => &mut scene_config.engine_air_gain,
-            "metal" => &mut scene_config.metal_gain,
-            "airbox" => &mut scene_config.airbox_gain,
             "engine_cover" => &mut scene_config.engine_cover_gain,
             "mount_monocoque" => &mut scene_config.mount_monocoque_gain,
-            "under_seat" => &mut scene_config.under_seat_gain,
             "output" => &mut scene_config.output_gain,
             _ => return Err(format!("unknown scene branch: {name}")),
         };
@@ -475,13 +489,32 @@ fn run() -> Result<(), String> {
         .map(|(name, gain)| format!("{name}={gain}"))
         .collect::<Vec<_>>()
         .join(",");
-    if let Some(hz) = args.metal_lowpass_hz {
-        scene_gain_overrides.push_str(&format!(",metal_lowpass_hz={hz}"));
-    }
     if let Some(hz) = args.cover_lowpass_hz {
         scene_gain_overrides.push_str(&format!(",cover_lowpass_hz={hz}"));
     }
+    let sample_layer_tuning = format!(
+        "sample_blend_weight={},physical_blend_weight={},zone_trim_db={}",
+        args.sample_blend_weight
+            .map(|value| format!("{value}"))
+            .unwrap_or_else(|| "baseline".to_string()),
+        args.physical_blend_weight
+            .map(|value| format!("{value}"))
+            .unwrap_or_else(|| "baseline".to_string()),
+        if args.sample_zone_trim_db.is_empty() {
+            "baseline".to_string()
+        } else {
+            args.sample_zone_trim_db
+                .iter()
+                .map(|value| format!("{value}"))
+                .collect::<Vec<_>>()
+                .join("|")
+        }
+    );
     let mut scene = AcousticScene::new(args.sample_rate as f32, scene_config)?;
+    let mut zone_trim_db = [0.0f32; 8];
+    for (slot, value) in zone_trim_db.iter_mut().zip(args.sample_zone_trim_db.iter()) {
+        *slot = *value;
+    }
     let mut sample_layer = args
         .sample_layer_dir
         .as_ref()
@@ -498,6 +531,13 @@ fn run() -> Result<(), String> {
                     residual_gain_loaded: args.sample_residual_gain.unwrap_or(
                         ThreeZoneSampleLayerConfig::default().residual_gain_loaded,
                     ),
+                    sample_blend_weight: args
+                        .sample_blend_weight
+                        .unwrap_or(ThreeZoneSampleLayerConfig::default().sample_blend_weight),
+                    physical_blend_weight: args.physical_blend_weight.unwrap_or(
+                        ThreeZoneSampleLayerConfig::default().physical_blend_weight,
+                    ),
+                    zone_trim_db,
                     ..ThreeZoneSampleLayerConfig::default()
                 },
             )
@@ -508,6 +548,12 @@ fn run() -> Result<(), String> {
         throttle: args.throttle,
         load: args.load,
     })?;
+    let sample_blend_weight = args
+        .sample_blend_weight
+        .unwrap_or(ThreeZoneSampleLayerConfig::default().sample_blend_weight);
+    let physical_blend_weight = args.physical_blend_weight.unwrap_or(
+        ThreeZoneSampleLayerConfig::default().physical_blend_weight,
+    );
 
     let warmup_samples = (args.warmup * args.sample_rate as f32).round() as usize;
     for _ in 0..warmup_samples {
@@ -538,13 +584,10 @@ fn run() -> Result<(), String> {
         "master",
         "engine_dry",
         "engine_air",
-        "metallic_structure",
-        "airbox_plenum",
         "engine_cover",
         "engine_mounts",
         "monocoque_seat",
         "mount_monocoque",
-        "under_seat_vibration",
         "cylinder_mechanical_sum",
         "cylinder_mechanical_0",
         "cylinder_mechanical_1",
@@ -722,14 +765,6 @@ fn run() -> Result<(), String> {
             .unwrap()
             .push(acoustic.engine_air);
         stems
-            .get_mut("metallic_structure")
-            .unwrap()
-            .push(acoustic.metallic_structure);
-        stems
-            .get_mut("airbox_plenum")
-            .unwrap()
-            .push(acoustic.airbox_plenum);
-        stems
             .get_mut("engine_cover")
             .unwrap()
             .push(acoustic.engine_cover);
@@ -745,10 +780,6 @@ fn run() -> Result<(), String> {
             .get_mut("mount_monocoque")
             .unwrap()
             .push(acoustic.mount_monocoque);
-        stems
-            .get_mut("under_seat_vibration")
-            .unwrap()
-            .push(acoustic.under_seat_vibration);
         stems
             .get_mut("cylinder_mechanical_sum")
             .unwrap()
@@ -787,7 +818,10 @@ fn run() -> Result<(), String> {
         }
         // Hybrid headroom is static and transparent. A limiter here would hide
         // gain errors and make the sample layer part of the sound design.
-        let hybrid = (acoustic.output + sample_output) * HYBRID_HEADROOM_GAIN;
+        // The blend weights mirror Gf509Runtime: scene * physical + sample * sample.
+        let hybrid = (acoustic.output * physical_blend_weight
+            + sample_output * sample_blend_weight)
+            * HYBRID_HEADROOM_GAIN;
         stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
         stems
             .get_mut("sample_residual")
@@ -989,6 +1023,7 @@ fn run() -> Result<(), String> {
             "  \"sample_rasp_disabled\": {},\n",
             "  \"sample_residual_scale\": {},\n",
             "  \"sample_residual_gain\": \"{}\",\n",
+            "  \"sample_layer_tuning\": \"{}\",\n",
             "  \"scene_gain_overrides\": \"{}\",\n",
             "  \"sample_layer_bank\": \"{}\",\n",
             "  \"sample_layer_source_weights\": \"{}\",\n",
@@ -1031,6 +1066,7 @@ fn run() -> Result<(), String> {
         args.sample_residual_gain
             .map(|gain| format!("{gain}"))
             .unwrap_or_else(|| "load-blended".to_string()),
+        sample_layer_tuning,
         scene_gain_overrides,
         sample_layer_bank,
         sample_layer_source_weights,

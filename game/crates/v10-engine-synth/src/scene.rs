@@ -10,15 +10,9 @@ pub struct AcousticSceneConfig {
     pub dry_high_gain: f32,
     /// Gain on the air-propagated dry branch in the scene mix (default 1.0).
     pub engine_air_gain: f32,
-    pub metal_gain: f32,
-    pub airbox_gain: f32,
     pub engine_cover_gain: f32,
     pub mount_monocoque_gain: f32,
-    pub under_seat_gain: f32,
     pub output_gain: f32,
-    /// One-pole lowpass on the thin-panel branch of the metallic structure (Hz).
-    /// A value at or above `0.48 * sample_rate` disables (bypasses) the filter.
-    pub metal_panel_lowpass_hz: f32,
     /// One-pole lowpass on the engine-cover radiation (Hz). A value at or above
     /// `0.48 * sample_rate` disables (bypasses) the filter.
     pub cover_radiation_lowpass_hz: f32,
@@ -42,13 +36,9 @@ impl Default for AcousticSceneConfig {
             dry_mid_gain: 0.46,
             dry_high_gain: 0.14,
             engine_air_gain: 1.0,
-            metal_gain: 1.00,
-            airbox_gain: 0.85,
             engine_cover_gain: 0.42,
             mount_monocoque_gain: 0.06,
-            under_seat_gain: 0.04,
             output_gain: 2.90,
-            metal_panel_lowpass_hz: 6_200.0,
             cover_radiation_lowpass_hz: 6_400.0,
         }
     }
@@ -58,13 +48,10 @@ impl Default for AcousticSceneConfig {
 pub struct AcousticFrame {
     pub engine_dry: f32,
     pub engine_air: f32,
-    pub metallic_structure: f32,
-    pub airbox_plenum: f32,
     pub engine_cover: f32,
     pub engine_mounts: f32,
     pub monocoque_seat: f32,
     pub mount_monocoque: f32,
-    pub under_seat_vibration: f32,
     pub cylinder_mechanical: [f32; CYLINDER_COUNT],
     pub cylinder_mechanical_sum: f32,
     pub output: f32,
@@ -130,17 +117,6 @@ impl CylinderMechanicalPath {
     }
 }
 
-pub struct AirboxPlenum {
-    helmholtz: ModalBank,
-    runners: ModalBank,
-    chamber_lowpass: OnePoleLowPass,
-    chamber_pressure: f32,
-    chamber_leak: f32,
-    air_delay: Vec<f32>,
-    delay_cursor: usize,
-    dc: DcBlocker,
-}
-
 pub struct EngineCover {
     broad_panels: ModalBank,
     upper_skin: ModalBank,
@@ -161,107 +137,6 @@ pub struct EngineMountMonocoque {
     monocoque_dc: DcBlocker,
     mount_lowpass: OnePoleLowPass,
     monocoque_lowpass: OnePoleLowPass,
-}
-
-pub struct UnderSeatVibration {
-    seat_modes: ModalBank,
-    transmission_delay: Vec<f32>,
-    delay_cursor: usize,
-    dc: DcBlocker,
-    lowpass: OnePoleLowPass,
-}
-
-/// RPM-tracking rejection used only on structural routes that over-capture
-/// the V10 firing family. The dry engine and final mix never pass through it.
-pub struct TrackingOrderNotch {
-    sample_rate: f32,
-    q: f32,
-    wet: f32,
-    x1: f32,
-    x2: f32,
-    y1: f32,
-    y2: f32,
-}
-
-impl TrackingOrderNotch {
-    fn new(sample_rate: f32, q: f32, wet: f32) -> Self {
-        Self {
-            sample_rate,
-            q,
-            wet,
-            x1: 0.0,
-            x2: 0.0,
-            y1: 0.0,
-            y2: 0.0,
-        }
-    }
-
-    #[inline]
-    fn process(&mut self, input: f32, frequency_hz: f32) -> f32 {
-        self.process_with_wet(input, frequency_hz, self.wet)
-    }
-
-    #[inline]
-    fn process_with_wet(&mut self, input: f32, frequency_hz: f32, wet: f32) -> f32 {
-        if frequency_hz < 40.0 || frequency_hz >= self.sample_rate * 0.45 {
-            return input;
-        }
-        let omega = std::f32::consts::TAU * frequency_hz / self.sample_rate;
-        let alpha = omega.sin() / (2.0 * self.q);
-        let a0_recip = 1.0 / (1.0 + alpha);
-        let b0 = a0_recip;
-        let b1 = -2.0 * omega.cos() * a0_recip;
-        let b2 = a0_recip;
-        let a1 = b1;
-        let a2 = (1.0 - alpha) * a0_recip;
-        let notched = b0 * input + b1 * self.x1 + b2 * self.x2 - a1 * self.y1 - a2 * self.y2;
-        self.x2 = self.x1;
-        self.x1 = input;
-        self.y2 = self.y1;
-        self.y1 = notched;
-        input + (notched - input) * wet.clamp(0.0, 1.0)
-    }
-}
-
-impl UnderSeatVibration {
-    pub fn new(sample_rate: f32) -> Self {
-        let delay_samples = (0.00145 * sample_rate).round().max(1.0) as usize;
-        Self {
-            seat_modes: ModalBank::new(
-                &[
-                    (92.0, 0.032, 0.13),
-                    (117.0, 0.028, -0.18),
-                    (146.0, 0.024, 0.20),
-                    (179.0, 0.020, -0.18),
-                    (216.0, 0.016, 0.15),
-                    (263.0, 0.012, -0.09),
-                ],
-                sample_rate,
-            ),
-            transmission_delay: vec![0.0; delay_samples + 1],
-            delay_cursor: 0,
-            dc: DcBlocker::new(28.0, sample_rate),
-            lowpass: OnePoleLowPass::new(360.0, sample_rate),
-        }
-    }
-
-    #[inline]
-    pub fn process(&mut self, mounts: f32, monocoque: f32, load: f32) -> f32 {
-        let input = (mounts * 0.34 + monocoque * 0.72) * (0.48 + 0.52 * load);
-        let arrived = self.transmission_delay[self.delay_cursor];
-        self.transmission_delay[self.delay_cursor] = input;
-        self.delay_cursor += 1;
-        if self.delay_cursor == self.transmission_delay.len() {
-            self.delay_cursor = 0;
-        }
-        let resonance = self.seat_modes.process(arrived);
-        let vibration = self
-            .lowpass
-            .process(self.dc.process(arrived * 0.045 + resonance));
-        // The seat path is deliberately soft and dense. It should be felt as
-        // transmitted mass, never heard as an isolated sub oscillator.
-        (vibration * 9.0).tanh() / 3.4
-    }
 }
 
 impl EngineMountMonocoque {
@@ -383,11 +258,11 @@ impl EngineCover {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame, airbox: f32, high_rpm: f32) -> f32 {
+    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> f32 {
         // The cover is a lightly coupled skin. It receives structure from the
-        // heads plus airborne pressure from the plenum and engine bay.
+        // heads plus airborne pressure from the engine bay.
         let excitation =
-            frame.head * 0.58 + frame.block * 0.16 + airbox * 0.34 + frame.turbulence * 0.12;
+            frame.head * 0.58 + frame.block * 0.16 + frame.turbulence * 0.12;
         let arrived = self.propagation_delay[self.delay_cursor];
         self.propagation_delay[self.delay_cursor] = excitation;
         self.delay_cursor += 1;
@@ -404,68 +279,6 @@ impl EngineCover {
             .dc
             .process(self.radiation_lowpass.process(broad + skin * 1.35));
         (radiated * 21.0).tanh() / 3.15
-    }
-}
-
-impl AirboxPlenum {
-    pub fn new(sample_rate: f32) -> Self {
-        let delay_samples = (0.0026 * sample_rate).round().max(1.0) as usize;
-        Self {
-            helmholtz: ModalBank::new(
-                &[
-                    (176.0, 0.031, 0.19),
-                    (263.0, 0.023, -0.18),
-                    (358.0, 0.018, 0.22),
-                    (471.0, 0.014, -0.21),
-                ],
-                sample_rate,
-            ),
-            runners: ModalBank::new(
-                &[
-                    (612.0, 0.012, 0.48),
-                    (748.0, 0.010, -0.44),
-                    (927.0, 0.0085, 0.40),
-                    (1_143.0, 0.0070, -0.35),
-                    (1_397.0, 0.0057, 0.30),
-                    (1_704.0, 0.0046, -0.23),
-                    (2_083.0, 0.0036, 0.15),
-                ],
-                sample_rate,
-            ),
-            chamber_lowpass: OnePoleLowPass::new(2_900.0, sample_rate),
-            chamber_pressure: 0.0,
-            chamber_leak: 1.0 - (-1.0 / (0.0065 * sample_rate)).exp(),
-            air_delay: vec![0.0; delay_samples + 1],
-            delay_cursor: 0,
-            dc: DcBlocker::new(55.0, sample_rate),
-        }
-    }
-
-    #[inline]
-    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> f32 {
-        // Intake roar is driven mostly by the changing cylinder demand and
-        // turbulent flow. Direct combustion pressure is deliberately absent.
-        let demand = frame.pressure_derivative * 0.46
-            + frame.turbulence * 0.82
-            + (frame.headers_a + frame.headers_b) * 0.055;
-        self.chamber_pressure += demand * 0.18 - self.chamber_leak * self.chamber_pressure;
-        let chamber = self.chamber_pressure / (1.0 + self.chamber_pressure.abs() * 0.8);
-        // The Helmholtz cavity is a 250-600 Hz boom; above 6000 rpm it must
-        // shrink so the runner band can carry the intake voice instead.
-        let body = self.helmholtz.process(chamber + demand * 0.20) * (1.0 - 0.55 * high_rpm);
-        let runner = self.runners.process(demand + chamber * 0.12) * (1.0 + 0.28 * high_rpm);
-        let radiated = self.dc.process(
-            self.chamber_lowpass
-                .process(body + runner + chamber * 0.012),
-        );
-
-        let arrived = self.air_delay[self.delay_cursor];
-        self.air_delay[self.delay_cursor] = (radiated * 13.0).tanh() / 3.0;
-        self.delay_cursor += 1;
-        if self.delay_cursor == self.air_delay.len() {
-            self.delay_cursor = 0;
-        }
-        arrived
     }
 }
 
@@ -503,180 +316,18 @@ impl AirPath {
     }
 }
 
-/// Short, event-driven resonances of the engine castings, bellhousing and
-/// nearby sheet metal. Nothing here free-runs: all modes are excited by the
-/// physical stems emitted by `V10Engine`.
-pub struct MetallicStructure {
-    heavy_low: ModalBank,
-    heavy_high: ModalBank,
-    bank_signature: ModalBank,
-    bellhousing: ModalBank,
-    thin_panels: ModalBank,
-    panel_lowpass: OnePoleLowPass,
-    panel_highpass: DcBlocker,
-    dc: DcBlocker,
-    // Cast bulk and surface shells arrive at the microphone through different
-    // path lengths, so their order-2 and order-5 tones do not share one phase.
-    cast_delay: Vec<f32>,
-    cast_cursor: usize,
-    bell_delay: Vec<f32>,
-    bell_cursor: usize,
-    panel_delay: Vec<f32>,
-    panel_cursor: usize,
-}
-
-impl MetallicStructure {
-    pub fn new(sample_rate: f32, panel_lowpass_hz: f32) -> Self {
-        let delay = |milliseconds: f32| {
-            vec![0.0; (milliseconds * 0.001 * sample_rate).round().max(1.0) as usize + 1]
-        };
-        Self {
-            heavy_low: ModalBank::new(
-                &[
-                    (214.0, 0.024, 0.34),
-                    (287.0, 0.019, -0.28),
-                    (373.0, 0.016, 0.31),
-                    (468.0, 0.013, -0.25),
-                ],
-                sample_rate,
-            ),
-            heavy_high: ModalBank::new(
-                &[
-                    (535.0, 0.0090, 0.060),
-                    (592.0, 0.0085, 0.200),
-                    (665.0, 0.0075, -0.060),
-                    (735.0, 0.0065, 0.050),
-                    (810.0, 0.0055, -0.040),
-                ],
-                sample_rate,
-            ),
-            bank_signature: ModalBank::new(
-                &[
-                    (188.0, 0.018, 0.18),
-                    (314.0, 0.014, -0.17),
-                    (438.0, 0.011, 0.15),
-                    (562.0, 0.008, -0.11),
-                ],
-                sample_rate,
-            ),
-            bellhousing: ModalBank::new(
-                &[
-                    (704.0, 0.010, 0.25),
-                    (843.0, 0.0085, -0.24),
-                    (1_027.0, 0.0072, 0.23),
-                    (1_246.0, 0.0061, -0.21),
-                    (1_493.0, 0.0052, 0.19),
-                    (1_781.0, 0.0045, -0.17),
-                    (2_117.0, 0.0038, 0.15),
-                ],
-                sample_rate,
-            ),
-            thin_panels: ModalBank::new(
-                &[
-                    (2_431.0, 0.0033, 0.28),
-                    (2_789.0, 0.0029, -0.26),
-                    (3_226.0, 0.0025, 0.23),
-                    (3_741.0, 0.0021, -0.20),
-                    (4_337.0, 0.0018, 0.16),
-                    (5_083.0, 0.0015, -0.12),
-                ],
-                sample_rate,
-            ),
-            panel_lowpass: lowpass_or_bypass(panel_lowpass_hz, sample_rate),
-            panel_highpass: DcBlocker::new(1_650.0, sample_rate),
-            dc: DcBlocker::new(45.0, sample_rate),
-            cast_delay: delay(3.036),
-            cast_cursor: 0,
-            bell_delay: delay(0.145),
-            bell_cursor: 0,
-            panel_delay: delay(0.145),
-            panel_cursor: 0,
-        }
-    }
-
-    #[inline]
-    fn delayed(delay: &mut [f32], cursor: &mut usize, input: f32) -> f32 {
-        let arrived = delay[*cursor];
-        delay[*cursor] = input;
-        *cursor += 1;
-        if *cursor == delay.len() {
-            *cursor = 0;
-        }
-        arrived
-    }
-
-    #[inline]
-    pub fn process(&mut self, frame: &EngineFrame, cylinder_structure: f32, high_rpm: f32) -> f32 {
-        // Mounts mostly conduct the block; the bellhousing also sees collector
-        // pressure; thin covers respond to fast head/pressure changes.
-        let mount_excitation = frame.block * 1.15
-            + frame.block_head * 0.48
-            + (frame.collector_pressure_a + frame.collector_pressure_b) * 0.12
-            + cylinder_structure * 0.52;
-        let bell_excitation =
-            frame.head * 1.05 + frame.pressure_derivative * 0.38 + frame.exhaust * 0.10;
-        let panel_excitation =
-            frame.head * 0.72 + frame.pressure_derivative * 0.55 + frame.turbulence * 0.08;
-
-        let cast_arrived = Self::delayed(
-            &mut self.cast_delay,
-            &mut self.cast_cursor,
-            mount_excitation,
-        );
-        // The cast block's 214-468 Hz clatter is cabin boomy noise; at high
-        // engine speed the 535 Hz and up cast/bell mass carries the body.
-        let heavy = self.heavy_low.process(cast_arrived) * (1.0 - 0.41 * high_rpm)
-            + self.heavy_high.process(cast_arrived) * (1.0 + 0.12 * high_rpm);
-        // Opposing banks do not load the chassis identically. Keeping their
-        // difference separate restores half/integer crank signatures that a
-        // summed firing pulse erases.
-        let bank_difference = frame.pressure_derivative_a - frame.pressure_derivative_b;
-        let bank_body = self.bank_signature.process(bank_difference) * (1.0 - 0.30 * high_rpm);
-        let bell_arrived =
-            Self::delayed(&mut self.bell_delay, &mut self.bell_cursor, bell_excitation);
-        let panel_arrived = Self::delayed(
-            &mut self.panel_delay,
-            &mut self.panel_cursor,
-            panel_excitation,
-        );
-        let bell = self.bellhousing.process(bell_arrived) * (1.0 + 0.50 * high_rpm);
-        let panel_modes = self
-            .panel_lowpass
-            .process(self.thin_panels.process(panel_arrived))
-            * (1.0 - 0.82 * high_rpm);
-        // A small high-passed strain component preserves the initial metallic
-        // tick that modal ringing alone tends to smear away.
-        let panel_edge = self.panel_highpass.process(panel_arrived) * (1.0 - 0.72 * high_rpm);
-        let metal = self.dc.process(
-            heavy * 1.00 + bank_body * 0.42 + bell * 1.20 + panel_modes * 2.35 + panel_edge * 0.16,
-        );
-
-        // Local strain compression keeps coincident modes from producing a
-        // bell-like spike. This is coloration of the structure, not a limiter.
-        (metal * 8.0).tanh() / 2.35
-    }
-}
-
 pub struct AcousticScene {
     config: AcousticSceneConfig,
-    metal: MetallicStructure,
-    airbox: AirboxPlenum,
     engine_cover: EngineCover,
     mount_monocoque: EngineMountMonocoque,
-    under_seat: UnderSeatVibration,
     cylinder_paths: [CylinderMechanicalPath; CYLINDER_COUNT],
-    metal_order_notch: TrackingOrderNotch,
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
     onboard_highpass: DcBlocker,
-    metal_envelope: f32,
-    envelope_attack: f32,
-    envelope_release: f32,
     sample_rate: f32,
     previous_crank_phase: f32,
     firing_frequency_hz: f32,
-    sample_clock: u64,
 }
 
 impl AcousticScene {
@@ -685,39 +336,27 @@ impl AcousticScene {
             || !(0.0..=1.5).contains(&config.dry_mid_gain)
             || !(0.0..=1.5).contains(&config.dry_high_gain)
             || !(0.0..=1.5).contains(&config.engine_air_gain)
-            || !(0.0..=1.5).contains(&config.metal_gain)
-            || !(0.0..=1.5).contains(&config.airbox_gain)
             || !(0.0..=1.5).contains(&config.engine_cover_gain)
             || !(0.0..=1.5).contains(&config.mount_monocoque_gain)
-            || !(0.0..=1.5).contains(&config.under_seat_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
-            || !(100.0..=1_000_000.0).contains(&config.metal_panel_lowpass_hz)
             || !(100.0..=1_000_000.0).contains(&config.cover_radiation_lowpass_hz)
         {
             return Err("acoustic scene gain outside supported range".into());
         }
         Ok(Self {
             config,
-            metal: MetallicStructure::new(sample_rate, config.metal_panel_lowpass_hz),
-            airbox: AirboxPlenum::new(sample_rate),
             engine_cover: EngineCover::new(sample_rate, config.cover_radiation_lowpass_hz),
             mount_monocoque: EngineMountMonocoque::new(sample_rate),
-            under_seat: UnderSeatVibration::new(sample_rate),
             cylinder_paths: std::array::from_fn(|index| {
                 CylinderMechanicalPath::new(index, sample_rate)
             }),
-            metal_order_notch: TrackingOrderNotch::new(sample_rate, 3.2, 0.64),
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
             onboard_highpass: DcBlocker::new(75.0, sample_rate),
-            metal_envelope: 0.0,
-            envelope_attack: 1.0 - (-1.0 / (0.0012 * sample_rate)).exp(),
-            envelope_release: 1.0 - (-1.0 / (0.026 * sample_rate)).exp(),
             sample_rate,
             previous_crank_phase: 0.0,
             firing_frequency_hz: 0.0,
-            sample_clock: 0,
         })
     }
 
@@ -743,64 +382,35 @@ impl AcousticScene {
             );
         }
         let cylinder_mechanical_sum = cylinder_mechanical.iter().sum::<f32>() * 0.34;
-        let metallic_structure = self.metal_order_notch.process(
-            self.metal
-                .process(engine, cylinder_mechanical_sum, high_rpm),
-            self.firing_frequency_hz,
-        );
-        let airbox_plenum = self.airbox.process(engine, high_rpm);
-        let engine_cover = self.engine_cover.process(engine, airbox_plenum, high_rpm);
+        let engine_cover = self.engine_cover.process(engine, high_rpm);
         let (engine_mounts, monocoque_seat) = self
             .mount_monocoque
             .process(engine, cylinder_mechanical_sum);
         let mount_monocoque = engine_mounts * 0.58 + monocoque_seat;
-        let under_seat_vibration =
-            self.under_seat
-                .process(engine_mounts, monocoque_seat, engine.load);
-        let detector = metallic_structure.abs();
-        let envelope_coefficient = if detector > self.metal_envelope {
-            self.envelope_attack
-        } else {
-            self.envelope_release
-        };
-        self.metal_envelope += envelope_coefficient * (detector - self.metal_envelope);
 
         let dry_low = self.dry_lowpass.process(engine.master);
         let below_mid = self.dry_midpass.process(engine.master);
         let dry_mid = below_mid - dry_low;
         let dry_high = engine.master - below_mid;
-        // Only the competing mid band ducks. Low-frequency mass remains stable
-        // and the high-frequency air is rolled off as the intake charge pulse
+        // The high-frequency air is rolled off as the intake charge pulse
         // shortens at high engine speed.
-        let duck = 1.0 - 0.10 * (self.metal_envelope * 10.0).clamp(0.0, 1.0);
         let filtered_dry = dry_low * self.config.dry_low_gain
-            + dry_mid * self.config.dry_mid_gain * duck
+            + dry_mid * self.config.dry_mid_gain
             + dry_high * self.config.dry_high_gain * (1.0 - 0.72 * high_rpm);
         let engine_air = self.air_path.process(filtered_dry);
-        let time = self.sample_clock as f32 / self.sample_rate;
-        self.sample_clock = self.sample_clock.wrapping_add(1);
-        let slow_scene_drift = 1.0
-            + 0.007 * (std::f32::consts::TAU * 0.79 * time + 0.4).sin()
-            + 0.003 * (std::f32::consts::TAU * 1.09 * time + 2.1).sin();
         AcousticFrame {
             engine_dry: engine.master,
             engine_air,
-            metallic_structure,
-            airbox_plenum,
             engine_cover,
             engine_mounts,
             monocoque_seat,
             mount_monocoque,
-            under_seat_vibration,
             cylinder_mechanical,
             cylinder_mechanical_sum,
             output: self.onboard_highpass.process(
                 (engine_air * self.config.engine_air_gain
-                    + metallic_structure * self.config.metal_gain * slow_scene_drift
-                    + airbox_plenum * self.config.airbox_gain
                     + engine_cover * self.config.engine_cover_gain
-                    + mount_monocoque * self.config.mount_monocoque_gain
-                    + under_seat_vibration * self.config.under_seat_gain)
+                    + mount_monocoque * self.config.mount_monocoque_gain)
                     * self.config.output_gain,
             ),
         }
@@ -812,17 +422,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn silent_engine_cannot_create_free_running_metal() {
+    fn silent_engine_stays_silent() {
         let mut scene = AcousticScene::new(48_000.0, AcousticSceneConfig::default()).unwrap();
         for _ in 0..96_000 {
             let frame = scene.process(&EngineFrame::default());
-            assert_eq!(frame.metallic_structure, 0.0);
+            assert_eq!(frame.engine_air, 0.0);
+            assert_eq!(frame.engine_cover, 0.0);
+            assert_eq!(frame.mount_monocoque, 0.0);
             assert_eq!(frame.output, 0.0);
         }
     }
 
     #[test]
-    fn filtered_air_path_is_audible_when_metal_is_disabled() {
+    fn filtered_air_path_is_audible() {
         let mut scene = AcousticScene::new(
             48_000.0,
             AcousticSceneConfig {
@@ -830,11 +442,8 @@ mod tests {
                 dry_mid_gain: 1.0,
                 dry_high_gain: 1.0,
                 engine_air_gain: 1.0,
-                metal_gain: 0.0,
-                airbox_gain: 0.0,
                 engine_cover_gain: 0.0,
                 mount_monocoque_gain: 0.0,
-                under_seat_gain: 0.0,
                 output_gain: 1.0,
                 ..AcousticSceneConfig::default()
             },
@@ -857,11 +466,8 @@ mod tests {
     #[test]
     fn engine_air_gain_scales_only_the_air_branch() {
         let base = AcousticSceneConfig {
-            metal_gain: 0.0,
-            airbox_gain: 0.0,
             engine_cover_gain: 0.0,
             mount_monocoque_gain: 0.0,
-            under_seat_gain: 0.0,
             output_gain: 1.0,
             ..AcousticSceneConfig::default()
         };

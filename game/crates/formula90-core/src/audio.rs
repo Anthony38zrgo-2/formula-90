@@ -76,16 +76,6 @@ fn v10_layer_tuning_from_section(
         tuned_scalar(&mut tuning.header_length_scale, "header_length_scale", scale)?;
     }
     if let Some(hz) = section
-        .get("metal_panel_lowpass_hz")
-        .and_then(serde_json::Value::as_f64)
-    {
-        tuned_scalar(
-            &mut tuning.metal_panel_lowpass_hz,
-            "metal_panel_lowpass_hz",
-            hz,
-        )?;
-    }
-    if let Some(hz) = section
         .get("cover_radiation_lowpass_hz")
         .and_then(serde_json::Value::as_f64)
     {
@@ -94,6 +84,38 @@ fn v10_layer_tuning_from_section(
             "cover_radiation_lowpass_hz",
             hz,
         )?;
+    }
+    if let Some(weight) = section
+        .get("sample_blend_weight")
+        .and_then(serde_json::Value::as_f64)
+    {
+        tuned_scalar(&mut tuning.sample_blend_weight, "sample_blend_weight", weight)?;
+    }
+    if let Some(weight) = section
+        .get("physical_blend_weight")
+        .and_then(serde_json::Value::as_f64)
+    {
+        tuned_scalar(
+            &mut tuning.physical_blend_weight,
+            "physical_blend_weight",
+            weight,
+        )?;
+    }
+    if let Some(trims) = section
+        .get("sample_zone_trim_db")
+        .and_then(serde_json::Value::as_array)
+    {
+        let mut values = Vec::with_capacity(trims.len());
+        for value in trims {
+            let trim = value
+                .as_f64()
+                .ok_or_else(|| "sample_zone_trim_db entries must be numbers".to_string())?;
+            if !trim.is_finite() {
+                return Err("sample_zone_trim_db entry is not finite".into());
+            }
+            values.push(trim as f32);
+        }
+        tuning.zone_trim_db = Some(values);
     }
     if let Some(geometry) = section.get("collector_geometry").filter(|value| !value.is_null()) {
         let field = |name: &str| -> Result<f32, String> {
@@ -607,13 +629,20 @@ mod tests {
     #[test]
     fn scene_filter_keys_are_transported_explicitly() {
         let section = serde_json::json!({
-            "scene_gains": { "engine_air": 0.841, "metal": 0.0 },
-            "metal_panel_lowpass_hz": 1_000_000.0,
-            "cover_radiation_lowpass_hz": 1_000_000.0
+            "scene_gains": { "engine_air": 0.841, "engine_cover": 0.9156 },
+            "cover_radiation_lowpass_hz": 1_000_000.0,
+            "sample_blend_weight": 1.3,
+            "physical_blend_weight": 0.77,
+            "sample_zone_trim_db": [2.0, 0.0, 0.0, 1.5, 1.5, 1.5]
         });
         let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
-        assert_eq!(tuning.metal_panel_lowpass_hz, Some(1_000_000.0));
         assert_eq!(tuning.cover_radiation_lowpass_hz, Some(1_000_000.0));
+        assert_eq!(tuning.sample_blend_weight, Some(1.3));
+        assert_eq!(tuning.physical_blend_weight, Some(0.77));
+        assert_eq!(
+            tuning.zone_trim_db,
+            Some(vec![2.0, 0.0, 0.0, 1.5, 1.5, 1.5])
+        );
         assert!(tuning.scene_gains.contains(&("engine_air".to_string(), 0.841)));
     }
 }

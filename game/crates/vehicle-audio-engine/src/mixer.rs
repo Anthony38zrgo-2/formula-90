@@ -533,12 +533,15 @@ pub struct V10LayerTuning {
     /// Explicit physical collector geometry; `None` keeps the legacy
     /// reduced-order modal collector.
     pub collector_geometry: Option<v10_engine_synth::CollectorGeometry>,
-    /// Optional metallic-panel lowpass override (Hz); values at or above
-    /// `0.48 * sample_rate` bypass the filter.
-    pub metal_panel_lowpass_hz: Option<f32>,
     /// Optional engine-cover radiation lowpass override (Hz); values at or
     /// above `0.48 * sample_rate` bypass the filter.
     pub cover_radiation_lowpass_hz: Option<f32>,
+    /// Optional hybrid blend weight on the sample layer (default 1.0).
+    pub sample_blend_weight: Option<f32>,
+    /// Optional hybrid blend weight on the physical scene (default 1.0).
+    pub physical_blend_weight: Option<f32>,
+    /// Optional per-zone tonal trims in dB for the sample-layer ON zones.
+    pub zone_trim_db: Option<Vec<f32>>,
 }
 
 #[derive(Default)]
@@ -1786,11 +1789,8 @@ impl VehicleAudioEngine {
                 "dry_mid" => &mut config.scene.dry_mid_gain,
                 "dry_high" => &mut config.scene.dry_high_gain,
                 "engine_air" => &mut config.scene.engine_air_gain,
-                "metal" => &mut config.scene.metal_gain,
-                "airbox" => &mut config.scene.airbox_gain,
                 "engine_cover" => &mut config.scene.engine_cover_gain,
                 "mount_monocoque" => &mut config.scene.mount_monocoque_gain,
-                "under_seat" => &mut config.scene.under_seat_gain,
                 "output" => &mut config.scene.output_gain,
                 _ => return Err(format!("unknown scene branch: {name}")),
             };
@@ -1802,11 +1802,21 @@ impl VehicleAudioEngine {
         if let Some(geometry) = &tuning.collector_geometry {
             config.engine.collector_geometry = Some(geometry.clone());
         }
-        if let Some(hz) = tuning.metal_panel_lowpass_hz {
-            config.scene.metal_panel_lowpass_hz = hz;
-        }
         if let Some(hz) = tuning.cover_radiation_lowpass_hz {
             config.scene.cover_radiation_lowpass_hz = hz;
+        }
+        if let Some(weight) = tuning.sample_blend_weight {
+            config.sample_layer.sample_blend_weight = weight;
+        }
+        if let Some(weight) = tuning.physical_blend_weight {
+            config.sample_layer.physical_blend_weight = weight;
+        }
+        if let Some(trims) = &tuning.zone_trim_db {
+            let mut values = [0.0f32; 8];
+            for (slot, value) in values.iter_mut().zip(trims.iter()) {
+                *slot = *value;
+            }
+            config.sample_layer.zone_trim_db = values;
         }
         match v10_engine_synth::Gf509Runtime::new(config) {
             Ok(runtime) => {
@@ -3145,7 +3155,7 @@ mod tests {
     fn v10_layer_tuning_applies_and_rejects_unknown_branch() {
         let mut engine = engine_with_bank(silent_engine_bank());
         let mut tuning = V10LayerTuning::default();
-        tuning.scene_gains.push(("metal".to_string(), 0.0));
+        tuning.scene_gains.push(("engine_cover".to_string(), 0.0));
         engine
             .enable_v10_layer(&packaged_gf509_assets(), &tuning)
             .unwrap();
