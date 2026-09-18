@@ -39,6 +39,7 @@ pub(crate) struct AudioTelemetryAdapter {
     throttle_dot: f32,
     was_shifting: bool,
     downshift: bool,
+    blip_s: f32,
     recovery_s: f32,
 }
 
@@ -55,18 +56,34 @@ impl AudioTelemetryAdapter {
             self.throttle_dot += alpha * ((throttle - last_throttle) / dt - self.throttle_dot);
         } else { self.rpm_dot = 0.0; self.throttle_dot = 0.0; }
         self.previous = Some((rpm as f32, throttle));
-        // Cut is physical. Recovery is a named 40 ms acoustic transition, not
-        // an invented transmission phase. No synthetic downshift blip is inferred.
+        // Cut is physical. Recovery is a named 40 ms acoustic transition, not an
+        // invented transmission phase. Downshift releases add the synthesized
+        // blip phase (~120 ms) before recovery; upshifts go cut -> recovery.
+        let step = if valid_dt { dt } else { 0.0 };
         let phase = if physical.shifting {
             self.downshift = physical.downshift;
+            self.blip_s = 0.0;
             self.recovery_s = 0.0;
             if self.downshift { ShiftPhase::DownshiftCut } else { ShiftPhase::UpshiftCut }
         } else {
-            if self.was_shifting { self.recovery_s = 0.040; }
-            let phase = if self.recovery_s > 0.0 {
-                if self.downshift { ShiftPhase::DownshiftRecovery } else { ShiftPhase::UpshiftRecovery }
-            } else { ShiftPhase::None };
-            self.recovery_s = (self.recovery_s - if valid_dt { dt } else { 0.0 }).max(0.0);
+            if self.was_shifting {
+                self.recovery_s = 0.040;
+                self.blip_s = if self.downshift { 0.120 } else { 0.0 };
+            }
+            let phase = if self.blip_s > 0.0 {
+                self.blip_s = (self.blip_s - step).max(0.0);
+                ShiftPhase::DownshiftBlip
+            } else if self.recovery_s > 0.0 {
+                let phase = if self.downshift {
+                    ShiftPhase::DownshiftRecovery
+                } else {
+                    ShiftPhase::UpshiftRecovery
+                };
+                self.recovery_s = (self.recovery_s - step).max(0.0);
+                phase
+            } else {
+                ShiftPhase::None
+            };
             phase
         };
         self.was_shifting = physical.shifting;
@@ -114,19 +131,64 @@ mod tests {
         assert_eq!(free_rev.clutch, 0.0);
     }
 
+    const SHIFT_TICK: f32 = 1.0 / 120.0;
+
+    fn update_phase(adapter: &mut AudioTelemetryAdapter, physical: MechanicalAudioState) -> i32 {
+        adapter
+            .update(
+                9_000.0, 1_000.0, 15_000.0, 0.8, 100.0, 4, 0.0, SHIFT_TICK, physical,
+            )
+            .shift_phase
+    }
+
     #[test]
-    fn shift_cut_has_only_physical_cut_then_acoustic_recovery() {
+    fn upshift_cut_then_acoustic_recovery_before_none() {
         let mut adapter = AudioTelemetryAdapter::default();
         let up = MechanicalAudioState {
             shifting: true,
             ..MechanicalAudioState::default()
         };
-        let cut = adapter.update(9_000.0, 1_000.0, 15_000.0, 0.8, 100.0, 4, 0.0, 1.0 / 120.0, up);
-        assert_eq!(cut.shift_phase, ShiftPhase::UpshiftCut as i32);
-        let settled = adapter.update(9_000.0, 1_000.0, 15_000.0, 0.8, 100.0, 4, 0.0, 1.0 / 120.0, MechanicalAudioState::default());
-        assert_eq!(settled.shift_phase, ShiftPhase::UpshiftRecovery as i32);
-        assert_eq!(settled.torque_sign, 0);
+        assert_eq!(
+            update_phase(&mut adapter, up),
+            ShiftPhase::UpshiftCut as i32
+        );
+        assert_eq!(
+            adapter
+                .update(
+                    9_000.0,
+                    1_000.0,
+                    15_000.0,
+                    0.8,
+                    100.0,
+                    4,
+                    0.0,
+                    SHIFT_TICK,
+                    MechanicalAudioState::default()
+                )
+                .torque_sign,
+            0
+        );
+        let mut phases = Vec::new();
+        for _ in 0..8 {
+            phases.push(update_phase(&mut adapter, MechanicalAudioState::default()));
+        }
+        assert_eq!(phases[0], ShiftPhase::UpshiftRecovery as i32);
+        let recovery_ticks = phases
+            .iter()
+            .take_while(|phase| **phase == ShiftPhase::UpshiftRecovery as i32)
+            .count();
+        assert!(
+            (4..=5).contains(&recovery_ticks),
+            "recovery ticks {recovery_ticks}"
+        );
+        assert!(phases[recovery_ticks..]
+            .iter()
+            .all(|phase| *phase == ShiftPhase::None as i32));
+    }
 
+    #[test]
+    fn downshift_release_emits_blip_then_recovery_then_none() {
+        let mut adapter = AudioTelemetryAdapter::default();
         let down_limiter = MechanicalAudioState {
             shifting: true,
             downshift: true,
@@ -134,10 +196,62 @@ mod tests {
             ..MechanicalAudioState::default()
         };
         let packet = adapter.update(
-            9_000.0, 1_000.0, 15_000.0, 0.2, 100.0, 3, 0.0, 1.0 / 120.0,
+            9_000.0,
+            1_000.0,
+            15_000.0,
+            0.2,
+            100.0,
+            3,
+            0.0,
+            SHIFT_TICK,
             down_limiter,
         );
         assert_eq!(packet.shift_phase, ShiftPhase::DownshiftCut as i32);
         assert_eq!(packet.rev_limiter_active, 1);
+
+        let mut phases = Vec::new();
+        for _ in 0..30 {
+            phases.push(update_phase(&mut adapter, MechanicalAudioState::default()));
+        }
+        let blip_ticks = phases
+            .iter()
+            .take_while(|phase| **phase == ShiftPhase::DownshiftBlip as i32)
+            .count();
+        assert!((14..=16).contains(&blip_ticks), "blip ticks {blip_ticks}");
+        let recovery_ticks = phases[blip_ticks..]
+            .iter()
+            .take_while(|phase| **phase == ShiftPhase::DownshiftRecovery as i32)
+            .count();
+        assert!(
+            (4..=6).contains(&recovery_ticks),
+            "recovery ticks {recovery_ticks}"
+        );
+        let tail = &phases[blip_ticks + recovery_ticks..];
+        assert!(!tail.is_empty());
+        assert!(tail.iter().all(|phase| *phase == ShiftPhase::None as i32));
+    }
+
+    #[test]
+    fn new_downshift_restarts_the_blip_sequence() {
+        let mut adapter = AudioTelemetryAdapter::default();
+        let down = MechanicalAudioState {
+            shifting: true,
+            downshift: true,
+            ..MechanicalAudioState::default()
+        };
+        update_phase(&mut adapter, down);
+        assert_eq!(
+            update_phase(&mut adapter, MechanicalAudioState::default()),
+            ShiftPhase::DownshiftBlip as i32
+        );
+        // A new physical shift cancels the pending blip and re-arms the cut.
+        assert_eq!(
+            update_phase(&mut adapter, down),
+            ShiftPhase::DownshiftCut as i32
+        );
+        assert_eq!(
+            update_phase(&mut adapter, MechanicalAudioState::default()),
+            ShiftPhase::DownshiftBlip as i32
+        );
     }
 }

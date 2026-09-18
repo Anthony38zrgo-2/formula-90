@@ -10,6 +10,22 @@ const COAST_BASE_ENERGY: f32 = 0.12;
 const COAST_RPM_ENERGY: f32 = 0.20;
 const ENERGY_ATTACK_SECONDS: f32 = 0.018;
 const ENERGY_RELEASE_SECONDS: f32 = 0.413;
+/// Shift gesture: damped amplitude wobble synthesized on recovery. Applied
+/// after the energy follower (not inside its target) so the asymmetric attack/
+/// release smoothing cannot rectify the oscillation. Bounded and dissipative.
+/// 10 Hz over 175 ms (1.75 cycles ending exactly at unity), sag to 0.70 with
+/// the positive rebound hard-capped at 1.15.
+const SHIFT_WOBBLE_DEPTH: f32 = 0.30;
+const SHIFT_WOBBLE_SECONDS: f32 = 0.175;
+const SHIFT_WOBBLE_TAU: f32 = 0.070;
+const SHIFT_WOBBLE_CYCLES: f32 = 1.75;
+const SHIFT_WOBBLE_MIN: f32 = 0.60;
+const SHIFT_WOBBLE_MAX: f32 = 1.15;
+/// Downshift blip: short energy flare over the generated `DownshiftBlip`
+/// phase. Linear decay, hard-bounded.
+const SHIFT_BLIP_SECONDS: f32 = 0.120;
+const SHIFT_BLIP_GAIN: f32 = 0.40;
+const SHIFT_GAIN_MAX: f32 = 1.45;
 
 #[derive(Clone, Copy, Debug)]
 pub struct EngineInput {
@@ -45,6 +61,75 @@ impl EngineInput {
     }
 }
 
+/// Per-sample state for the synthesized shift gesture (wobble + blip).
+/// Driven by the discrete mechanical `shift_phase`; phase edges start an
+/// envelope, and the envelope keeps running after the phase returns to `None`
+/// so the wobble carries the shift gesture. Allocation-free and deterministic.
+#[derive(Clone, Copy, Debug, Default)]
+struct ShiftGesture {
+    last_phase: u8,
+    wobble_active: bool,
+    wobble_t: f32,
+    blip_active: bool,
+    blip_t: f32,
+}
+
+impl ShiftGesture {
+    /// Advances rising-edge detection and the envelope timers by one sample.
+    #[inline]
+    fn step(&mut self, phase: u8, sample_rate: f32) {
+        let is_cut = phase == 1 || phase == 3;
+        // A new cut restarts the gesture: the previous wobble/blip is over.
+        if is_cut {
+            self.wobble_active = false;
+            self.blip_active = false;
+        }
+        if phase == 4 && self.last_phase != 4 {
+            self.blip_active = true;
+            self.blip_t = 0.0;
+        }
+        if (phase == 2 || phase == 5) && self.last_phase != phase {
+            self.wobble_active = true;
+            self.wobble_t = 0.0;
+        }
+        let dt = 1.0 / sample_rate;
+        if self.wobble_active {
+            self.wobble_t += dt;
+            if self.wobble_t >= SHIFT_WOBBLE_SECONDS {
+                self.wobble_active = false;
+            }
+        }
+        if self.blip_active {
+            self.blip_t += dt;
+            if self.blip_t >= SHIFT_BLIP_SECONDS {
+                self.blip_active = false;
+            }
+        }
+        self.last_phase = phase;
+    }
+
+    /// Bounded amplitude multiplier for the current gesture state. `1.0` when
+    /// idle; sag -> rebound -> settle on recovery; energy flare on blip.
+    #[inline]
+    fn gain(&self) -> f32 {
+        let wobble = if self.wobble_active {
+            let decay = (-self.wobble_t / SHIFT_WOBBLE_TAU).exp();
+            let omega = std::f32::consts::TAU * SHIFT_WOBBLE_CYCLES / SHIFT_WOBBLE_SECONDS;
+            (1.0 - SHIFT_WOBBLE_DEPTH * decay * (omega * self.wobble_t).cos())
+                .clamp(SHIFT_WOBBLE_MIN, SHIFT_WOBBLE_MAX)
+        } else {
+            1.0
+        };
+        let blip = if self.blip_active {
+            (1.0 + SHIFT_BLIP_GAIN * (1.0 - self.blip_t / SHIFT_BLIP_SECONDS))
+                .clamp(1.0, 1.0 + SHIFT_BLIP_GAIN)
+        } else {
+            1.0
+        };
+        (wobble * blip).clamp(0.0, SHIFT_GAIN_MAX)
+    }
+}
+
 #[inline]
 #[cfg_attr(not(test), allow(dead_code))]
 fn target_acoustic_energy(input: EngineInput) -> f32 {
@@ -58,7 +143,9 @@ fn target_acoustic_energy_with_state(input: EngineInput, mechanical: MechanicalS
     let coast_energy = COAST_BASE_ENERGY + COAST_RPM_ENERGY * rpm_norm;
     let powered_energy = 0.25 * input.throttle + 0.63 * input.load * (0.35 + 0.65 * input.throttle);
     // A shift cut and the physical limiter suppress combustion energy. Their
-    // state is discrete and arrives from physics; no synthetic blip is made.
+    // state is discrete and arrives from physics. The synthesized recovery
+    // wobble and downshift blip are applied after the energy follower (see
+    // `ShiftGesture`), never inside this target.
     let cut_gain = match mechanical.shift_phase {
         1 | 3 => 0.12,
         2 | 5 => 0.72,
@@ -142,6 +229,7 @@ pub struct V10Engine {
     turbulence_envelope: f32,
     noise_rng: u64,
     sample_clock: u64,
+    gesture: ShiftGesture,
 }
 
 impl V10Engine {
@@ -187,6 +275,7 @@ impl V10Engine {
             turbulence_envelope: 0.0,
             noise_rng: config.seed ^ 0xA17E_5EED_D15C_A11E,
             sample_clock: 0,
+            gesture: ShiftGesture::default(),
             config,
         })
     }
@@ -217,6 +306,16 @@ impl V10Engine {
         };
     }
 
+    /// Current synthesized shift gesture gain (wobble * blip), exactly the
+    /// multiplier applied to the procedural energy. `1.0` when idle. The cut
+    /// is not part of this gain; it lives in the acoustic energy target. The
+    /// GF509 runtime uses this to carry the gesture to the sample layer so the
+    /// whole hybrid mix wobbles together.
+    #[inline]
+    pub fn shift_gesture_gain(&self) -> f32 {
+        self.gesture.gain()
+    }
+
     #[inline]
     pub fn render_sample(&mut self) -> EngineFrame {
         let sample_rate = self.config.sample_rate as f32;
@@ -228,6 +327,10 @@ impl V10Engine {
             self.energy_release_alpha
         };
         self.smoothed_energy += (target_energy - self.smoothed_energy) * alpha;
+        // Synthesized shift gesture, applied after the follower so the wobble
+        // and blip retain their exact bounded shape.
+        self.gesture.step(self.mechanical.shift_phase, sample_rate);
+        let shift_gain = self.gesture.gain();
         // Combustion quality wanders slowly, rather than drawing a new random
         // gain every mechanical cycle. Two incommensurate rates avoid a loop.
         let time = self.sample_clock as f32 / sample_rate;
@@ -268,7 +371,7 @@ impl V10Engine {
             }
             let cylinder = self.cylinders[index].process(
                 deg_per_sample,
-                self.smoothed_energy * slow_drift,
+                self.smoothed_energy * shift_gain * slow_drift,
                 &self.config,
             );
             if index < 5 {
@@ -570,5 +673,187 @@ mod tests {
                 load: 0.5
             })
             .is_err());
+    }
+
+    use crate::runtime::ShiftPhase;
+
+    fn shift_test_engine() -> V10Engine {
+        let mut engine = V10Engine::new(EngineConfig::default()).unwrap();
+        engine
+            .set_input(EngineInput {
+                rpm: 9_000.0,
+                throttle: 0.9,
+                load: 0.9,
+            })
+            .unwrap();
+        engine
+    }
+
+    #[test]
+    fn shift_cut_keeps_the_static_target_levels() {
+        let input = EngineInput {
+            rpm: 8_000.0,
+            throttle: 1.0,
+            load: 1.0,
+        };
+        let base = target_acoustic_energy_with_state(input, MechanicalState::default());
+        let cut = target_acoustic_energy_with_state(
+            input,
+            MechanicalState {
+                shift_phase: ShiftPhase::UpshiftCut as u8,
+                ..MechanicalState::default()
+            },
+        );
+        let recovery = target_acoustic_energy_with_state(
+            input,
+            MechanicalState {
+                shift_phase: ShiftPhase::UpshiftRecovery as u8,
+                ..MechanicalState::default()
+            },
+        );
+        assert!(cut < base * 0.35, "cut={cut} base={base}");
+        assert!(recovery > cut && recovery < base, "recovery={recovery}");
+    }
+
+    #[test]
+    fn shift_wobble_sags_rebounds_is_bounded_and_settles() {
+        let sample_rate = EngineConfig::default().sample_rate as f32;
+        let mut engine = shift_test_engine();
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftCut);
+        for _ in 0..2_048 {
+            engine.render_sample();
+        }
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftRecovery);
+        let total = (SHIFT_WOBBLE_SECONDS * 2.0 * sample_rate) as usize;
+        let mut first_active = None;
+        let mut min = f32::MAX;
+        let mut max = 0.0f32;
+        for _ in 0..total {
+            engine.render_sample();
+            if engine.gesture.wobble_active {
+                let gain = engine.shift_gesture_gain();
+                first_active.get_or_insert(gain);
+                min = min.min(gain);
+                max = max.max(gain);
+            }
+        }
+        let first = first_active.expect("recovery must start the wobble");
+        assert!(
+            first <= 0.72,
+            "recovery must open with the sag, got {first}"
+        );
+        assert!(min >= SHIFT_WOBBLE_MIN - 1e-6, "wobble min {min}");
+        assert!(
+            max > 1.10 && max <= SHIFT_WOBBLE_MAX + 1e-6,
+            "wobble must rebound under the hard bound, got {max}"
+        );
+        assert!(!engine.gesture.wobble_active, "wobble must end");
+        assert_eq!(engine.shift_gesture_gain(), 1.0);
+    }
+
+    #[test]
+    fn shift_gesture_gain_is_unity_idle_and_excludes_the_cut() {
+        let mut engine = shift_test_engine();
+        assert_eq!(engine.shift_gesture_gain(), 1.0);
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftCut);
+        engine.render_sample();
+        assert_eq!(
+            engine.shift_gesture_gain(),
+            1.0,
+            "the cut lives in the energy target, not in the gesture gain"
+        );
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftRecovery);
+        engine.render_sample();
+        let gain = engine.shift_gesture_gain();
+        assert!(gain < 0.75, "gesture must open on recovery, got {gain}");
+    }
+
+    #[test]
+    fn downshift_blip_flares_then_decays_to_unity() {
+        let sample_rate = EngineConfig::default().sample_rate as f32;
+        let mut engine = shift_test_engine();
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::DownshiftCut);
+        for _ in 0..512 {
+            engine.render_sample();
+        }
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::DownshiftBlip);
+        engine.render_sample();
+        let first = engine.shift_gesture_gain();
+        assert!(first > 1.35, "blip must flare on phase 4, got {first}");
+        let total = (SHIFT_BLIP_SECONDS * 2.0 * sample_rate) as usize;
+        let mut max = first;
+        for _ in 1..total {
+            engine.render_sample();
+            max = max.max(engine.shift_gesture_gain());
+        }
+        assert!(max <= 1.0 + SHIFT_BLIP_GAIN + 1e-6, "blip max {max}");
+        assert!(!engine.gesture.blip_active, "blip must end");
+        assert_eq!(engine.shift_gesture_gain(), 1.0);
+    }
+
+    #[test]
+    fn overlapping_shift_gestures_stay_hard_bounded() {
+        let sample_rate = EngineConfig::default().sample_rate as f32;
+        let mut engine = shift_test_engine();
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::DownshiftBlip);
+        engine.render_sample();
+        for _ in 0..(0.05 * sample_rate) as usize {
+            engine.render_sample();
+        }
+        // Defensive overlap: telemetry sequences blip then recovery, but a
+        // direct caller may stack them; the combined gain must stay bounded.
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::DownshiftRecovery);
+        let mut max = 0.0f32;
+        for _ in 0..(0.3 * sample_rate) as usize {
+            engine.render_sample();
+            max = max.max(engine.gesture.gain());
+        }
+        assert!(max <= SHIFT_GAIN_MAX + 1e-6, "combined gain {max}");
+    }
+
+    #[test]
+    fn new_cut_cancels_an_active_gesture() {
+        let mut engine = shift_test_engine();
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftCut);
+        engine.render_sample();
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftRecovery);
+        engine.render_sample();
+        assert!(engine.gesture.wobble_active);
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::UpshiftCut);
+        engine.render_sample();
+        assert!(!engine.gesture.wobble_active && !engine.gesture.blip_active);
+        assert_eq!(engine.gesture.gain(), 1.0);
+    }
+
+    #[test]
+    fn shift_gesture_sequence_is_bit_deterministic() {
+        let config = EngineConfig::default();
+        let mut a = V10Engine::new(config.clone()).unwrap();
+        let mut b = V10Engine::new(config).unwrap();
+        let input = EngineInput {
+            rpm: 9_000.0,
+            throttle: 0.9,
+            load: 0.9,
+        };
+        a.set_input(input).unwrap();
+        b.set_input(input).unwrap();
+        for sample in 0..40_000 {
+            let phase = match sample {
+                0..=1_999 => ShiftPhase::None,
+                2_000..=5_999 => ShiftPhase::UpshiftCut,
+                6_000..=7_999 => ShiftPhase::UpshiftRecovery,
+                8_000..=11_999 => ShiftPhase::None,
+                12_000..=15_999 => ShiftPhase::DownshiftCut,
+                16_000..=17_999 => ShiftPhase::DownshiftBlip,
+                _ => ShiftPhase::None,
+            };
+            a.set_mechanical_state(0.8, 1.0, 0.0, false, phase);
+            b.set_mechanical_state(0.8, 1.0, 0.0, false, phase);
+            assert_eq!(
+                a.render_sample().master.to_bits(),
+                b.render_sample().master.to_bits(),
+                "sample {sample} diverged"
+            );
+        }
     }
 }

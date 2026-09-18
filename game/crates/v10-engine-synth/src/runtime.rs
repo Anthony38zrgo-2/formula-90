@@ -15,6 +15,27 @@ use sha2::{Digest, Sha256};
 
 pub const GF509_HEADROOM_GAIN: f32 = 0.61;
 
+/// Blends the procedural scene with the optional sample layer. The procedural
+/// side already carries the synthesized shift gesture (it scales the engine
+/// energy); the sample side is multiplied by the same gesture gain so the
+/// whole hybrid wobbles together on recovery/blip. Without a sample layer the
+/// scene is returned untouched (no double gesture).
+#[inline]
+pub fn blend_hybrid(
+    scene: f32,
+    sample: Option<f32>,
+    physical_weight: f32,
+    sample_weight: f32,
+    gesture_gain: f32,
+) -> f32 {
+    match sample {
+        Some(sample) => {
+            (scene * physical_weight + sample * sample_weight * gesture_gain) * GF509_HEADROOM_GAIN
+        }
+        None => scene,
+    }
+}
+
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum TorqueSign {
@@ -349,13 +370,13 @@ impl Gf509Runtime {
             } else {
                 None
             };
-            let output = if let Some(sample_frame) = sample_frame {
-                (scene_frame.output * self.config.sample_layer.physical_blend_weight
-                    + sample_frame * self.config.sample_layer.sample_blend_weight)
-                    * GF509_HEADROOM_GAIN
-            } else {
-                scene_frame.output
-            };
+            let output = blend_hybrid(
+                scene_frame.output,
+                sample_frame,
+                self.config.sample_layer.physical_blend_weight,
+                self.config.sample_layer.sample_blend_weight,
+                self.engine.shift_gesture_gain(),
+            );
             *left_sample = output;
             *right_sample = output;
         }
@@ -735,6 +756,22 @@ mod tests {
             Some(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_gf509"));
         let runtime = Gf509Runtime::new(config).unwrap();
         assert_eq!(runtime.sample_rate(), 44_100);
+    }
+
+    #[test]
+    fn hybrid_blend_carries_the_gesture_to_the_sample_layer() {
+        let (scene, sample, physical, sample_weight) = (0.5, 0.5, 1.0, 0.8165);
+        let idle = blend_hybrid(scene, Some(sample), physical, sample_weight, 1.0);
+        let ducked = blend_hybrid(scene, Some(sample), physical, sample_weight, 0.7);
+        assert!(ducked < idle, "gesture must dip the sample contribution");
+        let expected = (scene * physical + sample * sample_weight * 0.7) * GF509_HEADROOM_GAIN;
+        assert!((ducked - expected).abs() < 1e-6, "{ducked} vs {expected}");
+        // The procedural side already carries the gesture inside the engine;
+        // without a sample layer the blend must not apply it twice.
+        assert_eq!(
+            blend_hybrid(scene, None, physical, sample_weight, 0.7),
+            scene
+        );
     }
 
     #[test]
