@@ -8,7 +8,7 @@ use std::{fs, path::Path};
 
 use crate::{
     AcousticScene, AcousticSceneConfig, EngineConfig, EngineInput, SampleLayerFrame, SampleLayerInput,
-    ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
+    ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, UpperMidShelf, V10Engine,
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -182,6 +182,7 @@ pub struct Gf509RuntimeConfig {
     pub sample_layer: ThreeZoneSampleLayerConfig,
     /// Prepared sample directory. `None` is the procedural-only INT-01 mode.
     pub sample_layer_directory: Option<PathBuf>,
+    pub upper_mid_shelf_gain: f32,
     pub max_block_frames: usize,
 }
 
@@ -192,6 +193,7 @@ impl Default for Gf509RuntimeConfig {
             scene: AcousticSceneConfig::default(),
             sample_layer: ThreeZoneSampleLayerConfig::default(),
             sample_layer_directory: None,
+            upper_mid_shelf_gain: 0.0,
             max_block_frames: 4096,
         }
     }
@@ -202,6 +204,7 @@ pub struct Gf509Runtime {
     engine: V10Engine,
     scene: AcousticScene,
     sample_layer: Option<ThreeZoneSampleLayer>,
+    upper_mid_shelf: UpperMidShelf,
     /// Reused per-sample sample-layer output. Keeps the audio callback
     /// allocation-free by avoiding a fresh `SampleLayerFrame` per sample.
     sample_frame: SampleLayerFrame,
@@ -235,11 +238,13 @@ impl Gf509Runtime {
                 ThreeZoneSampleLayer::load_directory(sample_rate, path, config.sample_layer)
             })
             .transpose()?;
+        let upper_mid_shelf = UpperMidShelf::new(sample_rate as f32, config.upper_mid_shelf_gain)?;
         Ok(Self {
             config,
             engine,
             scene,
             sample_layer,
+            upper_mid_shelf,
             sample_frame: SampleLayerFrame::default(),
             telemetry: RuntimeTelemetry::default(),
             rendered_telemetry: RuntimeTelemetry::default(),
@@ -377,6 +382,7 @@ impl Gf509Runtime {
                 self.config.sample_layer.sample_blend_weight,
                 self.engine.shift_gesture_gain(),
             );
+            let output = self.upper_mid_shelf.process(output);
             *left_sample = output;
             *right_sample = output;
         }

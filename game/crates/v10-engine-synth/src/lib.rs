@@ -11,6 +11,7 @@ pub mod runtime;
 pub mod sample_layer;
 pub mod scene;
 pub mod thermodynamics;
+pub mod tone;
 pub mod wav;
 
 pub use config::{CollectorGeometry, EngineConfig};
@@ -23,6 +24,7 @@ pub use sample_layer::{
 pub use scene::{
     AcousticFrame, AcousticScene, AcousticSceneConfig, EngineCover, EngineMountMonocoque,
 };
+pub use tone::UpperMidShelf;
 pub use thermodynamics::{
     ChamberPhase, CombustionChamber, CombustionFrame, ExhaustRunner, ExhaustValve, GasState,
     PolytropicProcess, RunnerState,

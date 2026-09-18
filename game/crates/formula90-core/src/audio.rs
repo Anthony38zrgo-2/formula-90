@@ -65,6 +65,16 @@ fn v10_layer_tuning_from_section(
         .get("residual_gain_scale")
         .and_then(serde_json::Value::as_f64)
         .map(|value| value as f32);
+    if let Some(value) = section
+        .get("upper_mid_shelf_gain")
+        .and_then(serde_json::Value::as_f64)
+    {
+        let value = value as f32;
+        if !value.is_finite() {
+            return Err("upper_mid_shelf_gain is not finite".into());
+        }
+        tuning.upper_mid_shelf_gain = value;
+    }
     if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object()) {
         for (branch, gain) in gains {
             if let Some(gain) = gain.as_f64() {
@@ -633,12 +643,14 @@ mod tests {
             "cover_radiation_lowpass_hz": 1_000_000.0,
             "sample_blend_weight": 1.3,
             "physical_blend_weight": 0.77,
-            "sample_zone_trim_db": [2.0, 0.0, 0.0, 1.5, 1.5, 1.5]
+            "sample_zone_trim_db": [2.0, 0.0, 0.0, 1.5, 1.5, 1.5],
+            "upper_mid_shelf_gain": 0.25
         });
         let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
         assert_eq!(tuning.cover_radiation_lowpass_hz, Some(1_000_000.0));
         assert_eq!(tuning.sample_blend_weight, Some(1.3));
         assert_eq!(tuning.physical_blend_weight, Some(0.77));
+        assert_eq!(tuning.upper_mid_shelf_gain, 0.25);
         assert_eq!(
             tuning.zone_trim_db,
             Some(vec![2.0, 0.0, 0.0, 1.5, 1.5, 1.5])

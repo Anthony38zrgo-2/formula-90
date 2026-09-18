@@ -8,7 +8,8 @@ use v10_engine_synth::runtime::blend_hybrid;
 use v10_engine_synth::wav::write_mono_pcm16;
 use v10_engine_synth::{
     AcousticScene, AcousticSceneConfig, CollectorGeometry, EngineConfig, EngineFrame, EngineInput,
-    SampleLayerInput, ShiftPhase, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, V10Engine,
+    SampleLayerInput, ShiftPhase, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, UpperMidShelf,
+    V10Engine,
 };
 
 const HYBRID_HEADROOM_GAIN: f32 = 0.61;
@@ -195,6 +196,7 @@ struct Args {
     sample_zone_trim_db: Vec<f32>,
     scene_gains: Vec<(String, f32)>,
     cover_lowpass_hz: Option<f32>,
+    upper_mid_shelf_gain: f32,
     shift_sequence: Vec<ShiftEvent>,
 }
 
@@ -247,6 +249,7 @@ fn parse_args() -> Result<Args, String> {
         sample_zone_trim_db: Vec::new(),
         scene_gains: Vec::new(),
         cover_lowpass_hz: None,
+        upper_mid_shelf_gain: 0.0,
         shift_sequence: Vec::new(),
     };
     let mut i = 0;
@@ -357,6 +360,10 @@ fn parse_args() -> Result<Args, String> {
             }
             "--cover-lowpass-hz" => {
                 parsed.cover_lowpass_hz = Some(parse_value(&raw, &mut i, "--cover-lowpass-hz")?)
+            }
+            "--upper-mid-shelf-gain" => {
+                parsed.upper_mid_shelf_gain =
+                    parse_value(&raw, &mut i, "--upper-mid-shelf-gain")?
             }
             "--scene-gain" => {
                 let spec = parse_value::<String>(&raw, &mut i, "--scene-gain")?;
@@ -624,6 +631,8 @@ fn run() -> Result<(), String> {
         }
     );
     let mut scene = AcousticScene::new(args.sample_rate as f32, scene_config)?;
+    let mut upper_mid_shelf =
+        UpperMidShelf::new(args.sample_rate as f32, args.upper_mid_shelf_gain)?;
     let mut zone_trim_db = [0.0f32; 8];
     for (slot, value) in zone_trim_db.iter_mut().zip(args.sample_zone_trim_db.iter()) {
         *slot = *value;
@@ -954,6 +963,7 @@ fn run() -> Result<(), String> {
             sample_blend_weight,
             engine.shift_gesture_gain(),
         );
+        let hybrid = upper_mid_shelf.process(hybrid);
         stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
         stems
             .get_mut("sample_residual")
@@ -1164,6 +1174,7 @@ fn run() -> Result<(), String> {
             "  \"sample_residual_rms\": {:.9},\n",
             "  \"sample_off_rms\": {:.9},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
+            "  \"upper_mid_shelf_gain\": {:.6},\n",
             "  \"chamber_cycle_model\": \"bounded_720deg_four_stroke_fresh_charge\",\n",
             "  \"chamber_phase_contract\": \"expansion_0_180,exhaust_180_360,intake_360_540,compression_540_720\",\n",
             "  \"firing_order\": [0,5,1,6,2,7,3,8,4,9],\n",
@@ -1207,6 +1218,7 @@ fn run() -> Result<(), String> {
         sample_tonal_rms,
         sample_residual_rms,
         sample_off_rms,
+        args.upper_mid_shelf_gain,
         HYBRID_HEADROOM_GAIN,
     );
     if metadata_path.exists() {

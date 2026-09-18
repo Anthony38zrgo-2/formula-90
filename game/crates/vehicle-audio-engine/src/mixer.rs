@@ -617,6 +617,8 @@ pub struct V10LayerTuning {
     pub physical_blend_weight: Option<f32>,
     /// Optional per-zone tonal trims in dB for the sample-layer ON zones.
     pub zone_trim_db: Option<Vec<f32>>,
+    /// Optional 2–5 kHz band-add shelf gain on the hybrid mix (0.0 = off).
+    pub upper_mid_shelf_gain: f32,
 }
 
 #[derive(Default)]
@@ -1927,6 +1929,7 @@ impl VehicleAudioEngine {
             }
             config.sample_layer.zone_trim_db = values;
         }
+        config.upper_mid_shelf_gain = tuning.upper_mid_shelf_gain;
         match v10_engine_synth::Gf509Runtime::new(config) {
             Ok(runtime) => {
                 self.gf509 = Some(runtime);

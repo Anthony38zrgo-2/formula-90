@@ -178,13 +178,18 @@
       "gain": 1.0,
       "manifest": "audio/v10_f2002_experimental/manifest.json",
       "schema_version": 2,
-      "disable_sample_rasp": false,
+      "disable_sample_rasp": true,
+      "residual_gain_scale": 0.7,
       "scene_gains": {
-        "mount_monocoque": 0.713,
-        "engine_cover": 0.9156,
+        "dry_low": 0.0,
+        "dry_mid": 0.75,
+        "dry_high": 0.14,
+        "mount_monocoque": 0.85,
+        "engine_cover": 1.10,
         "engine_air": 0.841
       },
       "cover_radiation_lowpass_hz": 1000000.0,
+      "upper_mid_shelf_gain": 0.35,
       "sample_blend_weight": 0.8165,
       "sample_zone_trim_db": [4.5, -4.63, 3.36, 1.84, 2.44, 3.88]
     },
