@@ -157,6 +157,49 @@ path; `run_f1_94.ps1 -ValidateRuntimeOnly` green with the refreshed
 `physics_sha256`. In-game still needs a runtime rebuild from this source: the
 installed DLLs predate the transport.
 
+## Dead-block removal (2026-09-17)
+
+With the balanced base, three scene branches were silent in the mix but still in
+the graph. `AcousticScene` now keeps only `engine_air`, `engine_cover` and
+`mount_monocoque`; `MetallicStructure`, `AirboxPlenum`, `UnderSeatVibration` and
+`TrackingOrderNotch` were deleted along with their config fields, frame fields,
+stems and transported branches (`metal`, `airbox`, `under_seat`,
+`metal_panel_lowpass_hz`). The profile drops those keys; only
+`cover_radiation_lowpass_hz` remains.
+
+Sound delta vs the previous base (same sweep): 630 Hz -1.9 dB, 800 Hz -1.3 dB,
+1-1.25 kHz -0.6 dB, low-mid unchanged; the metal detector no longer ducks
+`dry_mid` and `engine_cover` lost the airbox excitation term. New reference
+audition: `reports/audio-v10/exh06/scene_config_sweep/sweep_base_after_block_removal.wav`
+(peak 0.779). Tests: v10-engine-synth 106, vehicle_audio_engine 225,
+formula90_core 26; `aud_path_bench` and `run_f1_94.ps1 -ValidateRuntimeOnly`
+green with the refreshed `physics_sha256`.
+
+## Sample-layer balance controls (2026-09-17)
+
+Measured the shipped hybrid balance from stems (A-weighted): the sample layer is
+3-4 dB below the scene at 3000/9000/12000 RPM but ~3 dB above it at 6000, so a
+uniform blend weight cannot equalise it.
+
+New explicit controls, all default-preserving:
+- `ThreeZoneSampleLayerConfig.zone_trim_db: [f32; 8]` — per-ON-zone full-zone
+  gain in dB (applies to tonal and residual, unlike the old tonal-only idea);
+  validated -12..=12. Profile key `sample_zone_trim_db`.
+- Transported `sample_blend_weight` / `physical_blend_weight` (profile keys of
+  the same name) for a uniform hybrid shift; left at 1.0 here because the
+  imbalance is RPM-dependent.
+- v10_render: `--sample-blend-weight`, `--physical-blend-weight`,
+  `--sample-zone-trim-db "a,b,c,..."`, recorded in the render metadata.
+
+Calibration: hybrid probes at 14 RPMs (`reports/audio-v10/exh08/calibration/`),
+least-squares fit of the per-zone trims with the variant group merged (zones 4/5
+share one trim). Fitted trims `4.5, -4.63, 3.36, 1.84, 2.44, 3.88` dB reduce the
+scene-vs-sample deviation from 3.13 to 1.03 dB RMS in the fit and, verified on
+the rendered candidate (`reports/audio-v10/exh08/fifty50_v2/`), leave the sample
+share at 100/110/106/95 % at 3000/6000/9000/12000 RPM (max deviation 0.4 dB).
+
+The profile is intentionally untouched: activation is pending user approval.
+
 ## Retrospective
 
 - Worked: explicit scale/geometry knobs with bit-identical defaults; isolated

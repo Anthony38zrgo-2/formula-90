@@ -180,15 +180,13 @@
       "schema_version": 2,
       "disable_sample_rasp": false,
       "scene_gains": {
-        "under_seat": 0.0,
         "mount_monocoque": 0.713,
         "engine_cover": 0.9156,
-        "metal": 0.0,
-        "airbox": 0.0,
         "engine_air": 0.841
       },
-      "metal_panel_lowpass_hz": 1000000.0,
-      "cover_radiation_lowpass_hz": 1000000.0
+      "cover_radiation_lowpass_hz": 1000000.0,
+      "sample_blend_weight": 0.8165,
+      "sample_zone_trim_db": [4.5, -4.63, 3.36, 1.84, 2.44, 3.88]
     },
     "powertrain_synthesis": {
       "aspiration": "naturally_aspirated",
