@@ -28,8 +28,8 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "2892BCC4FCF4F7F63586185B550AA4ABDB218A2B4A67F0B8EB464D8D1D21B9A8",
-      "size_bytes": 22678276
+      "sha256": "9FE776382107B869BA32742A3506846DE6C46067120A36A1382E267A201B6A7E",
+      "size_bytes": 22678344
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",

@@ -1,10 +1,10 @@
 """Build the complete fixed intermediate rear-wing plane for F1 2030.
 
-The generated wing is continuous from end to end, has a pronounced inverted-V
-(chevron) spanwise crown with a rounded center apex that blends into nearly
-straight descending arms, and matches the measured chord inclination of
-AeroPart3. Its tips are projected onto the endplate inner walls at the
-authored (lowered) pose, trimming any excess that would clip. Running the
+The generated wing is continuous from end to end and has a shallow-W spanwise
+crown: a raised center apex, a soft valley around half span and tips lifted to
+the endplate mid-height so the arms meet the endplates almost horizontally. It
+matches the measured chord inclination of AeroPart3. Its tips are projected
+onto the endplate inner walls, trimming any excess that would clip. Running the
 script again replaces only the generated intermediate plane.
 """
 
@@ -29,24 +29,26 @@ SIDE_CONTACT_INSET_M = 0.0002
 CHORD_M = 0.220
 THICKNESS_RATIO = 0.115
 CAMBER_RATIO = 0.020
-# Rounded inverted-V crown in the build frame: the center apex sits higher
-# than the endplate tips and transitions with zero slope (circular look)
-# into near-straight descending arms.
-TIP_CENTER_Z_M = 0.088
+# Shallow-W crown in the build frame: raised center apex, a subtle valley around
+# half span, and tips lifted to the endplate mid-height so the arms meet the
+# endplates almost horizontally (zero slope at both the center and the tips).
+TIP_CENTER_Z_M = 0.139
 CENTER_CENTER_Z_M = 0.260
-CROWN_EXPONENT = 1.35
+W_DIP_FACTOR = 0.5
 CHORD_CENTER_X_M = 2.260
 SPAN_SEGMENTS = 64
 PROFILE_SEGMENTS = 32
 
-# Manual pose authored by the user in f1_2030.blend (rotation plus the lowered
-# position). It is codified here so reruns reproduce the exact same placement.
+# Manual pose authored by the user in f1_2030.blend (rotation plus the final
+# raised position). It is codified here so reruns reproduce the exact same
+# placement, and the lateral tip projection samples the endplate inner walls at
+# the final height.
 TARGET_ROTATION_DEG = (
     0.40144308780645327,
     -1.4034940578003547,
     0.07669287247687054,
 )
-TARGET_TRANSLATION_M = (0.0, 0.0, -0.178712)
+TARGET_TRANSLATION_M = (0.0, 0.0, -0.120784)
 
 
 def world_bounds(obj: bpy.types.Object) -> list[list[float]]:
@@ -67,10 +69,13 @@ def measured_chord_angle(obj: bpy.types.Object) -> float:
 
 def crown_height(normalized: float) -> float:
     normalized = min(abs(normalized), 1.0)
-    # Rounded inverted V: normalized=0 is the raised center apex (zero slope,
-    # circular transition) and normalized=1 the lower endplate tips.
-    rounded_crown = math.cos(normalized * math.pi * 0.5) ** CROWN_EXPONENT
-    return TIP_CENTER_Z_M + (CENTER_CENTER_Z_M - TIP_CENTER_Z_M) * rounded_crown
+    # Shallow W: smoothstep gets the center and tip heights with zero slope at
+    # both ends, and the sin^2 dip pushes the arms below the tip level so the
+    # spanwise profile valleys softly around half span before rising into the
+    # endplates.
+    rounded = normalized * normalized * (3.0 - 2.0 * normalized)
+    dip = W_DIP_FACTOR * math.sin(math.pi * normalized) ** 2
+    return CENTER_CENTER_Z_M - (CENTER_CENTER_Z_M - TIP_CENTER_Z_M) * (rounded + dip)
 
 
 def world_bvh(obj: bpy.types.Object) -> BVHTree:
@@ -257,8 +262,8 @@ def build_complete_mesh(chord_angle: float, target_matrix_world) -> tuple[bpy.ty
         "tip_center_z_m": TIP_CENTER_Z_M,
         "center_center_z_m": CENTER_CENTER_Z_M,
         "crown_rise_m": CENTER_CENTER_Z_M - TIP_CENTER_Z_M,
-        "crown_law": "inverted_v_rounded",
-        "crown_exponent": CROWN_EXPONENT,
+        "crown_law": "shallow_w",
+        "w_dip_factor": W_DIP_FACTOR,
         "chord_angle_deg": math.degrees(chord_angle),
         **contact_metrics,
     }
@@ -291,7 +296,7 @@ def build_mid_plane() -> dict[str, object]:
     target["formula90_role"] = "fixed_rear_wing_intermediate_plane"
     target["source_angle_object"] = BEAM_NAME
     target["continuous_profile"] = True
-    target["inverted_v_crown"] = True
+    target["shallow_w_crown"] = True
     target["drs"] = False
     for key, value in metrics.items():
         target[key] = value
