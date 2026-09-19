@@ -144,7 +144,120 @@ fn v10_layer_tuning_from_section(
             mode_coupling: field("mode_coupling")?,
         });
     }
+    if let Some(value) = section
+        .get("gear_shift_gain")
+        .and_then(serde_json::Value::as_f64)
+    {
+        let value = value as f32;
+        if !value.is_finite() {
+            return Err("gear_shift_gain is not finite".into());
+        }
+        tuning.gear_shift_gain = Some(value);
+    }
+    if let Some(value) = section
+        .get("gear_shift_reference_rpm")
+        .and_then(serde_json::Value::as_f64)
+    {
+        let value = value as f32;
+        if !value.is_finite() || value <= 0.0 {
+            return Err("gear_shift_reference_rpm out of range".into());
+        }
+        tuning.gear_shift_reference_rpm = Some(value);
+    }
+    if let Some(transmission) = section.get("transmission").filter(|value| !value.is_null()) {
+        if let Some(gain) = transmission.get("gain").and_then(serde_json::Value::as_f64) {
+            let gain = gain as f32;
+            if !gain.is_finite() {
+                return Err("transmission.gain is not finite".into());
+            }
+            tuning.transmission_gain = gain;
+        }
+        if let Some(value) = transmission.get("whine").and_then(serde_json::Value::as_f64) {
+            tuned_scalar(&mut tuning.transmission_whine_gain, "transmission.whine", value)?;
+        }
+        if let Some(value) = transmission.get("clack").and_then(serde_json::Value::as_f64) {
+            tuned_scalar(&mut tuning.transmission_clack_gain, "transmission.clack", value)?;
+        }
+        if let Some(value) = transmission.get("rattle").and_then(serde_json::Value::as_f64) {
+            tuned_scalar(&mut tuning.transmission_rattle_gain, "transmission.rattle", value)?;
+        }
+        if let Some(value) = transmission.get("clutch").and_then(serde_json::Value::as_f64) {
+            tuned_scalar(&mut tuning.transmission_clutch_gain, "transmission.clutch", value)?;
+        }
+        if let Some(value) = transmission
+            .get("final_drive")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(&mut tuning.transmission_final_drive, "transmission.final_drive", value)?;
+        }
+        if let Some(value) = transmission
+            .get("reverse_ratio")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(
+                &mut tuning.transmission_reverse_ratio,
+                "transmission.reverse_ratio",
+                value,
+            )?;
+        }
+        if let Some(value) = transmission
+            .get("gear_teeth")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(&mut tuning.transmission_gear_teeth, "transmission.gear_teeth", value)?;
+        }
+        if let Some(value) = transmission
+            .get("final_teeth")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(
+                &mut tuning.transmission_final_teeth,
+                "transmission.final_teeth",
+                value,
+            )?;
+        }
+        if let Some(ratios) = transmission
+            .get("gear_ratios")
+            .and_then(serde_json::Value::as_array)
+        {
+            let mut values = Vec::with_capacity(ratios.len());
+            for value in ratios {
+                let ratio = value.as_f64().ok_or_else(|| {
+                    "transmission.gear_ratios entries must be numbers".to_string()
+                })?;
+                if !ratio.is_finite() || ratio <= 0.0 {
+                    return Err("transmission.gear_ratios entry out of range".into());
+                }
+                values.push(ratio as f32);
+            }
+            tuning.transmission_gear_ratios = Some(values);
+        }
+    }
     Ok(tuning)
+}
+
+/// Mirror the profile powertrain ratios into the transmission tuning when the
+/// audio section does not declare its own table, so the mesh frequency always
+/// follows the physically simulated gearbox.
+fn apply_powertrain_transmission(
+    tuning: &mut vehicle_audio_engine::V10LayerTuning,
+    config: &vehicle_physics_engine::VehicleConfig,
+) {
+    if tuning.transmission_gear_ratios.is_none() {
+        tuning.transmission_gear_ratios = Some(
+            config
+                .gear_ratios
+                .iter()
+                .map(|value| *value as f32)
+                .collect(),
+        );
+    }
+    if tuning.transmission_final_drive.is_none() {
+        tuning.transmission_final_drive = Some(config.final_drive as f32);
+    }
+    if tuning.transmission_reverse_ratio.is_none() {
+        tuning.transmission_reverse_ratio = Some(config.reverse_ratio as f32);
+    }
 }
 
 fn tuned_scalar(slot: &mut Option<f32>, name: &str, value: f64) -> Result<(), String> {
@@ -263,7 +376,11 @@ impl AudioModule {
     /// `vehicle_audio_engine::powertrain`). Returns false when the mixer is absent
     /// or the profile has no (valid) enabled `powertrain_synthesis` section. The
     /// fallback is a no-op: the engine keeps its sampled-band path (silent engine).
-    pub fn enable_synth_from_profile(&mut self, audio: Option<&serde_json::Value>) -> bool {
+    pub fn enable_synth_from_profile(
+        &mut self,
+        audio: Option<&serde_json::Value>,
+        powertrain: Option<&vehicle_physics_engine::VehicleConfig>,
+    ) -> bool {
         let Some(audio) = audio else {
             return false;
         };
@@ -346,7 +463,7 @@ impl AudioModule {
                 });
                 // Optional per-profile layer tuning. Absent keys reproduce
                 // shipped GF509 behavior exactly.
-                let tuning = match v10_layer_tuning_from_section(gf509_section) {
+                let mut tuning = match v10_layer_tuning_from_section(gf509_section) {
                     Ok(tuning) => tuning,
                     Err(error) => {
                         eprintln!(
@@ -355,6 +472,9 @@ impl AudioModule {
                         vehicle_audio_engine::V10LayerTuning::default()
                     }
                 };
+                if let Some(config) = powertrain {
+                    apply_powertrain_transmission(&mut tuning, config);
+                }
                 match bank_directory.as_deref() {
                     Some(directory) => {
                         if let Err(error) = eng.enable_v10_layer(directory, &tuning) {
@@ -644,17 +764,58 @@ mod tests {
             "sample_blend_weight": 1.3,
             "physical_blend_weight": 0.77,
             "sample_zone_trim_db": [2.0, 0.0, 0.0, 1.5, 1.5, 1.5],
-            "upper_mid_shelf_gain": 0.25
+            "upper_mid_shelf_gain": 0.25,
+            "transmission": {
+                "gain": 0.6,
+                "whine": 1.2,
+                "clack": 1.1,
+                "rattle": 0.4,
+                "clutch": 0.5,
+                "gear_teeth": 22.0,
+                "final_teeth": 41.0,
+                "reverse_ratio": 4.1
+            }
         });
         let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
         assert_eq!(tuning.cover_radiation_lowpass_hz, Some(1_000_000.0));
         assert_eq!(tuning.sample_blend_weight, Some(1.3));
         assert_eq!(tuning.physical_blend_weight, Some(0.77));
         assert_eq!(tuning.upper_mid_shelf_gain, 0.25);
+        assert_eq!(tuning.transmission_gain, 0.6);
+        assert_eq!(tuning.transmission_whine_gain, Some(1.2));
+        assert_eq!(tuning.transmission_gear_teeth, Some(22.0));
+        assert_eq!(tuning.transmission_final_teeth, Some(41.0));
+        assert_eq!(tuning.transmission_reverse_ratio, Some(4.1));
         assert_eq!(
             tuning.zone_trim_db,
             Some(vec![2.0, 0.0, 0.0, 1.5, 1.5, 1.5])
         );
         assert!(tuning.scene_gains.contains(&("engine_air".to_string(), 0.841)));
+    }
+
+    #[test]
+    fn powertrain_ratios_fill_transmission_tuning_unless_overridden() {
+        let config = vehicle_physics_engine::VehicleConfig::default();
+        let mut tuning = vehicle_audio_engine::V10LayerTuning::default();
+        apply_powertrain_transmission(&mut tuning, &config);
+        assert_eq!(
+            tuning.transmission_gear_ratios.as_ref().map(Vec::len),
+            Some(config.gear_ratios.len())
+        );
+        assert_eq!(
+            tuning.transmission_final_drive,
+            Some(config.final_drive as f32)
+        );
+        assert_eq!(
+            tuning.transmission_reverse_ratio,
+            Some(config.reverse_ratio as f32)
+        );
+
+        let mut declared = vehicle_audio_engine::V10LayerTuning {
+            transmission_gear_ratios: Some(vec![9.0, 8.0]),
+            ..vehicle_audio_engine::V10LayerTuning::default()
+        };
+        apply_powertrain_transmission(&mut declared, &config);
+        assert_eq!(declared.transmission_gear_ratios, Some(vec![9.0, 8.0]));
     }
 }

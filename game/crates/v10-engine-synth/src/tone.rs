@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Default)]
-struct Biquad {
+pub(crate) struct Biquad {
     b0: f32,
     b1: f32,
     b2: f32,
@@ -23,7 +23,7 @@ impl Biquad {
         }
     }
 
-    fn highpass(cutoff_hz: f32, q: f32, sample_rate: f32) -> Self {
+    pub(crate) fn highpass(cutoff_hz: f32, q: f32, sample_rate: f32) -> Self {
         let w0 = 2.0 * std::f32::consts::PI * cutoff_hz / sample_rate;
         let (sin_w0, cos_w0) = w0.sin_cos();
         let alpha = sin_w0 / (2.0 * q);
@@ -51,8 +51,25 @@ impl Biquad {
         )
     }
 
+    /// RBJ high shelf: flat below `cutoff_hz`, `gain_db` above it.
+    pub(crate) fn high_shelf(cutoff_hz: f32, q: f32, gain_db: f32, sample_rate: f32) -> Self {
+        let a = 10.0f32.powf(gain_db / 40.0);
+        let w0 = 2.0 * std::f32::consts::PI * cutoff_hz / sample_rate;
+        let (sin_w0, cos_w0) = w0.sin_cos();
+        let alpha = sin_w0 / (2.0 * q);
+        let two_sqrt_a_alpha = 2.0 * a.sqrt() * alpha;
+        Self::from_coefficients(
+            a * ((a + 1.0) + (a - 1.0) * cos_w0 + two_sqrt_a_alpha),
+            -2.0 * a * ((a - 1.0) + (a + 1.0) * cos_w0),
+            a * ((a + 1.0) + (a - 1.0) * cos_w0 - two_sqrt_a_alpha),
+            (a + 1.0) - (a - 1.0) * cos_w0 + two_sqrt_a_alpha,
+            2.0 * ((a - 1.0) - (a + 1.0) * cos_w0),
+            (a + 1.0) - (a - 1.0) * cos_w0 - two_sqrt_a_alpha,
+        )
+    }
+
     #[inline]
-    fn process(&mut self, input: f32) -> f32 {
+    pub(crate) fn process(&mut self, input: f32) -> f32 {
         let output = self.b0 * input + self.z1;
         self.z1 = self.b1 * input - self.a1 * output + self.z2;
         self.z2 = self.b2 * input - self.a2 * output;
@@ -62,6 +79,39 @@ impl Biquad {
     fn reset(&mut self) {
         self.z1 = 0.0;
         self.z2 = 0.0;
+    }
+}
+
+#[cfg(test)]
+mod biquad_tests {
+    use super::*;
+
+    const SAMPLE_RATE: f32 = 44_100.0;
+
+    fn sine_amplitude_db(biquad: &mut Biquad, frequency: f32) -> f64 {
+        let total = SAMPLE_RATE as usize;
+        let skip = total / 2;
+        let mut sum = 0.0f64;
+        for index in 0..total {
+            let phase =
+                2.0 * std::f64::consts::PI * frequency as f64 * index as f64 / SAMPLE_RATE as f64;
+            let output = biquad.process(phase.sin() as f32);
+            if index >= skip {
+                sum += (output as f64) * (output as f64);
+            }
+        }
+        let rms = (sum / (total - skip) as f64).sqrt();
+        20.0 * (rms * 2.0_f64.sqrt()).log10()
+    }
+
+    #[test]
+    fn high_shelf_boosts_only_above_cutoff() {
+        let mut shelf = Biquad::high_shelf(2_500.0, 0.707, 4.0, SAMPLE_RATE);
+        let low = sine_amplitude_db(&mut shelf, 500.0);
+        let mut shelf = Biquad::high_shelf(2_500.0, 0.707, 4.0, SAMPLE_RATE);
+        let high = sine_amplitude_db(&mut shelf, 6_000.0);
+        assert!(low.abs() < 0.4, "500 Hz must stay flat, got {low} dB");
+        assert!((high - 4.0).abs() < 1.0, "6 kHz must lift ~4 dB, got {high} dB");
     }
 }
 

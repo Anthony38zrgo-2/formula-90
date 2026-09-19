@@ -70,6 +70,9 @@ pub struct EngineConfig {
     pub exhaust_gain: f32,
     pub turbulence_gain: f32,
     pub master_gain: f32,
+    /// Synthesized downshift blip flare (phase 4). Disabled when the runtime
+    /// plays the `geardn.wav` sample instead.
+    pub blip_enabled: bool,
 }
 
 impl Default for EngineConfig {
@@ -134,6 +137,7 @@ impl Default for EngineConfig {
             exhaust_gain: 2.20,
             turbulence_gain: 0.40,
             master_gain: 7.0,
+            blip_enabled: true,
         }
     }
 }
@@ -451,6 +455,7 @@ impl EngineConfig {
             exhaust_gain: mix.exhaust_gain,
             turbulence_gain: mix.turbulence_gain,
             master_gain: mix.master_gain,
+            blip_enabled: true,
         }
     }
 }

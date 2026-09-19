@@ -1,0 +1,1698 @@
+{
+  "passed": true,
+  "errors": [],
+  "assets": {
+    "chassis": {
+      "mesh_count": 30,
+      "vertices": 52812,
+      "polygons": 83375,
+      "bounds_min": [
+        -0.859598,
+        -2.535136,
+        -0.337262
+      ],
+      "bounds_max": [
+        0.859598,
+        2.779502,
+        0.708344
+      ],
+      "dimensions": [
+        1.719196,
+        5.314639,
+        1.045606
+      ],
+      "center": [
+        0.0,
+        0.122183,
+        0.185541
+      ],
+      "tire_dimensions": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "tire_center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "objects": {
+        "GEO_CHASSIS_ACTIVEFRONT": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR"
+          ],
+          "bounds_min": [
+            -0.488734,
+            2.137447,
+            -0.188079
+          ],
+          "bounds_max": [
+            0.488735,
+            2.56354,
+            -0.017206
+          ],
+          "dimensions": [
+            0.977469,
+            0.426093,
+            0.170872
+          ],
+          "center": [
+            0.0,
+            2.350493,
+            -0.102643
+          ]
+        },
+        "GEO_CHASSIS_AERO2": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.85591,
+            2.12252,
+            -0.03976
+          ],
+          "bounds_max": [
+            0.85591,
+            2.355818,
+            0.006641
+          ],
+          "dimensions": [
+            1.71182,
+            0.233297,
+            0.046401
+          ],
+          "center": [
+            0.0,
+            2.239169,
+            -0.016559
+          ]
+        },
+        "GEO_CHASSIS_AEROPART1": {
+          "materials": [
+            "MP46_Senna1_WarmWhite_Paint"
+          ],
+          "bounds_min": [
+            -0.840054,
+            0.145599,
+            -0.266056
+          ],
+          "bounds_max": [
+            0.840055,
+            0.875711,
+            0.094404
+          ],
+          "dimensions": [
+            1.680109,
+            0.730112,
+            0.36046
+          ],
+          "center": [
+            0.0,
+            0.510655,
+            -0.085826
+          ]
+        },
+        "GEO_CHASSIS_AEROPART2": {
+          "materials": [
+            "MP46_Senna1_WarmWhite_Paint.001"
+          ],
+          "bounds_min": [
+            -0.496448,
+            -2.535136,
+            0.472997
+          ],
+          "bounds_max": [
+            0.496447,
+            -2.378595,
+            0.679831
+          ],
+          "dimensions": [
+            0.992895,
+            0.156541,
+            0.206834
+          ],
+          "center": [
+            -0.0,
+            -2.456866,
+            0.576414
+          ]
+        },
+        "GEO_CHASSIS_AEROPART3": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint"
+          ],
+          "bounds_min": [
+            -0.360802,
+            -2.265264,
+            -0.058168
+          ],
+          "bounds_max": [
+            0.360802,
+            -2.143666,
+            -0.007949
+          ],
+          "dimensions": [
+            0.721604,
+            0.121598,
+            0.050219
+          ],
+          "center": [
+            -0.0,
+            -2.204465,
+            -0.033059
+          ]
+        },
+        "GEO_CHASSIS_BODY": {
+          "materials": [
+            "MP46_Senna1_Body_Paint_Procedural"
+          ],
+          "bounds_min": [
+            -0.654279,
+            -1.736785,
+            -0.268532
+          ],
+          "bounds_max": [
+            0.654279,
+            2.771832,
+            0.635869
+          ],
+          "dimensions": [
+            1.308558,
+            4.508616,
+            0.904401
+          ],
+          "center": [
+            0.0,
+            0.517523,
+            0.183669
+          ]
+        },
+        "GEO_CHASSIS_CARBON3": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.101783,
+            -0.472341,
+            0.467667
+          ],
+          "bounds_max": [
+            0.101783,
+            -0.472341,
+            0.618608
+          ],
+          "dimensions": [
+            0.203565,
+            0.0,
+            0.150941
+          ],
+          "center": [
+            -0.0,
+            -0.472341,
+            0.543138
+          ]
+        },
+        "GEO_CHASSIS_CARBON4": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.604808,
+            0.270501,
+            0.153962
+          ],
+          "bounds_max": [
+            0.604808,
+            0.364895,
+            0.249028
+          ],
+          "dimensions": [
+            1.209617,
+            0.094393,
+            0.095066
+          ],
+          "center": [
+            0.0,
+            0.317698,
+            0.201495
+          ]
+        },
+        "GEO_CHASSIS_CARBON5": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.199482,
+            -1.73555,
+            -0.144629
+          ],
+          "bounds_max": [
+            0.199482,
+            -1.73355,
+            0.272475
+          ],
+          "dimensions": [
+            0.398964,
+            0.002,
+            0.417104
+          ],
+          "center": [
+            -0.0,
+            -1.73455,
+            0.063923
+          ]
+        },
+        "GEO_CHASSIS_CYLINDER_001": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.007495,
+            0.36897,
+            0.235505
+          ],
+          "bounds_max": [
+            0.007495,
+            0.378012,
+            0.250495
+          ],
+          "dimensions": [
+            0.01499,
+            0.009042,
+            0.01499
+          ],
+          "center": [
+            0.0,
+            0.373491,
+            0.243
+          ]
+        },
+        "GEO_CHASSIS_ENDPLATE": {
+          "materials": [
+            "MP46_Senna1_WarmWhite_Paint",
+            "MP46_Senna1_RocketRed_Paint.001"
+          ],
+          "bounds_min": [
+            -0.859598,
+            1.884413,
+            -0.213891
+          ],
+          "bounds_max": [
+            0.859598,
+            2.532359,
+            0.069101
+          ],
+          "dimensions": [
+            1.719196,
+            0.647946,
+            0.282992
+          ],
+          "center": [
+            0.0,
+            2.208386,
+            -0.072395
+          ]
+        },
+        "GEO_CHASSIS_FLOOR": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.716683,
+            -2.521518,
+            -0.337262
+          ],
+          "bounds_max": [
+            0.716683,
+            1.052297,
+            0.08061
+          ],
+          "dimensions": [
+            1.433367,
+            3.573815,
+            0.417871
+          ],
+          "center": [
+            0.0,
+            -0.73461,
+            -0.128326
+          ]
+        },
+        "GEO_CHASSIS_FRONTSUPPORT": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint.001"
+          ],
+          "bounds_min": [
+            -0.079987,
+            2.543107,
+            -0.218547
+          ],
+          "bounds_max": [
+            0.079988,
+            2.733302,
+            -0.005127
+          ],
+          "dimensions": [
+            0.159975,
+            0.190195,
+            0.21342
+          ],
+          "center": [
+            0.0,
+            2.638204,
+            -0.111837
+          ]
+        },
+        "GEO_CHASSIS_FRONTWING": {
+          "materials": [
+            "MP46_Senna1_FrontWing_Paint_Procedural"
+          ],
+          "bounds_min": [
+            -0.580175,
+            2.106925,
+            -0.237154
+          ],
+          "bounds_max": [
+            0.580175,
+            2.779502,
+            -0.014149
+          ],
+          "dimensions": [
+            1.16035,
+            0.672577,
+            0.223005
+          ],
+          "center": [
+            0.0,
+            2.443214,
+            -0.125651
+          ]
+        },
+        "GEO_CHASSIS_FRONT_SUSPENSION": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.586605,
+            1.018586,
+            -0.039394
+          ],
+          "bounds_max": [
+            0.586605,
+            1.639826,
+            0.224101
+          ],
+          "dimensions": [
+            1.17321,
+            0.62124,
+            0.263495
+          ],
+          "center": [
+            0.0,
+            1.329206,
+            0.092354
+          ]
+        },
+        "GEO_CHASSIS_INTERIOR": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.208438,
+            -0.322505,
+            0.025225
+          ],
+          "bounds_max": [
+            0.208438,
+            1.24461,
+            0.303709
+          ],
+          "dimensions": [
+            0.416876,
+            1.567115,
+            0.278484
+          ],
+          "center": [
+            0.0,
+            0.461053,
+            0.164467
+          ]
+        },
+        "GEO_CHASSIS_LATERALCAM": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.238421,
+            -0.644974,
+            0.517382
+          ],
+          "bounds_max": [
+            0.238421,
+            -0.501827,
+            0.567817
+          ],
+          "dimensions": [
+            0.476843,
+            0.143147,
+            0.050435
+          ],
+          "center": [
+            -0.0,
+            -0.5734,
+            0.542599
+          ]
+        },
+        "GEO_CHASSIS_MIRRORS": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint"
+          ],
+          "bounds_min": [
+            -0.648605,
+            0.206918,
+            0.22693
+          ],
+          "bounds_max": [
+            0.648605,
+            0.457288,
+            0.398114
+          ],
+          "dimensions": [
+            1.29721,
+            0.25037,
+            0.171185
+          ],
+          "center": [
+            0.0,
+            0.332103,
+            0.312522
+          ]
+        },
+        "GEO_CHASSIS_ONBOARDCAM": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.095403,
+            -0.590958,
+            0.631279
+          ],
+          "bounds_max": [
+            0.095403,
+            -0.450371,
+            0.708344
+          ],
+          "dimensions": [
+            0.190807,
+            0.140587,
+            0.077066
+          ],
+          "center": [
+            -0.0,
+            -0.520665,
+            0.669811
+          ]
+        },
+        "GEO_CHASSIS_REARLIGHT": {
+          "materials": [
+            "MP46_Senna1_Rearlight"
+          ],
+          "bounds_min": [
+            -0.037291,
+            -2.501672,
+            -0.08179
+          ],
+          "bounds_max": [
+            0.037291,
+            -2.49671,
+            0.029484
+          ],
+          "dimensions": [
+            0.074581,
+            0.004962,
+            0.111274
+          ],
+          "center": [
+            -0.0,
+            -2.499191,
+            -0.026153
+          ]
+        },
+        "GEO_CHASSIS_REARSUPPORT": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.065,
+            -2.278913,
+            0.05354
+          ],
+          "bounds_max": [
+            0.065,
+            -1.935113,
+            0.621
+          ],
+          "dimensions": [
+            0.13,
+            0.3438,
+            0.56746
+          ],
+          "center": [
+            -0.0,
+            -2.107013,
+            0.33727
+          ]
+        },
+        "GEO_CHASSIS_REAR_SUSPENSION": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.001"
+          ],
+          "bounds_min": [
+            -0.510495,
+            -1.664112,
+            -0.130479
+          ],
+          "bounds_max": [
+            0.510495,
+            -1.115121,
+            0.126169
+          ],
+          "dimensions": [
+            1.02099,
+            0.548991,
+            0.256648
+          ],
+          "center": [
+            -0.0,
+            -1.389616,
+            -0.002155
+          ]
+        },
+        "GEO_CHASSIS_REAR_WING": {
+          "materials": [
+            "MP46_Senna1_RearWing_Paint_Procedural"
+          ],
+          "bounds_min": [
+            -0.56228,
+            -2.499936,
+            -0.129352
+          ],
+          "bounds_max": [
+            0.562279,
+            -2.12,
+            0.537055
+          ],
+          "dimensions": [
+            1.124559,
+            0.379936,
+            0.666407
+          ],
+          "center": [
+            -0.0,
+            -2.309968,
+            0.203852
+          ]
+        },
+        "GEO_CHASSIS_REAR_WING_MID": {
+          "materials": [
+            "MP46_Senna1_RearWing_Paint_Procedural"
+          ],
+          "bounds_min": [
+            -0.444399,
+            -2.36589,
+            0.222287
+          ],
+          "bounds_max": [
+            0.448406,
+            -2.144869,
+            0.445784
+          ],
+          "dimensions": [
+            0.892805,
+            0.221021,
+            0.223496
+          ],
+          "center": [
+            0.002003,
+            -2.25538,
+            0.334035
+          ]
+        },
+        "GEO_CHASSIS_SCREEN": {
+          "materials": [
+            "Screen"
+          ],
+          "bounds_min": [
+            -0.044364,
+            0.375967,
+            0.264995
+          ],
+          "bounds_max": [
+            0.044364,
+            0.37626,
+            0.304973
+          ],
+          "dimensions": [
+            0.088727,
+            0.000293,
+            0.039979
+          ],
+          "center": [
+            0.0,
+            0.376113,
+            0.284984
+          ]
+        },
+        "GEO_CHASSIS_SEAT": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.15981,
+            -0.304936,
+            0.015079
+          ],
+          "bounds_max": [
+            0.15981,
+            0.304936,
+            0.308828
+          ],
+          "dimensions": [
+            0.31962,
+            0.609872,
+            0.29375
+          ],
+          "center": [
+            0.0,
+            0.0,
+            0.161953
+          ]
+        },
+        "GEO_CHASSIS_SHIFTERBRAK": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.078549,
+            0.401694,
+            0.20708
+          ],
+          "bounds_max": [
+            -0.007805,
+            0.415721,
+            0.28333
+          ],
+          "dimensions": [
+            0.070745,
+            0.014027,
+            0.07625
+          ],
+          "center": [
+            -0.043177,
+            0.408707,
+            0.245205
+          ]
+        },
+        "GEO_CHASSIS_SHIFTERTHRO": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            0.007805,
+            0.401694,
+            0.20708
+          ],
+          "bounds_max": [
+            0.078549,
+            0.415721,
+            0.28333
+          ],
+          "dimensions": [
+            0.070745,
+            0.014027,
+            0.07625
+          ],
+          "center": [
+            0.043177,
+            0.408707,
+            0.245205
+          ]
+        },
+        "GEO_CHASSIS_STEER": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.116547,
+            0.375126,
+            0.1852
+          ],
+          "bounds_max": [
+            0.116547,
+            0.403932,
+            0.311968
+          ],
+          "dimensions": [
+            0.233094,
+            0.028807,
+            0.126768
+          ],
+          "center": [
+            0.0,
+            0.389529,
+            0.248584
+          ]
+        },
+        "GEO_CHASSIS_STEERCOLUM": {
+          "materials": [
+            "MP46_Senna1_Carbon_PBR.002"
+          ],
+          "bounds_min": [
+            -0.007495,
+            0.399541,
+            0.236248
+          ],
+          "bounds_max": [
+            0.007495,
+            1.242211,
+            0.251238
+          ],
+          "dimensions": [
+            0.01499,
+            0.842669,
+            0.01499
+          ],
+          "center": [
+            0.0,
+            0.820876,
+            0.243743
+          ]
+        }
+      },
+      "visual_groups": {
+        "SpinVisual": [],
+        "BrakeStatic": []
+      }
+    },
+    "wheel_FL": {
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
+      "bounds_min": [
+        -0.165,
+        -0.329991,
+        -0.33
+      ],
+      "bounds_max": [
+        0.203048,
+        0.329991,
+        0.33
+      ],
+      "dimensions": [
+        0.368048,
+        0.659981,
+        0.66
+      ],
+      "center": [
+        0.019024,
+        -0.0,
+        -0.0
+      ],
+      "tire_dimensions": [
+        0.33,
+        0.659981,
+        0.66
+      ],
+      "tire_center": [
+        -0.0,
+        -0.0,
+        -0.0
+      ],
+      "objects": {
+        "GEO_WHEEL_FRONT_L_NUT_02": {
+          "materials": [
+            "MP46_Senna1_MachinedMetal"
+          ],
+          "bounds_min": [
+            -0.157681,
+            -0.046269,
+            -0.046017
+          ],
+          "bounds_max": [
+            -0.127333,
+            0.046268,
+            0.046015
+          ],
+          "dimensions": [
+            0.030348,
+            0.092538,
+            0.092032
+          ],
+          "center": [
+            -0.142507,
+            -1e-06,
+            -1e-06
+          ]
+        },
+        "GEO_WHEEL_FRONT_L_NUT_05": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint.002"
+          ],
+          "bounds_min": [
+            -0.013524,
+            -0.150769,
+            -0.0819
+          ],
+          "bounds_max": [
+            0.013523,
+            -0.074489,
+            0.0819
+          ],
+          "dimensions": [
+            0.027047,
+            0.07628,
+            0.163801
+          ],
+          "center": [
+            -0.0,
+            -0.112629,
+            -0.0
+          ]
+        },
+        "GEO_WHEEL_FRONT_L_RIM_01": {
+          "materials": [
+            "MP46_Senna1_BlackMetal"
+          ],
+          "bounds_min": [
+            -0.109045,
+            -0.032835,
+            -0.032639
+          ],
+          "bounds_max": [
+            0.143949,
+            0.032834,
+            0.032671
+          ],
+          "dimensions": [
+            0.252994,
+            0.065669,
+            0.06531
+          ],
+          "center": [
+            0.017452,
+            -1e-06,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_FRONT_L_RIM_03": {
+          "materials": [
+            "MP46_Senna1_BlackMetal"
+          ],
+          "bounds_min": [
+            -0.010178,
+            -0.145948,
+            -0.145149
+          ],
+          "bounds_max": [
+            0.010177,
+            0.145949,
+            0.145149
+          ],
+          "dimensions": [
+            0.020355,
+            0.291897,
+            0.290298
+          ],
+          "center": [
+            -1e-06,
+            0.0,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_FRONT_L_RIM_04": {
+          "materials": [
+            "MP46_Senna1_BlackMetal"
+          ],
+          "bounds_min": [
+            -0.149294,
+            -0.228609,
+            -0.228608
+          ],
+          "bounds_max": [
+            0.149294,
+            0.228609,
+            0.228608
+          ],
+          "dimensions": [
+            0.298589,
+            0.457219,
+            0.457217
+          ],
+          "center": [
+            -0.0,
+            0.0,
+            -0.0
+          ]
+        },
+        "GEO_WHEEL_FRONT_L_RIM_06": {
+          "materials": [
+            "MP46_Senna1_BlackMetal"
+          ],
+          "bounds_min": [
+            0.111937,
+            -0.177486,
+            -0.176502
+          ],
+          "bounds_max": [
+            0.203048,
+            0.177486,
+            0.176535
+          ],
+          "dimensions": [
+            0.091111,
+            0.354971,
+            0.353037
+          ],
+          "center": [
+            0.157493,
+            -0.0,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_FRONT_L_TIRE": {
+          "materials": [
+            "MP46_Senna1_Tire_Rubber"
+          ],
+          "bounds_min": [
+            -0.165,
+            -0.329991,
+            -0.33
+          ],
+          "bounds_max": [
+            0.165,
+            0.329991,
+            0.33
+          ],
+          "dimensions": [
+            0.33,
+            0.659981,
+            0.66
+          ],
+          "center": [
+            -0.0,
+            -0.0,
+            -0.0
+          ]
+        }
+      },
+      "visual_groups": {
+        "SpinVisual": [
+          "GEO_WHEEL_FRONT_L_NUT_02",
+          "GEO_WHEEL_FRONT_L_RIM_01",
+          "GEO_WHEEL_FRONT_L_RIM_03",
+          "GEO_WHEEL_FRONT_L_RIM_04",
+          "GEO_WHEEL_FRONT_L_TIRE"
+        ],
+        "BrakeStatic": [
+          "GEO_WHEEL_FRONT_L_NUT_05",
+          "GEO_WHEEL_FRONT_L_RIM_06"
+        ]
+      }
+    },
+    "wheel_FR": {
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
+      "bounds_min": [
+        -0.203048,
+        -0.329991,
+        -0.33
+      ],
+      "bounds_max": [
+        0.165,
+        0.329991,
+        0.33
+      ],
+      "dimensions": [
+        0.368048,
+        0.659981,
+        0.66
+      ],
+      "center": [
+        -0.019024,
+        0.0,
+        0.0
+      ],
+      "tire_dimensions": [
+        0.33,
+        0.659981,
+        0.66
+      ],
+      "tire_center": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "objects": {
+        "GEO_WHEEL_FRONT_R_NUT_02": {
+          "materials": [
+            "MP46_Senna1_MachinedMetal.001"
+          ],
+          "bounds_min": [
+            0.127333,
+            -0.046269,
+            -0.046017
+          ],
+          "bounds_max": [
+            0.157681,
+            0.046268,
+            0.046015
+          ],
+          "dimensions": [
+            0.030348,
+            0.092538,
+            0.092032
+          ],
+          "center": [
+            0.142507,
+            -1e-06,
+            -1e-06
+          ]
+        },
+        "GEO_WHEEL_FRONT_R_NUT_05": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint.003"
+          ],
+          "bounds_min": [
+            -0.013524,
+            -0.150769,
+            -0.0819
+          ],
+          "bounds_max": [
+            0.013523,
+            -0.074489,
+            0.0819
+          ],
+          "dimensions": [
+            0.027047,
+            0.07628,
+            0.163801
+          ],
+          "center": [
+            -0.0,
+            -0.112629,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_FRONT_R_RIM_01": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.001"
+          ],
+          "bounds_min": [
+            -0.143949,
+            -0.032835,
+            -0.032639
+          ],
+          "bounds_max": [
+            0.109045,
+            0.032834,
+            0.032671
+          ],
+          "dimensions": [
+            0.252994,
+            0.065669,
+            0.06531
+          ],
+          "center": [
+            -0.017452,
+            -1e-06,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_FRONT_R_RIM_03": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.001"
+          ],
+          "bounds_min": [
+            -0.010177,
+            -0.145948,
+            -0.145149
+          ],
+          "bounds_max": [
+            0.010178,
+            0.145949,
+            0.145149
+          ],
+          "dimensions": [
+            0.020355,
+            0.291897,
+            0.290298
+          ],
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_FRONT_R_RIM_04": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.001"
+          ],
+          "bounds_min": [
+            -0.149294,
+            -0.228609,
+            -0.228608
+          ],
+          "bounds_max": [
+            0.149294,
+            0.228609,
+            0.228608
+          ],
+          "dimensions": [
+            0.298589,
+            0.457219,
+            0.457217
+          ],
+          "center": [
+            -0.0,
+            -0.0,
+            -0.0
+          ]
+        },
+        "GEO_WHEEL_FRONT_R_RIM_06": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.001"
+          ],
+          "bounds_min": [
+            -0.203048,
+            -0.177486,
+            -0.176502
+          ],
+          "bounds_max": [
+            -0.111937,
+            0.177486,
+            0.176535
+          ],
+          "dimensions": [
+            0.091111,
+            0.354971,
+            0.353037
+          ],
+          "center": [
+            -0.157493,
+            0.0,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_FRONT_R_TIRE": {
+          "materials": [
+            "MP46_Senna1_Tire_Rubber.001"
+          ],
+          "bounds_min": [
+            -0.165,
+            -0.329991,
+            -0.33
+          ],
+          "bounds_max": [
+            0.165,
+            0.329991,
+            0.33
+          ],
+          "dimensions": [
+            0.33,
+            0.659981,
+            0.66
+          ],
+          "center": [
+            -0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "visual_groups": {
+        "SpinVisual": [
+          "GEO_WHEEL_FRONT_R_NUT_02",
+          "GEO_WHEEL_FRONT_R_RIM_01",
+          "GEO_WHEEL_FRONT_R_RIM_03",
+          "GEO_WHEEL_FRONT_R_RIM_04",
+          "GEO_WHEEL_FRONT_R_TIRE"
+        ],
+        "BrakeStatic": [
+          "GEO_WHEEL_FRONT_R_NUT_05",
+          "GEO_WHEEL_FRONT_R_RIM_06"
+        ]
+      }
+    },
+    "wheel_RL": {
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
+      "bounds_min": [
+        -0.21,
+        -0.329991,
+        -0.33
+      ],
+      "bounds_max": [
+        0.258424,
+        0.329991,
+        0.33
+      ],
+      "dimensions": [
+        0.468424,
+        0.659982,
+        0.66
+      ],
+      "center": [
+        0.024212,
+        0.0,
+        0.0
+      ],
+      "tire_dimensions": [
+        0.42,
+        0.659982,
+        0.66
+      ],
+      "tire_center": [
+        -0.0,
+        0.0,
+        0.0
+      ],
+      "objects": {
+        "GEO_WHEEL_REAR_L_NUT_02": {
+          "materials": [
+            "MP46_Senna1_MachinedMetal.002"
+          ],
+          "bounds_min": [
+            -0.200686,
+            -0.04627,
+            -0.046017
+          ],
+          "bounds_max": [
+            -0.162061,
+            0.046268,
+            0.046015
+          ],
+          "dimensions": [
+            0.038626,
+            0.092538,
+            0.092032
+          ],
+          "center": [
+            -0.181373,
+            -1e-06,
+            -1e-06
+          ]
+        },
+        "GEO_WHEEL_REAR_L_NUT_05": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint.004"
+          ],
+          "bounds_min": [
+            -0.017212,
+            -0.150769,
+            -0.0819
+          ],
+          "bounds_max": [
+            0.017211,
+            -0.074489,
+            0.0819
+          ],
+          "dimensions": [
+            0.034423,
+            0.07628,
+            0.163801
+          ],
+          "center": [
+            -1e-06,
+            -0.112629,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_REAR_L_RIM_01": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.002"
+          ],
+          "bounds_min": [
+            -0.138786,
+            -0.032835,
+            -0.032639
+          ],
+          "bounds_max": [
+            0.183208,
+            0.032834,
+            0.032671
+          ],
+          "dimensions": [
+            0.321994,
+            0.065669,
+            0.06531
+          ],
+          "center": [
+            0.022211,
+            -1e-06,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_REAR_L_RIM_03": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.002"
+          ],
+          "bounds_min": [
+            -0.012955,
+            -0.145948,
+            -0.145149
+          ],
+          "bounds_max": [
+            0.012952,
+            0.145949,
+            0.145149
+          ],
+          "dimensions": [
+            0.025907,
+            0.291897,
+            0.290298
+          ],
+          "center": [
+            -2e-06,
+            0.0,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_REAR_L_RIM_04": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.002"
+          ],
+          "bounds_min": [
+            -0.190011,
+            -0.22861,
+            -0.228608
+          ],
+          "bounds_max": [
+            0.190011,
+            0.228609,
+            0.228608
+          ],
+          "dimensions": [
+            0.380022,
+            0.457219,
+            0.457217
+          ],
+          "center": [
+            -0.0,
+            -0.0,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_REAR_L_RIM_06": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.002"
+          ],
+          "bounds_min": [
+            0.142465,
+            -0.177486,
+            -0.176502
+          ],
+          "bounds_max": [
+            0.258424,
+            0.177485,
+            0.176535
+          ],
+          "dimensions": [
+            0.115959,
+            0.354971,
+            0.353037
+          ],
+          "center": [
+            0.200445,
+            -0.0,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_REAR_L_TIRE": {
+          "materials": [
+            "MP46_Senna1_Tire_Rubber.002"
+          ],
+          "bounds_min": [
+            -0.21,
+            -0.329991,
+            -0.33
+          ],
+          "bounds_max": [
+            0.21,
+            0.329991,
+            0.33
+          ],
+          "dimensions": [
+            0.42,
+            0.659982,
+            0.66
+          ],
+          "center": [
+            -0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "visual_groups": {
+        "SpinVisual": [
+          "GEO_WHEEL_REAR_L_NUT_02",
+          "GEO_WHEEL_REAR_L_RIM_01",
+          "GEO_WHEEL_REAR_L_RIM_03",
+          "GEO_WHEEL_REAR_L_RIM_04",
+          "GEO_WHEEL_REAR_L_TIRE"
+        ],
+        "BrakeStatic": [
+          "GEO_WHEEL_REAR_L_NUT_05",
+          "GEO_WHEEL_REAR_L_RIM_06"
+        ]
+      }
+    },
+    "wheel_RR": {
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
+      "bounds_min": [
+        -0.258424,
+        -0.329991,
+        -0.33
+      ],
+      "bounds_max": [
+        0.21,
+        0.329991,
+        0.33
+      ],
+      "dimensions": [
+        0.468424,
+        0.659982,
+        0.66
+      ],
+      "center": [
+        -0.024212,
+        0.0,
+        0.0
+      ],
+      "tire_dimensions": [
+        0.42,
+        0.659982,
+        0.66
+      ],
+      "tire_center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "objects": {
+        "GEO_WHEEL_REAR_R_NUT_02": {
+          "materials": [
+            "MP46_Senna1_MachinedMetal.003"
+          ],
+          "bounds_min": [
+            0.162061,
+            -0.04627,
+            -0.046017
+          ],
+          "bounds_max": [
+            0.200686,
+            0.046268,
+            0.046015
+          ],
+          "dimensions": [
+            0.038626,
+            0.092538,
+            0.092032
+          ],
+          "center": [
+            0.181373,
+            -1e-06,
+            -1e-06
+          ]
+        },
+        "GEO_WHEEL_REAR_R_NUT_05": {
+          "materials": [
+            "MP46_Senna1_RocketRed_Paint.005"
+          ],
+          "bounds_min": [
+            -0.017211,
+            -0.150769,
+            -0.0819
+          ],
+          "bounds_max": [
+            0.017212,
+            -0.074489,
+            0.0819
+          ],
+          "dimensions": [
+            0.034423,
+            0.07628,
+            0.163801
+          ],
+          "center": [
+            1e-06,
+            -0.112629,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_REAR_R_RIM_01": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.003"
+          ],
+          "bounds_min": [
+            -0.183208,
+            -0.032835,
+            -0.032639
+          ],
+          "bounds_max": [
+            0.138786,
+            0.032834,
+            0.032671
+          ],
+          "dimensions": [
+            0.321994,
+            0.065669,
+            0.06531
+          ],
+          "center": [
+            -0.022211,
+            -1e-06,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_REAR_R_RIM_03": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.003"
+          ],
+          "bounds_min": [
+            -0.012952,
+            -0.145948,
+            -0.145149
+          ],
+          "bounds_max": [
+            0.012955,
+            0.145949,
+            0.145149
+          ],
+          "dimensions": [
+            0.025907,
+            0.291897,
+            0.290298
+          ],
+          "center": [
+            2e-06,
+            0.0,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_REAR_R_RIM_04": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.003"
+          ],
+          "bounds_min": [
+            -0.190011,
+            -0.22861,
+            -0.228608
+          ],
+          "bounds_max": [
+            0.190011,
+            0.228609,
+            0.228608
+          ],
+          "dimensions": [
+            0.380022,
+            0.457219,
+            0.457217
+          ],
+          "center": [
+            0.0,
+            -0.0,
+            0.0
+          ]
+        },
+        "GEO_WHEEL_REAR_R_RIM_06": {
+          "materials": [
+            "MP46_Senna1_BlackMetal.003"
+          ],
+          "bounds_min": [
+            -0.258424,
+            -0.177486,
+            -0.176502
+          ],
+          "bounds_max": [
+            -0.142465,
+            0.177485,
+            0.176535
+          ],
+          "dimensions": [
+            0.115959,
+            0.354971,
+            0.353037
+          ],
+          "center": [
+            -0.200445,
+            -0.0,
+            1.6e-05
+          ]
+        },
+        "GEO_WHEEL_REAR_R_TIRE": {
+          "materials": [
+            "MP46_Senna1_Tire_Rubber.003"
+          ],
+          "bounds_min": [
+            -0.21,
+            -0.329991,
+            -0.33
+          ],
+          "bounds_max": [
+            0.21,
+            0.329991,
+            0.33
+          ],
+          "dimensions": [
+            0.42,
+            0.659982,
+            0.66
+          ],
+          "center": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "visual_groups": {
+        "SpinVisual": [
+          "GEO_WHEEL_REAR_R_NUT_02",
+          "GEO_WHEEL_REAR_R_RIM_01",
+          "GEO_WHEEL_REAR_R_RIM_03",
+          "GEO_WHEEL_REAR_R_RIM_04",
+          "GEO_WHEEL_REAR_R_TIRE"
+        ],
+        "BrakeStatic": [
+          "GEO_WHEEL_REAR_R_NUT_05",
+          "GEO_WHEEL_REAR_R_RIM_06"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": 8,
+  "schema": "formula90s/vehicle-import/v1",
+  "vehicle_id": "f1_2030_v10",
+  "standard": "Formula-90 GEVP decoupled visual asset",
+  "asset": "F1_2030_V10",
+  "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_physics.json",
+  "physics_sha256": "AD1489D316FE64D30830605E454E0AEA96DB0B4096799FD2CD04689B086EE461",
+  "coordinate_contract": {
+    "right": "+X",
+    "left": "-X",
+    "up": "+Y",
+    "front": "-Z",
+    "rear": "+Z",
+    "units": "meters",
+    "transformations_applied": true
+  },
+  "authored_alignment": {
+    "front_track": 1.5059999227523804,
+    "rear_track": 1.4319999814033508,
+    "wheelbase": 2.950000286102295,
+    "chassis_vertical_offset": 0.10500002279877663
+  },
+  "wheel_visual_contract": {
+    "SpinVisual": "tire, rim, hub and brake disc rotate about local X",
+    "BrakeStatic": "brake caliper and inboard brake duct follow suspension, steering and camber but do not rotate"
+  },
+  "geometry_assets": {
+    "chassis": {
+      "path": "f1_2030_v10_chassis.glb",
+      "sha256": "B031597FDAE8B7189AF7E6ACFE9DA3424B69D9B6EEB5F1FB1F748E0E7C8D2AA8",
+      "size_bytes": 19261704
+    },
+    "wheel_FL": {
+      "path": "f1_2030_v10_wheel_FL.glb",
+      "sha256": "85BCE3BC876878D0624ADD6D3CFB4150886E4AA89BDBF270C492CFC4E0C48D7C",
+      "size_bytes": 4201260
+    },
+    "wheel_FR": {
+      "path": "f1_2030_v10_wheel_FR.glb",
+      "sha256": "F5E6ED9BAED733B7DDB9802B48166614620691145D6252C18486D8D43A23A72D",
+      "size_bytes": 4201260
+    },
+    "wheel_RL": {
+      "path": "f1_2030_v10_wheel_RL.glb",
+      "sha256": "03357CD5CCEF5D2D5B466B7112BA1AA635112200D6A8D9FC0F6D641954BD9FA3",
+      "size_bytes": 4201240
+    },
+    "wheel_RR": {
+      "path": "f1_2030_v10_wheel_RR.glb",
+      "sha256": "98230846A76986285DA27C9E0D26462B6783C09E620F52323B27074A70C7BB49",
+      "size_bytes": 4201240
+    }
+  },
+  "validation": {
+    "status": "EXPORT_PASS",
+    "note": "Five canonical GLBs; every wheel contains separate SpinVisual and BrakeStatic groups."
+  }
+}

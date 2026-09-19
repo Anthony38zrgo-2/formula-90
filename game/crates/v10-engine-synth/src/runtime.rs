@@ -7,8 +7,10 @@ use std::path::PathBuf;
 use std::{fs, path::Path};
 
 use crate::{
-    AcousticScene, AcousticSceneConfig, EngineConfig, EngineInput, SampleLayerFrame, SampleLayerInput,
-    ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, UpperMidShelf, V10Engine,
+    AcousticScene, AcousticSceneConfig, EngineConfig, EngineInput, GearShiftPlayer,
+    GearShiftSamples, SampleLayerFrame, SampleLayerInput, ThreeZoneSampleLayer,
+    ThreeZoneSampleLayerConfig, TransmissionConfig, TransmissionInput, TransmissionSynth,
+    UpperMidShelf, V10Engine,
 };
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -183,6 +185,9 @@ pub struct Gf509RuntimeConfig {
     /// Prepared sample directory. `None` is the procedural-only INT-01 mode.
     pub sample_layer_directory: Option<PathBuf>,
     pub upper_mid_shelf_gain: f32,
+    pub transmission: TransmissionConfig,
+    pub gear_shift_gain: f32,
+    pub gear_shift_reference_rpm: f32,
     pub max_block_frames: usize,
 }
 
@@ -194,6 +199,9 @@ impl Default for Gf509RuntimeConfig {
             sample_layer: ThreeZoneSampleLayerConfig::default(),
             sample_layer_directory: None,
             upper_mid_shelf_gain: 0.0,
+            transmission: TransmissionConfig::default(),
+            gear_shift_gain: 1.0,
+            gear_shift_reference_rpm: 10_000.0,
             max_block_frames: 4096,
         }
     }
@@ -205,6 +213,8 @@ pub struct Gf509Runtime {
     scene: AcousticScene,
     sample_layer: Option<ThreeZoneSampleLayer>,
     upper_mid_shelf: UpperMidShelf,
+    transmission: TransmissionSynth,
+    gear_shift: GearShiftPlayer,
     /// Reused per-sample sample-layer output. Keeps the audio callback
     /// allocation-free by avoiding a fresh `SampleLayerFrame` per sample.
     sample_frame: SampleLayerFrame,
@@ -226,7 +236,15 @@ impl Gf509Runtime {
             return Err("max_block_frames must be greater than zero".into());
         }
         let sample_rate = config.engine.sample_rate;
-        let engine = V10Engine::new(config.engine.clone())?;
+        let gear_shift_samples = match config.sample_layer_directory.as_deref() {
+            Some(directory) => GearShiftSamples::load_directory(directory, sample_rate)?,
+            None => None,
+        };
+        let mut engine_config = config.engine.clone();
+        if gear_shift_samples.is_some() {
+            engine_config.blip_enabled = false;
+        }
+        let engine = V10Engine::new(engine_config)?;
         let scene = AcousticScene::new(sample_rate as f32, config.scene)?;
         if let Some(directory) = config.sample_layer_directory.as_deref() {
             validate_asset_manifest(directory, sample_rate)?;
@@ -239,12 +257,21 @@ impl Gf509Runtime {
             })
             .transpose()?;
         let upper_mid_shelf = UpperMidShelf::new(sample_rate as f32, config.upper_mid_shelf_gain)?;
+        let transmission = TransmissionSynth::new(config.transmission.clone())?;
+        let gear_shift = GearShiftPlayer::new(
+            gear_shift_samples,
+            config.gear_shift_gain,
+            config.gear_shift_reference_rpm,
+            sample_rate,
+        )?;
         Ok(Self {
             config,
             engine,
             scene,
             sample_layer,
             upper_mid_shelf,
+            transmission,
+            gear_shift,
             sample_frame: SampleLayerFrame::default(),
             telemetry: RuntimeTelemetry::default(),
             rendered_telemetry: RuntimeTelemetry::default(),
@@ -357,7 +384,16 @@ impl Gf509Runtime {
                 interpolated.rev_limiter_active,
                 interpolated.shift_phase,
             );
-            let engine_frame = self.engine.render_sample();
+            let mut engine_frame = self.engine.render_sample();
+            engine_frame.transmission = self.transmission.process(TransmissionInput {
+                rpm: interpolated.rpm,
+                gear: interpolated.gear,
+                clutch: interpolated.clutch_engagement,
+                torque: interpolated.normalized_engine_torque,
+                throttle: interpolated.throttle,
+                shift_phase: interpolated.shift_phase,
+            });
+            engine_frame.gear_shift = self.gear_shift.process(interpolated.shift_phase, interpolated.rpm);
             let scene_frame = self.scene.process(&engine_frame);
             let sample_frame = if let Some(layer) = self.sample_layer.as_mut() {
                 layer.process_into(
@@ -651,6 +687,47 @@ mod tests {
             })
             .unwrap();
         runtime
+    }
+
+    #[test]
+    fn transmission_layer_is_wired_into_the_scene() {
+        let render = |gain: f32| {
+            let mut config = Gf509RuntimeConfig::default();
+            config.transmission.output_gain = gain;
+            config.transmission.gear_ratios = vec![3.45, 2.75, 2.3, 1.95, 1.68, 1.46];
+            config.transmission.final_drive = 4.25;
+            let mut runtime = Gf509Runtime::new(config).unwrap();
+            runtime
+                .update_telemetry(RuntimeTelemetry {
+                    rpm: 9_000.0,
+                    throttle: 0.85,
+                    normalized_engine_load: 0.8,
+                    normalized_engine_torque: 0.7,
+                    torque_sign: TorqueSign::Positive,
+                    rpm_derivative: 0.0,
+                    throttle_derivative: 0.0,
+                    gear: 4,
+                    shift_phase: ShiftPhase::None,
+                    clutch_engagement: 1.0,
+                    tc_cut_ratio: 0.0,
+                    rev_limiter_active: false,
+                    dt_seconds: 1.0 / 120.0,
+                })
+                .unwrap();
+            let mut left = vec![0.0; 4_096];
+            let mut right = vec![0.0; 4_096];
+            runtime.render_block(&mut left, &mut right).unwrap();
+            left
+        };
+        let silent = render(0.0);
+        let audible = render(0.9);
+        assert!(
+            silent
+                .iter()
+                .zip(audible.iter())
+                .any(|(off, on)| (off - on).abs() > 1e-4),
+            "transmission must reach the scene output"
+        );
     }
 
     #[test]

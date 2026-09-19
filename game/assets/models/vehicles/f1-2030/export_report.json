@@ -4,8 +4,8 @@
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "69703FB232D6666A7CE3F794A9586F157A065B7CC499471457BF77063EA63196",
-      "size_bytes": 23162396
+      "sha256": "0751730C45AAE0C41C244D22695D0D7BF21BC235C0CA1468D59F2E4F5EB3CA67",
+      "size_bytes": 22678340
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -34,10 +34,6 @@
         "vertices": 288,
         "polygons": 490
       },
-      "GEO_CHASSIS_ACTIVEREAR": {
-        "vertices": 126,
-        "polygons": 192
-      },
       "GEO_CHASSIS_AERO2": {
         "vertices": 896,
         "polygons": 448
@@ -47,16 +43,16 @@
         "polygons": 2656
       },
       "GEO_CHASSIS_AEROPART2": {
-        "vertices": 126,
-        "polygons": 192
+        "vertices": 5424,
+        "polygons": 9632
       },
       "GEO_CHASSIS_AEROPART3": {
-        "vertices": 160,
-        "polygons": 256
+        "vertices": 2624,
+        "polygons": 4608
       },
       "GEO_CHASSIS_BODY": {
-        "vertices": 8401,
-        "polygons": 14726
+        "vertices": 8177,
+        "polygons": 14342
       },
       "GEO_CHASSIS_CARBON3": {
         "vertices": 25,
@@ -83,8 +79,8 @@
         "polygons": 9952
       },
       "GEO_CHASSIS_FRONTSUPPORT": {
-        "vertices": 400,
-        "polygons": 322
+        "vertices": 224,
+        "polygons": 384
       },
       "GEO_CHASSIS_FRONTWING": {
         "vertices": 972,
@@ -115,16 +111,20 @@
         "polygons": 128
       },
       "GEO_CHASSIS_REARSUPPORT": {
-        "vertices": 48,
-        "polygons": 24
+        "vertices": 1752,
+        "polygons": 1730
       },
       "GEO_CHASSIS_REAR_SUSPENSION": {
         "vertices": 252,
         "polygons": 136
       },
       "GEO_CHASSIS_REAR_WING": {
-        "vertices": 652,
-        "polygons": 1104
+        "vertices": 11707,
+        "polygons": 19711
+      },
+      "GEO_CHASSIS_REAR_WING_MID": {
+        "vertices": 2082,
+        "polygons": 2112
       },
       "GEO_CHASSIS_SCREEN": {
         "vertices": 32,

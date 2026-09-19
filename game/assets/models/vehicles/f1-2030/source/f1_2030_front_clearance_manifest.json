@@ -1,0 +1,35 @@
+{
+  "schema": "formula90s/front-clearance-design/v1",
+  "vehicle_id": "f1_2030_v10",
+  "source_blends": [
+    "f1_2030.blend",
+    "f1_2030_mp4_6_senna_1.blend"
+  ],
+  "scope": {
+    "nose": "GEO_CHASSIS_BODY",
+    "supports": "GEO_CHASSIS_FRONTSUPPORT",
+    "fixed_lower_plane": "GEO_CHASSIS_FRONTWING"
+  },
+  "design": {
+    "nose_extra_tip_rise_m": 0.025,
+    "nose_blend_start_x_m": -1.85,
+    "nose_blend_length_m": 0.92,
+    "lower_plane_object_transform_preserved": true,
+    "lower_plane_extra_center_depression_m": 0.018,
+    "lower_plane_blend_half_width_m": 0.44,
+    "average_support_clearance_increase_m": 0.0411735018,
+    "support_top_overlap_m": 0.001,
+    "support_bottom_overlap_m": 0.001,
+    "symmetrical": true
+  },
+  "validation": {
+    "body_to_lower_plane_triangle_overlaps": 0,
+    "support_to_lower_plane_triangle_overlaps": 46,
+    "support_span_symmetry_error_m": 7.4505806e-09,
+    "maximum_support_top_surface_distance_m": 0.0009988444,
+    "maximum_support_bottom_surface_distance_m": 0.0009880244,
+    "passed": true
+  },
+  "generator": "tools/blender/refine_f1_2030_front_clearance.py",
+  "validator": "tools/blender/validate_f1_2030_front_clearance.py"
+}

@@ -1,6 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
+    [ValidateSet('original', 'mp4_6_senna_1')]
+    [string]$Livery = 'original',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
     [switch]$SmokeAudio,
@@ -12,9 +14,22 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
-$scene = 'res://scenes/runtime/vehicle_test_session.tscn'
-$manifestPath = Join-Path $game 'assets\models\vehicles\f1-2030\manifest.json'
-$variantLabel = 'F1 2030 V10 canonical vehicle'
+$liveries = @{
+    original = @{
+        Scene = 'res://scenes/runtime/vehicle_test_session.tscn'
+        Manifest = 'assets\models\vehicles\f1-2030\manifest.json'
+        Label = 'F1 2030 V10 original livery'
+    }
+    mp4_6_senna_1 = @{
+        Scene = 'res://scenes/runtime/vehicle_test_session_mp4_6_senna_1.tscn'
+        Manifest = 'assets\models\vehicles\f1-2030\liveries\mp4_6_senna_1\manifest.json'
+        Label = 'F1 2030 V10 MP4/6 Senna-inspired livery'
+    }
+}
+$selectedLivery = $liveries[$Livery]
+$scene = [string]$selectedLivery.Scene
+$manifestPath = Join-Path $game ([string]$selectedLivery.Manifest)
+$variantLabel = [string]$selectedLivery.Label
 $vehicleId = 'f1_2030_v10'
 $trackDir = Join-Path $game 'tracks\fuji76_77'
 $trackPath = Join-Path $trackDir 'fuji76_77_visual.glb'

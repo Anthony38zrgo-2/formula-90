@@ -1,0 +1,42 @@
+{
+  "design": "MP4/6-inspired sponsor-free livery",
+  "source_references": [
+    "C:/Users/bill/Downloads/image_143813_2982807447_wb.jpg",
+    "C:/Users/bill/Downloads/image_143814_2453272229_wb.jpg",
+    "C:/Users/bill/Downloads/mclaren-mp46-1991-nr-1-ayrton-senna-02-web1.jpg",
+    "C:/Users/bill/Downloads/image_143812_1581120764_wb.jpg"
+  ],
+  "maps": [
+    {
+      "file": "mp4_6_senna_1_warm_white_basecolor_4k.png",
+      "role": "paint base color",
+      "resolution": "4096x4096"
+    },
+    {
+      "file": "mp4_6_senna_1_rocket_red_basecolor_4k.png",
+      "role": "paint base color",
+      "resolution": "4096x4096"
+    },
+    {
+      "file": "mp4_6_senna_1_carbon_basecolor_4k.png",
+      "role": "carbon base color",
+      "resolution": "4096x4096"
+    },
+    {
+      "file": "mp4_6_senna_1_paint_roughness_4k.png",
+      "role": "paint roughness",
+      "resolution": "4096x4096"
+    },
+    {
+      "file": "mp4_6_senna_1_carbon_roughness_4k.png",
+      "role": "carbon roughness",
+      "resolution": "4096x4096"
+    },
+    {
+      "file": "mp4_6_senna_1_carbon_normal_4k.png",
+      "role": "carbon normal",
+      "resolution": "4096x4096"
+    }
+  ],
+  "branding_policy": "No sponsors, logos, text, or number decals."
+}

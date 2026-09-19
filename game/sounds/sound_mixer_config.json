@@ -1068,7 +1068,7 @@
     "output_db": 1.0,
     "limiter_threshold": 0.85,
     "saturation": 0.2,
-    "engine_lowpass_hz": 20950.0,
+    "engine_lowpass_hz": 0.0,
     "engine_lowpass_db_per_oct": 2.0
   },
   "hot_reload": {

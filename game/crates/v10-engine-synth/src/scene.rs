@@ -1,7 +1,10 @@
 use crate::acoustics::{DcBlocker, ModalBank, OnePoleLowPass};
 use crate::engine::EngineFrame;
+use crate::tone::Biquad;
 
 use crate::crank::CYLINDER_COUNT;
+
+const AIR_TILT_HZ: f32 = 2_500.0;
 
 #[derive(Clone, Copy, Debug)]
 pub struct AcousticSceneConfig {
@@ -12,6 +15,18 @@ pub struct AcousticSceneConfig {
     pub engine_air_gain: f32,
     pub engine_cover_gain: f32,
     pub mount_monocoque_gain: f32,
+    /// Parallel send of the transmission (whine/clack/rattle) into the
+    /// mount/monocoque structural path. 0.0 keeps the transmission air-only.
+    pub transmission_mount_gain: f32,
+    /// Parallel send of the transmission into the engine-cover skin, the only
+    /// scene branch broadband enough to radiate the gearbox band.
+    pub transmission_cover_gain: f32,
+    /// High-shelf lift (dB) above `air_tilt_hz` applied to the air-path input.
+    /// 0.0 keeps the air branch untouched.
+    pub air_high_tilt_db: f32,
+    /// Fraction of the high-tilted air input mixed straight into the air
+    /// output, bypassing the comb taps. 0.0 keeps the pure comb.
+    pub air_direct_gain: f32,
     pub output_gain: f32,
     /// One-pole lowpass on the engine-cover radiation (Hz). A value at or above
     /// `0.48 * sample_rate` disables (bypasses) the filter.
@@ -38,6 +53,10 @@ impl Default for AcousticSceneConfig {
             engine_air_gain: 1.0,
             engine_cover_gain: 0.42,
             mount_monocoque_gain: 0.06,
+            transmission_mount_gain: 0.0,
+            transmission_cover_gain: 0.0,
+            air_high_tilt_db: 0.0,
+            air_direct_gain: 0.0,
             output_gain: 2.90,
             cover_radiation_lowpass_hz: 6_400.0,
         }
@@ -258,11 +277,12 @@ impl EngineCover {
     }
 
     #[inline]
-    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32) -> f32 {
+    pub fn process(&mut self, frame: &EngineFrame, high_rpm: f32, transmission_send: f32) -> f32 {
         // The cover is a lightly coupled skin. It receives structure from the
-        // heads plus airborne pressure from the engine bay.
+        // heads plus airborne pressure from the engine bay, plus the optional
+        // gearbox send (the only branch broadband enough to radiate it).
         let excitation =
-            frame.head * 0.58 + frame.block * 0.16 + frame.turbulence * 0.12;
+            frame.head * 0.58 + frame.block * 0.16 + frame.turbulence * 0.12 + transmission_send;
         let arrived = self.propagation_delay[self.delay_cursor];
         self.propagation_delay[self.delay_cursor] = excitation;
         self.delay_cursor += 1;
@@ -324,6 +344,8 @@ pub struct AcousticScene {
     dry_lowpass: OnePoleLowPass,
     dry_midpass: OnePoleLowPass,
     air_path: AirPath,
+    air_tilt: Biquad,
+    air_direct_highpass: Biquad,
     onboard_highpass: DcBlocker,
     sample_rate: f32,
     previous_crank_phase: f32,
@@ -338,6 +360,10 @@ impl AcousticScene {
             || !(0.0..=1.5).contains(&config.engine_air_gain)
             || !(0.0..=1.5).contains(&config.engine_cover_gain)
             || !(0.0..=1.5).contains(&config.mount_monocoque_gain)
+            || !(0.0..=1.5).contains(&config.transmission_mount_gain)
+            || !(0.0..=2.0).contains(&config.transmission_cover_gain)
+            || !(-6.0..=12.0).contains(&config.air_high_tilt_db)
+            || !(0.0..=1.0).contains(&config.air_direct_gain)
             || !(0.25..=5.0).contains(&config.output_gain)
             || !(100.0..=1_000_000.0).contains(&config.cover_radiation_lowpass_hz)
         {
@@ -353,6 +379,17 @@ impl AcousticScene {
             dry_lowpass: OnePoleLowPass::new(360.0, sample_rate),
             dry_midpass: OnePoleLowPass::new(2_650.0, sample_rate),
             air_path: AirPath::new(sample_rate),
+            air_tilt: Biquad::high_shelf(
+                AIR_TILT_HZ,
+                std::f32::consts::FRAC_1_SQRT_2,
+                config.air_high_tilt_db,
+                sample_rate,
+            ),
+            air_direct_highpass: Biquad::highpass(
+                AIR_TILT_HZ,
+                std::f32::consts::FRAC_1_SQRT_2,
+                sample_rate,
+            ),
             onboard_highpass: DcBlocker::new(75.0, sample_rate),
             sample_rate,
             previous_crank_phase: 0.0,
@@ -382,24 +419,33 @@ impl AcousticScene {
             );
         }
         let cylinder_mechanical_sum = cylinder_mechanical.iter().sum::<f32>() * 0.34;
-        let engine_cover = self.engine_cover.process(engine, high_rpm);
+        let structure_send =
+            cylinder_mechanical_sum + engine.transmission * self.config.transmission_mount_gain;
+        let transmission_cover_send =
+            engine.transmission * self.config.transmission_cover_gain;
+        let engine_cover = self
+            .engine_cover
+            .process(engine, high_rpm, transmission_cover_send);
         let (engine_mounts, monocoque_seat) = self
             .mount_monocoque
-            .process(engine, cylinder_mechanical_sum);
+            .process(engine, structure_send);
         let mount_monocoque = engine_mounts * 0.58 + monocoque_seat;
 
-        let dry_low = self.dry_lowpass.process(engine.master);
-        let below_mid = self.dry_midpass.process(engine.master);
+        let master = engine.master + engine.transmission;
+        let dry_low = self.dry_lowpass.process(master);
+        let below_mid = self.dry_midpass.process(master);
         let dry_mid = below_mid - dry_low;
-        let dry_high = engine.master - below_mid;
+        let dry_high = master - below_mid;
         // The high-frequency air is rolled off as the intake charge pulse
         // shortens at high engine speed.
         let filtered_dry = dry_low * self.config.dry_low_gain
             + dry_mid * self.config.dry_mid_gain
             + dry_high * self.config.dry_high_gain * (1.0 - 0.72 * high_rpm);
-        let engine_air = self.air_path.process(filtered_dry);
+        let air_input = self.air_tilt.process(filtered_dry);
+        let air_direct = self.air_direct_highpass.process(air_input) * self.config.air_direct_gain;
+        let engine_air = self.air_path.process(air_input) + air_direct;
         AcousticFrame {
-            engine_dry: engine.master,
+            engine_dry: master,
             engine_air,
             engine_cover,
             engine_mounts,
@@ -410,7 +456,8 @@ impl AcousticScene {
             output: self.onboard_highpass.process(
                 (engine_air * self.config.engine_air_gain
                     + engine_cover * self.config.engine_cover_gain
-                    + mount_monocoque * self.config.mount_monocoque_gain)
+                    + mount_monocoque * self.config.mount_monocoque_gain
+                    + engine.gear_shift)
                     * self.config.output_gain,
             ),
         }
@@ -461,6 +508,98 @@ mod tests {
             heard |= output != 0.0;
         }
         assert!(heard);
+    }
+
+    #[test]
+    fn transmission_mount_send_reaches_the_monocoque_path() {
+        let config = |gain: f32| AcousticSceneConfig {
+            engine_air_gain: 0.0,
+            engine_cover_gain: 0.0,
+            mount_monocoque_gain: 1.0,
+            transmission_mount_gain: gain,
+            output_gain: 1.0,
+            ..AcousticSceneConfig::default()
+        };
+        let source = EngineFrame {
+            transmission: 0.8,
+            ..EngineFrame::default()
+        };
+        let mut reference = AcousticScene::new(48_000.0, config(0.0)).unwrap();
+        let mut candidate = AcousticScene::new(48_000.0, config(0.5)).unwrap();
+        let mut reference_peak = 0.0f32;
+        let mut candidate_peak = 0.0f32;
+        for _ in 0..96_000 {
+            reference_peak = reference_peak.max(reference.process(&source).output.abs());
+            candidate_peak = candidate_peak.max(candidate.process(&source).output.abs());
+        }
+        assert_eq!(reference_peak, 0.0, "air send off must isolate the mount path");
+        assert!(
+            candidate_peak > 1.0e-4,
+            "transmission must reach the mount path, peak {candidate_peak}"
+        );
+    }
+
+    #[test]
+    fn transmission_cover_send_reaches_the_cover_branch() {
+        let config = |gain: f32| AcousticSceneConfig {
+            engine_air_gain: 0.0,
+            mount_monocoque_gain: 0.0,
+            engine_cover_gain: 1.0,
+            transmission_cover_gain: gain,
+            output_gain: 1.0,
+            ..AcousticSceneConfig::default()
+        };
+        let source = EngineFrame {
+            transmission: 0.8,
+            ..EngineFrame::default()
+        };
+        let mut reference = AcousticScene::new(48_000.0, config(0.0)).unwrap();
+        let mut candidate = AcousticScene::new(48_000.0, config(0.5)).unwrap();
+        let mut reference_peak = 0.0f32;
+        let mut candidate_peak = 0.0f32;
+        for _ in 0..4_800 {
+            reference_peak = reference_peak.max(reference.process(&source).output.abs());
+            candidate_peak = candidate_peak.max(candidate.process(&source).output.abs());
+        }
+        assert_eq!(reference_peak, 0.0, "cover send off must isolate the branch");
+        assert!(
+            candidate_peak > 1.0e-4,
+            "transmission must reach the cover branch, peak {candidate_peak}"
+        );
+    }
+
+    #[test]
+    fn air_tilt_and_direct_add_high_frequency_detail() {
+        let config = |tilt: f32, direct: f32| AcousticSceneConfig {
+            engine_cover_gain: 0.0,
+            mount_monocoque_gain: 0.0,
+            transmission_cover_gain: 0.0,
+            engine_air_gain: 1.0,
+            air_high_tilt_db: tilt,
+            air_direct_gain: direct,
+            output_gain: 1.0,
+            ..AcousticSceneConfig::default()
+        };
+        let render = |tilt: f32, direct: f32| {
+            let mut scene = AcousticScene::new(48_000.0, config(tilt, direct)).unwrap();
+            let mut state = 0x1234_5678u32;
+            let mut sum = 0.0f64;
+            for _ in 0..96_000 {
+                state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                let noise = (state as f32 / u32::MAX as f32) * 2.0 - 1.0;
+                let mut frame = EngineFrame::default();
+                frame.master = 0.3 * noise;
+                let output = scene.process(&frame).engine_air;
+                sum += (output as f64) * (output as f64);
+            }
+            (sum / 96_000.0).sqrt()
+        };
+        let reference = render(0.0, 0.0);
+        let tilted = render(6.0, 0.0);
+        let direct = render(0.0, 0.5);
+        assert!(reference > 0.0);
+        assert!(tilted > reference * 1.02, "tilt must add air detail");
+        assert!(direct > reference * 1.02, "direct must add air detail");
     }
 
     #[test]

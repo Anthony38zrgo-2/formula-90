@@ -11,7 +11,7 @@
 use crate::bank::{BankError, VehicleSoundBank};
 use crate::config::{ConfigLoadResult, ExhaustConfig, SoundConfig, SoundMixerConfig};
 use crate::dsp::{
-    adsr::Adsr, biquad::Biquad,
+    adsr::Adsr,
     eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
     tube::Tube,
 };
@@ -131,21 +131,16 @@ impl Default for AudioConfig {
     }
 }
 
-/// A one-shot voice (gear shifts, impacts) drawn from the bank.
+/// A one-shot voice (impacts, backfire) drawn from the bank.
 ///
-/// Shift voices (`shift_up`/`shift_down`) carry two fixed treatments, set on
-/// every trigger: a 200 Hz highpass (biquad state lives here so each hit
-/// starts clean) and, for `shift_down` only, a short linear attack ramp that
-/// keeps stacked downshifts from clicking. The delayed shift companions were
-/// removed: only the main up/down voices exist, so nothing is spent on them.
+/// Samples may carry an optional RPM-window slice selected at trigger time
+/// (`windows`); `None` plays the whole sample (legacy behavior). Gear shifts are
+/// fully procedural in the V10 synth and no longer own bank voices.
 struct OneShot {
     trigger: Trigger,
     key: String,
     cursor: usize,
     active: bool,
-    attack_remaining: usize,
-    attack_total: usize,
-    hp: Option<Biquad>,
     /// Optional RPM-windowed slice selected at trigger time. `None` plays the
     /// whole sample (legacy behavior).
     windows: Option<ShiftWindows>,
@@ -224,10 +219,6 @@ fn select_shift_window(
 }
 
 /// Highpass applied to both shift voices: removes low-frequency thump.
-const SHIFT_HP_HZ: f32 = 200.0;
-/// Extra attack on gear-down only: softens stacked-shift harshness.
-const SHIFT_DOWN_ATTACK_MS: usize = 5;
-
 struct VoiceStrip {
     config: SoundConfig,
     envelope: Option<Adsr>,
@@ -619,6 +610,25 @@ pub struct V10LayerTuning {
     pub zone_trim_db: Option<Vec<f32>>,
     /// Optional 2–5 kHz band-add shelf gain on the hybrid mix (0.0 = off).
     pub upper_mid_shelf_gain: f32,
+    /// Optional procedural transmission master gain (0.0 = off).
+    pub transmission_gain: f32,
+    pub transmission_whine_gain: Option<f32>,
+    pub transmission_clack_gain: Option<f32>,
+    pub transmission_rattle_gain: Option<f32>,
+    pub transmission_clutch_gain: Option<f32>,
+    /// Gearbox ratios used for the mesh frequency; injected from the profile
+    /// powertrain unless the audio section overrides them.
+    pub transmission_gear_ratios: Option<Vec<f32>>,
+    pub transmission_final_drive: Option<f32>,
+    pub transmission_reverse_ratio: Option<f32>,
+    pub transmission_gear_teeth: Option<f32>,
+    pub transmission_final_teeth: Option<f32>,
+    /// One-shot gear up/down sample gain (1.0 = as prepared). `None` keeps the
+    /// runtime default.
+    pub gear_shift_gain: Option<f32>,
+    /// RPM at which the gear shift samples play at native pitch. `None` keeps
+    /// the runtime default.
+    pub gear_shift_reference_rpm: Option<f32>,
 }
 
 #[derive(Default)]
@@ -662,8 +672,6 @@ impl VehicleAudioEngine {
 
         let mut one_shots: Vec<OneShot> = Vec::new();
         for t in [
-            Trigger::ShiftUp,
-            Trigger::ShiftDown,
             Trigger::Hit1,
             Trigger::Hit2,
             Trigger::Hit3,
@@ -680,9 +688,6 @@ impl VehicleAudioEngine {
                     key,
                     cursor: 0,
                     active: false,
-                    attack_remaining: 0,
-                    attack_total: 0,
-                    hp: None,
                     windows: None,
                     start_offset: 0,
                     window_len: 0,
@@ -702,9 +707,6 @@ impl VehicleAudioEngine {
                 key: sample.key.clone(),
                 cursor: 0,
                 active: false,
-                attack_remaining: 0,
-                attack_total: 0,
-                hp: None,
                 windows: None,
                 start_offset: 0,
                 window_len: 0,
@@ -1040,14 +1042,6 @@ impl VehicleAudioEngine {
         self.bed_key = skey.map(|s| s.to_string());
 
         if telem.gear != self.last_gear {
-            if self.last_gear != 0 {
-                let t = if telem.gear > self.last_gear {
-                    Trigger::ShiftUp
-                } else {
-                    Trigger::ShiftDown
-                };
-                self.trigger_at_rpm(t, telem.rpm);
-            }
             self.last_gear = telem.gear;
         }
 
@@ -1173,23 +1167,21 @@ impl VehicleAudioEngine {
     }
 
     /// Fire one deterministic pseudo-random variant for the requested one-shot.
-    /// Shift triggers use only the main up/down voices (the delayed companions
-    /// no longer exist) and arm their fixed per-hit treatments: 200 Hz
-    /// highpass on both, plus a short attack ramp on gear-down. Uses the last
-    /// target RPM for window selection; callers with the physical RPM at hand
-    /// should use [`Self::trigger_at_rpm`].
+    /// Uses the last target RPM for window selection; callers with the physical
+    /// RPM at hand should use [`Self::trigger_at_rpm`]. Triggers without a bank
+    /// voice are a no-op and do not update `last_trigger`.
     pub fn trigger(&mut self, t: Trigger) {
         self.trigger_at_rpm(t, self.target_rpm);
     }
 
-    /// Fire a one-shot with the RPM at trigger time. Shift voices with an RPM
-    /// window table play only the slice for that band, with crossfaded edges.
+    /// Fire a one-shot with the RPM at trigger time. Voices with an RPM window
+    /// table play only the slice for that band, with crossfaded edges.
     pub fn trigger_at_rpm(&mut self, t: Trigger, rpm: f64) {
-        self.last_trigger = t.bank_key().to_string();
         let variant_count = self.one_shots.iter().filter(|o| o.trigger == t).count();
         if variant_count == 0 {
             return;
         }
+        self.last_trigger = t.bank_key().to_string();
         self.variant_rng_state = self
             .variant_rng_state
             .wrapping_mul(6_364_136_223_846_793_005)
@@ -1207,14 +1199,6 @@ impl VehicleAudioEngine {
                     o.start_offset = start;
                     o.window_len = window_len;
                     o.fade_samples = fade;
-                    let is_shift = matches!(t, Trigger::ShiftUp | Trigger::ShiftDown);
-                    o.hp = is_shift.then(|| Biquad::highpass(self.sample_rate as f32, SHIFT_HP_HZ));
-                    o.attack_total = if t == Trigger::ShiftDown {
-                        self.sample_rate as usize * SHIFT_DOWN_ATTACK_MS / 1000
-                    } else {
-                        0
-                    };
-                    o.attack_remaining = o.attack_total;
                     if let Some(strip) = self.strips.get_mut(&o.key) {
                         strip.note_on();
                     }
@@ -1596,22 +1580,7 @@ impl VehicleAudioEngine {
                     .get(o.key.as_str())
                     .copied()
                     .unwrap_or(1.0);
-                let mut source = s
-                    * os_gain
-                    * self.cfg.shift_gain
-                    * one_shot_env(o.cursor, o.window_len, o.fade_samples);
-                // Gear-down attack ramp: linear fade-in so stacked shifts
-                // cannot start on a discontinuity.
-                if o.attack_total > 0 && o.attack_remaining > 0 {
-                    let done =
-                        (o.attack_total - o.attack_remaining) as f32 / o.attack_total as f32;
-                    source *= done;
-                    o.attack_remaining -= 1;
-                }
-                // Shift highpass at 200 Hz: removes low thump before the strip.
-                if let Some(hp) = o.hp.as_mut() {
-                    source = hp.process(source);
-                }
+                let source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, o.window_len, o.fade_samples);
                 mix_through_strip(
                     &mut self.strips,
                     &mut self.reverb_buses,
@@ -1902,6 +1871,10 @@ impl VehicleAudioEngine {
                 "engine_air" => &mut config.scene.engine_air_gain,
                 "engine_cover" => &mut config.scene.engine_cover_gain,
                 "mount_monocoque" => &mut config.scene.mount_monocoque_gain,
+                "transmission_mount" => &mut config.scene.transmission_mount_gain,
+                "transmission_cover" => &mut config.scene.transmission_cover_gain,
+                "air_tilt_db" => &mut config.scene.air_high_tilt_db,
+                "air_direct" => &mut config.scene.air_direct_gain,
                 "output" => &mut config.scene.output_gain,
                 _ => return Err(format!("unknown scene branch: {name}")),
             };
@@ -1930,6 +1903,41 @@ impl VehicleAudioEngine {
             config.sample_layer.zone_trim_db = values;
         }
         config.upper_mid_shelf_gain = tuning.upper_mid_shelf_gain;
+        config.transmission.sample_rate = self.sample_rate;
+        config.transmission.output_gain = tuning.transmission_gain;
+        if let Some(value) = tuning.transmission_whine_gain {
+            config.transmission.whine_gain = value;
+        }
+        if let Some(value) = tuning.transmission_clack_gain {
+            config.transmission.clack_gain = value;
+        }
+        if let Some(value) = tuning.transmission_rattle_gain {
+            config.transmission.rattle_gain = value;
+        }
+        if let Some(value) = tuning.transmission_clutch_gain {
+            config.transmission.clutch_gain = value;
+        }
+        if let Some(ratios) = &tuning.transmission_gear_ratios {
+            config.transmission.gear_ratios = ratios.clone();
+        }
+        if let Some(value) = tuning.transmission_final_drive {
+            config.transmission.final_drive = value;
+        }
+        if let Some(value) = tuning.transmission_reverse_ratio {
+            config.transmission.reverse_ratio = value;
+        }
+        if let Some(value) = tuning.transmission_gear_teeth {
+            config.transmission.gear_teeth = value;
+        }
+        if let Some(value) = tuning.transmission_final_teeth {
+            config.transmission.final_teeth = value;
+        }
+        if let Some(gain) = tuning.gear_shift_gain {
+            config.gear_shift_gain = gain;
+        }
+        if let Some(reference) = tuning.gear_shift_reference_rpm {
+            config.gear_shift_reference_rpm = reference;
+        }
         match v10_engine_synth::Gf509Runtime::new(config) {
             Ok(runtime) => {
                 self.gf509 = Some(runtime);
@@ -2432,9 +2440,9 @@ mod tests {
             "engine_high",
             "engine_redline",
             "surf_grass",
-            "shift_up",
+            "impact_hit_1",
         ] {
-            let (data, is_loop) = if key == "shift_up" {
+            let (data, is_loop) = if key == "impact_hit_1" {
                 (pcm.clone(), false)
             } else if key == "surf_grass" {
                 (pcm.clone(), true)
@@ -2627,13 +2635,10 @@ mod tests {
             cpp_out_r: vec![0.0f32; MAX_CPP_BLOCK],
         };
         e.one_shots.push(OneShot {
-            trigger: Trigger::ShiftUp,
-            key: "shift_up".to_string(),
+            trigger: Trigger::Hit1,
+            key: "impact_hit_1".to_string(),
             cursor: 0,
             active: false,
-            attack_remaining: 0,
-            attack_total: 0,
-            hp: None,
             windows: None,
             start_offset: 0,
             window_len: 0,
@@ -2644,9 +2649,6 @@ mod tests {
             key: "int_backfire".to_string(),
             cursor: 0,
             active: false,
-            attack_remaining: 0,
-            attack_total: 0,
-            hp: None,
             windows: None,
             start_offset: 0,
             window_len: 0,
@@ -2657,9 +2659,6 @@ mod tests {
             key: "int_backfire_2".to_string(),
             cursor: 0,
             active: false,
-            attack_remaining: 0,
-            attack_total: 0,
-            hp: None,
             windows: None,
             start_offset: 0,
             window_len: 0,
@@ -2813,7 +2812,7 @@ mod tests {
     fn one_shot_fires_and_stops() {
         let mut e = engine_with_bank(silent_engine_bank());
         e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
-        e.trigger(Trigger::ShiftUp);
+        e.trigger(Trigger::Hit1);
         let mut l = vec![0.0f32; 4096];
         let mut r = vec![0.0f32; 4096];
         e.render(&mut l, &mut r, 4096);
@@ -2825,104 +2824,30 @@ mod tests {
     }
 
     #[test]
-    fn shift_companions_are_gone_only_main_up_down_fire() {
-        // The delayed/panned-left companions were removed in code: even with
-        // the bank samples present, no delayed voice may exist or activate.
+    fn gear_change_does_not_fire_a_shift_voice() {
         let mut e = engine_with_bank(silent_engine_bank());
-        for key in ["shift_up_delayed", "shift_down_delayed"] {
-            let mut sample = e.bank.samples["shift_up"].clone();
-            sample.key = key.to_string();
-            e.bank.samples.insert(key.to_string(), sample);
-        }
         assert!(
-            e.one_shots.iter().all(|voice| !voice.key.ends_with("_delayed")),
-            "no delayed companion voice may be constructed"
+            e.one_shots
+                .iter()
+                .all(|voice| voice.trigger != Trigger::ShiftUp && voice.trigger != Trigger::ShiftDown),
+            "gates must not own bank voices"
         );
-        e.trigger(Trigger::ShiftUp);
-        let active: Vec<&str> = e
-            .one_shots
-            .iter()
-            .filter(|voice| voice.active)
-            .map(|voice| voice.key.as_str())
-            .collect();
-        assert_eq!(active, vec!["shift_up"]);
+        e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
+        e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 4, 0.0, "asphalt");
+        assert!(e.last_trigger().is_empty(), "shift must not report a trigger");
+        let mut l = vec![0.0f32; 64];
+        let mut r = vec![0.0f32; 64];
+        e.render(&mut l, &mut r, 64);
+        assert!(l.iter().all(|value| value.abs() < 1e-6));
     }
 
-    #[test]
-    fn shift_down_attack_ramps_from_zero_up_has_none() {
+    fn long_one_shot_bank() -> VehicleAudioEngine {
         let mut e = engine_with_bank(silent_engine_bank());
-        let mut down = e.bank.samples["shift_up"].clone();
-        down.key = "shift_down".to_string();
-        e.bank.samples.insert("shift_down".to_string(), down);
-        // Re-register: construction already ran, so push the down voice the
-        // same way `new` would.
-        e.one_shots.push(OneShot {
-            trigger: Trigger::ShiftDown,
-            key: "shift_down".to_string(),
-            cursor: 0,
-            active: false,
-            attack_remaining: 0,
-            attack_total: 0,
-            hp: None,
-            windows: None,
-            start_offset: 0,
-            window_len: 0,
-            fade_samples: 0,
-        });
-        e.trigger(Trigger::ShiftDown);
-        let voice = e
-            .one_shots
-            .iter()
-            .find(|voice| voice.key == "shift_down")
-            .unwrap();
-        let expected = e.sample_rate as usize * SHIFT_DOWN_ATTACK_MS / 1000;
-        assert!(expected > 0);
-        assert_eq!(voice.attack_total, expected);
-        assert_eq!(voice.attack_remaining, expected);
-        let mut l = vec![0.0; 10];
-        let mut r = vec![0.0; 10];
-        e.render(&mut l, &mut r, 10);
-        let voice = e
-            .one_shots
-            .iter()
-            .find(|voice| voice.key == "shift_down")
-            .unwrap();
-        assert_eq!(voice.attack_remaining, expected - 10);
-        e.trigger(Trigger::ShiftUp);
-        let voice = e
-            .one_shots
-            .iter()
-            .find(|voice| voice.key == "shift_up")
-            .unwrap();
-        assert_eq!(voice.attack_total, 0);
-        assert_eq!(voice.attack_remaining, 0);
-        assert!(voice.hp.is_some(), "shift_up keeps the 200 Hz highpass");
-    }
-
-    #[test]
-    fn shift_highpass_blocks_dc() {
-        let mut e = engine_with_bank(silent_engine_bank());
-        e.trigger(Trigger::ShiftUp);
-        let voice = e
-            .one_shots
-            .iter_mut()
-            .find(|voice| voice.key == "shift_up")
-            .unwrap();
-        let hp = voice.hp.as_mut().expect("shift voice must carry HP");
-        let mut out = 0.0;
-        for _ in 0..300 {
-            out = hp.process(1.0);
-        }
-        assert!(out.abs() < 0.01, "200 Hz HP must block DC, tail={out}");
-    }
-
-    fn long_shift_bank() -> VehicleAudioEngine {
-        let mut e = engine_with_bank(silent_engine_bank());
-        e.bank.samples.get_mut("shift_up").unwrap().pcm = vec![0i16; 44_100];
+        e.bank.samples.get_mut("impact_hit_1").unwrap().pcm = vec![0i16; 44_100];
         e
     }
 
-    fn shift_windows_fixture() -> ShiftWindows {
+    fn one_shot_windows_fixture() -> ShiftWindows {
         ShiftWindows {
             low_rpm: 7_000.0,
             high_rpm: 11_000.0,
@@ -2942,15 +2867,15 @@ mod tests {
         }
     }
 
-    fn shift_voice(e: &VehicleAudioEngine) -> &OneShot {
+    fn one_shot_voice(e: &VehicleAudioEngine) -> &OneShot {
         e.one_shots
             .iter()
-            .find(|voice| voice.key == "shift_up")
+            .find(|voice| voice.key == "impact_hit_1")
             .unwrap()
     }
 
     #[test]
-    fn shift_window_config_resolves_to_bank_frames() {
+    fn one_shot_window_config_resolves_to_bank_frames() {
         let config = crate::config::ShiftWindowConfig {
             low_rpm: 7_000.0,
             high_rpm: 11_000.0,
@@ -2998,44 +2923,44 @@ mod tests {
     }
 
     #[test]
-    fn shift_window_band_selection_follows_rpm() {
-        let mut e = long_shift_bank();
+    fn one_shot_window_band_selection_follows_rpm() {
+        let mut e = long_one_shot_bank();
         e.one_shots
             .iter_mut()
-            .find(|voice| voice.key == "shift_up")
+            .find(|voice| voice.key == "impact_hit_1")
             .unwrap()
-            .windows = Some(shift_windows_fixture());
-        e.trigger_at_rpm(Trigger::ShiftUp, 5_000.0);
-        let voice = shift_voice(&e);
+            .windows = Some(one_shot_windows_fixture());
+        e.trigger_at_rpm(Trigger::Hit1, 5_000.0);
+        let voice = one_shot_voice(&e);
         assert_eq!((voice.start_offset, voice.window_len), (0, 24_255));
-        e.trigger_at_rpm(Trigger::ShiftUp, 9_000.0);
-        let voice = shift_voice(&e);
+        e.trigger_at_rpm(Trigger::Hit1, 9_000.0);
+        let voice = one_shot_voice(&e);
         assert_eq!((voice.start_offset, voice.window_len), (882, 19_845));
         assert_eq!(voice.fade_samples, 353);
-        e.trigger_at_rpm(Trigger::ShiftUp, 12_000.0);
-        let voice = shift_voice(&e);
+        e.trigger_at_rpm(Trigger::Hit1, 12_000.0);
+        let voice = one_shot_voice(&e);
         assert_eq!((voice.start_offset, voice.window_len), (2_205, 15_435));
     }
 
     #[test]
     fn trigger_uses_the_last_target_rpm_for_window_selection() {
-        let mut e = long_shift_bank();
+        let mut e = long_one_shot_bank();
         e.one_shots
             .iter_mut()
-            .find(|voice| voice.key == "shift_up")
+            .find(|voice| voice.key == "impact_hit_1")
             .unwrap()
-            .windows = Some(shift_windows_fixture());
+            .windows = Some(one_shot_windows_fixture());
         e.set_state(12_000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
-        e.trigger(Trigger::ShiftUp);
-        let voice = shift_voice(&e);
+        e.trigger(Trigger::Hit1);
+        let voice = one_shot_voice(&e);
         assert_eq!((voice.start_offset, voice.window_len), (2_205, 15_435));
     }
 
     #[test]
-    fn shift_without_window_config_plays_the_full_sample() {
-        let mut e = long_shift_bank();
-        e.trigger_at_rpm(Trigger::ShiftUp, 12_000.0);
-        let voice = shift_voice(&e);
+    fn one_shot_without_window_config_plays_the_full_sample() {
+        let mut e = long_one_shot_bank();
+        e.trigger_at_rpm(Trigger::Hit1, 12_000.0);
+        let voice = one_shot_voice(&e);
         assert_eq!(voice.start_offset, 0);
         assert_eq!(voice.window_len, 44_100);
         assert_eq!(voice.fade_samples, ONE_SHOT_ENV_SAMPLES);
@@ -3049,12 +2974,12 @@ mod tests {
         assert!((one_shot_env(950, 1_000, 100) - 0.5).abs() < 1e-6);
         assert_eq!(one_shot_env(0, 1_000, 0), 1.0);
 
-        let mut e = long_shift_bank();
+        let mut e = long_one_shot_bank();
         {
             let voice = e
                 .one_shots
                 .iter_mut()
-                .find(|voice| voice.key == "shift_up")
+                .find(|voice| voice.key == "impact_hit_1")
                 .unwrap();
             voice.windows = Some(ShiftWindows {
                 fade_samples: 10,
@@ -3070,14 +2995,14 @@ mod tests {
                     start: 100,
                     length: 500,
                 },
-                ..shift_windows_fixture()
+                ..one_shot_windows_fixture()
             });
         }
-        e.trigger_at_rpm(Trigger::ShiftUp, 5_000.0);
+        e.trigger_at_rpm(Trigger::Hit1, 5_000.0);
         let mut l = vec![0.0f32; 640];
         let mut r = vec![0.0f32; 640];
         e.render(&mut l, &mut r, 640);
-        let voice = shift_voice(&e);
+        let voice = one_shot_voice(&e);
         assert!(!voice.active, "windowed voice must stop at window end");
         assert_eq!(voice.cursor, 500);
     }
@@ -3552,7 +3477,7 @@ mod tests {
         assert!(silent_l.iter().all(|sample| sample.abs() < 1e-7));
         assert_eq!(silent_l, silent_r);
 
-        engine.trigger(Trigger::ShiftUp);
+        engine.trigger(Trigger::Hit1);
         let mut event_l = vec![0.0; 512];
         let mut event_r = vec![0.0; 512];
         engine.render(&mut event_l, &mut event_r, 512);
@@ -3581,7 +3506,7 @@ mod tests {
         engine.enable_v10_gf509(&packaged_gf509_assets()).unwrap();
         engine.set_synth_volume(0.0);
         engine.set_state(9_000.0, 1_000.0, 15_000.0, 0.8, 120.0, 4, 0.0, "asphalt");
-        engine.trigger(Trigger::ShiftUp);
+        engine.trigger(Trigger::Hit1);
         engine.reset_audio_state().unwrap();
         let mut left = vec![0.0; 512];
         let mut right = vec![0.0; 512];

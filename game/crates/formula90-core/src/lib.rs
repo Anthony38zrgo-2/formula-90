@@ -445,7 +445,7 @@ impl CoreFacade {
         };
         // Enable the procedural powertrain synth from the profile `audio` section
         // (best-effort: a missing/disabled section silently keeps the sampled path).
-        self.audio.enable_synth_from_profile(cfg.audio.as_ref());
+        self.audio.enable_synth_from_profile(cfg.audio.as_ref(), Some(&cfg));
         self.spawned = true;
         Ok(id)
     }

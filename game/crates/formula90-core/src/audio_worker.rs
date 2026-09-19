@@ -579,7 +579,9 @@ mod tests {
                         object.insert("enabled".to_string(), serde_json::Value::Bool(false));
                     }
                 }
-                module.enable_synth_from_profile(audio.as_ref());
+                let powertrain =
+                    vehicle_physics_engine::VehicleConfig::from_json_path(&profile).ok();
+                module.enable_synth_from_profile(audio.as_ref(), powertrain.as_ref());
             }
         }
         Some(module)

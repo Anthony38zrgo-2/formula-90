@@ -8,8 +8,9 @@ use v10_engine_synth::runtime::blend_hybrid;
 use v10_engine_synth::wav::write_mono_pcm16;
 use v10_engine_synth::{
     AcousticScene, AcousticSceneConfig, CollectorGeometry, EngineConfig, EngineFrame, EngineInput,
-    SampleLayerInput, ShiftPhase, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, UpperMidShelf,
-    V10Engine,
+    GearShiftPlayer, GearShiftSamples, SampleLayerInput, ShiftPhase, ThreeZoneSampleLayer,
+    ThreeZoneSampleLayerConfig, TransmissionConfig, TransmissionInput, TransmissionSynth,
+    UpperMidShelf, V10Engine,
 };
 
 const HYBRID_HEADROOM_GAIN: f32 = 0.61;
@@ -197,6 +198,19 @@ struct Args {
     scene_gains: Vec<(String, f32)>,
     cover_lowpass_hz: Option<f32>,
     upper_mid_shelf_gain: f32,
+    gear: i8,
+    transmission_gain: f32,
+    transmission_whine_gain: f32,
+    transmission_clack_gain: f32,
+    transmission_rattle_gain: f32,
+    transmission_clutch_gain: f32,
+    gear_ratios: Vec<f32>,
+    final_drive: f32,
+    reverse_ratio: f32,
+    gear_teeth: f32,
+    final_teeth: f32,
+    gear_shift_gain: f32,
+    gear_shift_reference_rpm: f32,
     shift_sequence: Vec<ShiftEvent>,
 }
 
@@ -250,6 +264,19 @@ fn parse_args() -> Result<Args, String> {
         scene_gains: Vec::new(),
         cover_lowpass_hz: None,
         upper_mid_shelf_gain: 0.0,
+        gear: 4,
+        transmission_gain: 0.0,
+        transmission_whine_gain: 1.0,
+        transmission_clack_gain: 1.0,
+        transmission_rattle_gain: 1.0,
+        transmission_clutch_gain: 1.0,
+        gear_ratios: Vec::new(),
+        final_drive: 1.0,
+        reverse_ratio: 3.0,
+        gear_teeth: 20.0,
+        final_teeth: 40.0,
+        gear_shift_gain: 1.0,
+        gear_shift_reference_rpm: 10_000.0,
         shift_sequence: Vec::new(),
     };
     let mut i = 0;
@@ -364,6 +391,57 @@ fn parse_args() -> Result<Args, String> {
             "--upper-mid-shelf-gain" => {
                 parsed.upper_mid_shelf_gain =
                     parse_value(&raw, &mut i, "--upper-mid-shelf-gain")?
+            }
+            "--gear" => parsed.gear = parse_value(&raw, &mut i, "--gear")?,
+            "--transmission-gain" => {
+                parsed.transmission_gain = parse_value(&raw, &mut i, "--transmission-gain")?
+            }
+            "--transmission-whine" => {
+                parsed.transmission_whine_gain =
+                    parse_value(&raw, &mut i, "--transmission-whine")?
+            }
+            "--transmission-clack" => {
+                parsed.transmission_clack_gain =
+                    parse_value(&raw, &mut i, "--transmission-clack")?
+            }
+            "--transmission-rattle" => {
+                parsed.transmission_rattle_gain =
+                    parse_value(&raw, &mut i, "--transmission-rattle")?
+            }
+            "--transmission-clutch" => {
+                parsed.transmission_clutch_gain =
+                    parse_value(&raw, &mut i, "--transmission-clutch")?
+            }
+            "--gear-ratios" => {
+                let spec = parse_value::<String>(&raw, &mut i, "--gear-ratios")?;
+                let mut values = Vec::new();
+                for chunk in spec.split(',').map(str::trim).filter(|part| !part.is_empty()) {
+                    values.push(
+                        chunk
+                            .parse::<f32>()
+                            .map_err(|_| format!("invalid gear ratio: {chunk}"))?,
+                    );
+                }
+                parsed.gear_ratios = values;
+            }
+            "--final-drive" => {
+                parsed.final_drive = parse_value(&raw, &mut i, "--final-drive")?
+            }
+            "--reverse-ratio" => {
+                parsed.reverse_ratio = parse_value(&raw, &mut i, "--reverse-ratio")?
+            }
+            "--gear-teeth" => {
+                parsed.gear_teeth = parse_value(&raw, &mut i, "--gear-teeth")?
+            }
+            "--final-teeth" => {
+                parsed.final_teeth = parse_value(&raw, &mut i, "--final-teeth")?
+            }
+            "--gear-shift-gain" => {
+                parsed.gear_shift_gain = parse_value(&raw, &mut i, "--gear-shift-gain")?
+            }
+            "--gear-shift-reference-rpm" => {
+                parsed.gear_shift_reference_rpm =
+                    parse_value(&raw, &mut i, "--gear-shift-reference-rpm")?
             }
             "--scene-gain" => {
                 let spec = parse_value::<String>(&raw, &mut i, "--scene-gain")?;
@@ -582,6 +660,19 @@ fn run() -> Result<(), String> {
         }),
         ..EngineConfig::default()
     };
+    let gear_shift_samples = match args.sample_layer_dir.as_deref() {
+        Some(directory) => GearShiftSamples::load_directory(directory, args.sample_rate)?,
+        None => None,
+    };
+    if gear_shift_samples.is_some() {
+        config.blip_enabled = false;
+    }
+    let mut gear_shift_player = GearShiftPlayer::new(
+        gear_shift_samples,
+        args.gear_shift_gain,
+        args.gear_shift_reference_rpm,
+        args.sample_rate,
+    )?;
     if let Some(gain) = args.exhaust_gain {
         config.exhaust_gain = gain;
     }
@@ -598,6 +689,10 @@ fn run() -> Result<(), String> {
             "engine_air" => &mut scene_config.engine_air_gain,
             "engine_cover" => &mut scene_config.engine_cover_gain,
             "mount_monocoque" => &mut scene_config.mount_monocoque_gain,
+            "transmission_mount" => &mut scene_config.transmission_mount_gain,
+            "transmission_cover" => &mut scene_config.transmission_cover_gain,
+            "air_tilt_db" => &mut scene_config.air_high_tilt_db,
+            "air_direct" => &mut scene_config.air_direct_gain,
             "output" => &mut scene_config.output_gain,
             _ => return Err(format!("unknown scene branch: {name}")),
         };
@@ -633,6 +728,20 @@ fn run() -> Result<(), String> {
     let mut scene = AcousticScene::new(args.sample_rate as f32, scene_config)?;
     let mut upper_mid_shelf =
         UpperMidShelf::new(args.sample_rate as f32, args.upper_mid_shelf_gain)?;
+    let mut transmission = TransmissionSynth::new(TransmissionConfig {
+        sample_rate: args.sample_rate,
+        output_gain: args.transmission_gain,
+        gear_ratios: args.gear_ratios.clone(),
+        reverse_ratio: args.reverse_ratio,
+        final_drive: args.final_drive,
+        gear_teeth: args.gear_teeth,
+        final_teeth: args.final_teeth,
+        whine_gain: args.transmission_whine_gain,
+        clack_gain: args.transmission_clack_gain,
+        rattle_gain: args.transmission_rattle_gain,
+        clutch_gain: args.transmission_clutch_gain,
+        ..TransmissionConfig::default()
+    })?;
     let mut zone_trim_db = [0.0f32; 8];
     for (slot, value) in zone_trim_db.iter_mut().zip(args.sample_zone_trim_db.iter()) {
         *slot = *value;
@@ -704,6 +813,8 @@ fn run() -> Result<(), String> {
         "turbulence",
         "master_pre_limiter",
         "master",
+        "transmission",
+        "gear_shift",
         "engine_dry",
         "engine_air",
         "engine_cover",
@@ -809,14 +920,18 @@ fn run() -> Result<(), String> {
         } else {
             -((0.30 - current_input.throttle) / 0.30) * 0.6
         };
-        engine.set_mechanical_state(
-            retention_torque,
-            1.0,
-            0.0,
-            false,
-            shift_phase_at(&args.shift_sequence, time_s),
-        );
-        let frame: EngineFrame = engine.render_sample();
+        let shift_phase = shift_phase_at(&args.shift_sequence, time_s);
+        engine.set_mechanical_state(retention_torque, 1.0, 0.0, false, shift_phase);
+        let mut frame: EngineFrame = engine.render_sample();
+        frame.transmission = transmission.process(TransmissionInput {
+            rpm: current_input.rpm,
+            gear: args.gear,
+            clutch: 1.0,
+            torque: retention_torque,
+            throttle: current_input.throttle,
+            shift_phase,
+        });
+        frame.gear_shift = gear_shift_player.process(shift_phase, current_input.rpm);
         let acoustic = scene.process(&frame);
         let sampled = sample_layer
             .as_mut()
@@ -939,6 +1054,14 @@ fn run() -> Result<(), String> {
                 .push(acoustic.cylinder_mechanical[index]);
         }
         stems.get_mut("scene_mix").unwrap().push(acoustic.output);
+        stems
+            .get_mut("transmission")
+            .unwrap()
+            .push(frame.transmission);
+        stems
+            .get_mut("gear_shift")
+            .unwrap()
+            .push(frame.gear_shift);
         let sample_tonal = sampled.as_ref().map_or(0.0, |frame| frame.tonal);
         let sample_residual = sampled.as_ref().map_or(0.0, |frame| frame.residual);
         let sample_max_rasp = sampled.as_ref().map_or(0.0, |frame| frame.max_rasp);
@@ -1175,6 +1298,12 @@ fn run() -> Result<(), String> {
             "  \"sample_off_rms\": {:.9},\n",
             "  \"hybrid_headroom_gain\": {:.6},\n",
             "  \"upper_mid_shelf_gain\": {:.6},\n",
+            "  \"transmission_gain\": {:.6},\n",
+            "  \"transmission_gear\": {},\n",
+            "  \"transmission_gear_ratios\": \"{}\",\n",
+            "  \"transmission_final_drive\": {:.6},\n",
+            "  \"gear_shift_gain\": {:.6},\n",
+            "  \"gear_shift_reference_rpm\": {:.6},\n",
             "  \"chamber_cycle_model\": \"bounded_720deg_four_stroke_fresh_charge\",\n",
             "  \"chamber_phase_contract\": \"expansion_0_180,exhaust_180_360,intake_360_540,compression_540_720\",\n",
             "  \"firing_order\": [0,5,1,6,2,7,3,8,4,9],\n",
@@ -1219,6 +1348,16 @@ fn run() -> Result<(), String> {
         sample_residual_rms,
         sample_off_rms,
         args.upper_mid_shelf_gain,
+        args.transmission_gain,
+        args.gear,
+        args.gear_ratios
+            .iter()
+            .map(|value| format!("{value}"))
+            .collect::<Vec<_>>()
+            .join(","),
+args.final_drive,
+        args.gear_shift_gain,
+        args.gear_shift_reference_rpm,
         HYBRID_HEADROOM_GAIN,
     );
     if metadata_path.exists() {

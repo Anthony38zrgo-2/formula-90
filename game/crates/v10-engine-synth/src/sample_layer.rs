@@ -1657,12 +1657,12 @@ fn sinc_sample_tabled(
     output
 }
 
-struct Pcm16Wav {
-    sample_rate: u32,
-    samples: Vec<f32>,
+pub(crate) struct Pcm16Wav {
+    pub(crate) sample_rate: u32,
+    pub(crate) samples: Vec<f32>,
 }
 
-fn read_mono_pcm16(path: &Path) -> Result<Pcm16Wav, String> {
+pub(crate) fn read_mono_pcm16(path: &Path) -> Result<Pcm16Wav, String> {
     let bytes =
         fs::read(path).map_err(|error| format!("cannot read {}: {error}", path.display()))?;
     if bytes.len() < 44 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {

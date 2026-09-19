@@ -77,14 +77,14 @@ struct ShiftGesture {
 impl ShiftGesture {
     /// Advances rising-edge detection and the envelope timers by one sample.
     #[inline]
-    fn step(&mut self, phase: u8, sample_rate: f32) {
+    fn step(&mut self, phase: u8, sample_rate: f32, blip_enabled: bool) {
         let is_cut = phase == 1 || phase == 3;
         // A new cut restarts the gesture: the previous wobble/blip is over.
         if is_cut {
             self.wobble_active = false;
             self.blip_active = false;
         }
-        if phase == 4 && self.last_phase != 4 {
+        if phase == 4 && self.last_phase != 4 && blip_enabled {
             self.blip_active = true;
             self.blip_t = 0.0;
         }
@@ -201,6 +201,11 @@ pub struct EngineFrame {
     pub turbulence: f32,
     pub master_pre_limiter: f32,
     pub master: f32,
+    /// Structure-borne transmission and gearbox radiation injected by
+    /// `Gf509Runtime`; summed into the scene dry paths by `AcousticScene`.
+    pub transmission: f32,
+    /// Gear up/down one-shot blip samples injected by `Gf509Runtime`.
+    pub gear_shift: f32,
     pub fired_mask: u16,
     pub crank_phase_deg: f32,
     pub limiter_reduction_db: f32,
@@ -230,6 +235,7 @@ pub struct V10Engine {
     noise_rng: u64,
     sample_clock: u64,
     gesture: ShiftGesture,
+    blip_enabled: bool,
 }
 
 impl V10Engine {
@@ -276,6 +282,7 @@ impl V10Engine {
             noise_rng: config.seed ^ 0xA17E_5EED_D15C_A11E,
             sample_clock: 0,
             gesture: ShiftGesture::default(),
+            blip_enabled: config.blip_enabled,
             config,
         })
     }
@@ -329,7 +336,7 @@ impl V10Engine {
         self.smoothed_energy += (target_energy - self.smoothed_energy) * alpha;
         // Synthesized shift gesture, applied after the follower so the wobble
         // and blip retain their exact bounded shape.
-        self.gesture.step(self.mechanical.shift_phase, sample_rate);
+        self.gesture.step(self.mechanical.shift_phase, sample_rate, self.blip_enabled);
         let shift_gain = self.gesture.gain();
         // Combustion quality wanders slowly, rather than drawing a new random
         // gain every mechanical cycle. Two incommensurate rates avoid a loop.
@@ -508,6 +515,8 @@ impl V10Engine {
             turbulence,
             master_pre_limiter: pre,
             master,
+            transmission: 0.0,
+            gear_shift: 0.0,
             fired_mask: events.mask,
             crank_phase_deg: events.crank_phase_deg,
             limiter_reduction_db: reduction_db,
@@ -789,6 +798,25 @@ mod tests {
         assert!(max <= 1.0 + SHIFT_BLIP_GAIN + 1e-6, "blip max {max}");
         assert!(!engine.gesture.blip_active, "blip must end");
         assert_eq!(engine.shift_gesture_gain(), 1.0);
+    }
+
+    #[test]
+    fn blip_is_suppressed_when_disabled() {
+        let mut config = EngineConfig::default();
+        config.blip_enabled = false;
+        let mut engine = V10Engine::new(config).unwrap();
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::DownshiftCut);
+        for _ in 0..512 {
+            engine.render_sample();
+        }
+        engine.set_mechanical_state(0.8, 1.0, 0.0, false, ShiftPhase::DownshiftBlip);
+        engine.render_sample();
+        assert_eq!(
+            engine.shift_gesture_gain(),
+            1.0,
+            "blip must stay flat when disabled"
+        );
+        assert!(!engine.gesture.blip_active);
     }
 
     #[test]

@@ -182,14 +182,27 @@
       "residual_gain_scale": 0.7,
       "scene_gains": {
         "dry_low": 0.0,
-        "dry_mid": 0.75,
+        "dry_mid": 0.85,
         "dry_high": 0.14,
         "mount_monocoque": 0.85,
         "engine_cover": 1.10,
-        "engine_air": 0.841
+        "engine_air": 0.841,
+        "transmission_cover": 0.0,
+        "air_tilt_db": 3.0
       },
       "cover_radiation_lowpass_hz": 1000000.0,
-      "upper_mid_shelf_gain": 0.35,
+      "upper_mid_shelf_gain": 0.45,
+      "transmission": {
+        "gain": 0.20825,
+        "whine": 0.6,
+        "clack": 0.1,
+        "rattle": 0.5,
+        "clutch": 0.5,
+        "gear_teeth": 21.0,
+        "final_teeth": 46.0
+      },
+      "gear_shift_gain": 0.05,
+      "gear_shift_reference_rpm": 10000.0,
       "sample_blend_weight": 0.8165,
       "sample_zone_trim_db": [4.5, -4.63, 3.36, 1.84, 2.44, 3.88]
     },

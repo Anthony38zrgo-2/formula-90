@@ -4,8 +4,8 @@
   "vehicle_id": "f1_2030_v10",
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2030_V10",
-  "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json",
-  "physics_sha256": "d43f860817640c4a53d3f481d26ad32dca01867e0f31b3bb2fdede20e368b063",
+  "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_physics.json",
+  "physics_sha256": "AD1489D316FE64D30830605E454E0AEA96DB0B4096799FD2CD04689B086EE461",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -28,8 +28,8 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "508B8F24622E2D57D3359F04BE591E12BE1A053028A6CE35A580E79DAA29156E",
-      "size_bytes": 23177088
+      "sha256": "0751730C45AAE0C41C244D22695D0D7BF21BC235C0CA1468D59F2E4F5EB3CA67",
+      "size_bytes": 22678340
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
