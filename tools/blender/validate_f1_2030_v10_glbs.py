@@ -2,6 +2,7 @@ import bpy
 import json
 import sys
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 from pathlib import Path
 
 
@@ -25,6 +26,58 @@ def object_details(obj):
         "bounds_max": [round(v, 6) for v in maximum],
         "dimensions": [round(v, 6) for v in dimensions],
         "center": [round(v, 6) for v in (minimum + maximum) * 0.5],
+    }
+
+
+def world_bvh(obj):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        vertices = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices]
+        polygons = [tuple(polygon.vertices) for polygon in mesh.polygons]
+        return BVHTree.FromPolygons(vertices, polygons, all_triangles=False)
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def rear_support_grip(path):
+    clear_scene()
+    bpy.ops.import_scene.gltf(filepath=str(path))
+    support = bpy.data.objects.get("GEO_CHASSIS_REARSUPPORT")
+    mid = bpy.data.objects.get("GEO_CHASSIS_REAR_WING_MID")
+    upper = bpy.data.objects.get("GEO_CHASSIS_REAR_WING")
+    if support is None or mid is None or upper is None:
+        return {"present": False, "errors": ["rear support, mid plane or upper wing missing from the chassis GLB"]}
+    support_tree = world_bvh(support)
+    contact = len(support_tree.overlap(world_bvh(mid)))
+    upper_tree = world_bvh(upper)
+    upper_overlap = len(support_tree.overlap(upper_tree))
+    support_points = [support.matrix_world @ vertex.co for vertex in support.data.vertices]
+    support_top = max(point.z for point in support_points)
+    top_band = [point for point in support_points if point.z > support_top - 0.006]
+    clearances = []
+    for point in top_band:
+        hit = upper_tree.ray_cast(
+            Vector((point.x, point.y, point.z + 0.0005)), Vector((0.0, 0.0, 1.0)), 0.6
+        )
+        if hit[0] is not None:
+            clearances.append(hit[0].z - point.z)
+    min_clearance = min(clearances) if clearances else None
+    errors = []
+    if contact == 0:
+        errors.append("rear support does not touch the intermediate plane")
+    if upper_overlap:
+        errors.append(f"rear support overlaps the upper wing ({upper_overlap} triangles)")
+    if min_clearance is not None and min_clearance < 0.005:
+        errors.append(f"rear support top is too close to the upper wing ({min_clearance:.4f} m)")
+    return {
+        "present": True,
+        "contact_triangles": contact,
+        "upper_wing_overlap": upper_overlap,
+        "support_top_m": round(support_top, 6),
+        "upper_wing_min_clearance_m": None if min_clearance is None else round(min_clearance, 6),
+        "errors": errors,
     }
 
 
@@ -63,7 +116,9 @@ def main():
     manifest = json.loads((asset_dir / "manifest.json").read_text(encoding="utf-8"))
     names = ["chassis", "wheel_FL", "wheel_FR", "wheel_RL", "wheel_RR"]
     results = {name: inspect(asset_dir / f"f1_2030_v10_{name}.glb") for name in names}
+    grip = rear_support_grip(asset_dir / "f1_2030_v10_chassis.glb")
     errors = []
+    errors.extend(grip.get("errors", []))
     chassis_dims = results["chassis"]["dimensions"]
     # Blender re-import maps glTF/Godot Z back to Blender Y.
     if not (chassis_dims[1] > chassis_dims[0] and chassis_dims[1] > chassis_dims[2]):
@@ -108,7 +163,7 @@ def main():
             rim_dimensions = result["objects"][rim_key]["dimensions"]
             if rim_dimensions[0] >= min(rim_dimensions[1], rim_dimensions[2]):
                 errors.append(f"wheel {short} rim axle is not Godot X: {rim_dimensions}")
-    report = {"passed": not errors, "errors": errors, "assets": results}
+    report = {"passed": not errors, "errors": errors, "rear_support_grip": grip, "assets": results}
     (asset_dir / "validation_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     if errors:
         raise RuntimeError("; ".join(errors))

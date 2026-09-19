@@ -1,8 +1,11 @@
 """Build the complete fixed intermediate rear-wing plane for F1 2030.
 
 The generated wing is continuous from end to end, has a pronounced inverted-V
-spanwise crown, and matches the measured chord inclination of AeroPart3.
-Running the script again replaces only the generated intermediate plane.
+(chevron) spanwise crown with a rounded center apex that blends into nearly
+straight descending arms, and matches the measured chord inclination of
+AeroPart3. Its tips are projected onto the endplate inner walls at the
+authored (lowered) pose, trimming any excess that would clip. Running the
+script again replaces only the generated intermediate plane.
 """
 
 from __future__ import annotations
@@ -11,7 +14,7 @@ import json
 import math
 
 import bpy
-from mathutils import Euler, Vector
+from mathutils import Euler, Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 
@@ -26,20 +29,24 @@ SIDE_CONTACT_INSET_M = 0.0002
 CHORD_M = 0.220
 THICKNESS_RATIO = 0.115
 CAMBER_RATIO = 0.020
+# Rounded inverted-V crown in the build frame: the center apex sits higher
+# than the endplate tips and transitions with zero slope (circular look)
+# into near-straight descending arms.
 TIP_CENTER_Z_M = 0.088
 CENTER_CENTER_Z_M = 0.260
+CROWN_EXPONENT = 1.35
 CHORD_CENTER_X_M = 2.260
 SPAN_SEGMENTS = 64
 PROFILE_SEGMENTS = 32
-CROWN_EXPONENT = 0.58
 
-# Manual pose authored by the user in f1_2030.blend. It is codified here so
-# both the original and alternate-livery sources retain the exact same wing.
+# Manual pose authored by the user in f1_2030.blend (rotation plus the lowered
+# position). It is codified here so reruns reproduce the exact same placement.
 TARGET_ROTATION_DEG = (
     0.40144308780645327,
     -1.4034940578003547,
     0.07669287247687054,
 )
+TARGET_TRANSLATION_M = (0.0, 0.0, -0.178712)
 
 
 def world_bounds(obj: bpy.types.Object) -> list[list[float]]:
@@ -60,10 +67,10 @@ def measured_chord_angle(obj: bpy.types.Object) -> float:
 
 def crown_height(normalized: float) -> float:
     normalized = min(abs(normalized), 1.0)
-    # A lower exponent keeps the center high for longer and then bends more
-    # assertively into the tips, matching the marked beam-wing-like crown.
-    smooth_crown = math.cos(normalized * math.pi * 0.5) ** CROWN_EXPONENT
-    return TIP_CENTER_Z_M + (CENTER_CENTER_Z_M - TIP_CENTER_Z_M) * smooth_crown
+    # Rounded inverted V: normalized=0 is the raised center apex (zero slope,
+    # circular transition) and normalized=1 the lower endplate tips.
+    rounded_crown = math.cos(normalized * math.pi * 0.5) ** CROWN_EXPONENT
+    return TIP_CENTER_Z_M + (CENTER_CENTER_Z_M - TIP_CENTER_Z_M) * rounded_crown
 
 
 def world_bvh(obj: bpy.types.Object) -> BVHTree:
@@ -141,6 +148,47 @@ def remove_existing_target() -> None:
         bpy.data.meshes.remove(mesh)
 
 
+def resolve_lateral_penetration(target, step: float = 0.002, max_steps: int = 200) -> dict[str, object]:
+    """Shrink the span until no triangle crosses the endplate inner walls.
+
+    Point projection alone is not enough: the endplate wall is concave between
+    sampled profile points, so flat cap facets can cross it even with every
+    vertex inset. A uniform span scale keeps the wing smooth while trimming
+    the excess that clips.
+    """
+
+    side_trees = []
+    for name in SIDE_OBJECT_NAMES:
+        obj = bpy.data.objects.get(name)
+        if obj is not None and obj.type == "MESH":
+            side_trees.append(world_bvh(obj))
+    if not side_trees:
+        raise RuntimeError("No lateral surfaces available for penetration trimming")
+
+    def mid_tree() -> BVHTree:
+        vertices = [target.matrix_world @ vertex.co for vertex in target.data.vertices]
+        polygons = []
+        for polygon in target.data.polygons:
+            indices = list(polygon.vertices)
+            for index in range(1, len(indices) - 1):
+                polygons.append((indices[0], indices[index], indices[index + 1]))
+        return BVHTree.FromPolygons(vertices, polygons, all_triangles=True)
+
+    tree = mid_tree()
+    for iteration in range(max_steps + 1):
+        overlaps = sum(len(tree.overlap(other)) for other in side_trees)
+        if overlaps == 0:
+            span_scale = 1.0 - step * iteration
+            target["f1_2030_mid_trim_iterations"] = iteration
+            target["f1_2030_mid_trim_span_scale"] = span_scale
+            return {"trim_iterations": iteration, "trim_span_scale": span_scale, "trim_overlaps": 0}
+        for vertex in target.data.vertices:
+            vertex.co.y *= 1.0 - step
+        target.data.update()
+        tree = mid_tree()
+    raise RuntimeError("Could not trim the intermediate plane out of the endplates")
+
+
 def build_complete_mesh(chord_angle: float, target_matrix_world) -> tuple[bpy.types.Mesh, dict[str, object]]:
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, ...]] = []
@@ -209,6 +257,7 @@ def build_complete_mesh(chord_angle: float, target_matrix_world) -> tuple[bpy.ty
         "tip_center_z_m": TIP_CENTER_Z_M,
         "center_center_z_m": CENTER_CENTER_Z_M,
         "crown_rise_m": CENTER_CENTER_Z_M - TIP_CENTER_Z_M,
+        "crown_law": "inverted_v_rounded",
         "crown_exponent": CROWN_EXPONENT,
         "chord_angle_deg": math.degrees(chord_angle),
         **contact_metrics,
@@ -225,7 +274,7 @@ def build_mid_plane() -> dict[str, object]:
         raise RuntimeError(f"Missing mesh object {BEAM_NAME}")
 
     chord_angle = measured_chord_angle(beam)
-    target_matrix_world = Euler(
+    target_matrix_world = Matrix.Translation(TARGET_TRANSLATION_M) @ Euler(
         tuple(math.radians(value) for value in TARGET_ROTATION_DEG),
         "XYZ",
     ).to_matrix().to_4x4()
@@ -237,6 +286,7 @@ def build_mid_plane() -> dict[str, object]:
     target.matrix_world = target_matrix_world
     if source.data.materials:
         mesh.materials.append(source.data.materials[0])
+    metrics.update(resolve_lateral_penetration(target))
 
     target["formula90_role"] = "fixed_rear_wing_intermediate_plane"
     target["source_angle_object"] = BEAM_NAME

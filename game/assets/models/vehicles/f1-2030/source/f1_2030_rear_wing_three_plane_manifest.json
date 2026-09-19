@@ -17,27 +17,64 @@
     "continuous_profile": true,
     "vertices": 2082,
     "polygons": 2112,
-    "half_span_m": 0.4467711483,
+    "half_span_m": 0.3742167685508728,
     "lateral_contact_inset_m": 0.0002,
-    "left_contact_y_range_m": [-0.4467711483, -0.4118855629],
-    "right_contact_y_range_m": [0.4101980064, 0.4460567866],
+    "left_contact_y_range_m": [
+      -0.3742167685508728,
+      -0.3594650063991547
+    ],
+    "right_contact_y_range_m": [
+      0.355238232421875,
+      0.3697253797531128
+    ],
     "chord_m": 0.22,
     "thickness_ratio": 0.115,
     "camber_ratio": 0.02,
     "tip_center_z_m": 0.088,
     "center_center_z_m": 0.26,
     "inverted_v_crown_rise_m": 0.172,
-    "crown_exponent": 0.58,
-    "authored_rotation_deg_xyz": [0.4014430878, -1.4034940578, 0.0766928725],
+    "crown_exponent": 1.35,
+    "authored_rotation_deg_xyz": [
+      0.4014430878,
+      -1.4034940578,
+      0.0766928725
+    ],
     "chord_angle_deg": 9.3901512244,
     "chord_angle_source": "GEO_CHASSIS_AEROPART3 principal X/Z axis",
     "world_bounds_m": {
-      "x": [2.14320755, 2.3668408394],
-      "y": [-0.4458776116, 0.448741138],
-      "z": [0.116823785, 0.3447310925]
+      "x": [
+        2.143324,
+        2.36673
+      ],
+      "y": [
+        -0.372577,
+        0.371672
+      ],
+      "z": [
+        -0.013446,
+        0.213408
+      ]
     },
-    "curvature": "Continuous symmetric inverted-V crown, rising 172 mm from both tips to the center with a more abrupt beam-wing-like side drop and exponent 0.58.",
-    "attachment": "Each endpoint profile is projected onto the existing rear-wing lateral surface with a 0.2 mm numerical inset; closed end caps remain inside the boundary and the center intersects the single swan-neck as a fixed structural attachment."
+    "curvature": "Continuous symmetric inverted-V crown, rising 172 mm from both tips to the center with a rounded (zero-slope) center transition and exponent 1.35.",
+    "attachment": "Each endpoint profile is projected onto the existing rear-wing lateral surface with a 0.2 mm numerical inset; closed end caps remain inside the boundary. The single swan-neck is shortened (vertical scale 0.571408 over its floor base) and its rear arm is seated on the intermediate plane top: the union run (x 2.209-2.279) is conformed to the top surface with a progressive bite up to 10 mm, and the arch is left clear of the plane."
   },
-  "generator": "tools/blender/add_f1_2030_rear_wing_mid_plane.py"
+  "generator": "tools/blender/add_f1_2030_rear_wing_mid_plane.py",
+  "swan_neck_grip": {
+    "support": "GEO_CHASSIS_REARSUPPORT",
+    "grip_from": "above",
+    "vertical_scale": 0.571408,
+    "intermediate_plane_top_m": 0.21,
+    "union_run_m": [
+      2.209,
+      2.279
+    ],
+    "union_max_gap_m": 0.001,
+    "max_bite_m": 0.0102,
+    "upper_wing_min_clearance_m": 0.0808,
+    "generators": [
+      "tools/blender/raise_f1_2030_mid_plane.py",
+      "tools/blender/shorten_f1_2030_rear_support_top.py",
+      "tools/blender/refine_f1_2030_rear_support_grip.py"
+    ]
+  }
 }

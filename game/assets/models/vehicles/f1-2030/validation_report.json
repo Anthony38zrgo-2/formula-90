@@ -1,10 +1,18 @@
 {
   "passed": true,
   "errors": [],
+  "rear_support_grip": {
+    "present": true,
+    "contact_triangles": 74,
+    "upper_wing_overlap": 0,
+    "support_top_m": 0.377791,
+    "upper_wing_min_clearance_m": 0.080806,
+    "errors": []
+  },
   "assets": {
     "chassis": {
       "mesh_count": 30,
-      "vertices": 52608,
+      "vertices": 52606,
       "polygons": 83375,
       "bounds_min": [
         -0.859598,
@@ -549,17 +557,17 @@
           "bounds_max": [
             0.065,
             -1.935113,
-            0.621
+            0.377791
           ],
           "dimensions": [
             0.13,
             0.3438,
-            0.56746
+            0.324251
           ],
           "center": [
             -0.0,
             -2.107013,
-            0.33727
+            0.215665
           ]
         },
         "GEO_CHASSIS_REAR_SUSPENSION": {
@@ -617,24 +625,24 @@
             "CarbonFiber_Seamless_2x2_Twill.002"
           ],
           "bounds_min": [
-            -0.444399,
-            -2.36589,
-            0.222287
+            -0.371035,
+            -2.365783,
+            0.091875
           ],
           "bounds_max": [
-            0.448406,
-            -2.144869,
-            0.445784
+            0.3714,
+            -2.144891,
+            0.315
           ],
           "dimensions": [
-            0.892805,
-            0.221021,
-            0.223496
+            0.742435,
+            0.220893,
+            0.223125
           ],
           "center": [
-            0.002003,
-            -2.25538,
-            0.334035
+            0.000182,
+            -2.255337,
+            0.203438
           ]
         },
         "GEO_CHASSIS_SCREEN": {

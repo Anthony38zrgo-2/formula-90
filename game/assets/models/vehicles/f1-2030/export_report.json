@@ -4,8 +4,8 @@
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "0751730C45AAE0C41C244D22695D0D7BF21BC235C0CA1468D59F2E4F5EB3CA67",
-      "size_bytes": 22678340
+      "sha256": "2892BCC4FCF4F7F63586185B550AA4ABDB218A2B4A67F0B8EB464D8D1D21B9A8",
+      "size_bytes": 22678276
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
