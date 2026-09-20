@@ -50,6 +50,10 @@ pub enum Trigger {
     Cone,
     Fire,
     Scrape,
+    /// Rev-limiter entry (edge on the physical limiter flag).
+    Limiter,
+    /// Traction-control cut entry (edge on the physical TC cut ratio).
+    TcCut,
 }
 
 impl Trigger {
@@ -66,6 +70,8 @@ impl Trigger {
             Trigger::Cone => "impact_cone",
             Trigger::Fire => "impact_fire",
             Trigger::Scrape => "impact_scrape",
+            Trigger::Limiter => "limiter_hit",
+            Trigger::TcCut => "tc_cut",
         }
     }
 }
@@ -328,6 +334,8 @@ mod tests {
         assert_eq!(Trigger::ShiftUp.bank_key(), "shift_up");
         assert_eq!(Trigger::Barrier.bank_key(), "impact_barrier");
         assert_eq!(Trigger::Cone.bank_key(), "impact_cone");
+        assert_eq!(Trigger::Limiter.bank_key(), "limiter_hit");
+        assert_eq!(Trigger::TcCut.bank_key(), "tc_cut");
     }
 
     #[test]

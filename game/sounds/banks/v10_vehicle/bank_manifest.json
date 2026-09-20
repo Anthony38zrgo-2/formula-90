@@ -3,6 +3,146 @@
   "channels": 1,
   "files": [
     {
+      "dc_offset": -8e-06,
+      "duration_s": 0.650635,
+      "file": "backfire_3.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -18.16,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "engine_backfire",
+      "sha256": "f41b950f6f102dfbe960d1ba9cdb6a52bfbf1bb029faaba0332ddfcf398df130",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_backfire_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/500_backfire3.wav",
+        "source_rate": 44100,
+        "source_sha256": "e107717d2fe4f4fccd5d10d910b7cff71cd36d11403ef2a1277d36418986d044"
+      }
+    },
+    {
+      "dc_offset": -1e-06,
+      "duration_s": 0.594966,
+      "file": "backfire_4.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -18.26,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "engine_backfire",
+      "sha256": "fef814aed76fa5d0ed65be83a05929454778bb7597c1a3cc5479cfc9ae74ad8c",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_backfire_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/500_backfire4.wav",
+        "source_rate": 44100,
+        "source_sha256": "e903a055cf8b5ca6a79b44862681f12bca5a11e95878f091095d613e7b63171e"
+      }
+    },
+    {
+      "dc_offset": -1.7e-05,
+      "duration_s": 0.362132,
+      "file": "backfire_5.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -17.12,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "engine_backfire",
+      "sha256": "d36d1b4b06d1b75b21ba00af07d44ab9b2b9bf89a01d7da9166210c384372267",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_backfire_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/500_backfire5.wav",
+        "source_rate": 44100,
+        "source_sha256": "a471a47bc8094a38e50894713b47b7847d81e1c518830b804e25dc87a69ceec1"
+      }
+    },
+    {
+      "dc_offset": -1.7e-05,
+      "duration_s": 0.396735,
+      "file": "backfire_6.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -17.81,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "engine_backfire",
+      "sha256": "866f03f79303e1f78c6b97d117a546a2eb7714978e652acf4900875cad365e27",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_backfire_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/500_backfire6.wav",
+        "source_rate": 44100,
+        "source_sha256": "6179b1460c81f58ce6ed69dd48498e0efcb3ec66eb18054cf1d97ac444426797"
+      }
+    },
+    {
+      "dc_offset": -9e-06,
+      "duration_s": 0.776916,
+      "file": "backfire_7.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -14.21,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "engine_backfire",
+      "sha256": "2040468949094b6514b31939323848e601c285f95a2b7c8f568604da3b5f8018",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_backfire_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/500_backfire7.wav",
+        "source_rate": 44100,
+        "source_sha256": "ed324b6935950738a6cb4eb0ba99eab74b58bd24fe8b6a9dc75973b47269c42c"
+      }
+    },
+    {
       "dc_offset": -0.0,
       "duration_s": 3.285624,
       "file": "engine_start_backfire.wav",
@@ -299,6 +439,34 @@
       }
     },
     {
+      "dc_offset": 0.000531,
+      "duration_s": 0.361429,
+      "file": "limiter_hit.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -12.1,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "limiter_hit",
+      "sha256": "290e04ea2c96dd97f51b4e1fcc789b43d18daeb8a5c7d44a8f240309853c9e90",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_limiter_tc_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/limiter_hit.wav",
+        "source_rate": 44100,
+        "source_sha256": "1bdb7a2cc3eb6d95e7fa8d56bec55fd4df8c9b307902056b93f5c30b32751758"
+      }
+    },
+    {
       "dc_offset": -0.0,
       "duration_s": 0.712834,
       "file": "shift_3.wav",
@@ -485,6 +653,34 @@
       }
     },
     {
+      "dc_offset": -4.8e-05,
+      "duration_s": 2.350907,
+      "file": "tc_cut.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -13.53,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "tc_cut",
+      "sha256": "a3f8a48f7166b4ef389f375fef77237b33300bd444981342cd3add46dd8936e4",
+      "synthesis": {
+        "category": "engine",
+        "processing": {
+          "fade_in_frames": 88,
+          "fade_out_frames": 529,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2030_sfx_limiter_tc_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2030/tc_cut.wav",
+        "source_rate": 44100,
+        "source_sha256": "9d5274f670af80eb1819c2fcd9295b7f050d27ae2b33e1c49f6f3d0d5fbf3732"
+      }
+    },
+    {
       "dc_offset": -0.0,
       "duration_s": 2.3,
       "file": "tyre_scrub.wav",
@@ -516,7 +712,7 @@
       }
     }
   ],
-  "generator": "formula90s canonical bank + f1_2026_2008 replacement overlay v1",
+  "generator": "formula90s canonical bank + f1_2026_2008 replacement overlay v1 + f1_2030 backfire overlay v1 + f1_2030 limiter/tc overlay v1",
   "pcm_bits": 16,
   "sample_rate": 44100,
   "schema_version": 1,

@@ -7,8 +7,9 @@ use std::path::PathBuf;
 use std::{fs, path::Path};
 
 use crate::{
-    AcousticScene, AcousticSceneConfig, EngineConfig, EngineInput, GearShiftPlayer,
-    GearShiftSamples, SampleLayerFrame, SampleLayerInput, ThreeZoneSampleLayer,
+    shift_energy_gain, AcousticScene, AcousticSceneConfig, Crankshaft, EngineConfig,
+    EngineInput, GearShiftPlayer, GearShiftSamples, SampleLayerFrame, SampleLayerInput,
+    ShiftGesture, SpectrumChain, SpectrumChainConfig, ThreeZoneSampleLayer,
     ThreeZoneSampleLayerConfig, TransmissionConfig, TransmissionInput, TransmissionSynth,
     UpperMidShelf, V10Engine,
 };
@@ -16,6 +17,17 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
 pub const GF509_HEADROOM_GAIN: f32 = 0.61;
+
+/// Continuous-engine source selector. `Hybrid` is the shipped GF509 behaviour
+/// (procedural engine + sample layer blended before the shelf); `SampleOnly`
+/// replaces the engine with the prepared bank and keeps only the gearbox
+/// procedural, summed after the acoustic scene.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum EngineMode {
+    #[default]
+    Hybrid,
+    SampleOnly,
+}
 
 /// Blends the procedural scene with the optional sample layer. The procedural
 /// side already carries the synthesized shift gesture (it scales the engine
@@ -189,6 +201,19 @@ pub struct Gf509RuntimeConfig {
     pub gear_shift_gain: f32,
     pub gear_shift_reference_rpm: f32,
     pub max_block_frames: usize,
+    /// Hybrid (shipped) or sample-only engine source.
+    pub engine_mode: EngineMode,
+    /// Bank drive gain for the sample-only engine (level calibration).
+    pub sampled_engine_gain: f32,
+    /// Post-scene gain on the procedural gearbox in sample-only mode. The
+    /// gearbox bypasses the acoustic scene there, so it carries its own level.
+    pub sampled_gearbox_gain: f32,
+    /// Spectrum chain on the V10 engine bus (procedural + samples). Default is
+    /// a bit-transparent bypass.
+    pub v10_filter: SpectrumChainConfig,
+    /// Spectrum chain on the procedural gearbox bus. Default is a
+    /// bit-transparent bypass.
+    pub gearbox_filter: SpectrumChainConfig,
 }
 
 impl Default for Gf509RuntimeConfig {
@@ -203,6 +228,11 @@ impl Default for Gf509RuntimeConfig {
             gear_shift_gain: 1.0,
             gear_shift_reference_rpm: 10_000.0,
             max_block_frames: 4096,
+            engine_mode: EngineMode::Hybrid,
+            sampled_engine_gain: 1.0,
+            sampled_gearbox_gain: 1.0,
+            v10_filter: SpectrumChainConfig::default(),
+            gearbox_filter: SpectrumChainConfig::default(),
         }
     }
 }
@@ -213,8 +243,17 @@ pub struct Gf509Runtime {
     scene: AcousticScene,
     sample_layer: Option<ThreeZoneSampleLayer>,
     upper_mid_shelf: UpperMidShelf,
+    /// Spectrum chain on the V10 engine bus (procedural + samples).
+    v10_filter: SpectrumChain,
+    /// Spectrum chain on the procedural gearbox bus.
+    gearbox_filter: SpectrumChain,
     transmission: TransmissionSynth,
     gear_shift: GearShiftPlayer,
+    /// Sample-only phase authority: a bare crankshaft (no engine model) keeps
+    /// loop phase alignment and the scene's firing-frequency tracker fed.
+    sampled_crank: Crankshaft,
+    /// Sample-only shift gesture (cut + wobble + blip) applied to the bank.
+    sampled_gesture: ShiftGesture,
     /// Reused per-sample sample-layer output. Keeps the audio callback
     /// allocation-free by avoiding a fresh `SampleLayerFrame` per sample.
     sample_frame: SampleLayerFrame,
@@ -257,6 +296,8 @@ impl Gf509Runtime {
             })
             .transpose()?;
         let upper_mid_shelf = UpperMidShelf::new(sample_rate as f32, config.upper_mid_shelf_gain)?;
+        let v10_filter = SpectrumChain::new(sample_rate as f32, config.v10_filter)?;
+        let gearbox_filter = SpectrumChain::new(sample_rate as f32, config.gearbox_filter)?;
         let transmission = TransmissionSynth::new(config.transmission.clone())?;
         let gear_shift = GearShiftPlayer::new(
             gear_shift_samples,
@@ -264,14 +305,22 @@ impl Gf509Runtime {
             config.gear_shift_reference_rpm,
             sample_rate,
         )?;
+        if config.engine_mode == EngineMode::SampleOnly && sample_layer.is_none() {
+            return Err("sample-only engine mode requires a sample-layer bank".into());
+        }
+        let sampled_crank = Crankshaft::new(sample_rate, config.engine.firing_order);
         Ok(Self {
             config,
             engine,
             scene,
             sample_layer,
             upper_mid_shelf,
+            v10_filter,
+            gearbox_filter,
             transmission,
             gear_shift,
+            sampled_crank,
+            sampled_gesture: ShiftGesture::default(),
             sample_frame: SampleLayerFrame::default(),
             telemetry: RuntimeTelemetry::default(),
             rendered_telemetry: RuntimeTelemetry::default(),
@@ -282,6 +331,9 @@ impl Gf509Runtime {
 
     pub fn sample_rate(&self) -> u32 {
         self.config.engine.sample_rate
+    }
+    pub fn engine_mode(&self) -> EngineMode {
+        self.config.engine_mode
     }
     pub fn max_block_frames(&self) -> usize {
         self.config.max_block_frames
@@ -372,57 +424,116 @@ impl Gf509Runtime {
             self.rendered_telemetry.rev_limiter_active = target.rev_limiter_active;
             self.rendered_telemetry.dt_seconds = target.dt_seconds;
             let interpolated = self.rendered_telemetry;
-            self.engine.set_input(EngineInput {
-                rpm: interpolated.rpm,
-                throttle: interpolated.throttle,
-                load: interpolated.normalized_engine_load,
-            })?;
-            self.engine.set_mechanical_state(
-                interpolated.normalized_engine_torque,
-                interpolated.clutch_engagement,
-                interpolated.tc_cut_ratio,
-                interpolated.rev_limiter_active,
-                interpolated.shift_phase,
-            );
-            let mut engine_frame = self.engine.render_sample();
-            engine_frame.transmission = self.transmission.process(TransmissionInput {
-                rpm: interpolated.rpm,
-                gear: interpolated.gear,
-                clutch: interpolated.clutch_engagement,
-                torque: interpolated.normalized_engine_torque,
-                throttle: interpolated.throttle,
-                shift_phase: interpolated.shift_phase,
-            });
-            engine_frame.gear_shift = self.gear_shift.process(interpolated.shift_phase, interpolated.rpm);
-            let scene_frame = self.scene.process(&engine_frame);
-            let sample_frame = if let Some(layer) = self.sample_layer.as_mut() {
-                layer.process_into(
-                    SampleLayerInput {
-                        rpm: interpolated.rpm,
-                        throttle: interpolated.throttle,
-                        load: interpolated.normalized_engine_load,
-                        normalized_engine_torque: interpolated.normalized_engine_torque,
-                        clutch_engagement: interpolated.clutch_engagement,
-                        crank_phase_deg: engine_frame.crank_phase_deg,
-                    },
-                    &mut self.sample_frame,
-                )?;
-                Some(self.sample_frame.output)
-            } else {
-                None
+            let output = match self.config.engine_mode {
+                EngineMode::Hybrid => self.render_hybrid_sample(interpolated)?,
+                EngineMode::SampleOnly => self.render_sampled_sample(interpolated)?,
             };
-            let output = blend_hybrid(
-                scene_frame.output,
-                sample_frame,
-                self.config.sample_layer.physical_blend_weight,
-                self.config.sample_layer.sample_blend_weight,
-                self.engine.shift_gesture_gain(),
-            );
-            let output = self.upper_mid_shelf.process(output);
             *left_sample = output;
             *right_sample = output;
         }
         Ok(left.len())
+    }
+
+    /// Hybrid path: procedural engine + scene, sample layer blended. The
+    /// procedural gearbox stays out of the acoustic scene and is summed after
+    /// its own spectrum chain, so the V10 and gearbox buses are shaped
+    /// independently.
+    fn render_hybrid_sample(&mut self, interpolated: RuntimeTelemetry) -> Result<f32, String> {
+        self.engine.set_input(EngineInput {
+            rpm: interpolated.rpm,
+            throttle: interpolated.throttle,
+            load: interpolated.normalized_engine_load,
+        })?;
+        self.engine.set_mechanical_state(
+            interpolated.normalized_engine_torque,
+            interpolated.clutch_engagement,
+            interpolated.tc_cut_ratio,
+            interpolated.rev_limiter_active,
+            interpolated.shift_phase,
+        );
+        let engine_frame = self.engine.render_sample();
+        let scene_frame = self.scene.process(&engine_frame);
+        let sample_frame = if let Some(layer) = self.sample_layer.as_mut() {
+            layer.process_into(
+                SampleLayerInput {
+                    rpm: interpolated.rpm,
+                    throttle: interpolated.throttle,
+                    load: interpolated.normalized_engine_load,
+                    normalized_engine_torque: interpolated.normalized_engine_torque,
+                    clutch_engagement: interpolated.clutch_engagement,
+                    crank_phase_deg: engine_frame.crank_phase_deg,
+                },
+                &mut self.sample_frame,
+            )?;
+            Some(self.sample_frame.output)
+        } else {
+            None
+        };
+        let engine_mix = blend_hybrid(
+            scene_frame.output,
+            sample_frame,
+            self.config.sample_layer.physical_blend_weight,
+            self.config.sample_layer.sample_blend_weight,
+            self.engine.shift_gesture_gain(),
+        );
+        let gearbox = self.transmission.process(TransmissionInput {
+            rpm: interpolated.rpm,
+            gear: interpolated.gear,
+            clutch: interpolated.clutch_engagement,
+            torque: interpolated.normalized_engine_torque,
+            throttle: interpolated.throttle,
+            shift_phase: interpolated.shift_phase,
+        }) + self.gear_shift.process(interpolated.shift_phase, interpolated.rpm);
+        let engine_out = self.v10_filter.process(engine_mix);
+        let gearbox_out = self.gearbox_filter.process(gearbox);
+        Ok(self.upper_mid_shelf.process(engine_out + gearbox_out))
+    }
+
+    /// Sample-only variant: the prepared bank is the engine source. The bank
+    /// and the procedural gearbox are summed independently, each through its
+    /// own spectrum chain (the bank never enters the acoustic scene).
+    fn render_sampled_sample(&mut self, interpolated: RuntimeTelemetry) -> Result<f32, String> {
+        let sample_rate = self.sample_rate() as f32;
+        let events = self.sampled_crank.step(interpolated.rpm);
+        let crank_phase_deg = events.crank_phase_deg;
+        let shift_phase = interpolated.shift_phase as u8;
+        // Gear-shift one-shots own the audible blip, so the procedural blip is
+        // disabled exactly as in the hybrid path.
+        self.sampled_gesture
+            .step(shift_phase, sample_rate, false);
+        let layer = self
+            .sample_layer
+            .as_mut()
+            .ok_or("sample-only engine mode requires a sample-layer bank")?;
+        layer.process_into(
+            SampleLayerInput {
+                rpm: interpolated.rpm,
+                throttle: interpolated.throttle,
+                load: interpolated.normalized_engine_load,
+                normalized_engine_torque: interpolated.normalized_engine_torque,
+                clutch_engagement: interpolated.clutch_engagement,
+                crank_phase_deg,
+            },
+            &mut self.sample_frame,
+        )?;
+        let gesture = shift_energy_gain(shift_phase) * self.sampled_gesture.gain();
+        let drive = self.sample_frame.output
+            * gesture
+            * GF509_HEADROOM_GAIN
+            * self.config.sampled_engine_gain;
+        // The sampled engine never enters the acoustic scene: the bank is the
+        // whole engine and the procedural gearbox is summed independently.
+        let gearbox = self.transmission.process(TransmissionInput {
+            rpm: interpolated.rpm,
+            gear: interpolated.gear,
+            clutch: interpolated.clutch_engagement,
+            torque: interpolated.normalized_engine_torque,
+            throttle: interpolated.throttle,
+            shift_phase: interpolated.shift_phase,
+        }) + self.gear_shift.process(interpolated.shift_phase, interpolated.rpm);
+        let engine_out = self.v10_filter.process(drive);
+        let gearbox_out = self.gearbox_filter.process(gearbox) * self.config.sampled_gearbox_gain;
+        Ok(self.upper_mid_shelf.process(engine_out + gearbox_out))
     }
 
     /// Restores deterministic post-construction state while retaining config.
@@ -569,7 +680,12 @@ fn validate_experimental_manifest(
 }
 
 fn validate_experimental_header(manifest: &ExperimentalManifest) -> Result<(), String> {
-    if manifest.schema_version != 2 || manifest.key != "v10_f2002_experimental" {
+    if manifest.schema_version != 2
+        || !matches!(
+            manifest.key.as_str(),
+            "v10_f2002_experimental" | "v10_f2002_sampled"
+        )
+    {
         return Err("experimental manifest schema/key mismatch".into());
     }
     if (manifest.output_gain - GF509_HEADROOM_GAIN).abs() > f32::EPSILON {
@@ -690,7 +806,7 @@ mod tests {
     }
 
     #[test]
-    fn transmission_layer_is_wired_into_the_scene() {
+    fn transmission_layer_is_summed_into_the_hybrid_mix() {
         let render = |gain: f32| {
             let mut config = Gf509RuntimeConfig::default();
             config.transmission.output_gain = gain;
@@ -912,6 +1028,226 @@ mod tests {
         assert!(config.validate().is_err());
         config.physical_blend_weight = 0.5;
         assert!(config.validate().is_ok());
+    }
+
+    fn sampled_bank_path() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_sampled")
+    }
+
+    fn sampled_telemetry(rpm: f32) -> RuntimeTelemetry {
+        RuntimeTelemetry {
+            rpm,
+            throttle: 0.85,
+            normalized_engine_load: 0.8,
+            normalized_engine_torque: 0.7,
+            torque_sign: TorqueSign::Positive,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            gear: 4,
+            shift_phase: ShiftPhase::None,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
+            rev_limiter_active: false,
+            dt_seconds: 1.0 / 120.0,
+        }
+    }
+
+    #[test]
+    fn sample_only_mode_requires_a_bank() {
+        let mut config = Gf509RuntimeConfig::default();
+        config.engine_mode = EngineMode::SampleOnly;
+        assert!(Gf509Runtime::new(config).is_err());
+    }
+
+    #[test]
+    fn sampled_bank_loads_and_renders_finite_over_the_sweep() {
+        let mut config = Gf509RuntimeConfig::default();
+        config.engine.sample_rate = 44_100;
+        config.max_block_frames = 512;
+        config.sample_layer_directory = Some(sampled_bank_path());
+        config.engine_mode = EngineMode::SampleOnly;
+        let mut runtime = Gf509Runtime::new(config).unwrap();
+        assert_eq!(runtime.engine_mode(), EngineMode::SampleOnly);
+        let mut left = [0.0f32; 512];
+        let mut right = [0.0f32; 512];
+        let mut peak = 0.0f32;
+        for block in 0..64 {
+            let rpm = if block < 32 {
+                3_000.0 + 15_000.0 * (block as f32 / 31.0)
+            } else {
+                18_000.0 - 13_000.0 * ((block - 32) as f32 / 31.0)
+            };
+            runtime.update_telemetry(sampled_telemetry(rpm)).unwrap();
+            runtime.render_block(&mut left, &mut right).unwrap();
+            assert!(left.iter().all(|sample| sample.is_finite()));
+            assert_eq!(left, right);
+            peak = peak.max(left.iter().map(|sample| sample.abs()).fold(0.0f32, f32::max));
+        }
+        assert!(peak > 1e-4, "sampled engine must stay audible");
+        assert!(peak <= 1.0, "sampled engine must stay under PCM ceiling, got {peak}");
+    }
+
+    #[test]
+    fn sample_only_ignores_the_procedural_engine_seed() {
+        // The procedural engine must contribute nothing in sample-only mode:
+        // two different seeds must render bit-identical output.
+        let base = Gf509RuntimeConfig {
+            sample_layer_directory: Some(sampled_bank_path()),
+            engine_mode: EngineMode::SampleOnly,
+            ..Gf509RuntimeConfig::default()
+        };
+        let mut first_config = base.clone();
+        first_config.engine.sample_rate = 44_100;
+        first_config.engine.seed = 0x1111;
+        let mut second_config = base;
+        second_config.engine.sample_rate = 44_100;
+        second_config.engine.seed = 0x2222;
+        let mut first = Gf509Runtime::new(first_config).unwrap();
+        let mut second = Gf509Runtime::new(second_config).unwrap();
+        let mut first_l = [0.0f32; 256];
+        let mut first_r = [0.0f32; 256];
+        let mut second_l = [0.0f32; 256];
+        let mut second_r = [0.0f32; 256];
+        for rpm in [4_500.0f32, 6_000.0, 9_000.0, 12_000.0] {
+            first
+                .update_telemetry(sampled_telemetry(rpm))
+                .unwrap();
+            second
+                .update_telemetry(sampled_telemetry(rpm))
+                .unwrap();
+        }
+        first.render_block(&mut first_l, &mut first_r).unwrap();
+        second.render_block(&mut second_l, &mut second_r).unwrap();
+        assert_eq!(first_l, second_l);
+    }
+
+    fn render_sampled_output(config_mutator: impl FnOnce(&mut Gf509RuntimeConfig)) -> Vec<f32> {
+        let mut config = Gf509RuntimeConfig::default();
+        config.engine.sample_rate = 44_100;
+        config.sample_layer_directory = Some(sampled_bank_path());
+        config.engine_mode = EngineMode::SampleOnly;
+        config.transmission.gear_ratios = vec![3.45, 2.75, 2.3, 1.95, 1.68, 1.46];
+        config.transmission.final_drive = 4.25;
+        config_mutator(&mut config);
+        let mut runtime = Gf509Runtime::new(config).unwrap();
+        runtime
+            .update_telemetry(sampled_telemetry(9_000.0))
+            .unwrap();
+        let mut left = [0.0f32; 512];
+        let mut right = [0.0f32; 512];
+        runtime.render_block(&mut left, &mut right).unwrap();
+        left.to_vec()
+    }
+
+    #[test]
+    fn sample_only_bypasses_the_acoustic_scene() {
+        let neutral = render_sampled_output(|_| {});
+        let extreme = render_sampled_output(|config| {
+            config.scene.output_gain = 5.0;
+            config.scene.engine_air_gain = 1.5;
+            config.scene.engine_cover_gain = 1.5;
+            config.scene.mount_monocoque_gain = 1.5;
+            config.scene.dry_mid_gain = 1.5;
+            config.scene.dry_high_gain = 1.5;
+        });
+        assert_eq!(
+            neutral, extreme,
+            "sample-only engine must not pass through the acoustic scene"
+        );
+    }
+
+    #[test]
+    fn sample_only_sums_the_procedural_gearbox() {
+        let muted_zero = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.0;
+            config.gear_shift_gain = 0.0;
+            config.sampled_gearbox_gain = 0.0;
+        });
+        let muted_one = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.0;
+            config.gear_shift_gain = 0.0;
+            config.sampled_gearbox_gain = 1.0;
+        });
+        assert_eq!(
+            muted_zero, muted_one,
+            "a silent gearbox must leave the bank untouched"
+        );
+        let audible_zero = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.5;
+            config.gear_shift_gain = 0.5;
+            config.sampled_gearbox_gain = 0.0;
+        });
+        let audible_one = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.5;
+            config.gear_shift_gain = 0.5;
+            config.sampled_gearbox_gain = 1.0;
+        });
+        assert_eq!(
+            audible_zero, muted_zero,
+            "bank output must not depend on gearbox settings"
+        );
+        assert_ne!(
+            audible_zero, audible_one,
+            "procedural gearbox must be summed into the sample-only mix"
+        );
+    }
+
+    #[test]
+    fn sample_only_shapes_engine_and_gearbox_buses_independently() {
+        let base = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.5;
+            config.gear_shift_gain = 0.5;
+        });
+        let engine_shaped = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.5;
+            config.gear_shift_gain = 0.5;
+            config.v10_filter.highpass_hz = 5_000.0;
+            config.v10_filter.highpass_slope_db_per_oct = 24.0;
+        });
+        assert_ne!(
+            base, engine_shaped,
+            "the V10 chain must shape the bank bus"
+        );
+        let gearbox_shaped = render_sampled_output(|config| {
+            config.transmission.output_gain = 0.5;
+            config.gear_shift_gain = 0.5;
+            config.gearbox_filter.lowpass_hz = 1_500.0;
+            config.gearbox_filter.lowpass_slope_db_per_oct = 24.0;
+        });
+        assert_ne!(
+            base, gearbox_shaped,
+            "the gearbox chain must shape the gearbox bus"
+        );
+    }
+
+    #[test]
+    fn hybrid_shapes_the_gearbox_independently_of_the_engine() {
+        let render = |mutator: &dyn Fn(&mut Gf509RuntimeConfig)| {
+            let mut config = Gf509RuntimeConfig::default();
+            config.engine.sample_rate = 44_100;
+            config.transmission.output_gain = 0.8;
+            config.transmission.gear_ratios = vec![3.45, 2.75, 2.3, 1.95, 1.68, 1.46];
+            config.transmission.final_drive = 4.25;
+            config.gear_shift_gain = 1.0;
+            mutator(&mut config);
+            let mut runtime = Gf509Runtime::new(config).unwrap();
+            runtime
+                .update_telemetry(sampled_telemetry(9_000.0))
+                .unwrap();
+            let mut left = [0.0f32; 512];
+            let mut right = [0.0f32; 512];
+            runtime.render_block(&mut left, &mut right).unwrap();
+            left.to_vec()
+        };
+        let base = render(&|_| {});
+        let gearbox_shaped = render(&|config| {
+            config.gearbox_filter.highpass_hz = 5_000.0;
+            config.gearbox_filter.highpass_slope_db_per_oct = 24.0;
+        });
+        assert_ne!(
+            base, gearbox_shaped,
+            "the gearbox chain must shape the hybrid gearbox bus"
+        );
     }
 
     #[test]

@@ -7,10 +7,11 @@ use std::path::{Path, PathBuf};
 use v10_engine_synth::runtime::blend_hybrid;
 use v10_engine_synth::wav::write_mono_pcm16;
 use v10_engine_synth::{
-    AcousticScene, AcousticSceneConfig, CollectorGeometry, EngineConfig, EngineFrame, EngineInput,
-    GearShiftPlayer, GearShiftSamples, SampleLayerInput, ShiftPhase, ThreeZoneSampleLayer,
-    ThreeZoneSampleLayerConfig, TransmissionConfig, TransmissionInput, TransmissionSynth,
-    UpperMidShelf, V10Engine,
+    shift_energy_gain, AcousticFrame, AcousticScene, AcousticSceneConfig, CollectorGeometry,
+    Crankshaft, EngineConfig, EngineFrame, EngineInput, EngineMode, GearShiftPlayer,
+    GearShiftSamples, SampleLayerInput, ShiftGesture, ShiftPhase, SpectrumChain,
+    SpectrumChainConfig, ThreeZoneSampleLayer, ThreeZoneSampleLayerConfig, TransmissionConfig,
+    TransmissionInput, TransmissionSynth, UpperMidShelf, V10Engine,
 };
 
 const HYBRID_HEADROOM_GAIN: f32 = 0.61;
@@ -212,6 +213,11 @@ struct Args {
     gear_shift_gain: f32,
     gear_shift_reference_rpm: f32,
     shift_sequence: Vec<ShiftEvent>,
+    engine_mode: EngineMode,
+    sampled_engine_gain: f32,
+    sampled_gearbox_gain: f32,
+    v10_filter: SpectrumChainConfig,
+    gearbox_filter: SpectrumChainConfig,
 }
 
 fn parse_value<T: std::str::FromStr>(
@@ -278,6 +284,11 @@ fn parse_args() -> Result<Args, String> {
         gear_shift_gain: 1.0,
         gear_shift_reference_rpm: 10_000.0,
         shift_sequence: Vec::new(),
+        engine_mode: EngineMode::Hybrid,
+        sampled_engine_gain: 1.0,
+        sampled_gearbox_gain: 1.0,
+        v10_filter: SpectrumChainConfig::default(),
+        gearbox_filter: SpectrumChainConfig::default(),
     };
     let mut i = 0;
     while i < raw.len() {
@@ -457,6 +468,71 @@ fn parse_args() -> Result<Args, String> {
                 let spec = parse_value::<String>(&raw, &mut i, "--shift-sequence")?;
                 parsed.shift_sequence = parse_shift_sequence(&spec)?;
             }
+            "--engine-mode" => {
+                let value = parse_value::<String>(&raw, &mut i, "--engine-mode")?;
+                parsed.engine_mode = match value.as_str() {
+                    "hybrid" => EngineMode::Hybrid,
+                    "sample-only" | "sample_only" => EngineMode::SampleOnly,
+                    other => return Err(format!("invalid --engine-mode: {other}")),
+                };
+            }
+            "--sampled-gearbox-gain" => {
+                parsed.sampled_gearbox_gain =
+                    parse_value(&raw, &mut i, "--sampled-gearbox-gain")?;
+            }
+            "--sampled-engine-gain" => {
+                parsed.sampled_engine_gain =
+                    parse_value(&raw, &mut i, "--sampled-engine-gain")?;
+            }
+            "--v10-highpass-hz" => {
+                parsed.v10_filter.highpass_hz =
+                    parse_value(&raw, &mut i, "--v10-highpass-hz")?
+            }
+            "--v10-highpass-slope" => {
+                parsed.v10_filter.highpass_slope_db_per_oct =
+                    parse_value(&raw, &mut i, "--v10-highpass-slope")?
+            }
+            "--v10-lowpass-hz" => {
+                parsed.v10_filter.lowpass_hz = parse_value(&raw, &mut i, "--v10-lowpass-hz")?
+            }
+            "--v10-lowpass-slope" => {
+                parsed.v10_filter.lowpass_slope_db_per_oct =
+                    parse_value(&raw, &mut i, "--v10-lowpass-slope")?
+            }
+            "--v10-peak-hz" => {
+                parsed.v10_filter.peak_hz = parse_value(&raw, &mut i, "--v10-peak-hz")?
+            }
+            "--v10-peak-gain-db" => {
+                parsed.v10_filter.peak_gain_db =
+                    parse_value(&raw, &mut i, "--v10-peak-gain-db")?
+            }
+            "--v10-peak-q" => {
+                parsed.v10_filter.peak_q = parse_value(&raw, &mut i, "--v10-peak-q")?
+            }
+            "--v10-peak-drive" => {
+                parsed.v10_filter.peak_drive =
+                    parse_value(&raw, &mut i, "--v10-peak-drive")?
+            }
+            "--v10-peak-drive-mix" => {
+                parsed.v10_filter.peak_drive_mix =
+                    parse_value(&raw, &mut i, "--v10-peak-drive-mix")?
+            }
+            "--gearbox-highpass-hz" => {
+                parsed.gearbox_filter.highpass_hz =
+                    parse_value(&raw, &mut i, "--gearbox-highpass-hz")?
+            }
+            "--gearbox-highpass-slope" => {
+                parsed.gearbox_filter.highpass_slope_db_per_oct =
+                    parse_value(&raw, &mut i, "--gearbox-highpass-slope")?
+            }
+            "--gearbox-lowpass-hz" => {
+                parsed.gearbox_filter.lowpass_hz =
+                    parse_value(&raw, &mut i, "--gearbox-lowpass-hz")?
+            }
+            "--gearbox-lowpass-slope" => {
+                parsed.gearbox_filter.lowpass_slope_db_per_oct =
+                    parse_value(&raw, &mut i, "--gearbox-lowpass-slope")?
+            }
             unknown => return Err(format!("unknown argument: {unknown}")),
         }
         i += 1;
@@ -497,6 +573,15 @@ fn parse_args() -> Result<Args, String> {
         return Err("--hold-before-lift requires --sweep-end-rpm".into());
     }
     validate_shift_sequence(&parsed.shift_sequence, parsed.seconds)?;
+    if parsed.engine_mode == EngineMode::SampleOnly && parsed.sample_layer_dir.is_none() {
+        return Err("--engine-mode sample-only requires --sample-layer-dir".into());
+    }
+    if !parsed.sampled_gearbox_gain.is_finite() || parsed.sampled_gearbox_gain < 0.0 {
+        return Err("--sampled-gearbox-gain out of range".into());
+    }
+    if !parsed.sampled_engine_gain.is_finite() || parsed.sampled_engine_gain < 0.0 {
+        return Err("--sampled-engine-gain out of range".into());
+    }
     Ok(parsed)
 }
 
@@ -742,7 +827,7 @@ fn run() -> Result<(), String> {
         clutch_gain: args.transmission_clutch_gain,
         ..TransmissionConfig::default()
     })?;
-    let mut zone_trim_db = [0.0f32; 8];
+    let mut zone_trim_db = [0.0f32; v10_engine_synth::ZONE_TRIM_SLOTS];
     for (slot, value) in zone_trim_db.iter_mut().zip(args.sample_zone_trim_db.iter()) {
         *slot = *value;
     }
@@ -779,17 +864,39 @@ fn run() -> Result<(), String> {
         throttle: args.throttle,
         load: args.load,
     })?;
+    let sample_only = args.engine_mode == EngineMode::SampleOnly;
+    let mut sampled_crank = Crankshaft::new(args.sample_rate, EngineConfig::default().firing_order);
+    let mut sampled_gesture = ShiftGesture::default();
     let sample_blend_weight = args
         .sample_blend_weight
         .unwrap_or(ThreeZoneSampleLayerConfig::default().sample_blend_weight);
     let physical_blend_weight = args.physical_blend_weight.unwrap_or(
         ThreeZoneSampleLayerConfig::default().physical_blend_weight,
     );
+    let mut v10_chain = SpectrumChain::new(args.sample_rate as f32, args.v10_filter)?;
+    let mut gearbox_chain = SpectrumChain::new(args.sample_rate as f32, args.gearbox_filter)?;
 
     let warmup_samples = (args.warmup * args.sample_rate as f32).round() as usize;
     for _ in 0..warmup_samples {
-        let frame = engine.render_sample();
-        scene.process(&frame);
+        if sample_only {
+            // The sampled engine bypasses the acoustic scene entirely: warmup
+            // only advances the crank phase and the bank's phase alignment.
+            let events = sampled_crank.step(args.rpm);
+            sample_layer
+                .as_mut()
+                .ok_or("sample-only warmup requires a sample layer")?
+                .process(SampleLayerInput {
+                    rpm: args.rpm,
+                    throttle: args.throttle,
+                    load: args.load,
+                    normalized_engine_torque: args.load,
+                    clutch_engagement: 1.0,
+                    crank_phase_deg: events.crank_phase_deg,
+                })?;
+        } else {
+            let frame = engine.render_sample();
+            scene.process(&frame);
+        }
     }
 
     let total = (args.seconds * args.sample_rate as f32).round() as usize;
@@ -838,6 +945,10 @@ fn run() -> Result<(), String> {
         "sample_max_rasp",
         "sample_off_throttle",
         "sample_layer",
+        "sampled_engine",
+        "gearbox",
+        "v10_filtered",
+        "gearbox_filtered",
         "hybrid_mix",
         // PHY-140 physical diagnostic stems
         "cylinder_pressure",
@@ -912,7 +1023,6 @@ fn run() -> Result<(), String> {
     for sample in 0..total {
         let time_s = sample as f32 / args.sample_rate as f32;
         let current_input = render_input(&args, time_s);
-        engine.set_input(current_input)?;
         // Mechanical engagement is identical with and without a shift
         // sequence: only the phase differs, so A/B isolates the gesture.
         let retention_torque = if current_input.throttle > 0.30 {
@@ -921,9 +1031,7 @@ fn run() -> Result<(), String> {
             -((0.30 - current_input.throttle) / 0.30) * 0.6
         };
         let shift_phase = shift_phase_at(&args.shift_sequence, time_s);
-        engine.set_mechanical_state(retention_torque, 1.0, 0.0, false, shift_phase);
-        let mut frame: EngineFrame = engine.render_sample();
-        frame.transmission = transmission.process(TransmissionInput {
+        let transmission_signal = transmission.process(TransmissionInput {
             rpm: current_input.rpm,
             gear: args.gear,
             clutch: 1.0,
@@ -931,8 +1039,21 @@ fn run() -> Result<(), String> {
             throttle: current_input.throttle,
             shift_phase,
         });
-        frame.gear_shift = gear_shift_player.process(shift_phase, current_input.rpm);
-        let acoustic = scene.process(&frame);
+        let gear_shift_signal = gear_shift_player.process(shift_phase, current_input.rpm);
+        let mut frame: EngineFrame = if sample_only {
+            let events = sampled_crank.step(current_input.rpm);
+            sampled_gesture.step(shift_phase as u8, args.sample_rate as f32, false);
+            EngineFrame {
+                throttle: current_input.throttle,
+                load: current_input.load,
+                crank_phase_deg: events.crank_phase_deg,
+                ..EngineFrame::default()
+            }
+        } else {
+            engine.set_input(current_input)?;
+            engine.set_mechanical_state(retention_torque, 1.0, 0.0, false, shift_phase);
+            engine.render_sample()
+        };
         let sampled = sample_layer
             .as_mut()
             .map(|layer| {
@@ -958,6 +1079,21 @@ fn run() -> Result<(), String> {
                 })
             })
             .transpose()?;
+        if sample_only {
+            // The prepared bank is the engine: it drives the mix directly and
+            // the gearbox is summed after it, never through the scene.
+            let gesture = shift_energy_gain(shift_phase as u8) * sampled_gesture.gain();
+            let sampled_engine = sampled.as_ref().map_or(0.0, |f| f.output)
+                * gesture
+                * HYBRID_HEADROOM_GAIN
+                * args.sampled_engine_gain;
+            frame.master = sampled_engine;
+        }
+        let acoustic = if sample_only {
+            AcousticFrame::default()
+        } else {
+            scene.process(&frame)
+        };
         stems
             .get_mut("combustion_source")
             .unwrap()
@@ -1057,11 +1193,15 @@ fn run() -> Result<(), String> {
         stems
             .get_mut("transmission")
             .unwrap()
-            .push(frame.transmission);
+            .push(transmission_signal);
         stems
             .get_mut("gear_shift")
             .unwrap()
-            .push(frame.gear_shift);
+            .push(gear_shift_signal);
+        stems
+            .get_mut("gearbox")
+            .unwrap()
+            .push(transmission_signal + gear_shift_signal);
         let sample_tonal = sampled.as_ref().map_or(0.0, |frame| frame.tonal);
         let sample_residual = sampled.as_ref().map_or(0.0, |frame| frame.residual);
         let sample_max_rasp = sampled.as_ref().map_or(0.0, |frame| frame.max_rasp);
@@ -1075,18 +1215,30 @@ fn run() -> Result<(), String> {
             sample_residual_sq += (frame.residual * frame.residual) as f64;
             sample_off_sq += (frame.off_throttle * frame.off_throttle) as f64;
         }
-        // Hybrid headroom is static and transparent. A limiter here would hide
-        // gain errors and make the sample layer part of the sound design.
-        // The blend mirrors Gf509Runtime: the sample layer follows the same
-        // synthesized shift gesture as the procedural side.
-        let hybrid = blend_hybrid(
-            acoustic.output,
-            sample_layer.is_some().then_some(sample_output),
-            physical_blend_weight,
-            sample_blend_weight,
-            engine.shift_gesture_gain(),
-        );
-        let hybrid = upper_mid_shelf.process(hybrid);
+        let gearbox_signal = transmission_signal + gear_shift_signal;
+        let (v10_bus, gearbox_level) = if sample_only {
+            (frame.master, args.sampled_gearbox_gain)
+        } else {
+            // Hybrid headroom is static and transparent. A limiter here would
+            // hide gain errors and make the sample layer part of the sound
+            // design. The blend mirrors Gf509Runtime: the sample layer follows
+            // the same synthesized shift gesture as the procedural side.
+            let blended = blend_hybrid(
+                acoustic.output,
+                sample_layer.is_some().then_some(sample_output),
+                physical_blend_weight,
+                sample_blend_weight,
+                engine.shift_gesture_gain(),
+            );
+            (blended, 1.0)
+        };
+        let v10_filtered = v10_chain.process(v10_bus);
+        let gearbox_filtered = gearbox_chain.process(gearbox_signal) * gearbox_level;
+        let hybrid = upper_mid_shelf.process(v10_filtered + gearbox_filtered);
+        stems
+            .get_mut("sampled_engine")
+            .unwrap()
+            .push(if sample_only { frame.master } else { 0.0 });
         stems.get_mut("sample_tonal").unwrap().push(sample_tonal);
         stems
             .get_mut("sample_residual")
@@ -1101,6 +1253,11 @@ fn run() -> Result<(), String> {
             .unwrap()
             .push(sample_off_throttle);
         stems.get_mut("sample_layer").unwrap().push(sample_output);
+        stems.get_mut("v10_filtered").unwrap().push(v10_filtered);
+        stems
+            .get_mut("gearbox_filtered")
+            .unwrap()
+            .push(gearbox_filtered);
         stems.get_mut("hybrid_mix").unwrap().push(hybrid);
         stems
             .get_mut("cylinder_pressure")
@@ -1292,6 +1449,9 @@ fn run() -> Result<(), String> {
             "  \"sample_layer_tuning\": \"{}\",\n",
             "  \"scene_gain_overrides\": \"{}\",\n",
             "  \"sample_layer_bank\": \"{}\",\n",
+            "  \"engine_mode\": \"{}\",\n",
+            "  \"sampled_engine_gain\": {:.6},\n",
+            "  \"sampled_gearbox_gain\": {:.6},\n",
             "  \"sample_layer_source_weights\": \"{}\",\n",
             "  \"sample_tonal_rms\": {:.9},\n",
             "  \"sample_residual_rms\": {:.9},\n",
@@ -1343,6 +1503,9 @@ fn run() -> Result<(), String> {
         sample_layer_tuning,
         scene_gain_overrides,
         sample_layer_bank,
+        if sample_only { "sample_only" } else { "hybrid" },
+        args.sampled_engine_gain,
+        args.sampled_gearbox_gain,
         sample_layer_source_weights,
         sample_tonal_rms,
         sample_residual_rms,

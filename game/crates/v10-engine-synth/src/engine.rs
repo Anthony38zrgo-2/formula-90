@@ -66,7 +66,7 @@ impl EngineInput {
 /// envelope, and the envelope keeps running after the phase returns to `None`
 /// so the wobble carries the shift gesture. Allocation-free and deterministic.
 #[derive(Clone, Copy, Debug, Default)]
-struct ShiftGesture {
+pub struct ShiftGesture {
     last_phase: u8,
     wobble_active: bool,
     wobble_t: f32,
@@ -74,10 +74,22 @@ struct ShiftGesture {
     blip_t: f32,
 }
 
+/// Discrete energy multiplier carried by the physical shift phases. Mirrors
+/// the mapping inside `target_acoustic_energy_with_state` so the sample-only
+/// runtime can apply the same cut/recovery gesture to a sampled engine.
+#[inline]
+pub fn shift_energy_gain(phase: u8) -> f32 {
+    match phase {
+        1 | 3 => 0.12,
+        2 | 5 => 0.72,
+        _ => 1.0,
+    }
+}
+
 impl ShiftGesture {
     /// Advances rising-edge detection and the envelope timers by one sample.
     #[inline]
-    fn step(&mut self, phase: u8, sample_rate: f32, blip_enabled: bool) {
+    pub fn step(&mut self, phase: u8, sample_rate: f32, blip_enabled: bool) {
         let is_cut = phase == 1 || phase == 3;
         // A new cut restarts the gesture: the previous wobble/blip is over.
         if is_cut {
@@ -111,7 +123,7 @@ impl ShiftGesture {
     /// Bounded amplitude multiplier for the current gesture state. `1.0` when
     /// idle; sag -> rebound -> settle on recovery; energy flare on blip.
     #[inline]
-    fn gain(&self) -> f32 {
+    pub fn gain(&self) -> f32 {
         let wobble = if self.wobble_active {
             let decay = (-self.wobble_t / SHIFT_WOBBLE_TAU).exp();
             let omega = std::f32::consts::TAU * SHIFT_WOBBLE_CYCLES / SHIFT_WOBBLE_SECONDS;
@@ -146,11 +158,7 @@ fn target_acoustic_energy_with_state(input: EngineInput, mechanical: MechanicalS
     // state is discrete and arrives from physics. The synthesized recovery
     // wobble and downshift blip are applied after the energy follower (see
     // `ShiftGesture`), never inside this target.
-    let cut_gain = match mechanical.shift_phase {
-        1 | 3 => 0.12,
-        2 | 5 => 0.72,
-        _ => 1.0,
-    };
+    let cut_gain = shift_energy_gain(mechanical.shift_phase);
     let limiter_gain = if mechanical.limiter_active { 0.78 } else { 1.0 };
     // Negative torque remains audible during retention/free-rev. The clutch
     // scales this drag contribution without changing the delivered load.

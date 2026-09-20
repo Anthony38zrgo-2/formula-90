@@ -8,7 +8,11 @@ param(
     [switch]$SmokeAudio,
     [switch]$SmokeBackground,
     [switch]$TestPhysics,
-    [switch]$Parity
+    [switch]$Parity,
+    [switch]$FujiMainStraightShowcase,
+    [string]$MovieOutput,
+    [ValidateRange(1, 120)][int]$MovieFps = 60,
+    [ValidateRange(1, 100000)][int]$MovieFrames = 1800
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,6 +34,23 @@ $selectedLivery = $liveries[$Livery]
 $scene = [string]$selectedLivery.Scene
 $manifestPath = Join-Path $game ([string]$selectedLivery.Manifest)
 $variantLabel = [string]$selectedLivery.Label
+$showcaseScene = 'res://scenes/showcases/f1_2030_fuji_main_straight_showcase.tscn'
+if ($FujiMainStraightShowcase) {
+    if ($Livery -ne 'original') { throw '-FujiMainStraightShowcase uses the original F1 2030 vehicle scene.' }
+    $scene = $showcaseScene
+    $variantLabel = 'F1 2030 V10 Fuji main-straight showcase'
+}
+$resolvedMovieOutput = $null
+if (-not [string]::IsNullOrWhiteSpace($MovieOutput)) {
+    if (-not $FujiMainStraightShowcase) { throw '-MovieOutput is supported only with -FujiMainStraightShowcase.' }
+    $resolvedMovieOutput = [System.IO.Path]::GetFullPath($MovieOutput)
+    if ([System.IO.Path]::GetExtension($resolvedMovieOutput).ToLowerInvariant() -ne '.ogv') {
+        throw 'Movie Maker output must use .ogv so the synchronized audio is included.'
+    }
+    $movieDirectory = Split-Path -Parent $resolvedMovieOutput
+    if (-not (Test-Path -LiteralPath $movieDirectory -PathType Container)) { throw "Movie output directory does not exist: $movieDirectory" }
+    if (Test-Path -LiteralPath $resolvedMovieOutput) { throw "Refusing to overwrite existing movie: $resolvedMovieOutput" }
+}
 $vehicleId = 'f1_2030_v10'
 $trackDir = Join-Path $game 'tracks\fuji76_77'
 $trackPath = Join-Path $trackDir 'fuji76_77_visual.glb'
@@ -123,9 +144,7 @@ if (-not (Test-Path -LiteralPath $buildSourcePath -PathType Leaf)) {
 $headSha = (& git rev-parse HEAD).Trim()
 $buildSource = (Get-Content -LiteralPath $buildSourcePath -Raw).Trim()
 $buildCommit = (& git log -1 --format=%H -- $buildSourcePath).Trim()
-$buildParent = (& git rev-parse "$buildCommit~1" 2>$null)
-if ($buildParent) { $buildParent = $buildParent.Trim() }
-if ($buildSource -ne $headSha -and $buildSource -ne $buildCommit -and $buildSource -ne $buildParent) {
+if ($buildSource -ne $headSha) {
     throw "Paridad BUILD/HEAD rota: BUILD_SOURCE=$buildSource HEAD=$headSha. Ejecute scripts/build_windows.ps1."
 }
 $requiredDlls = @(
@@ -142,7 +161,7 @@ foreach ($dll in $requiredDlls) {
         throw "DLL faltante: $dll. Ejecute scripts/build_windows.ps1."
     }
 }
-Write-Host "Paridad BUILD/HEAD validada: $headSha" -ForegroundColor Green
+Write-Host "Paridad BUILD/HEAD validada: $headSha (BUILD_SOURCE file last committed by $buildCommit)" -ForegroundColor Green
 
 Write-Host "Importando y validando $variantLabel..." -ForegroundColor Cyan
 & $godot --headless --path $game --import
@@ -183,5 +202,11 @@ if ($ValidateRuntimeOnly) {
 }
 
 Write-Host "Iniciando $variantLabel con $scene" -ForegroundColor Green
-& $godot --path $game $scene
+$runArgs = @('--path', $game)
+if ($resolvedMovieOutput) {
+    $runArgs += @('--write-movie', $resolvedMovieOutput, '--fixed-fps', [string]$MovieFps, '--quit-after', [string]$MovieFrames)
+    Write-Host "Grabación Movie Maker: $resolvedMovieOutput ($MovieFrames frames a $MovieFps FPS)" -ForegroundColor Cyan
+}
+$runArgs += $scene
+& $godot @runArgs
 exit $LASTEXITCODE

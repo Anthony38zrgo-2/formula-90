@@ -47,6 +47,68 @@ fn bed_code(token: &str) -> u8 {
     }
 }
 
+/// Translate one `audio.gf509.v10_filter` / `gearbox_filter` object into a
+/// spectrum chain config. Absent keys keep the runtime bypass defaults.
+fn spectrum_chain_from_value(
+    value: &serde_json::Value,
+    label: &str,
+) -> Result<v10_engine_synth::SpectrumChainConfig, String> {
+    let scalar = |name: &str| -> Result<Option<f32>, String> {
+        match value.get(name) {
+            None | Some(serde_json::Value::Null) => Ok(None),
+            Some(raw) => {
+                let number = raw
+                    .as_f64()
+                    .ok_or_else(|| format!("{label}.{name} must be a number"))?;
+                if !number.is_finite() {
+                    return Err(format!("{label}.{name} is not finite"));
+                }
+                Ok(Some(number as f32))
+            }
+        }
+    };
+    let mut config = v10_engine_synth::SpectrumChainConfig::default();
+    if let Some(number) = scalar("highpass_hz")? {
+        config.highpass_hz = number;
+    }
+    if let Some(number) = scalar("highpass_slope_db_per_oct")? {
+        config.highpass_slope_db_per_oct = number;
+    }
+    if let Some(number) = scalar("lowpass_hz")? {
+        config.lowpass_hz = number;
+    }
+    if let Some(number) = scalar("lowpass_slope_db_per_oct")? {
+        config.lowpass_slope_db_per_oct = number;
+    }
+    if let Some(number) = scalar("peak_hz")? {
+        config.peak_hz = number;
+    }
+    if let Some(number) = scalar("peak_gain_db")? {
+        config.peak_gain_db = number;
+    }
+    if let Some(number) = scalar("peak_q")? {
+        config.peak_q = number;
+    }
+    if let Some(number) = scalar("peak_drive")? {
+        config.peak_drive = number;
+    }
+    if let Some(number) = scalar("peak_drive_mix")? {
+        config.peak_drive_mix = number;
+    }
+    if config.highpass_hz < 0.0
+        || config.lowpass_hz < 0.0
+        || config.highpass_slope_db_per_oct < 0.0
+        || config.lowpass_slope_db_per_oct < 0.0
+        || config.peak_hz < 0.0
+        || config.peak_q < 0.0
+        || config.peak_drive < 0.0
+        || !(0.0..=1.0).contains(&config.peak_drive_mix)
+    {
+        return Err(format!("{label} out of range"));
+    }
+    Ok(config)
+}
+
 /// Translate the profile `audio.gf509` section into explicit layer tuning.
 /// Absent keys reproduce shipped GF509 behavior exactly; geometry keys select
 /// an exhaust candidate only when the profile declares them.
@@ -163,6 +225,45 @@ fn v10_layer_tuning_from_section(
             return Err("gear_shift_reference_rpm out of range".into());
         }
         tuning.gear_shift_reference_rpm = Some(value);
+    }
+    if let Some(value) = section
+        .get("engine_mode")
+        .and_then(serde_json::Value::as_str)
+    {
+        tuning.engine_mode = match value {
+            "hybrid" => v10_engine_synth::EngineMode::Hybrid,
+            "sample_only" => v10_engine_synth::EngineMode::SampleOnly,
+            other => return Err(format!("unknown engine_mode: {other}")),
+        };
+    }
+    if let Some(value) = section
+        .get("sampled_gearbox_gain")
+        .and_then(serde_json::Value::as_f64)
+    {
+        let value = value as f32;
+        if !value.is_finite() || value < 0.0 {
+            return Err("sampled_gearbox_gain out of range".into());
+        }
+        tuning.sampled_gearbox_gain = Some(value);
+    }
+    if let Some(value) = section
+        .get("sampled_engine_gain")
+        .and_then(serde_json::Value::as_f64)
+    {
+        let value = value as f32;
+        if !value.is_finite() || value < 0.0 {
+            return Err("sampled_engine_gain out of range".into());
+        }
+        tuning.sampled_engine_gain = Some(value);
+    }
+    if let Some(value) = section.get("v10_filter").filter(|value| !value.is_null()) {
+        tuning.v10_filter = spectrum_chain_from_value(value, "v10_filter")?;
+    }
+    if let Some(value) = section
+        .get("gearbox_filter")
+        .filter(|value| !value.is_null())
+    {
+        tuning.gearbox_filter = spectrum_chain_from_value(value, "gearbox_filter")?;
     }
     if let Some(transmission) = section.get("transmission").filter(|value| !value.is_null()) {
         if let Some(gain) = transmission.get("gain").and_then(serde_json::Value::as_f64) {
@@ -791,6 +892,75 @@ mod tests {
             Some(vec![2.0, 0.0, 0.0, 1.5, 1.5, 1.5])
         );
         assert!(tuning.scene_gains.contains(&("engine_air".to_string(), 0.841)));
+    }
+
+    #[test]
+    fn engine_mode_and_sampled_gearbox_gain_are_transported() {
+        let section = serde_json::json!({
+            "engine_mode": "sample_only",
+            "sampled_gearbox_gain": 0.4
+        });
+        let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
+        assert_eq!(
+            tuning.engine_mode,
+            v10_engine_synth::EngineMode::SampleOnly
+        );
+        assert_eq!(tuning.sampled_gearbox_gain, Some(0.4));
+
+        let hybrid = serde_json::json!({ "engine_mode": "hybrid" });
+        assert_eq!(
+            v10_layer_tuning_from_section(Some(&hybrid))
+                .unwrap()
+                .engine_mode,
+            v10_engine_synth::EngineMode::Hybrid
+        );
+        let unknown = serde_json::json!({ "engine_mode": "warp_drive" });
+        assert!(v10_layer_tuning_from_section(Some(&unknown)).is_err());
+    }
+
+    #[test]
+    fn spectrum_filter_blocks_are_transported() {
+        let section = serde_json::json!({
+            "v10_filter": {
+                "highpass_hz": 97.0,
+                "highpass_slope_db_per_oct": 24.0,
+                "lowpass_hz": 13100.0,
+                "lowpass_slope_db_per_oct": 72.0,
+                "peak_hz": 10000.0,
+                "peak_gain_db": 6.0,
+                "peak_q": 3.0,
+                "peak_drive": 2.0,
+                "peak_drive_mix": 0.3
+            },
+            "gearbox_filter": {
+                "highpass_hz": 515.0,
+                "highpass_slope_db_per_oct": 72.0,
+                "lowpass_hz": 3100.0,
+                "lowpass_slope_db_per_oct": 72.0
+            }
+        });
+        let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
+        assert_eq!(tuning.v10_filter.highpass_hz, 97.0);
+        assert_eq!(tuning.v10_filter.highpass_slope_db_per_oct, 24.0);
+        assert_eq!(tuning.v10_filter.lowpass_hz, 13_100.0);
+        assert_eq!(tuning.v10_filter.lowpass_slope_db_per_oct, 72.0);
+        assert_eq!(tuning.v10_filter.peak_hz, 10_000.0);
+        assert_eq!(tuning.v10_filter.peak_gain_db, 6.0);
+        assert_eq!(tuning.v10_filter.peak_q, 3.0);
+        assert_eq!(tuning.v10_filter.peak_drive, 2.0);
+        assert_eq!(tuning.v10_filter.peak_drive_mix, 0.3);
+        assert_eq!(tuning.gearbox_filter.highpass_hz, 515.0);
+        assert_eq!(tuning.gearbox_filter.highpass_slope_db_per_oct, 72.0);
+        assert_eq!(tuning.gearbox_filter.lowpass_hz, 3_100.0);
+        assert_eq!(tuning.gearbox_filter.lowpass_slope_db_per_oct, 72.0);
+        assert_eq!(tuning.gearbox_filter.peak_gain_db, 0.0);
+
+        let absent = v10_layer_tuning_from_section(Some(&serde_json::json!({}))).unwrap();
+        assert!(absent.v10_filter.is_bypass());
+        assert!(absent.gearbox_filter.is_bypass());
+
+        let bad = serde_json::json!({ "v10_filter": { "lowpass_hz": -5.0 } });
+        assert!(v10_layer_tuning_from_section(Some(&bad)).is_err());
     }
 
     #[test]

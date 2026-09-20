@@ -176,8 +176,28 @@
       "diagnostic_mode": "mix",
       "fallback_to_legacy_on_initialization_error": true,
       "gain": 1.0,
-      "manifest": "audio/v10_f2002_experimental/manifest.json",
+      "manifest": "audio/v10_f2002_sampled/manifest.json",
       "schema_version": 2,
+      "engine_mode": "hybrid",
+      "sampled_engine_gain": 2.65,
+      "sampled_gearbox_gain": 1.0,
+      "v10_filter": {
+        "highpass_hz": 97.0,
+        "highpass_slope_db_per_oct": 24.0,
+        "lowpass_hz": 14410.0,
+        "lowpass_slope_db_per_oct": 72.0,
+        "peak_hz": 10000.0,
+        "peak_gain_db": 3.0,
+        "peak_q": 3.0,
+        "peak_drive": 1000.0,
+        "peak_drive_mix": 0.3
+      },
+      "gearbox_filter": {
+        "highpass_hz": 515.0,
+        "highpass_slope_db_per_oct": 72.0,
+        "lowpass_hz": 3100.0,
+        "lowpass_slope_db_per_oct": 72.0
+      },
       "disable_sample_rasp": true,
       "residual_gain_scale": 0.7,
       "scene_gains": {
@@ -191,7 +211,7 @@
         "air_tilt_db": 3.0
       },
       "cover_radiation_lowpass_hz": 1000000.0,
-      "upper_mid_shelf_gain": 0.45,
+      "upper_mid_shelf_gain": 0.0,
       "transmission": {
         "gain": 0.20825,
         "whine": 0.6,
@@ -204,7 +224,7 @@
       "gear_shift_gain": 0.05,
       "gear_shift_reference_rpm": 10000.0,
       "sample_blend_weight": 0.8165,
-      "sample_zone_trim_db": [4.5, -4.63, 3.36, 1.84, 2.44, 3.88]
+      "sample_zone_trim_db": [-0.2, -1.3, -0.2, 0.1, 0.25, 1.3]
     },
     "powertrain_synthesis": {
       "aspiration": "naturally_aspirated",

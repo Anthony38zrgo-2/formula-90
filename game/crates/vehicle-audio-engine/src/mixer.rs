@@ -471,6 +471,8 @@ pub struct VehicleAudioEngine {
     last_tc_cut_ratio: f32,
     last_rev_limiter_active: bool,
     backfire_cooldown_samples: usize,
+    limiter_cooldown_samples: usize,
+    tc_cooldown_samples: usize,
     variant_rng_state: u64,
 
     /// Per-sample linear gain ceiling (0..1) from `sound_mixer_config.json`,
@@ -610,6 +612,16 @@ pub struct V10LayerTuning {
     pub zone_trim_db: Option<Vec<f32>>,
     /// Optional 2–5 kHz band-add shelf gain on the hybrid mix (0.0 = off).
     pub upper_mid_shelf_gain: f32,
+    /// Engine source mode: `Hybrid` (shipped) or `SampleOnly` (bank-only).
+    pub engine_mode: v10_engine_synth::EngineMode,
+    /// Bank drive gain for the sample-only engine.
+    pub sampled_engine_gain: Option<f32>,
+    /// Post-scene gearbox gain for the sample-only mode.
+    pub sampled_gearbox_gain: Option<f32>,
+    /// Spectrum chain on the V10 engine bus (`audio.gf509.v10_filter`).
+    pub v10_filter: v10_engine_synth::SpectrumChainConfig,
+    /// Spectrum chain on the procedural gearbox bus (`audio.gf509.gearbox_filter`).
+    pub gearbox_filter: v10_engine_synth::SpectrumChainConfig,
     /// Optional procedural transmission master gain (0.0 = off).
     pub transmission_gain: f32,
     pub transmission_whine_gain: Option<f32>,
@@ -680,6 +692,8 @@ impl VehicleAudioEngine {
             Trigger::Cone,
             Trigger::Fire,
             Trigger::Scrape,
+            Trigger::Limiter,
+            Trigger::TcCut,
         ] {
             let key = t.bank_key().to_string();
             if bank.get(&key).is_some() {
@@ -849,6 +863,8 @@ impl VehicleAudioEngine {
             idle_rpm: 0.0,
             max_rpm: 0.0,
             backfire_cooldown_samples: 0,
+            limiter_cooldown_samples: 0,
+            tc_cooldown_samples: 0,
             variant_rng_state: 0xF090_1994_D15C_A11D,
             per_sample_gain,
             strips,
@@ -1060,6 +1076,28 @@ impl VehicleAudioEngine {
             self.exhaust_crackle_samples = (self.sample_rate as f64 * 0.12) as usize;
         }
 
+        // Rev limiter: accent the entry edge only (a bouncing limiter must not
+        // machine-gun the sample), with a 250 ms cooldown.
+        let limiter_active = telem.rev_limiter_active != 0;
+        if limiter_active && !self.last_rev_limiter_active && self.limiter_cooldown_samples == 0 {
+            self.trigger(Trigger::Limiter);
+            self.limiter_cooldown_samples = (self.sample_rate as f64 * 0.25) as usize;
+        }
+
+        // Traction control: accent the entry edge when the cut becomes
+        // meaningful (threshold crossing plus cooldown), with a 400 ms
+        // cooldown. The TC texture in the procedural synth is untouched; this
+        // is an event accent only.
+        const TC_ENTER: f32 = 0.20;
+        let tc_cut = telem.tc_cut_ratio.clamp(0.0, 1.0);
+        if tc_cut >= TC_ENTER
+            && self.last_tc_cut_ratio < TC_ENTER
+            && self.tc_cooldown_samples == 0
+        {
+            self.trigger(Trigger::TcCut);
+            self.tc_cooldown_samples = (self.sample_rate as f64 * 0.4) as usize;
+        }
+
         if self.synth_enabled {
             if let Some(synth) = &mut self.synth {
                 synth.update_controls(telem.rpm, telem.idle_rpm, telem.max_rpm, telem.throttle);
@@ -1216,6 +1254,8 @@ impl VehicleAudioEngine {
         let mut metrics = RenderMetrics::default();
         enable_fast_floats();
         self.backfire_cooldown_samples = self.backfire_cooldown_samples.saturating_sub(n);
+        self.limiter_cooldown_samples = self.limiter_cooldown_samples.saturating_sub(n);
+        self.tc_cooldown_samples = self.tc_cooldown_samples.saturating_sub(n);
         let state = self.prepare_block_engine(n);
         for i in 0..n {
             for bus in &mut self.reverb_buses {
@@ -1896,13 +1936,22 @@ impl VehicleAudioEngine {
             config.sample_layer.physical_blend_weight = weight;
         }
         if let Some(trims) = &tuning.zone_trim_db {
-            let mut values = [0.0f32; 8];
+            let mut values = [0.0f32; v10_engine_synth::ZONE_TRIM_SLOTS];
             for (slot, value) in values.iter_mut().zip(trims.iter()) {
                 *slot = *value;
             }
             config.sample_layer.zone_trim_db = values;
         }
         config.upper_mid_shelf_gain = tuning.upper_mid_shelf_gain;
+        config.engine_mode = tuning.engine_mode;
+        if let Some(gain) = tuning.sampled_engine_gain {
+            config.sampled_engine_gain = gain;
+        }
+        if let Some(gain) = tuning.sampled_gearbox_gain {
+            config.sampled_gearbox_gain = gain;
+        }
+        config.v10_filter = tuning.v10_filter;
+        config.gearbox_filter = tuning.gearbox_filter;
         config.transmission.sample_rate = self.sample_rate;
         config.transmission.output_gain = tuning.transmission_gain;
         if let Some(value) = tuning.transmission_whine_gain {
@@ -1958,6 +2007,11 @@ impl VehicleAudioEngine {
 
     pub fn continuous_source(&self) -> ContinuousSourceKind {
         self.continuous_source
+    }
+
+    /// Engine source mode of the active GF509 runtime, if any.
+    pub fn gf509_engine_mode(&self) -> Option<v10_engine_synth::EngineMode> {
+        self.gf509.as_ref().map(|runtime| runtime.engine_mode())
     }
 
     /// Target telemetry most recently delivered to the GF509 runtime, if active.
@@ -2064,6 +2118,8 @@ impl VehicleAudioEngine {
         self.target_rpm = 0.0;
         self.exhaust_crackle_samples = 0;
         self.backfire_cooldown_samples = 0;
+        self.limiter_cooldown_samples = 0;
+        self.tc_cooldown_samples = 0;
         self.last_throttle = 0.0;
         self.last_gear = 0;
         self.last_trigger.clear();
@@ -2393,9 +2449,13 @@ mod tests {
             "int_backfire",
             "int_backfire_2",
             "impact_scrape",
+            "limiter_hit",
+            "tc_cut",
         ] {
             let (data, is_loop) =
                 if key == "shift_up" || key.starts_with("int_backfire") || key == "impact_scrape" {
+                    (pcm.clone(), false)
+                } else if key == "limiter_hit" || key == "tc_cut" {
                     (pcm.clone(), false)
                 } else if key == "surf_grass" {
                     (pcm.clone(), true)
@@ -2519,7 +2579,15 @@ mod tests {
                 },
             );
         }
-        for key in ["int_backfire", "int_backfire_2"] {
+        for key in [
+            "int_backfire",
+            "int_backfire_2",
+            "backfire_3",
+            "backfire_4",
+            "backfire_5",
+            "backfire_6",
+            "backfire_7",
+        ] {
             samples.insert(
                 key.to_string(),
                 Sample {
@@ -2591,6 +2659,8 @@ mod tests {
             idle_rpm: 0.0,
             max_rpm: 0.0,
             backfire_cooldown_samples: 0,
+            limiter_cooldown_samples: 0,
+            tc_cooldown_samples: 0,
             variant_rng_state: 0xF090_1994_D15C_A11D,
             per_sample_gain: BTreeMap::new(),
             strips: BTreeMap::new(),
@@ -2644,26 +2714,48 @@ mod tests {
             window_len: 0,
             fade_samples: 0,
         });
-        e.one_shots.push(OneShot {
-            trigger: Trigger::Backfire,
-            key: "int_backfire".to_string(),
-            cursor: 0,
-            active: false,
-            windows: None,
-            start_offset: 0,
-            window_len: 0,
-            fade_samples: 0,
-        });
-        e.one_shots.push(OneShot {
-            trigger: Trigger::Backfire,
-            key: "int_backfire_2".to_string(),
-            cursor: 0,
-            active: false,
-            windows: None,
-            start_offset: 0,
-            window_len: 0,
-            fade_samples: 0,
-        });
+        // Mirror `VehicleAudioEngine::new`: every bank sample with the
+        // `engine_backfire` role becomes a Backfire voice. Banks whose roles
+        // are just their keys (dummy_bank) keep the two legacy variants.
+        let mut backfire_keys: Vec<String> = e
+            .bank
+            .samples
+            .values()
+            .filter(|sample| sample.role == "engine_backfire")
+            .map(|sample| sample.key.clone())
+            .collect();
+        if backfire_keys.is_empty() {
+            backfire_keys = vec!["int_backfire".to_string(), "int_backfire_2".to_string()];
+        }
+        for key in backfire_keys {
+            e.one_shots.push(OneShot {
+                trigger: Trigger::Backfire,
+                key,
+                cursor: 0,
+                active: false,
+                windows: None,
+                start_offset: 0,
+                window_len: 0,
+                fade_samples: 0,
+            });
+        }
+        for (trigger, key) in [
+            (Trigger::Limiter, "limiter_hit"),
+            (Trigger::TcCut, "tc_cut"),
+        ] {
+            if e.bank.get(key).is_some() {
+                e.one_shots.push(OneShot {
+                    trigger,
+                    key: key.to_string(),
+                    cursor: 0,
+                    active: false,
+                    windows: None,
+                    start_offset: 0,
+                    window_len: 0,
+                    fade_samples: 0,
+                });
+            }
+        }
         e
     }
 
@@ -3173,10 +3265,125 @@ mod tests {
     }
 
     #[test]
-    fn backfire_selects_one_of_two_variants_deterministically() {
+    fn limiter_edge_fires_once_with_cooldown() {
+        use crate::ffi::{VehicleAudioTelemetryV3, VEHICLE_AUDIO_ABI_VERSION};
         let mut e = engine_with_bank(dummy_bank());
+        let mut packet = |limiter: u32| VehicleAudioTelemetryV3 {
+            schema_version: VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
+            rpm: 14_800.0, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 1.0,
+            normalized_engine_load: 1.0, normalized_engine_torque: 1.0,
+            rpm_derivative: 0.0, throttle_derivative: 0.0,
+            speed_kph: 200.0, slip: 0.0, gear: 4, torque_sign: 1,
+            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: 0.0,
+            rev_limiter_active: limiter,
+        };
+        e.set_telemetry_timed(&packet(1), "asphalt", 1.0 / 120.0);
+        assert_eq!(e.last_trigger(), "limiter_hit");
+
+        // Holding the limiter must not retrigger while the edge is unchanged.
+        let active_before = e.limiter_cooldown_samples;
+        e.set_telemetry_timed(&packet(1), "asphalt", 1.0 / 120.0);
+        assert_eq!(e.limiter_cooldown_samples, active_before);
+
+        // Releasing and re-entering before the cooldown expires stays silent.
+        e.set_telemetry_timed(&packet(0), "asphalt", 1.0 / 120.0);
+        e.set_telemetry_timed(&packet(1), "asphalt", 1.0 / 120.0);
+        assert_eq!(e.limiter_cooldown_samples, active_before);
+
+        // After the cooldown, a new entry edge fires again.
+        let mut l = vec![0.0f32; 11_100];
+        let mut r = vec![0.0f32; 11_100];
+        e.render(&mut l, &mut r, 11_100);
+        assert_eq!(e.limiter_cooldown_samples, 0);
+        e.set_telemetry_timed(&packet(0), "asphalt", 1.0 / 120.0);
+        e.set_telemetry_timed(&packet(1), "asphalt", 1.0 / 120.0);
+        assert!(e.limiter_cooldown_samples > 0);
+    }
+
+    #[test]
+    fn tc_cut_edge_fires_once_with_cooldown() {
+        use crate::ffi::{VehicleAudioTelemetryV3, VEHICLE_AUDIO_ABI_VERSION};
+        let mut e = engine_with_bank(dummy_bank());
+        let mut packet = |tc: f32| VehicleAudioTelemetryV3 {
+            schema_version: VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
+            rpm: 8_000.0, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 0.9,
+            normalized_engine_load: 0.9, normalized_engine_torque: 0.7,
+            rpm_derivative: 0.0, throttle_derivative: 0.0,
+            speed_kph: 120.0, slip: 0.12, gear: 3, torque_sign: 1,
+            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: tc,
+            rev_limiter_active: 0,
+        };
+        // A small ratio below the entry threshold must not fire.
+        e.set_telemetry_timed(&packet(0.05), "asphalt", 1.0 / 120.0);
+        assert_eq!(e.last_trigger(), "");
+
+        // Crossing the threshold fires once.
+        e.set_telemetry_timed(&packet(0.30), "asphalt", 1.0 / 120.0);
+        assert_eq!(e.last_trigger(), "tc_cut");
+        let cooldown = e.tc_cooldown_samples;
+        assert!(cooldown > 0);
+
+        // Bouncing across the threshold inside the cooldown stays silent.
+        e.set_telemetry_timed(&packet(0.0), "asphalt", 1.0 / 120.0);
+        e.set_telemetry_timed(&packet(0.30), "asphalt", 1.0 / 120.0);
+        assert_eq!(e.tc_cooldown_samples, cooldown);
+
+        // A real re-entry after the cooldown fires again.
+        let mut l = vec![0.0f32; 17_700];
+        let mut r = vec![0.0f32; 17_700];
+        e.render(&mut l, &mut r, 17_700);
+        assert_eq!(e.tc_cooldown_samples, 0);
+        e.set_telemetry_timed(&packet(0.0), "asphalt", 1.0 / 120.0);
+        e.set_telemetry_timed(&packet(0.25), "asphalt", 1.0 / 120.0);
+        assert!(e.tc_cooldown_samples > 0);
+    }
+
+    #[test]
+    fn limiter_and_tc_triggers_are_noops_without_bank_voices() {
+        use crate::ffi::{VehicleAudioTelemetryV3, VEHICLE_AUDIO_ABI_VERSION};
+        let mut e = engine_with_bank(silent_engine_bank());
+        let packet = VehicleAudioTelemetryV3 {
+            schema_version: VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
+            rpm: 14_800.0, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 1.0,
+            normalized_engine_load: 1.0, normalized_engine_torque: 1.0,
+            rpm_derivative: 0.0, throttle_derivative: 0.0,
+            speed_kph: 200.0, slip: 0.12, gear: 4, torque_sign: 1,
+            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: 0.4,
+            rev_limiter_active: 1,
+        };
+        e.set_telemetry_timed(&packet, "asphalt", 1.0 / 120.0);
+        assert_eq!(e.last_trigger(), "");
+    }
+
+    #[test]
+    fn backfire_selects_one_of_the_bank_variants_deterministically() {
+        // The F1-2030 bank adds five backfire variants on top of the two
+        // F1-2008 overlay entries; every trigger must activate exactly one and
+        // the replay must be identical.
+        let mut e = engine_with_bank(silent_backfire_bank());
+        let variants: Vec<String> = e
+            .one_shots
+            .iter()
+            .filter(|o| o.trigger == Trigger::Backfire)
+            .map(|o| o.key.clone())
+            .collect();
+        assert_eq!(
+            variants,
+            vec![
+                "backfire_3",
+                "backfire_4",
+                "backfire_5",
+                "backfire_6",
+                "backfire_7",
+                "int_backfire",
+                "int_backfire_2"
+            ]
+        );
         let mut sequence = Vec::new();
-        for _ in 0..8 {
+        for _ in 0..32 {
             e.trigger(Trigger::Backfire);
             let active: Vec<&str> = e
                 .one_shots
@@ -3187,11 +3394,15 @@ mod tests {
             assert_eq!(active.len(), 1);
             sequence.push(active[0].to_string());
         }
-        assert!(sequence.iter().any(|k| k == "int_backfire"));
-        assert!(sequence.iter().any(|k| k == "int_backfire_2"));
+        for expected in &variants {
+            assert!(
+                sequence.iter().any(|key| key == expected),
+                "variant {expected} never selected"
+            );
+        }
 
-        let mut replay = engine_with_bank(dummy_bank());
-        let replay_sequence: Vec<String> = (0..8)
+        let mut replay = engine_with_bank(silent_backfire_bank());
+        let replay_sequence: Vec<String> = (0..32)
             .map(|_| {
                 replay.trigger(Trigger::Backfire);
                 replay
@@ -3384,11 +3595,31 @@ mod tests {
             .enable_v10_layer(&packaged_gf509_assets(), &tuning)
             .unwrap();
         assert_eq!(engine.continuous_source(), ContinuousSourceKind::V10Gf509);
+        assert_eq!(
+            engine.gf509_engine_mode(),
+            Some(v10_engine_synth::EngineMode::Hybrid)
+        );
         let mut bad = V10LayerTuning::default();
         bad.scene_gains.push(("not_a_branch".to_string(), 0.0));
         assert!(engine
             .enable_v10_layer(&packaged_gf509_assets(), &bad)
             .is_err());
+    }
+
+    #[test]
+    fn sampled_bank_enables_sample_only_engine_mode() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        let mut tuning = V10LayerTuning::default();
+        tuning.engine_mode = v10_engine_synth::EngineMode::SampleOnly;
+        tuning.sampled_gearbox_gain = Some(0.3);
+        let bank = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../audio/v10_f2002_sampled");
+        engine.enable_v10_layer(&bank, &tuning).unwrap();
+        assert_eq!(engine.continuous_source(), ContinuousSourceKind::V10Gf509);
+        assert_eq!(
+            engine.gf509_engine_mode(),
+            Some(v10_engine_synth::EngineMode::SampleOnly)
+        );
     }
 
     #[test]

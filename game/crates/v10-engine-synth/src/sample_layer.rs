@@ -57,6 +57,10 @@ impl SampleLayerInput {
     }
 }
 
+/// Per-zone trim slots. The schema-2 sampled bank carries nine ON zones; the
+/// array is sized with headroom and legacy banks simply leave the tail zero.
+pub const ZONE_TRIM_SLOTS: usize = 16;
+
 #[derive(Clone, Copy, Debug)]
 pub struct ThreeZoneSampleLayerConfig {
     pub tonal_gain_closed: f32,
@@ -98,7 +102,7 @@ pub struct ThreeZoneSampleLayerConfig {
     /// Per-zone tonal trim in dB, indexed by ON zone order (low anchor first).
     /// All zeros preserves shipped behavior; used to flatten the procedural
     /// vs sample balance across RPM.
-    pub zone_trim_db: [f32; 8],
+    pub zone_trim_db: [f32; ZONE_TRIM_SLOTS],
 }
 
 impl Default for ThreeZoneSampleLayerConfig {
@@ -118,7 +122,7 @@ impl Default for ThreeZoneSampleLayerConfig {
             use_tabled_sinc: true,
             disable_sample_rasp: false,
             residual_gain_scale: 1.0,
-            zone_trim_db: [0.0; 8],
+            zone_trim_db: [0.0; ZONE_TRIM_SLOTS],
         }
     }
 }
@@ -706,7 +710,7 @@ impl ThreeZoneSampleLayer {
                         index,
                         output_sample_rate as f32,
                         !config.disable_sample_rasp,
-                        config.zone_trim_db[index.min(7)],
+                        config.zone_trim_db[index.min(ZONE_TRIM_SLOTS - 1)],
                     ),
                     variant_span: (f32::NEG_INFINITY, f32::INFINITY),
                 }
@@ -763,7 +767,12 @@ impl ThreeZoneSampleLayer {
             .map_err(|error| format!("cannot read {}: {error}", manifest_path.display()))?;
         let manifest: ManifestSchema2 = serde_json::from_str(&raw)
             .map_err(|error| format!("invalid {}: {error}", manifest_path.display()))?;
-        if manifest.schema_version != 2 || manifest.key != "v10_f2002_experimental" {
+        if manifest.schema_version != 2
+            || !matches!(
+                manifest.key.as_str(),
+                "v10_f2002_experimental" | "v10_f2002_sampled"
+            )
+        {
             return Err("sample-layer schema-2 manifest key/version mismatch".into());
         }
         if (manifest.output_gain - 0.61).abs() > f32::EPSILON {
@@ -815,7 +824,7 @@ impl ThreeZoneSampleLayer {
                 processor_kind,
                 output_sample_rate as f32,
                 !config.disable_sample_rasp,
-                config.zone_trim_db[index.min(7)],
+                config.zone_trim_db[index.min(ZONE_TRIM_SLOTS - 1)],
             );
         }
         let mut labels = Vec::new();
@@ -1717,7 +1726,7 @@ mod tests {
     #[test]
     fn zone_tonal_trims_validate_and_default_to_baseline() {
         let config = ThreeZoneSampleLayerConfig::default();
-        assert_eq!(config.zone_trim_db, [0.0; 8]);
+        assert_eq!(config.zone_trim_db, [0.0; ZONE_TRIM_SLOTS]);
         assert!(config.validate().is_ok());
 
         let mut invalid = config;
@@ -2347,9 +2356,9 @@ mod tests {
     #[test]
     fn experimental_schema2_bank_covers_sweep_with_all_sources() {
         // F2K integration: the prepared F2002 bank loads by manifest roles,
-        // renders finite audible audio over the 5k->18k->5k evaluation
+        // renders finite audible audio over the 3k->18k->5k evaluation
         // trajectory, carries OFF energy in the coast, and gives every one
-        // of the 12 sources nonzero weight somewhere on the trajectory.
+        // of the 13 sources nonzero weight somewhere on the trajectory.
         use std::path::Path;
         let bank = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_experimental");
         let mut layer = ThreeZoneSampleLayer::load_directory(
@@ -2359,20 +2368,20 @@ mod tests {
         )
         .unwrap();
         assert!(!layer.legacy_three_zone, "experimental bank must use multi curves");
-        assert_eq!(layer.source_labels().len(), 12);
+        assert_eq!(layer.source_labels().len(), 13);
         assert_eq!(layer.off_source_count(), 5);
         let mut accumulated = vec![0.0f32; layer.source_labels().len()];
         let mut peak = 0.0f32;
         let mut off_energy_coast = 0.0f64;
         let mut off_samples = 0u64;
-        // 0-7 s accel 5000->18000 loaded, 7-10 s coast 18000->5000 lift.
+        // 0-7 s accel 3000->18000 loaded, 7-10 s coast 18000->5000 lift.
         let steps = 30_000usize;
         for i in 0..steps {
             let time_s = i as f32 / steps as f32 * 10.0;
             let (rpm, throttle, load, torque) = if time_s < 7.0 {
                 let t = time_s / 7.0;
                 let shaped = t * t * (3.0 - 2.0 * t);
-                (5_000.0 + 13_000.0 * shaped, 0.95, 0.90, 0.90)
+                (3_000.0 + 15_000.0 * shaped, 0.95, 0.90, 0.90)
             } else {
                 let t = (time_s - 7.0) / 3.0;
                 let decay = 1.0 - (1.0 - t).powf(1.55);
@@ -2396,6 +2405,85 @@ mod tests {
                 .unwrap();
             assert!(frame.output.is_finite(), "sample {i}");
             assert!(frame.tonal.is_finite() && frame.residual.is_finite());
+            peak = peak.max(frame.output.abs());
+            for (slot, weight) in accumulated.iter_mut().zip(frame.zone_weights.iter()) {
+                *slot += weight;
+            }
+            if time_s >= 7.5 {
+                off_energy_coast += (frame.off_throttle * frame.off_throttle) as f64;
+                off_samples += 1;
+            }
+        }
+        assert!(peak > 1e-4, "sweep must stay audible, peak {peak}");
+        assert!(peak <= 1.0, "sweep must stay under PCM ceiling, peak {peak}");
+        let off_rms = (off_energy_coast / off_samples as f64).sqrt();
+        assert!(off_rms > 1e-5, "OFF stem must carry coast energy, rms {off_rms}");
+        for (label, total) in layer.source_labels().iter().zip(accumulated.iter()) {
+            assert!(
+                *total > 0.0,
+                "source {label} never weighted on the trajectory"
+            );
+        }
+    }
+
+    #[test]
+    fn sampled_bank_loads_all_sources_and_covers_the_sweep() {
+        // Fully-sampled V10 bank: 7 ON members in 6 zones + 4 OFF members in
+        // 3 zones. The bank ships exactly the curated set that remains in
+        // implementation/sfx; exterior takes and user-removed sources are
+        // recorded in anchors.json:excluded. Every source keeps its measured
+        // native RPM.
+        use std::path::Path;
+        let bank =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_sampled");
+        let mut layer = ThreeZoneSampleLayer::load_directory(
+            44_100,
+            &bank,
+            ThreeZoneSampleLayerConfig::default(),
+        )
+        .unwrap();
+        assert!(!layer.legacy_three_zone, "sampled bank must use multi curves");
+        assert_eq!(layer.source_labels().len(), 11);
+        assert_eq!(layer.off_source_count(), 4);
+        let anchors = layer.rpm_anchors();
+        assert_eq!(anchors.len(), 6, "7 members collapse into 6 ON zones");
+        assert!((anchors[0] - 4_579.5).abs() < 1.0);
+        assert!((anchors[anchors.len() - 1] - 8_952.0).abs() < 1.0);
+
+        let mut accumulated = vec![0.0f32; layer.source_labels().len()];
+        let mut peak = 0.0f32;
+        let mut off_energy_coast = 0.0f64;
+        let mut off_samples = 0u64;
+        // 0-7 s accel 3000->18000 loaded, 7-10 s coast 18000->3000 lift.
+        let steps = 30_000usize;
+        for i in 0..steps {
+            let time_s = i as f32 / steps as f32 * 10.0;
+            let (rpm, throttle, load, torque) = if time_s < 7.0 {
+                let t = time_s / 7.0;
+                let shaped = t * t * (3.0 - 2.0 * t);
+                (3_000.0 + 15_000.0 * shaped, 0.95, 0.90, 0.90)
+            } else {
+                let t = (time_s - 7.0) / 3.0;
+                let decay = 1.0 - (1.0 - t).powf(1.55);
+                let lift = (-t / 0.035).exp();
+                (
+                    18_000.0 - 15_000.0 * decay,
+                    0.035 + (0.95 - 0.035) * lift,
+                    0.10 + (0.90 - 0.10) * (-t / 0.12).exp(),
+                    -0.53,
+                )
+            };
+            let frame = layer
+                .process(SampleLayerInput {
+                    rpm,
+                    throttle,
+                    load,
+                    normalized_engine_torque: torque,
+                    clutch_engagement: 1.0,
+                    crank_phase_deg: 0.0,
+                })
+                .unwrap();
+            assert!(frame.output.is_finite(), "sample {i}");
             peak = peak.max(frame.output.abs());
             for (slot, weight) in accumulated.iter_mut().zip(frame.zone_weights.iter()) {
                 *slot += weight;
