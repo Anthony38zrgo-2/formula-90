@@ -43,7 +43,7 @@ set interior) y 4 fuentes retiradas por el usuario (`idle`, `low_off_rear`, `med
 
 Los one-shots de eventos (backfire/limiter/TC) ya no dependen de `implementation/sfx`: sus
 fuentes se preservaron en `source-assets/audio/replacements/f1_2030/` (7 WAV) y el manifiesto
-del banco `v10_vehicle` apunta allí; los WAV de runtime no cambiaron (mismos hashes).
+del banco `commons` apunta allí; los WAV de runtime no cambiaron (mismos hashes).
 
 ## Cambios de código
 

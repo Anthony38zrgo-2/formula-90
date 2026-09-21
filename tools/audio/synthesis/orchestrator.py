@@ -17,7 +17,7 @@ Ejemplo
 ...      LoudnessNormalizer(-14.0),
 ...      Resampler(44100)],
 ... )
->>> synth.render_to_wav("game/sounds/banks/v10_vehicle/engine_test.wav")
+>>> synth.render_to_wav("game/sounds/banks/commons/engine_test.wav")
 """
 
 from __future__ import annotations

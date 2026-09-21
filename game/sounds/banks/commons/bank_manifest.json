@@ -1,0 +1,282 @@
+{
+  "bank_name": "commons",
+  "channels": 1,
+  "files": [
+    {
+      "dc_offset": -1.5e-05,
+      "duration_s": 2.44322,
+      "file": "impact_barrier.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -9.72,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998); remastered with modular synthesis (impact stages)",
+      "role": "impact_barrier",
+      "sha256": "846e3156f14cfd869d780ebb2792199bb3289144edb30d621a0317e45292b4da",
+      "synthesis": {
+        "category": "impact",
+        "remaster": {
+          "kind": "barrier",
+          "recipe": "impact_remaster_v1"
+        },
+        "source_file": "GP_barrier.wav",
+        "source_rate": 44100,
+        "source_sha256": "c4c3210cdc1119f4ef38055e15e843a085111806e45b1bdea28c8a8d87784b68"
+      }
+    },
+    {
+      "dc_offset": -1.5e-05,
+      "duration_s": 0.351519,
+      "file": "impact_cone.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -15.32,
+      "peak": 0.919983,
+      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998); remastered with modular synthesis (impact stages)",
+      "role": "impact_cone",
+      "sha256": "0e9cd6cb035dba091be061c216feda098669aa8a67d27e64e640e77c45da478a",
+      "synthesis": {
+        "category": "impact",
+        "remaster": {
+          "kind": "cone",
+          "recipe": "impact_remaster_v1"
+        },
+        "source_file": "GP_conehit.wav",
+        "source_rate": 22050,
+        "source_sha256": "664225b6d640c799d2752cf37a45d3258fdcc478ace3f41d011c1af5e7552ee4"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 0.802812,
+      "file": "impact_hit_1.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -13.6,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "impact_hit",
+      "sha256": "4f0fa91a560a835fbe2c10822bea10a74f1d4395505f6ea74959cffa2030f6b9",
+      "synthesis": {
+        "category": "impact",
+        "processing": {
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_1.wav",
+        "source_rate": 44100,
+        "source_sha256": "e59cd6af9b5c0896f3b53a3ed0e5d6892914fb74a54b0123b38c95cdcde3bfc6"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 3.791315,
+      "file": "impact_hit_2.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -15.86,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "impact_hit",
+      "sha256": "9b0a8d71b74308be22c0c36c9ffd4e97fa3410bb49b6e16d6f488492aacbdc30",
+      "synthesis": {
+        "category": "impact",
+        "processing": {
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_2.wav",
+        "source_rate": 44100,
+        "source_sha256": "3b786278bc4a973062c08c1660d88c4a76b75fec574c03ffd339913f293d102b"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 2.010816,
+      "file": "impact_hit_3.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -17.36,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "impact_hit",
+      "sha256": "646853434ff983ed3e80ed19a11a541ffaff0fb0b0c36800f4ecf8114e2add1f",
+      "synthesis": {
+        "category": "impact",
+        "processing": {
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_3.wav",
+        "source_rate": 44100,
+        "source_sha256": "3fd60300fdf32893570044a5e59f149d8ed1b42e4a74cc3dc97864fb7ec47995"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 0.802812,
+      "file": "impact_hit_4.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -13.86,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "impact_hit",
+      "sha256": "ab73167de4c68c5fe87a334f774ee07bedbfe50b1d94684a639e1aa45da2fb0d",
+      "synthesis": {
+        "category": "impact",
+        "processing": {
+          "remove_dc": true,
+          "source_rate": 44100,
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/impact_hit_4.wav",
+        "source_rate": 44100,
+        "source_sha256": "6abd874896c3b925b0c8d5b9ba9cce50217e3fc43026a1c10c04f148f8233767"
+      }
+    },
+    {
+      "dc_offset": -1.5e-05,
+      "duration_s": 0.36,
+      "file": "impact_scrape.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -29.59,
+      "peak": 0.920013,
+      "provenance": "deterministic procedural synthesis; remastered with modular synthesis (impact stages)",
+      "role": "impact_scrape",
+      "sha256": "fc668e217139129988fe3f85d27d35232e87ddfc76736d375b6c95ab656562e8",
+      "synthesis": {
+        "attack_ms": 16.0,
+        "category": "impact",
+        "components": [
+          "16ms_s_curve_attack",
+          "global_hpf_280hz",
+          "midhigh_1400_4800hz_friction",
+          "poisson_titanium_sparks_4500_9000hz",
+          "parametric_3600hz_softening",
+          "tanh_warmth"
+        ],
+        "duration_s": 0.36,
+        "recipe": "flat_floor_scrape_v2",
+        "remaster": {
+          "kind": "scrape",
+          "recipe": "impact_remaster_v1"
+        },
+        "seed": 9002,
+        "target_peak": 0.28
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 1.547846,
+      "file": "surf_grass.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -11.21,
+      "peak": 0.89,
+      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
+      "role": "surf_grass",
+      "sha256": "eb0295ab5d3ccf630e5cef7c869a509c7dcc6ae2dc27becc7e26dfd057ded57b",
+      "synthesis": {
+        "category": "surface",
+        "source_file": "GP_grass_2.wav",
+        "source_rate": 11025,
+        "source_sha256": "03e80386d5b1ac4dc7546340c290137d17f007210f545b71b57b4b5ccff2ec23"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.0,
+      "file": "surf_rumble.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -8.28,
+      "peak": 0.89,
+      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
+      "role": "surf_rumble",
+      "sha256": "2bd139d9eb8e00473b111877ab33213db23c094507240f36c07c38d4ea70f74f",
+      "synthesis": {
+        "category": "surface",
+        "source_file": "GP_rumble_2.wav",
+        "source_rate": 44100,
+        "source_sha256": "4579d32366de7d78ac3282ae0ff90d2506f01cdd2a1eab5e83144f76f69d879e"
+      }
+    },
+    {
+      "dc_offset": 0.0,
+      "duration_s": 2.174966,
+      "file": "surf_sand.wav",
+      "loop": true,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -15.61,
+      "peak": 0.89,
+      "provenance": "derived from original samples (source-assets/audio/legacy-f1-1998)",
+      "role": "surf_sand",
+      "sha256": "ba5020c2f6eb9e33b6665209d44ccef147610bc636cd23bf80f3a5291bc1b8c6",
+      "synthesis": {
+        "category": "surface",
+        "source_file": "GP_sand_2.wav",
+        "source_rate": 44100,
+        "source_sha256": "16268a8e60bfc8b5a5f1801507200e220d3f171b960be961e31265a5490e1875"
+      }
+    },
+    {
+      "dc_offset": -0.0,
+      "duration_s": 2.3,
+      "file": "tyre_scrub.wav",
+      "loop": true,
+      "loop_end_s": 2.3,
+      "loop_start_s": 0.0,
+      "loudness_dbfs": -9.84,
+      "peak": 0.89,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "tyre_scrub",
+      "sha256": "c1b40033fbe07638ffe8f99fffbb3ce47b56d62a72ddf033c08d8e2a971e4a03",
+      "synthesis": {
+        "category": "tire",
+        "processing": {
+          "equal_power_loop_crossfade_frames": 2048,
+          "remove_dc": true,
+          "source_rate": 44100,
+          "stable_loop_region_s": [
+            0.2,
+            2.5
+          ],
+          "target_peak": 0.89,
+          "target_rate": 44100
+        },
+        "promotion_recipe": "f1_2026_2008_replacement_overlay_v1",
+        "source_file": "source-assets/audio/replacements/f1_2026_2008/tyre_scrub.wav",
+        "source_rate": 44100,
+        "source_sha256": "eb71a4b5744f7cfbdc269f3994298bc3ace9482e3bbea4d08a51638220e683f1"
+      }
+    }
+  ],
+  "generator": "formula90s commons bank (non-specific effects pruned 2026-09-20)",
+  "pcm_bits": 16,
+  "sample_rate": 44100,
+  "schema_version": 1,
+  "seed": 0
+}

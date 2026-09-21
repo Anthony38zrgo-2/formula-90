@@ -11,10 +11,10 @@ from tools.audio.promote_vehicle_replacement_sounds import main as vehicle_promo
 
 
 def test_audio_write_defaults_live_under_scratch():
-    assert bank_generator.DEFAULT_OUTPUT == Path("scratch/audio/v10_vehicle")
+    assert bank_generator.DEFAULT_OUTPUT == Path("scratch/audio/commons")
     assert render_audio_scenario.DEFAULT_OUTPUT == Path("scratch/audio/scenarios")
     remaster_source = Path("tools/audio/remaster_lib.py").read_text(encoding="utf-8")
-    assert 'DEFAULT_BANK = Path("scratch/audio/v10_vehicle")' in remaster_source
+    assert 'DEFAULT_BANK = Path("scratch/audio/commons")' in remaster_source
     assert "D:/Formula90s" not in remaster_source
 
 

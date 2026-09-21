@@ -60,7 +60,7 @@ fn main() -> Result<(), String> {
     let json_path = output_dir.join("physics-transient-summary.json");
 
     let mut core = CoreFacade::new(CoreConfig {
-        bank_dir: Some(repo_path("game/sounds/banks/v10_vehicle")),
+        bank_dir: Some(repo_path("game/sounds/banks/commons")),
         config_json_path: Some(repo_path("game/data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")),
         use_canonical: false,
         enable_audio: true,

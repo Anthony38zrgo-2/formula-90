@@ -5,6 +5,10 @@ Reads reports/audio-v10/f2002-experimental/prepared/*.sample-layer.json,
 copies loop tonal/residual WAVs + per-source metadata into
 game/audio/v10_f2002_experimental, and writes manifest.json (schema 2)
 with roles, variant groups and SHA-256 of every runtime asset.
+
+Only files owned by this script are cleaned before rebuilding; the static
+one-shot assets (gearup.wav/geardn.wav) and the Godot `.import` companions
+are preserved.
 """
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ BANK = ROOT / "game/audio/v10_f2002_experimental"
 CALIB = ROOT / "reports/audio-v10/f2002-experimental/calibration/anchors.json"
 
 ON_SOURCES = [
+    "idle",
     "low_on",
     "med_on",
     "med_hi_on",
@@ -40,18 +45,47 @@ GROUPS = {
     "on_zone_high": ["hi_max_on", "hi_on"],
     "off_zone_midhigh": ["hi_off", "hi_off_2"],
 }
+# One-shot assets loaded directly by the runtime (gear_shift.rs), not generated
+# from the prepared loops. They must survive a bank rebuild.
+STATIC_ASSETS = ["gearup.wav", "geardn.wav"]
+# Provenance label overrides: the idle anchor was forced explicitly and then
+# verified (extended-range grid + 720-degree autocorrelation), unlike the
+# spectral-only estimates of the original corpus.
+RPM_SOURCE_OVERRIDES = {"idle": "explicit_reviewed"}
+DEFAULT_RPM_SOURCE = "spectral_estimate_reviewed"
+# Files this script owns. Everything else in the bank directory is preserved
+# (including the Godot `.import` companions).
+GENERATED_SUFFIXES = (".sample-layer.json", ".loop.tonal.wav", ".loop.residual.wav")
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def clean_generated(bank: Path) -> None:
+    if not bank.exists():
+        bank.mkdir(parents=True)
+        return
+    for path in bank.iterdir():
+        if path.is_file() and (
+            path.name == "manifest.json" or path.name.endswith(GENERATED_SUFFIXES)
+        ):
+            path.unlink()
+
+
 def main() -> int:
     calib = json.loads(CALIB.read_text(encoding="utf-8"))
     anchors: dict = calib["anchors"]
-    if BANK.exists():
-        shutil.rmtree(BANK)
-    BANK.mkdir(parents=True)
+    clean_generated(BANK)
+    BANK.mkdir(parents=True, exist_ok=True)
+    missing_static = [name for name in STATIC_ASSETS if not (BANK / name).is_file()]
+    if missing_static:
+        print(
+            "missing static one-shot assets in bank (restore before rebuilding): "
+            + ", ".join(missing_static),
+            file=sys.stderr,
+        )
+        return 1
     member_of = {}
     for group, members in GROUPS.items():
         for position, member in enumerate(members):
@@ -70,7 +104,7 @@ def main() -> int:
             "role": role,
             "metadata": meta_name,
             "native_rpm": anchors[f"{stem}.wav"],
-            "rpm_source": "spectral_estimate_reviewed",
+            "rpm_source": RPM_SOURCE_OVERRIDES.get(stem, DEFAULT_RPM_SOURCE),
             "effective_loop_rpm": meta["loop_effective_rpm"],
             "sample_rate": meta["sample_rate"],
             "channels": 1,

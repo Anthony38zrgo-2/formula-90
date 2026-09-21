@@ -31,7 +31,7 @@ from tools.audio.playback_metadata import playback_for_key
 from tools.common.output_policy import OutputMode, OutputPolicyError, validate_output_path
 
 DEFAULT_CONFIG = Path("tools/audio/bank_config.yaml")
-DEFAULT_OUTPUT = Path("scratch/audio/v10_vehicle")
+DEFAULT_OUTPUT = Path("scratch/audio/commons")
 
 # Loop seam crossfade frames (~46 ms) applied only to loopable entries.
 LOOP_XFADE_FRAMES = 2048
@@ -525,7 +525,7 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
         e.sha256 = sha256_file(output_dir / e.file)
 
     manifest = BankManifest(
-        bank_name="v10_vehicle",
+        bank_name="commons",
         sample_rate=sample_rate,
         channels=1,
         pcm_bits=16,
@@ -538,7 +538,7 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Build a v10_vehicle preview bank")
+    ap = argparse.ArgumentParser(description="Build a commons preview bank")
     ap.add_argument("--repo-root", type=Path, default=Path("."))
     ap.add_argument("--source", type=Path, default=DEFAULT_SOURCE_DIR)
     ap.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)

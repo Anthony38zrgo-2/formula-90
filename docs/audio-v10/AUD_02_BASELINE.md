@@ -37,8 +37,8 @@ Reproduction from `game/crates`:
 
 ```powershell
 cargo build --release --manifest-path Cargo.toml -p vehicle_audio_engine --bin aud_runtime_baseline
-./target/release/aud_runtime_baseline.exe ../sounds/banks/v10_vehicle ../audio/v10_gf509 ../../reports/audio-v10/aud02/runtime-v2/run1
-./target/release/aud_runtime_baseline.exe ../sounds/banks/v10_vehicle ../audio/v10_gf509 ../../reports/audio-v10/aud02/runtime-v2/run2
+./target/release/aud_runtime_baseline.exe ../sounds/banks/commons ../audio/v10_gf509 ../../reports/audio-v10/aud02/runtime-v2/run1
+./target/release/aud_runtime_baseline.exe ../sounds/banks/commons ../audio/v10_gf509 ../../reports/audio-v10/aud02/runtime-v2/run2
 ```
 
 ## Diagnostic stems capture

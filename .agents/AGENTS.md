@@ -1,30 +1,21 @@
 # Formula-90 Agent Protocol
 
-AUTHORITY: `.agents/AGENTS.md`
-JSON SOT: `game/data/vehicles/f1_2026_2008/f1_2026_2008_physics.json` is the single authoritative source of truth for the active vehicle tuning — it always wins over code defaults, canonical fallbacks, and scene values.
-INVARIANT: Fail Faster, Adapt Faster — cheapest falsification before mutation.
+CANON SCRIPT:
+
+`run_f1_94.ps1`
 
 PIPELINE:
-classify -> preflight -> baseline? -> ownership -> hypothesis -> cheapest experiment -> 1 reversible delta -> validate -> keep|rollback
 
-GUARDRAILS:
-SCOPE-LOCK; CTX-FIRST; ACTIVE-SKILLS-ONLY; NO-LIB-SCAN; NO-BROAD-DISCOVERY; NO-SMOKE; BUILD!=BEHAVIOR; DIAG-FIRST; RUNTIME-FIRST; FACT!=INFERENCE; NO-WEAKEN; HUMAN-GATE; SUBAGENT=EXECUTOR; OWNER-EXPLICIT; REVIEW=RO; 1-HYPOTHESIS/ITER; REUSE-BUILDS; STOP-ON-MISSING-CONTEXT; PRESERVE-WORKTREE; ARCH-SCOPE-LOCK.
+plan sprint -> select backlog item -> implement -> review -> human approval -> done
 
-SKILLS:
-LOAD=`.agents/skills/*`; LIBRARY=OFF unless an active skill explicitly references it; MAX-ACTIVE=3.
+SCOPE: If scope, intent, or affected systems are unclear, stop and request human clarification. Never infer requirements.
 
-EVIDENCE:
-CRASH/EXIT > STRUCTURED-EVENTS > TELEMETRY/DELTA > BUILD > DIRECT-REGRESSION > STATIC.
-NO-ERROR != CORRECT; UNOBSERVED => `NOT_OBSERVED`.
+CODE: Use fully self-explanatory names. Abbreviations are prohibited in identifiers, filenames, variables, functions, classes, methods, fields, and new symbols. Do not add code comments. Code must explain itself through naming and structure.
 
-GATE:
-AGENT-MAX=`READY_FOR_HUMAN_GATE`; HUMAN-ONLY=`ACCEPTED|REJECTED`; `diag.py gate` only on explicit human decision; second `REJECTED` => STOP.
+PROVENANCE: Before any change, verify and record branch, HEAD, and git status. Never switch, reset, or alter a dirty branch before inventorying its changes and creating an approved backup.
 
-SUBAGENTS:
-SPAWN only for independent evidence; NON-OVERLAP ownership; EXECUTOR=write-scope only; REVIEWER=RO; NO-REPLAN.
+COMMIT SCOPE: Keep commits atomic. Stage explicit paths only. `git add -A` is prohibited. Never commit pre-existing, generated, unrelated, or foreign changes. Verify `git diff --cached` before commit.
 
-ARCH-SCOPE-LOCK: gameplay architecture changes only if explicitly requested or causally proven by evidence.
+REBUILD SAFETY: Never reuse DLLs, object files, or ignored caches across branches. For full rebuilds, verify HEAD and clean Cargo, SCons, and `game/.godot`. The resulting BUILD must match the current source.
 
-SOT:
-RUNTIME=`diagnostics/runtime.sqlite`; AGENT-KB=`.agents/data/agents.sqlite`.
-TOOLS: `diag.py`=query evidence; `run_godot.py`=real-runtime capture.
+RUNTIME PARITY: Runtime must reject binaries whose BUILD does not match HEAD. Launch scripts must compile required binaries or validate BUILD/HEAD parity before starting Godot.

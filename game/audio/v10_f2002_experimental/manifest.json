@@ -4,6 +4,24 @@
   "output_gain": 0.61,
   "samples": [
     {
+      "key": "idle",
+      "role": "on",
+      "metadata": "idle.sample-layer.json",
+      "native_rpm": 3504.0,
+      "rpm_source": "explicit_reviewed",
+      "effective_loop_rpm": 3503.8622820569412,
+      "sample_rate": 44100,
+      "channels": 1,
+      "loop_frames": 54372,
+      "loop_engine_cycles_720": 36,
+      "firing_phase_degrees_at_loop_start": 45.95283521180244,
+      "source_sha256": "ba8da9944eeab55983157489251f855a6730c0b42c3fc822d0dab2d7d92c4c6e",
+      "tonal": "idle.loop.tonal.wav",
+      "tonal_sha256": "6b9318004244689a54c305edf95551aa90ef7a2556526080546ac1c776ad9c0e",
+      "residual": "idle.loop.residual.wav",
+      "residual_sha256": "88fd799576b49d80c192092bffba0597cc71e7d7239872423fe016a93f96d820"
+    },
+    {
       "key": "low_on",
       "role": "on",
       "metadata": "low_on.sample-layer.json",

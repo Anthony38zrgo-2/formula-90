@@ -2,18 +2,20 @@
 
 CANON SCRIPT:
 
-run_f1_94.ps1
+`run_f1_94.ps1`
 
 PIPELINE:
 
-sprint planning -> backlog item -> implement -> review -> human gate -> sprint retrospective -> done
+plan sprint -> select backlog item -> implement -> review -> human approval -> done
 
-IMPORTANT: If scope is unclear, stop and request human clarification. Do not assume.
+SCOPE: If scope, intent, or affected systems are unclear, stop and request human clarification. Never infer requirements.
 
-REBUILD SAFETY: Never mix unrelated changes or create large WIP commits. When performing a full rebuild, never reuse DLLs, object files, or ignored caches from another branch. Verify HEAD, clean Cargo/SCons/game/.godot, and confirm that the resulting BUILD matches the current source state.
+CODE: Use fully self-explanatory names. Abbreviations are prohibited in identifiers, filenames, variables, functions, classes, methods, fields, and new symbols. Do not add code comments. Code must explain itself through naming and structure.
 
-PROVENANCE: Before modifying anything, record and verify the current branch, HEAD, and git status. Never switch, reset, or modify a dirty branch without first inventorying its changes and creating an approved backup.
+PROVENANCE: Before any change, verify and record branch, HEAD, and git status. Never switch, reset, or alter a dirty branch before inventorying its changes and creating an approved backup.
 
-COMMIT SCOPE: Keep commits atomic and stage explicit paths only. git add -A is prohibited. Never include pre-existing, generated, unrelated, or foreign changes without reviewing git diff --cached.
+COMMIT SCOPE: Keep commits atomic. Stage explicit paths only. `git add -A` is prohibited. Never commit pre-existing, generated, unrelated, or foreign changes. Verify `git diff --cached` before commit.
 
-RUNTIME PARITY: The runtime must reject binaries whose BUILD does not match HEAD. Every launch script must either compile the required binaries or validate BUILD/HEAD parity before starting Godot.
+REBUILD SAFETY: Never reuse DLLs, object files, or ignored caches across branches. For full rebuilds, verify HEAD and clean Cargo, SCons, and `game/.godot`. The resulting BUILD must match the current source.
+
+RUNTIME PARITY: Runtime must reject binaries whose BUILD does not match HEAD. Launch scripts must compile required binaries or validate BUILD/HEAD parity before starting Godot.

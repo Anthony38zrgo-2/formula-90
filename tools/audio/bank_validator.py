@@ -126,8 +126,8 @@ def validate_bank(bank_dir: Path, manifest_name: str = "bank_manifest.json") -> 
 
 def main() -> int:
     import argparse
-    ap = argparse.ArgumentParser(description="Validate v10_vehicle sound bank")
-    ap.add_argument("--bank", type=Path, default=Path("game/sounds/banks/v10_vehicle"))
+    ap = argparse.ArgumentParser(description="Validate commons sound bank")
+    ap.add_argument("--bank", type=Path, default=Path("game/sounds/banks/commons"))
     args = ap.parse_args()
     findings = validate_bank(args.bank)
     if not findings:

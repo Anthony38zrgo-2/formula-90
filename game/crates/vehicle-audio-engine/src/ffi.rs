@@ -315,7 +315,7 @@ mod layout_tests {
     #[test]
     fn telemetry_v3_validation_and_forwarding() {
         let bank_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../sounds/banks/v10_vehicle");
+            .join("../../sounds/banks/commons");
         let c_bank = std::ffi::CString::new(bank_path.to_str().unwrap()).unwrap();
         // SAFETY: `c_bank` is a valid NUL-terminated C string and the handle is used only here.
         let handle = unsafe { vehicle_audio_create(c_bank.as_ptr()) };

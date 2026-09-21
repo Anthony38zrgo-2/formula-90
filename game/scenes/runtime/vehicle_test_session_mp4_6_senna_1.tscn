@@ -10,4 +10,4 @@ psx_enabled = false
 [node name="F90Core" type="F90Core" parent="."]
 config_json_path = "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
 enable_audio = true
-bank_dir = "res://sounds/banks/v10_vehicle"
+bank_dir = "res://sounds/banks/commons"

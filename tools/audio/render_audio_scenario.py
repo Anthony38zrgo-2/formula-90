@@ -5,7 +5,7 @@ Consumes a deterministic `Scenario` (RPM, speed, throttle, gear, slip, surface,
 impact events), crossfades bank loops at their wrap points, and emits an
 auditionable WAV + CSV/JSON preview under scratch/audio/scenarios/. No GEVP/Godot coupling.
 
-Bank contract: game/sounds/banks/v10_vehicle/*.wav + bank_manifest.json
+Bank contract: game/sounds/banks/commons/*.wav + bank_manifest.json
 Scenario definitions live in `scenarios.py`; DSP helpers in `dsp_common.py`.
 """
 
@@ -25,7 +25,7 @@ from tools.audio.dsp_common import SAMPLE_RATE, normalize_peak, write_wav_mono16
 from tools.audio.scenarios import SCENARIO_FACTORIES, Scenario
 from tools.common.output_policy import OutputMode, OutputPolicyError, validate_output_path
 
-BANK_DIR = Path("game/sounds/banks/v10_vehicle")
+BANK_DIR = Path("game/sounds/banks/commons")
 DEFAULT_OUTPUT = Path("scratch/audio/scenarios")
 
 # Loop-wrap crossfade (~11.6 ms) so bank loops never click when wrapped by the mixer.

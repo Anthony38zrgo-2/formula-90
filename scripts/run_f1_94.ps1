@@ -170,7 +170,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($SmokeAudio) {
-    Write-Host "Ejecutando smoke de audio $variantLabel (v10_vehicle + GEVP)..." -ForegroundColor Cyan
+    Write-Host "Ejecutando smoke de audio $variantLabel (commons + GEVP)..." -ForegroundColor Cyan
     & $godot --headless --path $game --script 'res://tests/smoke_test_vehicle_audio.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }

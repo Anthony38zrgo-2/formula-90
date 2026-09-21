@@ -265,7 +265,7 @@ Carga: LoadLibraryW("formula90_core.dll") probando 7 candidatos (res://addons/fo
 Propiedades Godot (ADD_PROPERTY):
   fixed_dt (1/120), config_json_path (res://data/vehicles/f1_94/f1_94_physics.json),
   use_canonical_config (bool), target_vehicle_path (NodePath), debug_throttle,
-  enable_audio (bool), bank_dir (res://sounds/banks/v10_vehicle), modules ("weather,ai"),
+  enable_audio (bool), bank_dir (res://sounds/banks/commons), modules ("weather,ai"),
   idle_rpm (1000), max_rpm (15000)
   Readouts (solo getter): last_norm/rpm/throttle/slip/speed_kph/engine_gain, last_weights/pitches,
                           last_trigger, surface, active_bed, engine_band_native_rpm, is_engine_loaded/audio_active
@@ -306,7 +306,7 @@ Cada capa delgada de glue y orquestación declarativa:
 | `handling_tuning_panel.gd` | (panel debug) | `bind_vehicle(vehicle, parent)` — sliders que llaman a los setters del `F194RustVehicle` (diff, aero, steering, braking…) |
 | `input_bindings.gd` | `InputBindings` (Autoload) | **Única fuente de verdad** de InputMap; `_init()` registra 13 acciones (Throttle, Brakes, Steer Left/Right, Handbrake, Clutch, Shift Up/Down, aid_1..5, ui_back_to_menu, ShowDebug, ToggleTransmission, ToggleTractionControl, Reset Vehicle) con deadzones y eventos teclado+joypad |
 | `telemetry_manager.gd` | `TelemetryManager` (Autoload) | Busca `F194RustVehicle` (prioritario) o `Vehicle` (GEVP) cada 1s; muestrea 20 Hz (50ms) a CSV `res://telemetry/telemetry_*.csv` + setup JSON con snapshot de todos los tunables y provenance |
-| `audio/vehicle_audio_controller.gd` | `VehicleAudioController extends Node` | Thin glue legacy GDScript para bank WAV `v10_vehicle` (5 bandas + beds + one-shots); hoy **no usado** en f1_94_rust (usa F90Core nativo), pero referencia del modelo de audio |
+| `audio/vehicle_audio_controller.gd` | `VehicleAudioController extends Node` | Thin glue legacy GDScript para bank WAV `commons` (5 bandas + beds + one-shots); hoy **no usado** en f1_94_rust (usa F90Core nativo), pero referencia del modelo de audio |
 | `audio/audio_telemetry.gd` | `AudioTelemetry extends Node` | Captura opcional (disabled por defecto) del mix Rust: muestrea `last_*` a `audio_telemetry_*.csv` |
 | `audio/ensure_vehicle_bus.gd` | `VehicleAudioBus` (Autoload) | Crea bus `Vehicle` con `AudioEffectLimiter` si no existe |
 | `vehicle_definition.gd` | `VehicleDefinition extends Resource` | `id, display_name, vehicle_scene:PackedScene` — usado por RaceSession |
@@ -355,7 +355,7 @@ Tipos C (formula90_physics.h):
 ```
 Cargo: serde, serde_json, thiserror, sha2 — cdylib + rlib
 Rol: Mixer determinista sample-accurate, bank loader, adapter GEVP
-Bank: game/sounds/banks/v10_vehicle (bank_manifest.json + WAVs por rol)
+Bank: game/sounds/banks/commons (bank_manifest.json + WAVs por rol)
   ENGINE_BANDS = [engine_idle, engine_low, engine_mid, engine_high, engine_redline] (5 bandas triangular crossfade)
   BANK_CENTERS = [0,0.25,0.5,0.75,1], BAND_WIDTH=0.25, PITCH_MIN=0.5 MAX=3.5
   Suface beds: surf_rumble/grass/sand (asphalt = silencio)
@@ -436,7 +436,7 @@ Albedos externos (no embebidos, binder los asigna):
 #### Audios
 
 ```
-game/sounds/banks/v10_vehicle/bank_manifest.json + *.wav (construidos por tools/audio/bank_generator.py)
+game/sounds/banks/commons/bank_manifest.json + *.wav (construidos por tools/audio/bank_generator.py)
 game/audio/engine + game/sounds/banks — fuente y artefacto del bank v10
 ```
 
@@ -667,7 +667,7 @@ game/data/
 game/assets/
   models/vehicles/f1_94/decoupled/{manifest.json, geometry/*.glb, textures/albedo/*.png}
   backgrounds/la_chutana_snes_day/{background.json, mountains_3d/manifest.json + *.glb}
-  skybox/ + sounds/banks/v10_vehicle/
+  skybox/ + sounds/banks/commons/
 game/physics/engine/  (vehicle_physics_engine crate: src/{lib,ffi,simulation,suspension,tire,powertrain,aero,telemetry,types,vehicle_config}.rs)
 game/sim/             (game_sim crate: src/lib.rs, bin/game_cli.rs)
 game/audio/engine/    (vehicle_audio_engine crate)

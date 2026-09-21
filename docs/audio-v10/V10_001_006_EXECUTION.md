@@ -175,7 +175,7 @@ listen specifically for the removed hot second-compression character.
 ```powershell
 .\scripts\audio\write_v10_001_006_manifest.ps1
 & .\game\crates\target\release\v10_provenance_probe.exe `
-  game/sounds/banks/v10_vehicle game/audio/v10_gf509 `
+  game/sounds/banks/commons game/audio/v10_gf509 `
   reports/audio-v10/v10-001-006/provenance-probes.json
 
 & .\game\crates\target\release\v10_render.exe `

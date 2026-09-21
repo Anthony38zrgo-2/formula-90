@@ -167,7 +167,17 @@
     "traction_control_slip_threshold": 0.08
   },
   "audio": {
-    "continuous_source": "v10_gf509",
+    "continuous_source": "grand_prix_sampler",
+    "grand_prix_sampler": {
+      "manifest": "audio/formula_one_2030_grand_prix_sampler/manifest.json",
+      "schema_version": 1,
+      "engine_gain": 1.0,
+      "gearbox_gain": 1.0,
+      "backfire_gain": 1.0,
+      "limiter_gain": 1.0,
+      "coast_gain": 0.55,
+      "fallback_to_legacy_on_initialization_error": false
+    },
     "cpp_dsp": {
       "enabled": false,
       "gain": 0.12

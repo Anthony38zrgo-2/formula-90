@@ -669,6 +669,18 @@ pub extern "C" fn f90_core_audio_readouts(h: *mut c_void, out: *mut F90CoreFrame
     }
 }
 
+/// Active continuous audio source: 0 legacy, 1 GF509, 2 Grand Prix sampler,
+/// -1 when the handle is invalid. Additive ABI 13 extension; layouts unchanged.
+/// # Safety
+/// `h` must be null or a valid facade handle.
+#[no_mangle]
+pub extern "C" fn f90_core_audio_source_code(h: *mut c_void) -> i32 {
+    if h.is_null() {
+        return -1;
+    }
+    facade_mut(h).audio_source_code()
+}
+
 /// Start the dedicated audio worker: the mixer moves off the render thread. The
 /// host creates and pins the OS thread that calls `f90_core_audio_worker_run`.
 /// Returns false when the mixer is unavailable or a worker already owns it (the

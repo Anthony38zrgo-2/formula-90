@@ -52,7 +52,7 @@ partials (numpy+numba)  ->  envolvente  ->  anti-alias (scipy)
 ```
 
 Cada paso es una función pura que `bank_generator.py` puede llamar al generar
-un sample del banco `v10_vehicle`.
+un sample del banco `commons`.
 
 ---
 
@@ -116,7 +116,7 @@ sig = anti_alias(sig, sr, cutoff=min(sr/2 - 1000, 8000))
 import soundfile as sf
 from pedalboard import Pedalboard, Compressor, Reverb, PitchShift
 
-data, sr = sf.read("scratch/audio/v10_vehicle/engine_idle.wav")
+data, sr = sf.read("scratch/audio/commons/engine_idle.wav")
 board = Pedalboard([
     Compressor(threshold_db=-18, ratio=4),
     Reverb(room_size=0.35, wet_level=0.25),
@@ -173,7 +173,7 @@ plt.close()
   **determinista**: fijar semillas y no usar ruido aleatorio sin seed, o los
   tests de determinismo fallarán.
 
-Convención de banco: `scratch/audio/v10_vehicle/*.wav` (engine layers,
+Convención de banco: `scratch/audio/commons/*.wav` (engine layers,
 impactos, shifts, surfaces). Mantener SR y loudness objetivo iguales en todos.
 
 ---
@@ -243,13 +243,13 @@ synth = EngineSynth(
      LoudnessNormalizer(-14.0),
      Resampler(44100)],
 )
-synth.render_to_wav("scratch/audio/v10_vehicle/engine_test.wav")
+synth.render_to_wav("scratch/audio/commons/engine_test.wav")
 ```
 
 **Modificar un sample existente** (p.ej. bajar tono y normalizar):
 ```python
 from tools.audio.synthesis import EngineSynth, WaveReader, EffectsChain, LoudnessNormalizer, WaveWriter
-EngineSynth(WaveReader("scratch/audio/v10_vehicle/engine_idle.wav"),
+EngineSynth(WaveReader("scratch/audio/commons/engine_idle.wav"),
             [EffectsChain(pitch_semitones=-2.0),
              LoudnessNormalizer(-14.0),
              WaveWriter("engine_idle_low.wav")]).render_to_wav("engine_idle_low.wav")
@@ -281,8 +281,8 @@ y sumarle el detalle que le faltaba.
 ### 8.2 Uso
 ```python
 from tools.audio.synthesis import remaster_shift
-remaster_shift("scratch/audio/v10_vehicle/shift_up.wav",
-               "scratch/audio/v10_vehicle/shift_up.wav",  # o un _remaster.wav
+remaster_shift("scratch/audio/commons/shift_up.wav",
+               "scratch/audio/commons/shift_up.wav",  # o un _remaster.wav
                kind="up")
 ```
 
@@ -361,8 +361,8 @@ una familia coherente con pesos y brillos distintos pero reconocibles.
 ### 9.3 Uso
 ```python
 from tools.audio.synthesis import remaster_impact
-remaster_impact("scratch/audio/v10_vehicle/impact_fire.wav",
-                "scratch/audio/v10_vehicle/impact_fire.wav",
+remaster_impact("scratch/audio/commons/impact_fire.wav",
+                "scratch/audio/commons/impact_fire.wav",
                 profile="fire")
 ```
 

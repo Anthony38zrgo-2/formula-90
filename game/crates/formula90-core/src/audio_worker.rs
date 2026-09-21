@@ -289,6 +289,8 @@ pub struct AudioWorker {
     healthy: bool,
     synth_enabled: bool,
     gf509_enabled: bool,
+    grand_prix_sampler_enabled: bool,
+    source_code: i32,
 }
 
 impl AudioWorker {
@@ -297,6 +299,8 @@ impl AudioWorker {
         let healthy = module.healthy();
         let synth_enabled = module.synth_enabled();
         let gf509_enabled = module.gf509_enabled();
+        let grand_prix_sampler_enabled = module.grand_prix_sampler_enabled();
+        let source_code = module.source_code();
         let readouts = AudioReadouts::default();
         let chunk = config.chunk_frames.max(1);
         Self {
@@ -317,6 +321,8 @@ impl AudioWorker {
             healthy,
             synth_enabled,
             gf509_enabled,
+            grand_prix_sampler_enabled,
+            source_code,
         }
     }
 
@@ -330,6 +336,14 @@ impl AudioWorker {
 
     pub fn gf509_enabled(&self) -> bool {
         self.gf509_enabled
+    }
+
+    pub fn grand_prix_sampler_enabled(&self) -> bool {
+        self.grand_prix_sampler_enabled
+    }
+
+    pub fn source_code(&self) -> i32 {
+        self.source_code
     }
 
     /// Push one physics-tick packet. Drops the oldest packet on overflow (counted,
@@ -553,7 +567,7 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 /// Resolve the packaged GF509 bank shipped with the game (tests/diagnostics).
 #[cfg(test)]
 pub(crate) fn packaged_bank_dir() -> std::path::PathBuf {
-    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10_vehicle")
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/commons")
 }
 
 #[cfg(test)]

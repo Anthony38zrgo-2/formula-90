@@ -370,6 +370,21 @@ fn tuned_scalar(slot: &mut Option<f32>, name: &str, value: f64) -> Result<(), St
     Ok(())
 }
 
+fn sampler_gain(section: &serde_json::Value, name: &str, default: f32) -> Result<f32, String> {
+    match section.get(name) {
+        None => Ok(default),
+        Some(value) => {
+            let number = value
+                .as_f64()
+                .ok_or_else(|| format!("{name} is not a number"))?;
+            if !number.is_finite() || number < 0.0 {
+                return Err(format!("{name} is not finite and non-negative"));
+            }
+            Ok(number as f32)
+        }
+    }
+}
+
 /// Legacy one-shot code table (mirrors `VehicleAudioControllerNative::trigger_code`).
 fn code_from_bank_key(key: &str) -> i32 {
     match key {
@@ -485,6 +500,13 @@ impl AudioModule {
         let Some(audio) = audio else {
             return false;
         };
+        let source = audio
+            .get("continuous_source")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("legacy");
+        if source == "grand_prix_sampler" {
+            return self.enable_grand_prix_sampler_from_profile(audio, powertrain);
+        }
         // `from_profile_json` expects the full profile JSON with an `audio` root;
         // re-wrap the passthrough section to satisfy that contract.
         let wrapped = serde_json::json!({ "audio": audio });
@@ -596,9 +618,90 @@ impl AudioModule {
             // is observable via `synth_enabled`.
             eng.synth_enabled()
                 || eng.continuous_source() == vehicle_audio_engine::ContinuousSourceKind::V10Gf509
+                || eng.continuous_source()
+                    == vehicle_audio_engine::ContinuousSourceKind::GrandPrixSampler
         } else {
             false
         }
+    }
+
+    fn enable_grand_prix_sampler_from_profile(
+        &mut self,
+        audio: &serde_json::Value,
+        powertrain: Option<&vehicle_physics_engine::VehicleConfig>,
+    ) -> bool {
+        let section = audio.get("grand_prix_sampler");
+        let manifest_relative = section
+            .and_then(|value| value.get("manifest"))
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("audio/formula_one_2030_grand_prix_sampler/manifest.json");
+        let fallback_to_legacy = section
+            .and_then(|value| value.get("fallback_to_legacy_on_initialization_error"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+        let bank_directory = self.game_root.as_deref().and_then(|game| {
+            game.join(manifest_relative)
+                .parent()
+                .map(|parent| parent.to_path_buf())
+        });
+        let mut tuning = vehicle_audio_engine::GrandPrixSamplerTuning::default();
+        if let Some(section) = section {
+            let mut parsed_gains = [1.0f32; 4];
+            for (slot, name) in parsed_gains
+                .iter_mut()
+                .zip(["engine_gain", "gearbox_gain", "backfire_gain", "limiter_gain"])
+            {
+                match sampler_gain(section, name, 1.0) {
+                    Ok(value) => *slot = value,
+                    Err(error) => {
+                        eprintln!("[formula90_core] grand_prix_sampler {error}");
+                        if fallback_to_legacy {
+                            if let Some(eng) = self.engine.as_mut() {
+                                eng.use_legacy_continuous_source();
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            tuning.engine_gain = parsed_gains[0];
+            tuning.gearbox_gain = parsed_gains[1];
+            tuning.backfire_gain = parsed_gains[2];
+            tuning.limiter_gain = parsed_gains[3];
+            if let Some(value) = section.get("coast_gain").and_then(serde_json::Value::as_f64) {
+                tuning.coast_gain = Some(value as f32);
+            }
+        }
+        if let Some(config) = powertrain {
+            tuning.required_minimum_revolutions_per_minute = Some(config.idle_rpm);
+            tuning.required_maximum_revolutions_per_minute = Some(config.max_rpm);
+        }
+        let mut applied = false;
+        if let Some(eng) = self.engine.as_mut() {
+            match bank_directory.as_deref() {
+                Some(directory) => match eng.enable_grand_prix_sampler(directory, &tuning) {
+                    Ok(()) => applied = true,
+                    Err(error) => {
+                        eprintln!(
+                            "[formula90_core] Grand Prix sampler initialization failed: {error}"
+                        );
+                    }
+                },
+                None => {
+                    eprintln!("[formula90_core] Grand Prix sampler asset root unavailable");
+                }
+            }
+            if !applied {
+                if fallback_to_legacy {
+                    eng.use_legacy_continuous_source();
+                } else {
+                    eprintln!(
+                        "[formula90_core] Grand Prix sampler selected without fallback; engine path silent"
+                    );
+                }
+            }
+        }
+        applied
     }
 
     /// Whether the procedural synth is currently driving the engine path.
@@ -612,6 +715,24 @@ impl AudioModule {
         self.engine.as_ref().is_some_and(|engine| {
             engine.continuous_source() == vehicle_audio_engine::ContinuousSourceKind::V10Gf509
         })
+    }
+
+    pub fn grand_prix_sampler_enabled(&self) -> bool {
+        self.engine.as_ref().is_some_and(|engine| {
+            engine.continuous_source()
+                == vehicle_audio_engine::ContinuousSourceKind::GrandPrixSampler
+        })
+    }
+
+    /// Active continuous source as a stable code: 0 legacy, 1 GF509,
+    /// 2 Grand Prix sampler, -1 no mixer.
+    pub fn source_code(&self) -> i32 {
+        match self.engine.as_ref().map(|engine| engine.continuous_source()) {
+            Some(vehicle_audio_engine::ContinuousSourceKind::V10Gf509) => 1,
+            Some(vehicle_audio_engine::ContinuousSourceKind::GrandPrixSampler) => 2,
+            Some(vehicle_audio_engine::ContinuousSourceKind::Legacy) => 0,
+            None => -1,
+        }
     }
 
     /// Push the current telemetry into the mixer. Gear-change one-shots fire inside

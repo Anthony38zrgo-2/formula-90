@@ -1,8 +1,8 @@
-# v10_vehicle bank configuration.
+# commons bank configuration.
 # The bank is derived from the original F1-1998 engine internal + Grand Prix
 # sample set in source-assets/audio/legacy-f1-1998/. No synthesis.
 
-bank_name: v10_vehicle
+bank_name: commons
 source_dir: source-assets/audio/legacy-f1-1998
 sample_rate: 44100
 channels: 1

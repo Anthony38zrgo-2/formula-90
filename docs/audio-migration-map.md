@@ -24,7 +24,7 @@ source-assets/audio/  ->  tools/audio/  ->  scratch/audio/
 - `game/sounds/` contiene solamente audio aprobado que el juego carga.
 
 La migración no intenta diseñar ahora una plataforma genérica de audio. El
-primer corte termina cuando `v10_vehicle` puede construirse fuera del runtime,
+primer corte termina cuando `commons` puede construirse fuera del runtime,
 escucharse y promoverse explícitamente sin romper F1-94.
 
 ## 2. Inventario observado
@@ -55,7 +55,7 @@ defecto se corregirán en un item posterior; AUDIO-001 no modifica conducta.
 `game/sounds/` contiene únicamente responsabilidades de ejecución:
 
 - `sound_mixer_config.json`: política de mezcla cargada por runtime;
-- `banks/v10_vehicle/`: banco canónico de 27 voces consumido por Rust.
+- `banks/commons/`: banco canónico de 27 voces consumido por Rust.
 
 Las fuentes legacy viven en `source-assets/audio/legacy-f1-1998/` y las once
 fuentes de reemplazo en `source-assets/audio/replacements/f1_94/`. Los previews,
@@ -70,7 +70,7 @@ del runtime.
 | `tools/audio/` | KEEP + REFACTOR | `tools/audio/` | Ya representa una sola responsabilidad |
 | `tools/audio/bank_config.yaml` | KEEP + REVIEW | `tools/audio/` | Receta de build; confirmar que sea ejecutable y no solo documental |
 | `game/sounds/sound_mixer_config.json` | KEEP | `game/sounds/` | Política de mezcla usada en ejecución |
-| `game/sounds/banks/v10_vehicle/` | KEEP | mismo destino | Banco runtime aprobado |
+| `game/sounds/banks/commons/` | KEEP | mismo destino | Banco runtime aprobado |
 | `game/sounds/banks/new sounds/` | MOVED | `source-assets/audio/replacements/f1_94/` | 11 fuentes originales preservadas por hash |
 | `*_backup.wav` dentro del banco | RETIRED | `scratch/promote-backups/` durante cutover | El runtime contiene solo las 27 voces declaradas |
 | `*.import` | REGENERATE, no mover | junto al recurso runtime que Godot importe | Artefactos del editor, nunca fuentes |
@@ -87,10 +87,10 @@ hashes permitan demostrar que no se alteró contenido.
 ### Productores
 
 - `tools/audio/bank_generator.py` lee fuentes legacy y escribe por defecto en
-  `scratch/audio/v10_vehicle`.
+  `scratch/audio/commons`.
 - `tools/audio/promote_f1_94_replacement_sounds.py` exige fuente y banco
   explícitos; no conserva un destino runtime por defecto.
-- `tools/audio/remaster_lib.py` usa `scratch/audio/v10_vehicle` como banco de
+- `tools/audio/remaster_lib.py` usa `scratch/audio/commons` como banco de
   trabajo predeterminado.
 
 La única escritura del banco runtime ocurre mediante `promote_content.ps1`
@@ -99,7 +99,7 @@ después del human gate.
 ### Consumidores
 
 - `F90Core` y el adaptador nativo cargan
-  `res://sounds/banks/v10_vehicle` y `sound_mixer_config.json`.
+  `res://sounds/banks/commons` y `sound_mixer_config.json`.
 - `game/crates/vehicle-audio-engine` abre el manifiesto, valida formato/hashes
   y reproduce el banco.
 - pruebas de Rust y Python consumen el banco canónico y, en varios casos, las
@@ -127,7 +127,7 @@ una prueba auditiva demuestre que representan el mismo concepto.
 ### Preview
 
 ```text
-fuentes + receta -> scratch/audio/v10_vehicle/ -> validación mínima -> escucha
+fuentes + receta -> scratch/audio/commons/ -> validación mínima -> escucha
 ```
 
 La validación automática previa al human gate se limita a fallos baratos:
@@ -142,7 +142,7 @@ decidir si el resultado vale la pena.
 
 ### Promote
 
-Solo un candidato aceptado se copia a `game/sounds/banks/v10_vehicle/` mediante
+Solo un candidato aceptado se copia a `game/sounds/banks/commons/` mediante
 el mecanismo común de promoción. La promoción conserva backup recuperable y
 registra origen/destino; no vuelve a sintetizar ni remasterizar.
 

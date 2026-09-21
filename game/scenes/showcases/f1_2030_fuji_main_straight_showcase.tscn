@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/runtime/vehicle_test_session.tscn" id="1_session"]
+[ext_resource type="Script" path="res://scripts/showcase/f1_2030_fuji_main_straight_showcase.gd" id="2_showcase"]
+
+[node name="F12030FujiMainStraightShowcase" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_showcase")
+
+[node name="VehicleTestSession" parent="." instance=ExtResource("1_session")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

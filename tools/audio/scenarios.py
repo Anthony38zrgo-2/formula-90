@@ -1,7 +1,7 @@
 """Scenario definitions — single responsibility: deterministic scenario fixtures.
 
 Each factory returns a fully-interpolated `Scenario` (frames at 200 Hz) covering
-the auditionable families for the v10_vehicle bank: idle->redline+shifts,
+the auditionable families for the commons bank: idle->redline+shifts,
 asphalt->sand->rumble (road/gravel/kerb), grass skid, and impacts.
 Surfaces are limited to those present in the sample bank: asphalt (engine only,
 no tire bed), sand, grass, rumble. No mixing or I/O here.

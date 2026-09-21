@@ -10,7 +10,7 @@ from pathlib import Path
 from tools.audio.render_audio_scenario import render_scenario
 from tools.audio.scenarios import SCENARIO_FACTORIES, make_idle_to_redline_with_shifts
 
-BANK = Path("game/sounds/banks/v10_vehicle")
+BANK = Path("game/sounds/banks/commons")
 
 
 def test_all_scenarios_render_and_are_deterministic(tmp_path):

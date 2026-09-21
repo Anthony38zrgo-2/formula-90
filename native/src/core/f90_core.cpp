@@ -122,6 +122,8 @@ void F90Core::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_audio_buffer_length"), &F90Core::get_audio_buffer_length);
 	ClassDB::bind_method(D_METHOD("get_audio_output_rms"), &F90Core::get_audio_output_rms);
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "audio_output_rms"), "", "get_audio_output_rms");
+	ClassDB::bind_method(D_METHOD("get_audio_source_code"), &F90Core::get_audio_source_code);
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_source_code", PROPERTY_HINT_RANGE, "-1,2,1"), "", "get_audio_source_code");
 	ClassDB::bind_method(D_METHOD("get_audio_gen_occupancy"), &F90Core::get_audio_gen_occupancy);
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "audio_gen_occupancy"), "", "get_audio_gen_occupancy");
 	ClassDB::bind_method(D_METHOD("get_audio_gen_capacity"), &F90Core::get_audio_gen_capacity);
@@ -154,6 +156,13 @@ PackedFloat32Array F90Core::get_last_pitches() const {
 		arr.set(i, frame_.pitches[i]);
 	}
 	return arr;
+}
+
+int F90Core::get_audio_source_code() const {
+	if (fn_audio_source_code_ == nullptr || core_ == nullptr) {
+		return -1;
+	}
+	return fn_audio_source_code_(core_);
 }
 
 PackedFloat64Array F90Core::get_engine_band_native_rpm() const {
@@ -353,6 +362,7 @@ bool F90Core::load_dll() {
 	fn_audio_render_ = reinterpret_cast<FnCoreAudioRender>(GetProcAddress(hDll, "f90_core_audio_render"));
 	fn_audio_trigger_ = reinterpret_cast<FnCoreAudioTrigger>(GetProcAddress(hDll, "f90_core_audio_trigger"));
 	fn_audio_readouts_ = reinterpret_cast<FnCoreAudioReadouts>(GetProcAddress(hDll, "f90_core_audio_readouts"));
+	fn_audio_source_code_ = reinterpret_cast<FnCoreAudioSourceCode>(GetProcAddress(hDll, "f90_core_audio_source_code"));
 	fn_audio_set_ambient_ = reinterpret_cast<FnCoreAudioSetAmbient>(GetProcAddress(hDll, "f90_core_audio_set_ambient"));
 	fn_audio_worker_start_ = reinterpret_cast<FnCoreAudioWorkerStart>(GetProcAddress(hDll, "f90_core_audio_worker_start"));
 	fn_audio_worker_handle_ = reinterpret_cast<FnCoreAudioWorkerHandle>(GetProcAddress(hDll, "f90_core_audio_worker_handle"));
@@ -416,6 +426,7 @@ void F90Core::unload_dll() {
 	fn_audio_render_ = nullptr;
 	fn_audio_trigger_ = nullptr;
 	fn_audio_readouts_ = nullptr;
+	fn_audio_source_code_ = nullptr;
 	fn_audio_set_ambient_ = nullptr;
 	fn_audio_worker_start_ = nullptr;
 	fn_audio_worker_handle_ = nullptr;

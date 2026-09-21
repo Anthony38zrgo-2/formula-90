@@ -17,6 +17,10 @@ use crate::dsp::{
 };
 use crate::dsp_contract::EventBuilder;
 use crate::dsp_runtime::{DspControls, DspRuntime};
+use crate::grand_prix_sample_bank::GrandPrixSampleBank;
+use crate::grand_prix_sampler::{
+    GrandPrixDiagnostics, GrandPrixEventKind, GrandPrixSampler, GrandPrixTelemetry,
+};
 use crate::powertrain::{AudioPowertrainSynthesis, DistanceLevels};
 use crate::state::*;
 use crate::synth::LodLevel;
@@ -365,9 +369,24 @@ fn continuous_output_gain(
         // GF509 already models throttle and authoritative engine load internally.
         // Applying the legacy pedal gain here attenuates coast a second time.
         ContinuousSourceKind::V10Gf509 => 1.0,
+        // The Grand Prix sampler applies its own calibrated load envelope.
+        ContinuousSourceKind::GrandPrixSampler => 1.0,
         ContinuousSourceKind::Legacy => smoothed_engine_gain,
     };
     source_gain * engine_headroom * synth_volume
+}
+
+/// Map legacy one-shot triggers to Grand Prix sampler event pools. Effects
+/// without a supplied replacement (impacts, scrape, TC cut) stay on the shared
+/// bank path.
+fn grand_prix_event_kind(trigger: Trigger) -> Option<GrandPrixEventKind> {
+    match trigger {
+        Trigger::ShiftUp => Some(GrandPrixEventKind::Upshift),
+        Trigger::ShiftDown => Some(GrandPrixEventKind::Downshift),
+        Trigger::Backfire => Some(GrandPrixEventKind::LiftBackfire),
+        Trigger::Limiter => Some(GrandPrixEventKind::Limiter),
+        _ => None,
+    }
 }
 
 /// Stateful engine audio mixer.
@@ -510,6 +529,7 @@ pub struct VehicleAudioEngine {
     synth_block_r: Vec<f32>,
     gf509: Option<v10_engine_synth::Gf509Runtime>,
     continuous_source: ContinuousSourceKind,
+    grand_prix: Option<GrandPrixSampler>,
     gf509_block_l: Vec<f32>,
     gf509_block_r: Vec<f32>,
     gf509_render_failed: bool,
@@ -539,12 +559,57 @@ pub struct VehicleAudioEngine {
     // Preallocated per-block C++ output buffers (no allocation in the callback).
     cpp_out_l: Vec<f32>,
     cpp_out_r: Vec<f32>,
+
+    // Diagnostic pre-master stem capture (disabled by default). The buffers are
+    // preallocated to MAX_CPP_BLOCK and only written when explicitly enabled.
+    stem_capture_enabled: bool,
+    grand_prix_sample_output: crate::grand_prix_sampler::GrandPrixSampleOutput,
+    stem_full_l: Vec<f32>,
+    stem_full_r: Vec<f32>,
+    stem_engine_l: Vec<f32>,
+    stem_engine_r: Vec<f32>,
+    stem_gearbox_l: Vec<f32>,
+    stem_gearbox_r: Vec<f32>,
+    stem_backfire_l: Vec<f32>,
+    stem_backfire_r: Vec<f32>,
+    stem_limiter_l: Vec<f32>,
+    stem_limiter_r: Vec<f32>,
+    stem_preserved_l: Vec<f32>,
+    stem_preserved_r: Vec<f32>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContinuousSourceKind {
     Legacy,
     V10Gf509,
+    GrandPrixSampler,
+}
+
+/// Per-profile tuning for the standalone Grand Prix sampler backend.
+/// Defaults are inert (unity gains, bank-calibrated coast level).
+#[derive(Clone, Copy, Debug)]
+pub struct GrandPrixSamplerTuning {
+    pub engine_gain: f32,
+    pub gearbox_gain: f32,
+    pub backfire_gain: f32,
+    pub limiter_gain: f32,
+    pub coast_gain: Option<f32>,
+    pub required_minimum_revolutions_per_minute: Option<f64>,
+    pub required_maximum_revolutions_per_minute: Option<f64>,
+}
+
+impl Default for GrandPrixSamplerTuning {
+    fn default() -> Self {
+        Self {
+            engine_gain: 1.0,
+            gearbox_gain: 1.0,
+            backfire_gain: 1.0,
+            limiter_gain: 1.0,
+            coast_gain: None,
+            required_minimum_revolutions_per_minute: None,
+            required_maximum_revolutions_per_minute: None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -554,9 +619,26 @@ pub enum DiagnosticMode {
     EventsOnly,
 }
 
+/// Pre-master stem snapshot for offline listening packages. Captured only when
+/// explicitly enabled; never used by the live render path.
+#[derive(Clone, Debug, Default)]
+pub struct GrandPrixRenderStems {
+    pub full_left: Vec<f32>,
+    pub full_right: Vec<f32>,
+    pub engine_left: Vec<f32>,
+    pub engine_right: Vec<f32>,
+    pub gearbox_left: Vec<f32>,
+    pub gearbox_right: Vec<f32>,
+    pub backfire_left: Vec<f32>,
+    pub backfire_right: Vec<f32>,
+    pub limiter_left: Vec<f32>,
+    pub limiter_right: Vec<f32>,
+    pub preserved_left: Vec<f32>,
+    pub preserved_right: Vec<f32>,
+}
+
 #[derive(Clone, Copy, Debug, Default)]
-pub struct ContinuousDiagnostics {
-    pub source: u8,
+pub struct ContinuousDiagnostics {    pub source: u8,
     pub received_rpm: f32,
     pub rendered_rpm: f32,
     pub peak_pre_protection: f32,
@@ -582,6 +664,15 @@ pub struct ContinuousDiagnostics {
     pub blocks: u64,
     pub gf509_render_calls: u64,
     pub gf509_bypass_blocks: u64,
+    pub grand_prix_active_zones: u8,
+    pub grand_prix_active_voices: u8,
+    pub grand_prix_rendered_rpm: f32,
+    pub grand_prix_gate: f32,
+    pub grand_prix_load_gain: f32,
+    pub grand_prix_accepted_events: u64,
+    pub grand_prix_suppressed_events: u64,
+    pub grand_prix_late_events: u64,
+    pub grand_prix_overflowed_events: u64,
     pub underruns: u64,
     pub asset_or_render_errors: u64,
 }
@@ -891,6 +982,7 @@ impl VehicleAudioEngine {
             synth_block_r: vec![0.0; MAX_CPP_BLOCK],
             gf509: None,
             continuous_source: ContinuousSourceKind::Legacy,
+            grand_prix: None,
             gf509_block_l: vec![0.0; MAX_CPP_BLOCK],
             gf509_block_r: vec![0.0; MAX_CPP_BLOCK],
             gf509_render_failed: false,
@@ -907,6 +999,20 @@ impl VehicleAudioEngine {
             cpp_layer_gain: 0.0,
             cpp_out_l: vec![0.0f32; MAX_CPP_BLOCK],
             cpp_out_r: vec![0.0f32; MAX_CPP_BLOCK],
+            stem_capture_enabled: false,
+            grand_prix_sample_output: crate::grand_prix_sampler::GrandPrixSampleOutput::default(),
+            stem_full_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_full_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_engine_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_engine_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_gearbox_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_gearbox_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_backfire_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_backfire_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_limiter_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_limiter_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_preserved_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_preserved_r: vec![0.0; MAX_CPP_BLOCK],
         })
     }
 
@@ -1064,7 +1170,24 @@ impl VehicleAudioEngine {
         // Over-run backfire: sudden lift-off from high throttle at high RPM
         // (> 13,500 RPM). The 1 s cooldown stops throttle pumps / rev-limiter
         // bouncing from chaining full backfire samples back-to-back.
-        if self.last_throttle >= 0.80
+        // The Grand Prix sampler owns these edges when it is the active
+        // continuous source; the legacy bank path stays silent in that mode.
+        let grand_prix_active =
+            self.continuous_source == ContinuousSourceKind::GrandPrixSampler
+                && self.grand_prix.is_some();
+        if grand_prix_active {
+            let packet = GrandPrixTelemetry {
+                rpm: telem.rpm.clamp(0.0, 25_000.0),
+                throttle: telem.throttle.clamp(0.0, 1.0),
+                gear: telem.gear.clamp(-1, 12),
+                shift_phase: telem.shift_phase,
+                rev_limiter_active: telem.rev_limiter_active != 0,
+                dt_seconds: dt_seconds.max(0.0) as f64,
+            };
+            if let Some(sampler) = &mut self.grand_prix {
+                sampler.ingest(&packet);
+            }
+        } else if self.last_throttle >= 0.80
             && telem.throttle <= 0.15
             && telem.rpm >= 13500.0
             && self.backfire_cooldown_samples == 0
@@ -1079,7 +1202,11 @@ impl VehicleAudioEngine {
         // Rev limiter: accent the entry edge only (a bouncing limiter must not
         // machine-gun the sample), with a 250 ms cooldown.
         let limiter_active = telem.rev_limiter_active != 0;
-        if limiter_active && !self.last_rev_limiter_active && self.limiter_cooldown_samples == 0 {
+        if !grand_prix_active
+            && limiter_active
+            && !self.last_rev_limiter_active
+            && self.limiter_cooldown_samples == 0
+        {
             self.trigger(Trigger::Limiter);
             self.limiter_cooldown_samples = (self.sample_rate as f64 * 0.25) as usize;
         }
@@ -1104,25 +1231,27 @@ impl VehicleAudioEngine {
             }
         }
         if let Some(gf509) = &mut self.gf509 {
-            let torque_sign = v10_engine_synth::TorqueSign::from_i32(telem.torque_sign)
-                .unwrap_or(v10_engine_synth::TorqueSign::Neutral);
-            let shift_phase = v10_engine_synth::ShiftPhase::from_i32(telem.shift_phase)
-                .unwrap_or(v10_engine_synth::ShiftPhase::None);
-            let _ = gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
-                rpm: telem.rpm.clamp(0.0, 25_000.0) as f32,
-                throttle: telem.throttle.clamp(0.0, 1.0),
-                normalized_engine_load: telem.normalized_engine_load.clamp(0.0, 1.0),
-                normalized_engine_torque: telem.normalized_engine_torque.clamp(-1.0, 1.0),
-                torque_sign,
-                rpm_derivative: telem.rpm_derivative,
-                throttle_derivative: telem.throttle_derivative,
-                gear: telem.gear.clamp(-1, 12) as i8,
-                shift_phase,
-                clutch_engagement: telem.clutch_engagement,
-                tc_cut_ratio: telem.tc_cut_ratio,
-                rev_limiter_active: telem.rev_limiter_active != 0,
-                dt_seconds,
-            });
+            if !grand_prix_active {
+                let torque_sign = v10_engine_synth::TorqueSign::from_i32(telem.torque_sign)
+                    .unwrap_or(v10_engine_synth::TorqueSign::Neutral);
+                let shift_phase = v10_engine_synth::ShiftPhase::from_i32(telem.shift_phase)
+                    .unwrap_or(v10_engine_synth::ShiftPhase::None);
+                let _ = gf509.update_telemetry(v10_engine_synth::RuntimeTelemetry {
+                    rpm: telem.rpm.clamp(0.0, 25_000.0) as f32,
+                    throttle: telem.throttle.clamp(0.0, 1.0),
+                    normalized_engine_load: telem.normalized_engine_load.clamp(0.0, 1.0),
+                    normalized_engine_torque: telem.normalized_engine_torque.clamp(-1.0, 1.0),
+                    torque_sign,
+                    rpm_derivative: telem.rpm_derivative,
+                    throttle_derivative: telem.throttle_derivative,
+                    gear: telem.gear.clamp(-1, 12) as i8,
+                    shift_phase,
+                    clutch_engagement: telem.clutch_engagement,
+                    tc_cut_ratio: telem.tc_cut_ratio,
+                    rev_limiter_active: telem.rev_limiter_active != 0,
+                    dt_seconds,
+                });
+            }
         }
 
         self.last_norm = norm;
@@ -1214,7 +1343,18 @@ impl VehicleAudioEngine {
 
     /// Fire a one-shot with the RPM at trigger time. Voices with an RPM window
     /// table play only the slice for that band, with crossfaded edges.
+    /// With the Grand Prix sampler active, gearbox/backfire/limiter commands are
+    /// routed to the sampler event pools (single-owner routing).
     pub fn trigger_at_rpm(&mut self, t: Trigger, rpm: f64) {
+        if self.continuous_source == ContinuousSourceKind::GrandPrixSampler {
+            if let Some(kind) = grand_prix_event_kind(t) {
+                if let Some(sampler) = &mut self.grand_prix {
+                    sampler.ingest_direct(kind, rpm);
+                    self.last_trigger = t.bank_key().to_string();
+                    return;
+                }
+            }
+        }
         let variant_count = self.one_shots.iter().filter(|o| o.trigger == t).count();
         if variant_count == 0 {
             return;
@@ -1269,6 +1409,7 @@ impl VehicleAudioEngine {
             (mixed_l, mixed_r) = self.mix_aux_voices(mixed_l, mixed_r, bg);
             self.mix_one_shots(&mut mixed_l, &mut mixed_r);
             self.mix_reverb(&mut mixed_l, &mut mixed_r);
+            self.capture_render_stems(i, engine_l, engine_r, mixed_l, mixed_r);
             if self.diagnostic_mode == DiagnosticMode::V10Only {
                 mixed_l = engine_l;
                 mixed_r = engine_r;
@@ -1300,6 +1441,7 @@ impl VehicleAudioEngine {
         // the temporal authority: it produces the same `F90DspEventBlock` the C++
         // consumes, so the cpp impulse coincides with `rust_event_impulse` timing.
         let cpp_active = self.cpp_layer_enabled
+            && self.continuous_source != ContinuousSourceKind::GrandPrixSampler
             && self.cpp_dsp.is_some()
             && self.cpp_event_builder.is_some()
             && n <= MAX_CPP_BLOCK;
@@ -1441,7 +1583,41 @@ impl VehicleAudioEngine {
     fn mix_engine_source(&mut self, i: usize, eg: f32, cpp_gain: f32, synth_prerendered: bool) -> (f32, f32) {
         let mut mixed_l = 0.0f32;
         let mut mixed_r = 0.0f32;
+        self.grand_prix_sample_output = crate::grand_prix_sampler::GrandPrixSampleOutput::default();
         if self.diagnostic_mode != DiagnosticMode::EventsOnly
+            && self.continuous_source == ContinuousSourceKind::GrandPrixSampler
+        {
+            if let Some(sampler) = &mut self.grand_prix {
+                let components = sampler.render_sample_components();
+                self.grand_prix_sample_output = components;
+                let gain = continuous_output_gain(
+                    self.continuous_source,
+                    eg,
+                    self.cfg.engine_headroom,
+                    self.synth_volume,
+                );
+                mixed_l += components.sum() * gain;
+                mixed_r += components.sum() * gain;
+            }
+            self.cur_weights.iter_mut().for_each(|weight| *weight = 0.0);
+            if let Some(sampler) = &self.grand_prix {
+                let diagnostics = sampler.diagnostics();
+                for (slot, weight) in self
+                    .cur_weights
+                    .iter_mut()
+                    .zip(diagnostics.zone_weights.iter())
+                {
+                    *slot = *weight;
+                }
+                for (slot, rate) in self
+                    .cur_pitches
+                    .iter_mut()
+                    .zip(diagnostics.zone_rates.iter())
+                {
+                    *slot = *rate;
+                }
+            }
+        } else if self.diagnostic_mode != DiagnosticMode::EventsOnly
             && self.continuous_source == ContinuousSourceKind::V10Gf509
         {
             let gain = continuous_output_gain(
@@ -1717,12 +1893,34 @@ impl VehicleAudioEngine {
     fn finalize_block_diagnostics(&mut self, render_started: std::time::Instant, n: usize, metrics: &RenderMetrics) {
         let elapsed_ns = render_started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
         let deadline_ns = n as u64 * 1_000_000_000u64 / self.sample_rate.max(1) as u64;
-        self.diagnostics.source = u8::from(self.continuous_source == ContinuousSourceKind::V10Gf509);
+        let source_code = match self.continuous_source {
+            ContinuousSourceKind::Legacy => 0u8,
+            ContinuousSourceKind::V10Gf509 => 1u8,
+            ContinuousSourceKind::GrandPrixSampler => 2u8,
+        };
+        self.diagnostics.source = source_code;
         self.diagnostics.received_rpm = self.target_rpm as f32;
         self.diagnostics.rendered_rpm = self.gf509.as_ref().map_or(
             self.smoothed_rpm as f32,
             |runtime| runtime.rendered_telemetry().rpm,
         );
+        if let Some(sampler) = &self.grand_prix {
+            let grand_prix = sampler.diagnostics();
+            if self.continuous_source == ContinuousSourceKind::GrandPrixSampler {
+                self.diagnostics.rendered_rpm =
+                    grand_prix.rendered_revolutions_per_minute;
+            }
+            self.diagnostics.grand_prix_active_zones = grand_prix.active_zone_count;
+            self.diagnostics.grand_prix_active_voices = grand_prix.active_voice_count;
+            self.diagnostics.grand_prix_rendered_rpm =
+                grand_prix.rendered_revolutions_per_minute;
+            self.diagnostics.grand_prix_gate = grand_prix.gate;
+            self.diagnostics.grand_prix_load_gain = grand_prix.load_gain;
+            self.diagnostics.grand_prix_accepted_events = grand_prix.accepted_events;
+            self.diagnostics.grand_prix_suppressed_events = grand_prix.suppressed_events;
+            self.diagnostics.grand_prix_late_events = grand_prix.late_events;
+            self.diagnostics.grand_prix_overflowed_events = grand_prix.overflowed_events;
+        }
         self.diagnostics.peak_pre_protection = metrics.peak_pre_protection;
         self.diagnostics.effective_saturation = self.cfg.saturation.clamp(0.0, 1.0);
         self.diagnostics.effective_limiter_threshold = self.cfg.limiter_threshold.clamp(0.0, 1.0);
@@ -2005,6 +2203,62 @@ impl VehicleAudioEngine {
         self.continuous_source = ContinuousSourceKind::Legacy;
     }
 
+    /// Load the standalone Grand Prix sampler bank and select it as the
+    /// continuous engine/gearbox source. The shared bank stays loaded for the
+    /// preserved effects. Initialization failures keep the previous source.
+    pub fn enable_grand_prix_sampler(
+        &mut self,
+        bank_directory: &Path,
+        tuning: &GrandPrixSamplerTuning,
+    ) -> Result<(), String> {
+        let bank = GrandPrixSampleBank::load(bank_directory).map_err(|error| error.to_string())?;
+        let mut sampler = GrandPrixSampler::new(
+            bank,
+            self.sample_rate,
+            tuning.required_minimum_revolutions_per_minute,
+            tuning.required_maximum_revolutions_per_minute,
+        )
+        .map_err(|error| error.to_string())?;
+        sampler.set_group_gains(
+            tuning.engine_gain,
+            tuning.gearbox_gain,
+            tuning.backfire_gain,
+            tuning.limiter_gain,
+        );
+        if let Some(coast_gain) = tuning.coast_gain {
+            sampler.set_coast_gain(coast_gain);
+        }
+        self.grand_prix = Some(sampler);
+        self.continuous_source = ContinuousSourceKind::GrandPrixSampler;
+        self.synth_enabled = false;
+        self.cpp_layer_enabled = false;
+        self.gf509_render_failed = false;
+        Ok(())
+    }
+
+    pub fn grand_prix_sampler_enabled(&self) -> bool {
+        self.continuous_source == ContinuousSourceKind::GrandPrixSampler && self.grand_prix.is_some()
+    }
+
+    pub fn grand_prix_bank_id(&self) -> Option<&str> {
+        self.grand_prix.as_ref().map(GrandPrixSampler::bank_id)
+    }
+
+    pub fn grand_prix_bank_sha256(&self) -> Option<&str> {
+        self.grand_prix.as_ref().map(GrandPrixSampler::bank_sha256)
+    }
+
+    pub fn grand_prix_loop_ids(&self) -> Vec<String> {
+        self.grand_prix
+            .as_ref()
+            .map(GrandPrixSampler::loop_ids)
+            .unwrap_or_default()
+    }
+
+    pub fn grand_prix_diagnostics(&self) -> Option<GrandPrixDiagnostics> {
+        self.grand_prix.as_ref().map(GrandPrixSampler::diagnostics)
+    }
+
     pub fn continuous_source(&self) -> ContinuousSourceKind {
         self.continuous_source
     }
@@ -2042,6 +2296,65 @@ impl VehicleAudioEngine {
     /// default so the normal callback does not pay for diagnostic accumulation.
     pub fn set_stage_diagnostics_enabled(&mut self, enabled: bool) {
         self.stage_diagnostics_enabled = enabled;
+    }
+
+    pub fn set_stem_capture_enabled(&mut self, enabled: bool) {
+        self.stem_capture_enabled = enabled;
+    }
+
+    pub fn captured_render_stems(&self, frames: usize) -> Option<GrandPrixRenderStems> {
+        if !self.stem_capture_enabled {
+            return None;
+        }
+        let n = frames.min(MAX_CPP_BLOCK);
+        Some(GrandPrixRenderStems {
+            full_left: self.stem_full_l[..n].to_vec(),
+            full_right: self.stem_full_r[..n].to_vec(),
+            engine_left: self.stem_engine_l[..n].to_vec(),
+            engine_right: self.stem_engine_r[..n].to_vec(),
+            gearbox_left: self.stem_gearbox_l[..n].to_vec(),
+            gearbox_right: self.stem_gearbox_r[..n].to_vec(),
+            backfire_left: self.stem_backfire_l[..n].to_vec(),
+            backfire_right: self.stem_backfire_r[..n].to_vec(),
+            limiter_left: self.stem_limiter_l[..n].to_vec(),
+            limiter_right: self.stem_limiter_r[..n].to_vec(),
+            preserved_left: self.stem_preserved_l[..n].to_vec(),
+            preserved_right: self.stem_preserved_r[..n].to_vec(),
+        })
+    }
+
+    #[inline]
+    fn capture_render_stems(
+        &mut self,
+        index: usize,
+        engine_l: f32,
+        engine_r: f32,
+        mixed_l: f32,
+        mixed_r: f32,
+    ) {
+        if !self.stem_capture_enabled || index >= MAX_CPP_BLOCK {
+            return;
+        }
+        let headroom = self.cfg.engine_headroom * self.synth_volume;
+        let components = self.grand_prix_sample_output;
+        let gearbox_l = components.gearbox * headroom;
+        let gearbox_r = components.gearbox * headroom;
+        let backfire_l = components.backfire * headroom;
+        let backfire_r = components.backfire * headroom;
+        let limiter_l = components.limiter * headroom;
+        let limiter_r = components.limiter * headroom;
+        self.stem_full_l[index] = mixed_l;
+        self.stem_full_r[index] = mixed_r;
+        self.stem_engine_l[index] = engine_l;
+        self.stem_engine_r[index] = engine_r;
+        self.stem_gearbox_l[index] = gearbox_l;
+        self.stem_gearbox_r[index] = gearbox_r;
+        self.stem_backfire_l[index] = backfire_l;
+        self.stem_backfire_r[index] = backfire_r;
+        self.stem_limiter_l[index] = limiter_l;
+        self.stem_limiter_r[index] = limiter_r;
+        self.stem_preserved_l[index] = mixed_l - engine_l - gearbox_l - backfire_l - limiter_l;
+        self.stem_preserved_r[index] = mixed_r - engine_r - gearbox_r - backfire_r - limiter_r;
     }
 
     pub fn stage_diagnostics_enabled(&self) -> bool {
@@ -2098,6 +2411,9 @@ impl VehicleAudioEngine {
     pub fn reset_audio_state(&mut self) -> Result<(), String> {
         if let Some(gf509) = &mut self.gf509 {
             gf509.reset()?;
+        }
+        if let Some(sampler) = &mut self.grand_prix {
+            sampler.reset();
         }
         for one_shot in &mut self.one_shots {
             one_shot.active = false;
@@ -2687,6 +3003,7 @@ mod tests {
             synth_block_r: vec![0.0; MAX_CPP_BLOCK],
             gf509: None,
             continuous_source: ContinuousSourceKind::Legacy,
+            grand_prix: None,
             gf509_block_l: vec![0.0; MAX_CPP_BLOCK],
             gf509_block_r: vec![0.0; MAX_CPP_BLOCK],
             gf509_render_failed: false,
@@ -2703,6 +3020,20 @@ mod tests {
             cpp_layer_gain: 0.0,
             cpp_out_l: vec![0.0f32; MAX_CPP_BLOCK],
             cpp_out_r: vec![0.0f32; MAX_CPP_BLOCK],
+            stem_capture_enabled: false,
+            grand_prix_sample_output: crate::grand_prix_sampler::GrandPrixSampleOutput::default(),
+            stem_full_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_full_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_engine_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_engine_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_gearbox_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_gearbox_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_backfire_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_backfire_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_limiter_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_limiter_r: vec![0.0; MAX_CPP_BLOCK],
+            stem_preserved_l: vec![0.0; MAX_CPP_BLOCK],
+            stem_preserved_r: vec![0.0; MAX_CPP_BLOCK],
         };
         e.one_shots.push(OneShot {
             trigger: Trigger::Hit1,
@@ -4100,5 +4431,203 @@ mod tests {
         let peak_24 = nyquist_peak(24.0);
         assert!(peak_24 < peak_6, "24 dB/oct ({peak_24}) must beat 6 dB/oct ({peak_6})");
         assert!(peak_24 < 0.30, "24 dB/oct cascade too leaky at Nyquist: {peak_24}");
+    }
+
+    fn grand_prix_bank_directory() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../audio/formula_one_2030_grand_prix_sampler")
+    }
+
+    fn grand_prix_packet(rpm: f64, throttle: f32, shift_phase: i32) -> crate::ffi::VehicleAudioTelemetryV3 {
+        use crate::ffi::{VehicleAudioTelemetryV3, VEHICLE_AUDIO_ABI_VERSION};
+        VehicleAudioTelemetryV3 {
+            schema_version: VEHICLE_AUDIO_ABI_VERSION,
+            struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
+            rpm,
+            idle_rpm: 4_500.0,
+            max_rpm: 18_000.0,
+            throttle,
+            normalized_engine_load: throttle,
+            normalized_engine_torque: 0.5,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            speed_kph: 200.0,
+            slip: 0.0,
+            gear: 4,
+            torque_sign: 1,
+            shift_phase,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
+            rev_limiter_active: 0,
+        }
+    }
+
+    #[test]
+    fn grand_prix_sampler_owns_continuous_engine_and_events() {
+        let mut engine = engine_with_bank(dummy_bank());
+        let mut tuning = GrandPrixSamplerTuning::default();
+        tuning.required_minimum_revolutions_per_minute = Some(4_500.0);
+        tuning.required_maximum_revolutions_per_minute = Some(18_000.0);
+        engine
+            .enable_grand_prix_sampler(&grand_prix_bank_directory(), &tuning)
+            .expect("sampler bank");
+        assert!(engine.grand_prix_sampler_enabled());
+        assert_eq!(
+            engine.continuous_source(),
+            ContinuousSourceKind::GrandPrixSampler
+        );
+        assert!(!engine.synth_enabled());
+
+        let mut left = vec![0.0f32; 4_410];
+        let mut right = vec![0.0f32; 4_410];
+        engine.set_telemetry_timed(
+            &grand_prix_packet(9_000.0, 0.9, 0),
+            "asphalt",
+            1.0 / 120.0,
+        );
+        engine.render(&mut left, &mut right, 4_410);
+        let steady = engine.grand_prix_diagnostics().expect("diagnostics");
+        assert!(steady.gate > 0.5, "engine gate {}", steady.gate);
+
+        engine.set_telemetry_timed(
+            &grand_prix_packet(9_200.0, 0.0, 1),
+            "asphalt",
+            1.0 / 120.0,
+        );
+        engine.render(&mut left, &mut right, 4_410);
+        let shifted = engine.grand_prix_diagnostics().expect("diagnostics");
+        assert_eq!(shifted.accepted_events, 1);
+        assert!(
+            engine.one_shots.iter().all(|voice| !voice.active),
+            "shared-bank shift voices must stay silent under the sampler"
+        );
+        let peak = left.iter().fold(0.0f32, |peak, sample| peak.max(sample.abs()));
+        assert!(peak > 0.005, "sampler engine output peak {peak}");
+    }
+
+    #[test]
+    fn grand_prix_sampler_keeps_effects_on_the_shared_bank() {
+        let mut engine = engine_with_bank(silent_engine_bank());
+        engine
+            .enable_grand_prix_sampler(&grand_prix_bank_directory(), &GrandPrixSamplerTuning::default())
+            .expect("sampler bank");
+        engine.trigger(Trigger::Hit1);
+        assert!(engine
+            .one_shots
+            .iter()
+            .any(|voice| voice.trigger == Trigger::Hit1 && voice.active));
+        assert_eq!(engine.last_trigger(), "impact_hit_1");
+    }
+
+    #[test]
+    fn grand_prix_sampler_lift_edge_routes_away_from_bank_backfire() {
+        let mut engine = engine_with_bank(dummy_bank());
+        engine
+            .enable_grand_prix_sampler(&grand_prix_bank_directory(), &GrandPrixSamplerTuning::default())
+            .expect("sampler bank");
+        let mut left = vec![0.0f32; 4_410];
+        let mut right = vec![0.0f32; 4_410];
+        engine.set_telemetry_timed(
+            &grand_prix_packet(14_000.0, 0.9, 0),
+            "asphalt",
+            1.0 / 120.0,
+        );
+        engine.set_telemetry_timed(
+            &grand_prix_packet(14_000.0, 0.1, 0),
+            "asphalt",
+            1.0 / 120.0,
+        );
+        engine.render(&mut left, &mut right, 4_410);
+        let diagnostics = engine.grand_prix_diagnostics().expect("diagnostics");
+        assert_eq!(diagnostics.accepted_events, 1);
+        assert!(
+            engine
+                .one_shots
+                .iter()
+                .all(|voice| voice.trigger != Trigger::Backfire || !voice.active),
+            "legacy backfire voices must not fire when the sampler owns the edge"
+        );
+        assert!(diagnostics.backfire_voice_active);
+    }
+
+    #[test]
+    fn grand_prix_sampler_render_is_block_partition_invariant() {
+        fn render_partitioned(block: usize) -> Vec<f32> {
+            let mut engine = engine_with_bank(dummy_bank());
+            engine
+                .enable_grand_prix_sampler(
+                    &grand_prix_bank_directory(),
+                    &GrandPrixSamplerTuning::default(),
+                )
+                .expect("sampler bank");
+            engine.set_telemetry_timed(
+                &grand_prix_packet(9_000.0, 0.9, 0),
+                "asphalt",
+                1.0 / 120.0,
+            );
+            engine.set_telemetry_timed(
+                &grand_prix_packet(9_600.0, 0.2, 1),
+                "asphalt",
+                1.0 / 120.0,
+            );
+            let total = 20_000usize;
+            let mut output = vec![0.0f32; total];
+            let mut scratch = vec![0.0f32; block];
+            let mut position = 0usize;
+            while position < total {
+                let count = block.min(total - position);
+                engine.render(
+                    &mut output[position..position + count],
+                    &mut scratch[..count],
+                    count,
+                );
+                position += count;
+            }
+            output
+        }
+        let small_blocks = render_partitioned(64);
+        let large_blocks = render_partitioned(512);
+        for (index, (small, large)) in small_blocks.iter().zip(large_blocks.iter()).enumerate() {
+            assert_eq!(
+                small.to_bits(),
+                large.to_bits(),
+                "block partition changed sample {index}"
+            );
+        }
+    }
+
+    #[test]
+    fn preserved_effects_match_legacy_with_sampler_enabled() {
+        fn preserved_stem(enable_sampler: bool) -> Vec<f32> {
+            let mut engine = engine_with_bank(silent_engine_bank());
+            if enable_sampler {
+                engine
+                    .enable_grand_prix_sampler(
+                        &grand_prix_bank_directory(),
+                        &GrandPrixSamplerTuning::default(),
+                    )
+                    .expect("sampler bank");
+            }
+            engine.set_stem_capture_enabled(true);
+            engine.trigger(Trigger::Hit1);
+            let mut left = vec![0.0f32; 4_410];
+            let mut right = vec![0.0f32; 4_410];
+            engine.render(&mut left, &mut right, 4_410);
+            engine
+                .captured_render_stems(4_410)
+                .expect("stems")
+                .preserved_left
+        }
+        let legacy = preserved_stem(false);
+        let with_sampler = preserved_stem(true);
+        assert!(legacy.iter().any(|sample| sample.abs() > 1e-4));
+        for (index, (legacy_sample, sampler_sample)) in
+            legacy.iter().zip(with_sampler.iter()).enumerate()
+        {
+            assert!(
+                (legacy_sample - sampler_sample).abs() < 1e-6,
+                "preserved effect sample {index} diverged: {legacy_sample} vs {sampler_sample}"
+            );
+        }
     }
 }

@@ -1,7 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 //! Formula-90 vehicle audio runtime core (pure Rust).
 //!
-//! Consumes the approved `v10_vehicle` sample bank and produces deterministic
+//! Consumes the approved `commons` sample bank and produces deterministic
 //! mixing decisions. No Godot, no GEVP, no synthesis in this core.
 //!
 //! Modules:
@@ -25,6 +25,8 @@ pub mod dsp;
 pub mod dsp_contract;
 pub mod dsp_runtime;
 pub mod ffi;
+pub mod grand_prix_sample_bank;
+pub mod grand_prix_sampler;
 pub mod mixer;
 pub mod powertrain;
 pub mod state;
@@ -36,15 +38,24 @@ pub use adapter::{surface_token, GevpTelemetry};
 pub use bank::{BankError, Sample, VehicleSoundBank};
 pub use config::{SoundMixerConfig, MIXER_CONFIG_FILENAME};
 pub use ffi::{vehicle_audio_abi_version, VEHICLE_AUDIO_ABI_VERSION};
+pub use grand_prix_sample_bank::{
+    GrandPrixBankError, GrandPrixDecodedEvent, GrandPrixDecodedGroup, GrandPrixDecodedLoop,
+    GrandPrixDecodedVariant, GrandPrixEventRole, GrandPrixManifest, GrandPrixSampleBank,
+    GrandPrixSelection, GrandPrixTriggerEvent, GRAND_PRIX_SAMPLE_RATE, GRAND_PRIX_SCHEMA_VERSION,
+};
+pub use grand_prix_sampler::{
+    GrandPrixDiagnostics, GrandPrixEventKind, GrandPrixSampleOutput, GrandPrixSampler,
+    GrandPrixSamplerError, GrandPrixTelemetry,
+};
 pub use mixer::{
-    AudioConfig, ContinuousDiagnostics, ContinuousSourceKind, DiagnosticMode, V10LayerTuning,
-    VehicleAudioEngine,
+    AudioConfig, ContinuousDiagnostics, ContinuousSourceKind, DiagnosticMode,
+    GrandPrixRenderStems, GrandPrixSamplerTuning, V10LayerTuning, VehicleAudioEngine,
 };
 pub use powertrain::AudioPowertrainSynthesis;
 pub use state::{engine_weights, mix, EngineBandProfile, Mix, Trigger, VehicleAudioState};
 
-/// The default relative path to the v10_vehicle bank from the game/ directory.
-pub const DEFAULT_BANK_REL: &str = "sounds/banks/v10_vehicle";
+/// The default relative path to the commons bank from the game/ directory.
+pub const DEFAULT_BANK_REL: &str = "sounds/banks/commons";
 
 #[cfg(test)]
 pub(crate) mod allocation_probe {

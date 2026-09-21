@@ -67,7 +67,7 @@ $assetPaths = @(
     "game/data/vehicles/f1_2026_2008/f1_2026_2008_physics.json",
     "game/audio/v10_gf509/package.json",
     "game/audio/v10_gf509/manifest.json",
-    "game/sounds/banks/v10_vehicle/manifest.json"
+    "game/sounds/banks/commons/manifest.json"
 )
 
 $binaryPaths = @(

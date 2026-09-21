@@ -1,7 +1,7 @@
-//! VehicleSoundBank — load and validate the v10_vehicle bank on disk.
+//! VehicleSoundBank — load and validate the commons bank on disk.
 //!
 //! Reads `bank_manifest.json` plus the mono PCM16 44.1 kHz WAVs under
-//! `game/sounds/banks/v10_vehicle/`, validates format (mono, 16-bit, 44.1 kHz)
+//! `game/sounds/banks/commons/`, validates format (mono, 16-bit, 44.1 kHz)
 //! and per-file sha256 against the manifest, and exposes buffers by key.
 //! Pure Rust, no Godot deps.
 
@@ -274,7 +274,7 @@ impl VehicleSoundBank {
 }
 
 /// Read a mono PCM16 WAV file. Validates mono + 16-bit + 44.1 kHz.
-fn read_wav_mono16(path: &Path) -> Result<Vec<i16>, BankError> {
+pub(crate) fn read_wav_mono16(path: &Path) -> Result<Vec<i16>, BankError> {
     let bytes = fs::read(path)?;
     if bytes.len() < 44 || &bytes[..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
         return Err(BankError::InvalidWav(

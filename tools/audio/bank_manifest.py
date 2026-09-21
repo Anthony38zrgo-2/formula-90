@@ -29,7 +29,7 @@ class FileEntry:
 @dataclass
 class BankManifest:
     schema_version: int = 1
-    bank_name: str = "v10_vehicle"
+    bank_name: str = "commons"
     sample_rate: int = 44100
     channels: int = 1
     pcm_bits: int = 16

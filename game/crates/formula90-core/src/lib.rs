@@ -35,7 +35,7 @@ mod aud04_integration {
     fn physical_signed_torque_reaches_audio_from_standalone_step() {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let mut core = CoreFacade::new(CoreConfig {
-            bank_dir: Some(root.join("sounds/banks/v10_vehicle")),
+            bank_dir: Some(root.join("sounds/banks/commons")),
             config_json_path: Some(root.join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")),
             use_canonical: false, enable_audio: true, ..CoreConfig::default()
         }).unwrap();
@@ -56,7 +56,7 @@ mod aud04_integration {
         use game_sim::DriverInput;
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         let mut core = CoreFacade::new(CoreConfig {
-            bank_dir: Some(root.join("sounds/banks/v10_vehicle")),
+            bank_dir: Some(root.join("sounds/banks/commons")),
             config_json_path: Some(root.join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")),
             use_canonical: false,
             enable_audio: true,
@@ -237,6 +237,60 @@ mod aud04_integration {
     }
 
     #[test]
+    fn f1_2030_profile_reaches_the_grand_prix_sampler_and_legacy_profile_stays_gf509() {
+        use game_sim::DriverInput;
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut core = CoreFacade::new(CoreConfig {
+            bank_dir: Some(root.join("sounds/banks/commons")),
+            config_json_path: Some(
+                root.join("data/vehicles/f1_2030/f1_2030_v10_geometric.json"),
+            ),
+            use_canonical: false,
+            enable_audio: true,
+            ..CoreConfig::default()
+        })
+        .unwrap();
+        let id = core.ensure_spawned().unwrap();
+        assert!(
+            core.audio_grand_prix_sampler_enabled(),
+            "active F1 2030 profile must select the Grand Prix sampler"
+        );
+        assert!(!core.audio_gf509_enabled(), "GF509 must stay offline in sampler mode");
+        assert!(!core.audio_synth_enabled(), "procedural engine must stay offline in sampler mode");
+        for _ in 0..60 {
+            let samples = core.flat_samples(id);
+            core.step_standalone(
+                id,
+                &DriverInput { throttle: 0.9, ..Default::default() },
+                &samples,
+                1.0 / 120.0,
+            );
+        }
+        let mut left = vec![0.0f32; 4_096];
+        let mut right = vec![0.0f32; 4_096];
+        assert_eq!(core.audio_render(&mut left, &mut right, 4_096), 4_096);
+        let peak = left
+            .iter()
+            .fold(0.0f32, |peak, sample| peak.max(sample.abs()));
+        assert!(peak > 1e-3, "sampler backend rendered silence: {peak}");
+        assert!(left.iter().all(|sample| sample.is_finite()));
+
+        let mut legacy = CoreFacade::new(CoreConfig {
+            bank_dir: Some(root.join("sounds/banks/commons")),
+            config_json_path: Some(
+                root.join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"),
+            ),
+            use_canonical: false,
+            enable_audio: true,
+            ..CoreConfig::default()
+        })
+        .unwrap();
+        legacy.ensure_spawned().unwrap();
+        assert!(legacy.audio_gf509_enabled(), "legacy profile must keep GF509");
+        assert!(!legacy.audio_grand_prix_sampler_enabled());
+    }
+
+    #[test]
     fn mechanical_dsp_matrix_differs_at_fixed_rpm() {
         use v10_engine_synth::{Gf509Runtime, Gf509RuntimeConfig, RuntimeTelemetry, ShiftPhase, TorqueSign};
         // DSP separation at identical initial control: only the mechanical
@@ -304,7 +358,7 @@ use crate::module::{ModuleCtx, ModuleRegistry, SimModule};
 /// options, consolidated into one handshake).
 #[derive(Debug, Clone)]
 pub struct CoreConfig {
-    /// OS path to the `v10_vehicle` sound bank dir. `None` disables the mixer.
+    /// OS path to the `commons` sound bank dir. `None` disables the mixer.
     pub bank_dir: Option<PathBuf>,
     /// OS path to the vehicle JSON config. Ignored when `use_canonical`.
     pub config_json_path: Option<PathBuf>,
@@ -506,6 +560,22 @@ impl CoreFacade {
         match self.audio_worker.as_ref() {
             Some(worker) => worker.gf509_enabled(),
             None => self.audio.gf509_enabled(),
+        }
+    }
+
+    /// True only when the standalone Grand Prix sampler backend initialized.
+    pub fn audio_grand_prix_sampler_enabled(&self) -> bool {
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.grand_prix_sampler_enabled(),
+            None => self.audio.grand_prix_sampler_enabled(),
+        }
+    }
+
+    /// Active continuous source code: 0 legacy, 1 GF509, 2 Grand Prix sampler.
+    pub fn audio_source_code(&self) -> i32 {
+        match self.audio_worker.as_ref() {
+            Some(worker) => worker.source_code(),
+            None => self.audio.source_code(),
         }
     }
 

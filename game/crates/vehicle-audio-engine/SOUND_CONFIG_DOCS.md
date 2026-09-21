@@ -143,7 +143,7 @@ Use `va_validate old.json --migrate --output new.json` to convert explicitly.
 ### va_baseline
 Render deterministic scenarios and capture golden metrics for regression testing.
 ```
-cargo run -p vehicle_audio_engine --bin va_baseline -- game/sounds/banks/v10_vehicle
+cargo run -p vehicle_audio_engine --bin va_baseline -- game/sounds/banks/commons
 ```
 
 ### va_validate

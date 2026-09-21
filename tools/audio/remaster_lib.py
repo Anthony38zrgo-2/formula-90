@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-DEFAULT_BANK = Path("scratch/audio/v10_vehicle")
+DEFAULT_BANK = Path("scratch/audio/commons")
 
 
 def _wav_metrics(path: Path):

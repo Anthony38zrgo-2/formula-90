@@ -2,7 +2,7 @@
 //!
 //! Supports both schema v1 (legacy gains-only) and v2 (full sound design).
 //! The file lives in the sounds root (`game/sounds/`), two levels above the bank
-//! directory (`game/sounds/banks/v10_vehicle` -> `../../sound_mixer_config.json`).
+//! directory (`game/sounds/banks/commons` -> `../../sound_mixer_config.json`).
 //!
 //! Missing, invalid or malformed JSON degrades to safe defaults: the mixer must
 //! never fail to start because of a tuning file.
@@ -1507,7 +1507,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         let root = std::env::temp_dir().join(format!("f90_audio_cfg_{unique}"));
-        let bank = root.join("banks").join("v10_vehicle");
+        let bank = root.join("banks").join("commons");
         std::fs::create_dir_all(&bank).expect("create temp bank dir");
         (DirGuard(root), bank)
     }

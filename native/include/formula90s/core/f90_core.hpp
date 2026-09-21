@@ -188,6 +188,8 @@ public:
 	int64_t get_audio_skips() const { return audio_skips_; }
 	/// RMS of the most recently pushed PCM block (0.0 == silence).
 	float get_audio_output_rms() const { return audio_output_rms_; }
+	/// Active continuous source: 0 legacy, 1 GF509, 2 Grand Prix sampler.
+	int get_audio_source_code() const;
 	/// Generator pre-buffer occupancy in frames (listener delay beyond the driver).
 	int get_audio_gen_occupancy() const { return audio_gen_occupancy_; }
 	int get_audio_gen_capacity() const { return audio_gen_capacity_; }
@@ -284,6 +286,7 @@ private:
 	FnCoreAudioRender fn_audio_render_ = nullptr;
 	FnCoreAudioTrigger fn_audio_trigger_ = nullptr;
 	FnCoreAudioReadouts fn_audio_readouts_ = nullptr;
+	FnCoreAudioSourceCode fn_audio_source_code_ = nullptr;
 	FnCoreAudioSetAmbient fn_audio_set_ambient_ = nullptr;
 	FnCoreAudioWorkerStart fn_audio_worker_start_ = nullptr;
 	FnCoreAudioWorkerHandle fn_audio_worker_handle_ = nullptr;
@@ -299,7 +302,7 @@ private:
 	F194RustVehicle *cached_veh_ = nullptr;
 	double debug_throttle_ = 0.0;
 	bool enable_audio_ = true;
-	String bank_dir_res_ = "res://sounds/banks/v10_vehicle";
+	String bank_dir_res_ = "res://sounds/banks/commons";
 	String modules_ = ""; // comma-separated module names (e.g. "weather,ai")
 	float idle_rpm_ = 1000.0f;
 	float max_rpm_ = 15000.0f;

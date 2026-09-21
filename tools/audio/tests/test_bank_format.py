@@ -10,7 +10,7 @@ from pathlib import Path
 
 from tools.audio.bank_spec import RETIRED_KEYS
 
-BANK = Path("game/sounds/banks/v10_vehicle")
+BANK = Path("game/sounds/banks/commons")
 
 
 def _read_mono16(path: Path):
