@@ -172,7 +172,7 @@
       "manifest": "audio/formula_one_2030_grand_prix_sampler/manifest.json",
       "schema_version": 1,
       "engine_gain": 1.0,
-      "gearbox_gain": 1.0,
+      "gearbox_gain": 1.12,
       "backfire_gain": 1.0,
       "limiter_gain": 1.0,
       "coast_gain": 0.55,

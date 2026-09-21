@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the standalone Grand Prix sampler bank (schema 1) for f1_2030_v10.
 
-Reads the 13 immutable WAV sources in implementation/sfx, verifies every
+Reads the 15 immutable WAV sources in the V10 GP3 source bank, verifies every
 SHA-256 against the frozen inventory, prepares five seamless engine loops and
 eight one-shot events at 44.1 kHz mono PCM16, calibrates a proportional
 reference-RPM ladder over the physical 4500-18000 RPM range, measures pairwise
@@ -28,7 +28,7 @@ from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
-from scipy.signal import resample_poly
+from scipy.signal import butter, resample_poly, sosfiltfilt
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE_DIR = ROOT / "game/sounds/banks/v10-gp3"
@@ -36,7 +36,7 @@ DEFAULT_BANK_DIR = ROOT / "game/audio/formula_one_2030_grand_prix_sampler"
 DEFAULT_REPORTS_DIR = ROOT / "reports/audio-v10/grand-prix-sampler"
 
 SCHEMA_VERSION = 1
-TOOL_REVISION = 4
+TOOL_REVISION = 5
 OUTPUT_SAMPLE_RATE = 44100
 EVENT_SELECTION_SEED = 1
 
@@ -79,12 +79,30 @@ SOURCE_INVENTORY = {
     "gearup.wav": {
         "role": "gearbox_upshift",
         "asset_id": "upshift_event",
-        "sha256": "f656d22c4b161d16e70bda277066246b99e73d83d0dd5833fa5c2d63ae9d0657",
+        "sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+        "original_source_sha256": "f656d22c4b161d16e70bda277066246b99e73d83d0dd5833fa5c2d63ae9d0657",
+        "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
+        "already_prepared": True,
     },
     "geardn.wav": {
         "role": "gearbox_downshift",
         "asset_id": "downshift_event",
-        "sha256": "421a7136b22b1624fda39fe9c0540de73b8a9b8c170e328bc44c4db44e09ee3e",
+        "sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+        "original_source_sha256": "421a7136b22b1624fda39fe9c0540de73b8a9b8c170e328bc44c4db44e09ee3e",
+        "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
+        "already_prepared": True,
+    },
+    "96_gear_change_up_1.wav": {
+        "role": "gearbox_upshift_component",
+        "asset_id": "upshift_event_1996_component",
+        "sha256": "8332c4815bd4d26378600a5592e93bc764ec667377b912db5a43c04906470a59",
+        "component_only": True,
+    },
+    "96_gear_change_down_2.wav": {
+        "role": "gearbox_downshift_component",
+        "asset_id": "downshift_event_1996_component",
+        "sha256": "efaf45f46722051b7f454e421657cfe72ef7ece3412ae0cb9a7a91099106c032",
+        "component_only": True,
     },
     "500_backfire3.wav": {
         "role": "lift_backfire",
@@ -117,6 +135,35 @@ SOURCE_INVENTORY = {
         "sha256": "1bdb7a2cc3eb6d95e7fa8d56bec55fd4df8c9b307902056b93f5c30b32751758",
     },
 }
+
+GEARBOX_EVENT_COMPOSITE_RECIPES = {
+    "upshift_event": {
+        "layer_source_filename": "96_gear_change_up_1.wav",
+        "layer_high_pass_hertz": 160.0,
+        "layer_filter_order": 2,
+        "layer_gain_decibels": -8.0,
+        "layer_offset_seconds": 0.0,
+        "layer_edge_fade_seconds": 0.001,
+        "true_peak_ceiling_decibels_full_scale": -3.0,
+    },
+    "downshift_event": {
+        "layer_source_filename": "96_gear_change_down_2.wav",
+        "layer_high_pass_hertz": 140.0,
+        "layer_filter_order": 2,
+        "layer_gain_decibels": -12.0,
+        "layer_offset_seconds": 0.0,
+        "layer_edge_fade_seconds": 0.001,
+        "true_peak_ceiling_decibels_full_scale": -3.0,
+    },
+}
+
+def load_source_inventory(path: Path) -> dict:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    table = {}
+    for source in payload["sources"]:
+        table[source["filename"]] = source
+    return table
+
 
 LOOP_ORDER = [
     "engine_idle_loop",
@@ -232,6 +279,80 @@ def dbfs(value: float) -> float:
     return 20.0 * math.log10(max(value, 1e-12))
 
 
+def amplitude_from_decibels(decibels: float) -> float:
+    return 10.0 ** (decibels / 20.0)
+
+
+def estimate_true_peak_amplitude(samples: np.ndarray) -> float:
+    if samples.size == 0:
+        return 0.0
+    reconstructed = resample_poly(
+        samples,
+        8,
+        1,
+        window=("kaiser", 12.0),
+        padtype="line",
+    )
+    return float(np.max(np.abs(reconstructed)))
+
+
+def prepare_gearbox_event_composite(
+    base_samples: np.ndarray,
+    layer_samples: np.ndarray,
+    rate: int,
+    recipe: dict,
+) -> tuple[np.ndarray, dict]:
+    centered_layer = layer_samples - float(np.mean(layer_samples))
+    filter_sections = butter(
+        int(recipe["layer_filter_order"]),
+        float(recipe["layer_high_pass_hertz"]),
+        btype="highpass",
+        fs=rate,
+        output="sos",
+    )
+    filtered_layer = sosfiltfilt(filter_sections, centered_layer)
+    edge_fade_frames = min(
+        int(round(float(recipe["layer_edge_fade_seconds"]) * rate)),
+        filtered_layer.size // 2,
+    )
+    if edge_fade_frames > 1:
+        fade = np.linspace(0.0, 1.0, edge_fade_frames, endpoint=True)
+        filtered_layer = filtered_layer.copy()
+        filtered_layer[:edge_fade_frames] *= fade
+        filtered_layer[-edge_fade_frames:] *= fade[::-1]
+    layer_gain = amplitude_from_decibels(float(recipe["layer_gain_decibels"]))
+    filtered_layer *= layer_gain
+    layer_offset_frames = max(0, int(round(float(recipe["layer_offset_seconds"]) * rate)))
+    composite_frames = max(base_samples.size, layer_offset_frames + filtered_layer.size)
+    composite = np.zeros(composite_frames, dtype=np.float64)
+    composite[:base_samples.size] += base_samples
+    composite[layer_offset_frames:layer_offset_frames + filtered_layer.size] += filtered_layer
+    true_peak_before_gain = estimate_true_peak_amplitude(composite)
+    true_peak_before_gain_decibels = dbfs(true_peak_before_gain)
+    ceiling = float(recipe["true_peak_ceiling_decibels_full_scale"])
+    final_gain_decibels = min(0.0, ceiling - true_peak_before_gain_decibels)
+    composite *= amplitude_from_decibels(final_gain_decibels)
+    details = {
+        "alignment": "shared_start",
+        "base_gain_decibels": 0.0,
+        "layer_downmix": "arithmetic_mean_to_mono",
+        "layer_direct_current_removal": True,
+        "layer_high_pass_hertz": float(recipe["layer_high_pass_hertz"]),
+        "layer_filter_order": int(recipe["layer_filter_order"]),
+        "layer_gain_decibels": float(recipe["layer_gain_decibels"]),
+        "layer_offset_frames": layer_offset_frames,
+        "layer_offset_seconds": float(recipe["layer_offset_seconds"]),
+        "layer_edge_fade_frames": edge_fade_frames,
+        "true_peak_before_final_gain_decibels_full_scale": true_peak_before_gain_decibels,
+        "true_peak_ceiling_decibels_full_scale": ceiling,
+        "final_gain_decibels": final_gain_decibels,
+        "estimated_true_peak_after_final_gain_decibels_full_scale": dbfs(
+            estimate_true_peak_amplitude(composite)
+        ),
+    }
+    return composite, details
+
+
 def band_rms(samples: np.ndarray, rate: int, low_hz: float, high_hz: float) -> float:
     segment = samples[: 1 << int(math.log2(min(len(samples), 1 << 16)))]
     window = np.hanning(len(segment))
@@ -337,16 +458,23 @@ def apply_rate(samples: np.ndarray, rate: int, ratio: float) -> np.ndarray:
     return resample_poly(samples, fraction.numerator, fraction.denominator)
 
 
-def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_only: bool) -> int:
-    missing = [name for name in SOURCE_INVENTORY if not (source_dir / name).is_file()]
+def build_manifest(
+    source_dir: Path,
+    bank_dir: Path,
+    reports_dir: Path,
+    check_only: bool,
+    source_inventory: dict | None = None,
+) -> int:
+    definition_table = source_inventory if source_inventory is not None else SOURCE_INVENTORY
+    missing = [name for name in definition_table if not (source_dir / name).is_file()]
     if missing:
         print("missing sources: " + ", ".join(sorted(missing)), file=sys.stderr)
         return 1
 
     inventory_entries = []
     source_audio: dict[str, tuple[np.ndarray, int]] = {}
-    for name in sorted(SOURCE_INVENTORY):
-        entry = SOURCE_INVENTORY[name]
+    for name in sorted(definition_table):
+        entry = definition_table[name]
         path = source_dir / name
         digest = sha256_file(path)
         expected = entry["sha256"]
@@ -355,22 +483,30 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
             return 1
         samples, rate, channels, bits = read_wav(path)
         source_audio[name] = (samples, rate)
-        inventory_entries.append(
-            {
-                "filename": name,
-                "sha256": digest,
-                "role": entry["role"],
-                "asset_id": entry["asset_id"],
-                "sample_rate_hz": rate,
-                "channels": channels,
-                "bits_per_sample": bits,
-                "frames": int(len(samples)),
-                "duration_seconds": len(samples) / rate,
-                "rms_dbfs": dbfs(rms_value(samples)),
-                "peak_dbfs": dbfs(float(np.max(np.abs(samples))) if len(samples) else 0.0),
-                "dc_offset": float(np.mean(samples)) if len(samples) else 0.0,
-            }
-        )
+        inventory_entry = {
+            "filename": name,
+            "sha256": digest,
+            "role": entry["role"],
+            "asset_id": entry["asset_id"],
+            "sample_rate_hz": rate,
+            "channels": channels,
+            "bits_per_sample": bits,
+            "frames": int(len(samples)),
+            "duration_seconds": len(samples) / rate,
+            "rms_dbfs": dbfs(rms_value(samples)),
+            "peak_dbfs": dbfs(float(np.max(np.abs(samples))) if len(samples) else 0.0),
+            "dc_offset": float(np.mean(samples)) if len(samples) else 0.0,
+        }
+        if "original_source_sha256" in entry:
+            inventory_entry["original_source_sha256"] = entry["original_source_sha256"]
+            inventory_entry["original_source_filename"] = entry.get(
+                "original_source_filename", name
+            )
+        if "preparation_recipe" in entry:
+            inventory_entry["preparation_recipe"] = entry["preparation_recipe"]
+        if entry.get("component_only"):
+            inventory_entry["component_only"] = True
+        inventory_entries.append(inventory_entry)
     inventory = {
         "schema_version": SCHEMA_VERSION,
         "tool_revision": TOOL_REVISION,
@@ -383,10 +519,22 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
     seam_evidence: list[dict] = []
     for name in LOOP_ORDER:
         source_name = next(
-            filename for filename, entry in SOURCE_INVENTORY.items() if entry["asset_id"] == name
+            filename for filename, entry in definition_table.items() if entry["asset_id"] == name
         )
+        source_entry = definition_table[source_name]
         samples, rate = source_audio[source_name]
-        prepared, seam = prepare_loop(samples, rate)
+        if source_entry.get("already_prepared"):
+            prepared = samples
+            seam = {
+                "source_loop_start_frame": 0,
+                "source_loop_end_frame_exclusive": int(len(samples)),
+                "loop_crossfade_frames": int(source_entry.get("loop_crossfade_frames", 0)),
+                "naive_wrap_step_before_preparation": float(abs(samples[0] - samples[-1])),
+                "endpoint_correlation": float(source_entry.get("endpoint_correlation", 0.0)),
+                "prepared_wrap_step": float(abs(samples[-1] - samples[0])),
+            }
+        else:
+            prepared, seam = prepare_loop(samples, rate)
         peaks = spectral_peaks(prepared, rate)
         spacing, score, harmonic = harmonic_comb_spacing(peaks, 20.0, 180.0)
         loop_audio[name] = prepared
@@ -395,7 +543,7 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
                 "id": name,
                 "role": "engine_loop",
                 "source_filename": source_name,
-                "source_sha256": SOURCE_INVENTORY[source_name]["sha256"],
+                "source_sha256": source_entry["sha256"],
                 "derived_filename": f"{name}.wav",
                 "derived_frames": int(len(prepared)),
                 "derived_rms_dbfs": dbfs(rms_value(prepared)),
@@ -404,6 +552,9 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
                 "comb_spacing_hz": spacing,
                 "comb_fit_confidence": float(score / max(harmonic, 1)),
                 "comb_harmonic_span": harmonic,
+                "preparation_recipe": source_entry.get(
+                    "preparation_recipe", "prepare_loop_crossfade_v1"
+                ),
             }
         )
         seam_evidence.append({"asset_id": name, **seam})
@@ -416,9 +567,28 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
     base_rpm_per_hz = center_rpm / math.sqrt(ladder_span) / min(spacings)
     references = [spacing * base_rpm_per_hz for spacing in spacings]
 
+    authored_references = [
+        definition_table[asset["source_filename"]].get("reference_revolutions_per_minute")
+        for asset in loop_assets
+    ]
+    references_are_authored = all(
+        reference is not None and reference > 0.0 for reference in authored_references
+    ) and all(
+        authored_references[index] < authored_references[index + 1]
+        for index in range(len(authored_references) - 1)
+    )
+    if references_are_authored:
+        references = [float(reference) for reference in authored_references]
+        base_rpm_per_hz = sum(references) / sum(spacings)
+    reference_method = (
+        "authored_progression_preserved_with_measured_spacing_evidence"
+        if references_are_authored
+        else "measured_comb_spacing_proportional_ladder"
+    )
+
     for asset, spacing, reference in zip(loop_assets, spacings, references):
         asset["reference_revolutions_per_minute"] = reference
-        asset["reference_method"] = "measured_comb_spacing_proportional_ladder"
+        asset["reference_method"] = reference_method
         asset["reference_rpm_per_hz"] = base_rpm_per_hz
 
     boundaries = [
@@ -484,16 +654,54 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
 
     event_assets: list[dict] = []
     event_audio: dict[str, np.ndarray] = {}
-    for name in sorted(SOURCE_INVENTORY):
-        entry = SOURCE_INVENTORY[name]
-        if entry["role"] == "engine_loop":
+    for name in sorted(definition_table):
+        entry = definition_table[name]
+        if entry["role"] == "engine_loop" or entry.get("component_only"):
             continue
         samples, rate = source_audio[name]
         source_rate = rate
         if rate != OUTPUT_SAMPLE_RATE:
             samples = resample_poly(samples, OUTPUT_SAMPLE_RATE, rate)
             rate = OUTPUT_SAMPLE_RATE
-        if entry["role"] in ("lift_backfire", "limiter_event"):
+        event_metadata = {}
+        composite_recipe = GEARBOX_EVENT_COMPOSITE_RECIPES.get(entry["asset_id"])
+        if entry.get("already_prepared"):
+            preparation_recipe = entry.get("preparation_recipe", "prepared_event_v1")
+        elif composite_recipe is not None:
+            layer_source_filename = composite_recipe["layer_source_filename"]
+            layer_entry = definition_table[layer_source_filename]
+            layer_samples, layer_rate = source_audio[layer_source_filename]
+            if layer_rate != OUTPUT_SAMPLE_RATE:
+                layer_samples = resample_poly(
+                    layer_samples,
+                    OUTPUT_SAMPLE_RATE,
+                    layer_rate,
+                )
+            samples, composite_processing = prepare_gearbox_event_composite(
+                samples,
+                layer_samples,
+                rate,
+                composite_recipe,
+            )
+            preparation_recipe = "gearbox_body_and_1996_mechanical_composite_v1"
+            event_metadata = {
+                "source_components": [
+                    {
+                        "purpose": "original_body_and_low_frequency_weight",
+                        "source_filename": name,
+                        "source_sha256": entry["sha256"],
+                        "gain_decibels": 0.0,
+                    },
+                    {
+                        "purpose": "1996_mechanical_attack_and_midrange_detail",
+                        "source_filename": layer_source_filename,
+                        "source_sha256": layer_entry["sha256"],
+                        "gain_decibels": float(composite_recipe["layer_gain_decibels"]),
+                    },
+                ],
+                "composite_processing": composite_processing,
+            }
+        elif entry["role"] in ("lift_backfire", "limiter_event"):
             samples = samples - float(np.mean(samples))
             fade_in = min(int(0.002 * rate), len(samples))
             fade_out = min(int(0.012 * rate), len(samples))
@@ -535,6 +743,7 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
                 "derived_band_rms_300_6000": band_rms(samples, rate, *LEVEL_BAND_HZ),
                 "preparation_recipe": preparation_recipe,
                 "duration_seconds": len(samples) / rate,
+                **event_metadata,
             }
         )
 
@@ -581,7 +790,7 @@ def build_manifest(source_dir: Path, bank_dir: Path, reports_dir: Path, check_on
         "event_groups": event_groups,
         "event_trigger_policy": EVENT_TRIGGER_POLICY,
         "reference_ladder": {
-            "method": "proportional_to_measured_comb_spacing",
+            "method": reference_method,
             "revolutions_per_minute_per_hertz": base_rpm_per_hz,
             "anchor_center_revolutions_per_minute": center_rpm,
             "measured_spacings_hz": spacings,
@@ -680,9 +889,21 @@ def main() -> int:
     parser.add_argument("--source-dir", type=Path, default=DEFAULT_SOURCE_DIR)
     parser.add_argument("--bank-dir", type=Path, default=DEFAULT_BANK_DIR)
     parser.add_argument("--reports-dir", type=Path, default=DEFAULT_REPORTS_DIR)
+    parser.add_argument("--source-inventory", type=Path, default=None)
     parser.add_argument("--check", action="store_true")
     arguments = parser.parse_args()
-    return build_manifest(arguments.source_dir, arguments.bank_dir, arguments.reports_dir, arguments.check)
+    source_inventory = (
+        load_source_inventory(arguments.source_inventory)
+        if arguments.source_inventory is not None
+        else None
+    )
+    return build_manifest(
+        arguments.source_dir,
+        arguments.bank_dir,
+        arguments.reports_dir,
+        arguments.check,
+        source_inventory,
+    )
 
 
 if __name__ == "__main__":

@@ -68,6 +68,37 @@ def test_grand_prix_bank_is_byte_deterministic(tmp_path, builder):
         assert (reports_first / name).read_bytes() == (reports_second / name).read_bytes(), name
 
 
+def test_grand_prix_gearbox_events_are_measured_composites(tmp_path, builder):
+    bank = tmp_path / "bank"
+    reports = tmp_path / "reports"
+    assert builder.build_manifest(SOURCE_DIR, bank, reports, False) == 0
+    generated_manifest = json.loads((bank / "manifest.json").read_text(encoding="utf-8"))
+    generated_inventory = json.loads(
+        (reports / "source_inventory.json").read_text(encoding="utf-8")
+    )
+    assert len(generated_inventory["sources"]) == 15
+    component_sources = {
+        entry["filename"]
+        for entry in generated_inventory["sources"]
+        if entry.get("component_only")
+    }
+    assert component_sources == {
+        "96_gear_change_up_1.wav",
+        "96_gear_change_down_2.wav",
+    }
+    events_by_id = {event["id"]: event for event in generated_manifest["events"]}
+    expected_composite_hashes = {
+        "upshift_event": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+        "downshift_event": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+    }
+    for event_id, expected_hash in expected_composite_hashes.items():
+        event = events_by_id[event_id]
+        assert event["preparation_recipe"] == "prepared_gearbox_body_and_1996_mechanical_composite_v1"
+        assert event["source_sha256"] == expected_hash
+        assert event["derived_sha256"] == expected_hash
+        assert sha256(bank / event["derived_filename"]) == expected_hash
+
+
 def test_grand_prix_shipped_manifest_hashes_match_files(manifest):
     assert manifest["bank_id"] == "formula_one_2030_grand_prix_sampler"
     assert manifest["schema_version"] == 1
@@ -89,17 +120,29 @@ def test_grand_prix_shipped_manifest_hashes_match_files(manifest):
 def test_grand_prix_source_inventory_is_accounted(manifest):
     inventory = json.loads((REPORTS_DIR / "source_inventory.json").read_text(encoding="utf-8"))
     source_hashes = {entry["sha256"] for entry in inventory["sources"]}
-    assert len(inventory["sources"]) == 13
+    assert len(inventory["sources"]) == 15
     assert not any(entry["filename"].startswith("01_Crackle") for entry in inventory["sources"])
     sources_by_role = {}
     for entry in inventory["sources"]:
         sources_by_role.setdefault(entry["role"], []).append(entry["filename"])
     assert sources_by_role["gearbox_upshift"] == ["gearup.wav"]
     assert sources_by_role["gearbox_downshift"] == ["geardn.wav"]
+    assert sources_by_role["gearbox_upshift_component"] == ["96_gear_change_up_1.wav"]
+    assert sources_by_role["gearbox_downshift_component"] == ["96_gear_change_down_2.wav"]
     assert sources_by_role["limiter_event"] == ["500_limiter.wav"]
     declared = {
         asset["source_sha256"] for asset in manifest["loops"] + manifest["events"]
     }
+    declared.update(
+        component["source_sha256"]
+        for asset in manifest["events"]
+        for component in asset.get("source_components", [])
+    )
+    declared.update(
+        entry["sha256"]
+        for entry in inventory["sources"]
+        if entry.get("component_only")
+    )
     assert declared == source_hashes
     inventory_payload = json.dumps(inventory, sort_keys=True, indent=2).encode("utf-8")
     assert hashlib.sha256(inventory_payload).hexdigest() == manifest["source_inventory_sha256"]
@@ -180,10 +223,10 @@ def test_grand_prix_event_groups_are_complete(manifest):
     for asset in manifest["events"]:
         if asset["role"] == "gearbox_upshift":
             assert asset["source_filename"] == "gearup.wav"
-            assert asset["preparation_recipe"] == "native_44100_copy"
+            assert asset["preparation_recipe"] == "prepared_gearbox_body_and_1996_mechanical_composite_v1"
         if asset["role"] == "gearbox_downshift":
             assert asset["source_filename"] == "geardn.wav"
-            assert asset["preparation_recipe"] == "native_44100_copy"
+            assert asset["preparation_recipe"] == "prepared_gearbox_body_and_1996_mechanical_composite_v1"
         if asset["role"] == "lift_backfire":
             assert asset["source_filename"].startswith("500_backfire")
             assert asset["preparation_recipe"] == "backfire_overlay_recipe_v1"

@@ -9,9 +9,8 @@ diagnostics. Writes reports/audio-v10/grand-prix-sampler/validation.json.
 """
 from __future__ import annotations
 
+import argparse
 import json
-import struct
-import sys
 import wave
 from pathlib import Path
 
@@ -69,7 +68,6 @@ def smooth(values: np.ndarray, size: int = 9) -> np.ndarray:
 
 
 def burst_count(samples: np.ndarray, threshold_ratio: float = 0.08) -> int:
-    mono = np.abs(samples.mean(axis=1))
     envelope = envelope_rms(samples, 2205, 441)
     if envelope.size == 0:
         return 0
@@ -84,8 +82,13 @@ def burst_count(samples: np.ndarray, threshold_ratio: float = 0.08) -> int:
     return count
 
 
-def main() -> int:
-    manifest = json.loads((RENDERS / "render_manifest.json").read_text(encoding="utf-8"))
+def main(
+    renders_directory: Path | None = None,
+    report_path: Path | None = None,
+) -> int:
+    renders = renders_directory or RENDERS
+    report_location = report_path or REPORT
+    manifest = json.loads((renders / "render_manifest.json").read_text(encoding="utf-8"))
     checks: list[dict] = []
     failures: list[str] = []
 
@@ -104,8 +107,8 @@ def main() -> int:
         f"worst rendered peak {worst_peak:.4f}",
     )
 
-    full_sampler = read_wav(RENDERS / "full_grand_prix_sampler.wav")
-    full_reference = read_wav(RENDERS / "full_gf509_reference.wav")
+    full_sampler = read_wav(renders / "full_grand_prix_sampler.wav")
+    full_reference = read_wav(renders / "full_gf509_reference.wav")
     sampler_rms = rms(full_sampler)
     reference_rms = rms(full_reference)
     check(
@@ -126,8 +129,8 @@ def main() -> int:
         "limiter": "stem_limiter.wav",
         "preserved": "stem_preserved_effects.wav",
     }
-    stems = {key: read_wav(RENDERS / name) for key, name in stem_names.items()}
-    pre_master = read_wav(RENDERS / "stem_pre_master_sum.wav")
+    stems = {key: read_wav(renders / name) for key, name in stem_names.items()}
+    pre_master = read_wav(renders / "stem_pre_master_sum.wav")
     stem_sum = sum(stems.values())
     difference = np.abs(stem_sum - pre_master)
     check(
@@ -150,7 +153,7 @@ def main() -> int:
         ", ".join(f"{key}={dbfs(value):.1f}dB" for key, value in stem_energy.items()),
     )
 
-    holds = read_wav(RENDERS / "steady_holds.wav")
+    holds = read_wav(renders / "steady_holds.wav")
     hold_count = len(holds) // HOLD_FRAMES
     hold_levels = [
         dbfs(rms(holds[index * HOLD_FRAMES + HOLD_FRAMES // 2: (index + 1) * HOLD_FRAMES]))
@@ -172,7 +175,7 @@ def main() -> int:
     )
 
     for direction, filename in (("ascending", "sweep_ascending.wav"), ("descending", "sweep_descending.wav")):
-        sweep = read_wav(RENDERS / filename)
+        sweep = read_wav(renders / filename)
         envelope = envelope_rms(sweep, 2205, 441)
         trend = smooth(envelope, 9)
         with np.errstate(divide="ignore"):
@@ -184,8 +187,8 @@ def main() -> int:
             f"max |residual| {worst:.2f} dB over {len(envelope)} windows",
         )
 
-    ascending = envelope_rms(read_wav(RENDERS / "sweep_ascending.wav"), 2205, 441)
-    descending = envelope_rms(read_wav(RENDERS / "sweep_descending.wav"), 2205, 441)
+    ascending = envelope_rms(read_wav(renders / "sweep_ascending.wav"), 2205, 441)
+    descending = envelope_rms(read_wav(renders / "sweep_descending.wav"), 2205, 441)
     length = min(len(ascending), len(descending))
     if length > 0:
         ascending = ascending[:length]
@@ -198,8 +201,8 @@ def main() -> int:
             f"median direction difference {float(np.median(difference_db)):.2f} dB",
         )
 
-    downshift_stem = read_wav(RENDERS / "audition_downshift_gearbox_stem.wav")
-    backfire_stem = read_wav(RENDERS / "audition_backfire_stem.wav")
+    downshift_stem = read_wav(renders / "audition_downshift_gearbox_stem.wav")
+    backfire_stem = read_wav(renders / "audition_backfire_stem.wav")
     check(
         "downshift_variants_audible",
         burst_count(downshift_stem, threshold_ratio=0.15) >= 3,
@@ -246,13 +249,17 @@ def main() -> int:
         "reference_rms_dbfs": dbfs(reference_rms),
         "sampler_diagnostics": diagnostics,
     }
-    REPORT.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    report_location.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     for entry in checks:
         status = "ok  " if entry["passed"] else "FAIL"
         print(f"[{status}] {entry['name']}: {entry['detail']}")
-    print(f"validation report: {REPORT}")
+    print(f"validation report: {report_location}")
     return 1 if failures else 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--renders-directory", type=Path, default=None)
+    parser.add_argument("--report-path", type=Path, default=None)
+    arguments = parser.parse_args()
+    raise SystemExit(main(arguments.renders_directory, arguments.report_path))

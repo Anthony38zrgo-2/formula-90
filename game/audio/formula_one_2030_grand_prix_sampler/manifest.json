@@ -188,32 +188,32 @@
       "source_sha256": "1bdb7a2cc3eb6d95e7fa8d56bec55fd4df8c9b307902056b93f5c30b32751758"
     },
     {
-      "derived_band_rms_300_6000": 0.021107803451011518,
+      "derived_band_rms_300_6000": 0.04078002388759487,
       "derived_filename": "downshift_event.wav",
-      "derived_frames": 8545,
-      "derived_peak_dbfs": -3.5614110252779714,
-      "derived_rms_dbfs": -13.588799730414134,
-      "derived_sha256": "421a7136b22b1624fda39fe9c0540de73b8a9b8c170e328bc44c4db44e09ee3e",
-      "duration_seconds": 0.19376417233560092,
+      "derived_frames": 13846,
+      "derived_peak_dbfs": -2.9999878172428636,
+      "derived_rms_dbfs": -15.862362325399022,
+      "derived_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+      "duration_seconds": 0.31396825396825395,
       "id": "downshift_event",
-      "preparation_recipe": "native_44100_copy",
+      "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
       "role": "gearbox_downshift",
       "source_filename": "geardn.wav",
-      "source_sha256": "421a7136b22b1624fda39fe9c0540de73b8a9b8c170e328bc44c4db44e09ee3e"
+      "source_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279"
     },
     {
-      "derived_band_rms_300_6000": 0.059458131591196034,
+      "derived_band_rms_300_6000": 0.07378453444827636,
       "derived_filename": "upshift_event.wav",
-      "derived_frames": 13057,
-      "derived_peak_dbfs": -5.677568188626046,
-      "derived_rms_dbfs": -16.606738429474785,
-      "derived_sha256": "f656d22c4b161d16e70bda277066246b99e73d83d0dd5833fa5c2d63ae9d0657",
-      "duration_seconds": 0.2960770975056689,
+      "derived_frames": 13806,
+      "derived_peak_dbfs": -4.48828520382904,
+      "derived_rms_dbfs": -16.342596350349424,
+      "derived_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+      "duration_seconds": 0.3130612244897959,
       "id": "upshift_event",
-      "preparation_recipe": "native_44100_copy",
+      "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
       "role": "gearbox_upshift",
       "source_filename": "gearup.wav",
-      "source_sha256": "f656d22c4b161d16e70bda277066246b99e73d83d0dd5833fa5c2d63ae9d0657"
+      "source_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a"
     }
   ],
   "loops": [
@@ -237,6 +237,7 @@
       "loop_crossfade_frames": 882,
       "loop_end_frame_exclusive": 50869,
       "loop_start_frame": 0,
+      "preparation_recipe": "prepare_loop_crossfade_v1",
       "reference_method": "measured_comb_spacing_proportional_ladder",
       "reference_revolutions_per_minute": 4542.534847313378,
       "reference_rpm_per_hz": 138.23903978377598,
@@ -266,6 +267,7 @@
       "loop_crossfade_frames": 882,
       "loop_end_frame_exclusive": 47770,
       "loop_start_frame": 0,
+      "preparation_recipe": "prepare_loop_crossfade_v1",
       "reference_method": "measured_comb_spacing_proportional_ladder",
       "reference_revolutions_per_minute": 8642.704767296445,
       "reference_rpm_per_hz": 138.23903978377598,
@@ -295,6 +297,7 @@
       "loop_crossfade_frames": 882,
       "loop_end_frame_exclusive": 65308,
       "loop_start_frame": 0,
+      "preparation_recipe": "prepare_loop_crossfade_v1",
       "reference_method": "measured_comb_spacing_proportional_ladder",
       "reference_revolutions_per_minute": 9563.376772255555,
       "reference_rpm_per_hz": 138.23903978377598,
@@ -324,6 +327,7 @@
       "loop_crossfade_frames": 882,
       "loop_end_frame_exclusive": 50037,
       "loop_start_frame": 0,
+      "preparation_recipe": "prepare_loop_crossfade_v1",
       "reference_method": "measured_comb_spacing_proportional_ladder",
       "reference_revolutions_per_minute": 13033.176670825176,
       "reference_rpm_per_hz": 138.23903978377598,
@@ -353,6 +357,7 @@
       "loop_crossfade_frames": 882,
       "loop_end_frame_exclusive": 172550,
       "loop_start_frame": 0,
+      "preparation_recipe": "prepare_loop_crossfade_v1",
       "reference_method": "measured_comb_spacing_proportional_ladder",
       "reference_revolutions_per_minute": 17831.453741715675,
       "reference_rpm_per_hz": 138.23903978377598,
@@ -365,7 +370,7 @@
   ],
   "output_sample_rate": 44100,
   "preparation_tool": "scripts/audio/build_grand_prix_sampler_bank.py",
-  "preparation_tool_revision": 4,
+  "preparation_tool_revision": 5,
   "reference_ladder": {
     "anchor_center_revolutions_per_minute": 9000.0,
     "measured_spacings_hz": [
@@ -375,7 +380,7 @@
       94.28000000007796,
       128.9900000000464
     ],
-    "method": "proportional_to_measured_comb_spacing",
+    "method": "measured_comb_spacing_proportional_ladder",
     "reference_revolutions_per_minute": [
       4542.534847313378,
       8642.704767296445,
@@ -386,7 +391,7 @@
     "revolutions_per_minute_per_hertz": 138.23903978377598
   },
   "schema_version": 1,
-  "source_inventory_sha256": "86d236c1cadac6e797da7e3fe168097a086ffb6aca0240ac1a753389a6331828",
+  "source_inventory_sha256": "5a532c3b3aaaa1646f65098be4debb8c94aceb21066dc057eda11a995cfa51f2",
   "transitions": [
     {
       "applied_level_step_db": 1.5,

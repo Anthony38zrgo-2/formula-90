@@ -9,7 +9,7 @@ variant groups and SHA-256 of every runtime asset.
 
 This bank is the source for the sample-only engine variant: every source keeps
 its measured native RPM; nothing is re-laddered. The gear-up/down one-shots
-are copied from the experimental bank on first build.
+are refreshed from the canonical V10 GP3 source bank on every build.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PREPARED = ROOT / "reports/audio-v10/f2002-sampled/prepared"
 BANK = ROOT / "game/audio/v10_f2002_sampled"
 CALIB = ROOT / "reports/audio-v10/f2002-sampled/calibration/anchors.json"
-GEAR_SOURCE = ROOT / "game/audio/v10_f2002_experimental"
+GEAR_SOURCE = ROOT / "game/sounds/banks/v10-gp3"
 
 # Semantic classification (ON vs OFF) of the curated set that ships in this
 # bank. `anchors.json:excluded` records the exterior takes (spectral audit) and
@@ -103,8 +103,6 @@ def remove_excluded_artifacts(excluded_stems: set[str]) -> None:
 def ensure_static_assets() -> int:
     for name in STATIC_ASSETS:
         target = BANK / name
-        if target.is_file():
-            continue
         source = GEAR_SOURCE / name
         if not source.is_file():
             print(f"missing static asset source: {source}", file=sys.stderr)
