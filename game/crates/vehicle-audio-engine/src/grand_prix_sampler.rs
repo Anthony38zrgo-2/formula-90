@@ -19,8 +19,21 @@ pub const GRAND_PRIX_PITCH_SMOOTHING_SECONDS: f64 = 0.015;
 pub const GRAND_PRIX_LOAD_SMOOTHING_SECONDS: f64 = 0.035;
 pub const GRAND_PRIX_GATE_ATTACK_SECONDS: f64 = 0.010;
 pub const GRAND_PRIX_GATE_RELEASE_SECONDS: f64 = 0.180;
+pub const GRAND_PRIX_SHIFT_ENGINE_DUCK_ATTACK_SECONDS: f64 = 0.006;
+pub const GRAND_PRIX_SHIFT_ENGINE_DUCK_RELEASE_SECONDS: f64 = 0.045;
+pub const GRAND_PRIX_UPSHIFT_ENGINE_GAIN: f32 = 0.18;
+pub const GRAND_PRIX_DOWNSHIFT_ENGINE_GAIN: f32 = 0.42;
 pub const GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS: f64 = 0.5;
 pub const GRAND_PRIX_COAST_GAIN_DEFAULT: f32 = 0.55;
+const GRAND_PRIX_GEARBOX_WHINE_TOOTH_CONTACT_DUTY_CYCLE: f32 = 0.125;
+const GRAND_PRIX_GEARBOX_WHINE_GEAR_CASING_RESONANCE_GAINS: [f32; 8] =
+    [0.15, 0.35, 0.82, 1.0, 0.78, 0.50, 0.27, 0.12];
+const GRAND_PRIX_GEARBOX_WHINE_FINAL_CASING_RESONANCE_GAINS: [f32; 6] =
+    [0.20, 0.55, 1.0, 0.80, 0.45, 0.20];
+const GRAND_PRIX_GEARBOX_WHINE_NOISE_GEAR_HARMONIC_ORDER: f32 = 3.0;
+const GRAND_PRIX_GEARBOX_WHINE_NOISE_FINAL_HARMONIC_ORDER: f32 = 2.0;
+const GRAND_PRIX_GEARBOX_WHINE_ATTACK_SECONDS: f64 = 0.025;
+const GRAND_PRIX_GEARBOX_WHINE_RELEASE_SECONDS: f64 = 0.300;
 
 const SHIFT_PHASE_UPSHIFT_CUT: i32 = 1;
 const SHIFT_PHASE_DOWNSHIFT_CUT: i32 = 3;
@@ -128,13 +141,14 @@ impl EventVoice {
 pub struct GrandPrixSampleOutput {
     pub engine: f32,
     pub gearbox: f32,
+    pub gearbox_whine: f32,
     pub backfire: f32,
     pub limiter: f32,
 }
 
 impl GrandPrixSampleOutput {
     pub fn sum(self) -> f32 {
-        self.engine + self.gearbox + self.backfire + self.limiter
+        self.engine + self.gearbox + self.gearbox_whine + self.backfire + self.limiter
     }
 }
 
@@ -148,6 +162,30 @@ pub struct GrandPrixSampler {
     coast_loop_cursors: Vec<f64>,
     coast_zone_anti_alias: Vec<Biquad>,
     coast_zone_filter_cutoffs: Vec<f32>,
+    gearbox_whine_gear_phase: f64,
+    gearbox_whine_final_phase: f64,
+    gearbox_whine_gear_pulse_harmonic_gains: Vec<f32>,
+    gearbox_whine_final_pulse_harmonic_gains: Vec<f32>,
+    gearbox_whine_gear_mesh_frequency_hertz: f32,
+    gearbox_whine_final_mesh_frequency_hertz: f32,
+    gearbox_whine_envelope: f32,
+    gearbox_whine_gain: f32,
+    gearbox_whine_tone_gain: f32,
+    gearbox_whine_noise_gain: f32,
+    gearbox_whine_gear_ratios: Vec<f32>,
+    gearbox_whine_final_drive: f32,
+    gearbox_whine_reverse_ratio: f32,
+    gearbox_whine_gear_teeth: f32,
+    gearbox_whine_final_teeth: f32,
+    gearbox_noise_state: u64,
+    gearbox_noise_high_pass: Biquad,
+    gearbox_noise_low_pass: Biquad,
+    gearbox_noise_low_cutoff_hertz: f32,
+    gearbox_noise_high_cutoff_hertz: f32,
+    current_gear: i32,
+    gearbox_whine_gear_level: f32,
+    gearbox_whine_attack_alpha: f32,
+    gearbox_whine_release_alpha: f32,
     group_indices: [Option<usize>; 4],
     event_voices: Vec<EventVoice>,
     event_queue: VecDeque<ScheduledEvent>,
@@ -161,6 +199,10 @@ pub struct GrandPrixSampler {
     load_alpha: f32,
     gate_attack_alpha: f32,
     gate_release_alpha: f32,
+    shift_engine_gain_target: f32,
+    shift_engine_gain: f32,
+    shift_engine_duck_attack_alpha: f32,
+    shift_engine_duck_release_alpha: f32,
     engine_gain: f32,
     gearbox_gain: f32,
     backfire_gain: f32,
@@ -235,6 +277,40 @@ impl GrandPrixSampler {
                 .map(|_| Biquad::lowpass(output_sample_rate as f32, 19_000.0))
                 .collect(),
             coast_zone_filter_cutoffs: vec![19_000.0; coast_loop_count],
+            gearbox_whine_gear_phase: 0.0,
+            gearbox_whine_final_phase: 0.0,
+            gearbox_whine_gear_pulse_harmonic_gains: tooth_pulse_harmonic_gains(
+                GRAND_PRIX_GEARBOX_WHINE_TOOTH_CONTACT_DUTY_CYCLE,
+                &GRAND_PRIX_GEARBOX_WHINE_GEAR_CASING_RESONANCE_GAINS,
+            ),
+            gearbox_whine_final_pulse_harmonic_gains: tooth_pulse_harmonic_gains(
+                GRAND_PRIX_GEARBOX_WHINE_TOOTH_CONTACT_DUTY_CYCLE,
+                &GRAND_PRIX_GEARBOX_WHINE_FINAL_CASING_RESONANCE_GAINS,
+            ),
+            gearbox_whine_gear_mesh_frequency_hertz: 0.0,
+            gearbox_whine_final_mesh_frequency_hertz: 0.0,
+            gearbox_whine_envelope: 0.0,
+            gearbox_whine_gain: 0.0,
+            gearbox_whine_tone_gain: 0.12,
+            gearbox_whine_noise_gain: 0.025,
+            gearbox_whine_gear_ratios: Vec::new(),
+            gearbox_whine_final_drive: 1.0,
+            gearbox_whine_reverse_ratio: 3.0,
+            gearbox_whine_gear_teeth: 20.0,
+            gearbox_whine_final_teeth: 40.0,
+            gearbox_noise_state: (rng_state ^ 0x9E37_79B9_7F4A_7C15).max(1),
+            gearbox_noise_high_pass: Biquad::highpass(output_sample_rate as f32, 1.0),
+            gearbox_noise_low_pass: Biquad::lowpass(output_sample_rate as f32, 2.0),
+            gearbox_noise_low_cutoff_hertz: 1.0,
+            gearbox_noise_high_cutoff_hertz: 2.0,
+            current_gear: 0,
+            gearbox_whine_gear_level: 1.0,
+            gearbox_whine_attack_alpha: (1.0
+                - (-1.0 / (sample_rate * GRAND_PRIX_GEARBOX_WHINE_ATTACK_SECONDS)).exp())
+                as f32,
+            gearbox_whine_release_alpha: (1.0
+                - (-1.0 / (sample_rate * GRAND_PRIX_GEARBOX_WHINE_RELEASE_SECONDS)).exp())
+                as f32,
             group_indices,
             event_voices,
             event_queue: VecDeque::with_capacity(GRAND_PRIX_EVENT_QUEUE_CAPACITY),
@@ -251,6 +327,14 @@ impl GrandPrixSampler {
                 as f32,
             gate_release_alpha: (1.0
                 - (-1.0 / (sample_rate * GRAND_PRIX_GATE_RELEASE_SECONDS)).exp())
+                as f32,
+            shift_engine_gain_target: 1.0,
+            shift_engine_gain: 1.0,
+            shift_engine_duck_attack_alpha: (1.0
+                - (-1.0 / (sample_rate * GRAND_PRIX_SHIFT_ENGINE_DUCK_ATTACK_SECONDS)).exp())
+                as f32,
+            shift_engine_duck_release_alpha: (1.0
+                - (-1.0 / (sample_rate * GRAND_PRIX_SHIFT_ENGINE_DUCK_RELEASE_SECONDS)).exp())
                 as f32,
             engine_gain: 1.0,
             gearbox_gain: 1.0,
@@ -303,6 +387,91 @@ impl GrandPrixSampler {
         self.coast_gain = coast_gain.clamp(0.0, 1.0);
     }
 
+    pub fn set_gearbox_whine_gain(&mut self, gain: f32) {
+        self.gearbox_whine_gain = gain.clamp(0.0, 4.0);
+    }
+
+    pub fn set_gearbox_whine_component_gains(&mut self, tone_gain: f32, noise_gain: f32) {
+        self.gearbox_whine_tone_gain = tone_gain.clamp(0.0, 1.0);
+        self.gearbox_whine_noise_gain = noise_gain.clamp(0.0, 1.0);
+    }
+
+    pub fn set_gearbox_whine_transmission(
+        &mut self,
+        gear_ratios: &[f32],
+        final_drive: f32,
+        reverse_ratio: f32,
+        gear_teeth: f32,
+        final_teeth: f32,
+    ) {
+        self.gearbox_whine_gear_ratios = gear_ratios
+            .iter()
+            .copied()
+            .filter(|ratio| ratio.is_finite() && *ratio > 0.0)
+            .collect();
+        if final_drive.is_finite() && final_drive > 0.0 {
+            self.gearbox_whine_final_drive = final_drive;
+        }
+        if reverse_ratio.is_finite() && reverse_ratio > 0.0 {
+            self.gearbox_whine_reverse_ratio = reverse_ratio;
+        }
+        if gear_teeth.is_finite() && gear_teeth > 0.0 {
+            self.gearbox_whine_gear_teeth = gear_teeth;
+        }
+        if final_teeth.is_finite() && final_teeth > 0.0 {
+            self.gearbox_whine_final_teeth = final_teeth;
+        }
+    }
+
+    fn gearbox_mesh_frequencies(&self, revolutions_per_minute: f64, gear: i32) -> (f32, f32) {
+        let gear_ratio = if gear > 0 {
+            self.gearbox_whine_gear_ratios
+                .get(gear as usize - 1)
+                .copied()
+                .filter(|ratio| ratio.is_finite() && *ratio > 0.0)
+                .or_else(|| self.gearbox_whine_gear_ratios.first().copied())
+                .unwrap_or(1.0)
+        } else if gear == -1 {
+            self.gearbox_whine_reverse_ratio
+        } else {
+            self.gearbox_whine_gear_ratios
+                .first()
+                .copied()
+                .unwrap_or(1.0)
+        };
+        let output_shaft_hertz = (revolutions_per_minute.max(0.0) as f32 / 60.0) / gear_ratio;
+        let gear_mesh_hertz = output_shaft_hertz * self.gearbox_whine_gear_teeth;
+        let final_mesh_hertz =
+            output_shaft_hertz / self.gearbox_whine_final_drive * self.gearbox_whine_final_teeth;
+        (gear_mesh_hertz, final_mesh_hertz)
+    }
+
+    fn update_gearbox_noise_filters(
+        &mut self,
+        gear_mesh_frequency_hertz: f32,
+        final_mesh_frequency_hertz: f32,
+    ) {
+        let sample_rate = self.output_sample_rate as f32;
+        let maximum_cutoff_hertz = sample_rate * 0.48;
+        let noise_center_hertz = (gear_mesh_frequency_hertz
+            * GRAND_PRIX_GEARBOX_WHINE_NOISE_GEAR_HARMONIC_ORDER)
+            .max(final_mesh_frequency_hertz * GRAND_PRIX_GEARBOX_WHINE_NOISE_FINAL_HARMONIC_ORDER)
+            .min(maximum_cutoff_hertz / 1.38);
+        let low_cutoff_hertz = (noise_center_hertz * 0.72).clamp(1.0, maximum_cutoff_hertz * 0.65);
+        let high_cutoff_hertz =
+            (noise_center_hertz * 1.38).clamp(low_cutoff_hertz + 1.0, maximum_cutoff_hertz);
+        if (low_cutoff_hertz - self.gearbox_noise_low_cutoff_hertz).abs() >= 20.0 {
+            self.gearbox_noise_high_pass
+                .update_highpass(sample_rate, low_cutoff_hertz);
+            self.gearbox_noise_low_cutoff_hertz = low_cutoff_hertz;
+        }
+        if (high_cutoff_hertz - self.gearbox_noise_high_cutoff_hertz).abs() >= 20.0 {
+            self.gearbox_noise_low_pass
+                .update_lowpass(sample_rate, high_cutoff_hertz);
+            self.gearbox_noise_high_cutoff_hertz = high_cutoff_hertz;
+        }
+    }
+
     pub fn diagnostics(&self) -> GrandPrixDiagnostics {
         self.diagnostics
     }
@@ -314,7 +483,23 @@ impl GrandPrixSampler {
         for cursor in &mut self.coast_loop_cursors {
             *cursor = 0.0;
         }
-        for filter in self.zone_anti_alias.iter_mut().chain(self.coast_zone_anti_alias.iter_mut()) {
+        self.gearbox_whine_gear_phase = 0.0;
+        self.gearbox_whine_final_phase = 0.0;
+        self.gearbox_whine_gear_mesh_frequency_hertz = 0.0;
+        self.gearbox_whine_final_mesh_frequency_hertz = 0.0;
+        self.gearbox_whine_envelope = 0.0;
+        self.gearbox_noise_state = (self.bank.event_selection_seed ^ 0x9E37_79B9_7F4A_7C15).max(1);
+        self.gearbox_noise_high_pass = Biquad::highpass(self.output_sample_rate as f32, 1.0);
+        self.gearbox_noise_low_pass = Biquad::lowpass(self.output_sample_rate as f32, 2.0);
+        self.gearbox_noise_low_cutoff_hertz = 1.0;
+        self.gearbox_noise_high_cutoff_hertz = 2.0;
+        self.current_gear = 0;
+        self.gearbox_whine_gear_level = 1.0;
+        for filter in self
+            .zone_anti_alias
+            .iter_mut()
+            .chain(self.coast_zone_anti_alias.iter_mut())
+        {
             *filter = Biquad::lowpass(self.output_sample_rate as f32, 19_000.0);
         }
         self.zone_filter_cutoffs.fill(19_000.0);
@@ -329,6 +514,8 @@ impl GrandPrixSampler {
         self.smoothed_throttle = 0.0;
         self.gate_target = 0.0;
         self.gate = 0.0;
+        self.shift_engine_gain_target = 1.0;
+        self.shift_engine_gain = 1.0;
         self.render_frame = 0;
         self.ingest_frame_cursor = 0;
         self.retrigger_until_frames = [0; 4];
@@ -366,12 +553,22 @@ impl GrandPrixSampler {
             self.limiter_edge_cooldown_frames.saturating_sub(dt_frames);
 
         self.target_rpm = telemetry.rpm.clamp(0.0, 30_000.0);
+        self.current_gear = telemetry.gear;
         self.target_throttle = telemetry.throttle.clamp(0.0, 1.0);
+        let (gear_mesh_frequency_hertz, final_mesh_frequency_hertz) =
+            self.gearbox_mesh_frequencies(self.target_rpm, self.current_gear);
+        self.update_gearbox_noise_filters(gear_mesh_frequency_hertz, final_mesh_frequency_hertz);
         self.gate_target = if telemetry.rpm >= GRAND_PRIX_MINIMUM_AUDIBLE_REVOLUTIONS_PER_MINUTE {
             1.0
         } else {
             0.0
         };
+        self.shift_engine_gain_target = match telemetry.shift_phase {
+            SHIFT_PHASE_UPSHIFT_CUT => GRAND_PRIX_UPSHIFT_ENGINE_GAIN,
+            SHIFT_PHASE_DOWNSHIFT_CUT => GRAND_PRIX_DOWNSHIFT_ENGINE_GAIN,
+            _ => 1.0,
+        };
+
         if !self.received_telemetry {
             self.received_telemetry = true;
             self.smoothed_rpm = self.target_rpm;
@@ -513,6 +710,14 @@ impl GrandPrixSampler {
             self.gate_release_alpha
         };
         self.gate += (self.gate_target - self.gate) * gate_alpha;
+        let shift_engine_gain_alpha = if self.shift_engine_gain_target < self.shift_engine_gain {
+            self.shift_engine_duck_attack_alpha
+        } else {
+            self.shift_engine_duck_release_alpha
+        };
+        self.shift_engine_gain +=
+            (self.shift_engine_gain_target - self.shift_engine_gain) * shift_engine_gain_alpha;
+
         self.drain_due_events();
 
         let rendered_rpm = self.smoothed_rpm;
@@ -601,13 +806,77 @@ impl GrandPrixSampler {
                 engine_weight + coast_weight,
             )
         };
-        let engine_sample =
-            engine_mix * self.gate * self.engine_gain;
+        let engine_sample = engine_mix * self.gate * self.shift_engine_gain * self.engine_gain;
 
         let mut output = GrandPrixSampleOutput {
             engine: engine_sample,
             ..GrandPrixSampleOutput::default()
         };
+        let (target_gear_mesh_frequency_hertz, target_final_mesh_frequency_hertz) =
+            self.gearbox_mesh_frequencies(self.smoothed_rpm, self.current_gear);
+        self.gearbox_whine_gear_mesh_frequency_hertz += (target_gear_mesh_frequency_hertz
+            - self.gearbox_whine_gear_mesh_frequency_hertz)
+            * self.rpm_alpha as f32;
+        self.gearbox_whine_final_mesh_frequency_hertz += (target_final_mesh_frequency_hertz
+            - self.gearbox_whine_final_mesh_frequency_hertz)
+            * self.rpm_alpha as f32;
+        self.update_gearbox_noise_filters(
+            self.gearbox_whine_gear_mesh_frequency_hertz,
+            self.gearbox_whine_final_mesh_frequency_hertz,
+        );
+
+        let target_whine_envelope = smoothstep(100.0, 900.0, self.smoothed_rpm) as f32;
+        let whine_envelope_alpha = if target_whine_envelope > self.gearbox_whine_envelope {
+            self.gearbox_whine_attack_alpha
+        } else {
+            self.gearbox_whine_release_alpha
+        };
+        self.gearbox_whine_envelope +=
+            (target_whine_envelope - self.gearbox_whine_envelope) * whine_envelope_alpha;
+
+        let sample_rate = self.output_sample_rate as f32;
+        let gear_mesh_tone = render_band_limited_tooth_pulse(
+            self.gearbox_whine_gear_phase,
+            self.gearbox_whine_gear_mesh_frequency_hertz,
+            &self.gearbox_whine_gear_pulse_harmonic_gains,
+            sample_rate,
+        );
+        let final_mesh_tone = render_band_limited_tooth_pulse(
+            self.gearbox_whine_final_phase,
+            self.gearbox_whine_final_mesh_frequency_hertz,
+            &self.gearbox_whine_final_pulse_harmonic_gains,
+            sample_rate,
+        );
+        let tone_sample = gear_mesh_tone + final_mesh_tone;
+        self.gearbox_whine_gear_phase = advance_phase(
+            self.gearbox_whine_gear_phase,
+            self.gearbox_whine_gear_mesh_frequency_hertz,
+            sample_rate,
+        );
+        self.gearbox_whine_final_phase = advance_phase(
+            self.gearbox_whine_final_phase,
+            self.gearbox_whine_final_mesh_frequency_hertz,
+            sample_rate,
+        );
+
+        self.gearbox_noise_state = next_rng_state(self.gearbox_noise_state.max(1));
+        let white_noise = (self.gearbox_noise_state >> 40) as f32 / 8_388_607.5 - 1.0;
+        let high_frequency_noise = self
+            .gearbox_noise_low_pass
+            .process(self.gearbox_noise_high_pass.process(white_noise));
+        let target_gear_level = if self.current_gear == 0 { 0.72 } else { 1.0 };
+        let gear_level_alpha = if target_gear_level > self.gearbox_whine_gear_level {
+            self.gearbox_whine_attack_alpha
+        } else {
+            self.gearbox_whine_release_alpha
+        };
+        self.gearbox_whine_gear_level +=
+            (target_gear_level - self.gearbox_whine_gear_level) * gear_level_alpha;
+        output.gearbox_whine = (tone_sample * self.gearbox_whine_tone_gain
+            + high_frequency_noise * self.gearbox_whine_noise_gain)
+            * self.gearbox_whine_gain
+            * self.gearbox_whine_envelope
+            * self.gearbox_whine_gear_level;
         let mut active_voices = 0u8;
         for index in 0..self.event_voices.len() {
             if self.event_voices[index].active {
@@ -832,12 +1101,75 @@ fn zone_blend(transitions: &[GrandPrixTransition], rpm: f64) -> (f32, f32, usize
     (1.0, 0.0, transition_index)
 }
 
+fn tooth_pulse_harmonic_gains(duty_cycle: f32, casing_resonance_gains: &[f32]) -> Vec<f32> {
+    let mut harmonic_gains: Vec<f32> = casing_resonance_gains
+        .iter()
+        .enumerate()
+        .map(|(index, casing_resonance_gain)| {
+            let harmonic_order = (index + 1) as f32;
+            let pulse_fourier_gain = 2.0
+                * (std::f32::consts::PI * harmonic_order * duty_cycle).sin()
+                / (std::f32::consts::PI * harmonic_order);
+            pulse_fourier_gain * casing_resonance_gain
+        })
+        .collect();
+    let total_harmonic_gain = harmonic_gains.iter().map(|gain| gain.abs()).sum::<f32>();
+    if total_harmonic_gain > f32::EPSILON {
+        for harmonic_gain in &mut harmonic_gains {
+            *harmonic_gain /= total_harmonic_gain;
+        }
+    }
+    harmonic_gains
+}
+
+fn render_band_limited_tooth_pulse(
+    phase: f64,
+    fundamental_hertz: f32,
+    gains: &[f32],
+    sample_rate: f32,
+) -> f32 {
+    let nyquist_hertz = sample_rate * 0.5;
+    let audible_gain_sum = gains
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| {
+            let harmonic_order = index + 1;
+            let harmonic_hertz = fundamental_hertz * harmonic_order as f32;
+            harmonic_hertz > 0.0 && harmonic_hertz < nyquist_hertz
+        })
+        .map(|(_, gain)| gain.abs())
+        .sum::<f32>();
+    if audible_gain_sum <= f32::EPSILON {
+        return 0.0;
+    }
+    gains
+        .iter()
+        .enumerate()
+        .filter_map(|(index, gain)| {
+            let harmonic_order = index + 1;
+            let harmonic_hertz = fundamental_hertz * harmonic_order as f32;
+            (harmonic_hertz > 0.0 && harmonic_hertz < nyquist_hertz)
+                .then(|| (phase * harmonic_order as f64).cos() as f32 * gain / audible_gain_sum)
+        })
+        .sum()
+}
+
+fn advance_phase(phase: f64, frequency_hertz: f32, sample_rate: f32) -> f64 {
+    (phase + std::f64::consts::TAU * frequency_hertz as f64 / sample_rate as f64)
+        .rem_euclid(std::f64::consts::TAU)
+}
+
 fn next_rng_state(state: u64) -> u64 {
     let mut value = state;
     value ^= value << 13;
     value ^= value >> 7;
     value ^= value << 17;
     value
+}
+
+fn smoothstep(edge_start: f64, edge_end: f64, value: f64) -> f64 {
+    let position = ((value - edge_start) / (edge_end - edge_start)).clamp(0.0, 1.0);
+    position * position * (3.0 - 2.0 * position)
 }
 
 #[cfg(test)]
@@ -998,6 +1330,44 @@ mod tests {
         let diagnostics = sampler.diagnostics();
         assert_eq!(diagnostics.accepted_events - before, 1);
         assert_eq!(diagnostics.late_events, 0);
+    }
+
+    #[test]
+    fn shift_phases_duck_and_restore_the_continuous_engine() {
+        let mut sampler = shipped_sampler();
+        ingest_steady(&mut sampler, 12_000.0, 0.9, 441);
+        advance(&mut sampler, 4_410);
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 12_000.0,
+            throttle: 0.0,
+            gear: 4,
+            shift_phase: SHIFT_PHASE_UPSHIFT_CUT,
+            rev_limiter_active: false,
+            dt_seconds: 0.02,
+        });
+        advance(&mut sampler, 1_323);
+        assert!(sampler.shift_engine_gain < 0.30);
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 10_100.0,
+            throttle: 0.7,
+            gear: 5,
+            shift_phase: 0,
+            rev_limiter_active: false,
+            dt_seconds: 0.08,
+        });
+        advance(&mut sampler, 8_820);
+        assert!(sampler.shift_engine_gain > 0.98);
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 10_100.0,
+            throttle: 0.2,
+            gear: 4,
+            shift_phase: SHIFT_PHASE_DOWNSHIFT_CUT,
+            rev_limiter_active: false,
+            dt_seconds: 0.02,
+        });
+        advance(&mut sampler, 1_323);
+        assert!(sampler.shift_engine_gain > 0.40);
+        assert!(sampler.shift_engine_gain < 0.52);
     }
 
     #[test]
@@ -1206,6 +1576,98 @@ mod tests {
         });
         advance(&mut sampler, 176_400);
         assert!(sampler.diagnostics().gate <= 1e-3);
+    }
+
+    #[test]
+    fn gearbox_oscillators_remain_audible_at_low_rpm_and_in_neutral() {
+        let mut sampler = shipped_sampler();
+        sampler.set_gearbox_whine_gain(0.55);
+        sampler.set_gearbox_whine_component_gains(0.12, 0.025);
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 600.0,
+            throttle: 0.0,
+            gear: 0,
+            shift_phase: 0,
+            rev_limiter_active: false,
+            dt_seconds: 0.1,
+        });
+        let neutral_energy: f32 = (0..4_410)
+            .map(|_| sampler.render_sample_components().gearbox_whine.abs())
+            .sum();
+        assert!(neutral_energy > 1.0);
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 600.0,
+            throttle: 0.0,
+            gear: 1,
+            shift_phase: 0,
+            rev_limiter_active: false,
+            dt_seconds: 0.01,
+        });
+        let in_gear_energy: f32 = (0..4_410)
+            .map(|_| sampler.render_sample_components().gearbox_whine.abs())
+            .sum();
+        assert!(in_gear_energy > neutral_energy * 0.7);
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 0.0,
+            throttle: 0.0,
+            gear: 0,
+            shift_phase: 0,
+            rev_limiter_active: false,
+            dt_seconds: 0.5,
+        });
+        advance(&mut sampler, 176_400);
+        assert!(sampler.render_sample_components().gearbox_whine.abs() < 1e-4);
+    }
+
+    #[test]
+    fn gearbox_whine_tracks_profile_gear_mesh_frequencies() {
+        let mut sampler = shipped_sampler();
+        sampler.set_gearbox_whine_transmission(
+            &[3.45, 2.75, 2.30, 1.95, 1.68, 1.46],
+            4.25,
+            4.20,
+            21.0,
+            46.0,
+        );
+        let cases = [(4_500.0, 1, 456.52), (18_000.0, 6, 4_315.07)];
+        for (revolutions_per_minute, gear, expected_gear_mesh_frequency_hertz) in cases {
+            sampler.reset();
+            sampler.ingest(&GrandPrixTelemetry {
+                rpm: revolutions_per_minute,
+                throttle: 0.8,
+                gear,
+                shift_phase: 0,
+                rev_limiter_active: false,
+                dt_seconds: 0.1,
+            });
+            advance(&mut sampler, 4_410);
+            assert!(
+                (sampler.gearbox_whine_gear_mesh_frequency_hertz
+                    - expected_gear_mesh_frequency_hertz)
+                    .abs()
+                    < 8.0,
+                "gear {gear} at {revolutions_per_minute} rpm produced {} Hz",
+                sampler.gearbox_whine_gear_mesh_frequency_hertz
+            );
+        }
+        assert!(sampler.gearbox_noise_low_cutoff_hertz > 9_000.0);
+        assert!(sampler.gearbox_noise_high_cutoff_hertz < 21_168.0);
+    }
+
+    #[test]
+    fn gearbox_tooth_pulse_places_its_strongest_partial_in_orders_three_to_five() {
+        let harmonic_gains = tooth_pulse_harmonic_gains(
+            GRAND_PRIX_GEARBOX_WHINE_TOOTH_CONTACT_DUTY_CYCLE,
+            &GRAND_PRIX_GEARBOX_WHINE_GEAR_CASING_RESONANCE_GAINS,
+        );
+        let strongest_harmonic_order = harmonic_gains
+            .iter()
+            .enumerate()
+            .max_by(|left, right| left.1.abs().total_cmp(&right.1.abs()))
+            .map(|(index, _)| index + 1)
+            .expect("gear tooth pulse must contain harmonics");
+        assert!((3..=5).contains(&strongest_harmonic_order));
+        assert!((harmonic_gains.iter().map(|gain| gain.abs()).sum::<f32>() - 1.0).abs() < 1e-6);
     }
 
     #[test]

@@ -666,15 +666,102 @@ impl AudioModule {
             }
             tuning.engine_gain = parsed_gains[0];
             tuning.gearbox_gain = parsed_gains[1];
+            tuning.gearbox_whine_gain = match sampler_gain(section, "gearbox_whine_gain", 0.0) {
+                Ok(value) => value,
+                Err(error) => {
+                    eprintln!("[formula90_core] grand_prix_sampler {error}");
+                    return false;
+                }
+            };
+            tuning.gearbox_whine_tone_gain =
+                match sampler_gain(section, "gearbox_whine_tone_gain", 0.12) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        eprintln!("[formula90_core] grand_prix_sampler {error}");
+                        return false;
+                    }
+                };
+            tuning.gearbox_whine_noise_gain =
+                match sampler_gain(section, "gearbox_whine_noise_gain", 0.025) {
+                    Ok(value) => value,
+                    Err(error) => {
+                        eprintln!("[formula90_core] grand_prix_sampler {error}");
+                        return false;
+                    }
+                };
             tuning.backfire_gain = parsed_gains[2];
             tuning.limiter_gain = parsed_gains[3];
-            if let Some(value) = section.get("coast_gain").and_then(serde_json::Value::as_f64) {
+            if let Some(value) = section
+                .get("coast_gain")
+                .and_then(serde_json::Value::as_f64)
+            {
                 tuning.coast_gain = Some(value as f32);
             }
         }
         if let Some(config) = powertrain {
             tuning.required_minimum_revolutions_per_minute = Some(config.idle_rpm);
             tuning.required_maximum_revolutions_per_minute = Some(config.max_rpm);
+            tuning.gearbox_whine_gear_ratios = config
+                .gear_ratios
+                .iter()
+                .map(|ratio| *ratio as f32)
+                .collect();
+            tuning.gearbox_whine_final_drive = config.final_drive as f32;
+            tuning.gearbox_whine_reverse_ratio = config.reverse_ratio as f32;
+        }
+        if let Some(transmission) = audio
+            .get("gf509")
+            .and_then(|section| section.get("transmission"))
+        {
+            if let Some(value) = transmission
+                .get("final_drive")
+                .and_then(serde_json::Value::as_f64)
+            {
+                if value.is_finite() && value > 0.0 {
+                    tuning.gearbox_whine_final_drive = value as f32;
+                }
+            }
+            if let Some(value) = transmission
+                .get("reverse_ratio")
+                .and_then(serde_json::Value::as_f64)
+            {
+                if value.is_finite() && value > 0.0 {
+                    tuning.gearbox_whine_reverse_ratio = value as f32;
+                }
+            }
+            if let Some(ratios) = transmission
+                .get("gear_ratios")
+                .and_then(serde_json::Value::as_array)
+            {
+                let parsed_ratios: Option<Vec<f32>> = ratios
+                    .iter()
+                    .map(serde_json::Value::as_f64)
+                    .map(|ratio| {
+                        ratio.and_then(|value| {
+                            (value.is_finite() && value > 0.0).then_some(value as f32)
+                        })
+                    })
+                    .collect();
+                if let Some(parsed_ratios) = parsed_ratios.filter(|ratios| !ratios.is_empty()) {
+                    tuning.gearbox_whine_gear_ratios = parsed_ratios;
+                }
+            }
+            if let Some(value) = transmission
+                .get("gear_teeth")
+                .and_then(serde_json::Value::as_f64)
+            {
+                if value.is_finite() && value > 0.0 {
+                    tuning.gearbox_whine_gear_teeth = value as f32;
+                }
+            }
+            if let Some(value) = transmission
+                .get("final_teeth")
+                .and_then(serde_json::Value::as_f64)
+            {
+                if value.is_finite() && value > 0.0 {
+                    tuning.gearbox_whine_final_teeth = value as f32;
+                }
+            }
         }
         let mut applied = false;
         if let Some(eng) = self.engine.as_mut() {

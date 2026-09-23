@@ -49,6 +49,13 @@ impl Biquad {
         *self = updated_filter;
     }
 
+    pub fn update_highpass(&mut self, sample_rate: f32, cutoff_hertz: f32) {
+        let mut updated_filter = Self::highpass(sample_rate, cutoff_hertz);
+        updated_filter.z1 = self.z1;
+        updated_filter.z2 = self.z2;
+        *self = updated_filter;
+    }
+
     pub fn highpass(sample_rate: f32, cutoff_hz: f32) -> Self {
         let cutoff = cutoff_hz.clamp(1.0, sample_rate * 0.49);
         let omega = std::f32::consts::TAU * cutoff / sample_rate;

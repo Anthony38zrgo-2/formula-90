@@ -587,10 +587,18 @@ pub enum ContinuousSourceKind {
 
 /// Per-profile tuning for the standalone Grand Prix sampler backend.
 /// Defaults are inert (unity gains, bank-calibrated coast level).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct GrandPrixSamplerTuning {
     pub engine_gain: f32,
     pub gearbox_gain: f32,
+    pub gearbox_whine_gain: f32,
+    pub gearbox_whine_tone_gain: f32,
+    pub gearbox_whine_noise_gain: f32,
+    pub gearbox_whine_gear_ratios: Vec<f32>,
+    pub gearbox_whine_final_drive: f32,
+    pub gearbox_whine_reverse_ratio: f32,
+    pub gearbox_whine_gear_teeth: f32,
+    pub gearbox_whine_final_teeth: f32,
     pub backfire_gain: f32,
     pub limiter_gain: f32,
     pub coast_gain: Option<f32>,
@@ -603,6 +611,14 @@ impl Default for GrandPrixSamplerTuning {
         Self {
             engine_gain: 1.0,
             gearbox_gain: 1.0,
+            gearbox_whine_gain: 0.0,
+            gearbox_whine_tone_gain: 0.12,
+            gearbox_whine_noise_gain: 0.025,
+            gearbox_whine_gear_ratios: Vec::new(),
+            gearbox_whine_final_drive: 1.0,
+            gearbox_whine_reverse_ratio: 3.0,
+            gearbox_whine_gear_teeth: 20.0,
+            gearbox_whine_final_teeth: 40.0,
             backfire_gain: 1.0,
             limiter_gain: 1.0,
             coast_gain: None,
@@ -2225,6 +2241,18 @@ impl VehicleAudioEngine {
             tuning.backfire_gain,
             tuning.limiter_gain,
         );
+        sampler.set_gearbox_whine_gain(tuning.gearbox_whine_gain);
+        sampler.set_gearbox_whine_component_gains(
+            tuning.gearbox_whine_tone_gain,
+            tuning.gearbox_whine_noise_gain,
+        );
+        sampler.set_gearbox_whine_transmission(
+            &tuning.gearbox_whine_gear_ratios,
+            tuning.gearbox_whine_final_drive,
+            tuning.gearbox_whine_reverse_ratio,
+            tuning.gearbox_whine_gear_teeth,
+            tuning.gearbox_whine_final_teeth,
+        );
         if let Some(coast_gain) = tuning.coast_gain {
             sampler.set_coast_gain(coast_gain);
         }
@@ -2337,8 +2365,8 @@ impl VehicleAudioEngine {
         }
         let headroom = self.cfg.engine_headroom * self.synth_volume;
         let components = self.grand_prix_sample_output;
-        let gearbox_l = components.gearbox * headroom;
-        let gearbox_r = components.gearbox * headroom;
+        let gearbox_l = (components.gearbox + components.gearbox_whine) * headroom;
+        let gearbox_r = (components.gearbox + components.gearbox_whine) * headroom;
         let backfire_l = components.backfire * headroom;
         let backfire_r = components.backfire * headroom;
         let limiter_l = components.limiter * headroom;
