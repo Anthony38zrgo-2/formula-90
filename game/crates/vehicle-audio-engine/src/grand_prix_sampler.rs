@@ -2,7 +2,8 @@ use std::collections::VecDeque;
 
 use crate::dsp::biquad::Biquad;
 use crate::grand_prix_sample_bank::{
-    GrandPrixDecodedVariant, GrandPrixEventRole, GrandPrixSampleBank, GrandPrixSelection,
+    GrandPrixDecodedLoop, GrandPrixDecodedVariant, GrandPrixEventRole, GrandPrixSampleBank,
+    GrandPrixSelection, GrandPrixTransition,
     GRAND_PRIX_MAXIMUM_LOOP_COUNT,
 };
 
@@ -144,6 +145,9 @@ pub struct GrandPrixSampler {
     zone_rates: Vec<f64>,
     zone_anti_alias: Vec<Biquad>,
     zone_filter_cutoffs: Vec<f32>,
+    coast_loop_cursors: Vec<f64>,
+    coast_zone_anti_alias: Vec<Biquad>,
+    coast_zone_filter_cutoffs: Vec<f32>,
     group_indices: [Option<usize>; 4],
     event_voices: Vec<EventVoice>,
     event_queue: VecDeque<ScheduledEvent>,
@@ -184,7 +188,9 @@ impl GrandPrixSampler {
         required_maximum_revolutions_per_minute: Option<f64>,
     ) -> Result<Self, GrandPrixSamplerError> {
         if output_sample_rate == 0 {
-            return Err(GrandPrixSamplerError::UnsupportedSampleRate(output_sample_rate));
+            return Err(GrandPrixSamplerError::UnsupportedSampleRate(
+                output_sample_rate,
+            ));
         }
         if let (Some(required_minimum), Some(required_maximum)) = (
             required_minimum_revolutions_per_minute,
@@ -200,6 +206,7 @@ impl GrandPrixSampler {
             }
         }
         let loop_count = bank.loops.len();
+        let coast_loop_count = bank.coast_loops.len();
         let mut group_indices: [Option<usize>; 4] = [None; 4];
         for (index, group) in bank.groups.iter().enumerate() {
             match group.role {
@@ -223,6 +230,11 @@ impl GrandPrixSampler {
                 .map(|_| Biquad::lowpass(output_sample_rate as f32, 19_000.0))
                 .collect(),
             zone_filter_cutoffs: vec![19_000.0; loop_count],
+            coast_loop_cursors: vec![0.0; coast_loop_count],
+            coast_zone_anti_alias: (0..coast_loop_count)
+                .map(|_| Biquad::lowpass(output_sample_rate as f32, 19_000.0))
+                .collect(),
+            coast_zone_filter_cutoffs: vec![19_000.0; coast_loop_count],
             group_indices,
             event_voices,
             event_queue: VecDeque::with_capacity(GRAND_PRIX_EVENT_QUEUE_CAPACITY),
@@ -235,8 +247,7 @@ impl GrandPrixSampler {
             rpm_alpha: 1.0 - (-1.0 / (sample_rate * GRAND_PRIX_PITCH_SMOOTHING_SECONDS)).exp(),
             load_alpha: (1.0 - (-1.0 / (sample_rate * GRAND_PRIX_LOAD_SMOOTHING_SECONDS)).exp())
                 as f32,
-            gate_attack_alpha: (1.0
-                - (-1.0 / (sample_rate * GRAND_PRIX_GATE_ATTACK_SECONDS)).exp())
+            gate_attack_alpha: (1.0 - (-1.0 / (sample_rate * GRAND_PRIX_GATE_ATTACK_SECONDS)).exp())
                 as f32,
             gate_release_alpha: (1.0
                 - (-1.0 / (sample_rate * GRAND_PRIX_GATE_RELEASE_SECONDS)).exp())
@@ -300,6 +311,14 @@ impl GrandPrixSampler {
         for cursor in &mut self.loop_cursors {
             *cursor = 0.0;
         }
+        for cursor in &mut self.coast_loop_cursors {
+            *cursor = 0.0;
+        }
+        for filter in self.zone_anti_alias.iter_mut().chain(self.coast_zone_anti_alias.iter_mut()) {
+            *filter = Biquad::lowpass(self.output_sample_rate as f32, 19_000.0);
+        }
+        self.zone_filter_cutoffs.fill(19_000.0);
+        self.coast_zone_filter_cutoffs.fill(19_000.0);
         for voice in &mut self.event_voices {
             *voice = EventVoice::default();
         }
@@ -324,22 +343,27 @@ impl GrandPrixSampler {
     }
 
     pub fn ingest(&mut self, telemetry: &GrandPrixTelemetry) {
-        if !telemetry.rpm.is_finite() || !telemetry.dt_seconds.is_finite() || telemetry.dt_seconds < 0.0
+        if !telemetry.rpm.is_finite()
+            || !telemetry.dt_seconds.is_finite()
+            || telemetry.dt_seconds < 0.0
         {
-            self.diagnostics.stale_input_holds = self.diagnostics.stale_input_holds.saturating_add(1);
+            self.diagnostics.stale_input_holds =
+                self.diagnostics.stale_input_holds.saturating_add(1);
             return;
         }
-        let bounded_gap = telemetry.dt_seconds.min(GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS);
+        let bounded_gap = telemetry
+            .dt_seconds
+            .min(GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS);
         let dt_frames = (bounded_gap * self.output_sample_rate as f64).round() as u64;
         if telemetry.dt_seconds > GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS {
-            self.diagnostics.stale_input_holds = self.diagnostics.stale_input_holds.saturating_add(1);
+            self.diagnostics.stale_input_holds =
+                self.diagnostics.stale_input_holds.saturating_add(1);
             self.ingest_frame_cursor = self.render_frame;
         }
         let scheduled_frame = self.render_frame.max(self.ingest_frame_cursor);
         self.lift_edge_cooldown_frames = self.lift_edge_cooldown_frames.saturating_sub(dt_frames);
-        self.limiter_edge_cooldown_frames = self
-            .limiter_edge_cooldown_frames
-            .saturating_sub(dt_frames);
+        self.limiter_edge_cooldown_frames =
+            self.limiter_edge_cooldown_frames.saturating_sub(dt_frames);
 
         self.target_rpm = telemetry.rpm.clamp(0.0, 30_000.0);
         self.target_throttle = telemetry.throttle.clamp(0.0, 1.0);
@@ -348,7 +372,6 @@ impl GrandPrixSampler {
         } else {
             0.0
         };
-
         if !self.received_telemetry {
             self.received_telemetry = true;
             self.smoothed_rpm = self.target_rpm;
@@ -366,11 +389,7 @@ impl GrandPrixSampler {
         } else if telemetry.shift_phase == SHIFT_PHASE_DOWNSHIFT_CUT
             && self.last_shift_phase != SHIFT_PHASE_DOWNSHIFT_CUT
         {
-            self.schedule_event(
-                GrandPrixEventKind::Downshift,
-                scheduled_frame,
-                self.target_rpm,
-            );
+            self.schedule_event(GrandPrixEventKind::Downshift, scheduled_frame, self.target_rpm);
         }
 
         let previous_throttle_min = self.bank.lift_edge_policy.previous_throttle_min as f32;
@@ -396,7 +415,11 @@ impl GrandPrixSampler {
             && !self.last_rev_limiter_active
             && self.limiter_edge_cooldown_frames == 0
         {
-            self.schedule_event(GrandPrixEventKind::Limiter, scheduled_frame, self.target_rpm);
+            self.schedule_event(
+                GrandPrixEventKind::Limiter,
+                scheduled_frame,
+                self.target_rpm,
+            );
             self.limiter_edge_cooldown_frames =
                 (limiter_cooldown_seconds * self.output_sample_rate as f64).round() as u64;
         }
@@ -416,19 +439,23 @@ impl GrandPrixSampler {
     fn schedule_event(&mut self, kind: GrandPrixEventKind, frame: u64, rpm: f64) {
         let index = kind.index();
         if frame < self.retrigger_until_frames[index] {
-            self.diagnostics.suppressed_events = self.diagnostics.suppressed_events.saturating_add(1);
+            self.diagnostics.suppressed_events =
+                self.diagnostics.suppressed_events.saturating_add(1);
             return;
         }
         let Some(group_index) = self.group_indices[index] else {
-            self.diagnostics.suppressed_events = self.diagnostics.suppressed_events.saturating_add(1);
+            self.diagnostics.suppressed_events =
+                self.diagnostics.suppressed_events.saturating_add(1);
             return;
         };
         let Some(variant) = self.select_variant(group_index, index) else {
-            self.diagnostics.suppressed_events = self.diagnostics.suppressed_events.saturating_add(1);
+            self.diagnostics.suppressed_events =
+                self.diagnostics.suppressed_events.saturating_add(1);
             return;
         };
         if self.event_queue.len() >= GRAND_PRIX_EVENT_QUEUE_CAPACITY {
-            self.diagnostics.overflowed_events = self.diagnostics.overflowed_events.saturating_add(1);
+            self.diagnostics.overflowed_events =
+                self.diagnostics.overflowed_events.saturating_add(1);
             return;
         }
         let ratio = variant
@@ -486,11 +513,15 @@ impl GrandPrixSampler {
             self.gate_release_alpha
         };
         self.gate += (self.gate_target - self.gate) * gate_alpha;
-
         self.drain_due_events();
 
         let rendered_rpm = self.smoothed_rpm;
-        let (weight_from, weight_to, transition_index) = zone_blend(&self.bank, rendered_rpm);
+        let playback_revolutions_per_minute = rendered_rpm.clamp(
+            self.bank.coverage_minimum_revolutions_per_minute,
+            self.bank.coverage_maximum_revolutions_per_minute,
+        );
+        let (weight_from, weight_to, transition_index) =
+            zone_blend(&self.bank.transitions, rendered_rpm);
         let mut loop_mix = 0.0f32;
         let mut active_zones = 0u8;
         let loop_count = self.bank.loops.len();
@@ -505,27 +536,73 @@ impl GrandPrixSampler {
             } else {
                 0.0
             };
-            let mut rate = rendered_rpm / reference;
+            let rate = playback_revolutions_per_minute / reference;
             if (rate < minimum || rate > maximum) && weight > 0.0 {
-                let within_rounding = rate >= minimum * (1.0 - 1e-9) && rate <= maximum * (1.0 + 1e-9);
+                let within_rounding =
+                    rate >= minimum * (1.0 - 1e-9) && rate <= maximum * (1.0 + 1e-9);
                 if !within_rounding {
                     self.diagnostics.clamped_rate_samples =
                         self.diagnostics.clamped_rate_samples.saturating_add(1);
                 }
             }
-            rate = rate.clamp(minimum, maximum);
             self.zone_rates[index] = rate;
             self.diagnostics.zone_rates[index] = rate as f32;
             self.diagnostics.zone_weights[index] = weight;
+            let sample = read_loop_sample(
+                &self.bank.loops[index],
+                &mut self.loop_cursors[index],
+                &mut self.zone_anti_alias[index],
+                &mut self.zone_filter_cutoffs[index],
+                self.output_sample_rate,
+                rate,
+            );
+            loop_mix += sample * weight * self.bank.loops[index].calibrated_gain;
             if weight > 0.0 {
                 active_zones = active_zones.saturating_add(1);
-                let sample = self.read_loop_sample(index, rate);
-                loop_mix += sample * weight * self.bank.loops[index].calibrated_gain;
             }
         }
 
-        let load_gain = self.coast_gain + (1.0 - self.coast_gain) * self.smoothed_throttle;
-        let engine_sample = loop_mix * load_gain * self.gate * self.engine_gain;
+        let (engine_mix, load_gain) = if self.bank.coast_loops.is_empty() {
+            let load_gain = self.coast_gain + (1.0 - self.coast_gain) * self.smoothed_throttle;
+            (loop_mix * load_gain, load_gain)
+        } else {
+            let (coast_from, coast_to, coast_transition_index) =
+                zone_blend(&self.bank.coast_transitions, rendered_rpm);
+            let mut coast_mix = 0.0f32;
+            for index in 0..self.bank.coast_loops.len() {
+                let coast_loop = &self.bank.coast_loops[index];
+                let weight = if index == coast_transition_index {
+                    coast_from
+                } else if index == coast_transition_index + 1 {
+                    coast_to
+                } else {
+                    0.0
+                };
+                let rate = playback_revolutions_per_minute / coast_loop.reference_revolutions_per_minute;
+                let sample = read_loop_sample(
+                    coast_loop,
+                    &mut self.coast_loop_cursors[index],
+                    &mut self.coast_zone_anti_alias[index],
+                    &mut self.coast_zone_filter_cutoffs[index],
+                    self.output_sample_rate,
+                    rate,
+                );
+                coast_mix += sample * weight * coast_loop.calibrated_gain;
+            }
+            let throttle = self.smoothed_throttle.clamp(0.0, 1.0);
+            let smoothed_load = throttle * throttle * (3.0 - 2.0 * throttle);
+            let load_angle = smoothed_load * std::f32::consts::FRAC_PI_2;
+            let idle_transition = ((rendered_rpm - 4_500.0) / 1_500.0).clamp(0.0, 1.0) as f32;
+            let idle_transition = idle_transition * idle_transition * (3.0 - 2.0 * idle_transition);
+            let engine_weight = 1.0 - idle_transition + idle_transition * load_angle.sin();
+            let coast_weight = idle_transition * load_angle.cos() * self.coast_gain;
+            (
+                loop_mix * engine_weight + coast_mix * coast_weight,
+                engine_weight + coast_weight,
+            )
+        };
+        let engine_sample =
+            engine_mix * self.gate * self.engine_gain;
 
         let mut output = GrandPrixSampleOutput {
             engine: engine_sample,
@@ -681,59 +758,63 @@ impl GrandPrixSampler {
         sample * voice.gain
     }
 
-    fn read_loop_sample(&mut self, index: usize, rate: f64) -> f32 {
-        let loop_asset = &self.bank.loops[index];
-        let start = loop_asset.loop_start_frame;
-        let end = loop_asset.loop_end_frame_exclusive;
-        let pcm = &loop_asset.pcm;
-        if pcm.is_empty() || end <= start || end > pcm.len() {
-            return 0.0;
-        }
-        let start_f = start as f64;
-        let end_f = end as f64;
-        let mut cursor = self.loop_cursors[index];
-        if cursor < start_f || cursor >= end_f {
-            cursor = start_f;
-        }
-        let mut first_index = cursor.floor() as usize;
-        if first_index >= end {
-            first_index = start;
-        }
-        let mut second_index = first_index + 1;
-        if second_index >= end {
-            second_index = start;
-        }
-        let fraction = (cursor - first_index as f64) as f32;
-        let first = pcm[first_index] as f32 / 32768.0;
-        let second = pcm[second_index] as f32 / 32768.0;
-        let mut sample = first + (second - first) * fraction;
-
-        if rate > 1.0 {
-            let cutoff = (0.45 / rate * self.output_sample_rate as f64).min(19_000.0) as f32;
-            let previous = self.zone_filter_cutoffs[index];
-            if (cutoff - previous).abs() / previous.max(1.0) > 0.01 {
-                self.zone_anti_alias[index] =
-                    Biquad::lowpass(self.output_sample_rate as f32, cutoff);
-                self.zone_filter_cutoffs[index] = cutoff;
-            }
-            sample = self.zone_anti_alias[index].process(sample);
-        }
-
-        cursor += rate;
-        if cursor >= end_f {
-            cursor -= end_f - start_f;
-            if cursor >= end_f {
-                cursor = start_f + cursor.rem_euclid(end_f - start_f);
-            }
-        }
-        self.loop_cursors[index] = cursor;
-        sample
-    }
 }
 
-fn zone_blend(bank: &GrandPrixSampleBank, rpm: f64) -> (f32, f32, usize) {
+fn read_loop_sample(
+    loop_asset: &GrandPrixDecodedLoop,
+    cursor: &mut f64,
+    anti_alias_filter: &mut Biquad,
+    filter_cutoff: &mut f32,
+    output_sample_rate: u32,
+    rate: f64,
+) -> f32 {
+    let start = loop_asset.loop_start_frame;
+    let end = loop_asset.loop_end_frame_exclusive;
+    let pcm = &loop_asset.pcm;
+    if pcm.is_empty() || end <= start || end > pcm.len() {
+        return 0.0;
+    }
+    let start_f = start as f64;
+    let end_f = end as f64;
+    let mut position = *cursor;
+    if position < start_f || position >= end_f {
+        position = start_f;
+    }
+    let mut first_index = position.floor() as usize;
+    if first_index >= end {
+        first_index = start;
+    }
+    let mut second_index = first_index + 1;
+    if second_index >= end {
+        second_index = start;
+    }
+    let fraction = (position - first_index as f64) as f32;
+    let first = pcm[first_index] as f32 / 32768.0;
+    let second = pcm[second_index] as f32 / 32768.0;
+    let mut sample = first + (second - first) * fraction;
+
+    let cutoff = (0.45 / rate.max(1.0) * output_sample_rate as f64).min(19_000.0) as f32;
+    let previous = *filter_cutoff;
+    if (cutoff - previous).abs() / previous.max(1.0) > 0.01 {
+        anti_alias_filter.update_lowpass(output_sample_rate as f32, cutoff);
+        *filter_cutoff = cutoff;
+    }
+    sample = anti_alias_filter.process(sample);
+
+    position += rate * 44_100.0 / output_sample_rate as f64;
+    if position >= end_f {
+        position -= end_f - start_f;
+        if position >= end_f {
+            position = start_f + position.rem_euclid(end_f - start_f);
+        }
+    }
+    *cursor = position;
+    sample
+}
+
+fn zone_blend(transitions: &[GrandPrixTransition], rpm: f64) -> (f32, f32, usize) {
     let mut transition_index = 0usize;
-    for (index, transition) in bank.transitions.iter().enumerate() {
+    for (index, transition) in transitions.iter().enumerate() {
         if rpm >= transition.end_revolutions_per_minute {
             transition_index = index + 1;
             continue;
@@ -765,7 +846,8 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     fn shipped_bank_directory() -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/formula_one_2030_grand_prix_sampler")
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../audio/formula_one_2030_grand_prix_sampler")
     }
 
     fn shipped_sampler() -> GrandPrixSampler {
@@ -795,7 +877,9 @@ mod tests {
             sampler.reset();
             ingest_steady(&mut sampler, rpm, 0.9, 4410);
             let output = advance(&mut sampler, 4410);
-            let peak = output.iter().fold(0.0f32, |peak, sample| peak.max(sample.abs()));
+            let peak = output
+                .iter()
+                .fold(0.0f32, |peak, sample| peak.max(sample.abs()));
             assert!(peak > 0.02, "rpm {rpm} rendered almost silence: {peak}");
             let diagnostics = sampler.diagnostics();
             assert!(
@@ -808,7 +892,10 @@ mod tests {
                 .iter()
                 .map(|weight| weight * weight)
                 .sum();
-            assert!((power_sum - 1.0).abs() < 1e-3, "rpm {rpm} power sum {power_sum}");
+            assert!(
+                (power_sum - 1.0).abs() < 1e-3,
+                "rpm {rpm} power sum {power_sum}"
+            );
             assert!(
                 diagnostics.clamped_rate_samples < 8,
                 "rpm {rpm} clamped {} times rendered={} rates={:?}",
@@ -829,13 +916,50 @@ mod tests {
     }
 
     #[test]
+    fn inactive_powered_and_coast_loops_keep_the_same_engine_cycle_phase() {
+        for output_sample_rate in [44_100, 48_000] {
+            let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
+            let mut sampler = GrandPrixSampler::new(bank, output_sample_rate, None, None).expect("sampler");
+            let mut accumulated_cycles = 0.0;
+            for frame in 0..output_sample_rate * 4 {
+                if frame % 400 == 0 {
+                    let revolutions_per_minute = if (frame / (output_sample_rate / 2)) % 2 == 0 { 5_000.0 } else { 17_000.0 };
+                    ingest_steady(&mut sampler, revolutions_per_minute, 1.0, 400);
+                }
+                sampler.render_sample_components();
+                accumulated_cycles += sampler.smoothed_rpm / (120.0 * output_sample_rate as f64);
+            }
+            for (loop_asset, cursor) in sampler.bank.loops.iter().zip(&sampler.loop_cursors)
+                .chain(sampler.bank.coast_loops.iter().zip(&sampler.coast_loop_cursors)) {
+                let cycles_per_frame = loop_asset.reference_revolutions_per_minute / (120.0 * 44_100.0);
+                let cycle_count = loop_asset.pcm.len() as f64 * cycles_per_frame;
+                let observed_cycles = cursor * cycles_per_frame;
+                let expected_cycles = accumulated_cycles.rem_euclid(cycle_count);
+                assert!((observed_cycles - expected_cycles).abs() < 1e-7, "{} at {}: {} != {}", loop_asset.id, output_sample_rate, observed_cycles, expected_cycles);
+            }
+        }
+    }
+
+    #[test]
+    fn reset_reproduces_the_same_filtered_engine_output() {
+        let mut sampler = shipped_sampler();
+        ingest_steady(&mut sampler, 6_000.0, 1.0, 4410);
+        let first_output = advance(&mut sampler, 4410);
+        ingest_steady(&mut sampler, 18_000.0, 0.0, 4410);
+        advance(&mut sampler, 4410);
+        sampler.reset();
+        ingest_steady(&mut sampler, 6_000.0, 1.0, 4410);
+        assert_eq!(first_output, advance(&mut sampler, 4410));
+    }
+
+    #[test]
     fn zone_weights_crossfade_without_steps() {
         let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
         let transition = &bank.transitions[0];
         let mut previous_from: Option<f32> = None;
         let mut rpm = transition.start_revolutions_per_minute - 100.0;
         while rpm < transition.end_revolutions_per_minute - 1.0 {
-            let (from, to, index) = zone_blend(&bank, rpm);
+            let (from, to, index) = zone_blend(&bank.transitions, rpm);
             assert_eq!(index, 0);
             assert!((from * from + to * to - 1.0).abs() < 1e-6);
             assert!((0.0..=1.0).contains(&from) && (0.0..=1.0).contains(&to));
@@ -874,6 +998,45 @@ mod tests {
         let diagnostics = sampler.diagnostics();
         assert_eq!(diagnostics.accepted_events - before, 1);
         assert_eq!(diagnostics.late_events, 0);
+    }
+
+    #[test]
+    fn closed_throttle_uses_coast_loops_above_idle() {
+        let mut sampler = shipped_sampler();
+        assert_eq!(sampler.bank.coast_loops.len(), 3);
+        sampler.set_coast_gain(1.0);
+        ingest_steady(&mut sampler, 12_000.0, 0.0, 441);
+        advance(&mut sampler, 8_820);
+        let coast_samples = advance(&mut sampler, 4_410);
+        let coast_level = coast_samples
+            .iter()
+            .map(|sample| sample.abs())
+            .sum::<f32>()
+            / coast_samples.len() as f32;
+        assert!(coast_level > 0.005, "coast loops were silent: {coast_level}");
+
+        sampler.reset();
+        sampler.set_coast_gain(0.0);
+        ingest_steady(&mut sampler, 12_000.0, 0.0, 441);
+        advance(&mut sampler, 8_820);
+        let muted_coast_samples = advance(&mut sampler, 4_410);
+        let muted_coast_level = muted_coast_samples
+            .iter()
+            .map(|sample| sample.abs())
+            .sum::<f32>()
+            / muted_coast_samples.len() as f32;
+        assert!(muted_coast_level < coast_level * 0.01);
+
+        sampler.reset();
+        ingest_steady(&mut sampler, 4_500.0, 0.0, 441);
+        advance(&mut sampler, 8_820);
+        let idle_samples = advance(&mut sampler, 4_410);
+        let idle_level = idle_samples
+            .iter()
+            .map(|sample| sample.abs())
+            .sum::<f32>()
+            / idle_samples.len() as f32;
+        assert!(idle_level > 0.005, "shared idle loop was silent: {idle_level}");
     }
 
     #[test]
@@ -982,7 +1145,10 @@ mod tests {
             .collect();
         assert_eq!(events[0].0, GrandPrixEventKind::Upshift);
         assert_eq!(events[1].0, GrandPrixEventKind::Downshift);
-        assert!(events[0].1 < events[1].1, "queued events collapsed: {events:?}");
+        assert!(
+            events[0].1 < events[1].1,
+            "queued events collapsed: {events:?}"
+        );
         advance(&mut sampler, 8820);
         assert_eq!(sampler.diagnostics().accepted_events, 2);
     }

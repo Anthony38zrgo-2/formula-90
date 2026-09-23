@@ -42,6 +42,13 @@ impl Biquad {
             z2: 0.0,
         }
     }
+    pub fn update_lowpass(&mut self, sample_rate: f32, cutoff_hertz: f32) {
+        let mut updated_filter = Self::lowpass(sample_rate, cutoff_hertz);
+        updated_filter.z1 = self.z1;
+        updated_filter.z2 = self.z2;
+        *self = updated_filter;
+    }
+
     pub fn highpass(sample_rate: f32, cutoff_hz: f32) -> Self {
         let cutoff = cutoff_hz.clamp(1.0, sample_rate * 0.49);
         let omega = std::f32::consts::TAU * cutoff / sample_rate;
@@ -85,6 +92,17 @@ impl Biquad {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn changing_lowpass_cutoff_preserves_a_steady_signal() {
+        let mut filter = Biquad::lowpass(44_100.0, 1_000.0);
+        for _ in 0..4_096 {
+            filter.process(1.0);
+        }
+        filter.update_lowpass(44_100.0, 1_011.0);
+        for _ in 0..128 {
+            assert!((filter.process(1.0) - 1.0).abs() < 0.05);
+        }
+    }
     #[test]
     fn zero_db_is_transparent() {
         let mut f = Biquad::peaking(44100.0, 1000.0, 1.0, 0.0);

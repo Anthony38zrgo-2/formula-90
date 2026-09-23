@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Build the standalone Grand Prix sampler bank (schema 1) for f1_2030_v10.
 
-Reads the 15 immutable WAV sources in the V10 GP3 source bank, verifies every
-SHA-256 against the frozen inventory, prepares five seamless engine loops and
-eight one-shot events at 44.1 kHz mono PCM16, calibrates a proportional
-reference-RPM ladder over the physical 4500-18000 RPM range, measures pairwise
+Reads the 18 immutable WAV sources in the V10 GP3 source bank, verifies every
+SHA-256 against the frozen inventory, prepares five powered engine loops, three
+coast loops and eight one-shot events at 44.1 kHz mono PCM16, calibrates the
+authored reference-RPM ladders over the physical 4500-18000 RPM range, measures pairwise
 boundary level compensation and writes:
 
   game/audio/formula_one_2030_grand_prix_sampler/          runtime bank + manifest.json
@@ -22,6 +22,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import sys
 import wave
 from fractions import Fraction
@@ -36,7 +37,7 @@ DEFAULT_BANK_DIR = ROOT / "game/audio/formula_one_2030_grand_prix_sampler"
 DEFAULT_REPORTS_DIR = ROOT / "reports/audio-v10/grand-prix-sampler"
 
 SCHEMA_VERSION = 1
-TOOL_REVISION = 5
+TOOL_REVISION = 7
 OUTPUT_SAMPLE_RATE = 44100
 EVENT_SELECTION_SEED = 1
 
@@ -47,34 +48,89 @@ LOOP_CROSSFADE_SECONDS = 0.020
 TRANSITION_HALF_WIDTH_RATIO = 0.075
 TRANSITION_BLEND_LAW = "smoothstep"
 TRANSITION_GAIN_LAW = "equal_power"
-BOUNDARY_LEVEL_STEP_DB = 1.5
+BOUNDARY_LEVEL_STEP_DB = 0.0
 LEVEL_BAND_HZ = (300.0, 6000.0)
 
 SOURCE_INVENTORY = {
     "98_int_idle.wav": {
         "role": "engine_loop",
         "asset_id": "engine_idle_loop",
-        "sha256": "f0021afba4048c59ae237325c932abef76433f03c437794d73de0e417384ddea",
+        "sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+        "original_source_filename": "idle.wav",
+        "original_source_sha256": "a2af839a00955f414b29e27fcae00837a00ca8b4ad1633dac75880a82cc00101",
+        "reference_revolutions_per_minute": 4500.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
     },
     "98_int_low.wav": {
         "role": "engine_loop",
         "asset_id": "engine_low_loop",
-        "sha256": "2eac0ef746c818ecac50fe77ca0099894f4762d55428a3cddfeb3007a6092cc5",
+        "sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
+        "original_source_filename": "low_on.wav",
+        "original_source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
+        "reference_revolutions_per_minute": 8000.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
     },
     "98_int_med.wav": {
         "role": "engine_loop",
         "asset_id": "engine_medium_loop",
-        "sha256": "d1a527d5ddf3ec6d4f38127d1c6a3b00d7b7771d5473f68315e4352c98db4007",
+        "sha256": "94e666ceb55ee552f109569b764faf8a1d07f60e6b659a158456b2890eeb8c9c",
+        "original_source_filename": "hi_on.wav",
+        "original_source_sha256": "ccf087f6b41b4dc4f73ded9535688926b184ffeb6842b4315645c4dfe0ca2c31",
+        "reference_revolutions_per_minute": 15000.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
     },
     "98_int_high_1.wav": {
         "role": "engine_loop",
         "asset_id": "engine_high_loop",
-        "sha256": "fc68bc279e3f8098be009be24eb4249c4ab76ab805e595af7bc5c509b1413477",
+        "sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
+        "original_source_filename": "hi_max_on.wav",
+        "original_source_sha256": "638485f34e50b1f4df46a406acf548eb22448ce208cf40540408cd466b6f638b",
+        "reference_revolutions_per_minute": 15600.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
     },
     "98_int_max_5.wav": {
         "role": "engine_loop",
         "asset_id": "engine_maximum_loop",
-        "sha256": "f6b6cd4389fee32cb5f4b41a550e7aa146d4a5d0912fda86551dabfd598aa50b",
+        "sha256": "fa0829de453fcf4e33b6533cf743d25d0f8f6ccc76e5eefe8ea11c77a189ad6a",
+        "original_source_filename": "max_on.wav",
+        "original_source_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
+        "reference_revolutions_per_minute": 16700.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
+    },
+    "engine_coast_low.wav": {
+        "role": "engine_coast_loop",
+        "asset_id": "engine_coast_low_loop",
+        "sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+        "original_source_filename": "low_off.wav",
+        "original_source_sha256": "a3ae253ddeaf19872af315305a2c54b7cc6025dba7a8efad7440bf4acecd9c55",
+        "reference_revolutions_per_minute": 8000.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
+    },
+    "engine_coast_high.wav": {
+        "role": "engine_coast_loop",
+        "asset_id": "engine_coast_high_loop",
+        "sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+        "original_source_filename": "hi_off.wav",
+        "original_source_sha256": "4142964333dba9aae06a20d76827bc01e0956b8401b984179a23a347ec4d3c3c",
+        "reference_revolutions_per_minute": 13000.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
+    },
+    "engine_coast_maximum.wav": {
+        "role": "engine_coast_loop",
+        "asset_id": "engine_coast_maximum_loop",
+        "sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+        "original_source_filename": "max_off.wav",
+        "original_source_sha256": "441e9231f1377ba9d7aa51e0c1630f21691cc0769623f9e70bc0bf5c109e3269",
+        "reference_revolutions_per_minute": 18000.0,
+        "already_prepared": True,
+        "loop_crossfade_frames": 882,
     },
     "gearup.wav": {
         "role": "gearbox_upshift",
@@ -107,27 +163,42 @@ SOURCE_INVENTORY = {
     "500_backfire3.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_3",
-        "sha256": "e107717d2fe4f4fccd5d10d910b7cff71cd36d11403ef2a1277d36418986d044",
+        "sha256": "3a1c604cbbd6bef443e558f64cb6996a83133681514df13ac350833a26856372",
+        "original_source_filename": "mp416_int_backfire_1.wav",
+        "original_source_sha256": "9215fdcce2dc12a38413e056efa96dbd0873fcf8c97283d36725dac3d2ab01c5",
+        "preparation_recipe": "stereo_resample_44100_true_peak_normalize_minus_3_dbfs",
     },
     "500_backfire4.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_4",
-        "sha256": "e903a055cf8b5ca6a79b44862681f12bca5a11e95878f091095d613e7b63171e",
+        "sha256": "be956f23ded2234ffa9e565a0e0af2924eb319e2730c49e6ebc00b6b2cf0c9c2",
+        "original_source_filename": "mp416_int_backfire_2.wav",
+        "original_source_sha256": "9adaf66e5aa8797f93fbe212992587d52f763fee707546c1149e3b57c0931b43",
+        "preparation_recipe": "stereo_resample_44100_true_peak_normalize_minus_3_dbfs",
     },
     "500_backfire5.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_5",
-        "sha256": "a471a47bc8094a38e50894713b47b7847d81e1c518830b804e25dc87a69ceec1",
+        "sha256": "5ec929f59a6dd9205aa1731eac08ffee42a0fef4a4e3561b1bb9bf24150d140c",
+        "original_source_filename": "mp416_int_backfire_3.wav",
+        "original_source_sha256": "011bd50ad0ef1ed76049d62aa924bcafdb4661f5e4dfc2ab090f7a76a041c6f9",
+        "preparation_recipe": "stereo_resample_44100_true_peak_normalize_minus_3_dbfs",
     },
     "500_backfire6.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_6",
-        "sha256": "6179b1460c81f58ce6ed69dd48498e0efcb3ec66eb18054cf1d97ac444426797",
+        "sha256": "b5304a7336fbabfac09d2c3c4f1dc63c49c3eee4ccb443cdf3e99e2aa6af2ec5",
+        "original_source_filename": "mp416_int_backfire_4.wav",
+        "original_source_sha256": "779a453f1b349af5754ce03625eff881a7539b2ad7318637f763dfde4b2f787e",
+        "preparation_recipe": "stereo_resample_44100_true_peak_normalize_minus_3_dbfs",
     },
     "500_backfire7.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_7",
-        "sha256": "ed324b6935950738a6cb4eb0ba99eab74b58bd24fe8b6a9dc75973b47269c42c",
+        "sha256": "d03a84c631aa840b158160c96f8bdc1f1f26781635deebfc550413f5f1869e5d",
+        "original_source_filename": "mp416_int_backfire_5.wav",
+        "original_source_sha256": "8b4d5e3ae6257d6844e3270ae4139a0c7954eb1db9bdf23da7da87419165dc04",
+        "preparation_recipe": "stereo_resample_44100_true_peak_normalize_minus_3_dbfs",
     },
     "500_limiter.wav": {
         "role": "limiter_event",
@@ -171,6 +242,12 @@ LOOP_ORDER = [
     "engine_medium_loop",
     "engine_high_loop",
     "engine_maximum_loop",
+]
+
+COAST_LOOP_ORDER = [
+    "engine_coast_low_loop",
+    "engine_coast_high_loop",
+    "engine_coast_maximum_loop",
 ]
 
 EVENT_GROUP_DEFINITIONS = [
@@ -454,7 +531,7 @@ def prepare_loop(samples: np.ndarray, rate: int) -> tuple[np.ndarray, dict]:
 
 
 def apply_rate(samples: np.ndarray, rate: int, ratio: float) -> np.ndarray:
-    fraction = Fraction(ratio).limit_denominator(4096)
+    fraction = Fraction(1.0 / ratio).limit_denominator(4096)
     return resample_poly(samples, fraction.numerator, fraction.denominator)
 
 
@@ -466,6 +543,19 @@ def build_manifest(
     source_inventory: dict | None = None,
 ) -> int:
     definition_table = source_inventory if source_inventory is not None else SOURCE_INVENTORY
+    definition_table = {name: dict(entry) for name, entry in definition_table.items()}
+    preparation_path = source_dir / "engine_preparation.json"
+    if source_inventory is None and not preparation_path.is_file():
+        raise ValueError(f"Missing measured engine preparation metadata: {preparation_path}")
+    if preparation_path.is_file():
+        preparation = json.loads(preparation_path.read_text(encoding="utf-8"))
+        for name, metadata in preparation.items():
+            entry = definition_table[name]
+            if metadata["sha256"] != entry["sha256"]:
+                raise ValueError(f"Preparation metadata disagrees with source inventory: {name}")
+            entry["zone_revolutions_per_minute"] = entry["reference_revolutions_per_minute"]
+            for key in ("reference_revolutions_per_minute", "loop_crossfade_frames", "preparation_recipe"):
+                entry[key] = metadata[key]
     missing = [name for name in definition_table if not (source_dir / name).is_file()]
     if missing:
         print("missing sources: " + ", ".join(sorted(missing)), file=sys.stderr)
@@ -573,31 +663,44 @@ def build_manifest(
     ]
     references_are_authored = all(
         reference is not None and reference > 0.0 for reference in authored_references
-    ) and all(
-        authored_references[index] < authored_references[index + 1]
-        for index in range(len(authored_references) - 1)
     )
     if references_are_authored:
         references = [float(reference) for reference in authored_references]
         base_rpm_per_hz = sum(references) / sum(spacings)
+        if preparation_path.is_file():
+            spacings = [reference / 120.0 for reference in references]
+            base_rpm_per_hz = 120.0
     reference_method = (
-        "authored_progression_preserved_with_measured_spacing_evidence"
+        "prepared_cycle_frequency_times_120" if preparation_path.is_file() else "authored_reference"
         if references_are_authored
         else "measured_comb_spacing_proportional_ladder"
     )
 
     for asset, spacing, reference in zip(loop_assets, spacings, references):
         asset["reference_revolutions_per_minute"] = reference
+        asset["zone_revolutions_per_minute"] = definition_table[asset["source_filename"]].get(
+            "zone_revolutions_per_minute", reference
+        )
+        if preparation_path.is_file():
+            asset["comb_spacing_hz"] = reference / 120.0
         asset["reference_method"] = reference_method
         asset["reference_rpm_per_hz"] = base_rpm_per_hz
 
     boundaries = [
-        math.sqrt(references[index] * references[index + 1])
+        math.sqrt(loop_assets[index]["zone_revolutions_per_minute"] * loop_assets[index + 1]["zone_revolutions_per_minute"])
         for index in range(len(references) - 1)
     ]
     transitions = []
     for index, center in enumerate(boundaries):
-        half_width = center * TRANSITION_HALF_WIDTH_RATIO
+        neighboring_center_gaps = []
+        if index > 0:
+            neighboring_center_gaps.append(center - boundaries[index - 1])
+        if index + 1 < len(boundaries):
+            neighboring_center_gaps.append(boundaries[index + 1] - center)
+        half_width = min(
+            center * TRANSITION_HALF_WIDTH_RATIO,
+            min(neighboring_center_gaps, default=center) * 0.45,
+        )
         transitions.append(
             {
                 "from_loop_id": loop_assets[index]["id"],
@@ -652,11 +755,113 @@ def build_manifest(
             next(seam["loop_crossfade_frames"] for seam in seam_evidence if seam["asset_id"] == asset["id"])
         )
 
+    coast_loop_assets: list[dict] = []
+    coast_loop_audio: dict[str, np.ndarray] = {}
+    matching_engine_loop_ids = [
+        "engine_low_loop", "engine_high_loop", "engine_maximum_loop"
+    ]
+    for coast_loop_id, matching_engine_loop_id in zip(
+        COAST_LOOP_ORDER, matching_engine_loop_ids
+    ):
+        source_name = next(
+            filename
+            for filename, entry in definition_table.items()
+            if entry["asset_id"] == coast_loop_id
+        )
+        source_entry = definition_table[source_name]
+        samples, sample_rate = source_audio[source_name]
+        if sample_rate != OUTPUT_SAMPLE_RATE:
+            samples = resample_poly(samples, OUTPUT_SAMPLE_RATE, sample_rate)
+        engine_asset = next(
+            asset for asset in loop_assets if asset["id"] == matching_engine_loop_id
+        )
+        reference = float(source_entry["reference_revolutions_per_minute"])
+        zone_reference = float(source_entry.get("zone_revolutions_per_minute", reference))
+        engine_level = loop_level(apply_rate(loop_audio[matching_engine_loop_id], OUTPUT_SAMPLE_RATE, zone_reference / engine_asset["reference_revolutions_per_minute"]))
+        coast_level = loop_level(apply_rate(samples, OUTPUT_SAMPLE_RATE, zone_reference / reference))
+        calibrated_gain = min(
+            2.0,
+            max(
+                0.25,
+                engine_asset["calibrated_gain"] * engine_level / max(coast_level, 1e-9),
+            ),
+        )
+        reference = float(source_entry["reference_revolutions_per_minute"])
+        coast_loop_audio[coast_loop_id] = samples
+        coast_loop_assets.append(
+            {
+                "id": coast_loop_id,
+                "role": "engine_coast_loop",
+                "source_filename": source_name,
+                "source_sha256": source_entry["sha256"],
+                "derived_filename": f"{coast_loop_id}.wav",
+                "derived_frames": int(len(samples)),
+                "derived_rms_dbfs": dbfs(rms_value(samples)),
+                "derived_peak_dbfs": dbfs(float(np.max(np.abs(samples)))),
+                "comb_spacing_hz": reference / 120.0,
+                "reference_revolutions_per_minute": reference,
+                "zone_revolutions_per_minute": zone_reference,
+                "calibrated_gain": float(calibrated_gain),
+                "valid_playback_rate_min": 0.0,
+                "valid_playback_rate_max": 0.0,
+                "active_coverage_revolutions_per_minute": [0.0, 0.0],
+                "loop_start_frame": 0,
+                "loop_end_frame_exclusive": int(len(samples)),
+                "loop_crossfade_frames": int(source_entry["loop_crossfade_frames"]),
+            }
+        )
+
+    coast_transitions = []
+    for index in range(len(coast_loop_assets) - 1):
+        center = math.sqrt(
+            coast_loop_assets[index]["zone_revolutions_per_minute"]
+            * coast_loop_assets[index + 1]["zone_revolutions_per_minute"]
+        )
+        half_width = center * TRANSITION_HALF_WIDTH_RATIO
+        coast_transitions.append(
+            {
+                "from_loop_id": coast_loop_assets[index]["id"],
+                "to_loop_id": coast_loop_assets[index + 1]["id"],
+                "start_revolutions_per_minute": center - half_width,
+                "end_revolutions_per_minute": center + half_width,
+                "center_revolutions_per_minute": center,
+                "half_width_revolutions_per_minute": half_width,
+                "blend_law": TRANSITION_BLEND_LAW,
+                "gain_law": TRANSITION_GAIN_LAW,
+                "measured_level_compensation_db": 0.0,
+            }
+        )
+    for index, transition in enumerate(coast_transitions):
+        center = transition["center_revolutions_per_minute"]
+        left_asset, right_asset = coast_loop_assets[index : index + 2]
+        left_level = loop_level(apply_rate(coast_loop_audio[left_asset["id"]], OUTPUT_SAMPLE_RATE, center / left_asset["reference_revolutions_per_minute"]))
+        right_level = loop_level(apply_rate(coast_loop_audio[right_asset["id"]], OUTPUT_SAMPLE_RATE, center / right_asset["reference_revolutions_per_minute"]))
+        ratio = left_level / max(right_level, 1e-9)
+        right_asset["calibrated_gain"] = left_asset["calibrated_gain"] * ratio
+        transition["measured_level_compensation_db"] = float(20.0 * math.log10(ratio))
+    for index, asset in enumerate(coast_loop_assets):
+        coverage_start = (
+            coverage_min
+            if index == 0
+            else coast_transitions[index - 1]["start_revolutions_per_minute"]
+        )
+        coverage_end = (
+            coverage_max
+            if index == len(coast_loop_assets) - 1
+            else coast_transitions[index]["end_revolutions_per_minute"]
+        )
+        reference = asset["reference_revolutions_per_minute"]
+        asset["active_coverage_revolutions_per_minute"] = [
+            coverage_start, coverage_end
+        ]
+        asset["valid_playback_rate_min"] = coverage_start / reference
+        asset["valid_playback_rate_max"] = coverage_end / reference
+
     event_assets: list[dict] = []
     event_audio: dict[str, np.ndarray] = {}
     for name in sorted(definition_table):
         entry = definition_table[name]
-        if entry["role"] == "engine_loop" or entry.get("component_only"):
+        if entry["role"] in ("engine_loop", "engine_coast_loop") or entry.get("component_only"):
             continue
         samples, rate = source_audio[name]
         source_rate = rate
@@ -786,6 +991,8 @@ def build_manifest(
         },
         "loops": loop_assets,
         "transitions": transitions,
+        "coast_loops": coast_loop_assets,
+        "coast_transitions": coast_transitions,
         "events": event_assets,
         "event_groups": event_groups,
         "event_trigger_policy": EVENT_TRIGGER_POLICY,
@@ -822,7 +1029,10 @@ def build_manifest(
 
     bank_dir.mkdir(parents=True, exist_ok=True)
     reports_dir.mkdir(parents=True, exist_ok=True)
-    expected_names = {asset["derived_filename"] for asset in loop_assets + event_assets}
+    expected_names = {
+        asset["derived_filename"]
+        for asset in loop_assets + coast_loop_assets + event_assets
+    }
     if not check_only:
         for existing in bank_dir.iterdir():
             if existing.is_file() and existing.name.endswith(".wav") and existing.name not in expected_names:
@@ -831,9 +1041,11 @@ def build_manifest(
                 if companion.is_file():
                     companion.unlink()
     failures: list[str] = []
-    for asset in loop_assets + event_assets:
+    for asset in loop_assets + coast_loop_assets + event_assets:
         target = bank_dir / asset["derived_filename"]
-        audio = loop_audio.get(asset["id"], event_audio.get(asset["id"]))
+        audio = loop_audio.get(
+            asset["id"], coast_loop_audio.get(asset["id"], event_audio.get(asset["id"]))
+        )
         expected_bytes = wav_bytes(audio, OUTPUT_SAMPLE_RATE)
         if check_only:
             if not target.is_file() or target.read_bytes() != expected_bytes:
@@ -841,7 +1053,9 @@ def build_manifest(
             else:
                 asset["derived_sha256"] = sha256_bytes(expected_bytes)
         else:
-            target.write_bytes(expected_bytes)
+            temporary_target = target.with_suffix(".prepared.wav")
+            temporary_target.write_bytes(expected_bytes)
+            os.replace(temporary_target, target)
             asset["derived_sha256"] = sha256_bytes(expected_bytes)
 
     payloads = {

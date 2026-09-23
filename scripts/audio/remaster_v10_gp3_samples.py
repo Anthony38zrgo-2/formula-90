@@ -55,27 +55,27 @@ SOURCE_DEFINITIONS = {
     "98_int_idle.wav": {
         "role": "engine_loop",
         "asset_id": "engine_idle_loop",
-        "sha256": "f0021afba4048c59ae237325c932abef76433f03c437794d73de0e417384ddea",
+        "sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
     },
     "98_int_low.wav": {
         "role": "engine_loop",
         "asset_id": "engine_low_loop",
-        "sha256": "2eac0ef746c818ecac50fe77ca0099894f4762d55428a3cddfeb3007a6092cc5",
+        "sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
     },
     "98_int_med.wav": {
         "role": "engine_loop",
         "asset_id": "engine_medium_loop",
-        "sha256": "d1a527d5ddf3ec6d4f38127d1c6a3b00d7b7771d5473f68315e4352c98db4007",
+        "sha256": "94e666ceb55ee552f109569b764faf8a1d07f60e6b659a158456b2890eeb8c9c",
     },
     "98_int_high_1.wav": {
         "role": "engine_loop",
         "asset_id": "engine_high_loop",
-        "sha256": "fc68bc279e3f8098be009be24eb4249c4ab76ab805e595af7bc5c509b1413477",
+        "sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
     },
     "98_int_max_5.wav": {
         "role": "engine_loop",
         "asset_id": "engine_maximum_loop",
-        "sha256": "f6b6cd4389fee32cb5f4b41a550e7aa146d4a5d0912fda86551dabfd598aa50b",
+        "sha256": "fa0829de453fcf4e33b6533cf743d25d0f8f6ccc76e5eefe8ea11c77a189ad6a",
     },
     "gearup.wav": {
         "role": "gearbox_upshift",
@@ -90,27 +90,27 @@ SOURCE_DEFINITIONS = {
     "500_backfire3.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_3",
-        "sha256": "e107717d2fe4f4fccd5d10d910b7cff71cd36d11403ef2a1277d36418986d044",
+        "sha256": "3a1c604cbbd6bef443e558f64cb6996a83133681514df13ac350833a26856372",
     },
     "500_backfire4.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_4",
-        "sha256": "e903a055cf8b5ca6a79b44862681f12bca5a11e95878f091095d613e7b63171e",
+        "sha256": "be956f23ded2234ffa9e565a0e0af2924eb319e2730c49e6ebc00b6b2cf0c9c2",
     },
     "500_backfire5.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_5",
-        "sha256": "a471a47bc8094a38e50894713b47b7847d81e1c518830b804e25dc87a69ceec1",
+        "sha256": "5ec929f59a6dd9205aa1731eac08ffee42a0fef4a4e3561b1bb9bf24150d140c",
     },
     "500_backfire6.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_6",
-        "sha256": "6179b1460c81f58ce6ed69dd48498e0efcb3ec66eb18054cf1d97ac444426797",
+        "sha256": "b5304a7336fbabfac09d2c3c4f1dc63c49c3eee4ccb443cdf3e99e2aa6af2ec5",
     },
     "500_backfire7.wav": {
         "role": "lift_backfire",
         "asset_id": "backfire_burst_7",
-        "sha256": "ed324b6935950738a6cb4eb0ba99eab74b58bd24fe8b6a9dc75973b47269c42c",
+        "sha256": "d03a84c631aa840b158160c96f8bdc1f1f26781635deebfc550413f5f1869e5d",
     },
     "500_limiter.wav": {
         "role": "limiter_event",

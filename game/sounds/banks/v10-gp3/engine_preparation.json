@@ -1,0 +1,98 @@
+{
+  "98_int_high_1.wav": {
+    "cycle_count": 280,
+    "dominant_harmonic_phase_radians": -2.957836442488102e-07,
+    "frames": 88089,
+    "loop_crossfade_frames": 1258,
+    "measured_cycle_frequency_hertz": 140.1767689088602,
+    "original_filename": "hi_max_on.wav",
+    "original_sha256": "638485f34e50b1f4df46a406acf548eb22448ce208cf40540408cd466b6f638b",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 16821.16949902939,
+    "sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb"
+  },
+  "98_int_idle.wav": {
+    "cycle_count": 76,
+    "dominant_harmonic_phase_radians": 8.129844765180264e-07,
+    "frames": 88752,
+    "loop_crossfade_frames": 4671,
+    "measured_cycle_frequency_hertz": 37.7635936498055,
+    "original_filename": "idle.wav",
+    "original_sha256": "a2af839a00955f414b29e27fcae00837a00ca8b4ad1633dac75880a82cc00101",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 4531.638723634397,
+    "sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc"
+  },
+  "98_int_low.wav": {
+    "cycle_count": 152,
+    "dominant_harmonic_phase_radians": 1.7987393736689242e-07,
+    "frames": 88053,
+    "loop_crossfade_frames": 2317,
+    "measured_cycle_frequency_hertz": 76.12717707286339,
+    "original_filename": "low_on.wav",
+    "original_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 9135.225375626043,
+    "sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f"
+  },
+  "98_int_max_5.wav": {
+    "cycle_count": 297,
+    "dominant_harmonic_phase_radians": 1.258860744201394e-08,
+    "frames": 88217,
+    "loop_crossfade_frames": 1188,
+    "measured_cycle_frequency_hertz": 148.47132367908935,
+    "original_filename": "max_on.wav",
+    "original_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 17816.565968010702,
+    "sha256": "fa0829de453fcf4e33b6533cf743d25d0f8f6ccc76e5eefe8ea11c77a189ad6a"
+  },
+  "98_int_med.wav": {
+    "cycle_count": 282,
+    "dominant_harmonic_phase_radians": -3.726605591563625e-07,
+    "frames": 88120,
+    "loop_crossfade_frames": 1250,
+    "measured_cycle_frequency_hertz": 141.12812417789985,
+    "original_filename": "hi_on.wav",
+    "original_sha256": "ccf087f6b41b4dc4f73ded9535688926b184ffeb6842b4315645c4dfe0ca2c31",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 16935.36087153881,
+    "sha256": "94e666ceb55ee552f109569b764faf8a1d07f60e6b659a158456b2890eeb8c9c"
+  },
+  "engine_coast_high.wav": {
+    "cycle_count": 208,
+    "dominant_harmonic_phase_radians": -4.809310353676352e-07,
+    "frames": 88295,
+    "loop_crossfade_frames": 1698,
+    "measured_cycle_frequency_hertz": 103.88820303612155,
+    "original_filename": "hi_off.wav",
+    "original_sha256": "4142964333dba9aae06a20d76827bc01e0956b8401b984179a23a347ec4d3c3c",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 12466.572286086415,
+    "sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa"
+  },
+  "engine_coast_low.wav": {
+    "cycle_count": 132,
+    "dominant_harmonic_phase_radians": 4.0063369362062947e-07,
+    "frames": 88171,
+    "loop_crossfade_frames": 2672,
+    "measured_cycle_frequency_hertz": 66.02197209203598,
+    "original_filename": "low_off.wav",
+    "original_sha256": "a3ae253ddeaf19872af315305a2c54b7cc6025dba7a8efad7440bf4acecd9c55",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 7922.604938131585,
+    "sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243"
+  },
+  "engine_coast_maximum.wav": {
+    "cycle_count": 276,
+    "dominant_harmonic_phase_radians": 3.000546298347912e-07,
+    "frames": 88292,
+    "loop_crossfade_frames": 1280,
+    "measured_cycle_frequency_hertz": 137.855523977399,
+    "original_filename": "max_off.wav",
+    "original_sha256": "441e9231f1377ba9d7aa51e0c1630f21691cc0769623f9e70bc0bf5c109e3269",
+    "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+    "reference_revolutions_per_minute": 16542.744529515698,
+    "sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b"
+  }
+}

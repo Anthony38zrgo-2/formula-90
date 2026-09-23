@@ -47,6 +47,8 @@ pub struct GrandPrixLoopAsset {
     pub derived_peak_dbfs: f64,
     pub comb_spacing_hz: f64,
     pub reference_revolutions_per_minute: f64,
+    #[serde(default)]
+    pub zone_revolutions_per_minute: Option<f64>,
     pub calibrated_gain: f64,
     pub valid_playback_rate_min: f64,
     pub valid_playback_rate_max: f64,
@@ -134,6 +136,10 @@ pub struct GrandPrixManifest {
     pub coverage: GrandPrixCoverage,
     pub loops: Vec<GrandPrixLoopAsset>,
     pub transitions: Vec<GrandPrixTransition>,
+    #[serde(default)]
+    pub coast_loops: Vec<GrandPrixLoopAsset>,
+    #[serde(default)]
+    pub coast_transitions: Vec<GrandPrixTransition>,
     pub events: Vec<GrandPrixEventAsset>,
     pub event_groups: Vec<GrandPrixEventGroup>,
     pub event_trigger_policy: GrandPrixEventTriggerPolicy,
@@ -253,6 +259,8 @@ pub struct GrandPrixSampleBank {
     pub coverage_maximum_revolutions_per_minute: f64,
     pub loops: Vec<GrandPrixDecodedLoop>,
     pub transitions: Vec<GrandPrixTransition>,
+    pub coast_loops: Vec<GrandPrixDecodedLoop>,
+    pub coast_transitions: Vec<GrandPrixTransition>,
     pub events: Vec<GrandPrixDecodedEvent>,
     pub groups: Vec<GrandPrixDecodedGroup>,
     pub lift_edge_policy: GrandPrixLiftEdgePolicy,
@@ -332,7 +340,7 @@ impl GrandPrixManifest {
             ));
         }
         let mut loop_ids = BTreeSet::new();
-        let mut previous_reference = 0.0_f64;
+        let mut previous_zone_revolutions_per_minute = 0.0_f64;
         for (index, loop_asset) in self.loops.iter().enumerate() {
             if loop_asset.role != "engine_loop" {
                 return Err(GrandPrixBankError::InvalidAsset(
@@ -360,13 +368,16 @@ impl GrandPrixManifest {
                     "reference rpm must be positive and finite".to_string(),
                 ));
             }
-            if loop_asset.reference_revolutions_per_minute <= previous_reference {
+            let zone_revolutions_per_minute = loop_asset.zone_revolutions_per_minute
+                .unwrap_or(loop_asset.reference_revolutions_per_minute);
+            if !is_finite_positive(zone_revolutions_per_minute)
+                || zone_revolutions_per_minute <= previous_zone_revolutions_per_minute {
                 return Err(GrandPrixBankError::InvalidAsset(
                     loop_asset.id.clone(),
-                    "loop references must be strictly ascending".to_string(),
+                    "loop zones must be positive and strictly ascending".to_string(),
                 ));
             }
-            previous_reference = loop_asset.reference_revolutions_per_minute;
+            previous_zone_revolutions_per_minute = zone_revolutions_per_minute;
             if !loop_asset.calibrated_gain.is_finite() || loop_asset.calibrated_gain <= 0.0 {
                 return Err(GrandPrixBankError::InvalidAsset(
                     loop_asset.id.clone(),
@@ -499,6 +510,96 @@ impl GrandPrixManifest {
         {
             return Err(GrandPrixBankError::InvalidManifest(
                 "transitions exceed declared coverage".to_string(),
+            ));
+        }
+        if !self.coast_loops.is_empty() {
+            if self.coast_loops.len() < GRAND_PRIX_MINIMUM_LOOP_COUNT
+                || self.coast_loops.len() > GRAND_PRIX_MAXIMUM_LOOP_COUNT
+                || self.coast_transitions.len() + 1 != self.coast_loops.len()
+            {
+                return Err(GrandPrixBankError::InvalidManifest(
+                    "coast loop and transition counts invalid".to_string(),
+                ));
+            }
+            let mut previous_zone_revolutions_per_minute = 0.0;
+            let mut coast_ids = BTreeSet::new();
+            for (index, coast_loop) in self.coast_loops.iter().enumerate() {
+                let zone_revolutions_per_minute = coast_loop.zone_revolutions_per_minute
+                    .unwrap_or(coast_loop.reference_revolutions_per_minute);
+                if coast_loop.role != "engine_coast_loop"
+                    || !coast_ids.insert(coast_loop.id.clone())
+                    || loop_ids.contains(&coast_loop.id)
+                    || !is_hex_sha256(&coast_loop.source_sha256)
+                    || !is_hex_sha256(&coast_loop.derived_sha256)
+                    || !is_finite_positive(coast_loop.reference_revolutions_per_minute)
+                    || !is_finite_positive(zone_revolutions_per_minute)
+                    || zone_revolutions_per_minute <= previous_zone_revolutions_per_minute
+                    || !is_finite_positive(coast_loop.calibrated_gain)
+                    || !is_finite_positive(coast_loop.valid_playback_rate_min)
+                    || !is_finite_positive(coast_loop.valid_playback_rate_max)
+                    || coast_loop.valid_playback_rate_min > coast_loop.valid_playback_rate_max
+                    || coast_loop.loop_start_frame >= coast_loop.loop_end_frame_exclusive
+                    || coast_loop.loop_end_frame_exclusive > coast_loop.derived_frames
+                    || coast_loop.loop_crossfade_frames == 0
+                    || coast_loop.loop_crossfade_frames * 4
+                        > coast_loop.loop_end_frame_exclusive - coast_loop.loop_start_frame
+                {
+                    return Err(GrandPrixBankError::InvalidAsset(
+                        coast_loop.id.clone(),
+                        "coast loop metadata invalid".to_string(),
+                    ));
+                }
+                previous_zone_revolutions_per_minute = zone_revolutions_per_minute;
+                let expected_start = if index == 0 {
+                    coverage.minimum_revolutions_per_minute
+                } else {
+                    self.coast_transitions[index - 1].start_revolutions_per_minute
+                };
+                let expected_end = if index + 1 == self.coast_loops.len() {
+                    coverage.maximum_revolutions_per_minute
+                } else {
+                    self.coast_transitions[index].end_revolutions_per_minute
+                };
+                if (coast_loop.active_coverage_revolutions_per_minute[0] - expected_start).abs()
+                    > 1e-6
+                    || (coast_loop.active_coverage_revolutions_per_minute[1] - expected_end).abs()
+                        > 1e-6
+                    || coast_loop.valid_playback_rate_min
+                        > expected_start / coast_loop.reference_revolutions_per_minute + 1e-6
+                    || coast_loop.valid_playback_rate_max
+                        < expected_end / coast_loop.reference_revolutions_per_minute - 1e-6
+                {
+                    return Err(GrandPrixBankError::InvalidAsset(
+                        coast_loop.id.clone(),
+                        "coast loop coverage invalid".to_string(),
+                    ));
+                }
+            }
+            for (index, transition) in self.coast_transitions.iter().enumerate() {
+                if transition.from_loop_id != self.coast_loops[index].id
+                    || transition.to_loop_id != self.coast_loops[index + 1].id
+                    || !is_finite_positive(transition.start_revolutions_per_minute)
+                    || !is_finite_positive(transition.end_revolutions_per_minute)
+                    || transition.start_revolutions_per_minute
+                        >= transition.end_revolutions_per_minute
+                    || transition.start_revolutions_per_minute
+                        < coverage.minimum_revolutions_per_minute
+                    || transition.end_revolutions_per_minute
+                        > coverage.maximum_revolutions_per_minute
+                    || transition.blend_law != "smoothstep"
+                    || transition.gain_law != "equal_power"
+                    || (index > 0
+                        && transition.start_revolutions_per_minute
+                            < self.coast_transitions[index - 1].end_revolutions_per_minute)
+                {
+                    return Err(GrandPrixBankError::InvalidManifest(
+                        "coast transition invalid".to_string(),
+                    ));
+                }
+            }
+        } else if !self.coast_transitions.is_empty() {
+            return Err(GrandPrixBankError::InvalidManifest(
+                "coast transitions require coast loops".to_string(),
             ));
         }
         let mut event_ids = BTreeSet::new();
@@ -658,6 +759,32 @@ impl GrandPrixSampleBank {
             });
         }
 
+        let mut coast_loops = Vec::with_capacity(manifest.coast_loops.len());
+        for coast_asset in &manifest.coast_loops {
+            let pcm = load_verified_pcm(
+                bank_directory,
+                &coast_asset.derived_filename,
+                &coast_asset.derived_sha256,
+            )?;
+            if pcm.len() as u64 != coast_asset.derived_frames {
+                return Err(GrandPrixBankError::InvalidAsset(
+                    coast_asset.id.clone(),
+                    "coast loop frame count disagrees with manifest".to_string(),
+                ));
+            }
+            coast_loops.push(GrandPrixDecodedLoop {
+                id: coast_asset.id.clone(),
+                pcm,
+                reference_revolutions_per_minute: coast_asset.reference_revolutions_per_minute,
+                calibrated_gain: coast_asset.calibrated_gain as f32,
+                valid_playback_rate_min: coast_asset.valid_playback_rate_min,
+                valid_playback_rate_max: coast_asset.valid_playback_rate_max,
+                loop_start_frame: coast_asset.loop_start_frame as usize,
+                loop_end_frame_exclusive: coast_asset.loop_end_frame_exclusive as usize,
+                crossfade_frames: coast_asset.loop_crossfade_frames as usize,
+            });
+        }
+
         let mut events = Vec::with_capacity(manifest.events.len());
         let mut event_index_by_id = BTreeMap::new();
         for event_asset in &manifest.events {
@@ -725,6 +852,8 @@ impl GrandPrixSampleBank {
                 .maximum_revolutions_per_minute,
             loops,
             transitions: manifest.transitions.clone(),
+            coast_loops,
+            coast_transitions: manifest.coast_transitions.clone(),
             events,
             groups,
             lift_edge_policy: manifest.event_trigger_policy.lift_edge.clone(),
@@ -796,8 +925,12 @@ mod tests {
             .iter()
             .map(|loop_asset| loop_asset.reference_revolutions_per_minute)
             .collect();
-        assert!(references.windows(2).all(|pair| pair[0] < pair[1]));
-        assert!(references[0] < 5000.0 && references[4] > 17000.0);
+        for (reference, loop_asset) in references.iter().zip(&bank.loops) {
+            let cycle_count = reference / 120.0 * loop_asset.pcm.len() as f64 / GRAND_PRIX_SAMPLE_RATE as f64;
+            assert!((cycle_count - cycle_count.round()).abs() < 1e-8);
+        }
+        assert_eq!(bank.coast_loops.len(), 3);
+        assert_eq!(bank.coast_transitions.len(), 2);
         let downshift = bank.group("downshift").expect("downshift group");
         assert_eq!(downshift.selection, GrandPrixSelection::SingleVariant);
         assert_eq!(downshift.variants.len(), 1);
