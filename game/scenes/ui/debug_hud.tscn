@@ -71,13 +71,13 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -260.0
-offset_top = -350.0
-offset_right = 93.0
-offset_bottom = 150.0
+offset_left = -360.0
+offset_top = -450.0
+offset_right = -7.0
+offset_bottom = 50.0
 grow_horizontal = 0
 grow_vertical = 0
-scale = Vector2(0.68, 0.68)
+scale = Vector2(0.816, 0.816)
 
 [node name="SpeedValue" type="Label" parent="SpeedGauge"]
 layout_mode = 0

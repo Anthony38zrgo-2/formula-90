@@ -3,11 +3,11 @@
   "retro_hud": {
     "config_path": "res://features/retro_hud/config/retro_hud.json",
     "visible": true,
-    "scale": 0.68
+    "scale": 0.816
   },
   "tires": {
     "visible": true,
-    "scale": 0.90,
+    "scale": 1.08,
     "size": [
       390.0,
       170.0
