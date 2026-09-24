@@ -153,36 +153,29 @@
       }
     },
     {
-      "dc_offset": -1.5e-05,
-      "duration_s": 0.36,
+      "dc_offset": 2.2274025984091552e-07,
+      "duration_s": 0.32,
       "file": "impact_scrape.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -29.59,
-      "peak": 0.920013,
-      "provenance": "deterministic procedural synthesis; remastered with modular synthesis (impact stages)",
+      "loudness_dbfs": -15.370525121094637,
+      "peak": 0.885833740234375,
+      "provenance": "normalized from the pre-existing 48000 Hz stereo 24-bit workspace asset for runtime bank compatibility",
       "role": "impact_scrape",
-      "sha256": "fc668e217139129988fe3f85d27d35232e87ddfc76736d375b6c95ab656562e8",
+      "sha256": "a52e9557646b3d9d78f4611cd9c6af9392a72716ea12f71736e51f65ebcf0a19",
       "synthesis": {
-        "attack_ms": 16.0,
         "category": "impact",
         "components": [
-          "16ms_s_curve_attack",
-          "global_hpf_280hz",
-          "midhigh_1400_4800hz_friction",
-          "poisson_titanium_sparks_4500_9000hz",
-          "parametric_3600hz_softening",
-          "tanh_warmth"
+          "arithmetic_stereo_downmix",
+          "polyphase_resample_48000_to_44100_hz",
+          "pcm16_quantization"
         ],
-        "duration_s": 0.36,
-        "recipe": "flat_floor_scrape_v2",
-        "remaster": {
-          "kind": "scrape",
-          "recipe": "impact_remaster_v1"
-        },
-        "seed": 9002,
-        "target_peak": 0.28
+        "duration_s": 0.32,
+        "recipe": "runtime_format_normalization_v1",
+        "source_channels": 2,
+        "source_rate": 48000,
+        "source_sample_width_bits": 24
       }
     },
     {
