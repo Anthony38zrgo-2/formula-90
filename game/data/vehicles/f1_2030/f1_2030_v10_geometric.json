@@ -169,7 +169,7 @@
   "audio": {
     "continuous_source": "grand_prix_sampler",
     "grand_prix_sampler": {
-      "manifest": "audio/formula_one_2030_grand_prix_sampler/manifest.json",
+      "manifest": "audio/formula_one_2030_grand_prix_sampler/formula_one_2030_five_engine_sample_bank/manifest.json",
       "schema_version": 1,
       "engine_gain": 1.0,
       "gearbox_gain": 0.792899,

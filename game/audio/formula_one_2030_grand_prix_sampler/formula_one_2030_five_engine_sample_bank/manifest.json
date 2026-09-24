@@ -1,0 +1,478 @@
+{
+  "schema_version": 1,
+  "bank_id": "formula_one_2030_five_engine_sample_bank",
+  "preparation_tool": "scripts/audio/prepare_formula_one_2030_five_engine_sample_bank.py",
+  "preparation_tool_revision": 1,
+  "source_inventory_sha256": "fd5ddde7e1784b5d2ca38bea61a4e7e0d034fa2ee60fba3dd21ecaaada99a2ea",
+  "output_sample_rate": 44100,
+  "event_selection_seed": 1,
+  "coverage": {
+    "maximum_revolutions_per_minute": 18000.0,
+    "minimum_revolutions_per_minute": 4500.0
+  },
+  "loops": [
+    {
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        6450.0
+      ],
+      "boundary_level_rms": 0.15603922132923,
+      "calibrated_gain": 1.0,
+      "comb_fit_confidence": 0.032,
+      "comb_harmonic_span": 25,
+      "comb_spacing_hz": 37.76365603028664,
+      "derived_band_rms_300_6000": 0.08420017470582074,
+      "derived_filename": "engine_idle_loop.wav",
+      "derived_frames": 88752,
+      "derived_peak_dbfs": -4.017751135637582,
+      "derived_rms_dbfs": -16.22356781487889,
+      "derived_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "id": "engine_idle_loop",
+      "loop_crossfade_frames": 4671,
+      "loop_end_frame_exclusive": 88752,
+      "loop_start_frame": 0,
+      "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 4531.638723634397,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "98_int_idle.wav",
+      "source_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "valid_playback_rate_max": 1.4233261725742927,
+      "valid_playback_rate_min": 0.9930182599355531,
+      "zone_revolutions_per_minute": 4500.0,
+      "original_source_filename": "idle.wav",
+      "original_source_path": "D:/ASETS/f12002/idle.wav",
+      "original_source_sha256": "a2af839a00955f414b29e27fcae00837a00ca8b4ad1633dac75880a82cc00101"
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        5550.0,
+        13325.888984598245
+      ],
+      "boundary_level_rms": 0.1937469476916576,
+      "calibrated_gain": 0.8054477461326739,
+      "comb_fit_confidence": 0.060000000000000005,
+      "comb_harmonic_span": 15,
+      "comb_spacing_hz": 76.12687813021702,
+      "derived_band_rms_300_6000": 0.09851558578122832,
+      "derived_filename": "engine_low_on_loop.wav",
+      "derived_frames": 88053,
+      "derived_peak_dbfs": -4.007233237428015,
+      "derived_rms_dbfs": -14.21836921242026,
+      "derived_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
+      "id": "engine_low_on_loop",
+      "loop_crossfade_frames": 2317,
+      "loop_end_frame_exclusive": 88053,
+      "loop_start_frame": 0,
+      "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 9135.225375626043,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "98_int_low.wav",
+      "source_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
+      "valid_playback_rate_max": 1.4587367510552538,
+      "valid_playback_rate_min": 0.6075383771929824,
+      "zone_revolutions_per_minute": 8000.0,
+      "original_source_filename": "low_on.wav",
+      "original_source_path": "D:/ASETS/f12002/low_on.wav",
+      "original_source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4"
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        11466.462614654305,
+        18000.0
+      ],
+      "boundary_level_rms": 0.20747686293310047,
+      "calibrated_gain": 0.7521439294812374,
+      "comb_fit_confidence": 0.09,
+      "comb_harmonic_span": 10,
+      "comb_spacing_hz": 140.17641249191158,
+      "derived_band_rms_300_6000": 0.12125536865000555,
+      "derived_filename": "engine_high_on_loop.wav",
+      "derived_frames": 88089,
+      "derived_peak_dbfs": -4.019014139731327,
+      "derived_rms_dbfs": -13.75515287071387,
+      "derived_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
+      "id": "engine_high_on_loop",
+      "loop_crossfade_frames": 1258,
+      "loop_end_frame_exclusive": 88089,
+      "loop_start_frame": 0,
+      "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 16821.16949902939,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "98_int_high_1.wav",
+      "source_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
+      "valid_playback_rate_max": 1.0700801749271136,
+      "valid_playback_rate_min": 0.6816685733602493,
+      "zone_revolutions_per_minute": 15600.0,
+      "original_source_filename": "hi_max_on.wav",
+      "original_source_path": "D:/ASETS/f12002/hi_max_on.wav",
+      "original_source_sha256": "638485f34e50b1f4df46a406acf548eb22448ce208cf40540408cd466b6f638b"
+    }
+  ],
+  "transitions": [
+    {
+      "from_loop_id": "engine_idle_loop",
+      "to_loop_id": "engine_low_on_loop",
+      "start_revolutions_per_minute": 5550.0,
+      "end_revolutions_per_minute": 6450.0,
+      "center_revolutions_per_minute": 6000.0,
+      "half_width_revolutions_per_minute": 450.0,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -1.87925258850422
+    },
+    {
+      "from_loop_id": "engine_low_on_loop",
+      "to_loop_id": "engine_high_on_loop",
+      "start_revolutions_per_minute": 11466.462614654305,
+      "end_revolutions_per_minute": 13325.888984598245,
+      "center_revolutions_per_minute": 12396.175799626275,
+      "half_width_revolutions_per_minute": 929.7131849719699,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.0
+    }
+  ],
+  "coast_loops": [
+    {
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        10962.891954224488
+      ],
+      "calibrated_gain": 0.8230464052003508,
+      "comb_spacing_hz": 66.02170781776321,
+      "derived_filename": "engine_low_off_loop.wav",
+      "derived_frames": 88171,
+      "derived_peak_dbfs": -4.001348772894557,
+      "derived_rms_dbfs": -14.458545027030677,
+      "derived_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "id": "engine_low_off_loop",
+      "loop_crossfade_frames": 2672,
+      "loop_end_frame_exclusive": 88171,
+      "loop_start_frame": 0,
+      "reference_revolutions_per_minute": 7922.604938131585,
+      "role": "engine_coast_loop",
+      "source_filename": "engine_coast_low.wav",
+      "source_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "valid_playback_rate_max": 1.383748405964302,
+      "valid_playback_rate_min": 0.5679950010307153,
+      "zone_revolutions_per_minute": 8000.0,
+      "original_source_filename": "low_off.wav",
+      "original_source_path": "D:/ASETS/f12002/low_off.wav",
+      "original_source_sha256": "a3ae253ddeaf19872af315305a2c54b7cc6025dba7a8efad7440bf4acecd9c55"
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        9433.186100146653,
+        18000.0
+      ],
+      "calibrated_gain": 0.9008363786900297,
+      "comb_spacing_hz": 103.88810238405345,
+      "derived_filename": "engine_high_off_loop.wav",
+      "derived_frames": 88295,
+      "derived_peak_dbfs": -4.004710835889143,
+      "derived_rms_dbfs": -15.212918384402641,
+      "derived_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "id": "engine_high_off_loop",
+      "loop_crossfade_frames": 1698,
+      "loop_end_frame_exclusive": 88295,
+      "loop_start_frame": 0,
+      "reference_revolutions_per_minute": 12466.572286086415,
+      "role": "engine_coast_loop",
+      "source_filename": "engine_coast_high.wav",
+      "source_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "valid_playback_rate_max": 1.443861198325484,
+      "valid_playback_rate_min": 0.7566784103658358,
+      "zone_revolutions_per_minute": 13000.0,
+      "original_source_filename": "hi_off.wav",
+      "original_source_path": "D:/ASETS/f12002/hi_off.wav",
+      "original_source_sha256": "4142964333dba9aae06a20d76827bc01e0956b8401b984179a23a347ec4d3c3c"
+    }
+  ],
+  "coast_transitions": [
+    {
+      "from_loop_id": "engine_low_off_loop",
+      "to_loop_id": "engine_high_off_loop",
+      "start_revolutions_per_minute": 9433.186100146653,
+      "end_revolutions_per_minute": 10962.891954224488,
+      "center_revolutions_per_minute": 10198.03902718557,
+      "half_width_revolutions_per_minute": 764.8529270389172,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.7844318736076777
+    }
+  ],
+  "events": [
+    {
+      "derived_band_rms_300_6000": 0.08276840021982028,
+      "derived_filename": "backfire_burst_3.wav",
+      "derived_frames": 57154,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -15.775574011695088,
+      "derived_sha256": "aec332bb4db3a22e83d4ecf956f283dd7c84d237eff22697348e3f81b762bb24",
+      "duration_seconds": 1.2960090702947846,
+      "id": "backfire_burst_3",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire3.wav",
+      "source_sha256": "3a1c604cbbd6bef443e558f64cb6996a83133681514df13ac350833a26856372"
+    },
+    {
+      "derived_band_rms_300_6000": 0.031974198812630354,
+      "derived_filename": "backfire_burst_4.wav",
+      "derived_frames": 18581,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -19.839580948198815,
+      "derived_sha256": "30ddf912ee2629841ed5ee055bf617ba941e2c629bd0ebb451b83c1ccb963f33",
+      "duration_seconds": 0.42133786848072563,
+      "id": "backfire_burst_4",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire4.wav",
+      "source_sha256": "be956f23ded2234ffa9e565a0e0af2924eb319e2730c49e6ebc00b6b2cf0c9c2"
+    },
+    {
+      "derived_band_rms_300_6000": 0.06613008628787335,
+      "derived_filename": "backfire_burst_5.wav",
+      "derived_frames": 24226,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -17.32003400167502,
+      "derived_sha256": "4aee801fa2d0768221417540c192bd19c750d7f52e54339be1a967448114e6df",
+      "duration_seconds": 0.5493424036281179,
+      "id": "backfire_burst_5",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire5.wav",
+      "source_sha256": "5ec929f59a6dd9205aa1731eac08ffee42a0fef4a4e3561b1bb9bf24150d140c"
+    },
+    {
+      "derived_band_rms_300_6000": 0.05566050548091399,
+      "derived_filename": "backfire_burst_6.wav",
+      "derived_frames": 34340,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -18.232969883205616,
+      "derived_sha256": "d2e5759bff9a12037632cf61459fd59797d2b095e6247b2143a082f93e575dc6",
+      "duration_seconds": 0.7786848072562358,
+      "id": "backfire_burst_6",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire6.wav",
+      "source_sha256": "b5304a7336fbabfac09d2c3c4f1dc63c49c3eee4ccb443cdf3e99e2aa6af2ec5"
+    },
+    {
+      "derived_band_rms_300_6000": 0.050015066325921384,
+      "derived_filename": "backfire_burst_7.wav",
+      "derived_frames": 35516,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -19.58954693910273,
+      "derived_sha256": "acf47affe9adcb7ada68763c79f8373749d6e544d4e74ca5fec74b07c6aa5782",
+      "duration_seconds": 0.8053514739229025,
+      "id": "backfire_burst_7",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire7.wav",
+      "source_sha256": "d03a84c631aa840b158160c96f8bdc1f1f26781635deebfc550413f5f1869e5d"
+    },
+    {
+      "derived_band_rms_300_6000": 0.11678810453404266,
+      "derived_filename": "limiter_event.wav",
+      "derived_frames": 15939,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -12.095967051822408,
+      "derived_sha256": "a95659574b0cea43367ec1572217c9f16aac4f97d72905f3e546d6fe5bb37c01",
+      "duration_seconds": 0.36142857142857143,
+      "id": "limiter_event",
+      "preparation_recipe": "limiter_overlay_recipe_v1",
+      "role": "limiter_event",
+      "source_filename": "500_limiter.wav",
+      "source_sha256": "1bdb7a2cc3eb6d95e7fa8d56bec55fd4df8c9b307902056b93f5c30b32751758"
+    },
+    {
+      "derived_band_rms_300_6000": 0.04078002388759487,
+      "derived_filename": "downshift_event.wav",
+      "derived_frames": 13846,
+      "derived_peak_dbfs": -2.9999878172428636,
+      "derived_rms_dbfs": -15.862362325399022,
+      "derived_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+      "duration_seconds": 0.31396825396825395,
+      "id": "downshift_event",
+      "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
+      "role": "gearbox_downshift",
+      "source_filename": "geardn.wav",
+      "source_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279"
+    },
+    {
+      "derived_band_rms_300_6000": 0.07378453444827636,
+      "derived_filename": "upshift_event.wav",
+      "derived_frames": 13806,
+      "derived_peak_dbfs": -4.48828520382904,
+      "derived_rms_dbfs": -16.342596350349424,
+      "derived_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+      "duration_seconds": 0.3130612244897959,
+      "id": "upshift_event",
+      "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
+      "role": "gearbox_upshift",
+      "source_filename": "gearup.wav",
+      "source_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a"
+    }
+  ],
+  "event_groups": [
+    {
+      "id": "upshift",
+      "minimum_retrigger_seconds": 0.03,
+      "role": "gearbox_upshift",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "upshift_cut_entry",
+      "variants": [
+        {
+          "asset_id": "upshift_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 2
+    },
+    {
+      "id": "downshift",
+      "minimum_retrigger_seconds": 0.1,
+      "role": "gearbox_downshift",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "downshift_cut_entry",
+      "variants": [
+        {
+          "asset_id": "downshift_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 2
+    },
+    {
+      "id": "lift_backfire",
+      "minimum_retrigger_seconds": 1.0,
+      "role": "lift_backfire",
+      "selection": "seeded_cycle",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "lift_edge",
+      "variants": [
+        {
+          "asset_id": "backfire_burst_3",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_4",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_5",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_6",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_7",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 1
+    },
+    {
+      "id": "limiter",
+      "minimum_retrigger_seconds": 0.25,
+      "role": "limiter_event",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "limiter_entry_edge",
+      "variants": [
+        {
+          "asset_id": "limiter_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 1
+    }
+  ],
+  "event_trigger_policy": {
+    "lift_edge": {
+      "cooldown_seconds": 1.0,
+      "previous_throttle_min": 0.8,
+      "revolutions_per_minute_min": 13500.0,
+      "throttle_max": 0.15
+    },
+    "limiter_entry_edge": {
+      "cooldown_seconds": 0.25
+    }
+  },
+  "engine_source_selection": [
+    {
+      "role": "engine_idle",
+      "source_path": "D:/ASETS/f12002/idle.wav",
+      "source_sha256": "a2af839a00955f414b29e27fcae00837a00ca8b4ad1633dac75880a82cc00101",
+      "prepared_bank_asset_id": "engine_idle_loop",
+      "prepared_source_filename": "98_int_idle.wav",
+      "prepared_source_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "runtime_asset_id": "engine_idle_loop",
+      "runtime_filename": "engine_idle_loop.wav",
+      "runtime_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc"
+    },
+    {
+      "role": "engine_low_on",
+      "source_path": "D:/ASETS/f12002/low_on.wav",
+      "source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
+      "prepared_bank_asset_id": "engine_low_loop",
+      "prepared_source_filename": "98_int_low.wav",
+      "prepared_source_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
+      "runtime_asset_id": "engine_low_on_loop",
+      "runtime_filename": "engine_low_on_loop.wav",
+      "runtime_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f"
+    },
+    {
+      "role": "engine_high_on",
+      "source_path": "D:/ASETS/f12002/hi_max_on.wav",
+      "source_sha256": "638485f34e50b1f4df46a406acf548eb22448ce208cf40540408cd466b6f638b",
+      "prepared_bank_asset_id": "engine_high_loop",
+      "prepared_source_filename": "98_int_high_1.wav",
+      "prepared_source_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
+      "runtime_asset_id": "engine_high_on_loop",
+      "runtime_filename": "engine_high_on_loop.wav",
+      "runtime_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb"
+    },
+    {
+      "role": "engine_low_off",
+      "source_path": "D:/ASETS/f12002/low_off.wav",
+      "source_sha256": "a3ae253ddeaf19872af315305a2c54b7cc6025dba7a8efad7440bf4acecd9c55",
+      "prepared_bank_asset_id": "engine_coast_low_loop",
+      "prepared_source_filename": "engine_coast_low.wav",
+      "prepared_source_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "runtime_asset_id": "engine_low_off_loop",
+      "runtime_filename": "engine_low_off_loop.wav",
+      "runtime_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243"
+    },
+    {
+      "role": "engine_high_off",
+      "source_path": "D:/ASETS/f12002/hi_off.wav",
+      "source_sha256": "4142964333dba9aae06a20d76827bc01e0956b8401b984179a23a347ec4d3c3c",
+      "prepared_bank_asset_id": "engine_coast_high_loop",
+      "prepared_source_filename": "engine_coast_high.wav",
+      "prepared_source_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "runtime_asset_id": "engine_high_off_loop",
+      "runtime_filename": "engine_high_off_loop.wav",
+      "runtime_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa"
+    }
+  ]
+}

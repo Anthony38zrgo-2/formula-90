@@ -1,0 +1,111 @@
+{
+  "bank_id": "formula_one_2030_five_engine_sample_bank",
+  "engine_source_directory": "D:/ASETS/f12002",
+  "engine_sources": [
+    {
+      "role": "engine_idle",
+      "source_path": "D:/ASETS/f12002/idle.wav",
+      "source_sha256": "a2af839a00955f414b29e27fcae00837a00ca8b4ad1633dac75880a82cc00101",
+      "prepared_bank_asset_id": "engine_idle_loop",
+      "prepared_source_filename": "98_int_idle.wav",
+      "prepared_source_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "runtime_asset_id": "engine_idle_loop",
+      "runtime_filename": "engine_idle_loop.wav",
+      "runtime_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc"
+    },
+    {
+      "role": "engine_low_on",
+      "source_path": "D:/ASETS/f12002/low_on.wav",
+      "source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
+      "prepared_bank_asset_id": "engine_low_loop",
+      "prepared_source_filename": "98_int_low.wav",
+      "prepared_source_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
+      "runtime_asset_id": "engine_low_on_loop",
+      "runtime_filename": "engine_low_on_loop.wav",
+      "runtime_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f"
+    },
+    {
+      "role": "engine_high_on",
+      "source_path": "D:/ASETS/f12002/hi_max_on.wav",
+      "source_sha256": "638485f34e50b1f4df46a406acf548eb22448ce208cf40540408cd466b6f638b",
+      "prepared_bank_asset_id": "engine_high_loop",
+      "prepared_source_filename": "98_int_high_1.wav",
+      "prepared_source_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
+      "runtime_asset_id": "engine_high_on_loop",
+      "runtime_filename": "engine_high_on_loop.wav",
+      "runtime_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb"
+    },
+    {
+      "role": "engine_low_off",
+      "source_path": "D:/ASETS/f12002/low_off.wav",
+      "source_sha256": "a3ae253ddeaf19872af315305a2c54b7cc6025dba7a8efad7440bf4acecd9c55",
+      "prepared_bank_asset_id": "engine_coast_low_loop",
+      "prepared_source_filename": "engine_coast_low.wav",
+      "prepared_source_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "runtime_asset_id": "engine_low_off_loop",
+      "runtime_filename": "engine_low_off_loop.wav",
+      "runtime_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243"
+    },
+    {
+      "role": "engine_high_off",
+      "source_path": "D:/ASETS/f12002/hi_off.wav",
+      "source_sha256": "4142964333dba9aae06a20d76827bc01e0956b8401b984179a23a347ec4d3c3c",
+      "prepared_bank_asset_id": "engine_coast_high_loop",
+      "prepared_source_filename": "engine_coast_high.wav",
+      "prepared_source_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "runtime_asset_id": "engine_high_off_loop",
+      "runtime_filename": "engine_high_off_loop.wav",
+      "runtime_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa"
+    }
+  ],
+  "preserved_non_engine_events": [
+    {
+      "asset_id": "backfire_burst_3",
+      "role": "lift_backfire",
+      "runtime_filename": "backfire_burst_3.wav",
+      "runtime_sha256": "aec332bb4db3a22e83d4ecf956f283dd7c84d237eff22697348e3f81b762bb24"
+    },
+    {
+      "asset_id": "backfire_burst_4",
+      "role": "lift_backfire",
+      "runtime_filename": "backfire_burst_4.wav",
+      "runtime_sha256": "30ddf912ee2629841ed5ee055bf617ba941e2c629bd0ebb451b83c1ccb963f33"
+    },
+    {
+      "asset_id": "backfire_burst_5",
+      "role": "lift_backfire",
+      "runtime_filename": "backfire_burst_5.wav",
+      "runtime_sha256": "4aee801fa2d0768221417540c192bd19c750d7f52e54339be1a967448114e6df"
+    },
+    {
+      "asset_id": "backfire_burst_6",
+      "role": "lift_backfire",
+      "runtime_filename": "backfire_burst_6.wav",
+      "runtime_sha256": "d2e5759bff9a12037632cf61459fd59797d2b095e6247b2143a082f93e575dc6"
+    },
+    {
+      "asset_id": "backfire_burst_7",
+      "role": "lift_backfire",
+      "runtime_filename": "backfire_burst_7.wav",
+      "runtime_sha256": "acf47affe9adcb7ada68763c79f8373749d6e544d4e74ca5fec74b07c6aa5782"
+    },
+    {
+      "asset_id": "limiter_event",
+      "role": "limiter_event",
+      "runtime_filename": "limiter_event.wav",
+      "runtime_sha256": "a95659574b0cea43367ec1572217c9f16aac4f97d72905f3e546d6fe5bb37c01"
+    },
+    {
+      "asset_id": "downshift_event",
+      "role": "gearbox_downshift",
+      "runtime_filename": "downshift_event.wav",
+      "runtime_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279"
+    },
+    {
+      "asset_id": "upshift_event",
+      "role": "gearbox_upshift",
+      "runtime_filename": "upshift_event.wav",
+      "runtime_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a"
+    }
+  ]
+}
