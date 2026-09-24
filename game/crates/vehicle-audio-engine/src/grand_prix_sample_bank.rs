@@ -368,10 +368,12 @@ impl GrandPrixManifest {
                     "reference rpm must be positive and finite".to_string(),
                 ));
             }
-            let zone_revolutions_per_minute = loop_asset.zone_revolutions_per_minute
+            let zone_revolutions_per_minute = loop_asset
+                .zone_revolutions_per_minute
                 .unwrap_or(loop_asset.reference_revolutions_per_minute);
             if !is_finite_positive(zone_revolutions_per_minute)
-                || zone_revolutions_per_minute <= previous_zone_revolutions_per_minute {
+                || zone_revolutions_per_minute <= previous_zone_revolutions_per_minute
+            {
                 return Err(GrandPrixBankError::InvalidAsset(
                     loop_asset.id.clone(),
                     "loop zones must be positive and strictly ascending".to_string(),
@@ -495,19 +497,11 @@ impl GrandPrixManifest {
                 }
             }
         }
-        if self
-            .transitions
-            .first()
-            .is_some_and(|transition| {
-                transition.start_revolutions_per_minute < coverage.minimum_revolutions_per_minute
-            })
-            || self
-                .transitions
-                .last()
-                .is_some_and(|transition| {
-                    transition.end_revolutions_per_minute > coverage.maximum_revolutions_per_minute
-                })
-        {
+        if self.transitions.first().is_some_and(|transition| {
+            transition.start_revolutions_per_minute < coverage.minimum_revolutions_per_minute
+        }) || self.transitions.last().is_some_and(|transition| {
+            transition.end_revolutions_per_minute > coverage.maximum_revolutions_per_minute
+        }) {
             return Err(GrandPrixBankError::InvalidManifest(
                 "transitions exceed declared coverage".to_string(),
             ));
@@ -524,7 +518,8 @@ impl GrandPrixManifest {
             let mut previous_zone_revolutions_per_minute = 0.0;
             let mut coast_ids = BTreeSet::new();
             for (index, coast_loop) in self.coast_loops.iter().enumerate() {
-                let zone_revolutions_per_minute = coast_loop.zone_revolutions_per_minute
+                let zone_revolutions_per_minute = coast_loop
+                    .zone_revolutions_per_minute
                     .unwrap_or(coast_loop.reference_revolutions_per_minute);
                 if coast_loop.role != "engine_coast_loop"
                     || !coast_ids.insert(coast_loop.id.clone())
@@ -621,7 +616,8 @@ impl GrandPrixManifest {
                     "sha256 fields invalid".to_string(),
                 ));
             }
-            if event_asset.derived_frames == 0 || !is_finite_positive(event_asset.duration_seconds) {
+            if event_asset.derived_frames == 0 || !is_finite_positive(event_asset.duration_seconds)
+            {
                 return Err(GrandPrixBankError::InvalidAsset(
                     event_asset.id.clone(),
                     "event duration invalid".to_string(),
@@ -735,7 +731,11 @@ impl GrandPrixSampleBank {
 
         let mut loops = Vec::with_capacity(manifest.loops.len());
         for loop_asset in &manifest.loops {
-            let pcm = load_verified_pcm(bank_directory, &loop_asset.derived_filename, &loop_asset.derived_sha256)?;
+            let pcm = load_verified_pcm(
+                bank_directory,
+                &loop_asset.derived_filename,
+                &loop_asset.derived_sha256,
+            )?;
             if pcm.len() as u64 != loop_asset.derived_frames {
                 return Err(GrandPrixBankError::InvalidAsset(
                     loop_asset.id.clone(),
@@ -881,7 +881,8 @@ fn load_verified_pcm(
     if actual != expected_sha256 {
         return Err(GrandPrixBankError::Sha256Mismatch(filename.to_string()));
     }
-    read_wav_mono16(&path).map_err(|error| GrandPrixBankError::Decode(filename.to_string(), error.to_string()))
+    read_wav_mono16(&path)
+        .map_err(|error| GrandPrixBankError::Decode(filename.to_string(), error.to_string()))
 }
 
 #[cfg(test)]
@@ -889,7 +890,8 @@ mod tests {
     use super::*;
 
     fn shipped_bank_directory() -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/formula_one_2030_grand_prix_sampler")
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../audio/formula_one_2030_grand_prix_sampler")
     }
 
     fn temporary_directory(name: &str) -> PathBuf {
@@ -912,21 +914,16 @@ mod tests {
         assert_eq!(bank.transitions.len(), 4);
         assert_eq!(bank.events.len(), 8);
         assert_eq!(bank.groups.len(), 4);
-        assert_eq!(
-            bank.coverage_minimum_revolutions_per_minute,
-            4500.0
-        );
-        assert_eq!(
-            bank.coverage_maximum_revolutions_per_minute,
-            18000.0
-        );
+        assert_eq!(bank.coverage_minimum_revolutions_per_minute, 4500.0);
+        assert_eq!(bank.coverage_maximum_revolutions_per_minute, 18000.0);
         let references: Vec<f64> = bank
             .loops
             .iter()
             .map(|loop_asset| loop_asset.reference_revolutions_per_minute)
             .collect();
         for (reference, loop_asset) in references.iter().zip(&bank.loops) {
-            let cycle_count = reference / 120.0 * loop_asset.pcm.len() as f64 / GRAND_PRIX_SAMPLE_RATE as f64;
+            let cycle_count =
+                reference / 120.0 * loop_asset.pcm.len() as f64 / GRAND_PRIX_SAMPLE_RATE as f64;
             assert!((cycle_count - cycle_count.round()).abs() < 1e-8);
         }
         assert_eq!(bank.coast_loops.len(), 3);
@@ -1008,15 +1005,17 @@ mod tests {
     }
 
     #[test]
-    fn transition_gaps_are_rejected() {        let target = temporary_directory("gap");
+    fn transition_gaps_are_rejected() {
+        let target = temporary_directory("gap");
         let mut manifest: serde_json::Value = serde_json::from_slice(
             &fs::read(shipped_bank_directory().join("manifest.json")).expect("manifest"),
         )
         .expect("parse manifest");
-        manifest["transitions"][1]["start_revolutions_per_minute"] =
-            serde_json::json!(4000.0);
-        manifest["loops"][1]["active_coverage_revolutions_per_minute"] =
-            serde_json::json!([4000.0, manifest["transitions"][1]["end_revolutions_per_minute"]]);
+        manifest["transitions"][1]["start_revolutions_per_minute"] = serde_json::json!(4000.0);
+        manifest["loops"][1]["active_coverage_revolutions_per_minute"] = serde_json::json!([
+            4000.0,
+            manifest["transitions"][1]["end_revolutions_per_minute"]
+        ]);
         fs::write(
             target.join("manifest.json"),
             serde_json::to_vec(&manifest).expect("serialize"),

@@ -473,7 +473,7 @@
   ],
   "output_sample_rate": 44100,
   "preparation_tool": "scripts/audio/build_grand_prix_sampler_bank.py",
-  "preparation_tool_revision": 7,
+  "preparation_tool_revision": 9,
   "reference_ladder": {
     "anchor_center_revolutions_per_minute": 9000.0,
     "measured_spacings_hz": [
@@ -494,7 +494,7 @@
     "revolutions_per_minute_per_hertz": 120.0
   },
   "schema_version": 1,
-  "source_inventory_sha256": "de868e3f9c8d4e16a7a4db8d248c03ed1aad8da5c6eb8ac6b67320718dd21f3e",
+  "source_inventory_sha256": "a6f3e166c488ef4c32e5fe57b2a745bdd1f727fe393ce16181604fbfe560dcbf",
   "transitions": [
     {
       "applied_level_step_db": 0.0,

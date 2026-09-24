@@ -37,7 +37,7 @@ DEFAULT_BANK_DIR = ROOT / "game/audio/formula_one_2030_grand_prix_sampler"
 DEFAULT_REPORTS_DIR = ROOT / "reports/audio-v10/grand-prix-sampler"
 
 SCHEMA_VERSION = 1
-TOOL_REVISION = 7
+TOOL_REVISION = 9
 OUTPUT_SAMPLE_RATE = 44100
 EVENT_SELECTION_SEED = 1
 

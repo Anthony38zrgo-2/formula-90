@@ -3,8 +3,7 @@ use std::collections::VecDeque;
 use crate::dsp::biquad::Biquad;
 use crate::grand_prix_sample_bank::{
     GrandPrixDecodedLoop, GrandPrixDecodedVariant, GrandPrixEventRole, GrandPrixSampleBank,
-    GrandPrixSelection, GrandPrixTransition,
-    GRAND_PRIX_MAXIMUM_LOOP_COUNT,
+    GrandPrixSelection, GrandPrixTransition, GRAND_PRIX_MAXIMUM_LOOP_COUNT,
 };
 
 pub const GRAND_PRIX_MAX_LOOPS: usize = GRAND_PRIX_MAXIMUM_LOOP_COUNT;
@@ -582,11 +581,19 @@ impl GrandPrixSampler {
         if telemetry.shift_phase == SHIFT_PHASE_UPSHIFT_CUT
             && self.last_shift_phase != SHIFT_PHASE_UPSHIFT_CUT
         {
-            self.schedule_event(GrandPrixEventKind::Upshift, scheduled_frame, self.target_rpm);
+            self.schedule_event(
+                GrandPrixEventKind::Upshift,
+                scheduled_frame,
+                self.target_rpm,
+            );
         } else if telemetry.shift_phase == SHIFT_PHASE_DOWNSHIFT_CUT
             && self.last_shift_phase != SHIFT_PHASE_DOWNSHIFT_CUT
         {
-            self.schedule_event(GrandPrixEventKind::Downshift, scheduled_frame, self.target_rpm);
+            self.schedule_event(
+                GrandPrixEventKind::Downshift,
+                scheduled_frame,
+                self.target_rpm,
+            );
         }
 
         let previous_throttle_min = self.bank.lift_edge_policy.previous_throttle_min as f32;
@@ -783,7 +790,8 @@ impl GrandPrixSampler {
                 } else {
                     0.0
                 };
-                let rate = playback_revolutions_per_minute / coast_loop.reference_revolutions_per_minute;
+                let rate =
+                    playback_revolutions_per_minute / coast_loop.reference_revolutions_per_minute;
                 let sample = read_loop_sample(
                     coast_loop,
                     &mut self.coast_loop_cursors[index],
@@ -960,9 +968,8 @@ impl GrandPrixSampler {
                         let event_length = self.bank.events[self.event_voices[index].event_index]
                             .pcm
                             .len();
-                        let remaining =
-                            (event_length as f64 - self.event_voices[index].cursor).max(0.0)
-                                as usize;
+                        let remaining = (event_length as f64 - self.event_voices[index].cursor)
+                            .max(0.0) as usize;
                         if remaining < oldest_remaining {
                             oldest_remaining = remaining;
                             target = Some(index);
@@ -1026,7 +1033,6 @@ impl GrandPrixSampler {
         }
         sample * voice.gain
     }
-
 }
 
 fn read_loop_sample(
@@ -1251,23 +1257,41 @@ mod tests {
     fn inactive_powered_and_coast_loops_keep_the_same_engine_cycle_phase() {
         for output_sample_rate in [44_100, 48_000] {
             let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
-            let mut sampler = GrandPrixSampler::new(bank, output_sample_rate, None, None).expect("sampler");
+            let mut sampler =
+                GrandPrixSampler::new(bank, output_sample_rate, None, None).expect("sampler");
             let mut accumulated_cycles = 0.0;
             for frame in 0..output_sample_rate * 4 {
                 if frame % 400 == 0 {
-                    let revolutions_per_minute = if (frame / (output_sample_rate / 2)) % 2 == 0 { 5_000.0 } else { 17_000.0 };
+                    let revolutions_per_minute = if (frame / (output_sample_rate / 2)) % 2 == 0 {
+                        5_000.0
+                    } else {
+                        17_000.0
+                    };
                     ingest_steady(&mut sampler, revolutions_per_minute, 1.0, 400);
                 }
                 sampler.render_sample_components();
                 accumulated_cycles += sampler.smoothed_rpm / (120.0 * output_sample_rate as f64);
             }
-            for (loop_asset, cursor) in sampler.bank.loops.iter().zip(&sampler.loop_cursors)
-                .chain(sampler.bank.coast_loops.iter().zip(&sampler.coast_loop_cursors)) {
-                let cycles_per_frame = loop_asset.reference_revolutions_per_minute / (120.0 * 44_100.0);
+            for (loop_asset, cursor) in sampler.bank.loops.iter().zip(&sampler.loop_cursors).chain(
+                sampler
+                    .bank
+                    .coast_loops
+                    .iter()
+                    .zip(&sampler.coast_loop_cursors),
+            ) {
+                let cycles_per_frame =
+                    loop_asset.reference_revolutions_per_minute / (120.0 * 44_100.0);
                 let cycle_count = loop_asset.pcm.len() as f64 * cycles_per_frame;
                 let observed_cycles = cursor * cycles_per_frame;
                 let expected_cycles = accumulated_cycles.rem_euclid(cycle_count);
-                assert!((observed_cycles - expected_cycles).abs() < 1e-7, "{} at {}: {} != {}", loop_asset.id, output_sample_rate, observed_cycles, expected_cycles);
+                assert!(
+                    (observed_cycles - expected_cycles).abs() < 1e-7,
+                    "{} at {}: {} != {}",
+                    loop_asset.id,
+                    output_sample_rate,
+                    observed_cycles,
+                    expected_cycles
+                );
             }
         }
     }
@@ -1378,12 +1402,12 @@ mod tests {
         ingest_steady(&mut sampler, 12_000.0, 0.0, 441);
         advance(&mut sampler, 8_820);
         let coast_samples = advance(&mut sampler, 4_410);
-        let coast_level = coast_samples
-            .iter()
-            .map(|sample| sample.abs())
-            .sum::<f32>()
+        let coast_level = coast_samples.iter().map(|sample| sample.abs()).sum::<f32>()
             / coast_samples.len() as f32;
-        assert!(coast_level > 0.005, "coast loops were silent: {coast_level}");
+        assert!(
+            coast_level > 0.005,
+            "coast loops were silent: {coast_level}"
+        );
 
         sampler.reset();
         sampler.set_coast_gain(0.0);
@@ -1401,12 +1425,12 @@ mod tests {
         ingest_steady(&mut sampler, 4_500.0, 0.0, 441);
         advance(&mut sampler, 8_820);
         let idle_samples = advance(&mut sampler, 4_410);
-        let idle_level = idle_samples
-            .iter()
-            .map(|sample| sample.abs())
-            .sum::<f32>()
-            / idle_samples.len() as f32;
-        assert!(idle_level > 0.005, "shared idle loop was silent: {idle_level}");
+        let idle_level =
+            idle_samples.iter().map(|sample| sample.abs()).sum::<f32>() / idle_samples.len() as f32;
+        assert!(
+            idle_level > 0.005,
+            "shared idle loop was silent: {idle_level}"
+        );
     }
 
     #[test]

@@ -137,15 +137,25 @@ fn v10_layer_tuning_from_section(
         }
         tuning.upper_mid_shelf_gain = value;
     }
-    if let Some(gains) = section.get("scene_gains").and_then(|value| value.as_object()) {
+    if let Some(gains) = section
+        .get("scene_gains")
+        .and_then(|value| value.as_object())
+    {
         for (branch, gain) in gains {
             if let Some(gain) = gain.as_f64() {
                 tuning.scene_gains.push((branch.clone(), gain as f32));
             }
         }
     }
-    if let Some(scale) = section.get("header_length_scale").and_then(serde_json::Value::as_f64) {
-        tuned_scalar(&mut tuning.header_length_scale, "header_length_scale", scale)?;
+    if let Some(scale) = section
+        .get("header_length_scale")
+        .and_then(serde_json::Value::as_f64)
+    {
+        tuned_scalar(
+            &mut tuning.header_length_scale,
+            "header_length_scale",
+            scale,
+        )?;
     }
     if let Some(hz) = section
         .get("cover_radiation_lowpass_hz")
@@ -161,7 +171,11 @@ fn v10_layer_tuning_from_section(
         .get("sample_blend_weight")
         .and_then(serde_json::Value::as_f64)
     {
-        tuned_scalar(&mut tuning.sample_blend_weight, "sample_blend_weight", weight)?;
+        tuned_scalar(
+            &mut tuning.sample_blend_weight,
+            "sample_blend_weight",
+            weight,
+        )?;
     }
     if let Some(weight) = section
         .get("physical_blend_weight")
@@ -189,7 +203,10 @@ fn v10_layer_tuning_from_section(
         }
         tuning.zone_trim_db = Some(values);
     }
-    if let Some(geometry) = section.get("collector_geometry").filter(|value| !value.is_null()) {
+    if let Some(geometry) = section
+        .get("collector_geometry")
+        .filter(|value| !value.is_null())
+    {
         let field = |name: &str| -> Result<f32, String> {
             geometry
                 .get(name)
@@ -273,23 +290,55 @@ fn v10_layer_tuning_from_section(
             }
             tuning.transmission_gain = gain;
         }
-        if let Some(value) = transmission.get("whine").and_then(serde_json::Value::as_f64) {
-            tuned_scalar(&mut tuning.transmission_whine_gain, "transmission.whine", value)?;
+        if let Some(value) = transmission
+            .get("whine")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(
+                &mut tuning.transmission_whine_gain,
+                "transmission.whine",
+                value,
+            )?;
         }
-        if let Some(value) = transmission.get("clack").and_then(serde_json::Value::as_f64) {
-            tuned_scalar(&mut tuning.transmission_clack_gain, "transmission.clack", value)?;
+        if let Some(value) = transmission
+            .get("clack")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(
+                &mut tuning.transmission_clack_gain,
+                "transmission.clack",
+                value,
+            )?;
         }
-        if let Some(value) = transmission.get("rattle").and_then(serde_json::Value::as_f64) {
-            tuned_scalar(&mut tuning.transmission_rattle_gain, "transmission.rattle", value)?;
+        if let Some(value) = transmission
+            .get("rattle")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(
+                &mut tuning.transmission_rattle_gain,
+                "transmission.rattle",
+                value,
+            )?;
         }
-        if let Some(value) = transmission.get("clutch").and_then(serde_json::Value::as_f64) {
-            tuned_scalar(&mut tuning.transmission_clutch_gain, "transmission.clutch", value)?;
+        if let Some(value) = transmission
+            .get("clutch")
+            .and_then(serde_json::Value::as_f64)
+        {
+            tuned_scalar(
+                &mut tuning.transmission_clutch_gain,
+                "transmission.clutch",
+                value,
+            )?;
         }
         if let Some(value) = transmission
             .get("final_drive")
             .and_then(serde_json::Value::as_f64)
         {
-            tuned_scalar(&mut tuning.transmission_final_drive, "transmission.final_drive", value)?;
+            tuned_scalar(
+                &mut tuning.transmission_final_drive,
+                "transmission.final_drive",
+                value,
+            )?;
         }
         if let Some(value) = transmission
             .get("reverse_ratio")
@@ -305,7 +354,11 @@ fn v10_layer_tuning_from_section(
             .get("gear_teeth")
             .and_then(serde_json::Value::as_f64)
         {
-            tuned_scalar(&mut tuning.transmission_gear_teeth, "transmission.gear_teeth", value)?;
+            tuned_scalar(
+                &mut tuning.transmission_gear_teeth,
+                "transmission.gear_teeth",
+                value,
+            )?;
         }
         if let Some(value) = transmission
             .get("final_teeth")
@@ -647,10 +700,12 @@ impl AudioModule {
         let mut tuning = vehicle_audio_engine::GrandPrixSamplerTuning::default();
         if let Some(section) = section {
             let mut parsed_gains = [1.0f32; 4];
-            for (slot, name) in parsed_gains
-                .iter_mut()
-                .zip(["engine_gain", "gearbox_gain", "backfire_gain", "limiter_gain"])
-            {
+            for (slot, name) in parsed_gains.iter_mut().zip([
+                "engine_gain",
+                "gearbox_gain",
+                "backfire_gain",
+                "limiter_gain",
+            ]) {
                 match sampler_gain(section, name, 1.0) {
                     Ok(value) => *slot = value,
                     Err(error) => {
@@ -814,7 +869,11 @@ impl AudioModule {
     /// Active continuous source as a stable code: 0 legacy, 1 GF509,
     /// 2 Grand Prix sampler, -1 no mixer.
     pub fn source_code(&self) -> i32 {
-        match self.engine.as_ref().map(|engine| engine.continuous_source()) {
+        match self
+            .engine
+            .as_ref()
+            .map(|engine| engine.continuous_source())
+        {
             Some(vehicle_audio_engine::ContinuousSourceKind::V10Gf509) => 1,
             Some(vehicle_audio_engine::ContinuousSourceKind::GrandPrixSampler) => 2,
             Some(vehicle_audio_engine::ContinuousSourceKind::Legacy) => 0,
@@ -838,17 +897,19 @@ impl AudioModule {
         surface: SurfaceType,
     ) {
         self.observe(surface, slip);
-        let packet = self.telemetry_adapter.update(rpm, idle_rpm, max_rpm, throttle,
-            speed_kph, gear, slip, dt_seconds, mechanical);
+        let packet = self.telemetry_adapter.update(
+            rpm, idle_rpm, max_rpm, throttle, speed_kph, gear, slip, dt_seconds, mechanical,
+        );
         if let Some(eng) = self.engine.as_mut() {
             let prev_code = code_from_bank_key(eng.last_trigger());
             eng.set_telemetry_timed(&packet, surface_token(surface), dt_seconds);
             let now_tag = eng.last_trigger();
-            self.last_trigger_code = if !now_tag.is_empty() && code_from_bank_key(now_tag) != prev_code {
-                code_from_bank_key(now_tag)
-            } else {
-                self.last_trigger_code
-            };
+            self.last_trigger_code =
+                if !now_tag.is_empty() && code_from_bank_key(now_tag) != prev_code {
+                    code_from_bank_key(now_tag)
+                } else {
+                    self.last_trigger_code
+                };
         }
     }
 
@@ -1099,7 +1160,9 @@ mod tests {
             tuning.zone_trim_db,
             Some(vec![2.0, 0.0, 0.0, 1.5, 1.5, 1.5])
         );
-        assert!(tuning.scene_gains.contains(&("engine_air".to_string(), 0.841)));
+        assert!(tuning
+            .scene_gains
+            .contains(&("engine_air".to_string(), 0.841)));
     }
 
     #[test]
@@ -1109,10 +1172,7 @@ mod tests {
             "sampled_gearbox_gain": 0.4
         });
         let tuning = v10_layer_tuning_from_section(Some(&section)).unwrap();
-        assert_eq!(
-            tuning.engine_mode,
-            v10_engine_synth::EngineMode::SampleOnly
-        );
+        assert_eq!(tuning.engine_mode, v10_engine_synth::EngineMode::SampleOnly);
         assert_eq!(tuning.sampled_gearbox_gain, Some(0.4));
 
         let hybrid = serde_json::json!({ "engine_mode": "hybrid" });

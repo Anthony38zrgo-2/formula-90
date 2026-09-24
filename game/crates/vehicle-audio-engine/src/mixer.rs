@@ -11,8 +11,7 @@
 use crate::bank::{BankError, VehicleSoundBank};
 use crate::config::{ConfigLoadResult, ExhaustConfig, SoundConfig, SoundMixerConfig};
 use crate::dsp::{
-    adsr::Adsr,
-    eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
+    adsr::Adsr, eq::GraphicEq, limiter::StereoLimiter, pan::equal_power, reverb::StereoReverb,
     tube::Tube,
 };
 use crate::dsp_contract::EventBuilder;
@@ -654,7 +653,8 @@ pub struct GrandPrixRenderStems {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct ContinuousDiagnostics {    pub source: u8,
+pub struct ContinuousDiagnostics {
+    pub source: u8,
     pub received_rpm: f32,
     pub rendered_rpm: f32,
     pub peak_pre_protection: f32,
@@ -915,7 +915,11 @@ impl VehicleAudioEngine {
             .collect();
         let stereo_limiter = StereoLimiter::new(master.limiter_threshold);
         let master_gain = 10.0_f32.powf(master.output_db / 20.0);
-        let engine_lowpass = EngineLowPass::new(master.engine_lowpass_hz, sample_rate, master.engine_lowpass_db_per_oct);
+        let engine_lowpass = EngineLowPass::new(
+            master.engine_lowpass_hz,
+            sample_rate,
+            master.engine_lowpass_db_per_oct,
+        );
 
         let exhaust_key = if bank.get("exhaust-mic").is_some() {
             "exhaust-mic".to_string()
@@ -1097,7 +1101,11 @@ impl VehicleAudioEngine {
         self.cfg.saturation = config.master.saturation;
         self.cfg.limiter_threshold = config.master.limiter_threshold;
         self.stereo_limiter = StereoLimiter::new(config.master.limiter_threshold);
-        self.engine_lowpass = EngineLowPass::new(config.master.engine_lowpass_hz, self.sample_rate, config.master.engine_lowpass_db_per_oct);
+        self.engine_lowpass = EngineLowPass::new(
+            config.master.engine_lowpass_hz,
+            self.sample_rate,
+            config.master.engine_lowpass_db_per_oct,
+        );
         self.cfg.exhaust = config.exhaust.to_runtime();
         self.transition_total =
             ((config.hot_reload.transition_ms as u64 * self.sample_rate as u64) / 1000) as usize;
@@ -1150,7 +1158,12 @@ impl VehicleAudioEngine {
     }
 
     /// Native Rust facade supplies tick duration without changing the v3 C ABI.
-    pub fn set_telemetry_timed(&mut self, telem: &crate::ffi::VehicleAudioTelemetryV3, surface: &str, dt_seconds: f32) {
+    pub fn set_telemetry_timed(
+        &mut self,
+        telem: &crate::ffi::VehicleAudioTelemetryV3,
+        surface: &str,
+        dt_seconds: f32,
+    ) {
         let norm = if telem.max_rpm > telem.idle_rpm {
             (((telem.rpm - telem.idle_rpm) / (telem.max_rpm - telem.idle_rpm)) as f32)
                 .clamp(0.0, 1.0)
@@ -1188,9 +1201,8 @@ impl VehicleAudioEngine {
         // bouncing from chaining full backfire samples back-to-back.
         // The Grand Prix sampler owns these edges when it is the active
         // continuous source; the legacy bank path stays silent in that mode.
-        let grand_prix_active =
-            self.continuous_source == ContinuousSourceKind::GrandPrixSampler
-                && self.grand_prix.is_some();
+        let grand_prix_active = self.continuous_source == ContinuousSourceKind::GrandPrixSampler
+            && self.grand_prix.is_some();
         if grand_prix_active {
             let packet = GrandPrixTelemetry {
                 rpm: telem.rpm.clamp(0.0, 25_000.0),
@@ -1233,9 +1245,7 @@ impl VehicleAudioEngine {
         // is an event accent only.
         const TC_ENTER: f32 = 0.20;
         let tc_cut = telem.tc_cut_ratio.clamp(0.0, 1.0);
-        if tc_cut >= TC_ENTER
-            && self.last_tc_cut_ratio < TC_ENTER
-            && self.tc_cooldown_samples == 0
+        if tc_cut >= TC_ENTER && self.last_tc_cut_ratio < TC_ENTER && self.tc_cooldown_samples == 0
         {
             self.trigger(Trigger::TcCut);
             self.tc_cooldown_samples = (self.sample_rate as f64 * 0.4) as usize;
@@ -1596,7 +1606,13 @@ impl VehicleAudioEngine {
     /// banda retirados) y aplica el lowpass del bus de motor. Devuelve el par
     /// post-lowpass (se usa tambien como senal "solo motor" para V10Only).
     #[inline]
-    fn mix_engine_source(&mut self, i: usize, eg: f32, cpp_gain: f32, synth_prerendered: bool) -> (f32, f32) {
+    fn mix_engine_source(
+        &mut self,
+        i: usize,
+        eg: f32,
+        cpp_gain: f32,
+        synth_prerendered: bool,
+    ) -> (f32, f32) {
         let mut mixed_l = 0.0f32;
         let mut mixed_r = 0.0f32;
         self.grand_prix_sample_output = crate::grand_prix_sampler::GrandPrixSampleOutput::default();
@@ -1812,7 +1828,10 @@ impl VehicleAudioEngine {
                     .get(o.key.as_str())
                     .copied()
                     .unwrap_or(1.0);
-                let source = s * os_gain * self.cfg.shift_gain * one_shot_env(o.cursor, o.window_len, o.fade_samples);
+                let source = s
+                    * os_gain
+                    * self.cfg.shift_gain
+                    * one_shot_env(o.cursor, o.window_len, o.fade_samples);
                 mix_through_strip(
                     &mut self.strips,
                     &mut self.reverb_buses,
@@ -1864,7 +1883,10 @@ impl VehicleAudioEngine {
         let (mut out_left, mut out_right) = self.stereo_limiter.process(colored_l, colored_r);
         if self.stage_diagnostics_enabled {
             metrics.master_input_peak = metrics.master_input_peak.max(raw_l.abs()).max(raw_r.abs());
-            metrics.master_color_peak = metrics.master_color_peak.max(colored_l.abs()).max(colored_r.abs());
+            metrics.master_color_peak = metrics
+                .master_color_peak
+                .max(colored_l.abs())
+                .max(colored_r.abs());
             metrics.coloration_delta_peak = metrics
                 .coloration_delta_peak
                 .max((colored_l - raw_l).abs())
@@ -1873,24 +1895,30 @@ impl VehicleAudioEngine {
             metrics.master_input_sum_sq += raw_r as f64 * raw_r as f64;
             metrics.master_color_sum_sq += colored_l as f64 * colored_l as f64;
             metrics.master_color_sum_sq += colored_r as f64 * colored_r as f64;
-            metrics.limiter_input_peak = metrics.limiter_input_peak.max(colored_l.abs()).max(colored_r.abs());
-            metrics.limiter_output_peak = metrics.limiter_output_peak.max(out_left.abs()).max(out_right.abs());
+            metrics.limiter_input_peak = metrics
+                .limiter_input_peak
+                .max(colored_l.abs())
+                .max(colored_r.abs());
+            metrics.limiter_output_peak = metrics
+                .limiter_output_peak
+                .max(out_left.abs())
+                .max(out_right.abs());
             if colored_l.abs().max(colored_r.abs()) > self.cfg.limiter_threshold {
                 metrics.linked_limiter_active_samples =
                     metrics.linked_limiter_active_samples.saturating_add(1);
             }
         }
         if self.transition_remaining > 0 && self.transition_total > 0 {
-            let progress =
-                1.0 - self.transition_remaining as f32 / self.transition_total as f32;
-            out_left =
-                self.transition_start_l + (out_left - self.transition_start_l) * progress;
-            out_right =
-                self.transition_start_r + (out_right - self.transition_start_r) * progress;
+            let progress = 1.0 - self.transition_remaining as f32 / self.transition_total as f32;
+            out_left = self.transition_start_l + (out_left - self.transition_start_l) * progress;
+            out_right = self.transition_start_r + (out_right - self.transition_start_r) * progress;
             self.transition_remaining -= 1;
         }
         if self.stage_diagnostics_enabled {
-            metrics.final_output_peak = metrics.final_output_peak.max(out_left.abs()).max(out_right.abs());
+            metrics.final_output_peak = metrics
+                .final_output_peak
+                .max(out_left.abs())
+                .max(out_right.abs());
             metrics.final_output_sum_sq += out_left as f64 * out_left as f64;
             metrics.final_output_sum_sq += out_right as f64 * out_right as f64;
         }
@@ -1906,7 +1934,12 @@ impl VehicleAudioEngine {
 
     /// Calcula las diagnosticas de bloque a partir de las metricas acumuladas
     /// en el lazo (CLEAN-10).
-    fn finalize_block_diagnostics(&mut self, render_started: std::time::Instant, n: usize, metrics: &RenderMetrics) {
+    fn finalize_block_diagnostics(
+        &mut self,
+        render_started: std::time::Instant,
+        n: usize,
+        metrics: &RenderMetrics,
+    ) {
         let elapsed_ns = render_started.elapsed().as_nanos().min(u64::MAX as u128) as u64;
         let deadline_ns = n as u64 * 1_000_000_000u64 / self.sample_rate.max(1) as u64;
         let source_code = match self.continuous_source {
@@ -1916,20 +1949,20 @@ impl VehicleAudioEngine {
         };
         self.diagnostics.source = source_code;
         self.diagnostics.received_rpm = self.target_rpm as f32;
-        self.diagnostics.rendered_rpm = self.gf509.as_ref().map_or(
-            self.smoothed_rpm as f32,
-            |runtime| runtime.rendered_telemetry().rpm,
-        );
+        self.diagnostics.rendered_rpm = self
+            .gf509
+            .as_ref()
+            .map_or(self.smoothed_rpm as f32, |runtime| {
+                runtime.rendered_telemetry().rpm
+            });
         if let Some(sampler) = &self.grand_prix {
             let grand_prix = sampler.diagnostics();
             if self.continuous_source == ContinuousSourceKind::GrandPrixSampler {
-                self.diagnostics.rendered_rpm =
-                    grand_prix.rendered_revolutions_per_minute;
+                self.diagnostics.rendered_rpm = grand_prix.rendered_revolutions_per_minute;
             }
             self.diagnostics.grand_prix_active_zones = grand_prix.active_zone_count;
             self.diagnostics.grand_prix_active_voices = grand_prix.active_voice_count;
-            self.diagnostics.grand_prix_rendered_rpm =
-                grand_prix.rendered_revolutions_per_minute;
+            self.diagnostics.grand_prix_rendered_rpm = grand_prix.rendered_revolutions_per_minute;
             self.diagnostics.grand_prix_gate = grand_prix.gate;
             self.diagnostics.grand_prix_load_gain = grand_prix.load_gain;
             self.diagnostics.grand_prix_accepted_events = grand_prix.accepted_events;
@@ -1943,11 +1976,14 @@ impl VehicleAudioEngine {
         if self.stage_diagnostics_enabled && n > 0 {
             let channel_samples = (n as f64 * 2.0).max(1.0);
             self.diagnostics.master_input_peak = metrics.master_input_peak;
-            self.diagnostics.master_input_rms = (metrics.master_input_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.master_input_rms =
+                (metrics.master_input_sum_sq / channel_samples).sqrt() as f32;
             self.diagnostics.master_color_peak = metrics.master_color_peak;
-            self.diagnostics.master_color_rms = (metrics.master_color_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.master_color_rms =
+                (metrics.master_color_sum_sq / channel_samples).sqrt() as f32;
             self.diagnostics.final_output_peak = metrics.final_output_peak;
-            self.diagnostics.final_output_rms = (metrics.final_output_sum_sq / channel_samples).sqrt() as f32;
+            self.diagnostics.final_output_rms =
+                (metrics.final_output_sum_sq / channel_samples).sqrt() as f32;
             self.diagnostics.coloration_delta_peak = metrics.coloration_delta_peak;
             self.diagnostics.linked_limiter_active_samples = metrics.linked_limiter_active_samples;
             self.diagnostics.linked_limiter_gain_reduction_db = if metrics.limiter_input_peak > 0.0
@@ -1983,7 +2019,6 @@ impl VehicleAudioEngine {
                 self.diagnostics.asset_or_render_errors.saturating_add(1);
         }
     }
-
 
     /// Master coloration. Saturation zero is an exact sample-transparent bypass;
     /// the linked `StereoLimiter` below owns the safety ceiling independently.
@@ -2265,7 +2300,8 @@ impl VehicleAudioEngine {
     }
 
     pub fn grand_prix_sampler_enabled(&self) -> bool {
-        self.continuous_source == ContinuousSourceKind::GrandPrixSampler && self.grand_prix.is_some()
+        self.continuous_source == ContinuousSourceKind::GrandPrixSampler
+            && self.grand_prix.is_some()
     }
 
     pub fn grand_prix_bank_id(&self) -> Option<&str> {
@@ -2305,7 +2341,9 @@ impl VehicleAudioEngine {
 
     /// Interpolated GF509 state actually consumed by the last rendered sample.
     pub fn gf509_rendered_telemetry(&self) -> Option<v10_engine_synth::RuntimeTelemetry> {
-        self.gf509.as_ref().map(|runtime| runtime.rendered_telemetry())
+        self.gf509
+            .as_ref()
+            .map(|runtime| runtime.rendered_telemetry())
     }
 
     pub fn gf509_render_failed(&self) -> bool {
@@ -3280,12 +3318,16 @@ mod tests {
         assert!(
             e.one_shots
                 .iter()
-                .all(|voice| voice.trigger != Trigger::ShiftUp && voice.trigger != Trigger::ShiftDown),
+                .all(|voice| voice.trigger != Trigger::ShiftUp
+                    && voice.trigger != Trigger::ShiftDown),
             "gates must not own bank voices"
         );
         e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 3, 0.0, "asphalt");
         e.set_state(8000.0, 1000.0, 15000.0, 1.0, 100.0, 4, 0.0, "asphalt");
-        assert!(e.last_trigger().is_empty(), "shift must not report a trigger");
+        assert!(
+            e.last_trigger().is_empty(),
+            "shift must not report a trigger"
+        );
         let mut l = vec![0.0f32; 64];
         let mut r = vec![0.0f32; 64];
         e.render(&mut l, &mut r, 64);
@@ -3630,11 +3672,21 @@ mod tests {
         let mut packet = |limiter: u32| VehicleAudioTelemetryV3 {
             schema_version: VEHICLE_AUDIO_ABI_VERSION,
             struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
-            rpm: 14_800.0, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 1.0,
-            normalized_engine_load: 1.0, normalized_engine_torque: 1.0,
-            rpm_derivative: 0.0, throttle_derivative: 0.0,
-            speed_kph: 200.0, slip: 0.0, gear: 4, torque_sign: 1,
-            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: 0.0,
+            rpm: 14_800.0,
+            idle_rpm: 1_000.0,
+            max_rpm: 15_000.0,
+            throttle: 1.0,
+            normalized_engine_load: 1.0,
+            normalized_engine_torque: 1.0,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            speed_kph: 200.0,
+            slip: 0.0,
+            gear: 4,
+            torque_sign: 1,
+            shift_phase: 0,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
             rev_limiter_active: limiter,
         };
         e.set_telemetry_timed(&packet(1), "asphalt", 1.0 / 120.0);
@@ -3667,11 +3719,21 @@ mod tests {
         let mut packet = |tc: f32| VehicleAudioTelemetryV3 {
             schema_version: VEHICLE_AUDIO_ABI_VERSION,
             struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
-            rpm: 8_000.0, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 0.9,
-            normalized_engine_load: 0.9, normalized_engine_torque: 0.7,
-            rpm_derivative: 0.0, throttle_derivative: 0.0,
-            speed_kph: 120.0, slip: 0.12, gear: 3, torque_sign: 1,
-            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: tc,
+            rpm: 8_000.0,
+            idle_rpm: 1_000.0,
+            max_rpm: 15_000.0,
+            throttle: 0.9,
+            normalized_engine_load: 0.9,
+            normalized_engine_torque: 0.7,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            speed_kph: 120.0,
+            slip: 0.12,
+            gear: 3,
+            torque_sign: 1,
+            shift_phase: 0,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: tc,
             rev_limiter_active: 0,
         };
         // A small ratio below the entry threshold must not fire.
@@ -3706,11 +3768,21 @@ mod tests {
         let packet = VehicleAudioTelemetryV3 {
             schema_version: VEHICLE_AUDIO_ABI_VERSION,
             struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
-            rpm: 14_800.0, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 1.0,
-            normalized_engine_load: 1.0, normalized_engine_torque: 1.0,
-            rpm_derivative: 0.0, throttle_derivative: 0.0,
-            speed_kph: 200.0, slip: 0.12, gear: 4, torque_sign: 1,
-            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: 0.4,
+            rpm: 14_800.0,
+            idle_rpm: 1_000.0,
+            max_rpm: 15_000.0,
+            throttle: 1.0,
+            normalized_engine_load: 1.0,
+            normalized_engine_torque: 1.0,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            speed_kph: 200.0,
+            slip: 0.12,
+            gear: 4,
+            torque_sign: 1,
+            shift_phase: 0,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.4,
             rev_limiter_active: 1,
         };
         e.set_telemetry_timed(&packet, "asphalt", 1.0 / 120.0);
@@ -3932,8 +4004,7 @@ mod tests {
     }
 
     fn packaged_gf509_assets() -> std::path::PathBuf {
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../audio/v10_gf509")
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_gf509")
     }
 
     #[test]
@@ -3971,8 +4042,8 @@ mod tests {
         let mut tuning = V10LayerTuning::default();
         tuning.engine_mode = v10_engine_synth::EngineMode::SampleOnly;
         tuning.sampled_gearbox_gain = Some(0.3);
-        let bank = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../audio/v10_f2002_sampled");
+        let bank =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../audio/v10_f2002_sampled");
         engine.enable_v10_layer(&bank, &tuning).unwrap();
         assert_eq!(engine.continuous_source(), ContinuousSourceKind::V10Gf509);
         assert_eq!(
@@ -4023,11 +4094,21 @@ mod tests {
         let packet = |rpm: f64| VehicleAudioTelemetryV3 {
             schema_version: VEHICLE_AUDIO_ABI_VERSION,
             struct_size: std::mem::size_of::<VehicleAudioTelemetryV3>() as u32,
-            rpm, idle_rpm: 1_000.0, max_rpm: 15_000.0, throttle: 0.9,
-            normalized_engine_load: 0.9, normalized_engine_torque: 0.9,
-            rpm_derivative: 0.0, throttle_derivative: 0.0,
-            speed_kph: 100.0, slip: 0.0, gear: 4, torque_sign: 1,
-            shift_phase: 0, clutch_engagement: 1.0, tc_cut_ratio: 0.0,
+            rpm,
+            idle_rpm: 1_000.0,
+            max_rpm: 15_000.0,
+            throttle: 0.9,
+            normalized_engine_load: 0.9,
+            normalized_engine_torque: 0.9,
+            rpm_derivative: 0.0,
+            throttle_derivative: 0.0,
+            speed_kph: 100.0,
+            slip: 0.0,
+            gear: 4,
+            torque_sign: 1,
+            shift_phase: 0,
+            clutch_engagement: 1.0,
+            tc_cut_ratio: 0.0,
             rev_limiter_active: 0,
         };
         let mut legacy = engine_with_bank(silent_engine_bank());
@@ -4051,8 +4132,10 @@ mod tests {
         assert!((timed.gf509_telemetry().unwrap().dt_seconds - 1.0 / 120.0).abs() < 1e-6);
         timed.render(&mut l, &mut r, 8);
         let rendered = timed.gf509_rendered_telemetry().unwrap().rpm;
-        assert!(rendered > 5_000.0 && rendered < 10_000.0,
-            "timed route must interpolate, got {rendered}");
+        assert!(
+            rendered > 5_000.0 && rendered < 10_000.0,
+            "timed route must interpolate, got {rendered}"
+        );
     }
 
     #[test]
@@ -4427,7 +4510,10 @@ mod tests {
                 assert_eq!(left, right);
             }
         }
-        assert!(peak < 0.65, "10 kHz low-pass failed to attenuate Nyquist: {peak}");
+        assert!(
+            peak < 0.65,
+            "10 kHz low-pass failed to attenuate Nyquist: {peak}"
+        );
     }
 
     #[test]
@@ -4457,8 +4543,14 @@ mod tests {
         }
         let peak_6 = nyquist_peak(6.0);
         let peak_24 = nyquist_peak(24.0);
-        assert!(peak_24 < peak_6, "24 dB/oct ({peak_24}) must beat 6 dB/oct ({peak_6})");
-        assert!(peak_24 < 0.30, "24 dB/oct cascade too leaky at Nyquist: {peak_24}");
+        assert!(
+            peak_24 < peak_6,
+            "24 dB/oct ({peak_24}) must beat 6 dB/oct ({peak_6})"
+        );
+        assert!(
+            peak_24 < 0.30,
+            "24 dB/oct cascade too leaky at Nyquist: {peak_24}"
+        );
     }
 
     fn grand_prix_bank_directory() -> std::path::PathBuf {
@@ -4466,7 +4558,11 @@ mod tests {
             .join("../../audio/formula_one_2030_grand_prix_sampler")
     }
 
-    fn grand_prix_packet(rpm: f64, throttle: f32, shift_phase: i32) -> crate::ffi::VehicleAudioTelemetryV3 {
+    fn grand_prix_packet(
+        rpm: f64,
+        throttle: f32,
+        shift_phase: i32,
+    ) -> crate::ffi::VehicleAudioTelemetryV3 {
         use crate::ffi::{VehicleAudioTelemetryV3, VEHICLE_AUDIO_ABI_VERSION};
         VehicleAudioTelemetryV3 {
             schema_version: VEHICLE_AUDIO_ABI_VERSION,
@@ -4508,20 +4604,12 @@ mod tests {
 
         let mut left = vec![0.0f32; 4_410];
         let mut right = vec![0.0f32; 4_410];
-        engine.set_telemetry_timed(
-            &grand_prix_packet(9_000.0, 0.9, 0),
-            "asphalt",
-            1.0 / 120.0,
-        );
+        engine.set_telemetry_timed(&grand_prix_packet(9_000.0, 0.9, 0), "asphalt", 1.0 / 120.0);
         engine.render(&mut left, &mut right, 4_410);
         let steady = engine.grand_prix_diagnostics().expect("diagnostics");
         assert!(steady.gate > 0.5, "engine gate {}", steady.gate);
 
-        engine.set_telemetry_timed(
-            &grand_prix_packet(9_200.0, 0.0, 1),
-            "asphalt",
-            1.0 / 120.0,
-        );
+        engine.set_telemetry_timed(&grand_prix_packet(9_200.0, 0.0, 1), "asphalt", 1.0 / 120.0);
         engine.render(&mut left, &mut right, 4_410);
         let shifted = engine.grand_prix_diagnostics().expect("diagnostics");
         assert_eq!(shifted.accepted_events, 1);
@@ -4529,7 +4617,9 @@ mod tests {
             engine.one_shots.iter().all(|voice| !voice.active),
             "shared-bank shift voices must stay silent under the sampler"
         );
-        let peak = left.iter().fold(0.0f32, |peak, sample| peak.max(sample.abs()));
+        let peak = left
+            .iter()
+            .fold(0.0f32, |peak, sample| peak.max(sample.abs()));
         assert!(peak > 0.005, "sampler engine output peak {peak}");
     }
 
@@ -4537,7 +4627,10 @@ mod tests {
     fn grand_prix_sampler_keeps_effects_on_the_shared_bank() {
         let mut engine = engine_with_bank(silent_engine_bank());
         engine
-            .enable_grand_prix_sampler(&grand_prix_bank_directory(), &GrandPrixSamplerTuning::default())
+            .enable_grand_prix_sampler(
+                &grand_prix_bank_directory(),
+                &GrandPrixSamplerTuning::default(),
+            )
             .expect("sampler bank");
         engine.trigger(Trigger::Hit1);
         assert!(engine
@@ -4551,20 +4644,15 @@ mod tests {
     fn grand_prix_sampler_lift_edge_routes_away_from_bank_backfire() {
         let mut engine = engine_with_bank(dummy_bank());
         engine
-            .enable_grand_prix_sampler(&grand_prix_bank_directory(), &GrandPrixSamplerTuning::default())
+            .enable_grand_prix_sampler(
+                &grand_prix_bank_directory(),
+                &GrandPrixSamplerTuning::default(),
+            )
             .expect("sampler bank");
         let mut left = vec![0.0f32; 4_410];
         let mut right = vec![0.0f32; 4_410];
-        engine.set_telemetry_timed(
-            &grand_prix_packet(14_000.0, 0.9, 0),
-            "asphalt",
-            1.0 / 120.0,
-        );
-        engine.set_telemetry_timed(
-            &grand_prix_packet(14_000.0, 0.1, 0),
-            "asphalt",
-            1.0 / 120.0,
-        );
+        engine.set_telemetry_timed(&grand_prix_packet(14_000.0, 0.9, 0), "asphalt", 1.0 / 120.0);
+        engine.set_telemetry_timed(&grand_prix_packet(14_000.0, 0.1, 0), "asphalt", 1.0 / 120.0);
         engine.render(&mut left, &mut right, 4_410);
         let diagnostics = engine.grand_prix_diagnostics().expect("diagnostics");
         assert_eq!(diagnostics.accepted_events, 1);
@@ -4588,16 +4676,8 @@ mod tests {
                     &GrandPrixSamplerTuning::default(),
                 )
                 .expect("sampler bank");
-            engine.set_telemetry_timed(
-                &grand_prix_packet(9_000.0, 0.9, 0),
-                "asphalt",
-                1.0 / 120.0,
-            );
-            engine.set_telemetry_timed(
-                &grand_prix_packet(9_600.0, 0.2, 1),
-                "asphalt",
-                1.0 / 120.0,
-            );
+            engine.set_telemetry_timed(&grand_prix_packet(9_000.0, 0.9, 0), "asphalt", 1.0 / 120.0);
+            engine.set_telemetry_timed(&grand_prix_packet(9_600.0, 0.2, 1), "asphalt", 1.0 / 120.0);
             let total = 20_000usize;
             let mut output = vec![0.0f32; total];
             let mut scratch = vec![0.0f32; block];
