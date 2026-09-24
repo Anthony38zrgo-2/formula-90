@@ -45,7 +45,7 @@ PATH_PATTERNS = (
     re.compile(r"blender[\\/]track_pipeline(?:[\\/]|\b)", re.IGNORECASE),
 )
 SOURCE_PATH_PATTERN = re.compile(
-    r"(?:assets-lowpoly-python|blender[\\/](?:assets|track_pipeline)|source-assets)(?:[\\/]|\b)",
+    r"(?:assets-lowpoly-python|blender[\\/](?:assets|track_pipeline))(?:[\\/]|\b)",
     re.IGNORECASE,
 )
 RUNTIME_PATH_PATTERN = re.compile(

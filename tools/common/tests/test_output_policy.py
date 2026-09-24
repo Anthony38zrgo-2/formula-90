@@ -19,7 +19,6 @@ class OutputPolicyTests(unittest.TestCase):
         (self.repo / "scratch").mkdir()
         (self.repo / "game" / "assets").mkdir(parents=True)
         (self.repo / "game" / "sounds").mkdir(parents=True)
-        (self.repo / "source-assets").mkdir()
 
     def tearDown(self) -> None:
         self._temporary.cleanup()
@@ -38,9 +37,13 @@ class OutputPolicyTests(unittest.TestCase):
         with self.assertRaises(OutputPolicyError):
             validate_output_path(self.repo, "game/assets/preview.glb", "preview")
 
-    def test_preview_rejects_source_assets(self) -> None:
+    def test_preview_rejects_sound_bank_sources(self) -> None:
         with self.assertRaises(OutputPolicyError):
-            validate_output_path(self.repo, "source-assets/audio/source.wav", "preview")
+            validate_output_path(
+                self.repo,
+                "game/sounds/bank_sources/audio/source.wav",
+                "preview",
+            )
 
     def test_preview_rejects_traversal_out_of_scratch(self) -> None:
         with self.assertRaises(OutputPolicyError):

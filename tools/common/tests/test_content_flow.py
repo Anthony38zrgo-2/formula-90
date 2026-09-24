@@ -20,7 +20,7 @@ class ContentFlowTests(unittest.TestCase):
         self.scratch = self.repo / "scratch"
         self.runtime_assets = self.repo / "game" / "assets"
         self.runtime_sounds = self.repo / "game" / "sounds"
-        self.sources = self.repo / "source-assets"
+        self.sources = self.runtime_sounds / "bank_sources"
         for directory in (self.scratch, self.runtime_assets, self.runtime_sounds, self.sources):
             directory.mkdir(parents=True)
 

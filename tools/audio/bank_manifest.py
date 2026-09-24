@@ -22,7 +22,10 @@ class FileEntry:
     dc_offset: float = 0.0
     playback: dict[str, Any] = field(default_factory=dict)
     synthesis: dict[str, Any] = field(default_factory=dict)
-    provenance: str = "derived from original samples (source-assets/audio/legacy-f1-1998)"
+    provenance: str = (
+        "derived from original samples "
+        "(game/sounds/bank_sources/legacy_formula_one_1998)"
+    )
     sha256: str = ""
 
 

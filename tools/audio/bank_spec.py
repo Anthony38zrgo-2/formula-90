@@ -1,9 +1,9 @@
 """Bank spec — declarative mapping of source and synthesized samples to bank roles.
 
 The bank is derived from the original F1-1998 engine internal + Grand Prix sample
-set in `source-assets/audio/legacy-f1-1998/`. Entries either map a source filename to
-a stable bank key or name a deterministic synthesis recipe. This is the single
-place to change what the bank contains.
+set in `game/sounds/bank_sources/legacy_formula_one_1998/`. Entries map source
+filenames to stable bank keys or name deterministic synthesis recipes. This is
+the single place to change what the bank contains.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-DEFAULT_SOURCE_DIR = Path("source-assets/audio/legacy-f1-1998")
+DEFAULT_SOURCE_DIR = Path("game/sounds/bank_sources/legacy_formula_one_1998")
 
 
 @dataclass(frozen=True)

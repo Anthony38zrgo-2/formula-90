@@ -508,7 +508,10 @@ def generate_bank(source_dir: Path, output_dir: Path, sample_rate: int = SAMPLE_
                 provenance=(
                     "deterministic procedural synthesis"
                     if spec.synthesis is not None
-                    else "derived from original samples (source-assets/audio/legacy-f1-1998)"
+                    else (
+                        "derived from original samples "
+                        "(game/sounds/bank_sources/legacy_formula_one_1998)"
+                    )
                 ),
                 sha256="",
             )

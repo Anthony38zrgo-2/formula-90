@@ -11,7 +11,7 @@ from tools.audio.bank_spec import RETIRED_KEYS
 from tools.audio.promote_f1_2030_backfire_sounds import LIMITER_SOURCES
 from tools.audio.promote_f1_2030_backfire_sounds import SOURCES as BACKFIRE_SOURCES
 
-SOURCE = Path("source-assets/audio/legacy-f1-1998")
+SOURCE = Path("game/sounds/bank_sources/legacy_formula_one_1998")
 BACKFIRE_BANK_FILES = set(BACKFIRE_SOURCES)
 LIMITER_BANK_FILES = set(LIMITER_SOURCES)
 COMMONS_FILE_COUNT = 11
@@ -46,7 +46,7 @@ def test_manifest_contains_required_fields():
     # Known provenance families; every entry must declare one of them with its
     # required source/recipe evidence.
     source_derived = (
-        "derived from original samples (source-assets/audio/legacy-f1-1998)",
+        "derived from original samples (game/sounds/bank_sources/legacy_formula_one_1998)",
         "derived from original user-supplied replacement samples",
         "derived from curated v10 alternative gear samples",
     )

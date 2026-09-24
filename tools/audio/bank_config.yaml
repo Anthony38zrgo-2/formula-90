@@ -1,9 +1,10 @@
 # commons bank configuration.
 # The bank is derived from the original F1-1998 engine internal + Grand Prix
-# sample set in source-assets/audio/legacy-f1-1998/. No synthesis.
+# sample set in
+# game/sounds/bank_sources/legacy_formula_one_1998/. No synthesis.
 
 bank_name: commons
-source_dir: source-assets/audio/legacy-f1-1998
+source_dir: game/sounds/bank_sources/legacy_formula_one_1998
 sample_rate: 44100
 channels: 1
 pcm_bits: 16
