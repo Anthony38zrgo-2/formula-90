@@ -1,0 +1,597 @@
+{
+  "bank_id": "formula_one_2030_grand_prix_sampler",
+  "coast_loops": [
+    {
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        10962.891954224488
+      ],
+      "calibrated_gain": 0.8230464052003508,
+      "comb_spacing_hz": 66.02170781776321,
+      "derived_filename": "engine_coast_low_loop.wav",
+      "derived_frames": 88171,
+      "derived_peak_dbfs": -4.001348772894557,
+      "derived_rms_dbfs": -14.458545027030677,
+      "derived_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "id": "engine_coast_low_loop",
+      "loop_crossfade_frames": 2672,
+      "loop_end_frame_exclusive": 88171,
+      "loop_start_frame": 0,
+      "reference_revolutions_per_minute": 7922.604938131585,
+      "role": "engine_coast_loop",
+      "source_filename": "engine_coast_low.wav",
+      "source_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "valid_playback_rate_max": 1.383748405964302,
+      "valid_playback_rate_min": 0.5679950010307153,
+      "zone_revolutions_per_minute": 8000.0
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        9433.186100146653,
+        16444.33793133673
+      ],
+      "calibrated_gain": 0.9008363786900297,
+      "comb_spacing_hz": 103.88810238405345,
+      "derived_filename": "engine_coast_high_loop.wav",
+      "derived_frames": 88295,
+      "derived_peak_dbfs": -4.004710835889143,
+      "derived_rms_dbfs": -15.212918384402641,
+      "derived_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "id": "engine_coast_high_loop",
+      "loop_crossfade_frames": 1698,
+      "loop_end_frame_exclusive": 88295,
+      "loop_start_frame": 0,
+      "reference_revolutions_per_minute": 12466.572286086415,
+      "role": "engine_coast_loop",
+      "source_filename": "engine_coast_high.wav",
+      "source_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "valid_playback_rate_max": 1.3190745261782812,
+      "valid_playback_rate_min": 0.7566784103658358,
+      "zone_revolutions_per_minute": 13000.0
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        14149.779150219978,
+        18000.0
+      ],
+      "calibrated_gain": 0.7947964708228147,
+      "comb_spacing_hz": 137.8562044126308,
+      "derived_filename": "engine_coast_maximum_loop.wav",
+      "derived_frames": 88292,
+      "derived_peak_dbfs": -4.003870198130145,
+      "derived_rms_dbfs": -14.155113836559192,
+      "derived_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "id": "engine_coast_maximum_loop",
+      "loop_crossfade_frames": 1280,
+      "loop_end_frame_exclusive": 88292,
+      "loop_start_frame": 0,
+      "reference_revolutions_per_minute": 16542.744529515698,
+      "role": "engine_coast_loop",
+      "source_filename": "engine_coast_maximum.wav",
+      "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "valid_playback_rate_max": 1.088090308587203,
+      "valid_playback_rate_min": 0.8553465312224238,
+      "zone_revolutions_per_minute": 18000.0
+    }
+  ],
+  "coast_transitions": [
+    {
+      "blend_law": "smoothstep",
+      "center_revolutions_per_minute": 10198.03902718557,
+      "end_revolutions_per_minute": 10962.891954224488,
+      "from_loop_id": "engine_coast_low_loop",
+      "gain_law": "equal_power",
+      "half_width_revolutions_per_minute": 764.8529270389178,
+      "measured_level_compensation_db": 0.7844318736076777,
+      "start_revolutions_per_minute": 9433.186100146653,
+      "to_loop_id": "engine_coast_high_loop"
+    },
+    {
+      "blend_law": "smoothstep",
+      "center_revolutions_per_minute": 15297.058540778355,
+      "end_revolutions_per_minute": 16444.33793133673,
+      "from_loop_id": "engine_coast_high_loop",
+      "gain_law": "equal_power",
+      "half_width_revolutions_per_minute": 1147.2793905583765,
+      "measured_level_compensation_db": -1.0877997211561743,
+      "start_revolutions_per_minute": 14149.779150219978,
+      "to_loop_id": "engine_coast_maximum_loop"
+    }
+  ],
+  "coverage": {
+    "maximum_revolutions_per_minute": 18000.0,
+    "minimum_revolutions_per_minute": 4500.0
+  },
+  "event_groups": [
+    {
+      "id": "upshift",
+      "minimum_retrigger_seconds": 0.03,
+      "role": "gearbox_upshift",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "upshift_cut_entry",
+      "variants": [
+        {
+          "asset_id": "upshift_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 2
+    },
+    {
+      "id": "downshift",
+      "minimum_retrigger_seconds": 0.1,
+      "role": "gearbox_downshift",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "downshift_cut_entry",
+      "variants": [
+        {
+          "asset_id": "downshift_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 2
+    },
+    {
+      "id": "lift_backfire",
+      "minimum_retrigger_seconds": 1.0,
+      "role": "lift_backfire",
+      "selection": "seeded_cycle",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "lift_edge",
+      "variants": [
+        {
+          "asset_id": "backfire_burst_3",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_4",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_5",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_6",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_7",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 1
+    },
+    {
+      "id": "limiter",
+      "minimum_retrigger_seconds": 0.25,
+      "role": "limiter_event",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "limiter_entry_edge",
+      "variants": [
+        {
+          "asset_id": "limiter_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 1
+    }
+  ],
+  "event_selection_seed": 1,
+  "event_trigger_policy": {
+    "lift_edge": {
+      "cooldown_seconds": 1.0,
+      "previous_throttle_min": 0.8,
+      "revolutions_per_minute_min": 13500.0,
+      "throttle_max": 0.15
+    },
+    "limiter_entry_edge": {
+      "cooldown_seconds": 0.25
+    }
+  },
+  "events": [
+    {
+      "derived_band_rms_300_6000": 0.08276840021982028,
+      "derived_filename": "backfire_burst_3.wav",
+      "derived_frames": 57154,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -15.775574011695088,
+      "derived_sha256": "aec332bb4db3a22e83d4ecf956f283dd7c84d237eff22697348e3f81b762bb24",
+      "duration_seconds": 1.2960090702947846,
+      "id": "backfire_burst_3",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire3.wav",
+      "source_sha256": "3a1c604cbbd6bef443e558f64cb6996a83133681514df13ac350833a26856372"
+    },
+    {
+      "derived_band_rms_300_6000": 0.031974198812630354,
+      "derived_filename": "backfire_burst_4.wav",
+      "derived_frames": 18581,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -19.839580948198815,
+      "derived_sha256": "30ddf912ee2629841ed5ee055bf617ba941e2c629bd0ebb451b83c1ccb963f33",
+      "duration_seconds": 0.42133786848072563,
+      "id": "backfire_burst_4",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire4.wav",
+      "source_sha256": "be956f23ded2234ffa9e565a0e0af2924eb319e2730c49e6ebc00b6b2cf0c9c2"
+    },
+    {
+      "derived_band_rms_300_6000": 0.06613008628787335,
+      "derived_filename": "backfire_burst_5.wav",
+      "derived_frames": 24226,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -17.32003400167502,
+      "derived_sha256": "4aee801fa2d0768221417540c192bd19c750d7f52e54339be1a967448114e6df",
+      "duration_seconds": 0.5493424036281179,
+      "id": "backfire_burst_5",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire5.wav",
+      "source_sha256": "5ec929f59a6dd9205aa1731eac08ffee42a0fef4a4e3561b1bb9bf24150d140c"
+    },
+    {
+      "derived_band_rms_300_6000": 0.05566050548091399,
+      "derived_filename": "backfire_burst_6.wav",
+      "derived_frames": 34340,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -18.232969883205616,
+      "derived_sha256": "d2e5759bff9a12037632cf61459fd59797d2b095e6247b2143a082f93e575dc6",
+      "duration_seconds": 0.7786848072562358,
+      "id": "backfire_burst_6",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire6.wav",
+      "source_sha256": "b5304a7336fbabfac09d2c3c4f1dc63c49c3eee4ccb443cdf3e99e2aa6af2ec5"
+    },
+    {
+      "derived_band_rms_300_6000": 0.050015066325921384,
+      "derived_filename": "backfire_burst_7.wav",
+      "derived_frames": 35516,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -19.58954693910273,
+      "derived_sha256": "acf47affe9adcb7ada68763c79f8373749d6e544d4e74ca5fec74b07c6aa5782",
+      "duration_seconds": 0.8053514739229025,
+      "id": "backfire_burst_7",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "500_backfire7.wav",
+      "source_sha256": "d03a84c631aa840b158160c96f8bdc1f1f26781635deebfc550413f5f1869e5d"
+    },
+    {
+      "derived_band_rms_300_6000": 0.11678810453404266,
+      "derived_filename": "limiter_event.wav",
+      "derived_frames": 15939,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -12.095967051822408,
+      "derived_sha256": "a95659574b0cea43367ec1572217c9f16aac4f97d72905f3e546d6fe5bb37c01",
+      "duration_seconds": 0.36142857142857143,
+      "id": "limiter_event",
+      "preparation_recipe": "limiter_overlay_recipe_v1",
+      "role": "limiter_event",
+      "source_filename": "500_limiter.wav",
+      "source_sha256": "1bdb7a2cc3eb6d95e7fa8d56bec55fd4df8c9b307902056b93f5c30b32751758"
+    },
+    {
+      "derived_band_rms_300_6000": 0.04078002388759487,
+      "derived_filename": "downshift_event.wav",
+      "derived_frames": 13846,
+      "derived_peak_dbfs": -2.9999878172428636,
+      "derived_rms_dbfs": -15.862362325399022,
+      "derived_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+      "duration_seconds": 0.31396825396825395,
+      "id": "downshift_event",
+      "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
+      "role": "gearbox_downshift",
+      "source_filename": "geardn.wav",
+      "source_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279"
+    },
+    {
+      "derived_band_rms_300_6000": 0.07378453444827636,
+      "derived_filename": "upshift_event.wav",
+      "derived_frames": 13806,
+      "derived_peak_dbfs": -4.48828520382904,
+      "derived_rms_dbfs": -16.342596350349424,
+      "derived_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+      "duration_seconds": 0.3130612244897959,
+      "id": "upshift_event",
+      "preparation_recipe": "prepared_gearbox_body_and_1996_mechanical_composite_v1",
+      "role": "gearbox_upshift",
+      "source_filename": "gearup.wav",
+      "source_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a"
+    }
+  ],
+  "loops": [
+    {
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        6450.0
+      ],
+      "boundary_level_rms": 0.15603922132923,
+      "calibrated_gain": 1.0,
+      "comb_fit_confidence": 0.032,
+      "comb_harmonic_span": 25,
+      "comb_spacing_hz": 37.76365603028664,
+      "derived_band_rms_300_6000": 0.08420017470582074,
+      "derived_filename": "engine_idle_loop.wav",
+      "derived_frames": 88752,
+      "derived_peak_dbfs": -4.017751135637582,
+      "derived_rms_dbfs": -16.22356781487889,
+      "derived_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "id": "engine_idle_loop",
+      "loop_crossfade_frames": 4671,
+      "loop_end_frame_exclusive": 88752,
+      "loop_start_frame": 0,
+      "preparation_recipe": "integer_engine_cycles_dominant_harmonic_phase_aligned_v2",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 4531.638723634397,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "98_int_idle.wav",
+      "source_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "valid_playback_rate_max": 1.4233261725742927,
+      "valid_playback_rate_min": 0.9930182599355531,
+      "zone_revolutions_per_minute": 4500.0
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        5550.0,
+        11776.034986361072
+      ],
+      "boundary_level_rms": 0.1937469476916576,
+      "calibrated_gain": 0.5541447226063448,
+      "comb_fit_confidence": 0.060000000000000005,
+      "comb_harmonic_span": 15,
+      "comb_spacing_hz": 43.46165691407453,
+      "derived_band_rms_300_6000": 0.14319211803231185,
+      "derived_filename": "engine_low_loop.wav",
+      "derived_frames": 16235,
+      "derived_peak_dbfs": -4.0000883347026726,
+      "derived_rms_dbfs": -12.782535166800821,
+      "derived_sha256": "3d3ca005275a336a4219edd8063e402c94e85cccb019bdb8115533e6ebfb36c8",
+      "id": "engine_low_loop",
+      "loop_crossfade_frames": 882,
+      "loop_end_frame_exclusive": 16235,
+      "loop_start_frame": 0,
+      "preparation_recipe": "center_downmix_harmonic_isolation_phase_aligned_720_degree_loop_v1",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 5215.398829688944,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "r24-sound.mp3@5.5-6.5s",
+      "source_sha256": "2642678264de5481fb872fd165eed2df704885bd609a09e34cb018b172a0b537",
+      "valid_playback_rate_max": 2.257935657638558,
+      "valid_playback_rate_min": 1.064156391723356,
+      "zone_revolutions_per_minute": 8000.0,
+      "source_window_start_seconds": 5.5,
+      "source_window_end_seconds": 6.5,
+      "source_estimated_revolutions_per_minute": 5215.500000000095,
+      "source_estimator_score": 76.84045089963978,
+      "source_half_window_revolutions_per_minute": [
+        5215.500000000095,
+        5218.5000000000955
+      ],
+      "isolated_engine_energy_fraction": 0.4821651656554805,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.43347616326652966,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.0005750431282347815
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        10132.867313845574,
+        15676.66657847776
+      ],
+      "boundary_level_rms": 0.1990809754614239,
+      "calibrated_gain": 0.5302011082745084,
+      "comb_fit_confidence": 0.08,
+      "comb_harmonic_span": 10,
+      "comb_spacing_hz": 60.592528982395876,
+      "derived_band_rms_300_6000": 0.17307835640124813,
+      "derived_filename": "engine_medium_loop.wav",
+      "derived_frames": 11645,
+      "derived_peak_dbfs": -4.003870198130145,
+      "derived_rms_dbfs": -11.180426577420654,
+      "derived_sha256": "4536fedf0336b441df58afdee787613bf79ebb2ae7ff49662dd7d5b06f87c6a2",
+      "id": "engine_medium_loop",
+      "loop_crossfade_frames": 882,
+      "loop_end_frame_exclusive": 11645,
+      "loop_start_frame": 0,
+      "preparation_recipe": "center_downmix_harmonic_isolation_phase_aligned_720_degree_loop_v1",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 7271.1034778875055,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "r24-sound.mp3@87.0-88.0s",
+      "source_sha256": "2642678264de5481fb872fd165eed2df704885bd609a09e34cb018b172a0b537",
+      "valid_playback_rate_max": 2.156023033663708,
+      "valid_playback_rate_min": 1.3935804028454708,
+      "zone_revolutions_per_minute": 15000.0,
+      "source_window_start_seconds": 87.0,
+      "source_window_end_seconds": 88.0,
+      "source_estimated_revolutions_per_minute": 7270.500000000562,
+      "source_estimator_score": 66.7536377515633,
+      "source_half_window_revolutions_per_minute": [
+        7260.000000000559,
+        7311.000000000571
+      ],
+      "isolated_engine_energy_fraction": 0.20306942706215575,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.3299700841257434,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.007000205888409562
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        14917.45050307895,
+        16520.239995587548
+      ],
+      "boundary_level_rms": 0.20747686293310047,
+      "calibrated_gain": 0.5541478411872246,
+      "comb_fit_confidence": 0.09,
+      "comb_harmonic_span": 10,
+      "comb_spacing_hz": 68.39197441116603,
+      "derived_band_rms_300_6000": 0.1645797071982057,
+      "derived_filename": "engine_high_loop.wav",
+      "derived_frames": 10317,
+      "derived_peak_dbfs": -4.0000883347026726,
+      "derived_rms_dbfs": -11.668574316947844,
+      "derived_sha256": "0fbd0e2f822b092992a41dfec2b00cd7e1d2531423e6ad895265d6c50c0fa006",
+      "id": "engine_high_loop",
+      "loop_crossfade_frames": 882,
+      "loop_end_frame_exclusive": 10317,
+      "loop_start_frame": 0,
+      "preparation_recipe": "center_downmix_harmonic_isolation_phase_aligned_720_degree_loop_v1",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 8207.036929339924,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "r24-sound.mp3@120.0-121.0s",
+      "source_sha256": "2642678264de5481fb872fd165eed2df704885bd609a09e34cb018b172a0b537",
+      "valid_playback_rate_max": 2.0129359886913827,
+      "valid_playback_rate_min": 1.817641449833068,
+      "zone_revolutions_per_minute": 15600.0,
+      "source_window_start_seconds": 120.0,
+      "source_window_end_seconds": 121.0,
+      "source_estimated_revolutions_per_minute": 8206.500000000775,
+      "source_estimator_score": 79.58119994628976,
+      "source_half_window_revolutions_per_minute": [
+        8170.500000000767,
+        8235.00000000078
+      ],
+      "isolated_engine_energy_fraction": 0.2132439119531355,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.17697434447552002,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.007863216604188542
+    },
+    {
+      "active_coverage_revolutions_per_minute": [
+        15761.023920188738,
+        18000.0
+      ],
+      "boundary_level_rms": 0.18222839778720845,
+      "calibrated_gain": 0.4913222511389624,
+      "comb_fit_confidence": 0.04,
+      "comb_harmonic_span": 20,
+      "comb_spacing_hz": 71.86067827681026,
+      "derived_band_rms_300_6000": 0.1859803340707457,
+      "derived_filename": "engine_maximum_loop.wav",
+      "derived_frames": 9819,
+      "derived_peak_dbfs": -4.003449909758154,
+      "derived_rms_dbfs": -10.562704878886162,
+      "derived_sha256": "e059e4591b31eb6378149d55117ad34c2758f022535378dcca65d4d506321982",
+      "id": "engine_maximum_loop",
+      "loop_crossfade_frames": 882,
+      "loop_end_frame_exclusive": 9819,
+      "loop_start_frame": 0,
+      "preparation_recipe": "center_downmix_harmonic_isolation_phase_aligned_720_degree_loop_v1",
+      "reference_method": "prepared_cycle_frequency_times_120",
+      "reference_revolutions_per_minute": 8623.281393217232,
+      "reference_rpm_per_hz": 120.0,
+      "role": "engine_loop",
+      "source_filename": "r24-sound.mp3@104.5-105.5s",
+      "source_sha256": "2642678264de5481fb872fd165eed2df704885bd609a09e34cb018b172a0b537",
+      "valid_playback_rate_max": 2.087372448979592,
+      "valid_playback_rate_min": 1.827729283261683,
+      "zone_revolutions_per_minute": 16700.0,
+      "source_window_start_seconds": 104.5,
+      "source_window_end_seconds": 105.5,
+      "source_estimated_revolutions_per_minute": 8622.00000000087,
+      "source_estimator_score": 75.68016701724187,
+      "source_half_window_revolutions_per_minute": [
+        8583.00000000086,
+        8632.500000000871
+      ],
+      "isolated_engine_energy_fraction": 0.3843976926390321,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.2503027237987108,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.005750631698179656
+    }
+  ],
+  "output_sample_rate": 44100,
+  "preparation_tool": "scripts/audio/prepare_formula_one_2030_engine_on_candidates.py",
+  "preparation_tool_revision": 1,
+  "reference_ladder": {
+    "anchor_center_revolutions_per_minute": 9000.0,
+    "measured_spacings_hz": [
+      37.76365603028664,
+      76.12687813021702,
+      141.12800726282342,
+      140.17641249191158,
+      148.47138306675586
+    ],
+    "method": "prepared_cycle_frequency_times_120",
+    "reference_revolutions_per_minute": [
+      4531.638723634397,
+      9135.225375626043,
+      16935.36087153881,
+      16821.16949902939,
+      17816.565968010702
+    ],
+    "revolutions_per_minute_per_hertz": 120.0
+  },
+  "schema_version": 1,
+  "source_inventory_sha256": "402f4764e1d1d4fd912f70d0554366359e33b9a4d7cd75a63ad1f029a8aaca6d",
+  "transitions": [
+    {
+      "applied_level_step_db": 0.0,
+      "blend_law": "smoothstep",
+      "center_revolutions_per_minute": 6000.0,
+      "end_revolutions_per_minute": 6450.0,
+      "from_loop_id": "engine_idle_loop",
+      "gain_law": "equal_power",
+      "half_width_revolutions_per_minute": 450.0,
+      "measured_level_compensation_db": -1.87925258850422,
+      "start_revolutions_per_minute": 5550.0,
+      "to_loop_id": "engine_low_loop"
+    },
+    {
+      "applied_level_step_db": 0.0,
+      "blend_law": "smoothstep",
+      "center_revolutions_per_minute": 10954.451150103323,
+      "end_revolutions_per_minute": 11776.034986361072,
+      "from_loop_id": "engine_low_loop",
+      "gain_law": "equal_power",
+      "half_width_revolutions_per_minute": 821.5838362577492,
+      "measured_level_compensation_db": -0.23597894013308957,
+      "start_revolutions_per_minute": 10132.867313845574,
+      "to_loop_id": "engine_medium_loop"
+    },
+    {
+      "applied_level_step_db": 0.0,
+      "blend_law": "smoothstep",
+      "center_revolutions_per_minute": 15297.058540778355,
+      "end_revolutions_per_minute": 15676.66657847776,
+      "from_loop_id": "engine_medium_loop",
+      "gain_law": "equal_power",
+      "half_width_revolutions_per_minute": 379.60803769940475,
+      "measured_level_compensation_db": -0.3587493776577389,
+      "start_revolutions_per_minute": 14917.45050307895,
+      "to_loop_id": "engine_high_loop"
+    },
+    {
+      "applied_level_step_db": 0.0,
+      "blend_law": "smoothstep",
+      "center_revolutions_per_minute": 16140.631957888143,
+      "end_revolutions_per_minute": 16520.239995587548,
+      "from_loop_id": "engine_high_loop",
+      "gain_law": "equal_power",
+      "half_width_revolutions_per_minute": 379.60803769940475,
+      "measured_level_compensation_db": 1.1270723215246612,
+      "start_revolutions_per_minute": 15761.023920188738,
+      "to_loop_id": "engine_maximum_loop"
+    }
+  ],
+  "candidate_variant": "four isolated engine-on loop replacements"
+}

@@ -1,0 +1,103 @@
+{
+  "source_audio_path": "game/sounds/banks/v10-gp3/tobe/r24-sound.mp3",
+  "source_audio_sha256": "2642678264de5481fb872fd165eed2df704885bd609a09e34cb018b172a0b537",
+  "source_sample_rate": 44100,
+  "source_channels": 2,
+  "downmix": "arithmetic mean to mono",
+  "engine_isolation": "project order-harmonic soft mask; non-harmonic residual excluded",
+  "rpm_method": "scripts/audio/analyze_v10_references.py estimate_shaft_frequency",
+  "rpm_and_throttle_limitation": "Source recording has no synchronized RPM or throttle telemetry; RPM values are spectral estimates and ON means powered-loop role only.",
+  "window_duration_seconds": 1.0,
+  "loop_cycles_720_degrees": 16,
+  "source_windows": [
+    {
+      "loop_identifier": "engine_low_loop",
+      "derived_filename": "engine_low_loop.wav",
+      "source_window_start_seconds": 5.5,
+      "source_window_end_seconds": 6.5,
+      "source_estimated_revolutions_per_minute": 5215.500000000095,
+      "source_estimator_score": 76.84045089963978,
+      "source_half_window_revolutions_per_minute": [
+        5215.500000000095,
+        5218.5000000000955
+      ],
+      "isolated_engine_energy_fraction": 0.4821651656554805,
+      "loop_start_source_frame": 7392,
+      "loop_end_source_frame_exclusive": 23627,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.43347616326652966,
+      "loop_reference_revolutions_per_minute": 5215.398829688944,
+      "derived_true_peak_target_dbfs": -4.0,
+      "derived_band_rms_300_6000": 0.14319211803231185,
+      "calibrated_gain": 0.5541447226063448,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.0005750431282347815
+    },
+    {
+      "loop_identifier": "engine_medium_loop",
+      "derived_filename": "engine_medium_loop.wav",
+      "source_window_start_seconds": 87.0,
+      "source_window_end_seconds": 88.0,
+      "source_estimated_revolutions_per_minute": 7270.500000000562,
+      "source_estimator_score": 66.7536377515633,
+      "source_half_window_revolutions_per_minute": [
+        7260.000000000559,
+        7311.000000000571
+      ],
+      "isolated_engine_energy_fraction": 0.20306942706215575,
+      "loop_start_source_frame": 15828,
+      "loop_end_source_frame_exclusive": 27473,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.3299700841257434,
+      "loop_reference_revolutions_per_minute": 7271.1034778875055,
+      "derived_true_peak_target_dbfs": -4.0,
+      "derived_band_rms_300_6000": 0.17307835640124813,
+      "calibrated_gain": 0.5302011082745084,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.007000205888409562
+    },
+    {
+      "loop_identifier": "engine_high_loop",
+      "derived_filename": "engine_high_loop.wav",
+      "source_window_start_seconds": 120.0,
+      "source_window_end_seconds": 121.0,
+      "source_estimated_revolutions_per_minute": 8206.500000000775,
+      "source_estimator_score": 79.58119994628976,
+      "source_half_window_revolutions_per_minute": [
+        8170.500000000767,
+        8235.00000000078
+      ],
+      "isolated_engine_energy_fraction": 0.2132439119531355,
+      "loop_start_source_frame": 16677,
+      "loop_end_source_frame_exclusive": 26994,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.17697434447552002,
+      "loop_reference_revolutions_per_minute": 8207.036929339924,
+      "derived_true_peak_target_dbfs": -4.0,
+      "derived_band_rms_300_6000": 0.1645797071982057,
+      "calibrated_gain": 0.5541478411872246,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.007863216604188542
+    },
+    {
+      "loop_identifier": "engine_maximum_loop",
+      "derived_filename": "engine_maximum_loop.wav",
+      "source_window_start_seconds": 104.5,
+      "source_window_end_seconds": 105.5,
+      "source_estimated_revolutions_per_minute": 8622.00000000087,
+      "source_estimator_score": 75.68016701724187,
+      "source_half_window_revolutions_per_minute": [
+        8583.00000000086,
+        8632.500000000871
+      ],
+      "isolated_engine_energy_fraction": 0.3843976926390321,
+      "loop_start_source_frame": 18036,
+      "loop_end_source_frame_exclusive": 27855,
+      "loop_cycles_720_degrees": 16,
+      "loop_seam_score": 0.2503027237987108,
+      "loop_reference_revolutions_per_minute": 8623.281393217232,
+      "derived_true_peak_target_dbfs": -4.0,
+      "derived_band_rms_300_6000": 0.1859803340707457,
+      "calibrated_gain": 0.4913222511389624,
+      "source_half_window_relative_revolutions_per_minute_spread": 0.005750631698179656
+    }
+  ],
+  "target_true_peak_decibels_full_scale": -4.0
+}
