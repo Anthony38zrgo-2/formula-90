@@ -12,6 +12,7 @@ const DEFAULT_PATH := "res://features/hud/config/hud_config.json"
 
 var retro_hud := RetroHudConfig.new()
 var tires := TiresSettings.new()
+var engine_temperatures := EngineTemperaturesSettings.new()
 
 
 static func load_from_json(path: String = DEFAULT_PATH) -> HudConfig:
@@ -30,6 +31,9 @@ static func load_from_json(path: String = DEFAULT_PATH) -> HudConfig:
 	var tires_data: Variant = parsed.get("tires", {})
 	if tires_data is Dictionary:
 		config.tires.apply(tires_data)
+	var engine_temperatures_data: Variant = parsed.get("engine_temperatures", {})
+	if engine_temperatures_data is Dictionary:
+		config.engine_temperatures.apply(engine_temperatures_data)
 	return config
 
 
@@ -158,6 +162,53 @@ class TiresSettings:
 
 
 	func _color(value: Variant, fallback: Color) -> Color:
+		if value is String and Color.html_is_valid(value):
+			return Color(value)
+		return fallback
+
+
+class EngineTemperaturesSettings:
+	extends RefCounted
+
+	var visible := true
+	var scale := 1.08
+	var size := Vector2(390.0, 82.0)
+	var gap := 8.0
+	var title := "ENGINE"
+	var margin_left := 8.0
+	var margin_right := 8.0
+	var margin_top := 6.0
+	var margin_bottom := 6.0
+	var column_separation := 24.0
+	var cold_color := Color("73b8ff")
+	var optimal_color := Color("a6ff9e")
+	var warm_color := Color("ffd16b")
+	var hot_color := Color("ff6b61")
+	var critical_color := Color("d91f1f")
+
+	func apply(data: Dictionary) -> void:
+		visible = bool(data.get("visible", visible))
+		scale = maxf(float(data.get("scale", scale)), 0.05)
+		size = _parse_size_vector(data.get("size", [size.x, size.y]), size)
+		gap = maxf(float(data.get("gap", gap)), 0.0)
+		title = str(data.get("title", title))
+		margin_left = maxf(float(data.get("margin_left", margin_left)), 0.0)
+		margin_right = maxf(float(data.get("margin_right", margin_right)), 0.0)
+		margin_top = maxf(float(data.get("margin_top", margin_top)), 0.0)
+		margin_bottom = maxf(float(data.get("margin_bottom", margin_bottom)), 0.0)
+		column_separation = maxf(float(data.get("column_separation", column_separation)), 0.0)
+		cold_color = _parse_html_color(data.get("cold_color", "#73b8ff"), cold_color)
+		optimal_color = _parse_html_color(data.get("optimal_color", "#a6ff9e"), optimal_color)
+		warm_color = _parse_html_color(data.get("warm_color", "#ffd16b"), warm_color)
+		hot_color = _parse_html_color(data.get("hot_color", "#ff6b61"), hot_color)
+		critical_color = _parse_html_color(data.get("critical_color", "#d91f1f"), critical_color)
+
+	func _parse_size_vector(value: Variant, fallback: Vector2) -> Vector2:
+		if value is Array and value.size() >= 2:
+			return Vector2(float(value[0]), float(value[1]))
+		return fallback
+
+	func _parse_html_color(value: Variant, fallback: Color) -> Color:
 		if value is String and Color.html_is_valid(value):
 			return Color(value)
 		return fallback

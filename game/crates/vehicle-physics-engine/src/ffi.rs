@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 13;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 14;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -56,6 +56,9 @@ pub struct FfiRuntimeConfig {
     pub suspension_rear_spring_length: f64,
     pub suspension_front_resting_ratio: f64,
     pub suspension_rear_resting_ratio: f64,
+    pub powertrain_cooling_duct_openings_supplied: bool,
+    pub water_cooling_duct_opening: f64,
+    pub oil_cooling_duct_opening: f64,
 }
 
 #[no_mangle]
@@ -105,6 +108,9 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             suspension_rear_spring_length: sim.config.rear_spring_length,
             suspension_front_resting_ratio: sim.config.front_resting_ratio,
             suspension_rear_resting_ratio: sim.config.rear_resting_ratio,
+            powertrain_cooling_duct_openings_supplied: false,
+            water_cooling_duct_opening: sim.config.powertrain_thermal.water_cooling_duct.opening,
+            oil_cooling_duct_opening: sim.config.powertrain_thermal.oil_cooling_duct.opening,
         };
     }
     true
@@ -117,6 +123,20 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
 pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) -> bool {
     apply_chassis_config(sim, cfg);
     apply_drivetrain_config(sim, cfg);
+    if cfg.powertrain_cooling_duct_openings_supplied {
+        if cfg.water_cooling_duct_opening.is_finite()
+            && (0.0..=1.0).contains(&cfg.water_cooling_duct_opening)
+        {
+            sim.config.powertrain_thermal.water_cooling_duct.opening =
+                cfg.water_cooling_duct_opening;
+        }
+        if cfg.oil_cooling_duct_opening.is_finite()
+            && (0.0..=1.0).contains(&cfg.oil_cooling_duct_opening)
+        {
+            sim.config.powertrain_thermal.oil_cooling_duct.opening =
+                cfg.oil_cooling_duct_opening;
+        }
+    }
     sim.aids = AidsMask::from_bits(cfg.aids_enabled_mask);
     true
 }
@@ -521,6 +541,32 @@ pub struct FfiTelemetryOutput {
     pub drive_torque_pre_tc_nm: [f64; 4],
     pub pre_tc_drive_power_w: f64,
     pub net_drive_power_w: f64,
+    pub engine_block_temperature_celsius: f64,
+    pub water_temperature_celsius: f64,
+    pub oil_temperature_celsius: f64,
+    pub engine_output_torque_newton_meters: f64,
+    pub engine_mechanical_power_watts: f64,
+    pub water_cooling_duct_opening: f64,
+    pub oil_cooling_duct_opening: f64,
+    pub water_cooling_mass_flow_kilograms_per_second: f64,
+    pub oil_cooling_mass_flow_kilograms_per_second: f64,
+    pub water_cooling_drag_force_newtons: f64,
+    pub oil_cooling_drag_force_newtons: f64,
+    pub total_powertrain_cooling_drag_force_newtons: f64,
+    pub generated_engine_heat_watts: f64,
+    pub engine_to_water_heat_transfer_watts: f64,
+    pub engine_to_oil_heat_transfer_watts: f64,
+    pub water_rejected_heat_watts: f64,
+    pub oil_rejected_heat_watts: f64,
+    pub available_engine_torque_fraction: f64,
+    pub water_optimal_minimum_temperature_celsius: f64,
+    pub water_optimal_maximum_temperature_celsius: f64,
+    pub water_hot_derating_temperature_celsius: f64,
+    pub water_critical_temperature_celsius: f64,
+    pub oil_optimal_minimum_temperature_celsius: f64,
+    pub oil_optimal_maximum_temperature_celsius: f64,
+    pub oil_hot_derating_temperature_celsius: f64,
+    pub oil_critical_temperature_celsius: f64,
 }
 
 #[no_mangle]
@@ -967,6 +1013,40 @@ fn write_telemetry(
                 .zip(sim.state.tires.wheels.iter())
                 .map(|(torque, wheel)| torque * wheel.spin)
                 .sum(),
+            engine_block_temperature_celsius: telem.engine_block_temperature_celsius,
+            water_temperature_celsius: telem.water_temperature_celsius,
+            oil_temperature_celsius: telem.oil_temperature_celsius,
+            engine_output_torque_newton_meters: telem.engine_output_torque_newton_meters,
+            engine_mechanical_power_watts: telem.engine_mechanical_power_watts,
+            water_cooling_duct_opening: telem.water_cooling_duct_opening,
+            oil_cooling_duct_opening: telem.oil_cooling_duct_opening,
+            water_cooling_mass_flow_kilograms_per_second: telem
+                .water_cooling_mass_flow_kilograms_per_second,
+            oil_cooling_mass_flow_kilograms_per_second: telem
+                .oil_cooling_mass_flow_kilograms_per_second,
+            water_cooling_drag_force_newtons: telem.water_cooling_drag_force_newtons,
+            oil_cooling_drag_force_newtons: telem.oil_cooling_drag_force_newtons,
+            total_powertrain_cooling_drag_force_newtons: telem
+                .total_powertrain_cooling_drag_force_newtons,
+            generated_engine_heat_watts: telem.generated_engine_heat_watts,
+            engine_to_water_heat_transfer_watts: telem.engine_to_water_heat_transfer_watts,
+            engine_to_oil_heat_transfer_watts: telem.engine_to_oil_heat_transfer_watts,
+            water_rejected_heat_watts: telem.water_rejected_heat_watts,
+            oil_rejected_heat_watts: telem.oil_rejected_heat_watts,
+            available_engine_torque_fraction: telem.available_engine_torque_fraction,
+            water_optimal_minimum_temperature_celsius: telem
+                .water_optimal_minimum_temperature_celsius,
+            water_optimal_maximum_temperature_celsius: telem
+                .water_optimal_maximum_temperature_celsius,
+            water_hot_derating_temperature_celsius: telem
+                .water_hot_derating_temperature_celsius,
+            water_critical_temperature_celsius: telem.water_critical_temperature_celsius,
+            oil_optimal_minimum_temperature_celsius: telem
+                .oil_optimal_minimum_temperature_celsius,
+            oil_optimal_maximum_temperature_celsius: telem
+                .oil_optimal_maximum_temperature_celsius,
+            oil_hot_derating_temperature_celsius: telem.oil_hot_derating_temperature_celsius,
+            oil_critical_temperature_celsius: telem.oil_critical_temperature_celsius,
         };
     }
 }
@@ -1015,7 +1095,9 @@ mod layout_tests {
         assert_eq!(offset_of!(FfiTelemetryOutput, drive_torque_pre_tc_nm), 1072);
         assert_eq!(offset_of!(FfiTelemetryOutput, pre_tc_drive_power_w), 1104);
         assert_eq!(offset_of!(FfiTelemetryOutput, net_drive_power_w), 1112);
-        assert_eq!(size_of::<FfiTelemetryOutput>(), 1120);
+        assert_eq!(offset_of!(FfiTelemetryOutput, engine_block_temperature_celsius), 1120);
+        assert_eq!(offset_of!(FfiTelemetryOutput, oil_critical_temperature_celsius), 1320);
+        assert_eq!(size_of::<FfiTelemetryOutput>(), 1328);
     }
 
     #[test]

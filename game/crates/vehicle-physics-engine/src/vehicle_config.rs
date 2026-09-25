@@ -10,6 +10,7 @@ use crate::suspension_geo_config::{
 use crate::tire_thermals::{
     PressureMechanicsSensitivity, TirePressureConfig, TireThermalAxleConfig, TireThermalConfig,
 };
+use crate::powertrain_thermals::PowertrainThermalConfig;
 use crate::types::{SurfaceType, Vec3, WheelIndex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -104,6 +105,7 @@ pub struct VehicleConfig {
     pub front_brake_bias: f64,
     pub max_brake_torque: f64,
     pub brake_thermal: BrakeThermalConfig,
+    pub powertrain_thermal: PowertrainThermalConfig,
 
     // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
     pub tire_pressure: TirePressureConfig,
@@ -640,6 +642,7 @@ impl VehicleConfig {
             front_brake_bias: 0.57,
             max_brake_torque: 2800.0,
             brake_thermal: BrakeThermalConfig::default(),
+            powertrain_thermal: PowertrainThermalConfig::default(),
 
             // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
             tire_pressure: TirePressureConfig::default(),
@@ -818,6 +821,7 @@ impl VehicleConfig {
             front_brake_bias: 0.58,
             max_brake_torque: 2800.0,
             brake_thermal: BrakeThermalConfig::default(),
+            powertrain_thermal: PowertrainThermalConfig::default(),
 
             // Tire pressure + thermal (legacy Jordan uses canonical defaults)
             tire_pressure: TirePressureConfig::default(),
@@ -1235,6 +1239,8 @@ struct JsonPowertrain {
     automatic_shift: Option<JsonAutomaticShift>,
     #[serde(default)]
     differential: JsonDifferential,
+    #[serde(default)]
+    thermal: Option<PowertrainThermalConfig>,
 }
 impl Default for JsonPowertrain {
     fn default() -> Self {
@@ -1260,6 +1266,7 @@ impl Default for JsonPowertrain {
             handbrake_torque_fraction: default_handbrake_frac(),
             automatic_shift: None,
             differential: JsonDifferential::default(),
+            thermal: None,
         }
     }
 }
@@ -2949,6 +2956,12 @@ impl JsonVehicleSpec {
             .map(JsonBrakeThermal::to_config)
             .unwrap_or_default();
         validate_brake_thermal(&brake_thermal)?;
+        self.powertrain
+            .thermal
+            .as_ref()
+            .cloned()
+            .unwrap_or_default()
+            .validate()?;
         self.validate_wheel_lock()?;
         self.validate_aids()?;
         if self.suspension.front.spring_length <= 0.0 || self.suspension.rear.spring_length <= 0.0 {
@@ -3313,6 +3326,7 @@ impl JsonVehicleSpec {
             reverse_ratio: self.powertrain.reverse_ratio,
             shift_time: self.powertrain.shift_time,
             automatic_transmission: self.powertrain.automatic_transmission,
+            powertrain_thermal: self.powertrain.thermal.unwrap_or_default(),
             automatic_shift: self
                 .powertrain
                 .automatic_shift
@@ -3614,6 +3628,7 @@ impl JsonVehicleSpec {
                 reverse_ratio: cfg.reverse_ratio,
                 shift_time: cfg.shift_time,
                 automatic_transmission: cfg.automatic_transmission,
+                thermal: Some(cfg.powertrain_thermal.clone()),
                 front_torque_split: cfg.front_torque_split,
                 gear_inertia: 0.02,
                 max_clutch_torque_ratio: cfg.max_clutch_torque_ratio,

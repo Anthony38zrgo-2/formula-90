@@ -444,7 +444,7 @@
     "abs_spin_diff_threshold": 12.0,
     "enable_abs": false,
     "front_brake_bias": 0.56,
-    "max_brake_torque": 3000.0,
+    "max_brake_torque": 3967.5,
     "wheel_lock_blend_spin_rad_s": 8.0,
     "wheel_lock_stick_tau_s": 0.02,
     "thermal": {
@@ -542,7 +542,7 @@
   "powertrain": {
     "automatic_transmission": false,
     "clutch_out_rpm_offset": 1100.0,
-    "constant_brake_ratio": 0.02,
+    "constant_brake_ratio": 0.015,
     "differential": {
       "clutch_friction_coefficient": 0.09,
       "clutches": 6.0,
@@ -568,7 +568,7 @@
     "max_clutch_torque_ratio": 1.1,
     "max_rpm": 18000.0,
     "max_torque": 400.0,
-    "motor_moment": 0.07,
+    "motor_moment": 0.1,
     "reverse_ratio": 4.2,
     "shift_time": 0.05,
     "torque_attack_rate_nm_s": 1100.0,
@@ -614,7 +614,56 @@
         0.88
       ]
     ],
-    "variable_drag_ratio": 0.1
+    "thermal": {
+      "initial_engine_block_temperature_celsius": 100.0,
+      "initial_water_temperature_celsius": 85.0,
+      "initial_oil_temperature_celsius": 100.0,
+      "engine_block_heat_capacity_joules_per_kelvin": 48000.0,
+      "water_heat_capacity_joules_per_kelvin": 22000.0,
+      "oil_heat_capacity_joules_per_kelvin": 13000.0,
+      "engine_to_water_conductance_watts_per_kelvin": 900.0,
+      "engine_to_oil_conductance_watts_per_kelvin": 420.0,
+      "idle_heat_generation_watts": 18000.0,
+      "heat_generation_per_mechanical_power": 1.4,
+      "exhaust_heat_fraction": 0.65,
+      "engine_block_heat_fraction": 0.08,
+      "water_heat_fraction": 0.2,
+      "oil_heat_fraction": 0.07,
+      "water_optimal_minimum_temperature_celsius": 80.0,
+      "water_optimal_maximum_temperature_celsius": 105.0,
+      "water_hot_derating_temperature_celsius": 110.0,
+      "water_critical_temperature_celsius": 120.0,
+      "water_minimum_cold_engine_torque_fraction": 0.96,
+      "oil_optimal_minimum_temperature_celsius": 95.0,
+      "oil_optimal_maximum_temperature_celsius": 125.0,
+      "oil_hot_derating_temperature_celsius": 130.0,
+      "oil_critical_temperature_celsius": 145.0,
+      "oil_minimum_cold_engine_torque_fraction": 0.88,
+      "minimum_hot_engine_torque_fraction": 0.70,
+      "water_cooling_duct": {
+        "opening": 0.5,
+        "maximum_inlet_area_square_meters": 0.12,
+        "discharge_coefficient": 0.72,
+        "pressure_recovery": 0.65,
+        "drag_coefficient": 0.70,
+        "area_response_exponent": 1.15,
+        "air_specific_heat_joules_per_kilogram_kelvin": 1005.0,
+        "heat_exchanger_conductance_watts_per_kelvin": 4500.0,
+        "base_cooling_conductance_watts_per_kelvin": 60.0
+      },
+      "oil_cooling_duct": {
+        "opening": 0.35,
+        "maximum_inlet_area_square_meters": 0.05,
+        "discharge_coefficient": 0.72,
+        "pressure_recovery": 0.60,
+        "drag_coefficient": 0.65,
+        "area_response_exponent": 1.15,
+        "air_specific_heat_joules_per_kilogram_kelvin": 1005.0,
+        "heat_exchanger_conductance_watts_per_kelvin": 2500.0,
+        "base_cooling_conductance_watts_per_kelvin": 30.0
+      }
+    },
+    "variable_drag_ratio": 0.075
   },
   "profile_name": "F1 2030 V10 3.5L NA (900cv) (Geometric prototype)",
   "schema_version": 3,

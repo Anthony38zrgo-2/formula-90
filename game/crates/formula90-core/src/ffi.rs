@@ -23,7 +23,7 @@ use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 13;
+pub const F90_CORE_ABI_VERSION: u32 = 14;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -187,6 +187,32 @@ pub struct F90CoreFrameOut {
     // Append-only ABI 13 underfloor rigid-contact diagnostics.
     pub underfloor_rigid_local_y: f64,
     pub underfloor_rigid_normal_impulse_ns: f64,
+    pub engine_block_temperature_celsius: f64,
+    pub water_temperature_celsius: f64,
+    pub oil_temperature_celsius: f64,
+    pub engine_output_torque_newton_meters: f64,
+    pub engine_mechanical_power_watts: f64,
+    pub water_cooling_duct_opening: f64,
+    pub oil_cooling_duct_opening: f64,
+    pub water_cooling_mass_flow_kilograms_per_second: f64,
+    pub oil_cooling_mass_flow_kilograms_per_second: f64,
+    pub water_cooling_drag_force_newtons: f64,
+    pub oil_cooling_drag_force_newtons: f64,
+    pub total_powertrain_cooling_drag_force_newtons: f64,
+    pub generated_engine_heat_watts: f64,
+    pub engine_to_water_heat_transfer_watts: f64,
+    pub engine_to_oil_heat_transfer_watts: f64,
+    pub water_rejected_heat_watts: f64,
+    pub oil_rejected_heat_watts: f64,
+    pub available_engine_torque_fraction: f64,
+    pub water_optimal_minimum_temperature_celsius: f64,
+    pub water_optimal_maximum_temperature_celsius: f64,
+    pub water_hot_derating_temperature_celsius: f64,
+    pub water_critical_temperature_celsius: f64,
+    pub oil_optimal_minimum_temperature_celsius: f64,
+    pub oil_optimal_maximum_temperature_celsius: f64,
+    pub oil_hot_derating_temperature_celsius: f64,
+    pub oil_critical_temperature_celsius: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -583,6 +609,41 @@ pub unsafe extern "C" fn f90_core_step(
                 pre_tc_drive_power_w: frame.pre_tc_drive_power_w,
                 underfloor_rigid_local_y: frame.underfloor_rigid_local_y,
                 underfloor_rigid_normal_impulse_ns: frame.underfloor_rigid_normal_impulse_ns,
+                engine_block_temperature_celsius: frame.engine_block_temperature_celsius,
+                water_temperature_celsius: frame.water_temperature_celsius,
+                oil_temperature_celsius: frame.oil_temperature_celsius,
+                engine_output_torque_newton_meters: frame.engine_output_torque_newton_meters,
+                engine_mechanical_power_watts: frame.engine_mechanical_power_watts,
+                water_cooling_duct_opening: frame.water_cooling_duct_opening,
+                oil_cooling_duct_opening: frame.oil_cooling_duct_opening,
+                water_cooling_mass_flow_kilograms_per_second: frame
+                    .water_cooling_mass_flow_kilograms_per_second,
+                oil_cooling_mass_flow_kilograms_per_second: frame
+                    .oil_cooling_mass_flow_kilograms_per_second,
+                water_cooling_drag_force_newtons: frame.water_cooling_drag_force_newtons,
+                oil_cooling_drag_force_newtons: frame.oil_cooling_drag_force_newtons,
+                total_powertrain_cooling_drag_force_newtons: frame
+                    .total_powertrain_cooling_drag_force_newtons,
+                generated_engine_heat_watts: frame.generated_engine_heat_watts,
+                engine_to_water_heat_transfer_watts: frame.engine_to_water_heat_transfer_watts,
+                engine_to_oil_heat_transfer_watts: frame.engine_to_oil_heat_transfer_watts,
+                water_rejected_heat_watts: frame.water_rejected_heat_watts,
+                oil_rejected_heat_watts: frame.oil_rejected_heat_watts,
+                available_engine_torque_fraction: frame.available_engine_torque_fraction,
+                water_optimal_minimum_temperature_celsius: frame
+                    .water_optimal_minimum_temperature_celsius,
+                water_optimal_maximum_temperature_celsius: frame
+                    .water_optimal_maximum_temperature_celsius,
+                water_hot_derating_temperature_celsius: frame
+                    .water_hot_derating_temperature_celsius,
+                water_critical_temperature_celsius: frame.water_critical_temperature_celsius,
+                oil_optimal_minimum_temperature_celsius: frame
+                    .oil_optimal_minimum_temperature_celsius,
+                oil_optimal_maximum_temperature_celsius: frame
+                    .oil_optimal_maximum_temperature_celsius,
+                oil_hot_derating_temperature_celsius: frame
+                    .oil_hot_derating_temperature_celsius,
+                oil_critical_temperature_celsius: frame.oil_critical_temperature_celsius,
             };
         }
     }
@@ -964,7 +1025,9 @@ mod layout_tests {
             offset_of!(F90CoreFrameOut, underfloor_rigid_normal_impulse_ns),
             1592
         );
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1600);
+        assert_eq!(offset_of!(F90CoreFrameOut, engine_block_temperature_celsius), 1600);
+        assert_eq!(offset_of!(F90CoreFrameOut, oil_critical_temperature_celsius), 1800);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1808);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

@@ -123,6 +123,32 @@ typedef struct F90CoreFrameOut {
     // Append-only ABI 13 underfloor rigid-contact diagnostics.
     double underfloor_rigid_local_y;
     double underfloor_rigid_normal_impulse_ns;
+    double engine_block_temperature_celsius;
+    double water_temperature_celsius;
+    double oil_temperature_celsius;
+    double engine_output_torque_newton_meters;
+    double engine_mechanical_power_watts;
+    double water_cooling_duct_opening;
+    double oil_cooling_duct_opening;
+    double water_cooling_mass_flow_kilograms_per_second;
+    double oil_cooling_mass_flow_kilograms_per_second;
+    double water_cooling_drag_force_newtons;
+    double oil_cooling_drag_force_newtons;
+    double total_powertrain_cooling_drag_force_newtons;
+    double generated_engine_heat_watts;
+    double engine_to_water_heat_transfer_watts;
+    double engine_to_oil_heat_transfer_watts;
+    double water_rejected_heat_watts;
+    double oil_rejected_heat_watts;
+    double available_engine_torque_fraction;
+    double water_optimal_minimum_temperature_celsius;
+    double water_optimal_maximum_temperature_celsius;
+    double water_hot_derating_temperature_celsius;
+    double water_critical_temperature_celsius;
+    double oil_optimal_minimum_temperature_celsius;
+    double oil_optimal_maximum_temperature_celsius;
+    double oil_hot_derating_temperature_celsius;
+    double oil_critical_temperature_celsius;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {
