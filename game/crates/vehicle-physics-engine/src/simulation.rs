@@ -1,6 +1,7 @@
 use crate::aero::{AeroEnvironment, AeroForces, AeroKinematics, AeroProbeMode};
 use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
+use crate::powertrain_thermals::{PowertrainThermalInput, PowertrainThermalSystem};
 use crate::suspension::{rest_compression_m, SuspensionSystem};
 use crate::suspension_loads::geometric_wheel_wrench;
 use crate::suspension_geo_config::SuspensionModelKind;
@@ -44,6 +45,7 @@ pub struct VehicleState {
     pub tires: TireSystem,
     pub tire_thermal: TireThermalSystem,
     pub brake_thermal: BrakeThermalSystem,
+    pub powertrain_thermal: PowertrainThermalSystem,
     pub aero: AeroForces,
     pub sim_time: f64,
     pub physics_hz: i32,
@@ -70,6 +72,7 @@ impl VehicleState {
                 &config.tire_thermal,
             ),
             brake_thermal: BrakeThermalSystem::new(&config.brake_thermal),
+            powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain_thermal),
             aero: AeroForces::zero(),
             sim_time: 0.0,
             physics_hz: 120,
@@ -297,6 +300,19 @@ impl VehicleSimulator {
             cfg.air_density,
             vehicle_speed_ms,
         );
+        st.powertrain_thermal
+            .update_available_engine_torque_fraction(&cfg.powertrain_thermal);
+        let available_engine_torque_fraction =
+            st.powertrain_thermal.available_engine_torque_fraction;
+        st.powertrain_thermal.evaluate_cooling_ducts(
+            &cfg.powertrain_thermal,
+            cfg.air_density,
+            vehicle_speed_ms,
+        );
+        let total_cooling_drag_force_newtons = brake_duct_drag_n
+            + st
+                .powertrain_thermal
+                .total_powertrain_cooling_drag_force_newtons;
 
         // Pressure/thermal mechanical modifiers from the CURRENT tick's tire
         // thermal state (pressure N drives mechanics/forces N; heat updates the
@@ -341,7 +357,8 @@ impl VehicleSimulator {
         let abs_enabled = self.aids.abs;
         let brake_assist_enabled = self.aids.brake_assist;
         let brake_efficiency = st.brake_thermal.efficiency_scales();
-        st.powertrain.step_with_reaction(
+        st.powertrain
+            .step_with_reaction_and_available_engine_torque_fraction(
             cfg,
             &effective_input,
             &wheel_spins,
@@ -350,6 +367,7 @@ impl VehicleSimulator {
             tc_enabled,
             brake_assist_enabled,
             abs_enabled,
+            available_engine_torque_fraction,
             dt,
         );
 
@@ -387,7 +405,7 @@ impl VehicleSimulator {
         // Brake-duct drag remains owned by the brake thermal model. The aero
         // solver already includes body/wing/floor drag and their moments.
         let drag_world = if st.linear_velocity.length() > 1e-6 {
-            st.linear_velocity.normalized() * -brake_duct_drag_n
+            st.linear_velocity.normalized() * -total_cooling_drag_force_newtons
         } else {
             Vec3::ZERO
         };
@@ -661,6 +679,18 @@ impl VehicleSimulator {
                     dt,
                 );
             }
+            st.powertrain_thermal.advance_temperatures(
+                &cfg.powertrain_thermal,
+                PowertrainThermalInput {
+                    engine_speed_revolutions_per_minute: st.powertrain.rpm,
+                    engine_torque_newton_meters: st.powertrain.engine_torque,
+                    driver_throttle_fraction: effective_input.throttle,
+                    vehicle_speed_meters_per_second: vehicle_speed_ms,
+                    air_density_kilograms_per_cubic_meter: cfg.air_density,
+                    ambient_temperature_celsius: cfg.tire_thermal.front.ambient_fallback_c,
+                },
+                dt,
+            );
         }
 
         // ESP / yaw-stability aid: counter only the excess yaw beyond the engage
@@ -996,6 +1026,74 @@ impl VehicleSimulator {
             wheel_effective_steer_angle_rad: std::array::from_fn(|i| {
                 st.tires.wheels[i].steer_angle_rad
             }),
+            engine_block_temperature_celsius: st
+                .powertrain_thermal
+                .engine_block_temperature_celsius,
+            water_temperature_celsius: st.powertrain_thermal.water_temperature_celsius,
+            oil_temperature_celsius: st.powertrain_thermal.oil_temperature_celsius,
+            engine_output_torque_newton_meters: st.powertrain.engine_torque,
+            engine_mechanical_power_watts: st.powertrain.engine_torque.max(0.0)
+                * st.powertrain.rpm
+                * 2.0
+                * std::f64::consts::PI
+                / 60.0,
+            water_cooling_duct_opening: cfg.powertrain_thermal.water_cooling_duct.opening,
+            oil_cooling_duct_opening: cfg.powertrain_thermal.oil_cooling_duct.opening,
+            water_cooling_mass_flow_kilograms_per_second: st
+                .powertrain_thermal
+                .water_cooling_duct_flow
+                .mass_flow_kilograms_per_second,
+            oil_cooling_mass_flow_kilograms_per_second: st
+                .powertrain_thermal
+                .oil_cooling_duct_flow
+                .mass_flow_kilograms_per_second,
+            water_cooling_drag_force_newtons: st
+                .powertrain_thermal
+                .water_cooling_duct_flow
+                .drag_force_newtons,
+            oil_cooling_drag_force_newtons: st
+                .powertrain_thermal
+                .oil_cooling_duct_flow
+                .drag_force_newtons,
+            total_powertrain_cooling_drag_force_newtons: st
+                .powertrain_thermal
+                .total_powertrain_cooling_drag_force_newtons,
+            generated_engine_heat_watts: st.powertrain_thermal.generated_engine_heat_watts,
+            engine_to_water_heat_transfer_watts: st
+                .powertrain_thermal
+                .engine_to_water_heat_transfer_watts,
+            engine_to_oil_heat_transfer_watts: st
+                .powertrain_thermal
+                .engine_to_oil_heat_transfer_watts,
+            water_rejected_heat_watts: st.powertrain_thermal.water_rejected_heat_watts,
+            oil_rejected_heat_watts: st.powertrain_thermal.oil_rejected_heat_watts,
+            available_engine_torque_fraction: st
+                .powertrain_thermal
+                .available_engine_torque_fraction,
+            water_optimal_minimum_temperature_celsius: cfg
+                .powertrain_thermal
+                .water_optimal_minimum_temperature_celsius,
+            water_optimal_maximum_temperature_celsius: cfg
+                .powertrain_thermal
+                .water_optimal_maximum_temperature_celsius,
+            water_hot_derating_temperature_celsius: cfg
+                .powertrain_thermal
+                .water_hot_derating_temperature_celsius,
+            water_critical_temperature_celsius: cfg
+                .powertrain_thermal
+                .water_critical_temperature_celsius,
+            oil_optimal_minimum_temperature_celsius: cfg
+                .powertrain_thermal
+                .oil_optimal_minimum_temperature_celsius,
+            oil_optimal_maximum_temperature_celsius: cfg
+                .powertrain_thermal
+                .oil_optimal_maximum_temperature_celsius,
+            oil_hot_derating_temperature_celsius: cfg
+                .powertrain_thermal
+                .oil_hot_derating_temperature_celsius,
+            oil_critical_temperature_celsius: cfg
+                .powertrain_thermal
+                .oil_critical_temperature_celsius,
         }
     }
 }

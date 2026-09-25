@@ -205,6 +205,8 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
+	ClassDB::bind_method(D_METHOD("get_engine_thermal_state_snapshot"), &F194RustVehicle::get_engine_thermal_state_snapshot);
+	ClassDB::bind_method(D_METHOD("set_powertrain_cooling_duct_openings", "water_cooling_duct_opening", "oil_cooling_duct_opening"), &F194RustVehicle::set_powertrain_cooling_duct_openings);
 	ClassDB::bind_method(D_METHOD("get_underfloor_state_snapshot"), &F194RustVehicle::get_underfloor_state_snapshot);
 }
 
@@ -758,6 +760,33 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	tc_cut_ratio_ = telem.tc_cut_ratio;
 	pre_tc_drive_power_w_ = telem.pre_tc_drive_power_w;
 	net_drive_power_w_ = telem.net_drive_power_w;
+	engine_block_temperature_celsius_ = telem.engine_block_temperature_celsius;
+	water_temperature_celsius_ = telem.water_temperature_celsius;
+	oil_temperature_celsius_ = telem.oil_temperature_celsius;
+	engine_output_torque_newton_meters_ = telem.engine_output_torque_newton_meters;
+	engine_mechanical_power_watts_ = telem.engine_mechanical_power_watts;
+	water_cooling_duct_opening_ = telem.water_cooling_duct_opening;
+	oil_cooling_duct_opening_ = telem.oil_cooling_duct_opening;
+	water_cooling_mass_flow_kilograms_per_second_ = telem.water_cooling_mass_flow_kilograms_per_second;
+	oil_cooling_mass_flow_kilograms_per_second_ = telem.oil_cooling_mass_flow_kilograms_per_second;
+	water_cooling_drag_force_newtons_ = telem.water_cooling_drag_force_newtons;
+	oil_cooling_drag_force_newtons_ = telem.oil_cooling_drag_force_newtons;
+	total_powertrain_cooling_drag_force_newtons_ = telem.total_powertrain_cooling_drag_force_newtons;
+	generated_engine_heat_watts_ = telem.generated_engine_heat_watts;
+	engine_to_water_heat_transfer_watts_ = telem.engine_to_water_heat_transfer_watts;
+	engine_to_oil_heat_transfer_watts_ = telem.engine_to_oil_heat_transfer_watts;
+	water_rejected_heat_watts_ = telem.water_rejected_heat_watts;
+	oil_rejected_heat_watts_ = telem.oil_rejected_heat_watts;
+	available_engine_torque_fraction_ = telem.available_engine_torque_fraction;
+	water_optimal_minimum_temperature_celsius_ = telem.water_optimal_minimum_temperature_celsius;
+	water_optimal_maximum_temperature_celsius_ = telem.water_optimal_maximum_temperature_celsius;
+	water_hot_derating_temperature_celsius_ = telem.water_hot_derating_temperature_celsius;
+	water_critical_temperature_celsius_ = telem.water_critical_temperature_celsius;
+	oil_optimal_minimum_temperature_celsius_ = telem.oil_optimal_minimum_temperature_celsius;
+	oil_optimal_maximum_temperature_celsius_ = telem.oil_optimal_maximum_temperature_celsius;
+	oil_hot_derating_temperature_celsius_ = telem.oil_hot_derating_temperature_celsius;
+	oil_critical_temperature_celsius_ = telem.oil_critical_temperature_celsius;
+	engine_thermal_telemetry_available_ = true;
 	wheel_normal_forces_[0] = telem.fl_normal_force;
 	wheel_normal_forces_[1] = telem.fr_normal_force;
 	wheel_normal_forces_[2] = telem.rl_normal_force;
@@ -1061,6 +1090,11 @@ void F194RustVehicle::apply_runtime_config() {
 	cfg.suspension_rear_spring_length = suspension_rear_spring_length_;
 	cfg.suspension_front_resting_ratio = suspension_front_resting_ratio_;
 	cfg.suspension_rear_resting_ratio = suspension_rear_resting_ratio_;
+	if (powertrain_cooling_duct_openings_overridden_) {
+		cfg.powertrain_cooling_duct_openings_supplied = true;
+		cfg.water_cooling_duct_opening = water_cooling_duct_opening_;
+		cfg.oil_cooling_duct_opening = oil_cooling_duct_opening_;
+	}
 
 	if (sim_ptr_ && fn_apply_runtime_config_) {
 		fn_apply_runtime_config_(sim_ptr_, &cfg);
@@ -1275,6 +1309,7 @@ bool F194RustVehicle::get_automatic_transmission() const {
 }
 
 void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
+	engine_thermal_telemetry_available_ = false;
 	if (sim_ptr_ && fn_reset_) {
 		fn_reset_(sim_ptr_, p_pos.x, p_pos.y, p_pos.z, p_yaw_rad);
 	}
@@ -1639,6 +1674,73 @@ Dictionary F194RustVehicle::get_brake_state_snapshot() const {
 	return out;
 }
 
+Dictionary F194RustVehicle::get_engine_thermal_state_snapshot() const {
+	Dictionary out;
+	if (!engine_thermal_telemetry_available_) {
+		return out;
+	}
+	out["schema_version"] = 1;
+	out["engine_block_temperature_c"] = engine_block_temperature_celsius_;
+	out["available_engine_torque_fraction"] = available_engine_torque_fraction_;
+	out["engine_output_torque_nm"] = engine_output_torque_newton_meters_;
+	out["engine_mechanical_power_w"] = engine_mechanical_power_watts_;
+	out["generated_engine_heat_w"] = generated_engine_heat_watts_;
+	out["engine_to_water_heat_transfer_w"] = engine_to_water_heat_transfer_watts_;
+	out["engine_to_oil_heat_transfer_w"] = engine_to_oil_heat_transfer_watts_;
+	out["water_rejected_heat_w"] = water_rejected_heat_watts_;
+	out["oil_rejected_heat_w"] = oil_rejected_heat_watts_;
+	out["total_powertrain_cooling_drag_n"] = total_powertrain_cooling_drag_force_newtons_;
+	Dictionary water;
+	water["temperature_c"] = water_temperature_celsius_;
+	water["duct_opening"] = water_cooling_duct_opening_;
+	water["mass_flow_kg_s"] = water_cooling_mass_flow_kilograms_per_second_;
+	water["drag_n"] = water_cooling_drag_force_newtons_;
+	water["optimal_min_c"] = water_optimal_minimum_temperature_celsius_;
+	water["optimal_max_c"] = water_optimal_maximum_temperature_celsius_;
+	water["derating_c"] = water_hot_derating_temperature_celsius_;
+	water["critical_c"] = water_critical_temperature_celsius_;
+	Dictionary oil;
+	oil["temperature_c"] = oil_temperature_celsius_;
+	oil["duct_opening"] = oil_cooling_duct_opening_;
+	oil["mass_flow_kg_s"] = oil_cooling_mass_flow_kilograms_per_second_;
+	oil["drag_n"] = oil_cooling_drag_force_newtons_;
+	oil["optimal_min_c"] = oil_optimal_minimum_temperature_celsius_;
+	oil["optimal_max_c"] = oil_optimal_maximum_temperature_celsius_;
+	oil["derating_c"] = oil_hot_derating_temperature_celsius_;
+	oil["critical_c"] = oil_critical_temperature_celsius_;
+	out["water"] = water;
+	out["oil"] = oil;
+	return out;
+}
+
+bool F194RustVehicle::set_powertrain_cooling_duct_openings(
+		double water_cooling_duct_opening,
+		double oil_cooling_duct_opening) {
+	if (!std::isfinite(water_cooling_duct_opening) || !std::isfinite(oil_cooling_duct_opening)
+			|| water_cooling_duct_opening < 0.0 || water_cooling_duct_opening > 1.0
+			|| oil_cooling_duct_opening < 0.0 || oil_cooling_duct_opening > 1.0
+			|| sim_ptr_ == nullptr || fn_get_runtime_config_ == nullptr) {
+		return false;
+	}
+	F90RuntimeConfig config = {};
+	if (!fn_get_runtime_config_(sim_ptr_, &config)) {
+		return false;
+	}
+	config.powertrain_cooling_duct_openings_supplied = true;
+	config.water_cooling_duct_opening = water_cooling_duct_opening;
+	config.oil_cooling_duct_opening = oil_cooling_duct_opening;
+	if (fn_apply_runtime_config_ == nullptr || !fn_apply_runtime_config_(sim_ptr_, &config)) {
+		return false;
+	}
+	water_cooling_duct_opening_ = water_cooling_duct_opening;
+	oil_cooling_duct_opening_ = oil_cooling_duct_opening;
+	powertrain_cooling_duct_openings_overridden_ = true;
+	if (core_driver_ != nullptr) {
+		core_driver_->apply_runtime_config(config);
+	}
+	return true;
+}
+
 Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	static const char *NAMES[5] = { "front_left", "front_right", "center", "diffuser_throat", "diffuser_exit" };
 	Dictionary out;
@@ -1816,6 +1918,33 @@ void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_fra
 	tc_cut_ratio_ = p_frame.tc_cut_ratio;
 	pre_tc_drive_power_w_ = p_frame.pre_tc_drive_power_w;
 	net_drive_power_w_ = p_frame.net_drive_power_w;
+	engine_block_temperature_celsius_ = p_frame.engine_block_temperature_celsius;
+	water_temperature_celsius_ = p_frame.water_temperature_celsius;
+	oil_temperature_celsius_ = p_frame.oil_temperature_celsius;
+	engine_output_torque_newton_meters_ = p_frame.engine_output_torque_newton_meters;
+	engine_mechanical_power_watts_ = p_frame.engine_mechanical_power_watts;
+	water_cooling_duct_opening_ = p_frame.water_cooling_duct_opening;
+	oil_cooling_duct_opening_ = p_frame.oil_cooling_duct_opening;
+	water_cooling_mass_flow_kilograms_per_second_ = p_frame.water_cooling_mass_flow_kilograms_per_second;
+	oil_cooling_mass_flow_kilograms_per_second_ = p_frame.oil_cooling_mass_flow_kilograms_per_second;
+	water_cooling_drag_force_newtons_ = p_frame.water_cooling_drag_force_newtons;
+	oil_cooling_drag_force_newtons_ = p_frame.oil_cooling_drag_force_newtons;
+	total_powertrain_cooling_drag_force_newtons_ = p_frame.total_powertrain_cooling_drag_force_newtons;
+	generated_engine_heat_watts_ = p_frame.generated_engine_heat_watts;
+	engine_to_water_heat_transfer_watts_ = p_frame.engine_to_water_heat_transfer_watts;
+	engine_to_oil_heat_transfer_watts_ = p_frame.engine_to_oil_heat_transfer_watts;
+	water_rejected_heat_watts_ = p_frame.water_rejected_heat_watts;
+	oil_rejected_heat_watts_ = p_frame.oil_rejected_heat_watts;
+	available_engine_torque_fraction_ = p_frame.available_engine_torque_fraction;
+	water_optimal_minimum_temperature_celsius_ = p_frame.water_optimal_minimum_temperature_celsius;
+	water_optimal_maximum_temperature_celsius_ = p_frame.water_optimal_maximum_temperature_celsius;
+	water_hot_derating_temperature_celsius_ = p_frame.water_hot_derating_temperature_celsius;
+	water_critical_temperature_celsius_ = p_frame.water_critical_temperature_celsius;
+	oil_optimal_minimum_temperature_celsius_ = p_frame.oil_optimal_minimum_temperature_celsius;
+	oil_optimal_maximum_temperature_celsius_ = p_frame.oil_optimal_maximum_temperature_celsius;
+	oil_hot_derating_temperature_celsius_ = p_frame.oil_hot_derating_temperature_celsius;
+	oil_critical_temperature_celsius_ = p_frame.oil_critical_temperature_celsius;
+	engine_thermal_telemetry_available_ = true;
 }
 
 } // namespace godot

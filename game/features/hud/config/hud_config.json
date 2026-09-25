@@ -46,5 +46,25 @@
       "hot_color": "#ff6b61",
       "critical_color": "#d91f1f"
     }
+  },
+  "engine_temperatures": {
+    "visible": true,
+    "scale": 1.08,
+    "size": [
+      390.0,
+      82.0
+    ],
+    "gap": 8.0,
+    "title": "ENGINE",
+    "margin_left": 8.0,
+    "margin_right": 8.0,
+    "margin_top": 6.0,
+    "margin_bottom": 6.0,
+    "column_separation": 24.0,
+    "cold_color": "#73b8ff",
+    "optimal_color": "#a6ff9e",
+    "warm_color": "#ffd16b",
+    "hot_color": "#ff6b61",
+    "critical_color": "#d91f1f"
   }
 }

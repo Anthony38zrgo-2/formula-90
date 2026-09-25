@@ -113,11 +113,64 @@ impl PowertrainState {
         abs_enabled: bool,
         dt: f64,
     ) {
-        let dt = dt.max(1e-5);
-        self.process_shift(config, input, wheel_spins, forward_speed_m_s, dt);
-        self.process_engine_and_clutch(config, input, wheel_spins, tire_reaction_torques, dt);
-        self.distribute_drive_torque(config, wheel_spins, tc_enabled, forward_speed_m_s, dt);
-        self.process_brakes(config, input, wheel_spins, dt, brake_assist_enabled, abs_enabled);
+        self.step_with_reaction_and_available_engine_torque_fraction(
+            config,
+            input,
+            wheel_spins,
+            tire_reaction_torques,
+            forward_speed_m_s,
+            tc_enabled,
+            brake_assist_enabled,
+            abs_enabled,
+            1.0,
+            dt,
+        );
+    }
+
+    pub fn step_with_reaction_and_available_engine_torque_fraction(
+        &mut self,
+        vehicle_config: &VehicleConfig,
+        vehicle_input: &VehicleInput,
+        wheel_angular_velocities: &[f64; 4],
+        tire_reaction_torques: &[f64; 4],
+        forward_speed_meters_per_second: f64,
+        traction_control_enabled: bool,
+        brake_assist_enabled: bool,
+        anti_lock_brakes_enabled: bool,
+        available_engine_torque_fraction: f64,
+        delta_time_seconds: f64,
+    ) {
+        let delta_time_seconds = delta_time_seconds.max(1e-5);
+        self.process_shift(
+            vehicle_config,
+            vehicle_input,
+            wheel_angular_velocities,
+            forward_speed_meters_per_second,
+            delta_time_seconds,
+        );
+        self.process_engine_and_clutch(
+            vehicle_config,
+            vehicle_input,
+            wheel_angular_velocities,
+            tire_reaction_torques,
+            available_engine_torque_fraction,
+            delta_time_seconds,
+        );
+        self.distribute_drive_torque(
+            vehicle_config,
+            wheel_angular_velocities,
+            traction_control_enabled,
+            forward_speed_meters_per_second,
+            delta_time_seconds,
+        );
+        self.process_brakes(
+            vehicle_config,
+            vehicle_input,
+            wheel_angular_velocities,
+            delta_time_seconds,
+            brake_assist_enabled,
+            anti_lock_brakes_enabled,
+        );
     }
 
     fn process_shift(
@@ -271,13 +324,17 @@ impl PowertrainState {
         input: &VehicleInput,
         wheel_spins: &[f64; 4],
         tire_reaction_torques: &[f64; 4],
+        available_engine_torque_fraction: f64,
         dt: f64,
     ) {
         let throttle = input.throttle.clamp(0.0, 1.0);
         self.driver_throttle = throttle;
         let rpm_factor = (self.rpm / config.max_rpm.max(1.0)).clamp(0.0, 1.0);
         let curve = config.evaluate_torque_curve(rpm_factor);
-        let mut positive_torque = curve * config.max_torque * throttle;
+        let mut positive_torque = curve
+            * config.max_torque
+            * throttle
+            * available_engine_torque_fraction.clamp(0.0, 1.0);
 
         // Attack limiter: positive torque may only RISE at `torque_attack_rate_nm_s`
         // Nm/s, so throttle no longer slams the drivetrain in a single tick. Release

@@ -879,6 +879,59 @@ impl CoreFacade {
         frame.aero_global_limit_factor = aero.global_limit_factor;
         frame.aero_load_ratio = aero.load_ratio;
         frame.aero_balance_front = aero.balance_front;
+        let powertrain_thermal = ent.sim.state.powertrain_thermal;
+        let powertrain_thermal_config = &ent.sim.config.powertrain_thermal;
+        frame.engine_block_temperature_celsius =
+            powertrain_thermal.engine_block_temperature_celsius;
+        frame.water_temperature_celsius = powertrain_thermal.water_temperature_celsius;
+        frame.oil_temperature_celsius = powertrain_thermal.oil_temperature_celsius;
+        frame.engine_output_torque_newton_meters = ent.sim.state.powertrain.engine_torque;
+        frame.engine_mechanical_power_watts = ent.sim.state.powertrain.engine_torque.max(0.0)
+            * ent.sim.state.powertrain.rpm
+            * 2.0
+            * std::f64::consts::PI
+            / 60.0;
+        frame.water_cooling_duct_opening = powertrain_thermal_config.water_cooling_duct.opening;
+        frame.oil_cooling_duct_opening = powertrain_thermal_config.oil_cooling_duct.opening;
+        frame.water_cooling_mass_flow_kilograms_per_second = powertrain_thermal
+            .water_cooling_duct_flow
+            .mass_flow_kilograms_per_second;
+        frame.oil_cooling_mass_flow_kilograms_per_second = powertrain_thermal
+            .oil_cooling_duct_flow
+            .mass_flow_kilograms_per_second;
+        frame.water_cooling_drag_force_newtons = powertrain_thermal
+            .water_cooling_duct_flow
+            .drag_force_newtons;
+        frame.oil_cooling_drag_force_newtons = powertrain_thermal
+            .oil_cooling_duct_flow
+            .drag_force_newtons;
+        frame.total_powertrain_cooling_drag_force_newtons =
+            powertrain_thermal.total_powertrain_cooling_drag_force_newtons;
+        frame.generated_engine_heat_watts = powertrain_thermal.generated_engine_heat_watts;
+        frame.engine_to_water_heat_transfer_watts =
+            powertrain_thermal.engine_to_water_heat_transfer_watts;
+        frame.engine_to_oil_heat_transfer_watts =
+            powertrain_thermal.engine_to_oil_heat_transfer_watts;
+        frame.water_rejected_heat_watts = powertrain_thermal.water_rejected_heat_watts;
+        frame.oil_rejected_heat_watts = powertrain_thermal.oil_rejected_heat_watts;
+        frame.available_engine_torque_fraction =
+            powertrain_thermal.available_engine_torque_fraction;
+        frame.water_optimal_minimum_temperature_celsius = powertrain_thermal_config
+            .water_optimal_minimum_temperature_celsius;
+        frame.water_optimal_maximum_temperature_celsius = powertrain_thermal_config
+            .water_optimal_maximum_temperature_celsius;
+        frame.water_hot_derating_temperature_celsius = powertrain_thermal_config
+            .water_hot_derating_temperature_celsius;
+        frame.water_critical_temperature_celsius =
+            powertrain_thermal_config.water_critical_temperature_celsius;
+        frame.oil_optimal_minimum_temperature_celsius =
+            powertrain_thermal_config.oil_optimal_minimum_temperature_celsius;
+        frame.oil_optimal_maximum_temperature_celsius =
+            powertrain_thermal_config.oil_optimal_maximum_temperature_celsius;
+        frame.oil_hot_derating_temperature_celsius =
+            powertrain_thermal_config.oil_hot_derating_temperature_celsius;
+        frame.oil_critical_temperature_celsius = powertrain_thermal_config
+            .oil_critical_temperature_celsius;
 
         // Tire pressure + thermal state (WheelIndex order FL/FR/RL/RR).
         for (i, w) in ent.sim.state.tire_thermal.wheels.iter().enumerate() {

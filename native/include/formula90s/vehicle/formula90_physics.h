@@ -108,9 +108,35 @@ typedef struct F90TelemetryOutput {
     double drive_torque_pre_tc_nm[4];
     double pre_tc_drive_power_w;
     double net_drive_power_w;
+    double engine_block_temperature_celsius;
+    double water_temperature_celsius;
+    double oil_temperature_celsius;
+    double engine_output_torque_newton_meters;
+    double engine_mechanical_power_watts;
+    double water_cooling_duct_opening;
+    double oil_cooling_duct_opening;
+    double water_cooling_mass_flow_kilograms_per_second;
+    double oil_cooling_mass_flow_kilograms_per_second;
+    double water_cooling_drag_force_newtons;
+    double oil_cooling_drag_force_newtons;
+    double total_powertrain_cooling_drag_force_newtons;
+    double generated_engine_heat_watts;
+    double engine_to_water_heat_transfer_watts;
+    double engine_to_oil_heat_transfer_watts;
+    double water_rejected_heat_watts;
+    double oil_rejected_heat_watts;
+    double available_engine_torque_fraction;
+    double water_optimal_minimum_temperature_celsius;
+    double water_optimal_maximum_temperature_celsius;
+    double water_hot_derating_temperature_celsius;
+    double water_critical_temperature_celsius;
+    double oil_optimal_minimum_temperature_celsius;
+    double oil_optimal_maximum_temperature_celsius;
+    double oil_hot_derating_temperature_celsius;
+    double oil_critical_temperature_celsius;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 13
+#define F1_94_PHYSICS_ABI_VERSION 14
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;
@@ -147,6 +173,9 @@ typedef struct F90RuntimeConfig {
     double suspension_rear_spring_length;
     double suspension_front_resting_ratio;
     double suspension_rear_resting_ratio;
+    bool powertrain_cooling_duct_openings_supplied;
+    double water_cooling_duct_opening;
+    double oil_cooling_duct_opening;
 } F90RuntimeConfig;
 
 uint32_t f1_94_physics_abi_version(void);

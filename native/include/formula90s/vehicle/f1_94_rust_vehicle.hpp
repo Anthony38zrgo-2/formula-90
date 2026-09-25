@@ -178,6 +178,34 @@ private:
 	double brake_spin_post_rad_s_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_power_w_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double brake_energy_j_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	bool engine_thermal_telemetry_available_ = false;
+	bool powertrain_cooling_duct_openings_overridden_ = false;
+	double engine_block_temperature_celsius_ = 0.0;
+	double water_temperature_celsius_ = 0.0;
+	double oil_temperature_celsius_ = 0.0;
+	double engine_output_torque_newton_meters_ = 0.0;
+	double engine_mechanical_power_watts_ = 0.0;
+	double water_cooling_duct_opening_ = 0.0;
+	double oil_cooling_duct_opening_ = 0.0;
+	double water_cooling_mass_flow_kilograms_per_second_ = 0.0;
+	double oil_cooling_mass_flow_kilograms_per_second_ = 0.0;
+	double water_cooling_drag_force_newtons_ = 0.0;
+	double oil_cooling_drag_force_newtons_ = 0.0;
+	double total_powertrain_cooling_drag_force_newtons_ = 0.0;
+	double generated_engine_heat_watts_ = 0.0;
+	double engine_to_water_heat_transfer_watts_ = 0.0;
+	double engine_to_oil_heat_transfer_watts_ = 0.0;
+	double water_rejected_heat_watts_ = 0.0;
+	double oil_rejected_heat_watts_ = 0.0;
+	double available_engine_torque_fraction_ = 0.0;
+	double water_optimal_minimum_temperature_celsius_ = 0.0;
+	double water_optimal_maximum_temperature_celsius_ = 0.0;
+	double water_hot_derating_temperature_celsius_ = 0.0;
+	double water_critical_temperature_celsius_ = 0.0;
+	double oil_optimal_minimum_temperature_celsius_ = 0.0;
+	double oil_optimal_maximum_temperature_celsius_ = 0.0;
+	double oil_hot_derating_temperature_celsius_ = 0.0;
+	double oil_critical_temperature_celsius_ = 0.0;
 	double underfloor_clearance_m_[5] = { 0.35, 0.35, 0.35, 0.35, 0.35 };
 	uint32_t underfloor_valid_mask_ = 0;
 	int underfloor_scrape_phase_ = 0;
@@ -432,6 +460,9 @@ public:
 	// Forward core telemetry into the vehicle's mirrors + wheel visuals.
 	void apply_core_telemetry(const CSimTelemetry &p_telemetry, double p_dt);
 	void set_core_powertrain_telemetry(const F90CoreFrameOut &p_frame);
+	bool set_powertrain_cooling_duct_openings(
+		double water_cooling_duct_opening,
+		double oil_cooling_duct_opening);
 	// Copy the six per-wheel tire arrays from the facade frame or the legacy
 	// physics telemetry block (WheelIndex order FL/FR/RL/RR).
 	void set_core_tire_telemetry(
@@ -463,6 +494,7 @@ public:
 	// Tire pressure + thermal snapshot for the HUD (no raw C structs leak out).
 	godot::Dictionary get_tire_state_snapshot() const;
 	godot::Dictionary get_brake_state_snapshot() const;
+	godot::Dictionary get_engine_thermal_state_snapshot() const;
 	godot::Dictionary get_underfloor_state_snapshot() const;
 	void set_core_underfloor_telemetry(const F90CoreFrameOut &p_frame);
 };

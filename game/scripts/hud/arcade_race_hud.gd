@@ -4,6 +4,7 @@ extends Control
 const AID_NOTIFICATION_SECONDS := 2.4
 const AID_FADE_SECONDS := 0.35
 const TireStatusPanelScript := preload("res://scripts/hud/tire_status_panel.gd")
+const EngineTemperaturePanelScript := preload("res://scripts/hud/engine_temperature_panel.gd")
 const DEFAULT_GAP := 10.0
 
 @export var vehicle_path: NodePath
@@ -19,12 +20,15 @@ var _aids: Node
 var _notification_remaining := 0.0
 var _hud_config: HudConfig = HudConfig.load_from_json(hud_config_path)
 var tire_status_panel: TireStatusPanel
+var engine_temperature_panel: EngineTemperaturePanel
 
 func bind_runtime(vehicle: Node, aids: Node) -> void:
 	_vehicle = vehicle
 	_aids = aids
 	if tire_status_panel != null:
 		tire_status_panel.bind_vehicle(_vehicle)
+	if engine_temperature_panel != null:
+		engine_temperature_panel.bind_vehicle(_vehicle)
 	_connect_aid_notifications()
 
 
@@ -33,12 +37,13 @@ func _ready() -> void:
 	aid_message.visible = false
 	_resolve_runtime_nodes()
 	_ensure_tire_status_panel()
+	_ensure_engine_temperature_panel()
 	_apply_hud_layout()
 
 
 func _process(delta: float) -> void:
 	_resolve_runtime_nodes()
-	_position_tire_status_panel()
+	_position_vehicle_status_panels()
 	_update_speed_gauge()
 	_update_aid_notification(delta)
 
@@ -69,7 +74,18 @@ func _ensure_tire_status_panel() -> void:
 	tire_status_panel.apply_settings(_hud_config.tires)
 	add_child(tire_status_panel)
 	tire_status_panel.bind_vehicle(_vehicle)
-	_position_tire_status_panel()
+	_position_vehicle_status_panels()
+
+
+func _ensure_engine_temperature_panel() -> void:
+	if engine_temperature_panel != null:
+		return
+	engine_temperature_panel = EngineTemperaturePanelScript.new()
+	engine_temperature_panel.name = "EngineTemperaturePanel"
+	engine_temperature_panel.apply_settings(_hud_config.engine_temperatures)
+	add_child(engine_temperature_panel)
+	engine_temperature_panel.bind_vehicle(_vehicle)
+	_position_vehicle_status_panels()
 
 
 func _apply_hud_layout() -> void:
@@ -80,8 +96,8 @@ func _apply_hud_layout() -> void:
 		retro_hud.call("apply_hud_layout", _hud_config.retro_hud.display_scale, _hud_config.retro_hud.visible)
 
 
-func _position_tire_status_panel() -> void:
-	if tire_status_panel == null:
+func _position_vehicle_status_panels() -> void:
+	if tire_status_panel == null or engine_temperature_panel == null:
 		return
 
 	# RetroHud is the primary reference because it owns the tachometer/readout region.
@@ -92,26 +108,32 @@ func _position_tire_status_panel() -> void:
 		return
 
 	var ref_rect := reference.get_global_rect()
-	var panel_size := tire_status_panel.size
-	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
-		panel_size = tire_status_panel.custom_minimum_size
-	# The panel may be display-scaled (e.g. 50% to keep the HUD compact), so
-	# centre/clamp on its VISUAL size rather than the layout size.
-	panel_size *= tire_status_panel.scale
-
-	var target_global := Vector2(
-		ref_rect.position.x + (ref_rect.size.x - panel_size.x) * 0.5,
-		ref_rect.position.y - panel_size.y - _hud_config.tires.gap
-	)
-
-	tire_status_panel.global_position = target_global
-
-	# Keep within viewport.
+	var tire_visual_size := _visual_panel_size(tire_status_panel)
+	var engine_visual_size := _visual_panel_size(engine_temperature_panel)
+	var panel_group_width := maxf(tire_visual_size.x, engine_visual_size.x)
+	var group_center_horizontal_position := ref_rect.position.x + ref_rect.size.x * 0.5
 	var viewport_size := get_viewport_rect().size
-	var clamped := tire_status_panel.global_position
-	clamped.x = clampf(clamped.x, 6.0, maxf(6.0, viewport_size.x - panel_size.x - 6.0))
-	clamped.y = clampf(clamped.y, 6.0, maxf(6.0, viewport_size.y - panel_size.y - 6.0))
-	tire_status_panel.global_position = clamped
+	group_center_horizontal_position = clampf(group_center_horizontal_position, panel_group_width * 0.5 + 6.0, viewport_size.x - panel_group_width * 0.5 - 6.0)
+	var tire_vertical_position := ref_rect.position.y - tire_visual_size.y - _hud_config.tires.gap
+	var engine_vertical_position := tire_vertical_position - engine_visual_size.y - _hud_config.engine_temperatures.gap
+	var full_group_height := ref_rect.position.y + ref_rect.size.y - engine_vertical_position
+	var group_top := clampf(engine_vertical_position, 6.0, maxf(6.0, viewport_size.y - full_group_height - 6.0))
+	var vertical_adjustment := group_top - engine_vertical_position
+	tire_vertical_position += vertical_adjustment
+	engine_vertical_position += vertical_adjustment
+	tire_status_panel.global_position = Vector2(
+		group_center_horizontal_position - tire_visual_size.x * 0.5,
+		tire_vertical_position)
+	engine_temperature_panel.global_position = Vector2(
+		group_center_horizontal_position - engine_visual_size.x * 0.5,
+		engine_vertical_position)
+
+
+func _visual_panel_size(panel: Control) -> Vector2:
+	var panel_size := panel.size
+	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
+		panel_size = panel.custom_minimum_size
+	return panel_size * panel.scale
 
 
 func _update_speed_gauge() -> void:
