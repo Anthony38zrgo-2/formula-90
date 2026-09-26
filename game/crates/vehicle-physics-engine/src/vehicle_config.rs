@@ -16,6 +16,65 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 
+/// Onboard fuel model. `vehicle_mass` stays the DRY mass; the total mass and the
+/// effective weight distribution are derived from the fuel remaining and the
+/// tank's local position so combustion never rewrites the profile's dry specs.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct FuelConfig {
+    pub capacity_kg: f64,
+    pub initial_kg: f64,
+    /// Tank centre of mass in vehicle-local geometric space (-Z forward, +Y up).
+    pub tank_position_local_m: Vec3,
+    pub brake_specific_consumption_kg_per_kwh: f64,
+    pub idle_consumption_kg_per_hour: f64,
+    /// Runtime state: kilograms currently in the tank.
+    pub current_kg: f64,
+    /// Runtime state: kilograms burned since the last refill.
+    pub consumed_kg: f64,
+}
+
+impl Default for FuelConfig {
+    fn default() -> Self {
+        Self {
+            capacity_kg: 0.0,
+            initial_kg: 0.0,
+            tank_position_local_m: Vec3::ZERO,
+            brake_specific_consumption_kg_per_kwh: 0.0,
+            idle_consumption_kg_per_hour: 0.0,
+            current_kg: 0.0,
+            consumed_kg: 0.0,
+        }
+    }
+}
+
+impl FuelConfig {
+    /// A zero-capacity tank disables the whole model (legacy profiles).
+    pub fn is_enabled(&self) -> bool {
+        self.capacity_kg > 0.0
+    }
+
+    pub fn effective_current_kg(&self) -> f64 {
+        if self.is_enabled() {
+            self.current_kg.clamp(0.0, self.capacity_kg)
+        } else {
+            0.0
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.is_enabled() && self.effective_current_kg() <= 0.0
+    }
+
+    pub fn refill_to_initial(&mut self) {
+        self.current_kg = if self.is_enabled() {
+            self.initial_kg.clamp(0.0, self.capacity_kg)
+        } else {
+            0.0
+        };
+        self.consumed_kg = 0.0;
+    }
+}
+
 /// Formula-90 vehicle configuration with GEVP-compatible suspension, tire and drivetrain semantics.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehicleConfig {
@@ -26,6 +85,7 @@ pub struct VehicleConfig {
     pub vehicle_mass: f64,
     pub front_weight_distribution: f64,
     pub center_of_gravity_height_offset: f64,
+    pub fuel: FuelConfig,
     pub inertia_multipliers: Vec3,
     pub wheelbase: f64,
     pub front_track: f64,
@@ -550,6 +610,7 @@ impl VehicleConfig {
             vehicle_mass: 575.0,
             front_weight_distribution: 0.45,
             center_of_gravity_height_offset: -0.12,
+            fuel: FuelConfig::default(),
             inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
             wheelbase: 2.92065,
             front_track: 1.5925,
@@ -731,6 +792,7 @@ impl VehicleConfig {
             vehicle_mass: 505.0,
             front_weight_distribution: 0.45,
             center_of_gravity_height_offset: -0.12,
+            fuel: FuelConfig::default(),
             inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
             wheelbase: 2.950,
             front_track: 1.762,
@@ -901,12 +963,39 @@ impl VehicleConfig {
         self.torque_curve[last_idx].1
     }
 
+    /// Dry mass plus the fuel currently in the tank.
+    pub fn total_vehicle_mass(&self) -> f64 {
+        self.vehicle_mass + self.fuel.effective_current_kg()
+    }
+
+    /// Front axle share of the total mass with the tank load present. The combined
+    /// centre of mass blends the dry centre of mass with the tank position, so the
+    /// distribution migrates toward the tank as the tank drains or fills.
+    pub fn effective_front_weight_distribution(&self) -> f64 {
+        let fuel_kg = self.fuel.effective_current_kg();
+        if fuel_kg <= 0.0 || self.wheelbase.abs() <= 1e-9 {
+            return self.front_weight_distribution;
+        }
+        let total_mass = self.vehicle_mass + fuel_kg;
+        if total_mass <= 1e-9 {
+            return self.front_weight_distribution;
+        }
+        let dry_center_of_mass_z = (0.5 - self.front_weight_distribution) * self.wheelbase;
+        let fuel_center_of_mass_z = self.fuel.tank_position_local_m.z;
+        let combined_center_of_mass_z = (self.vehicle_mass * dry_center_of_mass_z
+            + fuel_kg * fuel_center_of_mass_z)
+            / total_mass;
+        (0.5 - combined_center_of_mass_z / self.wheelbase).clamp(0.0, 1.0)
+    }
+
     /// Helper to get mass supported by a single wheel at static rest.
     pub fn mass_over_wheel(&self, wheel: WheelIndex) -> f64 {
+        let total_mass = self.total_vehicle_mass();
+        let front_distribution = self.effective_front_weight_distribution();
         if wheel.is_front() {
-            self.vehicle_mass * self.front_weight_distribution * 0.5
+            total_mass * front_distribution * 0.5
         } else {
-            self.vehicle_mass * (1.0 - self.front_weight_distribution) * 0.5
+            total_mass * (1.0 - front_distribution) * 0.5
         }
     }
 
@@ -1017,6 +1106,8 @@ struct JsonVehicleSpec {
     #[serde(default)]
     chassis: JsonChassis,
     #[serde(default)]
+    fuel: JsonFuel,
+    #[serde(default)]
     geometry: JsonGeometry,
     #[serde(default)]
     steering: JsonSteering,
@@ -1093,6 +1184,32 @@ impl Default for JsonVec3 {
             x: 1.0,
             y: 1.0,
             z: 1.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonFuel {
+    capacity_kg: f64,
+    initial_kg: f64,
+    tank_position_local_m: JsonVec3,
+    brake_specific_consumption_kg_per_kwh: f64,
+    idle_consumption_kg_per_hour: f64,
+}
+
+impl Default for JsonFuel {
+    fn default() -> Self {
+        Self {
+            capacity_kg: 0.0,
+            initial_kg: 0.0,
+            tank_position_local_m: JsonVec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            brake_specific_consumption_kg_per_kwh: 0.0,
+            idle_consumption_kg_per_hour: 0.0,
         }
     }
 }
@@ -2992,6 +3109,36 @@ impl JsonVehicleSpec {
         if self.tires.front.radius <= 0.0 || self.tires.rear.radius <= 0.0 {
             return Err("Tire radii must be positive".to_string());
         }
+        if !self.fuel.capacity_kg.is_finite() || self.fuel.capacity_kg < 0.0 {
+            return Err("fuel.capacity_kg must be finite and non-negative".to_string());
+        }
+        if !self.fuel.initial_kg.is_finite()
+            || self.fuel.initial_kg < 0.0
+            || self.fuel.initial_kg > self.fuel.capacity_kg
+        {
+            return Err("fuel.initial_kg must be finite and within [0, fuel.capacity_kg]".to_string());
+        }
+        if !self.fuel.brake_specific_consumption_kg_per_kwh.is_finite()
+            || self.fuel.brake_specific_consumption_kg_per_kwh < 0.0
+        {
+            return Err(
+                "fuel.brake_specific_consumption_kg_per_kwh must be finite and non-negative"
+                    .to_string(),
+            );
+        }
+        if !self.fuel.idle_consumption_kg_per_hour.is_finite()
+            || self.fuel.idle_consumption_kg_per_hour < 0.0
+        {
+            return Err(
+                "fuel.idle_consumption_kg_per_hour must be finite and non-negative".to_string(),
+            );
+        }
+        if !self.fuel.tank_position_local_m.x.is_finite()
+            || !self.fuel.tank_position_local_m.y.is_finite()
+            || !self.fuel.tank_position_local_m.z.is_finite()
+        {
+            return Err("fuel.tank_position_local_m must be finite".to_string());
+        }
         Ok(())
     }
 
@@ -3292,12 +3439,28 @@ impl JsonVehicleSpec {
             }
         }
 
+        let mut fuel = FuelConfig {
+            capacity_kg: self.fuel.capacity_kg.max(0.0),
+            initial_kg: self.fuel.initial_kg,
+            tank_position_local_m: Vec3::new(
+                self.fuel.tank_position_local_m.x,
+                self.fuel.tank_position_local_m.y,
+                self.fuel.tank_position_local_m.z,
+            ),
+            brake_specific_consumption_kg_per_kwh: self.fuel.brake_specific_consumption_kg_per_kwh,
+            idle_consumption_kg_per_hour: self.fuel.idle_consumption_kg_per_hour,
+            current_kg: 0.0,
+            consumed_kg: 0.0,
+        };
+        fuel.refill_to_initial();
+
         VehicleConfig {
             schema_version: self.schema_version,
             vehicle_name: self.chassis.vehicle_name,
             vehicle_mass: self.chassis.vehicle_mass,
             front_weight_distribution: self.chassis.front_weight_distribution,
             center_of_gravity_height_offset: self.chassis.center_of_gravity_height_offset,
+            fuel,
             inertia_multipliers: Vec3::new(
                 self.chassis.inertia_multipliers.x,
                 self.chassis.inertia_multipliers.y,
@@ -3598,6 +3761,17 @@ impl JsonVehicleSpec {
                     y: cfg.inertia_multipliers.y,
                     z: cfg.inertia_multipliers.z,
                 },
+            },
+            fuel: JsonFuel {
+                capacity_kg: cfg.fuel.capacity_kg,
+                initial_kg: cfg.fuel.initial_kg,
+                tank_position_local_m: JsonVec3 {
+                    x: cfg.fuel.tank_position_local_m.x,
+                    y: cfg.fuel.tank_position_local_m.y,
+                    z: cfg.fuel.tank_position_local_m.z,
+                },
+                brake_specific_consumption_kg_per_kwh: cfg.fuel.brake_specific_consumption_kg_per_kwh,
+                idle_consumption_kg_per_hour: cfg.fuel.idle_consumption_kg_per_hour,
             },
             geometry: JsonGeometry {
                 wheelbase: cfg.wheelbase,

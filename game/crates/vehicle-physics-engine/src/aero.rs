@@ -711,7 +711,7 @@ impl AeroForces {
         let cg = Vec3::new(
             0.0,
             config.center_of_gravity_height_offset,
-            (0.5 - config.front_weight_distribution) * config.wheelbase,
+            (0.5 - config.effective_front_weight_distribution()) * config.wheelbase,
         );
         self.step_with_kinematics(
             config,
@@ -804,7 +804,7 @@ impl AeroForces {
             + rw.downforce()
             + floor_loads[0].downforce()
             + floor_loads[1].downforce();
-        let weight = config.vehicle_mass * 9.81;
+        let weight = config.total_vehicle_mass() * 9.81;
         let hard = (weight * m.limits.hard_max_load_ratio).min(m.limits.hard_max_downforce_n);
         let soft = (weight * m.limits.soft_max_load_ratio).min(hard);
         let limited = soft_limit(raw, soft, hard);

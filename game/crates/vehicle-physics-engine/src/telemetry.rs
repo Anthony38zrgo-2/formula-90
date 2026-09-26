@@ -109,6 +109,11 @@ pub struct TelemetryFrame {
     pub oil_optimal_maximum_temperature_celsius: f64,
     pub oil_hot_derating_temperature_celsius: f64,
     pub oil_critical_temperature_celsius: f64,
+    // --- FUEL-100 onboard fuel state ---
+    pub fuel_remaining_kg: f64,
+    pub fuel_capacity_kg: f64,
+    pub total_vehicle_mass_kg: f64,
+    pub effective_front_weight_distribution: f64,
 }
 
 #[cfg(test)]
@@ -314,6 +319,10 @@ impl TelemetryFrame {
         "OilOptimalMaximumTemperatureCelsius",
         "OilHotDeratingTemperatureCelsius",
         "OilCriticalTemperatureCelsius",
+        "FuelRemainingKg",
+        "FuelCapacityKg",
+        "TotalVehicleMassKg",
+        "EffectiveFrontWeightDistribution",
     ];
 
     /// Formats the telemetry frame into a single comma-separated CSV line.
@@ -472,6 +481,10 @@ impl TelemetryFrame {
             format!("{:.3}", self.oil_optimal_maximum_temperature_celsius),
             format!("{:.3}", self.oil_hot_derating_temperature_celsius),
             format!("{:.3}", self.oil_critical_temperature_celsius),
+            format!("{:.4}", self.fuel_remaining_kg),
+            format!("{:.4}", self.fuel_capacity_kg),
+            format!("{:.4}", self.total_vehicle_mass_kg),
+            format!("{:.5}", self.effective_front_weight_distribution),
         ]);
         fields.join(",")
     }

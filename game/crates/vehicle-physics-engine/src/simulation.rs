@@ -304,6 +304,11 @@ impl VehicleSimulator {
             .update_available_engine_torque_fraction(&cfg.powertrain_thermal);
         let available_engine_torque_fraction =
             st.powertrain_thermal.available_engine_torque_fraction;
+        // FUEL-100: an empty tank cuts positive engine torque (engine braking
+        // survives). Consumption itself is integrated after the solve.
+        let fuel_cutoff_fraction = if cfg.fuel.is_empty() { 0.0 } else { 1.0 };
+        let effective_engine_torque_fraction =
+            available_engine_torque_fraction * fuel_cutoff_fraction;
         st.powertrain_thermal.evaluate_cooling_ducts(
             &cfg.powertrain_thermal,
             cfg.air_density,
@@ -367,7 +372,7 @@ impl VehicleSimulator {
             tc_enabled,
             brake_assist_enabled,
             abs_enabled,
-            available_engine_torque_fraction,
+            effective_engine_torque_fraction,
             dt,
         );
 
@@ -710,7 +715,14 @@ impl VehicleSimulator {
 
         // In external mode this is force-derived acceleration for telemetry only;
         // Godot will add gravity itself.
-        st.linear_acceleration = total_force / cfg.vehicle_mass.max(1e-6);
+        let total_mass = cfg.total_vehicle_mass().max(1e-6);
+        st.linear_acceleration = total_force / total_mass;
+        let engine_mechanical_power_watts = st.powertrain.engine_torque.max(0.0)
+            * st.powertrain.rpm
+            * 2.0
+            * std::f64::consts::PI
+            / 60.0;
+        Self::burn_fuel(&mut self.config, engine_mechanical_power_watts, dt);
         let telemetry = self.build_telemetry_frame();
         (
             ForceTorqueOutput {
@@ -719,6 +731,26 @@ impl VehicleSimulator {
             },
             telemetry,
         )
+    }
+
+    /// Burn fuel for one tick. Flow is the mechanical-power term (BSFC) plus the
+    /// idle term; an empty tank stops combustion and the torque cutoff in
+    /// `solve_forces` keeps positive engine torque at zero until a refill.
+    fn burn_fuel(config: &mut VehicleConfig, engine_mechanical_power_watts: f64, dt: f64) {
+        if !config.fuel.is_enabled() {
+            return;
+        }
+        let fuel = &mut config.fuel;
+        if fuel.current_kg <= 0.0 {
+            fuel.current_kg = 0.0;
+            return;
+        }
+        let power_kilowatts = engine_mechanical_power_watts.max(0.0) / 1000.0;
+        let flow_kg_s = power_kilowatts * fuel.brake_specific_consumption_kg_per_kwh / 3600.0
+            + fuel.idle_consumption_kg_per_hour / 3600.0;
+        let burned_kg = (flow_kg_s * dt).min(fuel.current_kg);
+        fuel.current_kg -= burned_kg;
+        fuel.consumed_kg += burned_kg;
     }
 
     /// Yaw-stability (ESP) corrective torque in world space.
@@ -794,8 +826,9 @@ impl VehicleSimulator {
         let cg_local = center_of_mass_local(cfg);
         let mut cg_world = st.transform.origin + old_basis.transform_vector(cg_local);
 
-        let gravity_force = Vec3::new(0.0, -9.80665 * cfg.vehicle_mass, 0.0);
-        st.linear_acceleration = (forces.force_world + gravity_force) / cfg.vehicle_mass.max(1e-6);
+        let total_mass = cfg.total_vehicle_mass();
+        let gravity_force = Vec3::new(0.0, -9.80665 * total_mass, 0.0);
+        st.linear_acceleration = (forces.force_world + gravity_force) / total_mass.max(1e-6);
         st.linear_velocity += st.linear_acceleration * dt;
         cg_world += st.linear_velocity * dt;
 
@@ -1094,12 +1127,16 @@ impl VehicleSimulator {
             oil_critical_temperature_celsius: cfg
                 .powertrain_thermal
                 .oil_critical_temperature_celsius,
+            fuel_remaining_kg: cfg.fuel.effective_current_kg(),
+            fuel_capacity_kg: cfg.fuel.capacity_kg,
+            total_vehicle_mass_kg: cfg.total_vehicle_mass(),
+            effective_front_weight_distribution: cfg.effective_front_weight_distribution(),
         }
     }
 }
 
 pub fn center_of_mass_local(config: &VehicleConfig) -> Vec3 {
-    let com_z = (0.50 - config.front_weight_distribution) * config.wheelbase;
+    let com_z = (0.50 - config.effective_front_weight_distribution()) * config.wheelbase;
     Vec3::new(0.0, config.center_of_gravity_height_offset, com_z)
 }
 
@@ -1232,10 +1269,11 @@ fn principal_inertia(config: &VehicleConfig) -> Vec3 {
     let w = (config.front_track + config.rear_track) * 0.5;
     let h = 0.75;
     let l = config.wheelbase;
+    let mass = config.total_vehicle_mass();
     Vec3::new(
-        (config.vehicle_mass / 12.0) * (h * h + l * l) * config.inertia_multipliers.x,
-        (config.vehicle_mass / 12.0) * (w * w + l * l) * config.inertia_multipliers.y,
-        (config.vehicle_mass / 12.0) * (w * w + h * h) * config.inertia_multipliers.z,
+        (mass / 12.0) * (h * h + l * l) * config.inertia_multipliers.x,
+        (mass / 12.0) * (w * w + l * l) * config.inertia_multipliers.y,
+        (mass / 12.0) * (w * w + h * h) * config.inertia_multipliers.z,
     )
 }
 

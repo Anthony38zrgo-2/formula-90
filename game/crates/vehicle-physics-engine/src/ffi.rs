@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::vehicle_config::*;
 use std::ffi::{c_char, c_void};
 
-pub const F1_94_PHYSICS_ABI_VERSION: u32 = 14;
+pub const F1_94_PHYSICS_ABI_VERSION: u32 = 15;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -567,6 +567,12 @@ pub struct FfiTelemetryOutput {
     pub oil_optimal_maximum_temperature_celsius: f64,
     pub oil_hot_derating_temperature_celsius: f64,
     pub oil_critical_temperature_celsius: f64,
+
+    // Append-only ABI 15 onboard fuel state.
+    pub fuel_remaining_kg: f64,
+    pub fuel_capacity_kg: f64,
+    pub total_vehicle_mass_kg: f64,
+    pub effective_front_weight_distribution: f64,
 }
 
 #[no_mangle]
@@ -672,7 +678,8 @@ pub extern "C" fn f1_94_physics_reset(
     // of the physical state being recreated. Without this the standalone path
     // silently re-enabled profile defaults after Reset Vehicle while the HUD and
     // the vehicle's cached mask kept the player's selection.
-    let config = sim.config.clone();
+    let mut config = sim.config.clone();
+    config.fuel.refill_to_initial();
     let aids = sim.aids;
     *sim = VehicleSimulator::new(config, Vec3::new(pos_x, pos_y, pos_z), yaw_rad);
     sim.aids = aids;
@@ -827,7 +834,9 @@ pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 
     }
     // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
-    sim.config.vehicle_mass
+    // Live total mass (dry + remaining fuel). The host uses this for the Godot
+    // body mass while the runtime config keeps reporting the dry tuning value.
+    sim.config.total_vehicle_mass()
 }
 
 #[no_mangle]
@@ -1047,6 +1056,10 @@ fn write_telemetry(
                 .oil_optimal_maximum_temperature_celsius,
             oil_hot_derating_temperature_celsius: telem.oil_hot_derating_temperature_celsius,
             oil_critical_temperature_celsius: telem.oil_critical_temperature_celsius,
+            fuel_remaining_kg: telem.fuel_remaining_kg,
+            fuel_capacity_kg: telem.fuel_capacity_kg,
+            total_vehicle_mass_kg: telem.total_vehicle_mass_kg,
+            effective_front_weight_distribution: telem.effective_front_weight_distribution,
         };
     }
 }
@@ -1097,7 +1110,15 @@ mod layout_tests {
         assert_eq!(offset_of!(FfiTelemetryOutput, net_drive_power_w), 1112);
         assert_eq!(offset_of!(FfiTelemetryOutput, engine_block_temperature_celsius), 1120);
         assert_eq!(offset_of!(FfiTelemetryOutput, oil_critical_temperature_celsius), 1320);
-        assert_eq!(size_of::<FfiTelemetryOutput>(), 1328);
+        // FUEL-100 append-only ABI 15 block.
+        assert_eq!(offset_of!(FfiTelemetryOutput, fuel_remaining_kg), 1328);
+        assert_eq!(offset_of!(FfiTelemetryOutput, fuel_capacity_kg), 1336);
+        assert_eq!(offset_of!(FfiTelemetryOutput, total_vehicle_mass_kg), 1344);
+        assert_eq!(
+            offset_of!(FfiTelemetryOutput, effective_front_weight_distribution),
+            1352
+        );
+        assert_eq!(size_of::<FfiTelemetryOutput>(), 1360);
     }
 
     #[test]
