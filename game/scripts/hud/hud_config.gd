@@ -194,6 +194,11 @@ class EngineTemperaturesSettings:
 	var fuel_critical_color := Color("ff6b61")
 	var fuel_low_fraction := 0.15
 	var fuel_critical_fraction := 0.05
+	var delta_neutral_color := Color("a6ff9e")
+	var delta_warning_color := Color("ffd16b")
+	var delta_critical_color := Color("ff6b61")
+	var delta_warning_laps := -0.25
+	var delta_critical_laps := -1.0
 
 	func apply(data: Dictionary) -> void:
 		visible = bool(data.get("visible", visible))
@@ -221,6 +226,15 @@ class EngineTemperaturesSettings:
 			float(data.get("fuel_critical_fraction", fuel_critical_fraction)),
 			0.0,
 			fuel_low_fraction)
+		delta_neutral_color = _parse_html_color(
+			data.get("delta_neutral_color", "#a6ff9e"), delta_neutral_color)
+		delta_warning_color = _parse_html_color(
+			data.get("delta_warning_color", "#ffd16b"), delta_warning_color)
+		delta_critical_color = _parse_html_color(
+			data.get("delta_critical_color", "#ff6b61"), delta_critical_color)
+		delta_warning_laps = float(data.get("delta_warning_laps", delta_warning_laps))
+		delta_critical_laps = minf(
+			float(data.get("delta_critical_laps", delta_critical_laps)), delta_warning_laps)
 
 	func _parse_size_vector(value: Variant, fallback: Vector2) -> Vector2:
 		if value is Array and value.size() >= 2:

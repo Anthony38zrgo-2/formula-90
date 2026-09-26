@@ -95,7 +95,10 @@ func _add_runtime_systems() -> void:
 	lap_timing = LAP_TIMING_SCRIPT.new() as LapTimingController
 	lap_timing.name = "LapTiming"
 	add_child(lap_timing)
-	lap_timing.configure(active_vehicle as Node3D, config.selected_track)
+	lap_timing.configure(
+		active_vehicle as Node3D,
+		config.selected_track,
+		config.selected_vehicle.physics_config_path)
 
 	_setup_background(camera_rig_chase)
 

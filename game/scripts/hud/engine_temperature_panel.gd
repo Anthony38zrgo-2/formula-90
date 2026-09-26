@@ -3,9 +3,12 @@ extends PanelContainer
 
 var _settings := HudConfig.EngineTemperaturesSettings.new()
 var _vehicle: Node
+var _lap_timing: LapTimingController
 var _water_temperature_label: Label
 var _oil_temperature_label: Label
 var _fuel_label: Label
+var _average_consumption_label: Label
+var _laps_delta_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -17,6 +20,11 @@ func _ready() -> void:
 func bind_vehicle(vehicle: Node) -> void:
 	_vehicle = vehicle
 	_refresh_temperatures()
+
+
+func bind_lap_timing(lap_timing: LapTimingController) -> void:
+	_lap_timing = lap_timing
+	_refresh_consumption()
 
 
 func apply_settings(settings: HudConfig.EngineTemperaturesSettings) -> void:
@@ -43,6 +51,34 @@ func _rebuild_ui() -> void:
 func _process(_delta: float) -> void:
 	_refresh_temperatures()
 	_refresh_fuel()
+	_refresh_consumption()
+
+
+func _refresh_consumption() -> void:
+	if _average_consumption_label == null or _laps_delta_label == null:
+		return
+	if _lap_timing == null or not _lap_timing.has_consumption_average:
+		_average_consumption_label.text = "AVG  --"
+		_average_consumption_label.add_theme_color_override("font_color", Color.WHITE)
+	else:
+		_average_consumption_label.text = "AVG  %.2f kg/l" % _lap_timing.average_consumption_kg_per_lap
+		_average_consumption_label.add_theme_color_override("font_color", _settings.fuel_color)
+	if _lap_timing == null or not _lap_timing.has_laps_delta:
+		_laps_delta_label.text = "DELTA  --"
+		_laps_delta_label.add_theme_color_override("font_color", Color.WHITE)
+	else:
+		_laps_delta_label.text = "DELTA  %+.2f laps" % _lap_timing.laps_delta
+		_laps_delta_label.add_theme_color_override(
+			"font_color",
+			_delta_color(_lap_timing.laps_delta))
+
+
+func _delta_color(laps_delta: float) -> Color:
+	if laps_delta <= _settings.delta_critical_laps:
+		return _settings.delta_critical_color
+	if laps_delta <= _settings.delta_warning_laps:
+		return _settings.delta_warning_color
+	return _settings.delta_neutral_color
 
 
 func _refresh_fuel() -> void:
@@ -202,6 +238,14 @@ func _build_ui() -> void:
 	_fuel_label = Label.new()
 	_fuel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(_fuel_label)
+
+	_average_consumption_label = Label.new()
+	_average_consumption_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root_box.add_child(_average_consumption_label)
+
+	_laps_delta_label = Label.new()
+	_laps_delta_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root_box.add_child(_laps_delta_label)
 
 
 func _temperature_color(

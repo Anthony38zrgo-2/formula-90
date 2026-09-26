@@ -31,6 +31,7 @@ func bind_runtime(vehicle: Node, aids: Node, lap_timing: LapTimingController = n
 		tire_status_panel.bind_vehicle(_vehicle)
 	if engine_temperature_panel != null:
 		engine_temperature_panel.bind_vehicle(_vehicle)
+		engine_temperature_panel.bind_lap_timing(lap_timing)
 	if lap_timing_panel != null:
 		lap_timing_panel.bind_lap_timing(lap_timing)
 	_connect_aid_notifications()
