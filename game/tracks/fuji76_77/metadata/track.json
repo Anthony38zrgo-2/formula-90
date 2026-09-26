@@ -428,6 +428,20 @@
     ],
     "yaw_radians": -0.005066454
   },
+  "start_finish": {
+    "position_m": [
+      -294.278,
+      0.095,
+      -275.19
+    ],
+    "forward": [
+      -0.0069,
+      0.0,
+      -0.99998
+    ],
+    "half_width_m": 12.0,
+    "source": "racing_line_lap_distance_zero"
+  },
   "coordinate_system": {
     "units": "meters",
     "up_axis": "+Y",

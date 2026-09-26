@@ -10,3 +10,4 @@ id = &"fuji76_77"
 display_name = "Fuji Speedway 1976-1977"
 track_scene = ExtResource("2")
 map_data = ExtResource("3")
+metadata_path = "res://tracks/fuji76_77/metadata/track.json"
