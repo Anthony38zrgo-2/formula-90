@@ -7,6 +7,8 @@ const FULL_THROTTLE_FRAMES := 1200
 const STEADY_WINDOW_FRAMES := 600
 const LAP_DISTANCE_STEPS := 110
 const LAP_DISTANCE_STEP_M := 20.0
+const LAP_FUEL_BURN_FRAMES := 90
+const LAP_FUEL_EASED_FRAMES := 150
 const MINIMUM_BURNED_MASS_KG := 0.05
 
 func _init() -> void:
@@ -104,6 +106,24 @@ func _run() -> void:
 	if int(lap_timing.get("current_lap_number")) != 1:
 		_fail("El primer cruce de meta no inicio la vuelta 1.", failures)
 
+	vehicle.freeze = false
+	for _full_frame in LAP_FUEL_BURN_FRAMES:
+		vehicle.set("throttle_amount", 1.0)
+		await physics_frame
+	var delta_at_full_throttle := float(lap_timing.get("laps_delta"))
+	for _eased_frame in LAP_FUEL_EASED_FRAMES:
+		vehicle.set("throttle_amount", 0.35)
+		await physics_frame
+	var delta_eased := float(lap_timing.get("laps_delta"))
+	for _push_frame in LAP_FUEL_BURN_FRAMES:
+		vehicle.set("throttle_amount", 1.0)
+		await physics_frame
+	var delta_pushed := float(lap_timing.get("laps_delta"))
+	var instant_consumption_at_burn := float(lap_timing.get("instant_consumption_kg_per_lap"))
+	var instant_delta_available := bool(lap_timing.get("has_laps_delta"))
+	vehicle.set("throttle_amount", 0.0)
+	vehicle.freeze = true
+
 	for _step in LAP_DISTANCE_STEPS:
 		vehicle.global_position += start_finish_forward * LAP_DISTANCE_STEP_M
 		await physics_frame
@@ -124,6 +144,29 @@ func _run() -> void:
 		lap_timing.call("format_lap_time", last_lap_time),
 		lap_timing.call("format_lap_time", best_lap_time)])
 
+	if not bool(lap_timing.get("has_consumption_average")):
+		_fail("El promedio de consumo no se registro.", failures)
+	elif float(lap_timing.get("average_consumption_kg_per_lap")) <= 0.0:
+		_fail("El promedio de consumo debe ser positivo.", failures)
+	if instant_consumption_at_burn <= 0.0:
+		_fail("El consumo instantaneo no se registro durante la combustion.", failures)
+	if not instant_delta_available:
+		_fail("El delta en tiempo real no se calculo durante la combustion.", failures)
+	if not (delta_eased > delta_at_full_throttle):
+		_fail("El delta no mejoro al aliviar el acelerador: %.2f -> %.2f" % [
+			delta_at_full_throttle, delta_eased], failures)
+	if not (delta_pushed < delta_eased):
+		_fail("El delta no empeoro al volver a fondo: %.2f -> %.2f" % [
+			delta_eased, delta_pushed], failures)
+	print("[AUDIT] avg=%.4f kg/lap | instant=%.2f kg/lap | delta live full=%+.2f eased=%+.2f pushed=%+.2f laps | estimate=%.2f kg/lap | planned=%.2f laps" % [
+		float(lap_timing.get("average_consumption_kg_per_lap")),
+		instant_consumption_at_burn,
+		delta_at_full_throttle,
+		delta_eased,
+		delta_pushed,
+		float(lap_timing.get("_estimated_lap_consumption_kg")),
+		float(lap_timing.get("planned_laps"))])
+
 	for _hud_frame in 3:
 		await process_frame
 
@@ -132,17 +175,27 @@ func _run() -> void:
 	var lap_panel := compositor.get_node_or_null(
 		"DisplayAspect/DisplayStage/HudLayer/DebugHud/LapTimingPanel") as Node
 	var fuel_label := engine_panel.get("_fuel_label") as Label if engine_panel != null else null
+	var average_label := engine_panel.get("_average_consumption_label") as Label if engine_panel != null else null
+	var delta_label := engine_panel.get("_laps_delta_label") as Label if engine_panel != null else null
 	var current_lap_label := lap_panel.get("_lap_value_label") as Label if lap_panel != null else null
 	var last_lap_label := lap_panel.get("_last_lap_value_label") as Label if lap_panel != null else null
 	var best_lap_label := lap_panel.get("_best_lap_value_label") as Label if lap_panel != null else null
 	var engine_text := fuel_label.text if fuel_label != null else ""
+	var average_text := average_label.text if average_label != null else ""
+	var delta_text := delta_label.text if delta_label != null else ""
 	var current_lap_text := current_lap_label.text if current_lap_label != null else ""
 	if not engine_text.begins_with("FUEL"):
 		_fail("El panel ENGINE no muestra FUEL.", failures)
+	if not average_text.begins_with("AVG"):
+		_fail("El panel ENGINE no muestra AVG.", failures)
+	if not delta_text.begins_with("DELTA"):
+		_fail("El panel ENGINE no muestra DELTA.", failures)
 	if current_lap_text != "2":
 		_fail("El panel LAP no muestra la vuelta actual.", failures)
-	print("[AUDIT] ENGINE=%s | LAP=%s | LAST=%s | BEST=%s" % [
+	print("[AUDIT] ENGINE=%s | %s | %s | LAP=%s | LAST=%s | BEST=%s" % [
 		engine_text,
+		average_text,
+		delta_text,
 		current_lap_text,
 		last_lap_label.text if last_lap_label != null else "",
 		best_lap_label.text if best_lap_label != null else ""])

@@ -2,9 +2,26 @@ extends GdUnitTestSuite
 
 const LAP_TIMING_SCRIPT := preload("res://scripts/runtime/lap_timing_controller.gd")
 const FUJI_TRACK_DEFINITION := "res://data/tracks/fuji76_77.tres"
+const F1_2030_PROFILE := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
 
 var _crossing_position := Vector3(-294.278, 0.095, -275.19)
 var _crossing_forward := Vector3(-0.0069, 0.0, -0.99998).normalized()
+
+
+class FuelStubVehicle:
+	extends Node3D
+
+	var remaining_kg := 7.6
+	var capacity_kg := 110.0
+	var burn_per_snapshot_kg := 0.0
+
+	func get_fuel_state_snapshot() -> Dictionary:
+		remaining_kg = maxf(remaining_kg - burn_per_snapshot_kg, 0.0)
+		return {
+			"schema_version": 1,
+			"remaining_kg": remaining_kg,
+			"capacity_kg": capacity_kg,
+		}
 
 
 func test_fuji_metadata_declares_the_start_finish_line() -> void:
@@ -86,12 +103,112 @@ func test_format_lap_time_uses_minutes_seconds_milliseconds() -> void:
 	assert_str(controller.format_lap_time(-1.0)).is_equal("--:--.---")
 
 
+func test_average_consumption_tracks_completed_laps() -> void:
+	var vehicle := auto_free(FuelStubVehicle.new()) as FuelStubVehicle
+	var controller := _configured_fueled_controller(vehicle, 7.6)
+	_start_first_lap(controller)
+	vehicle.remaining_kg = 5.0
+	_complete_lap(controller)
+
+	assert_bool(controller.has_consumption_average).is_true()
+	assert_float(controller.average_consumption_kg_per_lap).is_equal_approx(2.6, 0.0001)
+
+
+func test_instant_delta_is_near_zero_on_the_reference_pace() -> void:
+	var vehicle := auto_free(FuelStubVehicle.new()) as FuelStubVehicle
+	var controller := _configured_fueled_controller(vehicle, 7.6)
+	vehicle.burn_per_snapshot_kg = 2.53 / 900.0
+	_start_first_lap(controller)
+	_run_reference_lap(controller)
+
+	assert_bool(controller.has_instant_consumption).is_true()
+	assert_float(controller.instant_consumption_kg_per_lap).is_equal_approx(2.53, 0.05)
+	assert_bool(controller.has_laps_delta).is_true()
+	assert_float(controller.laps_delta).is_equal_approx(0.0, 0.15)
+
+
+func test_instant_delta_turns_negative_when_consumption_rises() -> void:
+	var vehicle := auto_free(FuelStubVehicle.new()) as FuelStubVehicle
+	var controller := _configured_fueled_controller(vehicle, 7.6)
+	vehicle.burn_per_snapshot_kg = 2.53 / 900.0
+	_start_first_lap(controller)
+	_run_steps(controller, 300)
+	var reference_delta := controller.laps_delta
+
+	vehicle.burn_per_snapshot_kg = 2.53 * 1.4 / 900.0
+	_run_steps(controller, 300)
+
+	assert_bool(controller.has_laps_delta).is_true()
+	assert_float(controller.laps_delta).is_less(reference_delta)
+	assert_float(controller.laps_delta).is_less(-0.25)
+
+
+func test_instant_delta_turns_positive_when_consumption_drops() -> void:
+	var vehicle := auto_free(FuelStubVehicle.new()) as FuelStubVehicle
+	var controller := _configured_fueled_controller(vehicle, 7.6)
+	vehicle.burn_per_snapshot_kg = 2.53 * 1.4 / 900.0
+	_start_first_lap(controller)
+	_run_steps(controller, 300)
+	var high_delta := controller.laps_delta
+
+	vehicle.burn_per_snapshot_kg = 2.53 * 0.5 / 900.0
+	_run_steps(controller, 300)
+
+	assert_bool(controller.has_laps_delta).is_true()
+	assert_float(controller.laps_delta).is_greater(high_delta)
+
+
+func test_refuel_restarts_consumption_accounting() -> void:
+	var vehicle := auto_free(FuelStubVehicle.new()) as FuelStubVehicle
+	var controller := _configured_fueled_controller(vehicle, 7.6)
+	_start_first_lap(controller)
+	vehicle.remaining_kg = 2.0
+	_complete_lap(controller)
+
+	assert_bool(controller.has_consumption_average).is_true()
+
+	vehicle.remaining_kg = 7.6
+	_complete_lap(controller)
+
+	assert_bool(controller.has_consumption_average).is_false()
+	assert_float(controller.average_consumption_kg_per_lap).is_equal(0.0)
+
+
 func _configured_controller() -> LapTimingController:
 	var vehicle := auto_free(Node3D.new()) as Node3D
 	var track_definition := load(FUJI_TRACK_DEFINITION) as TrackDefinition
 	var controller := auto_free(LAP_TIMING_SCRIPT.new()) as LapTimingController
 	assert_bool(controller.configure(vehicle, track_definition)).is_true()
 	return controller
+
+
+func _configured_fueled_controller(
+		vehicle: FuelStubVehicle,
+		initial_fuel_kg: float) -> LapTimingController:
+	vehicle.remaining_kg = initial_fuel_kg
+	var track_definition := load(FUJI_TRACK_DEFINITION) as TrackDefinition
+	var controller := auto_free(LAP_TIMING_SCRIPT.new()) as LapTimingController
+	assert_bool(controller.configure(vehicle, track_definition, F1_2030_PROFILE)).is_true()
+	return controller
+
+
+func _start_first_lap(controller: LapTimingController) -> void:
+	controller.sample_position(_behind_line(5.0), 0.1)
+	controller.sample_position(_beyond_line(5.0), 0.1)
+
+
+func _complete_lap(controller: LapTimingController) -> void:
+	_sample_accumulated_distance(controller, 2200.0)
+	controller.sample_position(_behind_line(5.0), 0.1)
+	controller.sample_position(_beyond_line(5.0), 0.1)
+
+
+func _run_reference_lap(controller: LapTimingController) -> void:
+	_run_steps(controller, 900)
+
+
+func _run_steps(controller: LapTimingController, step_count: int) -> void:
+	_sample_accumulated_distance(controller, float(step_count) * 10.0)
 
 
 func _behind_line(distance_m: float, lateral_m: float = 0.0) -> Vector3:
