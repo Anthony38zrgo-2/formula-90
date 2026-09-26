@@ -6,6 +6,7 @@ signal composition_ready(vehicle: Node, track: Node3D, aids: DrivingAidsControll
 const CAMERA_SCENE := preload("res://scenes/runtime/arcade_chase_camera_rig.tscn")
 const TCAM_SCENE := preload("res://scenes/runtime/fixed_tcam_rig.tscn")
 const AIDS_SCRIPT := preload("res://scripts/vehicle/driving_aids.gd")
+const LAP_TIMING_SCRIPT := preload("res://scripts/runtime/lap_timing_controller.gd")
 
 @export var config: RaceSessionConfig
 
@@ -13,6 +14,7 @@ var active_track: Node3D
 var active_vehicle_root: Node3D
 var active_vehicle: Node
 var driving_aids: DrivingAidsController
+var lap_timing: LapTimingController
 var background_controller: BackgroundController
 var background_skybox: BackgroundSkybox
 # Deprecated compatibility handle. Factory-authored tracks no longer
@@ -89,6 +91,11 @@ func _add_runtime_systems() -> void:
 	driving_aids.name = "DrivingAids"
 	driving_aids.vehicle_node = active_vehicle
 	add_child(driving_aids)
+
+	lap_timing = LAP_TIMING_SCRIPT.new() as LapTimingController
+	lap_timing.name = "LapTiming"
+	add_child(lap_timing)
+	lap_timing.configure(active_vehicle as Node3D, config.selected_track)
 
 	_setup_background(camera_rig_chase)
 
@@ -209,7 +216,7 @@ func _clear_composition() -> void:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
+	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"LapTiming", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -221,6 +228,7 @@ func _clear_composition() -> void:
 	camera_rig_tcam = null
 	use_tcam = false
 	driving_aids = null
+	lap_timing = null
 	background_controller = null
 	background_skybox = null
 	background_mountains_3d = null

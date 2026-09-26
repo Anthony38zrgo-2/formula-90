@@ -5,6 +5,7 @@ const AID_NOTIFICATION_SECONDS := 2.4
 const AID_FADE_SECONDS := 0.35
 const TireStatusPanelScript := preload("res://scripts/hud/tire_status_panel.gd")
 const EngineTemperaturePanelScript := preload("res://scripts/hud/engine_temperature_panel.gd")
+const LapTimingPanelScript := preload("res://scripts/hud/lap_timing_panel.gd")
 const DEFAULT_GAP := 10.0
 
 @export var vehicle_path: NodePath
@@ -21,14 +22,17 @@ var _notification_remaining := 0.0
 var _hud_config: HudConfig = HudConfig.load_from_json(hud_config_path)
 var tire_status_panel: TireStatusPanel
 var engine_temperature_panel: EngineTemperaturePanel
+var lap_timing_panel: LapTimingPanel
 
-func bind_runtime(vehicle: Node, aids: Node) -> void:
+func bind_runtime(vehicle: Node, aids: Node, lap_timing: LapTimingController = null) -> void:
 	_vehicle = vehicle
 	_aids = aids
 	if tire_status_panel != null:
 		tire_status_panel.bind_vehicle(_vehicle)
 	if engine_temperature_panel != null:
 		engine_temperature_panel.bind_vehicle(_vehicle)
+	if lap_timing_panel != null:
+		lap_timing_panel.bind_lap_timing(lap_timing)
 	_connect_aid_notifications()
 
 
@@ -38,12 +42,14 @@ func _ready() -> void:
 	_resolve_runtime_nodes()
 	_ensure_tire_status_panel()
 	_ensure_engine_temperature_panel()
+	_ensure_lap_timing_panel()
 	_apply_hud_layout()
 
 
 func _process(delta: float) -> void:
 	_resolve_runtime_nodes()
 	_position_vehicle_status_panels()
+	_position_lap_timing_panel()
 	_update_speed_gauge()
 	_update_aid_notification(delta)
 
@@ -87,6 +93,15 @@ func _ensure_engine_temperature_panel() -> void:
 	engine_temperature_panel.bind_vehicle(_vehicle)
 	_position_vehicle_status_panels()
 
+func _ensure_lap_timing_panel() -> void:
+	if lap_timing_panel != null:
+		return
+	lap_timing_panel = LapTimingPanelScript.new()
+	lap_timing_panel.name = "LapTimingPanel"
+	lap_timing_panel.apply_settings(_hud_config.lap_timing)
+	add_child(lap_timing_panel)
+	_position_lap_timing_panel()
+
 
 func _apply_hud_layout() -> void:
 	# RetroHud theme lives in retro_hud.json (referenced from hud_config.json); the
@@ -127,6 +142,14 @@ func _position_vehicle_status_panels() -> void:
 	engine_temperature_panel.global_position = Vector2(
 		group_center_horizontal_position - engine_visual_size.x * 0.5,
 		engine_vertical_position)
+
+
+func _position_lap_timing_panel() -> void:
+	if lap_timing_panel == null:
+		return
+	lap_timing_panel.global_position = Vector2(
+		_hud_config.lap_timing.margin_left,
+		_hud_config.lap_timing.margin_top)
 
 
 func _visual_panel_size(panel: Control) -> Vector2:
@@ -175,5 +198,6 @@ func _update_aid_notification(delta: float) -> void:
 		aid_message.modulate.a = _notification_remaining / AID_FADE_SECONDS
 
 
-# FUTURE_UI-002: Put LAP, POS, countdown, and rival markers here only after a
+# FUTURE_UI-002: LAP is delivered by LapTimingPanel from the RaceSession lap
+# timing authority. POS, countdown, and rival markers stay absent until a
 # race-session authority exposes verified values. Do not render placeholder data.

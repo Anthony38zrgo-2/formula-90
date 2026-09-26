@@ -52,7 +52,7 @@
     "scale": 1.08,
     "size": [
       390.0,
-      82.0
+      112.0
     ],
     "gap": 8.0,
     "title": "ENGINE",
@@ -65,6 +65,29 @@
     "optimal_color": "#a6ff9e",
     "warm_color": "#ffd16b",
     "hot_color": "#ff6b61",
-    "critical_color": "#d91f1f"
+    "critical_color": "#d91f1f",
+    "fuel_color": "#a6ff9e",
+    "fuel_low_color": "#ffd16b",
+    "fuel_critical_color": "#ff6b61",
+    "fuel_low_fraction": 0.15,
+    "fuel_critical_fraction": 0.05
+  },
+  "lap_timing": {
+    "visible": true,
+    "scale": 1.08,
+    "size": [
+      220.0,
+      118.0
+    ],
+    "title": "LAP TIMING",
+    "margin_left": 8.0,
+    "margin_right": 8.0,
+    "margin_top": 6.0,
+    "margin_bottom": 6.0,
+    "row_separation": 6.0,
+    "caption_width": 58.0,
+    "pending_color": "#cfd6e4",
+    "last_lap_color": "#ffffff",
+    "best_lap_color": "#a6ff9e"
   }
 }

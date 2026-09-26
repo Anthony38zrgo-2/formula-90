@@ -5,6 +5,7 @@ var _settings := HudConfig.EngineTemperaturesSettings.new()
 var _vehicle: Node
 var _water_temperature_label: Label
 var _oil_temperature_label: Label
+var _fuel_label: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -41,6 +42,47 @@ func _rebuild_ui() -> void:
 
 func _process(_delta: float) -> void:
 	_refresh_temperatures()
+	_refresh_fuel()
+
+
+func _refresh_fuel() -> void:
+	if _vehicle == null or not _vehicle.has_method(&"get_fuel_state_snapshot"):
+		_show_missing_fuel()
+		return
+	var fuel_state_value: Variant = _vehicle.call(&"get_fuel_state_snapshot")
+	if not (fuel_state_value is Dictionary):
+		_show_missing_fuel()
+		return
+	var fuel_state: Dictionary = fuel_state_value
+	var remaining_value: Variant = fuel_state.get("remaining_kg")
+	var capacity_value: Variant = fuel_state.get("capacity_kg")
+	if remaining_value == null or capacity_value == null:
+		_show_missing_fuel()
+		return
+	var remaining_kg := float(remaining_value)
+	var capacity_kg := float(capacity_value)
+	if not is_finite(remaining_kg) or capacity_kg <= 0.0:
+		_show_missing_fuel()
+		return
+	_fuel_label.text = "FUEL  %.1f kg" % remaining_kg
+	_fuel_label.add_theme_color_override(
+		"font_color",
+		_fuel_color(remaining_kg / capacity_kg))
+
+
+func _fuel_color(remaining_fraction: float) -> Color:
+	if remaining_fraction <= _settings.fuel_critical_fraction:
+		return _settings.fuel_critical_color
+	if remaining_fraction <= _settings.fuel_low_fraction:
+		return _settings.fuel_low_color
+	return _settings.fuel_color
+
+
+func _show_missing_fuel() -> void:
+	if _fuel_label == null:
+		return
+	_fuel_label.text = "FUEL  ---"
+	_fuel_label.add_theme_color_override("font_color", Color.WHITE)
 
 
 func _refresh_temperatures() -> void:
@@ -117,6 +159,7 @@ func _set_temperature_label(
 func _show_missing_temperatures() -> void:
 	_show_missing_temperature(_water_temperature_label, "WATER")
 	_show_missing_temperature(_oil_temperature_label, "OIL")
+	_show_missing_fuel()
 
 
 func _show_missing_temperature(label: Label, name: String) -> void:
@@ -155,6 +198,10 @@ func _build_ui() -> void:
 	_oil_temperature_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_oil_temperature_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	temperature_columns.add_child(_oil_temperature_label)
+
+	_fuel_label = Label.new()
+	_fuel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root_box.add_child(_fuel_label)
 
 
 func _temperature_color(

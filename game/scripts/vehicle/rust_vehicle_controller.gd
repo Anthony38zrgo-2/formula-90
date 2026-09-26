@@ -193,6 +193,7 @@ func get_telemetry_snapshot() -> Dictionary:
 	var tire_state: Dictionary = {}
 	var brake_state: Dictionary = {}
 	var engine_thermal_state: Dictionary = {}
+	var fuel_state: Dictionary = {}
 
 	if has_method(&"get_tire_state_snapshot"):
 		var value: Variant = call(&"get_tire_state_snapshot")
@@ -206,6 +207,10 @@ func get_telemetry_snapshot() -> Dictionary:
 		var engine_thermal_value: Variant = call(&"get_engine_thermal_state_snapshot")
 		if engine_thermal_value is Dictionary:
 			engine_thermal_state = engine_thermal_value
+	if has_method(&"get_fuel_state_snapshot"):
+		var fuel_value: Variant = call(&"get_fuel_state_snapshot")
+		if fuel_value is Dictionary:
+			fuel_state = fuel_value
 
 	return {
 		"speed_ms": speed,
@@ -224,6 +229,7 @@ func get_telemetry_snapshot() -> Dictionary:
 		"tires": tire_state,
 		"brakes": brake_state,
 		"engine_thermal": engine_thermal_state,
+		"fuel": fuel_state,
 		"position": global_position,
 		"linear_velocity": linear_velocity,
 		"angular_velocity": angular_velocity

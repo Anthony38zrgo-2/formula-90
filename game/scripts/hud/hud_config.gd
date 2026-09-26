@@ -13,6 +13,7 @@ const DEFAULT_PATH := "res://features/hud/config/hud_config.json"
 var retro_hud := RetroHudConfig.new()
 var tires := TiresSettings.new()
 var engine_temperatures := EngineTemperaturesSettings.new()
+var lap_timing := LapTimingSettings.new()
 
 
 static func load_from_json(path: String = DEFAULT_PATH) -> HudConfig:
@@ -34,6 +35,9 @@ static func load_from_json(path: String = DEFAULT_PATH) -> HudConfig:
 	var engine_temperatures_data: Variant = parsed.get("engine_temperatures", {})
 	if engine_temperatures_data is Dictionary:
 		config.engine_temperatures.apply(engine_temperatures_data)
+	var lap_timing_data: Variant = parsed.get("lap_timing", {})
+	if lap_timing_data is Dictionary:
+		config.lap_timing.apply(lap_timing_data)
 	return config
 
 
@@ -185,6 +189,11 @@ class EngineTemperaturesSettings:
 	var warm_color := Color("ffd16b")
 	var hot_color := Color("ff6b61")
 	var critical_color := Color("d91f1f")
+	var fuel_color := Color("a6ff9e")
+	var fuel_low_color := Color("ffd16b")
+	var fuel_critical_color := Color("ff6b61")
+	var fuel_low_fraction := 0.15
+	var fuel_critical_fraction := 0.05
 
 	func apply(data: Dictionary) -> void:
 		visible = bool(data.get("visible", visible))
@@ -202,6 +211,59 @@ class EngineTemperaturesSettings:
 		warm_color = _parse_html_color(data.get("warm_color", "#ffd16b"), warm_color)
 		hot_color = _parse_html_color(data.get("hot_color", "#ff6b61"), hot_color)
 		critical_color = _parse_html_color(data.get("critical_color", "#d91f1f"), critical_color)
+		fuel_color = _parse_html_color(data.get("fuel_color", "#a6ff9e"), fuel_color)
+		fuel_low_color = _parse_html_color(data.get("fuel_low_color", "#ffd16b"), fuel_low_color)
+		fuel_critical_color = _parse_html_color(
+			data.get("fuel_critical_color", "#ff6b61"), fuel_critical_color)
+		fuel_low_fraction = clampf(
+			float(data.get("fuel_low_fraction", fuel_low_fraction)), 0.0, 1.0)
+		fuel_critical_fraction = clampf(
+			float(data.get("fuel_critical_fraction", fuel_critical_fraction)),
+			0.0,
+			fuel_low_fraction)
+
+	func _parse_size_vector(value: Variant, fallback: Vector2) -> Vector2:
+		if value is Array and value.size() >= 2:
+			return Vector2(float(value[0]), float(value[1]))
+		return fallback
+
+	func _parse_html_color(value: Variant, fallback: Color) -> Color:
+		if value is String and Color.html_is_valid(value):
+			return Color(value)
+		return fallback
+
+
+class LapTimingSettings:
+	extends RefCounted
+
+	var visible := true
+	var scale := 1.08
+	var size := Vector2(220.0, 118.0)
+	var title := "LAP TIMING"
+	var margin_left := 8.0
+	var margin_right := 8.0
+	var margin_top := 6.0
+	var margin_bottom := 6.0
+	var row_separation := 6.0
+	var caption_width := 58.0
+	var pending_color := Color("cfd6e4")
+	var last_lap_color := Color("ffffff")
+	var best_lap_color := Color("a6ff9e")
+
+	func apply(data: Dictionary) -> void:
+		visible = bool(data.get("visible", visible))
+		scale = maxf(float(data.get("scale", scale)), 0.05)
+		size = _parse_size_vector(data.get("size", [size.x, size.y]), size)
+		title = str(data.get("title", title))
+		margin_left = maxf(float(data.get("margin_left", margin_left)), 0.0)
+		margin_right = maxf(float(data.get("margin_right", margin_right)), 0.0)
+		margin_top = maxf(float(data.get("margin_top", margin_top)), 0.0)
+		margin_bottom = maxf(float(data.get("margin_bottom", margin_bottom)), 0.0)
+		row_separation = maxf(float(data.get("row_separation", row_separation)), 0.0)
+		caption_width = maxf(float(data.get("caption_width", caption_width)), 0.0)
+		pending_color = _parse_html_color(data.get("pending_color", "#cfd6e4"), pending_color)
+		last_lap_color = _parse_html_color(data.get("last_lap_color", "#ffffff"), last_lap_color)
+		best_lap_color = _parse_html_color(data.get("best_lap_color", "#a6ff9e"), best_lap_color)
 
 	func _parse_size_vector(value: Variant, fallback: Vector2) -> Vector2:
 		if value is Array and value.size() >= 2:

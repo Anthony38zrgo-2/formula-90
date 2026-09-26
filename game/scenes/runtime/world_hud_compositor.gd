@@ -18,6 +18,8 @@ const UPSCALE_MODE_NATIVE_HIRES_PSX := 3
 @onready var debug_hud: ArcadeRaceHud = $DisplayAspect/DisplayStage/HudLayer/DebugHud
 @onready var psx_art: PsxArtController = get_node_or_null("PsxArtController") as PsxArtController
 
+var _race_session: RaceSession
+
 
 func _ready() -> void:
 	display_stage.resized.connect(_sync_native_viewport_size)
@@ -38,6 +40,7 @@ func _ready() -> void:
 	session.name = "RaceSession"
 	session.config = session_config
 	session.composition_ready.connect(_on_composition_ready)
+	_race_session = session
 	world_viewport.add_child(session)
 
 func set_visual_preset(preset_path: String) -> bool:
@@ -79,7 +82,10 @@ func _on_composition_ready(vehicle: Node, _track: Node3D, aids: DrivingAidsContr
 		for child in session_root.get_children():
 			if child != _track.get_parent() and child != vehicle_root:
 				_apply_non_vehicle_full_bright(child)
-	debug_hud.bind_runtime(vehicle, aids)
+	debug_hud.bind_runtime(
+		vehicle,
+		aids,
+		_race_session.lap_timing if _race_session != null else null)
 	var minimap := debug_hud.get_node_or_null("Minimap") as TrackMinimapController
 	if minimap != null:
 		minimap.map_data = session_config.selected_track.map_data
