@@ -120,7 +120,7 @@ func _run() -> void:
 	if vehicle != null and vehicle.has_method("get_fuel_state_snapshot"):
 		var fuel_state: Dictionary = vehicle.call("get_fuel_state_snapshot")
 		var remaining_kg := float(fuel_state.get("remaining_kg", -1.0))
-		if remaining_kg <= 0.0 or remaining_kg > 4.6 or float(fuel_state.get("capacity_kg", 0.0)) != 110.0:
+		if remaining_kg <= 0.0 or remaining_kg > 7.6 or float(fuel_state.get("capacity_kg", 0.0)) != 110.0:
 			_fail("Fuel state is not the configured three-lap Fuji load: %s" % [fuel_state], failures)
 	else:
 		_fail("Vehicle does not expose the fuel state snapshot.", failures)

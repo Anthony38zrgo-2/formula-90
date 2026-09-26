@@ -73,7 +73,7 @@ func _run() -> void:
 	var fuel_state: Dictionary = vehicle.call(&"get_fuel_state_snapshot")
 	assert(float(fuel_state.get("capacity_kg", 0.0)) == 110.0, "Capacidad de combustible del f1_2030_v10 debe ser 110 kg")
 	var remaining_kg := float(fuel_state.get("remaining_kg", -1.0))
-	assert(remaining_kg > 0.0 and remaining_kg <= 4.6, "Carga inicial de combustible debe ser ~3 vueltas de Fuji (4.6 kg)")
+	assert(remaining_kg > 0.0 and remaining_kg <= 7.6, "Carga inicial de combustible debe ser ~3 vueltas de Fuji (7.6 kg)")
 	assert(absf(vehicle.mass - (600.0 + remaining_kg)) < 0.2, "La masa del RigidBody debe ser masa seca + combustible restante")
 	print("Fuel remaining: ", remaining_kg, " kg | RigidBody mass: ", vehicle.mass)
 	assert(float(engine.get("max_torque", 0.0)) == 400.0, "Torque maximo del perfil f1_2030_v10 debe ser 400 Nm")

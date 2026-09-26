@@ -8,7 +8,7 @@ const FUELED_PROFILE_JSON: &str = r#"{
   "geometry": {"wheelbase": 2.95},
   "fuel": {
     "capacity_kg": 110.0,
-    "initial_kg": 4.6,
+    "initial_kg": 7.6,
     "tank_position_local_m": {"x": 0.0, "y": 0.05, "z": 0.60},
     "brake_specific_consumption_kg_per_kwh": 0.30,
     "idle_consumption_kg_per_hour": 2.0
@@ -62,10 +62,10 @@ fn profile_without_fuel_keeps_dry_mass_and_distribution() {
 #[test]
 fn tank_load_raises_mass_and_moves_distribution_rearward() {
     let mut cfg = fueled_config();
-    assert!((cfg.fuel.current_kg - 4.6).abs() < 1e-12);
+    assert!((cfg.fuel.current_kg - 7.6).abs() < 1e-12);
 
     let loaded_mass = cfg.total_vehicle_mass();
-    assert!((loaded_mass - 604.6).abs() < 1e-9);
+    assert!((loaded_mass - 607.6).abs() < 1e-9);
     assert!(cfg.effective_front_weight_distribution() < cfg.front_weight_distribution);
 
     cfg.fuel.current_kg = cfg.fuel.capacity_kg;
@@ -106,14 +106,43 @@ fn solver_burns_fuel_proportional_to_engine_power() {
     }
     let remaining_kg = sim.config.fuel.effective_current_kg();
     assert!(
-        remaining_kg < 4.6,
+        remaining_kg < 7.6,
         "fuel must burn while the engine drives, remaining={remaining_kg}"
     );
     assert!(
-        remaining_kg > 4.0,
+        remaining_kg > 7.0,
         "two seconds must not empty a three-lap load, remaining={remaining_kg}"
     );
     assert!(sim.config.fuel.consumed_kg > 0.0);
+}
+
+#[test]
+fn burn_matches_the_telemetry_mechanical_power() {
+    let cfg = fueled_config();
+    let spawn = default_spawn_height(&cfg);
+    let mut sim = VehicleSimulator::new(cfg, Vec3::new(0.0, spawn, 0.0), 0.0);
+    let samples = flat_ground_samples(&sim);
+    let input = VehicleInput {
+        throttle: 1.0,
+        ..VehicleInput::default()
+    };
+    let mut previous_remaining = sim.config.fuel.effective_current_kg();
+    for _ in 0..240 {
+        let body = sim.state.body_kinematics();
+        let (_, telem) = sim.solve_external(body, &input, &samples, 1.0 / 120.0);
+        let remaining = sim.config.fuel.effective_current_kg();
+        let burned = previous_remaining - remaining;
+        let expected = (telem.engine_mechanical_power_watts / 1000.0
+            * sim.config.fuel.brake_specific_consumption_kg_per_kwh
+            / 3600.0
+            + sim.config.fuel.idle_consumption_kg_per_hour / 3600.0)
+            * (1.0 / 120.0);
+        assert!(
+            (burned - expected).abs() < 1e-9,
+            "burn {burned} must match the telemetry power flow {expected}"
+        );
+        previous_remaining = remaining;
+    }
 }
 
 #[test]
@@ -129,7 +158,7 @@ fn idle_burn_applies_without_throttle() {
     let remaining_kg = sim.config.fuel.effective_current_kg();
     let expected_idle_burn = 2.0 / 3600.0;
     assert!(
-        (4.6 - remaining_kg - expected_idle_burn).abs() < expected_idle_burn * 0.25,
+        (7.6 - remaining_kg - expected_idle_burn).abs() < expected_idle_burn * 0.25,
         "one second of idle must burn the idle flow, remaining={remaining_kg}"
     );
 }
@@ -165,8 +194,8 @@ fn shipped_f1_2030_profile_declares_the_three_lap_load() {
     let cfg = VehicleConfig::from_json_path(&path).expect("shipped profile must load");
     assert_eq!(cfg.vehicle_mass, 600.0);
     assert_eq!(cfg.fuel.capacity_kg, 110.0);
-    assert!((cfg.fuel.initial_kg - 4.6).abs() < 1e-9);
-    assert!((cfg.total_vehicle_mass() - 604.6).abs() < 1e-9);
+    assert!((cfg.fuel.initial_kg - 7.6).abs() < 1e-9);
+    assert!((cfg.total_vehicle_mass() - 607.6).abs() < 1e-9);
     assert!(cfg.effective_front_weight_distribution() < 0.45);
 }
 
@@ -179,6 +208,6 @@ fn reset_refills_fuel_to_initial_load() {
     sim.config.fuel.consumed_kg = 100.0;
     let ptr = sim.as_mut() as *mut VehicleSimulator as *mut c_void;
     f1_94_physics_reset(ptr, 0.0, 0.0, 0.0, 0.0);
-    assert!((sim.config.fuel.current_kg - 4.6).abs() < 1e-12);
+    assert!((sim.config.fuel.current_kg - 7.6).abs() < 1e-12);
     assert_eq!(sim.config.fuel.consumed_kg, 0.0);
 }

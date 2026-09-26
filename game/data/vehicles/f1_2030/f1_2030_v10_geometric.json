@@ -538,7 +538,7 @@
     "brake_specific_consumption_kg_per_kwh": 0.3,
     "capacity_kg": 110.0,
     "idle_consumption_kg_per_hour": 2.0,
-    "initial_kg": 4.6,
+    "initial_kg": 7.6,
     "tank_position_local_m": {
       "x": 0.0,
       "y": 0.05,
