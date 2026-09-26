@@ -117,7 +117,26 @@ func _run() -> void:
 			if vertical_offset < 2.0 or vertical_offset > 7.0:
 				_fail("Chase camera did not follow a 10 m elevation change: %.2f m." % vertical_offset, failures)
 
+	if vehicle != null and vehicle.has_method("get_fuel_state_snapshot"):
+		var fuel_state: Dictionary = vehicle.call("get_fuel_state_snapshot")
+		var remaining_kg := float(fuel_state.get("remaining_kg", -1.0))
+		if remaining_kg <= 0.0 or remaining_kg > 4.6 or float(fuel_state.get("capacity_kg", 0.0)) != 110.0:
+			_fail("Fuel state is not the configured three-lap Fuji load: %s" % [fuel_state], failures)
+	else:
+		_fail("Vehicle does not expose the fuel state snapshot.", failures)
+
+	var lap_timing = race_session.get("lap_timing") if race_session != null else null
+	if lap_timing == null:
+		_fail("RaceSession lap timing authority is missing.", failures)
+	elif not bool(lap_timing.get("is_configured")):
+		_fail("Lap timing is not configured from Fuji start/finish metadata.", failures)
+
+	if compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/LapTimingPanel") == null:
+		_fail("Lap timing HUD panel is missing.", failures)
+	if compositor.get_node_or_null("DisplayAspect/DisplayStage/HudLayer/DebugHud/EngineTemperaturePanel") == null:
+		_fail("Engine HUD panel is missing.", failures)
+
 	compositor.queue_free()
 	if failures.is_empty():
-		print("[PASS] %s loads on Fuji 76-77 with spawn, surfaces, camera, HUD and wheel contact." % expected_vehicle_id)
+		print("[PASS] %s loads on Fuji 76-77 with spawn, surfaces, camera, HUD, fuel and lap timing." % expected_vehicle_id)
 	quit(failures.size())
