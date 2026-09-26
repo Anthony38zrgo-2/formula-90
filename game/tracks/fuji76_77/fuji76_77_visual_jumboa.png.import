@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_jumboa.png-cc383fa53b7a1556580a94cd
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "a685af32bfe4c9b0488d9edf324f0201"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

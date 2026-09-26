@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_lgfrmula.png-925db4ad6c7300220a2e48
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "76d5d91ab37e5c960a8059e7ba35a85a"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

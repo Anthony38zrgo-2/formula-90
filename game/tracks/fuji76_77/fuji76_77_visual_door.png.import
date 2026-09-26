@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_door.png-a7d3bfb3084b8be8bfbf2b5c4c
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "17c79587118134da9b161db99f7368ab"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_tyresa.png-55d19dc02a848c7a210c58fd
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "41f87b8d2223f77faa4fc34e24bc83d3"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

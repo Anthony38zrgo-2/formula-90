@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_grailt.png-3272764a8f449f7905c9d659
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "c120f799f09fd51d6d418d301e71f1f9"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

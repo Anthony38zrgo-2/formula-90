@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_grating.png-4e8eea1bc5e56d68ecd6b21
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "b8c0b5e12401f7f3c375e8944dd3fb66"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

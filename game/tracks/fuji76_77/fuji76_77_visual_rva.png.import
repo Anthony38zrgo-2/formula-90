@@ -7,9 +7,6 @@ path="res://.godot/imported/fuji76_77_visual_rva.png-bd7290db135c1e8535aa1c0319b
 metadata={
 "vram_texture": false
 }
-generator_parameters={
-"md5": "89941a5572f207a0ff94ae0dc5b1a7c1"
-}
 
 [deps]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
