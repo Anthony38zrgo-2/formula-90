@@ -1149,6 +1149,25 @@ impl CoreFacade {
         ent.aids.stability = ent.sim.aids.stability;
         ok
     }
+
+    /// Pit-service refuel: leaves exactly `target_kg` in the entity tank,
+    /// clamped to the profile capacity.
+    pub fn set_fuel_kg(&mut self, id: u32, target_kg: f64) -> bool {
+        let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) else {
+            return false;
+        };
+        ent.sim.set_fuel_kg(target_kg);
+        true
+    }
+
+    /// Pit-service tire change: fits a fresh cold set on the entity.
+    pub fn replace_tires(&mut self, id: u32) -> bool {
+        let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) else {
+            return false;
+        };
+        ent.sim.replace_tire_set();
+        true
+    }
 }
 
 /// Derive the dominant surface token from the tick's tri-ray samples. Precedence and

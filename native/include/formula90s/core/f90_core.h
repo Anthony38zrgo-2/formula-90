@@ -183,6 +183,9 @@ typedef void (*FnCoreDestroy)(void *core);
 typedef uint32_t (*FnCoreSpawn)(void *core);
 typedef void (*FnCoreReset)(void *core, double x, double y, double z, double yaw);
 typedef bool (*FnCoreApplyRuntimeConfig)(void *core, uint32_t id, const F90RuntimeConfig *config);
+// Append-only ABI 17: pit-service calls.
+typedef bool (*FnCoreSetFuelKg)(void *core, uint32_t id, double target_kg);
+typedef bool (*FnCoreReplaceTires)(void *core, uint32_t id);
 typedef void (*FnCoreStep)(void *core, uint32_t id,
     double x, double y, double z, double qx, double qy, double qz, double qw,
     double lx, double ly, double lz, double ax, double ay, double az,

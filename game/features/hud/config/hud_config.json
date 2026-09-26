@@ -101,5 +101,22 @@
     "pending_color": "#cfd6e4",
     "last_lap_color": "#ffffff",
     "best_lap_color": "#a6ff9e"
+  },
+  "pit_stop": {
+    "visible": true,
+    "scale": 1.08,
+    "size": [
+      340.0,
+      148.0
+    ],
+    "margin_top": 24.0,
+    "title": "PIT STOP",
+    "hint_color": "#cfd6e4",
+    "field_color": "#ffffff",
+    "active_field_color": "#ffd16b",
+    "fuel_value_color": "#a6ff9e",
+    "progress_color": "#73b8ff",
+    "complete_color": "#a6ff9e",
+    "blocked_color": "#ff6b61"
   }
 }

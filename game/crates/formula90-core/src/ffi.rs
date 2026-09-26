@@ -23,7 +23,7 @@ use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 16;
+pub const F90_CORE_ABI_VERSION: u32 = 17;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -397,6 +397,20 @@ pub unsafe extern "C" fn f90_core_apply_runtime_config(
     }
     // SAFETY: `config` is non-null (checked above) and, per `# Safety`, points to a valid config.
     facade_mut(h).apply_runtime_config(id, unsafe { &*config })
+}
+
+/// Pit-service refuel: leaves exactly `target_kg` in the entity tank (clamped
+/// to the profile capacity). Returns true when the entity exists.
+#[no_mangle]
+pub extern "C" fn f90_core_set_fuel_kg(h: *mut c_void, id: u32, target_kg: f64) -> bool {
+    facade_mut(h).set_fuel_kg(id, target_kg)
+}
+
+/// Pit-service tire change: fits a fresh cold set (zero wear, initial pressure
+/// and ambient temperature) on the entity. Returns true when the entity exists.
+#[no_mangle]
+pub extern "C" fn f90_core_replace_tires(h: *mut c_void, id: u32) -> bool {
+    facade_mut(h).replace_tires(id)
 }
 
 /// Orchestrated step: physics solve + module ticks + audio state update, writing

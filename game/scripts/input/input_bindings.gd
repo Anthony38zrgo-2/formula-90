@@ -32,6 +32,11 @@ const DEBUG_NEXT := "DebugNext"
 const DEBUG_PREVIOUS := "DebugPrevious"
 const RESET_VEHICLE := "Reset Vehicle"
 const TOGGLE_CAMERA := "Toggle Camera"
+const PIT_FIELD_UP := "Pit Field Up"
+const PIT_FIELD_DOWN := "Pit Field Down"
+const PIT_VALUE_LEFT := "Pit Value Left"
+const PIT_VALUE_RIGHT := "Pit Value Right"
+const PIT_CONFIRM := "Pit Confirm"
 
 
 func _init() -> void:
@@ -61,6 +66,12 @@ func _init() -> void:
 	_register(RESET_VEHICLE, 0.5, [key_ev(82)])
 	# Fixed T-cam toggle. C (67) previously drove Clutch; Clutch moved to X (88).
 	_register(TOGGLE_CAMERA, 0.5, [key_ev(67)])
+	# Pit-stop selection panel: keyboard rows/values plus gamepad d-pad and A.
+	_register(PIT_FIELD_UP, 0.2, [key_ev(KEY_W), joypad_button_ev(JOY_BUTTON_DPAD_UP)])
+	_register(PIT_FIELD_DOWN, 0.2, [key_ev(KEY_S), joypad_button_ev(JOY_BUTTON_DPAD_DOWN)])
+	_register(PIT_VALUE_LEFT, 0.2, [key_ev(KEY_Q), joypad_button_ev(JOY_BUTTON_DPAD_LEFT)])
+	_register(PIT_VALUE_RIGHT, 0.2, [key_ev(KEY_E), joypad_button_ev(JOY_BUTTON_DPAD_RIGHT)])
+	_register(PIT_CONFIRM, 0.2, [key_ev(KEY_ENTER), joypad_button_ev(JOY_BUTTON_A)])
 
 
 func _register(action: String, deadzone: float, events: Array) -> void:

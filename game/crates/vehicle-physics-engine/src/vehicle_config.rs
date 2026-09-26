@@ -83,6 +83,21 @@ impl FuelConfig {
         };
         self.consumed_kg = 0.0;
     }
+
+    /// Pit-service target: leaves exactly `target_kg` in the tank, clamped to
+    /// the profile limits. A non-finite request keeps the current load. The
+    /// consumed counter restarts so the HUD plan tracks the new stint.
+    pub fn set_current_kg(&mut self, target_kg: f64) {
+        if !self.is_enabled() {
+            self.current_kg = 0.0;
+            self.consumed_kg = 0.0;
+            return;
+        }
+        if target_kg.is_finite() {
+            self.current_kg = target_kg.clamp(0.0, self.capacity_kg);
+            self.consumed_kg = 0.0;
+        }
+    }
 }
 
 /// Formula-90 vehicle configuration with GEVP-compatible suspension, tire and drivetrain semantics.

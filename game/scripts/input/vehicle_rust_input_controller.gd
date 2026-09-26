@@ -95,7 +95,7 @@ func _physics_process(_delta: float) -> void:
 				vehicle_node.set_automatic_transmission(not auto)
 
 	if action_toggle_traction_control != "" and InputMap.has_action(action_toggle_traction_control):
-		if Input.is_action_just_pressed(action_toggle_traction_control):
+		if Input.is_action_just_pressed(action_toggle_traction_control) and not _is_pit_selection_active():
 			_toggle_traction_control()
 
 	if action_reset_vehicle != "" and InputMap.has_action(action_reset_vehicle):
@@ -140,6 +140,13 @@ func _physics_process(_delta: float) -> void:
 	vehicle_node.set_clutch_amount(clutch_val)
 	if next_gear != -2:
 		vehicle_node.set_gear_request(next_gear)
+
+
+func _is_pit_selection_active() -> bool:
+	var pit_stop := get_tree().get_first_node_in_group(PitStopController.PIT_STOP_CONTROLLER_GROUP)
+	if pit_stop == null or not pit_stop.has_method("is_selection_active"):
+		return false
+	return bool(pit_stop.call("is_selection_active"))
 
 
 func _toggle_traction_control() -> void:

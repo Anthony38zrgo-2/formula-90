@@ -202,6 +202,10 @@ void F194RustVehicle::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "aids_enabled_mask"), "set_aids_enabled_mask", "get_aids_enabled_mask");
 
 	ClassDB::bind_method(D_METHOD("reset_vehicle", "pos", "yaw_rad"), &F194RustVehicle::reset_vehicle);
+
+	// Pit service: explicit tank target and a fresh cold tire set.
+	ClassDB::bind_method(D_METHOD("set_fuel_kg", "target_kg"), &F194RustVehicle::set_fuel_kg);
+	ClassDB::bind_method(D_METHOD("replace_tires"), &F194RustVehicle::replace_tires);
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
@@ -1351,6 +1355,18 @@ void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 	brake_amount_ = 0.0;
 	handbrake_amount_ = 0.0;
 	clutch_amount_ = 0.0;
+}
+
+void F194RustVehicle::set_fuel_kg(double p_target_kg) {
+	if (core_driver_ != nullptr) {
+		core_driver_->set_fuel_kg(p_target_kg);
+	}
+}
+
+void F194RustVehicle::replace_tires() {
+	if (core_driver_ != nullptr) {
+		core_driver_->replace_tires();
+	}
 }
 
 void F194RustVehicle::_exit_tree() {

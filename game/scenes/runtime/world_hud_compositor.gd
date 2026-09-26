@@ -85,7 +85,8 @@ func _on_composition_ready(vehicle: Node, _track: Node3D, aids: DrivingAidsContr
 	debug_hud.bind_runtime(
 		vehicle,
 		aids,
-		_race_session.lap_timing if _race_session != null else null)
+		_race_session.lap_timing if _race_session != null else null,
+		_race_session.pit_stop if _race_session != null else null)
 	var minimap := debug_hud.get_node_or_null("Minimap") as TrackMinimapController
 	if minimap != null:
 		minimap.map_data = session_config.selected_track.map_data

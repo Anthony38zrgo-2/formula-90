@@ -7,6 +7,8 @@ const CAMERA_SCENE := preload("res://scenes/runtime/arcade_chase_camera_rig.tscn
 const TCAM_SCENE := preload("res://scenes/runtime/fixed_tcam_rig.tscn")
 const AIDS_SCRIPT := preload("res://scripts/vehicle/driving_aids.gd")
 const LAP_TIMING_SCRIPT := preload("res://scripts/runtime/lap_timing_controller.gd")
+const PIT_STOP_SCRIPT := preload("res://scripts/runtime/pit_stop_controller.gd")
+const PIT_STOP_RULES_SCRIPT := preload("res://scripts/runtime/pit_stop_rules.gd")
 
 @export var config: RaceSessionConfig
 
@@ -15,6 +17,7 @@ var active_vehicle_root: Node3D
 var active_vehicle: Node
 var driving_aids: DrivingAidsController
 var lap_timing: LapTimingController
+var pit_stop: PitStopController
 var background_controller: BackgroundController
 var background_skybox: BackgroundSkybox
 # Deprecated compatibility handle. Factory-authored tracks no longer
@@ -99,6 +102,15 @@ func _add_runtime_systems() -> void:
 		active_vehicle as Node3D,
 		config.selected_track,
 		config.selected_vehicle.physics_config_path)
+
+	pit_stop = PIT_STOP_SCRIPT.new() as PitStopController
+	pit_stop.name = "PitStop"
+	add_child(pit_stop)
+	pit_stop.configure(
+		active_vehicle as Node3D,
+		config.selected_track,
+		config.selected_vehicle,
+		PIT_STOP_RULES_SCRIPT.load_from_json())
 
 	_setup_background(camera_rig_chase)
 
@@ -219,7 +231,7 @@ func _clear_composition() -> void:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"LapTiming", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
+	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"LapTiming", &"PitStop", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -232,6 +244,7 @@ func _clear_composition() -> void:
 	use_tcam = false
 	driving_aids = null
 	lap_timing = null
+	pit_stop = null
 	background_controller = null
 	background_skybox = null
 	background_mountains_3d = null

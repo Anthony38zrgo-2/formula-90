@@ -14,6 +14,7 @@ var retro_hud := RetroHudConfig.new()
 var tires := TiresSettings.new()
 var engine_temperatures := EngineTemperaturesSettings.new()
 var lap_timing := LapTimingSettings.new()
+var pit_stop := PitStopSettings.new()
 
 
 static func load_from_json(path: String = DEFAULT_PATH) -> HudConfig:
@@ -38,6 +39,9 @@ static func load_from_json(path: String = DEFAULT_PATH) -> HudConfig:
 	var lap_timing_data: Variant = parsed.get("lap_timing", {})
 	if lap_timing_data is Dictionary:
 		config.lap_timing.apply(lap_timing_data)
+	var pit_stop_data: Variant = parsed.get("pit_stop", {})
+	if pit_stop_data is Dictionary:
+		config.pit_stop.apply(pit_stop_data)
 	return config
 
 
@@ -258,6 +262,47 @@ class EngineTemperaturesSettings:
 		delta_warning_laps = float(data.get("delta_warning_laps", delta_warning_laps))
 		delta_critical_laps = minf(
 			float(data.get("delta_critical_laps", delta_critical_laps)), delta_warning_laps)
+
+	func _parse_size_vector(value: Variant, fallback: Vector2) -> Vector2:
+		if value is Array and value.size() >= 2:
+			return Vector2(float(value[0]), float(value[1]))
+		return fallback
+
+	func _parse_html_color(value: Variant, fallback: Color) -> Color:
+		if value is String and Color.html_is_valid(value):
+			return Color(value)
+		return fallback
+
+
+class PitStopSettings:
+	extends RefCounted
+
+	var visible := true
+	var scale := 1.08
+	var size := Vector2(340.0, 148.0)
+	var margin_top := 24.0
+	var title := "PIT STOP"
+	var hint_color := Color("cfd6e4")
+	var field_color := Color("ffffff")
+	var active_field_color := Color("ffd16b")
+	var fuel_value_color := Color("a6ff9e")
+	var progress_color := Color("73b8ff")
+	var complete_color := Color("a6ff9e")
+	var blocked_color := Color("ff6b61")
+
+	func apply(data: Dictionary) -> void:
+		visible = bool(data.get("visible", visible))
+		scale = maxf(float(data.get("scale", scale)), 0.05)
+		size = _parse_size_vector(data.get("size", [size.x, size.y]), size)
+		margin_top = maxf(float(data.get("margin_top", margin_top)), 0.0)
+		title = str(data.get("title", title))
+		hint_color = _parse_html_color(data.get("hint_color", "#cfd6e4"), hint_color)
+		field_color = _parse_html_color(data.get("field_color", "#ffffff"), field_color)
+		active_field_color = _parse_html_color(data.get("active_field_color", "#ffd16b"), active_field_color)
+		fuel_value_color = _parse_html_color(data.get("fuel_value_color", "#a6ff9e"), fuel_value_color)
+		progress_color = _parse_html_color(data.get("progress_color", "#73b8ff"), progress_color)
+		complete_color = _parse_html_color(data.get("complete_color", "#a6ff9e"), complete_color)
+		blocked_color = _parse_html_color(data.get("blocked_color", "#ff6b61"), blocked_color)
 
 	func _parse_size_vector(value: Variant, fallback: Vector2) -> Vector2:
 		if value is Array and value.size() >= 2:

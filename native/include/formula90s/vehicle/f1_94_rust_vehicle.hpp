@@ -449,6 +449,11 @@ public:
 
 	void reset_vehicle(const Vector3 &p_pos, double p_yaw_rad);
 
+	// Pit service: forwards the explicit tank target and the fresh cold tire
+	// set to the orchestrator facade that owns the live entity.
+	void set_fuel_kg(double p_target_kg);
+	void replace_tires();
+
 	// --- Snapshot-server bridge control: F90SimBridge drives this vehicle via the
 	// authoritative Rust core. When bridge_controlled_, _integrate_forces is skipped
 	// (the bridge sets body velocities from the core's predicted pose). ---

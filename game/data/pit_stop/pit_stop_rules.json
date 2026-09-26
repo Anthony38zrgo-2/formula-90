@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "tire_change_seconds": 3.0,
+  "refuel_rate_kg_per_s": 5.0,
+  "stop_speed_threshold_kmh": 2.0,
+  "stop_hold_seconds": 0.25,
+  "default_fuel_laps": 15,
+  "minimum_fuel_laps": 1,
+  "tire_compounds": [
+    "BLANDOS"
+  ]
+}

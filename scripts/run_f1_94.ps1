@@ -5,6 +5,7 @@ param(
     [string]$Livery = 'original',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
+    [switch]$SmokePitStop,
     [switch]$SmokeAudio,
     [switch]$SmokeBackground,
     [switch]$TestPhysics,
@@ -182,6 +183,11 @@ if ($SmokeBackground) {
 if ($Smoke) {
     Write-Host "Ejecutando smoke de $variantLabel + Fuji 76-77 + camara + HUD..." -ForegroundColor Cyan
     & $godot --headless --path $game --script $smokeScript -- "--scene=$scene" "--vehicle-id=$vehicleId"
+    exit $LASTEXITCODE
+}
+if ($SmokePitStop) {
+    Write-Host 'Ejecutando smoke de pit stop en Fuji 76-77 (box, inmovilizado, servicio)...' -ForegroundColor Cyan
+    & $godot --headless --path $game --script 'res://tests/smoke_test_pit_stop_fuji76_77.gd' -- "--scene=$scene" "--vehicle-id=$vehicleId"
     exit $LASTEXITCODE
 }
 if ($TestPhysics) {

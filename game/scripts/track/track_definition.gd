@@ -40,3 +40,19 @@ func load_start_finish_data() -> Dictionary:
 
 func load_lap_length_m() -> float:
 	return float(load_metadata().get("lap_length_m", 0.0))
+
+
+func load_pit_lane_data() -> Dictionary:
+	var pit_lane: Variant = load_metadata().get("pit_lane", {})
+	if not (pit_lane is Dictionary):
+		return {}
+	return pit_lane
+
+
+func has_pit_lane() -> bool:
+	var pit_lane := load_pit_lane_data()
+	if pit_lane.is_empty():
+		return false
+	if not (pit_lane.get("boxes") is Array) or pit_lane.get("boxes", []).is_empty():
+		return false
+	return pit_lane.get("strip_center_m") is Array and pit_lane.get("strip_half_extents_m") is Array

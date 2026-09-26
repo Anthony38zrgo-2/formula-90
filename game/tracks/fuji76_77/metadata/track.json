@@ -442,6 +442,123 @@
     "half_width_m": 12.0,
     "source": "racing_line_lap_distance_zero"
   },
+  "pit_lane": {
+    "source": "visual_glb_pitslot_mesh",
+    "forward": [
+      0.0,
+      0.0,
+      -1.0
+    ],
+    "strip_center_m": [
+      -267.8,
+      0.0,
+      -131.6
+    ],
+    "strip_half_extents_m": [
+      2.8,
+      2.0,
+      146.9
+    ],
+    "player_box_index": 0,
+    "boxes": [
+      {
+        "index": 0,
+        "center_m": [-267.82, 0.0, 9.365],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 1,
+        "center_m": [-267.82, 0.0, -2.685],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 2,
+        "center_m": [-267.82, 0.0, -17.995],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 3,
+        "center_m": [-267.82, 0.0, -33.125],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 4,
+        "center_m": [-267.82, 0.0, -48.555],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 5,
+        "center_m": [-267.82, 0.0, -64.025],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 6,
+        "center_m": [-267.82, 0.0, -95.47],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 7,
+        "center_m": [-267.82, 0.0, -110.785],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 8,
+        "center_m": [-267.82, 0.0, -126.115],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 9,
+        "center_m": [-267.82, 0.0, -141.435],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 10,
+        "center_m": [-267.82, 0.0, -172.025],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 11,
+        "center_m": [-267.82, 0.0, -187.425],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 12,
+        "center_m": [-267.82, 0.0, -202.965],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 13,
+        "center_m": [-267.82, 0.0, -218.59],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 14,
+        "center_m": [-267.82, 0.0, -234.105],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      },
+      {
+        "index": 15,
+        "center_m": [-267.82, 0.0, -250.695],
+        "half_width_m": 1.67,
+        "half_length_m": 3.055
+      }
+    ]
+  },
   "coordinate_system": {
     "units": "meters",
     "up_axis": "+Y",

@@ -194,6 +194,24 @@ impl VehicleSimulator {
         }
     }
 
+    /// Pit-service refuel: leaves exactly the requested load in the tank,
+    /// clamped to the profile capacity. Does not touch wear or thermals.
+    pub fn set_fuel_kg(&mut self, target_kg: f64) {
+        self.config.fuel.set_current_kg(target_kg);
+    }
+
+    /// Pit-service tire change: fits a fresh cold set (zero wear, initial
+    /// pressure and ambient temperature). Brake and powertrain thermal state
+    /// stay untouched because only the tires come off the car.
+    pub fn replace_tire_set(&mut self) {
+        self.state
+            .tire_wear
+            .reset_with_axles(&self.config.tire_wear);
+        self.state
+            .tire_thermal
+            .reset_with_axles(&self.config.tire_pressure, &self.config.tire_thermal);
+    }
+
     /// Legacy standalone step. It uses the same GEVP force solver as external mode,
     /// then integrates a full rigid body locally. Prefer solve_external() when Godot
     /// already owns a RigidBody3D.

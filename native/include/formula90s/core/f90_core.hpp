@@ -121,7 +121,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 16;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 17;
 	/// Audio output rate driven by the AudioStreamGenerator (Hz).
 	static constexpr int kAudioMixRate = 44100;
 	/// Legacy fixed per-pump sample cap. Kept only for the `audio_pump_mode == 0`
@@ -250,6 +250,10 @@ public:
 	/// Apply a runtime config (F90RuntimeConfig) to the facade entity — the GDScript
 	/// tuning panel / vehicle setters keep working in bridge-controlled mode.
 	void apply_runtime_config(const F90RuntimeConfig &cfg);
+	/// Pit-service refuel: leaves exactly `target_kg` in the entity tank.
+	void set_fuel_kg(double target_kg);
+	/// Pit-service tire change: fits a fresh cold set on the entity.
+	void replace_tires();
 
 protected:
 	static void _bind_methods();
@@ -293,6 +297,8 @@ private:
 	FnCoreSpawn fn_spawn_ = nullptr;
 	FnCoreReset fn_reset_ = nullptr;
 	FnCoreApplyRuntimeConfig fn_apply_runtime_config_ = nullptr;
+	FnCoreSetFuelKg fn_set_fuel_kg_ = nullptr;
+	FnCoreReplaceTires fn_replace_tires_ = nullptr;
 	FnCoreStep fn_step_ = nullptr;
 	FnCoreAudioRender fn_audio_render_ = nullptr;
 	FnCoreAudioTrigger fn_audio_trigger_ = nullptr;

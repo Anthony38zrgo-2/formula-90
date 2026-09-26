@@ -6,6 +6,7 @@ const AID_FADE_SECONDS := 0.35
 const TireStatusPanelScript := preload("res://scripts/hud/tire_status_panel.gd")
 const EngineTemperaturePanelScript := preload("res://scripts/hud/engine_temperature_panel.gd")
 const LapTimingPanelScript := preload("res://scripts/hud/lap_timing_panel.gd")
+const PitStopPanelScript := preload("res://scripts/hud/pit_stop_panel.gd")
 const DEFAULT_GAP := 10.0
 
 @export var vehicle_path: NodePath
@@ -23,8 +24,13 @@ var _hud_config: HudConfig = HudConfig.load_from_json(hud_config_path)
 var tire_status_panel: TireStatusPanel
 var engine_temperature_panel: EngineTemperaturePanel
 var lap_timing_panel: LapTimingPanel
+var pit_stop_panel: PitStopPanel
 
-func bind_runtime(vehicle: Node, aids: Node, lap_timing: LapTimingController = null) -> void:
+func bind_runtime(
+		vehicle: Node,
+		aids: Node,
+		lap_timing: LapTimingController = null,
+		pit_stop: PitStopController = null) -> void:
 	_vehicle = vehicle
 	_aids = aids
 	if tire_status_panel != null:
@@ -34,6 +40,8 @@ func bind_runtime(vehicle: Node, aids: Node, lap_timing: LapTimingController = n
 		engine_temperature_panel.bind_lap_timing(lap_timing)
 	if lap_timing_panel != null:
 		lap_timing_panel.bind_lap_timing(lap_timing)
+	if pit_stop_panel != null:
+		pit_stop_panel.bind_pit_stop(pit_stop)
 	_connect_aid_notifications()
 
 
@@ -44,6 +52,7 @@ func _ready() -> void:
 	_ensure_tire_status_panel()
 	_ensure_engine_temperature_panel()
 	_ensure_lap_timing_panel()
+	_ensure_pit_stop_panel()
 	_apply_hud_layout()
 
 
@@ -51,6 +60,7 @@ func _process(delta: float) -> void:
 	_resolve_runtime_nodes()
 	_position_vehicle_status_panels()
 	_position_lap_timing_panel()
+	_position_pit_stop_panel()
 	_update_speed_gauge()
 	_update_aid_notification(delta)
 
@@ -104,6 +114,16 @@ func _ensure_lap_timing_panel() -> void:
 	_position_lap_timing_panel()
 
 
+func _ensure_pit_stop_panel() -> void:
+	if pit_stop_panel != null:
+		return
+	pit_stop_panel = PitStopPanelScript.new()
+	pit_stop_panel.name = "PitStopPanel"
+	pit_stop_panel.apply_settings(_hud_config.pit_stop)
+	add_child(pit_stop_panel)
+	_position_pit_stop_panel()
+
+
 func _apply_hud_layout() -> void:
 	# RetroHud theme lives in retro_hud.json (referenced from hud_config.json); the
 	# unified config only drives the JSON-safe scale/visibility. Position stays
@@ -151,6 +171,16 @@ func _position_lap_timing_panel() -> void:
 	lap_timing_panel.global_position = Vector2(
 		_hud_config.lap_timing.margin_left,
 		_hud_config.lap_timing.margin_top)
+
+
+func _position_pit_stop_panel() -> void:
+	if pit_stop_panel == null:
+		return
+	var viewport_size := get_viewport_rect().size
+	var panel_visual_size := _visual_panel_size(pit_stop_panel)
+	pit_stop_panel.global_position = Vector2(
+		(viewport_size.x - panel_visual_size.x) * 0.5,
+		_hud_config.pit_stop.margin_top)
 
 
 func _visual_panel_size(panel: Control) -> Vector2:

@@ -358,6 +358,8 @@ bool F90Core::load_dll() {
 	fn_spawn_ = reinterpret_cast<FnCoreSpawn>(GetProcAddress(hDll, "f90_core_spawn"));
 	fn_reset_ = reinterpret_cast<FnCoreReset>(GetProcAddress(hDll, "f90_core_reset"));
 	fn_apply_runtime_config_ = reinterpret_cast<FnCoreApplyRuntimeConfig>(GetProcAddress(hDll, "f90_core_apply_runtime_config"));
+	fn_set_fuel_kg_ = reinterpret_cast<FnCoreSetFuelKg>(GetProcAddress(hDll, "f90_core_set_fuel_kg"));
+	fn_replace_tires_ = reinterpret_cast<FnCoreReplaceTires>(GetProcAddress(hDll, "f90_core_replace_tires"));
 	fn_step_ = reinterpret_cast<FnCoreStep>(GetProcAddress(hDll, "f90_core_step"));
 	fn_audio_render_ = reinterpret_cast<FnCoreAudioRender>(GetProcAddress(hDll, "f90_core_audio_render"));
 	fn_audio_trigger_ = reinterpret_cast<FnCoreAudioTrigger>(GetProcAddress(hDll, "f90_core_audio_trigger"));
@@ -422,6 +424,8 @@ void F90Core::unload_dll() {
 	fn_spawn_ = nullptr;
 	fn_reset_ = nullptr;
 	fn_apply_runtime_config_ = nullptr;
+	fn_set_fuel_kg_ = nullptr;
+	fn_replace_tires_ = nullptr;
 	fn_step_ = nullptr;
 	fn_audio_render_ = nullptr;
 	fn_audio_trigger_ = nullptr;
@@ -449,6 +453,18 @@ void F90Core::reset_core_at(double x, double y, double z, double yaw) {
 void F90Core::apply_runtime_config(const F90RuntimeConfig &cfg) {
 	if (core_ && entity_id_ != 0 && fn_apply_runtime_config_) {
 		fn_apply_runtime_config_(core_, entity_id_, &cfg);
+	}
+}
+
+void F90Core::set_fuel_kg(double target_kg) {
+	if (core_ && entity_id_ != 0 && fn_set_fuel_kg_) {
+		fn_set_fuel_kg_(core_, entity_id_, target_kg);
+	}
+}
+
+void F90Core::replace_tires() {
+	if (core_ && entity_id_ != 0 && fn_replace_tires_) {
+		fn_replace_tires_(core_, entity_id_);
 	}
 }
 
