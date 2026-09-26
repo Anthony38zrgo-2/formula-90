@@ -149,6 +149,11 @@ typedef struct F90CoreFrameOut {
     double oil_optimal_maximum_temperature_celsius;
     double oil_hot_derating_temperature_celsius;
     double oil_critical_temperature_celsius;
+    // Append-only ABI 15 onboard fuel state (FUEL-100).
+    double fuel_remaining_kg;
+    double fuel_capacity_kg;
+    double total_vehicle_mass_kg;
+    double effective_front_weight_distribution;
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

@@ -134,9 +134,15 @@ typedef struct F90TelemetryOutput {
     double oil_optimal_maximum_temperature_celsius;
     double oil_hot_derating_temperature_celsius;
     double oil_critical_temperature_celsius;
+
+    // Append-only ABI 15 onboard fuel state (FUEL-100).
+    double fuel_remaining_kg;
+    double fuel_capacity_kg;
+    double total_vehicle_mass_kg;
+    double effective_front_weight_distribution;
 } F90TelemetryOutput;
 
-#define F1_94_PHYSICS_ABI_VERSION 14
+#define F1_94_PHYSICS_ABI_VERSION 15
 
 typedef struct F90RuntimeConfig {
     double vehicle_mass;

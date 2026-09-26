@@ -206,6 +206,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_engine_thermal_state_snapshot"), &F194RustVehicle::get_engine_thermal_state_snapshot);
+	ClassDB::bind_method(D_METHOD("get_fuel_state_snapshot"), &F194RustVehicle::get_fuel_state_snapshot);
 	ClassDB::bind_method(D_METHOD("set_powertrain_cooling_duct_openings", "water_cooling_duct_opening", "oil_cooling_duct_opening"), &F194RustVehicle::set_powertrain_cooling_duct_openings);
 	ClassDB::bind_method(D_METHOD("get_underfloor_state_snapshot"), &F194RustVehicle::get_underfloor_state_snapshot);
 }
@@ -787,6 +788,14 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	oil_hot_derating_temperature_celsius_ = telem.oil_hot_derating_temperature_celsius;
 	oil_critical_temperature_celsius_ = telem.oil_critical_temperature_celsius;
 	engine_thermal_telemetry_available_ = true;
+	fuel_remaining_kg_ = telem.fuel_remaining_kg;
+	fuel_capacity_kg_ = telem.fuel_capacity_kg;
+	total_vehicle_mass_kg_ = telem.total_vehicle_mass_kg;
+	effective_front_weight_distribution_ = telem.effective_front_weight_distribution;
+	fuel_telemetry_available_ = true;
+	if (total_vehicle_mass_kg_ > 0.0 && std::abs((double)get_mass() - total_vehicle_mass_kg_) > 0.01) {
+		set_mass((float)total_vehicle_mass_kg_);
+	}
 	wheel_normal_forces_[0] = telem.fl_normal_force;
 	wheel_normal_forces_[1] = telem.fr_normal_force;
 	wheel_normal_forces_[2] = telem.rl_normal_force;
@@ -1138,7 +1147,12 @@ void F194RustVehicle::sync_runtime_config_from_rust() {
 		suspension_rear_spring_length_ = cfg.suspension_rear_spring_length;
 		suspension_front_resting_ratio_ = cfg.suspension_front_resting_ratio;
 		suspension_rear_resting_ratio_ = cfg.suspension_rear_resting_ratio;
-		set_mass((float)vehicle_mass_);
+		// `vehicle_mass_` is the dry tuning value. The RigidBody3D carries the
+		// live total (dry + fuel) and is refreshed from Rust telemetry each tick.
+		const double live_mass = get_vehicle_mass_value();
+		if (live_mass > 0.0) {
+			set_mass((float)live_mass);
+		}
 	}
 }
 
@@ -1310,8 +1324,13 @@ bool F194RustVehicle::get_automatic_transmission() const {
 
 void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 	engine_thermal_telemetry_available_ = false;
+	fuel_telemetry_available_ = false;
 	if (sim_ptr_ && fn_reset_) {
 		fn_reset_(sim_ptr_, p_pos.x, p_pos.y, p_pos.z, p_yaw_rad);
+	}
+	const double refilled_mass = get_vehicle_mass_value();
+	if (refilled_mass > 0.0) {
+		set_mass((float)refilled_mass);
 	}
 	// Orchestrator facade: when F90Core drives this vehicle, reset the core's
 	// entity (powertrain/suspension/aids/modules) to the same pose so a reset does
@@ -1713,6 +1732,19 @@ Dictionary F194RustVehicle::get_engine_thermal_state_snapshot() const {
 	return out;
 }
 
+Dictionary F194RustVehicle::get_fuel_state_snapshot() const {
+	Dictionary out;
+	if (!fuel_telemetry_available_) {
+		return out;
+	}
+	out["schema_version"] = 1;
+	out["remaining_kg"] = fuel_remaining_kg_;
+	out["capacity_kg"] = fuel_capacity_kg_;
+	out["total_vehicle_mass_kg"] = total_vehicle_mass_kg_;
+	out["effective_front_weight_distribution"] = effective_front_weight_distribution_;
+	return out;
+}
+
 bool F194RustVehicle::set_powertrain_cooling_duct_openings(
 		double water_cooling_duct_opening,
 		double oil_cooling_duct_opening) {
@@ -1945,6 +1977,14 @@ void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_fra
 	oil_hot_derating_temperature_celsius_ = p_frame.oil_hot_derating_temperature_celsius;
 	oil_critical_temperature_celsius_ = p_frame.oil_critical_temperature_celsius;
 	engine_thermal_telemetry_available_ = true;
+	fuel_remaining_kg_ = p_frame.fuel_remaining_kg;
+	fuel_capacity_kg_ = p_frame.fuel_capacity_kg;
+	total_vehicle_mass_kg_ = p_frame.total_vehicle_mass_kg;
+	effective_front_weight_distribution_ = p_frame.effective_front_weight_distribution;
+	fuel_telemetry_available_ = true;
+	if (total_vehicle_mass_kg_ > 0.0 && std::abs((double)get_mass() - total_vehicle_mass_kg_) > 0.01) {
+		set_mass((float)total_vehicle_mass_kg_);
+	}
 }
 
 } // namespace godot

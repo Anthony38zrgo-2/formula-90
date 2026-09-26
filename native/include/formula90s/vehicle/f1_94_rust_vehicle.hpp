@@ -206,6 +206,11 @@ private:
 	double oil_optimal_maximum_temperature_celsius_ = 0.0;
 	double oil_hot_derating_temperature_celsius_ = 0.0;
 	double oil_critical_temperature_celsius_ = 0.0;
+	double fuel_remaining_kg_ = 0.0;
+	double fuel_capacity_kg_ = 0.0;
+	double total_vehicle_mass_kg_ = 0.0;
+	double effective_front_weight_distribution_ = 0.0;
+	bool fuel_telemetry_available_ = false;
 	double underfloor_clearance_m_[5] = { 0.35, 0.35, 0.35, 0.35, 0.35 };
 	uint32_t underfloor_valid_mask_ = 0;
 	int underfloor_scrape_phase_ = 0;
@@ -495,6 +500,7 @@ public:
 	godot::Dictionary get_tire_state_snapshot() const;
 	godot::Dictionary get_brake_state_snapshot() const;
 	godot::Dictionary get_engine_thermal_state_snapshot() const;
+	godot::Dictionary get_fuel_state_snapshot() const;
 	godot::Dictionary get_underfloor_state_snapshot() const;
 	void set_core_underfloor_telemetry(const F90CoreFrameOut &p_frame);
 };
