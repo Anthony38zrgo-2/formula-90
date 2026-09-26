@@ -23,7 +23,7 @@ use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 14;
+pub const F90_CORE_ABI_VERSION: u32 = 15;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -213,6 +213,11 @@ pub struct F90CoreFrameOut {
     pub oil_optimal_maximum_temperature_celsius: f64,
     pub oil_hot_derating_temperature_celsius: f64,
     pub oil_critical_temperature_celsius: f64,
+    // Append-only ABI 15 onboard fuel state.
+    pub fuel_remaining_kg: f64,
+    pub fuel_capacity_kg: f64,
+    pub total_vehicle_mass_kg: f64,
+    pub effective_front_weight_distribution: f64,
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -644,6 +649,10 @@ pub unsafe extern "C" fn f90_core_step(
                 oil_hot_derating_temperature_celsius: frame
                     .oil_hot_derating_temperature_celsius,
                 oil_critical_temperature_celsius: frame.oil_critical_temperature_celsius,
+                fuel_remaining_kg: frame.fuel_remaining_kg,
+                fuel_capacity_kg: frame.fuel_capacity_kg,
+                total_vehicle_mass_kg: frame.total_vehicle_mass_kg,
+                effective_front_weight_distribution: frame.effective_front_weight_distribution,
             };
         }
     }
@@ -1027,7 +1036,15 @@ mod layout_tests {
         );
         assert_eq!(offset_of!(F90CoreFrameOut, engine_block_temperature_celsius), 1600);
         assert_eq!(offset_of!(F90CoreFrameOut, oil_critical_temperature_celsius), 1800);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1808);
+        // FUEL-100 append-only ABI 15 block.
+        assert_eq!(offset_of!(F90CoreFrameOut, fuel_remaining_kg), 1808);
+        assert_eq!(offset_of!(F90CoreFrameOut, fuel_capacity_kg), 1816);
+        assert_eq!(offset_of!(F90CoreFrameOut, total_vehicle_mass_kg), 1824);
+        assert_eq!(
+            offset_of!(F90CoreFrameOut, effective_front_weight_distribution),
+            1832
+        );
+        assert_eq!(size_of::<F90CoreFrameOut>(), 1840);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

@@ -235,6 +235,10 @@ pub struct CoreFrame {
     pub oil_optimal_maximum_temperature_celsius: f64,
     pub oil_hot_derating_temperature_celsius: f64,
     pub oil_critical_temperature_celsius: f64,
+    pub fuel_remaining_kg: f64,
+    pub fuel_capacity_kg: f64,
+    pub total_vehicle_mass_kg: f64,
+    pub effective_front_weight_distribution: f64,
     pub audio: AudioReadouts,
     pub modules: Vec<ModuleOutput>,
 }
@@ -373,6 +377,10 @@ impl Default for CoreFrame {
             oil_optimal_maximum_temperature_celsius: 0.0,
             oil_hot_derating_temperature_celsius: 0.0,
             oil_critical_temperature_celsius: 0.0,
+            fuel_remaining_kg: 0.0,
+            fuel_capacity_kg: 0.0,
+            total_vehicle_mass_kg: 0.0,
+            effective_front_weight_distribution: 0.0,
             audio: AudioReadouts::default(),
             modules: Vec::new(),
         }

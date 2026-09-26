@@ -932,6 +932,11 @@ impl CoreFacade {
             powertrain_thermal_config.oil_hot_derating_temperature_celsius;
         frame.oil_critical_temperature_celsius = powertrain_thermal_config
             .oil_critical_temperature_celsius;
+        frame.fuel_remaining_kg = ent.sim.config.fuel.effective_current_kg();
+        frame.fuel_capacity_kg = ent.sim.config.fuel.capacity_kg;
+        frame.total_vehicle_mass_kg = ent.sim.config.total_vehicle_mass();
+        frame.effective_front_weight_distribution =
+            ent.sim.config.effective_front_weight_distribution();
 
         // Tire pressure + thermal state (WheelIndex order FL/FR/RL/RR).
         for (i, w) in ent.sim.state.tire_thermal.wheels.iter().enumerate() {
@@ -1102,11 +1107,10 @@ impl CoreFacade {
     /// legacy `f1_94_physics_reset`) and resets every module.
     pub fn reset(&mut self, x: f64, y: f64, z: f64, yaw: f64) {
         for ent in self.world.entities.iter_mut() {
-            ent.sim = vehicle_physics_engine::VehicleSimulator::new(
-                ent.sim.config.clone(),
-                Vec3::new(x, y, z),
-                yaw,
-            );
+            let mut config = ent.sim.config.clone();
+            config.fuel.refill_to_initial();
+            ent.sim =
+                vehicle_physics_engine::VehicleSimulator::new(config, Vec3::new(x, y, z), yaw);
         }
         self.registry.reset_all();
         self.underfloor.reset();

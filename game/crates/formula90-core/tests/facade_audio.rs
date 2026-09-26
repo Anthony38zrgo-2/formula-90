@@ -24,8 +24,8 @@ fn run_steps(facade: &mut CoreFacade, id: u32, throttle: f64, steps: usize) {
 /// Canary: the exported ABI version must match the compiled constant. A mismatch
 /// here means the facade and its C++ controller disagree on the symbol surface.
 #[test]
-fn abi_version_canary_is_14() {
-    assert_eq!(F90_CORE_ABI_VERSION, 14, "f90_core ABI must be v14");
+fn abi_version_canary_is_15() {
+    assert_eq!(F90_CORE_ABI_VERSION, 15, "f90_core ABI must be v15");
 }
 
 /// Audio disabled by config -> telemetry-only, no mixer.
