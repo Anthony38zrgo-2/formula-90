@@ -27,6 +27,13 @@ pub struct FuelConfig {
     pub tank_position_local_m: Vec3,
     pub brake_specific_consumption_kg_per_kwh: f64,
     pub idle_consumption_kg_per_hour: f64,
+    /// Plan reference (kg/lap) used by the HUD delta: comparing the measured
+    /// average against this value flags a stint that is burning more or less
+    /// fuel than the initial load assumed.
+    pub estimated_lap_consumption_kg: f64,
+    /// Plan reference lap duration (s) used to project the instantaneous burn
+    /// rate into kilograms per lap before the first lap time is known.
+    pub reference_lap_time_s: f64,
     /// Runtime state: kilograms currently in the tank.
     pub current_kg: f64,
     /// Runtime state: kilograms burned since the last refill.
@@ -41,6 +48,8 @@ impl Default for FuelConfig {
             tank_position_local_m: Vec3::ZERO,
             brake_specific_consumption_kg_per_kwh: 0.0,
             idle_consumption_kg_per_hour: 0.0,
+            estimated_lap_consumption_kg: 0.0,
+            reference_lap_time_s: 0.0,
             current_kg: 0.0,
             consumed_kg: 0.0,
         }
@@ -1196,6 +1205,8 @@ struct JsonFuel {
     tank_position_local_m: JsonVec3,
     brake_specific_consumption_kg_per_kwh: f64,
     idle_consumption_kg_per_hour: f64,
+    estimated_lap_consumption_kg: f64,
+    reference_lap_time_s: f64,
 }
 
 impl Default for JsonFuel {
@@ -1210,6 +1221,8 @@ impl Default for JsonFuel {
             },
             brake_specific_consumption_kg_per_kwh: 0.0,
             idle_consumption_kg_per_hour: 0.0,
+            estimated_lap_consumption_kg: 0.0,
+            reference_lap_time_s: 0.0,
         }
     }
 }
@@ -3133,6 +3146,16 @@ impl JsonVehicleSpec {
                 "fuel.idle_consumption_kg_per_hour must be finite and non-negative".to_string(),
             );
         }
+        if !self.fuel.estimated_lap_consumption_kg.is_finite()
+            || self.fuel.estimated_lap_consumption_kg < 0.0
+        {
+            return Err(
+                "fuel.estimated_lap_consumption_kg must be finite and non-negative".to_string(),
+            );
+        }
+        if !self.fuel.reference_lap_time_s.is_finite() || self.fuel.reference_lap_time_s < 0.0 {
+            return Err("fuel.reference_lap_time_s must be finite and non-negative".to_string());
+        }
         if !self.fuel.tank_position_local_m.x.is_finite()
             || !self.fuel.tank_position_local_m.y.is_finite()
             || !self.fuel.tank_position_local_m.z.is_finite()
@@ -3449,6 +3472,8 @@ impl JsonVehicleSpec {
             ),
             brake_specific_consumption_kg_per_kwh: self.fuel.brake_specific_consumption_kg_per_kwh,
             idle_consumption_kg_per_hour: self.fuel.idle_consumption_kg_per_hour,
+            estimated_lap_consumption_kg: self.fuel.estimated_lap_consumption_kg,
+            reference_lap_time_s: self.fuel.reference_lap_time_s,
             current_kg: 0.0,
             consumed_kg: 0.0,
         };
@@ -3772,6 +3797,8 @@ impl JsonVehicleSpec {
                 },
                 brake_specific_consumption_kg_per_kwh: cfg.fuel.brake_specific_consumption_kg_per_kwh,
                 idle_consumption_kg_per_hour: cfg.fuel.idle_consumption_kg_per_hour,
+                estimated_lap_consumption_kg: cfg.fuel.estimated_lap_consumption_kg,
+                reference_lap_time_s: cfg.fuel.reference_lap_time_s,
             },
             geometry: JsonGeometry {
                 wheelbase: cfg.wheelbase,

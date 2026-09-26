@@ -11,7 +11,9 @@ const FUELED_PROFILE_JSON: &str = r#"{
     "initial_kg": 7.6,
     "tank_position_local_m": {"x": 0.0, "y": 0.05, "z": 0.60},
     "brake_specific_consumption_kg_per_kwh": 0.30,
-    "idle_consumption_kg_per_hour": 2.0
+    "idle_consumption_kg_per_hour": 2.0,
+    "estimated_lap_consumption_kg": 2.53,
+    "reference_lap_time_s": 90.0
   }
 }"#;
 
@@ -195,6 +197,8 @@ fn shipped_f1_2030_profile_declares_the_three_lap_load() {
     assert_eq!(cfg.vehicle_mass, 600.0);
     assert_eq!(cfg.fuel.capacity_kg, 110.0);
     assert!((cfg.fuel.initial_kg - 7.6).abs() < 1e-9);
+    assert!((cfg.fuel.estimated_lap_consumption_kg - 2.53).abs() < 1e-9);
+    assert!((cfg.fuel.reference_lap_time_s - 90.0).abs() < 1e-9);
     assert!((cfg.total_vehicle_mass() - 607.6).abs() < 1e-9);
     assert!(cfg.effective_front_weight_distribution() < 0.45);
 }
