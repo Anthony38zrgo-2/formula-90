@@ -907,6 +907,32 @@
       "tread_to_carcass_w_k": 75.0,
       "tread_zone_heat_capacity_j_k": 2100.0,
       "volume_deflection_gain": 0.04
+    },
+    "wear": {
+      "center_wear_multiplier": 0.85,
+      "cliff_start_wear_fraction": 0.75,
+      "cold_temperature_wear_multiplier": 0.45,
+      "cold_tread_temperature_celsius": 60.0,
+      "end_of_life_grip_scale": 0.55,
+      "extreme_temperature_wear_multiplier": 3.0,
+      "extreme_tread_temperature_celsius": 160.0,
+      "friction_reference_coefficient": 2.7,
+      "friction_sensitivity_exponent": 0.6,
+      "front": {
+        "tread_wear_per_megajoule_millimeters": 0.9
+      },
+      "initial_tread_depth_millimeters": 6.0,
+      "inner_shoulder_wear_multiplier": 1.0,
+      "minimum_tread_depth_millimeters": 0.5,
+      "optimal_tread_temperature_celsius": 95.0,
+      "outer_shoulder_wear_multiplier": 1.0,
+      "overheat_temperature_wear_multiplier": 1.6,
+      "overheat_tread_temperature_celsius": 120.0,
+      "progressive_grip_loss_fraction": 0.05,
+      "rear": {
+        "tread_wear_per_megajoule_millimeters": 1.05
+      },
+      "tread_wear_per_megajoule_millimeters": 1.0
     }
   },
   "units": "SI",

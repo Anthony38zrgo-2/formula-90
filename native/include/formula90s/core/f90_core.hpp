@@ -103,7 +103,12 @@ static_assert(offsetof(F90CoreFrameOut, fuel_remaining_kg) == 1808);
 static_assert(offsetof(F90CoreFrameOut, fuel_capacity_kg) == 1816);
 static_assert(offsetof(F90CoreFrameOut, total_vehicle_mass_kg) == 1824);
 static_assert(offsetof(F90CoreFrameOut, effective_front_weight_distribution) == 1832);
-static_assert(sizeof(F90CoreFrameOut) == 1840);
+static_assert(offsetof(F90CoreFrameOut, tire_wear_inner_fraction) == 1840);
+static_assert(offsetof(F90CoreFrameOut, tire_wear_center_fraction) == 1872);
+static_assert(offsetof(F90CoreFrameOut, tire_wear_outer_fraction) == 1904);
+static_assert(offsetof(F90CoreFrameOut, tire_wear_remaining_fraction) == 1936);
+static_assert(offsetof(F90CoreFrameOut, tire_wear_grip_scale) == 1968);
+static_assert(sizeof(F90CoreFrameOut) == 2000);
 
 /// The orchestrator node. Loads the SINGLE `formula90_core.dll` facade (one
 /// handshake / one ABI version), owns the sim + audio, drives the vehicle inside
@@ -116,7 +121,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 15;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 16;
 	/// Audio output rate driven by the AudioStreamGenerator (Hz).
 	static constexpr int kAudioMixRate = 44100;
 	/// Legacy fixed per-pump sample cap. Kept only for the `audio_pump_mode == 0`

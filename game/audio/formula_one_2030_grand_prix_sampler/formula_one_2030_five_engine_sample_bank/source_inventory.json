@@ -1,61 +1,61 @@
 {
   "bank_id": "formula_one_2030_five_engine_sample_bank",
-  "engine_source_directory": "D:/ASETS/f12002",
+  "engine_source_directory": "D:/Formula90s/game/sounds/banks/v10-v2-bank",
   "engine_sources": [
     {
       "role": "engine_idle",
-      "source_path": "D:/ASETS/f12002/idle.wav",
-      "source_sha256": "a2af839a00955f414b29e27fcae00837a00ca8b4ad1633dac75880a82cc00101",
+      "source_path": "D:/Formula90s/game/sounds/banks/v10-v2-bank/engine_idle.wav",
+      "source_sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
       "prepared_bank_asset_id": "engine_idle_loop",
-      "prepared_source_filename": "98_int_idle.wav",
-      "prepared_source_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc",
+      "prepared_source_filename": "engine_idle.wav",
+      "prepared_source_sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
       "runtime_asset_id": "engine_idle_loop",
       "runtime_filename": "engine_idle_loop.wav",
-      "runtime_sha256": "043361fda1a5518a2098c6e3cf5715dfe5cdd05a57b05790c5f58facb53327bc"
+      "runtime_sha256": "df3b37d63b6c5abba31004a9a39ad1ec2ceeea62ead1fcd5cf85c56e498e6417"
     },
     {
       "role": "engine_low_on",
-      "source_path": "D:/ASETS/f12002/low_on.wav",
-      "source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
+      "source_path": "D:/Formula90s/game/sounds/banks/v10-v2-bank/engine_on_low.wav",
+      "source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
       "prepared_bank_asset_id": "engine_low_loop",
-      "prepared_source_filename": "98_int_low.wav",
-      "prepared_source_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f",
+      "prepared_source_filename": "engine_on_low.wav",
+      "prepared_source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
       "runtime_asset_id": "engine_low_on_loop",
       "runtime_filename": "engine_low_on_loop.wav",
-      "runtime_sha256": "1eb531e04b1b44edb943dabe86df833d8696e78f9923242bbed2ccf50193d12f"
+      "runtime_sha256": "55c1eebbe2b2e6fc9daaff1509896e198f297748bb8db9f9494a6a06a3ac24af"
     },
     {
       "role": "engine_high_on",
-      "source_path": "D:/ASETS/f12002/hi_max_on.wav",
-      "source_sha256": "638485f34e50b1f4df46a406acf548eb22448ce208cf40540408cd466b6f638b",
+      "source_path": "D:/Formula90s/game/sounds/banks/v10-v2-bank/engine_on_high.wav",
+      "source_sha256": "efc9868cbef6f4358382a3b5bac9ea6de48d58606d486cc0a0f5932b0f88ae34",
       "prepared_bank_asset_id": "engine_high_loop",
-      "prepared_source_filename": "98_int_high_1.wav",
-      "prepared_source_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb",
+      "prepared_source_filename": "engine_on_high.wav",
+      "prepared_source_sha256": "efc9868cbef6f4358382a3b5bac9ea6de48d58606d486cc0a0f5932b0f88ae34",
       "runtime_asset_id": "engine_high_on_loop",
       "runtime_filename": "engine_high_on_loop.wav",
-      "runtime_sha256": "b1c9e31cd20dac89e2342dce07915d6bd9deb744a48c13ff2cd1e4031a84a4bb"
+      "runtime_sha256": "e9e921a09d3e29b9683c437b4e905a805b5df77fa73c5f2cee2d21558f8db753"
     },
     {
       "role": "engine_low_off",
-      "source_path": "D:/ASETS/f12002/low_off.wav",
-      "source_sha256": "a3ae253ddeaf19872af315305a2c54b7cc6025dba7a8efad7440bf4acecd9c55",
+      "source_path": "D:/Formula90s/game/sounds/banks/v10-v2-bank/engine_off_low.wav",
+      "source_sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
       "prepared_bank_asset_id": "engine_coast_low_loop",
-      "prepared_source_filename": "engine_coast_low.wav",
-      "prepared_source_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243",
+      "prepared_source_filename": "engine_off_low.wav",
+      "prepared_source_sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
       "runtime_asset_id": "engine_low_off_loop",
       "runtime_filename": "engine_low_off_loop.wav",
-      "runtime_sha256": "c72e4b0318465abddb635c7116d507958c153a1475d4c9d823ffe622574be243"
+      "runtime_sha256": "f35fd94282d0bd92e10ece4225b0e10153f1aea23cfbd9553008270daf891ad6"
     },
     {
       "role": "engine_high_off",
-      "source_path": "D:/ASETS/f12002/hi_off.wav",
-      "source_sha256": "4142964333dba9aae06a20d76827bc01e0956b8401b984179a23a347ec4d3c3c",
+      "source_path": "D:/Formula90s/game/sounds/banks/v10-v2-bank/engine_off_high.wav",
+      "source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
       "prepared_bank_asset_id": "engine_coast_high_loop",
-      "prepared_source_filename": "engine_coast_high.wav",
-      "prepared_source_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa",
+      "prepared_source_filename": "engine_off_high.wav",
+      "prepared_source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
       "runtime_asset_id": "engine_high_off_loop",
       "runtime_filename": "engine_high_off_loop.wav",
-      "runtime_sha256": "480cf43a4a511eabb5c25b5f298501efd9c3b489aae74684bc68ba8e23f488aa"
+      "runtime_sha256": "a8aae84332afa08ff1c8006b0ef3788875baf0d9e1152befd0eb697197f5f5f8"
     }
   ],
   "preserved_non_engine_events": [
@@ -90,22 +90,22 @@
       "runtime_sha256": "acf47affe9adcb7ada68763c79f8373749d6e544d4e74ca5fec74b07c6aa5782"
     },
     {
-      "asset_id": "limiter_event",
-      "role": "limiter_event",
-      "runtime_filename": "limiter_event.wav",
-      "runtime_sha256": "a95659574b0cea43367ec1572217c9f16aac4f97d72905f3e546d6fe5bb37c01"
-    },
-    {
       "asset_id": "downshift_event",
       "role": "gearbox_downshift",
       "runtime_filename": "downshift_event.wav",
-      "runtime_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279"
+      "runtime_sha256": "5c19ba452970b3b9477a1ce6b19cf99ce5f005feb164050185cb25182d9aee66"
     },
     {
       "asset_id": "upshift_event",
       "role": "gearbox_upshift",
       "runtime_filename": "upshift_event.wav",
-      "runtime_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a"
+      "runtime_sha256": "9ccf3e59c4981710e92316fe5270a942ceac48a9aa5badaa0195cb0fd9c9052d"
+    },
+    {
+      "asset_id": "limiter_event",
+      "role": "limiter_event",
+      "runtime_filename": "limiter_event.wav",
+      "runtime_sha256": "6fc1b7368976057c7191b24b0d200405102d64e18b01223c4f145c61e6369147"
     }
   ]
 }

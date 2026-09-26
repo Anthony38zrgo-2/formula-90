@@ -464,7 +464,8 @@ impl TireSystem {
         // grip window; brake torque is consumed through the shared friction budget below.
         let mu = effective_friction.max(0.0)
             * state.load_sensitivity_scale
-            * modifiers.grip_scale.clamp(0.05, 2.0);
+            * modifiers.grip_scale.clamp(0.05, 2.0)
+            * modifiers.wear_grip_scale.clamp(0.05, 1.0);
         let longitudinal_ratio = config
             .surface_longitudinal_grip_ratio
             .get(&surface)

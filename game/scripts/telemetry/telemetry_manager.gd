@@ -38,9 +38,13 @@ const CSV_COLUMNS := [
     "RL_BrakeTorque_Nm", "RL_SpinPre_RadS", "RL_SpinPost_RadS", "RL_BrakePower_W", "RL_BrakeEnergy_J",
     "RR_BrakeTorque_Nm", "RR_SpinPre_RadS", "RR_SpinPost_RadS", "RR_BrakePower_W", "RR_BrakeEnergy_J",
     "FL_TreadInner_C", "FL_TreadCenter_C", "FL_TreadOuter_C", "FL_Carcass_C", "FL_Gas_C", "FL_Disc_C", "FL_Rim_C", "FL_BrakeEfficiency", "FL_DuctMassFlow_kg_s", "FL_DuctDrag_N",
+    "FL_TreadWearInner", "FL_TreadWearCenter", "FL_TreadWearOuter", "FL_TreadWearGrip",
     "FR_TreadInner_C", "FR_TreadCenter_C", "FR_TreadOuter_C", "FR_Carcass_C", "FR_Gas_C", "FR_Disc_C", "FR_Rim_C", "FR_BrakeEfficiency", "FR_DuctMassFlow_kg_s", "FR_DuctDrag_N",
+    "FR_TreadWearInner", "FR_TreadWearCenter", "FR_TreadWearOuter", "FR_TreadWearGrip",
     "RL_TreadInner_C", "RL_TreadCenter_C", "RL_TreadOuter_C", "RL_Carcass_C", "RL_Gas_C", "RL_Disc_C", "RL_Rim_C", "RL_BrakeEfficiency", "RL_DuctMassFlow_kg_s", "RL_DuctDrag_N",
+    "RL_TreadWearInner", "RL_TreadWearCenter", "RL_TreadWearOuter", "RL_TreadWearGrip",
     "RR_TreadInner_C", "RR_TreadCenter_C", "RR_TreadOuter_C", "RR_Carcass_C", "RR_Gas_C", "RR_Disc_C", "RR_Rim_C", "RR_BrakeEfficiency", "RR_DuctMassFlow_kg_s", "RR_DuctDrag_N",
+    "RR_TreadWearInner", "RR_TreadWearCenter", "RR_TreadWearOuter", "RR_TreadWearGrip",
     "FL_NaturalCooling_WK", "FR_NaturalCooling_WK", "RL_NaturalCooling_WK", "RR_NaturalCooling_WK",
     "FL_SpeedCooling_WK", "FR_SpeedCooling_WK", "RL_SpeedCooling_WK", "RR_SpeedCooling_WK",
     "UF_FL_Clearance_m", "UF_FR_Clearance_m", "UF_Center_Clearance_m", "UF_DiffuserThroat_Clearance_m", "UF_DiffuserExit_Clearance_m",
@@ -230,10 +234,10 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var resolved: Array = []
     for _field in range(8):
         resolved.append(0.0)
-    # Per wheel: tread I/C/O, carcass, gas, disc, rim,
-    # brake efficiency, duct mass flow, duct drag.
+    # Per wheel: tread I/C/O, carcass, gas, disc, rim, brake efficiency,
+    # duct mass flow, duct drag, wear I/C/O, wear grip.
     var thermal: Array = []
-    for _field in range(40):
+    for _field in range(56):
         thermal.append(0.0)
     var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     var aero_fields: Array = []
@@ -246,7 +250,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
             var brakes_value: Variant = snapshot_value.get("brakes", {})
             for i in range(4):
                 var wheel_name: String = ["FL", "FR", "RL", "RR"][i]
-                var offset := i * 10
+                var offset := i * 14
                 if tire_state.has(wheel_name):
                     var tire_value: Variant = tire_state.get(wheel_name, {})
                     if tire_value is Dictionary:
@@ -256,6 +260,10 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                         thermal[offset + 2] = float(tire.get("tread_outer_c", 0.0))
                         thermal[offset + 3] = float(tire.get("carcass_c", 0.0))
                         thermal[offset + 4] = float(tire.get("gas_c", 0.0))
+                        thermal[offset + 10] = float(tire.get("wear_inner_fraction", 0.0))
+                        thermal[offset + 11] = float(tire.get("wear_center_fraction", 0.0))
+                        thermal[offset + 12] = float(tire.get("wear_outer_fraction", 0.0))
+                        thermal[offset + 13] = float(tire.get("wear_grip_scale", 1.0))
                 if brakes_value is Dictionary:
                     var brake_state: Dictionary = brakes_value
                     var wheel_value: Variant = brake_state.get(wheel_name, {})

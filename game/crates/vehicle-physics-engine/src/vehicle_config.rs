@@ -10,6 +10,7 @@ use crate::suspension_geo_config::{
 use crate::tire_thermals::{
     PressureMechanicsSensitivity, TirePressureConfig, TireThermalAxleConfig, TireThermalConfig,
 };
+use crate::tire_wear::{TireWearAxleConfig, TireWearConfig};
 use crate::powertrain_thermals::PowertrainThermalConfig;
 use crate::types::{SurfaceType, Vec3, WheelIndex};
 use serde::{Deserialize, Serialize};
@@ -179,6 +180,9 @@ pub struct VehicleConfig {
     // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
     pub tire_pressure: TirePressureConfig,
     pub tire_thermal: TireThermalAxleConfig,
+
+    #[serde(default)]
+    pub tire_wear: TireWearAxleConfig,
 
     // Schema v3: per-axle steady tire force envelope (consumed by tire.rs).
     #[serde(default)]
@@ -717,6 +721,7 @@ impl VehicleConfig {
             // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
             tire_pressure: TirePressureConfig::default(),
             tire_thermal: TireThermalAxleConfig::default(),
+            tire_wear: TireWearAxleConfig::default(),
             front_tire_force: TireForceProfile::default(),
             rear_tire_force: TireForceProfile::default(),
             pressure_mechanics: PressureMechanicsSensitivity::default(),
@@ -897,6 +902,7 @@ impl VehicleConfig {
             // Tire pressure + thermal (legacy Jordan uses canonical defaults)
             tire_pressure: TirePressureConfig::default(),
             tire_thermal: TireThermalAxleConfig::default(),
+            tire_wear: TireWearAxleConfig::default(),
             front_tire_force: TireForceProfile::default(),
             rear_tire_force: TireForceProfile::default(),
             pressure_mechanics: PressureMechanicsSensitivity::default(),
@@ -1669,6 +1675,8 @@ struct JsonTires {
     /// Optional thermal section (5-node thermal model tuning). Absent -> canonical defaults.
     #[serde(default)]
     thermal: Option<JsonTireThermal>,
+    #[serde(default)]
+    wear: Option<JsonTireWear>,
     /// Schema v3: per-axle steady tire force curve (TIRE-200). Absent -> parser-only defaults.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     force_model: Option<JsonTireForceModel>,
@@ -1690,6 +1698,7 @@ impl Default for JsonTires {
             surfaces: HashMap::new(),
             pressure: None,
             thermal: None,
+            wear: None,
             force_model: None,
             pressure_mechanics: None,
             surface_transition_tau_s: None,
@@ -1974,6 +1983,162 @@ impl JsonTireThermal {
             front: None,
             rear: None,
         }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct JsonTireWear {
+    #[serde(default)]
+    initial_tread_depth_millimeters: Option<f64>,
+    #[serde(default)]
+    minimum_tread_depth_millimeters: Option<f64>,
+    #[serde(default)]
+    tread_wear_per_megajoule_millimeters: Option<f64>,
+    #[serde(default)]
+    cold_tread_temperature_celsius: Option<f64>,
+    #[serde(default)]
+    optimal_tread_temperature_celsius: Option<f64>,
+    #[serde(default)]
+    overheat_tread_temperature_celsius: Option<f64>,
+    #[serde(default)]
+    extreme_tread_temperature_celsius: Option<f64>,
+    #[serde(default)]
+    cold_temperature_wear_multiplier: Option<f64>,
+    #[serde(default)]
+    overheat_temperature_wear_multiplier: Option<f64>,
+    #[serde(default)]
+    extreme_temperature_wear_multiplier: Option<f64>,
+    #[serde(default)]
+    friction_reference_coefficient: Option<f64>,
+    #[serde(default)]
+    friction_sensitivity_exponent: Option<f64>,
+    #[serde(default)]
+    inner_shoulder_wear_multiplier: Option<f64>,
+    #[serde(default)]
+    center_wear_multiplier: Option<f64>,
+    #[serde(default)]
+    outer_shoulder_wear_multiplier: Option<f64>,
+    #[serde(default)]
+    cliff_start_wear_fraction: Option<f64>,
+    #[serde(default)]
+    end_of_life_grip_scale: Option<f64>,
+    #[serde(default)]
+    progressive_grip_loss_fraction: Option<f64>,
+    #[serde(default)]
+    front: Option<Box<JsonTireWear>>,
+    #[serde(default)]
+    rear: Option<Box<JsonTireWear>>,
+}
+
+impl JsonTireWear {
+    fn from_config(c: &TireWearAxleConfig) -> Self {
+        let mut out = Self::from_single_config(&c.front);
+        out.front = Some(Box::new(Self::from_single_config(&c.front)));
+        out.rear = Some(Box::new(Self::from_single_config(&c.rear)));
+        out
+    }
+
+    fn from_single_config(c: &TireWearConfig) -> Self {
+        Self {
+            initial_tread_depth_millimeters: Some(c.initial_tread_depth_millimeters),
+            minimum_tread_depth_millimeters: Some(c.minimum_tread_depth_millimeters),
+            tread_wear_per_megajoule_millimeters: Some(c.tread_wear_per_megajoule_millimeters),
+            cold_tread_temperature_celsius: Some(c.cold_tread_temperature_celsius),
+            optimal_tread_temperature_celsius: Some(c.optimal_tread_temperature_celsius),
+            overheat_tread_temperature_celsius: Some(c.overheat_tread_temperature_celsius),
+            extreme_tread_temperature_celsius: Some(c.extreme_tread_temperature_celsius),
+            cold_temperature_wear_multiplier: Some(c.cold_temperature_wear_multiplier),
+            overheat_temperature_wear_multiplier: Some(c.overheat_temperature_wear_multiplier),
+            extreme_temperature_wear_multiplier: Some(c.extreme_temperature_wear_multiplier),
+            friction_reference_coefficient: Some(c.friction_reference_coefficient),
+            friction_sensitivity_exponent: Some(c.friction_sensitivity_exponent),
+            inner_shoulder_wear_multiplier: Some(c.inner_shoulder_wear_multiplier),
+            center_wear_multiplier: Some(c.center_wear_multiplier),
+            outer_shoulder_wear_multiplier: Some(c.outer_shoulder_wear_multiplier),
+            cliff_start_wear_fraction: Some(c.cliff_start_wear_fraction),
+            end_of_life_grip_scale: Some(c.end_of_life_grip_scale),
+            progressive_grip_loss_fraction: Some(c.progressive_grip_loss_fraction),
+            front: None,
+            rear: None,
+        }
+    }
+}
+
+fn tire_wear_from_json(j: &Option<JsonTireWear>) -> TireWearAxleConfig {
+    let mut shared = TireWearConfig::default();
+    if let Some(w) = j {
+        overlay_tire_wear(&mut shared, w);
+        let mut front = shared;
+        let mut rear = shared;
+        if let Some(front_json) = &w.front {
+            overlay_tire_wear(&mut front, front_json);
+        }
+        if let Some(rear_json) = &w.rear {
+            overlay_tire_wear(&mut rear, rear_json);
+        }
+        return TireWearAxleConfig { front, rear };
+    }
+    TireWearAxleConfig {
+        front: shared,
+        rear: shared,
+    }
+}
+
+fn overlay_tire_wear(c: &mut TireWearConfig, w: &JsonTireWear) {
+    if let Some(v) = w.initial_tread_depth_millimeters {
+        c.initial_tread_depth_millimeters = v;
+    }
+    if let Some(v) = w.minimum_tread_depth_millimeters {
+        c.minimum_tread_depth_millimeters = v;
+    }
+    if let Some(v) = w.tread_wear_per_megajoule_millimeters {
+        c.tread_wear_per_megajoule_millimeters = v;
+    }
+    if let Some(v) = w.cold_tread_temperature_celsius {
+        c.cold_tread_temperature_celsius = v;
+    }
+    if let Some(v) = w.optimal_tread_temperature_celsius {
+        c.optimal_tread_temperature_celsius = v;
+    }
+    if let Some(v) = w.overheat_tread_temperature_celsius {
+        c.overheat_tread_temperature_celsius = v;
+    }
+    if let Some(v) = w.extreme_tread_temperature_celsius {
+        c.extreme_tread_temperature_celsius = v;
+    }
+    if let Some(v) = w.cold_temperature_wear_multiplier {
+        c.cold_temperature_wear_multiplier = v;
+    }
+    if let Some(v) = w.overheat_temperature_wear_multiplier {
+        c.overheat_temperature_wear_multiplier = v;
+    }
+    if let Some(v) = w.extreme_temperature_wear_multiplier {
+        c.extreme_temperature_wear_multiplier = v;
+    }
+    if let Some(v) = w.friction_reference_coefficient {
+        c.friction_reference_coefficient = v;
+    }
+    if let Some(v) = w.friction_sensitivity_exponent {
+        c.friction_sensitivity_exponent = v;
+    }
+    if let Some(v) = w.inner_shoulder_wear_multiplier {
+        c.inner_shoulder_wear_multiplier = v;
+    }
+    if let Some(v) = w.center_wear_multiplier {
+        c.center_wear_multiplier = v;
+    }
+    if let Some(v) = w.outer_shoulder_wear_multiplier {
+        c.outer_shoulder_wear_multiplier = v;
+    }
+    if let Some(v) = w.cliff_start_wear_fraction {
+        c.cliff_start_wear_fraction = v;
+    }
+    if let Some(v) = w.end_of_life_grip_scale {
+        c.end_of_life_grip_scale = v;
+    }
+    if let Some(v) = w.progressive_grip_loss_fraction {
+        c.progressive_grip_loss_fraction = v;
     }
 }
 
@@ -3168,6 +3333,7 @@ impl JsonVehicleSpec {
     fn validate_tires(&self) -> Result<(), String> {
         self.validate_tire_pressure()?;
         self.validate_tire_thermal()?;
+        self.validate_tire_wear()?;
         self.validate_tire_force_model()?;
         self.validate_tire_pressure_mechanics()
     }
@@ -3210,6 +3376,70 @@ impl JsonVehicleSpec {
                 if min_p >= max_p {
                     return Err(format!(
                         "tires.thermal.{name}.minimum_pressure_kpa_gauge must be below maximum_pressure_kpa_gauge"
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_tire_wear(&self) -> Result<(), String> {
+        if let Some(w) = &self.tires.wear {
+            for (name, profile) in [
+                ("shared", w),
+                ("front", w.front.as_deref().unwrap_or(w)),
+                ("rear", w.rear.as_deref().unwrap_or(w)),
+            ] {
+                let initial = profile.initial_tread_depth_millimeters.unwrap_or(6.0);
+                let minimum = profile.minimum_tread_depth_millimeters.unwrap_or(0.5);
+                if !initial.is_finite() || initial <= 0.0 {
+                    return Err(format!(
+                        "tires.wear.{name}.initial_tread_depth_millimeters must be positive and finite"
+                    ));
+                }
+                if !minimum.is_finite() || minimum < 0.0 || minimum >= initial {
+                    return Err(format!(
+                        "tires.wear.{name}.minimum_tread_depth_millimeters must be non-negative and below the initial depth"
+                    ));
+                }
+                let rate = profile.tread_wear_per_megajoule_millimeters.unwrap_or(0.0);
+                if !rate.is_finite() || rate < 0.0 {
+                    return Err(format!(
+                        "tires.wear.{name}.tread_wear_per_megajoule_millimeters must be finite and non-negative"
+                    ));
+                }
+                for (field, value) in [
+                    ("friction_reference_coefficient", profile.friction_reference_coefficient),
+                    ("friction_sensitivity_exponent", profile.friction_sensitivity_exponent),
+                    ("inner_shoulder_wear_multiplier", profile.inner_shoulder_wear_multiplier),
+                    ("center_wear_multiplier", profile.center_wear_multiplier),
+                    ("outer_shoulder_wear_multiplier", profile.outer_shoulder_wear_multiplier),
+                    ("cliff_start_wear_fraction", profile.cliff_start_wear_fraction),
+                    ("end_of_life_grip_scale", profile.end_of_life_grip_scale),
+                    ("progressive_grip_loss_fraction", profile.progressive_grip_loss_fraction),
+                    ("cold_temperature_wear_multiplier", profile.cold_temperature_wear_multiplier),
+                    ("overheat_temperature_wear_multiplier", profile.overheat_temperature_wear_multiplier),
+                    ("extreme_temperature_wear_multiplier", profile.extreme_temperature_wear_multiplier),
+                ] {
+                    if let Some(v) = value {
+                        if !v.is_finite() || !(0.0..=10.0).contains(&v) {
+                            return Err(format!(
+                                "tires.wear.{name}.{field} must be finite and in [0.0,10.0]"
+                            ));
+                        }
+                    }
+                }
+                let cliff = profile.cliff_start_wear_fraction.unwrap_or(0.75);
+                let end_of_life = profile.end_of_life_grip_scale.unwrap_or(0.55);
+                let progressive = profile.progressive_grip_loss_fraction.unwrap_or(0.05);
+                if cliff > 1.0 || end_of_life > 1.0 || progressive > 1.0 {
+                    return Err(format!(
+                        "tires.wear.{name} fractions must not exceed 1.0"
+                    ));
+                }
+                if progressive + end_of_life > 1.0 {
+                    return Err(format!(
+                        "tires.wear.{name}.progressive_grip_loss_fraction plus end_of_life_grip_scale must not exceed 1.0"
                     ));
                 }
             }
@@ -3577,6 +3807,7 @@ impl JsonVehicleSpec {
                 .unwrap_or(self.tires.airborne_spin_decay_torque),
             tire_pressure: tire_pressure_from_json(&self.tires.pressure),
             tire_thermal: tire_thermal_from_json(&self.tires.thermal),
+            tire_wear: tire_wear_from_json(&self.tires.wear),
             front_tire_force: self
                 .tires
                 .force_model
@@ -3927,6 +4158,7 @@ impl JsonVehicleSpec {
                     atmospheric_pressure_kpa: Some(cfg.tire_pressure.atmospheric_pressure_kpa),
                 }),
                 thermal: Some(JsonTireThermal::from_config(&cfg.tire_thermal)),
+                wear: (cfg.schema_version >= 3).then(|| JsonTireWear::from_config(&cfg.tire_wear)),
                 force_model: (cfg.schema_version >= 3).then(|| JsonTireForceModel {
                     front: JsonTireForceProfile {
                         lateral_peak_slip_angle_rad: cfg.front_tire_force.lateral_peak_slip_angle_rad,

@@ -228,6 +228,12 @@ pub struct TireMechanicalModifiers {
     pub force_stiffness_scale: f64,
     pub grip_scale: f64,
     pub pneumatic_trail_scale: f64,
+    #[serde(default = "default_identity_scale")]
+    pub wear_grip_scale: f64,
+}
+
+fn default_identity_scale() -> f64 {
+    1.0
 }
 
 impl TireMechanicalModifiers {
@@ -245,6 +251,7 @@ impl TireMechanicalModifiers {
             force_stiffness_scale: 1.0,
             grip_scale: 1.0,
             pneumatic_trail_scale: 1.0,
+            wear_grip_scale: 1.0,
         }
     }
 }
@@ -390,6 +397,8 @@ impl TireThermalSystem {
             // THERM-705: pneumatic trail derives from base construction/contact state
             // and saturation (see tire.rs TIRE-104), not from a pressure exponent.
             pneumatic_trail_scale: 1.0,
+
+            wear_grip_scale: 1.0,
         }
     }
 
@@ -410,7 +419,7 @@ impl TireThermalSystem {
         let p_ref = pressure.reference_hot_kpa_gauge[i].max(20.0);
         let p_ratio = (st.pressure_kpa_gauge / p_ref).clamp(0.45, 1.80);
 
-        let zone_weights = normalized_zone_weights(
+        let zone_weights = normalized_contact_zone_weights(
             input.zone_contact_weights,
             p_ratio,
             input.dynamic_camber_rad,
@@ -538,7 +547,7 @@ pub fn pressure_from_gas(
     (p_hot_abs - atmospheric_pressure_kpa).max(0.0)
 }
 
-fn normalized_zone_weights(
+pub fn normalized_contact_zone_weights(
     raw: [f64; 3],
     pressure_ratio: f64,
     dynamic_camber_rad: f64,

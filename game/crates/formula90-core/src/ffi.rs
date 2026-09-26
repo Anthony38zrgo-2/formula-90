@@ -23,7 +23,7 @@ use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 15;
+pub const F90_CORE_ABI_VERSION: u32 = 16;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -218,6 +218,11 @@ pub struct F90CoreFrameOut {
     pub fuel_capacity_kg: f64,
     pub total_vehicle_mass_kg: f64,
     pub effective_front_weight_distribution: f64,
+    pub tire_wear_inner_fraction: [f64; 4],
+    pub tire_wear_center_fraction: [f64; 4],
+    pub tire_wear_outer_fraction: [f64; 4],
+    pub tire_wear_remaining_fraction: [f64; 4],
+    pub tire_wear_grip_scale: [f64; 4],
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -653,6 +658,11 @@ pub unsafe extern "C" fn f90_core_step(
                 fuel_capacity_kg: frame.fuel_capacity_kg,
                 total_vehicle_mass_kg: frame.total_vehicle_mass_kg,
                 effective_front_weight_distribution: frame.effective_front_weight_distribution,
+                tire_wear_inner_fraction: frame.tire_wear_inner_fraction,
+                tire_wear_center_fraction: frame.tire_wear_center_fraction,
+                tire_wear_outer_fraction: frame.tire_wear_outer_fraction,
+                tire_wear_remaining_fraction: frame.tire_wear_remaining_fraction,
+                tire_wear_grip_scale: frame.tire_wear_grip_scale,
             };
         }
     }
@@ -1044,7 +1054,12 @@ mod layout_tests {
             offset_of!(F90CoreFrameOut, effective_front_weight_distribution),
             1832
         );
-        assert_eq!(size_of::<F90CoreFrameOut>(), 1840);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_inner_fraction), 1840);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_center_fraction), 1872);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_outer_fraction), 1904);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_remaining_fraction), 1936);
+        assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_grip_scale), 1968);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 2000);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

@@ -159,6 +159,11 @@ private:
 	double tire_tread_outer_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double tire_carcass_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
 	double tire_gas_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_wear_inner_fraction_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_wear_center_fraction_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_wear_outer_fraction_[4] = { 0.0, 0.0, 0.0, 0.0 };
+	double tire_wear_remaining_fraction_[4] = { 1.0, 1.0, 1.0, 1.0 };
+	double tire_wear_grip_scale_[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 	// Brake thermal + duct telemetry (WheelIndex order FL/FR/RL/RR).
 	double brake_disc_c_[4] = { 0.0, 0.0, 0.0, 0.0 };
@@ -477,6 +482,12 @@ public:
 		const double tread_outer_c[4],
 		const double carcass_c[4],
 		const double gas_c[4]);
+	void set_core_tire_wear_telemetry(
+		const double inner_wear_fraction[4],
+		const double center_wear_fraction[4],
+		const double outer_wear_fraction[4],
+		const double remaining_tread_fraction[4],
+		const double wear_grip_scale[4]);
 	void set_core_brake_telemetry(
 		const double disc_c[4],
 		const double rim_c[4],

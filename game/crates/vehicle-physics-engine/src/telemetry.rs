@@ -63,6 +63,11 @@ pub struct TelemetryFrame {
     pub tire_pressure_kpa: [f64; 4],
     pub tread_temperature_c: [f64; 4],
     pub carcass_temperature_c: [f64; 4],
+    pub wheel_tread_wear_inner_fraction: [f64; 4],
+    pub wheel_tread_wear_center_fraction: [f64; 4],
+    pub wheel_tread_wear_outer_fraction: [f64; 4],
+    pub wheel_tread_wear_remaining_fraction: [f64; 4],
+    pub wheel_tread_wear_grip_scale: [f64; 4],
     pub brake_efficiency: [f64; 4],
     pub aero_front_downforce_n: f64,
     pub aero_floor_downforce_n: f64,
@@ -249,6 +254,26 @@ impl TelemetryFrame {
         "FR_CarcassTemp_C",
         "RL_CarcassTemp_C",
         "RR_CarcassTemp_C",
+        "FL_TreadWearInner",
+        "FR_TreadWearInner",
+        "RL_TreadWearInner",
+        "RR_TreadWearInner",
+        "FL_TreadWearCenter",
+        "FR_TreadWearCenter",
+        "RL_TreadWearCenter",
+        "RR_TreadWearCenter",
+        "FL_TreadWearOuter",
+        "FR_TreadWearOuter",
+        "RL_TreadWearOuter",
+        "RR_TreadWearOuter",
+        "FL_TreadWearRemaining",
+        "FR_TreadWearRemaining",
+        "RL_TreadWearRemaining",
+        "RR_TreadWearRemaining",
+        "FL_TreadWearGrip",
+        "FR_TreadWearGrip",
+        "RL_TreadWearGrip",
+        "RR_TreadWearGrip",
         "FL_BrakeEff",
         "FR_BrakeEff",
         "RL_BrakeEff",
@@ -406,6 +431,31 @@ impl TelemetryFrame {
         fields.extend(self.tire_pressure_kpa.iter().map(|v| format!("{v:.2}")));
         fields.extend(self.tread_temperature_c.iter().map(|v| format!("{v:.2}")));
         fields.extend(self.carcass_temperature_c.iter().map(|v| format!("{v:.2}")));
+        fields.extend(
+            self.wheel_tread_wear_inner_fraction
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_tread_wear_center_fraction
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_tread_wear_outer_fraction
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_tread_wear_remaining_fraction
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
+        fields.extend(
+            self.wheel_tread_wear_grip_scale
+                .iter()
+                .map(|v| format!("{v:.5}")),
+        );
         fields.extend(self.brake_efficiency.iter().map(|v| format!("{v:.4}")));
         fields.extend([
             format!("{:.3}", self.aero_front_downforce_n),

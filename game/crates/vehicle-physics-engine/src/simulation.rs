@@ -8,7 +8,10 @@ use crate::suspension_geo_config::SuspensionModelKind;
 use crate::wheel_mechanics::WheelMechanicalTuning;
 use crate::telemetry::TelemetryFrame;
 use crate::tire::TireSystem;
-use crate::tire_thermals::{TireEnvironment, TireThermalInput, TireThermalSystem};
+use crate::tire_thermals::{
+    normalized_contact_zone_weights, TireEnvironment, TireThermalInput, TireThermalSystem,
+};
+use crate::tire_wear::TireWearSystem;
 use crate::types::{Mat3, Quat, Transform3D, TriRaycastSample, Vec3, VehicleInput, WheelIndex};
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
@@ -44,6 +47,7 @@ pub struct VehicleState {
     pub suspension: SuspensionSystem,
     pub tires: TireSystem,
     pub tire_thermal: TireThermalSystem,
+    pub tire_wear: TireWearSystem,
     pub brake_thermal: BrakeThermalSystem,
     pub powertrain_thermal: PowertrainThermalSystem,
     pub aero: AeroForces,
@@ -71,6 +75,7 @@ impl VehicleState {
                 &config.tire_pressure,
                 &config.tire_thermal,
             ),
+            tire_wear: TireWearSystem::new_with_axles(&config.tire_wear),
             brake_thermal: BrakeThermalSystem::new(&config.brake_thermal),
             powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain_thermal),
             aero: AeroForces::zero(),
@@ -322,7 +327,7 @@ impl VehicleSimulator {
         // Pressure/thermal mechanical modifiers from the CURRENT tick's tire
         // thermal state (pressure N drives mechanics/forces N; heat updates the
         // pressure for the next tick).
-        let thermal_modifiers = [
+        let mut thermal_modifiers = [
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::FrontLeft,
                 &cfg.tire_pressure,
@@ -348,6 +353,10 @@ impl VehicleSimulator {
                 cfg.pressure_mechanics,
             ),
         ];
+        for wheel in WheelIndex::ALL {
+            thermal_modifiers[wheel as usize].wear_grip_scale =
+                st.tire_wear.wheels[wheel as usize].wear_grip_scale;
+        }
         st.suspension
             .step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
 
@@ -659,6 +668,18 @@ impl VehicleSimulator {
                     if sus.ray_grounded[1] { 2.0 } else { 0.0 },
                     if sus.ray_grounded[2] { 1.0 } else { 0.0 },
                 ];
+                let wear_zone_weights = normalized_contact_zone_weights(
+                    zone_contact_weights,
+                    (st.tire_thermal.wheels[i].pressure_kpa_gauge
+                        / cfg.tire_pressure.reference_hot_kpa_gauge[i].max(20.0))
+                        .clamp(0.45, 1.80),
+                    sus.dynamic_camber,
+                );
+                let wear_config = cfg.tire_wear.for_wheel(wheel);
+                let wear_surface_friction = sus.effective_friction;
+                let wear_longitudinal_force = tire.longitudinal_force;
+                let wear_lateral_force = tire.lateral_force;
+                let wear_longitudinal_slip_velocity = tire.spin_velocity_diff.abs();
                 let thermal_input = TireThermalInput {
                     normal_force_n: sus.total_normal_force.max(0.0),
                     longitudinal_force_n: tire.longitudinal_force,
@@ -681,6 +702,23 @@ impl VehicleSimulator {
                     tire_thermal,
                     tire_environment,
                     thermal_input,
+                    dt,
+                );
+                let wear_tread_zone_temperatures = [
+                    st.tire_thermal.wheels[i].tread_inner_c,
+                    st.tire_thermal.wheels[i].tread_center_c,
+                    st.tire_thermal.wheels[i].tread_outer_c,
+                ];
+                st.tire_wear.step_after_forces(
+                    wheel,
+                    wear_config,
+                    wear_surface_friction,
+                    wear_zone_weights,
+                    wear_tread_zone_temperatures,
+                    wear_longitudinal_force,
+                    wear_lateral_force,
+                    wear_longitudinal_slip_velocity,
+                    wheel_lateral_slip_ms[i],
                     dt,
                 );
             }
@@ -1024,6 +1062,21 @@ impl VehicleSimulator {
                 st.tire_thermal.wheels[i].average_tread_c()
             }),
             carcass_temperature_c: std::array::from_fn(|i| st.tire_thermal.wheels[i].carcass_c),
+            wheel_tread_wear_inner_fraction: std::array::from_fn(|i| {
+                st.tire_wear.wheels[i].inner_wear_fraction
+            }),
+            wheel_tread_wear_center_fraction: std::array::from_fn(|i| {
+                st.tire_wear.wheels[i].center_wear_fraction
+            }),
+            wheel_tread_wear_outer_fraction: std::array::from_fn(|i| {
+                st.tire_wear.wheels[i].outer_wear_fraction
+            }),
+            wheel_tread_wear_remaining_fraction: std::array::from_fn(|i| {
+                st.tire_wear.wheels[i].remaining_tread_fraction()
+            }),
+            wheel_tread_wear_grip_scale: std::array::from_fn(|i| {
+                st.tire_wear.wheels[i].wear_grip_scale
+            }),
             brake_efficiency: st.brake_thermal.efficiency_scales(),
             aero_front_downforce_n: st.aero.front_downforce,
             aero_floor_downforce_n: st.aero.diffuser_downforce,

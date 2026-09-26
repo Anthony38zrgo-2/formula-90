@@ -947,6 +947,13 @@ impl CoreFacade {
             frame.tire_carcass_c[i] = w.carcass_c;
             frame.tire_gas_c[i] = w.gas_c;
         }
+        for (i, w) in ent.sim.state.tire_wear.wheels.iter().enumerate() {
+            frame.tire_wear_inner_fraction[i] = w.inner_wear_fraction;
+            frame.tire_wear_center_fraction[i] = w.center_wear_fraction;
+            frame.tire_wear_outer_fraction[i] = w.outer_wear_fraction;
+            frame.tire_wear_remaining_fraction[i] = w.remaining_tread_fraction();
+            frame.tire_wear_grip_scale[i] = w.wear_grip_scale;
+        }
         for (i, w) in ent.sim.state.brake_thermal.wheels.iter().enumerate() {
             frame.brake_disc_c[i] = w.disc_c;
             frame.brake_rim_c[i] = w.rim_c;

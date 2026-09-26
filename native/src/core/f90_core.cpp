@@ -643,6 +643,12 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		frame_.tire_tread_outer_c,
 		frame_.tire_carcass_c,
 		frame_.tire_gas_c);
+	veh->set_core_tire_wear_telemetry(
+		frame_.tire_wear_inner_fraction,
+		frame_.tire_wear_center_fraction,
+		frame_.tire_wear_outer_fraction,
+		frame_.tire_wear_remaining_fraction,
+		frame_.tire_wear_grip_scale);
 	veh->set_core_brake_telemetry(
 		frame_.brake_disc_c,
 		frame_.brake_rim_c,

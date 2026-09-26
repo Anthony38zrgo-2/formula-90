@@ -5,7 +5,10 @@ extends PanelContainer
 ## Expected native/GDScript data contract (post-BRAKE-1000, snapshot schema 1):
 ## {
 ##   "FL": {"pressure_kpa":145.0,"tread_inner_c":92.0,"tread_center_c":96.0,
-##          "tread_outer_c":88.0,"carcass_c":81.0,"gas_c":73.0},
+##          "tread_outer_c":88.0,"carcass_c":81.0,"gas_c":73.0,
+##          "wear_inner_fraction":0.10,"wear_center_fraction":0.06,
+##          "wear_outer_fraction":0.14,"wear_remaining_fraction":0.90,
+##          "wear_grip_scale":0.97},
 ##   ...
 ##   "schema_version": 1
 ## }
@@ -110,10 +113,24 @@ func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 		var zones_label: Label = cell["zones"]
 		var carcass_label: Label = cell["carcass"]
 		var brake_label: Label = cell["brake"]
+		var wear_label: Label = cell["wear"]
 
 		pressure_label.text = "P %.0f kPa" % pressure
 		zones_label.text = "I %.0f°  C %.0f°  O %.0f°" % [inner, center, outer]
 		carcass_label.text = "CAR %.0f°  GAS %.0f°" % [carcass, gas]
+
+		var remaining_value: Variant = wheel_data.get("wear_remaining_fraction")
+		if remaining_value == null:
+			wear_label.text = "WR ---"
+			wear_label.add_theme_color_override("font_color", _settings.wear_optimal_color)
+		else:
+			var remaining := clampf(float(remaining_value), 0.0, 1.0)
+			var inner_wear := float(wheel_data.get("wear_inner_fraction", 0.0))
+			var center_wear := float(wheel_data.get("wear_center_fraction", 0.0))
+			var outer_wear := float(wheel_data.get("wear_outer_fraction", 0.0))
+			wear_label.text = "WR %.0f%%  I%.0f C%.0f O%.0f" % [
+				remaining * 100.0, inner_wear * 100.0, center_wear * 100.0, outer_wear * 100.0]
+			wear_label.add_theme_color_override("font_color", _wear_color(remaining))
 
 		var brake_wheel: Dictionary = brake_data.get(wheel, {})
 		if not brake_wheel.is_empty():
@@ -192,12 +209,18 @@ func _build_ui() -> void:
 		brake_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(brake_label)
 
+		var wear_label := Label.new()
+		wear_label.text = "WR ---"
+		wear_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(wear_label)
+
 		grid.add_child(box)
 		_cells[wheel] = {
 			"pressure": pressure_label,
 			"zones": zones_label,
 			"carcass": carcass_label,
 			"brake": brake_label,
+			"wear": wear_label,
 		}
 
 
@@ -210,6 +233,15 @@ func _temperature_color(temp_c: float) -> Color:
 	if temp_c <= s.warm_max_c:
 		return s.warm_color
 	return s.hot_color
+
+
+func _wear_color(remaining_fraction: float) -> Color:
+	var s := _settings
+	if remaining_fraction <= s.wear_critical_remaining_fraction:
+		return s.wear_critical_color
+	if remaining_fraction <= s.wear_warn_remaining_fraction:
+		return s.wear_warn_color
+	return s.wear_optimal_color
 
 
 func _brake_temperature_color(temp_c: float, optimal_min_c: float, optimal_max_c: float, fade_start_c: float, critical_c: float) -> Color:

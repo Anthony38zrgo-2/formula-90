@@ -1626,6 +1626,21 @@ void F194RustVehicle::set_core_tire_telemetry(
 	}
 }
 
+void F194RustVehicle::set_core_tire_wear_telemetry(
+	const double inner_wear_fraction[4],
+	const double center_wear_fraction[4],
+	const double outer_wear_fraction[4],
+	const double remaining_tread_fraction[4],
+	const double wear_grip_scale[4]) {
+	for (int i = 0; i < 4; ++i) {
+		tire_wear_inner_fraction_[i] = inner_wear_fraction[i];
+		tire_wear_center_fraction_[i] = center_wear_fraction[i];
+		tire_wear_outer_fraction_[i] = outer_wear_fraction[i];
+		tire_wear_remaining_fraction_[i] = remaining_tread_fraction[i];
+		tire_wear_grip_scale_[i] = wear_grip_scale[i];
+	}
+}
+
 void F194RustVehicle::set_core_brake_telemetry(
 	const double disc_c[4],
 	const double rim_c[4],
@@ -1661,6 +1676,11 @@ Dictionary F194RustVehicle::get_tire_state_snapshot() const {
 		wheel["tread_outer_c"] = tire_tread_outer_c_[i];
 		wheel["carcass_c"] = tire_carcass_c_[i];
 		wheel["gas_c"] = tire_gas_c_[i];
+		wheel["wear_inner_fraction"] = tire_wear_inner_fraction_[i];
+		wheel["wear_center_fraction"] = tire_wear_center_fraction_[i];
+		wheel["wear_outer_fraction"] = tire_wear_outer_fraction_[i];
+		wheel["wear_remaining_fraction"] = tire_wear_remaining_fraction_[i];
+		wheel["wear_grip_scale"] = tire_wear_grip_scale_[i];
 		out[String(WHEELS[i])] = wheel;
 	}
 	return out;

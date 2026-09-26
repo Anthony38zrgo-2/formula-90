@@ -84,6 +84,12 @@ class TiresSettings:
 	var brake_hot_color := Color("ff6b61")
 	var brake_critical_color := Color("d91f1f")
 
+	var wear_warn_remaining_fraction := 0.6
+	var wear_critical_remaining_fraction := 0.3
+	var wear_optimal_color := Color("a6ff9e")
+	var wear_warn_color := Color("ffd16b")
+	var wear_critical_color := Color("ff6b61")
+
 
 	func apply(data: Dictionary) -> void:
 		visible = bool(data.get("visible", visible))
@@ -124,6 +130,16 @@ class TiresSettings:
 			brake_hot_color = _color(brake.get("hot_color", "#ff6b61"), brake_hot_color)
 			brake_critical_color = _color(brake.get("critical_color", "#d91f1f"), brake_critical_color)
 
+		var wear: Variant = data.get("wear", {})
+		if wear is Dictionary:
+			wear_warn_remaining_fraction = clampf(
+				float(wear.get("warn_remaining_fraction", wear_warn_remaining_fraction)), 0.0, 1.0)
+			wear_critical_remaining_fraction = clampf(
+				float(wear.get("critical_remaining_fraction", wear_critical_remaining_fraction)), 0.0, wear_warn_remaining_fraction)
+			wear_optimal_color = _color(wear.get("optimal_color", "#a6ff9e"), wear_optimal_color)
+			wear_warn_color = _color(wear.get("warn_color", "#ffd16b"), wear_warn_color)
+			wear_critical_color = _color(wear.get("critical_color", "#ff6b61"), wear_critical_color)
+
 
 	func to_dict() -> Dictionary:
 		return {
@@ -155,6 +171,13 @@ class TiresSettings:
 				"warm_color": brake_warm_color.to_html(true),
 				"hot_color": brake_hot_color.to_html(true),
 				"critical_color": brake_critical_color.to_html(true)
+			},
+			"wear": {
+				"warn_remaining_fraction": wear_warn_remaining_fraction,
+				"critical_remaining_fraction": wear_critical_remaining_fraction,
+				"optimal_color": wear_optimal_color.to_html(true),
+				"warn_color": wear_warn_color.to_html(true),
+				"critical_color": wear_critical_color.to_html(true)
 			}
 		}
 

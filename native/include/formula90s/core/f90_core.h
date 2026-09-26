@@ -154,6 +154,11 @@ typedef struct F90CoreFrameOut {
     double fuel_capacity_kg;
     double total_vehicle_mass_kg;
     double effective_front_weight_distribution;
+    double tire_wear_inner_fraction[4];
+    double tire_wear_center_fraction[4];
+    double tire_wear_outer_fraction[4];
+    double tire_wear_remaining_fraction[4];
+    double tire_wear_grip_scale[4];
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

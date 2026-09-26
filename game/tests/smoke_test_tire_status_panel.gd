@@ -38,10 +38,14 @@ func _run() -> void:
 	await process_frame
 
 	var tire_data := {
-		"FL": {"pressure_kpa": 145.0, "tread_inner_c": 92.0, "tread_center_c": 96.0, "tread_outer_c": 88.0, "carcass_c": 81.0, "gas_c": 73.0},
-		"FR": {"pressure_kpa": 146.0, "tread_inner_c": 91.0, "tread_center_c": 95.0, "tread_outer_c": 87.0, "carcass_c": 80.0, "gas_c": 72.0},
-		"RL": {"pressure_kpa": 140.0, "tread_inner_c": 90.0, "tread_center_c": 94.0, "tread_outer_c": 86.0, "carcass_c": 79.0, "gas_c": 71.0},
-		"RR": {"pressure_kpa": 141.0, "tread_inner_c": 89.0, "tread_center_c": 93.0, "tread_outer_c": 85.0, "carcass_c": 78.0, "gas_c": 70.0},
+		"FL": {"pressure_kpa": 145.0, "tread_inner_c": 92.0, "tread_center_c": 96.0, "tread_outer_c": 88.0, "carcass_c": 81.0, "gas_c": 73.0,
+			"wear_inner_fraction": 0.42, "wear_center_fraction": 0.31, "wear_outer_fraction": 0.55, "wear_remaining_fraction": 0.57, "wear_grip_scale": 0.94},
+		"FR": {"pressure_kpa": 146.0, "tread_inner_c": 91.0, "tread_center_c": 95.0, "tread_outer_c": 87.0, "carcass_c": 80.0, "gas_c": 72.0,
+			"wear_inner_fraction": 0.40, "wear_center_fraction": 0.30, "wear_outer_fraction": 0.52, "wear_remaining_fraction": 0.59, "wear_grip_scale": 0.95},
+		"RL": {"pressure_kpa": 140.0, "tread_inner_c": 90.0, "tread_center_c": 94.0, "tread_outer_c": 86.0, "carcass_c": 79.0, "gas_c": 71.0,
+			"wear_inner_fraction": 0.70, "wear_center_fraction": 0.55, "wear_outer_fraction": 0.80, "wear_remaining_fraction": 0.25, "wear_grip_scale": 0.71},
+		"RR": {"pressure_kpa": 141.0, "tread_inner_c": 89.0, "tread_center_c": 93.0, "tread_outer_c": 85.0, "carcass_c": 78.0, "gas_c": 70.0,
+			"wear_inner_fraction": 0.68, "wear_center_fraction": 0.53, "wear_outer_fraction": 0.78, "wear_remaining_fraction": 0.34, "wear_grip_scale": 0.72},
 	}
 	panel.call("set_tire_data", tire_data, _v3_brake_data())
 
@@ -58,6 +62,7 @@ func _run() -> void:
 			var zones_label: Label = cell["zones"]
 			var carcass_label: Label = cell["carcass"]
 			var brake_label: Label = cell["brake"]
+			var wear_label: Label = cell["wear"]
 			if pressure_label.text.is_empty() or not pressure_label.text.contains("kPa"):
 				failures.append(wheel + " pressure label missing: " + pressure_label.text)
 			if not zones_label.text.contains("I ") or not zones_label.text.contains("C ") or not zones_label.text.contains("O "):
@@ -68,12 +73,20 @@ func _run() -> void:
 				failures.append(wheel + " brake label missing BRK/RIM: " + brake_label.text)
 			if brake_label.text.contains("caliper"):
 				failures.append(wheel + " brake label references removed caliper state: " + brake_label.text)
+			if not wear_label.text.contains("WR") or not wear_label.text.contains("I") or not wear_label.text.contains("O"):
+				failures.append(wheel + " wear label missing WR/I/C/O: " + wear_label.text)
 		var fl_pressure: Label = cells["FL"]["pressure"]
 		if not fl_pressure.text.contains("145"):
 			failures.append("FL pressure label did not update: " + fl_pressure.text)
 		var fl_brake: Label = cells["FL"]["brake"]
 		if not fl_brake.text.contains("300") or not fl_brake.text.contains("250"):
 			failures.append("FL brake label did not render two-node disc/rim: " + fl_brake.text)
+		var fl_wear: Label = cells["FL"]["wear"]
+		if not fl_wear.text.contains("57%") or not fl_wear.text.contains("I42") or not fl_wear.text.contains("O55"):
+			failures.append("FL wear label did not render remaining/zones: " + fl_wear.text)
+		var rl_wear: Label = cells["RL"]["wear"]
+		if rl_wear.get_theme_color("font_color") != panel.get("_settings").wear_critical_color:
+			failures.append("RL wear label did not switch to the critical color: " + rl_wear.text)
 
 	# Transitional snapshot: rim_c/critical absent must not throw or render stale
 	# caliper state (HUD-1205: no errors on absent legacy state).
