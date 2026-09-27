@@ -7,8 +7,9 @@ This file is binding for every change under `game/`. It specializes the root
 
 - The canonical V10 engine bank is `D:\Formula90s\game\sounds\banks\v10-v2-bank`
   (`game/sounds/banks/v10-v2-bank` in the repository).
-- Every runtime sound bank lives under `game/sounds/banks/`. Never place runtime
-  banks under `game/audio/`; that tree is historical and is not consumed anymore.
+- The V10 engine bank and the shared commons bank are the runtime banks: never
+  create new runtime banks under `game/audio/`; that tree is historical and is
+  not consumed anymore.
 - The shared commons bank stays at `game/sounds/banks/commons` because it is not
   V10-specific. Do not move it into `v10-v2-bank` and do not rename its
   `bank_manifest.json`.

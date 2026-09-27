@@ -687,7 +687,7 @@ impl AudioModule {
         let manifest_relative = section
             .and_then(|value| value.get("manifest"))
             .and_then(serde_json::Value::as_str)
-            .unwrap_or("audio/formula_one_2030_grand_prix_sampler/manifest.json");
+            .unwrap_or("sounds/banks/v10-v2-bank/manifest.json");
         let fallback_to_legacy = section
             .and_then(|value| value.get("fallback_to_legacy_on_initialization_error"))
             .and_then(serde_json::Value::as_bool)
