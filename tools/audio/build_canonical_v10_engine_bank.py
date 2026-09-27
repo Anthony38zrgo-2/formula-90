@@ -1,0 +1,726 @@
+"""Build the canonical v10-v2 engine sample bank (schema 1) for f1_2030_v10.
+
+Reads the raw engine, gearbox, limiter and backfire recordings from
+game/sounds/banks/v10-v2-bank, normalizes every asset to 44.1 kHz mono PCM16,
+rotates each engine loop to a common dominant-harmonic phase, inserts the two
+mid captures between the low and high zones, copies the already prepared event
+assets from the five engine sample bank, and writes manifest.json plus
+source_inventory.json next to the derived WAVs.
+
+The build is deterministic: identical sources produce byte-identical outputs.
+Use --audit to inspect formats and measurements without writing, and --check to
+validate an existing bank without rewriting anything.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import io
+import json
+import math
+import wave
+from fractions import Fraction
+from pathlib import Path
+
+import numpy as np
+from scipy.signal import butter, resample_poly, sosfiltfilt, welch
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BANK_DIRECTORY = ROOT / "game/sounds/banks/v10-v2-bank"
+EVENT_SOURCE_DIRECTORY = (
+    ROOT / "game/audio/formula_one_2030_grand_prix_sampler/formula_one_2030_five_engine_sample_bank"
+)
+DEFAULT_REPORT_DIRECTORY = ROOT / "reports/audio-v10/v10-v2-bank"
+
+SAMPLE_RATE = 44100
+SCHEMA_VERSION = 1
+TOOL_NAME = "tools/audio/build_canonical_v10_engine_bank.py"
+TOOL_REVISION = 1
+BANK_ID = "v10_v2_engine_bank"
+EVENT_SELECTION_SEED = 1
+
+MINIMUM_REVOLUTIONS_PER_MINUTE = 4500.0
+MAXIMUM_REVOLUTIONS_PER_MINUTE = 18000.0
+REVOLUTIONS_PER_MINUTE_PER_HERTZ = 120.0
+CROSSFADE_CYCLE_COUNT = 4
+TRANSITION_HALF_WIDTH_RATIO = 0.075
+TRANSITION_BLEND_LAW = "smoothstep"
+TRANSITION_GAIN_LAW = "equal_power"
+LEVEL_BAND_HZ = (300.0, 6000.0)
+REFERENCE_PHASE_SEARCH_FRAMES = 64
+PREPARATION_RECIPE = "canonical_mono16_cycle_phase_rotated_v1"
+
+ENGINE_SOURCES = [
+    {
+        "source_filename": "engine_idle.wav",
+        "asset_id": "engine_idle_loop",
+        "derived_filename": "engine_idle_loop.wav",
+        "role": "engine_loop",
+        "collection": "loops",
+        "cycle_frequency_hertz": 4531.638723634397 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "reference_method": "authored_reference_integer_cycles",
+        "zone_revolutions_per_minute": 4500.0,
+    },
+    {
+        "source_filename": "engine_on_low.wav",
+        "asset_id": "engine_low_on_loop",
+        "derived_filename": "engine_low_on_loop.wav",
+        "role": "engine_loop",
+        "collection": "loops",
+        "cycle_frequency_hertz": 9135.225375626043 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "reference_method": "authored_reference_integer_cycles",
+        "zone_revolutions_per_minute": 8000.0,
+    },
+    {
+        "source_filename": "engine_on_med.wav",
+        "asset_id": "engine_mid_on_loop",
+        "derived_filename": "engine_mid_on_loop.wav",
+        "role": "engine_loop",
+        "collection": "loops",
+        "cycle_frequency_hertz": 106.265,
+        "reference_method": "measured_dominant_period_integer_cycles",
+        "zone_revolutions_per_minute": None,
+    },
+    {
+        "source_filename": "engine_on_high.wav",
+        "asset_id": "engine_high_on_loop",
+        "derived_filename": "engine_high_on_loop.wav",
+        "role": "engine_loop",
+        "collection": "loops",
+        "cycle_frequency_hertz": 16821.16949902939 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "reference_method": "authored_reference_integer_cycles",
+        "zone_revolutions_per_minute": 15600.0,
+    },
+    {
+        "source_filename": "engine_off_low.wav",
+        "asset_id": "engine_low_off_loop",
+        "derived_filename": "engine_low_off_loop.wav",
+        "role": "engine_coast_loop",
+        "collection": "coast_loops",
+        "cycle_frequency_hertz": 7922.604938131585 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "reference_method": "authored_reference_integer_cycles",
+        "zone_revolutions_per_minute": 8000.0,
+    },
+    {
+        "source_filename": "engine_off_med.wav",
+        "asset_id": "engine_mid_off_loop",
+        "derived_filename": "engine_mid_off_loop.wav",
+        "role": "engine_coast_loop",
+        "collection": "coast_loops",
+        "cycle_frequency_hertz": 107.039,
+        "reference_method": "measured_dominant_period_integer_cycles",
+        "zone_revolutions_per_minute": None,
+    },
+    {
+        "source_filename": "engine_off_high.wav",
+        "asset_id": "engine_high_off_loop",
+        "derived_filename": "engine_high_off_loop.wav",
+        "role": "engine_coast_loop",
+        "collection": "coast_loops",
+        "cycle_frequency_hertz": 12466.572286086415 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "reference_method": "authored_reference_integer_cycles",
+        "zone_revolutions_per_minute": 13000.0,
+    },
+]
+
+EVENT_SOURCE_BY_ASSET_ID = {
+    "backfire_burst_3": "backfire_1.wav",
+    "backfire_burst_4": "backfire_2.wav",
+    "backfire_burst_5": "backfire_3.wav",
+    "backfire_burst_6": "backfire_4.wav",
+    "backfire_burst_7": "backfire_5.wav",
+    "upshift_event": "gearup.wav",
+    "downshift_event": "geardn.wav",
+    "limiter_event": "limiter.wav",
+}
+
+
+def sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source_file:
+        for chunk in iter(lambda: source_file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def serialize_json(payload: object) -> bytes:
+    return (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+def read_wave_mono(path: Path) -> tuple[int, np.ndarray]:
+    with wave.open(str(path), "rb") as reader:
+        channels = reader.getnchannels()
+        sample_width = reader.getsampwidth()
+        sample_rate = reader.getframerate()
+        raw = reader.readframes(reader.getnframes())
+    if sample_width == 1:
+        samples = (np.frombuffer(raw, dtype=np.uint8).astype(np.float64) - 128.0) / 128.0
+    elif sample_width == 2:
+        samples = np.frombuffer(raw, dtype="<i2").astype(np.float64) / 32768.0
+    elif sample_width == 3:
+        octets = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3)
+        values = (
+            octets[:, 0].astype(np.int32)
+            | (octets[:, 1].astype(np.int32) << 8)
+            | (octets[:, 2].astype(np.int32) << 16)
+        )
+        values = np.where(values >= (1 << 23), values - (1 << 24), values).astype(np.float64)
+        samples = values / 8388608.0
+    elif sample_width == 4:
+        samples = np.frombuffer(raw, dtype="<i4").astype(np.float64) / 2147483648.0
+    else:
+        raise ValueError(f"unsupported sample width {sample_width} bits in {path}")
+    if channels > 1:
+        samples = samples.reshape(-1, channels).mean(axis=1)
+    return sample_rate, samples
+
+
+def encode_pcm16(samples: np.ndarray) -> bytes:
+    quantized = np.clip(np.round(samples * 32768.0), -32768.0, 32767.0).astype("<i2")
+    return quantized.tobytes()
+
+
+def wave_mono16_bytes(samples: np.ndarray) -> bytes:
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as writer:
+        writer.setnchannels(1)
+        writer.setsampwidth(2)
+        writer.setframerate(SAMPLE_RATE)
+        writer.writeframes(encode_pcm16(samples))
+    return buffer.getvalue()
+
+
+def rms_value(samples: np.ndarray) -> float:
+    if samples.size == 0:
+        return 0.0
+    return float(math.sqrt(float(np.mean(np.square(samples)))))
+
+
+def decibels_full_scale(value: float) -> float:
+    return float(20.0 * math.log10(max(value, 1e-9)))
+
+
+def band_rms(samples: np.ndarray, low_hz: float, high_hz: float) -> float:
+    if samples.size < 16:
+        return rms_value(samples)
+    sos = butter(4, [low_hz, high_hz], btype="bandpass", fs=SAMPLE_RATE, output="sos")
+    filtered = sosfiltfilt(sos, samples)
+    return rms_value(np.asarray(filtered, dtype=np.float64))
+
+
+def loop_level(samples: np.ndarray) -> float:
+    margin = len(samples) // 10
+    core = samples[margin : len(samples) - margin] if len(samples) > 4 * margin else samples
+    return rms_value(core)
+
+
+def apply_playback_rate(samples: np.ndarray, ratio: float) -> np.ndarray:
+    fraction = Fraction(1.0 / ratio).limit_denominator(4096)
+    return resample_poly(samples, fraction.numerator, fraction.denominator)
+
+
+def derive_reference(length: int, cycle_frequency_hertz: float) -> tuple[float, int]:
+    cycles = max(1, round(length * cycle_frequency_hertz / SAMPLE_RATE))
+    reference = cycles * SAMPLE_RATE / length * REVOLUTIONS_PER_MINUTE_PER_HERTZ
+    return reference, cycles
+
+
+def measure_seam(samples: np.ndarray) -> dict:
+    deltas = np.abs(np.diff(np.round(samples * 32768.0).astype(np.int64)))
+    if deltas.size == 0:
+        return {"wrap_step": 0, "local_slope": 0, "seam_contract_holds": True}
+    local_slope = int(np.sort(deltas)[int(deltas.size * 0.99)])
+    wrap_step = abs(round(float(samples[0]) * 32768.0) - round(float(samples[-1]) * 32768.0))
+    return {
+        "wrap_step": wrap_step,
+        "local_slope": local_slope,
+        "seam_contract_holds": wrap_step <= max(2 * local_slope, 64),
+    }
+
+
+def rotate_to_reference_phase(samples: np.ndarray, frequency_hertz: float) -> tuple[np.ndarray, dict]:
+    count = samples.size
+    indices = np.arange(count)
+    phasor = np.exp(-2j * np.pi * frequency_hertz * indices / SAMPLE_RATE)
+    initial_phase = float(np.angle(np.dot(samples, phasor)))
+    period_frames = SAMPLE_RATE / frequency_hertz
+    target = (-initial_phase / (2.0 * np.pi)) * period_frames % period_frames
+    base_shift = round(target)
+    best_shift = base_shift % count
+    best_step = None
+    for offset in range(-REFERENCE_PHASE_SEARCH_FRAMES, REFERENCE_PHASE_SEARCH_FRAMES + 1):
+        shift = (base_shift + offset) % count
+        step = abs(float(samples[(shift - 1) % count] - samples[shift]))
+        if best_step is None or step < best_step:
+            best_step = step
+            best_shift = shift
+    rotated = np.concatenate([samples[best_shift:], samples[:best_shift]])
+    residual = float(np.angle(np.dot(rotated, phasor)))
+    metrics = {
+        "loop_start_rotation_frames": int(best_shift),
+        "dominant_harmonic_phase_before_radians": initial_phase,
+        "dominant_harmonic_phase_residual_radians": residual,
+        "rotation_wrap_step": float(best_step),
+    }
+    return rotated, metrics
+
+
+def spectral_peaks(samples: np.ndarray, count: int = 16) -> list[float]:
+    frequencies, power = welch(
+        samples, fs=SAMPLE_RATE, nperseg=min(len(samples), 1 << 15), nfft=1 << 17
+    )
+    band = (frequencies >= 25.0) & (frequencies <= 1500.0)
+    frequencies = frequencies[band]
+    power = power[band]
+    local_maxima = [
+        index
+        for index in range(1, len(power) - 1)
+        if power[index] >= power[index - 1] and power[index] >= power[index + 1]
+    ]
+    local_maxima.sort(key=lambda index: power[index], reverse=True)
+    picked: list[float] = []
+    for index in local_maxima:
+        frequency = float(frequencies[index])
+        if any(abs(frequency - existing) / existing < 0.03 for existing in picked):
+            continue
+        picked.append(frequency)
+        if len(picked) >= count:
+            break
+    return picked
+
+
+def harmonic_comb_spacing(
+    peaks: list[float], minimum_hz: float = 20.0, maximum_hz: float = 180.0
+) -> tuple[float, float, int] | None:
+    strong = peaks[:10]
+    if not strong:
+        return None
+    for candidate in np.arange(maximum_hz, minimum_hz, -0.01):
+        covered = 0
+        total_error = 0.0
+        for peak in strong:
+            harmonic = max(1, round(peak / candidate))
+            predicted = harmonic * candidate
+            error = abs(peak - predicted) / peak
+            if error <= 0.015:
+                covered += 1
+                total_error += error
+        coverage = covered / max(len(strong), 1)
+        if coverage >= 0.8 and total_error / max(covered, 1) <= 0.01:
+            span = max(round(max(strong) / max(float(candidate), 1e-9)), 1)
+            return float(candidate), float(coverage), span
+    return None
+
+
+def measure_dominant_period_frequency(samples: np.ndarray) -> float | None:
+    centered = samples - float(np.mean(samples))
+    count = centered.size
+    if count < SAMPLE_RATE // 10:
+        return None
+    spectrum = np.fft.rfft(centered, n=2 * count)
+    autocorrelation = np.fft.irfft(spectrum * np.conj(spectrum))[: SAMPLE_RATE // 20 + 1]
+    autocorrelation /= max(float(autocorrelation[0]), 1e-9)
+    low_lag = max(2, int(SAMPLE_RATE / 250.0))
+    high_lag = int(SAMPLE_RATE / 20.0)
+    window = autocorrelation[low_lag : high_lag + 1]
+    if window.size == 0:
+        return None
+    lag = int(np.argmax(window)) + low_lag
+    return SAMPLE_RATE / lag
+
+
+def transition(from_id: str, to_id: str, start: float, end: float, compensation: float) -> dict:
+    center = (start + end) * 0.5
+    return {
+        "from_loop_id": from_id,
+        "to_loop_id": to_id,
+        "start_revolutions_per_minute": float(start),
+        "end_revolutions_per_minute": float(end),
+        "center_revolutions_per_minute": float(center),
+        "half_width_revolutions_per_minute": float((end - start) * 0.5),
+        "blend_law": TRANSITION_BLEND_LAW,
+        "gain_law": TRANSITION_GAIN_LAW,
+        "measured_level_compensation_db": float(compensation),
+        "applied_level_step_db": 0.0,
+    }
+
+
+def prepare_engine_loop(source_directory: Path, entry: dict) -> tuple[dict, np.ndarray, bytes]:
+    source_path = source_directory / entry["source_filename"]
+    if not source_path.is_file():
+        raise FileNotFoundError(f"missing engine source: {source_path}")
+    source_hash = sha256_file(source_path)
+    sample_rate, samples = read_wave_mono(source_path)
+    if sample_rate != SAMPLE_RATE:
+        raise ValueError(f"{source_path} must be {SAMPLE_RATE} Hz, found {sample_rate}")
+    seam_before = measure_seam(samples)
+    reference, cycles = derive_reference(samples.size, entry["cycle_frequency_hertz"])
+    rotated, rotation_metrics = rotate_to_reference_phase(samples, reference / REVOLUTIONS_PER_MINUTE_PER_HERTZ)
+    seam_after = measure_seam(rotated)
+    derived_payload = wave_mono16_bytes(rotated)
+    crossfade_frames = max(
+        32,
+        round(CROSSFADE_CYCLE_COUNT * SAMPLE_RATE / (reference / REVOLUTIONS_PER_MINUTE_PER_HERTZ)),
+    )
+    peaks = spectral_peaks(rotated)
+    comb = harmonic_comb_spacing(peaks)
+    asset = {
+        "id": entry["asset_id"],
+        "role": entry["role"],
+        "collection": entry["collection"],
+        "source_filename": entry["source_filename"],
+        "source_sha256": source_hash,
+        "derived_filename": entry["derived_filename"],
+        "derived_sha256": sha256_bytes(derived_payload),
+        "derived_frames": int(rotated.size),
+        "derived_rms_dbfs": decibels_full_scale(rms_value(rotated)),
+        "derived_peak_dbfs": decibels_full_scale(float(np.max(np.abs(rotated)))),
+        "derived_band_rms_300_6000": band_rms(rotated, *LEVEL_BAND_HZ),
+        "comb_spacing_hz": reference / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "comb_fit_confidence": float(comb[1]) if comb else None,
+        "comb_harmonic_span": int(comb[2]) if comb else None,
+        "reference_method": entry["reference_method"],
+        "reference_rpm_per_hz": REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+        "reference_revolutions_per_minute": float(reference),
+        "integer_cycle_count": int(cycles),
+        "preparation_recipe": PREPARATION_RECIPE,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": int(rotated.size),
+        "loop_crossfade_frames": int(crossfade_frames),
+        "seam_before_preparation": seam_before,
+        "seam_after_preparation": seam_after,
+        **rotation_metrics,
+    }
+    return asset, rotated, derived_payload
+
+
+def set_zone_revolutions_per_minute(asset: dict, entry: dict) -> None:
+    if entry["zone_revolutions_per_minute"] is not None:
+        asset["zone_revolutions_per_minute"] = float(entry["zone_revolutions_per_minute"])
+    else:
+        asset["zone_revolutions_per_minute"] = float(
+            round(asset["reference_revolutions_per_minute"] / 100.0) * 100
+        )
+
+
+def build_collection(assets: list[dict], audio: dict[str, np.ndarray], coverage: dict) -> list[dict]:
+    transitions: list[dict] = []
+    for index in range(len(assets) - 1):
+        center = math.sqrt(
+            assets[index]["zone_revolutions_per_minute"]
+            * assets[index + 1]["zone_revolutions_per_minute"]
+        )
+        half_width = center * TRANSITION_HALF_WIDTH_RATIO
+        transitions.append(
+            transition(
+                assets[index]["id"], assets[index + 1]["id"], center - half_width, center + half_width, 0.0
+            )
+        )
+    gains = [1.0]
+    for index, item in enumerate(transitions):
+        center = item["center_revolutions_per_minute"]
+        left_rate = center / assets[index]["reference_revolutions_per_minute"]
+        right_rate = center / assets[index + 1]["reference_revolutions_per_minute"]
+        left_level = loop_level(apply_playback_rate(audio[assets[index]["id"]], left_rate))
+        right_level = loop_level(apply_playback_rate(audio[assets[index + 1]["id"]], right_rate))
+        ratio = left_level / max(right_level, 1e-9)
+        item["measured_level_compensation_db"] = float(20.0 * math.log10(max(ratio, 1e-9)))
+        item["applied_level_step_db"] = 0.0
+        assets[index]["boundary_level_rms"] = float(left_level)
+        assets[index + 1]["boundary_level_rms"] = float(right_level)
+        gains.append(gains[index] * ratio)
+    normalization = max(gains) if max(gains) > 0.0 else 1.0
+    for asset, gain in zip(assets, gains):
+        asset["calibrated_gain"] = float(gain / normalization)
+    for index, asset in enumerate(assets):
+        start = (
+            coverage["minimum_revolutions_per_minute"]
+            if index == 0
+            else transitions[index - 1]["start_revolutions_per_minute"]
+        )
+        end = (
+            coverage["maximum_revolutions_per_minute"]
+            if index + 1 == len(assets)
+            else transitions[index]["end_revolutions_per_minute"]
+        )
+        reference = asset["reference_revolutions_per_minute"]
+        asset["active_coverage_revolutions_per_minute"] = [float(start), float(end)]
+        asset["valid_playback_rate_min"] = float(min(start, end) / reference * (1.0 - 1e-6))
+        asset["valid_playback_rate_max"] = float(max(start, end) / reference * (1.0 + 1e-6))
+    return transitions
+
+
+def remove_internal_fields(asset: dict) -> dict:
+    return {key: value for key, value in asset.items() if key != "collection"}
+
+
+def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[dict, dict[str, bytes]]:
+    coverage = {
+        "minimum_revolutions_per_minute": MINIMUM_REVOLUTIONS_PER_MINUTE,
+        "maximum_revolutions_per_minute": MAXIMUM_REVOLUTIONS_PER_MINUTE,
+    }
+    prepared_assets: list[dict] = []
+    loop_audio: dict[str, np.ndarray] = {}
+    loop_payloads: dict[str, bytes] = {}
+    for entry in ENGINE_SOURCES:
+        asset, rotated, derived_payload = prepare_engine_loop(bank_directory, entry)
+        set_zone_revolutions_per_minute(asset, entry)
+        prepared_assets.append(asset)
+        loop_audio[asset["id"]] = rotated
+        loop_payloads[asset["id"]] = derived_payload
+    powered = [asset for asset in prepared_assets if asset["collection"] == "loops"]
+    coast = [asset for asset in prepared_assets if asset["collection"] == "coast_loops"]
+    for collection in (powered, coast):
+        zones = [asset["zone_revolutions_per_minute"] for asset in collection]
+        if zones != sorted(zones) or len(set(zones)) != len(zones):
+            raise ValueError(f"engine zones must be strictly ascending: {zones}")
+    powered_transitions = build_collection(powered, loop_audio, coverage)
+    coast_transitions = build_collection(coast, loop_audio, coverage)
+
+    source_manifest = json.loads(
+        (event_source_directory / "manifest.json").read_text(encoding="utf-8")
+    )
+    events = []
+    inventory_events = []
+    event_audio: dict[str, bytes] = {}
+    for event in source_manifest["events"]:
+        asset_id = event["id"]
+        if asset_id not in EVENT_SOURCE_BY_ASSET_ID:
+            raise ValueError(f"unexpected event asset {asset_id}")
+        canon_source_name = EVENT_SOURCE_BY_ASSET_ID[asset_id]
+        canon_source_path = bank_directory / canon_source_name
+        event_path = event_source_directory / event["derived_filename"]
+        payload = event_path.read_bytes()
+        if sha256_bytes(payload) != event["derived_sha256"]:
+            raise ValueError(f"prepared event hash mismatch: {event_path}")
+        copied = {key: value for key, value in event.items()}
+        copied["source_filename"] = canon_source_name
+        copied["source_sha256"] = sha256_file(canon_source_path)
+        events.append(copied)
+        event_audio[event["derived_filename"]] = payload
+        inventory_events.append(
+            {
+                "asset_id": asset_id,
+                "role": event["role"],
+                "derived_filename": event["derived_filename"],
+                "derived_sha256": event["derived_sha256"],
+                "source_filename": canon_source_name,
+                "source_sha256": copied["source_sha256"],
+                "preparation_recipe": event["preparation_recipe"],
+                "preparation_source_bank": event_source_directory.name,
+            }
+        )
+
+    engine_source_inventory = []
+    for asset in prepared_assets:
+        engine_source_inventory.append(
+            {
+                "role": asset["id"],
+                "source_path": (bank_directory / asset["source_filename"]).relative_to(ROOT).as_posix(),
+                "source_sha256": asset["source_sha256"],
+                "runtime_asset_id": asset["id"],
+                "runtime_filename": asset["derived_filename"],
+                "runtime_sha256": asset["derived_sha256"],
+                "derived_frames": asset["derived_frames"],
+                "reference_revolutions_per_minute": asset["reference_revolutions_per_minute"],
+                "zone_revolutions_per_minute": asset["zone_revolutions_per_minute"],
+                "integer_cycle_count": asset["integer_cycle_count"],
+                "loop_crossfade_frames": asset["loop_crossfade_frames"],
+                "loop_start_rotation_frames": asset["loop_start_rotation_frames"],
+                "preparation_recipe": PREPARATION_RECIPE,
+            }
+        )
+    source_inventory = {
+        "bank_id": BANK_ID,
+        "engine_source_directory": bank_directory.relative_to(ROOT).as_posix(),
+        "engine_sources": engine_source_inventory,
+        "preserved_events": inventory_events,
+    }
+    inventory_bytes = serialize_json(source_inventory)
+
+    manifest = {
+        "schema_version": SCHEMA_VERSION,
+        "bank_id": BANK_ID,
+        "preparation_tool": TOOL_NAME,
+        "preparation_tool_revision": TOOL_REVISION,
+        "source_inventory_sha256": sha256_bytes(inventory_bytes),
+        "output_sample_rate": SAMPLE_RATE,
+        "event_selection_seed": EVENT_SELECTION_SEED,
+        "coverage": coverage,
+        "loops": [remove_internal_fields(asset) for asset in powered],
+        "transitions": powered_transitions,
+        "coast_loops": [remove_internal_fields(asset) for asset in coast],
+        "coast_transitions": coast_transitions,
+        "events": events,
+        "event_groups": source_manifest["event_groups"],
+        "event_trigger_policy": source_manifest["event_trigger_policy"],
+        "reference_ladder": {
+            "method": "authored_and_measured_reference_integer_cycles",
+            "revolutions_per_minute_per_hertz": REVOLUTIONS_PER_MINUTE_PER_HERTZ,
+            "anchor_center_revolutions_per_minute": math.sqrt(
+                MINIMUM_REVOLUTIONS_PER_MINUTE * MAXIMUM_REVOLUTIONS_PER_MINUTE
+            ),
+            "engine_references_revolutions_per_minute": {
+                asset["id"]: asset["reference_revolutions_per_minute"] for asset in prepared_assets
+            },
+            "engine_zones_revolutions_per_minute": {
+                asset["id"]: asset["zone_revolutions_per_minute"] for asset in prepared_assets
+            },
+        },
+        "engine_source_selection": engine_source_inventory,
+    }
+    manifest_bytes = serialize_json(manifest)
+
+    outputs = {
+        "manifest.json": manifest_bytes,
+        "source_inventory.json": inventory_bytes,
+    }
+    for asset in prepared_assets:
+        outputs[asset["derived_filename"]] = loop_payloads[asset["id"]]
+    for filename, payload in event_audio.items():
+        outputs[filename] = payload
+    return manifest, outputs
+
+
+def build_report(manifest: dict, bank_directory: Path) -> dict:
+    entries = []
+    for loop in manifest["loops"] + manifest["coast_loops"]:
+        source_path = bank_directory / loop["source_filename"]
+        sample_rate, samples = read_wave_mono(source_path)
+        with wave.open(str(source_path), "rb") as reader:
+            source_channels = reader.getnchannels()
+            source_sample_width_bits = reader.getsampwidth() * 8
+        entries.append(
+            {
+                "asset_id": loop["id"],
+                "source_filename": loop["source_filename"],
+                "source_sample_rate": sample_rate,
+                "source_channels": source_channels,
+                "source_sample_width_bits": source_sample_width_bits,
+                "source_frames": int(samples.size),
+                "derived_filename": loop["derived_filename"],
+                "derived_frames": loop["derived_frames"],
+                "reference_revolutions_per_minute": loop["reference_revolutions_per_minute"],
+                "zone_revolutions_per_minute": loop["zone_revolutions_per_minute"],
+                "integer_cycle_count": loop["integer_cycle_count"],
+                "loop_crossfade_frames": loop["loop_crossfade_frames"],
+                "loop_start_rotation_frames": loop["loop_start_rotation_frames"],
+                "seam_before_preparation": loop["seam_before_preparation"],
+                "seam_after_preparation": loop["seam_after_preparation"],
+            }
+        )
+    return {"bank_id": manifest["bank_id"], "engine_loops": entries}
+
+
+def source_format_table(bank_directory: Path) -> list[dict]:
+    table = []
+    for path in sorted(bank_directory.glob("*.wav")):
+        if path.name.endswith("_loop.wav") or path.name in (
+            "upshift_event.wav",
+            "downshift_event.wav",
+            "limiter_event.wav",
+        ) or path.name.startswith("backfire_burst_"):
+            continue
+        with wave.open(str(path), "rb") as reader:
+            table.append(
+                {
+                    "file": path.name,
+                    "channels": reader.getnchannels(),
+                    "sample_width_bits": reader.getsampwidth() * 8,
+                    "sample_rate": reader.getframerate(),
+                    "frames": reader.getnframes(),
+                    "duration_seconds": reader.getnframes() / reader.getframerate(),
+                }
+            )
+    return table
+
+
+def audit(bank_directory: Path, report_directory: Path) -> int:
+    formats = source_format_table(bank_directory)
+    measurements = []
+    for entry in ENGINE_SOURCES:
+        path = bank_directory / entry["source_filename"]
+        sample_rate, samples = read_wave_mono(path)
+        reference, cycles = derive_reference(samples.size, entry["cycle_frequency_hertz"])
+        rotated, rotation_metrics = rotate_to_reference_phase(samples, reference / REVOLUTIONS_PER_MINUTE_PER_HERTZ)
+        peaks = spectral_peaks(rotated)
+        comb = harmonic_comb_spacing(peaks)
+        measurements.append(
+            {
+                "source_filename": entry["source_filename"],
+                "sample_rate": sample_rate,
+                "frames": int(samples.size),
+                "configured_cycle_frequency_hertz": entry["cycle_frequency_hertz"],
+                "measured_dominant_period_hertz": measure_dominant_period_frequency(rotated),
+                "measured_comb_spacing_hertz": comb[0] if comb else None,
+                "derived_reference_revolutions_per_minute": reference,
+                "integer_cycle_count": cycles,
+                "seam_before_preparation": measure_seam(samples),
+                "seam_after_preparation": measure_seam(rotated),
+                **rotation_metrics,
+            }
+        )
+    print("source format table")
+    for row in formats:
+        print(
+            f"  {row['file']:24s} channels={row['channels']} bits={row['sample_width_bits']:2d} "
+            f"rate={row['sample_rate']} frames={row['frames']} seconds={row['duration_seconds']:.3f}"
+        )
+    print("engine loop measurements")
+    for row in measurements:
+        dominant = row["measured_dominant_period_hertz"]
+        comb = row["measured_comb_spacing_hertz"]
+        print(
+            f"  {row['source_filename']:22s} configured={row['configured_cycle_frequency_hertz']:9.4f}Hz "
+            f"dominant={dominant if dominant is None else round(dominant, 4)}Hz "
+            f"comb={comb if comb is None else round(comb, 4)}Hz "
+            f"reference={row['derived_reference_revolutions_per_minute']:9.3f}rpm cycles={row['integer_cycle_count']} "
+            f"seam_before={row['seam_before_preparation']} seam_after={row['seam_after_preparation']}"
+        )
+    report_directory.mkdir(parents=True, exist_ok=True)
+    (report_directory / "audit.json").write_bytes(
+        serialize_json({"source_formats": formats, "engine_measurements": measurements})
+    )
+    print(f"audit written to {report_directory / 'audit.json'}")
+    return 0
+
+
+def main() -> int:
+    argument_parser = argparse.ArgumentParser()
+    argument_parser.add_argument("--bank-directory", type=Path, default=DEFAULT_BANK_DIRECTORY)
+    argument_parser.add_argument("--event-source-directory", type=Path, default=EVENT_SOURCE_DIRECTORY)
+    argument_parser.add_argument("--report-directory", type=Path, default=DEFAULT_REPORT_DIRECTORY)
+    argument_parser.add_argument("--audit", action="store_true")
+    argument_parser.add_argument("--check", action="store_true")
+    arguments = argument_parser.parse_args()
+
+    if arguments.audit:
+        return audit(arguments.bank_directory, arguments.report_directory)
+
+    manifest, outputs = build_manifest(arguments.bank_directory, arguments.event_source_directory)
+    if arguments.check:
+        for filename, expected in outputs.items():
+            path = arguments.bank_directory / filename
+            if not path.is_file() or path.read_bytes() != expected:
+                raise SystemExit(f"canonical bank output differs from reproducible build: {path}")
+        print(f"verified {len(outputs)} canonical bank files in {arguments.bank_directory}")
+        return 0
+
+    arguments.bank_directory.mkdir(parents=True, exist_ok=True)
+    for filename, payload in outputs.items():
+        (arguments.bank_directory / filename).write_bytes(payload)
+    arguments.report_directory.mkdir(parents=True, exist_ok=True)
+    (arguments.report_directory / "build_report.json").write_bytes(
+        serialize_json(build_report(manifest, arguments.bank_directory))
+    )
+    print(f"prepared {len(outputs)} canonical bank files in {arguments.bank_directory}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

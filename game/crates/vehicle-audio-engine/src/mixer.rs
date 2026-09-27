@@ -4554,8 +4554,7 @@ mod tests {
     }
 
     fn grand_prix_bank_directory() -> std::path::PathBuf {
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../audio/formula_one_2030_grand_prix_sampler")
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10-v2-bank")
     }
 
     fn grand_prix_packet(

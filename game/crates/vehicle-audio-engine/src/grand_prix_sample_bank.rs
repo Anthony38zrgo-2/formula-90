@@ -890,8 +890,7 @@ mod tests {
     use super::*;
 
     fn shipped_bank_directory() -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../audio/formula_one_2030_grand_prix_sampler")
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10-v2-bank")
     }
 
     fn temporary_directory(name: &str) -> PathBuf {
@@ -908,10 +907,10 @@ mod tests {
     #[test]
     fn shipped_bank_loads_and_matches_manifest() {
         let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("shipped bank");
-        assert_eq!(bank.bank_id, "formula_one_2030_grand_prix_sampler");
+        assert_eq!(bank.bank_id, "v10_v2_engine_bank");
         assert_eq!(bank.bank_sha256.len(), 64);
-        assert_eq!(bank.loops.len(), 5);
-        assert_eq!(bank.transitions.len(), 4);
+        assert_eq!(bank.loops.len(), 4);
+        assert_eq!(bank.transitions.len(), 3);
         assert_eq!(bank.events.len(), 8);
         assert_eq!(bank.groups.len(), 4);
         assert_eq!(bank.coverage_minimum_revolutions_per_minute, 4500.0);

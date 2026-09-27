@@ -1184,8 +1184,7 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     fn shipped_bank_directory() -> PathBuf {
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../audio/formula_one_2030_grand_prix_sampler")
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10-v2-bank")
     }
 
     fn shipped_sampler() -> GrandPrixSampler {

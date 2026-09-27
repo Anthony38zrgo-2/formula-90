@@ -1,0 +1,193 @@
+{
+  "bank_id": "v10_v2_engine_bank",
+  "engine_source_directory": "game/sounds/banks/v10-v2-bank",
+  "engine_sources": [
+    {
+      "role": "engine_idle_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_idle.wav",
+      "source_sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
+      "runtime_asset_id": "engine_idle_loop",
+      "runtime_filename": "engine_idle_loop.wav",
+      "runtime_sha256": "db4553b2a9683aa40d1bf259b2a2b9db1c7a8e27fcff31049680fe89f2796498",
+      "derived_frames": 88752,
+      "reference_revolutions_per_minute": 4531.638723634397,
+      "zone_revolutions_per_minute": 4500.0,
+      "integer_cycle_count": 76,
+      "loop_crossfade_frames": 4671,
+      "loop_start_rotation_frames": 1174,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_low_on_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_low.wav",
+      "source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
+      "runtime_asset_id": "engine_low_on_loop",
+      "runtime_filename": "engine_low_on_loop.wav",
+      "runtime_sha256": "1f6b6c4e79c72f901b6d66c7e391a8f5411b4268bf02bb30350e5e9db88c873d",
+      "derived_frames": 88053,
+      "reference_revolutions_per_minute": 9135.225375626043,
+      "zone_revolutions_per_minute": 8000.0,
+      "integer_cycle_count": 152,
+      "loop_crossfade_frames": 2317,
+      "loop_start_rotation_frames": 103,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_mid_on_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_med.wav",
+      "source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
+      "runtime_asset_id": "engine_mid_on_loop",
+      "runtime_filename": "engine_mid_on_loop.wav",
+      "runtime_sha256": "28d13d69896029022344aca00d29c5be6b69800b6464a38baa36466af2237945",
+      "derived_frames": 1287463,
+      "reference_revolutions_per_minute": 12750.48991699179,
+      "zone_revolutions_per_minute": 12800.0,
+      "integer_cycle_count": 3102,
+      "loop_crossfade_frames": 1660,
+      "loop_start_rotation_frames": 354,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_high_on_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_high.wav",
+      "source_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
+      "runtime_asset_id": "engine_high_on_loop",
+      "runtime_filename": "engine_high_on_loop.wav",
+      "runtime_sha256": "06472c193831806ec7d2aabc3ac71ac479bb383474567f2d15ae88bdf5c91edd",
+      "derived_frames": 1315372,
+      "reference_revolutions_per_minute": 16820.984481956435,
+      "zone_revolutions_per_minute": 15600.0,
+      "integer_cycle_count": 4181,
+      "loop_crossfade_frames": 1258,
+      "loop_start_rotation_frames": 163,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_low_off_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_low.wav",
+      "source_sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
+      "runtime_asset_id": "engine_low_off_loop",
+      "runtime_filename": "engine_low_off_loop.wav",
+      "runtime_sha256": "601a88d0ff4cae4a8c7f5b62e2642f614c80735c3b51723603da28d81e42a246",
+      "derived_frames": 88171,
+      "reference_revolutions_per_minute": 7922.604938131586,
+      "zone_revolutions_per_minute": 8000.0,
+      "integer_cycle_count": 132,
+      "loop_crossfade_frames": 2672,
+      "loop_start_rotation_frames": 141,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_mid_off_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_med.wav",
+      "source_sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
+      "runtime_asset_id": "engine_mid_off_loop",
+      "runtime_filename": "engine_mid_off_loop.wav",
+      "runtime_sha256": "ab2b4b4d82aede2b3f1d94c7b9dce7fa095fbcb42b229e995d4be7fd214d784e",
+      "derived_frames": 1321916,
+      "reference_revolutions_per_minute": 12846.525800429074,
+      "zone_revolutions_per_minute": 12800.0,
+      "integer_cycle_count": 3209,
+      "loop_crossfade_frames": 1648,
+      "loop_start_rotation_frames": 48,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_high_off_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_high.wav",
+      "source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
+      "runtime_asset_id": "engine_high_off_loop",
+      "runtime_filename": "engine_high_off_loop.wav",
+      "runtime_sha256": "89d41f4e221809f689e1bc29b779e0681e29bcd799f6c72010f55c2fd7081acc",
+      "derived_frames": 1321190,
+      "reference_revolutions_per_minute": 12465.053474519184,
+      "zone_revolutions_per_minute": 13000.0,
+      "integer_cycle_count": 3112,
+      "loop_crossfade_frames": 1698,
+      "loop_start_rotation_frames": 66,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    }
+  ],
+  "preserved_events": [
+    {
+      "asset_id": "backfire_burst_3",
+      "role": "lift_backfire",
+      "derived_filename": "backfire_burst_3.wav",
+      "derived_sha256": "aec332bb4db3a22e83d4ecf956f283dd7c84d237eff22697348e3f81b762bb24",
+      "source_filename": "backfire_1.wav",
+      "source_sha256": "3a1c604cbbd6bef443e558f64cb6996a83133681514df13ac350833a26856372",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "backfire_burst_4",
+      "role": "lift_backfire",
+      "derived_filename": "backfire_burst_4.wav",
+      "derived_sha256": "30ddf912ee2629841ed5ee055bf617ba941e2c629bd0ebb451b83c1ccb963f33",
+      "source_filename": "backfire_2.wav",
+      "source_sha256": "be956f23ded2234ffa9e565a0e0af2924eb319e2730c49e6ebc00b6b2cf0c9c2",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "backfire_burst_5",
+      "role": "lift_backfire",
+      "derived_filename": "backfire_burst_5.wav",
+      "derived_sha256": "4aee801fa2d0768221417540c192bd19c750d7f52e54339be1a967448114e6df",
+      "source_filename": "backfire_3.wav",
+      "source_sha256": "5ec929f59a6dd9205aa1731eac08ffee42a0fef4a4e3561b1bb9bf24150d140c",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "backfire_burst_6",
+      "role": "lift_backfire",
+      "derived_filename": "backfire_burst_6.wav",
+      "derived_sha256": "d2e5759bff9a12037632cf61459fd59797d2b095e6247b2143a082f93e575dc6",
+      "source_filename": "backfire_4.wav",
+      "source_sha256": "b5304a7336fbabfac09d2c3c4f1dc63c49c3eee4ccb443cdf3e99e2aa6af2ec5",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "backfire_burst_7",
+      "role": "lift_backfire",
+      "derived_filename": "backfire_burst_7.wav",
+      "derived_sha256": "acf47affe9adcb7ada68763c79f8373749d6e544d4e74ca5fec74b07c6aa5782",
+      "source_filename": "backfire_5.wav",
+      "source_sha256": "d03a84c631aa840b158160c96f8bdc1f1f26781635deebfc550413f5f1869e5d",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "downshift_event",
+      "role": "gearbox_downshift",
+      "derived_filename": "downshift_event.wav",
+      "derived_sha256": "5c19ba452970b3b9477a1ce6b19cf99ce5f005feb164050185cb25182d9aee66",
+      "source_filename": "geardn.wav",
+      "source_sha256": "ac0d922ee8abdb4edda6fc2f2729768218335bd29e660e15a1ea0f72030a41e1",
+      "preparation_recipe": "prepared_event_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "upshift_event",
+      "role": "gearbox_upshift",
+      "derived_filename": "upshift_event.wav",
+      "derived_sha256": "9ccf3e59c4981710e92316fe5270a942ceac48a9aa5badaa0195cb0fd9c9052d",
+      "source_filename": "gearup.wav",
+      "source_sha256": "35edd40c03a13ce9f2f44aaba75b9d33272fc821e8e93b585805cff88a1dcdae",
+      "preparation_recipe": "prepared_event_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    },
+    {
+      "asset_id": "limiter_event",
+      "role": "limiter_event",
+      "derived_filename": "limiter_event.wav",
+      "derived_sha256": "6fc1b7368976057c7191b24b0d200405102d64e18b01223c4f145c61e6369147",
+      "source_filename": "limiter.wav",
+      "source_sha256": "db1551e2f30e5ad4f8ba01967120d73b67200994be5cda73fb140b166ef52ea3",
+      "preparation_recipe": "limiter_overlay_recipe_v1",
+      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+    }
+  ]
+}
