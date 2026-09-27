@@ -30,6 +30,23 @@ func test_panel_shows_soft_compound_and_fifteen_laps_on_entry() -> void:
 	assert_str(panel._fuel_label.text).contains("15 VUELTAS")
 	assert_str(panel._fuel_label.text).contains("37.9 kg")
 	assert_str(panel._hint_label.text).contains("BOX 1")
+	assert_str(panel._lap_label.text).contains("VUELTA  1")
+
+
+func test_panel_opens_before_pit_entry_for_a_programmed_stop() -> void:
+	var controller := _controller_with_selection()
+	controller.in_pit_lane = false
+	controller.menu_open = true
+	controller.on_lap_started(4)
+	controller.set_selected_stop_lap(6)
+	var panel := _bound_panel(controller)
+	panel.call("_refresh")
+
+	assert_bool(panel.visible).is_true()
+	assert_str(panel._lap_label.text).contains("VUELTA  6")
+	controller.confirm_selection()
+	panel.call("_refresh")
+	assert_str(panel._status_label.text).contains("VUELTA 6")
 
 
 func test_panel_hides_outside_the_pit_lane() -> void:

@@ -9,6 +9,7 @@ const AIDS_SCRIPT := preload("res://scripts/vehicle/driving_aids.gd")
 const LAP_TIMING_SCRIPT := preload("res://scripts/runtime/lap_timing_controller.gd")
 const PIT_STOP_SCRIPT := preload("res://scripts/runtime/pit_stop_controller.gd")
 const PIT_STOP_RULES_SCRIPT := preload("res://scripts/runtime/pit_stop_rules.gd")
+const PIT_CREW_VISUAL_SCRIPT := preload("res://scripts/runtime/pit_crew_visual_controller.gd")
 
 @export var config: RaceSessionConfig
 
@@ -18,6 +19,7 @@ var active_vehicle: Node
 var driving_aids: DrivingAidsController
 var lap_timing: LapTimingController
 var pit_stop: PitStopController
+var pit_crew_visual: PitCrewVisualController
 var background_controller: BackgroundController
 var background_skybox: BackgroundSkybox
 # Deprecated compatibility handle. Factory-authored tracks no longer
@@ -111,6 +113,12 @@ func _add_runtime_systems() -> void:
 		config.selected_track,
 		config.selected_vehicle,
 		PIT_STOP_RULES_SCRIPT.load_from_json())
+	if pit_stop.is_configured and config.selected_track.id == &"fuji76_77" and config.selected_vehicle.id == &"f1_2030_v10":
+		lap_timing.lap_started.connect(pit_stop.on_lap_started)
+		pit_crew_visual = PIT_CREW_VISUAL_SCRIPT.new() as PitCrewVisualController
+		pit_crew_visual.name = "PitCrewVisual"
+		add_child(pit_crew_visual)
+		pit_crew_visual.configure(pit_stop, active_vehicle as Node3D)
 
 	_setup_background(camera_rig_chase)
 
@@ -231,7 +239,7 @@ func _clear_composition() -> void:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"LapTiming", &"PitStop", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
+	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"LapTiming", &"PitStop", &"PitCrewVisual", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -245,6 +253,7 @@ func _clear_composition() -> void:
 	driving_aids = null
 	lap_timing = null
 	pit_stop = null
+	pit_crew_visual = null
 	background_controller = null
 	background_skybox = null
 	background_mountains_3d = null

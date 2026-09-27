@@ -279,7 +279,7 @@ class PitStopSettings:
 
 	var visible := true
 	var scale := 1.08
-	var size := Vector2(340.0, 148.0)
+	var size := Vector2(400.0, 174.0)
 	var margin_top := 24.0
 	var title := "PIT STOP"
 	var hint_color := Color("cfd6e4")

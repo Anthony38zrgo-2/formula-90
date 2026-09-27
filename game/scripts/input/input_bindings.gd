@@ -37,6 +37,7 @@ const PIT_FIELD_DOWN := "Pit Field Down"
 const PIT_VALUE_LEFT := "Pit Value Left"
 const PIT_VALUE_RIGHT := "Pit Value Right"
 const PIT_CONFIRM := "Pit Confirm"
+const PIT_TOGGLE_MENU := "Pit Toggle Menu"
 
 
 func _init() -> void:
@@ -72,6 +73,7 @@ func _init() -> void:
 	_register(PIT_VALUE_LEFT, 0.2, [key_ev(KEY_Q), joypad_button_ev(JOY_BUTTON_DPAD_LEFT)])
 	_register(PIT_VALUE_RIGHT, 0.2, [key_ev(KEY_E), joypad_button_ev(JOY_BUTTON_DPAD_RIGHT)])
 	_register(PIT_CONFIRM, 0.2, [key_ev(KEY_ENTER), joypad_button_ev(JOY_BUTTON_A)])
+	_register(PIT_TOGGLE_MENU, 0.2, [key_ev(KEY_B)])
 
 
 func _register(action: String, deadzone: float, events: Array) -> void:

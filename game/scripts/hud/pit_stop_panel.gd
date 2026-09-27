@@ -9,6 +9,7 @@ var _title_label: Label
 var _hint_label: Label
 var _compound_label: Label
 var _fuel_label: Label
+var _lap_label: Label
 var _status_label: Label
 var _complete_notice_remaining := 0.0
 
@@ -116,6 +117,10 @@ func _build_ui() -> void:
 	_fuel_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(_fuel_label)
 
+	_lap_label = Label.new()
+	_lap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root_box.add_child(_lap_label)
+
 	_status_label = Label.new()
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(_status_label)
@@ -133,7 +138,8 @@ func _refresh() -> void:
 	var fuel_target_kg := float(selection.get("fuel_target_kg", 0.0))
 	var compound_label := str(selection.get("compound_label", ""))
 	var active_field := int(selection.get("field", PitStopController.SELECTION_FIELD_FUEL))
-	_hint_label.text = "BOX %d  —  DETENERSE EN EL RECUADRO" % (_controller.get_assigned_box_index() + 1)
+	_lap_label.visible = bool(selection.get("supports_scheduled_stop", false))
+	_hint_label.text = "BOX %d  —  DETENERSE EN EL RECUADRO" % (_controller.get_assigned_box_index() + 1) if _controller.in_pit_lane else "PROGRAMAR PARADA EN BOXES"
 	_hint_label.add_theme_color_override("font_color", _settings.hint_color)
 	_compound_label.text = "%s NEUMÁTICO  %s" % [
 		">" if active_field == PitStopController.SELECTION_FIELD_COMPOUND else " ",
@@ -150,6 +156,13 @@ func _refresh() -> void:
 	_fuel_label.add_theme_color_override(
 		"font_color",
 		_settings.active_field_color if active_field == PitStopController.SELECTION_FIELD_FUEL else _settings.fuel_value_color)
+	_lap_label.text = "%s PARADA EN VUELTA  %d" % [
+		">" if active_field == PitStopController.SELECTION_FIELD_LAP else " ",
+		int(selection.get("selected_stop_lap", 1)),
+	]
+	_lap_label.add_theme_color_override(
+		"font_color",
+		_settings.active_field_color if active_field == PitStopController.SELECTION_FIELD_LAP else _settings.field_color)
 	_refresh_status(selection)
 
 
@@ -171,8 +184,9 @@ func _refresh_status(selection: Dictionary) -> void:
 		_status_label.add_theme_color_override("font_color", _settings.progress_color)
 		return
 	if bool(selection.get("confirmed", false)):
-		_status_label.text = "SELECCIÓN CONFIRMADA"
+		var scheduled_lap := int(selection.get("scheduled_stop_lap", 0))
+		_status_label.text = "EQUIPO LISTO EN VUELTA %d" % scheduled_lap if scheduled_lap > 0 else "SELECCIÓN CONFIRMADA"
 		_status_label.add_theme_color_override("font_color", _settings.complete_color)
 		return
-	_status_label.text = "W/S CAMPO   Q/E AJUSTA   ENTER CONFIRMA"
+	_status_label.text = "W/S CAMPO   Q/E AJUSTA   ENTER CONFIRMA   B CIERRA"
 	_status_label.add_theme_color_override("font_color", _settings.hint_color)

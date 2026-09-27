@@ -7,12 +7,14 @@ signal selection_changed(selection: Dictionary)
 signal service_started(plan: Dictionary)
 signal service_progress(status: Dictionary)
 signal service_completed
+signal crew_visibility_changed(should_be_visible: bool)
 
 const PIT_STOP_CONTROLLER_GROUP := "pit_stop_controller"
 const MARKER_RENDER_HEIGHT_M := 0.02
 
 const SELECTION_FIELD_COMPOUND := 0
 const SELECTION_FIELD_FUEL := 1
+const SELECTION_FIELD_LAP := 2
 
 const SERVICE_PHASE_NONE := 0
 const SERVICE_PHASE_TIRES := 1
@@ -24,10 +26,16 @@ var vehicle_definition: VehicleDefinition
 var rules: PitStopRules
 
 var is_configured := false
+var supports_scheduled_stop := false
 var in_pit_lane := false
 var service_phase := SERVICE_PHASE_NONE
 var selection_field := SELECTION_FIELD_FUEL
 var selection_confirmed := false
+var menu_open := false
+var current_lap_number := 0
+var selected_stop_lap := 1
+var scheduled_stop_lap := 0
+var crew_visible := false
 var assigned_box_index := 0
 var selected_compound_index := 0
 var fuel_target_laps := 15
@@ -62,13 +70,20 @@ func configure(
 		next_vehicle_definition: VehicleDefinition,
 		next_rules: PitStopRules) -> bool:
 	is_configured = false
+	supports_scheduled_stop = false
 	_clear_markers()
+	menu_open = false
+	current_lap_number = 0
+	selected_stop_lap = 1
+	scheduled_stop_lap = 0
+	crew_visible = false
 	vehicle = next_vehicle
 	track_definition = next_track_definition
 	vehicle_definition = next_vehicle_definition
 	rules = next_rules if next_rules != null else PitStopRules.new()
 	if vehicle == null or track_definition == null or not track_definition.has_pit_lane():
 		return false
+	supports_scheduled_stop = track_definition.id == &"fuji76_77" and vehicle_definition != null and vehicle_definition.id == &"f1_2030_v10"
 	var pit_lane := track_definition.load_pit_lane_data()
 	_pit_forward = _to_vector3(pit_lane.get("forward", [0.0, 0.0, -1.0]), Vector3.FORWARD)
 	if _pit_forward.length_squared() <= 0.0:
@@ -110,8 +125,12 @@ func _physics_process(delta: float) -> void:
 	if now_in_pit_lane != in_pit_lane:
 		in_pit_lane = now_in_pit_lane
 		if in_pit_lane:
+			menu_open = false
+			_set_crew_visible(true)
 			pit_lane_entered.emit()
 		else:
+			if service_phase == SERVICE_PHASE_NONE:
+				_set_crew_visible(scheduled_stop_lap > 0 and current_lap_number >= scheduled_stop_lap and current_lap_number <= scheduled_stop_lap + 1)
 			pit_lane_exited.emit()
 	if service_phase != SERVICE_PHASE_NONE:
 		_advance_service(delta)
@@ -133,7 +152,43 @@ func _physics_process(delta: float) -> void:
 
 
 func is_selection_active() -> bool:
-	return is_configured and (in_pit_lane or service_phase != SERVICE_PHASE_NONE)
+	return is_configured and (menu_open or in_pit_lane or service_phase != SERVICE_PHASE_NONE)
+
+
+func on_lap_started(lap_number: int) -> void:
+	current_lap_number = lap_number
+	if selected_stop_lap <= lap_number and scheduled_stop_lap == 0:
+		selected_stop_lap = lap_number + 1
+	if scheduled_stop_lap > 0:
+		if lap_number >= scheduled_stop_lap + 2:
+			scheduled_stop_lap = 0
+			selected_stop_lap = lap_number + 1
+			selection_confirmed = false
+			if not in_pit_lane and service_phase == SERVICE_PHASE_NONE:
+				_set_crew_visible(false)
+		elif lap_number >= scheduled_stop_lap:
+			_set_crew_visible(true)
+	selection_changed.emit(get_selection())
+
+
+func set_selected_stop_lap(lap_number: int) -> void:
+	selected_stop_lap = maxi(lap_number, current_lap_number + 1)
+	selection_confirmed = false
+	selection_changed.emit(get_selection())
+
+
+func get_assigned_box() -> Dictionary:
+	if _boxes.is_empty():
+		return {}
+	return (_boxes[assigned_box_index] as Dictionary).duplicate()
+
+
+func get_pit_forward() -> Vector3:
+	return _pit_forward
+
+
+func get_pit_right() -> Vector3:
+	return _pit_right
 
 
 func is_servicing() -> bool:
@@ -181,6 +236,10 @@ func get_selection() -> Dictionary:
 		"fuel_target_kg": get_fuel_target_kg(),
 		"minimum_fuel_laps": _minimum_fuel_laps,
 		"maximum_fuel_laps": _maximum_fuel_laps,
+		"current_lap": current_lap_number,
+		"selected_stop_lap": selected_stop_lap,
+		"scheduled_stop_lap": scheduled_stop_lap,
+		"supports_scheduled_stop": supports_scheduled_stop,
 	}
 
 
@@ -197,7 +256,7 @@ func get_service_status() -> Dictionary:
 
 
 func set_selection_field(next_field: int) -> void:
-	selection_field = SELECTION_FIELD_COMPOUND if next_field == SELECTION_FIELD_COMPOUND else SELECTION_FIELD_FUEL
+	selection_field = clampi(next_field, SELECTION_FIELD_COMPOUND, SELECTION_FIELD_LAP if supports_scheduled_stop else SELECTION_FIELD_FUEL)
 	selection_confirmed = false
 	selection_changed.emit(get_selection())
 
@@ -218,16 +277,25 @@ func set_compound_index(next_index: int) -> void:
 
 func confirm_selection() -> void:
 	selection_confirmed = true
+	if supports_scheduled_stop and not in_pit_lane and service_phase == SERVICE_PHASE_NONE:
+		scheduled_stop_lap = selected_stop_lap
+		_set_crew_visible(false)
 	selection_changed.emit(get_selection())
 
 
 func _handle_selection_input() -> void:
-	if not in_pit_lane or not _is_inside_strip(vehicle.global_position):
+	if InputMap.has_action(InputBindings.PIT_TOGGLE_MENU) and Input.is_action_just_pressed(InputBindings.PIT_TOGGLE_MENU):
+		if supports_scheduled_stop and not in_pit_lane and service_phase == SERVICE_PHASE_NONE:
+			menu_open = not menu_open
+			if menu_open and scheduled_stop_lap == 0:
+				selected_stop_lap = current_lap_number + 1
+			selection_changed.emit(get_selection())
+	if not is_selection_active():
 		return
 	if InputMap.has_action(InputBindings.PIT_FIELD_UP) and Input.is_action_just_pressed(InputBindings.PIT_FIELD_UP):
-		set_selection_field(SELECTION_FIELD_COMPOUND)
+		set_selection_field(posmod(selection_field - 1, SELECTION_FIELD_LAP + 1 if supports_scheduled_stop else SELECTION_FIELD_FUEL + 1))
 	if InputMap.has_action(InputBindings.PIT_FIELD_DOWN) and Input.is_action_just_pressed(InputBindings.PIT_FIELD_DOWN):
-		set_selection_field(SELECTION_FIELD_FUEL)
+		set_selection_field(posmod(selection_field + 1, SELECTION_FIELD_LAP + 1 if supports_scheduled_stop else SELECTION_FIELD_FUEL + 1))
 	if InputMap.has_action(InputBindings.PIT_VALUE_LEFT) and Input.is_action_just_pressed(InputBindings.PIT_VALUE_LEFT):
 		_adjust_selected_value(-1)
 	if InputMap.has_action(InputBindings.PIT_VALUE_RIGHT) and Input.is_action_just_pressed(InputBindings.PIT_VALUE_RIGHT):
@@ -237,6 +305,9 @@ func _handle_selection_input() -> void:
 
 
 func _adjust_selected_value(direction: int) -> void:
+	if selection_field == SELECTION_FIELD_LAP:
+		set_selected_stop_lap(selected_stop_lap + direction)
+		return
 	if selection_field == SELECTION_FIELD_FUEL:
 		set_fuel_target_laps(fuel_target_laps + direction)
 		return
@@ -285,9 +356,20 @@ func _apply_fuel_target() -> void:
 	if service_fill_kg > 0.0 and vehicle.has_method("set_fuel_kg"):
 		vehicle.call("set_fuel_kg", service_target_kg)
 	service_phase = SERVICE_PHASE_NONE
+	scheduled_stop_lap = 0
+	selection_confirmed = false
+	selected_stop_lap = current_lap_number + 1
 	_requires_box_exit = true
 	_release_vehicle()
 	service_completed.emit()
+	selection_changed.emit(get_selection())
+
+
+func _set_crew_visible(should_be_visible: bool) -> void:
+	if crew_visible == should_be_visible:
+		return
+	crew_visible = should_be_visible
+	crew_visibility_changed.emit(crew_visible)
 
 
 func _lock_vehicle() -> void:
