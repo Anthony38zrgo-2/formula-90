@@ -63,7 +63,7 @@ def test_canonical_bank_check_mode_accepts_shipped_artifacts() -> None:
     assert completed.returncode == 0, completed.stderr
 
 
-def test_canonical_bank_declares_format_and_mid_loops(manifest: dict) -> None:
+def test_canonical_bank_declares_format_and_intermediate_loops(manifest: dict) -> None:
     assert manifest["bank_id"] == "v10_v2_engine_bank"
     assert manifest["schema_version"] == 1
     assert manifest["output_sample_rate"] == 44100
@@ -74,28 +74,32 @@ def test_canonical_bank_declares_format_and_mid_loops(manifest: dict) -> None:
     powered_ids = [asset["id"] for asset in manifest["loops"]]
     assert powered_ids == [
         "engine_idle_loop",
+        "engine_on_idle_low_loop",
         "engine_low_on_loop",
+        "engine_on_low_med_loop",
         "engine_mid_on_loop",
+        "engine_on_med_high_loop",
         "engine_high_on_loop",
     ]
     coast_ids = [asset["id"] for asset in manifest["coast_loops"]]
     assert coast_ids == [
         "engine_low_off_loop",
+        "engine_off_low_med_loop",
         "engine_mid_off_loop",
-        "engine_high_off_loop",
+        "engine_off_med_high_loop",
+        "engine_off_maximum_loop",
     ]
     assert len(manifest["transitions"]) == len(powered_ids) - 1
     assert len(manifest["coast_transitions"]) == len(coast_ids) - 1
-    mid_transitions = [
+    powered_transitions = [
         (item["from_loop_id"], item["to_loop_id"]) for item in manifest["transitions"]
     ]
-    assert ("engine_low_on_loop", "engine_mid_on_loop") in mid_transitions
-    assert ("engine_mid_on_loop", "engine_high_on_loop") in mid_transitions
-    coast_mid_transitions = [
-        (item["from_loop_id"], item["to_loop_id"]) for item in manifest["coast_transitions"]
+    assert powered_transitions == list(itertools.pairwise(powered_ids))
+    coast_transitions = [
+        (item["from_loop_id"], item["to_loop_id"])
+        for item in manifest["coast_transitions"]
     ]
-    assert ("engine_low_off_loop", "engine_mid_off_loop") in coast_mid_transitions
-    assert ("engine_mid_off_loop", "engine_high_off_loop") in coast_mid_transitions
+    assert coast_transitions == list(itertools.pairwise(coast_ids))
 
 
 def test_canonical_loop_zones_and_transitions_are_ordered(manifest: dict) -> None:

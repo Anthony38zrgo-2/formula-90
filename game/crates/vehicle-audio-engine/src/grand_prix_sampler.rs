@@ -1396,7 +1396,7 @@ mod tests {
     #[test]
     fn closed_throttle_uses_coast_loops_above_idle() {
         let mut sampler = shipped_sampler();
-        assert_eq!(sampler.bank.coast_loops.len(), 3);
+        assert_eq!(sampler.bank.coast_loops.len(), 5);
         sampler.set_coast_gain(1.0);
         ingest_steady(&mut sampler, 12_000.0, 0.0, 441);
         advance(&mut sampler, 8_820);

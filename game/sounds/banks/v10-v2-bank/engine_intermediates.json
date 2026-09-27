@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "generator": "tools/audio/generate_v10_engine_intermediates.py",
+  "generator_revision": 1,
+  "sample_rate": 44100,
+  "engine_sources": [
+    {
+      "filename": "engine_idle.wav",
+      "sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
+      "frames": 88752,
+      "integer_cycle_count": 76,
+      "reference_revolutions_per_minute": 4531.638723634397
+    },
+    {
+      "filename": "engine_off_high.wav",
+      "sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
+      "frames": 1321190,
+      "integer_cycle_count": 3112,
+      "reference_revolutions_per_minute": 12465.053474519184
+    },
+    {
+      "filename": "engine_off_low.wav",
+      "sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
+      "frames": 88171,
+      "integer_cycle_count": 132,
+      "reference_revolutions_per_minute": 7922.604938131586
+    },
+    {
+      "filename": "engine_off_maximum.wav",
+      "sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "frames": 88292,
+      "integer_cycle_count": 276,
+      "reference_revolutions_per_minute": 16542.744529515698
+    },
+    {
+      "filename": "engine_off_med.wav",
+      "sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
+      "frames": 1321916,
+      "integer_cycle_count": 3209,
+      "reference_revolutions_per_minute": 12846.525800429074
+    },
+    {
+      "filename": "engine_on_high.wav",
+      "sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
+      "frames": 1315372,
+      "integer_cycle_count": 4441,
+      "reference_revolutions_per_minute": 17867.015566699003
+    },
+    {
+      "filename": "engine_on_low.wav",
+      "sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
+      "frames": 88053,
+      "integer_cycle_count": 152,
+      "reference_revolutions_per_minute": 9135.225375626043
+    },
+    {
+      "filename": "engine_on_med.wav",
+      "sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
+      "frames": 1287463,
+      "integer_cycle_count": 3102,
+      "reference_revolutions_per_minute": 12750.48991699179
+    }
+  ],
+  "historical_sources": [
+    {
+      "filename": "engine_coast_maximum.wav",
+      "path": "game/sounds/banks/v10-gp3/engine_coast_maximum.wav",
+      "sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "frames": 88292,
+      "integer_cycle_count": 276,
+      "reference_revolutions_per_minute": 16542.744529515698
+    }
+  ],
+  "intermediates": [
+    {
+      "output_filename": "engine_off_maximum.wav",
+      "recipe": "historical_gp3_coast_maximum_import",
+      "source_filename": "engine_coast_maximum.wav",
+      "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "frames": 88292,
+      "integer_cycle_count": 276,
+      "reference_revolutions_per_minute": 16542.744529515698,
+      "output_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b"
+    },
+    {
+      "output_filename": "engine_on_idle_low.wav",
+      "recipe": "spectral_magnitude_morph_integer_cycles",
+      "phase_source_filename": "engine_idle.wav",
+      "phase_source_sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
+      "second_source_filename": "engine_on_low.wav",
+      "second_source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
+      "second_source_weight": 0.4,
+      "samples_per_cycle": 882,
+      "cycle_frequency_hertz": 50.0,
+      "reference_revolutions_per_minute": 6000.0,
+      "frames": 67032,
+      "integer_cycle_count": 76,
+      "output_sha256": "e05045451b388e048787360c42a67120e74cd9548ac12d9fc0958ae7bd41864d"
+    },
+    {
+      "output_filename": "engine_on_low_med.wav",
+      "recipe": "spectral_magnitude_morph_integer_cycles",
+      "phase_source_filename": "engine_on_low.wav",
+      "phase_source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
+      "second_source_filename": "engine_on_med.wav",
+      "second_source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
+      "second_source_weight": 0.306,
+      "samples_per_cycle": 523,
+      "cycle_frequency_hertz": 84.32122370936902,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "frames": 79496,
+      "integer_cycle_count": 152,
+      "output_sha256": "3dbf2ab36a0755d28bf7835519e20906ba83499fca0aa9ff8f695388ad08dd98"
+    },
+    {
+      "output_filename": "engine_on_med_high.wav",
+      "recipe": "spectral_magnitude_morph_integer_cycles",
+      "phase_source_filename": "engine_on_med.wav",
+      "phase_source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
+      "second_source_filename": "engine_on_high.wav",
+      "second_source_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
+      "second_source_weight": 0.3,
+      "samples_per_cycle": 375,
+      "cycle_frequency_hertz": 117.6,
+      "reference_revolutions_per_minute": 14112.0,
+      "frames": 352500,
+      "integer_cycle_count": 940,
+      "output_sha256": "1bb71a04662fefe66d56b786045cd337400d92f399fdced891fb83df0105b7bc"
+    },
+    {
+      "output_filename": "engine_off_low_med.wav",
+      "recipe": "spectral_magnitude_morph_integer_cycles",
+      "phase_source_filename": "engine_off_high.wav",
+      "phase_source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
+      "second_source_filename": "engine_off_low.wav",
+      "second_source_sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
+      "second_source_weight": 0.456,
+      "samples_per_cycle": 523,
+      "cycle_frequency_hertz": 84.32122370936902,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "frames": 69036,
+      "integer_cycle_count": 132,
+      "output_sha256": "2fdf307ccf357d085a863ad0d09638a01e1c0c3ec3ce9fb8a115c31e90429629"
+    },
+    {
+      "output_filename": "engine_off_med_high.wav",
+      "recipe": "spectral_magnitude_morph_integer_cycles",
+      "phase_source_filename": "engine_off_med.wav",
+      "phase_source_sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
+      "second_source_filename": "engine_off_maximum.wav",
+      "second_source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "second_source_weight": 0.372,
+      "samples_per_cycle": 375,
+      "cycle_frequency_hertz": 117.6,
+      "reference_revolutions_per_minute": 14112.0,
+      "frames": 103500,
+      "integer_cycle_count": 276,
+      "output_sha256": "a52c0170390b21bad5a22ae2ce872e50974d0439df00110c3e32b6e515c41236"
+    }
+  ]
+}

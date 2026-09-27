@@ -909,8 +909,8 @@ mod tests {
         let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("shipped bank");
         assert_eq!(bank.bank_id, "v10_v2_engine_bank");
         assert_eq!(bank.bank_sha256.len(), 64);
-        assert_eq!(bank.loops.len(), 4);
-        assert_eq!(bank.transitions.len(), 3);
+        assert_eq!(bank.loops.len(), 7);
+        assert_eq!(bank.transitions.len(), 6);
         assert_eq!(bank.events.len(), 8);
         assert_eq!(bank.groups.len(), 4);
         assert_eq!(bank.coverage_minimum_revolutions_per_minute, 4500.0);
@@ -925,8 +925,8 @@ mod tests {
                 reference / 120.0 * loop_asset.pcm.len() as f64 / GRAND_PRIX_SAMPLE_RATE as f64;
             assert!((cycle_count - cycle_count.round()).abs() < 1e-8);
         }
-        assert_eq!(bank.coast_loops.len(), 3);
-        assert_eq!(bank.coast_transitions.len(), 2);
+        assert_eq!(bank.coast_loops.len(), 5);
+        assert_eq!(bank.coast_transitions.len(), 4);
         let downshift = bank.group("downshift").expect("downshift group");
         assert_eq!(downshift.selection, GrandPrixSelection::SingleVariant);
         assert_eq!(downshift.variants.len(), 1);

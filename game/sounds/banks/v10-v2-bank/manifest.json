@@ -2,8 +2,8 @@
   "schema_version": 1,
   "bank_id": "v10_v2_engine_bank",
   "preparation_tool": "tools/audio/build_canonical_v10_engine_bank.py",
-  "preparation_tool_revision": 2,
-  "source_inventory_sha256": "3a9a4c6f4749b1284062abe641a989e10b4a823a09a68456af6c3a855bacb015",
+  "preparation_tool_revision": 3,
+  "source_inventory_sha256": "ad52160f7ed84d0e97279bf338a002c22867c614dfb3678c419393a1618e9663",
   "output_sample_rate": 44100,
   "event_selection_seed": 1,
   "coverage": {
@@ -48,14 +48,60 @@
       "dominant_harmonic_phase_residual_radians": 0.03734449185673574,
       "rotation_wrap_step": 0.0005872249603271484,
       "zone_revolutions_per_minute": 4500.0,
-      "boundary_level_rms": 0.15304264242640458,
-      "calibrated_gain": 1.0,
+      "boundary_level_rms": 0.15303041104637824,
+      "calibrated_gain": 0.8507570741905278,
       "active_coverage_revolutions_per_minute": [
         4500.0,
-        6450.0
+        5585.863854409629
       ],
       "valid_playback_rate_min": 0.9930172669172932,
-      "valid_playback_rate_max": 1.4233275959004652
+      "valid_playback_rate_max": 1.2326378559572349
+    },
+    {
+      "id": "engine_on_idle_low_loop",
+      "role": "engine_loop",
+      "source_filename": "engine_on_idle_low.wav",
+      "source_sha256": "e05045451b388e048787360c42a67120e74cd9548ac12d9fc0958ae7bd41864d",
+      "derived_filename": "engine_on_idle_low_loop.wav",
+      "derived_sha256": "2757304e66f3b209b7286f37e79d916c906dd9e84aab1d11a2b0bbcfd5b567fd",
+      "derived_frames": 67032,
+      "derived_rms_dbfs": -17.81395225620691,
+      "derived_peak_dbfs": -5.951135411518821,
+      "derived_band_rms_300_6000": 0.09962542007971156,
+      "comb_spacing_hz": 50.0,
+      "comb_fit_confidence": 1.0,
+      "comb_harmonic_span": 25,
+      "reference_method": "generated_spectral_morph_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 6000.0,
+      "integer_cycle_count": 76,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 67032,
+      "loop_crossfade_frames": 3528,
+      "seam_before_preparation": {
+        "wrap_step": 333,
+        "local_slope": 1361,
+        "seam_contract_holds": true
+      },
+      "seam_after_preparation": {
+        "wrap_step": 7,
+        "local_slope": 1361,
+        "seam_contract_holds": true
+      },
+      "loop_start_rotation_frames": 829,
+      "dominant_harmonic_phase_before_radians": 0.19849871083004908,
+      "dominant_harmonic_phase_residual_radians": -0.17906231102994613,
+      "rotation_wrap_step": 0.00019919872283935547,
+      "zone_revolutions_per_minute": 6000.0,
+      "boundary_level_rms": 0.13020059346750884,
+      "calibrated_gain": 1.0,
+      "active_coverage_revolutions_per_minute": [
+        4806.440991003635,
+        7447.8184725461715
+      ],
+      "valid_playback_rate_min": 0.8010726974271073,
+      "valid_playback_rate_max": 1.2413043200607738
     },
     {
       "id": "engine_low_on_loop",
@@ -94,14 +140,60 @@
       "dominant_harmonic_phase_residual_radians": -0.5005118998406135,
       "rotation_wrap_step": 2.9087066650390625e-05,
       "zone_revolutions_per_minute": 8000.0,
-      "boundary_level_rms": 0.19056431597589413,
-      "calibrated_gain": 0.803141548852032,
+      "boundary_level_rms": 0.1905542786538296,
+      "calibrated_gain": 0.6832705319082267,
       "active_coverage_revolutions_per_minute": [
-        5550.0,
-        10878.235150979226
+        6408.587988004846,
+        9672.270548325248
       ],
-      "valid_playback_rate_min": 0.6075377696546053,
-      "valid_playback_rate_max": 1.1908021512243077
+      "valid_playback_rate_min": 0.7015241897059024,
+      "valid_playback_rate_max": 1.058789446662442
+    },
+    {
+      "id": "engine_on_low_med_loop",
+      "role": "engine_loop",
+      "source_filename": "engine_on_low_med.wav",
+      "source_sha256": "3dbf2ab36a0755d28bf7835519e20906ba83499fca0aa9ff8f695388ad08dd98",
+      "derived_filename": "engine_on_low_med_loop.wav",
+      "derived_sha256": "aea0a6fe95f54d8f05c68174f56f45efed69201fcc090a8ecc23ee25876bf107",
+      "derived_frames": 79496,
+      "derived_rms_dbfs": -16.00349345398235,
+      "derived_peak_dbfs": -5.414841945145365,
+      "derived_band_rms_300_6000": 0.13605539836084335,
+      "comb_spacing_hz": 84.32122370936902,
+      "comb_fit_confidence": 1.0,
+      "comb_harmonic_span": 15,
+      "reference_method": "generated_spectral_morph_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "integer_cycle_count": 152,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 79496,
+      "loop_crossfade_frames": 2092,
+      "seam_before_preparation": {
+        "wrap_step": 37,
+        "local_slope": 2027,
+        "seam_contract_holds": true
+      },
+      "seam_after_preparation": {
+        "wrap_step": 8,
+        "local_slope": 2027,
+        "seam_contract_holds": true
+      },
+      "loop_start_rotation_frames": 100,
+      "dominant_harmonic_phase_before_radians": -0.6115532900726794,
+      "dominant_harmonic_phase_residual_radians": 0.5898205736327824,
+      "rotation_wrap_step": 0.0002384185791015625,
+      "zone_revolutions_per_minute": 10119.288,
+      "boundary_level_rms": 0.16161144882448372,
+      "calibrated_gain": 0.8056770053470707,
+      "active_coverage_revolutions_per_minute": [
+        8322.651402047306,
+        12234.562031229398
+      ],
+      "valid_playback_rate_min": 0.8225136678994818,
+      "valid_playback_rate_max": 1.2091236472050106
     },
     {
       "id": "engine_mid_on_loop",
@@ -140,14 +232,60 @@
       "dominant_harmonic_phase_residual_radians": 0.029536832425563125,
       "rotation_wrap_step": 0.000335693359375,
       "zone_revolutions_per_minute": 12800.0,
-      "boundary_level_rms": 0.2023837092359245,
-      "calibrated_gain": 0.7562883429658056,
+      "boundary_level_rms": 0.2023769932702693,
+      "calibrated_gain": 0.6434083368787564,
       "active_coverage_revolutions_per_minute": [
-        9360.341874098403,
-        15190.628690083895
+        10527.413840825295,
+        13986.916285752195
       ],
-      "valid_playback_rate_min": 0.7341155182815832,
-      "valid_playback_rate_max": 1.1913772709603065
+      "valid_playback_rate_min": 0.825646965877149,
+      "valid_playback_rate_max": 1.096971988035453
+    },
+    {
+      "id": "engine_on_med_high_loop",
+      "role": "engine_loop",
+      "source_filename": "engine_on_med_high.wav",
+      "source_sha256": "1bb71a04662fefe66d56b786045cd337400d92f399fdced891fb83df0105b7bc",
+      "derived_filename": "engine_on_med_high_loop.wav",
+      "derived_sha256": "67ed27dc34f1c1427a591cf501d28443363d5cc231fcdb251f1c54a45c3d0cbe",
+      "derived_frames": 352500,
+      "derived_rms_dbfs": -14.694578385167521,
+      "derived_peak_dbfs": -4.420130596733116,
+      "derived_band_rms_300_6000": 0.1714358725450486,
+      "comb_spacing_hz": 117.6,
+      "comb_fit_confidence": 1.0,
+      "comb_harmonic_span": 12,
+      "reference_method": "generated_spectral_morph_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 14112.0,
+      "integer_cycle_count": 940,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 352500,
+      "loop_crossfade_frames": 1500,
+      "seam_before_preparation": {
+        "wrap_step": 145,
+        "local_slope": 2826,
+        "seam_contract_holds": true
+      },
+      "seam_after_preparation": {
+        "wrap_step": 21,
+        "local_slope": 2826,
+        "seam_contract_holds": true
+      },
+      "loop_start_rotation_frames": 302,
+      "dominant_harmonic_phase_before_radians": 0.5807298775159578,
+      "dominant_harmonic_phase_residual_radians": -0.6423968622816414,
+      "rotation_wrap_step": 0.000630497932434082,
+      "zone_revolutions_per_minute": 14130.818,
+      "boundary_level_rms": 0.1844175441924484,
+      "calibrated_gain": 0.7060885333331449,
+      "active_coverage_revolutions_per_minute": [
+        12910.999648386642,
+        15441.137486638736
+      ],
+      "valid_playback_rate_min": 0.9148941849055409,
+      "valid_playback_rate_max": 1.0941860067868636
     },
     {
       "id": "engine_high_on_loop",
@@ -186,51 +324,87 @@
       "dominant_harmonic_phase_residual_radians": -0.2451292380509096,
       "rotation_wrap_step": 0.000152587890625,
       "zone_revolutions_per_minute": 15600.0,
-      "boundary_level_rms": 0.25298330009820613,
-      "calibrated_gain": 0.6050219126791923,
+      "boundary_level_rms": 0.25298329006170744,
+      "calibrated_gain": 0.5147182379831664,
       "active_coverage_revolutions_per_minute": [
-        13071.006082165213,
+        14253.357679974217,
         18000.0
       ],
-      "valid_playback_rate_min": 0.7315711436173582,
+      "valid_playback_rate_min": 0.7977461805754666,
       "valid_playback_rate_max": 1.007444020676228
     }
   ],
   "transitions": [
     {
       "from_loop_id": "engine_idle_loop",
-      "to_loop_id": "engine_low_on_loop",
-      "start_revolutions_per_minute": 5550.0,
-      "end_revolutions_per_minute": 6450.0,
-      "center_revolutions_per_minute": 6000.0,
-      "half_width_revolutions_per_minute": 450.0,
+      "to_loop_id": "engine_on_idle_low_loop",
+      "start_revolutions_per_minute": 4806.440991003635,
+      "end_revolutions_per_minute": 5585.863854409629,
+      "center_revolutions_per_minute": 5196.152422706632,
+      "half_width_revolutions_per_minute": 389.7114317029973,
       "blend_law": "smoothstep",
       "gain_law": "equal_power",
-      "measured_level_compensation_db": -1.9041581238700103,
+      "measured_level_compensation_db": 1.4038886196853908,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "engine_on_idle_low_loop",
+      "to_loop_id": "engine_low_on_loop",
+      "start_revolutions_per_minute": 6408.587988004846,
+      "end_revolutions_per_minute": 7447.8184725461715,
+      "center_revolutions_per_minute": 6928.203230275509,
+      "half_width_revolutions_per_minute": 519.6152422706627,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -3.308146182520288,
       "applied_level_step_db": 0.0
     },
     {
       "from_loop_id": "engine_low_on_loop",
-      "to_loop_id": "engine_mid_on_loop",
-      "start_revolutions_per_minute": 9360.341874098403,
-      "end_revolutions_per_minute": 10878.235150979226,
-      "center_revolutions_per_minute": 10119.288512538815,
-      "half_width_revolutions_per_minute": 758.9466384404113,
+      "to_loop_id": "engine_on_low_med_loop",
+      "start_revolutions_per_minute": 8322.651402047306,
+      "end_revolutions_per_minute": 9672.270548325248,
+      "center_revolutions_per_minute": 8997.460975186277,
+      "half_width_revolutions_per_minute": 674.8095731389712,
       "blend_law": "smoothstep",
       "gain_law": "equal_power",
-      "measured_level_compensation_db": -0.5220937469501685,
+      "measured_level_compensation_db": 1.4313655568437404,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "engine_on_low_med_loop",
+      "to_loop_id": "engine_mid_on_loop",
+      "start_revolutions_per_minute": 10527.413840825295,
+      "end_revolutions_per_minute": 12234.562031229398,
+      "center_revolutions_per_minute": 11380.987936027346,
+      "half_width_revolutions_per_minute": 853.5740952020515,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -1.9534856960046492,
       "applied_level_step_db": 0.0
     },
     {
       "from_loop_id": "engine_mid_on_loop",
-      "to_loop_id": "engine_high_on_loop",
-      "start_revolutions_per_minute": 13071.006082165213,
-      "end_revolutions_per_minute": 15190.628690083895,
-      "center_revolutions_per_minute": 14130.817386124554,
-      "half_width_revolutions_per_minute": 1059.8113039593409,
+      "to_loop_id": "engine_on_med_high_loop",
+      "start_revolutions_per_minute": 12910.999648386642,
+      "end_revolutions_per_minute": 13986.916285752195,
+      "center_revolutions_per_minute": 13448.957967069418,
+      "half_width_revolutions_per_minute": 537.9583186827767,
       "blend_law": "smoothstep",
       "gain_law": "equal_power",
-      "measured_level_compensation_db": -1.9383260449463267,
+      "measured_level_compensation_db": 0.807449496469098,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "engine_on_med_high_loop",
+      "to_loop_id": "engine_high_on_loop",
+      "start_revolutions_per_minute": 14253.357679974217,
+      "end_revolutions_per_minute": 15441.137486638736,
+      "center_revolutions_per_minute": 14847.247583306476,
+      "half_width_revolutions_per_minute": 593.8899033322596,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -2.745792037679498,
       "applied_level_step_db": 0.0
     }
   ],
@@ -272,14 +446,60 @@
       "dominant_harmonic_phase_residual_radians": -0.3166532226556599,
       "rotation_wrap_step": 7.510185241699219e-06,
       "zone_revolutions_per_minute": 8000.0,
-      "boundary_level_rms": 0.18015646987812992,
-      "calibrated_gain": 1.0,
+      "boundary_level_rms": 0.18014914198157325,
+      "calibrated_gain": 0.7889246022157463,
       "active_coverage_revolutions_per_minute": [
         4500.0,
-        10878.235150979226
+        9672.270548325248
       ],
       "valid_playback_rate_min": 0.5679944330357142,
-      "valid_playback_rate_max": 1.3730643032391097
+      "valid_playback_rate_max": 1.220845958637039
+    },
+    {
+      "id": "engine_off_low_med_loop",
+      "role": "engine_coast_loop",
+      "source_filename": "engine_off_low_med.wav",
+      "source_sha256": "2fdf307ccf357d085a863ad0d09638a01e1c0c3ec3ce9fb8a115c31e90429629",
+      "derived_filename": "engine_off_low_med_loop.wav",
+      "derived_sha256": "3e962fb42232d6cd38df34be2abe8f98e73a8949f2966ae39b7dbc79b0a33540",
+      "derived_frames": 69036,
+      "derived_rms_dbfs": -16.873988923128756,
+      "derived_peak_dbfs": -4.4488834492719445,
+      "derived_band_rms_300_6000": 0.10793524015940349,
+      "comb_spacing_hz": 84.32122370936902,
+      "comb_fit_confidence": 0.8,
+      "comb_harmonic_span": 20,
+      "reference_method": "generated_spectral_morph_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "integer_cycle_count": 132,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 69036,
+      "loop_crossfade_frames": 2092,
+      "seam_before_preparation": {
+        "wrap_step": 38,
+        "local_slope": 1798,
+        "seam_contract_holds": true
+      },
+      "seam_after_preparation": {
+        "wrap_step": 3,
+        "local_slope": 1798,
+        "seam_contract_holds": true
+      },
+      "loop_start_rotation_frames": 67,
+      "dominant_harmonic_phase_before_radians": -0.4596620222143229,
+      "dominant_harmonic_phase_residual_radians": 0.3452584664683374,
+      "rotation_wrap_step": 9.953975677490234e-05,
+      "zone_revolutions_per_minute": 10119.288,
+      "boundary_level_rms": 0.14213098538575417,
+      "calibrated_gain": 1.0,
+      "active_coverage_revolutions_per_minute": [
+        8322.651402047306,
+        12234.562031229398
+      ],
+      "valid_playback_rate_min": 0.8225136678994818,
+      "valid_playback_rate_max": 1.2091236472050106
     },
     {
       "id": "engine_mid_off_loop",
@@ -318,85 +538,155 @@
       "dominant_harmonic_phase_residual_radians": -0.33243903950031595,
       "rotation_wrap_step": 7.62939453125e-05,
       "zone_revolutions_per_minute": 12800.0,
-      "boundary_level_rms": 0.1870169889323762,
-      "calibrated_gain": 0.9633173673276814,
+      "boundary_level_rms": 0.18702029118823915,
+      "calibrated_gain": 0.7599905819912569,
       "active_coverage_revolutions_per_minute": [
-        9360.341874098403,
-        13867.083327073504
+        10527.413840825295,
+        13986.916285752195
       ],
-      "valid_playback_rate_min": 0.728627541731469,
-      "valid_playback_rate_max": 1.0794433771108505
+      "valid_playback_rate_min": 0.8194747340218503,
+      "valid_playback_rate_max": 1.0887714304984557
     },
     {
-      "id": "engine_high_off_loop",
+      "id": "engine_off_med_high_loop",
       "role": "engine_coast_loop",
-      "source_filename": "engine_off_high.wav",
-      "source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
-      "derived_filename": "engine_high_off_loop.wav",
-      "derived_sha256": "89d41f4e221809f689e1bc29b779e0681e29bcd799f6c72010f55c2fd7081acc",
-      "derived_frames": 1321190,
-      "derived_rms_dbfs": -14.732070895844803,
-      "derived_peak_dbfs": -2.694834041241158,
-      "derived_band_rms_300_6000": 0.15219858266196287,
-      "comb_spacing_hz": 103.87544562099319,
-      "comb_fit_confidence": 0.9,
-      "comb_harmonic_span": 28,
-      "reference_method": "authored_reference_integer_cycles",
+      "source_filename": "engine_off_med_high.wav",
+      "source_sha256": "a52c0170390b21bad5a22ae2ce872e50974d0439df00110c3e32b6e515c41236",
+      "derived_filename": "engine_off_med_high_loop.wav",
+      "derived_sha256": "ccff01e6e3319d910178b8fb8fafcca52fd107e220f0620361cd905c2f192537",
+      "derived_frames": 103500,
+      "derived_rms_dbfs": -15.987937799158463,
+      "derived_peak_dbfs": -4.759000842474179,
+      "derived_band_rms_300_6000": 0.14341049391398383,
+      "comb_spacing_hz": 117.6,
+      "comb_fit_confidence": 0.8,
+      "comb_harmonic_span": 10,
+      "reference_method": "generated_spectral_morph_integer_cycles",
       "reference_rpm_per_hz": 120.0,
-      "reference_revolutions_per_minute": 12465.053474519184,
-      "integer_cycle_count": 3112,
+      "reference_revolutions_per_minute": 14112.0,
+      "integer_cycle_count": 276,
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
       "loop_start_frame": 0,
-      "loop_end_frame_exclusive": 1321190,
-      "loop_crossfade_frames": 1698,
+      "loop_end_frame_exclusive": 103500,
+      "loop_crossfade_frames": 1500,
       "seam_before_preparation": {
-        "wrap_step": 2572,
-        "local_slope": 2837,
+        "wrap_step": 121,
+        "local_slope": 2427,
         "seam_contract_holds": true
       },
       "seam_after_preparation": {
-        "wrap_step": 3,
-        "local_slope": 2837,
+        "wrap_step": 0,
+        "local_slope": 2427,
         "seam_contract_holds": true
       },
-      "loop_start_rotation_frames": 66,
-      "dominant_harmonic_phase_before_radians": -1.3204421719308126,
-      "dominant_harmonic_phase_residual_radians": -0.34365912285231065,
-      "rotation_wrap_step": 8.481740951538086e-05,
-      "zone_revolutions_per_minute": 13000.0,
-      "boundary_level_rms": 0.18311673918070662,
-      "calibrated_gain": 0.9838353076290923,
+      "loop_start_rotation_frames": 18,
+      "dominant_harmonic_phase_before_radians": -0.6888758667888518,
+      "dominant_harmonic_phase_residual_radians": -0.38728297204423023,
+      "rotation_wrap_step": 1.990795135498047e-05,
+      "zone_revolutions_per_minute": 14130.818,
+      "boundary_level_rms": 0.15984433045555202,
+      "calibrated_gain": 0.8892287166723739,
       "active_coverage_revolutions_per_minute": [
-        11932.141467481853,
+        12910.999648386642,
+        15880.309516983603
+      ],
+      "valid_playback_rate_min": 0.9148941849055409,
+      "valid_playback_rate_max": 1.1253065049102267
+    },
+    {
+      "id": "engine_off_maximum_loop",
+      "role": "engine_coast_loop",
+      "source_filename": "engine_off_maximum.wav",
+      "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "derived_filename": "engine_off_maximum_loop.wav",
+      "derived_sha256": "47538d4769a1bc6328c30e8ee9f996e877f29810b83001e0f3b56300199cc7e2",
+      "derived_frames": 88292,
+      "derived_rms_dbfs": -14.155113836559192,
+      "derived_peak_dbfs": -4.003870198130145,
+      "derived_band_rms_300_6000": 0.1746748408796254,
+      "comb_spacing_hz": 137.8562044126308,
+      "comb_fit_confidence": 0.9,
+      "comb_harmonic_span": 10,
+      "reference_method": "imported_reference_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 16542.744529515698,
+      "integer_cycle_count": 276,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 88292,
+      "loop_crossfade_frames": 1280,
+      "seam_before_preparation": {
+        "wrap_step": 1394,
+        "local_slope": 3830,
+        "seam_contract_holds": true
+      },
+      "seam_after_preparation": {
+        "wrap_step": 97,
+        "local_slope": 3830,
+        "seam_contract_holds": true
+      },
+      "loop_start_rotation_frames": 137,
+      "dominant_harmonic_phase_before_radians": -2.83651469041056,
+      "dominant_harmonic_phase_residual_radians": -0.1456729059332086,
+      "rotation_wrap_step": 0.002960205078125,
+      "zone_revolutions_per_minute": 16500.0,
+      "boundary_level_rms": 0.19650368545964236,
+      "calibrated_gain": 0.7233358931964535,
+      "active_coverage_revolutions_per_minute": [
+        14658.747246446403,
         18000.0
       ],
-      "valid_playback_rate_min": 0.9572465581260289,
-      "valid_playback_rate_max": 1.4440385704558172
+      "valid_playback_rate_min": 0.8861124924914924,
+      "valid_playback_rate_max": 1.0880913966775114
     }
   ],
   "coast_transitions": [
     {
       "from_loop_id": "engine_low_off_loop",
-      "to_loop_id": "engine_mid_off_loop",
-      "start_revolutions_per_minute": 9360.341874098403,
-      "end_revolutions_per_minute": 10878.235150979226,
-      "center_revolutions_per_minute": 10119.288512538815,
-      "half_width_revolutions_per_minute": 758.9466384404113,
+      "to_loop_id": "engine_off_low_med_loop",
+      "start_revolutions_per_minute": 8322.651402047306,
+      "end_revolutions_per_minute": 9672.270548325248,
+      "center_revolutions_per_minute": 8997.460975186277,
+      "half_width_revolutions_per_minute": 674.8095731389712,
       "blend_law": "smoothstep",
       "gain_law": "equal_power",
-      "measured_level_compensation_db": -0.32461219785635265,
+      "measured_level_compensation_db": 2.059290009482491,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "engine_off_low_med_loop",
+      "to_loop_id": "engine_mid_off_loop",
+      "start_revolutions_per_minute": 10527.413840825295,
+      "end_revolutions_per_minute": 12234.562031229398,
+      "center_revolutions_per_minute": 11380.987936027346,
+      "half_width_revolutions_per_minute": 853.5740952020515,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -2.383835791609723,
       "applied_level_step_db": 0.0
     },
     {
       "from_loop_id": "engine_mid_off_loop",
-      "to_loop_id": "engine_high_off_loop",
-      "start_revolutions_per_minute": 11932.141467481853,
-      "end_revolutions_per_minute": 13867.083327073504,
-      "center_revolutions_per_minute": 12899.612397277679,
-      "half_width_revolutions_per_minute": 967.4709297958252,
+      "to_loop_id": "engine_off_med_high_loop",
+      "start_revolutions_per_minute": 12910.999648386642,
+      "end_revolutions_per_minute": 13986.916285752195,
+      "center_revolutions_per_minute": 13448.957967069418,
+      "half_width_revolutions_per_minute": 537.9583186827767,
       "blend_law": "smoothstep",
       "gain_law": "equal_power",
-      "measured_level_compensation_db": 0.1830602848948926,
+      "measured_level_compensation_db": 1.3641053780185939,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "engine_off_med_high_loop",
+      "to_loop_id": "engine_off_maximum_loop",
+      "start_revolutions_per_minute": 14658.747246446403,
+      "end_revolutions_per_minute": 15880.309516983603,
+      "center_revolutions_per_minute": 15269.528381715003,
+      "half_width_revolutions_per_minute": 610.7811352686003,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -1.7934692646851609,
       "applied_level_step_db": 0.0
     }
   ],
@@ -617,21 +907,31 @@
     "anchor_center_revolutions_per_minute": 9000.0,
     "engine_references_revolutions_per_minute": {
       "engine_idle_loop": 4531.638723634397,
+      "engine_on_idle_low_loop": 6000.0,
       "engine_low_on_loop": 9135.225375626043,
+      "engine_on_low_med_loop": 10118.546845124283,
       "engine_mid_on_loop": 12750.48991699179,
+      "engine_on_med_high_loop": 14112.0,
       "engine_high_on_loop": 17867.015566699003,
       "engine_low_off_loop": 7922.604938131586,
+      "engine_off_low_med_loop": 10118.546845124283,
       "engine_mid_off_loop": 12846.525800429074,
-      "engine_high_off_loop": 12465.053474519184
+      "engine_off_med_high_loop": 14112.0,
+      "engine_off_maximum_loop": 16542.744529515698
     },
     "engine_zones_revolutions_per_minute": {
       "engine_idle_loop": 4500.0,
+      "engine_on_idle_low_loop": 6000.0,
       "engine_low_on_loop": 8000.0,
+      "engine_on_low_med_loop": 10119.288,
       "engine_mid_on_loop": 12800.0,
+      "engine_on_med_high_loop": 14130.818,
       "engine_high_on_loop": 15600.0,
       "engine_low_off_loop": 8000.0,
+      "engine_off_low_med_loop": 10119.288,
       "engine_mid_off_loop": 12800.0,
-      "engine_high_off_loop": 13000.0
+      "engine_off_med_high_loop": 14130.818,
+      "engine_off_maximum_loop": 16500.0
     }
   },
   "engine_source_selection": [
@@ -651,6 +951,22 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
+      "role": "engine_on_idle_low_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_idle_low.wav",
+      "source_sha256": "e05045451b388e048787360c42a67120e74cd9548ac12d9fc0958ae7bd41864d",
+      "runtime_asset_id": "engine_on_idle_low_loop",
+      "runtime_filename": "engine_on_idle_low_loop.wav",
+      "runtime_sha256": "2757304e66f3b209b7286f37e79d916c906dd9e84aab1d11a2b0bbcfd5b567fd",
+      "derived_frames": 67032,
+      "reference_revolutions_per_minute": 6000.0,
+      "zone_revolutions_per_minute": 6000.0,
+      "integer_cycle_count": 76,
+      "loop_crossfade_frames": 3528,
+      "loop_start_rotation_frames": 829,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
       "role": "engine_low_on_loop",
       "source_path": "game/sounds/banks/v10-v2-bank/engine_on_low.wav",
       "source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
@@ -666,6 +982,22 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
+      "role": "engine_on_low_med_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_low_med.wav",
+      "source_sha256": "3dbf2ab36a0755d28bf7835519e20906ba83499fca0aa9ff8f695388ad08dd98",
+      "runtime_asset_id": "engine_on_low_med_loop",
+      "runtime_filename": "engine_on_low_med_loop.wav",
+      "runtime_sha256": "aea0a6fe95f54d8f05c68174f56f45efed69201fcc090a8ecc23ee25876bf107",
+      "derived_frames": 79496,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "zone_revolutions_per_minute": 10119.288,
+      "integer_cycle_count": 152,
+      "loop_crossfade_frames": 2092,
+      "loop_start_rotation_frames": 100,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
       "role": "engine_mid_on_loop",
       "source_path": "game/sounds/banks/v10-v2-bank/engine_on_med.wav",
       "source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
@@ -679,6 +1011,22 @@
       "loop_crossfade_frames": 1660,
       "loop_start_rotation_frames": 354,
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_on_med_high_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_med_high.wav",
+      "source_sha256": "1bb71a04662fefe66d56b786045cd337400d92f399fdced891fb83df0105b7bc",
+      "runtime_asset_id": "engine_on_med_high_loop",
+      "runtime_filename": "engine_on_med_high_loop.wav",
+      "runtime_sha256": "67ed27dc34f1c1427a591cf501d28443363d5cc231fcdb251f1c54a45c3d0cbe",
+      "derived_frames": 352500,
+      "reference_revolutions_per_minute": 14112.0,
+      "zone_revolutions_per_minute": 14130.818,
+      "integer_cycle_count": 940,
+      "loop_crossfade_frames": 1500,
+      "loop_start_rotation_frames": 302,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
     },
     {
       "role": "engine_high_on_loop",
@@ -711,6 +1059,22 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
+      "role": "engine_off_low_med_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_low_med.wav",
+      "source_sha256": "2fdf307ccf357d085a863ad0d09638a01e1c0c3ec3ce9fb8a115c31e90429629",
+      "runtime_asset_id": "engine_off_low_med_loop",
+      "runtime_filename": "engine_off_low_med_loop.wav",
+      "runtime_sha256": "3e962fb42232d6cd38df34be2abe8f98e73a8949f2966ae39b7dbc79b0a33540",
+      "derived_frames": 69036,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "zone_revolutions_per_minute": 10119.288,
+      "integer_cycle_count": 132,
+      "loop_crossfade_frames": 2092,
+      "loop_start_rotation_frames": 67,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
       "role": "engine_mid_off_loop",
       "source_path": "game/sounds/banks/v10-v2-bank/engine_off_med.wav",
       "source_sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
@@ -726,19 +1090,36 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
-      "role": "engine_high_off_loop",
-      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_high.wav",
-      "source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
-      "runtime_asset_id": "engine_high_off_loop",
-      "runtime_filename": "engine_high_off_loop.wav",
-      "runtime_sha256": "89d41f4e221809f689e1bc29b779e0681e29bcd799f6c72010f55c2fd7081acc",
-      "derived_frames": 1321190,
-      "reference_revolutions_per_minute": 12465.053474519184,
-      "zone_revolutions_per_minute": 13000.0,
-      "integer_cycle_count": 3112,
-      "loop_crossfade_frames": 1698,
-      "loop_start_rotation_frames": 66,
-      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+      "role": "engine_off_med_high_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_med_high.wav",
+      "source_sha256": "a52c0170390b21bad5a22ae2ce872e50974d0439df00110c3e32b6e515c41236",
+      "runtime_asset_id": "engine_off_med_high_loop",
+      "runtime_filename": "engine_off_med_high_loop.wav",
+      "runtime_sha256": "ccff01e6e3319d910178b8fb8fafcca52fd107e220f0620361cd905c2f192537",
+      "derived_frames": 103500,
+      "reference_revolutions_per_minute": 14112.0,
+      "zone_revolutions_per_minute": 14130.818,
+      "integer_cycle_count": 276,
+      "loop_crossfade_frames": 1500,
+      "loop_start_rotation_frames": 18,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
+      "role": "engine_off_maximum_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_maximum.wav",
+      "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "runtime_asset_id": "engine_off_maximum_loop",
+      "runtime_filename": "engine_off_maximum_loop.wav",
+      "runtime_sha256": "47538d4769a1bc6328c30e8ee9f996e877f29810b83001e0f3b56300199cc7e2",
+      "derived_frames": 88292,
+      "reference_revolutions_per_minute": 16542.744529515698,
+      "zone_revolutions_per_minute": 16500.0,
+      "integer_cycle_count": 276,
+      "loop_crossfade_frames": 1280,
+      "loop_start_rotation_frames": 137,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "historical_gp3_coast_maximum_import"
     }
   ]
 }

@@ -18,6 +18,22 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
+      "role": "engine_on_idle_low_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_idle_low.wav",
+      "source_sha256": "e05045451b388e048787360c42a67120e74cd9548ac12d9fc0958ae7bd41864d",
+      "runtime_asset_id": "engine_on_idle_low_loop",
+      "runtime_filename": "engine_on_idle_low_loop.wav",
+      "runtime_sha256": "2757304e66f3b209b7286f37e79d916c906dd9e84aab1d11a2b0bbcfd5b567fd",
+      "derived_frames": 67032,
+      "reference_revolutions_per_minute": 6000.0,
+      "zone_revolutions_per_minute": 6000.0,
+      "integer_cycle_count": 76,
+      "loop_crossfade_frames": 3528,
+      "loop_start_rotation_frames": 829,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
       "role": "engine_low_on_loop",
       "source_path": "game/sounds/banks/v10-v2-bank/engine_on_low.wav",
       "source_sha256": "7423348b0c6ea6b854846e7a6a7b4e8fdd324f67ff575309ce93b5a2b0f53127",
@@ -33,6 +49,22 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
+      "role": "engine_on_low_med_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_low_med.wav",
+      "source_sha256": "3dbf2ab36a0755d28bf7835519e20906ba83499fca0aa9ff8f695388ad08dd98",
+      "runtime_asset_id": "engine_on_low_med_loop",
+      "runtime_filename": "engine_on_low_med_loop.wav",
+      "runtime_sha256": "aea0a6fe95f54d8f05c68174f56f45efed69201fcc090a8ecc23ee25876bf107",
+      "derived_frames": 79496,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "zone_revolutions_per_minute": 10119.288,
+      "integer_cycle_count": 152,
+      "loop_crossfade_frames": 2092,
+      "loop_start_rotation_frames": 100,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
       "role": "engine_mid_on_loop",
       "source_path": "game/sounds/banks/v10-v2-bank/engine_on_med.wav",
       "source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
@@ -46,6 +78,22 @@
       "loop_crossfade_frames": 1660,
       "loop_start_rotation_frames": 354,
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_on_med_high_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_med_high.wav",
+      "source_sha256": "1bb71a04662fefe66d56b786045cd337400d92f399fdced891fb83df0105b7bc",
+      "runtime_asset_id": "engine_on_med_high_loop",
+      "runtime_filename": "engine_on_med_high_loop.wav",
+      "runtime_sha256": "67ed27dc34f1c1427a591cf501d28443363d5cc231fcdb251f1c54a45c3d0cbe",
+      "derived_frames": 352500,
+      "reference_revolutions_per_minute": 14112.0,
+      "zone_revolutions_per_minute": 14130.818,
+      "integer_cycle_count": 940,
+      "loop_crossfade_frames": 1500,
+      "loop_start_rotation_frames": 302,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
     },
     {
       "role": "engine_high_on_loop",
@@ -78,6 +126,22 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
+      "role": "engine_off_low_med_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_low_med.wav",
+      "source_sha256": "2fdf307ccf357d085a863ad0d09638a01e1c0c3ec3ce9fb8a115c31e90429629",
+      "runtime_asset_id": "engine_off_low_med_loop",
+      "runtime_filename": "engine_off_low_med_loop.wav",
+      "runtime_sha256": "3e962fb42232d6cd38df34be2abe8f98e73a8949f2966ae39b7dbc79b0a33540",
+      "derived_frames": 69036,
+      "reference_revolutions_per_minute": 10118.546845124283,
+      "zone_revolutions_per_minute": 10119.288,
+      "integer_cycle_count": 132,
+      "loop_crossfade_frames": 2092,
+      "loop_start_rotation_frames": 67,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
       "role": "engine_mid_off_loop",
       "source_path": "game/sounds/banks/v10-v2-bank/engine_off_med.wav",
       "source_sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
@@ -93,19 +157,36 @@
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
-      "role": "engine_high_off_loop",
-      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_high.wav",
-      "source_sha256": "67fe43023faf586f44f7181ddf961266779f1f08969ed503e840297a643760e2",
-      "runtime_asset_id": "engine_high_off_loop",
-      "runtime_filename": "engine_high_off_loop.wav",
-      "runtime_sha256": "89d41f4e221809f689e1bc29b779e0681e29bcd799f6c72010f55c2fd7081acc",
-      "derived_frames": 1321190,
-      "reference_revolutions_per_minute": 12465.053474519184,
-      "zone_revolutions_per_minute": 13000.0,
-      "integer_cycle_count": 3112,
-      "loop_crossfade_frames": 1698,
-      "loop_start_rotation_frames": 66,
-      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+      "role": "engine_off_med_high_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_med_high.wav",
+      "source_sha256": "a52c0170390b21bad5a22ae2ce872e50974d0439df00110c3e32b6e515c41236",
+      "runtime_asset_id": "engine_off_med_high_loop",
+      "runtime_filename": "engine_off_med_high_loop.wav",
+      "runtime_sha256": "ccff01e6e3319d910178b8fb8fafcca52fd107e220f0620361cd905c2f192537",
+      "derived_frames": 103500,
+      "reference_revolutions_per_minute": 14112.0,
+      "zone_revolutions_per_minute": 14130.818,
+      "integer_cycle_count": 276,
+      "loop_crossfade_frames": 1500,
+      "loop_start_rotation_frames": 18,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "spectral_magnitude_morph_integer_cycles"
+    },
+    {
+      "role": "engine_off_maximum_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_maximum.wav",
+      "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "runtime_asset_id": "engine_off_maximum_loop",
+      "runtime_filename": "engine_off_maximum_loop.wav",
+      "runtime_sha256": "47538d4769a1bc6328c30e8ee9f996e877f29810b83001e0f3b56300199cc7e2",
+      "derived_frames": 88292,
+      "reference_revolutions_per_minute": 16542.744529515698,
+      "zone_revolutions_per_minute": 16500.0,
+      "integer_cycle_count": 276,
+      "loop_crossfade_frames": 1280,
+      "loop_start_rotation_frames": 137,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "historical_gp3_coast_maximum_import"
     }
   ],
   "preserved_events": [
