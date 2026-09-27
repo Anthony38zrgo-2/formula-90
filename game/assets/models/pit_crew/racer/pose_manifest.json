@@ -1,0 +1,73 @@
+{
+  "base_character": "Racer.fbx",
+  "character_source": "racer.zip/source/Racer.rar/Racer.fbx",
+  "character_source_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
+  "vehicle": "f1_2030_v10",
+  "track_first_use": "fuji76_77",
+  "members": [
+    {
+      "name": "front_left_wheel_carrier",
+      "role": "wheel_carrier",
+      "wheel": "front_left"
+    },
+    {
+      "name": "front_left_wheel_change_mechanic",
+      "role": "wheel_change_mechanic",
+      "wheel": "front_left"
+    },
+    {
+      "name": "front_right_wheel_carrier",
+      "role": "wheel_carrier",
+      "wheel": "front_right"
+    },
+    {
+      "name": "front_right_wheel_change_mechanic",
+      "role": "wheel_change_mechanic",
+      "wheel": "front_right"
+    },
+    {
+      "name": "rear_left_wheel_carrier",
+      "role": "wheel_carrier",
+      "wheel": "rear_left"
+    },
+    {
+      "name": "rear_left_wheel_change_mechanic",
+      "role": "wheel_change_mechanic",
+      "wheel": "rear_left"
+    },
+    {
+      "name": "rear_right_wheel_carrier",
+      "role": "wheel_carrier",
+      "wheel": "rear_right"
+    },
+    {
+      "name": "rear_right_wheel_change_mechanic",
+      "role": "wheel_change_mechanic",
+      "wheel": "rear_right"
+    },
+    {
+      "name": "front_jack_operator",
+      "role": "jack_operator"
+    },
+    {
+      "name": "pit_signaler",
+      "role": "signaler"
+    },
+    {
+      "name": "fuel_hose_operator",
+      "role": "fuel_hose_operator"
+    }
+  ],
+  "wheel_sources": {
+    "front_left": "f1_2030_v10_wheel_FL.glb",
+    "front_right": "f1_2030_v10_wheel_FR.glb",
+    "rear_left": "f1_2030_v10_wheel_RL.glb",
+    "rear_right": "f1_2030_v10_wheel_RR.glb"
+  },
+  "wheel_source_sha256": {
+    "front_left": "2f888550449764f56c97c8db20fd68a277d0c63c5c9e2063a981bd23b687742d",
+    "front_right": "6a0e9960dfc1008764b4193744cc3932c173268c141626ead29758379af144e3",
+    "rear_left": "27676bf78df92d38228cb07dc8009e554d321887532ffff2f33eca401b042c27",
+    "rear_right": "c195b82fe90cf20d00974d890b431605ddb328537c43641fb6684081f71a0bf0"
+  }
+}
