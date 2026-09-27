@@ -135,6 +135,25 @@ def test_canonical_loop_zones_and_transitions_are_ordered(manifest: dict) -> Non
             assert abs(cycle_count - round(cycle_count)) < 1e-8
 
 
+def test_declared_references_match_measured_engine_pitch(manifest: dict) -> None:
+    for asset in manifest["loops"] + manifest["coast_loops"]:
+        reference_hertz = (
+            asset["reference_revolutions_per_minute"] / canonical.REVOLUTIONS_PER_MINUTE_PER_HERTZ
+        )
+        sample_rate, samples = canonical.read_wave_mono(BANK_DIR / asset["derived_filename"])
+        assert sample_rate == 44100
+        measurement = canonical.measure_cepstral_cycle_frequency(samples, reference_hertz)
+        assert measurement is not None, asset["id"]
+        measured_hertz, _, prominence = measurement
+        assert (
+            prominence >= canonical.REFERENCE_MEASUREMENT_MINIMUM_PROMINENCE_RATIO
+        ), f"{asset['id']} pitch prominence {prominence}"
+        error_ratio = abs(measured_hertz - reference_hertz) / reference_hertz
+        assert (
+            error_ratio <= canonical.REFERENCE_MEASUREMENT_TOLERANCE_RATIO
+        ), f"{asset['id']} declared {reference_hertz} Hz vs measured {measured_hertz} Hz"
+
+
 def test_canonical_assets_are_mono16_and_seam_safe(manifest: dict) -> None:
     for asset in manifest["loops"] + manifest["coast_loops"] + manifest["events"]:
         path = BANK_DIR / asset["derived_filename"]

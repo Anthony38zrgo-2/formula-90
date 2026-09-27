@@ -7,6 +7,10 @@ mid captures between the low and high zones, copies the already prepared event
 assets from the five engine sample bank, and writes manifest.json plus
 source_inventory.json next to the derived WAVs.
 
+Every configured engine cycle frequency is validated against a cepstral pitch
+measurement of the raw capture, so a stale or mistyped reference fails the build
+instead of shipping a mistuned loop.
+
 The build is deterministic: identical sources produce byte-identical outputs.
 Use --audit to inspect formats and measurements without writing, and --check to
 validate an existing bank without rewriting anything.
@@ -36,7 +40,7 @@ DEFAULT_REPORT_DIRECTORY = ROOT / "reports/audio-v10/v10-v2-bank"
 SAMPLE_RATE = 44100
 SCHEMA_VERSION = 1
 TOOL_NAME = "tools/audio/build_canonical_v10_engine_bank.py"
-TOOL_REVISION = 1
+TOOL_REVISION = 2
 BANK_ID = "v10_v2_engine_bank"
 EVENT_SELECTION_SEED = 1
 
@@ -49,6 +53,12 @@ TRANSITION_BLEND_LAW = "smoothstep"
 TRANSITION_GAIN_LAW = "equal_power"
 LEVEL_BAND_HZ = (300.0, 6000.0)
 REFERENCE_PHASE_SEARCH_FRAMES = 64
+CEPSTRUM_FRAME_SIZE = 1 << 15
+CEPSTRUM_MAXIMUM_FRAMES = 64
+CEPSTRUM_SEARCH_MINIMUM_HERTZ = 25.0
+CEPSTRUM_SEARCH_MAXIMUM_HERTZ = 250.0
+REFERENCE_MEASUREMENT_TOLERANCE_RATIO = 0.015
+REFERENCE_MEASUREMENT_MINIMUM_PROMINENCE_RATIO = 0.25
 PREPARATION_RECIPE = "canonical_mono16_cycle_phase_rotated_v1"
 
 ENGINE_SOURCES = [
@@ -88,8 +98,8 @@ ENGINE_SOURCES = [
         "derived_filename": "engine_high_on_loop.wav",
         "role": "engine_loop",
         "collection": "loops",
-        "cycle_frequency_hertz": 16821.16949902939 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
-        "reference_method": "authored_reference_integer_cycles",
+        "cycle_frequency_hertz": 148.889,
+        "reference_method": "measured_dominant_period_integer_cycles",
         "zone_revolutions_per_minute": 15600.0,
     },
     {
@@ -334,6 +344,86 @@ def measure_dominant_period_frequency(samples: np.ndarray) -> float | None:
     return SAMPLE_RATE / lag
 
 
+def cepstral_frequency_spectrum(samples: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
+    centered = samples - float(np.mean(samples))
+    frame_size = min(int(centered.size), CEPSTRUM_FRAME_SIZE)
+    if frame_size < 1024:
+        return None
+    hop = frame_size // 2
+    frame_count = 1 + max(0, (centered.size - frame_size) // hop)
+    window = np.hanning(frame_size)
+    accumulated = None
+    for index in range(min(frame_count, CEPSTRUM_MAXIMUM_FRAMES)):
+        segment = centered[index * hop : index * hop + frame_size] * window
+        magnitude = np.abs(np.fft.rfft(segment)) + 1e-12
+        cepstrum = np.fft.irfft(np.log(magnitude))
+        accumulated = cepstrum if accumulated is None else accumulated + cepstrum
+    cepstrum = accumulated / min(frame_count, CEPSTRUM_MAXIMUM_FRAMES)
+    quefrency = np.arange(cepstrum.size)
+    frequency = np.where(quefrency > 0, SAMPLE_RATE / np.maximum(quefrency, 1), 0.0)
+    return frequency, cepstrum
+
+
+def measure_cepstral_cycle_frequency(
+    samples: np.ndarray, search_hertz: float
+) -> tuple[float, float, float] | None:
+    spectrum = cepstral_frequency_spectrum(samples)
+    if spectrum is None:
+        return None
+    frequency, cepstrum = spectrum
+    tolerance_band = (frequency >= search_hertz * (1.0 - REFERENCE_MEASUREMENT_TOLERANCE_RATIO)) & (
+        frequency <= search_hertz * (1.0 + REFERENCE_MEASUREMENT_TOLERANCE_RATIO)
+    )
+    band_indices = np.flatnonzero(tolerance_band)
+    if band_indices.size == 0:
+        return None
+    peak_index = int(band_indices[int(np.argmax(cepstrum[band_indices]))])
+    interpolation_offset = 0.0
+    if 0 < peak_index < cepstrum.size - 1:
+        left_value = float(cepstrum[peak_index - 1])
+        peak_value = float(cepstrum[peak_index])
+        right_value = float(cepstrum[peak_index + 1])
+        curvature = left_value - 2.0 * peak_value + right_value
+        if curvature != 0.0:
+            interpolation_offset = 0.5 * (left_value - right_value) / curvature
+    measured_hertz = float(SAMPLE_RATE / (peak_index + interpolation_offset))
+    search_band = (frequency >= CEPSTRUM_SEARCH_MINIMUM_HERTZ) & (
+        frequency <= CEPSTRUM_SEARCH_MAXIMUM_HERTZ
+    )
+    reference_peak = float(np.max(cepstrum[search_band])) if bool(np.any(search_band)) else 0.0
+    prominence = float(cepstrum[peak_index]) / max(reference_peak, 1e-9)
+    return measured_hertz, float(cepstrum[peak_index]), prominence
+
+
+def validate_engine_reference(samples: np.ndarray, entry: dict) -> dict:
+    configured_hertz = float(entry["cycle_frequency_hertz"])
+    measurement = measure_cepstral_cycle_frequency(samples, configured_hertz)
+    if measurement is None:
+        raise ValueError(
+            f"{entry['source_filename']}: no cepstral pitch found near the configured "
+            f"{configured_hertz:.4f} Hz reference"
+        )
+    measured_hertz, peak_value, prominence = measurement
+    error_ratio = abs(measured_hertz - configured_hertz) / configured_hertz
+    if error_ratio > REFERENCE_MEASUREMENT_TOLERANCE_RATIO:
+        raise ValueError(
+            f"{entry['source_filename']}: configured {configured_hertz:.4f} Hz differs from "
+            f"the measured {measured_hertz:.4f} Hz by {error_ratio * 100.0:.3f}%"
+        )
+    if prominence < REFERENCE_MEASUREMENT_MINIMUM_PROMINENCE_RATIO:
+        raise ValueError(
+            f"{entry['source_filename']}: configured {configured_hertz:.4f} Hz is not the "
+            f"dominant engine comb (prominence {prominence:.3f}); the capture plays at "
+            f"{measured_hertz:.4f} Hz"
+        )
+    return {
+        "measured_cepstral_spacing_hertz": measured_hertz,
+        "cepstral_spacing_peak": peak_value,
+        "cepstral_spacing_prominence": prominence,
+        "configured_reference_error_ratio": error_ratio,
+    }
+
+
 def transition(from_id: str, to_id: str, start: float, end: float, compensation: float) -> dict:
     center = (start + end) * 0.5
     return {
@@ -358,6 +448,7 @@ def prepare_engine_loop(source_directory: Path, entry: dict) -> tuple[dict, np.n
     sample_rate, samples = read_wave_mono(source_path)
     if sample_rate != SAMPLE_RATE:
         raise ValueError(f"{source_path} must be {SAMPLE_RATE} Hz, found {sample_rate}")
+    validate_engine_reference(samples, entry)
     seam_before = measure_seam(samples)
     reference, cycles = derive_reference(samples.size, entry["cycle_frequency_hertz"])
     rotated, rotation_metrics = rotate_to_reference_phase(samples, reference / REVOLUTIONS_PER_MINUTE_PER_HERTZ)
@@ -650,6 +741,7 @@ def audit(bank_directory: Path, report_directory: Path) -> int:
         rotated, rotation_metrics = rotate_to_reference_phase(samples, reference / REVOLUTIONS_PER_MINUTE_PER_HERTZ)
         peaks = spectral_peaks(rotated)
         comb = harmonic_comb_spacing(peaks)
+        cepstral = measure_cepstral_cycle_frequency(samples, entry["cycle_frequency_hertz"])
         measurements.append(
             {
                 "source_filename": entry["source_filename"],
@@ -658,6 +750,13 @@ def audit(bank_directory: Path, report_directory: Path) -> int:
                 "configured_cycle_frequency_hertz": entry["cycle_frequency_hertz"],
                 "measured_dominant_period_hertz": measure_dominant_period_frequency(rotated),
                 "measured_comb_spacing_hertz": comb[0] if comb else None,
+                "measured_cepstral_spacing_hertz": cepstral[0] if cepstral else None,
+                "cepstral_spacing_prominence": cepstral[2] if cepstral else None,
+                "configured_reference_error_ratio": (
+                    abs(cepstral[0] - entry["cycle_frequency_hertz"]) / entry["cycle_frequency_hertz"]
+                    if cepstral
+                    else None
+                ),
                 "derived_reference_revolutions_per_minute": reference,
                 "integer_cycle_count": cycles,
                 "seam_before_preparation": measure_seam(samples),
@@ -675,10 +774,16 @@ def audit(bank_directory: Path, report_directory: Path) -> int:
     for row in measurements:
         dominant = row["measured_dominant_period_hertz"]
         comb = row["measured_comb_spacing_hertz"]
+        cepstral = row["measured_cepstral_spacing_hertz"]
+        prominence = row["cepstral_spacing_prominence"]
+        error_ratio = row["configured_reference_error_ratio"]
         print(
             f"  {row['source_filename']:22s} configured={row['configured_cycle_frequency_hertz']:9.4f}Hz "
             f"dominant={dominant if dominant is None else round(dominant, 4)}Hz "
             f"comb={comb if comb is None else round(comb, 4)}Hz "
+            f"cepstral={cepstral if cepstral is None else round(cepstral, 4)}Hz "
+            f"prominence={prominence if prominence is None else round(prominence, 3)} "
+            f"error={error_ratio if error_ratio is None else round(error_ratio, 5)} "
             f"reference={row['derived_reference_revolutions_per_minute']:9.3f}rpm cycles={row['integer_cycle_count']} "
             f"seam_before={row['seam_before_preparation']} seam_after={row['seam_after_preparation']}"
         )

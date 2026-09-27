@@ -53,13 +53,13 @@
       "source_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
       "runtime_asset_id": "engine_high_on_loop",
       "runtime_filename": "engine_high_on_loop.wav",
-      "runtime_sha256": "06472c193831806ec7d2aabc3ac71ac479bb383474567f2d15ae88bdf5c91edd",
+      "runtime_sha256": "53686d9307b6a026ee41e5e9077d4b472eac90fb54d821cf556a0a2509a340f0",
       "derived_frames": 1315372,
-      "reference_revolutions_per_minute": 16820.984481956435,
+      "reference_revolutions_per_minute": 17867.015566699003,
       "zone_revolutions_per_minute": 15600.0,
-      "integer_cycle_count": 4181,
-      "loop_crossfade_frames": 1258,
-      "loop_start_rotation_frames": 163,
+      "integer_cycle_count": 4441,
+      "loop_crossfade_frames": 1185,
+      "loop_start_rotation_frames": 28,
       "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
     },
     {
