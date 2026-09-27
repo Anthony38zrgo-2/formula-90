@@ -1,1 +1,14 @@
-Procesa con Python los samples originales `98_int_low.wav`, `98_int_med.wav`, `98_int_high_1.wav` y `98_int_max_5.wav` usando síntesis aditiva para añadir armónicos impares tipo square en la zona media-alta y alta. El resultado debe sonar más metálico, brillante, agresivo y definido, con mayor presencia armónica y sensación mecánica, sin volverse áspero, artificial o ruidoso. Conserva el pitch, duración, cuerpo y dinámica relativa de cada sample, mantén coherencia tonal entre low, med, high y max, evita clipping y exporta los resultados en WAV PCM 16-bit a 44.1 kHz.
+Actualmente el banco de sonidos de v10 se consume desde:
+D:\Formula90s\game\audio\formula_one_2030_grand_prix_sampler
+
+El problema es que no es un folder estandarizado , el folder que contiene todos los sonidos del v10 + 2 nuevos de off y on mid es :
+D:\Formula90s\game\sounds\banks\v10-v2-bank
+
+Este banco es el que debe ser el canon.  
+Primero verificar que todos los audios esten alineados al formato requerido por el sampler.
+Luego planificar la introduccion de 2 samples intermedios (mid) tanto en on como en off.
+
+genera un AGENTS.md en /games/ , este debe indicar explicitamente que todos los bancos de sonido, tanto el de motores , como el commons , deben estar en  
+D:\Formula90s\game\sounds\banks\v10-v2-bank
+
+tambien indicar en el AGENTS.md cual es el formato de sampleo.
