@@ -3,7 +3,7 @@
   "bank_id": "v10_v2_engine_bank",
   "preparation_tool": "tools/audio/build_canonical_v10_engine_bank.py",
   "preparation_tool_revision": 3,
-  "source_inventory_sha256": "ad52160f7ed84d0e97279bf338a002c22867c614dfb3678c419393a1618e9663",
+  "source_inventory_sha256": "6c1c943ba261d2e8ec49adf435de7ace102e5b22d94af94181936b3ad4a52926",
   "output_sample_rate": 44100,
   "event_selection_seed": 1,
   "coverage": {
@@ -773,7 +773,7 @@
       "preparation_recipe": "prepared_event_v1",
       "role": "gearbox_downshift",
       "source_filename": "geardn.wav",
-      "source_sha256": "ac0d922ee8abdb4edda6fc2f2729768218335bd29e660e15a1ea0f72030a41e1"
+      "source_sha256": "55e80869520e07a67b9904aae484c9215389585e9557afdbe0f7611657d8d9ef"
     },
     {
       "derived_band_rms_300_6000": 0.04703447034329142,
@@ -787,7 +787,7 @@
       "preparation_recipe": "prepared_event_v1",
       "role": "gearbox_upshift",
       "source_filename": "gearup.wav",
-      "source_sha256": "35edd40c03a13ce9f2f44aaba75b9d33272fc821e8e93b585805cff88a1dcdae"
+      "source_sha256": "5831fabcf1882f62daa901e18ccf6bebab376f09a4efa209a3399ff095b83937"
     },
     {
       "derived_band_rms_300_6000": 0.1135376878778195,
