@@ -3,4 +3,7 @@
 *.png binary
 *.glb binary
 *.zip binary
-
+game/tracks/fuji76_77/metadata/surfaces.json text eol=crlf
+game/tracks/fuji76_77/metadata/racing_line.json text eol=crlf
+game/tracks/fuji76_77/metadata/scene_manifest.json text eol=crlf
+game/tracks/fuji76_77/metadata/visual_profile.json text eol=crlf
