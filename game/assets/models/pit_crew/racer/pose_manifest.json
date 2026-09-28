@@ -4,6 +4,12 @@
   "character_source_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
   "vehicle": "f1_2030_v10",
   "track_first_use": "fuji76_77",
+  "rigged": true,
+  "animation_clips": [
+    "idle_wait",
+    "service_sequence"
+  ],
+  "clip_seconds": 1.0,
   "members": [
     {
       "name": "front_left_wheel_carrier",
