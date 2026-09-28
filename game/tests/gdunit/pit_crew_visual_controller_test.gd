@@ -62,10 +62,44 @@ func test_fuji_crew_has_eleven_members_and_exchanges_four_wheels() -> void:
 		assert_object(carrier.find_child("CarriedWheel", true, false)).is_not_null()
 	visual._on_service_started({"tire_seconds": 3.0})
 	assert_int(visual.wheel_exchanges.size()).is_equal(4)
-	visual._on_service_progress({"phase": PitStopController.SERVICE_PHASE_TIRES, "tire_seconds_remaining": 1.5})
+	var fuel_operator := visual.crew_members["fuel_hose_operator"] as Node3D
+	var fuel_operator_resting_position := visual.fuel_operator_resting_transform.origin
+	visual._on_service_progress({"phase": PitStopController.SERVICE_PHASE_TIRES, "tire_seconds_remaining": 2.4})
+	var mechanic := visual.crew_members["front_left_wheel_change_mechanic"] as Node3D
+	var mechanic_resting_transform: Transform3D = visual.crew_member_service_transforms[mechanic.name]
+	assert_float(mechanic.global_position.distance_to(mechanic_resting_transform.origin)).is_greater(0.2)
+	var mechanic_tool := visual.wheel_change_tools[mechanic.name] as Node3D
+	assert_float(absf(mechanic_tool.rotation.z)).is_greater(0.01)
+	visual._on_service_progress({"phase": PitStopController.SERVICE_PHASE_TIRES, "tire_seconds_remaining": 1.74})
+	var front_left_exchange: Dictionary = visual.wheel_exchanges[0]
+	var front_left_carrier := front_left_exchange["carrier"] as Node3D
+	var carrier_resting_transform: Transform3D = visual.crew_member_service_transforms[front_left_carrier.name]
+	assert_float(front_left_carrier.global_position.distance_to(carrier_resting_transform.origin)).is_greater(0.5)
+	var carried_replacement := front_left_exchange["replacement"] as Node3D
+	var carried_wheel_transform: Transform3D = front_left_exchange["carrier_relative_replacement_transform"]
+	assert_float(carried_replacement.global_position.distance_to(
+		(front_left_carrier.global_transform * carried_wheel_transform).origin)).is_less(0.05)
+	visual._on_service_progress({"phase": PitStopController.SERVICE_PHASE_TIRES, "tire_seconds_remaining": 0.12})
+	var fuel_nozzle := fuel_operator.find_child("FuelNozzle", true, false) as Node3D
+	var nozzle_to_port := fuel_nozzle.global_position - vehicle.global_transform * visual.FUEL_PORT_LOCAL_POSITION
+	nozzle_to_port.y = 0.0
+	assert_float(nozzle_to_port.length()).is_less(0.05)
 	for exchange in visual.wheel_exchanges:
-		assert_bool((exchange["original"] as Node3D).visible).is_false()
-	visual._on_service_completed()
+		var original_parts: Array[Node3D] = exchange["original_parts"]
+		for original_part in original_parts:
+			assert_bool(original_part.visible).is_false()
+		var original_wheel := original_parts[0].get_parent().get_parent() as Node3D
+		assert_bool((original_wheel.get_node("BrakeStatic") as Node3D).visible).is_true()
+	visual._on_service_progress({"phase": PitStopController.SERVICE_PHASE_FUEL, "fuel_seconds_remaining": 1.0})
 	assert_int(visual.wheel_exchanges.size()).is_equal(0)
+	assert_int(visual.carried_removed_wheels.size()).is_equal(4)
+	visual._on_service_completed()
+	visual._process(1.2)
+	assert_float(fuel_operator.global_position.distance_to(fuel_operator_resting_position)).is_less(0.01)
 	for wheel_path in visual.VEHICLE_WHEEL_PATHS:
-		assert_bool((vehicle.get_node(wheel_path) as Node3D).visible).is_true()
+		for wheel_part in visual._find_transferable_wheel_parts(vehicle.get_node(wheel_path) as Node3D):
+			assert_bool(wheel_part.visible).is_true()
+	visual._on_service_started({"tire_seconds": 3.0})
+	assert_int(visual.carried_removed_wheels.size()).is_equal(0)
+	assert_int(visual.wheel_exchanges.size()).is_equal(4)
+	visual._on_service_completed()
