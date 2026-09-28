@@ -51,12 +51,25 @@ func test_fuji_crew_has_eleven_members_and_exchanges_four_wheels() -> void:
 	var visual := auto_free(PIT_CREW_VISUAL_SCRIPT.new()) as PitCrewVisualController
 	add_child(visual)
 	visual.configure(controller, vehicle)
+	assert_int(visual.crew_members.size()).is_equal(11)
+	assert_bool(visual.crew_root.visible).is_false()
+	var initial_crew_root := visual.crew_root
+	var initial_carrier := visual.crew_members["front_left_wheel_carrier"] as Node3D
 	controller.set_selected_stop_lap(2)
 	controller.confirm_selection()
 	controller.on_lap_started(2)
 
 	assert_int(visual.crew_members.size()).is_equal(11)
+	assert_bool(visual.crew_root.visible).is_true()
+	assert_object(visual.crew_root).is_same(initial_crew_root)
+	assert_object(visual.crew_members["front_left_wheel_carrier"]).is_same(initial_carrier)
 	assert_int(visual.crew_root.get_child_count()).is_equal(11)
+	visual._on_crew_visibility_changed(false)
+	assert_bool(visual.crew_root.visible).is_false()
+	assert_int(visual.crew_members.size()).is_equal(11)
+	visual._on_crew_visibility_changed(true)
+	assert_bool(visual.crew_root.visible).is_true()
+	assert_object(visual.crew_members["front_left_wheel_carrier"]).is_same(initial_carrier)
 	for wheel_name in visual.WHEEL_NAMES:
 		var carrier := visual.crew_members[wheel_name + "_wheel_carrier"] as Node3D
 		assert_object(carrier.find_child("CarriedWheel", true, false)).is_not_null()

@@ -44,6 +44,7 @@ func configure(next_pit_stop: PitStopController, next_vehicle: Node3D) -> void:
 	pit_stop.service_started.connect(_on_service_started)
 	pit_stop.service_progress.connect(_on_service_progress)
 	pit_stop.service_completed.connect(_on_service_completed)
+	_create_crew()
 	_on_crew_visibility_changed(pit_stop.crew_visible)
 
 
@@ -65,13 +66,11 @@ func _process(delta: float) -> void:
 
 
 func _on_crew_visibility_changed(should_be_visible: bool) -> void:
-	if should_be_visible:
-		if crew_root == null:
-			_create_crew()
+	if crew_root == null:
 		return
-	if pit_stop != null and pit_stop.is_servicing():
+	if not should_be_visible and pit_stop != null and pit_stop.is_servicing():
 		return
-	_clear_crew()
+	crew_root.visible = should_be_visible
 
 
 func _create_crew() -> void:
@@ -135,20 +134,19 @@ func _create_wheel_change_tool_pivot(member_name: String, member: Node3D) -> voi
 
 func _on_service_started(plan: Dictionary) -> void:
 	if crew_root == null:
-		_create_crew()
-	if crew_root != null:
-		_restore_carried_wheels()
-		for member_name in crew_member_resting_transforms:
-			var member := crew_members.get(member_name) as Node3D
-			if member != null:
-				member.transform = crew_member_resting_transforms[member_name]
-		var box_center: Vector3 = pit_stop.get_assigned_box().get("center", Vector3.ZERO)
-		var vehicle_offset := vehicle.global_position - box_center
-		crew_root.global_position = Vector3(vehicle_offset.x, 0.0, vehicle_offset.z)
-		crew_member_service_transforms.clear()
-		for member_name in crew_members:
-			crew_member_service_transforms[member_name] = (crew_members[member_name] as Node3D).global_transform
-		_prepare_fuel_operator()
+		return
+	_restore_carried_wheels()
+	for member_name in crew_member_resting_transforms:
+		var member := crew_members.get(member_name) as Node3D
+		if member != null:
+			member.transform = crew_member_resting_transforms[member_name]
+	var box_center: Vector3 = pit_stop.get_assigned_box().get("center", Vector3.ZERO)
+	var vehicle_offset := vehicle.global_position - box_center
+	crew_root.global_position = Vector3(vehicle_offset.x, 0.0, vehicle_offset.z)
+	crew_member_service_transforms.clear()
+	for member_name in crew_members:
+		crew_member_service_transforms[member_name] = (crew_members[member_name] as Node3D).global_transform
+	_prepare_fuel_operator()
 	fuel_operator_retreat_elapsed = -1.0
 	tire_service_duration = maxf(float(plan.get("tire_seconds", 0.0)), 0.001)
 	_start_wheel_exchanges()
@@ -349,17 +347,3 @@ func _clear_wheel_exchanges(retain_removed_wheels: bool = false) -> void:
 		if is_instance_valid(replacement_wheel):
 			replacement_wheel.queue_free()
 	wheel_exchanges.clear()
-
-
-func _clear_crew() -> void:
-	_clear_wheel_exchanges()
-	fuel_operator_retreat_elapsed = -1.0
-	crew_members.clear()
-	crew_member_resting_transforms.clear()
-	crew_member_service_transforms.clear()
-	wheel_change_tools.clear()
-	wheel_change_tool_resting_transforms.clear()
-	carried_removed_wheels.clear()
-	if crew_root != null:
-		crew_root.queue_free()
-		crew_root = null
