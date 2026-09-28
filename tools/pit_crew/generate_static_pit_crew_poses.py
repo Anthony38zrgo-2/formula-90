@@ -134,6 +134,10 @@ def attach_carried_wheel(wheel_position):
     existing_objects = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=str(WHEEL_PATHS[wheel_position]))
     imported_objects = set(bpy.data.objects) - existing_objects
+    for imported_object in imported_objects:
+        if imported_object.type == "MESH" and not imported_object.name.endswith(("_RIM_04", "_TIRE")):
+            bpy.data.objects.remove(imported_object, do_unlink=True)
+    imported_objects = set(bpy.data.objects) - existing_objects
     carried_wheel = bpy.data.objects.new("CarriedWheel", None)
     bpy.context.scene.collection.objects.link(carried_wheel)
     for imported_object in imported_objects:

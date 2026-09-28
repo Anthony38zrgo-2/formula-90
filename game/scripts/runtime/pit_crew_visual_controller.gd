@@ -109,18 +109,36 @@ func _start_wheel_exchanges() -> void:
 		var carrier := crew_members.get(wheel_name + "_wheel_carrier") as Node3D
 		if original_wheel == null or carrier == null:
 			continue
+		var original_wheel_parts := _find_transferable_wheel_parts(original_wheel)
+		if original_wheel_parts.size() != 2:
+			continue
 		var replacement_wheel := carrier.find_child("CarriedWheel", true, false) as Node3D
 		var wheel_scene := load(WHEEL_MODEL_DIRECTORY + WHEEL_MODEL_FILES[wheel_index]) as PackedScene
 		if replacement_wheel == null or wheel_scene == null:
 			continue
 		var removed_wheel := wheel_scene.instantiate() as Node3D
+		var removed_wheel_parts := _find_transferable_wheel_parts(removed_wheel)
+		if removed_wheel_parts.size() != 2:
+			removed_wheel.free()
+			continue
+		var removed_brake_parts := removed_wheel.get_node_or_null("BrakeStatic") as Node3D
+		if removed_brake_parts != null:
+			removed_brake_parts.visible = false
+		var removed_spin_parts := removed_wheel.get_node_or_null("SpinVisual") as Node3D
+		for wheel_part in removed_spin_parts.get_children():
+			if wheel_part is Node3D:
+				wheel_part.visible = removed_wheel_parts.has(wheel_part)
 		crew_root.add_child(removed_wheel)
 		removed_wheel.global_transform = original_wheel.global_transform
 		var starting_replacement_transform := replacement_wheel.global_transform
 		replacement_wheel.reparent(crew_root, true)
-		original_wheel.visible = false
+		var original_part_visibility: Array[bool] = []
+		for wheel_part in original_wheel_parts:
+			original_part_visibility.append(wheel_part.visible)
+			wheel_part.visible = false
 		wheel_exchanges.append({
-			"original": original_wheel,
+			"original_parts": original_wheel_parts,
+			"original_part_visibility": original_part_visibility,
 			"removed": removed_wheel,
 			"replacement": replacement_wheel,
 			"starting_removed_transform": removed_wheel.global_transform,
@@ -154,11 +172,24 @@ func _on_service_completed() -> void:
 	_clear_wheel_exchanges()
 
 
+func _find_transferable_wheel_parts(wheel_root: Node3D) -> Array[Node3D]:
+	var transferable_parts: Array[Node3D] = []
+	var spin_visual := wheel_root.get_node_or_null("SpinVisual") as Node3D
+	if spin_visual == null:
+		return transferable_parts
+	for wheel_part in spin_visual.get_children():
+		if wheel_part is Node3D and (wheel_part.name.ends_with("_RIM_04") or wheel_part.name.ends_with("_TIRE")):
+			transferable_parts.append(wheel_part)
+	return transferable_parts
+
+
 func _clear_wheel_exchanges() -> void:
 	for exchange in wheel_exchanges:
-		var original_wheel: Node3D = exchange["original"]
-		if is_instance_valid(original_wheel):
-			original_wheel.visible = true
+		var original_parts: Array[Node3D] = exchange["original_parts"]
+		var original_part_visibility: Array[bool] = exchange["original_part_visibility"]
+		for part_index in original_parts.size():
+			if is_instance_valid(original_parts[part_index]):
+				original_parts[part_index].visible = original_part_visibility[part_index]
 		var removed_wheel: Node3D = exchange["removed"]
 		if is_instance_valid(removed_wheel):
 			removed_wheel.queue_free()

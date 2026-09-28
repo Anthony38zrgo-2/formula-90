@@ -2,7 +2,7 @@
 
 Este paquete prepara once poses independientes para la primera integración en Fuji 76-77. Los modelos GLB están en `poses/`; `pose_manifest.json` relaciona cada puesto con su archivo y las ruedas de origen.
 
-- Cuatro portadores llevan una instancia visible de la rueda correspondiente del F1 2030. Cada rueda está bajo el nodo `CarriedWheel`, separado del cuerpo.
+- Cuatro portadores llevan únicamente el rin y el neumático de la rueda correspondiente del F1 2030. Cada conjunto está bajo el nodo `CarriedWheel`, separado del cuerpo; disco, pinza y ducto de freno permanecen en el coche.
 - Cuatro mecánicos se inclinan hacia el buje y llevan una representación simple de la herramienta de cambio.
 - El encargado del gato, el señalero y el encargado de la manguera tienen poses y accesorios estáticos propios.
 
