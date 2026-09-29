@@ -43,6 +43,9 @@ func _run() -> void:
 	elif not minimap.get("map_data").is_valid_map():
 		printerr("[FAIL] Arcade HUD minimap data is invalid.")
 		failures += 1
+	elif not is_equal_approx(minimap.scale.x, 3.0):
+		printerr("[FAIL] Minimap scale changed with the other HUD panels.")
+		failures += 1
 	elif minimap.get_node_or_null(minimap.target_path) != vehicle:
 		printerr("[FAIL] Standalone HUD minimap did not resolve its local vehicle target.")
 		failures += 1
@@ -63,15 +66,15 @@ func _run() -> void:
 	elif retro_hud.get("state").gear_label != "N":
 		printerr("[FAIL] Retro HUD did not receive the standalone adapter state.")
 		failures += 1
-	elif not is_equal_approx(retro_hud.scale.x, 0.816):
-		printerr("[FAIL] Embedded Retro HUD scale was not applied from hud_config.json (expected 0.816).")
+	elif not is_equal_approx(retro_hud.scale.x, 1.1):
+		printerr("[FAIL] Embedded Retro HUD scale was not applied from hud_config.json (expected 1.1).")
 		failures += 1
 	var tire_panel := hud.get_node_or_null("TireStatusPanel") as TireStatusPanel
 	if tire_panel == null:
 		printerr("[FAIL] Runtime-created Tyres panel is missing.")
 		failures += 1
-	elif not is_equal_approx(tire_panel.scale.x, 1.08):
-		printerr("[FAIL] Tyres panel scale was not applied from hud_config.json (expected 1.08).")
+	elif not is_equal_approx(tire_panel.scale.x, 1.188):
+		printerr("[FAIL] Tyres panel scale was not applied from hud_config.json (expected 1.188).")
 		failures += 1
 	if retro_hud is Control and tire_panel != null:
 		var tachometer_rectangle := (retro_hud as Control).get_global_rect()

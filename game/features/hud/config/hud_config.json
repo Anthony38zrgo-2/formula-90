@@ -3,11 +3,11 @@
   "retro_hud": {
     "config_path": "res://features/retro_hud/config/retro_hud.json",
     "visible": true,
-    "scale": 1.0
+    "scale": 1.1
   },
   "tires": {
     "visible": true,
-    "scale": 1.08,
+    "scale": 1.188,
     "size": [
       390.0,
       196.0
@@ -18,10 +18,10 @@
       180.0,
       78.0
     ],
-    "margin_left": 8.0,
-    "margin_right": 8.0,
-    "margin_top": 6.0,
-    "margin_bottom": 6.0,
+    "margin_left": 16.0,
+    "margin_right": 16.0,
+    "margin_top": 12.0,
+    "margin_bottom": 12.0,
     "h_separation": 10.0,
     "v_separation": 6.0,
     "wheel_order": [
@@ -56,17 +56,17 @@
   },
   "engine_temperatures": {
     "visible": true,
-    "scale": 1.08,
+    "scale": 1.188,
     "size": [
       390.0,
       168.0
     ],
     "gap": 8.0,
     "title": "ENGINE",
-    "margin_left": 8.0,
-    "margin_right": 8.0,
-    "margin_top": 6.0,
-    "margin_bottom": 6.0,
+    "margin_left": 16.0,
+    "margin_right": 16.0,
+    "margin_top": 12.0,
+    "margin_bottom": 12.0,
     "column_separation": 24.0,
     "cold_color": "#73b8ff",
     "optimal_color": "#a6ff9e",
@@ -86,16 +86,16 @@
   },
   "lap_timing": {
     "visible": true,
-    "scale": 1.08,
+    "scale": 1.188,
     "size": [
       220.0,
       118.0
     ],
     "title": "LAP TIMING",
-    "margin_left": 8.0,
-    "margin_right": 8.0,
-    "margin_top": 6.0,
-    "margin_bottom": 6.0,
+    "margin_left": 14.0,
+    "margin_right": 14.0,
+    "margin_top": 10.0,
+    "margin_bottom": 10.0,
     "row_separation": 6.0,
     "caption_width": 58.0,
     "pending_color": "#cfd6e4",
@@ -104,7 +104,7 @@
   },
   "pit_stop": {
     "visible": true,
-    "scale": 1.08,
+    "scale": 1.188,
     "size": [
       400.0,
       174.0

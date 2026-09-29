@@ -3,19 +3,21 @@ extends Control
 
 const STATE_SCRIPT := preload("res://features/retro_hud/scripts/retro_hud_state.gd")
 const CONFIG_SCRIPT := preload("res://features/retro_hud/scripts/retro_hud_config.gd")
+const DISPLAY_FONT := preload("res://assets/fonts/BarlowCondensed-Medium.ttf")
 const REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/rpm_segment.svg")
 const FUEL_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/fuel_segment.svg")
 const FUEL_ICON_TEXTURE := preload("res://features/retro_hud/assets/fuel_icon.svg")
 const DIVIDER_TEXTURE := preload("res://features/retro_hud/assets/divider.svg")
-const DIGITAL_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/digital_segment.svg")
 
 const DESIGN_SIZE := Vector2(1448.0, 1086.0)
-const REVOLUTIONS_PER_MINUTE_CENTER := Vector2(700.0, 760.0)
-const REVOLUTIONS_PER_MINUTE_RADIUS := 570.0
+const REVOLUTIONS_PER_MINUTE_CENTER := Vector2(650.0, 760.0)
+const REVOLUTIONS_PER_MINUTE_RADIUS := 470.0
 const REVOLUTIONS_PER_MINUTE_START_DEGREES := 180.0
 const REVOLUTIONS_PER_MINUTE_END_DEGREES := 328.0
-const REVOLUTIONS_PER_MINUTE_LABEL_RADIUS := 650.0
-const DIGITAL_SEGMENT_SOURCE_SIZE := Vector2(100.0, 24.0)
+const REVOLUTIONS_PER_MINUTE_LABEL_RADIUS := 540.0
+const INDICATOR_FONT_SIZE := 72
+const GEAR_FONT_SIZE := 400
+const SPEED_FONT_SIZE := 120
 
 @export_file("*.json") var config_path := "res://features/retro_hud/config/retro_hud.json"
 @export var apply_layout_from_config := false
@@ -55,7 +57,9 @@ func set_competition_readout(
 		average_consumption_kg_per_lap: float,
 		has_average_consumption: bool,
 		fuel_delta_laps: float,
-		has_fuel_delta: bool) -> void:
+		has_fuel_delta: bool,
+		oil_temperature_color: Color = Color.WHITE,
+		water_temperature_color: Color = Color.WHITE) -> void:
 	state.set_competition_readout(
 		speed_kilometers_per_hour,
 		engine_revolutions_per_minute,
@@ -67,7 +71,9 @@ func set_competition_readout(
 		average_consumption_kg_per_lap,
 		has_average_consumption,
 		fuel_delta_laps,
-		has_fuel_delta)
+		has_fuel_delta,
+		oil_temperature_color,
+		water_temperature_color)
 
 
 func set_state(next_state: RetroHudState) -> void:
@@ -115,6 +121,7 @@ func _draw() -> void:
 	draw_set_transform(_design_origin, 0.0, Vector2.ONE * _design_scale_factor)
 
 	_draw_revolutions_per_minute_scale()
+	_draw_shift_lights()
 	_draw_gear_and_speed()
 	_draw_temperature_panel()
 	_draw_fuel_bar()
@@ -140,73 +147,106 @@ func _draw_revolutions_per_minute_scale() -> void:
 			config.revolutions_per_minute_minimum,
 			config.revolutions_per_minute_maximum,
 			segment_ratio)
-		var redline_ratio := inverse_lerp(
-			config.revolutions_per_minute_minimum,
-			config.revolutions_per_minute_maximum,
-			config.revolutions_per_minute_redline)
-		var is_redline_segment := segment_ratio >= redline_ratio
-		var segment_color := config.dial_color
-		if is_redline_segment:
-			segment_color = config.redline_color
-		if state.engine_revolutions_per_minute < revolutions_per_minute:
-			segment_color = (
-				config.inactive_redline_color
-				if is_redline_segment
+		if revolutions_per_minute < config.urgent_shift_revolutions_per_minute:
+			var segment_color := (
+				config.dial_color
+				if state.engine_revolutions_per_minute >= revolutions_per_minute
 				else config.inactive_color)
-		_draw_rotated_texture(
-			REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
-			segment_center,
-			Vector2(92.0, 46.0),
-			angle_radians + PI * 0.5,
-			segment_color)
+			_draw_rotated_texture(
+				REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
+				segment_center,
+				Vector2(92.0, 46.0),
+				angle_radians + PI * 0.5,
+				segment_color)
 
 		var displayed_revolutions_per_minute := int(round(revolutions_per_minute / 1000.0))
 		if displayed_revolutions_per_minute % 2 == 0 or segment_index == segment_count - 1:
 			var label_center := (
 				REVOLUTIONS_PER_MINUTE_CENTER
 				+ radial_direction * REVOLUTIONS_PER_MINUTE_LABEL_RADIUS)
-			_draw_condensed_text(
+			_draw_competition_text(
 				str(displayed_revolutions_per_minute),
 				label_center,
-				38,
+				INDICATOR_FONT_SIZE,
 				config.dial_color)
+	_draw_redline_band()
+
+
+func _draw_redline_band() -> void:
+	var revolutions_per_minute_range := config.revolutions_per_minute_maximum - config.revolutions_per_minute_minimum
+	var redline_range := config.revolutions_per_minute_maximum - config.urgent_shift_revolutions_per_minute
+	if redline_range <= 0.0:
+		return
+	var redline_midpoint := (config.urgent_shift_revolutions_per_minute + config.revolutions_per_minute_maximum) * 0.5
+	var midpoint_ratio := (redline_midpoint - config.revolutions_per_minute_minimum) / revolutions_per_minute_range
+	var midpoint_angle := deg_to_rad(lerpf(
+		REVOLUTIONS_PER_MINUTE_START_DEGREES,
+		REVOLUTIONS_PER_MINUTE_END_DEGREES,
+		midpoint_ratio))
+	var arc_width := REVOLUTIONS_PER_MINUTE_RADIUS * deg_to_rad(
+		(REVOLUTIONS_PER_MINUTE_END_DEGREES - REVOLUTIONS_PER_MINUTE_START_DEGREES)
+		* redline_range / revolutions_per_minute_range)
+	var center := REVOLUTIONS_PER_MINUTE_CENTER + Vector2(cos(midpoint_angle), sin(midpoint_angle)) * REVOLUTIONS_PER_MINUTE_RADIUS
+	var redline_color := (
+		config.redline_color
+		if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute
+		else config.inactive_redline_color)
+	_draw_rotated_texture(
+		REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
+		center,
+		Vector2(arc_width, 46.0),
+		midpoint_angle + PI * 0.5,
+		redline_color)
+
+
+func _draw_shift_lights() -> void:
+	if state.engine_revolutions_per_minute >= config.ideal_shift_revolutions_per_minute:
+		draw_circle(Vector2(130.0, 130.0), 57.0, config.inactive_color)
+		draw_circle(Vector2(130.0, 130.0), 48.0, config.dial_color)
+	if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute:
+		draw_circle(Vector2(285.0, 130.0), 57.0, config.inactive_color)
+		draw_circle(Vector2(285.0, 130.0), 48.0, config.alert_color)
 
 
 func _draw_gear_and_speed() -> void:
-	_draw_seven_segment_text(
+	var gear_color := (
+		config.alert_color
+		if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute
+		else config.digital_color)
+	_draw_competition_text(
 		state.gear_label,
 		Vector2(617.0, 540.0),
-		Vector2(194.0, 300.0),
-		config.digital_color)
-	_draw_seven_segment_text(
+		GEAR_FONT_SIZE,
+		gear_color)
+	_draw_competition_text(
 		str(int(round(state.speed_kilometers_per_hour))),
 		Vector2(846.0, 594.0),
-		Vector2(57.0, 96.0),
+		SPEED_FONT_SIZE,
 		config.digital_color)
-	_draw_condensed_text("KM/H", Vector2(844.0, 694.0), 42, config.dial_color)
+	_draw_competition_text("KM/H", Vector2(844.0, 694.0), INDICATOR_FONT_SIZE, config.dial_color)
 
 
 func _draw_temperature_panel() -> void:
-	_draw_condensed_text("OIL TEMP", Vector2(1297.0, 123.0), 34, config.dial_color)
-	_draw_temperature_value(state.oil_temperature_celsius, Vector2(1288.0, 203.0))
-	_draw_condensed_text("°C", Vector2(1390.0, 204.0), 32, config.dial_color)
+	_draw_competition_text("OIL TEMP", Vector2(1257.0, 123.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_temperature_value(state.oil_temperature_celsius, state.oil_temperature_color, Vector2(1268.0, 203.0))
+	_draw_competition_text("°C", Vector2(1370.0, 204.0), INDICATOR_FONT_SIZE, config.dial_color)
 
-	_draw_horizontal_divider(Vector2(1184.0, 264.0), 224.0)
+	_draw_horizontal_divider(Vector2(1164.0, 264.0), 224.0)
 
-	_draw_condensed_text("WATER TEMP", Vector2(1297.0, 304.0), 34, config.dial_color)
-	_draw_temperature_value(state.water_temperature_celsius, Vector2(1288.0, 385.0))
-	_draw_condensed_text("°C", Vector2(1390.0, 386.0), 32, config.dial_color)
+	_draw_competition_text("WATER TEMP", Vector2(1257.0, 304.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_temperature_value(state.water_temperature_celsius, state.water_temperature_color, Vector2(1268.0, 385.0))
+	_draw_competition_text("°C", Vector2(1370.0, 386.0), INDICATOR_FONT_SIZE, config.dial_color)
 
 
-func _draw_temperature_value(temperature_celsius: float, center: Vector2) -> void:
+func _draw_temperature_value(temperature_celsius: float, temperature_color: Color, center: Vector2) -> void:
 	if temperature_celsius < 0.0:
-		_draw_condensed_text("--", center, 52, config.inactive_color)
+		_draw_competition_text("--", center, INDICATOR_FONT_SIZE, config.inactive_color)
 		return
-	_draw_seven_segment_text(
+	_draw_competition_text(
 		str(int(round(temperature_celsius))),
 		center,
-		Vector2(54.0, 88.0),
-		config.digital_color)
+		INDICATOR_FONT_SIZE,
+		temperature_color)
 
 
 func _draw_fuel_bar() -> void:
@@ -229,7 +269,6 @@ func _draw_fuel_bar() -> void:
 		(fuel_track.size.x - 34.0 - segment_gap * float(segment_count - 1))
 		/ float(segment_count))
 	var first_segment_x := fuel_track.position.x + 17.0
-	var active_segment_count := int(floor(fuel_fraction * float(segment_count)))
 	var fuel_color := (
 		config.alert_color
 		if fuel_fraction <= config.fuel_alert_fraction
@@ -239,50 +278,59 @@ func _draw_fuel_bar() -> void:
 		var segment_center := Vector2(
 			first_segment_x + (segment_width + segment_gap) * float(segment_index) + segment_width * 0.5,
 			fuel_track.position.y + fuel_track.size.y * 0.5)
-		var segment_color := (
-			fuel_color
-			if segment_index < active_segment_count
-			else config.inactive_color)
-		_draw_rotated_texture(
-			FUEL_SEGMENT_TEXTURE,
+		var segment_fill_fraction := clampf(fuel_fraction * float(segment_count) - float(segment_index), 0.0, 1.0)
+		_draw_fuel_segment(
 			segment_center,
 			Vector2(segment_width, fuel_track.size.y - 16.0),
-			0.0,
-			segment_color)
+			segment_fill_fraction,
+			fuel_color)
+
+
+func _draw_fuel_segment(center: Vector2, dimensions: Vector2, fill_fraction: float, active_color: Color) -> void:
+	_draw_rotated_texture(FUEL_SEGMENT_TEXTURE, center, dimensions, 0.0, config.inactive_color)
+	if fill_fraction <= 0.0:
+		return
+	draw_set_transform(_design_origin + center * _design_scale_factor, 0.0, Vector2.ONE * _design_scale_factor)
+	draw_texture_rect_region(
+		FUEL_SEGMENT_TEXTURE,
+		Rect2(-dimensions * 0.5, Vector2(dimensions.x * fill_fraction, dimensions.y)),
+		Rect2(Vector2.ZERO, Vector2(FUEL_SEGMENT_TEXTURE.get_width() * fill_fraction, FUEL_SEGMENT_TEXTURE.get_height())),
+		active_color)
+	_restore_design_transform()
 
 
 func _draw_fuel_summary() -> void:
-	_draw_condensed_text("FUEL", Vector2(290.0, 887.0), 36, config.dial_color)
-	_draw_condensed_text("AVG", Vector2(728.0, 887.0), 36, config.dial_color)
-	_draw_condensed_text("DELTA", Vector2(1154.0, 887.0), 36, config.dial_color)
+	_draw_competition_text("FUEL", Vector2(290.0, 887.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("AVG", Vector2(728.0, 887.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("DELTA", Vector2(1154.0, 887.0), INDICATOR_FONT_SIZE, config.dial_color)
 
 	_draw_vertical_divider(Vector2(509.0, 879.0), 123.0)
 	_draw_vertical_divider(Vector2(943.0, 879.0), 123.0)
 
 	if state.fuel_remaining_kg < 0.0:
-		_draw_condensed_text("--.-", Vector2(291.0, 963.0), 44, config.inactive_color)
+		_draw_competition_text("--.-", Vector2(291.0, 963.0), INDICATOR_FONT_SIZE, config.inactive_color)
 	else:
 		var fuel_color := config.dial_color
 		if state.fuel_capacity_kg > 0.0:
 			var fuel_fraction := state.fuel_remaining_kg / state.fuel_capacity_kg
 			if fuel_fraction <= config.fuel_alert_fraction:
 				fuel_color = config.alert_color
-		_draw_seven_segment_text(
+		_draw_competition_text(
 			"%.1f" % state.fuel_remaining_kg,
 			Vector2(292.0, 960.0),
-			Vector2(52.0, 84.0),
+			INDICATOR_FONT_SIZE,
 			fuel_color)
-	_draw_condensed_text("KG", Vector2(408.0, 968.0), 32, config.dial_color)
+	_draw_competition_text("KG", Vector2(408.0, 968.0), INDICATOR_FONT_SIZE, config.dial_color)
 
 	if state.has_average_consumption:
-		_draw_seven_segment_text(
+		_draw_competition_text(
 			"%.2f" % state.average_consumption_kg_per_lap,
 			Vector2(725.0, 960.0),
-			Vector2(47.0, 82.0),
+			INDICATOR_FONT_SIZE,
 			config.digital_color)
 	else:
-		_draw_condensed_text("--.--", Vector2(724.0, 963.0), 40, config.inactive_color)
-	_draw_condensed_text("KG/LAP", Vector2(866.0, 968.0), 29, config.dial_color)
+		_draw_competition_text("--.--", Vector2(724.0, 963.0), INDICATOR_FONT_SIZE, config.inactive_color)
+	_draw_competition_text("KG/LAP", Vector2(866.0, 968.0), INDICATOR_FONT_SIZE, config.dial_color)
 
 	if state.has_fuel_delta:
 		var fuel_delta_color := (
@@ -293,14 +341,14 @@ func _draw_fuel_summary() -> void:
 			"-%.2f" % absf(state.fuel_delta_laps)
 			if state.fuel_delta_laps < 0.0
 			else "%.2f" % state.fuel_delta_laps)
-		_draw_seven_segment_text(
+		_draw_competition_text(
 			fuel_delta_text,
-			Vector2(1123.0, 960.0),
-			Vector2(43.0, 79.0),
+			Vector2(1078.0, 960.0),
+			INDICATOR_FONT_SIZE,
 			fuel_delta_color)
 	else:
-		_draw_condensed_text("--.--", Vector2(1124.0, 963.0), 40, config.inactive_color)
-	_draw_condensed_text("LAPS", Vector2(1335.0, 968.0), 30, config.dial_color)
+		_draw_competition_text("--.--", Vector2(1078.0, 963.0), INDICATOR_FONT_SIZE, config.inactive_color)
+	_draw_competition_text("LAPS", Vector2(1305.0, 968.0), INDICATOR_FONT_SIZE, config.dial_color)
 
 
 func _draw_rotated_texture(
@@ -321,234 +369,24 @@ func _draw_rotated_texture(
 	_restore_design_transform()
 
 
-func _draw_seven_segment_text(
-	text: String,
-	center: Vector2,
-	glyph_size: Vector2,
-	color: Color) -> void:
-	var glyph_gap := glyph_size.x * 0.11
-	var text_width := 0.0
-	for character_index in range(text.length()):
-		var character := text.substr(character_index, 1)
-		text_width += glyph_size.x * (0.34 if character == "." else 1.0)
-		if character_index < text.length() - 1:
-			text_width += glyph_gap
-
-	var cursor_x := center.x - text_width * 0.5
-	var glyph_top := center.y - glyph_size.y * 0.5
-	for character_index in range(text.length()):
-		var character := text.substr(character_index, 1)
-		var glyph_width := _draw_seven_segment_glyph(
-			character,
-			Vector2(cursor_x, glyph_top),
-			glyph_size,
-			color)
-		cursor_x += glyph_width
-		if character_index < text.length() - 1:
-			cursor_x += glyph_gap
-
-
-func _draw_seven_segment_glyph(
-	character: String,
-	top_left: Vector2,
-	glyph_size: Vector2,
-	color: Color) -> float:
-	if character == ".":
-		draw_circle(
-			top_left + Vector2(glyph_size.x * 0.15, glyph_size.y * 0.91),
-			minf(glyph_size.x * 0.09, glyph_size.y * 0.045),
-			color)
-		return glyph_size.x * 0.34
-
-	var horizontal_segment_length := glyph_size.x * 0.72
-	var horizontal_segment_thickness := glyph_size.y * 0.115
-	var vertical_segment_length := glyph_size.y * 0.34
-	var vertical_segment_thickness := glyph_size.x * 0.14
-	var active_segments := _segments_for_character(character)
-
-	for segment_name in active_segments:
-		match segment_name:
-			"top_horizontal":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.5, glyph_size.y * 0.055),
-					horizontal_segment_length,
-					horizontal_segment_thickness,
-					0.0,
-					color)
-			"upper_right":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.92, glyph_size.y * 0.275),
-					vertical_segment_length,
-					vertical_segment_thickness,
-					PI * 0.5,
-					color)
-			"lower_right":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.92, glyph_size.y * 0.725),
-					vertical_segment_length,
-					vertical_segment_thickness,
-					PI * 0.5,
-					color)
-			"bottom_horizontal":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.5, glyph_size.y * 0.945),
-					horizontal_segment_length,
-					horizontal_segment_thickness,
-					0.0,
-					color)
-			"lower_left":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.08, glyph_size.y * 0.725),
-					vertical_segment_length,
-					vertical_segment_thickness,
-					PI * 0.5,
-					color)
-			"upper_left":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.08, glyph_size.y * 0.275),
-					vertical_segment_length,
-					vertical_segment_thickness,
-					PI * 0.5,
-					color)
-			"middle_horizontal":
-				_draw_digital_segment(
-					top_left + Vector2(glyph_size.x * 0.5, glyph_size.y * 0.5),
-					horizontal_segment_length,
-					horizontal_segment_thickness,
-					0.0,
-					color)
-
-	return glyph_size.x
-
-
-func _draw_digital_segment(
-	center: Vector2,
-	segment_length: float,
-	segment_thickness: float,
-	rotation: float,
-	color: Color) -> void:
-	draw_set_transform(
-		_design_origin + center * _design_scale_factor,
-		rotation,
-		Vector2(
-			segment_length / DIGITAL_SEGMENT_SOURCE_SIZE.x * _design_scale_factor,
-			segment_thickness / DIGITAL_SEGMENT_SOURCE_SIZE.y * _design_scale_factor))
-	draw_texture_rect(
-		DIGITAL_SEGMENT_TEXTURE,
-		Rect2(-DIGITAL_SEGMENT_SOURCE_SIZE * 0.5, DIGITAL_SEGMENT_SOURCE_SIZE),
-		false,
-		color)
-	_restore_design_transform()
-
-
-func _segments_for_character(character: String) -> PackedStringArray:
-	match character:
-		"0":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_right",
-				"lower_right",
-				"bottom_horizontal",
-				"lower_left",
-				"upper_left"])
-		"1":
-			return PackedStringArray(["upper_right", "lower_right"])
-		"2":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_right",
-				"middle_horizontal",
-				"lower_left",
-				"bottom_horizontal"])
-		"3":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_right",
-				"middle_horizontal",
-				"lower_right",
-				"bottom_horizontal"])
-		"4":
-			return PackedStringArray([
-				"upper_left",
-				"middle_horizontal",
-				"upper_right",
-				"lower_right"])
-		"5":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_left",
-				"middle_horizontal",
-				"lower_right",
-				"bottom_horizontal"])
-		"6":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_left",
-				"middle_horizontal",
-				"lower_left",
-				"lower_right",
-				"bottom_horizontal"])
-		"7":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_right",
-				"lower_right"])
-		"8":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_right",
-				"lower_right",
-				"bottom_horizontal",
-				"lower_left",
-				"upper_left",
-				"middle_horizontal"])
-		"9":
-			return PackedStringArray([
-				"top_horizontal",
-				"upper_right",
-				"lower_right",
-				"bottom_horizontal",
-				"upper_left",
-				"middle_horizontal"])
-		"-":
-			return PackedStringArray(["middle_horizontal"])
-		"R":
-			return PackedStringArray([
-				"upper_left",
-				"middle_horizontal",
-				"lower_left",
-				"lower_right"])
-		"N":
-			return PackedStringArray([
-				"middle_horizontal",
-				"lower_left",
-				"lower_right"])
-		_:
-			return PackedStringArray()
-
-
-func _draw_condensed_text(
+func _draw_competition_text(
 	text: String,
 	center: Vector2,
 	font_size: int,
 	color: Color) -> void:
-	var font: Font = ThemeDB.fallback_font
-	var text_width := font.get_string_size(
+	var text_width := DISPLAY_FONT.get_string_size(
 		text,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1.0,
 		font_size).x
-	var horizontal_scale := 0.82
 	var baseline := Vector2(
-		(center.x - text_width * horizontal_scale * 0.5) / horizontal_scale,
-		center.y + float(font_size) * 0.34)
+		center.x - text_width * 0.5,
+		center.y + (DISPLAY_FONT.get_ascent(font_size) - DISPLAY_FONT.get_descent(font_size)) * 0.5)
 	draw_set_transform(
 		_design_origin,
 		0.0,
-		Vector2(
-			horizontal_scale * _design_scale_factor,
-			_design_scale_factor))
-	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, color)
+		Vector2.ONE * _design_scale_factor)
+	draw_string(DISPLAY_FONT, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, color)
 	_restore_design_transform()
 
 

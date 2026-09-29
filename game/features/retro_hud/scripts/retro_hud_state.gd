@@ -12,6 +12,8 @@ var speed_kilometers_per_hour := 0.0
 var engine_revolutions_per_minute := 0.0
 var oil_temperature_celsius := -1.0
 var water_temperature_celsius := -1.0
+var oil_temperature_color := Color.WHITE
+var water_temperature_color := Color.WHITE
 var fuel_remaining_kg := -1.0
 var fuel_capacity_kg := 0.0
 var average_consumption_kg_per_lap := 0.0
@@ -59,7 +61,9 @@ func set_competition_readout(
 		next_average_consumption_kg_per_lap: float,
 		next_has_average_consumption: bool,
 		next_fuel_delta_laps: float,
-		next_has_fuel_delta: bool) -> void:
+		next_has_fuel_delta: bool,
+		next_oil_temperature_color: Color = Color.WHITE,
+		next_water_temperature_color: Color = Color.WHITE) -> void:
 	var normalized_speed := maxf(next_speed_kilometers_per_hour, 0.0)
 	var normalized_engine_revolutions_per_minute := maxf(next_engine_revolutions_per_minute, 0.0)
 	var normalized_gear_label := next_gear_label if not next_gear_label.is_empty() else "N"
@@ -83,6 +87,8 @@ func set_competition_readout(
 			and gear_label == normalized_gear_label
 			and is_equal_approx(oil_temperature_celsius, normalized_oil_temperature)
 			and is_equal_approx(water_temperature_celsius, normalized_water_temperature)
+			and oil_temperature_color == next_oil_temperature_color
+			and water_temperature_color == next_water_temperature_color
 			and is_equal_approx(fuel_remaining_kg, normalized_fuel_remaining)
 			and is_equal_approx(fuel_capacity_kg, normalized_fuel_capacity)
 			and is_equal_approx(average_consumption_kg_per_lap, normalized_average_consumption)
@@ -97,6 +103,8 @@ func set_competition_readout(
 	engine_revolutions_per_minute = normalized_engine_revolutions_per_minute
 	oil_temperature_celsius = normalized_oil_temperature
 	water_temperature_celsius = normalized_water_temperature
+	oil_temperature_color = next_oil_temperature_color
+	water_temperature_color = next_water_temperature_color
 	fuel_remaining_kg = normalized_fuel_remaining
 	fuel_capacity_kg = normalized_fuel_capacity
 	average_consumption_kg_per_lap = normalized_average_consumption

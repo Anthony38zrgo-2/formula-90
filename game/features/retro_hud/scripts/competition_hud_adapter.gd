@@ -1,6 +1,9 @@
 class_name CompetitionHudAdapter
 extends "res://scripts/hud/arcade_race_hud.gd"
 
+const DISPLAY_FONT := preload("res://assets/fonts/BarlowCondensed-Medium.ttf")
+const STANDARD_FONT_SIZE := 18
+
 var _lap_timing_controller: LapTimingController
 
 
@@ -14,9 +17,37 @@ func bind_runtime(
 
 
 func _ready() -> void:
+	var display_theme := Theme.new()
+	display_theme.default_font = DISPLAY_FONT
+	display_theme.default_font_size = STANDARD_FONT_SIZE
+	theme = display_theme
 	super._ready()
 	if engine_temperature_panel != null:
 		engine_temperature_panel.visible = false
+	_apply_competition_panel_backgrounds()
+	_position_vehicle_status_panels()
+
+
+func _apply_competition_panel_backgrounds() -> void:
+	var display := retro_hud as RetroHudDisplay
+	if display == null:
+		return
+	var background_style := StyleBoxFlat.new()
+	background_style.bg_color = display.config.background_color
+	var track_minimap := get_node_or_null("Minimap") as TrackMinimapController
+	if track_minimap != null:
+		track_minimap.background_color = display.config.background_color
+		track_minimap.queue_redraw()
+	var handling_panel := get_node_or_null("HandlingTuningPanel/LiveTuningPanel") as PanelContainer
+	for panel in [
+		tire_status_panel,
+		lap_timing_panel,
+		pit_stop_panel,
+		engine_temperature_panel,
+		handling_panel,
+	]:
+		if panel is PanelContainer:
+			panel.add_theme_stylebox_override("panel", background_style)
 
 
 func _update_speed_gauge() -> void:
@@ -52,6 +83,8 @@ func _update_speed_gauge() -> void:
 	var thermal_state := _engine_thermal_state()
 	var oil_temperature_celsius := _temperature_from_state(thermal_state, "oil")
 	var water_temperature_celsius := _temperature_from_state(thermal_state, "water")
+	var oil_temperature_color := _engine_temperature_color(thermal_state, "oil", oil_temperature_celsius)
+	var water_temperature_color := _engine_temperature_color(thermal_state, "water", water_temperature_celsius)
 	var fuel_state := _fuel_state()
 	var fuel_remaining_kg := _finite_value(fuel_state.get("remaining_kg"), -1.0)
 	var fuel_capacity_kg := _finite_value(fuel_state.get("capacity_kg"), 0.0)
@@ -82,7 +115,9 @@ func _update_speed_gauge() -> void:
 		average_consumption_kg_per_lap,
 		has_average_consumption,
 		fuel_delta_laps,
-		has_fuel_delta)
+		has_fuel_delta,
+		oil_temperature_color,
+		water_temperature_color)
 
 
 func _engine_thermal_state() -> Dictionary:
@@ -106,6 +141,24 @@ func _temperature_from_state(thermal_state: Dictionary, system_name: String) -> 
 	if not (system_state is Dictionary):
 		return -1.0
 	return _finite_value(system_state.get("temperature_c"), -1.0)
+
+
+func _engine_temperature_color(thermal_state: Dictionary, system_name: String, temperature_celsius: float) -> Color:
+	var system_state: Variant = thermal_state.get(system_name, {})
+	if temperature_celsius < 0.0 or not (system_state is Dictionary):
+		return _hud_config.engine_temperatures.cold_color
+	var temperature_settings := _hud_config.engine_temperatures
+	if not system_state.has("optimal_min_c"):
+		return temperature_settings.optimal_color
+	if temperature_celsius < float(system_state.get("optimal_min_c")):
+		return temperature_settings.cold_color
+	if temperature_celsius <= float(system_state.get("optimal_max_c", INF)):
+		return temperature_settings.optimal_color
+	if temperature_celsius < float(system_state.get("derating_c", INF)):
+		return temperature_settings.warm_color
+	if temperature_celsius < float(system_state.get("critical_c", INF)):
+		return temperature_settings.hot_color
+	return temperature_settings.critical_color
 
 
 func _fuel_state() -> Dictionary:

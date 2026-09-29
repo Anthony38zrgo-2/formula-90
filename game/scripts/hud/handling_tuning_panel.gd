@@ -110,7 +110,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "JORDAN 191 | HANDLING LIVE"
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", 18)
 	content.add_child(title)
 
 	var hint := Label.new()

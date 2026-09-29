@@ -145,13 +145,18 @@ func _position_vehicle_status_panels() -> void:
 
 	var ref_rect := reference.get_global_rect()
 	var tire_visual_size := _visual_panel_size(tire_status_panel)
-	var engine_visual_size := _visual_panel_size(engine_temperature_panel)
+	var engine_visual_size := (
+		_visual_panel_size(engine_temperature_panel)
+		if engine_temperature_panel.visible
+		else Vector2.ZERO)
 	var panel_group_width := maxf(tire_visual_size.x, engine_visual_size.x)
 	var group_center_horizontal_position := ref_rect.position.x + ref_rect.size.x * 0.5
 	var viewport_size := get_viewport_rect().size
 	group_center_horizontal_position = clampf(group_center_horizontal_position, panel_group_width * 0.5 + 6.0, viewport_size.x - panel_group_width * 0.5 - 6.0)
 	var tire_vertical_position := ref_rect.position.y - tire_visual_size.y - _hud_config.tires.gap
-	var engine_vertical_position := tire_vertical_position - engine_visual_size.y - _hud_config.engine_temperatures.gap
+	var engine_vertical_position := tire_vertical_position
+	if engine_temperature_panel.visible:
+		engine_vertical_position -= engine_visual_size.y + _hud_config.engine_temperatures.gap
 	var full_group_height := ref_rect.position.y + ref_rect.size.y - engine_vertical_position
 	var group_top := clampf(engine_vertical_position, 6.0, maxf(6.0, viewport_size.y - full_group_height - 6.0))
 	var vertical_adjustment := group_top - engine_vertical_position

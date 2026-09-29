@@ -10,6 +10,8 @@ const PLAYER_OUTLINE := Color(0.01, 0.02, 0.08, 0.98)
 @export var target_path: NodePath
 @export var map_data: TrackMapData
 @export_range(0.02, 0.24, 0.01) var padding_ratio := 0.10
+@export var background_color := Color.TRANSPARENT
+@export var background_margin := 10.0
 
 var _target: Node3D
 
@@ -49,6 +51,11 @@ func _draw() -> void:
 	for world_point in map_data.centerline:
 		outline.append(_world_to_map(world_point))
 	outline.append(outline[0])
+	if background_color.a > 0.0:
+		var outline_bounds := Rect2(outline[0], Vector2.ZERO)
+		for outline_point in outline:
+			outline_bounds = outline_bounds.expand(outline_point)
+		draw_rect(outline_bounds.grow(background_margin), background_color)
 
 	draw_polyline(outline, TRACK_SHADOW, 4.0, true)
 	draw_polyline(outline, TRACK_OUTLINE, 1.8, true)
