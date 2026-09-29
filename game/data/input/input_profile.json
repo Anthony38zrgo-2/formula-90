@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "actions": [
+    {
+      "name": "Throttle",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194320 },
+        { "type": "gamepad_axis", "axis": 5, "axis_value": 1.0 }
+      ]
+    },
+    {
+      "name": "Brakes",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194322 },
+        { "type": "gamepad_axis", "axis": 4, "axis_value": 1.0 }
+      ]
+    },
+    {
+      "name": "Steer Left",
+      "deadzone": 0.12,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194319 },
+        { "type": "gamepad_axis", "axis": 0, "axis_value": -1.0 }
+      ]
+    },
+    {
+      "name": "Steer Right",
+      "deadzone": 0.12,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194321 },
+        { "type": "gamepad_axis", "axis": 0, "axis_value": 1.0 }
+      ]
+    },
+    {
+      "name": "Handbrake",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 32 }
+      ]
+    },
+    {
+      "name": "Clutch",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 88 },
+        { "type": "gamepad_button", "button_index": 9 }
+      ]
+    },
+    {
+      "name": "Shift Up",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 65 },
+        { "type": "gamepad_button", "button_index": 0 }
+      ]
+    },
+    {
+      "name": "Shift Down",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 90 },
+        { "type": "gamepad_button", "button_index": 2 }
+      ]
+    },
+    {
+      "name": "Toggle Transmission",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194312 }
+      ]
+    },
+    {
+      "name": "Toggle Traction Control",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 84 }
+      ]
+    },
+    {
+      "name": "aid_1",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 49 }
+      ]
+    },
+    {
+      "name": "aid_2",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 50 }
+      ]
+    },
+    {
+      "name": "aid_3",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 51 }
+      ]
+    },
+    {
+      "name": "aid_4",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 52 }
+      ]
+    },
+    {
+      "name": "aid_5",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 53 }
+      ]
+    },
+    {
+      "name": "ui_back_to_menu",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194305 },
+        { "type": "gamepad_button", "button_index": 6 }
+      ]
+    },
+    {
+      "name": "ShowDebug",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194323 }
+      ]
+    },
+    {
+      "name": "DebugNext",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 46 }
+      ]
+    },
+    {
+      "name": "DebugPrevious",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 44 }
+      ]
+    },
+    {
+      "name": "Reset Vehicle",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 82 }
+      ]
+    },
+    {
+      "name": "Toggle Camera",
+      "deadzone": 0.5,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 67 }
+      ]
+    },
+    {
+      "name": "Pit Field Up",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 87 },
+        { "type": "gamepad_button", "button_index": 11 }
+      ]
+    },
+    {
+      "name": "Pit Field Down",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 83 },
+        { "type": "gamepad_button", "button_index": 12 }
+      ]
+    },
+    {
+      "name": "Pit Value Left",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 81 },
+        { "type": "gamepad_button", "button_index": 13 }
+      ]
+    },
+    {
+      "name": "Pit Value Right",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 69 },
+        { "type": "gamepad_button", "button_index": 14 }
+      ]
+    },
+    {
+      "name": "Pit Confirm",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 4194309 },
+        { "type": "gamepad_button", "button_index": 1 }
+      ]
+    },
+    {
+      "name": "Pit Toggle Menu",
+      "deadzone": 0.2,
+      "events": [
+        { "type": "physical_key", "physical_keycode": 66 },
+        { "type": "gamepad_button", "button_index": 3 }
+      ]
+    }
+  ],
+  "axis_shaping": {
+    "steering_axis_deadzone": 0.08,
+    "steering_curve_exponent": 1.8,
+    "throttle_curve_exponent": 1.0,
+    "brake_curve_exponent": 1.0,
+    "steering_return_speed_per_second": 6.85
+  },
+  "vibration": {
+    "minimum_speed_kmh": 15.0,
+    "piano": {
+      "weak_motor_magnitude": 0.35,
+      "strong_motor_magnitude": 0.6,
+      "pulses_per_second": 9.0
+    },
+    "off_asphalt": {
+      "weak_motor_magnitude": 0.22,
+      "strong_motor_magnitude": 0.1,
+      "pulses_per_second": 5.0
+    },
+    "front_grip_limit": {
+      "weak_motor_magnitude": 0.3,
+      "strong_motor_magnitude": 0.8,
+      "pulses_per_second": 12.0,
+      "engage_slip_angle_rad": 0.1,
+      "release_slip_angle_rad": 0.075
+    },
+    "rear_grip_limit": {
+      "weak_motor_magnitude": 0.8,
+      "strong_motor_magnitude": 0.3,
+      "pulses_per_second": 12.0,
+      "engage_slip_angle_rad": 0.1,
+      "release_slip_angle_rad": 0.075
+    }
+  }
+}

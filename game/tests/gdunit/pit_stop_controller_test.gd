@@ -215,8 +215,9 @@ func test_menu_can_open_before_pit_entry_and_lap_selector_starts_next_lap() -> v
 	assert_int(controller.scheduled_stop_lap).is_equal(11)
 	assert_bool(InputMap.has_action(InputBindings.PIT_TOGGLE_MENU)).is_true()
 	var toggle_events := InputMap.action_get_events(InputBindings.PIT_TOGGLE_MENU)
-	assert_int(toggle_events.size()).is_equal(1)
+	assert_int(toggle_events.size()).is_equal(2)
 	assert_int((toggle_events[0] as InputEventKey).physical_keycode).is_equal(KEY_B)
+	assert_int((toggle_events[1] as InputEventJoypadButton).button_index).is_equal(JOY_BUTTON_Y)
 
 
 func _controller_for(vehicle: PitStopStubVehicle) -> PitStopController:

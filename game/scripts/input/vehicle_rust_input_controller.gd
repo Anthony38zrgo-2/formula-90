@@ -14,12 +14,12 @@ class_name VehicleRustInputController
 @export var action_toggle_transmission: String = InputBindings.TOGGLE_TRANSMISSION
 @export var action_toggle_traction_control: String = InputBindings.TOGGLE_TRACTION_CONTROL
 @export var action_reset_vehicle: String = InputBindings.RESET_VEHICLE
-@export var throttle_exponent: float = 1.0
 
 var _has_required_interface: bool = false
 var _spawn_pos: Vector3 = Vector3()
 var _spawn_yaw: float = 0.0
 var _max_gear: int = 6
+var _steering_return_speed_pending: bool = false
 
 func _ready() -> void:
 	if vehicle_node == null:
@@ -47,6 +47,11 @@ func _ready() -> void:
 	_has_required_interface = true
 
 	_resolve_max_gear()
+	var rumble_controller := GamepadRumbleController.new()
+	rumble_controller.name = "GamepadRumbleController"
+	rumble_controller.vehicle_node = vehicle_node
+	add_child(rumble_controller)
+	_steering_return_speed_pending = true
 
 	# Capture spawn pose so Reset Vehicle can restore it.
 	if vehicle_node.has_method("global_transform"):
@@ -61,9 +66,14 @@ func _physics_process(_delta: float) -> void:
 	if "enable_player_input" in vehicle_node and not vehicle_node.enable_player_input:
 		return
 
+	if _steering_return_speed_pending:
+		_apply_common_steering_return_speed()
+
+	var input_profile := _active_input_profile()
 	var brake_val := 0.0
 	if action_brake != "" and InputMap.has_action(action_brake):
-		brake_val = Input.get_action_strength(action_brake)
+		var raw_brake := Input.get_action_strength(action_brake)
+		brake_val = _shape_unsigned(raw_brake, input_profile.brake_curve_exponent if input_profile != null else 1.0)
 
 	var steer_left := 0.0
 	if action_steer_left != "" and InputMap.has_action(action_steer_left):
@@ -72,12 +82,12 @@ func _physics_process(_delta: float) -> void:
 	var steer_right := 0.0
 	if action_steer_right != "" and InputMap.has_action(action_steer_right):
 		steer_right = Input.get_action_strength(action_steer_right)
-	var steering_val := steer_left - steer_right
+	var steering_val := _shape_steering(steer_left - steer_right, input_profile)
 
 	var throttle_val := 0.0
 	if action_throttle != "" and InputMap.has_action(action_throttle):
 		var raw_throttle := Input.get_action_strength(action_throttle)
-		throttle_val = pow(raw_throttle, throttle_exponent) if throttle_exponent != 1.0 else raw_throttle
+		throttle_val = _shape_unsigned(raw_throttle, input_profile.throttle_curve_exponent if input_profile != null else 1.0)
 
 	var handbrake_val := 0.0
 	if action_handbrake != "" and InputMap.has_action(action_handbrake):
@@ -147,6 +157,38 @@ func _is_pit_selection_active() -> bool:
 	if pit_stop == null or not pit_stop.has_method("is_selection_active"):
 		return false
 	return bool(pit_stop.call("is_selection_active"))
+
+
+func _active_input_profile() -> InputProfile:
+	var bindings := get_node_or_null("/root/InputBindings")
+	if bindings == null:
+		return null
+	var profile: InputProfile = bindings.input_profile
+	if profile == null or not profile.is_valid():
+		return null
+	return profile
+
+
+func _shape_unsigned(raw_value: float, curve_exponent: float) -> float:
+	return InputProfile.apply_unsigned_curve(raw_value, curve_exponent)
+
+
+func _shape_steering(raw_value: float, input_profile: InputProfile) -> float:
+	if input_profile == null:
+		return clampf(raw_value, -1.0, 1.0)
+	var deadzoned := InputProfile.remap_axis_deadzone(raw_value, input_profile.steering_axis_deadzone)
+	return InputProfile.apply_signed_curve(deadzoned, input_profile.steering_curve_exponent)
+
+
+func _apply_common_steering_return_speed() -> void:
+	_steering_return_speed_pending = false
+	var input_profile := _active_input_profile()
+	if input_profile == null:
+		return
+	var speed := input_profile.steering_return_speed_per_second
+	if speed <= 0.0 or not vehicle_node.has_method("set_countersteer_speed"):
+		return
+	vehicle_node.set_countersteer_speed(speed)
 
 
 func _toggle_traction_control() -> void:
