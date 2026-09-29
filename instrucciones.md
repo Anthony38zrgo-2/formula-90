@@ -15,7 +15,7 @@ tambien indicar en el AGENTS.md cual es el formato de sampleo.
 
 # Plan de sprint: controles Xbox, ajustes de entrada y vibración por superficie
 
-Estado: especificación actualizada con las aclaraciones del usuario; implementación integrada en HEAD 918ad875; rebuild canónico pendiente.
+Estado: especificación actualizada con las aclaraciones del usuario; el backlog y los criterios de aceptación describen el alcance de la feature.
 
 ## Procedencia e inventario previo
 

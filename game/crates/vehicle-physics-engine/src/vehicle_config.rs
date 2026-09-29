@@ -649,7 +649,7 @@ impl VehicleConfig {
             front_steering_ratio: 1.0,
             rear_steering_ratio: 0.0,
             steering_speed: 4.25,
-            countersteer_speed: 11.0,
+            countersteer_speed: default_counter_speed(),
             steering_speed_decay: 0.20,
             steering_slip_assist: 0.54,
             countersteer_assist: 0.89,
@@ -832,7 +832,7 @@ impl VehicleConfig {
             front_steering_ratio: 1.0,
             rear_steering_ratio: 0.0,
             steering_speed: 3.7,
-            countersteer_speed: 9.0,
+            countersteer_speed: default_counter_speed(),
             steering_speed_decay: 0.26,
             steering_slip_assist: 0.11,
             countersteer_assist: 0.70,
@@ -1291,8 +1291,6 @@ struct JsonSteering {
     rear_steering_ratio: f64,
     #[serde(default = "default_steer_speed")]
     steering_speed: f64,
-    #[serde(default = "default_counter_speed")]
-    countersteer_speed: f64,
     #[serde(default = "default_steer_decay")]
     steering_speed_decay: f64,
     #[serde(default = "default_slip_assist")]
@@ -1311,7 +1309,6 @@ impl Default for JsonSteering {
             front_steering_ratio: 1.0,
             rear_steering_ratio: 0.0,
             steering_speed: default_steer_speed(),
-            countersteer_speed: default_counter_speed(),
             steering_speed_decay: default_steer_decay(),
             steering_slip_assist: default_slip_assist(),
             countersteer_assist: default_counter_assist(),
@@ -3743,7 +3740,7 @@ impl JsonVehicleSpec {
             front_steering_ratio: self.steering.front_steering_ratio,
             rear_steering_ratio: self.steering.rear_steering_ratio,
             steering_speed: self.steering.steering_speed,
-            countersteer_speed: self.steering.countersteer_speed,
+            countersteer_speed: default_counter_speed(),
             steering_speed_decay: self.steering.steering_speed_decay,
             steering_slip_assist: self.steering.steering_slip_assist,
             countersteer_assist: self.steering.countersteer_assist,
@@ -4057,7 +4054,6 @@ impl JsonVehicleSpec {
                 front_steering_ratio: cfg.front_steering_ratio,
                 rear_steering_ratio: cfg.rear_steering_ratio,
                 steering_speed: cfg.steering_speed,
-                countersteer_speed: cfg.countersteer_speed,
                 steering_speed_decay: cfg.steering_speed_decay,
                 steering_slip_assist: cfg.steering_slip_assist,
                 countersteer_assist: cfg.countersteer_assist,

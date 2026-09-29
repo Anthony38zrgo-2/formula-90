@@ -562,7 +562,6 @@
   "steering": {
     "ackermann": 0.2,
     "countersteer_assist": 0.55,
-    "countersteer_speed": 6.85,
     "front_steering_ratio": 1.0,
     "max_steering_angle": 0.4363,
     "rear_steering_ratio": 0.0,
