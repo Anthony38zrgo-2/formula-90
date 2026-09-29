@@ -193,6 +193,12 @@ def test_canonical_event_groups_cover_every_event(manifest: dict) -> None:
         source_name = event["source_filename"]
         assert (BANK_DIR / source_name).is_file()
         assert sha256(BANK_DIR / source_name) == event["source_sha256"]
+        if event["id"] in canonical.CANONICAL_SOURCE_EVENT_IDENTIFIERS:
+            expected_event, expected_payload = canonical.prepare_event_from_source(
+                BANK_DIR / source_name, event
+            )
+            assert event == expected_event
+            assert (BANK_DIR / event["derived_filename"]).read_bytes() == expected_payload
 
 
 def test_canonical_source_inventory_hash_matches(manifest: dict) -> None:

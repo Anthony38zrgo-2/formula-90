@@ -244,21 +244,21 @@
       "asset_id": "downshift_event",
       "role": "gearbox_downshift",
       "derived_filename": "downshift_event.wav",
-      "derived_sha256": "5c19ba452970b3b9477a1ce6b19cf99ce5f005feb164050185cb25182d9aee66",
+      "derived_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
       "source_filename": "geardn.wav",
-      "source_sha256": "55e80869520e07a67b9904aae484c9215389585e9557afdbe0f7611657d8d9ef",
-      "preparation_recipe": "prepared_event_v1",
-      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+      "source_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+      "preparation_recipe": "canonical_mono16_source_event_v1",
+      "preparation_source_bank": "v10-v2-bank"
     },
     {
       "asset_id": "upshift_event",
       "role": "gearbox_upshift",
       "derived_filename": "upshift_event.wav",
-      "derived_sha256": "9ccf3e59c4981710e92316fe5270a942ceac48a9aa5badaa0195cb0fd9c9052d",
+      "derived_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
       "source_filename": "gearup.wav",
-      "source_sha256": "5831fabcf1882f62daa901e18ccf6bebab376f09a4efa209a3399ff095b83937",
-      "preparation_recipe": "prepared_event_v1",
-      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+      "source_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+      "preparation_recipe": "canonical_mono16_source_event_v1",
+      "preparation_source_bank": "v10-v2-bank"
     },
     {
       "asset_id": "limiter_event",

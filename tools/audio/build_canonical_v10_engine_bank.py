@@ -41,7 +41,7 @@ DEFAULT_REPORT_DIRECTORY = ROOT / "reports/audio-v10/v10-v2-bank"
 SAMPLE_RATE = 44100
 SCHEMA_VERSION = 1
 TOOL_NAME = "tools/audio/build_canonical_v10_engine_bank.py"
-TOOL_REVISION = 3
+TOOL_REVISION = 4
 BANK_ID = "v10_v2_engine_bank"
 EVENT_SELECTION_SEED = 1
 
@@ -202,6 +202,8 @@ EVENT_SOURCE_BY_ASSET_ID = {
     "downshift_event": "geardn.wav",
     "limiter_event": "limiter.wav",
 }
+CANONICAL_SOURCE_EVENT_IDENTIFIERS = frozenset({"upshift_event", "downshift_event"})
+CANONICAL_SOURCE_EVENT_RECIPE = "canonical_mono16_source_event_v1"
 
 
 def sha256_bytes(payload: bytes) -> str:
@@ -279,6 +281,38 @@ def band_rms(samples: np.ndarray, low_hz: float, high_hz: float) -> float:
     sos = butter(4, [low_hz, high_hz], btype="bandpass", fs=SAMPLE_RATE, output="sos")
     filtered = sosfiltfilt(sos, samples)
     return rms_value(np.asarray(filtered, dtype=np.float64))
+
+
+def prepare_event_from_source(source_path: Path, event_template: dict) -> tuple[dict, bytes]:
+    source_sample_rate, source_samples = read_wave_mono(source_path)
+    if source_sample_rate <= 0:
+        raise ValueError(f"{source_path} must have a positive sample rate")
+    if source_sample_rate != SAMPLE_RATE:
+        sample_rate_ratio = Fraction(SAMPLE_RATE, source_sample_rate)
+        source_samples = resample_poly(
+            source_samples,
+            sample_rate_ratio.numerator,
+            sample_rate_ratio.denominator,
+        )
+    if source_samples.size == 0:
+        raise ValueError(f"{source_path} must contain audio samples")
+
+    derived_payload = wave_mono16_bytes(source_samples)
+    prepared_event = {key: value for key, value in event_template.items()}
+    prepared_event.update(
+        {
+            "source_filename": source_path.name,
+            "source_sha256": sha256_file(source_path),
+            "derived_sha256": sha256_bytes(derived_payload),
+            "derived_frames": int(source_samples.size),
+            "duration_seconds": float(source_samples.size / SAMPLE_RATE),
+            "derived_rms_dbfs": decibels_full_scale(rms_value(source_samples)),
+            "derived_peak_dbfs": decibels_full_scale(float(np.max(np.abs(source_samples)))),
+            "derived_band_rms_300_6000": band_rms(source_samples, *LEVEL_BAND_HZ),
+            "preparation_recipe": CANONICAL_SOURCE_EVENT_RECIPE,
+        }
+    )
+    return prepared_event, derived_payload
 
 
 def loop_level(samples: np.ndarray) -> float:
@@ -670,13 +704,18 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
             raise ValueError(f"unexpected event asset {asset_id}")
         canon_source_name = EVENT_SOURCE_BY_ASSET_ID[asset_id]
         canon_source_path = bank_directory / canon_source_name
-        event_path = event_source_directory / event["derived_filename"]
-        payload = event_path.read_bytes()
-        if sha256_bytes(payload) != event["derived_sha256"]:
-            raise ValueError(f"prepared event hash mismatch: {event_path}")
-        copied = {key: value for key, value in event.items()}
-        copied["source_filename"] = canon_source_name
-        copied["source_sha256"] = sha256_file(canon_source_path)
+        if asset_id in CANONICAL_SOURCE_EVENT_IDENTIFIERS:
+            copied, payload = prepare_event_from_source(canon_source_path, event)
+            preparation_source_bank = bank_directory.name
+        else:
+            event_path = event_source_directory / event["derived_filename"]
+            payload = event_path.read_bytes()
+            if sha256_bytes(payload) != event["derived_sha256"]:
+                raise ValueError(f"prepared event hash mismatch: {event_path}")
+            copied = {key: value for key, value in event.items()}
+            copied["source_filename"] = canon_source_name
+            copied["source_sha256"] = sha256_file(canon_source_path)
+            preparation_source_bank = event_source_directory.name
         events.append(copied)
         event_audio[event["derived_filename"]] = payload
         inventory_events.append(
@@ -684,11 +723,11 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
                 "asset_id": asset_id,
                 "role": event["role"],
                 "derived_filename": event["derived_filename"],
-                "derived_sha256": event["derived_sha256"],
+                "derived_sha256": copied["derived_sha256"],
                 "source_filename": canon_source_name,
                 "source_sha256": copied["source_sha256"],
-                "preparation_recipe": event["preparation_recipe"],
-                "preparation_source_bank": event_source_directory.name,
+                "preparation_recipe": copied["preparation_recipe"],
+                "preparation_source_bank": preparation_source_bank,
             }
         )
 
