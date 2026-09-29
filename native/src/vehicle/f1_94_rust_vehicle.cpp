@@ -654,6 +654,7 @@ void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) 
 	input.handbrake = handbrake_amount_;
 	input.clutch = clutch_amount_;
 	input.gear_request = gear_request_;
+	gear_request_ = -2;
 
 	// 3. Sample 12 RayCast3Ds in Godot (global coordinates)
 	F90TriRaycastSample samples[4] = {};

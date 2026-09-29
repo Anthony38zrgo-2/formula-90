@@ -18,6 +18,10 @@ pub struct PowertrainState {
     pub target_gear: i8,
     pub clutch_engagement: f64,
     pub shift_timer: f64,
+    #[serde(default)]
+    pub downshift_minimum_interval_remaining_seconds: f64,
+    #[serde(default)]
+    pub downshift_clutch_reengagement_remaining_seconds: f64,
     pub engine_torque: f64,
     pub clutch_torque: f64,
     pub is_rev_limited: bool,
@@ -51,6 +55,8 @@ impl PowertrainState {
             target_gear: 1,
             clutch_engagement: 1.0,
             shift_timer: 0.0,
+            downshift_minimum_interval_remaining_seconds: 0.0,
+            downshift_clutch_reengagement_remaining_seconds: 0.0,
             engine_torque: 0.0,
             clutch_torque: 0.0,
             is_rev_limited: false,
@@ -153,6 +159,7 @@ impl PowertrainState {
             vehicle_input,
             wheel_angular_velocities,
             tire_reaction_torques,
+            forward_speed_meters_per_second,
             available_engine_torque_fraction,
             delta_time_seconds,
         );
@@ -181,6 +188,8 @@ impl PowertrainState {
         forward_speed_m_s: f64,
         dt: f64,
     ) {
+        self.downshift_minimum_interval_remaining_seconds =
+            (self.downshift_minimum_interval_remaining_seconds - dt).max(0.0);
         if self.apply_shift_timer(config, wheel_spins, forward_speed_m_s, dt) {
             return;
         }
@@ -204,6 +213,17 @@ impl PowertrainState {
             }
         }
 
+        if config.downshift_rev_matching_enabled && desired > 0 && desired < self.current_gear {
+            let target_revolutions_per_minute =
+                self.target_revolutions_per_minute_for_gear(config, wheel_spins, forward_speed_m_s, desired);
+            if self.downshift_minimum_interval_remaining_seconds > 0.0
+                || target_revolutions_per_minute
+                    > config.max_rpm * config.downshift_maximum_target_revolutions_per_minute_fraction
+            {
+                return;
+            }
+            self.downshift_minimum_interval_remaining_seconds = config.downshift_minimum_interval_seconds;
+        }
         self.apply_gear_change(config, desired);
     }
 
@@ -221,18 +241,24 @@ impl PowertrainState {
         }
         self.shift_timer = (self.shift_timer - dt).max(0.0);
         if self.shift_timer == 0.0 {
+            let completed_downshift = self.target_gear > 0 && self.target_gear < self.current_gear;
             self.current_gear = self.target_gear;
-            let ratio = self.get_total_gear_ratio(config).abs();
-            if ratio > 0.0 {
-                let wheel_spin = self.drivetrain_spin(config, wheel_spins).abs();
-                let road_spin = forward_speed_m_s.abs() / config.rear_tire_radius.max(1e-6);
-                let target_spin = if (wheel_spin - road_spin).abs() > config.automatic_shift.wheel_road_spin_blend_threshold_rads {
-                    road_spin * config.automatic_shift.road_spin_weight + wheel_spin * config.automatic_shift.wheel_spin_weight
-                } else {
-                    wheel_spin
-                };
-                self.rpm = (target_spin * ratio * RAD_S_TO_RPM)
-                    .clamp(config.idle_rpm, config.max_rpm);
+            if completed_downshift && config.downshift_rev_matching_enabled {
+                self.downshift_clutch_reengagement_remaining_seconds =
+                    config.downshift_clutch_reengagement_seconds;
+            } else {
+                let ratio = self.get_total_gear_ratio(config).abs();
+                if ratio > 0.0 {
+                    let wheel_spin = self.drivetrain_spin(config, wheel_spins).abs();
+                    let road_spin = forward_speed_m_s.abs() / config.rear_tire_radius.max(1e-6);
+                    let target_spin = if (wheel_spin - road_spin).abs() > config.automatic_shift.wheel_road_spin_blend_threshold_rads {
+                        road_spin * config.automatic_shift.road_spin_weight + wheel_spin * config.automatic_shift.wheel_spin_weight
+                    } else {
+                        wheel_spin
+                    };
+                    self.rpm = (target_spin * ratio * RAD_S_TO_RPM)
+                        .clamp(config.idle_rpm, config.max_rpm);
+                }
             }
         }
         true
@@ -312,9 +338,24 @@ impl PowertrainState {
         if desired == self.current_gear {
             return;
         }
+        self.downshift_clutch_reengagement_remaining_seconds = 0.0;
         self.target_gear = desired;
         self.shift_timer = (config.shift_time + config.gear_inertia).max(0.0);
         if self.shift_timer == 0.0 { self.current_gear = desired; }
+    }
+
+    fn target_revolutions_per_minute_for_gear(
+        &self,
+        config: &VehicleConfig,
+        wheel_spins: &[f64; 4],
+        forward_speed_meters_per_second: f64,
+        gear: i8,
+    ) -> f64 {
+        let wheel_angular_velocity = self.drivetrain_spin(config, wheel_spins).abs();
+        let road_angular_velocity =
+            forward_speed_meters_per_second.abs() / config.rear_tire_radius.max(1e-6);
+        let total_gear_ratio = config.gear_ratios[(gear - 1) as usize] * config.final_drive;
+        wheel_angular_velocity.max(road_angular_velocity) * total_gear_ratio.abs() * RAD_S_TO_RPM
     }
 
 
@@ -324,6 +365,7 @@ impl PowertrainState {
         input: &VehicleInput,
         wheel_spins: &[f64; 4],
         tire_reaction_torques: &[f64; 4],
+        forward_speed_meters_per_second: f64,
         available_engine_torque_fraction: f64,
         dt: f64,
     ) {
@@ -360,6 +402,31 @@ impl PowertrainState {
         if self.shift_timer > 0.0 {
             torque_output = torque_output.min(0.0);
         }
+        let rev_matching_active = config.downshift_rev_matching_enabled
+            && self.target_gear > 0
+            && ((self.shift_timer > 0.0 && self.target_gear < self.current_gear)
+                || self.downshift_clutch_reengagement_remaining_seconds > 0.0);
+        if rev_matching_active {
+            let target_revolutions_per_minute = self.target_revolutions_per_minute_for_gear(
+                config,
+                wheel_spins,
+                forward_speed_meters_per_second,
+                self.target_gear,
+            ).min(config.max_rpm * config.downshift_maximum_target_revolutions_per_minute_fraction);
+            let torque_required_to_match =
+                (target_revolutions_per_minute - self.rpm).max(0.0)
+                    * config.motor_moment.max(1e-6)
+                    / (RAD_S_TO_RPM * dt);
+            let maximum_blip_torque =
+                config.max_torque * config.downshift_blip_torque_fraction;
+            torque_output = (torque_required_to_match + variable_drag + constant_brake)
+                .min(maximum_blip_torque)
+                - variable_drag
+                - constant_brake;
+            if self.rpm >= config.max_rpm {
+                torque_output = torque_output.min(0.0);
+            }
+        }
         self.engine_torque = torque_output;
 
         // Free engine integration occurs before clutch reaction, as in GEVP.
@@ -376,6 +443,14 @@ impl PowertrainState {
         let total_ratio = self.get_total_gear_ratio(config);
         let manual_clutch = input.clutch.clamp(0.0, 1.0);
         let shift_clutch = if self.shift_timer > 0.0 { 1.0 } else { 0.0 };
+        let downshift_reengagement_disengagement = if config.downshift_clutch_reengagement_seconds > 0.0 {
+            self.downshift_clutch_reengagement_remaining_seconds
+                / config.downshift_clutch_reengagement_seconds
+        } else {
+            0.0
+        };
+        self.downshift_clutch_reengagement_remaining_seconds =
+            (self.downshift_clutch_reengagement_remaining_seconds - dt).max(0.0);
         // GEVP anti-stall clutch: at idle (or below clutch-out RPM when launching from rest),
         // disengage clutch completely so idle governor does not produce artificial creep torque.
         // Hysteresis and offset are now profile-tunable via JSON.
@@ -388,7 +463,10 @@ impl PowertrainState {
         } else {
             (clutch_out_rpm - self.rpm) / (clutch_out_rpm - idle_floor).max(1e-6)
         };
-        let clutch_disengagement = manual_clutch.max(shift_clutch).max(idle_disengagement);
+        let clutch_disengagement = manual_clutch
+            .max(shift_clutch)
+            .max(idle_disengagement)
+            .max(downshift_reengagement_disengagement);
         self.clutch_engagement = 1.0 - clutch_disengagement;
 
         let drive_axles_inertia = driven_wheel_inertia(config);

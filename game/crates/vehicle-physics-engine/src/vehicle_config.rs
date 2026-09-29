@@ -139,6 +139,11 @@ pub struct VehicleConfig {
     pub reverse_ratio: f64,
     pub shift_time: f64, // seconds
     pub automatic_transmission: bool,
+    pub downshift_rev_matching_enabled: bool,
+    pub downshift_maximum_target_revolutions_per_minute_fraction: f64,
+    pub downshift_blip_torque_fraction: f64,
+    pub downshift_minimum_interval_seconds: f64,
+    pub downshift_clutch_reengagement_seconds: f64,
     pub front_torque_split: f64, // 0.0 = pure RWD, 1.0 = pure FWD
 
     // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned)
@@ -676,6 +681,11 @@ impl VehicleConfig {
             reverse_ratio: 3.00,
             shift_time: 0.12,
             automatic_transmission: false,
+            downshift_rev_matching_enabled: false,
+            downshift_maximum_target_revolutions_per_minute_fraction: 1.0,
+            downshift_blip_torque_fraction: 0.0,
+            downshift_minimum_interval_seconds: 0.0,
+            downshift_clutch_reengagement_seconds: 0.0,
             automatic_shift: AutomaticShift::default(),
             gear_inertia: default_gear_inertia(),
             audio: None,
@@ -857,6 +867,11 @@ impl VehicleConfig {
             reverse_ratio: 3.00,
             shift_time: 0.16,
             automatic_transmission: true,
+            downshift_rev_matching_enabled: false,
+            downshift_maximum_target_revolutions_per_minute_fraction: 1.0,
+            downshift_blip_torque_fraction: 0.0,
+            downshift_minimum_interval_seconds: 0.0,
+            downshift_clutch_reengagement_seconds: 0.0,
             automatic_shift: AutomaticShift::default(),
             gear_inertia: default_gear_inertia(),
             audio: None,
@@ -1366,6 +1381,16 @@ struct JsonPowertrain {
     #[serde(default = "default_auto_trans")]
     automatic_transmission: bool,
     #[serde(default)]
+    downshift_rev_matching_enabled: bool,
+    #[serde(default = "default_downshift_maximum_target_revolutions_per_minute_fraction")]
+    downshift_maximum_target_revolutions_per_minute_fraction: f64,
+    #[serde(default)]
+    downshift_blip_torque_fraction: f64,
+    #[serde(default)]
+    downshift_minimum_interval_seconds: f64,
+    #[serde(default)]
+    downshift_clutch_reengagement_seconds: f64,
+    #[serde(default)]
     front_torque_split: f64,
     #[serde(default = "default_gear_inertia")]
     gear_inertia: f64,
@@ -1403,6 +1428,11 @@ impl Default for JsonPowertrain {
             reverse_ratio: default_reverse_ratio(),
             shift_time: default_shift_time(),
             automatic_transmission: default_auto_trans(),
+            downshift_rev_matching_enabled: false,
+            downshift_maximum_target_revolutions_per_minute_fraction: default_downshift_maximum_target_revolutions_per_minute_fraction(),
+            downshift_blip_torque_fraction: 0.0,
+            downshift_minimum_interval_seconds: 0.0,
+            downshift_clutch_reengagement_seconds: 0.0,
             front_torque_split: 0.0,
             gear_inertia: default_gear_inertia(),
             max_clutch_torque_ratio: default_max_clutch_ratio(),
@@ -1453,6 +1483,9 @@ fn default_reverse_ratio() -> f64 {
 }
 fn default_shift_time() -> f64 {
     0.12
+}
+fn default_downshift_maximum_target_revolutions_per_minute_fraction() -> f64 {
+    1.0
 }
 fn default_auto_trans() -> bool {
     false
@@ -3293,6 +3326,17 @@ impl JsonVehicleSpec {
         if self.powertrain.gear_ratios.len() < 1 {
             return Err("At least one gear ratio required".to_string());
         }
+        if !self.powertrain.downshift_maximum_target_revolutions_per_minute_fraction.is_finite()
+            || !(0.0..=1.0).contains(&self.powertrain.downshift_maximum_target_revolutions_per_minute_fraction)
+            || !self.powertrain.downshift_blip_torque_fraction.is_finite()
+            || !(0.0..=1.0).contains(&self.powertrain.downshift_blip_torque_fraction)
+            || !self.powertrain.downshift_minimum_interval_seconds.is_finite()
+            || self.powertrain.downshift_minimum_interval_seconds < 0.0
+            || !self.powertrain.downshift_clutch_reengagement_seconds.is_finite()
+            || self.powertrain.downshift_clutch_reengagement_seconds < 0.0
+        {
+            return Err("Invalid downshift rev matching configuration".to_string());
+        }
         if self.powertrain.torque_curve.len() < 2 {
             return Err("At least 2 torque curve points required".to_string());
         }
@@ -3756,6 +3800,11 @@ impl JsonVehicleSpec {
             reverse_ratio: self.powertrain.reverse_ratio,
             shift_time: self.powertrain.shift_time,
             automatic_transmission: self.powertrain.automatic_transmission,
+            downshift_rev_matching_enabled: self.powertrain.downshift_rev_matching_enabled,
+            downshift_maximum_target_revolutions_per_minute_fraction: self.powertrain.downshift_maximum_target_revolutions_per_minute_fraction,
+            downshift_blip_torque_fraction: self.powertrain.downshift_blip_torque_fraction,
+            downshift_minimum_interval_seconds: self.powertrain.downshift_minimum_interval_seconds,
+            downshift_clutch_reengagement_seconds: self.powertrain.downshift_clutch_reengagement_seconds,
             powertrain_thermal: self.powertrain.thermal.unwrap_or_default(),
             automatic_shift: self
                 .powertrain
@@ -4071,6 +4120,11 @@ impl JsonVehicleSpec {
                 reverse_ratio: cfg.reverse_ratio,
                 shift_time: cfg.shift_time,
                 automatic_transmission: cfg.automatic_transmission,
+                downshift_rev_matching_enabled: cfg.downshift_rev_matching_enabled,
+                downshift_maximum_target_revolutions_per_minute_fraction: cfg.downshift_maximum_target_revolutions_per_minute_fraction,
+                downshift_blip_torque_fraction: cfg.downshift_blip_torque_fraction,
+                downshift_minimum_interval_seconds: cfg.downshift_minimum_interval_seconds,
+                downshift_clutch_reengagement_seconds: cfg.downshift_clutch_reengagement_seconds,
                 thermal: Some(cfg.powertrain_thermal.clone()),
                 front_torque_split: cfg.front_torque_split,
                 gear_inertia: 0.02,

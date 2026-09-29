@@ -554,6 +554,11 @@
   },
   "powertrain": {
     "automatic_transmission": false,
+    "downshift_rev_matching_enabled": true,
+    "downshift_maximum_target_revolutions_per_minute_fraction": 0.96,
+    "downshift_blip_torque_fraction": 0.9,
+    "downshift_minimum_interval_seconds": 0.18,
+    "downshift_clutch_reengagement_seconds": 0.06,
     "clutch_out_rpm_offset": 1100.0,
     "constant_brake_ratio": 0.015,
     "differential": {
