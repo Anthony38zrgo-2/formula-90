@@ -3,7 +3,7 @@
   "actions": [
     {
       "name": "Throttle",
-      "deadzone": 0.5,
+      "deadzone": 0.05,
       "events": [
         { "type": "physical_key", "physical_keycode": 4194320 },
         { "type": "gamepad_axis", "axis": 5, "axis_value": 1.0 }
@@ -11,7 +11,7 @@
     },
     {
       "name": "Brakes",
-      "deadzone": 0.5,
+      "deadzone": 0.05,
       "events": [
         { "type": "physical_key", "physical_keycode": 4194322 },
         { "type": "gamepad_axis", "axis": 4, "axis_value": 1.0 }
@@ -19,7 +19,7 @@
     },
     {
       "name": "Steer Left",
-      "deadzone": 0.12,
+      "deadzone": 0.05,
       "events": [
         { "type": "physical_key", "physical_keycode": 4194319 },
         { "type": "gamepad_axis", "axis": 0, "axis_value": -1.0 }
@@ -27,7 +27,7 @@
     },
     {
       "name": "Steer Right",
-      "deadzone": 0.12,
+      "deadzone": 0.05,
       "events": [
         { "type": "physical_key", "physical_keycode": 4194321 },
         { "type": "gamepad_axis", "axis": 0, "axis_value": 1.0 }
@@ -206,10 +206,12 @@
     }
   ],
   "axis_shaping": {
-    "steering_axis_deadzone": 0.08,
+    "steering_axis_deadzone": 0.05,
     "steering_curve_exponent": 1.8,
     "throttle_curve_exponent": 1.0,
     "brake_curve_exponent": 1.0,
+    "throttle_release_speed_per_second": 3.0,
+    "brake_release_speed_per_second": 6.0,
     "steering_return_speed_per_second": 6.85
   },
   "vibration": {

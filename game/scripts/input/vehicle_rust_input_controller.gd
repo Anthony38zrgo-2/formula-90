@@ -20,6 +20,8 @@ var _spawn_pos: Vector3 = Vector3()
 var _spawn_yaw: float = 0.0
 var _max_gear: int = 6
 var _steering_return_speed_pending: bool = false
+var _throttle_release_value: float = 0.0
+var _brake_release_value: float = 0.0
 
 func _ready() -> void:
 	if vehicle_node == null:
@@ -59,11 +61,13 @@ func _ready() -> void:
 		_spawn_pos = t.origin
 		_spawn_yaw = t.basis.get_euler().y
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not _has_required_interface or vehicle_node == null:
 		return
 
 	if "enable_player_input" in vehicle_node and not vehicle_node.enable_player_input:
+		_throttle_release_value = 0.0
+		_brake_release_value = 0.0
 		return
 
 	if _steering_return_speed_pending:
@@ -74,6 +78,7 @@ func _physics_process(_delta: float) -> void:
 	if action_brake != "" and InputMap.has_action(action_brake):
 		var raw_brake := Input.get_action_strength(action_brake)
 		brake_val = _shape_unsigned(raw_brake, input_profile.brake_curve_exponent if input_profile != null else 1.0)
+	brake_val = _apply_pedal_release(brake_val, true, input_profile, delta)
 
 	var steer_left := 0.0
 	if action_steer_left != "" and InputMap.has_action(action_steer_left):
@@ -88,6 +93,7 @@ func _physics_process(_delta: float) -> void:
 	if action_throttle != "" and InputMap.has_action(action_throttle):
 		var raw_throttle := Input.get_action_strength(action_throttle)
 		throttle_val = _shape_unsigned(raw_throttle, input_profile.throttle_curve_exponent if input_profile != null else 1.0)
+	throttle_val = _apply_pedal_release(throttle_val, false, input_profile, delta)
 
 	var handbrake_val := 0.0
 	if action_handbrake != "" and InputMap.has_action(action_handbrake):
@@ -178,6 +184,17 @@ func _shape_steering(raw_value: float, input_profile: InputProfile) -> float:
 		return clampf(raw_value, -1.0, 1.0)
 	var deadzoned := InputProfile.remap_axis_deadzone(raw_value, input_profile.steering_axis_deadzone)
 	return InputProfile.apply_signed_curve(deadzoned, input_profile.steering_curve_exponent)
+
+
+func _apply_pedal_release(raw_value: float, is_brake_pedal: bool, input_profile: InputProfile, delta_seconds: float) -> float:
+	var release_speed := 0.0
+	if input_profile != null:
+		release_speed = input_profile.brake_release_speed_per_second if is_brake_pedal else input_profile.throttle_release_speed_per_second
+	if is_brake_pedal:
+		_brake_release_value = InputProfile.apply_release_limit(_brake_release_value, raw_value, release_speed, delta_seconds)
+		return _brake_release_value
+	_throttle_release_value = InputProfile.apply_release_limit(_throttle_release_value, raw_value, release_speed, delta_seconds)
+	return _throttle_release_value
 
 
 func _apply_common_steering_return_speed() -> void:

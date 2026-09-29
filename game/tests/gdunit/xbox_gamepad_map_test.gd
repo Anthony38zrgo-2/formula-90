@@ -70,6 +70,8 @@ func test_keyboard_bindings_survive_the_new_map() -> void:
 
 
 func test_action_deadzones_match_the_profile() -> void:
-	assert_float(InputMap.action_get_deadzone("Steer Left")).is_between(0.11, 0.13)
-	assert_float(InputMap.action_get_deadzone("Throttle")).is_between(0.49, 0.51)
+	assert_float(InputMap.action_get_deadzone("Steer Left")).is_between(0.049, 0.051)
+	assert_float(InputMap.action_get_deadzone("Steer Right")).is_between(0.049, 0.051)
+	assert_float(InputMap.action_get_deadzone("Throttle")).is_between(0.049, 0.051)
+	assert_float(InputMap.action_get_deadzone("Brakes")).is_between(0.049, 0.051)
 	assert_float(InputMap.action_get_deadzone("Pit Confirm")).is_between(0.19, 0.21)

@@ -7,6 +7,8 @@ const MINIMUM_CURVE_EXPONENT := 0.05
 const MAXIMUM_CURVE_EXPONENT := 5.0
 const MINIMUM_RETURN_SPEED_PER_SECOND := 0.1
 const MAXIMUM_RETURN_SPEED_PER_SECOND := 50.0
+const MINIMUM_RELEASE_SPEED_PER_SECOND := 0.0
+const MAXIMUM_RELEASE_SPEED_PER_SECOND := 50.0
 const MINIMUM_PULSES_PER_SECOND := 0.5
 const MAXIMUM_PULSES_PER_SECOND := 50.0
 const MINIMUM_MAGNITUDE := 0.0
@@ -23,6 +25,8 @@ var steering_axis_deadzone := 0.0
 var steering_curve_exponent := 1.0
 var throttle_curve_exponent := 1.0
 var brake_curve_exponent := 1.0
+var throttle_release_speed_per_second := 0.0
+var brake_release_speed_per_second := 0.0
 var steering_return_speed_per_second := 0.0
 var vibration_minimum_speed_kmh := 0.0
 var vibration_settings: Dictionary = {}
@@ -92,6 +96,16 @@ static func remap_axis_deadzone(value: float, deadzone: float) -> float:
 		return 0.0
 	var rescaled := (absf(value) - clamped_deadzone) / remaining
 	return signf(value) * clampf(rescaled, 0.0, 1.0)
+
+
+static func apply_release_limit(previous_value: float, raw_value: float, release_speed_per_second: float, delta_seconds: float) -> float:
+	var clamped_previous := clampf(previous_value, 0.0, 1.0)
+	var clamped_raw := clampf(raw_value, 0.0, 1.0)
+	if release_speed_per_second <= 0.0 or delta_seconds <= 0.0:
+		return clamped_raw
+	if clamped_raw >= clamped_previous:
+		return clamped_raw
+	return maxf(clamped_raw, clamped_previous - release_speed_per_second * delta_seconds)
 
 
 static func surface_band_for_wheel_codes(wheel_codes: Array, piano_code: int, off_asphalt_codes: Array) -> String:
@@ -192,6 +206,8 @@ func _collect_axis_shaping(raw_shaping: Variant) -> void:
 	steering_curve_exponent = _read_exponent(shaping, "steering_curve_exponent")
 	throttle_curve_exponent = _read_exponent(shaping, "throttle_curve_exponent")
 	brake_curve_exponent = _read_exponent(shaping, "brake_curve_exponent")
+	throttle_release_speed_per_second = _read_release_speed(shaping, "throttle_release_speed_per_second")
+	brake_release_speed_per_second = _read_release_speed(shaping, "brake_release_speed_per_second")
 	steering_return_speed_per_second = float(shaping.get("steering_return_speed_per_second", -1.0))
 	if steering_return_speed_per_second < MINIMUM_RETURN_SPEED_PER_SECOND or steering_return_speed_per_second > MAXIMUM_RETURN_SPEED_PER_SECOND:
 		errors.append("steering_return_speed_per_second %f is outside [%f, %f]" % [steering_return_speed_per_second, MINIMUM_RETURN_SPEED_PER_SECOND, MAXIMUM_RETURN_SPEED_PER_SECOND])
@@ -204,6 +220,14 @@ func _read_exponent(shaping: Dictionary, field_name: String) -> float:
 		errors.append("%s %f is outside [%f, %f]" % [field_name, exponent, MINIMUM_CURVE_EXPONENT, MAXIMUM_CURVE_EXPONENT])
 		return 1.0
 	return exponent
+
+
+func _read_release_speed(shaping: Dictionary, field_name: String) -> float:
+	var release_speed := float(shaping.get(field_name, -1.0))
+	if release_speed < MINIMUM_RELEASE_SPEED_PER_SECOND or release_speed > MAXIMUM_RELEASE_SPEED_PER_SECOND:
+		errors.append("%s %f is outside [%f, %f]" % [field_name, release_speed, MINIMUM_RELEASE_SPEED_PER_SECOND, MAXIMUM_RELEASE_SPEED_PER_SECOND])
+		return 0.0
+	return release_speed
 
 
 func _collect_vibration(raw_vibration: Variant) -> void:

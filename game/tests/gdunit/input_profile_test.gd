@@ -29,7 +29,7 @@ func test_canonical_profile_covers_every_action_constant() -> void:
 func test_missing_file_is_reported_and_registers_nothing() -> void:
 	var profile: InputProfile = INPUT_PROFILE_SCRIPT.load_from_path("res://data/input/does_not_exist.json")
 	assert_bool(profile.is_valid()).is_false()
-	assert_bool(profile.errors.is_empty())
+	assert_bool(profile.errors.is_empty()).is_false()
 	assert_int(profile.action_definitions.size()).is_equal(0)
 
 
@@ -59,6 +59,8 @@ func test_out_of_range_values_reject_their_entry_only() -> void:
 			"steering_curve_exponent": 99.0,
 			"throttle_curve_exponent": 1.0,
 			"brake_curve_exponent": 1.0,
+			"throttle_release_speed_per_second": -0.5,
+			"brake_release_speed_per_second": 6.0,
 			"steering_return_speed_per_second": 6.85,
 		},
 		"vibration": {
@@ -72,10 +74,42 @@ func test_out_of_range_values_reject_their_entry_only() -> void:
 	var profile: InputProfile = INPUT_PROFILE_SCRIPT.new()
 	profile.parse_json_text(JSON.stringify(document))
 	assert_bool(profile.is_valid()).is_false()
-	assert_bool(profile.has_registered_action("Throttle"))
-	assert_bool(profile.has_registered_action("Brakes"))
-	assert_bool(profile.has_registered_action("Bad"))
-	assert_bool(profile.has_registered_action("Aid"))
+	assert_bool(profile.has_registered_action("Throttle")).is_false()
+	assert_bool(profile.has_registered_action("Brakes")).is_true()
+	assert_bool(profile.has_registered_action("Bad")).is_false()
+	assert_bool(profile.has_registered_action("Aid")).is_false()
+	assert_float(profile.brake_release_speed_per_second).is_equal(6.0)
+	assert_float(profile.throttle_release_speed_per_second).is_equal(0.0)
+
+
+func test_release_limit_follows_press_immediately() -> void:
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(0.2, 0.8, 3.0, 0.016)).is_equal(0.8)
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(0.0, 0.05, 3.0, 0.016)).is_equal(0.05)
+
+
+func test_release_limit_decays_at_configured_speed() -> void:
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(0.5, 0.0, 3.0, 0.1)).is_between(0.199, 0.201)
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(1.0, 0.0, 6.0, 0.1)).is_between(0.399, 0.401)
+
+
+func test_release_limit_never_undershoots_the_raw_value() -> void:
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(0.05, 0.02, 3.0, 0.1)).is_equal(0.02)
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(1.0, 0.0, 3.0, 1.0)).is_equal(0.0)
+
+
+func test_release_limit_with_zero_speed_or_delta_is_immediate() -> void:
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(1.0, 0.0, 0.0, 0.016)).is_equal(0.0)
+	assert_float(INPUT_PROFILE_SCRIPT.apply_release_limit(1.0, 0.0, 3.0, 0.0)).is_equal(0.0)
+
+
+func test_canonical_profile_exposes_pedal_release_and_five_percent_deadzones() -> void:
+	var profile: InputProfile = INPUT_PROFILE_SCRIPT.load_from_path(CANONICAL_PROFILE_PATH)
+	assert_bool(profile.is_valid()).is_true()
+	assert_float(profile.throttle_release_speed_per_second).is_equal(3.0)
+	assert_float(profile.brake_release_speed_per_second).is_equal(6.0)
+	assert_float(profile.steering_axis_deadzone).is_between(0.049, 0.051)
+	for action_name in [InputBindings.THROTTLE, InputBindings.BRAKES, InputBindings.STEER_LEFT, InputBindings.STEER_RIGHT]:
+		assert_float(float(profile.action_definitions[action_name]["deadzone"])).is_between(0.049, 0.051)
 
 
 func test_signed_curve_boundaries_and_symmetry() -> void:
