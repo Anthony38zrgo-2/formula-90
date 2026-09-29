@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://scripts/hud/arcade_race_hud.gd" id="1"]
+[ext_resource type="Script" path="res://features/retro_hud/scripts/competition_hud_adapter.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/track/track_minimap_controller.gd" id="2"]
 [ext_resource type="Resource" path="res://scenes/ui/fuji76_77_hud_map.tres" id="3"]
 [ext_resource type="Script" path="res://scripts/hud/arcade_speed_gauge.gd" id="4"]
@@ -71,13 +71,13 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -360.0
-offset_top = -450.0
-offset_right = -7.0
-offset_bottom = 50.0
+offset_left = -866.0
+offset_top = -650.0
+offset_right = 0.0
+offset_bottom = 0.0
 grow_horizontal = 0
 grow_vertical = 0
-scale = Vector2(0.816, 0.816)
+scale = Vector2(1, 1)
 
 [node name="SpeedValue" type="Label" parent="SpeedGauge"]
 layout_mode = 0

@@ -1,25 +1,30 @@
 class_name RetroHudDisplay
 extends Control
 
-## Procedural reinterpretation of the 2004-2008 Formula broadcast telemetry HUD.
-## No texture frames from the Assetto Corsa mod are required at runtime.
-
 const STATE_SCRIPT := preload("res://features/retro_hud/scripts/retro_hud_state.gd")
 const CONFIG_SCRIPT := preload("res://features/retro_hud/scripts/retro_hud_config.gd")
+const REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/rpm_segment.svg")
+const FUEL_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/fuel_segment.svg")
+const FUEL_ICON_TEXTURE := preload("res://features/retro_hud/assets/fuel_icon.svg")
+const DIVIDER_TEXTURE := preload("res://features/retro_hud/assets/divider.svg")
+const DIGITAL_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/digital_segment.svg")
 
-const DESIGN_SIZE := Vector2(353.0, 500.0)
-const RPM_DIAL_CENTER := Vector2(179.0, 178.0)
-const RPM_DIAL_RADIUS := 108.0
-const RPM_START_DEG := 91.0
-const RPM_END_DEG := 357.0
+const DESIGN_SIZE := Vector2(1448.0, 1086.0)
+const REVOLUTIONS_PER_MINUTE_CENTER := Vector2(700.0, 760.0)
+const REVOLUTIONS_PER_MINUTE_RADIUS := 570.0
+const REVOLUTIONS_PER_MINUTE_START_DEGREES := 180.0
+const REVOLUTIONS_PER_MINUTE_END_DEGREES := 328.0
+const REVOLUTIONS_PER_MINUTE_LABEL_RADIUS := 650.0
+const DIGITAL_SEGMENT_SOURCE_SIZE := Vector2(100.0, 24.0)
 
 @export_file("*.json") var config_path := "res://features/retro_hud/config/retro_hud.json"
 @export var apply_layout_from_config := false
 
-var state = STATE_SCRIPT.new()
+var state: RetroHudState = STATE_SCRIPT.new()
 var config: RetroHudConfig = CONFIG_SCRIPT.new()
 var _peak_rpm := 0.0
-var _peak_hold_remaining := 0.0
+var _design_origin := Vector2.ZERO
+var _design_scale_factor := 1.0
 
 
 func _ready() -> void:
@@ -27,7 +32,6 @@ func _ready() -> void:
 	state.changed.connect(_on_state_changed)
 	reload_config()
 	_peak_rpm = state.rpm
-	set_process(true)
 	queue_redraw()
 
 
@@ -40,58 +44,58 @@ func set_readout(
 	state.set_readout(speed_kph, rpm, gear_label, throttle, brake)
 
 
-func set_state(next_state: RefCounted) -> void:
+func set_competition_readout(
+		speed_kilometers_per_hour: float,
+		engine_revolutions_per_minute: float,
+		gear_label: String,
+		oil_temperature_celsius: float,
+		water_temperature_celsius: float,
+		fuel_remaining_kg: float,
+		fuel_capacity_kg: float,
+		average_consumption_kg_per_lap: float,
+		has_average_consumption: bool,
+		fuel_delta_laps: float,
+		has_fuel_delta: bool) -> void:
+	state.set_competition_readout(
+		speed_kilometers_per_hour,
+		engine_revolutions_per_minute,
+		gear_label,
+		oil_temperature_celsius,
+		water_temperature_celsius,
+		fuel_remaining_kg,
+		fuel_capacity_kg,
+		average_consumption_kg_per_lap,
+		has_average_consumption,
+		fuel_delta_laps,
+		has_fuel_delta)
+
+
+func set_state(next_state: RetroHudState) -> void:
 	if next_state == null or state == next_state:
 		return
 	if state.changed.is_connected(_on_state_changed):
 		state.changed.disconnect(_on_state_changed)
 	state = next_state
 	state.changed.connect(_on_state_changed)
-	_peak_rpm = state.rpm
-	_peak_hold_remaining = 0.0
 	queue_redraw()
 
 
 func reload_config() -> void:
 	config = CONFIG_SCRIPT.load_from_json(config_path)
 	if apply_layout_from_config:
-		position = config.display_position
 		scale = Vector2.ONE * config.display_scale
+		visible = config.visible
 	queue_redraw()
 
 
-## Applies the unified HUD layout (hud_config.json retro_hud section). Only the
-## JSON-safe scale/visibility knobs are pushed through; position stays anchored
-## in the scene so the tuned RetroHud layout is preserved.
 func apply_hud_layout(scale_value: float, visible_value: bool) -> void:
 	visible = visible_value
 	scale = Vector2.ONE * maxf(scale_value, 0.1)
 	queue_redraw()
 
 
-func _process(delta: float) -> void:
-	var changed := false
-	if state.rpm >= _peak_rpm:
-		if not is_equal_approx(_peak_rpm, state.rpm):
-			_peak_rpm = state.rpm
-			changed = true
-		_peak_hold_remaining = config.peak_hold_seconds if state.rpm >= config.peak_activation_rpm else 0.0
-	elif _peak_hold_remaining > 0.0:
-		_peak_hold_remaining = maxf(_peak_hold_remaining - delta, 0.0)
-	elif _peak_rpm > state.rpm:
-		_peak_rpm = maxf(state.rpm, _peak_rpm - config.peak_return_rpm_per_second * delta)
-		changed = true
-	if state.rpm < config.peak_activation_rpm and _peak_hold_remaining <= 0.0 and not is_equal_approx(_peak_rpm, state.rpm):
-		_peak_rpm = state.rpm
-		changed = true
-	if changed:
-		queue_redraw()
-
-
 func _on_state_changed() -> void:
-	if state.rpm > _peak_rpm:
-		_peak_rpm = state.rpm
-		_peak_hold_remaining = config.peak_hold_seconds if state.rpm >= config.peak_activation_rpm else 0.0
+	_peak_rpm = maxf(_peak_rpm, state.rpm)
 	queue_redraw()
 
 
@@ -104,180 +108,473 @@ func _draw() -> void:
 	if size.x <= 1.0 or size.y <= 1.0:
 		return
 
-	var scale_factor := minf(size.x / DESIGN_SIZE.x, size.y / DESIGN_SIZE.y)
-	var origin := (size - DESIGN_SIZE * scale_factor) * 0.5
-	draw_set_transform(origin, 0.0, Vector2.ONE * scale_factor)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	draw_rect(Rect2(Vector2.ZERO, size), config.background_color)
+	_design_scale_factor = minf(size.x / DESIGN_SIZE.x, size.y / DESIGN_SIZE.y)
+	_design_origin = (size - DESIGN_SIZE * _design_scale_factor) * 0.5
+	draw_set_transform(_design_origin, 0.0, Vector2.ONE * _design_scale_factor)
 
-	_draw_rpm_cluster()
-	_draw_gear_and_pedals()
-	_draw_speed_cluster()
+	_draw_revolutions_per_minute_scale()
+	_draw_gear_and_speed()
+	_draw_temperature_panel()
+	_draw_fuel_bar()
+	_draw_fuel_summary()
 
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
-func _draw_rpm_cluster() -> void:
-	var shadow := config.dial_shadow_color
-	shadow.a *= config.background_opacity
-	draw_circle(RPM_DIAL_CENTER, RPM_DIAL_RADIUS + 24.0, shadow)
+func _draw_revolutions_per_minute_scale() -> void:
+	var segment_count := maxi(config.revolutions_per_minute_segment_count, 2)
+	for segment_index in range(segment_count):
+		var segment_ratio := float(segment_index) / float(segment_count - 1)
+		var angle_degrees := lerpf(
+			REVOLUTIONS_PER_MINUTE_START_DEGREES,
+			REVOLUTIONS_PER_MINUTE_END_DEGREES,
+			segment_ratio)
+		var angle_radians := deg_to_rad(angle_degrees)
+		var radial_direction := Vector2(cos(angle_radians), sin(angle_radians))
+		var segment_center := (
+			REVOLUTIONS_PER_MINUTE_CENTER
+			+ radial_direction * REVOLUTIONS_PER_MINUTE_RADIUS)
+		var revolutions_per_minute := lerpf(
+			config.revolutions_per_minute_minimum,
+			config.revolutions_per_minute_maximum,
+			segment_ratio)
+		var redline_ratio := inverse_lerp(
+			config.revolutions_per_minute_minimum,
+			config.revolutions_per_minute_maximum,
+			config.revolutions_per_minute_redline)
+		var is_redline_segment := segment_ratio >= redline_ratio
+		var segment_color := config.dial_color
+		if is_redline_segment:
+			segment_color = config.redline_color
+		if state.engine_revolutions_per_minute < revolutions_per_minute:
+			segment_color = (
+				config.inactive_redline_color
+				if is_redline_segment
+				else config.inactive_color)
+		_draw_rotated_texture(
+			REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
+			segment_center,
+			Vector2(92.0, 46.0),
+			angle_radians + PI * 0.5,
+			segment_color)
 
-	# The original TV graphic uses several close concentric white rings.
-	for radius_offset in [-16.0, 0.0, 7.0]:
-		draw_arc(
-			RPM_DIAL_CENTER,
-			RPM_DIAL_RADIUS + radius_offset,
-			deg_to_rad(RPM_START_DEG),
-			deg_to_rad(RPM_END_DEG),
-			72,
-			config.dial_color,
-			2.2,
-			true)
-
-	var font: Font = ThemeDB.fallback_font
-	var major_count := int(round((config.rpm_max - config.rpm_min) / 1000.0))
-	major_count = maxi(major_count, 1)
-	for index in range(major_count + 1):
-		var ratio := float(index) / float(major_count)
-		var angle := deg_to_rad(lerpf(RPM_START_DEG, RPM_END_DEG, ratio))
-		var direction := Vector2(cos(angle), sin(angle))
-		var tick_outer := RPM_DIAL_RADIUS + 22.0
-		var tick_inner := RPM_DIAL_RADIUS + 9.0
-		draw_line(
-			RPM_DIAL_CENTER + direction * tick_inner,
-			RPM_DIAL_CENTER + direction * tick_outer,
-			config.dial_color,
-			2.2,
-			true)
-
-		var rpm_number := int(round((config.rpm_min + 1000.0 * index) / 1000.0))
-		var label := str(rpm_number)
-		var label_pos := RPM_DIAL_CENTER + direction * (RPM_DIAL_RADIUS + 44.0)
-		_draw_centered_text(font, label_pos, label, 15, config.dial_color)
-
-		if index < major_count:
-			var minor_angle := deg_to_rad(lerpf(RPM_START_DEG, RPM_END_DEG, ratio + 0.5 / float(major_count)))
-			var minor_direction := Vector2(cos(minor_angle), sin(minor_angle))
-			draw_line(
-				RPM_DIAL_CENTER + minor_direction * (RPM_DIAL_RADIUS + 11.0),
-				RPM_DIAL_CENTER + minor_direction * (RPM_DIAL_RADIUS + 19.0),
-				config.dial_color,
-				1.4,
-				true)
-
-	# Redline band: a short red arc on the outer tick ring at the configured redline.
-	var redline_ratio := inverse_lerp(config.rpm_min, config.rpm_max, clampf(config.rpm_redline, config.rpm_min, config.rpm_max))
-	var redline_angle := deg_to_rad(lerpf(RPM_START_DEG, RPM_END_DEG, redline_ratio))
-	draw_arc(RPM_DIAL_CENTER, RPM_DIAL_RADIUS + 15.5, redline_angle - deg_to_rad(5.0), redline_angle + deg_to_rad(5.0), 7, config.peak_color, 4.0, true)
-
-	# Peak-hold needle first, current RPM needle on top.
-	_draw_rpm_needle(_peak_rpm, config.peak_color, 3.6, RPM_DIAL_RADIUS - 8.0)
-	_draw_rpm_needle(state.rpm, config.dial_color, 4.8, RPM_DIAL_RADIUS - 17.0)
-	draw_circle(RPM_DIAL_CENTER, 13.0, config.dial_color)
-	draw_circle(RPM_DIAL_CENTER, 5.4, Color(0.82, 0.82, 0.82, 1.0))
+		var displayed_revolutions_per_minute := int(round(revolutions_per_minute / 1000.0))
+		if displayed_revolutions_per_minute % 2 == 0 or segment_index == segment_count - 1:
+			var label_center := (
+				REVOLUTIONS_PER_MINUTE_CENTER
+				+ radial_direction * REVOLUTIONS_PER_MINUTE_LABEL_RADIUS)
+			_draw_condensed_text(
+				str(displayed_revolutions_per_minute),
+				label_center,
+				38,
+				config.dial_color)
 
 
-func _draw_rpm_needle(value: float, color: Color, width: float, length: float) -> void:
-	var ratio := inverse_lerp(config.rpm_min, config.rpm_max, clampf(value, config.rpm_min, config.rpm_max))
-	var angle := deg_to_rad(lerpf(RPM_START_DEG, RPM_END_DEG, ratio))
-	var direction := Vector2(cos(angle), sin(angle))
-	var tail := RPM_DIAL_CENTER - direction * 7.0
-	var tip := RPM_DIAL_CENTER + direction * length
-	draw_line(tail, tip, color, width, true)
+func _draw_gear_and_speed() -> void:
+	_draw_seven_segment_text(
+		state.gear_label,
+		Vector2(617.0, 540.0),
+		Vector2(194.0, 300.0),
+		config.digital_color)
+	_draw_seven_segment_text(
+		str(int(round(state.speed_kilometers_per_hour))),
+		Vector2(846.0, 594.0),
+		Vector2(57.0, 96.0),
+		config.digital_color)
+	_draw_condensed_text("KM/H", Vector2(844.0, 694.0), 42, config.dial_color)
 
 
-func _draw_gear_and_pedals() -> void:
-	var font: Font = ThemeDB.fallback_font
-	var panel_x := 208.0
-	var panel_width := 145.0
-	var row_height := 40.0
+func _draw_temperature_panel() -> void:
+	_draw_condensed_text("OIL TEMP", Vector2(1297.0, 123.0), 34, config.dial_color)
+	_draw_temperature_value(state.oil_temperature_celsius, Vector2(1288.0, 203.0))
+	_draw_condensed_text("°C", Vector2(1390.0, 204.0), 32, config.dial_color)
 
-	# Gear plate.
-	var gear_rect := Rect2(panel_x, 183.0, panel_width, 40.0)
-	draw_rect(gear_rect, Color.WHITE)
-	draw_string(font, Vector2(panel_x + 23.0, 211.0), "Gear", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 17, Color.BLACK)
-	draw_string(font, Vector2(panel_x + 99.0, 211.0), state.gear_label, HORIZONTAL_ALIGNMENT_CENTER, 38.0, 21, Color.BLACK)
+	_draw_horizontal_divider(Vector2(1184.0, 264.0), 224.0)
 
-	# Pedal bars. They preserve the horizontal TV layout but now use true analog values.
-	var throttle_rect := Rect2(panel_x, 223.0, panel_width, row_height)
-	_draw_input_bar(throttle_rect, state.throttle, "Throttle", config.throttle_color, font)
-	var brake_rect := Rect2(panel_x, 263.0, panel_width, row_height)
-	_draw_input_bar(brake_rect, state.brake, "Brake", config.brake_color, font)
+	_draw_condensed_text("WATER TEMP", Vector2(1297.0, 304.0), 34, config.dial_color)
+	_draw_temperature_value(state.water_temperature_celsius, Vector2(1288.0, 385.0))
+	_draw_condensed_text("°C", Vector2(1390.0, 386.0), 32, config.dial_color)
 
 
-func _draw_input_bar(rect: Rect2, amount: float, label: String, color: Color, font: Font) -> void:
-	# Original broadcast graphic leaves the row transparent and reveals a colored fill.
-	if amount > 0.0:
-		draw_rect(Rect2(rect.position, Vector2(rect.size.x * clampf(amount, 0.0, 1.0), rect.size.y)), color)
-	_draw_text_with_shadow(font, rect.position + Vector2(17.0, 28.0), label, 18, Color.WHITE)
-
-
-func _draw_speed_cluster() -> void:
-	var font: Font = ThemeDB.fallback_font
-	# The source graphic has 19 visual segments: 10 straight green bars followed
-	# by 3 yellow, 3 orange and 3 red curved/stacked pieces. The count is
-	# config-driven but bounded to the 19 available drawn shapes (10 + 9 curved).
-	var segments := clampi(config.speed_segments, 4, 19)
-	var active_segments := int(round(clampf(state.speed_kph / config.speed_max, 0.0, 1.0) * float(segments)))
-	for index in range(segments):
-		var base_color := _speed_color_for_index(index)
-		if index >= active_segments:
-			base_color = Color(
-				base_color.r * config.inactive_multiplier,
-				base_color.g * config.inactive_multiplier,
-				base_color.b * config.inactive_multiplier,
-				base_color.a)
-		_draw_speed_segment(index, base_color)
-
-	# Numeric scale follows the source layout closely, but the current value is live.
-	_draw_text_with_shadow(font, Vector2(15.0, 483.0), "%d %s" % [int(round(state.speed_kph)), config.speed_unit], 16, config.dial_color)
-	_draw_centered_text(font, Vector2(202.0, 472.0), "200", 14, config.dial_color)
-	_draw_centered_text(font, Vector2(284.0, 434.0), "260", 14, config.dial_color)
-	_draw_centered_text(font, Vector2(320.0, 378.0), "320", 14, config.dial_color)
-	_draw_centered_text(font, Vector2(327.0, 319.0), "340", 14, config.dial_color)
-
-
-func _draw_speed_segment(index: int, color: Color) -> void:
-	if index < 10:
-		# Exact straight section spacing measured from the 353x500 reference sprites.
-		draw_rect(Rect2(16.0 + 17.0 * float(index), 403.0, 12.0, 45.0), color)
+func _draw_temperature_value(temperature_celsius: float, center: Vector2) -> void:
+	if temperature_celsius < 0.0:
+		_draw_condensed_text("--", center, 52, config.inactive_color)
 		return
-
-	var curved_segments := [
-		# Yellow
-		[[200, 400], [187, 403], [189, 446], [207, 444]],
-		[[213, 395], [205, 402], [215, 442], [232, 434]],
-		[[227, 386], [219, 392], [239, 432], [255, 422]],
-		# Orange
-		[[236, 378], [231, 383], [260, 417], [273, 405]],
-		[[242, 369], [240, 374], [278, 399], [287, 385], [247, 368]],
-		[[250, 354], [247, 362], [290, 379], [296, 362]],
-		# Red
-		[[254, 337], [253, 348], [299, 355], [299, 339]],
-		[[255, 322], [255, 331], [299, 333], [299, 322]],
-		[[255, 309], [255, 318], [299, 318], [299, 309]]
-	]
-	var source_points: Array = curved_segments[index - 10]
-	var points := PackedVector2Array()
-	for point in source_points:
-		points.append(Vector2(float(point[0]), float(point[1])))
-	draw_colored_polygon(points, color)
+	_draw_seven_segment_text(
+		str(int(round(temperature_celsius))),
+		center,
+		Vector2(54.0, 88.0),
+		config.digital_color)
 
 
-func _speed_color_for_index(index: int) -> Color:
-	if index < 10:
-		return config.speed_green
-	if index < 13:
-		return config.speed_yellow
-	if index < 16:
-		return config.speed_orange
-	return config.speed_red
+func _draw_fuel_bar() -> void:
+	_draw_rotated_texture(
+		FUEL_ICON_TEXTURE,
+		Vector2(328.0, 783.0),
+		Vector2(68.0, 78.0),
+		0.0,
+		config.dial_color)
+
+	var fuel_track := Rect2(Vector2(383.0, 751.0), Vector2(690.0, 66.0))
+	draw_rect(fuel_track, config.background_color, false, 3.0)
+
+	var fuel_fraction := 0.0
+	if state.fuel_capacity_kg > 0.0 and state.fuel_remaining_kg >= 0.0:
+		fuel_fraction = clampf(state.fuel_remaining_kg / state.fuel_capacity_kg, 0.0, 1.0)
+	var segment_count := maxi(config.fuel_segment_count, 1)
+	var segment_gap := 7.0
+	var segment_width := (
+		(fuel_track.size.x - 34.0 - segment_gap * float(segment_count - 1))
+		/ float(segment_count))
+	var first_segment_x := fuel_track.position.x + 17.0
+	var active_segment_count := int(floor(fuel_fraction * float(segment_count)))
+	var fuel_color := (
+		config.alert_color
+		if fuel_fraction <= config.fuel_alert_fraction
+		else config.dial_color)
+
+	for segment_index in range(segment_count):
+		var segment_center := Vector2(
+			first_segment_x + (segment_width + segment_gap) * float(segment_index) + segment_width * 0.5,
+			fuel_track.position.y + fuel_track.size.y * 0.5)
+		var segment_color := (
+			fuel_color
+			if segment_index < active_segment_count
+			else config.inactive_color)
+		_draw_rotated_texture(
+			FUEL_SEGMENT_TEXTURE,
+			segment_center,
+			Vector2(segment_width, fuel_track.size.y - 16.0),
+			0.0,
+			segment_color)
 
 
-func _draw_centered_text(font: Font, center: Vector2, text: String, font_size: int, color: Color) -> void:
-	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size)
-	var baseline := center - Vector2(text_size.x * 0.5, -text_size.y * 0.32)
-	_draw_text_with_shadow(font, baseline, text, font_size, color)
+func _draw_fuel_summary() -> void:
+	_draw_condensed_text("FUEL", Vector2(290.0, 887.0), 36, config.dial_color)
+	_draw_condensed_text("AVG", Vector2(728.0, 887.0), 36, config.dial_color)
+	_draw_condensed_text("DELTA", Vector2(1154.0, 887.0), 36, config.dial_color)
+
+	_draw_vertical_divider(Vector2(509.0, 879.0), 123.0)
+	_draw_vertical_divider(Vector2(943.0, 879.0), 123.0)
+
+	if state.fuel_remaining_kg < 0.0:
+		_draw_condensed_text("--.-", Vector2(291.0, 963.0), 44, config.inactive_color)
+	else:
+		var fuel_color := config.dial_color
+		if state.fuel_capacity_kg > 0.0:
+			var fuel_fraction := state.fuel_remaining_kg / state.fuel_capacity_kg
+			if fuel_fraction <= config.fuel_alert_fraction:
+				fuel_color = config.alert_color
+		_draw_seven_segment_text(
+			"%.1f" % state.fuel_remaining_kg,
+			Vector2(292.0, 960.0),
+			Vector2(52.0, 84.0),
+			fuel_color)
+	_draw_condensed_text("KG", Vector2(408.0, 968.0), 32, config.dial_color)
+
+	if state.has_average_consumption:
+		_draw_seven_segment_text(
+			"%.2f" % state.average_consumption_kg_per_lap,
+			Vector2(725.0, 960.0),
+			Vector2(47.0, 82.0),
+			config.digital_color)
+	else:
+		_draw_condensed_text("--.--", Vector2(724.0, 963.0), 40, config.inactive_color)
+	_draw_condensed_text("KG/LAP", Vector2(866.0, 968.0), 29, config.dial_color)
+
+	if state.has_fuel_delta:
+		var fuel_delta_color := (
+			config.alert_color
+			if state.fuel_delta_laps < 0.0
+			else config.digital_color)
+		var fuel_delta_text := (
+			"-%.2f" % absf(state.fuel_delta_laps)
+			if state.fuel_delta_laps < 0.0
+			else "%.2f" % state.fuel_delta_laps)
+		_draw_seven_segment_text(
+			fuel_delta_text,
+			Vector2(1123.0, 960.0),
+			Vector2(43.0, 79.0),
+			fuel_delta_color)
+	else:
+		_draw_condensed_text("--.--", Vector2(1124.0, 963.0), 40, config.inactive_color)
+	_draw_condensed_text("LAPS", Vector2(1335.0, 968.0), 30, config.dial_color)
 
 
-func _draw_text_with_shadow(font: Font, baseline: Vector2, text: String, font_size: int, color: Color) -> void:
-	draw_string(font, baseline + Vector2(1.5, 1.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color(0.0, 0.0, 0.0, 0.88))
+func _draw_rotated_texture(
+		texture: Texture2D,
+		center: Vector2,
+		dimensions: Vector2,
+		rotation: float,
+		color: Color) -> void:
+	draw_set_transform(
+		_design_origin + center * _design_scale_factor,
+		rotation,
+		Vector2.ONE * _design_scale_factor)
+	draw_texture_rect(
+		texture,
+		Rect2(-dimensions * 0.5, dimensions),
+		false,
+		color)
+	_restore_design_transform()
+
+
+func _draw_seven_segment_text(
+	text: String,
+	center: Vector2,
+	glyph_size: Vector2,
+	color: Color) -> void:
+	var glyph_gap := glyph_size.x * 0.11
+	var text_width := 0.0
+	for character_index in range(text.length()):
+		var character := text.substr(character_index, 1)
+		text_width += glyph_size.x * (0.34 if character == "." else 1.0)
+		if character_index < text.length() - 1:
+			text_width += glyph_gap
+
+	var cursor_x := center.x - text_width * 0.5
+	var glyph_top := center.y - glyph_size.y * 0.5
+	for character_index in range(text.length()):
+		var character := text.substr(character_index, 1)
+		var glyph_width := _draw_seven_segment_glyph(
+			character,
+			Vector2(cursor_x, glyph_top),
+			glyph_size,
+			color)
+		cursor_x += glyph_width
+		if character_index < text.length() - 1:
+			cursor_x += glyph_gap
+
+
+func _draw_seven_segment_glyph(
+	character: String,
+	top_left: Vector2,
+	glyph_size: Vector2,
+	color: Color) -> float:
+	if character == ".":
+		draw_circle(
+			top_left + Vector2(glyph_size.x * 0.15, glyph_size.y * 0.91),
+			minf(glyph_size.x * 0.09, glyph_size.y * 0.045),
+			color)
+		return glyph_size.x * 0.34
+
+	var horizontal_segment_length := glyph_size.x * 0.72
+	var horizontal_segment_thickness := glyph_size.y * 0.115
+	var vertical_segment_length := glyph_size.y * 0.34
+	var vertical_segment_thickness := glyph_size.x * 0.14
+	var active_segments := _segments_for_character(character)
+
+	for segment_name in active_segments:
+		match segment_name:
+			"top_horizontal":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.5, glyph_size.y * 0.055),
+					horizontal_segment_length,
+					horizontal_segment_thickness,
+					0.0,
+					color)
+			"upper_right":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.92, glyph_size.y * 0.275),
+					vertical_segment_length,
+					vertical_segment_thickness,
+					PI * 0.5,
+					color)
+			"lower_right":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.92, glyph_size.y * 0.725),
+					vertical_segment_length,
+					vertical_segment_thickness,
+					PI * 0.5,
+					color)
+			"bottom_horizontal":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.5, glyph_size.y * 0.945),
+					horizontal_segment_length,
+					horizontal_segment_thickness,
+					0.0,
+					color)
+			"lower_left":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.08, glyph_size.y * 0.725),
+					vertical_segment_length,
+					vertical_segment_thickness,
+					PI * 0.5,
+					color)
+			"upper_left":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.08, glyph_size.y * 0.275),
+					vertical_segment_length,
+					vertical_segment_thickness,
+					PI * 0.5,
+					color)
+			"middle_horizontal":
+				_draw_digital_segment(
+					top_left + Vector2(glyph_size.x * 0.5, glyph_size.y * 0.5),
+					horizontal_segment_length,
+					horizontal_segment_thickness,
+					0.0,
+					color)
+
+	return glyph_size.x
+
+
+func _draw_digital_segment(
+	center: Vector2,
+	segment_length: float,
+	segment_thickness: float,
+	rotation: float,
+	color: Color) -> void:
+	draw_set_transform(
+		_design_origin + center * _design_scale_factor,
+		rotation,
+		Vector2(
+			segment_length / DIGITAL_SEGMENT_SOURCE_SIZE.x * _design_scale_factor,
+			segment_thickness / DIGITAL_SEGMENT_SOURCE_SIZE.y * _design_scale_factor))
+	draw_texture_rect(
+		DIGITAL_SEGMENT_TEXTURE,
+		Rect2(-DIGITAL_SEGMENT_SOURCE_SIZE * 0.5, DIGITAL_SEGMENT_SOURCE_SIZE),
+		false,
+		color)
+	_restore_design_transform()
+
+
+func _segments_for_character(character: String) -> PackedStringArray:
+	match character:
+		"0":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_right",
+				"lower_right",
+				"bottom_horizontal",
+				"lower_left",
+				"upper_left"])
+		"1":
+			return PackedStringArray(["upper_right", "lower_right"])
+		"2":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_right",
+				"middle_horizontal",
+				"lower_left",
+				"bottom_horizontal"])
+		"3":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_right",
+				"middle_horizontal",
+				"lower_right",
+				"bottom_horizontal"])
+		"4":
+			return PackedStringArray([
+				"upper_left",
+				"middle_horizontal",
+				"upper_right",
+				"lower_right"])
+		"5":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_left",
+				"middle_horizontal",
+				"lower_right",
+				"bottom_horizontal"])
+		"6":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_left",
+				"middle_horizontal",
+				"lower_left",
+				"lower_right",
+				"bottom_horizontal"])
+		"7":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_right",
+				"lower_right"])
+		"8":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_right",
+				"lower_right",
+				"bottom_horizontal",
+				"lower_left",
+				"upper_left",
+				"middle_horizontal"])
+		"9":
+			return PackedStringArray([
+				"top_horizontal",
+				"upper_right",
+				"lower_right",
+				"bottom_horizontal",
+				"upper_left",
+				"middle_horizontal"])
+		"-":
+			return PackedStringArray(["middle_horizontal"])
+		"R":
+			return PackedStringArray([
+				"upper_left",
+				"middle_horizontal",
+				"lower_left",
+				"lower_right"])
+		"N":
+			return PackedStringArray([
+				"middle_horizontal",
+				"lower_left",
+				"lower_right"])
+		_:
+			return PackedStringArray()
+
+
+func _draw_condensed_text(
+	text: String,
+	center: Vector2,
+	font_size: int,
+	color: Color) -> void:
+	var font: Font = ThemeDB.fallback_font
+	var text_width := font.get_string_size(
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1.0,
+		font_size).x
+	var horizontal_scale := 0.82
+	var baseline := Vector2(
+		(center.x - text_width * horizontal_scale * 0.5) / horizontal_scale,
+		center.y + float(font_size) * 0.34)
+	draw_set_transform(
+		_design_origin,
+		0.0,
+		Vector2(
+			horizontal_scale * _design_scale_factor,
+			_design_scale_factor))
 	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, color)
+	_restore_design_transform()
+
+
+func _draw_vertical_divider(position: Vector2, height: float) -> void:
+	draw_texture_rect(
+		DIVIDER_TEXTURE,
+		Rect2(position, Vector2(4.0, height)),
+		false,
+		config.divider_color)
+
+
+func _draw_horizontal_divider(position: Vector2, width: float) -> void:
+	draw_set_transform(
+		_design_origin + (position + Vector2(width * 0.5, 0.0)) * _design_scale_factor,
+		PI * 0.5,
+		Vector2.ONE * _design_scale_factor)
+	draw_texture_rect(
+		DIVIDER_TEXTURE,
+		Rect2(Vector2(-2.0, -width * 0.5), Vector2(4.0, width)),
+		false,
+		config.divider_color)
+	_restore_design_transform()
+
+
+func _restore_design_transform() -> void:
+	draw_set_transform(
+		_design_origin,
+		0.0,
+		Vector2.ONE * _design_scale_factor)

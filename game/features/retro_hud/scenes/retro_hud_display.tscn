@@ -3,10 +3,10 @@
 [ext_resource type="Script" path="res://features/retro_hud/scripts/retro_hud_display.gd" id="1_display"]
 
 [node name="RetroHudDisplay" type="Control"]
-custom_minimum_size = Vector2(353, 500)
+custom_minimum_size = Vector2(866, 650)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 353.0
-offset_bottom = 500.0
+offset_right = 866.0
+offset_bottom = 650.0
 mouse_filter = 2
 script = ExtResource("1_display")

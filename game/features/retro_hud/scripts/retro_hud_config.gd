@@ -3,30 +3,27 @@ extends RefCounted
 
 const DEFAULT_PATH := "res://features/retro_hud/config/retro_hud.json"
 
-var speed_unit := "km/h"
-var rpm_min := 6000.0
-var rpm_max := 20000.0
-var rpm_redline := 18000.0
-var speed_max := 360.0
-var speed_segments := 20
-var peak_hold_seconds := 2.0
-var peak_activation_rpm := 12000.0
-var peak_return_rpm_per_second := 7500.0
-var background_opacity := 0.82
+var revolutions_per_minute_minimum := 0.0
+var revolutions_per_minute_maximum := 19000.0
+var revolutions_per_minute_redline := 18000.0
+var revolutions_per_minute_segment_count := 20
+var fuel_segment_count := 12
+var fuel_alert_fraction := 0.05
+var background_color := Color("#061525e8")
+var dial_color := Color("#f4f5f6")
+var digital_color := Color("#f4f5f6")
+var inactive_color := Color("#183149")
+var redline_color := Color("#f0182d")
+var inactive_redline_color := Color("#67202b")
+var alert_color := Color("#f0182d")
+var divider_color := Color("#46617c")
 var display_scale := 1.0
-var display_position := Vector2.ZERO
 var visible := true
-
-var dial_color := Color("f4f4f4")
-var dial_shadow_color := Color("080808d9")
-var peak_color := Color("dc1f27")
-var throttle_color := Color("19ed39")
-var brake_color := Color("f02a2a")
-var speed_green := Color("00ec2e")
-var speed_yellow := Color("ffd702")
-var speed_orange := Color("fe9a0d")
-var speed_red := Color("ea0000")
-var inactive_multiplier := 0.55
+var rpm_min := 0.0
+var rpm_max := 19000.0
+var rpm_redline := 18000.0
+var speed_segments := 19
+var peak_activation_rpm := 12000.0
 
 
 static func load_from_json(path: String = DEFAULT_PATH) -> RetroHudConfig:
@@ -48,33 +45,38 @@ func apply(data: Dictionary) -> void:
 
 
 func _apply(data: Dictionary) -> void:
-	speed_unit = str(data.get("speed_unit", speed_unit))
-	rpm_min = maxf(float(data.get("rpm_min", rpm_min)), 0.0)
-	rpm_max = maxf(float(data.get("rpm_max", rpm_max)), rpm_min + 1.0)
-	rpm_redline = clampf(float(data.get("rpm_redline", rpm_redline)), rpm_min, rpm_max)
-	speed_max = maxf(float(data.get("speed_max", speed_max)), 1.0)
-	speed_segments = clampi(int(data.get("speed_segments", speed_segments)), 4, 19)
-	peak_hold_seconds = maxf(float(data.get("peak_hold_seconds", peak_hold_seconds)), 0.0)
-	peak_activation_rpm = clampf(float(data.get("peak_activation_rpm", peak_activation_rpm)), rpm_min, rpm_max)
-	peak_return_rpm_per_second = maxf(float(data.get("peak_return_rpm_per_second", peak_return_rpm_per_second)), 1.0)
-	background_opacity = clampf(float(data.get("background_opacity", background_opacity)), 0.0, 1.0)
+	revolutions_per_minute_minimum = maxf(
+		float(data.get("revolutions_per_minute_minimum", revolutions_per_minute_minimum)),
+		0.0)
+	revolutions_per_minute_maximum = maxf(
+		float(data.get("revolutions_per_minute_maximum", revolutions_per_minute_maximum)),
+		revolutions_per_minute_minimum + 1.0)
+	revolutions_per_minute_redline = clampf(
+		float(data.get("revolutions_per_minute_redline", revolutions_per_minute_redline)),
+		revolutions_per_minute_minimum,
+		revolutions_per_minute_maximum)
+	rpm_min = revolutions_per_minute_minimum
+	rpm_max = revolutions_per_minute_maximum
+	rpm_redline = revolutions_per_minute_redline
+	peak_activation_rpm = clampf(peak_activation_rpm, rpm_min, rpm_max)
+	speed_segments = clampi(speed_segments, 4, 19)
+	revolutions_per_minute_segment_count = clampi(
+		int(data.get("revolutions_per_minute_segment_count", revolutions_per_minute_segment_count)),
+		2,
+		40)
+	fuel_segment_count = clampi(int(data.get("fuel_segment_count", fuel_segment_count)), 4, 24)
+	fuel_alert_fraction = clampf(float(data.get("fuel_alert_fraction", fuel_alert_fraction)), 0.0, 1.0)
 	display_scale = maxf(float(data.get("scale", display_scale)), 0.1)
-	inactive_multiplier = clampf(float(data.get("inactive_multiplier", inactive_multiplier)), 0.0, 1.0)
 	visible = bool(data.get("visible", visible))
 
-	dial_color = _color(data.get("dial_color", "#f4f4f4"), dial_color)
-	dial_shadow_color = _color(data.get("dial_shadow_color", "#080808d9"), dial_shadow_color)
-	peak_color = _color(data.get("peak_color", "#dc1f27"), peak_color)
-	throttle_color = _color(data.get("throttle_color", "#19ed39"), throttle_color)
-	brake_color = _color(data.get("brake_color", "#f02a2a"), brake_color)
-	speed_green = _color(data.get("speed_green", "#00ec2e"), speed_green)
-	speed_yellow = _color(data.get("speed_yellow", "#ffd702"), speed_yellow)
-	speed_orange = _color(data.get("speed_orange", "#fe9a0d"), speed_orange)
-	speed_red = _color(data.get("speed_red", "#ea0000"), speed_red)
-
-	var position_value: Variant = data.get("position", [0.0, 0.0])
-	if position_value is Array and position_value.size() >= 2:
-		display_position = Vector2(float(position_value[0]), float(position_value[1]))
+	background_color = _color(data.get("background_color", "#061525e8"), background_color)
+	dial_color = _color(data.get("dial_color", "#f4f5f6"), dial_color)
+	digital_color = _color(data.get("digital_color", "#f4f5f6"), digital_color)
+	inactive_color = _color(data.get("inactive_color", "#183149"), inactive_color)
+	redline_color = _color(data.get("redline_color", "#f0182d"), redline_color)
+	inactive_redline_color = _color(data.get("inactive_redline_color", "#67202b"), inactive_redline_color)
+	alert_color = _color(data.get("alert_color", "#f0182d"), alert_color)
+	divider_color = _color(data.get("divider_color", "#46617c"), divider_color)
 
 
 func _color(value: Variant, fallback: Color) -> Color:
