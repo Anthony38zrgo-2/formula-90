@@ -14,8 +14,11 @@ func _ready() -> void:
 		return
 	var steering_wheel := chassis_visual.find_child("GEO_CHASSIS_STEER", true, false) as MeshInstance3D
 	var steering_column := chassis_visual.find_child("GEO_CHASSIS_STEERCOLUM", true, false) as MeshInstance3D
-	if steering_wheel == null or steering_column == null:
-		push_error("Steering wheel animation requires the steering wheel and column meshes.")
+	var left_shift_paddle := chassis_visual.find_child("GEO_CHASSIS_SHIFTERBRAK", true, false) as MeshInstance3D
+	var right_shift_paddle := chassis_visual.find_child("GEO_CHASSIS_SHIFTERTHRO", true, false) as MeshInstance3D
+	var steering_wheel_display := chassis_visual.find_child("GEO_CHASSIS_SCREEN", true, false) as MeshInstance3D
+	if steering_wheel == null or steering_column == null or left_shift_paddle == null or right_shift_paddle == null or steering_wheel_display == null:
+		push_error("Steering wheel animation requires the steering wheel, column, shift paddles, and display meshes.")
 		set_process(false)
 		return
 	var chassis_inverse := chassis_visual.global_transform.affine_inverse()
@@ -27,6 +30,9 @@ func _ready() -> void:
 	chassis_visual.add_child(steering_wheel_pivot)
 	steering_wheel_pivot.position = Vector3(steering_column_center.x, steering_column_center.y, steering_wheel_bounds.get_center().z)
 	steering_wheel.reparent(steering_wheel_pivot, true)
+	left_shift_paddle.reparent(steering_wheel_pivot, true)
+	right_shift_paddle.reparent(steering_wheel_pivot, true)
+	steering_wheel_display.reparent(steering_wheel_pivot, true)
 	update_steering_wheel_pose()
 
 func _process(_elapsed_seconds: float) -> void:
