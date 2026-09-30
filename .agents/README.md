@@ -30,7 +30,7 @@ python .agents/tools/run_godot.py --project . --task "describe the task" --profi
 READY-MARKER: exact `[OBSERVABILITY] GAME_READY` => `game_ready=1`.
 
 LAYOUT:
-- `AGENTS.md` = always-on protocol
+- `AGENTS.md` = pointer to the root protocol
 - `library/skills/` = canonical/off-context
 - `skills/` = active/generated only; MAX=3
 - `profiles/` = skill sets

@@ -12,8 +12,10 @@ itself in its own AGENTS.md.
 
 - The canonical V10 engine bank is `game/sounds/banks/v10-v2-bank`.
 - The V10 engine bank and the shared commons bank are the runtime banks: never
-  create new runtime banks under `game/audio/`; that tree is historical and is
-  not consumed anymore.
+  create new runtime banks under `game/audio/`; that tree is historical.
+  Shipped sessions never load it; the runtime reaches into it only for the
+  alternative `gf509` diagnostic source declared through
+  `audio.continuous_source = "v10_gf509"` in vehicle profiles.
 - The shared commons bank stays at `game/sounds/banks/commons` because it is not
   V10-specific. Do not move it into `v10-v2-bank` and do not rename its
   `bank_manifest.json`.
@@ -26,38 +28,16 @@ itself in its own AGENTS.md.
   `audio.grand_prix_sampler.manifest = "sounds/banks/v10-v2-bank/manifest.json"`
   in `game/data/vehicles/f1_2030/f1_2030_v10_geometric.json`. The runtime
   resolves this path relative to the Godot project root.
-- This folder carries a `.gdignore`: Godot must not import runtime bank WAVs.
-  The Rust runtime loads them from the filesystem, so bank assets are never
-  referenced through `res://` paths.
+- `bank_sources/`, `banks/v10-v2-bank/`, and `banks/v10-gp3/backup/` each
+  carry a `.gdignore`: Godot must not import those WAVs. The Rust runtime
+  loads bank audio from the filesystem, so bank assets are never referenced
+  through `res://` paths.
 
 ## Sampling format
 
-Every WAV referenced by a runtime bank manifest must be exactly:
-
-- RIFF/WAVE container.
-- PCM, uncompressed.
-- Mono (1 channel).
-- Signed 16-bit little-endian samples.
-- 44100 Hz sample rate.
-- Byte count, frame count and SHA-256 must match the manifest entry exactly.
-  The loader rejects any mismatch (`read_wav_mono16` in
-  `game/crates/vehicle-audio-engine/src/bank.rs`).
-
-The engine bank uses manifest schema 1 and adds these invariants:
-
-- `loop_start_frame = 0` and `loop_end_frame_exclusive = derived_frames`.
-- `loop_crossfade_frames` greater than zero and at most one quarter of the loop
-  length.
-- `reference_revolutions_per_minute = integer_cycle_count * 44100 / derived_frames * 120`;
-  every loop must contain an integer number of engine cycles so loop wraps stay
-  phase-coherent across zones.
-- `coverage` spans 4500 to 18000 revolutions per minute; loop zones are strictly
-  ascending; transition windows use `smoothstep` and `equal_power`, never
-  overlap, and each loop's active coverage must match its neighboring
-  transition windows.
-- Events are mono16 as well and keep their recorded preparation recipes and
-  SHA-256 values; engine events are triggered by the sampler, not by the shared
-  commons bank.
+Sampling format truth and engine-bank manifest invariants live in
+`formats/audio_bank/`; the loader rejects any mismatch (`read_wav_mono16` in
+`game/crates/vehicle-audio-engine/src/bank.rs`).
 
 ## Regeneration rules
 
