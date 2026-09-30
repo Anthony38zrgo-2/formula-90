@@ -1,0 +1,54 @@
+{
+  "operation": "Fit and lower GEO_CHASSIS_SEAT around the original F1 2030 driver",
+  "passed": true,
+  "source_before_sha256": "735077cd543c72d865af314a98c5f386411fc3cb085bdddbc49f74a325453e3f",
+  "source_after_sha256": "811f8f9dbea396f9b31cde12b09724c4fdd5da06aeebff9bd7e578f44606f3f9",
+  "driver_sha256": "3976565f9391d65b9a42bd02815a2601aba9799b49308f86811ce766235e56ae",
+  "protected_mesh_count": 57,
+  "protected_meshes_unchanged": true,
+  "original_upper_edge_height_meters": 0.308828204870224,
+  "upper_edge_trim_meters": 0.2438282072544098,
+  "measurements": {
+    "vertex_count": 600,
+    "polygon_count": 598,
+    "driver_intersection_pairs": [
+      {
+        "steering_degrees": 0.0,
+        "intersection_pairs": 0
+      },
+      {
+        "steering_degrees": 90.0,
+        "intersection_pairs": 0
+      },
+      {
+        "steering_degrees": 120.0,
+        "intersection_pairs": 0
+      },
+      {
+        "steering_degrees": 180.0,
+        "intersection_pairs": 0
+      },
+      {
+        "steering_degrees": -90.0,
+        "intersection_pairs": 0
+      },
+      {
+        "steering_degrees": -120.0,
+        "intersection_pairs": 0
+      },
+      {
+        "steering_degrees": -180.0,
+        "intersection_pairs": 0
+      }
+    ],
+    "upper_edge_height_meters": 0.06499999761581421,
+    "minimum_height_meters": -0.13735109567642212,
+    "surface_clearance_meters": 0.022,
+    "shell_thickness_meters": 0.006
+  },
+  "chassis": {
+    "path": "f1_2030_v10_chassis.glb",
+    "sha256": "C9C8D5702585071356DEBDAE8F157FD01EC5660E1306727536140BCC16D47815",
+    "size_bytes": 22747600
+  }
+}
