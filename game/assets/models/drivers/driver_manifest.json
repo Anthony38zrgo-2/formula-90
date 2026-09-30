@@ -1,0 +1,21 @@
+{
+  "character": "driver",
+  "source": "game\\assets\\models\\pit_crew\\racer\\source\\Racer.fbx",
+  "source_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
+  "model_sha256": "3976565f9391d65b9a42bd02815a2601aba9799b49308f86811ce766235e56ae",
+  "bone_count": 55,
+  "pose": "seated",
+  "separate_finger_bones": true,
+  "finger_bones_per_hand": 15,
+  "glove_geometry": "articulated_palm_four_fingers_opposable_thumb",
+  "thumb_segments": [
+    "Metacarpal",
+    "Proximal",
+    "Distal"
+  ],
+  "body_radial_scale": 0.85,
+  "seat_recline_degrees": 59.86680690888585,
+  "torso_recline_degrees": 79.86680690888585,
+  "head_pitch_degrees": 0.0,
+  "seat_model_sha256": "9fe776382107b869ba32742a3506846de6c46067120a36a1382e267a201b6a7e"
+}
