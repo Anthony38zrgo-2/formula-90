@@ -11,7 +11,10 @@ var urgent_shift_revolutions_per_minute := 17800.0
 var revolutions_per_minute_segment_count := 20
 var fuel_segment_count := 12
 var fuel_alert_fraction := 0.05
-var background_color := Color("#06152540")
+var fuel_container_color := Color("#9aa5ae")
+var fuel_inactive_segment_color := Color("#4a555e")
+var fuel_active_segment_color := Color("#f2f3f1")
+var background_color := Color("#06152566")
 var dial_color := Color("#f4f5f6")
 var digital_color := Color("#f4f5f6")
 var inactive_color := Color("#183149")
@@ -79,7 +82,10 @@ func _apply(data: Dictionary) -> void:
 	display_scale = maxf(float(data.get("scale", display_scale)), 0.1)
 	visible = bool(data.get("visible", visible))
 
-	background_color = _color(data.get("background_color", "#06152540"), background_color)
+	background_color = _color(data.get("background_color", "#06152566"), background_color)
+	fuel_container_color = _color(data.get("fuel_container_color", "#9aa5ae"), fuel_container_color)
+	fuel_inactive_segment_color = _color(data.get("fuel_inactive_segment_color", "#4a555e"), fuel_inactive_segment_color)
+	fuel_active_segment_color = _color(data.get("fuel_active_segment_color", "#f2f3f1"), fuel_active_segment_color)
 	dial_color = _color(data.get("dial_color", "#f4f5f6"), dial_color)
 	digital_color = _color(data.get("digital_color", "#f4f5f6"), digital_color)
 	inactive_color = _color(data.get("inactive_color", "#183149"), inactive_color)

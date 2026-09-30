@@ -1,15 +1,10 @@
 extends SceneTree
 
-# Verifies the TireStatusPanel renders per-wheel pressure + 5-node temperatures
-# from the native/GDScript snapshot contract used by the HUD.
-
 func _init() -> void:
 	call_deferred("_run")
 
 
 func _v3_brake_data() -> Dictionary:
-	# Two-node compact brake contract (post-BRAKE-1000): disc + rim only.
-	# Removed states (caliper_c, hub_c) are intentionally absent.
 	var data := {}
 	for wheel in ["FL", "FR", "RL", "RR"]:
 		data[wheel] = {
@@ -63,33 +58,32 @@ func _run() -> void:
 			var carcass_label: Label = cell["carcass"]
 			var brake_label: Label = cell["brake"]
 			var wear_label: Label = cell["wear"]
-			if pressure_label.text.is_empty() or not pressure_label.text.contains("kPa"):
-				failures.append(wheel + " pressure label missing: " + pressure_label.text)
-			if not zones_label.text.contains("I ") or not zones_label.text.contains("C ") or not zones_label.text.contains("O "):
-				failures.append(wheel + " zones label missing I/C/O: " + zones_label.text)
-			if not carcass_label.text.contains("CAR") or not carcass_label.text.contains("GAS"):
-				failures.append(wheel + " carcass/gas label missing: " + carcass_label.text)
-			if not brake_label.text.contains("BRK") or not brake_label.text.contains("RIM"):
-				failures.append(wheel + " brake label missing BRK/RIM: " + brake_label.text)
-			if brake_label.text.contains("caliper"):
-				failures.append(wheel + " brake label references removed caliper state: " + brake_label.text)
-			if not wear_label.text.contains("WR") or not wear_label.text.contains("I") or not wear_label.text.contains("O"):
-				failures.append(wheel + " wear label missing WR/I/C/O: " + wear_label.text)
+			if not pressure_label.text.ends_with(" kPa") or pressure_label.text.begins_with("P "):
+				failures.append(wheel + " pressure format is incorrect: " + pressure_label.text)
+			if zones_label.text.contains("I ") or zones_label.text.contains("C ") or zones_label.text.contains("O ") or not zones_label.text.ends_with("°"):
+				failures.append(wheel + " tread temperature format is incorrect: " + zones_label.text)
+			if not carcass_label.text.begins_with("CAR ") or carcass_label.text.contains("GAS"):
+				failures.append(wheel + " carcass format is incorrect: " + carcass_label.text)
+			if not brake_label.text.begins_with("BRK ") or brake_label.text.contains("RIM"):
+				failures.append(wheel + " brake format is incorrect: " + brake_label.text)
+			if not wear_label.text.ends_with("%") or wear_label.text.contains("WR"):
+				failures.append(wheel + " wear format is incorrect: " + wear_label.text)
 		var fl_pressure: Label = cells["FL"]["pressure"]
 		if not fl_pressure.text.contains("145"):
 			failures.append("FL pressure label did not update: " + fl_pressure.text)
 		var fl_brake: Label = cells["FL"]["brake"]
-		if not fl_brake.text.contains("300") or not fl_brake.text.contains("250"):
-			failures.append("FL brake label did not render two-node disc/rim: " + fl_brake.text)
+		if fl_brake.text != "BRK 300°":
+			failures.append("FL brake label did not render disc temperature: " + fl_brake.text)
 		var fl_wear: Label = cells["FL"]["wear"]
-		if not fl_wear.text.contains("57%") or not fl_wear.text.contains("I42") or not fl_wear.text.contains("O55"):
-			failures.append("FL wear label did not render remaining/zones: " + fl_wear.text)
+		if fl_wear.text != "57%":
+			failures.append("FL wear label did not render remaining wear: " + fl_wear.text)
+		var front_left_tread_temperatures_label: Label = cells["FL"]["zones"]
+		if front_left_tread_temperatures_label.text != "92 96 88°":
+			failures.append("FL tread temperatures did not render in order: " + front_left_tread_temperatures_label.text)
 		var rl_wear: Label = cells["RL"]["wear"]
 		if rl_wear.get_theme_color("font_color") != panel.get("_settings").wear_critical_color:
 			failures.append("RL wear label did not switch to the critical color: " + rl_wear.text)
 
-	# Transitional snapshot: rim_c/critical absent must not throw or render stale
-	# caliper state (HUD-1205: no errors on absent legacy state).
 	var transitional := _v3_brake_data()
 	for wheel in ["FL", "FR", "RL", "RR"]:
 		transitional[wheel]["rim_c"] = null
@@ -98,14 +92,22 @@ func _run() -> void:
 	for wheel in ["FL", "FR", "RL", "RR"]:
 		var cell: Dictionary = cells[wheel]
 		var brake_label: Label = cell["brake"]
-		if not brake_label.text.contains("RIM---"):
-			failures.append(wheel + " brake label without rim_c did not degrade: " + brake_label.text)
-		if brake_label.text.contains("caliper"):
-			failures.append(wheel + " brake label references removed caliper state: " + brake_label.text)
+		if brake_label.text != "BRK 300°":
+			failures.append(wheel + " brake label depended on rim temperature: " + brake_label.text)
+
+	for wheel in ["FL", "FR", "RL", "RR"]:
+		transitional[wheel]["disc_c"] = null
+	panel.call("set_tire_data", tire_data, transitional)
+	await process_frame
+	for wheel in ["FL", "FR", "RL", "RR"]:
+		var cell: Dictionary = cells[wheel]
+		var brake_label: Label = cell["brake"]
+		if brake_label.text != "BRK --°":
+			failures.append(wheel + " missing brake temperature did not show a placeholder: " + brake_label.text)
 
 	panel.queue_free()
 	if failures.is_empty():
-		print("[PASS] TireStatusPanel renders per-wheel pressure + 5-node temperatures and the two-node brake contract.")
+		print("[PASS] TireStatusPanel renders the compact pressure, tread, carcass, brake, and wear readout.")
 	else:
 		for failure in failures:
 			printerr("[FAIL] " + failure)

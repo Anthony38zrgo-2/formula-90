@@ -34,6 +34,8 @@ func _run() -> void:
 	await process_frame
 
 	var minimap := hud.get_node_or_null("Minimap") as TrackMinimapController
+	var lap_timing_panel := hud.get_node_or_null("LapTimingPanel") as LapTimingPanel
+	var lap_and_map_background := hud.get_node_or_null("LapAndMapBackground") as ColorRect
 	var speed_gauge := hud.get_node_or_null("SpeedGauge")
 	var retro_hud := hud.get_node_or_null("RetroHud")
 	var aid_message := hud.get_node_or_null("AidMessage") as Label
@@ -43,8 +45,8 @@ func _run() -> void:
 	elif not minimap.get("map_data").is_valid_map():
 		printerr("[FAIL] Arcade HUD minimap data is invalid.")
 		failures += 1
-	elif not is_equal_approx(minimap.scale.x, 3.0):
-		printerr("[FAIL] Minimap scale changed with the other HUD panels.")
+	elif not is_equal_approx(minimap.scale.x, 2.25) or not is_equal_approx(minimap.scale.y, 2.25):
+		printerr("[FAIL] Minimap scale does not match the requested 25 percent reduction.")
 		failures += 1
 	elif minimap.get_node_or_null(minimap.target_path) != vehicle:
 		printerr("[FAIL] Standalone HUD minimap did not resolve its local vehicle target.")
@@ -56,6 +58,26 @@ func _run() -> void:
 		var player_after := minimap.get_player_map_position()
 		if player_before.distance_to(player_after) < 1.0:
 			printerr("[FAIL] Standalone HUD minimap player marker did not move with the vehicle.")
+			failures += 1
+	if lap_timing_panel == null or lap_and_map_background == null or minimap == null:
+		printerr("[FAIL] Lap timing and map block is incomplete.")
+		failures += 1
+	else:
+		var timing_rectangle := lap_timing_panel.get_global_rect()
+		var map_rectangle := minimap.get_global_rect()
+		var background_rectangle := lap_and_map_background.get_global_rect()
+		var viewport_rectangle := Rect2(Vector2.ZERO, hud.get_viewport_rect().size)
+		if timing_rectangle.end.y >= map_rectangle.position.y or map_rectangle.position.y - timing_rectangle.end.y > 24.0:
+			printerr("[FAIL] Lap timing is not directly above the minimap.")
+			failures += 1
+		if absf(timing_rectangle.get_center().x - map_rectangle.get_center().x) > 1.0:
+			printerr("[FAIL] Lap timing and minimap are not centered together.")
+			failures += 1
+		if not background_rectangle.encloses(timing_rectangle) or not background_rectangle.encloses(map_rectangle) or not viewport_rectangle.encloses(background_rectangle):
+			printerr("[FAIL] Lap timing and minimap do not fit inside their shared left block.")
+			failures += 1
+		if not (lap_timing_panel.get_theme_stylebox("panel") is StyleBoxEmpty) or minimap.background_color.a > 0.0:
+			printerr("[FAIL] Lap timing or minimap still draws a separate background.")
 			failures += 1
 	if speed_gauge == null or not speed_gauge.has_method("set_readout"):
 		printerr("[FAIL] Arcade speed gauge is missing its readout API.")

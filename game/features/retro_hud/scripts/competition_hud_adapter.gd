@@ -1,7 +1,7 @@
 class_name CompetitionHudAdapter
 extends "res://scripts/hud/arcade_race_hud.gd"
 
-const DISPLAY_FONT := preload("res://assets/fonts/BarlowCondensed-Medium.ttf")
+const DATTO_REGULAR_FONT := preload("res://fonts/D-DIN.ttf")
 const STANDARD_FONT_SIZE := 18
 
 var _lap_timing_controller: LapTimingController
@@ -18,7 +18,7 @@ func bind_runtime(
 
 func _ready() -> void:
 	var display_theme := Theme.new()
-	display_theme.default_font = DISPLAY_FONT
+	display_theme.default_font = DATTO_REGULAR_FONT
 	display_theme.default_font_size = STANDARD_FONT_SIZE
 	theme = display_theme
 	super._ready()
@@ -34,20 +34,59 @@ func _apply_competition_panel_backgrounds() -> void:
 		return
 	var background_style := StyleBoxFlat.new()
 	background_style.bg_color = display.config.background_color
+	var lap_and_map_background := get_node_or_null("LapAndMapBackground") as ColorRect
+	if lap_and_map_background != null:
+		lap_and_map_background.color = display.config.background_color
 	var track_minimap := get_node_or_null("Minimap") as TrackMinimapController
 	if track_minimap != null:
-		track_minimap.background_color = display.config.background_color
+		track_minimap.background_color = Color.TRANSPARENT
 		track_minimap.queue_redraw()
+	if lap_timing_panel != null:
+		lap_timing_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var handling_panel := get_node_or_null("HandlingTuningPanel/LiveTuningPanel") as PanelContainer
 	for panel in [
 		tire_status_panel,
-		lap_timing_panel,
 		pit_stop_panel,
 		engine_temperature_panel,
 		handling_panel,
 	]:
 		if panel is PanelContainer:
 			panel.add_theme_stylebox_override("panel", background_style)
+	_position_lap_timing_panel()
+
+
+func _position_lap_timing_panel() -> void:
+	if lap_timing_panel == null:
+		return
+	var track_minimap := get_node_or_null("Minimap") as TrackMinimapController
+	var lap_and_map_background := get_node_or_null("LapAndMapBackground") as ColorRect
+	if track_minimap == null or lap_and_map_background == null:
+		super._position_lap_timing_panel()
+		return
+
+	var timing_visual_size := _visual_panel_size(lap_timing_panel)
+	var map_visual_size := track_minimap.size * track_minimap.scale
+	var content_width := maxf(timing_visual_size.x, map_visual_size.x)
+	var block_padding := _hud_config.lap_timing.block_padding
+	var timing_height := timing_visual_size.y if lap_timing_panel.visible else 0.0
+	var map_gap := _hud_config.lap_timing.map_gap if lap_timing_panel.visible else 0.0
+	var block_position := Vector2(
+		_hud_config.lap_timing.margin_left,
+		_hud_config.lap_timing.margin_top)
+	var content_left := block_position.x + block_padding
+	var content_top := block_position.y + block_padding
+
+	lap_timing_panel.global_position = Vector2(
+		content_left + (content_width - timing_visual_size.x) * 0.5,
+		content_top)
+	track_minimap.global_position = Vector2(
+		content_left + (content_width - map_visual_size.x) * 0.5,
+		content_top + timing_height + map_gap)
+	lap_and_map_background.global_position = block_position
+	lap_and_map_background.size = Vector2(
+		content_width + block_padding * 2.0,
+		timing_height + map_gap + map_visual_size.y + block_padding * 2.0)
+	lap_and_map_background.visible = lap_timing_panel.visible or track_minimap.visible
 
 
 func _update_speed_gauge() -> void:

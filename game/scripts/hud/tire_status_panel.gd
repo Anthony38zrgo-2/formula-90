@@ -1,6 +1,9 @@
 class_name TireStatusPanel
 extends PanelContainer
 
+const DATTO_CONDENSED_REGULAR_FONT := preload("res://fonts/D-DINCondensed.ttf")
+const DATTO_CONDENSED_BOLD_FONT := preload("res://fonts/D-DINCondensed-Bold.ttf")
+
 ## Compact four-wheel pressure + thermal panel.
 ## Expected native/GDScript data contract (post-BRAKE-1000, snapshot schema 1):
 ## {
@@ -106,7 +109,6 @@ func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 		var center := float(wheel_data.get("tread_center_c", 0.0))
 		var outer := float(wheel_data.get("tread_outer_c", 0.0))
 		var carcass := float(wheel_data.get("carcass_c", 0.0))
-		var gas := float(wheel_data.get("gas_c", 0.0))
 
 		var cell: Dictionary = _cells[wheel]
 		var pressure_label: Label = cell["pressure"]
@@ -115,40 +117,31 @@ func set_tire_data(data: Dictionary, brake_data: Dictionary = {}) -> void:
 		var brake_label: Label = cell["brake"]
 		var wear_label: Label = cell["wear"]
 
-		pressure_label.text = "P %.0f kPa" % pressure
-		zones_label.text = "I %.0f°  C %.0f°  O %.0f°" % [inner, center, outer]
-		carcass_label.text = "CAR %.0f°  GAS %.0f°" % [carcass, gas]
+		pressure_label.text = "%.0f kPa" % pressure
+		zones_label.text = "%.0f %.0f %.0f°" % [inner, center, outer]
+		carcass_label.text = "CAR %.0f°" % carcass
 
 		var remaining_value: Variant = wheel_data.get("wear_remaining_fraction")
 		if remaining_value == null:
-			wear_label.text = "WR ---"
+			wear_label.text = "--%"
 			wear_label.add_theme_color_override("font_color", _settings.wear_optimal_color)
 		else:
 			var remaining := clampf(float(remaining_value), 0.0, 1.0)
-			var inner_wear := float(wheel_data.get("wear_inner_fraction", 0.0))
-			var center_wear := float(wheel_data.get("wear_center_fraction", 0.0))
-			var outer_wear := float(wheel_data.get("wear_outer_fraction", 0.0))
-			wear_label.text = "WR %.0f%%  I%.0f C%.0f O%.0f" % [
-				remaining * 100.0, inner_wear * 100.0, center_wear * 100.0, outer_wear * 100.0]
+			wear_label.text = "%.0f%%" % (remaining * 100.0)
 			wear_label.add_theme_color_override("font_color", _wear_color(remaining))
 
 		var brake_wheel: Dictionary = brake_data.get(wheel, {})
-		if not brake_wheel.is_empty():
-			var disc_text := "D---"
-			var disc_value: Variant = brake_wheel.get("disc_c")
-			if disc_value != null:
-				disc_text = "D%.0f°" % float(disc_value)
-			var rim_text := "RIM---"
-			var rim_value: Variant = brake_wheel.get("rim_c")
-			if rim_value != null:
-				rim_text = "RIM%.0f°" % float(rim_value)
-			brake_label.text = "BRK %s %s" % [disc_text, rim_text]
+		var disc_value: Variant = brake_wheel.get("disc_c")
+		brake_label.text = "BRK %.0f°" % float(disc_value) if disc_value != null else "BRK --°"
+		if disc_value != null:
 			brake_label.add_theme_color_override("font_color", _brake_temperature_color(
-				float(disc_value if disc_value != null else 0.0),
+				float(disc_value),
 				float(brake_wheel.get("optimal_min_c", 400.0)),
 				float(brake_wheel.get("optimal_max_c", 800.0)),
 				float(brake_wheel.get("fade_start_c", 900.0)),
 				float(brake_wheel.get("critical_c", 1100.0))))
+		else:
+			brake_label.remove_theme_color_override("font_color")
 
 		# Overall zone colour is based on the hottest tread reading so overheating
 		# remains visible without making the compact panel unreadable.
@@ -171,6 +164,8 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = s.title
+	title.add_theme_font_override("font", DATTO_CONDENSED_BOLD_FONT)
+	title.add_theme_font_size_override("font_size", s.title_font_size)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(title)
 
@@ -186,31 +181,43 @@ func _build_ui() -> void:
 
 		var header := Label.new()
 		header.text = wheel
+		header.add_theme_font_override("font", DATTO_CONDENSED_BOLD_FONT)
+		header.add_theme_font_size_override("font_size", s.wheel_font_size)
 		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(header)
 
 		var pressure_label := Label.new()
-		pressure_label.text = "P --- kPa"
+		pressure_label.text = "-- kPa"
+		pressure_label.add_theme_font_override("font", DATTO_CONDENSED_REGULAR_FONT)
+		pressure_label.add_theme_font_size_override("font_size", s.pressure_font_size)
 		pressure_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(pressure_label)
 
 		var zones_label := Label.new()
-		zones_label.text = "I --°  C --°  O --°"
+		zones_label.text = "-- -- --°"
+		zones_label.add_theme_font_override("font", DATTO_CONDENSED_BOLD_FONT)
+		zones_label.add_theme_font_size_override("font_size", s.tread_font_size)
 		zones_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(zones_label)
 
 		var carcass_label := Label.new()
-		carcass_label.text = "CAR --°  GAS --°"
+		carcass_label.text = "CAR --°"
+		carcass_label.add_theme_font_override("font", DATTO_CONDENSED_REGULAR_FONT)
+		carcass_label.add_theme_font_size_override("font_size", s.detail_font_size)
 		carcass_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(carcass_label)
 
 		var brake_label := Label.new()
-		brake_label.text = "BRK D---° RIM---°"
+		brake_label.text = "BRK --°"
+		brake_label.add_theme_font_override("font", DATTO_CONDENSED_REGULAR_FONT)
+		brake_label.add_theme_font_size_override("font_size", s.detail_font_size)
 		brake_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(brake_label)
 
 		var wear_label := Label.new()
-		wear_label.text = "WR ---"
+		wear_label.text = "--%"
+		wear_label.add_theme_font_override("font", DATTO_CONDENSED_BOLD_FONT)
+		wear_label.add_theme_font_size_override("font_size", s.wear_font_size)
 		wear_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(wear_label)
 

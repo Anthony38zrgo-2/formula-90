@@ -14,6 +14,12 @@
     ],
     "gap": 10.0,
     "title": "TYRES",
+    "title_font_size": 18,
+    "wheel_font_size": 20,
+    "tread_font_size": 18,
+    "wear_font_size": 17,
+    "pressure_font_size": 15,
+    "detail_font_size": 13,
     "box_size": [
       180.0,
       78.0
@@ -92,12 +98,17 @@
       118.0
     ],
     "title": "LAP TIMING",
+    "title_font_size": 18,
+    "caption_font_size": 15,
+    "value_font_size": 24,
     "margin_left": 14.0,
     "margin_right": 14.0,
     "margin_top": 10.0,
     "margin_bottom": 10.0,
     "row_separation": 6.0,
     "caption_width": 58.0,
+    "map_gap": 12.0,
+    "block_padding": 12.0,
     "pending_color": "#cfd6e4",
     "last_lap_color": "#ffffff",
     "best_lap_color": "#a6ff9e"

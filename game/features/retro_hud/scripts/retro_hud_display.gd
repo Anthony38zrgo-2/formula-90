@@ -3,7 +3,10 @@ extends Control
 
 const STATE_SCRIPT := preload("res://features/retro_hud/scripts/retro_hud_state.gd")
 const CONFIG_SCRIPT := preload("res://features/retro_hud/scripts/retro_hud_config.gd")
-const DISPLAY_FONT := preload("res://assets/fonts/BarlowCondensed-Medium.ttf")
+const DATTO_BOLD_FONT := preload("res://fonts/D-DIN-Bold.ttf")
+const DATTO_CONDENSED_REGULAR_FONT := preload("res://fonts/D-DINCondensed.ttf")
+const DATTO_CONDENSED_BOLD_FONT := preload("res://fonts/D-DINCondensed-Bold.ttf")
+const DATTO_EXPANDED_BOLD_FONT := preload("res://fonts/D-DINExp-Bold.ttf")
 const REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/rpm_segment.svg")
 const FUEL_SEGMENT_TEXTURE := preload("res://features/retro_hud/assets/fuel_segment.svg")
 const FUEL_ICON_TEXTURE := preload("res://features/retro_hud/assets/fuel_icon.svg")
@@ -15,9 +18,18 @@ const REVOLUTIONS_PER_MINUTE_RADIUS := 470.0
 const REVOLUTIONS_PER_MINUTE_START_DEGREES := 180.0
 const REVOLUTIONS_PER_MINUTE_END_DEGREES := 328.0
 const REVOLUTIONS_PER_MINUTE_LABEL_RADIUS := 540.0
-const INDICATOR_FONT_SIZE := 72
+const REVOLUTIONS_PER_MINUTE_SCALE_FONT_SIZE := 88
+const REVOLUTIONS_PER_MINUTE_VALUE_FONT_SIZE := 180
+const REVOLUTIONS_PER_MINUTE_UNIT_FONT_SIZE := 52
 const GEAR_FONT_SIZE := 400
-const SPEED_FONT_SIZE := 120
+const SPEED_FONT_SIZE := 160
+const SPEED_UNIT_FONT_SIZE := 52
+const TEMPERATURE_LABEL_FONT_SIZE := 52
+const TEMPERATURE_VALUE_FONT_SIZE := 94
+const FUEL_LABEL_FONT_SIZE := 52
+const FUEL_VALUE_FONT_SIZE := 64
+const DELTA_LABEL_FONT_SIZE := 64
+const DELTA_VALUE_FONT_SIZE := 108
 
 @export_file("*.json") var config_path := "res://features/retro_hud/config/retro_hud.json"
 @export var apply_layout_from_config := false
@@ -123,6 +135,7 @@ func _draw() -> void:
 	_draw_revolutions_per_minute_scale()
 	_draw_shift_lights()
 	_draw_gear_and_speed()
+	_draw_numeric_revolutions_per_minute()
 	_draw_temperature_panel()
 	_draw_fuel_bar()
 	_draw_fuel_summary()
@@ -155,20 +168,21 @@ func _draw_revolutions_per_minute_scale() -> void:
 			_draw_rotated_texture(
 				REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
 				segment_center,
-				Vector2(92.0, 46.0),
+				Vector2(108.0, 52.0),
 				angle_radians + PI * 0.5,
 				segment_color)
 
 		var displayed_revolutions_per_minute := int(round(revolutions_per_minute / 1000.0))
-		if displayed_revolutions_per_minute % 2 == 0 or segment_index == segment_count - 1:
+		if displayed_revolutions_per_minute % 2 == 0:
 			var label_center := (
 				REVOLUTIONS_PER_MINUTE_CENTER
 				+ radial_direction * REVOLUTIONS_PER_MINUTE_LABEL_RADIUS)
 			_draw_competition_text(
 				str(displayed_revolutions_per_minute),
 				label_center,
-				INDICATOR_FONT_SIZE,
-				config.dial_color)
+				REVOLUTIONS_PER_MINUTE_SCALE_FONT_SIZE,
+				config.dial_color,
+				DATTO_CONDENSED_BOLD_FONT)
 	_draw_redline_band()
 
 
@@ -194,7 +208,7 @@ func _draw_redline_band() -> void:
 	_draw_rotated_texture(
 		REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
 		center,
-		Vector2(arc_width, 46.0),
+		Vector2(arc_width, 52.0),
 		midpoint_angle + PI * 0.5,
 		redline_color)
 
@@ -217,35 +231,52 @@ func _draw_gear_and_speed() -> void:
 		state.gear_label,
 		Vector2(617.0, 540.0),
 		GEAR_FONT_SIZE,
-		gear_color)
+		gear_color,
+		DATTO_EXPANDED_BOLD_FONT)
 	_draw_competition_text(
 		str(int(round(state.speed_kilometers_per_hour))),
-		Vector2(846.0, 594.0),
+		Vector2(895.0, 594.0),
 		SPEED_FONT_SIZE,
-		config.digital_color)
-	_draw_competition_text("KM/H", Vector2(844.0, 694.0), INDICATOR_FONT_SIZE, config.dial_color)
+		config.digital_color,
+		DATTO_BOLD_FONT)
+	_draw_competition_text("KM/H", Vector2(895.0, 694.0), SPEED_UNIT_FONT_SIZE, config.dial_color, DATTO_CONDENSED_BOLD_FONT)
+
+
+func _draw_numeric_revolutions_per_minute() -> void:
+	_draw_competition_text(
+		str(int(round(maxf(state.engine_revolutions_per_minute, 0.0)))),
+		Vector2(1240.0, 575.0),
+		REVOLUTIONS_PER_MINUTE_VALUE_FONT_SIZE,
+		config.digital_color,
+		DATTO_CONDENSED_BOLD_FONT)
+	_draw_competition_text(
+		"RPM",
+		Vector2(1240.0, 700.0),
+		REVOLUTIONS_PER_MINUTE_UNIT_FONT_SIZE,
+		config.dial_color,
+		DATTO_CONDENSED_BOLD_FONT)
 
 
 func _draw_temperature_panel() -> void:
-	_draw_competition_text("OIL TEMP", Vector2(1257.0, 123.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("OIL TEMP", Vector2(1257.0, 123.0), TEMPERATURE_LABEL_FONT_SIZE, config.dial_color)
 	_draw_temperature_value(state.oil_temperature_celsius, state.oil_temperature_color, Vector2(1268.0, 203.0))
-	_draw_competition_text("°C", Vector2(1370.0, 204.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("°C", Vector2(1370.0, 204.0), TEMPERATURE_LABEL_FONT_SIZE, config.dial_color)
 
 	_draw_horizontal_divider(Vector2(1164.0, 264.0), 224.0)
 
-	_draw_competition_text("WATER TEMP", Vector2(1257.0, 304.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("WATER TEMP", Vector2(1257.0, 304.0), TEMPERATURE_LABEL_FONT_SIZE, config.dial_color)
 	_draw_temperature_value(state.water_temperature_celsius, state.water_temperature_color, Vector2(1268.0, 385.0))
-	_draw_competition_text("°C", Vector2(1370.0, 386.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("°C", Vector2(1370.0, 386.0), TEMPERATURE_LABEL_FONT_SIZE, config.dial_color)
 
 
 func _draw_temperature_value(temperature_celsius: float, temperature_color: Color, center: Vector2) -> void:
 	if temperature_celsius < 0.0:
-		_draw_competition_text("--", center, INDICATOR_FONT_SIZE, config.inactive_color)
+		_draw_competition_text("--", center, TEMPERATURE_VALUE_FONT_SIZE, config.inactive_color)
 		return
 	_draw_competition_text(
 		str(int(round(temperature_celsius))),
 		center,
-		INDICATOR_FONT_SIZE,
+		TEMPERATURE_VALUE_FONT_SIZE,
 		temperature_color)
 
 
@@ -258,7 +289,7 @@ func _draw_fuel_bar() -> void:
 		config.dial_color)
 
 	var fuel_track := Rect2(Vector2(383.0, 751.0), Vector2(690.0, 66.0))
-	draw_rect(fuel_track, config.background_color, false, 3.0)
+	draw_rect(fuel_track, config.fuel_container_color)
 
 	var fuel_fraction := 0.0
 	if state.fuel_capacity_kg > 0.0 and state.fuel_remaining_kg >= 0.0:
@@ -272,7 +303,7 @@ func _draw_fuel_bar() -> void:
 	var fuel_color := (
 		config.alert_color
 		if fuel_fraction <= config.fuel_alert_fraction
-		else config.dial_color)
+		else config.fuel_active_segment_color)
 
 	for segment_index in range(segment_count):
 		var segment_center := Vector2(
@@ -287,7 +318,7 @@ func _draw_fuel_bar() -> void:
 
 
 func _draw_fuel_segment(center: Vector2, dimensions: Vector2, fill_fraction: float, active_color: Color) -> void:
-	_draw_rotated_texture(FUEL_SEGMENT_TEXTURE, center, dimensions, 0.0, config.inactive_color)
+	_draw_rotated_texture(FUEL_SEGMENT_TEXTURE, center, dimensions, 0.0, config.fuel_inactive_segment_color)
 	if fill_fraction <= 0.0:
 		return
 	draw_set_transform(_design_origin + center * _design_scale_factor, 0.0, Vector2.ONE * _design_scale_factor)
@@ -300,15 +331,15 @@ func _draw_fuel_segment(center: Vector2, dimensions: Vector2, fill_fraction: flo
 
 
 func _draw_fuel_summary() -> void:
-	_draw_competition_text("FUEL", Vector2(290.0, 887.0), INDICATOR_FONT_SIZE, config.dial_color)
-	_draw_competition_text("AVG", Vector2(728.0, 887.0), INDICATOR_FONT_SIZE, config.dial_color)
-	_draw_competition_text("DELTA", Vector2(1154.0, 887.0), INDICATOR_FONT_SIZE, config.dial_color)
+	_draw_competition_text("FUEL", Vector2(290.0, 887.0), FUEL_LABEL_FONT_SIZE, config.dial_color)
+	_draw_competition_text("AVG", Vector2(728.0, 887.0), FUEL_LABEL_FONT_SIZE, config.dial_color)
+	_draw_competition_text("DELTA", Vector2(1154.0, 887.0), DELTA_LABEL_FONT_SIZE, config.dial_color)
 
 	_draw_vertical_divider(Vector2(509.0, 879.0), 123.0)
 	_draw_vertical_divider(Vector2(943.0, 879.0), 123.0)
 
 	if state.fuel_remaining_kg < 0.0:
-		_draw_competition_text("--.-", Vector2(291.0, 963.0), INDICATOR_FONT_SIZE, config.inactive_color)
+		_draw_competition_text("--.-", Vector2(291.0, 963.0), FUEL_VALUE_FONT_SIZE, config.inactive_color, DATTO_CONDENSED_BOLD_FONT)
 	else:
 		var fuel_color := config.dial_color
 		if state.fuel_capacity_kg > 0.0:
@@ -318,19 +349,21 @@ func _draw_fuel_summary() -> void:
 		_draw_competition_text(
 			"%.1f" % state.fuel_remaining_kg,
 			Vector2(292.0, 960.0),
-			INDICATOR_FONT_SIZE,
-			fuel_color)
-	_draw_competition_text("KG", Vector2(408.0, 968.0), INDICATOR_FONT_SIZE, config.dial_color)
+			FUEL_VALUE_FONT_SIZE,
+			fuel_color,
+			DATTO_CONDENSED_BOLD_FONT)
+	_draw_competition_text("KG", Vector2(408.0, 968.0), FUEL_LABEL_FONT_SIZE, config.dial_color)
 
 	if state.has_average_consumption:
 		_draw_competition_text(
 			"%.2f" % state.average_consumption_kg_per_lap,
 			Vector2(725.0, 960.0),
-			INDICATOR_FONT_SIZE,
-			config.digital_color)
+			FUEL_VALUE_FONT_SIZE,
+			config.digital_color,
+			DATTO_CONDENSED_BOLD_FONT)
 	else:
-		_draw_competition_text("--.--", Vector2(724.0, 963.0), INDICATOR_FONT_SIZE, config.inactive_color)
-	_draw_competition_text("KG/LAP", Vector2(866.0, 968.0), INDICATOR_FONT_SIZE, config.dial_color)
+		_draw_competition_text("--.--", Vector2(724.0, 963.0), FUEL_VALUE_FONT_SIZE, config.inactive_color, DATTO_CONDENSED_BOLD_FONT)
+	_draw_competition_text("KG/LAP", Vector2(866.0, 968.0), FUEL_LABEL_FONT_SIZE, config.dial_color)
 
 	if state.has_fuel_delta:
 		var fuel_delta_color := (
@@ -344,11 +377,12 @@ func _draw_fuel_summary() -> void:
 		_draw_competition_text(
 			fuel_delta_text,
 			Vector2(1078.0, 960.0),
-			INDICATOR_FONT_SIZE,
-			fuel_delta_color)
+			DELTA_VALUE_FONT_SIZE,
+			fuel_delta_color,
+			DATTO_CONDENSED_BOLD_FONT)
 	else:
-		_draw_competition_text("--.--", Vector2(1078.0, 963.0), INDICATOR_FONT_SIZE, config.inactive_color)
-	_draw_competition_text("LAPS", Vector2(1305.0, 968.0), INDICATOR_FONT_SIZE, config.dial_color)
+		_draw_competition_text("--.--", Vector2(1078.0, 963.0), DELTA_VALUE_FONT_SIZE, config.inactive_color, DATTO_CONDENSED_BOLD_FONT)
+	_draw_competition_text("LAPS", Vector2(1305.0, 968.0), FUEL_LABEL_FONT_SIZE, config.dial_color)
 
 
 func _draw_rotated_texture(
@@ -373,20 +407,21 @@ func _draw_competition_text(
 	text: String,
 	center: Vector2,
 	font_size: int,
-	color: Color) -> void:
-	var text_width := DISPLAY_FONT.get_string_size(
+	color: Color,
+	font: Font = DATTO_CONDENSED_REGULAR_FONT) -> void:
+	var text_width := font.get_string_size(
 		text,
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1.0,
 		font_size).x
 	var baseline := Vector2(
 		center.x - text_width * 0.5,
-		center.y + (DISPLAY_FONT.get_ascent(font_size) - DISPLAY_FONT.get_descent(font_size)) * 0.5)
+		center.y + (font.get_ascent(font_size) - font.get_descent(font_size)) * 0.5)
 	draw_set_transform(
 		_design_origin,
 		0.0,
 		Vector2.ONE * _design_scale_factor)
-	draw_string(DISPLAY_FONT, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, color)
+	draw_string(font, baseline, text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, color)
 	_restore_design_transform()
 
 

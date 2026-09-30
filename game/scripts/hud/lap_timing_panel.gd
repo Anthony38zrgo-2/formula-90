@@ -1,6 +1,9 @@
 class_name LapTimingPanel
 extends PanelContainer
 
+const DATTO_CONDENSED_REGULAR_FONT := preload("res://fonts/D-DINCondensed.ttf")
+const DATTO_CONDENSED_BOLD_FONT := preload("res://fonts/D-DINCondensed-Bold.ttf")
+
 var _settings := HudConfig.LapTimingSettings.new()
 var _controller: LapTimingController
 var _lap_value_label: Label
@@ -52,6 +55,8 @@ func _build_ui() -> void:
 
 	var title_label := Label.new()
 	title_label.text = _settings.title
+	title_label.add_theme_font_override("font", DATTO_CONDENSED_BOLD_FONT)
+	title_label.add_theme_font_size_override("font_size", _settings.title_font_size)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_box.add_child(title_label)
 
@@ -64,9 +69,13 @@ func _add_row(root_box: VBoxContainer, caption: String) -> Label:
 	root_box.add_child(row)
 	var caption_label := Label.new()
 	caption_label.text = caption
+	caption_label.add_theme_font_override("font", DATTO_CONDENSED_REGULAR_FONT)
+	caption_label.add_theme_font_size_override("font_size", _settings.caption_font_size)
 	caption_label.custom_minimum_size.x = _settings.caption_width
 	row.add_child(caption_label)
 	var value_label := Label.new()
+	value_label.add_theme_font_override("font", DATTO_CONDENSED_BOLD_FONT)
+	value_label.add_theme_font_size_override("font_size", _settings.value_font_size)
 	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(value_label)

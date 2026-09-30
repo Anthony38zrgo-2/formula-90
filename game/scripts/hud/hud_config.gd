@@ -65,6 +65,12 @@ class TiresSettings:
 	var size := Vector2(390.0, 170.0)
 	var gap := 10.0
 	var title := "TYRES"
+	var title_font_size := 18
+	var wheel_font_size := 20
+	var tread_font_size := 18
+	var wear_font_size := 17
+	var pressure_font_size := 15
+	var detail_font_size := 13
 	var box_size := Vector2(180.0, 60.0)
 	var margin_left := 8.0
 	var margin_right := 8.0
@@ -101,6 +107,12 @@ class TiresSettings:
 		size = _vec2(data.get("size", [size.x, size.y]), size)
 		gap = maxf(float(data.get("gap", gap)), 0.0)
 		title = str(data.get("title", title))
+		title_font_size = maxi(int(data.get("title_font_size", title_font_size)), 1)
+		wheel_font_size = maxi(int(data.get("wheel_font_size", wheel_font_size)), 1)
+		tread_font_size = maxi(int(data.get("tread_font_size", tread_font_size)), 1)
+		wear_font_size = maxi(int(data.get("wear_font_size", wear_font_size)), 1)
+		pressure_font_size = maxi(int(data.get("pressure_font_size", pressure_font_size)), 1)
+		detail_font_size = maxi(int(data.get("detail_font_size", detail_font_size)), 1)
 		box_size = _vec2(data.get("box_size", [box_size.x, box_size.y]), box_size)
 		margin_left = maxf(float(data.get("margin_left", margin_left)), 0.0)
 		margin_right = maxf(float(data.get("margin_right", margin_right)), 0.0)
@@ -152,6 +164,12 @@ class TiresSettings:
 			"size": [size.x, size.y],
 			"gap": gap,
 			"title": title,
+			"title_font_size": title_font_size,
+			"wheel_font_size": wheel_font_size,
+			"tread_font_size": tread_font_size,
+			"wear_font_size": wear_font_size,
+			"pressure_font_size": pressure_font_size,
+			"detail_font_size": detail_font_size,
 			"box_size": [box_size.x, box_size.y],
 			"margin_left": margin_left,
 			"margin_right": margin_right,
@@ -322,12 +340,17 @@ class LapTimingSettings:
 	var scale := 1.08
 	var size := Vector2(220.0, 118.0)
 	var title := "LAP TIMING"
+	var title_font_size := 18
+	var caption_font_size := 15
+	var value_font_size := 24
 	var margin_left := 8.0
 	var margin_right := 8.0
 	var margin_top := 6.0
 	var margin_bottom := 6.0
 	var row_separation := 6.0
 	var caption_width := 58.0
+	var map_gap := 12.0
+	var block_padding := 12.0
 	var pending_color := Color("cfd6e4")
 	var last_lap_color := Color("ffffff")
 	var best_lap_color := Color("a6ff9e")
@@ -337,12 +360,17 @@ class LapTimingSettings:
 		scale = maxf(float(data.get("scale", scale)), 0.05)
 		size = _parse_size_vector(data.get("size", [size.x, size.y]), size)
 		title = str(data.get("title", title))
+		title_font_size = maxi(int(data.get("title_font_size", title_font_size)), 1)
+		caption_font_size = maxi(int(data.get("caption_font_size", caption_font_size)), 1)
+		value_font_size = maxi(int(data.get("value_font_size", value_font_size)), 1)
 		margin_left = maxf(float(data.get("margin_left", margin_left)), 0.0)
 		margin_right = maxf(float(data.get("margin_right", margin_right)), 0.0)
 		margin_top = maxf(float(data.get("margin_top", margin_top)), 0.0)
 		margin_bottom = maxf(float(data.get("margin_bottom", margin_bottom)), 0.0)
 		row_separation = maxf(float(data.get("row_separation", row_separation)), 0.0)
 		caption_width = maxf(float(data.get("caption_width", caption_width)), 0.0)
+		map_gap = maxf(float(data.get("map_gap", map_gap)), 0.0)
+		block_padding = maxf(float(data.get("block_padding", block_padding)), 0.0)
 		pending_color = _parse_html_color(data.get("pending_color", "#cfd6e4"), pending_color)
 		last_lap_color = _parse_html_color(data.get("last_lap_color", "#ffffff"), last_lap_color)
 		best_lap_color = _parse_html_color(data.get("best_lap_color", "#a6ff9e"), best_lap_color)
