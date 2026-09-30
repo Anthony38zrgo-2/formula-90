@@ -144,6 +144,14 @@ func _draw() -> void:
 
 
 func _draw_revolutions_per_minute_scale() -> void:
+	_draw_revolutions_per_minute_band(
+		config.revolutions_per_minute_minimum,
+		config.urgent_shift_revolutions_per_minute,
+		config.inactive_color)
+	_draw_revolutions_per_minute_band(
+		config.revolutions_per_minute_minimum,
+		clampf(state.engine_revolutions_per_minute, config.revolutions_per_minute_minimum, config.urgent_shift_revolutions_per_minute),
+		config.dial_color)
 	var segment_count := maxi(config.revolutions_per_minute_segment_count, 2)
 	for segment_index in range(segment_count):
 		var segment_ratio := float(segment_index) / float(segment_count - 1)
@@ -153,25 +161,10 @@ func _draw_revolutions_per_minute_scale() -> void:
 			segment_ratio)
 		var angle_radians := deg_to_rad(angle_degrees)
 		var radial_direction := Vector2(cos(angle_radians), sin(angle_radians))
-		var segment_center := (
-			REVOLUTIONS_PER_MINUTE_CENTER
-			+ radial_direction * REVOLUTIONS_PER_MINUTE_RADIUS)
 		var revolutions_per_minute := lerpf(
 			config.revolutions_per_minute_minimum,
 			config.revolutions_per_minute_maximum,
 			segment_ratio)
-		if revolutions_per_minute < config.urgent_shift_revolutions_per_minute:
-			var segment_color := (
-				config.dial_color
-				if state.engine_revolutions_per_minute >= revolutions_per_minute
-				else config.inactive_color)
-			_draw_rotated_texture(
-				REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
-				segment_center,
-				Vector2(108.0, 52.0),
-				angle_radians + PI * 0.5,
-				segment_color)
-
 		var displayed_revolutions_per_minute := int(round(revolutions_per_minute / 1000.0))
 		if displayed_revolutions_per_minute % 2 == 0:
 			var label_center := (
@@ -187,30 +180,35 @@ func _draw_revolutions_per_minute_scale() -> void:
 
 
 func _draw_redline_band() -> void:
-	var revolutions_per_minute_range := config.revolutions_per_minute_maximum - config.revolutions_per_minute_minimum
-	var redline_range := config.revolutions_per_minute_maximum - config.urgent_shift_revolutions_per_minute
-	if redline_range <= 0.0:
-		return
-	var redline_midpoint := (config.urgent_shift_revolutions_per_minute + config.revolutions_per_minute_maximum) * 0.5
-	var midpoint_ratio := (redline_midpoint - config.revolutions_per_minute_minimum) / revolutions_per_minute_range
-	var midpoint_angle := deg_to_rad(lerpf(
-		REVOLUTIONS_PER_MINUTE_START_DEGREES,
-		REVOLUTIONS_PER_MINUTE_END_DEGREES,
-		midpoint_ratio))
-	var arc_width := REVOLUTIONS_PER_MINUTE_RADIUS * deg_to_rad(
-		(REVOLUTIONS_PER_MINUTE_END_DEGREES - REVOLUTIONS_PER_MINUTE_START_DEGREES)
-		* redline_range / revolutions_per_minute_range)
-	var center := REVOLUTIONS_PER_MINUTE_CENTER + Vector2(cos(midpoint_angle), sin(midpoint_angle)) * REVOLUTIONS_PER_MINUTE_RADIUS
 	var redline_color := (
 		config.redline_color
 		if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute
 		else config.inactive_redline_color)
-	_draw_rotated_texture(
-		REVOLUTIONS_PER_MINUTE_SEGMENT_TEXTURE,
-		center,
-		Vector2(arc_width, 52.0),
-		midpoint_angle + PI * 0.5,
+	_draw_revolutions_per_minute_band(
+		config.urgent_shift_revolutions_per_minute,
+		config.revolutions_per_minute_maximum,
 		redline_color)
+
+
+func _draw_revolutions_per_minute_band(start_revolutions_per_minute: float, end_revolutions_per_minute: float, color: Color) -> void:
+	if end_revolutions_per_minute <= start_revolutions_per_minute:
+		return
+	var revolutions_per_minute_range := config.revolutions_per_minute_maximum - config.revolutions_per_minute_minimum
+	var start_ratio := (start_revolutions_per_minute - config.revolutions_per_minute_minimum) / revolutions_per_minute_range
+	var end_ratio := (end_revolutions_per_minute - config.revolutions_per_minute_minimum) / revolutions_per_minute_range
+	draw_arc(
+		REVOLUTIONS_PER_MINUTE_CENTER,
+		REVOLUTIONS_PER_MINUTE_RADIUS,
+		deg_to_rad(lerpf(REVOLUTIONS_PER_MINUTE_START_DEGREES, REVOLUTIONS_PER_MINUTE_END_DEGREES, start_ratio)),
+		deg_to_rad(lerpf(REVOLUTIONS_PER_MINUTE_START_DEGREES, REVOLUTIONS_PER_MINUTE_END_DEGREES, end_ratio)),
+		128,
+		color,
+		52.0,
+		true)
+
+
+func engine_readout_color() -> Color:
+	return config.alert_color if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute else config.digital_color
 
 
 func _draw_shift_lights() -> void:
@@ -223,15 +221,11 @@ func _draw_shift_lights() -> void:
 
 
 func _draw_gear_and_speed() -> void:
-	var gear_color := (
-		config.alert_color
-		if state.engine_revolutions_per_minute >= config.urgent_shift_revolutions_per_minute
-		else config.digital_color)
 	_draw_competition_text(
 		state.gear_label,
 		Vector2(617.0, 540.0),
 		GEAR_FONT_SIZE,
-		gear_color,
+		engine_readout_color(),
 		DATTO_EXPANDED_BOLD_FONT)
 	_draw_competition_text(
 		str(int(round(state.speed_kilometers_per_hour))),
@@ -247,7 +241,7 @@ func _draw_numeric_revolutions_per_minute() -> void:
 		str(int(round(maxf(state.engine_revolutions_per_minute, 0.0)))),
 		Vector2(1240.0, 575.0),
 		REVOLUTIONS_PER_MINUTE_VALUE_FONT_SIZE,
-		config.digital_color,
+		engine_readout_color(),
 		DATTO_CONDENSED_BOLD_FONT)
 	_draw_competition_text(
 		"RPM",
