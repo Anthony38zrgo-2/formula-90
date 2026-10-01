@@ -14,6 +14,7 @@ var maximum_elbow_flexion_degrees: float = 0.0
 var maximum_wrist_bend_degrees: float = 0.0
 var maximum_finger_bone_length_error: float = 0.0
 var minimum_closed_palm_alignment: float = 1.0
+var maximum_closed_thumb_extension_alignment: float = -1.0
 var minimum_finger_closure: float = 1.0
 var maximum_simultaneously_open_hands: int = 0
 var maximum_shoulder_protraction_degrees: float = 0.0
@@ -120,6 +121,8 @@ func run_validation() -> void:
 		failures.append("Driver grip stretches finger bones.")
 	if minimum_closed_palm_alignment < 0.70:
 		failures.append("Driver closed palms do not face the steering rim.")
+	if maximum_closed_thumb_extension_alignment > -0.50:
+		failures.append("Driver closed thumbs do not fold around the steering rim.")
 	if minimum_finger_closure > 0.15:
 		failures.append("Driver fingers do not open while changing grip.")
 	if maximum_simultaneously_open_hands > 1:
@@ -140,6 +143,7 @@ func run_validation() -> void:
 	print("DRIVER_MAXIMUM_WRIST_BEND_DEGREES=" + str(maximum_wrist_bend_degrees))
 	print("DRIVER_MAXIMUM_FINGER_BONE_LENGTH_ERROR_METERS=" + str(maximum_finger_bone_length_error))
 	print("DRIVER_MINIMUM_CLOSED_PALM_ALIGNMENT=" + str(minimum_closed_palm_alignment))
+	print("DRIVER_MAXIMUM_CLOSED_THUMB_EXTENSION_ALIGNMENT=" + str(maximum_closed_thumb_extension_alignment))
 	print("DRIVER_MINIMUM_FINGER_CLOSURE=" + str(minimum_finger_closure))
 	print("DRIVER_MAXIMUM_SIMULTANEOUSLY_OPEN_HANDS=" + str(maximum_simultaneously_open_hands))
 	print("DRIVER_MAXIMUM_SHOULDER_PROTRACTION_DEGREES=" + str(maximum_shoulder_protraction_degrees))
@@ -202,6 +206,11 @@ func validate_arm_pose() -> void:
 			var palm_normal := skeleton.global_basis * skeleton.get_bone_global_pose(wrist_index).basis.z
 			minimum_closed_palm_alignment = minf(minimum_closed_palm_alignment, palm_normal.normalized().dot(inward_direction.normalized()))
 		for finger_chain in arm_configuration["finger_chains"]:
+			if finger_chain["is_thumb"] and finger_closure > 0.999:
+				var thumb_root_index: int = finger_chain["bone_indices"][0]
+				var thumb_direction := skeleton.get_bone_global_pose(thumb_root_index).basis.y.normalized()
+				var thumb_comparison_hand_direction := skeleton.get_bone_global_pose(wrist_index).basis.y.normalized()
+				maximum_closed_thumb_extension_alignment = maxf(maximum_closed_thumb_extension_alignment, thumb_direction.dot(thumb_comparison_hand_direction))
 			for bone_index in finger_chain["bone_indices"]:
 				var parent_index := skeleton.get_bone_parent(bone_index)
 				var actual_length := skeleton.get_bone_global_pose(bone_index).origin.distance_to(skeleton.get_bone_global_pose(parent_index).origin)

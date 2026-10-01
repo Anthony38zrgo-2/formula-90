@@ -4,8 +4,8 @@
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "C9C8D5702585071356DEBDAE8F157FD01EC5660E1306727536140BCC16D47815",
-      "size_bytes": 22747600
+      "sha256": "3E23DEAC45CF6954D2C53B31ADF31251F1C658D0D3A745F7FA09BFE558D470AB",
+      "size_bytes": 22937688
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -91,8 +91,8 @@
         "polygons": 224
       },
       "GEO_CHASSIS_INTERIOR": {
-        "vertices": 499,
-        "polygons": 792
+        "vertices": 4686,
+        "polygons": 4626
       },
       "GEO_CHASSIS_LATERALCAM": {
         "vertices": 40,

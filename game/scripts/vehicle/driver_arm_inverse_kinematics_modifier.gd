@@ -3,8 +3,12 @@ extends "res://scripts/runtime/wheel_gun_arm_inverse_kinematics_modifier.gd"
 const SHOULDER_REACH_RESERVE_METERS := 0.045
 const MAXIMUM_SHOULDER_SPEED_DEGREES := 75.0
 const SHOULDER_RESPONSE_SPEED := 12.0
+const THUMB_BASE_OPPOSITION_DEGREES := 145.0
+const MAXIMUM_HAND_ROTATION_SPEED_DEGREES := 325.0
+const MAXIMUM_TARGET_WRIST_BEND_DEGREES := 30.0
 
 var shoulder_rotations: Dictionary = {}
+var hand_rotations: Dictionary = {}
 
 func _process_modification_with_delta(elapsed_seconds: float) -> void:
 	var skeleton := get_skeleton()
@@ -28,15 +32,38 @@ func _process_modification_with_delta(elapsed_seconds: float) -> void:
 			var forearm_direction := (skeleton.global_basis * (current_hand_pose.origin - current_elbow_pose.origin)).normalized()
 			var desired_hand_direction := desired_hand_basis.y.normalized()
 			var wrist_bend := forearm_direction.angle_to(desired_hand_direction)
-			var allowed_fraction := minf(1.0, deg_to_rad(30.0) / maxf(wrist_bend, 0.0001))
+			var allowed_fraction := minf(1.0, deg_to_rad(MAXIMUM_TARGET_WRIST_BEND_DEGREES) / maxf(wrist_bend, 0.0001))
 			var constrained_hand_direction := forearm_direction.slerp(desired_hand_direction, allowed_fraction).normalized()
 			hand_target.global_basis = Basis(Quaternion(desired_hand_direction, constrained_hand_direction)) * desired_hand_basis
 			hand_target.global_position = palm_world_position - hand_target.global_basis * palm_offset
 			_solve_arm_to_hand_target(skeleton, arm_configuration)
+		var chassis := hand_target.get_parent() as Node3D
+		var desired_hand_rotation := (chassis.global_basis.inverse() * hand_target.global_basis).get_rotation_quaternion()
+		var previous_hand_rotation: Quaternion = hand_rotations.get(hand_bone_index, desired_hand_rotation)
+		var hand_rotation_distance := previous_hand_rotation.angle_to(desired_hand_rotation)
+		var maximum_hand_rotation_step := deg_to_rad(MAXIMUM_HAND_ROTATION_SPEED_DEGREES) * maxf(elapsed_seconds, 0.0)
+		var hand_rotation := previous_hand_rotation.slerp(desired_hand_rotation, minf(1.0, maximum_hand_rotation_step / maxf(hand_rotation_distance, 0.0001)))
+		hand_rotations[hand_bone_index] = hand_rotation
+		hand_target.global_basis = chassis.global_basis * Basis(hand_rotation)
+		hand_target.global_position = palm_world_position - hand_target.global_basis * palm_offset
+		_solve_arm_to_hand_target(skeleton, arm_configuration)
 		var hand_pose := skeleton.get_bone_global_pose(hand_bone_index)
 		hand_pose.basis = skeleton.global_basis.inverse() * hand_target.global_basis
 		skeleton.set_bone_global_pose(hand_bone_index, hand_pose)
 		update_finger_poses(skeleton, arm_configuration)
+
+func _solve_arm_to_hand_target(skeleton: Skeleton3D, arm_configuration: Dictionary) -> void:
+	var shoulder_index := skeleton.find_bone(arm_configuration["root_bone_name"])
+	var elbow_index := skeleton.find_bone(arm_configuration["middle_bone_name"])
+	var wrist_index := skeleton.find_bone(arm_configuration["end_bone_name"])
+	var hand_target := arm_configuration["hand_target"] as Node3D
+	var shoulder_position := skeleton.get_bone_global_pose(shoulder_index).origin
+	var target_position := skeleton.global_transform.affine_inverse() * hand_target.global_position
+	var shoulder_to_target := target_position - shoulder_position
+	var maximum_reach := skeleton.get_bone_rest(elbow_index).origin.length() + skeleton.get_bone_rest(wrist_index).origin.length() - 0.001
+	if shoulder_to_target.length() > maximum_reach:
+		hand_target.global_position = skeleton.global_transform * (shoulder_position + shoulder_to_target.normalized() * maximum_reach)
+	super._solve_arm_to_hand_target(skeleton, arm_configuration)
 
 func prepare_shoulder_reach(skeleton: Skeleton3D, arm_configuration: Dictionary, elapsed_seconds: float) -> void:
 	var arm_index := skeleton.find_bone(arm_configuration["root_bone_name"])
@@ -75,12 +102,15 @@ func prepare_shoulder_reach(skeleton: Skeleton3D, arm_configuration: Dictionary,
 func update_finger_poses(skeleton: Skeleton3D, arm_configuration: Dictionary) -> void:
 	var finger_closure := clampf(float(arm_configuration["finger_closure"]), 0.0, 1.0)
 	for finger_chain in arm_configuration["finger_chains"]:
-		var flexion_degrees := Vector3(35.0, 75.0, 45.0)
-		if finger_chain["is_thumb"]:
-			flexion_degrees = Vector3(25.0, 60.0, 45.0)
+		var flexion_degrees := Vector3(THUMB_BASE_OPPOSITION_DEGREES, 35.0, 30.0) if finger_chain["is_thumb"] else Vector3(45.0, 70.0, 35.0)
+		if finger_chain["finger_name"] == "Index":
+			flexion_degrees.z = 20.0
 		for segment_index in range(3):
 			var bone_index: int = finger_chain["bone_indices"][segment_index]
 			var parent_index := skeleton.get_bone_parent(bone_index)
 			var local_pose := skeleton.get_bone_rest(bone_index)
-			local_pose.basis *= Basis(Vector3.RIGHT, deg_to_rad(flexion_degrees[segment_index] * finger_closure))
+			var flexion_angle := flexion_degrees[segment_index] * finger_closure
+			if finger_chain["is_thumb"] and segment_index == 0:
+				flexion_angle = flexion_degrees[segment_index]
+			local_pose.basis *= Basis(Vector3.RIGHT, deg_to_rad(flexion_angle))
 			skeleton.set_bone_global_pose(bone_index, skeleton.get_bone_global_pose(parent_index) * local_pose)

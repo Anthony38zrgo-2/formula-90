@@ -62,40 +62,43 @@ func capture_current_surface() -> void:
 	capture_next_modification = false
 	var skeleton := driver_controller.get("driver_skeleton") as Skeleton3D
 	var driver_instance := driver_controller.get("driver_instance") as Node3D
-	var driver_body := driver_instance.find_child("DriverBody", true, false) as MeshInstance3D
 	var chassis := driver_controller.get("chassis_visual") as Node3D
 	var skeleton_to_chassis := chassis.global_transform.affine_inverse() * skeleton.global_transform
 	var vertices: Array = []
 	var triangles: Array = []
 	var dominant_bones: Array[String] = []
-	for surface_index in range(driver_body.mesh.get_surface_count()):
-		var surface_arrays := driver_body.mesh.surface_get_arrays(surface_index)
-		var source_vertices: PackedVector3Array = surface_arrays[Mesh.ARRAY_VERTEX]
-		var bone_bind_indices: PackedInt32Array = surface_arrays[Mesh.ARRAY_BONES]
-		var bone_weights: PackedFloat32Array = surface_arrays[Mesh.ARRAY_WEIGHTS]
-		var triangle_indices: PackedInt32Array = surface_arrays[Mesh.ARRAY_INDEX]
-		var influence_count := int(bone_weights.size() / source_vertices.size())
-		var vertex_offset := vertices.size()
-		for vertex_index in range(source_vertices.size()):
-			var skinned_position := Vector3.ZERO
-			var maximum_weight := -1.0
-			var dominant_bone_name := ""
-			for influence_index in range(influence_count):
-				var weight_index := vertex_index * influence_count + influence_index
-				var weight := bone_weights[weight_index]
-				if weight <= 0.0:
-					continue
-				var bind_index := bone_bind_indices[weight_index]
-				var bone_name := driver_body.skin.get_bind_name(bind_index)
-				var bone_index := skeleton.find_bone(bone_name) if not bone_name.is_empty() else driver_body.skin.get_bind_bone(bind_index)
-				var skin_transform := skeleton.get_bone_global_pose(bone_index) * driver_body.skin.get_bind_pose(bind_index)
-				skinned_position += skin_transform * source_vertices[vertex_index] * weight
-				if weight > maximum_weight:
-					maximum_weight = weight
-					dominant_bone_name = skeleton.get_bone_name(bone_index)
-			var chassis_position := skeleton_to_chassis * skinned_position
-			vertices.append([chassis_position.x, -chassis_position.z, chassis_position.y])
-			dominant_bones.append(dominant_bone_name)
-		for triangle_index in range(0, triangle_indices.size(), 3):
-			triangles.append([triangle_indices[triangle_index] + vertex_offset, triangle_indices[triangle_index + 1] + vertex_offset, triangle_indices[triangle_index + 2] + vertex_offset])
+	for descendant in driver_instance.find_children("*", "MeshInstance3D", true, false):
+		var driver_body := descendant as MeshInstance3D
+		if driver_body.skin == null:
+			continue
+		for surface_index in range(driver_body.mesh.get_surface_count()):
+			var surface_arrays := driver_body.mesh.surface_get_arrays(surface_index)
+			var source_vertices: PackedVector3Array = surface_arrays[Mesh.ARRAY_VERTEX]
+			var bone_bind_indices: PackedInt32Array = surface_arrays[Mesh.ARRAY_BONES]
+			var bone_weights: PackedFloat32Array = surface_arrays[Mesh.ARRAY_WEIGHTS]
+			var triangle_indices: PackedInt32Array = surface_arrays[Mesh.ARRAY_INDEX]
+			var influence_count := int(bone_weights.size() / source_vertices.size())
+			var vertex_offset := vertices.size()
+			for vertex_index in range(source_vertices.size()):
+				var skinned_position := Vector3.ZERO
+				var maximum_weight := -1.0
+				var dominant_bone_name := ""
+				for influence_index in range(influence_count):
+					var weight_index := vertex_index * influence_count + influence_index
+					var weight := bone_weights[weight_index]
+					if weight <= 0.0:
+						continue
+					var bind_index := bone_bind_indices[weight_index]
+					var bone_name := driver_body.skin.get_bind_name(bind_index)
+					var bone_index := skeleton.find_bone(bone_name) if not bone_name.is_empty() else driver_body.skin.get_bind_bone(bind_index)
+					var skin_transform := skeleton.get_bone_global_pose(bone_index) * driver_body.skin.get_bind_pose(bind_index)
+					skinned_position += skin_transform * source_vertices[vertex_index] * weight
+					if weight > maximum_weight:
+						maximum_weight = weight
+						dominant_bone_name = skeleton.get_bone_name(bone_index)
+				var chassis_position := skeleton_to_chassis * skinned_position
+				vertices.append([chassis_position.x, -chassis_position.z, chassis_position.y])
+				dominant_bones.append(dominant_bone_name)
+			for triangle_index in range(0, triangle_indices.size(), 3):
+				triangles.append([triangle_indices[triangle_index] + vertex_offset, triangle_indices[triangle_index + 1] + vertex_offset, triangle_indices[triangle_index + 2] + vertex_offset])
 	captured_samples.append({"steering_degrees": current_steering_degrees, "vertices": vertices, "triangles": triangles, "dominant_bones": dominant_bones})

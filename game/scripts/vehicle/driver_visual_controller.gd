@@ -5,8 +5,12 @@ const GRIP_TRANSFER_START_DEGREES := 60.0
 const GRIP_TRANSFER_END_DEGREES := 180.0
 const FIRST_HAND_TRANSFER_END := 0.30
 const SECOND_HAND_TRANSFER_END := 0.70
-const MAXIMUM_GRIP_TRANSFER_SPEED := 0.8
+const MAXIMUM_GRIP_TRANSFER_SPEED := 0.75
 const GRIP_TRANSFER_ACCELERATION := 4.0
+const STEERING_GRIP_HALF_WIDTH_METERS := 0.132
+const STEERING_GRIP_HALF_HEIGHT_METERS := 0.084
+const STEERING_GRIP_DEPTH_METERS := -0.018
+const REGRIP_RIM_CLEARANCE_METERS := 0.025
 
 @export var driver_model: PackedScene
 @export var chassis_visual: Node3D
@@ -19,7 +23,6 @@ var arm_modifier: SkeletonModifier3D
 var hand_targets: Array[Node3D] = []
 var elbow_targets: Array[Node3D] = []
 var neutral_hand_bases: Array[Basis] = []
-var neutral_grip_positions: Array[Vector3] = []
 var steering_pivot: Node3D
 var grip_transfer_progress: float = 0.0
 var grip_transfer_direction: float = 1.0
@@ -60,7 +63,7 @@ func _ready() -> void:
 		var elbow_target := Node3D.new()
 		elbow_target.name = side + "DriverElbowTarget"
 		chassis_visual.add_child(elbow_target)
-		elbow_target.position = Vector3(side_sign * 0.20, 0.08, -0.08)
+		elbow_target.position = seated_position + Vector3(side_sign * 0.20, 0.091, 0.26)
 		elbow_targets.append(elbow_target)
 		var hand_bone_index := driver_skeleton.find_bone("mixamorig_" + side + "Hand")
 		if hand_bone_index < 0:
@@ -73,7 +76,6 @@ func _ready() -> void:
 		var prefix := hand_bone_name.trim_suffix(side + "Hand")
 		var hand_basis := Basis(Vector3.DOWN, Vector3.FORWARD, Vector3.RIGHT) if side == "Left" else Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT)
 		neutral_hand_bases.append(hand_basis)
-		neutral_grip_positions.append(Vector3(side_sign * 0.116, 0.0, 0.010))
 		var finger_chains: Array[Dictionary] = []
 		for finger_name in ["Index", "Middle", "Ring", "Little", "Thumb"]:
 			var finger_bone_indices: Array[int] = []
@@ -85,7 +87,7 @@ func _ready() -> void:
 					set_process(false)
 					return
 				finger_bone_indices.append(finger_bone_index)
-			finger_chains.append({"bone_indices": finger_bone_indices, "is_thumb": finger_name == "Thumb"})
+			finger_chains.append({"bone_indices": finger_bone_indices, "is_thumb": finger_name == "Thumb", "finger_name": finger_name})
 		arm_configurations.append({
 			"root_bone_name": prefix + side + "Arm",
 			"middle_bone_name": prefix + side + "ForeArm",
@@ -128,26 +130,30 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		var leading_hand_index := 0 if grip_transfer_direction >= 0.0 else 1
 		var hand_progress := clampf((release_progress - FIRST_HAND_TRANSFER_END) / (SECOND_HAND_TRANSFER_END - FIRST_HAND_TRANSFER_END), 0.0, 1.0)
 		var smooth_progress := smoothstep(0.0, 1.0, hand_progress)
-		var grip_orientation_angle := -grip_transfer_direction * PI * smooth_progress
-		var grip_position := neutral_grip_positions[hand_index].lerp(neutral_grip_positions[1 - hand_index], smooth_progress)
+		var initial_side_sign := -1.0 if hand_index == 0 else 1.0
+		var transfer_angle := PI * smooth_progress
+		var grip_orientation_angle := -grip_transfer_direction * transfer_angle
+		var grip_position := steering_rim_grip_position(initial_side_sign * cos(transfer_angle), -sin(transfer_angle))
 		if hand_index == leading_hand_index:
-			var upper_rim_grip := Vector3(0.0, 0.068, 0.010)
 			var first_transfer_progress := clampf(release_progress / FIRST_HAND_TRANSFER_END, 0.0, 1.0)
 			var final_transfer_progress := clampf((release_progress - SECOND_HAND_TRANSFER_END) / (1.0 - SECOND_HAND_TRANSFER_END), 0.0, 1.0)
 			if release_progress < FIRST_HAND_TRANSFER_END:
-				grip_orientation_angle = -grip_transfer_direction * PI * 0.5 * smoothstep(0.0, 1.0, first_transfer_progress)
 				finger_opening = sin(first_transfer_progress * PI)
-				grip_position = neutral_grip_positions[hand_index].lerp(upper_rim_grip, smoothstep(0.0, 1.0, first_transfer_progress))
+				var upper_transfer_angle := PI * 0.5 * smoothstep(0.0, 1.0, first_transfer_progress)
+				grip_orientation_angle = -grip_transfer_direction * upper_transfer_angle
+				grip_position = steering_rim_grip_position(initial_side_sign * cos(upper_transfer_angle), sin(upper_transfer_angle))
 				grip_position.z += sin(first_transfer_progress * PI) * 0.025
 			else:
-				grip_orientation_angle = -grip_transfer_direction * PI * 0.5 * (1.0 + smoothstep(0.0, 1.0, final_transfer_progress))
 				finger_opening = sin(final_transfer_progress * PI)
-				grip_position = upper_rim_grip.lerp(neutral_grip_positions[1 - hand_index], smoothstep(0.0, 1.0, final_transfer_progress))
+				var upper_transfer_angle := PI * 0.5 * smoothstep(0.0, 1.0, final_transfer_progress)
+				grip_orientation_angle = -grip_transfer_direction * (PI * 0.5 + upper_transfer_angle)
+				grip_position = steering_rim_grip_position(-initial_side_sign * sin(upper_transfer_angle), cos(upper_transfer_angle))
 				grip_position.z += sin(final_transfer_progress * PI) * 0.025
 		else:
 			finger_opening = sin(hand_progress * PI)
-			grip_position.y -= sin(hand_progress * PI) * 0.068
 			grip_position.z += sin(hand_progress * PI) * 0.030
+		var rim_outward_direction := Vector3(grip_position.x, grip_position.y, 0.0).normalized()
+		grip_position += rim_outward_direction * REGRIP_RIM_CLEARANCE_METERS * sin(release_progress * PI)
 		var wrist_angle := steering_angle + grip_orientation_angle
 		hand_targets[hand_index].global_basis = chassis_visual.global_basis * Basis(Vector3.BACK, wrist_angle) * neutral_hand_bases[hand_index]
 		var arm_configurations: Array = arm_modifier.get("arm_configurations")
@@ -157,5 +163,8 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		var palm_chassis_position := steering_pivot.transform * grip_position
 		var side_sign := -1.0 if hand_index == 0 else 1.0
 		var elbow_height := clampf((palm_chassis_position.y - steering_pivot.position.y) * 0.4, -0.04, 0.04)
-		var desired_elbow_position := Vector3(side_sign * 0.20, 0.08 + elbow_height, -0.08)
+		var desired_elbow_position := seated_position + Vector3(side_sign * 0.20, 0.091 + elbow_height, 0.26)
 		elbow_targets[hand_index].position = elbow_targets[hand_index].position.lerp(desired_elbow_position, 1.0 - exp(-10.0 * maxf(elapsed_seconds, 0.0)))
+
+func steering_rim_grip_position(horizontal_direction: float, vertical_direction: float) -> Vector3:
+	return Vector3(signf(horizontal_direction) * sqrt(absf(horizontal_direction)) * STEERING_GRIP_HALF_WIDTH_METERS, signf(vertical_direction) * sqrt(absf(vertical_direction)) * STEERING_GRIP_HALF_HEIGHT_METERS, STEERING_GRIP_DEPTH_METERS)
