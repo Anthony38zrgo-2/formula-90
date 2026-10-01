@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/camera/cockpit_camera_rig.gd" id="1_cockpit_camera"]
+
+[node name="CockpitCameraRig" type="Node3D"]
+top_level = true
+script = ExtResource("1_cockpit_camera")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = false

@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import bpy
+import bmesh
 from mathutils import Matrix, Vector
 
 
@@ -61,6 +62,53 @@ def slim_character_body(armature, body, radial_scale):
     body.data.update()
 
 
+def separate_driver_head_and_neck(body):
+    head_and_neck_groups = {group.index for group in body.vertex_groups if "Head" in group.name or "Neck" in group.name}
+    head_and_neck_faces = set()
+    for polygon in body.data.polygons:
+        total_weight = sum(group.weight for vertex_index in polygon.vertices for group in body.data.vertices[vertex_index].groups if group.group in head_and_neck_groups)
+        if total_weight / len(polygon.vertices) >= 0.5:
+            head_and_neck_faces.add(polygon.index)
+    head_and_neck = body.copy()
+    head_and_neck.data = body.data.copy()
+    head_and_neck.name = "DriverHeadAndNeck"
+    bpy.context.collection.objects.link(head_and_neck)
+    for target_object, keep_head_and_neck in ((body, False), (head_and_neck, True)):
+        editable_mesh = bmesh.new()
+        editable_mesh.from_mesh(target_object.data)
+        editable_mesh.faces.ensure_lookup_table()
+        discarded_faces = [face for face in editable_mesh.faces if (face.index in head_and_neck_faces) != keep_head_and_neck]
+        bmesh.ops.delete(editable_mesh, geom=discarded_faces, context="FACES")
+        editable_mesh.to_mesh(target_object.data)
+        editable_mesh.free()
+        target_object.data.update()
+        target_object.select_set(True)
+    return head_and_neck
+
+
+def create_driver_eye_point(armature, body):
+    head_bone = armature.pose.bones["mixamorig:Head"]
+    body_to_head = armature.data.bones[head_bone.name].matrix_local.inverted() @ armature.matrix_world.inverted() @ body.matrix_world
+    head_group_index = body.vertex_groups["mixamorig:Head"].index
+    visor_material_index = next(index for index, material in enumerate(body.data.materials) if material.name == "Blue_Mat")
+    visor_vertex_indices = {vertex_index for polygon in body.data.polygons if polygon.material_index == visor_material_index for vertex_index in polygon.vertices}
+    visor_positions = [body_to_head @ body.data.vertices[vertex_index].co for vertex_index in visor_vertex_indices if any(group.group == head_group_index and group.weight >= 0.5 for group in body.data.vertices[vertex_index].groups)]
+    if not visor_positions:
+        raise RuntimeError("Driver helmet requires a visor to locate the eye point")
+    minimum_position = Vector(tuple(min(position[axis] for position in visor_positions) for axis in range(3)))
+    maximum_position = Vector(tuple(max(position[axis] for position in visor_positions) for axis in range(3)))
+    eye_position = (minimum_position + maximum_position) * 0.5
+    eye_position.z = maximum_position.z - 0.035
+    eye_point = bpy.data.objects.new("DriverEyePoint", None)
+    bpy.context.collection.objects.link(eye_point)
+    eye_point.parent = armature
+    eye_point.parent_type = "BONE"
+    eye_point.parent_bone = head_bone.name
+    eye_point.matrix_world = armature.matrix_world @ head_bone.matrix @ Matrix.Translation(eye_position) @ Matrix.Rotation(math.pi, 4, "Y") @ Matrix.Rotation(-math.pi * 0.5, 4, "X")
+    eye_point.select_set(True)
+    return eye_position
+
+
 def main():
     arguments = sys.argv[sys.argv.index("--") + 1:]
     parser = argparse.ArgumentParser()
@@ -108,6 +156,9 @@ def main():
     hips_world = armature.matrix_world @ hips.head
     armature.location -= hips_world
     bpy.context.view_layer.update()
+    eye_position = create_driver_eye_point(armature, body)
+    separate_driver_head_and_neck(body)
+    bpy.context.view_layer.update()
     destination.mkdir(parents=True, exist_ok=True)
     model_path = destination / "driver.glb"
     validate_output_path(PROJECT_DIRECTORY, model_path, options.mode)
@@ -126,6 +177,9 @@ def main():
         "body_radial_scale": 0.85, "seat_recline_degrees": seat_recline_degrees,
         "torso_recline_degrees": torso_recline_degrees, "head_pitch_degrees": 0.0,
         "seat_model_sha256": hashlib.sha256(chassis_path.read_bytes()).hexdigest(),
+        "separate_head_and_neck": True,
+        "eye_point": "DriverEyePoint",
+        "eye_position_in_head_space_meters": list(eye_position),
     }
     manifest_path = destination / "driver_manifest.json"
     validate_output_path(PROJECT_DIRECTORY, manifest_path, options.mode)

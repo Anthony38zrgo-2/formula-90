@@ -1,6 +1,8 @@
 extends Node
 
 const DRIVER_ARM_INVERSE_KINEMATICS_SCRIPT := preload("res://scripts/vehicle/driver_arm_inverse_kinematics_modifier.gd")
+const DRIVER_HEAD_MOTION_SCRIPT := preload("res://scripts/vehicle/driver_head_motion_modifier.gd")
+const COCKPIT_CONFIGURATION_SCRIPT := preload("res://scripts/camera/cockpit_camera_configuration.gd")
 const GRIP_TRANSFER_START_DEGREES := 60.0
 const GRIP_TRANSFER_END_DEGREES := 180.0
 const FIRST_HAND_TRANSFER_END := 0.30
@@ -16,6 +18,7 @@ const REGRIP_RIM_CLEARANCE_METERS := 0.025
 @export var chassis_visual: Node3D
 @export var steering_wheel_controller: Node
 @export var seated_position := Vector3(0.0, -0.011, -0.34)
+@export_file("*.json") var cockpit_configuration_path: String
 
 var driver_instance: Node3D
 var driver_skeleton: Skeleton3D
@@ -27,6 +30,9 @@ var steering_pivot: Node3D
 var grip_transfer_progress: float = 0.0
 var grip_transfer_direction: float = 1.0
 var grip_transfer_velocity: float = 0.0
+var head_motion_modifier: SkeletonModifier3D
+var driver_eye_point: Node3D
+var driver_head_and_neck: MeshInstance3D
 
 func _ready() -> void:
 	if driver_model == null or chassis_visual == null or steering_wheel_controller == null:
@@ -99,11 +105,44 @@ func _ready() -> void:
 			"finger_closure": 1.0,
 		})
 	arm_modifier.set("arm_configurations", arm_configurations)
+	configure_head_motion()
 	process_priority = 10
 	update_driver_hand_targets()
 
 func _process(elapsed_seconds: float) -> void:
 	update_driver_hand_targets(elapsed_seconds)
+
+func configure_head_motion() -> void:
+	if cockpit_configuration_path.is_empty():
+		return
+	var cockpit_configuration := COCKPIT_CONFIGURATION_SCRIPT.load_from_path(cockpit_configuration_path)
+	if cockpit_configuration == null:
+		return
+	driver_eye_point = driver_instance.find_child("DriverEyePoint", true, false) as Node3D
+	driver_head_and_neck = driver_instance.find_child("DriverHeadAndNeck", true, false) as MeshInstance3D
+	if driver_eye_point == null or driver_head_and_neck == null:
+		push_error("Cockpit driver requires an authored eye point and separate head and neck geometry.")
+		return
+	head_motion_modifier = DRIVER_HEAD_MOTION_SCRIPT.new() as SkeletonModifier3D
+	head_motion_modifier.name = "DriverHeadMotion"
+	head_motion_modifier.set("vehicle", chassis_visual.get_parent())
+	head_motion_modifier.set("configuration", cockpit_configuration)
+	driver_skeleton.add_child(head_motion_modifier)
+
+func get_driver_eye_point() -> Node3D:
+	return driver_eye_point
+
+func set_cockpit_view_active(view_active: bool) -> void:
+	if is_instance_valid(driver_head_and_neck):
+		driver_head_and_neck.visible = not view_active
+
+func set_cockpit_force_response_strength(response_strength: float) -> void:
+	if head_motion_modifier == null:
+		return
+	var cockpit_configuration := head_motion_modifier.get("configuration") as CockpitCameraConfiguration
+	cockpit_configuration.force_response_strength = clampf(response_strength, 0.0, 2.0)
+	if cockpit_configuration.force_response_strength == 0.0:
+		head_motion_modifier.call("reset_motion")
 
 func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 	if steering_pivot == null or hand_targets.size() != 2:

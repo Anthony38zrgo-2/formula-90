@@ -2,7 +2,7 @@
   "character": "driver",
   "source": "game\\assets\\models\\pit_crew\\racer\\source\\Racer.fbx",
   "source_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
-  "model_sha256": "3976565f9391d65b9a42bd02815a2601aba9799b49308f86811ce766235e56ae",
+  "model_sha256": "a0bdda02a9e69c8a396fcb9302c56c9cba074600cbb3bf9a013d2f45df4e7cbc",
   "bone_count": 55,
   "pose": "seated",
   "separate_finger_bones": true,
@@ -14,8 +14,15 @@
     "Distal"
   ],
   "body_radial_scale": 0.85,
-  "seat_recline_degrees": 59.86680690888585,
+  "seat_recline_degrees": 70.64100648156666,
   "torso_recline_degrees": 79.86680690888585,
   "head_pitch_degrees": 0.0,
-  "seat_model_sha256": "9fe776382107b869ba32742a3506846de6c46067120a36a1382e267a201b6a7e"
+  "seat_model_sha256": "3e23deac45cf6954d2c53b31adf31251f1c658d0d3a745f7fa09bfe558d470ab",
+  "separate_head_and_neck": true,
+  "eye_point": "DriverEyePoint",
+  "eye_position_in_head_space_meters": [
+    7.450580596923828e-09,
+    0.13961851596832275,
+    0.16398879885673523
+  ]
 }

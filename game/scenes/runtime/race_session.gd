@@ -5,6 +5,7 @@ signal composition_ready(vehicle: Node, track: Node3D, aids: DrivingAidsControll
 
 const CAMERA_SCENE := preload("res://scenes/runtime/arcade_chase_camera_rig.tscn")
 const TCAM_SCENE := preload("res://scenes/runtime/fixed_tcam_rig.tscn")
+const COCKPIT_CAMERA_SCENE := preload("res://scenes/runtime/cockpit_camera_rig.tscn")
 const AIDS_SCRIPT := preload("res://scripts/vehicle/driving_aids.gd")
 const LAP_TIMING_SCRIPT := preload("res://scripts/runtime/lap_timing_controller.gd")
 const PIT_STOP_SCRIPT := preload("res://scripts/runtime/pit_stop_controller.gd")
@@ -27,7 +28,8 @@ var background_skybox: BackgroundSkybox
 var background_mountains_3d: BackgroundMountains3D
 var camera_rig_chase: Node3D
 var camera_rig_tcam: Node3D
-var use_tcam := false
+var camera_rig_cockpit: Node3D
+var active_camera_index := 0
 
 func _ready() -> void:
 	if config != null:
@@ -90,7 +92,14 @@ func _add_runtime_systems() -> void:
 	if not config.selected_vehicle.tcam_config_path.is_empty():
 		camera_rig_tcam.set("config_path", config.selected_vehicle.tcam_config_path)
 	add_child(camera_rig_tcam)
-	_apply_active_camera(false)
+	var driver_controller := active_vehicle.get_node_or_null("DriverVisualController")
+	if driver_controller != null and driver_controller.has_method("get_driver_eye_point") and driver_controller.call("get_driver_eye_point") != null:
+		camera_rig_cockpit = COCKPIT_CAMERA_SCENE.instantiate() as Node3D
+		camera_rig_cockpit.name = "CockpitCameraRig"
+		camera_rig_cockpit.set("driver_controller_path", NodePath("../VehicleContainer/ActiveVehicle/VehicleRigidBody/DriverVisualController"))
+		camera_rig_cockpit.set("configuration_path", driver_controller.get("cockpit_configuration_path"))
+		add_child(camera_rig_cockpit)
+	_select_camera_view(0)
 
 	driving_aids = AIDS_SCRIPT.new() as DrivingAidsController
 	driving_aids.name = "DrivingAids"
@@ -133,21 +142,30 @@ func _process(_delta: float) -> void:
 
 
 func toggle_camera() -> void:
-	_apply_active_camera(not use_tcam)
+	var camera_count := 3 if camera_rig_cockpit != null else 2
+	_select_camera_view((active_camera_index + 1) % camera_count)
 
 
 func is_tcam_active() -> bool:
-	return use_tcam
+	return active_camera_index == 1
 
 
-func _apply_active_camera(enable_tcam: bool) -> void:
-	use_tcam = enable_tcam
-	var chase_cam := _find_camera3d_recursive(camera_rig_chase) if camera_rig_chase != null else null
-	var tcam_cam := _find_camera3d_recursive(camera_rig_tcam) if camera_rig_tcam != null else null
-	if chase_cam != null:
-		chase_cam.current = not use_tcam
-	if tcam_cam != null:
-		tcam_cam.current = use_tcam
+func is_cockpit_active() -> bool:
+	return active_camera_index == 2 and camera_rig_cockpit != null
+
+
+func _select_camera_view(camera_index: int) -> void:
+	active_camera_index = camera_index
+	var camera_rigs: Array[Node3D] = [camera_rig_chase, camera_rig_tcam, camera_rig_cockpit]
+	for rig_index in range(camera_rigs.size()):
+		var camera_rig := camera_rigs[rig_index]
+		if camera_rig == null:
+			continue
+		var camera := _find_camera3d_recursive(camera_rig)
+		if camera != null:
+			camera.current = rig_index == active_camera_index
+	if camera_rig_cockpit != null:
+		camera_rig_cockpit.call("set_view_active", is_cockpit_active())
 	_rebind_background_to_active_camera()
 
 func _find_camera3d_recursive(node: Node) -> Camera3D:
@@ -208,7 +226,7 @@ func _setup_background(camera_rig: Node3D) -> void:
 
 
 func _rebind_background_to_active_camera() -> void:
-	var active_rig := camera_rig_tcam if use_tcam else camera_rig_chase
+	var active_rig := camera_rig_cockpit if is_cockpit_active() else (camera_rig_tcam if is_tcam_active() else camera_rig_chase)
 	if active_rig == null:
 		return
 	var cam := active_rig.get_node_or_null("Camera3D") as Camera3D
@@ -239,7 +257,7 @@ func _clear_composition() -> void:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"CameraRigTCam", &"DrivingAids", &"LapTiming", &"PitStop", &"PitCrewVisual", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
+	for child_name in [&"CameraRig", &"CameraRigTCam", &"CockpitCameraRig", &"DrivingAids", &"LapTiming", &"PitStop", &"PitCrewVisual", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -249,7 +267,8 @@ func _clear_composition() -> void:
 	active_vehicle = null
 	camera_rig_chase = null
 	camera_rig_tcam = null
-	use_tcam = false
+	camera_rig_cockpit = null
+	active_camera_index = 0
 	driving_aids = null
 	lap_timing = null
 	pit_stop = null

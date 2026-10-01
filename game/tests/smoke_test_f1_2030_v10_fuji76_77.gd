@@ -19,6 +19,19 @@ func _argument(prefix: String, fallback: String) -> String:
 			return argument.trim_prefix(prefix)
 	return fallback
 
+func cycle_camera_with_keyboard() -> void:
+	var camera_key_event := InputEventKey.new()
+	camera_key_event.physical_keycode = KEY_C
+	camera_key_event.pressed = true
+	Input.parse_input_event(camera_key_event)
+	await process_frame
+	await process_frame
+	camera_key_event = InputEventKey.new()
+	camera_key_event.physical_keycode = KEY_C
+	camera_key_event.pressed = false
+	Input.parse_input_event(camera_key_event)
+	await process_frame
+
 func _run() -> void:
 	var failures: Array[String] = []
 	var scene_path := _argument("--scene=", DEFAULT_SCENE_PATH)
@@ -64,13 +77,36 @@ func _run() -> void:
 			if race_session == null or not race_session.has_method("toggle_camera"):
 				_fail("RaceSession cannot toggle the vehicle cameras.", failures)
 			else:
-				race_session.call("toggle_camera")
+				await cycle_camera_with_keyboard()
 			await process_frame
 			if not tcam_camera.current or camera.current:
 				_fail("T-cam cannot become the active camera.", failures)
 			if race_session != null and race_session.has_method("toggle_camera"):
-				race_session.call("toggle_camera")
+				await cycle_camera_with_keyboard()
 			await process_frame
+			var driver_controller := vehicle.get_node_or_null("DriverVisualController") if vehicle != null else null
+			if driver_controller != null:
+				var cockpit_camera_rig := compositor.find_child("CockpitCameraRig", true, false) as Node3D
+				var cockpit_camera := cockpit_camera_rig.get_node_or_null("Camera3D") as Camera3D if cockpit_camera_rig != null else null
+				if cockpit_camera == null or not cockpit_camera.current or camera.current or tcam_camera.current:
+					_fail("C does not cycle from T-cam to the driver's cockpit camera.", failures)
+				var head_and_neck := driver_controller.get("driver_head_and_neck") as MeshInstance3D
+				if head_and_neck == null or head_and_neck.visible:
+					_fail("Cockpit view does not hide the driver's head and neck.", failures)
+				if cockpit_camera != null:
+					var driver_eye_point := driver_controller.call("get_driver_eye_point") as Node3D
+					if driver_eye_point == null:
+						_fail("Runtime cockpit camera has no driver eye point.", failures)
+					else:
+						var cockpit_configuration := cockpit_camera_rig.get("configuration") as CockpitCameraConfiguration
+						var expected_camera_position := driver_eye_point.global_position + driver_eye_point.global_basis.y.normalized() * cockpit_configuration.viewpoint_elevation_meters
+						if cockpit_camera.global_position.distance_to(expected_camera_position) > 0.001:
+							_fail("Runtime cockpit camera does not follow the elevated driver eye point.", failures)
+				await cycle_camera_with_keyboard()
+				if not camera.current or (cockpit_camera != null and cockpit_camera.current) or (head_and_neck != null and not head_and_neck.visible):
+					_fail("C does not return from cockpit to chase and restore the complete driver.", failures)
+			elif not camera.current or compositor.find_child("CockpitCameraRig", true, false) != null:
+				_fail("A vehicle without a driver must retain its two existing cameras.", failures)
 
 	for group in REQUIRED_GROUPS:
 		var found := false

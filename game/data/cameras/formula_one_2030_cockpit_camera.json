@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "field_of_view_degrees": 70.0,
+  "viewpoint_elevation_meters": 0.14,
+  "near_clip_distance_meters": 0.015,
+  "far_clip_distance_meters": 2500.0,
+  "force_response_strength": 1.0,
+  "lateral_response_degrees_per_gravity": 3.0,
+  "longitudinal_response_degrees_per_gravity": 2.5,
+  "vertical_response_degrees_per_gravity": 0.65,
+  "maximum_pitch_degrees": 12.0,
+  "maximum_roll_degrees": 10.0,
+  "maximum_telemetry_gravity": 8.0,
+  "response_frequency_hertz": 2.4,
+  "damping_ratio": 0.85,
+  "neck_rotation_fraction": 0.65,
+  "horizon_stabilization_strength": 1.0,
+  "maximum_horizon_correction_degrees": 45.0,
+  "teleport_reset_distance_meters": 5.0,
+  "maximum_elapsed_seconds": 0.1,
+  "maximum_integration_step_seconds": 0.004166666666666667
+}
