@@ -1,11 +1,17 @@
 extends "res://scripts/runtime/wheel_gun_arm_inverse_kinematics_modifier.gd"
 
+const SHOULDER_REACH_RESERVE_METERS := 0.045
+const MAXIMUM_SHOULDER_SPEED_DEGREES := 75.0
+const SHOULDER_RESPONSE_SPEED := 12.0
+
+var shoulder_rotations: Dictionary = {}
+
 func _process_modification_with_delta(elapsed_seconds: float) -> void:
 	var skeleton := get_skeleton()
 	if skeleton == null:
 		return
 	for arm_configuration in arm_configurations:
-		prepare_shoulder_reach(skeleton, arm_configuration)
+		prepare_shoulder_reach(skeleton, arm_configuration, elapsed_seconds)
 	super._process_modification_with_delta(elapsed_seconds)
 	for arm_configuration in arm_configurations:
 		var hand_bone_index := skeleton.find_bone(arm_configuration["end_bone_name"])
@@ -32,7 +38,7 @@ func _process_modification_with_delta(elapsed_seconds: float) -> void:
 		skeleton.set_bone_global_pose(hand_bone_index, hand_pose)
 		update_finger_poses(skeleton, arm_configuration)
 
-func prepare_shoulder_reach(skeleton: Skeleton3D, arm_configuration: Dictionary) -> void:
+func prepare_shoulder_reach(skeleton: Skeleton3D, arm_configuration: Dictionary, elapsed_seconds: float) -> void:
 	var arm_index := skeleton.find_bone(arm_configuration["root_bone_name"])
 	var elbow_index := skeleton.find_bone(arm_configuration["middle_bone_name"])
 	var hand_index := skeleton.find_bone(arm_configuration["end_bone_name"])
@@ -49,14 +55,21 @@ func prepare_shoulder_reach(skeleton: Skeleton3D, arm_configuration: Dictionary)
 	var target_position := skeleton.global_transform.affine_inverse() * hand_target.global_position
 	var shoulder_to_target := target_position - shoulder_pose.origin
 	var target_distance := shoulder_to_target.length()
-	var arm_reach := skeleton.get_bone_rest(elbow_index).origin.length() + skeleton.get_bone_rest(hand_index).origin.length() - 0.025
-	if shoulder_length < 0.001 or target_distance < 0.001 or arm_origin.distance_to(target_position) <= arm_reach:
+	var arm_reach := skeleton.get_bone_rest(elbow_index).origin.length() + skeleton.get_bone_rest(hand_index).origin.length() - SHOULDER_REACH_RESERVE_METERS
+	if shoulder_length < 0.001 or target_distance < 0.001:
 		return
 	var required_alignment := clampf((target_distance * target_distance + shoulder_length * shoulder_length - arm_reach * arm_reach) / (2.0 * target_distance * shoulder_length), -1.0, 1.0)
 	var current_angle := shoulder_direction.angle_to(shoulder_to_target)
 	var rotation_angle := minf(maxf(current_angle - acos(required_alignment), 0.0), deg_to_rad(35.0))
 	var new_direction := shoulder_direction.normalized().slerp(shoulder_to_target.normalized(), rotation_angle / maxf(current_angle, 0.0001))
-	shoulder_pose.basis = Basis(Quaternion(shoulder_direction.normalized(), new_direction.normalized())) * shoulder_pose.basis
+	var desired_rotation := Quaternion(shoulder_direction.normalized(), new_direction.normalized())
+	var previous_rotation: Quaternion = shoulder_rotations.get(shoulder_index, desired_rotation)
+	var rotation_distance := previous_rotation.angle_to(desired_rotation)
+	var maximum_rotation_step := deg_to_rad(MAXIMUM_SHOULDER_SPEED_DEGREES) * maxf(elapsed_seconds, 0.0)
+	var interpolation_fraction := minf(1.0 - exp(-SHOULDER_RESPONSE_SPEED * maxf(elapsed_seconds, 0.0)), maximum_rotation_step / maxf(rotation_distance, 0.0001))
+	var shoulder_rotation := previous_rotation.slerp(desired_rotation, interpolation_fraction)
+	shoulder_rotations[shoulder_index] = shoulder_rotation
+	shoulder_pose.basis = Basis(shoulder_rotation) * shoulder_pose.basis
 	skeleton.set_bone_global_pose(shoulder_index, shoulder_pose)
 
 func update_finger_poses(skeleton: Skeleton3D, arm_configuration: Dictionary) -> void:

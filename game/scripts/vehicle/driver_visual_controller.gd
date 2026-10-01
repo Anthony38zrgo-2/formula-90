@@ -1,6 +1,12 @@
 extends Node
 
 const DRIVER_ARM_INVERSE_KINEMATICS_SCRIPT := preload("res://scripts/vehicle/driver_arm_inverse_kinematics_modifier.gd")
+const GRIP_TRANSFER_START_DEGREES := 60.0
+const GRIP_TRANSFER_END_DEGREES := 180.0
+const FIRST_HAND_TRANSFER_END := 0.30
+const SECOND_HAND_TRANSFER_END := 0.70
+const MAXIMUM_GRIP_TRANSFER_SPEED := 0.8
+const GRIP_TRANSFER_ACCELERATION := 4.0
 
 @export var driver_model: PackedScene
 @export var chassis_visual: Node3D
@@ -17,6 +23,7 @@ var neutral_grip_positions: Array[Vector3] = []
 var steering_pivot: Node3D
 var grip_transfer_progress: float = 0.0
 var grip_transfer_direction: float = 1.0
+var grip_transfer_velocity: float = 0.0
 
 func _ready() -> void:
 	if driver_model == null or chassis_visual == null or steering_wheel_controller == null:
@@ -65,7 +72,7 @@ func _ready() -> void:
 		var hand_bone_name := driver_skeleton.get_bone_name(hand_bone_index)
 		var prefix := hand_bone_name.trim_suffix(side + "Hand")
 		var hand_basis := Basis(Vector3.DOWN, Vector3.FORWARD, Vector3.RIGHT) if side == "Left" else Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT)
-		neutral_hand_bases.append(chassis_visual.global_basis * hand_basis)
+		neutral_hand_bases.append(hand_basis)
 		neutral_grip_positions.append(Vector3(side_sign * 0.116, 0.0, 0.010))
 		var finger_chains: Array[Dictionary] = []
 		for finger_name in ["Index", "Middle", "Ring", "Little", "Thumb"]:
@@ -101,41 +108,54 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		return
 	var telemetry_vehicle := steering_wheel_controller.get("vehicle") as Node3D
 	var steering_angle := clampf(float(telemetry_vehicle.call("get_true_steering_amount")), -1.0, 1.0) * deg_to_rad(float(steering_wheel_controller.get("total_rotation_degrees")) * 0.5)
-	var release_progress := clampf((absf(steering_angle) - deg_to_rad(85.0)) / deg_to_rad(65.0), 0.0, 1.0)
+	var release_progress := clampf((absf(steering_angle) - deg_to_rad(GRIP_TRANSFER_START_DEGREES)) / deg_to_rad(GRIP_TRANSFER_END_DEGREES - GRIP_TRANSFER_START_DEGREES), 0.0, 1.0)
 	if grip_transfer_progress <= 0.0001:
-		grip_transfer_direction = signf(steering_angle)
+		grip_transfer_direction = -1.0 if steering_angle < 0.0 else 1.0
 	if signf(steering_angle) != grip_transfer_direction:
 		release_progress = 0.0
-	grip_transfer_progress = move_toward(grip_transfer_progress, release_progress, maxf(elapsed_seconds, 0.0) / 0.35)
+	var remaining_progress := release_progress - grip_transfer_progress
+	var desired_velocity := clampf(remaining_progress * 12.0, -MAXIMUM_GRIP_TRANSFER_SPEED, MAXIMUM_GRIP_TRANSFER_SPEED)
+	grip_transfer_velocity = move_toward(grip_transfer_velocity, desired_velocity, maxf(elapsed_seconds, 0.0) * GRIP_TRANSFER_ACCELERATION)
+	var progress_step := grip_transfer_velocity * maxf(elapsed_seconds, 0.0)
+	if absf(progress_step) >= absf(remaining_progress) and progress_step * remaining_progress >= 0.0:
+		grip_transfer_progress = release_progress
+		grip_transfer_velocity = 0.0
+	else:
+		grip_transfer_progress = clampf(grip_transfer_progress + progress_step, 0.0, 1.0)
 	release_progress = grip_transfer_progress
 	for hand_index in range(2):
 		var finger_opening := 0.0
 		var leading_hand_index := 0 if grip_transfer_direction >= 0.0 else 1
-		var hand_progress := clampf((release_progress - 0.25) * 2.0, 0.0, 1.0)
+		var hand_progress := clampf((release_progress - FIRST_HAND_TRANSFER_END) / (SECOND_HAND_TRANSFER_END - FIRST_HAND_TRANSFER_END), 0.0, 1.0)
 		var smooth_progress := smoothstep(0.0, 1.0, hand_progress)
 		var grip_orientation_angle := -grip_transfer_direction * PI * smooth_progress
 		var grip_position := neutral_grip_positions[hand_index].lerp(neutral_grip_positions[1 - hand_index], smooth_progress)
 		if hand_index == leading_hand_index:
 			var upper_rim_grip := Vector3(0.0, 0.068, 0.010)
-			var first_transfer_progress := clampf(release_progress * 4.0, 0.0, 1.0)
-			var final_transfer_progress := clampf((release_progress - 0.75) * 4.0, 0.0, 1.0)
-			if release_progress < 0.25:
+			var first_transfer_progress := clampf(release_progress / FIRST_HAND_TRANSFER_END, 0.0, 1.0)
+			var final_transfer_progress := clampf((release_progress - SECOND_HAND_TRANSFER_END) / (1.0 - SECOND_HAND_TRANSFER_END), 0.0, 1.0)
+			if release_progress < FIRST_HAND_TRANSFER_END:
 				grip_orientation_angle = -grip_transfer_direction * PI * 0.5 * smoothstep(0.0, 1.0, first_transfer_progress)
 				finger_opening = sin(first_transfer_progress * PI)
 				grip_position = neutral_grip_positions[hand_index].lerp(upper_rim_grip, smoothstep(0.0, 1.0, first_transfer_progress))
-				grip_position.z += sin(first_transfer_progress * PI) * 0.07
+				grip_position.z += sin(first_transfer_progress * PI) * 0.025
 			else:
 				grip_orientation_angle = -grip_transfer_direction * PI * 0.5 * (1.0 + smoothstep(0.0, 1.0, final_transfer_progress))
 				finger_opening = sin(final_transfer_progress * PI)
 				grip_position = upper_rim_grip.lerp(neutral_grip_positions[1 - hand_index], smoothstep(0.0, 1.0, final_transfer_progress))
-				grip_position.z += sin(final_transfer_progress * PI) * 0.07
+				grip_position.z += sin(final_transfer_progress * PI) * 0.025
 		else:
 			finger_opening = sin(hand_progress * PI)
-			grip_position.y -= sin(hand_progress * PI) * 0.08
-			grip_position.z += sin(hand_progress * PI) * 0.09
-		var wrist_angle := clampf(steering_angle + grip_orientation_angle, -deg_to_rad(85.0), deg_to_rad(85.0))
-		hand_targets[hand_index].global_basis = chassis_visual.global_basis * Basis(Vector3.BACK, wrist_angle) * chassis_visual.global_basis.inverse() * neutral_hand_bases[hand_index]
+			grip_position.y -= sin(hand_progress * PI) * 0.068
+			grip_position.z += sin(hand_progress * PI) * 0.030
+		var wrist_angle := steering_angle + grip_orientation_angle
+		hand_targets[hand_index].global_basis = chassis_visual.global_basis * Basis(Vector3.BACK, wrist_angle) * neutral_hand_bases[hand_index]
 		var arm_configurations: Array = arm_modifier.get("arm_configurations")
 		arm_configurations[hand_index]["finger_closure"] = 1.0 - finger_opening
 		var palm_offset := Vector3(0.0, 0.066, 0.013)
 		hand_targets[hand_index].global_position = steering_pivot.global_transform * grip_position - hand_targets[hand_index].global_basis * palm_offset
+		var palm_chassis_position := steering_pivot.transform * grip_position
+		var side_sign := -1.0 if hand_index == 0 else 1.0
+		var elbow_height := clampf((palm_chassis_position.y - steering_pivot.position.y) * 0.4, -0.04, 0.04)
+		var desired_elbow_position := Vector3(side_sign * 0.20, 0.08 + elbow_height, -0.08)
+		elbow_targets[hand_index].position = elbow_targets[hand_index].position.lerp(desired_elbow_position, 1.0 - exp(-10.0 * maxf(elapsed_seconds, 0.0)))

@@ -20,6 +20,10 @@ var maximum_shoulder_protraction_degrees: float = 0.0
 var maximum_shoulder_bone_length_error: float = 0.0
 var driver_controller: Node
 var modification_samples: int = 0
+var previous_bone_rotations: Dictionary = {}
+var maximum_hand_rotation_step_degrees: float = 0.0
+var maximum_shoulder_rotation_step_degrees: float = 0.0
+var measure_rotation_steps := false
 
 func _init() -> void:
 	call_deferred("run_validation")
@@ -60,16 +64,46 @@ func run_validation() -> void:
 	if (chassis.global_basis.inverse() * head_pose.basis.z).dot(Vector3.FORWARD) < 0.95:
 		failures.append("Driver head is not facing forward.")
 	print("DRIVER_HELMET_HEIGHT_OFFSET_METERS=" + str(helmet_height_offset))
-	var steering_steps := range(0, 101)
-	steering_steps.append_array(range(99, -101, -1))
-	steering_steps.append_array(range(-99, 1))
+	for settle_frame in range(30):
+		await process_frame
+	measure_rotation_steps = true
+	var steering_steps := range(0, 181)
+	steering_steps.append_array(range(179, -181, -1))
+	steering_steps.append_array(range(-179, 1))
 	for steering_step in steering_steps:
-		var steering_amount := float(steering_step) / 100.0
+		var steering_amount := float(steering_step) / 180.0
 		steering_telemetry.effective_steering_amount = steering_amount
 		steering_controller.call("update_steering_wheel_pose")
-		driver_controller.call("update_driver_hand_targets")
-		for frame_index in range(3):
-			await process_frame
+		await process_frame
+	measure_rotation_steps = false
+	var fast_steering_steps := range(0, 181, 3)
+	fast_steering_steps.append_array(range(177, -181, -3))
+	fast_steering_steps.append_array(range(-177, 1, 3))
+	for steering_step in fast_steering_steps:
+		steering_telemetry.effective_steering_amount = float(steering_step) / 180.0
+		steering_controller.call("update_steering_wheel_pose")
+		await process_frame
+	for settle_frame in range(120):
+		await process_frame
+	if float(driver_controller.get("grip_transfer_progress")) > 0.001:
+		failures.append("Driver does not recover its neutral grip after returning to center.")
+	driver_controller.call("update_driver_hand_targets", 0.0)
+	var neutral_target_bases: Array[Basis] = []
+	for hand_target in driver_controller.get("hand_targets"):
+		neutral_target_bases.append(chassis.global_basis.inverse() * hand_target.global_basis)
+	for chassis_heading in [45.0, 90.0, 180.0, 270.0, 360.0]:
+		vehicle.rotation.y = deg_to_rad(chassis_heading)
+		driver_controller.call("update_driver_hand_targets", 0.0)
+		for hand_index in range(2):
+			var target: Node3D = driver_controller.get("hand_targets")[hand_index]
+			var local_hand_rotation := (chassis.global_basis.inverse() * target.global_basis).get_rotation_quaternion()
+			if local_hand_rotation.angle_to(neutral_target_bases[hand_index].get_rotation_quaternion()) > deg_to_rad(0.1):
+				failures.append("Driver hand orientation depends on the world heading of the chassis.")
+		await process_frame
+	if maximum_hand_rotation_step_degrees > 5.5:
+		failures.append("Driver hands rotate too abruptly during the slow steering sweep.")
+	if maximum_shoulder_rotation_step_degrees > 1.4:
+		failures.append("Driver shoulders rotate too abruptly during the slow steering sweep.")
 	if modification_samples < 16:
 		failures.append("Driver arm modifier did not process the steering sweep.")
 	if maximum_wrist_error > 0.005:
@@ -110,6 +144,8 @@ func run_validation() -> void:
 	print("DRIVER_MAXIMUM_SIMULTANEOUSLY_OPEN_HANDS=" + str(maximum_simultaneously_open_hands))
 	print("DRIVER_MAXIMUM_SHOULDER_PROTRACTION_DEGREES=" + str(maximum_shoulder_protraction_degrees))
 	print("DRIVER_MAXIMUM_SHOULDER_BONE_LENGTH_ERROR_METERS=" + str(maximum_shoulder_bone_length_error))
+	print("DRIVER_MAXIMUM_HAND_ROTATION_STEP_DEGREES=" + str(maximum_hand_rotation_step_degrees))
+	print("DRIVER_MAXIMUM_SHOULDER_ROTATION_STEP_DEGREES=" + str(maximum_shoulder_rotation_step_degrees))
 	for failure in failures:
 		printerr(failure)
 	print("DRIVER_VALIDATION_FAILURES=" + str(failures.size()))
@@ -130,6 +166,14 @@ func validate_arm_pose() -> void:
 		var shoulder := skeleton.get_bone_global_pose(shoulder_index).origin
 		var collarbone_index := skeleton.get_bone_parent(shoulder_index)
 		var collarbone_pose := skeleton.get_bone_global_pose(collarbone_index)
+		if measure_rotation_steps:
+			var hand_rotation := skeleton.get_bone_global_pose(wrist_index).basis.get_rotation_quaternion()
+			var collarbone_rotation := collarbone_pose.basis.get_rotation_quaternion()
+			if previous_bone_rotations.has(wrist_index):
+				maximum_hand_rotation_step_degrees = maxf(maximum_hand_rotation_step_degrees, rad_to_deg(hand_rotation.angle_to(previous_bone_rotations[wrist_index])))
+				maximum_shoulder_rotation_step_degrees = maxf(maximum_shoulder_rotation_step_degrees, rad_to_deg(collarbone_rotation.angle_to(previous_bone_rotations[collarbone_index])))
+			previous_bone_rotations[wrist_index] = hand_rotation
+			previous_bone_rotations[collarbone_index] = collarbone_rotation
 		var collarbone_rest := skeleton.get_bone_global_rest(collarbone_index)
 		var shoulder_rotation := collarbone_pose.basis * collarbone_rest.basis.inverse()
 		maximum_shoulder_protraction_degrees = maxf(maximum_shoulder_protraction_degrees, rad_to_deg(shoulder_rotation.get_rotation_quaternion().get_angle()))
