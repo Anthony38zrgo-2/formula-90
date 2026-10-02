@@ -7,8 +7,10 @@ const GRIP_TRANSFER_START_DEGREES := 60.0
 const GRIP_TRANSFER_END_DEGREES := 180.0
 const FIRST_HAND_TRANSFER_END := 0.30
 const SECOND_HAND_TRANSFER_END := 0.70
-const MAXIMUM_GRIP_TRANSFER_SPEED := 0.75
-const GRIP_TRANSFER_ACCELERATION := 4.0
+const FINAL_HAND_TRANSFER_END := 0.86
+const MAXIMUM_GRIP_TRANSFER_SPEED := 6.0
+const GRIP_TRANSFER_RESPONSE_RATE := 60.0
+const GRIP_TRANSFER_INTEGRATION_STEP_SECONDS := 1.0 / 240.0
 const STEERING_GRIP_HALF_WIDTH_METERS := 0.132
 const STEERING_GRIP_HALF_HEIGHT_METERS := 0.084
 const STEERING_GRIP_DEPTH_METERS := -0.018
@@ -30,6 +32,8 @@ var steering_pivot: Node3D
 var grip_transfer_progress: float = 0.0
 var grip_transfer_direction: float = 1.0
 var grip_transfer_velocity: float = 0.0
+var previous_steering_angle: float = 0.0
+var has_previous_steering_angle := false
 var head_motion_modifier: SkeletonModifier3D
 var driver_eye_point: Node3D
 var driver_head_and_neck: MeshInstance3D
@@ -149,20 +153,18 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		return
 	var telemetry_vehicle := steering_wheel_controller.get("vehicle") as Node3D
 	var steering_angle := clampf(float(telemetry_vehicle.call("get_true_steering_amount")), -1.0, 1.0) * deg_to_rad(float(steering_wheel_controller.get("total_rotation_degrees")) * 0.5)
+	var steering_rotation_speed_degrees := 0.0
+	if has_previous_steering_angle and elapsed_seconds > 0.0:
+		steering_rotation_speed_degrees = rad_to_deg(absf(steering_angle - previous_steering_angle)) / elapsed_seconds
+	previous_steering_angle = steering_angle
+	has_previous_steering_angle = true
+	arm_modifier.set("steering_rotation_speed_degrees", steering_rotation_speed_degrees)
 	var release_progress := clampf((absf(steering_angle) - deg_to_rad(GRIP_TRANSFER_START_DEGREES)) / deg_to_rad(GRIP_TRANSFER_END_DEGREES - GRIP_TRANSFER_START_DEGREES), 0.0, 1.0)
-	if grip_transfer_progress <= 0.0001:
-		grip_transfer_direction = -1.0 if steering_angle < 0.0 else 1.0
-	if signf(steering_angle) != grip_transfer_direction:
-		release_progress = 0.0
-	var remaining_progress := release_progress - grip_transfer_progress
-	var desired_velocity := clampf(remaining_progress * 12.0, -MAXIMUM_GRIP_TRANSFER_SPEED, MAXIMUM_GRIP_TRANSFER_SPEED)
-	grip_transfer_velocity = move_toward(grip_transfer_velocity, desired_velocity, maxf(elapsed_seconds, 0.0) * GRIP_TRANSFER_ACCELERATION)
-	var progress_step := grip_transfer_velocity * maxf(elapsed_seconds, 0.0)
-	if absf(progress_step) >= absf(remaining_progress) and progress_step * remaining_progress >= 0.0:
-		grip_transfer_progress = release_progress
-		grip_transfer_velocity = 0.0
-	else:
-		grip_transfer_progress = clampf(grip_transfer_progress + progress_step, 0.0, 1.0)
+	update_grip_transfer_progress(release_progress * signf(steering_angle), elapsed_seconds)
+	var hand_transfer_velocity := grip_transfer_velocity
+	if grip_transfer_progress >= SECOND_HAND_TRANSFER_END:
+		hand_transfer_velocity *= (1.0 - SECOND_HAND_TRANSFER_END) / (FINAL_HAND_TRANSFER_END - SECOND_HAND_TRANSFER_END)
+	arm_modifier.set("grip_transfer_velocity", hand_transfer_velocity)
 	release_progress = grip_transfer_progress
 	for hand_index in range(2):
 		var finger_opening := 0.0
@@ -175,7 +177,7 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		var grip_position := steering_rim_grip_position(initial_side_sign * cos(transfer_angle), -sin(transfer_angle))
 		if hand_index == leading_hand_index:
 			var first_transfer_progress := clampf(release_progress / FIRST_HAND_TRANSFER_END, 0.0, 1.0)
-			var final_transfer_progress := clampf((release_progress - SECOND_HAND_TRANSFER_END) / (1.0 - SECOND_HAND_TRANSFER_END), 0.0, 1.0)
+			var final_transfer_progress := clampf((release_progress - SECOND_HAND_TRANSFER_END) / (FINAL_HAND_TRANSFER_END - SECOND_HAND_TRANSFER_END), 0.0, 1.0)
 			if release_progress < FIRST_HAND_TRANSFER_END:
 				finger_opening = sin(first_transfer_progress * PI)
 				var upper_transfer_angle := PI * 0.5 * smoothstep(0.0, 1.0, first_transfer_progress)
@@ -192,7 +194,7 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 			finger_opening = sin(hand_progress * PI)
 			grip_position.z += sin(hand_progress * PI) * 0.030
 		var rim_outward_direction := Vector3(grip_position.x, grip_position.y, 0.0).normalized()
-		grip_position += rim_outward_direction * REGRIP_RIM_CLEARANCE_METERS * sin(release_progress * PI)
+		grip_position += rim_outward_direction * REGRIP_RIM_CLEARANCE_METERS * finger_opening
 		var wrist_angle := steering_angle + grip_orientation_angle
 		hand_targets[hand_index].global_basis = chassis_visual.global_basis * Basis(Vector3.BACK, wrist_angle) * neutral_hand_bases[hand_index]
 		var arm_configurations: Array = arm_modifier.get("arm_configurations")
@@ -204,6 +206,31 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		var elbow_height := clampf((palm_chassis_position.y - steering_pivot.position.y) * 0.4, -0.04, 0.04)
 		var desired_elbow_position := seated_position + Vector3(side_sign * 0.20, 0.091 + elbow_height, 0.26)
 		elbow_targets[hand_index].position = elbow_targets[hand_index].position.lerp(desired_elbow_position, 1.0 - exp(-10.0 * maxf(elapsed_seconds, 0.0)))
+
+func update_grip_transfer_progress(target_progress: float, elapsed_seconds: float) -> void:
+	var remaining_seconds := maxf(elapsed_seconds, 0.0)
+	var signed_progress := grip_transfer_progress * grip_transfer_direction
+	var signed_velocity := grip_transfer_velocity * grip_transfer_direction
+	while remaining_seconds > 0.0000001:
+		var integration_seconds := minf(remaining_seconds, GRIP_TRANSFER_INTEGRATION_STEP_SECONDS)
+		var displacement := signed_progress - target_progress
+		var spring_velocity := signed_velocity + GRIP_TRANSFER_RESPONSE_RATE * displacement
+		var response_decay := exp(-GRIP_TRANSFER_RESPONSE_RATE * integration_seconds)
+		var next_displacement := (displacement + spring_velocity * integration_seconds) * response_decay
+		var next_velocity := (signed_velocity - GRIP_TRANSFER_RESPONSE_RATE * spring_velocity * integration_seconds) * response_decay
+		var next_progress := target_progress + next_displacement
+		if absf(next_velocity) > MAXIMUM_GRIP_TRANSFER_SPEED:
+			next_velocity = clampf(next_velocity, -MAXIMUM_GRIP_TRANSFER_SPEED, MAXIMUM_GRIP_TRANSFER_SPEED)
+			next_progress = signed_progress + (signed_velocity + next_velocity) * 0.5 * integration_seconds
+		signed_progress = clampf(next_progress, -1.0, 1.0)
+		signed_velocity = next_velocity
+		if (signed_progress <= -1.0 and signed_velocity < 0.0) or (signed_progress >= 1.0 and signed_velocity > 0.0):
+			signed_velocity = 0.0
+		remaining_seconds -= integration_seconds
+	if absf(signed_progress) > 0.0000001:
+		grip_transfer_direction = signf(signed_progress)
+	grip_transfer_progress = absf(signed_progress)
+	grip_transfer_velocity = signed_velocity * grip_transfer_direction
 
 func steering_rim_grip_position(horizontal_direction: float, vertical_direction: float) -> Vector3:
 	return Vector3(signf(horizontal_direction) * sqrt(absf(horizontal_direction)) * STEERING_GRIP_HALF_WIDTH_METERS, signf(vertical_direction) * sqrt(absf(vertical_direction)) * STEERING_GRIP_HALF_HEIGHT_METERS, STEERING_GRIP_DEPTH_METERS)

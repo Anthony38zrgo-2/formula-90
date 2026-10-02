@@ -25,6 +25,7 @@ var previous_bone_rotations: Dictionary = {}
 var maximum_hand_rotation_step_degrees: float = 0.0
 var maximum_shoulder_rotation_step_degrees: float = 0.0
 var measure_rotation_steps := false
+var maximum_final_supporting_hand_rim_error_meters: float = 0.0
 
 func _init() -> void:
 	call_deferred("run_validation")
@@ -65,6 +66,8 @@ func run_validation() -> void:
 	if (chassis.global_basis.inverse() * head_pose.basis.z).dot(Vector3.FORWARD) < 0.95:
 		failures.append("Driver head is not facing forward.")
 	print("DRIVER_HELMET_HEIGHT_OFFSET_METERS=" + str(helmet_height_offset))
+	validate_grip_transfer_response(steering_telemetry, steering_controller)
+	validate_final_hand_transfer(steering_telemetry, steering_controller)
 	for settle_frame in range(30):
 		await process_frame
 	measure_rotation_steps = true
@@ -84,6 +87,8 @@ func run_validation() -> void:
 		steering_telemetry.effective_steering_amount = float(steering_step) / 180.0
 		steering_controller.call("update_steering_wheel_pose")
 		await process_frame
+	await validate_fast_final_hand_transfer(steering_telemetry, steering_controller)
+	await validate_lock_to_lock_transitions(steering_telemetry, steering_controller)
 	for settle_frame in range(120):
 		await process_frame
 	if float(driver_controller.get("grip_transfer_progress")) > 0.001:
@@ -127,6 +132,8 @@ func run_validation() -> void:
 		failures.append("Driver fingers do not open while changing grip.")
 	if maximum_simultaneously_open_hands > 1:
 		failures.append("Driver releases both hands at once.")
+	if maximum_final_supporting_hand_rim_error_meters > 0.001:
+		failures.append("Driver supporting hand separates from the steering rim during the final regrip.")
 	if maximum_shoulder_protraction_degrees > 35.1:
 		failures.append("Driver shoulders exceed the allowed protraction.")
 	if maximum_shoulder_bone_length_error > 0.0001:
@@ -146,6 +153,7 @@ func run_validation() -> void:
 	print("DRIVER_MAXIMUM_CLOSED_THUMB_EXTENSION_ALIGNMENT=" + str(maximum_closed_thumb_extension_alignment))
 	print("DRIVER_MINIMUM_FINGER_CLOSURE=" + str(minimum_finger_closure))
 	print("DRIVER_MAXIMUM_SIMULTANEOUSLY_OPEN_HANDS=" + str(maximum_simultaneously_open_hands))
+	print("DRIVER_MAXIMUM_FINAL_SUPPORTING_HAND_RIM_ERROR_METERS=" + str(maximum_final_supporting_hand_rim_error_meters))
 	print("DRIVER_MAXIMUM_SHOULDER_PROTRACTION_DEGREES=" + str(maximum_shoulder_protraction_degrees))
 	print("DRIVER_MAXIMUM_SHOULDER_BONE_LENGTH_ERROR_METERS=" + str(maximum_shoulder_bone_length_error))
 	print("DRIVER_MAXIMUM_HAND_ROTATION_STEP_DEGREES=" + str(maximum_hand_rotation_step_degrees))
@@ -157,12 +165,167 @@ func run_validation() -> void:
 	steering_telemetry.queue_free()
 	quit(0 if failures.is_empty() else 1)
 
+func validate_grip_transfer_response(steering_telemetry: SteeringTelemetryVehicle, steering_controller: Node) -> void:
+	driver_controller.set_process(false)
+	var settled_progress_by_frame_rate: Array[float] = []
+	for frames_per_second in [30, 60, 120]:
+		driver_controller.set("grip_transfer_progress", 0.0)
+		driver_controller.set("grip_transfer_velocity", 0.0)
+		driver_controller.set("grip_transfer_direction", 1.0)
+		steering_telemetry.effective_steering_amount = 1.0
+		steering_controller.call("update_steering_wheel_pose")
+		for response_frame in range(int(0.8 * frames_per_second)):
+			driver_controller.call("update_driver_hand_targets", 1.0 / frames_per_second)
+		var settled_progress := float(driver_controller.get("grip_transfer_progress"))
+		settled_progress_by_frame_rate.append(settled_progress)
+		if settled_progress < 0.995:
+			failures.append("Driver grip transfer does not settle within 0.8 seconds at " + str(frames_per_second) + " frames per second.")
+	if settled_progress_by_frame_rate.max() - settled_progress_by_frame_rate.min() > 0.002:
+		failures.append("Driver grip transfer response changes with frame rate.")
+	for steering_direction in [-1.0, 1.0]:
+		driver_controller.set("grip_transfer_progress", 0.0)
+		driver_controller.set("grip_transfer_velocity", 0.0)
+		steering_telemetry.effective_steering_amount = steering_direction
+		steering_controller.call("update_steering_wheel_pose")
+		for response_frame in range(30):
+			driver_controller.call("update_driver_hand_targets", 1.0 / 60.0)
+			if float(driver_controller.get("grip_transfer_progress")) >= 0.25:
+				break
+		var interrupted_progress := float(driver_controller.get("grip_transfer_progress"))
+		var interrupted_velocity := float(driver_controller.get("grip_transfer_velocity"))
+		steering_telemetry.effective_steering_amount = steering_direction * (60.0 + 120.0 * interrupted_progress) / 180.0
+		steering_controller.call("update_steering_wheel_pose")
+		driver_controller.call("update_driver_hand_targets", 0.0)
+		if absf(float(driver_controller.get("grip_transfer_velocity")) - interrupted_velocity) > 0.00001:
+			failures.append("Driver grip transfer discards velocity immediately when steering is corrected.")
+		var maximum_progress_after_correction := interrupted_progress
+		for braking_frame in range(30):
+			driver_controller.call("update_driver_hand_targets", 1.0 / 60.0)
+			maximum_progress_after_correction = maxf(maximum_progress_after_correction, float(driver_controller.get("grip_transfer_progress")))
+		var braking_travel := maximum_progress_after_correction - interrupted_progress
+		if braking_travel < 0.005 or braking_travel > 0.04:
+			failures.append("Driver grip transfer does not brake smoothly within a short travel after correction.")
+		if absf(float(driver_controller.get("grip_transfer_progress")) - interrupted_progress) > 0.001 or absf(float(driver_controller.get("grip_transfer_velocity"))) > 0.01:
+			failures.append("Driver grip transfer does not settle at the corrected steering position.")
+		steering_telemetry.effective_steering_amount = -steering_direction
+		steering_controller.call("update_steering_wheel_pose")
+		for reversal_frame in range(72):
+			driver_controller.call("update_driver_hand_targets", 1.0 / 60.0)
+		if float(driver_controller.get("grip_transfer_progress")) < 0.99 or float(driver_controller.get("grip_transfer_direction")) != -steering_direction:
+			failures.append("Driver grip transfer does not recover when steering reverses during a transfer.")
+	print("DRIVER_GRIP_PROGRESS_AFTER_0_8_SECONDS=" + str(settled_progress_by_frame_rate))
+	driver_controller.set("grip_transfer_progress", 0.0)
+	driver_controller.set("grip_transfer_velocity", 0.0)
+	steering_telemetry.effective_steering_amount = 0.0
+	steering_controller.call("update_steering_wheel_pose")
+	driver_controller.call("update_driver_hand_targets", 0.0)
+	driver_controller.set_process(true)
+
+func validate_final_hand_transfer(steering_telemetry: SteeringTelemetryVehicle, steering_controller: Node) -> void:
+	driver_controller.set_process(false)
+	for steering_direction in [-1.0, 1.0]:
+		driver_controller.set("grip_transfer_direction", steering_direction)
+		driver_controller.set("grip_transfer_velocity", 0.0)
+		for transfer_step in range(70, 101):
+			var transfer_progress := float(transfer_step) / 100.0
+			driver_controller.set("grip_transfer_progress", transfer_progress)
+			steering_telemetry.effective_steering_amount = steering_direction * (60.0 + 120.0 * transfer_progress) / 180.0
+			steering_controller.call("update_steering_wheel_pose")
+			driver_controller.call("update_driver_hand_targets", 0.0)
+			var arm_configurations: Array = driver_controller.get("arm_modifier").get("arm_configurations")
+			if transfer_step >= 86:
+				for arm_configuration in arm_configurations:
+					if float(arm_configuration["finger_closure"]) < 0.999:
+						failures.append("Driver final regrip does not finish before the last steering segment ends.")
+						break
+			var supporting_hand_index := 1 if steering_direction > 0.0 else 0
+			if measure_hand_rim_error(arm_configurations[supporting_hand_index]) > 0.001:
+				failures.append("Driver last hand transfer leaves its supporting hand outside the rim.")
+	driver_controller.set("grip_transfer_progress", 0.0)
+	driver_controller.set("grip_transfer_velocity", 0.0)
+	steering_telemetry.effective_steering_amount = 0.0
+	steering_controller.call("update_steering_wheel_pose")
+	driver_controller.call("update_driver_hand_targets", 0.0)
+	driver_controller.set_process(true)
+
+func validate_fast_final_hand_transfer(steering_telemetry: SteeringTelemetryVehicle, steering_controller: Node) -> void:
+	for steering_direction in [-1.0, 1.0]:
+		steering_telemetry.effective_steering_amount = 0.0
+		steering_controller.call("update_steering_wheel_pose")
+		for settle_frame in range(120):
+			await process_frame
+		for steering_degrees in range(0, 145, 3):
+			steering_telemetry.effective_steering_amount = steering_direction * float(steering_degrees) / 180.0
+			steering_controller.call("update_steering_wheel_pose")
+			await process_frame
+		steering_telemetry.effective_steering_amount = steering_direction * 144.0 / 180.0
+		steering_controller.call("update_steering_wheel_pose")
+		for settle_frame in range(120):
+			await process_frame
+		var arm_configurations: Array = driver_controller.get("arm_modifier").get("arm_configurations")
+		var leading_hand_index := 0 if steering_direction > 0.0 else 1
+		var completed_transfer_frame := -1
+		for transfer_frame in range(30):
+			steering_telemetry.effective_steering_amount = steering_direction * minf(144.0 + 12.0 * float(transfer_frame + 1), 180.0) / 180.0
+			steering_controller.call("update_steering_wheel_pose")
+			await process_frame
+			if completed_transfer_frame < 0 and float(driver_controller.get("grip_transfer_progress")) > 0.8 and float(arm_configurations[leading_hand_index]["finger_closure"]) > 0.999:
+				completed_transfer_frame = transfer_frame + 1
+		if completed_transfer_frame < 0 or completed_transfer_frame > 8:
+			failures.append("Driver final support handoff takes longer than 0.134 seconds after steering to full lock.")
+		print("DRIVER_FINAL_HANDOFF_COMPLETION_FRAMES=" + str(completed_transfer_frame))
+		for steering_degrees in range(177, -1, -3):
+			steering_telemetry.effective_steering_amount = steering_direction * float(steering_degrees) / 180.0
+			steering_controller.call("update_steering_wheel_pose")
+			await process_frame
+	steering_telemetry.effective_steering_amount = 0.0
+	steering_controller.call("update_steering_wheel_pose")
+
+func validate_lock_to_lock_transitions(steering_telemetry: SteeringTelemetryVehicle, steering_controller: Node) -> void:
+	for steering_degrees in range(0, 181, 3):
+		steering_telemetry.effective_steering_amount = float(steering_degrees) / 180.0
+		steering_controller.call("update_steering_wheel_pose")
+		await process_frame
+	for settle_frame in range(60):
+		await process_frame
+	var starting_direction := 1.0
+	for transition_frame_count in [36, 36, 24, 24]:
+		for transition_frame in range(1, transition_frame_count + 1):
+			steering_telemetry.effective_steering_amount = lerpf(starting_direction, -starting_direction, float(transition_frame) / float(transition_frame_count))
+			steering_controller.call("update_steering_wheel_pose")
+			await process_frame
+		for settle_frame in range(8):
+			await process_frame
+		if float(driver_controller.get("grip_transfer_direction")) != -starting_direction or float(driver_controller.get("grip_transfer_progress")) < 0.98:
+			failures.append("Driver hands lag behind a complete steering reversal lasting " + str(float(transition_frame_count) / 60.0) + " seconds.")
+		print("DRIVER_LOCK_TO_LOCK_SETTLED_PROGRESS=" + str([transition_frame_count, driver_controller.get("grip_transfer_direction"), driver_controller.get("grip_transfer_progress")]))
+		starting_direction = -starting_direction
+	for reversal_index in range(4):
+		for transition_frame in range(1, 25):
+			steering_telemetry.effective_steering_amount = lerpf(starting_direction, -starting_direction, float(transition_frame) / 24.0)
+			steering_controller.call("update_steering_wheel_pose")
+			await process_frame
+		starting_direction = -starting_direction
+	for steering_degrees in range(177, -1, -3):
+		steering_telemetry.effective_steering_amount = starting_direction * float(steering_degrees) / 180.0
+		steering_controller.call("update_steering_wheel_pose")
+		await process_frame
+
+func measure_hand_rim_error(arm_configuration: Dictionary) -> float:
+	var target := arm_configuration["hand_target"] as Node3D
+	var steering_pivot := driver_controller.get("steering_pivot") as Node3D
+	var palm_position: Vector3 = steering_pivot.global_transform.affine_inverse() * (target.global_transform * arm_configuration["palm_offset"])
+	var rim_direction := Vector2(signf(palm_position.x) * pow(absf(palm_position.x) / 0.132, 2.0), signf(palm_position.y) * pow(absf(palm_position.y) / 0.084, 2.0)).normalized()
+	var contact_position := Vector3(signf(rim_direction.x) * sqrt(absf(rim_direction.x)) * 0.132, signf(rim_direction.y) * sqrt(absf(rim_direction.y)) * 0.084, -0.018)
+	return palm_position.distance_to(contact_position)
+
 func validate_arm_pose() -> void:
 	modification_samples += 1
 	var skeleton := driver_controller.get("driver_skeleton") as Skeleton3D
 	var arm_configurations: Array = driver_controller.get("arm_modifier").get("arm_configurations")
 	var wrists: Array[Vector3] = []
 	var open_hand_count := 0
+	var minimum_supporting_hand_rim_error_meters := INF
 	for arm_configuration in arm_configurations:
 		var shoulder_index := skeleton.find_bone(arm_configuration["root_bone_name"])
 		var elbow_index := skeleton.find_bone(arm_configuration["middle_bone_name"])
@@ -199,6 +362,7 @@ func validate_arm_pose() -> void:
 		if finger_closure < 0.95:
 			open_hand_count += 1
 		if finger_closure > 0.999:
+			minimum_supporting_hand_rim_error_meters = minf(minimum_supporting_hand_rim_error_meters, measure_hand_rim_error(arm_configuration))
 			var palm_world_position: Vector3 = target.global_transform * arm_configuration["palm_offset"]
 			var steering_pivot := driver_controller.get("steering_pivot") as Node3D
 			var inward_direction := steering_pivot.global_position - palm_world_position
@@ -217,3 +381,5 @@ func validate_arm_pose() -> void:
 				maximum_finger_bone_length_error = maxf(maximum_finger_bone_length_error, absf(actual_length - skeleton.get_bone_rest(bone_index).origin.length()))
 	minimum_hand_separation = minf(minimum_hand_separation, wrists[0].distance_to(wrists[1]))
 	maximum_simultaneously_open_hands = maxi(maximum_simultaneously_open_hands, open_hand_count)
+	if float(driver_controller.get("grip_transfer_progress")) >= 0.70:
+		maximum_final_supporting_hand_rim_error_meters = maxf(maximum_final_supporting_hand_rim_error_meters, minimum_supporting_hand_rim_error_meters)

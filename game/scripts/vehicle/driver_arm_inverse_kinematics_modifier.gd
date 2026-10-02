@@ -5,10 +5,14 @@ const MAXIMUM_SHOULDER_SPEED_DEGREES := 75.0
 const SHOULDER_RESPONSE_SPEED := 12.0
 const THUMB_BASE_OPPOSITION_DEGREES := 145.0
 const MAXIMUM_HAND_ROTATION_SPEED_DEGREES := 325.0
+const STEERING_FOLLOW_START_DEGREES_PER_SECOND := 90.0
+const STEERING_FOLLOW_FULL_DEGREES_PER_SECOND := 180.0
 const MAXIMUM_TARGET_WRIST_BEND_DEGREES := 30.0
 
 var shoulder_rotations: Dictionary = {}
 var hand_rotations: Dictionary = {}
+var grip_transfer_velocity: float = 0.0
+var steering_rotation_speed_degrees: float = 0.0
 
 func _process_modification_with_delta(elapsed_seconds: float) -> void:
 	var skeleton := get_skeleton()
@@ -41,7 +45,9 @@ func _process_modification_with_delta(elapsed_seconds: float) -> void:
 		var desired_hand_rotation := (chassis.global_basis.inverse() * hand_target.global_basis).get_rotation_quaternion()
 		var previous_hand_rotation: Quaternion = hand_rotations.get(hand_bone_index, desired_hand_rotation)
 		var hand_rotation_distance := previous_hand_rotation.angle_to(desired_hand_rotation)
-		var maximum_hand_rotation_step := deg_to_rad(MAXIMUM_HAND_ROTATION_SPEED_DEGREES) * maxf(elapsed_seconds, 0.0)
+		var steering_follow_speed := steering_rotation_speed_degrees * smoothstep(STEERING_FOLLOW_START_DEGREES_PER_SECOND, STEERING_FOLLOW_FULL_DEGREES_PER_SECOND, steering_rotation_speed_degrees)
+		var hand_rotation_speed := maxf(MAXIMUM_HAND_ROTATION_SPEED_DEGREES, steering_follow_speed + MAXIMUM_HAND_ROTATION_SPEED_DEGREES * absf(grip_transfer_velocity))
+		var maximum_hand_rotation_step := deg_to_rad(hand_rotation_speed) * maxf(elapsed_seconds, 0.0)
 		var hand_rotation := previous_hand_rotation.slerp(desired_hand_rotation, minf(1.0, maximum_hand_rotation_step / maxf(hand_rotation_distance, 0.0001)))
 		hand_rotations[hand_bone_index] = hand_rotation
 		hand_target.global_basis = chassis.global_basis * Basis(hand_rotation)
