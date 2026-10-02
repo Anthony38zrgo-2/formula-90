@@ -2453,6 +2453,7 @@ struct JsonBrakeAxleThermal {
     rotor_mass_kg: Option<f64>,
     rotor_outer_diameter_m: Option<f64>,
     rotor_inner_diameter_m: Option<f64>,
+    rotor_radiation_emissivity: Option<f64>,
     rotor_ventilation: Option<BrakeRotorVentilation>,
     cooling_profile: Option<BrakeCoolingProfile>,
     installation_airflow_scale: Option<f64>,
@@ -2580,6 +2581,7 @@ impl JsonBrakeAxleThermal {
             rotor_mass_kg: Some(c.rotor_mass_kg),
             rotor_outer_diameter_m: Some(c.rotor_outer_diameter_m),
             rotor_inner_diameter_m: Some(c.rotor_inner_diameter_m),
+            rotor_radiation_emissivity: Some(c.rotor_radiation_emissivity),
             rotor_ventilation: Some(c.rotor_ventilation),
             cooling_profile: Some(c.cooling_profile),
             installation_airflow_scale: Some(c.installation_airflow_scale),
@@ -2652,6 +2654,9 @@ fn overlay_brake_axle(c: &mut BrakeAxleThermalConfig, j: &JsonBrakeAxleThermal) 
     }
     if let Some(v) = j.rotor_inner_diameter_m {
         c.rotor_inner_diameter_m = v;
+    }
+    if let Some(emissivity) = j.rotor_radiation_emissivity {
+        c.rotor_radiation_emissivity = emissivity;
     }
     if let Some(v) = j.rotor_ventilation {
         c.rotor_ventilation = v;
@@ -3164,6 +3169,13 @@ fn validate_brake_thermal(c: &BrakeThermalConfig) -> Result<(), String> {
 }
 
 fn validate_brake_axle(name: &str, c: &BrakeAxleThermalConfig) -> Result<(), String> {
+    if !c.rotor_radiation_emissivity.is_finite()
+        || !(0.0..=1.0).contains(&c.rotor_radiation_emissivity)
+    {
+        return Err(format!(
+            "brakes.thermal.{name}.rotor_radiation_emissivity must be in [0,1]"
+        ));
+    }
     for (field, value) in [
         ("rotor_mass_kg", c.rotor_mass_kg),
         ("rotor_outer_diameter_m", c.rotor_outer_diameter_m),

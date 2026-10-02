@@ -2,6 +2,211 @@
 // through the public API and the JSON config layer.
 use vehicle_physics_engine::*;
 
+fn current_vehicle_configuration() -> VehicleConfig {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+    VehicleConfig::from_json_path(&path).unwrap()
+}
+
+#[test]
+fn radiation_rejects_heat_without_creating_mechanical_braking_energy() {
+    let mut configuration = current_vehicle_configuration();
+    configuration.brake_thermal.front.installation_airflow_scale = 0.0;
+    configuration.brake_thermal.front.rotor_to_rim_w_k = 0.0;
+    configuration.brake_thermal.front_duct.opening = 0.0;
+    let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+    let mut cooling_rates = Vec::new();
+    for temperature in [25.0, 350.0, 900.0] {
+        system.wheels[0].disc_c = temperature;
+        system.step_after_braking(
+            WheelIndex::FrontLeft,
+            &configuration.brake_thermal,
+            BrakeThermalInput {
+                ambient_temperature_c: 25.0,
+                tire_carcass_temperature_c: 25.0,
+                tire_gas_temperature_c: 25.0,
+                ..Default::default()
+            },
+            1.0 / 120.0,
+        );
+        cooling_rates.push((temperature - system.wheels[0].disc_c) * 120.0);
+        assert_eq!(system.wheels[0].brake_power_w, 0.0);
+        assert_eq!(system.wheels[0].brake_energy_j, 0.0);
+    }
+    assert_eq!(cooling_rates[0], 0.0);
+    assert!(cooling_rates[1] > 0.0);
+    assert!(cooling_rates[2] > cooling_rates[1] * 10.0);
+    assert!((cooling_rates[2] - 5.91).abs() < 0.02);
+}
+
+#[test]
+fn radiation_is_optional_validated_and_preserved_by_serialization() {
+    let configuration = current_vehicle_configuration();
+    let serialized = configuration.to_json_value();
+    let restored = VehicleConfig::from_json_str(&serialized.to_string()).unwrap();
+    assert_eq!(restored.brake_thermal.front.rotor_radiation_emissivity, 0.8);
+    assert_eq!(restored.brake_thermal.rear.rotor_radiation_emissivity, 0.8);
+    let legacy = VehicleConfig::from_json_str(r#"{"schema_version":3}"#).unwrap();
+    assert_eq!(legacy.brake_thermal.front.rotor_radiation_emissivity, 0.0);
+    for invalid_emissivity in [-0.01, 1.01] {
+        let mut invalid = serialized.clone();
+        invalid["brakes"]["thermal"]["rear"]["rotor_radiation_emissivity"] =
+            invalid_emissivity.into();
+        assert!(VehicleConfig::from_json_str(&invalid.to_string()).is_err());
+    }
+}
+
+fn simulate_current_brakes(opening: f64, pedal: f64, seconds: usize) -> BrakeThermalSystem {
+    let mut configuration = current_vehicle_configuration();
+    configuration.brake_thermal.front_duct.opening = opening;
+    configuration.brake_thermal.rear_duct.opening = opening;
+    let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+    for tick in 0..seconds * 120 {
+        let braking = tick % (20 * 120) < 3 * 120;
+        let speed = if braking {
+            70.0 - 45.0 * (tick % (20 * 120)) as f64 / 360.0
+        } else {
+            60.0
+        };
+        let efficiencies = system.efficiency_scales();
+        for wheel in WheelIndex::ALL {
+            let index = wheel as usize;
+            let axle_share = if wheel.is_front() {
+                configuration.front_brake_bias
+            } else {
+                1.0 - configuration.front_brake_bias
+            };
+            let radius = if wheel.is_front() {
+                configuration.front_tire_radius
+            } else {
+                configuration.rear_tire_radius
+            };
+            system.step_after_braking(
+                wheel,
+                &configuration.brake_thermal,
+                BrakeThermalInput {
+                    applied_brake_torque_nm: if braking {
+                        configuration.max_brake_torque
+                            * axle_share
+                            * 0.5
+                            * pedal
+                            * efficiencies[index]
+                    } else {
+                        0.0
+                    },
+                    wheel_spin_pre_rad_s: speed / radius,
+                    wheel_spin_post_rad_s: speed / radius,
+                    vehicle_speed_ms: speed,
+                    air_density_kg_m3: configuration.air_density,
+                    ambient_temperature_c: configuration.brake_thermal.initial_temperature_c,
+                    tire_carcass_temperature_c: 70.0,
+                    tire_gas_temperature_c: 70.0,
+                },
+                1.0 / 120.0,
+            );
+        }
+    }
+    system
+}
+
+#[test]
+fn current_brakes_respond_to_duct_opening_and_actual_braking_demand() {
+    let closed = simulate_current_brakes(0.0, 1.0, 600);
+    let configured = simulate_current_brakes(0.06, 1.0, 600);
+    let open = simulate_current_brakes(1.0, 1.0, 600);
+    let light_braking = simulate_current_brakes(0.06, 0.15, 600);
+    for index in 0..4 {
+        assert!(closed.wheels[index].disc_c > configured.wheels[index].disc_c);
+        assert!(configured.wheels[index].disc_c > open.wheels[index].disc_c);
+        assert!(configured.wheels[index].disc_c > light_braking.wheels[index].disc_c);
+        assert!(
+            configured.wheels[index].brake_energy_j > light_braking.wheels[index].brake_energy_j
+        );
+        assert!(
+            configured.wheels[index].disc_c >= 350.0,
+            "wheel {index}: {}",
+            configured.wheels[index].disc_c
+        );
+        assert!(open.wheels[index].disc_c < 350.0);
+        assert!(light_braking.wheels[index].disc_c < 350.0);
+    }
+}
+
+fn simulate_vehicle_braking_at_temperature(temperature_celsius: f64) -> TelemetryFrame {
+    let configuration = current_vehicle_configuration();
+    let height = default_spawn_height(&configuration);
+    let mut simulator =
+        VehicleSimulator::new(configuration.clone(), Vec3::new(0.0, height, 0.0), 0.0);
+    simulator.state.linear_velocity = Vec3::new(0.0, 0.0, -70.0);
+    simulator.state.brake_input_smoothed = 1.0;
+    let mut contact_samples = [TriRaycastSample::default(); 4];
+    for wheel in WheelIndex::ALL {
+        let index = wheel as usize;
+        let radius = if wheel.is_front() {
+            configuration.front_tire_radius
+        } else {
+            configuration.rear_tire_radius
+        };
+        simulator.state.tires.wheels[index].spin = 70.0 / radius;
+        simulator.state.brake_thermal.wheels[index].disc_c = temperature_celsius;
+        simulator.state.brake_thermal.wheels[index].efficiency =
+            brake_efficiency(temperature_celsius, &configuration.brake_thermal);
+        let anchor = simulator
+            .state
+            .transform
+            .transform_point(configuration.wheel_anchor_local(wheel));
+        let hit = RaycastHit {
+            is_colliding: true,
+            distance: anchor.y.max(0.0),
+            point: Vec3::new(anchor.x, 0.0, anchor.z),
+            normal: Vec3::UP,
+            surface: SurfaceType::Road,
+        };
+        contact_samples[index] = TriRaycastSample {
+            inner: hit,
+            center: hit,
+            outer: hit,
+        };
+    }
+    simulator.step(
+        &VehicleInput {
+            brake: 1.0,
+            ..Default::default()
+        },
+        &contact_samples,
+        1.0 / 120.0,
+    )
+}
+
+#[test]
+fn vehicle_solver_uses_temperature_efficiency_for_torque_power_and_heat() {
+    let configuration = current_vehicle_configuration();
+    for temperature in [25.0, 450.0, 1050.0] {
+        let telemetry = simulate_vehicle_braking_at_temperature(temperature);
+        let efficiency = brake_efficiency(temperature, &configuration.brake_thermal);
+        for wheel in WheelIndex::ALL {
+            let index = wheel as usize;
+            let axle_share = if wheel.is_front() {
+                configuration.front_brake_bias
+            } else {
+                1.0 - configuration.front_brake_bias
+            };
+            let expected_torque = configuration.max_brake_torque * axle_share * 0.5 * efficiency;
+            assert!((telemetry.brake_torque_nm[index] - expected_torque).abs() < 1e-6);
+            let average_spin = (telemetry.brake_spin_pre_rad_s[index]
+                + telemetry.brake_spin_post_rad_s[index])
+                .abs()
+                * 0.5;
+            assert!((telemetry.brake_power_w[index] - expected_torque * average_spin).abs() < 1e-6);
+            assert!(
+                (telemetry.brake_energy_j[index] - telemetry.brake_power_w[index] / 120.0).abs()
+                    < 1e-6
+            );
+            assert!(telemetry.brake_power_w[index] > 0.0);
+        }
+    }
+}
+
 fn stop_input(torque_nm: f64, spin_rad_s: f64, speed_ms: f64) -> BrakeThermalInput {
     BrakeThermalInput {
         applied_brake_torque_nm: torque_nm,

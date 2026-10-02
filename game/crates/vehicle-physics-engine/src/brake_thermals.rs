@@ -53,6 +53,8 @@ pub struct BrakeAxleThermalConfig {
     pub rotor_mass_kg: f64,
     pub rotor_outer_diameter_m: f64,
     pub rotor_inner_diameter_m: f64,
+    #[serde(default)]
+    pub rotor_radiation_emissivity: f64,
     pub rotor_ventilation: BrakeRotorVentilation,
     pub cooling_profile: BrakeCoolingProfile,
     pub installation_airflow_scale: f64,
@@ -76,6 +78,7 @@ impl Default for BrakeAxleThermalConfig {
             rotor_mass_kg: 1.35,
             rotor_outer_diameter_m: 0.278,
             rotor_inner_diameter_m: 0.105,
+            rotor_radiation_emissivity: 0.0,
             rotor_ventilation: BrakeRotorVentilation::Solid,
             cooling_profile: BrakeCoolingProfile::RoadSolid,
             installation_airflow_scale: 1.0,
@@ -194,6 +197,7 @@ pub struct ResolvedBrakeAxleThermalConfig {
     pub cooling_speed_exponent: f64,
     /// Fraction of generated braking heat deposited directly into the rotor.
     pub rotor_heat_fraction: f64,
+    pub rotor_radiating_area_square_meters: f64,
 }
 
 impl BrakeAxleThermalConfig {
@@ -223,6 +227,7 @@ impl BrakeAxleThermalConfig {
             cooling_reference_speed_ms: profile.reference_speed_ms,
             cooling_speed_exponent: profile.speed_exponent,
             rotor_heat_fraction: material.rotor_heat_fraction.clamp(0.50, 1.0),
+            rotor_radiating_area_square_meters: area * 2.0,
         }
     }
 }
@@ -480,8 +485,14 @@ impl BrakeThermalSystem {
         let h_rim_air = axle.rim_base_air_w_k + dynamic_h * (1.0 - rotor_share);
         let q_rotor_air = h_rotor_air * (st.disc_c - input.ambient_temperature_c);
         let q_rim_air = h_rim_air * (st.rim_c - input.ambient_temperature_c);
+        let rotor_temperature_kelvin = st.disc_c + 273.15;
+        let ambient_temperature_kelvin = input.ambient_temperature_c + 273.15;
+        let rotor_radiation_heat_watts = axle.rotor_radiation_emissivity
+            * resolved.rotor_radiating_area_square_meters
+            * 5.670374419e-8
+            * (rotor_temperature_kelvin.powi(4) - ambient_temperature_kelvin.powi(4));
 
-        let rotor_net_w = rotor_heat_w - q_rotor_rim - q_rotor_air;
+        let rotor_net_w = rotor_heat_w - q_rotor_rim - q_rotor_air - rotor_radiation_heat_watts;
         let rim_net_w =
             rim_direct_heat_w + q_rotor_rim - q_rim_to_carcass - q_rim_to_gas - q_rim_air;
 
