@@ -38,6 +38,7 @@ pub enum BrakeRotorVentilation {
 #[serde(rename_all = "snake_case")]
 pub enum BrakeCoolingProfile {
     OpenWheelDucted,
+    OpenWheelExternalFaces,
     RoadVented,
     RoadSolid,
 }
@@ -55,6 +56,8 @@ pub struct BrakeAxleThermalConfig {
     pub rotor_inner_diameter_m: f64,
     #[serde(default)]
     pub rotor_radiation_emissivity: f64,
+    #[serde(default = "default_rotor_radiation_ambient_view_factor")]
+    pub rotor_radiation_ambient_view_factor: f64,
     pub rotor_ventilation: BrakeRotorVentilation,
     pub cooling_profile: BrakeCoolingProfile,
     pub installation_airflow_scale: f64,
@@ -79,6 +82,7 @@ impl Default for BrakeAxleThermalConfig {
             rotor_outer_diameter_m: 0.278,
             rotor_inner_diameter_m: 0.105,
             rotor_radiation_emissivity: 0.0,
+            rotor_radiation_ambient_view_factor: default_rotor_radiation_ambient_view_factor(),
             rotor_ventilation: BrakeRotorVentilation::Solid,
             cooling_profile: BrakeCoolingProfile::RoadSolid,
             installation_airflow_scale: 1.0,
@@ -200,6 +204,10 @@ pub struct ResolvedBrakeAxleThermalConfig {
     pub rotor_radiating_area_square_meters: f64,
 }
 
+fn default_rotor_radiation_ambient_view_factor() -> f64 {
+    1.0
+}
+
 impl BrakeAxleThermalConfig {
     pub fn resolve(&self) -> ResolvedBrakeAxleThermalConfig {
         let material = material_properties(self.rotor_material);
@@ -267,6 +275,14 @@ struct CoolingProfileProperties {
 
 fn profile_properties(profile: BrakeCoolingProfile) -> CoolingProfileProperties {
     match profile {
+        BrakeCoolingProfile::OpenWheelExternalFaces => CoolingProfileProperties {
+            natural_h_w_m2_k: 5.0,
+            forced_h_at_reference_w_m2_k: 65.0,
+            reference_speed_ms: 50.0,
+            speed_exponent: 0.8,
+            solid_area_multiplier: 1.0,
+            vented_area_multiplier: 1.0,
+        },
         BrakeCoolingProfile::OpenWheelDucted => CoolingProfileProperties {
             natural_h_w_m2_k: 5.0,
             forced_h_at_reference_w_m2_k: 65.0,
@@ -488,6 +504,7 @@ impl BrakeThermalSystem {
         let rotor_temperature_kelvin = st.disc_c + 273.15;
         let ambient_temperature_kelvin = input.ambient_temperature_c + 273.15;
         let rotor_radiation_heat_watts = axle.rotor_radiation_emissivity
+            * axle.rotor_radiation_ambient_view_factor
             * resolved.rotor_radiating_area_square_meters
             * 5.670374419e-8
             * (rotor_temperature_kelvin.powi(4) - ambient_temperature_kelvin.powi(4));

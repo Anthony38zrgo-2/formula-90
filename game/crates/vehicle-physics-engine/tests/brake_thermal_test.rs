@@ -12,6 +12,10 @@ fn current_vehicle_configuration() -> VehicleConfig {
 fn radiation_rejects_heat_without_creating_mechanical_braking_energy() {
     let mut configuration = current_vehicle_configuration();
     configuration.brake_thermal.front.installation_airflow_scale = 0.0;
+    configuration
+        .brake_thermal
+        .front
+        .rotor_radiation_ambient_view_factor = 1.0;
     configuration.brake_thermal.front.rotor_to_rim_w_k = 0.0;
     configuration.brake_thermal.front_duct.opening = 0.0;
     let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
@@ -46,20 +50,123 @@ fn radiation_is_optional_validated_and_preserved_by_serialization() {
     let restored = VehicleConfig::from_json_str(&serialized.to_string()).unwrap();
     assert_eq!(restored.brake_thermal.front.rotor_radiation_emissivity, 0.8);
     assert_eq!(restored.brake_thermal.rear.rotor_radiation_emissivity, 0.8);
+    assert_eq!(
+        restored
+            .brake_thermal
+            .front
+            .rotor_radiation_ambient_view_factor,
+        0.5
+    );
+    assert_eq!(
+        restored
+            .brake_thermal
+            .rear
+            .rotor_radiation_ambient_view_factor,
+        0.5
+    );
     let legacy = VehicleConfig::from_json_str(r#"{"schema_version":3}"#).unwrap();
     assert_eq!(legacy.brake_thermal.front.rotor_radiation_emissivity, 0.0);
+    assert_eq!(
+        legacy
+            .brake_thermal
+            .front
+            .rotor_radiation_ambient_view_factor,
+        1.0
+    );
     for invalid_emissivity in [-0.01, 1.01] {
         let mut invalid = serialized.clone();
         invalid["brakes"]["thermal"]["rear"]["rotor_radiation_emissivity"] =
             invalid_emissivity.into();
         assert!(VehicleConfig::from_json_str(&invalid.to_string()).is_err());
+        invalid["brakes"]["thermal"]["rear"]["rotor_radiation_emissivity"] = 0.8.into();
+        invalid["brakes"]["thermal"]["rear"]["rotor_radiation_ambient_view_factor"] =
+            invalid_emissivity.into();
+        assert!(VehicleConfig::from_json_str(&invalid.to_string()).is_err());
     }
 }
 
-fn simulate_current_brakes(opening: f64, pedal: f64, seconds: usize) -> BrakeThermalSystem {
+#[test]
+fn internal_ventilation_does_not_multiply_external_face_convection() {
+    let mut axle = current_vehicle_configuration().brake_thermal.front;
+    axle.rotor_ventilation = BrakeRotorVentilation::Solid;
+    let solid_external = axle.resolve();
+    axle.rotor_ventilation = BrakeRotorVentilation::Vented;
+    let vented_external = axle.resolve();
+    assert_eq!(
+        solid_external.rotor_natural_w_k,
+        vented_external.rotor_natural_w_k
+    );
+    assert_eq!(
+        solid_external.rotor_forced_at_reference_w_k,
+        vented_external.rotor_forced_at_reference_w_k
+    );
+    axle.cooling_profile = BrakeCoolingProfile::OpenWheelDucted;
+    let legacy_vented = axle.resolve();
+    assert!(
+        (legacy_vented.rotor_forced_at_reference_w_k
+            / vented_external.rotor_forced_at_reference_w_k
+            - 1.8)
+            .abs()
+            < 1e-12
+    );
+}
+
+#[test]
+fn ambient_view_factor_scales_only_radiative_heat_exchange() {
     let mut configuration = current_vehicle_configuration();
-    configuration.brake_thermal.front_duct.opening = opening;
-    configuration.brake_thermal.rear_duct.opening = opening;
+    configuration.brake_thermal.front.installation_airflow_scale = 0.0;
+    configuration.brake_thermal.front.rotor_to_rim_w_k = 0.0;
+    configuration.brake_thermal.front_duct.opening = 0.0;
+    let mut extracted_energies = Vec::new();
+    for ambient_view_factor in [0.0, 0.5, 1.0] {
+        configuration
+            .brake_thermal
+            .front
+            .rotor_radiation_ambient_view_factor = ambient_view_factor;
+        let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+        system.wheels[0].disc_c = 450.0;
+        system.step_after_braking(
+            WheelIndex::FrontLeft,
+            &configuration.brake_thermal,
+            BrakeThermalInput {
+                ambient_temperature_c: 25.0,
+                tire_carcass_temperature_c: 25.0,
+                tire_gas_temperature_c: 25.0,
+                ..Default::default()
+            },
+            1.0 / 120.0,
+        );
+        extracted_energies.push(
+            (450.0 - system.wheels[0].disc_c)
+                * configuration
+                    .brake_thermal
+                    .front
+                    .resolve()
+                    .rotor_capacity_j_k,
+        );
+        assert_eq!(system.wheels[0].duct.mass_flow_kg_s, 0.0);
+        assert_eq!(system.wheels[0].rim_c, 25.0);
+    }
+    assert_eq!(extracted_energies[0], 0.0);
+    assert!((extracted_energies[1] * 2.0 - extracted_energies[2]).abs() < 1e-8);
+    let expected_radiated_energy = 0.8
+        * configuration
+            .brake_thermal
+            .front
+            .resolve()
+            .rotor_radiating_area_square_meters
+        * 5.670374419e-8
+        * (723.15_f64.powi(4) - 298.15_f64.powi(4))
+        / 120.0;
+    assert!((extracted_energies[2] - expected_radiated_energy).abs() < 1e-8);
+}
+
+fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> BrakeThermalSystem {
+    let mut configuration = current_vehicle_configuration();
+    if let Some(duct_opening) = opening {
+        configuration.brake_thermal.front_duct.opening = duct_opening;
+        configuration.brake_thermal.rear_duct.opening = duct_opening;
+    }
     let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
     for tick in 0..seconds * 120 {
         let braking = tick % (20 * 120) < 3 * 120;
@@ -111,10 +218,10 @@ fn simulate_current_brakes(opening: f64, pedal: f64, seconds: usize) -> BrakeThe
 
 #[test]
 fn current_brakes_respond_to_duct_opening_and_actual_braking_demand() {
-    let closed = simulate_current_brakes(0.0, 1.0, 600);
-    let configured = simulate_current_brakes(0.06, 1.0, 600);
-    let open = simulate_current_brakes(1.0, 1.0, 600);
-    let light_braking = simulate_current_brakes(0.06, 0.15, 600);
+    let closed = simulate_current_brakes(Some(0.0), 1.0, 600);
+    let configured = simulate_current_brakes(None, 1.0, 600);
+    let open = simulate_current_brakes(Some(1.0), 1.0, 600);
+    let light_braking = simulate_current_brakes(None, 0.15, 600);
     for index in 0..4 {
         assert!(closed.wheels[index].disc_c > configured.wheels[index].disc_c);
         assert!(configured.wheels[index].disc_c > open.wheels[index].disc_c);

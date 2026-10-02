@@ -2,6 +2,8 @@
 
 Fecha: 2026-10-02. Rama: `main-clean`. HEAD anterior a los cambios: `e80f5537ac6bd6b27d76615c6e110ced1dfde02a`.
 
+La primera calibración descrita abajo es histórica. La sección «Separación de refrigeración exterior y ventilación interna» al final registra el reajuste vigente.
+
 ## Alcance y referencias
 
 El perfil activo es `game/data/vehicles/f1_2030/f1_2030_v10_geometric.json`, cargado por `f1_2030_v10_rust.tscn` en la sesión por defecto de `scripts/run_f1_94.ps1`. Las escenas que comparten ese perfil reciben la misma calibración. El perfil legado `f1_2030_v10_physics.json`, las escenas, los GLB y los materiales no se modifican.
@@ -98,3 +100,57 @@ Los resultados completos y las configuraciones de comparación están en `scratc
 Validación: 147 pruebas de biblioteca, 12 pruebas de integración térmica y una prueba del lector del ejemplo. Las pruebas nuevas verifican radiación, equilibrio a temperatura ambiente, compatibilidad de perfiles sin emisividad, validación y serialización, respuesta a apertura/demanda, y el acoplamiento del simulador completo entre eficiencia, par, potencia y energía. La integración mecánica se verifica en frío, en la ventana óptima y con pérdida de eficiencia por exceso de temperatura.
 
 No se ejecutó Godot ni se reconstruyeron o instalaron las DLL del juego. Los binarios y `BUILD_SOURCE` que ya estaban modificados se conservan. La prueba de conducción y el efecto sobre la evolución libre de los neumáticos quedan pendientes de una ejecución del juego con binarios reconstruidos desde estas fuentes.
+
+## Separación de refrigeración exterior y ventilación interna
+
+Reajuste del 2026-10-02, rama `main-clean`, HEAD de partida `086f9160878040bed1937612a7ecda6a83744c4e`. Antes de editar se inventariaron los cambios existentes en JSON, binarios, BUILD_SOURCE e importaciones. Se conservan el par de 6500 N·m y la intensidad ESP 3,0 solicitados previamente. No se modifican masas, diámetros, reparto de frenado, mallas ni materiales.
+
+### Modelo y configuración vigente
+
+El nuevo perfil optativo `open_wheel_external_faces` calcula la convección exterior únicamente sobre las dos caras anulares del disco. Los canales internos dejan de multiplicar esa superficie por 1,8. La ventilación suministrada por el conducto continúa calculándose con su caudal másico, capacidad térmica del aire y conductancia del intercambiador. Cerrar el conducto elimina esa ventilación; la convección exterior permanece. El perfil anterior conserva su comportamiento para los vehículos que siguen utilizándolo.
+
+La radiación directa al ambiente se calcula como `emisividad × factor_de_vista_ambiente × superficie_de_dos_caras × sigma × (temperatura_kelvin^4 − ambiente_kelvin^4)`. El nuevo campo `rotor_radiation_ambient_view_factor` está limitado a [0,1] y vale 1 cuando se omite, conservando las configuraciones anteriores. El F1 2030 emplea 0,5 en ambos ejes y conserva la emisividad 0,8.
+
+Ese factor de vista es una estimación de exposición parcial al ambiente, no una cifra publicada por Brembo ni una medida obtenida de la malla. La transferencia agregada disco–rin sigue representando conducción y radiación hacia la instalación; no se añade un segundo intercambio radiativo hacia el rin. El modelo no resuelve una temperatura independiente del carenado, su geometría de visibilidad ni la rotación del disco. Estas limitaciones requieren validación posterior con conducción real.
+
+| Parámetro | Delanteros | Traseros |
+|---|---:|---:|
+| Perfil exterior | `open_wheel_external_faces` | `open_wheel_external_faces` |
+| Escala de instalación, conservada | 0,70 | 0,85 |
+| Factor de vista radiativo al ambiente | 0,50 | 0,50 |
+| Apertura anterior | 5 % | 5 % |
+| Apertura reajustada | **9 %** | **12 %** |
+
+La apertura trasera mayor compensa su menor capacidad térmica y su mayor temperatura observada. La escala exterior y el caudal del conducto son rutas independientes; la apertura no cambia la emisividad ni el factor de vista.
+
+A 450 °C de disco, 25 °C ambiente, 120 °C de rin y 180 km/h, la extracción aproximada por disco queda:
+
+| Ruta | Delantero | Trasero |
+|---|---:|---:|
+| Convección exterior | 3,20 kW | 2,72 kW |
+| Radiación directa al ambiente | 0,93 kW | 0,65 kW |
+| Ventilación del conducto, apertura vigente | 4,99 kW | 5,78 kW |
+| Transferencia al rin | 3,30 kW | 2,64 kW |
+
+La transferencia al rin almacena y distribuye calor antes de su disipación final; no es una pérdida inmediata al ambiente. Las capacidades de los discos siguen siendo 2222,2 y 1555,6 J/K por rueda.
+
+### Comparación con la última sesión real
+
+Se utiliza `telemetry_20261002_113230_062.csv`, registrada con par 6500 N·m y ESP 3,0. El ejemplo Rust integra a 120 Hz y repite la sesión cinco veces, conservando el estado térmico: 1045,29 s. Las medias corresponden a la quinta repetición; los máximos abarcan toda la reproducción.
+
+| Modelo y apertura delantera/trasera | Media FL / FR / RL / RR, °C | Máximo FL / FR / RL / RR, °C |
+|---|---:|---:|
+| Anterior, 5 % / 5 % | 451 / 427 / 490 / 481 | 613 / 589 / 668 / 657 |
+| Separación y exposición corregidas, 5 % / 5 % | 571 / 542 / 625 / 615 | 736 / 706 / 803 / 790 |
+| Reajuste vigente, 9 % / 12 % | **476 / 450 / 455 / 447** | **643 / 616 / 637 / 626** |
+| Reajuste con ambos conductos cerrados | 706 / 674 / 773 / 763 | 864 / 833 / 942 / 930 |
+
+La configuración vigente no activa pérdida de eficiencia térmica en la reproducción normal. Con los conductos cerrados, los traseros superan 900 °C durante el 7,5 % y 4,7 % de la última repetición. Con demanda multiplicada por 1,5, los máximos vigentes son 903 / 869 / 911 / 896 °C; con demanda doble son 1077 / 1049 / 1088 / 1079 °C. Con media demanda, las medias bajan a 254 / 237 / 235 / 230 °C. El modelo responde a energía y refrigeración, sin forzar la temperatura óptima.
+
+La reproducción prescribe velocidades de rueda y temperaturas de neumáticos registradas. No predice nuevas vueltas, bloqueos ni evolución libre de neumáticos. Las pruebas Rust verifican conservación de energía, respuesta a apertura/demanda, radiación, factor de vista, compatibilidad y serialización: 147 pruebas de biblioteca, 14 de integración térmica y una del lector del ejemplo.
+
+Diagnósticos locales: `scratch/brake_cooling_separation/previous_profile.json`, `baseline_replay.json`, `separated_five_percent.json`, `final_replay.json`, `tests.log`, `build.log` y `provenance.json`. La configuración anterior se conserva para reproducir la comparación. Los cambios permanecen sin commit.
+
+Se compilaron incrementalmente en debug las bibliotecas `vehicle_physics_engine`, `game_sim` y `formula90_core`, en la misma rama. Se respaldaron y actualizaron sus seis DLL de runtime; sus hashes coinciden con los productos de Cargo. No se realizó un rebuild completo ni se alteraron las otras bibliotecas. `provenance.json` registra HEAD, hashes de fuentes, perfil, sesión y binarios, e identifica explícitamente las fuentes sin commit; BUILD_SOURCE conserva el HEAD de partida.
+
+El smoke de `scripts/run_f1_94.ps1 -Smoke` pasó y confirmó la carga del JSON activo con las DLL actualizadas en Fuji 76-77. El smoke valida carga e integración; las temperaturas de la tabla proceden de la reproducción térmica Rust y todavía requieren una nueva sesión de conducción para contrastarlas.
