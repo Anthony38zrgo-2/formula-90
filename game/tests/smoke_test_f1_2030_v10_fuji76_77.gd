@@ -94,15 +94,53 @@ func _run() -> void:
 				if head_and_neck == null or head_and_neck.visible:
 					_fail("Cockpit view does not hide the driver's head and neck.", failures)
 				if cockpit_camera != null:
+					await (driver_controller.get("driver_skeleton") as Skeleton3D).skeleton_updated
 					var driver_eye_point := driver_controller.call("get_driver_eye_point") as Node3D
 					if driver_eye_point == null:
 						_fail("Runtime cockpit camera has no driver eye point.", failures)
 					else:
 						var cockpit_configuration := cockpit_camera_rig.get("configuration") as CockpitCameraConfiguration
-						var expected_camera_position := driver_eye_point.global_position + driver_eye_point.global_basis.y.normalized() * cockpit_configuration.viewpoint_elevation_meters
+						var rendered_eye_transform: Transform3D = cockpit_camera_rig.call("get_rendered_eye_transform")
+						var elevation_direction: Vector3 = cockpit_camera_rig.call("get_viewpoint_elevation_direction")
+						var expected_camera_position := rendered_eye_transform.origin + elevation_direction * cockpit_configuration.viewpoint_elevation_meters
+						var positional_correction: Vector3 = cockpit_camera_rig.get("positional_correction_world")
+						positional_correction *= cockpit_configuration.positional_stabilization_strength
+						var lateral_direction := Vector3(vehicle.global_basis.x.x, 0.0, vehicle.global_basis.x.z).normalized()
+						if absf(positional_correction.y) > cockpit_configuration.maximum_vertical_correction_meters + 0.000001 or absf(positional_correction.dot(lateral_direction)) > cockpit_configuration.maximum_lateral_correction_meters + 0.000001 or absf(positional_correction.dot(lateral_direction.cross(Vector3.UP))) > 0.000001:
+							_fail("Runtime cockpit positional stabilization exceeds its permitted transverse correction.", failures)
+						expected_camera_position += positional_correction
 						if cockpit_camera.global_position.distance_to(expected_camera_position) > 0.001:
-							_fail("Runtime cockpit camera does not follow the elevated driver eye point.", failures)
+							_fail("Runtime cockpit camera does not follow the elevated driver eye point with its bounded stabilization: " + str(cockpit_camera.global_position.distance_to(expected_camera_position)), failures)
+				var preferences_panel := cockpit_camera_rig.get("preferences_panel") as CanvasLayer
+				var preference_key := InputEventKey.new()
+				preference_key.physical_keycode = KEY_F9
+				preference_key.pressed = true
+				Input.parse_input_event(preference_key)
+				await process_frame
+				if preferences_panel == null or not preferences_panel.visible or preferences_panel.get_viewport() != root:
+					_fail("F9 does not open cockpit preferences above the root HUD viewport.", failures)
+				else:
+					var sliders: Dictionary = preferences_panel.get("sliders")
+					var longitudinal_slider := sliders["longitudinal_force_response_strength"] as HSlider
+					var cockpit_configuration := cockpit_camera_rig.get("configuration") as CockpitCameraConfiguration
+					var initial_strength := cockpit_configuration.longitudinal_force_response_strength
+					var slider_rectangle := longitudinal_slider.get_global_rect()
+					var mouse_event := InputEventMouseButton.new()
+					mouse_event.button_index = MOUSE_BUTTON_LEFT
+					mouse_event.pressed = true
+					mouse_event.position = slider_rectangle.position + Vector2(slider_rectangle.size.x * 0.8, slider_rectangle.size.y * 0.5)
+					root.push_input(mouse_event, true)
+					await process_frame
+					if absf(cockpit_configuration.longitudinal_force_response_strength - 1.6) > 0.15:
+						_fail("Root viewport mouse input does not reach cockpit preference sliders: " + str(cockpit_configuration.longitudinal_force_response_strength), failures)
+					mouse_event.pressed = false
+					root.push_input(mouse_event, true)
+					longitudinal_slider.value = initial_strength
+				preference_key.pressed = false
+				Input.parse_input_event(preference_key)
 				await cycle_camera_with_keyboard()
+				if preferences_panel != null and preferences_panel.visible:
+					_fail("Leaving cockpit does not close motion preferences.", failures)
 				if not camera.current or (cockpit_camera != null and cockpit_camera.current) or (head_and_neck != null and not head_and_neck.visible):
 					_fail("C does not return from cockpit to chase and restore the complete driver.", failures)
 			elif not camera.current or compositor.find_child("CockpitCameraRig", true, false) != null:

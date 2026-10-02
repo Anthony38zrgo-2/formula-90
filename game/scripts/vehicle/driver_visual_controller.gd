@@ -131,6 +131,7 @@ func configure_head_motion() -> void:
 	head_motion_modifier.name = "DriverHeadMotion"
 	head_motion_modifier.set("vehicle", chassis_visual.get_parent())
 	head_motion_modifier.set("configuration", cockpit_configuration)
+	head_motion_modifier.set("driver_eye_point", driver_eye_point)
 	driver_skeleton.add_child(head_motion_modifier)
 
 func get_driver_eye_point() -> Node3D:
