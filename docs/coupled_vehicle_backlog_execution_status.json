@@ -466,10 +466,10 @@
         "34",
         "35"
       ],
-      "status": "implementing",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Versioned owned JSON boundary and registered C++ loader implemented; translation unit and parser checked.",
-      "remaining_acceptance": "Rebuild extension and execute registration, native lifecycle, ownership and parity smoke."
+      "candidate_progress": "Native world loader, full source parity gate, owned response buffers and close/removal lifecycle exercised with freshly compiled isolated libraries.",
+      "remaining_acceptance": "Rebuild and validate the complete production extension and canonical game runtime."
     },
     {
       "identifier": "37",
@@ -478,10 +478,10 @@
         "27",
         "36"
       ],
-      "status": "pending",
+      "status": "implemented_awaiting_review",
       "human_approved": false,
-      "candidate_progress": "Existing Godot force-host loop remains active.",
-      "remaining_acceptance": "Implement one world scheduler and physically inert vehicle proxies; remove duplicate integration and response."
+      "candidate_progress": "Opt-in Godot controller queues all vehicle inputs then advances one shared Rust world; native vehicle proxies are frozen with collision layers, masks and gravity disabled. Two-vehicle native smoke passes.",
+      "remaining_acceptance": "Review the complete canonical scene and full race scheduling/performance; obtain human approval before default activation."
     },
     {
       "identifier": "38",
@@ -494,8 +494,8 @@
       ],
       "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Candidate world supports pause, reset, refuel, tire replacement and stale handle rejection.",
-      "remaining_acceptance": "Integrate scene loading, runtime initialization, pause/reset and gameplay lifecycle."
+      "candidate_progress": "Explicit scene bindings initialize the world; native refuel, tire replacement, requested-pose reset, pause and vehicle removal pass in the isolated two-vehicle Godot harness.",
+      "remaining_acceptance": "Validate late session recomposition, pit-stop animation and the full gameplay lifecycle in the canonical race scene."
     },
     {
       "identifier": "39",
@@ -507,10 +507,10 @@
         "37",
         "38"
       ],
-      "status": "pending",
+      "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Candidate snapshots include physical and systems state plus rack and wheel spin.",
-      "remaining_acceptance": "Drive wheel and suspension renderers from solved/interpolated authoritative snapshots."
+      "candidate_progress": "Rust snapshots publish four solved corners. Godot renders hub, wheel spin, wishbones, pushrod, rocker, damper and driveshaft from authoritative endpoints without a second suspension solve. Native harness checks hub/damper agreement and zero linkage solves.",
+      "remaining_acceptance": "Validate interpolation, full authored vehicle appearance and all mechanical packaging volumes through human visual review."
     },
     {
       "identifier": "40",
@@ -522,10 +522,10 @@
         "36",
         "37"
       ],
-      "status": "pending",
+      "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Candidate collision events and telemetry exist.",
-      "remaining_acceptance": "Connect existing audio, telemetry, feedback and presentation consumers without duplicate stepping."
+      "candidate_progress": "Existing CoreFrame telemetry and sampler consume physical systems snapshots without advancing legacy simulation; native wheel surface/load/spin getters are mirrored; collision events are signaled and routed to impact audio. Sampler output is finite and nonzero.",
+      "remaining_acceptance": "Validate audible contact transitions, sustained scraping, controller feedback, HUD consumers and all collision event classes in the full game."
     },
     {
       "identifier": "41",
@@ -537,10 +537,10 @@
         "39",
         "40"
       ],
-      "status": "pending",
+      "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Standalone refuel and tire replacement preserve brake state.",
-      "remaining_acceptance": "Preserve integrated pit service, camera, aids, controller and all configuration consumers."
+      "candidate_progress": "Profile paths are checked across physical/presentation owners; per-vehicle input and aids are sampled; refuel/tire/reset services route to Rust; unsupported runtime tuning is rejected rather than applied to the shadow simulator.",
+      "remaining_acceptance": "Complete runtime tuning transport, pit animation, cameras and all configuration/editor consumers; validate session recomposition."
     },
     {
       "identifier": "42",
@@ -553,10 +553,10 @@
         "40",
         "41"
       ],
-      "status": "pending",
+      "status": "implementing",
       "human_approved": false,
-      "candidate_progress": "Candidate configuration is explicitly labeled rust_world_candidate and is not runtime activated.",
-      "remaining_acceptance": "Implement explicit runtime owner selection, compatibility routing and all activation gates."
+      "candidate_progress": "Both F1 2030 test session variants have an inactive world controller. Canonical launcher accepts an explicit PhysicalWorldPackage parameter; native loader rejects BUILD disagreement and incompatible/missing symbols; unregistered moving Godot bodies are rejected.",
+      "remaining_acceptance": "Complete production rebuild, canonical scene smoke, performance/compatibility gates and human acceptance; keep default owner unchanged until approved."
     },
     {
       "identifier": "43",
@@ -729,5 +729,12 @@
       "candidate_progress": "Protected provenance and per-item candidate execution records exist.",
       "remaining_acceptance": "Audit all prior gates, review explicit atomic change scope and prepare publication only after approval."
     }
-  ]
+  ],
+  "candidate_commits": [
+    "4c81c4dc",
+    "bd34f28dc3d792bafb86fba1e6529f6eb8aba458"
+  ],
+  "godot_integration_base_head": "bd34f28dc3d792bafb86fba1e6529f6eb8aba458",
+  "godot_native_candidate_smoke_passed": true,
+  "godot_integration_review_document": "docs/coupled_vehicle_godot_integration.md"
 }
