@@ -9,7 +9,7 @@
     "model": {
       "front_wing": {
         "area_m2": 0.58,
-        "incidence_deg": 11.0,
+        "incidence_deg": 10.0,
         "max_angle_deg": 20.0,
         "min_angle_deg": 4.0,
         "polar": [
@@ -49,7 +49,7 @@
       },
       "rear_wing": {
         "area_m2": 0.95,
-        "incidence_deg": 18.0,
+        "incidence_deg": 14.0,
         "max_angle_deg": 26.0,
         "min_angle_deg": 6.0,
         "polar": [
@@ -86,7 +86,7 @@
         "choke_height_m": 0.014,
         "high_height_m": 0.165,
         "induced_drag_ratio": 0.13,
-        "lift_area_m2": 1.58,
+        "lift_area_m2": 1.95,
         "optimal_height_m": 0.052,
         "optimal_rake_deg": 0.6,
         "rake_window_deg": 3.25,
