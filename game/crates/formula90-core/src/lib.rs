@@ -868,6 +868,9 @@ impl CoreFacade {
         frame.aero_floor_downforce_n = aero.diffuser_downforce;
         frame.aero_rear_downforce_n = aero.rear_downforce;
         frame.aero_drag_n = aero.drag_force;
+        frame.aerodynamic_body_drag_newtons = aero.body_drag_force;
+        frame.aerodynamic_wing_and_floor_drag_newtons = aero.wing_and_floor_drag_force;
+        frame.aerodynamic_wheel_drag_newtons = aero.wheel_drag_forces;
         frame.aero_front_wing_angle_deg = aero.front_wing_angle_deg;
         frame.aero_rear_wing_angle_deg = aero.rear_wing_angle_deg;
         frame.aero_front_wing_cl = aero.front_wing_cl;

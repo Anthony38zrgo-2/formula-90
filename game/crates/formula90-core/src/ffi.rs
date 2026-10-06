@@ -23,7 +23,7 @@ use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 17;
+pub const F90_CORE_ABI_VERSION: u32 = 18;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -223,6 +223,9 @@ pub struct F90CoreFrameOut {
     pub tire_wear_outer_fraction: [f64; 4],
     pub tire_wear_remaining_fraction: [f64; 4],
     pub tire_wear_grip_scale: [f64; 4],
+    pub aerodynamic_body_drag_newtons: f64,
+    pub aerodynamic_wing_and_floor_drag_newtons: f64,
+    pub aerodynamic_wheel_drag_newtons: [f64; 4],
 }
 
 fn write_error(buf: *mut u8, len: u32, msg: &str) {
@@ -609,6 +612,9 @@ pub unsafe extern "C" fn f90_core_step(
                 aero_floor_downforce_n: frame.aero_floor_downforce_n,
                 aero_rear_downforce_n: frame.aero_rear_downforce_n,
                 aero_drag_n: frame.aero_drag_n,
+                aerodynamic_body_drag_newtons: frame.aerodynamic_body_drag_newtons,
+                aerodynamic_wing_and_floor_drag_newtons: frame.aerodynamic_wing_and_floor_drag_newtons,
+                aerodynamic_wheel_drag_newtons: frame.aerodynamic_wheel_drag_newtons,
                 aero_front_wing_angle_deg: frame.aero_front_wing_angle_deg,
                 aero_rear_wing_angle_deg: frame.aero_rear_wing_angle_deg,
                 aero_front_wing_cl: frame.aero_front_wing_cl,
@@ -1073,7 +1079,10 @@ mod layout_tests {
         assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_outer_fraction), 1904);
         assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_remaining_fraction), 1936);
         assert_eq!(offset_of!(F90CoreFrameOut, tire_wear_grip_scale), 1968);
-        assert_eq!(size_of::<F90CoreFrameOut>(), 2000);
+        assert_eq!(offset_of!(F90CoreFrameOut, aerodynamic_body_drag_newtons), 2000);
+        assert_eq!(offset_of!(F90CoreFrameOut, aerodynamic_wing_and_floor_drag_newtons), 2008);
+        assert_eq!(offset_of!(F90CoreFrameOut, aerodynamic_wheel_drag_newtons), 2016);
+        assert_eq!(size_of::<F90CoreFrameOut>(), 2048);
     }
 
     /// A `F90TriRaycastSample` reuses the mirrored game_sim struct; its per-hit

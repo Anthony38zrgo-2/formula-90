@@ -73,6 +73,9 @@ pub struct TelemetryFrame {
     pub aero_floor_downforce_n: f64,
     pub aero_rear_downforce_n: f64,
     pub aero_drag_n: f64,
+    pub aerodynamic_body_drag_newtons: f64,
+    pub aerodynamic_wing_and_floor_drag_newtons: f64,
+    pub aerodynamic_wheel_drag_newtons: [f64; 4],
     // --- TIRE-100/103 combined-slip diagnostics ---
     /// Raw combined-slip demand before the budget scale (may exceed 1).
     pub wheel_combined_demand: [f64; 4],
@@ -348,6 +351,12 @@ impl TelemetryFrame {
         "FuelCapacityKg",
         "TotalVehicleMassKg",
         "EffectiveFrontWeightDistribution",
+        "AerodynamicBodyDragNewtons",
+        "AerodynamicWingAndFloorDragNewtons",
+        "FrontLeftWheelAerodynamicDragNewtons",
+        "FrontRightWheelAerodynamicDragNewtons",
+        "RearLeftWheelAerodynamicDragNewtons",
+        "RearRightWheelAerodynamicDragNewtons",
     ];
 
     /// Formats the telemetry frame into a single comma-separated CSV line.
@@ -536,6 +545,9 @@ impl TelemetryFrame {
             format!("{:.4}", self.total_vehicle_mass_kg),
             format!("{:.5}", self.effective_front_weight_distribution),
         ]);
+        fields.push(format!("{:.3}", self.aerodynamic_body_drag_newtons));
+        fields.push(format!("{:.3}", self.aerodynamic_wing_and_floor_drag_newtons));
+        fields.extend(self.aerodynamic_wheel_drag_newtons.iter().map(|value| format!("{value:.3}")));
         fields.join(",")
     }
 }

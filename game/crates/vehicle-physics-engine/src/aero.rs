@@ -2,6 +2,7 @@
 //! Configuration, equilibrium coefficients and transient flow states are separate.
 //! Forces use instantaneous air-relative velocity; only coefficients/flow lag.
 use crate::types::Vec3;
+use crate::types::WheelIndex;
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
 
@@ -228,6 +229,7 @@ pub struct AeroModelConfig {
     pub underfloor: UnderfloorAeroConfig,
     pub limits: EraAeroLimits,
     pub body: BodyAeroConfig,
+    pub wheels: WheelAerodynamicsConfiguration,
 }
 impl Default for AeroModelConfig {
     fn default() -> Self {
@@ -237,6 +239,7 @@ impl Default for AeroModelConfig {
             underfloor: UnderfloorAeroConfig::default(),
             limits: EraAeroLimits::default(),
             body: BodyAeroConfig::default(),
+            wheels: WheelAerodynamicsConfiguration::default(),
         }
     }
 }
@@ -260,6 +263,7 @@ pub struct BodyAeroConfig {
     pub vertical_drag_area_m2: f64,
     /// None applies body drag at the center of mass.
     pub position_m: Option<Vec3>,
+    pub wheel_reference_drag_area_m2: f64,
 }
 impl Default for BodyAeroConfig {
     fn default() -> Self {
@@ -268,6 +272,22 @@ impl Default for BodyAeroConfig {
             side_drag_area_m2: 1.8,
             vertical_drag_area_m2: 1.0,
             position_m: None,
+            wheel_reference_drag_area_m2: 0.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct WheelAerodynamicsConfiguration {
+    pub front_drag_coefficient: f64,
+    pub rear_drag_coefficient: f64,
+}
+impl Default for WheelAerodynamicsConfiguration {
+    fn default() -> Self {
+        Self {
+            front_drag_coefficient: 0.0,
+            rear_drag_coefficient: 0.0,
         }
     }
 }
@@ -398,6 +418,9 @@ pub struct AeroForces {
     pub diffuser_downforce: f64,
     pub rear_downforce: f64,
     pub drag_force: f64,
+    pub body_drag_force: f64,
+    pub wing_and_floor_drag_force: f64,
+    pub wheel_drag_forces: [f64; 4],
     pub effective_cl: f64,
     pub yaw_decay_factor: f64,
     pub blend_factor: f64,
@@ -670,6 +693,9 @@ impl AeroForces {
             diffuser_downforce: 0.0,
             rear_downforce: 0.0,
             drag_force: 0.0,
+            body_drag_force: 0.0,
+            wing_and_floor_drag_force: 0.0,
+            wheel_drag_forces: [0.0; 4],
             effective_cl: 0.0,
             yaw_decay_factor: 1.0,
             blend_factor: 0.0,
@@ -819,12 +845,13 @@ impl AeroForces {
                 + (floor.free_air_lift_area_m2 + floor.lift_area_m2) * floor.induced_drag_ratio;
             body_drag_area = (body_drag_area - reference_elements).max(0.0);
         }
+        body_drag_area -= m.body.wheel_reference_drag_area_m2;
         let body_drag = Vec3::new(
             -body_air.q * m.body.side_drag_area_m2 * body_air.direction.x,
             -body_air.q * m.body.vertical_drag_area_m2 * body_air.direction.y,
             -body_air.q * body_drag_area * body_air.direction.z,
         );
-        let (force, torque, drag_vector, drag_magnitude, pressure_sum) =
+        let (mut force, mut torque, mut drag_vector, mut drag_magnitude, pressure_sum) =
             accumulate_element_loads(
                 fw,
                 floor_loads,
@@ -834,6 +861,39 @@ impl AeroForces {
                 k.center_of_mass_m,
                 limit_factor,
             );
+        self.body_drag_force = body_drag.length();
+        self.wing_and_floor_drag_force = drag_magnitude - self.body_drag_force;
+        for wheel in WheelIndex::ALL {
+            let wheel_index = wheel as usize;
+            let wheel_position = config.wheel_anchor_local(wheel);
+            let wheel_air = AirFlow::at(config, k, wheel_position);
+            let wheel_width = if wheel.is_front() {
+                config.front_tire_width
+            } else {
+                config.rear_tire_width
+            };
+            let wheel_radius = if wheel.is_front() {
+                config.front_tire_radius
+            } else {
+                config.rear_tire_radius
+            };
+            let wheel_drag_coefficient = if wheel.is_front() {
+                m.wheels.front_drag_coefficient
+            } else {
+                m.wheels.rear_drag_coefficient
+            };
+            let wheel_drag_force = wheel_air.q
+                * wheel_width
+                * 2.0
+                * wheel_radius
+                * wheel_drag_coefficient;
+            let wheel_drag = wheel_air.direction * -wheel_drag_force;
+            self.wheel_drag_forces[wheel_index] = wheel_drag_force;
+            force += wheel_drag;
+            torque += (wheel_position - k.center_of_mass_m).cross(wheel_drag);
+            drag_vector += wheel_drag;
+            drag_magnitude += wheel_drag_force;
+        }
         self.front_downforce = fw.downforce() * limit_factor;
         self.diffuser_downforce =
             (floor_loads[0].downforce() + floor_loads[1].downforce()) * limit_factor;
@@ -1239,17 +1299,22 @@ pub fn validate_aero_config(c: &VehicleConfig) -> Result<(), String> {
         );
     }
     let m = &c.aero_model;
+    let mut available_body_drag_area = c.coefficient_of_drag * c.frontal_area;
     if m.body.drag_coefficient_scope == DragCoefficientScope::WholeVehicleReference {
-        let elements = m.front_wing.area_m2
+        let nominal_element_drag_area = m.front_wing.area_m2
             * polar_at(&m.front_wing.polar, m.front_wing.incidence_deg).1
             + m.rear_wing.area_m2 * polar_at(&m.rear_wing.polar, m.rear_wing.incidence_deg).1
             + (floor.free_air_lift_area_m2 + floor.lift_area_m2) * floor.induced_drag_ratio;
-        if c.coefficient_of_drag * c.frontal_area < elements {
+        if available_body_drag_area < nominal_element_drag_area {
             return Err(
                 "aero whole-vehicle reference drag cannot be smaller than its nominal elements"
                     .into(),
             );
         }
+        available_body_drag_area -= nominal_element_drag_area;
+    }
+    if m.body.wheel_reference_drag_area_m2 > available_body_drag_area {
+        return Err("aero wheel reference drag area exceeds body reference drag area".into());
     }
     Ok(())
 }
@@ -1436,6 +1501,9 @@ impl AeroModelConfig {
             self.limits.hard_max_downforce_n,
             self.body.side_drag_area_m2,
             self.body.vertical_drag_area_m2,
+            self.body.wheel_reference_drag_area_m2,
+            self.wheels.front_drag_coefficient,
+            self.wheels.rear_drag_coefficient,
         ] {
             if !value.is_finite() || value < 0.0 {
                 return Err(
@@ -1464,6 +1532,62 @@ mod tests {
         assert_eq!(polar_at(&p, -10.0), (0.45, 0.075));
         assert!((polar_at(&p, 10.0).0 - 0.97).abs() < 1e-9);
         assert_eq!(polar_at(&p, 40.0), (1.20, 0.340));
+    }
+
+    #[test]
+    fn wheel_drag_is_independent_and_preserves_reference_total() {
+        let reference_configuration = VehicleConfig::f1_94_canonical();
+        let mut separated_configuration = reference_configuration.clone();
+        separated_configuration.aero_model.wheels.front_drag_coefficient = 0.08;
+        separated_configuration.aero_model.wheels.rear_drag_coefficient = 0.08;
+        separated_configuration.aero_model.body.wheel_reference_drag_area_m2 = 0.08
+            * 2.0
+            * (separated_configuration.front_tire_width * separated_configuration.front_tire_radius * 2.0
+                + separated_configuration.rear_tire_width * separated_configuration.rear_tire_radius * 2.0);
+        let velocity = Vec3::new(0.0, 0.0, -80.0);
+        let environment = AeroEnvironment::default();
+        let mut reference_forces = AeroForces::zero();
+        let mut separated_forces = AeroForces::zero();
+        for _ in 0..60 {
+            reference_forces.step_with_environment(&reference_configuration, velocity, &environment, 0.0, 1.0 / 120.0);
+            separated_forces.step_with_environment(&separated_configuration, velocity, &environment, 0.0, 1.0 / 120.0);
+        }
+        assert!((reference_forces.drag_force - separated_forces.drag_force).abs() < 1e-8);
+        assert!(separated_forces.wheel_drag_forces.iter().all(|force| *force > 0.0));
+        assert!((separated_forces.drag_force
+            - separated_forces.body_drag_force
+            - separated_forces.wing_and_floor_drag_force
+            - separated_forces.wheel_drag_forces.iter().sum::<f64>()).abs() < 1e-8);
+
+        separated_configuration.front_tire_width -= 0.01;
+        let mut narrower_forces = AeroForces::zero();
+        for _ in 0..60 {
+            narrower_forces.step_with_environment(&separated_configuration, velocity, &environment, 0.0, 1.0 / 120.0);
+        }
+        assert!(narrower_forces.drag_force < separated_forces.drag_force);
+        assert_eq!(narrower_forces.body_drag_force, separated_forces.body_drag_force);
+        assert_eq!(narrower_forces.wing_and_floor_drag_force, separated_forces.wing_and_floor_drag_force);
+        assert_eq!(narrower_forces.wheel_drag_forces[2], separated_forces.wheel_drag_forces[2]);
+        assert_eq!(narrower_forces.wheel_drag_forces[3], separated_forces.wheel_drag_forces[3]);
+    }
+
+    #[test]
+    fn f1_2030_wheel_drag_reference_matches_profile_geometry() {
+        let profile_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+        let configuration = VehicleConfig::from_json_path(&profile_path).unwrap();
+        let wheels = &configuration.aero_model.wheels;
+        let reference_drag_area = 2.0
+            * (configuration.front_tire_width
+                * 2.0
+                * configuration.front_tire_radius
+                * wheels.front_drag_coefficient
+                + configuration.rear_tire_width
+                    * 2.0
+                    * configuration.rear_tire_radius
+                    * wheels.rear_drag_coefficient);
+        assert!((configuration.aero_model.body.wheel_reference_drag_area_m2 - reference_drag_area).abs() < 1e-10);
+        assert!(reference_drag_area > 0.0);
     }
 
     #[test]

@@ -59,7 +59,10 @@ const CSV_COLUMNS := [
     "Aero_TotalDownforce_N", "Aero_RawDownforce_N", "Aero_FrontDownforce_N", "Aero_FloorDownforce_N", "Aero_RearDownforce_N", "Aero_Drag_N",
     "Aero_FrontWingAngle_deg", "Aero_RearWingAngle_deg", "Aero_FrontWing_CL", "Aero_RearWing_CL",
     "Aero_FloorHeightFactor", "Aero_FloorRakeFactor", "Aero_FloorSealFactor", "Aero_DiffuserStallFactor",
-    "Aero_GlobalLimitFactor", "Aero_LoadRatio", "Aero_BalanceFront"
+    "Aero_GlobalLimitFactor", "Aero_LoadRatio", "Aero_BalanceFront",
+    "Aero_Body_Drag_Newtons", "Aero_Wing_And_Floor_Drag_Newtons",
+    "Front_Left_Wheel_Aerodynamic_Drag_Newtons", "Front_Right_Wheel_Aerodynamic_Drag_Newtons",
+    "Rear_Left_Wheel_Aerodynamic_Drag_Newtons", "Rear_Right_Wheel_Aerodynamic_Drag_Newtons"
 ]
 
 func _ready():
@@ -241,7 +244,7 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         thermal.append(0.0)
     var underfloor_fields: Array = [0.35, 0.35, 0.35, 0.35, 0.35, 0, 0, 0.35, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     var aero_fields: Array = []
-    aero_fields.resize(17)
+    aero_fields.resize(23)
     aero_fields.fill(0.0)
     if _is_rust:
         var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
@@ -326,6 +329,14 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
                     var aero_names := ["total_downforce_n", "raw_downforce_n", "front_downforce_n", "floor_downforce_n", "rear_downforce_n", "drag_n", "front_wing_angle_deg", "rear_wing_angle_deg", "front_wing_cl", "rear_wing_cl", "floor_height_factor", "floor_rake_factor", "floor_seal_factor", "diffuser_stall_factor", "global_limit_factor", "load_ratio", "balance_front"]
                     for i in range(aero_names.size()):
                         aero_fields[i] = float(aero.get(aero_names[i], 0.0))
+                    aero_fields[17] = float(aero.get("body_drag_newtons", 0.0))
+                    aero_fields[18] = float(aero.get("wing_and_floor_drag_newtons", 0.0))
+                    var wheel_drag_value: Variant = aero.get("wheel_drag_newtons", {})
+                    if wheel_drag_value is Dictionary:
+                        var wheel_drag: Dictionary = wheel_drag_value
+                        var wheel_drag_names := ["front_left", "front_right", "rear_left", "rear_right"]
+                        for wheel_index in range(wheel_drag_names.size()):
+                            aero_fields[19 + wheel_index] = float(wheel_drag.get(wheel_drag_names[wheel_index], 0.0))
 
     var base_fields := PackedStringArray([
         "%d" % now_msec, "%.1f" % speed_kmh, "%d" % rpm, "%d" % gear,

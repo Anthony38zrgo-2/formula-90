@@ -1861,6 +1861,14 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	for (int i = 0; i < 17; ++i) {
 		aero[String(AERO_NAMES[i])] = aero_telemetry_[i];
 	}
+	aero["body_drag_newtons"] = aerodynamic_body_drag_newtons_;
+	aero["wing_and_floor_drag_newtons"] = aerodynamic_wing_and_floor_drag_newtons_;
+	static const char *wheel_names[4] = { "front_left", "front_right", "rear_left", "rear_right" };
+	Dictionary wheel_drag;
+	for (int wheel_index = 0; wheel_index < 4; ++wheel_index) {
+		wheel_drag[String(wheel_names[wheel_index])] = aerodynamic_wheel_drag_newtons_[wheel_index];
+	}
+	aero["wheel_drag_newtons"] = wheel_drag;
 	out["aero"] = aero;
 	return out;
 }
@@ -1909,6 +1917,11 @@ void F194RustVehicle::set_core_underfloor_telemetry(const F90CoreFrameOut &p_fra
 	};
 	for (int i = 0; i < 17; ++i) {
 		aero_telemetry_[i] = aero_values[i];
+	}
+	aerodynamic_body_drag_newtons_ = p_frame.aerodynamic_body_drag_newtons;
+	aerodynamic_wing_and_floor_drag_newtons_ = p_frame.aerodynamic_wing_and_floor_drag_newtons;
+	for (int wheel_index = 0; wheel_index < 4; ++wheel_index) {
+		aerodynamic_wheel_drag_newtons_[wheel_index] = p_frame.aerodynamic_wheel_drag_newtons[wheel_index];
 	}
 }
 

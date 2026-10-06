@@ -249,6 +249,9 @@ private:
 	double underfloor_rigid_impulse_ns_ = 0.0;
 	double underfloor_rigid_tangent_m_s_ = 0.0;
 	double aero_telemetry_[17] = {};
+	double aerodynamic_body_drag_newtons_ = 0.0;
+	double aerodynamic_wing_and_floor_drag_newtons_ = 0.0;
+	double aerodynamic_wheel_drag_newtons_[4] = {};
 
 	bool load_rust_dll();
 	void unload_rust_dll();

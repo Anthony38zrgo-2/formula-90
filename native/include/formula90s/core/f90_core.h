@@ -159,6 +159,9 @@ typedef struct F90CoreFrameOut {
     double tire_wear_outer_fraction[4];
     double tire_wear_remaining_fraction[4];
     double tire_wear_grip_scale[4];
+    double aerodynamic_body_drag_newtons;
+    double aerodynamic_wing_and_floor_drag_newtons;
+    double aerodynamic_wheel_drag_newtons[4];
 } F90CoreFrameOut;
 
 typedef struct F90UnderfloorRayHit {

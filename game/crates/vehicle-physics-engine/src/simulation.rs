@@ -1193,6 +1193,9 @@ impl VehicleSimulator {
             aero_floor_downforce_n: st.aero.diffuser_downforce,
             aero_rear_downforce_n: st.aero.rear_downforce,
             aero_drag_n: st.aero.drag_force,
+            aerodynamic_body_drag_newtons: st.aero.body_drag_force,
+            aerodynamic_wing_and_floor_drag_newtons: st.aero.wing_and_floor_drag_force,
+            aerodynamic_wheel_drag_newtons: st.aero.wheel_drag_forces,
             wheel_combined_demand: std::array::from_fn(|i| {
                 st.tires.wheels[i].combined_demand
             }),

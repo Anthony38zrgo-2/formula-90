@@ -7,6 +7,13 @@
     "frontal_area": 1.25,
     "lag_tau_s": 0.03,
     "model": {
+      "body": {
+        "wheel_reference_drag_area_m2": 0.0792
+      },
+      "wheels": {
+        "front_drag_coefficient": 0.08,
+        "rear_drag_coefficient": 0.08
+      },
       "front_wing": {
         "area_m2": 0.58,
         "incidence_deg": 9.0,
