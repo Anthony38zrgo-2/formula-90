@@ -3,7 +3,7 @@ extends SceneTree
 ## Deterministic visual-only review. No native vehicle, forces or runtime DLLs.
 ## Copy this script, the visual scripts, JSON and five GLBs to an isolated Godot
 ## project to review without loading the game's GDExtensions.
-const CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
+const CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
 const ASSETS := "res://assets/models/vehicles/f1-2030/"
 
 func _init() -> void:

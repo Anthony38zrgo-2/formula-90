@@ -15,6 +15,7 @@ $files = @(
     'scripts/vehicle/suspension_geometry.gd',
     'scripts/vehicle/suspension_link_visual.gd',
     'scripts/vehicle/f1_wheel_visual_controller.gd',
+    'data/vehicles/f1_2030/f1_2030_v10_geometric.json',
     'data/vehicles/f1_2030/f1_2030_v10_physics.json',
     'data/vehicles/f1_2030/f1_2030_suspension_meshes.json',
     'tests/test_f1_2030_suspension_geometry.gd',
