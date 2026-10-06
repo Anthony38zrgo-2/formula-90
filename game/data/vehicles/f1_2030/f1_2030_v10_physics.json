@@ -512,8 +512,8 @@
       2.75,
       2.3,
       1.95,
-      1.68,
-      1.46
+      1.70,
+      1.60
     ],
     "handbrake_torque_fraction": 0.0,
     "idle_disengagement_hysteresis_rpm": 150.0,
