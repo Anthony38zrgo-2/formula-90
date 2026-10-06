@@ -513,11 +513,30 @@ pub unsafe extern "C" fn f90_core_step(
         &rust_underfloor,
         dt,
     );
-    if !out.is_null() {
-        let a = frame.audio;
-        // SAFETY: `out` is non-null (checked above) and points to a writable `F90CoreFrameOut`.
+    write_core_frame_output(frame, out);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn f90_core_accept_physical_world_snapshot(handle: *mut c_void,
+    presentation_entity_identifier: u32, document: *const u8, document_length: usize,
+    output: *mut F90CoreFrameOut) -> bool {
+    if handle.is_null() || document.is_null() || document_length == 0 || document_length > 64 * 1024 * 1024 || output.is_null() {
+        return false;
+    }
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let bytes = unsafe { std::slice::from_raw_parts(document, document_length) };
+        let Ok(snapshot) = serde_json::from_slice::<vehicle_physics_engine::coupled_vehicle_world::CoupledWorldSnapshot>(bytes) else { return false; };
+        let Ok(frame) = facade_mut(handle).accept_physical_world_snapshot(presentation_entity_identifier, &snapshot) else { return false; };
+        write_core_frame_output(frame, output);
+        true
+    })).unwrap_or(false)
+}
+
+fn write_core_frame_output(frame: &crate::frame::CoreFrame, output: *mut F90CoreFrameOut) {
+    if !output.is_null() {
+        let audio = frame.audio;
         unsafe {
-            *out = F90CoreFrameOut {
+            *output = F90CoreFrameOut {
                 force_x: frame.force[0],
                 force_y: frame.force[1],
                 force_z: frame.force[2],
@@ -550,17 +569,17 @@ pub unsafe extern "C" fn f90_core_step(
                 avx: frame.avx,
                 avy: frame.avy,
                 avz: frame.avz,
-                surface_code: a.surface_code as i32,
-                active_bed_code: a.active_bed_code as i32,
-                trigger_code: a.trigger_code,
-                last_norm: a.last_norm,
-                last_rpm: a.last_rpm,
-                last_throttle: a.last_throttle,
-                last_speed_kph: a.last_speed_kph,
-                last_slip: a.last_slip,
-                last_engine_gain: a.last_engine_gain,
-                weights: a.weights,
-                pitches: a.pitches,
+                surface_code: audio.surface_code as i32,
+                active_bed_code: audio.active_bed_code as i32,
+                trigger_code: audio.trigger_code,
+                last_norm: audio.last_norm,
+                last_rpm: audio.last_rpm,
+                last_throttle: audio.last_throttle,
+                last_speed_kph: audio.last_speed_kph,
+                last_slip: audio.last_slip,
+                last_engine_gain: audio.last_engine_gain,
+                weights: audio.weights,
+                pitches: audio.pitches,
                 tire_pressure_kpa: frame.tire_pressure_kpa,
                 tire_tread_inner_c: frame.tire_tread_inner_c,
                 tire_tread_center_c: frame.tire_tread_center_c,
@@ -592,9 +611,9 @@ pub unsafe extern "C" fn f90_core_step(
                 underfloor_roll_rad: frame.underfloor_roll_rad,
                 underfloor_contact_confidence: frame.underfloor_contact_confidence,
                 underfloor_scrape_intensity: frame.underfloor_scrape_intensity,
-                audio_scrape_gain: a.scrape_gain,
-                audio_scrape_pitch: a.scrape_pitch,
-                audio_scrape_cursor: a.scrape_cursor,
+                audio_scrape_gain: audio.scrape_gain,
+                audio_scrape_pitch: audio.scrape_pitch,
+                audio_scrape_cursor: audio.scrape_cursor,
                 underfloor_compression_m: frame.underfloor_compression_m,
                 underfloor_closing_speed_m_s: frame.underfloor_closing_speed_m_s,
                 underfloor_normal_force_n: frame.underfloor_normal_force_n,

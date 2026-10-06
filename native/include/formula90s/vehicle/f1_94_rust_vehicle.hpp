@@ -461,9 +461,21 @@ public:
 	// authoritative Rust core. When bridge_controlled_, _integrate_forces is skipped
 	// (the bridge sets body velocities from the core's predicted pose). ---
 	bool bridge_controlled_ = false;
+	bool physical_world_controlled = false;
+	uint32_t saved_collision_layer = 0;
+	uint32_t saved_collision_mask = 0;
+	double saved_gravity_scale = 1.0;
+	bool saved_freeze_enabled = false;
+	bool saved_custom_integrator = false;
+	Dictionary physical_world_snapshot;
+	int64_t physical_wheel_surface_codes[4] = {};
 
 public:
 	void set_bridge_controlled(bool p_v);
+	void set_physical_world_controlled(bool enabled);
+	bool is_physical_world_controlled() const { return physical_world_controlled; }
+	void apply_physical_world_snapshot(const Dictionary &snapshot);
+	Dictionary get_physical_world_snapshot() const { return physical_world_snapshot; }
 	bool is_bridge_controlled() const { return bridge_controlled_; }
 	// Orchestrator facade (F90Core): drives physics and audio with a single handshake.
 	F90Core *core_driver_ = nullptr;

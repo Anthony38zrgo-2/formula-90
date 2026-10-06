@@ -155,6 +155,9 @@ public:
 	/// samples rays, steps the facade (physics + modules + audio inputs), applies the
 	/// resolved force/torque to the body and mirrors telemetry onto the vehicle.
 	void drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *state);
+	bool supports_physical_world_snapshots() const;
+	void clear_physical_world_vehicle(F194RustVehicle *vehicle);
+	bool accept_physical_world_snapshot(F194RustVehicle *vehicle, const Dictionary &snapshot);
 
 	// --- configuration (bound as Godot properties) ------------------------------
 	void set_fixed_dt(double v) { fixed_dt_ = v; }
@@ -303,6 +306,8 @@ private:
 	FnCoreSetFuelKg fn_set_fuel_kg_ = nullptr;
 	FnCoreReplaceTires fn_replace_tires_ = nullptr;
 	FnCoreStep fn_step_ = nullptr;
+	PhysicalWorldSnapshotFunction physical_world_snapshot_function = nullptr;
+	CSimTelemetry mirror_vehicle_telemetry(F194RustVehicle *vehicle, double duration_seconds);
 	FnCoreAudioRender fn_audio_render_ = nullptr;
 	FnCoreAudioTrigger fn_audio_trigger_ = nullptr;
 	FnCoreAudioReadouts fn_audio_readouts_ = nullptr;

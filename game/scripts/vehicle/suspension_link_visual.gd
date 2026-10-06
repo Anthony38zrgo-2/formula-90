@@ -29,7 +29,7 @@ var _shaft_material: Material
 var _rocker_material: Material
 
 
-func setup(geometry: SuspensionGeometry) -> void:
+func setup(geometry: SuspensionGeometry, use_physical_geometry: bool = false) -> void:
 	for child in get_children():
 		remove_child(child)
 		child.queue_free()
@@ -59,7 +59,7 @@ func setup(geometry: SuspensionGeometry) -> void:
 	for wheel_index in range(4):
 		var corner := _geometry.get_corner(wheel_index).duplicate()
 		var packaging: Dictionary = geometry.visual_packaging.get("front", {}) if wheel_index < 2 else {}
-		if not packaging.is_empty():
+		if not packaging.is_empty() and not use_physical_geometry:
 			for pair in [["pivot", "rocker_pivot"], ["pushrod_arm", "rocker_arm_rest"], ["damper_arm", "damper_arm_rest"], ["damper_chassis", "damper_chassis"]]:
 				var value: Array = packaging[pair[0]]
 				corner[pair[1]] = Vector3(float(value[0]) * (-1.0 if wheel_index == 0 else 1.0), value[1], value[2])
@@ -180,7 +180,8 @@ func set_links_visible(enabled: bool) -> void:
 func update_wheel(wheel_index: int, data: Dictionary) -> void:
 	if data.is_empty() or not data.get("present", false):
 		return
-	data = visual_pose(wheel_index, data)
+	if not data.get("authoritative_physical_pose", false):
+		data = visual_pose(wheel_index, data)
 
 	(_wishbone_lower[wheel_index].get_parent() as Node3D).visible = true
 	var authored: Dictionary = _source_parts[wheel_index]

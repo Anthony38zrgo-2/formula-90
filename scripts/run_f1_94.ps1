@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$GodotPath,
+    [string]$PhysicalWorldPackage,
     [ValidateSet('original', 'mp4_6_senna_1')]
     [string]$Livery = 'original',
     [switch]$ValidateRuntimeOnly,
@@ -17,6 +18,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($PhysicalWorldPackage -and ($Smoke -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
+    throw '-PhysicalWorldPackage requires a vehicle session. Use the dedicated physical-world native test for candidate smoke validation.'
+}
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
 $liveries = @{
@@ -214,5 +218,9 @@ if ($resolvedMovieOutput) {
     Write-Host "Grabación Movie Maker: $resolvedMovieOutput ($MovieFrames frames a $MovieFps FPS)" -ForegroundColor Cyan
 }
 $runArgs += $scene
+if ($PhysicalWorldPackage) {
+    $physicalPackageAbsolutePath = (Resolve-Path -LiteralPath $PhysicalWorldPackage).Path
+    $runArgs += @('--', "--physical-world-package=$physicalPackageAbsolutePath")
+}
 & $godot @runArgs
 exit $LASTEXITCODE

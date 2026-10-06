@@ -112,6 +112,7 @@ var _has_physics_sample: bool = false
 var _render_compression: Array = [0.0, 0.0, 0.0, 0.0]
 var _render_steer: float = 0.0
 
+var physical_geometry_selected: bool = false
 var _suspension_geometry: SuspensionGeometry = null
 var _suspension_links: SuspensionLinkVisual = null
 var _suspension_solved: Array = [{}, {}, {}, {}]
@@ -304,6 +305,9 @@ func _recursive_hide_suspension(node: Node) -> void:
 		_recursive_hide_suspension(child)
 
 func _update_suspension_links(blend: float) -> void:
+	if vehicle.has_method("is_physical_world_controlled") and vehicle.is_physical_world_controlled():
+		update_authoritative_suspension_visuals()
+		return
 	if _suspension_geometry == null or _suspension_links == null:
 		return
 	_render_steer = lerpf(_render_steer, _target_steer[0] - _toe(0), blend)
@@ -406,6 +410,9 @@ func _create_smoke_emitter(parent_node: Node3D, wheel_index: int) -> CPUParticle
 	return particles
 
 func _physics_process(delta: float) -> void:
+	if vehicle != null and vehicle.has_method("is_physical_world_controlled") and vehicle.is_physical_world_controlled():
+		_has_physics_sample = true
+		return
 	if vehicle == null:
 		return
 	_time_accum += delta
@@ -684,3 +691,57 @@ func _tire_radius(wheel_index: int) -> float:
 
 func _toe(wheel_index: int) -> float:
 	return front_toe if wheel_index < 2 else rear_toe
+
+func physical_vector(document: Dictionary) -> Vector3:
+	return Vector3(float(document["x"]), float(document["y"]), float(document["z"]))
+
+func physical_basis(document: Dictionary) -> Basis:
+	return Basis(physical_vector(document["x"]), physical_vector(document["y"]), physical_vector(document["z"]))
+
+func update_authoritative_suspension_visuals() -> void:
+	var snapshot: Dictionary = vehicle.get_physical_world_snapshot()
+	if snapshot.is_empty() or _suspension_geometry == null or _suspension_links == null:
+		return
+	if not physical_geometry_selected:
+		_suspension_geometry = SuspensionGeometry.from_json_path(physics_config_path)
+		_suspension_links.setup(_suspension_geometry, true)
+		physical_geometry_selected = true
+	var corners: Array = snapshot["solved_suspension_corners"]
+	var angles: Array = snapshot["state"]["wheel_spin_angle_radians"]
+	for wheel_index in range(4):
+		var corner: Dictionary = _suspension_geometry.get_corner(wheel_index)
+		var solved: Dictionary = corners[wheel_index]
+		var lower_joint := physical_vector(solved["lbj"])
+		var upper_joint := physical_vector(solved["ubj"])
+		var hub := physical_vector(solved["hub"])
+		var pushrod_outer := physical_vector(solved["pushrod_outer"])
+		var rocker_end := physical_vector(solved["rocker_end"])
+		var damper_end := physical_vector(solved["damper_end"])
+		var trackrod_outer := physical_vector(solved["trackrod_outer"])
+		var trackrod_inner: Vector3 = corner["trackrod_inner"]
+		if wheel_index < 2:
+			trackrod_inner.x += float(snapshot["steering_rack_metres"])
+		var upright_basis := physical_basis(solved["upright_basis"])
+		var driveshaft: Dictionary = {}
+		var driveshaft_pose := Transform3D.IDENTITY
+		if corner.get("has_driveshaft", false):
+			var driveshaft_outer: Vector3 = lower_joint + upright_basis * (corner["ds_outer_rest"] - corner["lbj_rest"])
+			driveshaft = {"inner": corner["ds_inner"], "outer": driveshaft_outer, "spin": float(angles[wheel_index])}
+			driveshaft_pose = _suspension_geometry._link_pose(corner["ds_inner"], corner["ds_outer_rest"], corner["ds_inner"], driveshaft_outer)
+		var data: Dictionary = {
+			"present": true, "authoritative_physical_pose": true,
+			"hub": hub, "upright_origin": hub, "upright_basis": upright_basis,
+			"wheel_basis": physical_basis(solved["wheel_basis"]),
+			"lower_pose": _suspension_geometry._arm_pose(corner["lw_if"], corner["l_dir"], corner["lbj_rest"], lower_joint),
+			"upper_pose": _suspension_geometry._arm_pose(corner["uw_if"], corner["u_dir"], corner["ubj_rest"], upper_joint),
+			"pushrod_pose": _suspension_geometry._link_pose(corner["pushrod_outer_rest"], corner["rocker_arm_rest"], pushrod_outer, rocker_end),
+			"trackrod_pose": _suspension_geometry._link_pose(corner["trackrod_inner"], corner["trackrod_outer"], trackrod_inner, trackrod_outer),
+			"lower": [corner["lw_if"], corner["lw_ir"], lower_joint],
+			"upper": [corner["uw_if"], corner["uw_ir"], upper_joint],
+			"trackrod": [trackrod_inner, trackrod_outer], "pushrod": [pushrod_outer, rocker_end],
+			"rocker": {"origin": corner["rocker_pivot"], "basis": Basis(corner["rocker_axis"], float(solved["rocker_angle"])), "pushrod": rocker_end, "damper": damper_end},
+			"damper": [corner["damper_chassis"], damper_end], "pushrod_mount": corner["pushrod_mount"],
+			"driveshaft": driveshaft, "driveshaft_pose": driveshaft_pose}
+		_wheel_angles[wheel_index] = float(angles[wheel_index])
+		_suspension_solved[wheel_index] = data
+		_suspension_links.update_wheel(wheel_index, data)

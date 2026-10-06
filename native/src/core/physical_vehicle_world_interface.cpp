@@ -1,5 +1,7 @@
+#include "formula90s/core/physical_world_document.hpp"
 #include "formula90s/core/physical_vehicle_world_interface.hpp"
 #include <godot_cpp/classes/json.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -33,17 +35,26 @@ bool PhysicalVehicleWorldInterface::initialize_library(const String &library_pat
     library_handle = reinterpret_cast<void *>(LoadLibraryW(reinterpret_cast<const wchar_t *>(absolute_path.utf16().get_data())));
     if (!library_handle) { return false; }
     interface_version_function = reinterpret_cast<InterfaceVersionFunction>(GetProcAddress(reinterpret_cast<HMODULE>(library_handle), "coupled_vehicle_world_interface_version"));
+    build_source_function = reinterpret_cast<BuildSourceFunction>(GetProcAddress(reinterpret_cast<HMODULE>(library_handle), "coupled_vehicle_world_build_source"));
     execute_request_function = reinterpret_cast<ExecuteRequestFunction>(GetProcAddress(reinterpret_cast<HMODULE>(library_handle), "coupled_vehicle_world_execute_request"));
     free_response_function = reinterpret_cast<FreeResponseFunction>(GetProcAddress(reinterpret_cast<HMODULE>(library_handle), "coupled_vehicle_world_free_response"));
 #else
     library_handle = dlopen(absolute_path.utf8().get_data(), RTLD_NOW | RTLD_LOCAL);
     if (!library_handle) { return false; }
     interface_version_function = reinterpret_cast<InterfaceVersionFunction>(dlsym(library_handle, "coupled_vehicle_world_interface_version"));
+    build_source_function = reinterpret_cast<BuildSourceFunction>(dlsym(library_handle, "coupled_vehicle_world_build_source"));
     execute_request_function = reinterpret_cast<ExecuteRequestFunction>(dlsym(library_handle, "coupled_vehicle_world_execute_request"));
     free_response_function = reinterpret_cast<FreeResponseFunction>(dlsym(library_handle, "coupled_vehicle_world_free_response"));
 #endif
     if (!interface_version_function || !execute_request_function || !free_response_function || interface_version_function() != 1) {
         close_library();
+        return false;
+    }
+    const String source_identifier = build_source_function ? String::utf8(build_source_function()) : String();
+    const String recorded_source = FileAccess::get_file_as_string("res://BUILD_SOURCE").strip_edges();
+    if (source_identifier.length() != 40 || source_identifier != recorded_source || recorded_source != String(FORMULA90_BUILD_SHA)) {
+        close_library();
+        UtilityFunctions::push_error("Physical world BUILD does not match native and recorded source");
         return false;
     }
     return true;
@@ -54,7 +65,7 @@ Dictionary PhysicalVehicleWorldInterface::execute_request(const Dictionary &requ
     failure["success"] = false;
     failure["error"] = "Physical world native interface is unavailable";
     if (!execute_request_function || !free_response_function) { return failure; }
-    const CharString document = JSON::stringify(request).utf8();
+    const CharString document = JSON::stringify(normalize_physical_document_numbers(request), String(), true, true).utf8();
     char *response = execute_request_function(reinterpret_cast<const uint8_t *>(document.get_data()), static_cast<size_t>(document.length()));
     if (!response) {
         failure["error"] = "Physical world returned an empty response";
@@ -98,6 +109,7 @@ void PhysicalVehicleWorldInterface::close_library() {
         }
     }
     interface_version_function = nullptr;
+    build_source_function = nullptr;
     execute_request_function = nullptr;
     free_response_function = nullptr;
     if (!library_handle) { return; }

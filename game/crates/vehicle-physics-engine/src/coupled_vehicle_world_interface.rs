@@ -14,14 +14,14 @@ pub const COUPLED_VEHICLE_WORLD_INTERFACE_VERSION: u32 = 1;
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CoupledVehicleWorldRequest {
-    CreateWorld { interface_version: u32, repository_root: PathBuf, physical_package_path: PathBuf, configuration: CoupledVehicleWorldConfiguration },
+    CreateWorld { interface_version: u32, repository_root: PathBuf, physical_package_path: PathBuf, #[serde(default)] configuration: Option<CoupledVehicleWorldConfiguration>, #[serde(default)] vehicle_profile: Option<String> },
     DestroyWorld { world_identifier: u64 },
     RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64 },
     RemoveVehicle { world_identifier: u64, entity_identifier: u64 },
     SubmitInput { world_identifier: u64, entity_identifier: u64, sample: TimestampedVehicleInput },
     Advance { world_identifier: u64, duration_seconds: f64 },
     Snapshots { world_identifier: u64 },
-    ResetVehicle { world_identifier: u64, entity_identifier: u64 },
+    ResetVehicle { world_identifier: u64, entity_identifier: u64, #[serde(default)] position_world_metres: Option<Vec3>, #[serde(default)] yaw_radians: Option<f64> },
     SetPaused { world_identifier: u64, paused: bool },
     Refuel { world_identifier: u64, entity_identifier: u64, kilograms: f64 },
     ReplaceTires { world_identifier: u64, entity_identifier: u64 },
@@ -47,11 +47,16 @@ impl CoupledVehicleWorldRegistry {
 
     fn execute(&mut self, request: CoupledVehicleWorldRequest) -> Result<serde_json::Value, String> {
         match request {
-            CoupledVehicleWorldRequest::CreateWorld { interface_version, repository_root, physical_package_path, configuration } => {
+            CoupledVehicleWorldRequest::CreateWorld { interface_version, repository_root, physical_package_path, configuration, vehicle_profile } => {
                 if interface_version != COUPLED_VEHICLE_WORLD_INTERFACE_VERSION { return Err("Physical-world native interface version mismatch".into()); }
                 let document = std::fs::read_to_string(physical_package_path).map_err(|error| format!("Cannot read physical-world package: {error}"))?;
                 let package: PhysicalWorldPackage = serde_json::from_str(&document).map_err(|error| format!("Invalid physical-world package: {error}"))?;
                 let collision = PhysicalCollisionWorld::from_package(package, &repository_root)?;
+                let configuration = match (configuration, vehicle_profile) {
+                    (Some(configuration), None) => configuration,
+                    (None, Some(document)) => VehicleConfig::from_json_str(&document)?.coupled_world.ok_or("Profile does not select a coupled world")?,
+                    _ => return Err("World creation requires exactly one configuration source".into()),
+                };
                 let world = CoupledVehicleWorld::new(collision, configuration)?;
                 self.next_identifier = self.next_identifier.checked_add(1).ok_or("Physical-world identity space exhausted")?;
                 let identifier = self.next_identifier;
@@ -79,15 +84,25 @@ impl CoupledVehicleWorldRegistry {
             CoupledVehicleWorldRequest::Advance { world_identifier, duration_seconds } => {
                 let world = self.world(world_identifier)?;
                 world.advance_host_interval(duration_seconds)?;
-                Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots(), "events": world.collision_events,
+                Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots()?, "events": world.collision_events,
                     "unconsumed_host_time_seconds": world.accumulated_host_time_seconds}))
             }
             CoupledVehicleWorldRequest::Snapshots { world_identifier } => {
                 let world = self.world(world_identifier)?;
-                Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots()}))
+                Ok(serde_json::json!({"time_seconds": world.time_seconds, "snapshots": world.snapshots()?}))
             }
-            CoupledVehicleWorldRequest::ResetVehicle { world_identifier, entity_identifier } => {
-                self.world(world_identifier)?.reset_vehicle(entity_identifier)?;
+            CoupledVehicleWorldRequest::ResetVehicle { world_identifier, entity_identifier, position_world_metres, yaw_radians } => {
+                let world = self.world(world_identifier)?;
+                if position_world_metres.is_some() != yaw_radians.is_some() { return Err("Reset pose requires both position and yaw".into()); }
+                if let (Some(position), Some(yaw)) = (position_world_metres, yaw_radians) {
+                    if !crate::suspension_mass_properties::vector_is_finite(position) || !yaw.is_finite() { return Err("Invalid reset pose".into()); }
+                    let mut candidate = world.clone();
+                    let vehicle = candidate.vehicles.get_mut(&entity_identifier).ok_or("Unknown physical vehicle")?;
+                    vehicle.spawn_position_world_metres = position;
+                    vehicle.spawn_yaw_radians = yaw;
+                    candidate.reset_vehicle(entity_identifier)?;
+                    *world = candidate;
+                } else { world.reset_vehicle(entity_identifier)?; }
                 Ok(serde_json::json!({"reset": entity_identifier}))
             }
             CoupledVehicleWorldRequest::SetPaused { world_identifier, paused } => {
@@ -134,6 +149,11 @@ pub fn execute_coupled_vehicle_world_request(document: &str) -> String {
         Err(error) => CoupledVehicleWorldResponse { interface_version: COUPLED_VEHICLE_WORLD_INTERFACE_VERSION, success: false, result: None, error: Some(error) },
     };
     serde_json::to_string(&response).unwrap_or_else(|_| "{\"interface_version\":1,\"success\":false,\"error\":\"World response serialization failed\"}".into())
+}
+
+#[no_mangle]
+pub extern "C" fn coupled_vehicle_world_build_source() -> *const c_char {
+    concat!(env!("COUPLED_WORLD_SOURCE_IDENTIFIER"), "\0").as_ptr() as *const c_char
 }
 
 #[no_mangle]

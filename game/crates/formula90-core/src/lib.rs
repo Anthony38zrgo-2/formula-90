@@ -445,6 +445,7 @@ pub struct CoreFacade {
     latest: RwLock<Arc<CoreFrame>>,
     spawned: bool,
     underfloor: underfloor::UnderfloorState,
+    physical_world_entity_identifier: Option<u64>,
 }
 
 impl CoreFacade {
@@ -471,6 +472,7 @@ impl CoreFacade {
             latest: RwLock::new(Arc::new(CoreFrame::default())),
             spawned: false,
             underfloor: underfloor::UnderfloorState::default(),
+            physical_world_entity_identifier: None,
         })
     }
 
@@ -667,6 +669,7 @@ impl CoreFacade {
         probe_mode: AeroProbeMode,
         dt: f64,
     ) -> &CoreFrame {
+        if self.physical_world_entity_identifier.is_some() { return &self.frame; }
         let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
         self.world.time += dt;
         let mut frame = CoreFrame {
@@ -770,6 +773,7 @@ impl CoreFacade {
         samples: &[TriRaycastSample; 4],
         dt: f64,
     ) -> &CoreFrame {
+        if self.physical_world_entity_identifier.is_some() { return &self.frame; }
         let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
         self.world.step_with_samples(id, input, samples, dt);
         let mut frame = CoreFrame {
@@ -794,9 +798,41 @@ impl CoreFacade {
         )
     }
 
-    /// Copy the entity's telemetry + pose/velocity into `frame` (physics-agnostic
-    /// tail shared by the force path and the standalone path). Static: it must not
-    /// borrow `self` while the caller holds a borrow into `self.world`.
+    pub fn accept_physical_world_snapshot(&mut self, presentation_entity_identifier: u32,
+        snapshot: &vehicle_physics_engine::coupled_vehicle_world::CoupledWorldSnapshot) -> Result<&CoreFrame, String> {
+        let time_seconds = snapshot.state.suspension.simulated_time_seconds;
+        if !time_seconds.is_finite() || time_seconds < self.world.time
+            || self.physical_world_entity_identifier.is_some_and(|identifier| identifier != snapshot.entity_identifier)
+            || snapshot.entity_identifier == 0 || !snapshot.fuel_mass_kilograms.is_finite()
+            || snapshot.fuel_mass_kilograms < 0.0 || !snapshot.operating_mass_kilograms.is_finite() || snapshot.driving_aids_mask > 255
+        { return Err("Invalid physical snapshot identity, time, fuel or aid state".into()); }
+        let entity = self.world.entities.iter_mut().find(|entity| entity.id == presentation_entity_identifier)
+            .ok_or("Unknown presentation entity")?;
+        if snapshot.fuel_mass_kilograms > entity.sim.config.fuel.capacity_kg
+            || (snapshot.operating_mass_kilograms - entity.sim.config.complete_dry_vehicle_mass() - snapshot.fuel_mass_kilograms).abs() > 1e-6
+        { return Err("Physical snapshot disagrees with presentation vehicle mass perimeter".into()); }
+        let duration_seconds = time_seconds - self.world.time;
+        entity.sim.state = snapshot.systems_state.clone();
+        entity.sim.set_fuel_kg(snapshot.fuel_mass_kilograms);
+        entity.sim.aids = AidsMask::from_bits(snapshot.driving_aids_mask);
+        entity.last = Some(snapshot.telemetry.clone());
+        let mut frame = CoreFrame { time_ms: (time_seconds * 1000.0).round() as i64, ..Default::default() };
+        Self::fill_frame_from_entity(&mut frame, entity, duration_seconds);
+        frame.throttle = snapshot.driver_input.throttle;
+        let surface = entity.sim.state.suspension.wheels.iter().find(|wheel| wheel.is_grounded)
+            .map_or(SurfaceType::Road, |wheel| wheel.effective_surface);
+        let mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&entity.sim.state.powertrain, &entity.sim.config);
+        self.world.time = time_seconds;
+        self.physical_world_entity_identifier = Some(snapshot.entity_identifier);
+        if duration_seconds == 0.0 {
+            self.frame = frame.clone();
+            *self.latest.write().unwrap_or_else(|poisoned| poisoned.into_inner()) = Arc::new(frame);
+            return Ok(&self.frame);
+        }
+        let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
+        Ok(self.finish_frame(duration_seconds, frame, surface, slip, mechanical_audio, audio_worker::AudioScrapeStep::default()))
+    }
+
     fn fill_frame_from_entity(
         frame: &mut CoreFrame,
         ent: &game_sim::world::VehicleEntity,
@@ -1116,6 +1152,7 @@ impl CoreFacade {
     /// Reset every entity to a pose/yaw (recreates its simulator, mirroring the
     /// legacy `f1_94_physics_reset`) and resets every module.
     pub fn reset(&mut self, x: f64, y: f64, z: f64, yaw: f64) {
+        if self.physical_world_entity_identifier.is_some() { return; }
         for ent in self.world.entities.iter_mut() {
             let mut config = ent.sim.config.clone();
             config.fuel.refill_to_initial();
@@ -1142,6 +1179,7 @@ impl CoreFacade {
         id: u32,
         cfg: &vehicle_physics_engine::FfiRuntimeConfig,
     ) -> bool {
+        if self.physical_world_entity_identifier.is_some() { return false; }
         let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) else {
             return false;
         };
@@ -1156,6 +1194,7 @@ impl CoreFacade {
     /// Pit-service refuel: leaves exactly `target_kg` in the entity tank,
     /// clamped to the profile capacity.
     pub fn set_fuel_kg(&mut self, id: u32, target_kg: f64) -> bool {
+        if self.physical_world_entity_identifier.is_some() { return false; }
         let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) else {
             return false;
         };
@@ -1165,6 +1204,7 @@ impl CoreFacade {
 
     /// Pit-service tire change: fits a fresh cold set on the entity.
     pub fn replace_tires(&mut self, id: u32) -> bool {
+        if self.physical_world_entity_identifier.is_some() { return false; }
         let Some(ent) = self.world.entities.iter_mut().find(|e| e.id == id) else {
             return false;
         };

@@ -13,10 +13,12 @@ class PhysicalVehicleWorldInterface : public RefCounted {
     GDCLASS(PhysicalVehicleWorldInterface, RefCounted)
 
     using InterfaceVersionFunction = uint32_t (*)();
+    using BuildSourceFunction = const char *(*)();
     using ExecuteRequestFunction = char *(*)(const uint8_t *, size_t);
     using FreeResponseFunction = void (*)(char *);
     void *library_handle = nullptr;
     InterfaceVersionFunction interface_version_function = nullptr;
+    BuildSourceFunction build_source_function = nullptr;
     ExecuteRequestFunction execute_request_function = nullptr;
     FreeResponseFunction free_response_function = nullptr;
     std::vector<uint64_t> owned_world_identifiers;

@@ -206,6 +206,11 @@ void F194RustVehicle::_bind_methods() {
 	// Pit service: explicit tank target and a fresh cold tire set.
 	ClassDB::bind_method(D_METHOD("set_fuel_kg", "target_kg"), &F194RustVehicle::set_fuel_kg);
 	ClassDB::bind_method(D_METHOD("replace_tires"), &F194RustVehicle::replace_tires);
+	ClassDB::bind_method(D_METHOD("set_physical_world_controlled", "enabled"), &F194RustVehicle::set_physical_world_controlled);
+	ClassDB::bind_method(D_METHOD("is_physical_world_controlled"), &F194RustVehicle::is_physical_world_controlled);
+	ClassDB::bind_method(D_METHOD("apply_physical_world_snapshot", "snapshot"), &F194RustVehicle::apply_physical_world_snapshot);
+	ClassDB::bind_method(D_METHOD("get_physical_world_snapshot"), &F194RustVehicle::get_physical_world_snapshot);
+	ADD_SIGNAL(MethodInfo("physical_world_service_requested", PropertyInfo(Variant::STRING, "operation"), PropertyInfo(Variant::DICTIONARY, "parameters")));
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
@@ -568,6 +573,7 @@ uint32_t F194RustVehicle::detect_surface_type(const RayCast3D *ray) const {
 }
 
 void F194RustVehicle::_integrate_forces(PhysicsDirectBodyState3D *p_state) {
+	if (physical_world_controlled) { return; }
 	if (bridge_controlled_) {
 		// Snapshot-server wiring: the F90Core (orchestrator facade) or the legacy
 		// F90Core owns the dynamics. It samples the raycasts and steps the
@@ -584,6 +590,7 @@ void F194RustVehicle::_integrate_forces(PhysicsDirectBodyState3D *p_state) {
 }
 
 void F194RustVehicle::solve_forces_for_state(PhysicsDirectBodyState3D *p_state) {
+	if (physical_world_controlled) { return; }
 	if (bridge_controlled_) {
 		return;
 	}
@@ -954,6 +961,12 @@ PackedFloat64Array F194RustVehicle::get_wheel_slips() const {
 // tri-raycasts. Used by VehicleAudioControllerNative::detect_surface so the Rust
 // vehicle reports real surface info instead of always falling back to "asphalt".
 PackedInt64Array F194RustVehicle::get_wheel_surface_types() const {
+	if (physical_world_controlled) {
+		PackedInt64Array surfaces;
+		surfaces.resize(4);
+		for (int wheel = 0; wheel < 4; ++wheel) { surfaces[wheel] = physical_wheel_surface_codes[wheel]; }
+		return surfaces;
+	}
 	PackedInt64Array arr;
 	arr.resize(4);
 	for (int w = 0; w < 4; ++w) {
@@ -1079,6 +1092,7 @@ double F194RustVehicle::get_default_spawn_height_value() const {
 }
 
 void F194RustVehicle::apply_runtime_config() {
+	if (physical_world_controlled) { return; }
 	F90RuntimeConfig cfg = {};
 	cfg.vehicle_mass = vehicle_mass_;
 	cfg.front_brake_bias = front_brake_bias_;
@@ -1328,6 +1342,13 @@ bool F194RustVehicle::get_automatic_transmission() const {
 }
 
 void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
+	if (physical_world_controlled) {
+		Dictionary parameters;
+		parameters["position_world_metres"] = p_pos;
+		parameters["yaw_radians"] = p_yaw_rad;
+		emit_signal("physical_world_service_requested", "reset_vehicle", parameters);
+		return;
+	}
 	engine_thermal_telemetry_available_ = false;
 	fuel_telemetry_available_ = false;
 	if (sim_ptr_ && fn_reset_) {
@@ -1359,12 +1380,22 @@ void F194RustVehicle::reset_vehicle(const Vector3 &p_pos, double p_yaw_rad) {
 }
 
 void F194RustVehicle::set_fuel_kg(double p_target_kg) {
+	if (physical_world_controlled) {
+		Dictionary parameters;
+		parameters["kilograms"] = p_target_kg;
+		emit_signal("physical_world_service_requested", "refuel", parameters);
+		return;
+	}
 	if (core_driver_ != nullptr) {
 		core_driver_->set_fuel_kg(p_target_kg);
 	}
 }
 
 void F194RustVehicle::replace_tires() {
+	if (physical_world_controlled) {
+		emit_signal("physical_world_service_requested", "replace_tires", Dictionary());
+		return;
+	}
 	if (core_driver_ != nullptr) {
 		core_driver_->replace_tires();
 	}
@@ -1477,6 +1508,7 @@ uint32_t F194RustVehicle::get_aids_enabled_mask() const {
 }
 
 void F194RustVehicle::set_bridge_controlled(bool p_v) {
+	if (physical_world_controlled) { return; }
 	bridge_controlled_ = p_v;
 	// The bridge uses the core's force solver (solve_external), which excludes gravity;
 	// Godot supplies gravity and integrates the rigid body, so keep gravity on.
@@ -1485,6 +1517,61 @@ void F194RustVehicle::set_bridge_controlled(bool p_v) {
 	set_can_sleep(!p_v);
 	if (p_v) {
 		set_sleeping(false);
+	}
+}
+
+void F194RustVehicle::set_physical_world_controlled(bool enabled) {
+	if (enabled == physical_world_controlled) { return; }
+	if (enabled) {
+		saved_collision_layer = get_collision_layer();
+		saved_collision_mask = get_collision_mask();
+		saved_gravity_scale = get_gravity_scale();
+		saved_freeze_enabled = is_freeze_enabled();
+		saved_custom_integrator = is_using_custom_integrator();
+		physical_world_controlled = true;
+		set_collision_layer(0);
+		set_collision_mask(0);
+		set_gravity_scale(0.0);
+		set_use_custom_integrator(true);
+		set_freeze_enabled(true);
+	} else {
+		physical_world_controlled = false;
+		set_collision_layer(saved_collision_layer);
+		set_collision_mask(saved_collision_mask);
+		set_gravity_scale(saved_gravity_scale);
+		set_use_custom_integrator(saved_custom_integrator);
+		set_freeze_enabled(saved_freeze_enabled);
+		physical_world_snapshot.clear();
+	}
+}
+
+void F194RustVehicle::apply_physical_world_snapshot(const Dictionary &snapshot) {
+	if (!physical_world_controlled) { return; }
+	physical_world_snapshot = snapshot.duplicate(true);
+	const Dictionary state = snapshot["state"];
+	const Dictionary suspension = state["suspension"];
+	const Dictionary position = suspension["body_origin_world_metres"];
+	const Dictionary orientation = suspension["body_orientation_world"];
+	const Quaternion rotation{static_cast<real_t>(orientation["x"]), static_cast<real_t>(orientation["y"]), static_cast<real_t>(orientation["z"]), static_cast<real_t>(orientation["w"])};
+	set_global_transform(Transform3D(Basis(rotation), Vector3(double(position["x"]), double(position["y"]), double(position["z"]))));
+	const Array velocity = suspension["generalized_velocity"];
+	lin_vel_ = Vector3(double(velocity[0]), double(velocity[1]), double(velocity[2]));
+	ang_vel_ = Vector3(double(velocity[3]), double(velocity[4]), double(velocity[5]));
+	set_linear_velocity(lin_vel_);
+	set_angular_velocity(ang_vel_);
+	const Dictionary systems = snapshot["systems_state"];
+	const Dictionary suspension_system = systems["suspension"];
+	const Array wheels = suspension_system["wheels"];
+	const Array angles = state["wheel_spin_angle_radians"];
+	const String surface_names[8] = {"Road", "Curb", "Dirt", "Grass", "Gravel", "Sand", "Wall", "Metal"};
+	for (int wheel = 0; wheel < 4; ++wheel) {
+		const Dictionary wheel_state = wheels[wheel];
+		wheel_normal_forces_[wheel] = wheel_state["total_normal_force"];
+		wheel_spins_[wheel] = angles[wheel];
+		physical_wheel_surface_codes[wheel] = 0;
+		for (int surface = 0; surface < 8; ++surface) {
+			if (String(wheel_state["effective_surface"]) == surface_names[surface]) { physical_wheel_surface_codes[wheel] = surface; break; }
+		}
 	}
 }
 
@@ -1785,7 +1872,7 @@ Dictionary F194RustVehicle::get_fuel_state_snapshot() const {
 bool F194RustVehicle::set_powertrain_cooling_duct_openings(
 		double water_cooling_duct_opening,
 		double oil_cooling_duct_opening) {
-	if (!std::isfinite(water_cooling_duct_opening) || !std::isfinite(oil_cooling_duct_opening)
+	if (physical_world_controlled || !std::isfinite(water_cooling_duct_opening) || !std::isfinite(oil_cooling_duct_opening)
 			|| water_cooling_duct_opening < 0.0 || water_cooling_duct_opening > 1.0
 			|| oil_cooling_duct_opening < 0.0 || oil_cooling_duct_opening > 1.0
 			|| sim_ptr_ == nullptr || fn_get_runtime_config_ == nullptr) {
@@ -1980,7 +2067,7 @@ void F194RustVehicle::apply_core_telemetry(const CSimTelemetry &p_telemetry, dou
 	wheel_drive_torques_[2] = p_telemetry.drive_torque;
 	wheel_drive_torques_[3] = p_telemetry.drive_torque;
 
-	update_wheel_visuals(p_dt);
+	if (!physical_world_controlled) { update_wheel_visuals(p_dt); }
 }
 
 void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_frame) {

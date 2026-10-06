@@ -1,6 +1,20 @@
 use std::process::Command;
 
 fn main() {
+    let source_output = Command::new("git").args(["rev-parse", "HEAD"]).output().expect("Physical world requires Git source provenance");
+    assert!(source_output.status.success(), "Cannot resolve physical world source");
+    let source_identifier = String::from_utf8(source_output.stdout).expect("Physical source identifier must be UTF-8");
+    let source_identifier = source_identifier.trim();
+    assert_eq!(source_identifier.len(), 40, "Physical world source must be a full commit identifier");
+    println!("cargo:rustc-env=COUPLED_WORLD_SOURCE_IDENTIFIER={source_identifier}");
+    if let Ok(reference_output) = Command::new("git").args(["symbolic-ref", "-q", "HEAD"]).output() {
+        if reference_output.status.success() {
+            let reference = String::from_utf8(reference_output.stdout).unwrap();
+            let reference_path_output = Command::new("git").args(["rev-parse", "--git-path", reference.trim()]).output().unwrap();
+            let reference_path = String::from_utf8(reference_path_output.stdout).unwrap();
+            println!("cargo:rerun-if-changed={}", reference_path.trim());
+        }
+    }
     let git_hash = Command::new("git")
         .args(["rev-parse", "--short", "HEAD"])
         .output()

@@ -94,6 +94,7 @@ pub struct CoupledWorldSnapshot {
     pub driver_input: VehicleInput,
     pub driving_aids_mask: u32,
     pub operating_mass_kilograms: f64,
+    pub solved_suspension_corners: Vec<crate::suspension_kinematics::KinematicSolution>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -220,17 +221,27 @@ impl CoupledVehicleWorld {
         vehicle.pending_inputs.clear();
         vehicle.input = VehicleInput::default();
         vehicle.last_force_input = CoupledSuspensionInput::default();
+        Self::synchronize_presentation(vehicle);
         self.collision_events.retain(|event| event.first_entity_identifier != identifier && event.second_entity_identifier != Some(identifier));
         Ok(())
     }
 
-    pub fn snapshots(&self) -> Vec<CoupledWorldSnapshot> {
-        self.vehicles.iter().map(|(identifier, vehicle)| CoupledWorldSnapshot { entity_identifier: *identifier,
+    pub fn snapshots(&self) -> Result<Vec<CoupledWorldSnapshot>, String> {
+        self.vehicles.iter().map(|(identifier, vehicle)| {
+            let geometry = vehicle.model.configuration.geometric_suspension.as_ref().ok_or("Missing snapshot geometry")?;
+            let solved_suspension_corners = WheelIndex::ALL.iter().map(|wheel| solve_corner(geometry.corners.get(*wheel),
+                vehicle.state.suspension.wheel_travel_metres[*wheel as usize], vehicle.last_force_input.steering_rack_metres, wheel.is_front(),
+                if wheel.is_front() { vehicle.model.configuration.front_camber } else { vehicle.model.configuration.rear_camber },
+                if wheel.is_front() { vehicle.model.configuration.front_toe } else { vehicle.model.configuration.rear_toe },
+                if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Invalid solved snapshot corner".to_string())).collect::<Result<Vec<_>, _>>()?;
+            if solved_suspension_corners.iter().any(|corner| !corner.converged) { return Err("Physical snapshot has unconverged suspension geometry".into()); }
+            Ok(CoupledWorldSnapshot { entity_identifier: *identifier,
             state: vehicle.state.clone(), telemetry: vehicle.systems.build_telemetry_frame(),
             systems_state: vehicle.systems.state.clone(), steering_rack_metres: vehicle.last_force_input.steering_rack_metres,
             fuel_mass_kilograms: vehicle.model.configuration.fuel.effective_current_kg(), driver_input: vehicle.input,
             driving_aids_mask: vehicle.driving_aids_mask,
-            operating_mass_kilograms: vehicle.model.configuration.total_vehicle_mass() }).collect()
+            operating_mass_kilograms: vehicle.model.configuration.total_vehicle_mass(), solved_suspension_corners })
+        }).collect()
     }
 
     pub fn advance_host_interval(&mut self, duration_seconds: f64) -> Result<(), String> {
@@ -426,6 +437,10 @@ impl CoupledVehicleWorld {
         vehicle.systems.state.sim_time = state.simulated_time_seconds;
         for wheel in 0..4 {
             vehicle.systems.state.tires.wheels[wheel].spin = -vehicle.state.wheel_angular_velocity_radians_per_second[wheel];
+            vehicle.systems.state.suspension.wheels[wheel].suspension_compression_m = crate::suspension::rest_compression_m(
+                &vehicle.systems.config, WheelIndex::ALL[wheel]) + state.wheel_travel_metres[wheel];
+            vehicle.systems.state.suspension.wheels[wheel].compression_mm = vehicle.systems.state.suspension.wheels[wheel].suspension_compression_m * 1000.0;
+            vehicle.systems.state.suspension.wheels[wheel].unsprung_velocity_m_s = velocity[6 + wheel];
         }
     }
 

@@ -1,3 +1,4 @@
+#include "formula90s/core/physical_world_document.hpp"
 #include "formula90s/core/f90_core.hpp"
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
 
@@ -10,6 +11,7 @@
 #include <godot_cpp/variant/quaternion.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/input.hpp>
+#include <godot_cpp/classes/json.hpp>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -24,6 +26,9 @@
 using namespace godot;
 
 void F90Core::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("clear_physical_world_vehicle", "vehicle"), &F90Core::clear_physical_world_vehicle);
+	ClassDB::bind_method(D_METHOD("supports_physical_world_snapshots"), &F90Core::supports_physical_world_snapshots);
+	ClassDB::bind_method(D_METHOD("accept_physical_world_snapshot", "vehicle", "snapshot"), &F90Core::accept_physical_world_snapshot);
 	// --- configuration ---------------------------------------------------------
 	ClassDB::bind_method(D_METHOD("set_fixed_dt", "v"), &F90Core::set_fixed_dt);
 	ClassDB::bind_method(D_METHOD("get_fixed_dt"), &F90Core::get_fixed_dt);
@@ -361,6 +366,7 @@ bool F90Core::load_dll() {
 	fn_set_fuel_kg_ = reinterpret_cast<FnCoreSetFuelKg>(GetProcAddress(hDll, "f90_core_set_fuel_kg"));
 	fn_replace_tires_ = reinterpret_cast<FnCoreReplaceTires>(GetProcAddress(hDll, "f90_core_replace_tires"));
 	fn_step_ = reinterpret_cast<FnCoreStep>(GetProcAddress(hDll, "f90_core_step"));
+	physical_world_snapshot_function = reinterpret_cast<PhysicalWorldSnapshotFunction>(GetProcAddress(hDll, "f90_core_accept_physical_world_snapshot"));
 	fn_audio_render_ = reinterpret_cast<FnCoreAudioRender>(GetProcAddress(hDll, "f90_core_audio_render"));
 	fn_audio_trigger_ = reinterpret_cast<FnCoreAudioTrigger>(GetProcAddress(hDll, "f90_core_audio_trigger"));
 	fn_audio_readouts_ = reinterpret_cast<FnCoreAudioReadouts>(GetProcAddress(hDll, "f90_core_audio_readouts"));
@@ -427,6 +433,7 @@ void F90Core::unload_dll() {
 	fn_set_fuel_kg_ = nullptr;
 	fn_replace_tires_ = nullptr;
 	fn_step_ = nullptr;
+	physical_world_snapshot_function = nullptr;
 	fn_audio_render_ = nullptr;
 	fn_audio_trigger_ = nullptr;
 	fn_audio_readouts_ = nullptr;
@@ -554,7 +561,7 @@ void F90Core::_physics_process(double delta) {
 		}
 		veh = cached_veh_;
 	}
-	if (veh == nullptr) {
+	if (veh == nullptr || veh->is_physical_world_controlled()) {
 		return;
 	}
 	veh->set_bridge_controlled(true);
@@ -579,7 +586,7 @@ F194RustVehicle *F90Core::find_first_vehicle(Node *from) {
 }
 
 void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *state) {
-	if (core_ == nullptr || entity_id_ == 0 || fn_step_ == nullptr) {
+	if (core_ == nullptr || entity_id_ == 0 || fn_step_ == nullptr || veh->is_physical_world_controlled()) {
 		return;
 	}
 
@@ -630,7 +637,42 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		state->apply_torque(torque);
 	}
 
-	// 5. Mirror telemetry onto the vehicle (same fields/wiring as the legacy bridge).
+	const CSimTelemetry tel = mirror_vehicle_telemetry(veh, dt);
+
+	process_collision_audio(veh, state, dt);
+
+	telemetry_print_accum_ += dt;
+	if (telemetry_print_accum_ >= 0.5) {
+		telemetry_print_accum_ = 0.0;
+		UtilityFunctions::print(String("[F90Core->Vehicle] v=") + String::num(tel.speed_kmh, 1) +
+			" km/h rpm=" + String::num(tel.rpm, 0) + " gear=" + String::num(tel.gear, 0) +
+			" fz=" + String::num(force.z, 1) + " surf=" + String::num(frame_.surface_code, 0) +
+			" posZ=" + String::num(old_pos.z, 2));
+	}
+}
+
+void F90Core::clear_physical_world_vehicle(F194RustVehicle *vehicle) {
+ if (cached_veh_ == vehicle) { cached_veh_ = nullptr; }
+}
+
+bool F90Core::supports_physical_world_snapshots() const {
+ return core_ != nullptr && entity_id_ != 0 && physical_world_snapshot_function != nullptr;
+}
+
+bool F90Core::accept_physical_world_snapshot(F194RustVehicle *vehicle, const Dictionary &snapshot) {
+ if (!vehicle || !vehicle->is_physical_world_controlled() || !supports_physical_world_snapshots()) { return false; }
+ const CharString document = JSON::stringify(normalize_physical_document_numbers(snapshot), String(), true, true).utf8();
+ F90CoreFrameOut candidate = {};
+ if (!physical_world_snapshot_function(core_, entity_id_, reinterpret_cast<const uint8_t *>(document.get_data()), document.length(), &candidate)) { return false; }
+ frame_ = candidate;
+ cached_veh_ = vehicle;
+ vehicle->set_core_driver(this);
+ vehicle->apply_physical_world_snapshot(snapshot);
+ mirror_vehicle_telemetry(vehicle, 0.0);
+ return true;
+}
+
+CSimTelemetry F90Core::mirror_vehicle_telemetry(F194RustVehicle *vehicle, double duration_seconds) {
 	CSimTelemetry tel;
 	tel.speed_kmh = frame_.speed_kmh;
 	tel.rpm = frame_.rpm;
@@ -647,25 +689,23 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 	tel.rear_slip = frame_.rear_slip;
 	tel.tc_active = frame_.tc_active;
 	tel.drive_torque = frame_.drive_torque;
-	veh->apply_core_telemetry(tel, dt);
-	veh->set_core_powertrain_telemetry(frame_);
+	vehicle->apply_core_telemetry(tel, duration_seconds);
+	vehicle->set_core_powertrain_telemetry(frame_);
 
-	// Tire pressure + thermal telemetry rides the same frame (WheelIndex order
-	// FL/FR/RL/RR); the vehicle mirrors it into the HUD snapshot Dictionary.
-	veh->set_core_tire_telemetry(
+	vehicle->set_core_tire_telemetry(
 		frame_.tire_pressure_kpa,
 		frame_.tire_tread_inner_c,
 		frame_.tire_tread_center_c,
 		frame_.tire_tread_outer_c,
 		frame_.tire_carcass_c,
 		frame_.tire_gas_c);
-	veh->set_core_tire_wear_telemetry(
+	vehicle->set_core_tire_wear_telemetry(
 		frame_.tire_wear_inner_fraction,
 		frame_.tire_wear_center_fraction,
 		frame_.tire_wear_outer_fraction,
 		frame_.tire_wear_remaining_fraction,
 		frame_.tire_wear_grip_scale);
-	veh->set_core_brake_telemetry(
+	vehicle->set_core_brake_telemetry(
 		frame_.brake_disc_c,
 		frame_.brake_rim_c,
 		frame_.brake_efficiency,
@@ -675,27 +715,17 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		frame_.brake_optimal_max_c,
 		frame_.brake_fade_start_c,
 		frame_.brake_critical_c);
-	veh->set_core_brake_energy_telemetry(
+	vehicle->set_core_brake_energy_telemetry(
 		frame_.brake_torque_nm,
 		frame_.brake_spin_pre_rad_s,
 		frame_.brake_spin_post_rad_s,
 		frame_.brake_power_w,
 		frame_.brake_energy_j);
-	veh->set_core_brake_cooling_telemetry(
+	vehicle->set_core_brake_cooling_telemetry(
 		frame_.brake_natural_cooling_w_k,
 		frame_.brake_speed_cooling_w_k);
-	veh->set_core_underfloor_telemetry(frame_);
-
-	process_collision_audio(veh, state, dt);
-
-	telemetry_print_accum_ += dt;
-	if (telemetry_print_accum_ >= 0.5) {
-		telemetry_print_accum_ = 0.0;
-		UtilityFunctions::print(String("[F90Core->Vehicle] v=") + String::num(tel.speed_kmh, 1) +
-			" km/h rpm=" + String::num(tel.rpm, 0) + " gear=" + String::num(tel.gear, 0) +
-			" fz=" + String::num(force.z, 1) + " surf=" + String::num(frame_.surface_code, 0) +
-			" posZ=" + String::num(old_pos.z, 2));
-	}
+	vehicle->set_core_underfloor_telemetry(frame_);
+	return tel;
 }
 
 void F90Core::process_collision_audio(F194RustVehicle *veh, PhysicsDirectBodyState3D *state, double dt) {

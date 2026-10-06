@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include "formula90s/sim/f90_sim_bridge.h"
 #include "formula90s/vehicle/formula90_physics.h" // F90RuntimeConfig (mirror of FfiRuntimeConfig)
 
@@ -196,6 +197,8 @@ typedef void (*FnCoreStep)(void *core, uint32_t id,
     int8_t gear_request, uint32_t aids_mask, double dt,
     const CSimTriRaycastSample *samples, const F90UnderfloorSample *underfloor,
     F90CoreFrameOut *out);
+typedef bool (*PhysicalWorldSnapshotFunction)(void *core, uint32_t presentation_entity_identifier, const uint8_t *document, size_t document_length, F90CoreFrameOut *output);
+
 typedef uint32_t (*FnCoreAudioRender)(void *core, float *out_l, float *out_r, uint32_t n);
 typedef bool (*FnCoreAudioTrigger)(void *core, int32_t code);
 typedef void (*FnCoreAudioReadouts)(void *core, F90CoreFrameOut *out);
