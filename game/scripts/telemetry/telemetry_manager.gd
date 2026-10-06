@@ -62,7 +62,13 @@ const CSV_COLUMNS := [
     "Aero_GlobalLimitFactor", "Aero_LoadRatio", "Aero_BalanceFront",
     "Aero_Body_Drag_Newtons", "Aero_Wing_And_Floor_Drag_Newtons",
     "Front_Left_Wheel_Aerodynamic_Drag_Newtons", "Front_Right_Wheel_Aerodynamic_Drag_Newtons",
-    "Rear_Left_Wheel_Aerodynamic_Drag_Newtons", "Rear_Right_Wheel_Aerodynamic_Drag_Newtons"
+    "Rear_Left_Wheel_Aerodynamic_Drag_Newtons", "Rear_Right_Wheel_Aerodynamic_Drag_Newtons",
+    "Engine_Block_Temperature_Celsius", "Water_Temperature_Celsius", "Oil_Temperature_Celsius",
+    "Water_Radiator_Opening", "Oil_Radiator_Opening",
+    "Water_Radiator_Mass_Flow_Kilograms_Per_Second", "Oil_Radiator_Mass_Flow_Kilograms_Per_Second",
+    "Water_Radiator_Drag_Newtons", "Oil_Radiator_Drag_Newtons", "Total_Radiator_Drag_Newtons",
+    "Engine_Available_Torque_Fraction", "Engine_Mechanical_Power_Watts",
+    "Water_Rejected_Heat_Watts", "Oil_Rejected_Heat_Watts"
 ]
 
 func _ready():
@@ -106,11 +112,12 @@ func _exit_tree():
 func _try_find_vehicle():
     # Rust route (facade / F194RustVehicle) takes precedence; GEVP `Vehicle` is the legacy fallback.
     var rust_nodes = get_tree().root.find_children("*", "F194RustVehicle", true, false)
-    if rust_nodes.size() > 0:
-        vehicle = rust_nodes[0]
-        _is_rust = true
-        _prev_velocity_time = 0
-        return
+    for rust_vehicle_candidate in rust_nodes:
+        if rust_vehicle_candidate.has_method("get_telemetry_snapshot"):
+            vehicle = rust_vehicle_candidate
+            _is_rust = true
+            _prev_velocity_time = 0
+            return
     var gevp_nodes = get_tree().root.find_children("*", "Vehicle", true, false)
     if gevp_nodes.size() > 0:
         vehicle = gevp_nodes[0]
@@ -246,9 +253,38 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
     var aero_fields: Array = []
     aero_fields.resize(23)
     aero_fields.fill(0.0)
+    var engine_thermal_fields := PackedStringArray()
+    engine_thermal_fields.resize(14)
+    engine_thermal_fields.fill("")
     if _is_rust:
         var snapshot_value: Variant = vehicle.get_telemetry_snapshot()
         if snapshot_value is Dictionary:
+            var engine_thermal_value: Variant = snapshot_value.get("engine_thermal", {})
+            if engine_thermal_value is Dictionary:
+                var engine_thermal_state: Dictionary = engine_thermal_value
+                var water_thermal_value: Variant = engine_thermal_state.get("water", {})
+                var oil_thermal_value: Variant = engine_thermal_state.get("oil", {})
+                if water_thermal_value is Dictionary and oil_thermal_value is Dictionary:
+                    var water_thermal_state: Dictionary = water_thermal_value
+                    var oil_thermal_state: Dictionary = oil_thermal_value
+                    if not water_thermal_state.is_empty() and not oil_thermal_state.is_empty():
+                        var engine_thermal_values: Array = [
+                            engine_thermal_state.get("engine_block_temperature_c", 0.0),
+                            water_thermal_state.get("temperature_c", 0.0),
+                            oil_thermal_state.get("temperature_c", 0.0),
+                            water_thermal_state.get("duct_opening", 0.0),
+                            oil_thermal_state.get("duct_opening", 0.0),
+                            water_thermal_state.get("mass_flow_kg_s", 0.0),
+                            oil_thermal_state.get("mass_flow_kg_s", 0.0),
+                            water_thermal_state.get("drag_n", 0.0),
+                            oil_thermal_state.get("drag_n", 0.0),
+                            engine_thermal_state.get("total_powertrain_cooling_drag_n", 0.0),
+                            engine_thermal_state.get("available_engine_torque_fraction", 0.0),
+                            engine_thermal_state.get("engine_mechanical_power_w", 0.0),
+                            engine_thermal_state.get("water_rejected_heat_w", 0.0),
+                            engine_thermal_state.get("oil_rejected_heat_w", 0.0)
+                        ]
+                        engine_thermal_fields = _thermal_csv_fields(engine_thermal_values)
             var tire_state: Dictionary = snapshot_value.get("tires", {})
             var brakes_value: Variant = snapshot_value.get("brakes", {})
             for i in range(4):
@@ -367,12 +403,12 @@ func _format_line(now_msec: int, current_velocity: Vector3) -> String:
         base_fields.append("%.3f" % float(brake_power[i]))
         base_fields.append("%.3f" % float(brake_energy[i]))
     # Guard: every block appended above must have a matching header column.
-    var field_count := base_fields.size() + thermal.size() + resolved.size() + underfloor_fields.size() + aero_fields.size()
+    var field_count := base_fields.size() + thermal.size() + resolved.size() + underfloor_fields.size() + aero_fields.size() + engine_thermal_fields.size()
     assert(
         field_count == CSV_COLUMNS.size(),
         "[TelemetryManager] column/field mismatch: header=%d fields=%d" % [CSV_COLUMNS.size(), field_count]
     )
-    return ",".join(base_fields) + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields))
+    return ",".join(base_fields) + "," + ",".join(_thermal_csv_fields(thermal)) + "," + ",".join(_thermal_csv_fields(resolved)) + "," + ",".join(_underfloor_csv_fields(underfloor_fields)) + "," + ",".join(_thermal_csv_fields(aero_fields)) + "," + ",".join(engine_thermal_fields)
 
 func _thermal_csv_fields(values: Array) -> PackedStringArray:
     var fields := PackedStringArray()
