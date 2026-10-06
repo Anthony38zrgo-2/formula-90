@@ -1,6 +1,18 @@
 //! SUS-GEO-09 acceptance: F1 2030 geometric profile migration + calibration.
 use vehicle_physics_engine::*;
 
+#[test]
+fn every_vehicle_livery_manifest_matches_the_selected_physics_profile_digest() {
+    use sha2::{Digest, Sha256};
+    let expected_digest = format!("{:x}", Sha256::digest(include_bytes!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")));
+    for document in [include_str!("../../../assets/models/vehicles/f1-2030/manifest.json"),
+        include_str!("../../../assets/models/vehicles/f1-2030/liveries/mp4_6_senna_1/manifest.json")] {
+        let manifest: serde_json::Value = serde_json::from_str(document).unwrap();
+        assert_eq!(manifest["physics_profile"], "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+        assert_eq!(manifest["physics_sha256"].as_str().unwrap().to_lowercase(), expected_digest);
+    }
+}
+
 fn geo_path() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")
@@ -84,6 +96,34 @@ fn f1_motion_ratio_healthy_across_envelope_and_steer() {
 }
 
 #[test]
+fn rear_damper_redesign_preserves_motion_ratio_across_wheel_travel() {
+    let profile_text = std::fs::read_to_string(geo_path()).unwrap();
+    let vehicle_configuration = VehicleConfig::from_json_str(&profile_text).unwrap();
+    let suspension_configuration = vehicle_configuration.geometric_suspension.as_ref().unwrap();
+    let reference_motion_ratios = [
+        (-0.04, 0.521904),
+        (-0.02, 0.441559),
+        (0.0, 0.382864),
+        (0.02, 0.337680),
+        (0.05, 0.285808),
+    ];
+    for wheel in [WheelIndex::RearLeft, WheelIndex::RearRight] {
+        let rear_corner = suspension_configuration.corners.get(wheel);
+        for (wheel_travel, reference_motion_ratio) in reference_motion_ratios {
+            let solution = solve_corner(rear_corner, wheel_travel, 0.0, false, 0.0, 0.0, 1.0)
+                .unwrap();
+            let sensitivity = jacobian(rear_corner, wheel_travel, 0.0, false).unwrap();
+            assert!(solution.converged, "{wheel:?} travel={wheel_travel}");
+            assert!(
+                (sensitivity.motion_ratio - reference_motion_ratio).abs() < 0.01,
+                "{wheel:?} travel={wheel_travel} motion ratio={} reference={reference_motion_ratio}",
+                sensitivity.motion_ratio
+            );
+        }
+    }
+}
+
+#[test]
 fn f1_geometric_settles_at_design() {
     let cfg =
         VehicleConfig::from_json_str(&std::fs::read_to_string(geo_path()).unwrap()).unwrap();
@@ -131,10 +171,13 @@ fn f1_geometric_settles_at_design() {
 fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
     // Objective A/B (scripted, blind-capable): same static stance, sane
     // dynamic differences from geometry (progressivity), no NaN anywhere.
-    let legacy =
+    let mut legacy =
         VehicleConfig::from_json_str(&std::fs::read_to_string(legacy_path()).unwrap()).unwrap();
     let geo =
         VehicleConfig::from_json_str(&std::fs::read_to_string(geo_path()).unwrap()).unwrap();
+    legacy.vehicle_mass = geo.vehicle_mass;
+    legacy.vehicle_mass_excludes_wheel_assemblies = geo.vehicle_mass_excludes_wheel_assemblies;
+    legacy.fuel = geo.fuel;
     let dt = 1.0 / 120.0;
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),

@@ -412,7 +412,7 @@ impl TireThermalSystem {
         input: TireThermalInput,
         dt: f64,
     ) {
-        let dt = dt.clamp(1.0 / 2000.0, 0.05);
+        let dt = dt.clamp(0.0, 0.05);
         let i = wheel as usize;
         let st = &mut self.wheels[i];
 

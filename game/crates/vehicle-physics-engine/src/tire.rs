@@ -237,7 +237,7 @@ impl TireSystem {
         dt: f64,
     ) {
         let state = &mut self.wheels[wheel as usize];
-        let dt = dt.max(1e-5);
+        let dt = dt.max(0.0);
         let is_driven = is_driven(config, wheel);
         let inertia = (state.wheel_moment
             + if is_driven {
@@ -348,7 +348,7 @@ impl TireSystem {
         dt: f64,
     ) {
         let state = &mut self.wheels[wheel as usize];
-        let dt = dt.max(1e-5);
+        let dt = dt.max(0.0);
         let tuning = WheelMechanicalTuning::for_wheel(config, wheel);
         let profile = tire_force_profile(config, wheel);
 
@@ -2275,4 +2275,3 @@ mod tests {
         assert!(s.combined_utilization <= 1.0 + 1e-9);
     }
 }
-

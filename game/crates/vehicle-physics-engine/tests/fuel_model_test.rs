@@ -199,7 +199,9 @@ fn shipped_f1_2030_profile_declares_the_three_lap_load() {
     assert!((cfg.fuel.initial_kg - 7.6).abs() < 1e-9);
     assert!((cfg.fuel.estimated_lap_consumption_kg - 2.53).abs() < 1e-9);
     assert!((cfg.fuel.reference_lap_time_s - 90.0).abs() < 1e-9);
-    assert!((cfg.total_vehicle_mass() - 607.6).abs() < 1e-9);
+    assert!(cfg.vehicle_mass_excludes_wheel_assemblies);
+    assert!((cfg.complete_dry_vehicle_mass() - 698.0).abs() < 1e-9);
+    assert!((cfg.total_vehicle_mass() - 705.6).abs() < 1e-9);
     assert!(cfg.effective_front_weight_distribution() < 0.45);
 }
 

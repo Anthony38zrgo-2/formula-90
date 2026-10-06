@@ -453,36 +453,64 @@ impl BrakeThermalSystem {
         dt: f64,
     ) -> BrakeToTireHeat {
         let dt = dt.clamp(1.0 / 2000.0, 0.05);
-        let i = wheel as usize;
-        let axle = axle_config(cfg, wheel);
-        let duct_cfg = duct_config(cfg, wheel);
-        let st = &mut self.wheels[i];
+        let average_wheel_spin_radians_per_second =
+            ((input.wheel_spin_pre_rad_s + input.wheel_spin_post_rad_s) * 0.5).abs();
+        self.step_with_mechanical_power(wheel, cfg, input,
+            input.applied_brake_torque_nm.abs() * average_wheel_spin_radians_per_second, dt)
+    }
+
+    pub fn step_after_mechanical_work(
+        &mut self,
+        wheel: WheelIndex,
+        configuration: &BrakeThermalConfig,
+        input: BrakeThermalInput,
+        dissipated_energy_joules: f64,
+        duration_seconds: f64,
+    ) -> Result<BrakeToTireHeat, String> {
+        if !dissipated_energy_joules.is_finite() || dissipated_energy_joules < 0.0
+            || !duration_seconds.is_finite() || duration_seconds <= 0.0 || duration_seconds > 0.05
+        {
+            return Err("Invalid brake mechanical work or physical duration".into());
+        }
+        Ok(self.step_with_mechanical_power(wheel, configuration, input,
+            dissipated_energy_joules / duration_seconds, duration_seconds))
+    }
+
+    fn step_with_mechanical_power(
+        &mut self,
+        wheel: WheelIndex,
+        configuration: &BrakeThermalConfig,
+        input: BrakeThermalInput,
+        brake_power_w: f64,
+        duration_seconds: f64,
+    ) -> BrakeToTireHeat {
+        let wheel_index = wheel as usize;
+        let axle = axle_config(configuration, wheel);
+        let duct_cfg = duct_config(configuration, wheel);
+        let state = &mut self.wheels[wheel_index];
 
         let duct = evaluate_duct_flow(duct_cfg, input.air_density_kg_m3, input.vehicle_speed_ms);
-        st.duct = duct;
+        state.duct = duct;
 
-        let average_wheel_spin_rad_s =
-            ((input.wheel_spin_pre_rad_s + input.wheel_spin_post_rad_s) * 0.5).abs();
-        let brake_power_w = input.applied_brake_torque_nm.abs() * average_wheel_spin_rad_s;
-        st.applied_brake_torque_nm = finite_nonnegative(input.applied_brake_torque_nm);
-        st.wheel_spin_pre_rad_s = finite_signed(input.wheel_spin_pre_rad_s);
-        st.wheel_spin_post_rad_s = finite_signed(input.wheel_spin_post_rad_s);
-        st.brake_power_w = finite_nonnegative(brake_power_w);
-        st.brake_energy_j = finite_nonnegative(st.brake_energy_j + st.brake_power_w * dt);
+        state.applied_brake_torque_nm = finite_nonnegative(input.applied_brake_torque_nm);
+        state.wheel_spin_pre_rad_s = finite_signed(input.wheel_spin_pre_rad_s);
+        state.wheel_spin_post_rad_s = finite_signed(input.wheel_spin_post_rad_s);
+        state.brake_power_w = finite_nonnegative(brake_power_w);
+        state.brake_energy_j = finite_nonnegative(state.brake_energy_j + state.brake_power_w * duration_seconds);
 
         let resolved = axle.resolve();
-        st.resolved_rotor_capacity_j_k = resolved.rotor_capacity_j_k;
-        let generated_heat_w = st.brake_power_w * cfg.braking_heat_fraction.clamp(0.0, 1.0);
+        state.resolved_rotor_capacity_j_k = resolved.rotor_capacity_j_k;
+        let generated_heat_w = state.brake_power_w * configuration.braking_heat_fraction.clamp(0.0, 1.0);
         let rotor_heat_w = generated_heat_w * resolved.rotor_heat_fraction;
         // The non-rotor share (historically the caliper direct-heat path) is
         // deposited directly on the rim node so total heat is conserved in
         // the two-node lumping.
         let rim_direct_heat_w = (generated_heat_w - rotor_heat_w).max(0.0);
 
-        let q_rotor_rim = axle.rotor_to_rim_w_k.max(0.0) * (st.disc_c - st.rim_c);
+        let q_rotor_rim = axle.rotor_to_rim_w_k.max(0.0) * (state.disc_c - state.rim_c);
         let q_rim_to_carcass =
-            axle.rim_to_tire_carcass_w_k * (st.rim_c - input.tire_carcass_temperature_c);
-        let q_rim_to_gas = axle.rim_to_tire_gas_w_k * (st.rim_c - input.tire_gas_temperature_c);
+            axle.rim_to_tire_carcass_w_k * (state.rim_c - input.tire_carcass_temperature_c);
+        let q_rim_to_gas = axle.rim_to_tire_gas_w_k * (state.rim_c - input.tire_gas_temperature_c);
 
         let speed_ratio = if resolved.cooling_reference_speed_ms > 0.0 {
             input.vehicle_speed_ms.abs() / resolved.cooling_reference_speed_ms
@@ -499,9 +527,9 @@ impl BrakeThermalSystem {
             + resolved.rotor_forced_at_reference_w_k * speed_factor
             + dynamic_h * rotor_share;
         let h_rim_air = axle.rim_base_air_w_k + dynamic_h * (1.0 - rotor_share);
-        let q_rotor_air = h_rotor_air * (st.disc_c - input.ambient_temperature_c);
-        let q_rim_air = h_rim_air * (st.rim_c - input.ambient_temperature_c);
-        let rotor_temperature_kelvin = st.disc_c + 273.15;
+        let q_rotor_air = h_rotor_air * (state.disc_c - input.ambient_temperature_c);
+        let q_rim_air = h_rim_air * (state.rim_c - input.ambient_temperature_c);
+        let rotor_temperature_kelvin = state.disc_c + 273.15;
         let ambient_temperature_kelvin = input.ambient_temperature_c + 273.15;
         let rotor_radiation_heat_watts = axle.rotor_radiation_emissivity
             * axle.rotor_radiation_ambient_view_factor
@@ -515,12 +543,12 @@ impl BrakeThermalSystem {
 
         let rotor_capacity = resolved.rotor_capacity_j_k.max(100.0);
         let rim_capacity = axle.rim_heat_capacity_j_k.max(200.0);
-        st.disc_c = finite_temp(st.disc_c + rotor_net_w / rotor_capacity * dt);
-        st.rim_c = finite_temp(st.rim_c + rim_net_w / rim_capacity * dt);
-        st.efficiency = brake_efficiency(st.disc_c, cfg);
-        st.natural_cooling_w_k = resolved.rotor_natural_w_k;
-        st.speed_cooling_w_k = resolved.rotor_forced_at_reference_w_k * speed_factor;
-        st.to_rim_heat_w = q_rotor_rim;
+        state.disc_c = finite_temp(state.disc_c + rotor_net_w / rotor_capacity * duration_seconds);
+        state.rim_c = finite_temp(state.rim_c + rim_net_w / rim_capacity * duration_seconds);
+        state.efficiency = brake_efficiency(state.disc_c, configuration);
+        state.natural_cooling_w_k = resolved.rotor_natural_w_k;
+        state.speed_cooling_w_k = resolved.rotor_forced_at_reference_w_k * speed_factor;
+        state.to_rim_heat_w = q_rotor_rim;
 
         BrakeToTireHeat {
             carcass_heat_w: q_rim_to_carcass,

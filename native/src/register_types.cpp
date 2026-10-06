@@ -4,6 +4,7 @@
 #include "formula90s/ui/main_menu_controller.hpp"
 #include "formula90s/vehicle/f1_94_rust_vehicle.hpp"
 #include "formula90s/core/f90_core.hpp"
+#include "formula90s/core/physical_vehicle_world_interface.hpp"
 #include "formula90s/presentation/psx_art_controller.hpp"
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
@@ -17,6 +18,7 @@ void initialize_formula90s_module(ModuleInitializationLevel level) {
 	GDREGISTER_CLASS(MainMenuController);
 	GDREGISTER_CLASS(F194RustVehicle);
 	GDREGISTER_CLASS(F90Core);
+	GDREGISTER_CLASS(PhysicalVehicleWorldInterface);
 	GDREGISTER_CLASS(PsxArtController);
 }
 void uninitialize_formula90s_module(ModuleInitializationLevel level) {}

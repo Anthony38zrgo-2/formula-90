@@ -179,8 +179,32 @@ pub struct VehicleSimulator {
     pub wind_velocity_world: Vec3,
     #[serde(default)]
     pub aero_probe_mode: AeroProbeMode,
+    #[serde(skip)]
+    pub coupled_force_context: Option<CoupledVehicleForceContext>,
+    #[serde(skip)]
+    pub pending_coupled_thermal_interval: Option<CoupledThermalAdvanceContext>,
 }
 
+#[derive(Debug, Clone)]
+pub struct CoupledVehicleForceContext {
+    pub normal_force_newtons: [f64; 4],
+    pub hub_velocity_world_metres_per_second: [Vec3; 4],
+    pub surface_velocity_world_metres_per_second: [Vec3; 4],
+    pub wheel_travel_metres: [f64; 4],
+    pub wheel_travel_velocity_metres_per_second: [f64; 4],
+    pub wheel_forward_world: [Vec3; 4],
+}
+
+#[derive(Debug, Clone)]
+pub struct CoupledThermalAdvanceContext {
+    pub applied_brake_torque_newton_metres: [f64; 4],
+    pub wheel_spin_before_radians_per_second: [f64; 4],
+    pub wheel_lateral_slip_metres_per_second: [f64; 4],
+    pub thermal_modifiers: [crate::tire_thermals::TireMechanicalModifiers; 4],
+    pub vehicle_speed_metres_per_second: f64,
+    pub driver_throttle_fraction: f64,
+    pub duration_seconds: f64,
+}
 impl VehicleSimulator {
     pub fn new(config: VehicleConfig, spawn_pos: Vec3, spawn_yaw: f64) -> Self {
         let state = VehicleState::new(&config, spawn_pos, spawn_yaw);
@@ -191,6 +215,8 @@ impl VehicleSimulator {
             aids,
             wind_velocity_world: Vec3::ZERO,
             aero_probe_mode: AeroProbeMode::Measured,
+            coupled_force_context: None,
+            pending_coupled_thermal_interval: None,
         }
     }
 
@@ -274,10 +300,11 @@ impl VehicleSimulator {
         aero_environment: &AeroEnvironment,
         dt: f64,
     ) -> (ForceTorqueOutput, TelemetryFrame) {
-        let dt = dt.clamp(1.0 / 1000.0, 1.0 / 20.0);
+        let dt = if self.coupled_force_context.is_some() { dt } else { dt.clamp(1.0 / 1000.0, 1.0 / 20.0) };
         self.state.sim_time += dt;
         self.state.physics_hz = (1.0 / dt).round() as i32;
 
+        let coupled_context = self.coupled_force_context.as_ref();
         let cfg = &self.config;
         let st = &mut self.state;
         let basis = st.transform.basis;
@@ -375,8 +402,30 @@ impl VehicleSimulator {
             thermal_modifiers[wheel as usize].wear_grip_scale =
                 st.tire_wear.wheels[wheel as usize].wear_grip_scale;
         }
-        st.suspension
-            .step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
+        if let Some(context) = coupled_context {
+            for wheel in WheelIndex::ALL {
+                let index = wheel as usize;
+                let sample = samples[index].center;
+                let state = &mut st.suspension.wheels[index];
+                state.total_normal_force = context.normal_force_newtons[index];
+                state.tire_vertical_force = state.total_normal_force;
+                state.is_grounded = sample.is_colliding && state.total_normal_force > 0.0;
+                state.contact_fraction = if state.is_grounded { 1.0 } else { 0.0 };
+                state.ray_grounded = [state.is_grounded; 3];
+                state.effective_contact_point = sample.point;
+                state.effective_normal = sample.normal;
+                state.effective_surface = sample.surface;
+                state.effective_friction = cfg.surface_friction.get(&sample.surface).copied().unwrap_or(1.0);
+                state.effective_stiffness = cfg.surface_stiffness.get(&sample.surface).copied().unwrap_or(1.0);
+                state.effective_rolling_resistance = cfg.surface_rolling_resistance.get(&sample.surface).copied().unwrap_or(1.0);
+                state.suspension_compression_m = rest_compression_m(cfg, wheel) + context.wheel_travel_metres[index];
+                state.unsprung_velocity_m_s = context.wheel_travel_velocity_metres_per_second[index];
+                let radius = if wheel.is_front() { cfg.front_tire_radius } else { cfg.rear_tire_radius };
+                state.tire_deflection_m = if state.is_grounded { (radius - sample.distance).max(0.0) } else { 0.0 };
+            }
+        } else {
+            st.suspension.step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
+        }
 
         let wheel_spins = [
             st.tires.wheels[0].spin,
@@ -413,6 +462,7 @@ impl VehicleSimulator {
         // GEVP applies wheel torque before calculating this frame's tire force.
         for wheel in WheelIndex::ALL {
             let i = wheel as usize;
+            if coupled_context.is_some() { continue; }
             st.tires.process_wheel_torque(
                 cfg,
                 wheel,
@@ -496,7 +546,7 @@ impl VehicleSimulator {
                 // SUS-GEO-05: airborne wheels still hang on the linkage: the
                 // hanging unsprung weight distributes to the anchors instead
                 // of vanishing (legacy `continue`s with no body load).
-                if is_geo {
+                if is_geo && coupled_context.is_none() {
                     if let Some(geo) = cfg.geometric_suspension.as_ref() {
                         let ws = &st.suspension.wheels[i];
                         let q = ws.suspension_compression_m
@@ -544,15 +594,18 @@ impl VehicleSimulator {
             }
 
             let arm = contact_point - cg_world;
-            let point_velocity_world = st.linear_velocity + st.angular_velocity.cross(arm);
+            let point_velocity_world = coupled_context.map_or_else(
+                || st.linear_velocity + st.angular_velocity.cross(arm),
+                |context| context.hub_velocity_world_metres_per_second[i] - context.surface_velocity_world_metres_per_second[i]);
             let steer_basis = Mat3::from_euler_yxz(steer_angle, 0.0, 0.0);
 
             // Build the wheel frame on the actual tricast contact plane. On banking,
             // curbs and uneven ground this prevents Fx/Fy from incorrectly remaining
             // in the chassis-horizontal plane.
             let contact_normal = st.suspension.wheels[i].effective_normal.normalized();
-            let nominal_forward_world =
-                basis.transform_vector(steer_basis.transform_vector(Vec3::FORWARD));
+            let nominal_forward_world = coupled_context.map_or_else(
+                || basis.transform_vector(steer_basis.transform_vector(Vec3::FORWARD)),
+                |context| context.wheel_forward_world[i]);
             let projected_forward =
                 nominal_forward_world - contact_normal * nominal_forward_world.dot(contact_normal);
             let contact_forward = if projected_forward.length_squared() > 1e-10 {
@@ -588,6 +641,8 @@ impl VehicleSimulator {
                 contact_normal * st.suspension.wheels[i].total_normal_force;
             let wheel_force = tire_force_world + suspension_force_world;
             let align_world = contact_normal * tire.aligning_torque;
+
+            if coupled_context.is_some() { continue; }
 
             if is_geo {
                 // SUS-GEO-05: same tyre/contact load, transmitted through the
@@ -652,108 +707,20 @@ impl VehicleSimulator {
         // mechanics/forces N -> heat N -> pressure N+1). Environment uses the
         // fallback (ambient/track); a session override can replace it later without
         // changing the tire architecture.
-        {
-            let mut brake_to_tire_heat = [BrakeToTireHeat::default(); 4];
-            for wheel in WheelIndex::ALL {
-                let i = wheel as usize;
-                let tire_thermal = cfg.tire_thermal.for_wheel(wheel);
-                let tire_state = st.tire_thermal.wheels[i];
-                brake_to_tire_heat[i] = st.brake_thermal.step_after_braking(
-                    wheel,
-                    &cfg.brake_thermal,
-                    BrakeThermalInput {
-                        applied_brake_torque_nm: st.powertrain.brake_torques[i],
-                        wheel_spin_pre_rad_s: wheel_spins[i],
-                        wheel_spin_post_rad_s: st.tires.wheels[i].spin,
-                        vehicle_speed_ms,
-                        air_density_kg_m3: cfg.air_density,
-                        ambient_temperature_c: tire_thermal.ambient_fallback_c,
-                        tire_carcass_temperature_c: tire_state.carcass_c,
-                        tire_gas_temperature_c: tire_state.gas_c,
-                    },
-                    dt,
-                );
-            }
-            for wheel in WheelIndex::ALL {
-                let i = wheel as usize;
-                let tire_thermal = cfg.tire_thermal.for_wheel(wheel);
-                let tire_environment = TireEnvironment::fallback(tire_thermal);
-                let sus = &st.suspension.wheels[i];
-                let tire = &st.tires.wheels[i];
-                let tuning = crate::wheel_mechanics::WheelMechanicalTuning::for_wheel(cfg, wheel);
-                let zone_contact_weights = [
-                    if sus.ray_grounded[0] { 1.0 } else { 0.0 },
-                    if sus.ray_grounded[1] { 2.0 } else { 0.0 },
-                    if sus.ray_grounded[2] { 1.0 } else { 0.0 },
-                ];
-                let wear_zone_weights = normalized_contact_zone_weights(
-                    zone_contact_weights,
-                    (st.tire_thermal.wheels[i].pressure_kpa_gauge
-                        / cfg.tire_pressure.reference_hot_kpa_gauge[i].max(20.0))
-                        .clamp(0.45, 1.80),
-                    sus.dynamic_camber,
-                );
-                let wear_config = cfg.tire_wear.for_wheel(wheel);
-                let wear_surface_friction = sus.effective_friction;
-                let wear_longitudinal_force = tire.longitudinal_force;
-                let wear_lateral_force = tire.lateral_force;
-                let wear_longitudinal_slip_velocity = tire.spin_velocity_diff.abs();
-                let thermal_input = TireThermalInput {
-                    normal_force_n: sus.total_normal_force.max(0.0),
-                    longitudinal_force_n: tire.longitudinal_force,
-                    lateral_force_n: tire.lateral_force,
-                    slip_velocity_long_ms: tire.spin_velocity_diff.abs(),
-                    slip_velocity_lat_ms: wheel_lateral_slip_ms[i],
-                    tire_deflection_m: sus.tire_deflection_m,
-                    tire_deflection_velocity_m_s: sus.tire_deflection_velocity_m_s,
-                    max_tire_deflection_m: tuning.max_tire_deflection_m
-                        * thermal_modifiers[i].max_deflection_scale.max(0.05),
-                    dynamic_camber_rad: sus.dynamic_camber,
-                    vehicle_speed_ms,
-                    external_carcass_heat_w: brake_to_tire_heat[i].carcass_heat_w,
-                    external_gas_heat_w: brake_to_tire_heat[i].gas_heat_w,
-                    zone_contact_weights,
-                };
-                st.tire_thermal.step_after_forces(
-                    wheel,
-                    &cfg.tire_pressure,
-                    tire_thermal,
-                    tire_environment,
-                    thermal_input,
-                    dt,
-                );
-                let wear_tread_zone_temperatures = [
-                    st.tire_thermal.wheels[i].tread_inner_c,
-                    st.tire_thermal.wheels[i].tread_center_c,
-                    st.tire_thermal.wheels[i].tread_outer_c,
-                ];
-                st.tire_wear.step_after_forces(
-                    wheel,
-                    wear_config,
-                    wear_surface_friction,
-                    wear_zone_weights,
-                    wear_tread_zone_temperatures,
-                    wear_longitudinal_force,
-                    wear_lateral_force,
-                    wear_longitudinal_slip_velocity,
-                    wheel_lateral_slip_ms[i],
-                    dt,
-                );
-            }
-            st.powertrain_thermal.advance_temperatures(
-                &cfg.powertrain_thermal,
-                PowertrainThermalInput {
-                    engine_speed_revolutions_per_minute: st.powertrain.rpm,
-                    engine_torque_newton_meters: st.powertrain.engine_torque,
-                    driver_throttle_fraction: effective_input.throttle,
-                    vehicle_speed_meters_per_second: vehicle_speed_ms,
-                    air_density_kilograms_per_cubic_meter: cfg.air_density,
-                    ambient_temperature_celsius: cfg.tire_thermal.front.ambient_fallback_c,
-                },
-                dt,
-            );
+        let thermal_context = CoupledThermalAdvanceContext {
+            applied_brake_torque_newton_metres: st.powertrain.brake_torques,
+            wheel_spin_before_radians_per_second: wheel_spins,
+            wheel_lateral_slip_metres_per_second: wheel_lateral_slip_ms,
+            thermal_modifiers,
+            vehicle_speed_metres_per_second: vehicle_speed_ms,
+            driver_throttle_fraction: effective_input.throttle,
+            duration_seconds: dt,
+        };
+        if coupled_context.is_some() {
+            self.pending_coupled_thermal_interval = Some(thermal_context);
+        } else {
+            Self::advance_thermal_systems(cfg, st, &thermal_context, None).expect("Legacy thermal interval must be valid");
         }
-
         // ESP / yaw-stability aid: counter only the excess yaw beyond the engage
         // threshold so the car stays controllable at the limit without killing
         // playful rotation.
@@ -792,6 +759,132 @@ impl VehicleSimulator {
     /// Burn fuel for one tick. Flow is the mechanical-power term (BSFC) plus the
     /// idle term; an empty tank stops combustion and the torque cutoff in
     /// `solve_forces` keeps positive engine torque at zero until a refill.
+    fn advance_thermal_systems(configuration: &VehicleConfig, state: &mut VehicleState,
+        context: &CoupledThermalAdvanceContext, brake_dissipated_energy_joules: Option<[f64; 4]>) -> Result<(), String> {
+        let wheel_spin_before_radians_per_second = context.wheel_spin_before_radians_per_second;
+        let wheel_lateral_slip_metres_per_second = context.wheel_lateral_slip_metres_per_second;
+        let thermal_modifiers = context.thermal_modifiers;
+        let vehicle_speed_metres_per_second = context.vehicle_speed_metres_per_second;
+        let driver_throttle_fraction = context.driver_throttle_fraction;
+        let duration_seconds = context.duration_seconds;
+        let mut brake_to_tire_heat = [BrakeToTireHeat::default(); 4];
+        for wheel in WheelIndex::ALL {
+            let wheel_index = wheel as usize;
+            let tire_thermal = configuration.tire_thermal.for_wheel(wheel);
+            let tire_state = state.tire_thermal.wheels[wheel_index];
+            let brake_thermal_input = BrakeThermalInput {
+                applied_brake_torque_nm: context.applied_brake_torque_newton_metres[wheel_index],
+                wheel_spin_pre_rad_s: wheel_spin_before_radians_per_second[wheel_index],
+                wheel_spin_post_rad_s: state.tires.wheels[wheel_index].spin,
+                vehicle_speed_ms: vehicle_speed_metres_per_second,
+                air_density_kg_m3: configuration.air_density,
+                ambient_temperature_c: tire_thermal.ambient_fallback_c,
+                tire_carcass_temperature_c: tire_state.carcass_c,
+                tire_gas_temperature_c: tire_state.gas_c,
+            };
+            brake_to_tire_heat[wheel_index] = if let Some(work) = brake_dissipated_energy_joules {
+                state.brake_thermal.step_after_mechanical_work(wheel, &configuration.brake_thermal,
+                    brake_thermal_input, work[wheel_index], duration_seconds)?
+            } else {
+                state.brake_thermal.step_after_braking(wheel, &configuration.brake_thermal,
+                    brake_thermal_input, duration_seconds)
+            };
+        }
+        for wheel in WheelIndex::ALL {
+            let wheel_index = wheel as usize;
+            let tire_thermal = configuration.tire_thermal.for_wheel(wheel);
+            let tire_environment = TireEnvironment::fallback(tire_thermal);
+            let suspension = &state.suspension.wheels[wheel_index];
+            let tire = &state.tires.wheels[wheel_index];
+            let tuning = crate::wheel_mechanics::WheelMechanicalTuning::for_wheel(configuration, wheel);
+            let zone_contact_weights = [
+                if suspension.ray_grounded[0] { 1.0 } else { 0.0 },
+                if suspension.ray_grounded[1] { 2.0 } else { 0.0 },
+                if suspension.ray_grounded[2] { 1.0 } else { 0.0 },
+            ];
+            let wear_zone_weights = normalized_contact_zone_weights(
+                zone_contact_weights,
+                (state.tire_thermal.wheels[wheel_index].pressure_kpa_gauge
+                    / configuration.tire_pressure.reference_hot_kpa_gauge[wheel_index].max(20.0))
+                    .clamp(0.45, 1.80),
+                suspension.dynamic_camber,
+            );
+            let wear_config = configuration.tire_wear.for_wheel(wheel);
+            let wear_surface_friction = suspension.effective_friction;
+            let wear_longitudinal_force = tire.longitudinal_force;
+            let wear_lateral_force = tire.lateral_force;
+            let wear_longitudinal_slip_velocity = tire.spin_velocity_diff.abs();
+            let thermal_input = TireThermalInput {
+                normal_force_n: suspension.total_normal_force.max(0.0),
+                longitudinal_force_n: tire.longitudinal_force,
+                lateral_force_n: tire.lateral_force,
+                slip_velocity_long_ms: tire.spin_velocity_diff.abs(),
+                slip_velocity_lat_ms: wheel_lateral_slip_metres_per_second[wheel_index],
+                tire_deflection_m: suspension.tire_deflection_m,
+                tire_deflection_velocity_m_s: suspension.tire_deflection_velocity_m_s,
+                max_tire_deflection_m: tuning.max_tire_deflection_m
+                    * thermal_modifiers[wheel_index].max_deflection_scale.max(0.05),
+                dynamic_camber_rad: suspension.dynamic_camber,
+                vehicle_speed_ms: vehicle_speed_metres_per_second,
+                external_carcass_heat_w: brake_to_tire_heat[wheel_index].carcass_heat_w,
+                external_gas_heat_w: brake_to_tire_heat[wheel_index].gas_heat_w,
+                zone_contact_weights,
+            };
+            state.tire_thermal.step_after_forces(
+                wheel,
+                &configuration.tire_pressure,
+                tire_thermal,
+                tire_environment,
+                thermal_input,
+                duration_seconds,
+            );
+            let wear_tread_zone_temperatures = [
+                state.tire_thermal.wheels[wheel_index].tread_inner_c,
+                state.tire_thermal.wheels[wheel_index].tread_center_c,
+                state.tire_thermal.wheels[wheel_index].tread_outer_c,
+            ];
+            state.tire_wear.step_after_forces(
+                wheel,
+                wear_config,
+                wear_surface_friction,
+                wear_zone_weights,
+                wear_tread_zone_temperatures,
+                wear_longitudinal_force,
+                wear_lateral_force,
+                wear_longitudinal_slip_velocity,
+                wheel_lateral_slip_metres_per_second[wheel_index],
+                duration_seconds,
+            );
+        }
+        state.powertrain_thermal.advance_temperatures(
+            &configuration.powertrain_thermal,
+            PowertrainThermalInput {
+                engine_speed_revolutions_per_minute: state.powertrain.rpm,
+                engine_torque_newton_meters: state.powertrain.engine_torque,
+                driver_throttle_fraction: driver_throttle_fraction,
+                vehicle_speed_meters_per_second: vehicle_speed_metres_per_second,
+                air_density_kilograms_per_cubic_meter: configuration.air_density,
+                ambient_temperature_celsius: configuration.tire_thermal.front.ambient_fallback_c,
+            },
+            duration_seconds,
+        );
+
+        Ok(())
+    }
+
+    pub fn finish_coupled_thermal_interval(&mut self, dissipated_brake_energy_joules: [f64; 4],
+        applied_brake_torque_newton_metres: [f64; 4], wheel_spin_before_radians_per_second: [f64; 4]) -> Result<(), String> {
+        if dissipated_brake_energy_joules.iter().any(|energy| !energy.is_finite() || *energy < 0.0) {
+            return Err("Invalid dissipated wheel brake energy".into());
+        }
+        let mut context = self.pending_coupled_thermal_interval.as_ref().ok_or("No coupled thermal interval is pending")?.clone();
+        context.applied_brake_torque_newton_metres = applied_brake_torque_newton_metres;
+        context.wheel_spin_before_radians_per_second = wheel_spin_before_radians_per_second;
+        Self::advance_thermal_systems(&self.config, &mut self.state, &context, Some(dissipated_brake_energy_joules))?;
+        self.pending_coupled_thermal_interval = None;
+        Ok(())
+    }
+
     fn burn_fuel(config: &mut VehicleConfig, engine_mechanical_power_watts: f64, dt: f64) {
         if !config.fuel.is_enabled() {
             return;
@@ -980,7 +1073,7 @@ impl VehicleSimulator {
         );
     }
 
-    fn build_telemetry_frame(&self) -> TelemetryFrame {
+    pub fn build_telemetry_frame(&self) -> TelemetryFrame {
         let st = &self.state;
         let cfg = &self.config;
         let basis = st.transform.basis;

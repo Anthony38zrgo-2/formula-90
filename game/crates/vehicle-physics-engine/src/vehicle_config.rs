@@ -108,6 +108,7 @@ pub struct VehicleConfig {
 
     // Mass & Geometry
     pub vehicle_mass: f64,
+    pub vehicle_mass_excludes_wheel_assemblies: bool,
     pub front_weight_distribution: f64,
     pub center_of_gravity_height_offset: f64,
     pub fuel: FuelConfig,
@@ -311,6 +312,10 @@ pub struct VehicleConfig {
     /// SUS-GEO-02 physical geometry. Required for Geometric, None for Legacy.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub geometric_suspension: Option<GeometricSuspensionConfig>,
+    #[serde(default)]
+    pub physical_mass_inventory: Option<crate::vehicle_mass_inventory::VehicleMassInventory>,
+    #[serde(default)]
+    pub coupled_world: Option<crate::coupled_vehicle_world::CoupledVehicleWorldConfiguration>,
 }
 
 /// Schema v3 steady tire force curve (parser-only until TIRE-100/TIRE-200).
@@ -641,6 +646,7 @@ impl VehicleConfig {
 
             // Mass & Geometry
             vehicle_mass: 575.0,
+            vehicle_mass_excludes_wheel_assemblies: false,
             front_weight_distribution: 0.45,
             center_of_gravity_height_offset: -0.12,
             fuel: FuelConfig::default(),
@@ -692,6 +698,8 @@ impl VehicleConfig {
             suspension_model: SuspensionModelKind::Legacy1Dof,
             suspension_model_version: default_suspension_model_version(),
             geometric_suspension: None,
+            physical_mass_inventory: None,
+            coupled_world: None,
             front_torque_split: 0.0,
 
             // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
@@ -829,6 +837,7 @@ impl VehicleConfig {
 
             // Mass & Geometry
             vehicle_mass: 505.0,
+            vehicle_mass_excludes_wheel_assemblies: false,
             front_weight_distribution: 0.45,
             center_of_gravity_height_offset: -0.12,
             fuel: FuelConfig::default(),
@@ -878,6 +887,8 @@ impl VehicleConfig {
             suspension_model: SuspensionModelKind::Legacy1Dof,
             suspension_model_version: default_suspension_model_version(),
             geometric_suspension: None,
+            physical_mass_inventory: None,
+            coupled_world: None,
             front_torque_split: 0.0, // RWD
 
             // Differential (Salisbury Clutch-Pack LSD)
@@ -1010,7 +1021,19 @@ impl VehicleConfig {
 
     /// Dry mass plus the fuel currently in the tank.
     pub fn total_vehicle_mass(&self) -> f64 {
-        self.vehicle_mass + self.fuel.effective_current_kg()
+        self.complete_dry_vehicle_mass() + self.fuel.effective_current_kg()
+    }
+
+    pub fn complete_dry_vehicle_mass(&self) -> f64 {
+        self.vehicle_mass + self.additional_wheel_assembly_mass()
+    }
+
+    pub fn additional_wheel_assembly_mass(&self) -> f64 {
+        if self.vehicle_mass_excludes_wheel_assemblies {
+            2.0 * (self.front_wheel_mass + self.rear_wheel_mass)
+        } else {
+            0.0
+        }
     }
 
     /// Front axle share of the total mass with the tank load present. The combined
@@ -1018,19 +1041,27 @@ impl VehicleConfig {
     /// distribution migrates toward the tank as the tank drains or fills.
     pub fn effective_front_weight_distribution(&self) -> f64 {
         let fuel_kg = self.fuel.effective_current_kg();
-        if fuel_kg <= 0.0 || self.wheelbase.abs() <= 1e-9 {
+        if !self.vehicle_mass_excludes_wheel_assemblies && fuel_kg <= 0.0 {
             return self.front_weight_distribution;
         }
-        let total_mass = self.vehicle_mass + fuel_kg;
+        let total_mass = self.total_vehicle_mass();
         if total_mass <= 1e-9 {
             return self.front_weight_distribution;
         }
-        let dry_center_of_mass_z = (0.5 - self.front_weight_distribution) * self.wheelbase;
-        let fuel_center_of_mass_z = self.fuel.tank_position_local_m.z;
-        let combined_center_of_mass_z = (self.vehicle_mass * dry_center_of_mass_z
-            + fuel_kg * fuel_center_of_mass_z)
-            / total_mass;
-        (0.5 - combined_center_of_mass_z / self.wheelbase).clamp(0.0, 1.0)
+        let fuel_front_distribution = if self.wheelbase.abs() > 1e-9 {
+            0.5 - self.fuel.tank_position_local_m.z / self.wheelbase
+        } else {
+            self.front_weight_distribution
+        };
+        let additional_front_wheel_mass = if self.vehicle_mass_excludes_wheel_assemblies {
+            2.0 * self.front_wheel_mass
+        } else {
+            0.0
+        };
+        ((self.vehicle_mass * self.front_weight_distribution
+            + additional_front_wheel_mass
+            + fuel_kg * fuel_front_distribution)
+            / total_mass).clamp(0.0, 1.0)
     }
 
     /// Helper to get mass supported by a single wheel at static rest.
@@ -1131,6 +1162,13 @@ impl VehicleConfig {
         spec.validate()?;
         let config = spec.to_config();
         crate::aero::validate_aero_config(&config)?;
+        if let Some(inventory) = &config.physical_mass_inventory {
+            inventory.validate(&config)?;
+        }
+        if let Some(world) = &config.coupled_world {
+            world.validate()?;
+            if config.physical_mass_inventory.is_none() { return Err("Coupled world requires a physical mass inventory".into()); }
+        }
         Ok(config)
     }
 }
@@ -1172,6 +1210,10 @@ struct JsonVehicleSpec {
     coordinate_contract: Option<HashMap<String, String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     audio: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    physical_mass_inventory: Option<crate::vehicle_mass_inventory::VehicleMassInventory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    coupled_world: Option<crate::coupled_vehicle_world::CoupledVehicleWorldConfiguration>,
 }
 
 fn default_schema_version() -> u32 {
@@ -1185,6 +1227,7 @@ struct JsonChassis {
     vehicle_name: String,
     #[serde(default = "default_mass")]
     vehicle_mass: f64,
+    vehicle_mass_excludes_wheel_assemblies: bool,
     #[serde(default = "default_front_weight_dist")]
     front_weight_distribution: f64,
     #[serde(default = "default_cog_height")]
@@ -1197,6 +1240,7 @@ impl Default for JsonChassis {
         Self {
             vehicle_name: default_vehicle_name(),
             vehicle_mass: default_mass(),
+            vehicle_mass_excludes_wheel_assemblies: false,
             front_weight_distribution: default_front_weight_dist(),
             center_of_gravity_height_offset: default_cog_height(),
             inertia_multipliers: JsonVec3::default(),
@@ -3793,6 +3837,7 @@ impl JsonVehicleSpec {
             schema_version: self.schema_version,
             vehicle_name: self.chassis.vehicle_name,
             vehicle_mass: self.chassis.vehicle_mass,
+            vehicle_mass_excludes_wheel_assemblies: self.chassis.vehicle_mass_excludes_wheel_assemblies,
             front_weight_distribution: self.chassis.front_weight_distribution,
             center_of_gravity_height_offset: self.chassis.center_of_gravity_height_offset,
             fuel,
@@ -4047,6 +4092,8 @@ impl JsonVehicleSpec {
                 input_smoothing_brake_rate: self.aids.input_smoothing_brake_rate,
             },
             audio: self.audio.clone(),
+            physical_mass_inventory: self.physical_mass_inventory.clone(),
+            coupled_world: self.coupled_world.clone(),
             suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
                 .unwrap_or(SuspensionModelKind::Legacy1Dof),
             suspension_model_version: self.suspension.model_version,
@@ -4087,6 +4134,8 @@ impl JsonVehicleSpec {
             );
         }
         Self {
+            physical_mass_inventory: cfg.physical_mass_inventory.clone(),
+            coupled_world: cfg.coupled_world.clone(),
             schema_version: cfg.schema_version,
             vehicle_id: "f1_94".to_string(),
             profile_name: cfg.vehicle_name.clone(),
@@ -4095,6 +4144,7 @@ impl JsonVehicleSpec {
             chassis: JsonChassis {
                 vehicle_name: cfg.vehicle_name.clone(),
                 vehicle_mass: cfg.vehicle_mass,
+                vehicle_mass_excludes_wheel_assemblies: cfg.vehicle_mass_excludes_wheel_assemblies,
                 front_weight_distribution: cfg.front_weight_distribution,
                 center_of_gravity_height_offset: cfg.center_of_gravity_height_offset,
                 inertia_multipliers: JsonVec3 {
