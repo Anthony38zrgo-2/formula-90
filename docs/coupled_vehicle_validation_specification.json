@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "specification_identifier": "coupled_vehicle_foundation_acceptance",
+  "scope": "Sprint 0 reference reproduction and frozen development budgets; release calibration and performance approval remain pending",
+  "contract_path": "docs/coupled_vehicle_architecture_contract.json",
+  "normalization_policy": {
+    "relative_error": "absolute_error / max(abs(reference_value), explicit_scenario_floor)",
+    "accounting_precision_is_not_measurement_precision": true,
+    "energy_residual": "final_energy + dissipated_energy - collision_energy_change - external_work - steering_actuator_work - initial_energy, using changes in cumulative ledgers",
+    "momentum_exchange": "Include explicit fuel exchange and external impulse; angular momentum reference origin must remain fixed",
+    "smooth_and_impact_convergence_are_separate": true
+  },
+  "foundation_gates": [
+    {
+      "identifier": "existing_reference_tests",
+      "measurement": "Cargo test named cases and process outcome",
+      "test_suites": [
+        "suspension_multibody_test",
+        "suspension_mass_audit_test",
+        "fuel_model_test"
+      ],
+      "expected_pass_count": 28,
+      "required_now": true
+    },
+    {
+      "identifier": "known_geometric_manifest_failure",
+      "measurement": "Separate geometric suite result; exactly the known scene/profile linkage case may fail",
+      "test_suite": "suspension_f1_2030_geometric_test",
+      "allowed_failure_names": [
+        "godot_scene_points_at_geometric_by_default"
+      ],
+      "expected_pass_count": 6,
+      "required_now": true,
+      "classification": "preexisting_failure_pending_item_10",
+      "must_not_be_reported_as_pass": true
+    },
+    {
+      "identifier": "mass_accounting",
+      "measurement": "Audit base + four rim/tire assemblies + current fuel",
+      "absolute_tolerance_kilograms": 0.000001,
+      "expected_base_kilograms": 600,
+      "expected_unfueled_kilograms": 698,
+      "expected_operating_kilograms": 705.6,
+      "required_now": true
+    },
+    {
+      "identifier": "static_weight_accounting",
+      "measurement": "Sum of audit corner normal forces versus operating mass times 9.80665",
+      "relative_tolerance": 1e-10,
+      "reference_floor_newtons": 1,
+      "required_now": true
+    },
+    {
+      "identifier": "synthetic_heave_frequency_and_energy",
+      "measurement": "Existing analytical heave test, including its own velocity-Verlet stepping; not a production semi-implicit integrator claim",
+      "relative_tolerance": 0.0001,
+      "required_now": true
+    },
+    {
+      "identifier": "estimated_settling_energy",
+      "measurement": "Energy residual including cumulative dissipation and external work, normalized by initial energy; diagnostic-only mass properties",
+      "relative_tolerance": 0.0001,
+      "reference_floor_joules": 1,
+      "durations_seconds": [
+        0.3,
+        2
+      ],
+      "required_now": true
+    },
+    {
+      "identifier": "estimated_settling_support",
+      "measurement": "Final four normal forces versus 705.6 times 9.80665 after two simulated seconds",
+      "relative_tolerance": 0.001,
+      "reference_floor_newtons": 1,
+      "required_now": true
+    },
+    {
+      "identifier": "nonlinear_short_reference_convergence",
+      "measurement": "Existing no-gravity ten-millisecond coarse/fine test; standalone captures also compare body position",
+      "absolute_position_tolerance_metres": 0.0001,
+      "energy_relative_tolerance": 0.015,
+      "duration_seconds": 0.01,
+      "required_now": true
+    },
+    {
+      "identifier": "protected_file_preservation",
+      "measurement": "Hashes of pre-existing files and index unchanged except explicitly selected review records",
+      "required_now": true
+    }
+  ],
+  "future_development_gates": [
+    {
+      "identifier": "component_derivatives",
+      "measurement": "Centered finite differences at multiple physical perturbation sizes; report translation and rotation separately",
+      "required_sprint": 2,
+      "release_state": "thresholds_pending_domain_and_physical_scales",
+      "must_not_claim_pass_without_report": true
+    },
+    {
+      "identifier": "generalized_collision_momentum",
+      "measurement": "Linear and fixed-origin angular momentum including external impulses",
+      "relative_tolerance": 0.000001,
+      "required_absolute_floor": "Scenario-defined momentum scale in the correct units",
+      "required_sprint": 4
+    },
+    {
+      "identifier": "contact_passivity",
+      "measurement": "Kinetic-energy change plus stored elastic energy and dissipative work, excluding declared external work",
+      "required_sprint": 4,
+      "allowance": "Explicit restitution/material model and frozen numeric budget"
+    },
+    {
+      "identifier": "rigid_contact_penetration",
+      "measurement": "Worst chassis/world normal penetration; excludes physical tire compression",
+      "maximum_penetration_metres": 0.001,
+      "required_sprint": 4,
+      "threshold_state": "provisional_development_target"
+    },
+    {
+      "identifier": "static_equilibrium",
+      "measurement": "Support weight error plus body/travel residuals",
+      "maximum_relative_weight_error": 0.001,
+      "pose_tolerance_state": "pending_item_47_calibration",
+      "required_sprint": 6
+    },
+    {
+      "identifier": "smooth_timestep_convergence",
+      "measurement": "Body position difference for frozen smooth diagnostic windows",
+      "maximum_position_difference_metres": 0.0001,
+      "required_sprint": 6
+    },
+    {
+      "identifier": "impact_timestep_convergence",
+      "measurement": "Impact time, normal/tangential impulse, peak penetration and post-impact velocities at decreasing timesteps",
+      "threshold_state": "requires_scenario_speed_shape_and_event_scales_before_collision_activation",
+      "required_sprint": 6
+    },
+    {
+      "identifier": "replay_and_runtime_parity",
+      "measurement": "Same-build authoritative physical snapshots and event ordering for identical geometry, inputs and step sequence",
+      "acceptance": "exact_same_build_replay; numeric_native_conversion_budget_recorded_separately",
+      "cross_platform_claim": false,
+      "required_sprint": 6
+    },
+    {
+      "identifier": "complete_race_cost",
+      "measurement": "Median, 95th and 99th percentile world-step cost plus worst spike, memory, iterations and subdivisions; identified hardware and configured full grid",
+      "acceptance": "99th_percentile_physics_cost_must_fit_selected_physical_step_budget_without_discarded_time",
+      "release_threshold_state": "requires_selected_frequency_hardware_grid_and_nonphysics_budget_in_item_46",
+      "suspension_only_timing_is_not_race_cost": true,
+      "required_sprint": 6
+    }
+  ],
+  "fixture_policy": {
+    "vehicle_profile": "game/data/vehicles/f1_2030/f1_2030_v10_geometric.json",
+    "reference_definition": "docs/coupled_vehicle_foundation_definition.json",
+    "reference_scenario": "docs/coupled_vehicle_foundation_scenario.json",
+    "reference_definition_classification": "five_component_estimate_diagnostic_only",
+    "randomness": "none_in_foundation_capture",
+    "geometry": "profile_hardpoints_and_supplied_planar_surfaces",
+    "unsupported_reference_capabilities": [
+      "wheel_spin_coupling",
+      "brush_tire_friction",
+      "general_world_impacts",
+      "multi_vehicle_collision",
+      "full_runtime_parity"
+    ],
+    "every_future_fixture_requires": [
+      "source_fingerprint",
+      "configuration_hashes",
+      "physical_scales",
+      "initial_state",
+      "timestamped_inputs",
+      "external_work",
+      "material_assumptions",
+      "step_sequence",
+      "normalization_floor",
+      "thresholds"
+    ]
+  }
+}

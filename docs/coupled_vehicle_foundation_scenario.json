@@ -1,0 +1,146 @@
+{
+  "input": {
+    "body_torque_about_origin_world_newton_metres": {
+      "y": 0.0,
+      "z": 0.0,
+      "x": 0.0
+    },
+    "contacts": [
+      {
+        "surface_normal_world": {
+          "y": 1.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "tangential_force_world_newtons": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_velocity_world_metres_per_second": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_point_world_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        }
+      },
+      {
+        "surface_normal_world": {
+          "y": 1.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "tangential_force_world_newtons": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_velocity_world_metres_per_second": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_point_world_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        }
+      },
+      {
+        "surface_normal_world": {
+          "y": 1.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "tangential_force_world_newtons": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_velocity_world_metres_per_second": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_point_world_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        }
+      },
+      {
+        "surface_normal_world": {
+          "y": 1.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "tangential_force_world_newtons": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_velocity_world_metres_per_second": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "surface_point_world_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        }
+      }
+    ],
+    "steering_rack_acceleration_metres_per_second_squared": 0.0,
+    "steering_rack_velocity_metres_per_second": 0.0,
+    "body_force_world_newtons": {
+      "y": 0.0,
+      "z": 0.0,
+      "x": 0.0
+    },
+    "steering_rack_metres": 0.0
+  },
+  "initial_state": {
+    "wheel_travel_metres": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "simulated_time_seconds": 0.0,
+    "external_work_joules": 0.0,
+    "generalized_velocity": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "steering_actuator_work_joules": 0.0,
+    "collision_energy_change_joules": 0.0,
+    "dissipated_energy_joules": 0.0,
+    "body_origin_world_metres": {
+      "y": 0.33,
+      "z": 0.0,
+      "x": 0.0
+    },
+    "body_orientation_world": {
+      "y": 0.0,
+      "z": 0.0,
+      "w": 1.0,
+      "x": 0.0
+    }
+  },
+  "duration_seconds": 0.3,
+  "schema_version": 1,
+  "output_interval_seconds": 0.008333333333333333
+}

@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "contract_identifier": "coupled_vehicle_foundation",
+  "decision_state": "selected_for_implementation",
+  "human_release_approval": "pending",
+  "selected_by": "User requested implementation of the first sprint of instrucciones.md",
+  "runtime_activation": false,
+  "vehicle_profile": "game/data/vehicles/f1_2030/f1_2030_v10_geometric.json",
+  "coordinate_contract": {
+    "forward": "negative_z",
+    "right": "positive_x",
+    "up": "positive_y",
+    "length_unit": "metres",
+    "mass_unit": "kilograms",
+    "time_unit": "seconds",
+    "angular_velocity_unit": "radians_per_second",
+    "force_unit": "newtons",
+    "impulse_unit": "newton_seconds",
+    "inertia_unit": "kilogram_square_metres",
+    "body_orientation": "unit_quaternion",
+    "body_angular_velocity_frame": "world",
+    "render_state_must_not_seed_physics": true
+  },
+  "mass_contract": {
+    "base_budget_kilograms": 600,
+    "base_budget_origin": "human_declared",
+    "component_inclusion": "Includes driver, engine, transmission, chassis, bodywork, non-fuel operating fluids, brakes, uprights, hubs and suspension members; excludes rim-and-tire assemblies and fuel",
+    "wheel_assembly_definition": "Rim, inflated tire and explicitly inventoried wheel-mounted accessories; excludes brake, hub, upright and suspension members",
+    "front_wheel_assembly_kilograms": 21,
+    "rear_wheel_assembly_kilograms": 28,
+    "wheel_mass_origin": "profile_declared_not_measured",
+    "complete_unfueled_operating_mass_kilograms": 698,
+    "initial_fuel_mass_kilograms": 7.6,
+    "initial_operating_mass_kilograms": 705.6,
+    "fuel_capacity_kilograms": 110,
+    "full_fuel_operating_mass_kilograms": 808,
+    "non_fuel_fluid_policy": "Included in the base budget",
+    "moving_component_extraction_rule": "Subtract each extracted moving component from its aggregate before adding its explicit component",
+    "physical_suspended_mass_state": "unresolved_until_complete_component_inventory",
+    "virtual_contact_filter_mass_is_physical": false,
+    "provisional_allocations": [
+      {
+        "component_group": "driver_equipment_and_ballast",
+        "mass_kilograms": 82,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "v10_engine",
+        "mass_kilograms": 110,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "transmission_and_differential_excluding_driveshafts",
+        "mass_kilograms": 50,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "structural_and_aerodynamic_body_components",
+        "mass_kilograms": 180,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "cooling_fluids_fuel_system_electronics_and_hydraulics",
+        "mass_kilograms": 100,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "inboard_suspension_steering_driveshafts_fixings_and_reserve",
+        "mass_kilograms": 46,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "outboard_brakes_hubs_and_uprights",
+        "mass_kilograms": 26,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      },
+      {
+        "component_group": "exterior_suspension_arms_and_rods",
+        "mass_kilograms": 6,
+        "origin": "engineering_estimate",
+        "production_calibration_approved": false
+      }
+    ],
+    "legacy_compatibility": "Profiles omitting vehicle_mass_excludes_wheel_assemblies retain complete unfueled mass semantics",
+    "front_distribution_policy": "Derive axle load from component centers and axle positions. Preserve existing base-budget distribution interpretation during accounting checks; do not impose 0.45 as a new complete-vehicle calibration target."
+  },
+  "ownership_contract": [
+    {
+      "responsibility": "authoritative_body_and_wheel_state",
+      "target_owner": "rust_world",
+      "current_owner": "godot_body_and_separate_rust_wheel_state"
+    },
+    {
+      "responsibility": "component_mass_properties_and_kinematics",
+      "target_owner": "rust_physical_model",
+      "current_owner": "rust_reference_only"
+    },
+    {
+      "responsibility": "gravity_and_vehicle_integration",
+      "target_owner": "rust_world",
+      "current_owner": "godot_in_external_runtime_path"
+    },
+    {
+      "responsibility": "suspension_tire_brake_drivetrain_fuel_and_aerodynamic_forces",
+      "target_owner": "rust_vehicle_systems",
+      "current_owner": "rust_runtime_with_reference_solver_separate"
+    },
+    {
+      "responsibility": "vehicle_collision_detection",
+      "target_owner": "rust_world_with_evaluated_geometry_library",
+      "current_owner": "godot_runtime"
+    },
+    {
+      "responsibility": "normal_and_tangential_impulses",
+      "target_owner": "rust_generalized_contact_solver",
+      "current_owner": "godot_runtime"
+    },
+    {
+      "responsibility": "input_collection_and_lifecycle_requests",
+      "target_owner": "godot_adapter",
+      "current_owner": "godot_adapter"
+    },
+    {
+      "responsibility": "rendering_interpolation_camera_driver_and_user_interface",
+      "target_owner": "godot_presentation",
+      "current_owner": "godot_presentation"
+    },
+    {
+      "responsibility": "collision_event_production",
+      "target_owner": "rust_world",
+      "current_owner": "godot_contact_monitor"
+    },
+    {
+      "responsibility": "audio_playback_and_surface_effects",
+      "target_owner": "godot_presentation_consumers",
+      "current_owner": "existing_presentation_consumers"
+    }
+  ],
+  "geometry_library": {
+    "candidate": "Parry",
+    "selection_status": "evaluation_pending_item_24",
+    "response_solver": "Custom generalized vehicle response unless articulated representation compatibility is proven",
+    "godot_custom_integrator_is_exclusive_collision_ownership": false
+  },
+  "world_interoperability": [
+    {
+      "object_class": "static_track_road_curbs_barriers",
+      "target_policy": "Versioned physical geometry package queried by Rust",
+      "activation_gate": "items_25_27_42"
+    },
+    {
+      "object_class": "rust_owned_vehicle",
+      "target_policy": "Shared world step and simultaneous contact island solve",
+      "activation_gate": "item_33"
+    },
+    {
+      "object_class": "movable_cones_barriers_and_other_dynamic_objects",
+      "target_policy": "Shared Rust dynamics or proven synchronized impulse adapter; unsupported classes explicitly disabled",
+      "activation_gate": "item_34"
+    },
+    {
+      "object_class": "legacy_godot_owned_vehicle",
+      "target_policy": "Keep explicit legacy route; mixed physical interaction unsupported until verified interoperability",
+      "activation_gate": "items_34_42"
+    }
+  ],
+  "transition_contract": {
+    "one_physics_clock_per_world": true,
+    "one_owner_per_force_and_contact": true,
+    "target_velocity_coordinate_count": "At least six body, four suspension travel and four wheel spin velocities; drivetrain states remain explicit",
+    "reference_velocity_coordinate_count": 10,
+    "contact_geometry_updates": "Refresh or conservatively validate during physical subdivisions",
+    "numerical_precision": "double",
+    "candidate_physical_frequencies_hertz": [
+      480,
+      960,
+      1920
+    ],
+    "production_frequency": "pending_measured_convergence_and_cost",
+    "failure_policy": "Report unsupported geometry, initial overlap policy, singular matrices and subdivision exhaustion; never silently discard physical time",
+    "fuel_exchange_policy": "Add once at the tank position; report momentum and energy carried by mass exchange under the documented approximation",
+    "reset_policy": "Invalidate contact warm starts and component caches; atomically restore clock, pose, travel, fuel, tire and drivetrain state"
+  },
+  "trace_requirements": [
+    {
+      "operation": "physical_step",
+      "current_trace": [
+        "Godot body callback",
+        "scene samples and Godot-resolved body state",
+        "Rust external force solve",
+        "force and torque applied to Godot"
+      ],
+      "target_trace": [
+        "world input queue",
+        "Rust fixed world step",
+        "coupled force/contact solve",
+        "authoritative snapshot",
+        "Godot interpolation"
+      ]
+    },
+    {
+      "operation": "contact_impulse",
+      "current_trace": [
+        "Godot contact response",
+        "next external solve receives host velocities"
+      ],
+      "target_trace": [
+        "Rust geometric contact",
+        "generalized contact Jacobian",
+        "coupled effective mass solve",
+        "simultaneous body and wheel velocity update",
+        "physical event"
+      ]
+    },
+    {
+      "operation": "fuel_update",
+      "current_trace": [
+        "Rust fuel model",
+        "configured complete mass and fuel-adjusted distribution",
+        "host telemetry scalar mass update"
+      ],
+      "target_trace": [
+        "single Rust reservoir update",
+        "component mass and inertia update",
+        "mass-exchange ledger",
+        "snapshot"
+      ]
+    },
+    {
+      "operation": "reset",
+      "current_trace": [
+        "existing host reset and Rust simulator reset"
+      ],
+      "target_trace": [
+        "queued world lifecycle command",
+        "atomic physical state restoration",
+        "contact and geometry cache invalidation",
+        "fresh snapshot"
+      ]
+    }
+  ],
+  "out_of_scope": [
+    "live_collision_activation_in_sprint_zero",
+    "production_component_inventory_in_sprint_zero",
+    "structural_fracture",
+    "deformable_chassis",
+    "finite_element_tires",
+    "network_rollback",
+    "audio_bank_redesign"
+  ]
+}

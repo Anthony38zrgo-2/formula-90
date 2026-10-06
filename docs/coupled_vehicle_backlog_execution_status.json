@@ -1,0 +1,733 @@
+{
+  "schema_version": 1,
+  "authorized_scope": "All 50 items in instrucciones.md",
+  "source_branch": "main-clean",
+  "source_head": "001cfc9e6ba0f77a9a9fd0759e82a995228021a9",
+  "complete_backlog_delivered": false,
+  "runtime_activated": false,
+  "human_approved": false,
+  "review_document": "docs/coupled_vehicle_candidate_implementation.md",
+  "items": [
+    {
+      "identifier": "01",
+      "title": "Capture provenance and change ownership",
+      "dependencies": [],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "Protected branch, HEAD, dirty ownership and scratch source copies recorded.",
+      "remaining_acceptance": "Review ownership map before any staging or branch operation."
+    },
+    {
+      "identifier": "02",
+      "title": "Review and reproduce the reference",
+      "dependencies": [
+        "01"
+      ],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "Reference solver reproduced; pre-existing aerodynamic failures reproduced independently.",
+      "remaining_acceptance": "Complete reference review and preserve baseline failure attribution."
+    },
+    {
+      "identifier": "03",
+      "title": "Freeze mass and collision ownership contracts",
+      "dependencies": [
+        "01",
+        "02"
+      ],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "Mass perimeter and Rust contact ownership contracts recorded.",
+      "remaining_acceptance": "Approve contracts after integrated owner verification."
+    },
+    {
+      "identifier": "04",
+      "title": "Define quantitative validation budgets",
+      "dependencies": [
+        "02",
+        "03"
+      ],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "Quantitative validation specification recorded.",
+      "remaining_acceptance": "Execute every specified gate against the integrated runtime."
+    },
+    {
+      "identifier": "05",
+      "title": "Extend the versioned physical inventory",
+      "dependencies": [
+        "03",
+        "04"
+      ],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "Version 2 component schema, attachment validation, uncertainty and closed budgets implemented.",
+      "remaining_acceptance": "Review schema migration with all loading consumers."
+    },
+    {
+      "identifier": "06",
+      "title": "Produce the complete component ledger",
+      "dependencies": [
+        "05"
+      ],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "80 estimated components close 600 kilogram base and 98 kilogram wheel budgets.",
+      "remaining_acceptance": "Approve allocation evidence and calibration; estimates are not measurements."
+    },
+    {
+      "identifier": "07",
+      "title": "Establish estimation ranges and evidence",
+      "dependencies": [
+        "06"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Per-component mass, center and tensor uncertainty recorded.",
+      "remaining_acceptance": "Complete component-specific evidence and correlated physical uncertainty ranges."
+    },
+    {
+      "identifier": "08",
+      "title": "Derive centers and full inertia tensors",
+      "dependencies": [
+        "05",
+        "06",
+        "07"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Component-local centers and full symmetric physical inertia tensors contribute to the candidate.",
+      "remaining_acceptance": "Verify full geometry trajectories, centers, sensitivity and aggregate tensors over the operating domain."
+    },
+    {
+      "identifier": "09",
+      "title": "Integrate fuel mass properties and exchange",
+      "dependencies": [
+        "06",
+        "08"
+      ],
+      "status": "implemented_awaiting_review",
+      "human_approved": false,
+      "candidate_progress": "Analytical fuel energy and momentum exchange preserves velocities; candidate consumption uses physical event duration.",
+      "remaining_acceptance": "Complete fuel-range handling and integrated refuel acceptance."
+    },
+    {
+      "identifier": "10",
+      "title": "Migrate loading and reconcile status records",
+      "dependencies": [
+        "06",
+        "08",
+        "09"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Base and livery manifests select and hash the geometric profile; eight geometric tests pass.",
+      "remaining_acceptance": "Complete all compatibility loaders and reconcile historical records."
+    },
+    {
+      "identifier": "11",
+      "title": "Validate hardpoints and full operating envelopes",
+      "dependencies": [
+        "08",
+        "10"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Rear damper upper-skin clearance passes with assumed radius; travel and motion ratio regressions pass.",
+      "remaining_acceptance": "Perform full finite-volume sweeps against lower shell, gearbox, shafts and adjacent members across travel and steering."
+    },
+    {
+      "identifier": "12",
+      "title": "Verify component poses and spatial derivatives",
+      "dependencies": [
+        "08",
+        "11"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Moving component frames and numerical spatial derivatives feed the candidate.",
+      "remaining_acceptance": "Validate full derivative envelopes, convergence, finite-difference scales and geometric branch continuity."
+    },
+    {
+      "identifier": "13",
+      "title": "Assemble the production coupled mass matrix",
+      "dependencies": [
+        "08",
+        "09",
+        "12"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Fourteen-coordinate symmetric positive definite matrix includes component and wheel spin cross terms.",
+      "remaining_acceptance": "Complete production comparison, generalized eigenvalue and full-state conditioning gates."
+    },
+    {
+      "identifier": "14",
+      "title": "Integrate orientation and rotating inertia",
+      "dependencies": [
+        "12",
+        "13"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Quaternion orientation, transported tensors, aligned rotors and gyroscopic terms implemented.",
+      "remaining_acceptance": "Complete spinning rotor and prescribed steering energy convergence over the whole domain."
+    },
+    {
+      "identifier": "15",
+      "title": "Project suspension forces from mechanical work",
+      "dependencies": [
+        "12",
+        "13"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Spring, damper, antiroll and stops use generalized mechanical work.",
+      "remaining_acceptance": "Complete force derivative and combined-load energy validation."
+    },
+    {
+      "identifier": "16",
+      "title": "Resolve travel limits as mechanical events",
+      "dependencies": [
+        "11",
+        "13",
+        "15"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Localized travel crossings and generalized velocity projection implemented.",
+      "remaining_acceptance": "Unify braking, travel and collision constraints and validate all simultaneous crossings."
+    },
+    {
+      "identifier": "17",
+      "title": "Recover physical joint and mounting loads",
+      "dependencies": [
+        "13",
+        "14",
+        "15",
+        "16"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Legacy filtered reaction outputs still exist.",
+      "remaining_acceptance": "Recover physical joint and mount forces from dynamic component acceleration and constraint reactions."
+    },
+    {
+      "identifier": "18",
+      "title": "Couple wheel spin, braking, and drivetrain reactions",
+      "dependencies": [
+        "08",
+        "13",
+        "14"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Coupled drive reaction and bounded wheel braking implemented; thermal energy uses resolved work.",
+      "remaining_acceptance": "Implement complete engine, shaft and clutch rotational momentum and energy; validate simultaneous constraints."
+    },
+    {
+      "identifier": "19",
+      "title": "Connect the existing tire model to actual contact motion",
+      "dependencies": [
+        "12",
+        "15",
+        "18"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Existing tire force path receives actual hub velocities, supported loads and solved wheel alignment.",
+      "remaining_acceptance": "Complete footprint queries, pressure-dependent vertical stiffness, deflection diagnostics and slip work validation."
+    },
+    {
+      "identifier": "20",
+      "title": "Project aerodynamic and remaining external forces",
+      "dependencies": [
+        "13",
+        "14",
+        "18",
+        "19"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Existing aero and external wrench adapted to body origin with five Rust probes.",
+      "remaining_acceptance": "Validate actual ground reconstruction, all external force work and remaining consumer diagnostics."
+    },
+    {
+      "identifier": "21",
+      "title": "Introduce an authoritative Rust simulation world",
+      "dependencies": [
+        "03",
+        "10",
+        "13"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Shared Rust clock, entities, timestamped inputs and atomic rejected steps implemented.",
+      "remaining_acceptance": "Complete integration ownership and supported dynamic world state."
+    },
+    {
+      "identifier": "22",
+      "title": "Select and implement the production integrator",
+      "dependencies": [
+        "13",
+        "14",
+        "15",
+        "16",
+        "18",
+        "19",
+        "20",
+        "21"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Candidate semi-implicit advancement and event localization implemented.",
+      "remaining_acceptance": "Select production method and frequency using convergence, passivity and measured race cost."
+    },
+    {
+      "identifier": "23",
+      "title": "Establish the complete pre-collision reference benches",
+      "dependencies": [
+        "17",
+        "18",
+        "19",
+        "20",
+        "22"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Analytical matrix, spin, braking, fuel and contact benches implemented.",
+      "remaining_acceptance": "Execute the complete pre-collision validation matrix and joint-load benches."
+    },
+    {
+      "identifier": "24",
+      "title": "Evaluate and select the geometric detection library",
+      "dependencies": [
+        "03",
+        "04",
+        "21",
+        "23"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Parry 0.23.0 pinned for candidate geometric queries.",
+      "remaining_acceptance": "Complete library selection review, license and required feature/maintenance coverage."
+    },
+    {
+      "identifier": "25",
+      "title": "Prepare and import the physical world geometry",
+      "dependencies": [
+        "24"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Fuji physical package preserves transformed geometry, roles, surfaces and source/geometry hashes.",
+      "remaining_acceptance": "Validate all geometry coverage, surface grouping and production promotion."
+    },
+    {
+      "identifier": "26",
+      "title": "Define collision shapes for the articulated vehicle",
+      "dependencies": [
+        "11",
+        "12",
+        "24"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Estimated body boxes and solved wheel cylinders implemented.",
+      "remaining_acceptance": "Validate authored shape fidelity, finite bounds and articulated attachments."
+    },
+    {
+      "identifier": "27",
+      "title": "Implement world queries and candidate filtering",
+      "dependencies": [
+        "21",
+        "25",
+        "26"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Rust rays, overlap/contact queries and swept bounding volume filtering implemented.",
+      "remaining_acceptance": "Implement scalable world broad phase and validate all road and collision query domains."
+    },
+    {
+      "identifier": "28",
+      "title": "Maintain stable persistent contact manifolds",
+      "dependencies": [
+        "27"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Candidate constraints are rebuilt cold each solve; entity-based contact identities are stable.",
+      "remaining_acceptance": "Implement feature-based persistent manifolds, cache lifecycle and warm starting."
+    },
+    {
+      "identifier": "29",
+      "title": "Solve normal impulses with the generalized vehicle matrix",
+      "dependencies": [
+        "13",
+        "14",
+        "22",
+        "28"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Generalized effective-mass normal response and restitution tests pass.",
+      "remaining_acceptance": "Complete persistent simultaneous-contact, travel and brake response gates."
+    },
+    {
+      "identifier": "30",
+      "title": "Solve tangential impact friction and rotational effects",
+      "dependencies": [
+        "18",
+        "19",
+        "29"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Projected friction disk with coupled tangential effective masses and passivity checks implemented.",
+      "remaining_acceptance": "Complete material pairing, rotating impacts, resting friction and full passivity matrix."
+    },
+    {
+      "identifier": "31",
+      "title": "Add continuous collision detection and event localization",
+      "dependencies": [
+        "22",
+        "27",
+        "29"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Translation/rotation casts and atomic impact re-advancement implemented.",
+      "remaining_acceptance": "Bound articulated trajectory error and validate tunneling and simultaneous event convergence."
+    },
+    {
+      "identifier": "32",
+      "title": "Classify contacts and prevent duplicate response",
+      "dependencies": [
+        "16",
+        "19",
+        "30",
+        "31"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Wheel tread support excludes selected vertical curb triangles from compliant support handling.",
+      "remaining_acceptance": "Validate composite curb meshes, feature remapping, slopes and duplicate response classification."
+    },
+    {
+      "identifier": "33",
+      "title": "Solve vehicle-to-vehicle contact in one world step",
+      "dependencies": [
+        "21",
+        "29",
+        "30",
+        "31",
+        "32"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "All candidate vehicles solve shared contact constraints in one Rust world.",
+      "remaining_acceptance": "Complete multi-car impact, pileup, identity/removal and energy benchmarks."
+    },
+    {
+      "identifier": "34",
+      "title": "Define dynamic world-object interoperability",
+      "dependencies": [
+        "25",
+        "33"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Unsupported moving nonvehicle prescribed contact motion is rejected.",
+      "remaining_acceptance": "Define and implement ownership, momentum exchange and lifecycle for supported dynamic world objects."
+    },
+    {
+      "identifier": "35",
+      "title": "Stabilize persistent contacts and rest states",
+      "dependencies": [
+        "29",
+        "30",
+        "32",
+        "33",
+        "34"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Bounded position correction has a separate energy ledger.",
+      "remaining_acceptance": "Implement stable resting manifolds, warm starts, static friction and mesh-seam validation."
+    },
+    {
+      "identifier": "36",
+      "title": "Define a versioned native world interface",
+      "dependencies": [
+        "21",
+        "22",
+        "33",
+        "34",
+        "35"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Versioned owned JSON boundary and registered C++ loader implemented; translation unit and parser checked.",
+      "remaining_acceptance": "Rebuild extension and execute registration, native lifecycle, ownership and parity smoke."
+    },
+    {
+      "identifier": "37",
+      "title": "Replace the force-host loop with a single world step",
+      "dependencies": [
+        "27",
+        "36"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Existing Godot force-host loop remains active.",
+      "remaining_acceptance": "Implement one world scheduler and physically inert vehicle proxies; remove duplicate integration and response."
+    },
+    {
+      "identifier": "38",
+      "title": "Implement lifecycle, reset, pause, and initialization",
+      "dependencies": [
+        "10",
+        "25",
+        "36",
+        "37"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Candidate world supports pause, reset, refuel, tire replacement and stale handle rejection.",
+      "remaining_acceptance": "Integrate scene loading, runtime initialization, pause/reset and gameplay lifecycle."
+    },
+    {
+      "identifier": "39",
+      "title": "Render the solved mechanical state",
+      "dependencies": [
+        "11",
+        "12",
+        "36",
+        "37",
+        "38"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Candidate snapshots include physical and systems state plus rack and wheel spin.",
+      "remaining_acceptance": "Drive wheel and suspension renderers from solved/interpolated authoritative snapshots."
+    },
+    {
+      "identifier": "40",
+      "title": "Deliver telemetry and collision events to existing consumers",
+      "dependencies": [
+        "17",
+        "32",
+        "33",
+        "36",
+        "37"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Candidate collision events and telemetry exist.",
+      "remaining_acceptance": "Connect existing audio, telemetry, feedback and presentation consumers without duplicate stepping."
+    },
+    {
+      "identifier": "41",
+      "title": "Preserve gameplay and configuration consumers",
+      "dependencies": [
+        "18",
+        "19",
+        "38",
+        "39",
+        "40"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Standalone refuel and tire replacement preserve brake state.",
+      "remaining_acceptance": "Preserve integrated pit service, camera, aids, controller and all configuration consumers."
+    },
+    {
+      "identifier": "42",
+      "title": "Add explicit activation and compatibility gates",
+      "dependencies": [
+        "10",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Candidate configuration is explicitly labeled rust_world_candidate and is not runtime activated.",
+      "remaining_acceptance": "Implement explicit runtime owner selection, compatibility routing and all activation gates."
+    },
+    {
+      "identifier": "43",
+      "title": "Execute the complete contact and impact matrix",
+      "dependencies": [
+        "16",
+        "23",
+        "32",
+        "33",
+        "34",
+        "35",
+        "42"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Selected analytical contact, friction, braking, energy and timestamp tests pass.",
+      "remaining_acceptance": "Execute complete world geometry, impacts, rest, curb, travel and multi-car acceptance matrix."
+    },
+    {
+      "identifier": "44",
+      "title": "Validate replay and standalone/runtime parity",
+      "dependencies": [
+        "36",
+        "37",
+        "38",
+        "40",
+        "42",
+        "43"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Host cadence determinism test passes inside the Rust candidate.",
+      "remaining_acceptance": "Implement native/Godot replay parity, recorded inputs and cross-host-step equivalence."
+    },
+    {
+      "identifier": "45",
+      "title": "Quantify physical uncertainty and timestep sensitivity",
+      "dependencies": [
+        "07",
+        "08",
+        "43",
+        "44"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Budget-constrained mass variants preserve 600 kilogram base and each declared wheel assembly; tensors scale consistently.",
+      "remaining_acceptance": "Execute correlated center/tensor uncertainty and timestep sensitivity scenarios against integrated parity."
+    },
+    {
+      "identifier": "46",
+      "title": "Measure race cost and optimize without changing physics",
+      "dependencies": [
+        "27",
+        "28",
+        "33",
+        "35",
+        "37",
+        "43",
+        "44"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Short 32-car sample fails real-time target; isolated kernel profiler implemented.",
+      "remaining_acceptance": "Optimize verified geometry/matrix bottlenecks and measure racing median/tail costs on all authored grid spots."
+    },
+    {
+      "identifier": "47",
+      "title": "Calibrate the complete physical vehicle",
+      "dependencies": [
+        "11",
+        "17",
+        "19",
+        "20",
+        "43",
+        "44",
+        "45",
+        "46"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Fictional provisional component data only.",
+      "remaining_acceptance": "Calibrate ride, tire behavior, handling, reaction loads and contact response against declared targets."
+    },
+    {
+      "identifier": "48",
+      "title": "Produce a clean source-matched runtime build",
+      "dependencies": [
+        "42",
+        "43",
+        "44",
+        "46",
+        "47"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Installed DLLs and BUILD_SOURCE preserved; candidate builds stay in task-owned scratch.",
+      "remaining_acceptance": "Complete clean Cargo/SCons/Godot rebuild, dirty-source fingerprint parity and canonical launcher verification."
+    },
+    {
+      "identifier": "49",
+      "title": "Perform integrated driving and visual review",
+      "dependencies": [
+        "39",
+        "40",
+        "41",
+        "47",
+        "48"
+      ],
+      "status": "pending",
+      "human_approved": false,
+      "candidate_progress": "Upper damper skin test completed; no integrated driving review.",
+      "remaining_acceptance": "Execute source-matched native smoke, Fuji driving, rear geometry visual review and obtain human review."
+    },
+    {
+      "identifier": "50",
+      "title": "Audit delivery and prepare atomic publication",
+      "dependencies": [
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49"
+      ],
+      "status": "implementing",
+      "human_approved": false,
+      "candidate_progress": "Protected provenance and per-item candidate execution records exist.",
+      "remaining_acceptance": "Audit all prior gates, review explicit atomic change scope and prepare publication only after approval."
+    }
+  ]
+}

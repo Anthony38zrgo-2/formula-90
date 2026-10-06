@@ -1,0 +1,237 @@
+{
+  "inventory": {
+    "components": [
+      {
+        "provenance": {
+          "inertia_origin": "estimated",
+          "mass_origin": "user_declared",
+          "source": "Diagnostic only: rectangular body approximation with assumed 0.75 metre height; component inclusion unresolved",
+          "center_of_mass_origin": "profile_declared"
+        },
+        "attachment": {
+          "kind": "body"
+        },
+        "inertia_about_center_of_mass": {
+          "entries_kilogram_square_metres": [
+            [
+              463.25,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              543.02305,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              136.02304999999998
+            ]
+          ]
+        },
+        "center_of_mass_in_attachment_metres": {
+          "y": -0.12,
+          "z": 0.14749999999999996,
+          "x": 0.0
+        },
+        "mass_kilograms": 600.0,
+        "name": "body_and_driver_reference"
+      },
+      {
+        "provenance": {
+          "inertia_origin": "estimated",
+          "mass_origin": "profile_declared",
+          "source": "Diagnostic only: thin ring at hub; brake, upright and links not separately inventoried; not production calibration",
+          "center_of_mass_origin": "estimated"
+        },
+        "attachment": {
+          "wheel": "FrontLeft",
+          "kind": "upright"
+        },
+        "inertia_about_center_of_mass": {
+          "entries_kilogram_square_metres": [
+            [
+              2.2869,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.14345,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.14345
+            ]
+          ]
+        },
+        "center_of_mass_in_attachment_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "mass_kilograms": 21.0,
+        "name": "FrontLeft_assembly_reference"
+      },
+      {
+        "provenance": {
+          "inertia_origin": "estimated",
+          "mass_origin": "profile_declared",
+          "source": "Diagnostic only: thin ring at hub; brake, upright and links not separately inventoried; not production calibration",
+          "center_of_mass_origin": "estimated"
+        },
+        "attachment": {
+          "wheel": "FrontRight",
+          "kind": "upright"
+        },
+        "inertia_about_center_of_mass": {
+          "entries_kilogram_square_metres": [
+            [
+              2.2869,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.14345,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.14345
+            ]
+          ]
+        },
+        "center_of_mass_in_attachment_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "mass_kilograms": 21.0,
+        "name": "FrontRight_assembly_reference"
+      },
+      {
+        "provenance": {
+          "inertia_origin": "estimated",
+          "mass_origin": "profile_declared",
+          "source": "Diagnostic only: thin ring at hub; brake, upright and links not separately inventoried; not production calibration",
+          "center_of_mass_origin": "estimated"
+        },
+        "attachment": {
+          "wheel": "RearLeft",
+          "kind": "upright"
+        },
+        "inertia_about_center_of_mass": {
+          "entries_kilogram_square_metres": [
+            [
+              3.0492000000000004,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.5246000000000002,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.5246000000000002
+            ]
+          ]
+        },
+        "center_of_mass_in_attachment_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "mass_kilograms": 28.0,
+        "name": "RearLeft_assembly_reference"
+      },
+      {
+        "provenance": {
+          "inertia_origin": "estimated",
+          "mass_origin": "profile_declared",
+          "source": "Diagnostic only: thin ring at hub; brake, upright and links not separately inventoried; not production calibration",
+          "center_of_mass_origin": "estimated"
+        },
+        "attachment": {
+          "wheel": "RearRight",
+          "kind": "upright"
+        },
+        "inertia_about_center_of_mass": {
+          "entries_kilogram_square_metres": [
+            [
+              3.0492000000000004,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              1.5246000000000002,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.5246000000000002
+            ]
+          ]
+        },
+        "center_of_mass_in_attachment_metres": {
+          "y": 0.0,
+          "z": 0.0,
+          "x": 0.0
+        },
+        "mass_kilograms": 28.0,
+        "name": "RearRight_assembly_reference"
+      }
+    ],
+    "declared_complete_dry_mass_kilograms": 698.0,
+    "schema_version": 1
+  },
+  "settings": {
+    "travel_stop_damping_newton_seconds_per_metre": [
+      1000.0,
+      1000.0,
+      1000.0,
+      1000.0
+    ],
+    "travel_stop_engagement_fraction": [
+      0.8,
+      0.8,
+      0.8,
+      0.8
+    ],
+    "tire_vertical_damping_newton_seconds_per_metre": [
+      1200.0,
+      1200.0,
+      1200.0,
+      1200.0
+    ],
+    "gravity_world_metres_per_second_squared": {
+      "y": -9.80665,
+      "z": 0.0,
+      "x": 0.0
+    },
+    "tire_vertical_stiffness_newtons_per_metre": [
+      180000.0,
+      180000.0,
+      180000.0,
+      180000.0
+    ],
+    "travel_stop_stiffness_newtons_per_cubic_metre": [
+      100000000.0,
+      100000000.0,
+      100000000.0,
+      100000000.0
+    ],
+    "differentiation_step_metres": 0.0001,
+    "maximum_substep_seconds": 0.0005208333333333333
+  },
+  "schema_version": 1
+}

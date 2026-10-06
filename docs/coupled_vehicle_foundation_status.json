@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "authoritative_backlog": "instrucciones.md",
+  "sprint": 0,
+  "items": [
+    {
+      "number": 1,
+      "title": "Capture provenance and change ownership",
+      "status": "implemented_awaiting_human_review",
+      "evidence": [
+        "pre_edit_provenance.json",
+        "execution_provenance.json",
+        "foundation_validation_report.json"
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Review and reproduce the reference",
+      "status": "review_implemented_with_baseline_regression_failures",
+      "required_tests": {
+        "passed": 28,
+        "failed": 0
+      },
+      "geometric_tests": {
+        "passed": 5,
+        "failed": 2
+      },
+      "evidence": [
+        "docs/coupled_vehicle_foundation_review.md",
+        "foundation_validation_report.json"
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Freeze mass and collision ownership contracts",
+      "status": "selected_contract_encoded_awaiting_human_review",
+      "evidence": [
+        "docs/coupled_vehicle_architecture_contract.json"
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Define quantitative validation budgets",
+      "status": "development_specification_encoded_release_calibration_pending",
+      "evidence": [
+        "docs/coupled_vehicle_validation_specification.json"
+      ]
+    }
+  ],
+  "delivery_state": "implemented_with_baseline_findings_awaiting_human_review",
+  "validation_state": "geometric_regression_gate_failed",
+  "human_approval": "pending",
+  "runtime_activation": false,
+  "source_branch": "main-clean",
+  "source_head": "001cfc9e6ba0f77a9a9fd0759e82a995228021a9",
+  "source_fingerprint": "3312c9ab22cb08e4f070edceb919f282f09b65d30ba2f13f0cc9fa2daefb34af",
+  "digest_algorithm": "SHA-256",
+  "evidence_directory": "scratch/coupled_vehicle_foundation_20261005_final",
+  "pre_edit_provenance": "scratch/coupled_vehicle_foundation_20261005_233057/pre_edit_provenance.json",
+  "report": "scratch/coupled_vehicle_foundation_20261005_final/foundation_validation_report.json",
+  "report_digest": "b9b0feb0be95f0c1e5725ea2d51a57530bedda8b1e3f1e91197284e4535619da",
+  "checks": {
+    "contract_allocation_and_profile_validation": true,
+    "required_reference_tests": true,
+    "geometric_suite_has_only_known_failure": false,
+    "release_reference_build": true,
+    "actual_profile_mass_accounting": true,
+    "static_load_accounting": true,
+    "short_settling_energy": true,
+    "extended_settling_energy": true,
+    "extended_settling_support": true,
+    "nonlinear_position_convergence": true,
+    "nonlinear_fine_energy": true,
+    "protected_file_preservation": true
+  },
+  "preservation": {
+    "changed_protected_paths": [],
+    "installed_binaries_changed": false,
+    "index_changed": false,
+    "build_source_changed": false,
+    "head_changed": false,
+    "branch_changed": false,
+    "source_fingerprint_changed_during_execution": false,
+    "passed": true
+  },
+  "baseline_findings": [
+    {
+      "test": "godot_scene_points_at_geometric_by_default",
+      "classification": "previously_known_manifest_profile_linkage_failure",
+      "follow_up_item": 10
+    },
+    {
+      "test": "ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely",
+      "classification": "newly_reproduced_preexisting_same_mass_fixture_failure",
+      "follow_up_item": 10
+    }
+  ],
+  "next_sprint": {
+    "number": 1,
+    "items": [
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "scope": "Complete component inventory, centers, tensors, mass closure and canonical-profile validation",
+    "activation_authorized_by_this_report": false
+  },
+  "release_targets_pending": [
+    "Production component calibration",
+    "Derivative physical-domain scales",
+    "Contact material and impact scenario budgets",
+    "Hardware grid frequency and complete race cost",
+    "Clean source-matched runtime and human driving review"
+  ]
+}
