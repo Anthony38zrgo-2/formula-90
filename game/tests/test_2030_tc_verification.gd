@@ -80,7 +80,7 @@ func _run() -> void:
 	assert(float(engine.get("max_rpm", 0.0)) == 18000.0, "RPM maxima del perfil f1_2030_v10 debe ser 18000 rpm")
 	assert(float(trans.get("final_drive", 0.0)) == 4.25, "Final Drive debe ser 4.25")
 	var ratios: Array = trans.get("gear_ratios", [])
-	assert(ratios.size() == 6, "El perfil f1_2030_v10 debe tener 6 marchas")
+	assert(ratios.size() == 7, "El perfil f1_2030_v10 debe tener 7 marchas")
 	print("[PASS] Verificación 5: Perfil 2030 y Setup_JSON validados con éxito!")
 
 	# --- VERIFICACIÓN 1: ENLACE UI -> RUNTIME DEL TC ---

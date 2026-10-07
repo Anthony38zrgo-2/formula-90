@@ -397,6 +397,7 @@
       0.65,
       0.45,
       0.2,
+      0.1,
       0.1
     ],
     "traction_control_gear_max_cut": [
@@ -405,6 +406,7 @@
       0.55,
       0.4,
       0.14,
+      0.07,
       0.07
     ],
     "traction_control_gear_slip_target": [
@@ -413,6 +415,7 @@
       0.085,
       0.105,
       0.14,
+      0.18,
       0.18
     ],
     "traction_control_player_selectable": true,
@@ -697,7 +700,7 @@
     "abs_spin_diff_threshold": 12.0,
     "enable_abs": false,
     "front_brake_bias": 0.56,
-    "max_brake_torque": 6500.0,
+    "max_brake_torque": 8125.0,
     "wheel_lock_blend_spin_rad_s": 8.0,
     "wheel_lock_stick_tau_s": 0.02,
     "thermal": {
@@ -832,11 +835,12 @@
     "gear_inertia": 0.014,
     "gear_ratios": [
       3.45,
-      2.75,
-      2.3,
-      1.95,
-      1.70,
-      1.60
+      2.85,
+      2.40,
+      2.05,
+      1.80,
+      1.64,
+      1.50
     ],
     "handbrake_torque_fraction": 0.0,
     "idle_disengagement_hysteresis_rpm": 150.0,
@@ -972,13 +976,13 @@
       "arb_ratio": 0.09,
       "bump_damp_multiplier": 0.9,
       "bump_stop_multiplier": 2.8,
-      "camber": -0.029,
+      "camber": -0.026179939,
       "camber_gain_rad_per_m": -0.02,
       "damping_ratio": 0.71,
       "rebound_damp_multiplier": 1.35,
       "resting_ratio": 0.22,
       "spring_length": 0.27,
-      "toe": 0.0042,
+      "toe": 0.001745329,
       "toe_gain_rad_per_m": 0.025
     },
     "tri_ray_spacing_ratio": 0.4,
@@ -1498,10 +1502,10 @@
         "RR": 80.0
       },
       "reference_hot_kpa_gauge": {
-        "FL": 145.0,
-        "FR": 145.0,
-        "RL": 140.0,
-        "RR": 140.0
+        "FL": 160.0,
+        "FR": 160.0,
+        "RL": 150.0,
+        "RR": 150.0
       },
       "reference_temperature_c": 25.0,
       "units": "kPa_gauge"
@@ -1577,7 +1581,7 @@
         "optimal_tread_window_c": 12.0,
         "overheat_tread_temperature_c": 120.0,
         "road_conductance_w_k": 60.0,
-        "slip_heat_efficiency": 1.0,
+        "slip_heat_efficiency": 1.1,
         "track_fallback_c": 35.0,
         "tread_to_air_w_k": 4.5,
         "tread_to_carcass_w_k": 75.0,
@@ -1609,9 +1613,9 @@
         "optimal_tread_window_c": 12.0,
         "overheat_tread_temperature_c": 120.0,
         "road_conductance_w_k": 60.0,
-        "slip_heat_efficiency": 1.0,
+        "slip_heat_efficiency": 0.9,
         "track_fallback_c": 35.0,
-        "tread_to_air_w_k": 6.0,
+        "tread_to_air_w_k": 7.0,
         "tread_to_carcass_w_k": 64.0,
         "tread_zone_heat_capacity_j_k": 2800.0,
         "volume_deflection_gain": 0.04

@@ -72,6 +72,7 @@ fn main() {
     let mut mode: String = "launch".to_string();
     let mut raw_aids = false;
     let mut init_speed_ms: Option<f64> = None;
+    let mut upshift_rpm: f64 = 17800.0;
     let mut steer_amp: f64 = 0.25;
     let mut ramp_sec: f64 = 8.0;
     let mut step_sec: f64 = 2.0;
@@ -91,6 +92,9 @@ fn main() {
             i += 1;
         } else if args[i] == "--init-speed-ms" && i + 1 < args.len() {
             init_speed_ms = args[i + 1].parse().ok();
+            i += 2;
+        } else if args[i] == "--upshift-rpm" && i + 1 < args.len() {
+            upshift_rpm = args[i + 1].parse().unwrap_or(17800.0);
             i += 2;
         } else if args[i] == "--steer-amp" && i + 1 < args.len() {
             steer_amp = args[i + 1].parse().unwrap_or(0.25);
@@ -159,6 +163,7 @@ fn main() {
         "lift_off" => "lift-off rotation (throttle 1.0 then cut at --lift-ratio, steering --steer-amp)",
         "power_on_exit" => "power-on exit (throttle 1.0, constant steering --steer-amp)",
         "curb" => "curb traversal (throttle 0.6, right wheels raised --curb-height-m at 35-55% of run)",
+        "acceleration_upshift" => "full throttle straight acceleration with upshifts at --upshift-rpm",
         _ => "full throttle straight acceleration",
     };
     println!("Simulating {} seconds of {}{}...", duration_sec, mode_desc, raw_aids_note);
@@ -248,13 +253,22 @@ fn main() {
             }
             _ => (1.0_f64, 0.0_f64, 0.0_f64, [0.0; 4]),
         };
+        let gear_request = if mode == "acceleration_upshift"
+            && sim.state.powertrain.current_gear > 0
+            && (sim.state.powertrain.current_gear as usize) < sim.config.gear_ratios.len()
+            && sim.state.powertrain.rpm >= upshift_rpm
+        {
+            Some(sim.state.powertrain.current_gear + 1)
+        } else {
+            None
+        };
         let input = VehicleInput {
             throttle: thr,
             steering: steer,
             brake,
             handbrake: 0.0,
             clutch: 0.0,
-            gear_request: None,
+            gear_request,
         };
 
         let samples = flat_ground_samples(&sim, wheel_lift);
@@ -296,6 +310,7 @@ fn main() {
                 "duration_sec": duration_sec,
                 "step_count": total_steps,
                 "init_speed_ms": init_speed,
+                "upshift_rpm": upshift_rpm,
                 "steer_amp": steer_amp,
                 "ramp_sec": ramp_sec,
                 "step_sec": step_sec,

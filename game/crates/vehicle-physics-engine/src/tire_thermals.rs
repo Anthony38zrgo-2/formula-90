@@ -430,7 +430,7 @@ impl TireThermalSystem {
         let slip_power_w = (
             input.longitudinal_force_n.abs() * input.slip_velocity_long_ms.abs()
                 + input.lateral_force_n.abs() * input.slip_velocity_lat_ms.abs()
-        ) * thermal.slip_heat_efficiency.clamp(0.0, 1.0);
+        ) * thermal.slip_heat_efficiency.clamp(0.0, 1.5);
 
         let airflow = (1.0 + input.vehicle_speed_ms.abs() * 0.020).clamp(1.0, 4.0);
 
@@ -732,5 +732,59 @@ mod tests {
         let overheated = sys.mechanical_modifiers(WheelIndex::FrontRight, &p, &t, m);
 
         assert!(overheated.grip_scale < optimum.grip_scale);
+    }
+
+    #[test]
+    fn slip_heat_efficiency_above_one_scales_tread_heating() {
+        let pressure = TirePressureConfig::default();
+        let mut reference = TireThermalConfig::default();
+        reference.slip_heat_efficiency = 1.0;
+        let mut boosted = reference;
+        boosted.slip_heat_efficiency = 1.1;
+
+        let mut reference_system = TireThermalSystem::new(&pressure, &reference);
+        let mut boosted_system = TireThermalSystem::new(&pressure, &boosted);
+        reference_system.wheels[WheelIndex::FrontLeft as usize].pressure_kpa_gauge =
+            pressure.reference_hot_kpa_gauge[0];
+        boosted_system.wheels[WheelIndex::FrontLeft as usize].pressure_kpa_gauge =
+            pressure.reference_hot_kpa_gauge[0];
+        let environment = TireEnvironment {
+            ambient_temperature_c: 25.0,
+            track_temperature_c: 25.0,
+        };
+        let input = TireThermalInput {
+            longitudinal_force_n: 3000.0,
+            slip_velocity_long_ms: 5.0,
+            zone_contact_weights: [1.0, 2.0, 1.0],
+            ..TireThermalInput::default()
+        };
+        let dt = 0.01;
+        reference_system.step_after_forces(
+            WheelIndex::FrontLeft,
+            &pressure,
+            &reference,
+            environment,
+            input,
+            dt,
+        );
+        boosted_system.step_after_forces(
+            WheelIndex::FrontLeft,
+            &pressure,
+            &boosted,
+            environment,
+            input,
+            dt,
+        );
+
+        let reference_center = reference_system.wheels[WheelIndex::FrontLeft as usize].tread_center_c;
+        let boosted_center = boosted_system.wheels[WheelIndex::FrontLeft as usize].tread_center_c;
+        let expected_reference =
+            25.0 + (15000.0 * 0.5 / reference.tread_zone_heat_capacity_j_k) * dt;
+        let expected_boosted =
+            25.0 + (16500.0 * 0.5 / boosted.tread_zone_heat_capacity_j_k) * dt;
+
+        assert!((reference_center - expected_reference).abs() < 1e-9);
+        assert!((boosted_center - expected_boosted).abs() < 1e-9);
+        assert!(boosted_center > reference_center);
     }
 }

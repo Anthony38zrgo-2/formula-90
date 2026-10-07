@@ -17,8 +17,9 @@ const SPAWN_HEIGHT_M := 0.35
 const WHEELBASE_M := 2.95
 const MAX_STEERING_ANGLE_RAD := 0.48
 const UPSHIFT_RPM := 14200.0
+const UPSHIFT_MAX_GEAR := 7
 const DOWNSHIFT_START_S := 22.5
-const DOWNSHIFT_MAX_SPEED_KMH := [145.0, 180.0, 220.0, 255.0, 290.0]
+const DOWNSHIFT_MAX_SPEED_KMH := [145.0, 180.0, 220.0, 255.0, 290.0, 320.0]
 const DOWNSHIFT_INTERVAL_S := 0.9
 
 @onready var _session_ui: Control = $VehicleTestSession
@@ -265,7 +266,7 @@ func _update_showcase_gear(throttle: float, brake: float, speed_kmh: float) -> v
 		return
 
 	if _elapsed_s < DOWNSHIFT_START_S:
-		if actual_gear < 6 and throttle > 0.55 and _active_vehicle.has_method("get_motor_rpm"):
+		if actual_gear < UPSHIFT_MAX_GEAR and throttle > 0.55 and _active_vehicle.has_method("get_motor_rpm"):
 			var rpm := float(_active_vehicle.call("get_motor_rpm"))
 			if rpm >= UPSHIFT_RPM:
 				_request_showcase_gear(actual_gear + 1)
