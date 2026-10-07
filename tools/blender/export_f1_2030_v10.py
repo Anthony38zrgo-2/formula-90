@@ -192,7 +192,7 @@ def main():
         "vehicle_id": ASSET_ID,
         "standard": "Formula-90 GEVP decoupled visual asset",
         "asset": "F1_2030_V10",
-        "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_physics.json",
+        "physics_profile": "res://" + physics_path.relative_to(Path(__file__).resolve().parents[2] / "game").as_posix(),
         "physics_sha256": sha256(physics_path),
         "coordinate_contract": {"right": "+X", "left": "-X", "up": "+Y", "front": "-Z", "rear": "+Z", "units": "meters", "transformations_applied": True},
         "authored_alignment": {

@@ -1,0 +1,37 @@
+{
+  "generated_textures": {
+    "chassis_red_lacquer_base_color.png": {
+      "generator": "image_gen.imagegen",
+      "sha256": "b3a458b4fea6a4ca69318ea61881ed0a22bec7af18c79d9f9b776b2109545877"
+    },
+    "wheel_champagne_gold_base_color.png": {
+      "generator": "image_gen.imagegen",
+      "sha256": "59bb98a248d218bdc5c86a15c158674871a4530ea3accf05ac8282d192da4d66"
+    }
+  },
+  "generated_images": [
+    {
+      "material": "ReferenceRedChassisLacquer",
+      "file": "chassis_red_lacquer_base_color.png",
+      "resolution": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "material": "ReferenceChampagneGoldWheelMetal",
+      "file": "wheel_champagne_gold_base_color.png",
+      "resolution": [
+        1254,
+        1254
+      ]
+    }
+  ],
+  "references": {
+    "D:\\Formula90s\\reference\\SF-26_Update-3-scaled.png": "23c8ab7b0a8fe2d7c7cd8423ca5cf35ed3502e6b4474bc49b7112fcf6249c649",
+    "D:\\Formula90s\\reference\\SF-26_Update-5-scaled.png": "eaf016f2ca93085af1ebab9abea16c037f155a57442b51f9c7ffd2e1426884a4",
+    "D:\\Formula90s\\reference\\SF-26_Update-8-scaled.png": "5b6a537ee6c9d8fa07c9041757eabd269f16e6e0e335b2c2e154643d4f3f2803"
+  },
+  "decals_added": false,
+  "head": "0d23dff333018747ad3428690014e8c563cb3e39"
+}

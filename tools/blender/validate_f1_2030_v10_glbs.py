@@ -146,16 +146,22 @@ def main():
             errors.append(f"wheel {short} radius mismatch: {dims}")
         if max(abs(v) for v in center) > 0.002:
             errors.append(f"wheel {short} is not centered: {center}")
-        if result["mesh_count"] != 7:
-            errors.append(f"wheel {short} expected 7 meshes, got {result['mesh_count']}")
+        structural_mesh_names = [name for name in result["objects"] if "_DECAL_" not in name]
+        if len(structural_mesh_names) != 7:
+            errors.append(f"wheel {short} expected 7 structural meshes, got {len(structural_mesh_names)}")
         wheel_prefix = f"GEO_WHEEL_{'FRONT' if short.startswith('F') else 'REAR'}_{'L' if short.endswith('L') else 'R'}"
         expected_static = [f"{wheel_prefix}_NUT_05", f"{wheel_prefix}_RIM_06"]
         if result["visual_groups"].get("BrakeStatic") != expected_static:
             errors.append(f"wheel {short} static brake group is wrong: {result['visual_groups'].get('BrakeStatic')}")
         if any(name in result["visual_groups"].get("SpinVisual", []) for name in expected_static):
             errors.append(f"wheel {short} caliper or brake duct still inherits wheel spin")
-        if len(result["visual_groups"].get("SpinVisual", [])) != 5:
-            errors.append(f"wheel {short} spin group expected 5 meshes")
+        rotating_mesh_names = result["visual_groups"].get("SpinVisual", [])
+        rotating_structural_mesh_names = [name for name in rotating_mesh_names if "_DECAL_" not in name]
+        if len(rotating_structural_mesh_names) != 5:
+            errors.append(f"wheel {short} spin group expected 5 structural meshes")
+        tire_decal_names = [name for name in result["objects"] if "_DECAL_" in name]
+        if any(not name.startswith(wheel_prefix + "_DECAL_") or name not in rotating_mesh_names for name in tire_decal_names):
+            errors.append(f"wheel {short} tire decals do not follow their spinning wheel")
         rim_key = next((name for name in result["objects"] if name.endswith("_RIM_03")), None)
         if rim_key is None:
             errors.append(f"wheel {short} reference rim disc is missing")

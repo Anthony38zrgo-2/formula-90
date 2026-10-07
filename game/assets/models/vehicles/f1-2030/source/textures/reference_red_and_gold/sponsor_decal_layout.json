@@ -1,0 +1,670 @@
+{
+  "reference_path": "C:/Users/bill/Downloads/ykplkj6u5rlh1.png",
+  "reference_sha256": "e100027e49c7e64130a171cc46361035dddef23ed6255df98b8d46ce5bf558e6",
+  "atlas_sha256": "0ac05f4112c56bbeb7920b303b3d67646c2c36d83d913d972758260245dedd97",
+  "atlas_resolution": [
+    1254,
+    1254
+  ],
+  "decals": [
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftHewlettPackard0",
+      "logo": "HewlettPackard",
+      "center": [
+        0.7,
+        0.335
+      ],
+      "size": [
+        0.255,
+        0.255
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftDriverNumber1",
+      "logo": "DriverNumber",
+      "center": [
+        1.08,
+        0.27
+      ],
+      "size": [
+        0.35,
+        0.22
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftUniCredit2",
+      "logo": "UniCredit",
+      "center": [
+        0.77,
+        0.13
+      ],
+      "size": [
+        0.44,
+        0.12
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftShell3",
+      "logo": "Shell",
+      "center": [
+        0.31,
+        -0.035
+      ],
+      "size": [
+        0.285,
+        0.265
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftCevaLogistics4",
+      "logo": "CevaLogistics",
+      "center": [
+        0.8,
+        -0.185
+      ],
+      "size": [
+        0.415,
+        0.11
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftFerrariShield5",
+      "logo": "FerrariShield",
+      "center": [
+        -0.72,
+        0.115
+      ],
+      "size": [
+        0.105,
+        0.13
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftRichardMille6",
+      "logo": "RichardMille",
+      "center": [
+        -1.03,
+        0.13
+      ],
+      "size": [
+        0.425,
+        0.056
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7",
+      "logo": "InternationalBusinessMachines",
+      "center": [
+        0.33,
+        0.205
+      ],
+      "size": [
+        0.165,
+        0.065
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftZyn8",
+      "logo": "Zyn",
+      "center": [
+        0.075,
+        0.162
+      ],
+      "size": [
+        0.145,
+        0.052
+      ],
+      "side": -1,
+      "polygons": 272
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftDxc10",
+      "logo": "Dxc",
+      "center": [
+        -0.12,
+        0.365
+      ],
+      "size": [
+        0.2,
+        0.025
+      ],
+      "side": -1,
+      "polygons": 282
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftUniCredit11",
+      "logo": "UniCredit",
+      "center": [
+        -1.91,
+        -0.005
+      ],
+      "size": [
+        0.27,
+        0.063
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftUniCredit12",
+      "logo": "UniCredit",
+      "center": [
+        -2.31,
+        -0.16
+      ],
+      "size": [
+        0.26,
+        0.064
+      ],
+      "side": -1,
+      "polygons": 279
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftVPower13",
+      "logo": "VPower",
+      "center": [
+        2.3,
+        0.275
+      ],
+      "size": [
+        0.285,
+        0.078
+      ],
+      "side": -1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftPeroni14",
+      "logo": "Peroni",
+      "center": [
+        2.3,
+        0.115
+      ],
+      "size": [
+        0.265,
+        0.155
+      ],
+      "side": -1,
+      "polygons": 272
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftAmbipar15",
+      "logo": "Ambipar",
+      "center": [
+        -0.5800374746322632,
+        -0.21635504066944122
+      ],
+      "size": [
+        0.325,
+        0.065
+      ],
+      "side": -1,
+      "polygons": 288,
+      "surface": "GEO_CHASSIS_AEROPART1"
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightHewlettPackard0",
+      "logo": "HewlettPackard",
+      "center": [
+        0.7,
+        0.335
+      ],
+      "size": [
+        0.255,
+        0.255
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightDriverNumber1",
+      "logo": "DriverNumber",
+      "center": [
+        1.08,
+        0.27
+      ],
+      "size": [
+        0.35,
+        0.22
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightUniCredit2",
+      "logo": "UniCredit",
+      "center": [
+        0.77,
+        0.13
+      ],
+      "size": [
+        0.44,
+        0.12
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightShell3",
+      "logo": "Shell",
+      "center": [
+        0.31,
+        -0.035
+      ],
+      "size": [
+        0.285,
+        0.265
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightCevaLogistics4",
+      "logo": "CevaLogistics",
+      "center": [
+        0.8,
+        -0.185
+      ],
+      "size": [
+        0.415,
+        0.11
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightFerrariShield5",
+      "logo": "FerrariShield",
+      "center": [
+        -0.72,
+        0.115
+      ],
+      "size": [
+        0.105,
+        0.13
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightRichardMille6",
+      "logo": "RichardMille",
+      "center": [
+        -1.03,
+        0.13
+      ],
+      "size": [
+        0.425,
+        0.056
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7",
+      "logo": "InternationalBusinessMachines",
+      "center": [
+        0.33,
+        0.205
+      ],
+      "size": [
+        0.165,
+        0.065
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightZyn8",
+      "logo": "Zyn",
+      "center": [
+        0.075,
+        0.162
+      ],
+      "size": [
+        0.145,
+        0.052
+      ],
+      "side": 1,
+      "polygons": 272
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightDxc10",
+      "logo": "Dxc",
+      "center": [
+        -0.12,
+        0.365
+      ],
+      "size": [
+        0.2,
+        0.025
+      ],
+      "side": 1,
+      "polygons": 282
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightUniCredit11",
+      "logo": "UniCredit",
+      "center": [
+        -1.91,
+        -0.005
+      ],
+      "size": [
+        0.27,
+        0.063
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightUniCredit12",
+      "logo": "UniCredit",
+      "center": [
+        -2.31,
+        -0.16
+      ],
+      "size": [
+        0.26,
+        0.064
+      ],
+      "side": 1,
+      "polygons": 279
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightVPower13",
+      "logo": "VPower",
+      "center": [
+        2.3,
+        0.275
+      ],
+      "size": [
+        0.285,
+        0.078
+      ],
+      "side": 1,
+      "polygons": 288
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightPeroni14",
+      "logo": "Peroni",
+      "center": [
+        2.3,
+        0.115
+      ],
+      "size": [
+        0.265,
+        0.155
+      ],
+      "side": 1,
+      "polygons": 272
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightAmbipar15",
+      "logo": "Ambipar",
+      "center": [
+        -0.5800374746322632,
+        -0.21635502576828003
+      ],
+      "size": [
+        0.325,
+        0.065
+      ],
+      "side": 1,
+      "polygons": 288,
+      "surface": "GEO_CHASSIS_AEROPART1"
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_NoseDriverNumber",
+      "logo": "DriverNumber",
+      "center": [
+        -2.2,
+        0
+      ],
+      "size": [
+        0.19,
+        0.25
+      ],
+      "side": 0,
+      "polygons": 1152,
+      "projection": "top"
+    },
+    {
+      "object": "GEO_WHEEL_FRONT_L_DECAL_Pirelli",
+      "logo": "Pirelli",
+      "center": [
+        -1.4750001430511475,
+        0.17700004798173902
+      ],
+      "size": [
+        0.185,
+        0.033
+      ],
+      "side": -1,
+      "polygons": 284
+    },
+    {
+      "object": "GEO_WHEEL_FRONT_L_DECAL_PZero",
+      "logo": "PZero",
+      "center": [
+        -1.4750001430511475,
+        -0.38699995201826093
+      ],
+      "size": [
+        0.265,
+        0.045
+      ],
+      "side": -1,
+      "polygons": 268
+    },
+    {
+      "object": "GEO_WHEEL_FRONT_R_DECAL_Pirelli",
+      "logo": "Pirelli",
+      "center": [
+        -1.4750001430511475,
+        0.17699992132186887
+      ],
+      "size": [
+        0.185,
+        0.033
+      ],
+      "side": 1,
+      "polygons": 284
+    },
+    {
+      "object": "GEO_WHEEL_FRONT_R_DECAL_PZero",
+      "logo": "PZero",
+      "center": [
+        -1.4750001430511475,
+        -0.3870000786781311
+      ],
+      "size": [
+        0.265,
+        0.045
+      ],
+      "side": 1,
+      "polygons": 268
+    },
+    {
+      "object": "GEO_WHEEL_REAR_L_DECAL_Pirelli",
+      "logo": "Pirelli",
+      "center": [
+        1.4750001430511475,
+        0.17700004798173902
+      ],
+      "size": [
+        0.185,
+        0.033
+      ],
+      "side": -1,
+      "polygons": 284
+    },
+    {
+      "object": "GEO_WHEEL_REAR_L_DECAL_PZero",
+      "logo": "PZero",
+      "center": [
+        1.4750001430511475,
+        -0.38699995201826093
+      ],
+      "size": [
+        0.265,
+        0.045
+      ],
+      "side": -1,
+      "polygons": 268
+    },
+    {
+      "object": "GEO_WHEEL_REAR_R_DECAL_Pirelli",
+      "logo": "Pirelli",
+      "center": [
+        1.4750001430511475,
+        0.17699992877244947
+      ],
+      "size": [
+        0.185,
+        0.033
+      ],
+      "side": 1,
+      "polygons": 284
+    },
+    {
+      "object": "GEO_WHEEL_REAR_R_DECAL_PZero",
+      "logo": "PZero",
+      "center": [
+        1.4750001430511475,
+        -0.3870000712275505
+      ],
+      "size": [
+        0.265,
+        0.045
+      ],
+      "side": 1,
+      "polygons": 268
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftFrontWingGreen",
+      "logo": "ItalianFlagGreen",
+      "center": [
+        -2.3983333333333334,
+        -0.24
+      ],
+      "size": [
+        0.08833333333333333,
+        0.019
+      ],
+      "side": -1,
+      "polygons": 24
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightFrontWingGreen",
+      "logo": "ItalianFlagGreen",
+      "center": [
+        -2.2216666666666667,
+        -0.24
+      ],
+      "size": [
+        0.08833333333333333,
+        0.019
+      ],
+      "side": 1,
+      "polygons": 24
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftFrontWingWhite",
+      "logo": "ItalianFlagWhite",
+      "center": [
+        -2.31,
+        -0.24
+      ],
+      "size": [
+        0.08833333333333333,
+        0.019
+      ],
+      "side": -1,
+      "polygons": 24
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightFrontWingWhite",
+      "logo": "ItalianFlagWhite",
+      "center": [
+        -2.31,
+        -0.24
+      ],
+      "size": [
+        0.08833333333333333,
+        0.019
+      ],
+      "side": 1,
+      "polygons": 24
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_LeftFrontWingRed",
+      "logo": "ItalianFlagRed",
+      "center": [
+        -2.2216666666666667,
+        -0.24
+      ],
+      "size": [
+        0.08833333333333333,
+        0.019
+      ],
+      "side": -1,
+      "polygons": 24
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_RightFrontWingRed",
+      "logo": "ItalianFlagRed",
+      "center": [
+        -2.3983333333333334,
+        -0.24
+      ],
+      "size": [
+        0.08833333333333333,
+        0.019
+      ],
+      "side": 1,
+      "polygons": 24
+    },
+    {
+      "object": "GEO_CHASSIS_DECAL_NoseShell",
+      "logo": "Shell",
+      "center": [
+        -1.94,
+        0
+      ],
+      "size": [
+        0.17,
+        0.15
+      ],
+      "side": 0,
+      "polygons": 576,
+      "projection": "top"
+    }
+  ],
+  "head": "0d23dff333018747ad3428690014e8c563cb3e39",
+  "readjustment": {
+    "nose_number_added": true,
+    "chassis_number_size": [
+      0.35,
+      0.22
+    ],
+    "chassis_number_shift_rearward": 0.04,
+    "chassis_number_shift_downward": 0.05,
+    "all_placements_readjusted": true
+  }
+}
