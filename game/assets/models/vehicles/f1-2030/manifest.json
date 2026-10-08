@@ -28,32 +28,32 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "DFD3219571448DF12E6C8E53C0938966C6CEB5D9A9AAEC44B28F55A5BF8920AF",
-      "size_bytes": 16203848
+      "sha256": "9D04E1EA51FAD6FEC5B005E90F509B9C16E3F77286429383E3B7C67BD7066FA6",
+      "size_bytes": 23170056
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "8B2D946F911272FAE1A69A57D95DB2B99E1C748F12E5DDFD2844311B39D0AC60",
-      "size_bytes": 6353372
+      "sha256": "8AE1E8CA092DCFBCBB7B1D11B4C79EEF66A0BAD10616A5055A63FC6A7C2FED95",
+      "size_bytes": 6353392
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "892C951826173CAA9E88492D9C806FD52185ADC4F042EFA7473C7CF5979A3DCE",
-      "size_bytes": 6353372
+      "sha256": "0F12E9C37A4D5646BCC15F17D3DC9CD5530A04FD694859225B8F8C2A5D3B70B1",
+      "size_bytes": 6353392
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "6A3CDDFA5FCC48B6724580EC98024891200105BC264CCF0534419B477C0326EF",
-      "size_bytes": 6353352
+      "sha256": "18028AD8C0735C98410C60A91760D0A0A2238216805066DDC47DBF70F6B08579",
+      "size_bytes": 6353372
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "36638A0683A587E873304E81B268B2362537D4B5611500237A22AF11FF1E3310",
+      "sha256": "EE4B15C23B0DE26C43CCC3DFAE21845D5A8B2A1C9051E7B1239D88980E09B3FF",
       "size_bytes": 6353356
     }
   },
   "validation": {
     "status": "EXPORT_PASS",
-    "note": "Five canonical GLBs; every wheel contains separate SpinVisual and BrakeStatic groups."
+    "note": "Five canonical GLBs; every wheel contains separate SpinVisual and BrakeStatic groups. Chassis includes the attached carbon headrest and its 75 millimeter radius rear crown."
   }
 }

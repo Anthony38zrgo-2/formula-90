@@ -3,7 +3,7 @@
   "errors": [],
   "rear_support_grip": {
     "present": true,
-    "contact_triangles": 66,
+    "contact_triangles": 77,
     "upper_wing_overlap": 0,
     "support_top_m": 0.39072,
     "upper_wing_min_clearance_m": 0.067892,
@@ -11,9 +11,9 @@
   },
   "assets": {
     "chassis": {
-      "mesh_count": 70,
-      "vertices": 73451,
-      "polygons": 117803,
+      "mesh_count": 34,
+      "vertices": 93653,
+      "polygons": 143425,
       "bounds_min": [
         -0.859598,
         -2.535136,
@@ -47,7 +47,7 @@
       "objects": {
         "GEO_CHASSIS_ACTIVEFRONT": {
           "materials": [
-            "ReferenceSatinChassisCarbon"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.488734,
@@ -72,7 +72,7 @@
         },
         "GEO_CHASSIS_AERO2": {
           "materials": [
-            "ReferenceSatinChassisCarbon.001"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.85591,
@@ -97,7 +97,7 @@
         },
         "GEO_CHASSIS_AEROPART1": {
           "materials": [
-            "ReferenceSatinChassisCarbon"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.840054,
@@ -122,7 +122,7 @@
         },
         "GEO_CHASSIS_AEROPART2": {
           "materials": [
-            "ReferenceSatinChassisCarbon.002"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.496448,
@@ -147,7 +147,7 @@
         },
         "GEO_CHASSIS_AEROPART3": {
           "materials": [
-            "ReferenceSatinChassisCarbon.002"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.360802,
@@ -172,8 +172,8 @@
         },
         "GEO_CHASSIS_BODY": {
           "materials": [
-            "ReferenceRedChassisLacquer",
-            "ReferenceSatinChassisCarbon"
+            "FormulaOne2030RedPaintWithFlatChassisDecals",
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.654279,
@@ -248,7 +248,7 @@
         },
         "GEO_CHASSIS_CARBON5": {
           "materials": [
-            "ReferenceSatinChassisCarbon.001"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.199482,
@@ -296,959 +296,59 @@
             0.243
           ]
         },
-        "GEO_CHASSIS_DECAL_LeftAmbipar15": {
+        "GEO_CHASSIS_CockpitHeadrestPadding": {
           "materials": [
-            "ReferenceSponsorPrintedDecals.001"
+            "FormulaOne2030HeadrestExportCarbon"
           ],
           "bounds_min": [
-            -0.817627,
-            0.417247,
-            -0.143852
+            -0.322453,
+            -0.4,
+            0.17
           ],
           "bounds_max": [
-            -0.750291,
-            0.742215,
-            -0.078821
+            0.328876,
+            0.214366,
+            0.374709
           ],
           "dimensions": [
-            0.067336,
-            0.324969,
-            0.065031
+            0.651329,
+            0.614366,
+            0.204709
           ],
           "center": [
-            -0.783959,
-            0.579731,
-            -0.111336
+            0.003211,
+            -0.092817,
+            0.272354
           ]
         },
-        "GEO_CHASSIS_DECAL_LeftCevaLogistics4": {
+        "GEO_CHASSIS_CockpitUpperLining": {
           "materials": [
-            "ReferenceSponsorPrintedDecals.001"
+            "Carbon"
           ],
           "bounds_min": [
-            -0.539713,
-            -1.007835,
-            -0.13521
+            -0.288382,
+            -0.4,
+            0.175
           ],
           "bounds_max": [
-            -0.324543,
-            -0.593024,
-            -0.024774
+            0.290365,
+            1.35,
+            0.325371
           ],
           "dimensions": [
-            0.21517,
-            0.41481,
-            0.110436
+            0.578747,
+            1.75,
+            0.150371
           ],
           "center": [
-            -0.432128,
-            -0.800429,
-            -0.079992
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftDriverNumber1": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.137654,
-            -1.255227,
-            0.265338
-          ],
-          "bounds_max": [
-            0.000908,
-            -0.905201,
-            0.485336
-          ],
-          "dimensions": [
-            0.138562,
-            0.350027,
-            0.219998
-          ],
-          "center": [
-            -0.068373,
-            -1.080214,
-            0.375337
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftDxc10": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.332816,
-            0.019711,
-            0.456791
-          ],
-          "bounds_max": [
-            -0.26008,
-            0.220873,
-            0.483956
-          ],
-          "dimensions": [
-            0.072736,
-            0.201162,
-            0.027165
-          ],
-          "center": [
-            -0.296448,
-            0.120292,
-            0.470374
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftFerrariShield5": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.254765,
-            0.667606,
-            0.155194
-          ],
-          "bounds_max": [
-            -0.234356,
-            0.772652,
-            0.285851
-          ],
-          "dimensions": [
-            0.020409,
-            0.105046,
-            0.130657
-          ],
-          "center": [
-            -0.24456,
-            0.720129,
-            0.220522
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftFrontWingGreen": {
-          "materials": [
-            "ReferenceItalianFlagGreen.001"
-          ],
-          "bounds_min": [
-            -0.596654,
-            2.354177,
-            -0.144402
-          ],
-          "bounds_max": [
-            -0.591184,
-            2.44253,
-            -0.125401
-          ],
-          "dimensions": [
-            0.005469,
-            0.088353,
-            0.019
-          ],
-          "center": [
-            -0.593919,
-            2.398354,
-            -0.134902
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftFrontWingRed": {
-          "materials": [
-            "ReferenceItalianFlagRed.001"
-          ],
-          "bounds_min": [
-            -0.604658,
-            2.177506,
-            -0.143713
-          ],
-          "bounds_max": [
-            -0.593598,
-            2.265897,
-            -0.125055
-          ],
-          "dimensions": [
-            0.01106,
-            0.088391,
-            0.018658
-          ],
-          "center": [
-            -0.599128,
-            2.221702,
-            -0.134384
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftFrontWingWhite": {
-          "materials": [
-            "ReferenceItalianFlagWhite.001"
-          ],
-          "bounds_min": [
-            -0.601522,
-            2.265863,
-            -0.144055
-          ],
-          "bounds_max": [
-            -0.591549,
-            2.354261,
-            -0.125024
-          ],
-          "dimensions": [
-            0.009973,
-            0.088398,
-            0.019031
-          ],
-          "center": [
-            -0.596535,
-            2.310062,
-            -0.134539
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftHewlettPackard0": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.323837,
-            -0.828275,
-            0.312931
-          ],
-          "bounds_max": [
-            -0.013308,
-            -0.572516,
-            0.5686
-          ],
-          "dimensions": [
-            0.310529,
-            0.255759,
-            0.255669
-          ],
-          "center": [
-            -0.168572,
-            -0.700395,
-            0.440765
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.348525,
-            -0.412615,
-            0.277725
-          ],
-          "bounds_max": [
-            -0.336399,
-            -0.247498,
-            0.342857
-          ],
-          "dimensions": [
-            0.012126,
-            0.165118,
-            0.065132
-          ],
-          "center": [
-            -0.342462,
-            -0.330057,
-            0.310291
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftPeroni14": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.487612,
-            -2.432966,
-            0.141852
-          ],
-          "bounds_max": [
-            -0.396416,
-            -2.167353,
-            0.296725
-          ],
-          "dimensions": [
-            0.091195,
-            0.265613,
-            0.154873
-          ],
-          "center": [
-            -0.442014,
-            -2.300159,
-            0.219289
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftRichardMille6": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.236783,
-            0.817595,
-            0.207
-          ],
-          "bounds_max": [
-            -0.203292,
-            1.242665,
-            0.263847
-          ],
-          "dimensions": [
-            0.033491,
-            0.42507,
-            0.056847
-          ],
-          "center": [
-            -0.220037,
-            1.03013,
-            0.235424
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftShell3": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.589876,
-            -0.452838,
-            -0.062747
-          ],
-          "bounds_max": [
-            -0.476469,
-            -0.167479,
-            0.203833
-          ],
-          "dimensions": [
-            0.113407,
-            0.285359,
-            0.26658
-          ],
-          "center": [
-            -0.533173,
-            -0.310158,
-            0.070543
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftUniCredit11": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.172202,
-            1.77517,
-            0.0685
-          ],
-          "bounds_max": [
-            -0.13268,
-            2.047877,
-            0.151912
-          ],
-          "dimensions": [
-            0.039523,
-            0.272706,
-            0.083412
-          ],
-          "center": [
-            -0.152441,
-            1.911524,
-            0.110206
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftUniCredit12": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.591794,
-            2.179991,
-            -0.087023
-          ],
-          "bounds_max": [
-            -0.586806,
-            2.44078,
-            -0.021877
-          ],
-          "dimensions": [
-            0.004988,
-            0.260789,
-            0.065146
-          ],
-          "center": [
-            -0.5893,
-            2.310385,
-            -0.05445
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftUniCredit2": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.475225,
-            -0.990364,
-            0.175124
-          ],
-          "bounds_max": [
-            -0.102697,
-            -0.550208,
-            0.296165
-          ],
-          "dimensions": [
-            0.372528,
-            0.440156,
-            0.121041
-          ],
-          "center": [
-            -0.288961,
-            -0.770286,
-            0.235644
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftVPower13": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.561367,
-            -2.442601,
-            0.340104
-          ],
-          "bounds_max": [
-            -0.514558,
-            -2.157237,
-            0.419418
-          ],
-          "dimensions": [
-            0.046809,
-            0.285365,
-            0.079314
-          ],
-          "center": [
-            -0.537963,
-            -2.299919,
-            0.379761
-          ]
-        },
-        "GEO_CHASSIS_DECAL_LeftZyn8": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.52828,
-            -0.147666,
-            0.241963
-          ],
-          "bounds_max": [
-            -0.349643,
-            -0.002444,
-            0.293446
-          ],
-          "dimensions": [
-            0.178638,
-            0.145222,
-            0.051483
-          ],
-          "center": [
-            -0.438962,
-            -0.075055,
-            0.267705
-          ]
-        },
-        "GEO_CHASSIS_DECAL_NoseDriverNumber": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.095449,
-            2.078489,
-            0.119355
-          ],
-          "bounds_max": [
-            0.09545,
-            2.335259,
-            0.153291
-          ],
-          "dimensions": [
-            0.190899,
-            0.256771,
-            0.033937
-          ],
-          "center": [
-            0.0,
-            2.206874,
-            0.136323
-          ]
-        },
-        "GEO_CHASSIS_DECAL_NoseShell": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.085006,
-            1.865191,
-            0.161297
-          ],
-          "bounds_max": [
-            0.085007,
-            2.01519,
-            0.180537
-          ],
-          "dimensions": [
-            0.170013,
-            0.149999,
-            0.01924
-          ],
-          "center": [
-            0.0,
-            1.94019,
-            0.170917
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightAmbipar15": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.750291,
-            0.417247,
-            -0.143852
-          ],
-          "bounds_max": [
-            0.817627,
-            0.742215,
-            -0.078821
-          ],
-          "dimensions": [
-            0.067336,
-            0.324968,
-            0.065031
-          ],
-          "center": [
-            0.783959,
-            0.579731,
-            -0.111336
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightCevaLogistics4": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.324544,
-            -1.007835,
-            -0.13521
-          ],
-          "bounds_max": [
-            0.539713,
-            -0.593024,
-            -0.024774
-          ],
-          "dimensions": [
-            0.215169,
-            0.41481,
-            0.110436
-          ],
-          "center": [
-            0.432128,
-            -0.800429,
-            -0.079992
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightDriverNumber1": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            -0.000908,
-            -1.255227,
-            0.265338
-          ],
-          "bounds_max": [
-            0.137654,
-            -0.905201,
-            0.485435
-          ],
-          "dimensions": [
-            0.138562,
-            0.350027,
-            0.220097
-          ],
-          "center": [
-            0.068373,
-            -1.080214,
-            0.375387
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightDxc10": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.26008,
-            0.019711,
-            0.456791
-          ],
-          "bounds_max": [
-            0.332816,
-            0.220873,
-            0.483956
-          ],
-          "dimensions": [
-            0.072736,
-            0.201162,
-            0.027165
-          ],
-          "center": [
-            0.296448,
-            0.120292,
-            0.470374
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightFerrariShield5": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.234356,
-            0.667606,
-            0.155194
-          ],
-          "bounds_max": [
-            0.254765,
-            0.772652,
-            0.285851
-          ],
-          "dimensions": [
-            0.02041,
-            0.105046,
-            0.130657
-          ],
-          "center": [
-            0.244561,
-            0.720129,
-            0.220522
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightFrontWingGreen": {
-          "materials": [
-            "ReferenceItalianFlagGreen.001"
-          ],
-          "bounds_min": [
-            0.593599,
-            2.177506,
-            -0.143713
-          ],
-          "bounds_max": [
-            0.604659,
-            2.265897,
-            -0.125055
-          ],
-          "dimensions": [
-            0.01106,
-            0.088391,
-            0.018658
-          ],
-          "center": [
-            0.599129,
-            2.221702,
-            -0.134384
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightFrontWingRed": {
-          "materials": [
-            "ReferenceItalianFlagRed.001"
-          ],
-          "bounds_min": [
-            0.591185,
-            2.354177,
-            -0.144402
-          ],
-          "bounds_max": [
-            0.596654,
-            2.44253,
-            -0.125401
-          ],
-          "dimensions": [
-            0.005469,
-            0.088353,
-            0.019
-          ],
-          "center": [
-            0.593919,
-            2.398354,
-            -0.134901
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightFrontWingWhite": {
-          "materials": [
-            "ReferenceItalianFlagWhite.001"
-          ],
-          "bounds_min": [
-            0.59155,
-            2.265863,
-            -0.144055
-          ],
-          "bounds_max": [
-            0.601522,
-            2.354261,
-            -0.125024
-          ],
-          "dimensions": [
-            0.009972,
-            0.088398,
-            0.019031
-          ],
-          "center": [
-            0.596536,
-            2.310062,
-            -0.134539
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightHewlettPackard0": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.011731,
-            -0.828275,
-            0.312931
-          ],
-          "bounds_max": [
-            0.323837,
-            -0.572516,
-            0.5686
-          ],
-          "dimensions": [
-            0.312106,
-            0.255759,
-            0.255669
-          ],
-          "center": [
-            0.167784,
-            -0.700395,
-            0.440765
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.336399,
-            -0.412615,
-            0.277725
-          ],
-          "bounds_max": [
-            0.348525,
-            -0.247498,
-            0.342857
-          ],
-          "dimensions": [
-            0.012126,
-            0.165118,
-            0.065132
-          ],
-          "center": [
-            0.342462,
-            -0.330057,
-            0.310291
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightPeroni14": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.396416,
-            -2.432966,
-            0.141852
-          ],
-          "bounds_max": [
-            0.487611,
-            -2.167353,
-            0.296725
-          ],
-          "dimensions": [
-            0.091195,
-            0.265613,
-            0.154873
-          ],
-          "center": [
-            0.442014,
-            -2.300159,
-            0.219289
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightRichardMille6": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.203292,
-            0.817595,
-            0.207
-          ],
-          "bounds_max": [
-            0.236783,
-            1.242665,
-            0.263847
-          ],
-          "dimensions": [
-            0.033491,
-            0.42507,
-            0.056847
-          ],
-          "center": [
-            0.220038,
-            1.03013,
-            0.235424
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightShell3": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.476469,
-            -0.452838,
-            -0.062747
-          ],
-          "bounds_max": [
-            0.589876,
-            -0.167479,
-            0.203833
-          ],
-          "dimensions": [
-            0.113407,
-            0.285359,
-            0.26658
-          ],
-          "center": [
-            0.533172,
-            -0.310158,
-            0.070543
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightUniCredit11": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.13268,
-            1.77517,
-            0.0685
-          ],
-          "bounds_max": [
-            0.172202,
-            2.047877,
-            0.151912
-          ],
-          "dimensions": [
-            0.039522,
-            0.272706,
-            0.083412
-          ],
-          "center": [
-            0.152441,
-            1.911524,
-            0.110206
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightUniCredit12": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.586869,
-            2.179991,
-            -0.087023
-          ],
-          "bounds_max": [
-            0.591795,
-            2.44083,
-            -0.021939
-          ],
-          "dimensions": [
-            0.004926,
-            0.260839,
-            0.065084
-          ],
-          "center": [
-            0.589332,
-            2.31041,
-            -0.054481
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightUniCredit2": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.102697,
-            -0.990364,
-            0.175124
-          ],
-          "bounds_max": [
-            0.475225,
-            -0.550208,
-            0.296165
-          ],
-          "dimensions": [
-            0.372528,
-            0.440156,
-            0.121041
-          ],
-          "center": [
-            0.288961,
-            -0.770286,
-            0.235644
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightVPower13": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.514558,
-            -2.442601,
-            0.340104
-          ],
-          "bounds_max": [
-            0.561367,
-            -2.157237,
-            0.419418
-          ],
-          "dimensions": [
-            0.046809,
-            0.285365,
-            0.079314
-          ],
-          "center": [
-            0.537963,
-            -2.299919,
-            0.379761
-          ]
-        },
-        "GEO_CHASSIS_DECAL_RightZyn8": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.001"
-          ],
-          "bounds_min": [
-            0.349643,
-            -0.147666,
-            0.241963
-          ],
-          "bounds_max": [
-            0.52828,
-            -0.002444,
-            0.293446
-          ],
-          "dimensions": [
-            0.178637,
-            0.145222,
-            0.051483
-          ],
-          "center": [
-            0.438962,
-            -0.075055,
-            0.267705
+            0.000991,
+            0.475,
+            0.250186
           ]
         },
         "GEO_CHASSIS_ENDPLATE": {
           "materials": [
-            "ReferenceSatinChassisCarbon"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.859598,
@@ -1273,7 +373,7 @@
         },
         "GEO_CHASSIS_EXHAUST_TUBE_LEFT": {
           "materials": [
-            "PolishedChromeExhaustMetal",
+            "BakedPhysicalPolishedChrome",
             "ExhaustInteriorDarkMetal"
           ],
           "bounds_min": [
@@ -1299,7 +399,7 @@
         },
         "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": {
           "materials": [
-            "PolishedChromeExhaustMetal",
+            "BakedPhysicalPolishedChrome",
             "ExhaustInteriorDarkMetal"
           ],
           "bounds_min": [
@@ -1325,7 +425,7 @@
         },
         "GEO_CHASSIS_FLOOR": {
           "materials": [
-            "ReferenceSatinChassisCarbon.001"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.716683,
@@ -1350,7 +450,7 @@
         },
         "GEO_CHASSIS_FRONTSUPPORT": {
           "materials": [
-            "ReferenceSatinChassisCarbon"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.079987,
@@ -1375,7 +475,7 @@
         },
         "GEO_CHASSIS_FRONTWING": {
           "materials": [
-            "ReferenceSatinChassisCarbon"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.580175,
@@ -1400,7 +500,7 @@
         },
         "GEO_CHASSIS_FRONT_SUSPENSION": {
           "materials": [
-            "ReferenceSatinChassisCarbon.001"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.586605,
@@ -1475,7 +575,7 @@
         },
         "GEO_CHASSIS_MIRRORS": {
           "materials": [
-            "ReferenceRedChassisLacquer.001"
+            "FormulaOne2030RedPaintWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.648605,
@@ -1550,7 +650,7 @@
         },
         "GEO_CHASSIS_REARSUPPORT": {
           "materials": [
-            "ReferenceSatinChassisCarbon.002"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.065,
@@ -1575,7 +675,7 @@
         },
         "GEO_CHASSIS_REAR_SUSPENSION": {
           "materials": [
-            "ReferenceSatinChassisCarbon.001"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.510495,
@@ -1600,7 +700,7 @@
         },
         "GEO_CHASSIS_REAR_WING": {
           "materials": [
-            "ReferenceSatinChassisCarbon.002"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.56228,
@@ -1625,7 +725,7 @@
         },
         "GEO_CHASSIS_REAR_WING_MID": {
           "materials": [
-            "ReferenceSatinChassisCarbon.002"
+            "FormulaOne2030CarbonSurfaceWithFlatChassisDecals"
           ],
           "bounds_min": [
             -0.403855,
@@ -1805,11 +905,11 @@
       }
     },
     "wheel_FL": {
-      "mesh_count": 9,
-      "vertices": 8873,
-      "polygons": 3852,
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
       "bounds_min": [
-        -0.166416,
+        -0.165,
         -0.329991,
         -0.33
       ],
@@ -1819,12 +919,12 @@
         0.33
       ],
       "dimensions": [
-        0.369465,
+        0.368048,
         0.659981,
         0.66
       ],
       "center": [
-        0.018316,
+        0.019024,
         -0.0,
         -0.0
       ],
@@ -1834,64 +934,14 @@
         0.66
       ],
       "tire_center": [
-        -0.0,
+        0.0,
         -0.0,
         -0.0
       ],
       "objects": {
-        "GEO_WHEEL_FRONT_L_DECAL_PZero": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.002"
-          ],
-          "bounds_min": [
-            -0.166416,
-            -0.123615,
-            -0.284101
-          ],
-          "bounds_max": [
-            -0.159183,
-            0.123615,
-            -0.241346
-          ],
-          "dimensions": [
-            0.007234,
-            0.247231,
-            0.042756
-          ],
-          "center": [
-            -0.162799,
-            0.0,
-            -0.262724
-          ]
-        },
-        "GEO_WHEEL_FRONT_L_DECAL_Pirelli": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.002"
-          ],
-          "bounds_min": [
-            -0.166416,
-            -0.086153,
-            0.246926
-          ],
-          "bounds_max": [
-            -0.165295,
-            0.086153,
-            0.278018
-          ],
-          "dimensions": [
-            0.001121,
-            0.172306,
-            0.031092
-          ],
-          "center": [
-            -0.165856,
-            0.0,
-            0.262472
-          ]
-        },
         "GEO_WHEEL_FRONT_L_NUT_02": {
           "materials": [
-            "Reference_Hub_Metal"
+            "FormulaOne2030PreservedWheelReference_Hub_Metal.003"
           ],
           "bounds_min": [
             -0.157681,
@@ -1916,10 +966,10 @@
         },
         "GEO_WHEEL_FRONT_L_NUT_05": {
           "materials": [
-            "Reference_Hub_Red"
+            "FormulaOne2030PreservedWheelReference_Hub_Red.003"
           ],
           "bounds_min": [
-            -0.013524,
+            -0.013523,
             -0.150769,
             -0.0819
           ],
@@ -1934,14 +984,14 @@
             0.163801
           ],
           "center": [
-            -0.0,
+            0.0,
             -0.112629,
-            -0.0
+            0.0
           ]
         },
         "GEO_WHEEL_FRONT_L_RIM_01": {
           "materials": [
-            "ReferenceGraphiteWheelMetal"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.003"
           ],
           "bounds_min": [
             -0.109045,
@@ -1966,7 +1016,7 @@
         },
         "GEO_WHEEL_FRONT_L_RIM_03": {
           "materials": [
-            "Reference_Rim_Black"
+            "FormulaOne2030PreservedWheelReference_Rim_Black.003"
           ],
           "bounds_min": [
             -0.010178,
@@ -1984,15 +1034,15 @@
             0.290298
           ],
           "center": [
-            -1e-06,
+            -0.0,
             0.0,
             0.0
           ]
         },
         "GEO_WHEEL_FRONT_L_RIM_04": {
           "materials": [
-            "ReferenceGraphiteWheelMetal",
-            "ReferenceChampagneGoldWheelMetal.001"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.003",
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.007"
           ],
           "bounds_min": [
             -0.149294,
@@ -2017,7 +1067,7 @@
         },
         "GEO_WHEEL_FRONT_L_RIM_06": {
           "materials": [
-            "ReferenceChampagneGoldWheelMetal"
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.006"
           ],
           "bounds_min": [
             0.111937,
@@ -2042,7 +1092,7 @@
         },
         "GEO_WHEEL_FRONT_L_TIRE": {
           "materials": [
-            "ReferenceMatch_GEO_INDY2010_FL_TIRE.001"
+            "FormulaOne2030TireSurface"
           ],
           "bounds_min": [
             -0.165,
@@ -2060,7 +1110,7 @@
             0.66
           ],
           "center": [
-            -0.0,
+            0.0,
             -0.0,
             -0.0
           ]
@@ -2068,8 +1118,6 @@
       },
       "visual_groups": {
         "SpinVisual": [
-          "GEO_WHEEL_FRONT_L_DECAL_PZero",
-          "GEO_WHEEL_FRONT_L_DECAL_Pirelli",
           "GEO_WHEEL_FRONT_L_NUT_02",
           "GEO_WHEEL_FRONT_L_RIM_01",
           "GEO_WHEEL_FRONT_L_RIM_03",
@@ -2083,26 +1131,26 @@
       }
     },
     "wheel_FR": {
-      "mesh_count": 9,
-      "vertices": 8873,
-      "polygons": 3852,
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
       "bounds_min": [
         -0.203048,
         -0.329991,
         -0.33
       ],
       "bounds_max": [
-        0.166416,
+        0.165,
         0.329991,
         0.33
       ],
       "dimensions": [
-        0.369465,
+        0.368048,
         0.659981,
         0.66
       ],
       "center": [
-        -0.018316,
+        -0.019024,
         0.0,
         0.0
       ],
@@ -2117,59 +1165,9 @@
         0.0
       ],
       "objects": {
-        "GEO_WHEEL_FRONT_R_DECAL_PZero": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.003"
-          ],
-          "bounds_min": [
-            0.159182,
-            -0.123615,
-            -0.284101
-          ],
-          "bounds_max": [
-            0.166416,
-            0.123615,
-            -0.241346
-          ],
-          "dimensions": [
-            0.007234,
-            0.247231,
-            0.042756
-          ],
-          "center": [
-            0.162799,
-            0.0,
-            -0.262724
-          ]
-        },
-        "GEO_WHEEL_FRONT_R_DECAL_Pirelli": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.003"
-          ],
-          "bounds_min": [
-            0.165295,
-            -0.086153,
-            0.246926
-          ],
-          "bounds_max": [
-            0.166416,
-            0.086153,
-            0.278018
-          ],
-          "dimensions": [
-            0.001121,
-            0.172306,
-            0.031092
-          ],
-          "center": [
-            0.165856,
-            0.0,
-            0.262472
-          ]
-        },
         "GEO_WHEEL_FRONT_R_NUT_02": {
           "materials": [
-            "Reference_Hub_Metal.001"
+            "FormulaOne2030PreservedWheelReference_Hub_Metal.002"
           ],
           "bounds_min": [
             0.127333,
@@ -2194,7 +1192,7 @@
         },
         "GEO_WHEEL_FRONT_R_NUT_05": {
           "materials": [
-            "Reference_Hub_Red.001"
+            "FormulaOne2030PreservedWheelReference_Hub_Red.002"
           ],
           "bounds_min": [
             -0.013524,
@@ -2219,7 +1217,7 @@
         },
         "GEO_WHEEL_FRONT_R_RIM_01": {
           "materials": [
-            "ReferenceGraphiteWheelMetal.001"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.002"
           ],
           "bounds_min": [
             -0.143949,
@@ -2244,7 +1242,7 @@
         },
         "GEO_WHEEL_FRONT_R_RIM_03": {
           "materials": [
-            "Reference_Rim_Black.001"
+            "FormulaOne2030PreservedWheelReference_Rim_Black.002"
           ],
           "bounds_min": [
             -0.010177,
@@ -2269,8 +1267,8 @@
         },
         "GEO_WHEEL_FRONT_R_RIM_04": {
           "materials": [
-            "ReferenceGraphiteWheelMetal.001",
-            "ReferenceChampagneGoldWheelMetal.003"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.002",
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.005"
           ],
           "bounds_min": [
             -0.149294,
@@ -2295,7 +1293,7 @@
         },
         "GEO_WHEEL_FRONT_R_RIM_06": {
           "materials": [
-            "ReferenceChampagneGoldWheelMetal.002"
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.004"
           ],
           "bounds_min": [
             -0.203048,
@@ -2320,7 +1318,7 @@
         },
         "GEO_WHEEL_FRONT_R_TIRE": {
           "materials": [
-            "ReferenceMatch_GEO_INDY2010_FR_TIRE.001"
+            "FormulaOne2030TireSurface.001"
           ],
           "bounds_min": [
             -0.165,
@@ -2346,8 +1344,6 @@
       },
       "visual_groups": {
         "SpinVisual": [
-          "GEO_WHEEL_FRONT_R_DECAL_PZero",
-          "GEO_WHEEL_FRONT_R_DECAL_Pirelli",
           "GEO_WHEEL_FRONT_R_NUT_02",
           "GEO_WHEEL_FRONT_R_RIM_01",
           "GEO_WHEEL_FRONT_R_RIM_03",
@@ -2361,11 +1357,11 @@
       }
     },
     "wheel_RL": {
-      "mesh_count": 9,
-      "vertices": 8873,
-      "polygons": 3852,
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
       "bounds_min": [
-        -0.211506,
+        -0.21,
         -0.329991,
         -0.33
       ],
@@ -2375,12 +1371,12 @@
         0.33
       ],
       "dimensions": [
-        0.46993,
+        0.468424,
         0.659982,
         0.66
       ],
       "center": [
-        0.023459,
+        0.024212,
         0.0,
         0.0
       ],
@@ -2395,59 +1391,9 @@
         0.0
       ],
       "objects": {
-        "GEO_WHEEL_REAR_L_DECAL_PZero": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.004"
-          ],
-          "bounds_min": [
-            -0.211505,
-            -0.123649,
-            -0.284183
-          ],
-          "bounds_max": [
-            -0.202281,
-            0.123649,
-            -0.241283
-          ],
-          "dimensions": [
-            0.009224,
-            0.247299,
-            0.0429
-          ],
-          "center": [
-            -0.206893,
-            -0.0,
-            -0.262733
-          ]
-        },
-        "GEO_WHEEL_REAR_L_DECAL_Pirelli": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.004"
-          ],
-          "bounds_min": [
-            -0.211506,
-            -0.086153,
-            0.246862
-          ],
-          "bounds_max": [
-            -0.210069,
-            0.086153,
-            0.278018
-          ],
-          "dimensions": [
-            0.001436,
-            0.172306,
-            0.031157
-          ],
-          "center": [
-            -0.210788,
-            -0.0,
-            0.26244
-          ]
-        },
         "GEO_WHEEL_REAR_L_NUT_02": {
           "materials": [
-            "Reference_Hub_Metal.002"
+            "FormulaOne2030PreservedWheelReference_Hub_Metal.001"
           ],
           "bounds_min": [
             -0.200686,
@@ -2472,7 +1418,7 @@
         },
         "GEO_WHEEL_REAR_L_NUT_05": {
           "materials": [
-            "Reference_Hub_Red.002"
+            "FormulaOne2030PreservedWheelReference_Hub_Red.001"
           ],
           "bounds_min": [
             -0.017212,
@@ -2485,7 +1431,7 @@
             0.0819
           ],
           "dimensions": [
-            0.034423,
+            0.034424,
             0.07628,
             0.163801
           ],
@@ -2497,11 +1443,11 @@
         },
         "GEO_WHEEL_REAR_L_RIM_01": {
           "materials": [
-            "ReferenceGraphiteWheelMetal.002"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.001"
           ],
           "bounds_min": [
             -0.138786,
-            -0.032835,
+            -0.032836,
             -0.032639
           ],
           "bounds_max": [
@@ -2522,11 +1468,11 @@
         },
         "GEO_WHEEL_REAR_L_RIM_03": {
           "materials": [
-            "Reference_Rim_Black.002"
+            "FormulaOne2030PreservedWheelReference_Rim_Black.001"
           ],
           "bounds_min": [
             -0.012955,
-            -0.145948,
+            -0.145949,
             -0.145149
           ],
           "bounds_max": [
@@ -2547,8 +1493,8 @@
         },
         "GEO_WHEEL_REAR_L_RIM_04": {
           "materials": [
-            "ReferenceGraphiteWheelMetal.002",
-            "ReferenceChampagneGoldWheelMetal.005"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.001",
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.003"
           ],
           "bounds_min": [
             -0.190011,
@@ -2567,13 +1513,13 @@
           ],
           "center": [
             -0.0,
-            -0.0,
+            -1e-06,
             0.0
           ]
         },
         "GEO_WHEEL_REAR_L_RIM_06": {
           "materials": [
-            "ReferenceChampagneGoldWheelMetal.004"
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.002"
           ],
           "bounds_min": [
             0.142465,
@@ -2592,13 +1538,13 @@
           ],
           "center": [
             0.200445,
-            -0.0,
+            -1e-06,
             1.6e-05
           ]
         },
         "GEO_WHEEL_REAR_L_TIRE": {
           "materials": [
-            "ReferenceMatch_GEO_INDY2010_RL_TIRE.001"
+            "FormulaOne2030TireSurface.002"
           ],
           "bounds_min": [
             -0.21,
@@ -2624,8 +1570,6 @@
       },
       "visual_groups": {
         "SpinVisual": [
-          "GEO_WHEEL_REAR_L_DECAL_PZero",
-          "GEO_WHEEL_REAR_L_DECAL_Pirelli",
           "GEO_WHEEL_REAR_L_NUT_02",
           "GEO_WHEEL_REAR_L_RIM_01",
           "GEO_WHEEL_REAR_L_RIM_03",
@@ -2639,26 +1583,26 @@
       }
     },
     "wheel_RR": {
-      "mesh_count": 9,
-      "vertices": 8873,
-      "polygons": 3852,
+      "mesh_count": 7,
+      "vertices": 8244,
+      "polygons": 2748,
       "bounds_min": [
         -0.258424,
         -0.329991,
         -0.33
       ],
       "bounds_max": [
-        0.211505,
+        0.21,
         0.329991,
         0.33
       ],
       "dimensions": [
-        0.46993,
+        0.468424,
         0.659982,
         0.66
       ],
       "center": [
-        -0.023459,
+        -0.024212,
         0.0,
         0.0
       ],
@@ -2673,59 +1617,9 @@
         0.0
       ],
       "objects": {
-        "GEO_WHEEL_REAR_R_DECAL_PZero": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.005"
-          ],
-          "bounds_min": [
-            0.202281,
-            -0.123649,
-            -0.284183
-          ],
-          "bounds_max": [
-            0.211505,
-            0.123649,
-            -0.241283
-          ],
-          "dimensions": [
-            0.009224,
-            0.247299,
-            0.0429
-          ],
-          "center": [
-            0.206893,
-            -0.0,
-            -0.262733
-          ]
-        },
-        "GEO_WHEEL_REAR_R_DECAL_Pirelli": {
-          "materials": [
-            "ReferenceSponsorPrintedDecals.005"
-          ],
-          "bounds_min": [
-            0.210069,
-            -0.086153,
-            0.246862
-          ],
-          "bounds_max": [
-            0.211505,
-            0.086153,
-            0.278018
-          ],
-          "dimensions": [
-            0.001436,
-            0.172306,
-            0.031157
-          ],
-          "center": [
-            0.210787,
-            -0.0,
-            0.26244
-          ]
-        },
         "GEO_WHEEL_REAR_R_NUT_02": {
           "materials": [
-            "Reference_Hub_Metal.003"
+            "FormulaOne2030PreservedWheelReference_Hub_Metal"
           ],
           "bounds_min": [
             0.162061,
@@ -2750,7 +1644,7 @@
         },
         "GEO_WHEEL_REAR_R_NUT_05": {
           "materials": [
-            "Reference_Hub_Red.003"
+            "FormulaOne2030PreservedWheelReference_Hub_Red"
           ],
           "bounds_min": [
             -0.017211,
@@ -2775,7 +1669,7 @@
         },
         "GEO_WHEEL_REAR_R_RIM_01": {
           "materials": [
-            "ReferenceGraphiteWheelMetal.003"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal"
           ],
           "bounds_min": [
             -0.183208,
@@ -2800,7 +1694,7 @@
         },
         "GEO_WHEEL_REAR_R_RIM_03": {
           "materials": [
-            "Reference_Rim_Black.003"
+            "FormulaOne2030PreservedWheelReference_Rim_Black"
           ],
           "bounds_min": [
             -0.012952,
@@ -2825,8 +1719,8 @@
         },
         "GEO_WHEEL_REAR_R_RIM_04": {
           "materials": [
-            "ReferenceGraphiteWheelMetal.003",
-            "ReferenceChampagneGoldWheelMetal.007"
+            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal",
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.001"
           ],
           "bounds_min": [
             -0.190011,
@@ -2851,7 +1745,7 @@
         },
         "GEO_WHEEL_REAR_R_RIM_06": {
           "materials": [
-            "ReferenceChampagneGoldWheelMetal.006"
+            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal"
           ],
           "bounds_min": [
             -0.258424,
@@ -2876,7 +1770,7 @@
         },
         "GEO_WHEEL_REAR_R_TIRE": {
           "materials": [
-            "ReferenceMatch_GEO_INDY2010_RR_TIRE.001"
+            "FormulaOne2030TireSurface.003"
           ],
           "bounds_min": [
             -0.21,
@@ -2902,8 +1796,6 @@
       },
       "visual_groups": {
         "SpinVisual": [
-          "GEO_WHEEL_REAR_R_DECAL_PZero",
-          "GEO_WHEEL_REAR_R_DECAL_Pirelli",
           "GEO_WHEEL_REAR_R_NUT_02",
           "GEO_WHEEL_REAR_R_RIM_01",
           "GEO_WHEEL_REAR_R_RIM_03",

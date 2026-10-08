@@ -1,0 +1,675 @@
+{
+  "source_before_sha256": "f42e3f8479207a4c53b892a885279fe193eaa88c6b017e586659ba62305f17c6",
+  "source_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "protected_mesh_fingerprints": {
+    "GEO_CHASSIS_ACTIVEFRONT": "ee0729d2d71bcbe897c8df1e2cba902736c974da559f9b871f6cdcdca95ffcbc",
+    "GEO_CHASSIS_AERO2": "125fd46b4d58771a50077ecb1bcfb6c72a261308674320f2f806743174a755c7",
+    "GEO_CHASSIS_AEROPART1": "31af15d51060bb81ead37c9c800bfe8bb59ac847cddecb0b971e4f4f2b071329",
+    "GEO_CHASSIS_AEROPART2": "cbf50804713ffa14d0caef4862436c2f6661048e5513cf1efe0b4d2ba1b5e239",
+    "GEO_CHASSIS_AEROPART3": "b722f3fe7f4c89b9afc3232514a3e82832865bbd714002f32268ebe169698b34",
+    "GEO_CHASSIS_BODY": "941bb38a9bc30def9ba5d858daca30c1f8b6dd5fb744ffaf3b3a8b2fb0697a80",
+    "GEO_CHASSIS_CARBON3": "60020c54054deb580dcc70be8e1f678a2a2857dbc97750f0eeb7469f31d0b011",
+    "GEO_CHASSIS_CARBON4": "fa8fddfc453a044cf53a31013b97591d174ea4629f322f0b92b3c517e5971be5",
+    "GEO_CHASSIS_CARBON5": "21e7883dbf0b3cdd6e0a4cb68d9c095c8bdbc32a70edb970349c339ff852def9",
+    "GEO_CHASSIS_CockpitUpperLining": "c6ba135839942371c40fef3f2429ea21cf52538a15a00dc552f94a91a2f53f8d",
+    "GEO_CHASSIS_CYLINDER_001": "6f98cb2df3c22223afbbe0e9da4997ab376848143c4badc2243d6bac65d6205b",
+    "GEO_CHASSIS_ENDPLATE": "57c5c82670a8a8b9ed171cc6e1a81a8530a21c96f9722bb268e12e4f21113c3c",
+    "GEO_CHASSIS_EXHAUST_TUBE_LEFT": "a8c665e21163d8f7d84063b252c95f090f9177ec13bca827bec87764d6aa172d",
+    "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": "6d2ecf336086f082ccc4d43cccaa76e528d42b1b464a1901663cfd6c06d02b77",
+    "GEO_CHASSIS_FLOOR": "24d2eedb3fd9de36eaf4ee77c787db0a9d26090b967410e256dcdf895fab9aa8",
+    "GEO_CHASSIS_FRONT_SUSPENSION": "74473ab2ffc1813331fb5ddb67389b838d5fdf430659a417ac9b0f0feba94709",
+    "GEO_CHASSIS_FRONTSUPPORT": "0347191fd7f7189958a70cf7411501eb324782ad2df2bfea4616cd8c02693ee3",
+    "GEO_CHASSIS_FRONTWING": "6cdfe532506834aa9c70299c23da7f777381e6b53d1268c555ad9098b071de9b",
+    "GEO_CHASSIS_INTERIOR": "fd34235a59377a50fc21210fd6a21f315ce4ce73e6d1f8c8b2f1f3c3bcf44b43",
+    "GEO_CHASSIS_LATERALCAM": "6a3797b2776425f7a2fbc37832f7a67950812a715f6ab8d317409d6992334085",
+    "GEO_CHASSIS_MIRRORS": "9207b22ad1f78057a56b497fbdb7b6c3eb9cbd0e34e0d9d4de50336bb538e73d",
+    "GEO_CHASSIS_ONBOARDCAM": "3498d7de18ff5e34820cd0b3be25533dc9a3fcec8308884ee3601a96dfed3c2a",
+    "GEO_CHASSIS_REAR_SUSPENSION": "f196d0eeba1ac5fdfe2e7b834537f07b9b88ad3bbd9231a22e295940b0839b1b",
+    "GEO_CHASSIS_REAR_WING": "3a73feafcf6e584d91814055f4a42818c076eed914a2a8ef1167d16a3f76f82e",
+    "GEO_CHASSIS_REAR_WING_MID": "e3ee2031d975e0d0e15dbf5b35114797faa2432521b573e3ae143431b881c3ef",
+    "GEO_CHASSIS_REARLIGHT": "47bb450d00f29b61c02043d453d326e8070ecbb551a41df96d8ef677d2833044",
+    "GEO_CHASSIS_REARSUPPORT": "36e503c4fcfc322405c9f8d6882b8c8a923cb81f99dcdc71c06eeb24effc36c5",
+    "GEO_CHASSIS_SCREEN": "cae286c400fd5823fa222f5b48b3f68870e6b0c78436693368e52ff2ff59ffc8",
+    "GEO_CHASSIS_SEAT": "b869167a816a0342e07f607a4381402318a1a17937a287c1614d82a3611c2ede",
+    "GEO_CHASSIS_SHIFTERBRAK": "f210d87fb438a9dbc54757debbc48f3c5fbb99e62be5f68359b85bf23dbddd42",
+    "GEO_CHASSIS_SHIFTERTHRO": "dece7e1154043609f0e48e93d07da313068c4b8d20a8616f5e4c7ec493f6b593",
+    "GEO_CHASSIS_STEER": "9a04936ba220431247521ef84b9c535899ec0081ac4cdde1436361b55d92b2a5",
+    "GEO_CHASSIS_STEERCOLUM": "1672385515893be0b032d69597115d758c3e76c611e5104e0208056f75bcca39",
+    "GEO_WHEEL_FRONT_L_NUT_02": "1db63d21f286343957854c599bb488106790a62ebeb62c2e58dcea5e8cc0da25",
+    "GEO_WHEEL_FRONT_L_NUT_05": "7cf77179421a8fdff26d9f1f28d5e671124090efccf56cbabb1249fc67649ee8",
+    "GEO_WHEEL_FRONT_L_RIM_01": "5f49da8b4b4cb02600f29b78fac969b2f7d803e76825b021dea09ff54701b29c",
+    "GEO_WHEEL_FRONT_L_RIM_03": "fa28adcee08f6e5f265075a53411e33eec57bbc80b75c476f79bafb971a15f3d",
+    "GEO_WHEEL_FRONT_L_RIM_04": "3145b7945cba02ca1c149944f2907e2fe48ca8ce3db143ee0d3d297e68f9613f",
+    "GEO_WHEEL_FRONT_L_RIM_06": "ee78ad20cc20c539815cbf3e539ffeb2777c7d52d97724b4fdfc39a1a65efd6b",
+    "GEO_WHEEL_FRONT_L_TIRE": "fb27e2cc843950c55dd79b57918589e1e3a1e76e3ee765a2b2f2de5aa1621574",
+    "GEO_WHEEL_FRONT_R_NUT_02": "60569fa5e35fca1fbcf5291e898540c02d77d76740cdf318976e83c01adae197",
+    "GEO_WHEEL_FRONT_R_NUT_05": "1a32e6f7e05d204271f6ac23008be6b4c56cff414560bea05f7c4cdcec7dd4b0",
+    "GEO_WHEEL_FRONT_R_RIM_01": "c667db1b0aa40d8ba9cafa4791f0da6405083dca2c1c7c4059cae9941817f3be",
+    "GEO_WHEEL_FRONT_R_RIM_03": "0fd258cd47b5d2ac8d3528913d52b5e687676533df3887ba14a492b86f00690b",
+    "GEO_WHEEL_FRONT_R_RIM_04": "a84606b9e499bc2b8959105926dfb0d3dab31bd3771eddcb2ea1c25ffec23588",
+    "GEO_WHEEL_FRONT_R_RIM_06": "968f1578c7f9b1666a9f575a0bec250838877b11fe91b3cf896df82f00197839",
+    "GEO_WHEEL_FRONT_R_TIRE": "e384f56efb59fba7d453772c0368b254e42b8a71a47ad0cf7bf66a90396e5c4d",
+    "GEO_WHEEL_REAR_L_NUT_02": "75a8c292e53af18a0da33621d9977225008e22a66e43bfae864aaf3a296972c4",
+    "GEO_WHEEL_REAR_L_NUT_05": "a88e328b2b98c77a6776b7bf6f8b9ad49ca3cfc479e9b00f446c22b72fd77c68",
+    "GEO_WHEEL_REAR_L_RIM_01": "593932a07f65b53859b1e90be148121e0e1b125ac0965a902961505a91dc0b91",
+    "GEO_WHEEL_REAR_L_RIM_03": "05b7624223a1d8c10d64982edd9ffbb5379b639f1f9de3c4bd344121f5cecced",
+    "GEO_WHEEL_REAR_L_RIM_04": "67a4c815e7d8bb1daac059a1a2d1f1069b1d865740e230164be7067125bc617b",
+    "GEO_WHEEL_REAR_L_RIM_06": "a8a0a8d625ad3cc26bd8e4a3108c6c6fc4c0b91dfe768ca7a47b1b770173240d",
+    "GEO_WHEEL_REAR_L_TIRE": "1da57bbffd09f80c9cd8d01a42fd3798004054b413c22cc8296023e5573ab411",
+    "GEO_WHEEL_REAR_R_NUT_02": "91a80ffa1ca1648c7b2bf9424f612bf5419f066bb2be082c11443cdbd9f42575",
+    "GEO_WHEEL_REAR_R_NUT_05": "12124b0684a891f6daa21217ed1e3c5598e295276fd057d9b5dfb34ca25fbf7b",
+    "GEO_WHEEL_REAR_R_RIM_01": "2dd2f96fd68b1c5e6bb7b98c13d40af3755710897f12b6f053681608f542de81",
+    "GEO_WHEEL_REAR_R_RIM_03": "47ffd0ccdfc801791b3cc0566ac5302a084d0f0ea3aacf8845c610df6f4be06d",
+    "GEO_WHEEL_REAR_R_RIM_04": "45a0afb00000c8aff26fe6c00c4fd0fb3cf80ec751676ca81fff52eef33356f4",
+    "GEO_WHEEL_REAR_R_RIM_06": "56c87a9f7fbaaf0cccb8419c6f544b2e5dcfe9082db9ff32505959d8de5fe5ad",
+    "GEO_WHEEL_REAR_R_TIRE": "1b8ff150d4921cbd80b12374960d03f9425588235250211bd500e599f0c31885",
+    "StudioGround": "6d2a97663cc19a1657d272fce0648c4ec26c7af45a660e01e3b83fe168ead2db"
+  },
+  "protected_mesh_count": 62,
+  "protected_geometry_unchanged": true,
+  "headrest_object": "GEO_CHASSIS_CockpitHeadrestPadding",
+  "rear_center_height_increase_meters": null,
+  "lower_edge_fit": {
+    "attachment_clearance_meters": 0.0,
+    "outer_upper_edge": "Shared exact cockpit rim",
+    "inner_upper_edge_recess_meters": {
+      "rear": 0.004,
+      "front": 0.006
+    },
+    "fit_target": "Existing lining and interior surface sections; sealed perimeter and recessed exposed padding"
+  },
+  "clearance": {
+    "chassis_intersections": {},
+    "intentional_cockpit_attachment_contacts": {
+      "GEO_CHASSIS_BODY": {
+        "triangle_pairs": 781,
+        "kind": "Shared cockpit rim interface"
+      },
+      "GEO_CHASSIS_CockpitUpperLining": {
+        "triangle_pairs": 10858,
+        "headrest_triangle_indices": [
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          116,
+          117,
+          118,
+          119,
+          121,
+          122,
+          123,
+          124,
+          125,
+          167,
+          168,
+          169,
+          216,
+          217,
+          218,
+          219,
+          220,
+          221
+        ]
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "triangle_pairs": 10288,
+        "headrest_triangle_indices": [
+          12,
+          13,
+          14,
+          16,
+          17,
+          63,
+          64,
+          65,
+          66,
+          67,
+          112,
+          113,
+          114,
+          115,
+          117,
+          163,
+          164,
+          165,
+          166,
+          167,
+          217,
+          218,
+          262,
+          263,
+          264,
+          312,
+          313,
+          314,
+          315,
+          363,
+          364,
+          365,
+          412,
+          413,
+          414,
+          415,
+          416,
+          462,
+          463,
+          464
+        ]
+      }
+    },
+    "driver_intersections": [
+      {
+        "steering_degrees": -55.0,
+        "triangle_pairs": 22,
+        "bones": [
+          "mixamorig_LeftArm",
+          "mixamorig_LeftForeArm"
+        ],
+        "maximum_sampled_penetration_meters": 0.0007167215808294713
+      },
+      {
+        "steering_degrees": 55.0,
+        "triangle_pairs": 26,
+        "bones": [
+          "mixamorig_RightArm",
+          "mixamorig_RightForeArm"
+        ],
+        "maximum_sampled_penetration_meters": 0.0008127603796310723
+      }
+    ],
+    "driver_pose_count": 73,
+    "minimum_neutral_head_surface_separation_meters": 0.007754005957394838,
+    "bounds": {
+      "minimum_meters": [
+        -0.32245302200317383,
+        -0.40000003576278687,
+        0.16999998688697815
+      ],
+      "maximum_meters": [
+        0.3288755714893341,
+        0.2143656313419342,
+        0.37470880150794983
+      ],
+      "dimensions_meters": [
+        0.6513285934925079,
+        0.6143656671047211,
+        0.20470881462097168
+      ]
+    },
+    "triangle_count": 44312
+  },
+  "topology": {
+    "object": "GEO_CHASSIS_CockpitHeadrestPadding",
+    "vertices": 22158,
+    "polygons": 29962,
+    "triangles": 44312,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "zero_area_faces": 0,
+    "zero_length_edges": 0,
+    "minimum_triangle_area_square_meters": 2.8266416984834564E-10,
+    "signed_volume_cubic_meters": 0.008723669707024175,
+    "bounding_pairs_inspected_including_adjacent_triangles": 253562,
+    "intersection_boundary_tolerance_meters": 5E-07,
+    "triangle_crossing_pairs": [],
+    "coplanar_overlap_pairs": [],
+    "passed": true
+  },
+  "head_motion_validation": {
+    "capture_sample_count": 64,
+    "existing_chassis_collision_free_samples": 46,
+    "existing_chassis_collision_samples": [
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": -15.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": 15.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -45.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": -15.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": 15.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 15.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 15.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0
+      }
+    ],
+    "new_headrest_collision_samples": [
+      {
+        "category": "configured_nod_and_roll",
+        "pitch_degrees": -6.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": -3.0,
+        "triangle_pairs": 146,
+        "maximum_sampled_penetration_meters": 0.008469606749713421
+      },
+      {
+        "category": "configured_nod_and_roll",
+        "pitch_degrees": -6.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 125,
+        "maximum_sampled_penetration_meters": 0.008315443992614746
+      },
+      {
+        "category": "configured_nod_and_roll",
+        "pitch_degrees": -6.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 3.0,
+        "triangle_pairs": 150,
+        "maximum_sampled_penetration_meters": 0.008469666354358196
+      },
+      {
+        "category": "configured_nod_and_roll",
+        "pitch_degrees": -3.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": -3.0,
+        "triangle_pairs": 15,
+        "maximum_sampled_penetration_meters": 0.0005841528181917965
+      },
+      {
+        "category": "configured_nod_and_roll",
+        "pitch_degrees": -3.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 11,
+        "maximum_sampled_penetration_meters": 0.00041418601176701486
+      },
+      {
+        "category": "configured_nod_and_roll",
+        "pitch_degrees": -3.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 3.0,
+        "triangle_pairs": 15,
+        "maximum_sampled_penetration_meters": 0.0005840046214871109
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 1501,
+        "maximum_sampled_penetration_meters": 0.039448097348213196
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -30.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 1513,
+        "maximum_sampled_penetration_meters": 0.03944821655750275
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 1415,
+        "maximum_sampled_penetration_meters": 0.037880729883909225
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": -15.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 885,
+        "maximum_sampled_penetration_meters": 0.02752293273806572
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": 0.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 582,
+        "maximum_sampled_penetration_meters": 0.025147438049316406
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": 15.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 879,
+        "maximum_sampled_penetration_meters": 0.027522865682840347
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": -15.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 1443,
+        "maximum_sampled_penetration_meters": 0.03792201727628708
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 882,
+        "maximum_sampled_penetration_meters": 0.024709144607186317
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 0.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 903,
+        "maximum_sampled_penetration_meters": 0.024709243327379227
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 15.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 620,
+        "maximum_sampled_penetration_meters": 0.024156520143151283
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 15.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 619,
+        "maximum_sampled_penetration_meters": 0.02415657788515091
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 30.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 1208,
+        "maximum_sampled_penetration_meters": 0.02514471299946308
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 30.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 515,
+        "maximum_sampled_penetration_meters": 0.017612183466553688
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 30.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 504,
+        "maximum_sampled_penetration_meters": 0.017612285912036896
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 30.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 1188,
+        "maximum_sampled_penetration_meters": 0.02514486014842987
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 45.0,
+        "road_roll_degrees": -45.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 853,
+        "maximum_sampled_penetration_meters": 0.024585025385022163
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 45.0,
+        "road_roll_degrees": -30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 345,
+        "maximum_sampled_penetration_meters": 0.013260175473988056
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 45.0,
+        "road_roll_degrees": 30.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 336,
+        "maximum_sampled_penetration_meters": 0.013260279782116413
+      },
+      {
+        "category": "horizon_correction_extremes",
+        "pitch_degrees": 0.0,
+        "road_pitch_degrees": 45.0,
+        "road_roll_degrees": 45.0,
+        "roll_degrees": 0.0,
+        "triangle_pairs": 831,
+        "maximum_sampled_penetration_meters": 0.02471878007054329
+      }
+    ],
+    "configured_nod_and_roll_samples_checked": 15,
+    "maximum_configured_pose_penetration_meters": 0.008469666354358196,
+    "minor_animated_head_clipping_authorized": true,
+    "passed": true
+  },
+  "head_motion_capture_sha256": "3546e2b38cf41a344cb8e9495bf7922ed240a2fdb400b52ba85ecc3697b9f33a",
+  "steering_capture_sha256": "bedc56a7bb15a289832b4578cc6b54b5ff72a762a910038840c88ca740f03969",
+  "material": {
+    "name": "FormulaOne2030CockpitHeadrestSatinCarbon",
+    "weave_texture_coordinate_repeat_per_meter": 4.0,
+    "roughness": 0.44,
+    "metallic": 0.0
+  },
+  "runtime_exported": true,
+  "shape_priority": "Central rear circular support raised above the cockpit rim, with preserved chassis attachments and recessed front ends",
+  "cockpit_attachment": {
+    "attachment_vertices": 9288,
+    "attachment_edge_samples": 240039,
+    "maximum_attachment_edge_gap_meters": 0.0008766758255660534,
+    "visible_seam_samples": 2144,
+    "maximum_visible_seam_gap_meters": 1.4976195416238625E-05,
+    "minimum_exposed_padding_recess_below_rim_meters": 0.0009999871253967285,
+    "minimum_exposed_front_padding_recess_below_rim_meters": 0.0014079809188842773,
+    "outer_top_edge_flush_with_cockpit_rim": true,
+    "hidden_support_vertices_under_chassis": 1644,
+    "uncovered_support_vertices": [],
+    "passed": true,
+    "central_raised_support_exemption_vertices": 1011,
+    "original_attachment_vertices_unchanged": true
+  },
+  "historical_rear_height_request_superseded_by_cockpit_rim_fit": true,
+  "minor_animated_head_clipping_limit_meters": 0.012,
+  "passed": true,
+  "candidate_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\candidate\\f1_2030.blend",
+  "candidate_sha256": "60a7f855e46375ec323a6ff14d5a5637454504fd4f7105caccba0e8f0767a917",
+  "headrest_mesh_fingerprint": "e716b2066a10582d09bb564a816b7b0df8992d625f61acaa7893aa5235ef0a48",
+  "topology_verified_geometry_fingerprint": "e716b2066a10582d09bb564a816b7b0df8992d625f61acaa7893aa5235ef0a48",
+  "upper_seam_vertex_count": 716,
+  "source_after_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+  "promoted_to_authoring_source": true,
+  "saved_source_reopened_and_verified": true,
+  "studio_settings_preserved": true,
+  "new_object_count": 0,
+  "previous_headrest_replaced": true,
+  "runtime_chassis_sha256": "9d04e1ea51fad6fec5b005e90f509b9c16e3f77286429383e3b7c67bd7066fa6",
+  "runtime_chassis_unchanged": false,
+  "source_backup_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\original\\f1_2030.blend",
+  "review_images_directory": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\review",
+  "review_driver_is_temporary_geometry_proxy": true,
+  "fitted_dimensions_note": "The central rear crown has a 75 millimeter circular radius and 150 millimeter nominal diameter. Rounded transitions merge into the existing padding. Its crown reaches 374.709 millimeters in the exported chassis coordinate frame. All original attachment vertices and the recessed front ends remain unchanged.",
+  "validation_boundary": "Source topology, preserved chassis attachments and animated clearance passed. Five runtime assets were subsequently exported and their geometry, material textures, wheel groups and dimensions validated. Runtime visual review in a race remains separate.",
+  "raised_rear_support": {
+    "radius_meters": 0.075,
+    "diameter_meters": 0.15,
+    "base_height_meters": 0.2997088134288788,
+    "crown_height_meters": 0.3747088134288788,
+    "nominal_rear_top_depth_meters": 0.0175,
+    "lateral_blend_extension_meters": 0.015,
+    "changed_vertex_count": 1011
+  },
+  "previous_headrest_report_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\original\\cockpit_headrest_report.json",
+  "upper_support_generator": "tools/blender/raise_formula_one_2030_headrest_support.py",
+  "runtime_driver_sha256": "81c17904565e184dfd89def4a6d714ee0692d726b7dcff824a056161c632685f",
+  "runtime_driver_unchanged": true,
+  "runtime_export_source_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+  "runtime_headrest_material": {
+    "material": "FormulaOne2030HeadrestExportCarbon",
+    "texture_resolution": 2048,
+    "baked_textures": {
+      "HeadrestCarbonBaseColor": "D:\\Formula90s\\scratch\\headrest_glb_export_20261008\\candidate\\HeadrestCarbonBaseColor.png",
+      "HeadrestCarbonNormal": "D:\\Formula90s\\scratch\\headrest_glb_export_20261008\\candidate\\HeadrestCarbonNormal.png"
+    },
+    "roughness": 0.44,
+    "metallic": 0.0,
+    "baked_textures_embedded_in_chassis": true
+  },
+  "runtime_export_validation_passed": true,
+  "runtime_export_report_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\export_report.json",
+  "runtime_export_backup_directory": "D:\\Formula90s\\scratch\\headrest_glb_export_20261008\\original"
+}
