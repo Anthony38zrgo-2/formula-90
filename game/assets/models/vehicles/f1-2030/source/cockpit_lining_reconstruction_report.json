@@ -1,0 +1,4401 @@
+{
+  "source_before_sha256": "6cf022230aa986d043020c4b5c0deccb0b47240a39fe8b7708a7bc28bec7ee53",
+  "source_commit": "e949272e9b21a480805ec8f4aa2e6c551b6d0cc4",
+  "source_branch": "main-clean",
+  "source_status": [
+    " M game/BUILD_SOURCE",
+    " M game/addons/formula90s/bin/formula90_core.dll",
+    " M game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/game_sim.dll",
+    " M game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/psx_art_plugin.dll",
+    " M game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/vehicle_audio_engine.dll",
+    " M game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
+    " M game/assets/models/vehicles/f1-2030/export_report.json",
+    " M game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb",
+    " M game/assets/models/vehicles/f1-2030/manifest.json",
+    " M game/assets/models/vehicles/f1-2030/source/AGENTS.md",
+    " M game/assets/models/vehicles/f1-2030/source/f1_2030.blend",
+    " M instrucciones.md",
+    " M tools/blender/export_f1_2030_v10.py",
+    "?? game/assets/fonts/BarlowCondensed-Medium.ttf.import",
+    "?? game/assets/models/drivers/driver.glb.import",
+    "?? game/assets/models/pit_crew/racer/source/",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_chassis_red_lacquer_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_chassis_red_lacquer_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_normal.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_normal.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_occlusion_roughness_metallic.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_occlusion_roughness_metallic.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_normal.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_normal.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_occlusion_roughness_metallic.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_occlusion_roughness_metallic.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_normal.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_normal.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_occlusion_roughness_metallic.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_occlusion_roughness_metallic.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/source/cockpit_interior_sealing_report.json",
+    "?? game/assets/models/vehicles/f1-2030/source/cockpit_shading_report.json",
+    "?? game/assets/models/vehicles/f1-2030/source/textures/baked_physical_materials/",
+    "?? game/features/retro_hud/assets/digital_segment.svg.import",
+    "?? game/features/retro_hud/assets/divider.svg.import",
+    "?? game/features/retro_hud/assets/fuel_icon.svg.import",
+    "?? game/features/retro_hud/assets/fuel_segment.svg.import",
+    "?? game/features/retro_hud/assets/rpm_segment.svg.import",
+    "?? reference/",
+    "?? tools/blender/bake_f1_2030_physical_materials.py",
+    "?? tools/blender/reconstruct_formula_one_2030_cockpit_lining.py",
+    "?? tools/blender/refine_vehicle_finishes_and_save_studio.py",
+    "?? tools/blender/seal_formula_one_2030_cockpit_interior.py",
+    "?? tools/blender/shade_formula_one_2030_cockpit_surfaces.py",
+    "?? tools/blender/validate_formula_one_2030_cockpit_geometry.py"
+  ],
+  "protected_mesh_fingerprints": {
+    "GEO_CHASSIS_ACTIVEFRONT": "dd92d952ab944f675d42856b04f698a209c3c7297abdbcb33cda210686a0c48a",
+    "GEO_CHASSIS_AERO2": "339d146a5abaee067caddd2aac1f5970e228f43e7224ebfda926fe0ad4a2cc05",
+    "GEO_CHASSIS_AEROPART1": "6566b1fb231a6eae4ff360479ecda63d6c514895494d68ed133f1e54d0a9e072",
+    "GEO_CHASSIS_AEROPART2": "e3796f4d6e809b774e41d2550d2d9868ac1c35983bf5693feaec9c9252b1cd69",
+    "GEO_CHASSIS_AEROPART3": "8ac24e3046d2443f92e24c1197949bf06ca9728a126b67d8b2fd9068f3e11e90",
+    "GEO_CHASSIS_BODY": "9215e4b15461548313a3c9504f69f3a04cbbb428476c07f697ece688237aa693",
+    "GEO_CHASSIS_CARBON3": "60020c54054deb580dcc70be8e1f678a2a2857dbc97750f0eeb7469f31d0b011",
+    "GEO_CHASSIS_CARBON4": "fa8fddfc453a044cf53a31013b97591d174ea4629f322f0b92b3c517e5971be5",
+    "GEO_CHASSIS_CARBON5": "fd5cffb164bc907138288de5b6b32706f8aa3f943f2c522ef4d87e8b0829ee95",
+    "GEO_CHASSIS_CYLINDER_001": "6f98cb2df3c22223afbbe0e9da4997ab376848143c4badc2243d6bac65d6205b",
+    "GEO_CHASSIS_DECAL_LeftAmbipar15": "e81d735b59688296e4f6d356e51ba64860b052d41c3fa4472cf68a90eed7a107",
+    "GEO_CHASSIS_DECAL_LeftCevaLogistics4": "5cc3802250afd327a2b954f96101578a514d201b27f431917dda3294e82e129b",
+    "GEO_CHASSIS_DECAL_LeftDriverNumber1": "4a752dfca438f3143658ae89a3f3960159881a94324795bd90c33430ab30127d",
+    "GEO_CHASSIS_DECAL_LeftDxc10": "6554ecca6f5b16c078633497bf0ea88c8d6d22af639d92d08a408af0f8a91afb",
+    "GEO_CHASSIS_DECAL_LeftFerrariShield5": "b6009871b4d82c26f50b4e7c25acb2bf9a8f8a18da690e79cd71c75bf53b458e",
+    "GEO_CHASSIS_DECAL_LeftFrontWingGreen": "61e3c202ef68d1c51c6abdd9570ff78aa6573c3e3ec1f94a2c893e2658d2e8a7",
+    "GEO_CHASSIS_DECAL_LeftFrontWingRed": "22ea1bbe7ad212db135c224b95a08232eb20a6bf3708e37e25b840b4411540b1",
+    "GEO_CHASSIS_DECAL_LeftFrontWingWhite": "ee219ffe3a6fddcc336b5f7b8c54a1777f39b9f8f2d2f3f8399d28d9e44e5431",
+    "GEO_CHASSIS_DECAL_LeftHewlettPackard0": "83cec8e947dc58ea237ad6b311452ee1ffbfcaa1171a31907d020fcb53ff3d1a",
+    "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": "e0044aab0b9acfa3348e47e12bbfce093bf66e58d16e3ba6565c3c39b8298054",
+    "GEO_CHASSIS_DECAL_LeftPeroni14": "e7158e530d76bc08a82feb0eca8e2e297c6e2594623f3f202fbd3fc8123c1035",
+    "GEO_CHASSIS_DECAL_LeftRichardMille6": "d3c006885ddd6cc53748a241956ae66d1e2802368b727139790c9576fa72cc0b",
+    "GEO_CHASSIS_DECAL_LeftShell3": "93c7cd08b27ce0dcf04e2bf8ebf74042904f545de56b5f0ec8a8832513cb20db",
+    "GEO_CHASSIS_DECAL_LeftUniCredit11": "d38f8571d0b222002b470b548544913a2bf99095b9e5b85d0a8f38afd54995d8",
+    "GEO_CHASSIS_DECAL_LeftUniCredit12": "51a074add48de1fdd9a4ff258303504b3a6c5aa273b5ab9a230179776068ad21",
+    "GEO_CHASSIS_DECAL_LeftUniCredit2": "67462883dfce105e994e8c8a260edaf69aac9e58a2b9e6eca9eda1349b73dfb4",
+    "GEO_CHASSIS_DECAL_LeftVPower13": "c24e16808dc2f382ec885f62f26a387926c5e9527f9e6f532f923f2f506001a4",
+    "GEO_CHASSIS_DECAL_LeftZyn8": "f98eda1b333b89a894a6d8f9950616a30a62d34987499ad6a7ce8cb124bb8650",
+    "GEO_CHASSIS_DECAL_NoseDriverNumber": "d232028d8121679b6fb19cda4c443fef7aca8caa25d26188a16e2f2b8e608d0d",
+    "GEO_CHASSIS_DECAL_NoseShell": "00fc542f977ca30afbaa508e87a689eae42e628f955bc056bc6744812ba18d82",
+    "GEO_CHASSIS_DECAL_RightAmbipar15": "30cc0321aa74e8411ea4247c630469134089ec7df0ed317998ef01bf65b0ae50",
+    "GEO_CHASSIS_DECAL_RightCevaLogistics4": "4b2367869492a0e6857e16212ab99be99673b7d1800ff10017678ebee4e65ab6",
+    "GEO_CHASSIS_DECAL_RightDriverNumber1": "a7e468a0f64f0416aa81817742f12df646967b7924d7b33ce4dd0ceddd205779",
+    "GEO_CHASSIS_DECAL_RightDxc10": "e59bb340f72bde7b419a56c47c78244f291492eb51e0fcbc13f4d195a827b8b8",
+    "GEO_CHASSIS_DECAL_RightFerrariShield5": "ce3f67863c6970438f386eeb12a11f159479cb55e3b3a2a175d09b6d0f06dd42",
+    "GEO_CHASSIS_DECAL_RightFrontWingGreen": "e885c0e44c6d226f10e0ee46324c3cfc78f6fb92c045f114aa1686dfe667d9e2",
+    "GEO_CHASSIS_DECAL_RightFrontWingRed": "509daee760f1f3def0f071a6f031f3f7e892bac4c982e70c731a92d0948f6d3d",
+    "GEO_CHASSIS_DECAL_RightFrontWingWhite": "7c6dff90a694a5586eb7020a0d84d0358fc9066b054a47009b7f473f6a634be9",
+    "GEO_CHASSIS_DECAL_RightHewlettPackard0": "032858d6e6891529c08e8cbf8dac268fc6fccb5a078152409b5ac71d274e5e37",
+    "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": "634af9f7276260f873ada75586acb80e6f8bcea7150d884b3b67540c8bfc3db9",
+    "GEO_CHASSIS_DECAL_RightPeroni14": "72fe35d1d4c21d47abb8a55f8f0b9b06c7a9f8f73a8f649aad2e686fc86520d3",
+    "GEO_CHASSIS_DECAL_RightRichardMille6": "fbfc30414bc211209b491eb57c3a7d2767f4366702ba62d18f4ed5385812d58b",
+    "GEO_CHASSIS_DECAL_RightShell3": "437d25a99c11071280e446e68a7304281beadcf7d04625f79109db931aee62ce",
+    "GEO_CHASSIS_DECAL_RightUniCredit11": "ed3b3a8aa3808764ad889b7de96fc263529dbd99e65a98d93cd8c51a71b304bc",
+    "GEO_CHASSIS_DECAL_RightUniCredit12": "e182f6bb075eec033a38c579dab436cff70b5da55e39cacee6b24f85586e0d33",
+    "GEO_CHASSIS_DECAL_RightUniCredit2": "4e865397b31accd3e7431e614afc10f2ea173d4bbfb2319d024a58190d593719",
+    "GEO_CHASSIS_DECAL_RightVPower13": "f50991383997acd7cf2926ea8376423202632119d62033b72d3bfaa1aa20a9fc",
+    "GEO_CHASSIS_DECAL_RightZyn8": "dae4c109fe8410ed96f58f8dd9e459d69bd721d28b2366ecde2007051df8179c",
+    "GEO_CHASSIS_ENDPLATE": "275312db05b1bfca043925ec220c6cff04392420de20e1ef3a3c07aa66c20004",
+    "GEO_CHASSIS_EXHAUST_TUBE_LEFT": "a8c665e21163d8f7d84063b252c95f090f9177ec13bca827bec87764d6aa172d",
+    "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": "6d2ecf336086f082ccc4d43cccaa76e528d42b1b464a1901663cfd6c06d02b77",
+    "GEO_CHASSIS_FLOOR": "1a988a2a9b4a729493852f1320ea1e22d282088f1932b49511717b3d4d5426c0",
+    "GEO_CHASSIS_FRONT_SUSPENSION": "c106cf75ffe8edc37f60d1ab9705ba40a1ded9a9bddf9eabd0c84986029bf5f9",
+    "GEO_CHASSIS_FRONTSUPPORT": "4978450fb622f4905be14a72605edae126f82477c12209c6744e33fa79233cd3",
+    "GEO_CHASSIS_FRONTWING": "e3452b86c7dce68452d18a72b66755c7fff66ce031ce95fab9b3b01be757e193",
+    "GEO_CHASSIS_INTERIOR": "fd34235a59377a50fc21210fd6a21f315ce4ce73e6d1f8c8b2f1f3c3bcf44b43",
+    "GEO_CHASSIS_LATERALCAM": "6a3797b2776425f7a2fbc37832f7a67950812a715f6ab8d317409d6992334085",
+    "GEO_CHASSIS_MIRRORS": "7cfebe7871f0bb13a4762ac6fc2e218ff6d65e684e8243677f9b77acd235be13",
+    "GEO_CHASSIS_ONBOARDCAM": "3498d7de18ff5e34820cd0b3be25533dc9a3fcec8308884ee3601a96dfed3c2a",
+    "GEO_CHASSIS_REAR_SUSPENSION": "6f61380ea895bf20fe1c3825c84f015a0f4588771cd7563026e01933572fc48e",
+    "GEO_CHASSIS_REAR_WING": "4dc48f6e033981ae9d844b57a1687e0b4718aad3c9e3c10b3ab541c96e0188aa",
+    "GEO_CHASSIS_REAR_WING_MID": "52216ecd9cddf92c035464fbf658bc4411bc642ac2352a02bdd9f5860936079c",
+    "GEO_CHASSIS_REARLIGHT": "47bb450d00f29b61c02043d453d326e8070ecbb551a41df96d8ef677d2833044",
+    "GEO_CHASSIS_REARSUPPORT": "722dc7f72d80537a55e6b262b6ce8f7c1f6704e8d93c145c386c0d44aeca355b",
+    "GEO_CHASSIS_SCREEN": "cae286c400fd5823fa222f5b48b3f68870e6b0c78436693368e52ff2ff59ffc8",
+    "GEO_CHASSIS_SEAT": "b869167a816a0342e07f607a4381402318a1a17937a287c1614d82a3611c2ede",
+    "GEO_CHASSIS_SHIFTERBRAK": "f210d87fb438a9dbc54757debbc48f3c5fbb99e62be5f68359b85bf23dbddd42",
+    "GEO_CHASSIS_SHIFTERTHRO": "dece7e1154043609f0e48e93d07da313068c4b8d20a8616f5e4c7ec493f6b593",
+    "GEO_CHASSIS_STEER": "9a04936ba220431247521ef84b9c535899ec0081ac4cdde1436361b55d92b2a5",
+    "GEO_CHASSIS_STEERCOLUM": "1672385515893be0b032d69597115d758c3e76c611e5104e0208056f75bcca39",
+    "GEO_WHEEL_FRONT_L_DECAL_Pirelli": "04118b2b659b50ef705b93647872fe2ba211712afd969ff1296ddf364c272e3f",
+    "GEO_WHEEL_FRONT_L_DECAL_PZero": "028ea51db591261d7cb758d744ed132b4454c9fcd07215d6c422135e3c5ae855",
+    "GEO_WHEEL_FRONT_L_NUT_02": "1db63d21f286343957854c599bb488106790a62ebeb62c2e58dcea5e8cc0da25",
+    "GEO_WHEEL_FRONT_L_NUT_05": "7cf77179421a8fdff26d9f1f28d5e671124090efccf56cbabb1249fc67649ee8",
+    "GEO_WHEEL_FRONT_L_RIM_01": "5f49da8b4b4cb02600f29b78fac969b2f7d803e76825b021dea09ff54701b29c",
+    "GEO_WHEEL_FRONT_L_RIM_03": "fa28adcee08f6e5f265075a53411e33eec57bbc80b75c476f79bafb971a15f3d",
+    "GEO_WHEEL_FRONT_L_RIM_04": "3145b7945cba02ca1c149944f2907e2fe48ca8ce3db143ee0d3d297e68f9613f",
+    "GEO_WHEEL_FRONT_L_RIM_06": "ee78ad20cc20c539815cbf3e539ffeb2777c7d52d97724b4fdfc39a1a65efd6b",
+    "GEO_WHEEL_FRONT_L_TIRE": "3a3a97ebf5b398d1735dd915dbb8fe32c658974b068cf3cd278ce7ec26037539",
+    "GEO_WHEEL_FRONT_R_DECAL_Pirelli": "aef7d79aeae93e733e72fb24dec57507047ca1424c5a08c6d8c383ef88564164",
+    "GEO_WHEEL_FRONT_R_DECAL_PZero": "50aa2f40441fc2b7c9dfa938d8fdb7e85232f840d21304d9f1b7b82736de447f",
+    "GEO_WHEEL_FRONT_R_NUT_02": "60569fa5e35fca1fbcf5291e898540c02d77d76740cdf318976e83c01adae197",
+    "GEO_WHEEL_FRONT_R_NUT_05": "1a32e6f7e05d204271f6ac23008be6b4c56cff414560bea05f7c4cdcec7dd4b0",
+    "GEO_WHEEL_FRONT_R_RIM_01": "c667db1b0aa40d8ba9cafa4791f0da6405083dca2c1c7c4059cae9941817f3be",
+    "GEO_WHEEL_FRONT_R_RIM_03": "0fd258cd47b5d2ac8d3528913d52b5e687676533df3887ba14a492b86f00690b",
+    "GEO_WHEEL_FRONT_R_RIM_04": "a84606b9e499bc2b8959105926dfb0d3dab31bd3771eddcb2ea1c25ffec23588",
+    "GEO_WHEEL_FRONT_R_RIM_06": "968f1578c7f9b1666a9f575a0bec250838877b11fe91b3cf896df82f00197839",
+    "GEO_WHEEL_FRONT_R_TIRE": "241e908cca4b02040e2700807c723e0f3e72480c6ea18e2b45dc96492e8884f4",
+    "GEO_WHEEL_REAR_L_DECAL_Pirelli": "0452adf58a9bac060d86d13870b0307e23680d89bffd64dbb00019a760f627b8",
+    "GEO_WHEEL_REAR_L_DECAL_PZero": "9dc0ff2617f86d5b2feff44c8bcbc24e2a74ad3c6145039adc867af622a707b0",
+    "GEO_WHEEL_REAR_L_NUT_02": "75a8c292e53af18a0da33621d9977225008e22a66e43bfae864aaf3a296972c4",
+    "GEO_WHEEL_REAR_L_NUT_05": "a88e328b2b98c77a6776b7bf6f8b9ad49ca3cfc479e9b00f446c22b72fd77c68",
+    "GEO_WHEEL_REAR_L_RIM_01": "593932a07f65b53859b1e90be148121e0e1b125ac0965a902961505a91dc0b91",
+    "GEO_WHEEL_REAR_L_RIM_03": "05b7624223a1d8c10d64982edd9ffbb5379b639f1f9de3c4bd344121f5cecced",
+    "GEO_WHEEL_REAR_L_RIM_04": "67a4c815e7d8bb1daac059a1a2d1f1069b1d865740e230164be7067125bc617b",
+    "GEO_WHEEL_REAR_L_RIM_06": "a8a0a8d625ad3cc26bd8e4a3108c6c6fc4c0b91dfe768ca7a47b1b770173240d",
+    "GEO_WHEEL_REAR_L_TIRE": "0b83d1ff84921ddd371d97c5116ef1bc416badbe9246d65ddc6dc5a52ec45579",
+    "GEO_WHEEL_REAR_R_DECAL_Pirelli": "b285c476de5181a6d3dc777e5d605c14c6e62d88c1264d619575d7a2b1822035",
+    "GEO_WHEEL_REAR_R_DECAL_PZero": "6707eb042c9ed1e6e274495c99e06e722c19f8b3ae859d655bd166ebdd888ede",
+    "GEO_WHEEL_REAR_R_NUT_02": "91a80ffa1ca1648c7b2bf9424f612bf5419f066bb2be082c11443cdbd9f42575",
+    "GEO_WHEEL_REAR_R_NUT_05": "12124b0684a891f6daa21217ed1e3c5598e295276fd057d9b5dfb34ca25fbf7b",
+    "GEO_WHEEL_REAR_R_RIM_01": "2dd2f96fd68b1c5e6bb7b98c13d40af3755710897f12b6f053681608f542de81",
+    "GEO_WHEEL_REAR_R_RIM_03": "47ffd0ccdfc801791b3cc0566ac5302a084d0f0ea3aacf8845c610df6f4be06d",
+    "GEO_WHEEL_REAR_R_RIM_04": "45a0afb00000c8aff26fe6c00c4fd0fb3cf80ec751676ca81fff52eef33356f4",
+    "GEO_WHEEL_REAR_R_RIM_06": "56c87a9f7fbaaf0cccb8419c6f544b2e5dcfe9082db9ff32505959d8de5fe5ad",
+    "GEO_WHEEL_REAR_R_TIRE": "4b36165dc2ad7a6fc312814899e8a7eb98457a9c0e357d25f85db16c1a901776",
+    "StudioGround": "6d2a97663cc19a1657d272fce0648c4ec26c7af45a660e01e3b83fe168ead2db"
+  },
+  "backup_texture_resolved_source": "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\validated\\source_before_reconstruction.blend",
+  "lining": {
+    "original_vertices": 1246,
+    "vertices": 1074,
+    "original_triangles": 2492,
+    "triangles": 2148,
+    "removed_skin_vertices": 86,
+    "evaluated_skin_vertices": 194,
+    "removed_original_skin_vertex_identifiers": [
+      513,
+      510,
+      504,
+      507,
+      498,
+      501,
+      495,
+      492,
+      486,
+      489,
+      471,
+      468,
+      459,
+      456,
+      453,
+      450,
+      462,
+      465,
+      477,
+      474,
+      519,
+      516,
+      570,
+      573,
+      567,
+      564,
+      534,
+      537,
+      531,
+      528,
+      543,
+      540,
+      558,
+      561,
+      483,
+      480,
+      546,
+      549,
+      522,
+      525,
+      552,
+      555,
+      283,
+      277,
+      88,
+      280,
+      444,
+      447,
+      82,
+      103,
+      292,
+      85,
+      151,
+      340,
+      271,
+      274,
+      334,
+      145,
+      22,
+      211,
+      343,
+      154,
+      235,
+      46,
+      298,
+      109,
+      295,
+      106,
+      115,
+      304,
+      217,
+      28,
+      19,
+      208,
+      139,
+      328,
+      31,
+      220,
+      310,
+      121,
+      579,
+      576,
+      58,
+      247,
+      97,
+      602
+    ],
+    "retained_original_skin_vertex_identifiers": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      20,
+      21,
+      23,
+      24,
+      25,
+      26,
+      27,
+      29,
+      30,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67,
+      68,
+      69,
+      70,
+      71,
+      72,
+      73,
+      74,
+      75,
+      76,
+      77,
+      78,
+      79,
+      80,
+      81,
+      83,
+      84,
+      86,
+      87,
+      89,
+      90,
+      91,
+      92,
+      93,
+      94,
+      95,
+      96,
+      98,
+      99,
+      100,
+      101,
+      102,
+      104,
+      105,
+      107,
+      108,
+      110,
+      111,
+      112,
+      113,
+      114,
+      116,
+      117,
+      118,
+      119,
+      120,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      140,
+      141,
+      142,
+      143,
+      144,
+      146,
+      147,
+      148,
+      149,
+      150,
+      152,
+      153,
+      155,
+      156,
+      157,
+      158,
+      159,
+      160,
+      161,
+      162,
+      163,
+      164,
+      165,
+      166,
+      167,
+      168,
+      169,
+      170,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177,
+      178,
+      179,
+      180,
+      181,
+      182,
+      183,
+      184,
+      185,
+      186,
+      187,
+      188,
+      189,
+      190,
+      191,
+      192,
+      193,
+      194,
+      195,
+      196,
+      197,
+      198,
+      199,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      209,
+      210,
+      212,
+      213,
+      214,
+      215,
+      216,
+      218,
+      219,
+      221,
+      222,
+      223,
+      224,
+      225,
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      236,
+      237,
+      238,
+      239,
+      240,
+      241,
+      242,
+      243,
+      244,
+      245,
+      246,
+      248,
+      249,
+      250,
+      251,
+      252,
+      253,
+      254,
+      255,
+      256,
+      257,
+      258,
+      259,
+      260,
+      261,
+      262,
+      263,
+      264,
+      265,
+      266,
+      267,
+      268,
+      269,
+      270,
+      272,
+      273,
+      275,
+      276,
+      278,
+      279,
+      281,
+      282,
+      284,
+      285,
+      286,
+      287,
+      288,
+      289,
+      290,
+      291,
+      293,
+      294,
+      296,
+      297,
+      299,
+      300,
+      301,
+      302,
+      303,
+      305,
+      306,
+      307,
+      308,
+      309,
+      311,
+      312,
+      313,
+      314,
+      315,
+      316,
+      317,
+      318,
+      319,
+      320,
+      321,
+      322,
+      323,
+      324,
+      325,
+      326,
+      327,
+      329,
+      330,
+      331,
+      332,
+      333,
+      335,
+      336,
+      337,
+      338,
+      339,
+      341,
+      342,
+      344,
+      345,
+      346,
+      347,
+      348,
+      349,
+      350,
+      351,
+      352,
+      353,
+      354,
+      355,
+      356,
+      357,
+      358,
+      359,
+      360,
+      361,
+      362,
+      363,
+      364,
+      365,
+      366,
+      367,
+      368,
+      369,
+      370,
+      371,
+      372,
+      373,
+      374,
+      375,
+      376,
+      377,
+      378,
+      379,
+      380,
+      381,
+      382,
+      383,
+      384,
+      385,
+      386,
+      387,
+      388,
+      389,
+      390,
+      391,
+      392,
+      393,
+      394,
+      395,
+      396,
+      397,
+      398,
+      399,
+      400,
+      401,
+      402,
+      403,
+      404,
+      405,
+      406,
+      407,
+      408,
+      409,
+      410,
+      411,
+      412,
+      413,
+      414,
+      415,
+      416,
+      417,
+      418,
+      419,
+      420,
+      421,
+      422,
+      423,
+      424,
+      425,
+      426,
+      427,
+      428,
+      429,
+      430,
+      431,
+      432,
+      433,
+      434,
+      435,
+      436,
+      437,
+      438,
+      439,
+      440,
+      441,
+      442,
+      443,
+      445,
+      446,
+      448,
+      449,
+      451,
+      452,
+      454,
+      455,
+      457,
+      458,
+      460,
+      461,
+      463,
+      464,
+      466,
+      467,
+      469,
+      470,
+      472,
+      473,
+      475,
+      476,
+      478,
+      479,
+      481,
+      482,
+      484,
+      485,
+      487,
+      488,
+      490,
+      491,
+      493,
+      494,
+      496,
+      497,
+      499,
+      500,
+      502,
+      503,
+      505,
+      506,
+      508,
+      509,
+      511,
+      512,
+      514,
+      515,
+      517,
+      518,
+      520,
+      521,
+      523,
+      524,
+      526,
+      527,
+      529,
+      530,
+      532,
+      533,
+      535,
+      536,
+      538,
+      539,
+      541,
+      542,
+      544,
+      545,
+      547,
+      548,
+      550,
+      551,
+      553,
+      554,
+      556,
+      557,
+      559,
+      560,
+      562,
+      563,
+      565,
+      566,
+      568,
+      569,
+      571,
+      572,
+      574,
+      575,
+      577,
+      578,
+      580,
+      581,
+      582,
+      583,
+      584,
+      585,
+      586,
+      587,
+      588,
+      589,
+      590,
+      591,
+      592,
+      593,
+      594,
+      595,
+      596,
+      597,
+      598,
+      599,
+      600,
+      601,
+      603,
+      604,
+      605,
+      606,
+      607,
+      608,
+      609,
+      610,
+      611,
+      612,
+      613,
+      614,
+      615,
+      616,
+      617,
+      618,
+      619,
+      620,
+      621,
+      622
+    ],
+    "locked_boundary_edges": 341,
+    "locked_crease_edges": 97,
+    "all_boundary_segments_and_crease_edges_preserved": true,
+    "maximum_allowed_surface_deviation_meters": 0.00025,
+    "maximum_source_to_reconstruction_distance_meters": 0.00022433712729252875,
+    "maximum_reconstruction_to_source_distance_meters": 0.00022109570272732526,
+    "source_surface_samples": 82355,
+    "reconstructed_surface_samples": 66703,
+    "sample_barycentric_subdivisions": 12,
+    "rejected_vertex_removals": {
+      "source_surface_deviation": 108
+    },
+    "texture_projection_preserved": true,
+    "shading": {
+      "vertices": 1074,
+      "polygons": 1807,
+      "triangles": 2148,
+      "geometry_sha256": "f5231a46d025840513b9e1251ff3908ce7585475e58e65c68dc77a785c42b341",
+      "geometry_texture_coordinates_material_assignments_unchanged": true,
+      "smooth_faces": 1807,
+      "sharp_edges": 900,
+      "preserved_skin_rim_edges": 682,
+      "steep_edges_preserved": 708,
+      "sharp_angle_degrees": 35,
+      "maximum_smooth_edge_corner_normal_difference": 0
+    }
+  },
+  "full_geometry_validation": {
+    "lining": {
+      "object": "GEO_CHASSIS_CockpitUpperLining",
+      "vertices": 1074,
+      "polygons": 1807,
+      "triangles": 2148,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "zero_area_faces": 0,
+      "zero_length_edges": 0,
+      "minimum_triangle_area_square_meters": 1.9257961980656546e-07,
+      "signed_volume_cubic_meters": 0.00046780234828997755,
+      "bounding_pairs_inspected_including_adjacent_triangles": 12857,
+      "intersection_boundary_tolerance_meters": 5e-07,
+      "triangle_crossing_pairs": [],
+      "coplanar_overlap_pairs": [],
+      "passed": true
+    },
+    "interior": {
+      "object": "GEO_CHASSIS_INTERIOR",
+      "vertices": 4686,
+      "polygons": 9368,
+      "triangles": 9368,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "zero_area_faces": 0,
+      "zero_length_edges": 0,
+      "minimum_triangle_area_square_meters": 4.474441993806977e-06,
+      "signed_volume_cubic_meters": 0.01051778993300347,
+      "bounding_pairs_inspected_including_adjacent_triangles": 56450,
+      "intersection_boundary_tolerance_meters": 5e-07,
+      "triangle_crossing_pairs": [],
+      "coplanar_overlap_pairs": [],
+      "passed": true
+    },
+    "opening_perimeter": {
+      "edges": 68,
+      "perimeter_length_meters": 2.239449314326326,
+      "samples": 2344,
+      "maximum_sample_step_meters": 0.001,
+      "maximum_distance_meters": 2.8462777663662564e-06,
+      "edge_measurements": [
+        {
+          "edge": 0,
+          "length_meters": 0.05448856548033057,
+          "samples": 56,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 1,
+          "length_meters": 0.07356324706295676,
+          "samples": 75,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 2,
+          "length_meters": 0.08212451967102397,
+          "samples": 84,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 3,
+          "length_meters": 0.06720196351944624,
+          "samples": 69,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 4,
+          "length_meters": 0.03195825286531488,
+          "samples": 33,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 5,
+          "length_meters": 0.012604242510706357,
+          "samples": 14,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 6,
+          "length_meters": 0.01409254140537841,
+          "samples": 16,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 7,
+          "length_meters": 0.012642357672610826,
+          "samples": 14,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 8,
+          "length_meters": 0.009271717738844517,
+          "samples": 11,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 9,
+          "length_meters": 0.006958551194278096,
+          "samples": 8,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 10,
+          "length_meters": 0.006781373673626227,
+          "samples": 8,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 11,
+          "length_meters": 0.007638168832915934,
+          "samples": 9,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 12,
+          "length_meters": 0.009790444032081442,
+          "samples": 11,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 13,
+          "length_meters": 0.017169699617231676,
+          "samples": 19,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 14,
+          "length_meters": 0.030211639515080022,
+          "samples": 32,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 15,
+          "length_meters": 0.03692329977049907,
+          "samples": 38,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 16,
+          "length_meters": 0.04039389083598964,
+          "samples": 42,
+          "maximum_distance_meters": 3.0719530030864917e-08
+        },
+        {
+          "edge": 17,
+          "length_meters": 0.035510541580679324,
+          "samples": 37,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 18,
+          "length_meters": 0.021256063519615558,
+          "samples": 23,
+          "maximum_distance_meters": 1.7754910004441626e-06
+        },
+        {
+          "edge": 19,
+          "length_meters": 0.012223866940853718,
+          "samples": 14,
+          "maximum_distance_meters": 2.8462777663662564e-06
+        },
+        {
+          "edge": 20,
+          "length_meters": 0.012223866939000905,
+          "samples": 14,
+          "maximum_distance_meters": 2.8462777663662564e-06
+        },
+        {
+          "edge": 21,
+          "length_meters": 0.02125606694261861,
+          "samples": 23,
+          "maximum_distance_meters": 1.8091877791448496e-06
+        },
+        {
+          "edge": 22,
+          "length_meters": 0.03551054471434296,
+          "samples": 37,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 23,
+          "length_meters": 0.04039387553660268,
+          "samples": 42,
+          "maximum_distance_meters": 3.0719530030864917e-08
+        },
+        {
+          "edge": 24,
+          "length_meters": 0.03692329592790695,
+          "samples": 38,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 25,
+          "length_meters": 0.03021167407458547,
+          "samples": 32,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 26,
+          "length_meters": 0.017169572486564626,
+          "samples": 19,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 27,
+          "length_meters": 0.009790494567464642,
+          "samples": 11,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 28,
+          "length_meters": 0.007638160364021263,
+          "samples": 9,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 29,
+          "length_meters": 0.006781373657008998,
+          "samples": 8,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 30,
+          "length_meters": 0.006958562074981467,
+          "samples": 8,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 31,
+          "length_meters": 0.009271717738844517,
+          "samples": 11,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 32,
+          "length_meters": 0.012642315659419763,
+          "samples": 14,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 33,
+          "length_meters": 0.014092592776982884,
+          "samples": 16,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 34,
+          "length_meters": 0.012604235863306081,
+          "samples": 14,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 35,
+          "length_meters": 0.03195821741403332,
+          "samples": 33,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 36,
+          "length_meters": 0.06720199415985358,
+          "samples": 69,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 37,
+          "length_meters": 0.08212453852272848,
+          "samples": 84,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 38,
+          "length_meters": 0.07356323940380605,
+          "samples": 75,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 39,
+          "length_meters": 0.05448856035187366,
+          "samples": 56,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 40,
+          "length_meters": 0.03229297345138006,
+          "samples": 34,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 41,
+          "length_meters": 0.022515599645513567,
+          "samples": 24,
+          "maximum_distance_meters": 3.3372032248735195e-08
+        },
+        {
+          "edge": 42,
+          "length_meters": 0.026441311242458344,
+          "samples": 28,
+          "maximum_distance_meters": 3.003425064207477e-08
+        },
+        {
+          "edge": 43,
+          "length_meters": 0.03300018202731009,
+          "samples": 35,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 44,
+          "length_meters": 0.03916734839863378,
+          "samples": 41,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 45,
+          "length_meters": 0.0470404400056763,
+          "samples": 49,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 46,
+          "length_meters": 0.05708030670416448,
+          "samples": 59,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 47,
+          "length_meters": 0.050625253809866495,
+          "samples": 52,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 48,
+          "length_meters": 0.027697705829769034,
+          "samples": 29,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 49,
+          "length_meters": 0.023212500626004537,
+          "samples": 25,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 50,
+          "length_meters": 0.041954278208185425,
+          "samples": 43,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 51,
+          "length_meters": 0.05017058087135895,
+          "samples": 52,
+          "maximum_distance_meters": 3.4142850324769825e-08
+        },
+        {
+          "edge": 52,
+          "length_meters": 0.04499481695862222,
+          "samples": 46,
+          "maximum_distance_meters": 4.470348358154297e-08
+        },
+        {
+          "edge": 53,
+          "length_meters": 0.04072643442134,
+          "samples": 42,
+          "maximum_distance_meters": 3.499592438060972e-08
+        },
+        {
+          "edge": 54,
+          "length_meters": 0.04072643727981066,
+          "samples": 42,
+          "maximum_distance_meters": 3.8399413426759565e-08
+        },
+        {
+          "edge": 55,
+          "length_meters": 0.04499481278457113,
+          "samples": 46,
+          "maximum_distance_meters": 4.214684778958144e-08
+        },
+        {
+          "edge": 56,
+          "length_meters": 0.05017058087135895,
+          "samples": 52,
+          "maximum_distance_meters": 3.4142850324769825e-08
+        },
+        {
+          "edge": 57,
+          "length_meters": 0.04195429177875833,
+          "samples": 43,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 58,
+          "length_meters": 0.023212473355841166,
+          "samples": 25,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 59,
+          "length_meters": 0.027697698737092047,
+          "samples": 29,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 60,
+          "length_meters": 0.05062527218830099,
+          "samples": 52,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 61,
+          "length_meters": 0.0570803185587607,
+          "samples": 59,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 62,
+          "length_meters": 0.04704045763856861,
+          "samples": 49,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 63,
+          "length_meters": 0.03916733465195498,
+          "samples": 41,
+          "maximum_distance_meters": 2.2351741790771484e-08
+        },
+        {
+          "edge": 64,
+          "length_meters": 0.03300017078270843,
+          "samples": 35,
+          "maximum_distance_meters": 2.2351741790771484e-08
+        },
+        {
+          "edge": 65,
+          "length_meters": 0.02644131279031125,
+          "samples": 28,
+          "maximum_distance_meters": 3.3527612686157227e-08
+        },
+        {
+          "edge": 66,
+          "length_meters": 0.02251559990807444,
+          "samples": 24,
+          "maximum_distance_meters": 2.986047320518992e-08
+        },
+        {
+          "edge": 67,
+          "length_meters": 0.032292974184520463,
+          "samples": 34,
+          "maximum_distance_meters": 3.332021236701621e-08
+        }
+      ],
+      "passed": true
+    },
+    "interior_perimeter": {
+      "edges": 142,
+      "perimeter_length_meters": 4.6771971650685815,
+      "samples": 4913,
+      "maximum_sample_step_meters": 0.001,
+      "maximum_distance_meters": 2.0267771105864085e-07,
+      "edge_measurements": [
+        {
+          "edge": 0,
+          "length_meters": 0.025000005541368706,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 1,
+          "length_meters": 0.025000005541368706,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 2,
+          "length_meters": 0.0250684991634004,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 3,
+          "length_meters": 0.05790267716635387,
+          "samples": 59,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 4,
+          "length_meters": 0.027683460828320523,
+          "samples": 29,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 5,
+          "length_meters": 0.025801256342698416,
+          "samples": 27,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 6,
+          "length_meters": 0.025457329648901735,
+          "samples": 27,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 7,
+          "length_meters": 0.02532545486039523,
+          "samples": 27,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 8,
+          "length_meters": 0.025338967150156783,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 9,
+          "length_meters": 0.025792044080383103,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 10,
+          "length_meters": 0.026269988678429286,
+          "samples": 28,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 11,
+          "length_meters": 0.02643095606925009,
+          "samples": 28,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 12,
+          "length_meters": 0.026300218592228846,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 13,
+          "length_meters": 0.02597892300557597,
+          "samples": 27,
+          "maximum_distance_meters": 3.0719530030864917e-08
+        },
+        {
+          "edge": 14,
+          "length_meters": 0.02546014779318729,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 15,
+          "length_meters": 0.025051420941540704,
+          "samples": 27,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 16,
+          "length_meters": 0.025007573789403062,
+          "samples": 27,
+          "maximum_distance_meters": 2.981687075021e-08
+        },
+        {
+          "edge": 17,
+          "length_meters": 0.025022507384016207,
+          "samples": 27,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 18,
+          "length_meters": 0.027095448006913977,
+          "samples": 29,
+          "maximum_distance_meters": 7.450580596923828e-09
+        },
+        {
+          "edge": 19,
+          "length_meters": 0.027543737569717675,
+          "samples": 29,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 20,
+          "length_meters": 0.02499999855644997,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 21,
+          "length_meters": 0.025000005541368706,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 22,
+          "length_meters": 0.02661498795396347,
+          "samples": 28,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 23,
+          "length_meters": 0.027497444225836516,
+          "samples": 29,
+          "maximum_distance_meters": 3.332000986233652e-08
+        },
+        {
+          "edge": 24,
+          "length_meters": 0.02662339544058736,
+          "samples": 28,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 25,
+          "length_meters": 0.0255595885039903,
+          "samples": 27,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 26,
+          "length_meters": 0.026217043598132025,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 27,
+          "length_meters": 0.026558191533136932,
+          "samples": 28,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 28,
+          "length_meters": 0.02787544055654926,
+          "samples": 29,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 29,
+          "length_meters": 0.029930498960364108,
+          "samples": 31,
+          "maximum_distance_meters": 4.470348358154297e-08
+        },
+        {
+          "edge": 30,
+          "length_meters": 0.02962738150332596,
+          "samples": 31,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 31,
+          "length_meters": 0.027157892331508362,
+          "samples": 29,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 32,
+          "length_meters": 0.026459239203732148,
+          "samples": 28,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 33,
+          "length_meters": 0.025820437691190783,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 34,
+          "length_meters": 0.0259831156186576,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 35,
+          "length_meters": 0.026590763001502954,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 36,
+          "length_meters": 0.02524231685730607,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 37,
+          "length_meters": 0.025030189935563392,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 38,
+          "length_meters": 0.025030132097813546,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 39,
+          "length_meters": 0.025030252853381608,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 40,
+          "length_meters": 0.025031273162782815,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 41,
+          "length_meters": 0.025043404170280295,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 42,
+          "length_meters": 0.025043460806166293,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 43,
+          "length_meters": 0.025043404170280295,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 44,
+          "length_meters": 0.025043463439123573,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 45,
+          "length_meters": 0.025043401537316785,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 46,
+          "length_meters": 0.025050371102703778,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 47,
+          "length_meters": 0.025048024218054226,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 48,
+          "length_meters": 0.02504451730798011,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 49,
+          "length_meters": 0.02504457657418911,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 50,
+          "length_meters": 0.02504451730798011,
+          "samples": 27,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 51,
+          "length_meters": 0.025044518193161194,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 52,
+          "length_meters": 0.02504457568447071,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 53,
+          "length_meters": 0.02505247566459577,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 54,
+          "length_meters": 0.0250611240094376,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 55,
+          "length_meters": 0.02505919309199844,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 56,
+          "length_meters": 0.0250538458832837,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 57,
+          "length_meters": 0.02505384490767817,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 58,
+          "length_meters": 0.025053964371427227,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 59,
+          "length_meters": 0.025134484757070828,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 60,
+          "length_meters": 0.025269484841174226,
+          "samples": 27,
+          "maximum_distance_meters": 3.0719530030864917e-08
+        },
+        {
+          "edge": 61,
+          "length_meters": 0.025784996537975925,
+          "samples": 27,
+          "maximum_distance_meters": 2.356080486265455e-08
+        },
+        {
+          "edge": 62,
+          "length_meters": 0.026779823145938127,
+          "samples": 28,
+          "maximum_distance_meters": 3.725290298461914e-08
+        },
+        {
+          "edge": 63,
+          "length_meters": 0.029451161666654325,
+          "samples": 31,
+          "maximum_distance_meters": 4.7706993910878737e-08
+        },
+        {
+          "edge": 64,
+          "length_meters": 0.09025800719030862,
+          "samples": 92,
+          "maximum_distance_meters": 1.2310378849633707e-07
+        },
+        {
+          "edge": 65,
+          "length_meters": 0.16017245401134614,
+          "samples": 162,
+          "maximum_distance_meters": 2.0267771105864085e-07
+        },
+        {
+          "edge": 66,
+          "length_meters": 0.024999976437527757,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 67,
+          "length_meters": 0.024999976437527757,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 68,
+          "length_meters": 0.025000095180985938,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 69,
+          "length_meters": 0.024999976437527757,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 70,
+          "length_meters": 0.30000000596046444,
+          "samples": 302,
+          "maximum_distance_meters": 1.1920928955078125e-07
+        },
+        {
+          "edge": 71,
+          "length_meters": 0.024999976437527757,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 72,
+          "length_meters": 0.025000095180985938,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 73,
+          "length_meters": 0.024999976437527757,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 74,
+          "length_meters": 0.024999976437527757,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 75,
+          "length_meters": 0.1601724423823477,
+          "samples": 162,
+          "maximum_distance_meters": 1.2338530552824523e-07
+        },
+        {
+          "edge": 76,
+          "length_meters": 0.09025800719030862,
+          "samples": 92,
+          "maximum_distance_meters": 1.2225537204813008e-07
+        },
+        {
+          "edge": 77,
+          "length_meters": 0.029451161666654325,
+          "samples": 31,
+          "maximum_distance_meters": 4.7706993910878737e-08
+        },
+        {
+          "edge": 78,
+          "length_meters": 0.026779823145938127,
+          "samples": 28,
+          "maximum_distance_meters": 3.725290298461914e-08
+        },
+        {
+          "edge": 79,
+          "length_meters": 0.025784998513221538,
+          "samples": 27,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 80,
+          "length_meters": 0.025269484841174226,
+          "samples": 27,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 81,
+          "length_meters": 0.025134484757070828,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 82,
+          "length_meters": 0.025053964371427227,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 83,
+          "length_meters": 0.02505384490767817,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 84,
+          "length_meters": 0.0250538458832837,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 85,
+          "length_meters": 0.02505919309199844,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 86,
+          "length_meters": 0.0250611240094376,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 87,
+          "length_meters": 0.02505247566459577,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 88,
+          "length_meters": 0.02504457568447071,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 89,
+          "length_meters": 0.025044518193161194,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 90,
+          "length_meters": 0.025044519082881633,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 91,
+          "length_meters": 0.02504457657418911,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 92,
+          "length_meters": 0.02504451730798011,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 93,
+          "length_meters": 0.025048024218054226,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 94,
+          "length_meters": 0.025050371102703778,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 95,
+          "length_meters": 0.025043401537316785,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 96,
+          "length_meters": 0.025043463439123573,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 97,
+          "length_meters": 0.025043404170280295,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 98,
+          "length_meters": 0.025043460806166293,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 99,
+          "length_meters": 0.025043404170280295,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 100,
+          "length_meters": 0.025031273162782815,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 101,
+          "length_meters": 0.025030252853381608,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 102,
+          "length_meters": 0.025030132097813546,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 103,
+          "length_meters": 0.025030189935563392,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 104,
+          "length_meters": 0.02524232098280435,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 105,
+          "length_meters": 0.026590763001502954,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 106,
+          "length_meters": 0.0259831156186576,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 107,
+          "length_meters": 0.025820437691190783,
+          "samples": 27,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 108,
+          "length_meters": 0.026459239203732148,
+          "samples": 28,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 109,
+          "length_meters": 0.027157892331508362,
+          "samples": 29,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 110,
+          "length_meters": 0.0296273957470903,
+          "samples": 31,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 111,
+          "length_meters": 0.029930498960364108,
+          "samples": 31,
+          "maximum_distance_meters": 4.470348358154297e-08
+        },
+        {
+          "edge": 112,
+          "length_meters": 0.027875435597230082,
+          "samples": 29,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 113,
+          "length_meters": 0.026558194307010556,
+          "samples": 28,
+          "maximum_distance_meters": 2.107342389479072e-08
+        },
+        {
+          "edge": 114,
+          "length_meters": 0.02621702916668408,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 115,
+          "length_meters": 0.025559574839996498,
+          "samples": 27,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 116,
+          "length_meters": 0.026108918607596156,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 117,
+          "length_meters": 0.02765446569507878,
+          "samples": 29,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 118,
+          "length_meters": 0.02790437125994557,
+          "samples": 29,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 119,
+          "length_meters": 0.025000005541368706,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 120,
+          "length_meters": 0.02499999855644997,
+          "samples": 26,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 121,
+          "length_meters": 0.025048569620652755,
+          "samples": 27,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 122,
+          "length_meters": 0.03358920982919179,
+          "samples": 35,
+          "maximum_distance_meters": 7.450580596923828e-09
+        },
+        {
+          "edge": 123,
+          "length_meters": 0.025022508647076683,
+          "samples": 27,
+          "maximum_distance_meters": 2.986047320518992e-08
+        },
+        {
+          "edge": 124,
+          "length_meters": 0.025007573055776767,
+          "samples": 27,
+          "maximum_distance_meters": 2.9803231882397085e-08
+        },
+        {
+          "edge": 125,
+          "length_meters": 0.025051417124965267,
+          "samples": 27,
+          "maximum_distance_meters": 2.986047320518992e-08
+        },
+        {
+          "edge": 126,
+          "length_meters": 0.02546015908142742,
+          "samples": 27,
+          "maximum_distance_meters": 3.003425064207477e-08
+        },
+        {
+          "edge": 127,
+          "length_meters": 0.02597893784936466,
+          "samples": 27,
+          "maximum_distance_meters": 3.0719530030864917e-08
+        },
+        {
+          "edge": 128,
+          "length_meters": 0.026300218592228846,
+          "samples": 28,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 129,
+          "length_meters": 0.02643095923498906,
+          "samples": 28,
+          "maximum_distance_meters": 1.666000493116826e-08
+        },
+        {
+          "edge": 130,
+          "length_meters": 0.026269972891223826,
+          "samples": 28,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 131,
+          "length_meters": 0.025792036745759903,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 132,
+          "length_meters": 0.02533896959088913,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 133,
+          "length_meters": 0.025325452741570914,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 134,
+          "length_meters": 0.025457343367774696,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 135,
+          "length_meters": 0.025801268556826105,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 136,
+          "length_meters": 0.02768348842512908,
+          "samples": 29,
+          "maximum_distance_meters": 2.9802322387695312e-08
+        },
+        {
+          "edge": 137,
+          "length_meters": 0.05790261081868206,
+          "samples": 59,
+          "maximum_distance_meters": 3.650024282819686e-08
+        },
+        {
+          "edge": 138,
+          "length_meters": 0.0250684991634004,
+          "samples": 27,
+          "maximum_distance_meters": 1.4901161193847656e-08
+        },
+        {
+          "edge": 139,
+          "length_meters": 0.025000005541368706,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 140,
+          "length_meters": 0.025000005541368706,
+          "samples": 27,
+          "maximum_distance_meters": 0
+        },
+        {
+          "edge": 141,
+          "length_meters": 0.30000000596046444,
+          "samples": 302,
+          "maximum_distance_meters": 3.332000986233652e-08
+        }
+      ],
+      "passed": true
+    },
+    "footwell_exterior_clearance": {
+      "samples": 340,
+      "minimum_vertical_distance_to_exterior_body_meters": 0.003967210650444031,
+      "passed": true
+    },
+    "vertical_shell_separation_meters": {
+      "minimum": 0.0014999955548392712,
+      "maximum": 0.0015000030581740298,
+      "construction": "Upper skin translated vertically by 1.5 millimeters; normal thickness varies with surface slope"
+    },
+    "passed": true
+  },
+  "seat_intersection_pairs": 0,
+  "steering_intersections": [],
+  "sealed_side_samples": [
+    {
+      "origin": [
+        -0.8999999761581421,
+        0.0,
+        0.15000000596046448
+      ],
+      "side": -1,
+      "sealed": true,
+      "distance_meters": 0.12331520020961761,
+      "normal_dot_direction": -0.9038712978363037
+    },
+    {
+      "origin": [
+        -0.8999999761581421,
+        0.0,
+        0.15000000596046448
+      ],
+      "side": 1,
+      "sealed": true,
+      "distance_meters": 0.12331514805555344,
+      "normal_dot_direction": -0.9038713574409485
+    },
+    {
+      "origin": [
+        -0.6000000238418579,
+        0.0,
+        0.15000000596046448
+      ],
+      "side": -1,
+      "sealed": true,
+      "distance_meters": 0.1395386904478073,
+      "normal_dot_direction": -0.8922219276428223
+    },
+    {
+      "origin": [
+        -0.6000000238418579,
+        0.0,
+        0.15000000596046448
+      ],
+      "side": 1,
+      "sealed": true,
+      "distance_meters": 0.13953861594200134,
+      "normal_dot_direction": -0.8922219276428223
+    },
+    {
+      "origin": [
+        -0.30000001192092896,
+        0.0,
+        0.15000000596046448
+      ],
+      "side": -1,
+      "sealed": true,
+      "distance_meters": 0.2403760701417923,
+      "normal_dot_direction": -0.8615729808807373
+    },
+    {
+      "origin": [
+        -0.30000001192092896,
+        0.0,
+        0.15000000596046448
+      ],
+      "side": 1,
+      "sealed": true,
+      "distance_meters": 0.2403760552406311,
+      "normal_dot_direction": -0.8615727424621582
+    }
+  ],
+  "protected_meshes_unchanged": true,
+  "driver_validation": {
+    "samples": 1052,
+    "intersection_samples": [],
+    "capture_provenance": {
+      "driver_sha256": "a0bdda02a9e69c8a396fcb9302c56c9cba074600cbb3bf9a013d2f45df4e7cbc",
+      "animation_sha256": {
+        "game/scripts/vehicle/driver_visual_controller.gd": "e27616e6a3ba173350314149ec7efa51ebc45a98733735ffba5242009d5c5e4b",
+        "game/scripts/vehicle/driver_arm_inverse_kinematics_modifier.gd": "3d61f392c845bb3ec30da8eb978e09157ace35763937e190338c2c6b062302f0",
+        "game/scripts/vehicle/steering_wheel_visual_controller.gd": "a0286c08e09a8236572438b8269e1f92bca2b80b0b729a86886f73c649439e51",
+        "game/scripts/runtime/wheel_gun_arm_inverse_kinematics_modifier.gd": "c0cfcbdd9042189143e9571eb489db79cfe4d211303f637a42210d436a36767c",
+        "game/scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn": "9ce90f66eb586cbe4cdc6b32b9fe85defd3acdf9018f1bf9f8e64f227558d596"
+      },
+      "capture_sha256": {
+        "tools/blender/capture_driver_cockpit_surfaces.gd": "b8894fda41c8a6307e99d9a32e285d78cc07592d8be049d04fd3b9733f84b31b",
+        "tools/blender/capture_driver_seated_surface.gd": "73e450a269a4845759d89d88b8e373f6a06e1749898bf43419e22b8e122aecc5"
+      },
+      "surfaces_sha256": "899c66cb47f3a20261164127831d35821c72d3b8a596c174cd85fd45fdc919c6",
+      "capture_chassis_sha256": "223edd6081eafa2baceac3b2f5c233415a35e810f67fe953df4d8882b5b2a883",
+      "seated_position": [
+        0,
+        -0.011,
+        -0.24
+      ],
+      "camera_dependencies_sha256": {
+        "scripts/vehicle/driver_head_motion_modifier.gd": "4aeb1915cb1958b86b8b3c467eb9581fcff93edcd8026d4e2f88eacd125a47a3",
+        "scripts/camera/cockpit_camera_configuration.gd": "70941c6d052fc661f0db39a34f4eae2d5a9e66cd5f7b907d899d95ff1506ad43",
+        "scripts/camera/cockpit_driver_motion_state.gd": "6c2510970fbdffe6a3fda735f76d9e6c8adf1e0533db1e68efa1d5e9aca2b245",
+        "data/cameras/formula_one_2030_cockpit_camera.json": "d32febdd652afa6e3859882b287b43cf17793d32c4088fe120d850f7c830be12"
+      }
+    },
+    "passed": true
+  },
+  "geometry_passed": true,
+  "passed": true,
+  "chassis_mesh_statistics": {
+    "GEO_CHASSIS_ACTIVEFRONT": {
+      "vertices": 288,
+      "polygons": 490
+    },
+    "GEO_CHASSIS_AERO2": {
+      "vertices": 896,
+      "polygons": 448
+    },
+    "GEO_CHASSIS_AEROPART1": {
+      "vertices": 1460,
+      "polygons": 2656
+    },
+    "GEO_CHASSIS_AEROPART2": {
+      "vertices": 5424,
+      "polygons": 9632
+    },
+    "GEO_CHASSIS_AEROPART3": {
+      "vertices": 2624,
+      "polygons": 4608
+    },
+    "GEO_CHASSIS_BODY": {
+      "vertices": 8177,
+      "polygons": 14342
+    },
+    "GEO_CHASSIS_CARBON3": {
+      "vertices": 25,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_CARBON4": {
+      "vertices": 50,
+      "polygons": 64
+    },
+    "GEO_CHASSIS_CARBON5": {
+      "vertices": 1564,
+      "polygons": 1562
+    },
+    "GEO_CHASSIS_CYLINDER_001": {
+      "vertices": 196,
+      "polygons": 252
+    },
+    "GEO_CHASSIS_CockpitUpperLining": {
+      "vertices": 1074,
+      "polygons": 1807
+    },
+    "GEO_CHASSIS_DECAL_LeftAmbipar15": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftCevaLogistics4": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftDriverNumber1": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftDxc10": {
+      "vertices": 325,
+      "polygons": 282
+    },
+    "GEO_CHASSIS_DECAL_LeftFerrariShield5": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftFrontWingGreen": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_LeftFrontWingRed": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_LeftFrontWingWhite": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_LeftHewlettPackard0": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftPeroni14": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_DECAL_LeftRichardMille6": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftShell3": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftUniCredit11": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftUniCredit12": {
+      "vertices": 325,
+      "polygons": 279
+    },
+    "GEO_CHASSIS_DECAL_LeftUniCredit2": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftVPower13": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftZyn8": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_DECAL_NoseDriverNumber": {
+      "vertices": 1221,
+      "polygons": 1152
+    },
+    "GEO_CHASSIS_DECAL_NoseShell": {
+      "vertices": 625,
+      "polygons": 576
+    },
+    "GEO_CHASSIS_DECAL_RightAmbipar15": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightCevaLogistics4": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightDriverNumber1": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightDxc10": {
+      "vertices": 325,
+      "polygons": 282
+    },
+    "GEO_CHASSIS_DECAL_RightFerrariShield5": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightFrontWingGreen": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_RightFrontWingRed": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_RightFrontWingWhite": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_RightHewlettPackard0": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightPeroni14": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_DECAL_RightRichardMille6": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightShell3": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightUniCredit11": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightUniCredit12": {
+      "vertices": 325,
+      "polygons": 279
+    },
+    "GEO_CHASSIS_DECAL_RightUniCredit2": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightVPower13": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightZyn8": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_ENDPLATE": {
+      "vertices": 2008,
+      "polygons": 3712
+    },
+    "GEO_CHASSIS_EXHAUST_TUBE_LEFT": {
+      "vertices": 832,
+      "polygons": 832
+    },
+    "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": {
+      "vertices": 832,
+      "polygons": 832
+    },
+    "GEO_CHASSIS_FLOOR": {
+      "vertices": 4991,
+      "polygons": 9952
+    },
+    "GEO_CHASSIS_FRONTSUPPORT": {
+      "vertices": 224,
+      "polygons": 384
+    },
+    "GEO_CHASSIS_FRONTWING": {
+      "vertices": 972,
+      "polygons": 1656
+    },
+    "GEO_CHASSIS_FRONT_SUSPENSION": {
+      "vertices": 432,
+      "polygons": 224
+    },
+    "GEO_CHASSIS_INTERIOR": {
+      "vertices": 4686,
+      "polygons": 9368
+    },
+    "GEO_CHASSIS_LATERALCAM": {
+      "vertices": 40,
+      "polygons": 72
+    },
+    "GEO_CHASSIS_MIRRORS": {
+      "vertices": 665,
+      "polygons": 840
+    },
+    "GEO_CHASSIS_ONBOARDCAM": {
+      "vertices": 78,
+      "polygons": 104
+    },
+    "GEO_CHASSIS_REARLIGHT": {
+      "vertices": 79,
+      "polygons": 128
+    },
+    "GEO_CHASSIS_REARSUPPORT": {
+      "vertices": 1752,
+      "polygons": 1730
+    },
+    "GEO_CHASSIS_REAR_SUSPENSION": {
+      "vertices": 252,
+      "polygons": 136
+    },
+    "GEO_CHASSIS_REAR_WING": {
+      "vertices": 11707,
+      "polygons": 19711
+    },
+    "GEO_CHASSIS_REAR_WING_MID": {
+      "vertices": 2082,
+      "polygons": 2112
+    },
+    "GEO_CHASSIS_SCREEN": {
+      "vertices": 32,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_SEAT": {
+      "vertices": 600,
+      "polygons": 598
+    },
+    "GEO_CHASSIS_SHIFTERBRAK": {
+      "vertices": 152,
+      "polygons": 88
+    },
+    "GEO_CHASSIS_SHIFTERTHRO": {
+      "vertices": 152,
+      "polygons": 88
+    },
+    "GEO_CHASSIS_STEER": {
+      "vertices": 980,
+      "polygons": 1752
+    },
+    "GEO_CHASSIS_STEERCOLUM": {
+      "vertices": 196,
+      "polygons": 252
+    }
+  },
+  "candidate_sha256": "a731c2b9d853c0909c340e721d1e14a9aa7631a208e8354250be250c16e15f7e",
+  "chassis_sha256": "463ea1d4808118149098de93cac0a8f6c7d0d631287ced135109941c8300df34",
+  "lining_corner_normals_preserved_explicitly_during_export": true,
+  "exporter_source_sha256": "5153a0308c8befe89ad8ad181eb3d7241fe293e06f974b5600a25e8db9b37185",
+  "export_validation": {
+    "unchanged_materials_and_embedded_textures": true,
+    "unchanged_other_mesh_geometry_texture_coordinates_and_normals": 70,
+    "exporter_tangent_rounding_variations": {
+      "GEO_CHASSIS_BODY": 0.00010001659393310547,
+      "GEO_CHASSIS_REAR_WING": 0.00010001659393310547
+    },
+    "lining_triangles": 2148,
+    "all_exported_triangles_correspond_to_source_polygons": true,
+    "maximum_source_export_position_error_meters": 6.664001972467304e-08,
+    "maximum_source_export_corner_normal_error": 0.0005098711388381208,
+    "maximum_source_export_corner_normal_angle_degrees": 0.02921346466739411,
+    "source_export_corner_normal_tolerance_degrees": 0.05,
+    "all_smooth_and_split_corner_normals_preserved": true
+  },
+  "backup_directory": "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\backup",
+  "before_reconstruction_lining_geometry_validation": {
+    "object": "GEO_CHASSIS_CockpitUpperLining",
+    "vertices": 1246,
+    "polygons": 2151,
+    "triangles": 2492,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "zero_area_faces": 0,
+    "zero_length_edges": 0,
+    "minimum_triangle_area_square_meters": 4.277009111319785e-07,
+    "signed_volume_cubic_meters": 0.0004678022524470601,
+    "bounding_pairs_inspected_including_adjacent_triangles": 14745,
+    "intersection_boundary_tolerance_meters": 5e-07,
+    "triangle_crossing_pairs": [],
+    "coplanar_overlap_pairs": [],
+    "passed": true
+  },
+  "preserved_crease_vertex_pairs": [
+    0,
+    1,
+    168,
+    169,
+    368,
+    369,
+    376,
+    382,
+    400,
+    405,
+    336,
+    337,
+    528,
+    529,
+    704,
+    705,
+    712,
+    714,
+    912,
+    913,
+    704,
+    873,
+    920,
+    926,
+    1,
+    2,
+    369,
+    370,
+    377,
+    378,
+    401,
+    406,
+    417,
+    421,
+    425,
+    429,
+    441,
+    445,
+    449,
+    453,
+    457,
+    461,
+    465,
+    469,
+    473,
+    477,
+    481,
+    485,
+    489,
+    493,
+    497,
+    502,
+    521,
+    522,
+    521,
+    527,
+    377,
+    383,
+    409,
+    413,
+    433,
+    437,
+    537,
+    538,
+    705,
+    706,
+    905,
+    906,
+    913,
+    919,
+    937,
+    942,
+    873,
+    874,
+    1065,
+    1066,
+    2,
+    4,
+    170,
+    171,
+    362,
+    363,
+    370,
+    376,
+    378,
+    379,
+    394,
+    400,
+    410,
+    414,
+    426,
+    430,
+    434,
+    438,
+    458,
+    462,
+    466,
+    470,
+    474,
+    478,
+    490,
+    494,
+    498,
+    504,
+    522,
+    528,
+    418,
+    422,
+    442,
+    446,
+    450,
+    454,
+    482,
+    486,
+    538,
+    539,
+    906,
+    907,
+    914,
+    915,
+    938,
+    943,
+    954,
+    958,
+    962,
+    966,
+    978,
+    982,
+    986,
+    990,
+    994,
+    998,
+    1002,
+    1006,
+    1010,
+    1014,
+    1018,
+    1022,
+    1026,
+    1030,
+    1034,
+    1039,
+    1058,
+    1059,
+    1058,
+    1064,
+    914,
+    920,
+    946,
+    950,
+    970,
+    974,
+    171,
+    172,
+    363,
+    364,
+    371,
+    377,
+    371,
+    372,
+    395,
+    401,
+    499,
+    505,
+    539,
+    541,
+    707,
+    708,
+    899,
+    900,
+    907,
+    913,
+    915,
+    916,
+    931,
+    937,
+    947,
+    951,
+    963,
+    967,
+    971,
+    975,
+    995,
+    999,
+    1003,
+    1007,
+    1011,
+    1015,
+    1027,
+    1031,
+    1035,
+    1041,
+    1059,
+    1065,
+    955,
+    959,
+    979,
+    983,
+    987,
+    991,
+    1019,
+    1023,
+    4,
+    5,
+    172,
+    174,
+    372,
+    373,
+    388,
+    394,
+    500,
+    507,
+    364,
+    370,
+    708,
+    709,
+    900,
+    901,
+    908,
+    909,
+    908,
+    914,
+    932,
+    938,
+    1036,
+    1042,
+    5,
+    7,
+    165,
+    169,
+    365,
+    371,
+    365,
+    366,
+    405,
+    409,
+    413,
+    417,
+    421,
+    425,
+    429,
+    433,
+    437,
+    441,
+    445,
+    449,
+    453,
+    457,
+    461,
+    465,
+    469,
+    473,
+    477,
+    481,
+    485,
+    489,
+    493,
+    498,
+    389,
+    395,
+    541,
+    542,
+    709,
+    711,
+    909,
+    910,
+    925,
+    931,
+    1037,
+    1044,
+    901,
+    907,
+    174,
+    175,
+    334,
+    337,
+    366,
+    367,
+    374,
+    375,
+    382,
+    388,
+    406,
+    410,
+    438,
+    442,
+    430,
+    434,
+    454,
+    458,
+    470,
+    474,
+    478,
+    482,
+    486,
+    490,
+    526,
+    527,
+    414,
+    418,
+    422,
+    426,
+    446,
+    450,
+    462,
+    466,
+    494,
+    499,
+    542,
+    544,
+    702,
+    706,
+    902,
+    908,
+    902,
+    903,
+    942,
+    946,
+    950,
+    954,
+    958,
+    962,
+    966,
+    970,
+    974,
+    978,
+    982,
+    986,
+    990,
+    994,
+    998,
+    1002,
+    1006,
+    1010,
+    1014,
+    1018,
+    1022,
+    1026,
+    1030,
+    1035,
+    926,
+    932,
+    167,
+    168,
+    175,
+    177,
+    375,
+    376,
+    167,
+    336,
+    383,
+    389,
+    711,
+    712,
+    871,
+    874,
+    903,
+    904,
+    911,
+    912,
+    919,
+    925,
+    943,
+    947,
+    975,
+    979,
+    967,
+    971,
+    991,
+    995,
+    1007,
+    1011,
+    1015,
+    1019,
+    1023,
+    1027,
+    1063,
+    1064,
+    951,
+    955,
+    959,
+    963,
+    983,
+    987,
+    999,
+    1003,
+    1031,
+    1036
+  ],
+  "source_after_sha256": "3c42cc3be23f53902e36bf65d94d44ecdab7f4e956d2c3cacb72f3a358da5f2f",
+  "promoted_chassis": {
+    "path": "f1_2030_v10_chassis.glb",
+    "sha256": "463EA1D4808118149098DE93CAC0A8F6C7D0D631287CED135109941C8300DF34",
+    "size_bytes": 17378888
+  },
+  "saved_source_validation": {
+    "passed": true,
+    "protected_meshes": 107,
+    "geometry": {
+      "lining": {
+        "object": "GEO_CHASSIS_CockpitUpperLining",
+        "vertices": 1074,
+        "polygons": 1807,
+        "triangles": 2148,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "inconsistent_winding_edges": 0,
+        "zero_area_faces": 0,
+        "zero_length_edges": 0,
+        "minimum_triangle_area_square_meters": 1.9257961980656546e-07,
+        "signed_volume_cubic_meters": 0.00046780234828997755,
+        "bounding_pairs_inspected_including_adjacent_triangles": 12857,
+        "intersection_boundary_tolerance_meters": 5e-07,
+        "triangle_crossing_pairs": [],
+        "coplanar_overlap_pairs": [],
+        "passed": true
+      },
+      "interior": {
+        "object": "GEO_CHASSIS_INTERIOR",
+        "vertices": 4686,
+        "polygons": 9368,
+        "triangles": 9368,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "inconsistent_winding_edges": 0,
+        "zero_area_faces": 0,
+        "zero_length_edges": 0,
+        "minimum_triangle_area_square_meters": 4.474441993806977e-06,
+        "signed_volume_cubic_meters": 0.01051778993300347,
+        "bounding_pairs_inspected_including_adjacent_triangles": 56450,
+        "intersection_boundary_tolerance_meters": 5e-07,
+        "triangle_crossing_pairs": [],
+        "coplanar_overlap_pairs": [],
+        "passed": true
+      },
+      "opening_perimeter": {
+        "edges": 68,
+        "perimeter_length_meters": 2.239449314326326,
+        "samples": 2344,
+        "maximum_sample_step_meters": 0.001,
+        "maximum_distance_meters": 2.8462777663662564e-06,
+        "edge_measurements": [
+          {
+            "edge": 0,
+            "length_meters": 0.017169699617231676,
+            "samples": 19,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 1,
+            "length_meters": 0.009790444032081442,
+            "samples": 11,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 2,
+            "length_meters": 0.007638168832915934,
+            "samples": 9,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 3,
+            "length_meters": 0.006781373673626227,
+            "samples": 8,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 4,
+            "length_meters": 0.006958551194278096,
+            "samples": 8,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 5,
+            "length_meters": 0.009271717738844517,
+            "samples": 11,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 6,
+            "length_meters": 0.012642357672610826,
+            "samples": 14,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 7,
+            "length_meters": 0.01409254140537841,
+            "samples": 16,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 8,
+            "length_meters": 0.012604242510706357,
+            "samples": 14,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 9,
+            "length_meters": 0.03195825286531488,
+            "samples": 33,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 10,
+            "length_meters": 0.06720196351944624,
+            "samples": 69,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 11,
+            "length_meters": 0.08212451967102397,
+            "samples": 84,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 12,
+            "length_meters": 0.07356324706295676,
+            "samples": 75,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 13,
+            "length_meters": 0.05448856548033057,
+            "samples": 56,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 14,
+            "length_meters": 0.032292974184520463,
+            "samples": 34,
+            "maximum_distance_meters": 3.332021236701621e-08
+          },
+          {
+            "edge": 15,
+            "length_meters": 0.02251559990807444,
+            "samples": 24,
+            "maximum_distance_meters": 3.3333023452541966e-08
+          },
+          {
+            "edge": 16,
+            "length_meters": 0.02644131279031125,
+            "samples": 28,
+            "maximum_distance_meters": 3.3527612686157227e-08
+          },
+          {
+            "edge": 17,
+            "length_meters": 0.03300017078270843,
+            "samples": 35,
+            "maximum_distance_meters": 2.2351741790771484e-08
+          },
+          {
+            "edge": 18,
+            "length_meters": 0.03916733465195498,
+            "samples": 41,
+            "maximum_distance_meters": 2.2351741790771484e-08
+          },
+          {
+            "edge": 19,
+            "length_meters": 0.04704045763856861,
+            "samples": 49,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 20,
+            "length_meters": 0.0570803185587607,
+            "samples": 59,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 21,
+            "length_meters": 0.05062527218830099,
+            "samples": 52,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 22,
+            "length_meters": 0.027697698737092047,
+            "samples": 29,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 23,
+            "length_meters": 0.023212473355841166,
+            "samples": 25,
+            "maximum_distance_meters": 3.650024282819686e-08
+          },
+          {
+            "edge": 24,
+            "length_meters": 0.04195429177875833,
+            "samples": 43,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 25,
+            "length_meters": 0.05017058087135895,
+            "samples": 52,
+            "maximum_distance_meters": 3.4142850324769825e-08
+          },
+          {
+            "edge": 26,
+            "length_meters": 0.04499481278457113,
+            "samples": 46,
+            "maximum_distance_meters": 4.214684778958144e-08
+          },
+          {
+            "edge": 27,
+            "length_meters": 0.04072643727981066,
+            "samples": 42,
+            "maximum_distance_meters": 3.725290298461914e-08
+          },
+          {
+            "edge": 28,
+            "length_meters": 0.04072643442134,
+            "samples": 42,
+            "maximum_distance_meters": 3.499592438060972e-08
+          },
+          {
+            "edge": 29,
+            "length_meters": 0.04499481695862222,
+            "samples": 46,
+            "maximum_distance_meters": 4.470348358154297e-08
+          },
+          {
+            "edge": 30,
+            "length_meters": 0.05017058087135895,
+            "samples": 52,
+            "maximum_distance_meters": 3.4142850324769825e-08
+          },
+          {
+            "edge": 31,
+            "length_meters": 0.041954278208185425,
+            "samples": 43,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 32,
+            "length_meters": 0.023212500626004537,
+            "samples": 25,
+            "maximum_distance_meters": 3.650024282819686e-08
+          },
+          {
+            "edge": 33,
+            "length_meters": 0.027697705829769034,
+            "samples": 29,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 34,
+            "length_meters": 0.050625253809866495,
+            "samples": 52,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 35,
+            "length_meters": 0.05708030670416448,
+            "samples": 59,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 36,
+            "length_meters": 0.0470404400056763,
+            "samples": 49,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 37,
+            "length_meters": 0.03916734839863378,
+            "samples": 41,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 38,
+            "length_meters": 0.03300018202731009,
+            "samples": 35,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 39,
+            "length_meters": 0.026441311242458344,
+            "samples": 28,
+            "maximum_distance_meters": 3.003425064207477e-08
+          },
+          {
+            "edge": 40,
+            "length_meters": 0.022515599645513567,
+            "samples": 24,
+            "maximum_distance_meters": 3.3372032248735195e-08
+          },
+          {
+            "edge": 41,
+            "length_meters": 0.03229297345138006,
+            "samples": 34,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 42,
+            "length_meters": 0.05448856035187366,
+            "samples": 56,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 43,
+            "length_meters": 0.07356323940380605,
+            "samples": 75,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 44,
+            "length_meters": 0.08212453852272848,
+            "samples": 84,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 45,
+            "length_meters": 0.06720199415985358,
+            "samples": 69,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 46,
+            "length_meters": 0.03195821741403332,
+            "samples": 33,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 47,
+            "length_meters": 0.012604235863306081,
+            "samples": 14,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 48,
+            "length_meters": 0.014092592776982884,
+            "samples": 16,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 49,
+            "length_meters": 0.012642315659419763,
+            "samples": 14,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 50,
+            "length_meters": 0.009271717738844517,
+            "samples": 11,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 51,
+            "length_meters": 0.006958562074981467,
+            "samples": 8,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 52,
+            "length_meters": 0.006781373657008998,
+            "samples": 8,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 53,
+            "length_meters": 0.007638160364021263,
+            "samples": 9,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 54,
+            "length_meters": 0.009790494567464642,
+            "samples": 11,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 55,
+            "length_meters": 0.017169572486564626,
+            "samples": 19,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 56,
+            "length_meters": 0.03021167407458547,
+            "samples": 32,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 57,
+            "length_meters": 0.03692329592790695,
+            "samples": 38,
+            "maximum_distance_meters": 3.4142850324769825e-08
+          },
+          {
+            "edge": 58,
+            "length_meters": 0.04039387553660268,
+            "samples": 42,
+            "maximum_distance_meters": 3.0719530030864917e-08
+          },
+          {
+            "edge": 59,
+            "length_meters": 0.03551054471434296,
+            "samples": 37,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 60,
+            "length_meters": 0.02125606694261861,
+            "samples": 23,
+            "maximum_distance_meters": 1.8091877791448496e-06
+          },
+          {
+            "edge": 61,
+            "length_meters": 0.012223866939000905,
+            "samples": 14,
+            "maximum_distance_meters": 2.8462777663662564e-06
+          },
+          {
+            "edge": 62,
+            "length_meters": 0.012223866940853718,
+            "samples": 14,
+            "maximum_distance_meters": 2.8462777663662564e-06
+          },
+          {
+            "edge": 63,
+            "length_meters": 0.021256063519615558,
+            "samples": 23,
+            "maximum_distance_meters": 1.7754910004441626e-06
+          },
+          {
+            "edge": 64,
+            "length_meters": 0.035510541580679324,
+            "samples": 37,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 65,
+            "length_meters": 0.04039389083598964,
+            "samples": 42,
+            "maximum_distance_meters": 3.0719530030864917e-08
+          },
+          {
+            "edge": 66,
+            "length_meters": 0.03692329977049907,
+            "samples": 38,
+            "maximum_distance_meters": 3.650024282819686e-08
+          },
+          {
+            "edge": 67,
+            "length_meters": 0.030211639515080022,
+            "samples": 32,
+            "maximum_distance_meters": 3.650024282819686e-08
+          }
+        ],
+        "passed": true
+      },
+      "interior_perimeter": {
+        "edges": 142,
+        "perimeter_length_meters": 4.6771971650685815,
+        "samples": 4913,
+        "maximum_sample_step_meters": 0.001,
+        "maximum_distance_meters": 2.0267771105864085e-07,
+        "edge_measurements": [
+          {
+            "edge": 0,
+            "length_meters": 0.025000005541368706,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 1,
+            "length_meters": 0.025000005541368706,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 2,
+            "length_meters": 0.0250684991634004,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 3,
+            "length_meters": 0.05790267716635387,
+            "samples": 59,
+            "maximum_distance_meters": 3.650024282819686e-08
+          },
+          {
+            "edge": 4,
+            "length_meters": 0.027683460828320523,
+            "samples": 29,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 5,
+            "length_meters": 0.025801256342698416,
+            "samples": 27,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 6,
+            "length_meters": 0.025457329648901735,
+            "samples": 27,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 7,
+            "length_meters": 0.02532545486039523,
+            "samples": 27,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 8,
+            "length_meters": 0.025338967150156783,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 9,
+            "length_meters": 0.025792044080383103,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 10,
+            "length_meters": 0.026269988678429286,
+            "samples": 28,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 11,
+            "length_meters": 0.02643095606925009,
+            "samples": 28,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 12,
+            "length_meters": 0.026300218592228846,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 13,
+            "length_meters": 0.02597892300557597,
+            "samples": 27,
+            "maximum_distance_meters": 3.0719530030864917e-08
+          },
+          {
+            "edge": 14,
+            "length_meters": 0.02546014779318729,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 15,
+            "length_meters": 0.025051420941540704,
+            "samples": 27,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 16,
+            "length_meters": 0.025007573789403062,
+            "samples": 27,
+            "maximum_distance_meters": 2.981687075021e-08
+          },
+          {
+            "edge": 17,
+            "length_meters": 0.025022507384016207,
+            "samples": 27,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 18,
+            "length_meters": 0.027095448006913977,
+            "samples": 29,
+            "maximum_distance_meters": 7.450580596923828e-09
+          },
+          {
+            "edge": 19,
+            "length_meters": 0.027543737569717675,
+            "samples": 29,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 20,
+            "length_meters": 0.02499999855644997,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 21,
+            "length_meters": 0.025000005541368706,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 22,
+            "length_meters": 0.02661498795396347,
+            "samples": 28,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 23,
+            "length_meters": 0.027497444225836516,
+            "samples": 29,
+            "maximum_distance_meters": 3.332000986233652e-08
+          },
+          {
+            "edge": 24,
+            "length_meters": 0.02662339544058736,
+            "samples": 28,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 25,
+            "length_meters": 0.0255595885039903,
+            "samples": 27,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 26,
+            "length_meters": 0.026217043598132025,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 27,
+            "length_meters": 0.026558191533136932,
+            "samples": 28,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 28,
+            "length_meters": 0.02787544055654926,
+            "samples": 29,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 29,
+            "length_meters": 0.029930498960364108,
+            "samples": 31,
+            "maximum_distance_meters": 4.470348358154297e-08
+          },
+          {
+            "edge": 30,
+            "length_meters": 0.02962738150332596,
+            "samples": 31,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 31,
+            "length_meters": 0.027157892331508362,
+            "samples": 29,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 32,
+            "length_meters": 0.026459239203732148,
+            "samples": 28,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 33,
+            "length_meters": 0.025820437691190783,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 34,
+            "length_meters": 0.0259831156186576,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 35,
+            "length_meters": 0.026590763001502954,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 36,
+            "length_meters": 0.02524231685730607,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 37,
+            "length_meters": 0.025030189935563392,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 38,
+            "length_meters": 0.025030132097813546,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 39,
+            "length_meters": 0.025030252853381608,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 40,
+            "length_meters": 0.025031273162782815,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 41,
+            "length_meters": 0.025043404170280295,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 42,
+            "length_meters": 0.025043460806166293,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 43,
+            "length_meters": 0.025043404170280295,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 44,
+            "length_meters": 0.025043463439123573,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 45,
+            "length_meters": 0.025043401537316785,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 46,
+            "length_meters": 0.025050371102703778,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 47,
+            "length_meters": 0.025048024218054226,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 48,
+            "length_meters": 0.02504451730798011,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 49,
+            "length_meters": 0.02504457657418911,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 50,
+            "length_meters": 0.02504451730798011,
+            "samples": 27,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 51,
+            "length_meters": 0.025044518193161194,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 52,
+            "length_meters": 0.02504457568447071,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 53,
+            "length_meters": 0.02505247566459577,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 54,
+            "length_meters": 0.0250611240094376,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 55,
+            "length_meters": 0.02505919309199844,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 56,
+            "length_meters": 0.0250538458832837,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 57,
+            "length_meters": 0.02505384490767817,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 58,
+            "length_meters": 0.025053964371427227,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 59,
+            "length_meters": 0.025134484757070828,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 60,
+            "length_meters": 0.025269484841174226,
+            "samples": 27,
+            "maximum_distance_meters": 3.0719530030864917e-08
+          },
+          {
+            "edge": 61,
+            "length_meters": 0.025784996537975925,
+            "samples": 27,
+            "maximum_distance_meters": 2.356080486265455e-08
+          },
+          {
+            "edge": 62,
+            "length_meters": 0.026779823145938127,
+            "samples": 28,
+            "maximum_distance_meters": 3.725290298461914e-08
+          },
+          {
+            "edge": 63,
+            "length_meters": 0.029451161666654325,
+            "samples": 31,
+            "maximum_distance_meters": 4.7706993910878737e-08
+          },
+          {
+            "edge": 64,
+            "length_meters": 0.09025800719030862,
+            "samples": 92,
+            "maximum_distance_meters": 1.2310378849633707e-07
+          },
+          {
+            "edge": 65,
+            "length_meters": 0.16017245401134614,
+            "samples": 162,
+            "maximum_distance_meters": 2.0267771105864085e-07
+          },
+          {
+            "edge": 66,
+            "length_meters": 0.024999976437527757,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 67,
+            "length_meters": 0.024999976437527757,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 68,
+            "length_meters": 0.025000095180985938,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 69,
+            "length_meters": 0.024999976437527757,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 70,
+            "length_meters": 0.30000000596046444,
+            "samples": 302,
+            "maximum_distance_meters": 1.1920928955078125e-07
+          },
+          {
+            "edge": 71,
+            "length_meters": 0.024999976437527757,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 72,
+            "length_meters": 0.025000095180985938,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 73,
+            "length_meters": 0.024999976437527757,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 74,
+            "length_meters": 0.024999976437527757,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 75,
+            "length_meters": 0.1601724423823477,
+            "samples": 162,
+            "maximum_distance_meters": 1.2338530552824523e-07
+          },
+          {
+            "edge": 76,
+            "length_meters": 0.09025800719030862,
+            "samples": 92,
+            "maximum_distance_meters": 1.2225537204813008e-07
+          },
+          {
+            "edge": 77,
+            "length_meters": 0.029451161666654325,
+            "samples": 31,
+            "maximum_distance_meters": 4.7706993910878737e-08
+          },
+          {
+            "edge": 78,
+            "length_meters": 0.026779823145938127,
+            "samples": 28,
+            "maximum_distance_meters": 3.725290298461914e-08
+          },
+          {
+            "edge": 79,
+            "length_meters": 0.025784998513221538,
+            "samples": 27,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 80,
+            "length_meters": 0.025269484841174226,
+            "samples": 27,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 81,
+            "length_meters": 0.025134484757070828,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 82,
+            "length_meters": 0.025053964371427227,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 83,
+            "length_meters": 0.02505384490767817,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 84,
+            "length_meters": 0.0250538458832837,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 85,
+            "length_meters": 0.02505919309199844,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 86,
+            "length_meters": 0.0250611240094376,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 87,
+            "length_meters": 0.02505247566459577,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 88,
+            "length_meters": 0.02504457568447071,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 89,
+            "length_meters": 0.025044518193161194,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 90,
+            "length_meters": 0.025044519082881633,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 91,
+            "length_meters": 0.02504457657418911,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 92,
+            "length_meters": 0.02504451730798011,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 93,
+            "length_meters": 0.025048024218054226,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 94,
+            "length_meters": 0.025050371102703778,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 95,
+            "length_meters": 0.025043401537316785,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 96,
+            "length_meters": 0.025043463439123573,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 97,
+            "length_meters": 0.025043404170280295,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 98,
+            "length_meters": 0.025043460806166293,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 99,
+            "length_meters": 0.025043404170280295,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 100,
+            "length_meters": 0.025031273162782815,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 101,
+            "length_meters": 0.025030252853381608,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 102,
+            "length_meters": 0.025030132097813546,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 103,
+            "length_meters": 0.025030189935563392,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 104,
+            "length_meters": 0.02524232098280435,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 105,
+            "length_meters": 0.026590763001502954,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 106,
+            "length_meters": 0.0259831156186576,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 107,
+            "length_meters": 0.025820437691190783,
+            "samples": 27,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 108,
+            "length_meters": 0.026459239203732148,
+            "samples": 28,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 109,
+            "length_meters": 0.027157892331508362,
+            "samples": 29,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 110,
+            "length_meters": 0.0296273957470903,
+            "samples": 31,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 111,
+            "length_meters": 0.029930498960364108,
+            "samples": 31,
+            "maximum_distance_meters": 4.470348358154297e-08
+          },
+          {
+            "edge": 112,
+            "length_meters": 0.027875435597230082,
+            "samples": 29,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 113,
+            "length_meters": 0.026558194307010556,
+            "samples": 28,
+            "maximum_distance_meters": 2.107342389479072e-08
+          },
+          {
+            "edge": 114,
+            "length_meters": 0.02621702916668408,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 115,
+            "length_meters": 0.025559574839996498,
+            "samples": 27,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 116,
+            "length_meters": 0.026108918607596156,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 117,
+            "length_meters": 0.02765446569507878,
+            "samples": 29,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 118,
+            "length_meters": 0.02790437125994557,
+            "samples": 29,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 119,
+            "length_meters": 0.025000005541368706,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 120,
+            "length_meters": 0.02499999855644997,
+            "samples": 26,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 121,
+            "length_meters": 0.025048569620652755,
+            "samples": 27,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 122,
+            "length_meters": 0.03358920982919179,
+            "samples": 35,
+            "maximum_distance_meters": 7.450580596923828e-09
+          },
+          {
+            "edge": 123,
+            "length_meters": 0.025022508647076683,
+            "samples": 27,
+            "maximum_distance_meters": 2.986047320518992e-08
+          },
+          {
+            "edge": 124,
+            "length_meters": 0.025007573055776767,
+            "samples": 27,
+            "maximum_distance_meters": 2.9803231882397085e-08
+          },
+          {
+            "edge": 125,
+            "length_meters": 0.025051417124965267,
+            "samples": 27,
+            "maximum_distance_meters": 2.986047320518992e-08
+          },
+          {
+            "edge": 126,
+            "length_meters": 0.02546015908142742,
+            "samples": 27,
+            "maximum_distance_meters": 3.003425064207477e-08
+          },
+          {
+            "edge": 127,
+            "length_meters": 0.02597893784936466,
+            "samples": 27,
+            "maximum_distance_meters": 3.0719530030864917e-08
+          },
+          {
+            "edge": 128,
+            "length_meters": 0.026300218592228846,
+            "samples": 28,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 129,
+            "length_meters": 0.02643095923498906,
+            "samples": 28,
+            "maximum_distance_meters": 1.666000493116826e-08
+          },
+          {
+            "edge": 130,
+            "length_meters": 0.026269972891223826,
+            "samples": 28,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 131,
+            "length_meters": 0.025792036745759903,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 132,
+            "length_meters": 0.02533896959088913,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 133,
+            "length_meters": 0.025325452741570914,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 134,
+            "length_meters": 0.025457343367774696,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 135,
+            "length_meters": 0.025801268556826105,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 136,
+            "length_meters": 0.02768348842512908,
+            "samples": 29,
+            "maximum_distance_meters": 2.9802322387695312e-08
+          },
+          {
+            "edge": 137,
+            "length_meters": 0.05790261081868206,
+            "samples": 59,
+            "maximum_distance_meters": 3.650024282819686e-08
+          },
+          {
+            "edge": 138,
+            "length_meters": 0.0250684991634004,
+            "samples": 27,
+            "maximum_distance_meters": 1.4901161193847656e-08
+          },
+          {
+            "edge": 139,
+            "length_meters": 0.025000005541368706,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 140,
+            "length_meters": 0.025000005541368706,
+            "samples": 27,
+            "maximum_distance_meters": 0
+          },
+          {
+            "edge": 141,
+            "length_meters": 0.30000000596046444,
+            "samples": 302,
+            "maximum_distance_meters": 3.332000986233652e-08
+          }
+        ],
+        "passed": true
+      },
+      "footwell_exterior_clearance": {
+        "samples": 340,
+        "minimum_vertical_distance_to_exterior_body_meters": 0.003967210650444031,
+        "passed": true
+      },
+      "vertical_shell_separation_meters": {
+        "minimum": 0.0014999955548392712,
+        "maximum": 0.0015000030581740298,
+        "construction": "Upper skin translated vertically by 1.5 millimeters; normal thickness varies with surface slope"
+      },
+      "passed": true
+    },
+    "textures_resolve": true,
+    "four_wheel_exports_unchanged": true,
+    "preserved_sharp_edges": true
+  },
+  "runtime_smoke": {
+    "passed": true,
+    "command": "scripts/run_f1_94.ps1 -Smoke",
+    "log": "scratch/cockpit_lining_retopology_20261007/runtime_smoke.log",
+    "sha256": "86dcc6e466695ea049e1b2206c7bff9dbb0ad6a6d7c90b4e8477783b0ebb450c",
+    "source_commit": "e949272e9b21a480805ec8f4aa2e6c551b6d0cc4",
+    "source_sha256": "3c42cc3be23f53902e36bf65d94d44ecdab7f4e956d2c3cacb72f3a358da5f2f",
+    "chassis_sha256": "463ea1d4808118149098de93cac0a8f6c7d0d631287ced135109941c8300df34",
+    "in_game_visual_review_performed": false
+  },
+  "tool_sources_sha256": {
+    "tools/blender/reconstruct_formula_one_2030_cockpit_lining.py": "482bd76d8e90d84f5a601d6a6575096ea48a778d79260a6cc28d0b9c0914e6ea",
+    "tools/blender/shade_formula_one_2030_cockpit_surfaces.py": "e626266e7fa295d549e3ee0e28c70e9bd3170cdf21d3a31d5c805c6764e7545a",
+    "tools/blender/export_f1_2030_v10.py": "5153a0308c8befe89ad8ad181eb3d7241fe293e06f974b5600a25e8db9b37185",
+    "tools/blender/validate_formula_one_2030_cockpit_geometry.py": "506f46682d4df6a80b012ea1aac4e8ccb7e1a833f7d7cb7ed168eaeafbaad230"
+  },
+  "restorable_source_backup_sha256": "d934de211358a999524677e699cb8c40318510dec6b44ecf9bf8f4c939c4e293",
+  "visual_review_images": [
+    "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\review\\before_cockpit.png",
+    "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\review\\before_lining.png",
+    "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\review\\before_topology.png",
+    "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\review\\after_cockpit.png",
+    "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\review\\after_lining.png",
+    "D:\\Formula90s\\scratch\\cockpit_lining_retopology_20261007\\review\\after_topology.png"
+  ],
+  "subsequent_chassis_decal_texture_conversion": {
+    "report": "chassis_flat_decal_report.json",
+    "source_sha256": "1a9a311f2f2d17a6e194ae14f20e9c9cc68d2a8d26df7d4272bb6e917fbd88fb",
+    "chassis_sha256": "641be5b299d3e90870f42577feff46829299e7fdf688ceccde42ca8c1152456e",
+    "removed_chassis_decal_meshes": 38,
+    "removed_triangles": 20836,
+    "retained_geometry_normals_sharp_edges_and_texture_coordinates_unchanged": true,
+    "authorized_material_aliases": {
+      "BakedPhysicalRedLacquer": "BakedPhysicalRedLacquerWithFlatChassisDecals",
+      "BakedPhysicalSatinCarbon": "BakedPhysicalSatinCarbonWithFlatChassisDecals"
+    },
+    "historical_report_backup": "D:\\Formula90s\\scratch\\chassis_decal_texture_conversion_20261007\\backup\\cockpit_lining_reconstruction_report.json"
+  },
+  "subsequent_authorized_reference_finish": {
+    "report": "reference_finish_report.json",
+    "source_sha256": "f3a25098fcca49aa38ee815631fe0c4303de3d57f5e1517d89774654f5509d2f",
+    "chassis_sha256": "DFD3219571448DF12E6C8E53C0938966C6CEB5D9A9AAEC44B28F55A5BF8920AF",
+    "retained_source_geometry_shading_and_sharp_edges_preserved": true,
+    "only_tires_receive_new_texture_coordinates": true,
+    "flat_chassis_decal_triangles": 0,
+    "removed_wheel_decal_meshes": [
+      "GEO_WHEEL_FRONT_L_DECAL_Pirelli",
+      "GEO_WHEEL_FRONT_L_DECAL_PZero",
+      "GEO_WHEEL_FRONT_R_DECAL_Pirelli",
+      "GEO_WHEEL_FRONT_R_DECAL_PZero",
+      "GEO_WHEEL_REAR_L_DECAL_Pirelli",
+      "GEO_WHEEL_REAR_L_DECAL_PZero",
+      "GEO_WHEEL_REAR_R_DECAL_Pirelli",
+      "GEO_WHEEL_REAR_R_DECAL_PZero"
+    ],
+    "removed_wheel_decal_triangles": 4416,
+    "runtime_triangle_total": 110105,
+    "historical_report_backup": "D:\\Formula90s\\scratch\\reference_finish_implementation_20261007\\backup\\game\\assets\\models\\vehicles\\f1-2030\\source\\cockpit_lining_reconstruction_report.json"
+  }
+}

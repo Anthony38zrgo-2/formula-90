@@ -4,28 +4,28 @@
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "8AD1EA188AF167F03958EE59E1FA0171F7CFB8FD01A75208B56A2DB800496FEA",
-      "size_bytes": 11448796
+      "sha256": "DFD3219571448DF12E6C8E53C0938966C6CEB5D9A9AAEC44B28F55A5BF8920AF",
+      "size_bytes": 16203848
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "B481244F948490A924C3139DAFA24AC2D22CCDB90687DBD0A6B39606399B1B81",
-      "size_bytes": 4853492
+      "sha256": "8B2D946F911272FAE1A69A57D95DB2B99E1C748F12E5DDFD2844311B39D0AC60",
+      "size_bytes": 6353372
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "4874A3337988F50AC5D9EC7A975C30D13DDDDAE7344B584370AC4E475572A292",
-      "size_bytes": 4861188
+      "sha256": "892C951826173CAA9E88492D9C806FD52185ADC4F042EFA7473C7CF5979A3DCE",
+      "size_bytes": 6353372
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "DAE9F6EDA89B4316AD7194E15AE51DA95F068727DE992D414B0410FE25F2D5EB",
-      "size_bytes": 4844592
+      "sha256": "6A3CDDFA5FCC48B6724580EC98024891200105BC264CCF0534419B477C0326EF",
+      "size_bytes": 6353352
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "E1837FFD296E23B768C2B26028AB99E49459B28153232397D772DBF99F537CE2",
-      "size_bytes": 4844920
+      "sha256": "36638A0683A587E873304E81B268B2362537D4B5611500237A22AF11FF1E3310",
+      "size_bytes": 6353356
     }
   },
   "mesh_stats": {
@@ -70,157 +70,9 @@
         "vertices": 196,
         "polygons": 252
       },
-      "GEO_CHASSIS_DECAL_LeftAmbipar15": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftCevaLogistics4": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftDriverNumber1": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftDxc10": {
-        "vertices": 325,
-        "polygons": 282
-      },
-      "GEO_CHASSIS_DECAL_LeftFerrariShield5": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftFrontWingGreen": {
-        "vertices": 36,
-        "polygons": 24
-      },
-      "GEO_CHASSIS_DECAL_LeftFrontWingRed": {
-        "vertices": 36,
-        "polygons": 24
-      },
-      "GEO_CHASSIS_DECAL_LeftFrontWingWhite": {
-        "vertices": 36,
-        "polygons": 24
-      },
-      "GEO_CHASSIS_DECAL_LeftHewlettPackard0": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftPeroni14": {
-        "vertices": 325,
-        "polygons": 272
-      },
-      "GEO_CHASSIS_DECAL_LeftRichardMille6": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftShell3": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftUniCredit11": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftUniCredit12": {
-        "vertices": 325,
-        "polygons": 279
-      },
-      "GEO_CHASSIS_DECAL_LeftUniCredit2": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftVPower13": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_LeftZyn8": {
-        "vertices": 325,
-        "polygons": 272
-      },
-      "GEO_CHASSIS_DECAL_NoseDriverNumber": {
-        "vertices": 1221,
-        "polygons": 1152
-      },
-      "GEO_CHASSIS_DECAL_NoseShell": {
-        "vertices": 625,
-        "polygons": 576
-      },
-      "GEO_CHASSIS_DECAL_RightAmbipar15": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightCevaLogistics4": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightDriverNumber1": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightDxc10": {
-        "vertices": 325,
-        "polygons": 282
-      },
-      "GEO_CHASSIS_DECAL_RightFerrariShield5": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightFrontWingGreen": {
-        "vertices": 36,
-        "polygons": 24
-      },
-      "GEO_CHASSIS_DECAL_RightFrontWingRed": {
-        "vertices": 36,
-        "polygons": 24
-      },
-      "GEO_CHASSIS_DECAL_RightFrontWingWhite": {
-        "vertices": 36,
-        "polygons": 24
-      },
-      "GEO_CHASSIS_DECAL_RightHewlettPackard0": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightPeroni14": {
-        "vertices": 325,
-        "polygons": 272
-      },
-      "GEO_CHASSIS_DECAL_RightRichardMille6": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightShell3": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightUniCredit11": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightUniCredit12": {
-        "vertices": 325,
-        "polygons": 279
-      },
-      "GEO_CHASSIS_DECAL_RightUniCredit2": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightVPower13": {
-        "vertices": 325,
-        "polygons": 288
-      },
-      "GEO_CHASSIS_DECAL_RightZyn8": {
-        "vertices": 325,
-        "polygons": 272
+      "GEO_CHASSIS_CockpitUpperLining": {
+        "vertices": 1074,
+        "polygons": 1807
       },
       "GEO_CHASSIS_ENDPLATE": {
         "vertices": 2008,
@@ -252,7 +104,7 @@
       },
       "GEO_CHASSIS_INTERIOR": {
         "vertices": 4686,
-        "polygons": 4626
+        "polygons": 9368
       },
       "GEO_CHASSIS_LATERALCAM": {
         "vertices": 40,
@@ -312,14 +164,6 @@
       }
     },
     "wheel_FL": {
-      "GEO_WHEEL_FRONT_L_DECAL_PZero": {
-        "vertices": 325,
-        "polygons": 268
-      },
-      "GEO_WHEEL_FRONT_L_DECAL_Pirelli": {
-        "vertices": 325,
-        "polygons": 284
-      },
       "GEO_WHEEL_FRONT_L_NUT_02": {
         "vertices": 360,
         "polygons": 120
@@ -350,8 +194,6 @@
       },
       "visual_groups": {
         "spin": [
-          "GEO_WHEEL_FRONT_L_DECAL_PZero",
-          "GEO_WHEEL_FRONT_L_DECAL_Pirelli",
           "GEO_WHEEL_FRONT_L_NUT_02",
           "GEO_WHEEL_FRONT_L_RIM_01",
           "GEO_WHEEL_FRONT_L_RIM_03",
@@ -365,14 +207,6 @@
       }
     },
     "wheel_FR": {
-      "GEO_WHEEL_FRONT_R_DECAL_PZero": {
-        "vertices": 325,
-        "polygons": 268
-      },
-      "GEO_WHEEL_FRONT_R_DECAL_Pirelli": {
-        "vertices": 325,
-        "polygons": 284
-      },
       "GEO_WHEEL_FRONT_R_NUT_02": {
         "vertices": 360,
         "polygons": 120
@@ -403,8 +237,6 @@
       },
       "visual_groups": {
         "spin": [
-          "GEO_WHEEL_FRONT_R_DECAL_PZero",
-          "GEO_WHEEL_FRONT_R_DECAL_Pirelli",
           "GEO_WHEEL_FRONT_R_NUT_02",
           "GEO_WHEEL_FRONT_R_RIM_01",
           "GEO_WHEEL_FRONT_R_RIM_03",
@@ -418,14 +250,6 @@
       }
     },
     "wheel_RL": {
-      "GEO_WHEEL_REAR_L_DECAL_PZero": {
-        "vertices": 325,
-        "polygons": 268
-      },
-      "GEO_WHEEL_REAR_L_DECAL_Pirelli": {
-        "vertices": 325,
-        "polygons": 284
-      },
       "GEO_WHEEL_REAR_L_NUT_02": {
         "vertices": 360,
         "polygons": 120
@@ -456,8 +280,6 @@
       },
       "visual_groups": {
         "spin": [
-          "GEO_WHEEL_REAR_L_DECAL_PZero",
-          "GEO_WHEEL_REAR_L_DECAL_Pirelli",
           "GEO_WHEEL_REAR_L_NUT_02",
           "GEO_WHEEL_REAR_L_RIM_01",
           "GEO_WHEEL_REAR_L_RIM_03",
@@ -471,14 +293,6 @@
       }
     },
     "wheel_RR": {
-      "GEO_WHEEL_REAR_R_DECAL_PZero": {
-        "vertices": 325,
-        "polygons": 268
-      },
-      "GEO_WHEEL_REAR_R_DECAL_Pirelli": {
-        "vertices": 325,
-        "polygons": 284
-      },
       "GEO_WHEEL_REAR_R_NUT_02": {
         "vertices": 360,
         "polygons": 120
@@ -509,8 +323,6 @@
       },
       "visual_groups": {
         "spin": [
-          "GEO_WHEEL_REAR_R_DECAL_PZero",
-          "GEO_WHEEL_REAR_R_DECAL_Pirelli",
           "GEO_WHEEL_REAR_R_NUT_02",
           "GEO_WHEEL_REAR_R_RIM_01",
           "GEO_WHEEL_REAR_R_RIM_03",
@@ -529,5 +341,6 @@
     "rear_track": 1.4319999814033508,
     "wheelbase": 2.950000286102295,
     "chassis_vertical_offset": 0.10500002279877663
-  }
+  },
+  "reference_finish_report": "source/reference_finish_report.json"
 }

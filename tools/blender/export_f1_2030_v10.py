@@ -35,9 +35,24 @@ def clear_export_objects():
 
 def duplicate_mesh_object(source, source_name, matrix_world):
     duplicate = source.copy()
-    duplicate.data = source.data.copy()
+    runtime_surface_name = source.get("formula_one_2030_runtime_surface_mesh")
+    source_surface = bpy.data.meshes[runtime_surface_name] if runtime_surface_name else source.data
+    duplicate.data = source_surface.copy()
+    lining_corner_normals = [normal.vector.copy() for normal in source_surface.corner_normals] if source_name == "GEO_CHASSIS_CockpitUpperLining" or runtime_surface_name else None
     duplicate.data.transform(matrix_world)
     duplicate.data.update()
+    if lining_corner_normals is not None:
+        normal_transformation = matrix_world.to_3x3().inverted().transposed()
+        duplicate.data.normals_split_custom_set([(normal_transformation @ normal).normalized() for normal in lining_corner_normals])
+    baked_coordinates = duplicate.data.uv_layers.get("BakedPhysicalMaterialCoordinates")
+    if baked_coordinates is not None:
+        for texture_coordinates in list(duplicate.data.uv_layers):
+            if texture_coordinates.name != baked_coordinates.name:
+                duplicate.data.uv_layers.remove(texture_coordinates)
+        duplicate.data.uv_layers.active_index = 0
+        duplicate.data.uv_layers[0].active_render = True
+        triangulation = duplicate.modifiers.new("BakedNormalExportTriangulation", "TRIANGULATE")
+        triangulation.keep_custom_normals = True
     duplicate.name = source_name
     duplicate.data.name = source_name + "_MESH"
     duplicate.parent = None
@@ -75,6 +90,7 @@ def export_selected(objects, output):
         export_cameras=False,
         export_lights=False,
         export_animations=False,
+        export_tangents=True,
     )
 
 

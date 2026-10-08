@@ -1,0 +1,264 @@
+{
+  "head": "e949272e9b21a480805ec8f4aa2e6c551b6d0cc4",
+  "branch": "main-clean",
+  "status_before": " M game/BUILD_SOURCE\n M game/addons/formula90s/bin/formula90_core.dll\n M game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll\n M game/addons/formula90s/bin/game_sim.dll\n M game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll\n M game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll\n M game/addons/formula90s/bin/psx_art_plugin.dll\n M game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll\n M game/addons/formula90s/bin/vehicle_audio_engine.dll\n M game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll\n M game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll\n M game/assets/models/vehicles/f1-2030/source/f1_2030.blend\n M instrucciones.md\n M tools/blender/export_f1_2030_v10.py\n?? game/assets/fonts/BarlowCondensed-Medium.ttf.import\n?? game/assets/models/drivers/driver.glb.import\n?? game/assets/models/pit_crew/racer/source/\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_chassis_red_lacquer_base_color.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_chassis_red_lacquer_base_color.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_reference_sponsor_decals.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_reference_sponsor_decals.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_reference_sponsor_decals.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_reference_sponsor_decals.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_wheel_champagne_gold_base_color.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_wheel_champagne_gold_base_color.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_reference_sponsor_decals.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_reference_sponsor_decals.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_wheel_champagne_gold_base_color.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_wheel_champagne_gold_base_color.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_reference_sponsor_decals.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_reference_sponsor_decals.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_wheel_champagne_gold_base_color.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_wheel_champagne_gold_base_color.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_reference_sponsor_decals.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_reference_sponsor_decals.png.import\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_wheel_champagne_gold_base_color.png\n?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_wheel_champagne_gold_base_color.png.import\n?? game/assets/models/vehicles/f1-2030/source/textures/baked_physical_materials/\n?? game/features/retro_hud/assets/digital_segment.svg.import\n?? game/features/retro_hud/assets/divider.svg.import\n?? game/features/retro_hud/assets/fuel_icon.svg.import\n?? game/features/retro_hud/assets/fuel_segment.svg.import\n?? game/features/retro_hud/assets/rpm_segment.svg.import\n?? reference/\n?? tools/blender/bake_f1_2030_physical_materials.py\n",
+  "source_before_sha256": "44cce07b7c7ca14445f68b8e10d13fc11b2376d648d1eb1201ef8579c187970e",
+  "groups": [
+    {
+      "family": "red_lacquer",
+      "material": "BakedPhysicalRedLacquer",
+      "objects": [
+        "GEO_CHASSIS_BODY",
+        "GEO_CHASSIS_MIRRORS"
+      ],
+      "resolution": 2048,
+      "maps": {
+        "base_color": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\red_lacquer_base_color.png",
+          "sha256": "94f2b2dfb3f581980e488aebca24b2edf81f56e2cdb38bd4fcfde813e63c2704"
+        },
+        "normal": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\red_lacquer_normal.png",
+          "sha256": "d11de42e1fa198ceb39c5a1cc6cfdf5135e1fad150c326e21213c855fa11742b"
+        },
+        "occlusion_roughness_metallic": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\red_lacquer_occlusion_roughness_metallic.png",
+          "sha256": "b4a1e6a1894cc7da6c5a21864d262cab31b633f19d99ea4d48726fb848510983"
+        }
+      }
+    },
+    {
+      "family": "satin_carbon",
+      "material": "BakedPhysicalSatinCarbon",
+      "objects": [
+        "GEO_CHASSIS_ACTIVEFRONT",
+        "GEO_CHASSIS_AERO2",
+        "GEO_CHASSIS_AEROPART1",
+        "GEO_CHASSIS_AEROPART2",
+        "GEO_CHASSIS_AEROPART3",
+        "GEO_CHASSIS_BODY",
+        "GEO_CHASSIS_CARBON5",
+        "GEO_CHASSIS_ENDPLATE",
+        "GEO_CHASSIS_FLOOR",
+        "GEO_CHASSIS_FRONT_SUSPENSION",
+        "GEO_CHASSIS_FRONTSUPPORT",
+        "GEO_CHASSIS_FRONTWING",
+        "GEO_CHASSIS_REAR_SUSPENSION",
+        "GEO_CHASSIS_REAR_WING",
+        "GEO_CHASSIS_REAR_WING_MID",
+        "GEO_CHASSIS_REARSUPPORT"
+      ],
+      "resolution": 4096,
+      "maps": {
+        "base_color": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\satin_carbon_base_color.png",
+          "sha256": "c3f511a56b595db5b5d235a0d8cfb19b2234e9398554fbf06077ed774b4ebb70"
+        },
+        "normal": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\satin_carbon_normal.png",
+          "sha256": "77927693b89cc988aa3c0a6e016cda48580466f024beec096c6ca80359add605"
+        },
+        "occlusion_roughness_metallic": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\satin_carbon_occlusion_roughness_metallic.png",
+          "sha256": "90ee15eb8868b20748c41c57e700d99a669f3b58029bdfab954238ffeffce2b7"
+        }
+      }
+    },
+    {
+      "family": "polished_chrome",
+      "material": "BakedPhysicalPolishedChrome",
+      "objects": [
+        "GEO_CHASSIS_EXHAUST_TUBE_LEFT",
+        "GEO_CHASSIS_EXHAUST_TUBE_RIGHT"
+      ],
+      "resolution": 512,
+      "maps": {
+        "base_color": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\polished_chrome_base_color.png",
+          "sha256": "edb38816d6569a9535a46000f64a9db7755f14b1d2197a97c2eb1007d5aea0c1"
+        },
+        "normal": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\polished_chrome_normal.png",
+          "sha256": "2030b9d979142d416d28df98889c5188661bcb5444bd37a0b2e6076d90bf62ae"
+        },
+        "occlusion_roughness_metallic": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\polished_chrome_occlusion_roughness_metallic.png",
+          "sha256": "39ce1c823b03a10bed9da98113afb3f9e688de5e8be8dc93348f92e51a20c0a6"
+        }
+      }
+    },
+    {
+      "family": "champagne_gold",
+      "material": "BakedPhysicalChampagneGold",
+      "objects": [
+        "GEO_WHEEL_FRONT_L_RIM_04",
+        "GEO_WHEEL_FRONT_L_RIM_06",
+        "GEO_WHEEL_FRONT_R_RIM_04",
+        "GEO_WHEEL_FRONT_R_RIM_06",
+        "GEO_WHEEL_REAR_L_RIM_04",
+        "GEO_WHEEL_REAR_L_RIM_06",
+        "GEO_WHEEL_REAR_R_RIM_04",
+        "GEO_WHEEL_REAR_R_RIM_06"
+      ],
+      "resolution": 1024,
+      "maps": {
+        "base_color": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\champagne_gold_base_color.png",
+          "sha256": "c0cea5df67782d7fdf5a5eeca00cf8cf69291728a7e29c1213f5ca731533670b"
+        },
+        "normal": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\champagne_gold_normal.png",
+          "sha256": "77c6be361c5fd6780bb1ac066fa7bc42b0fd26a3b0b8fbf019c5ad84e87d0aae"
+        },
+        "occlusion_roughness_metallic": {
+          "path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\textures\\baked_physical_materials\\champagne_gold_occlusion_roughness_metallic.png",
+          "sha256": "9626043f8484babc72e1cd07eb222f9f08d3ec0100164c3e7c957746a551f7a8"
+        }
+      }
+    }
+  ],
+  "adjusted_decals": [],
+  "protected_geometry": {
+    "GEO_CHASSIS_ACTIVEFRONT": "9fdef3b3b6c91647f06ee4e494a73867b117710d803716cd38f8c6ced2eab957",
+    "GEO_CHASSIS_AERO2": "8511f5b7c569c232c3584da4f5e933b76e45fb5c0f5c6fd3950af268cf7eff0f",
+    "GEO_CHASSIS_AEROPART1": "125c3ab0af002db6140b9669060272288108fcfc8a2f721ffcf0978f5270a4f9",
+    "GEO_CHASSIS_AEROPART2": "47439996c0b41fd9c91427b3a0c59672274a3e8e428f71ec2fe2d4fd56c31b71",
+    "GEO_CHASSIS_AEROPART3": "bebb839a191e5caa083faebc22882a1c68693c1f2fcaad690ea71d42cf8a233b",
+    "GEO_CHASSIS_BODY": "720d73f3e562206a4a04eebc72226d80ab24e186b84d9e00bdb00cdaeb70a923",
+    "GEO_CHASSIS_CARBON3": "e88bd96e1a56fa631d92a57d5c54eba1ecfe13518815c146280c910a0bb32e00",
+    "GEO_CHASSIS_CARBON4": "3a5848af78c911ad209620578af50f0e7e32a131986bbeec6604c62c15b17d6a",
+    "GEO_CHASSIS_CARBON5": "e94cbe3795c8976d9650973ea1fe5b574257c35f82066058e6c534eb65db2f43",
+    "GEO_CHASSIS_CYLINDER_001": "7896e2f638adeff583bbe72a920ada0c3e3933287acaf15eb2c1144f9a08c64b",
+    "GEO_CHASSIS_DECAL_LeftAmbipar15": "3c739c4209b3e4351aed1794dfe6369fd995baeb2438316ebb477cc0d7fe16ff",
+    "GEO_CHASSIS_DECAL_LeftCevaLogistics4": "e58560654e8fb71e27416812067da1827cf8b5808915a94e61fe68b807a3fc4d",
+    "GEO_CHASSIS_DECAL_LeftDriverNumber1": "d514ecddb4d9531b19a7d06582326cee7a0aa3180c3416309e0a1ad5c22ee457",
+    "GEO_CHASSIS_DECAL_LeftDxc10": "276e0cb353dd07da6668136c6cd025902f0cca0f4f19b1263adff4640bf6ce29",
+    "GEO_CHASSIS_DECAL_LeftFerrariShield5": "66a00924b6e96c11139f1ac53d11b136cb4c1f125fd1d48f24fa745d986a1d9e",
+    "GEO_CHASSIS_DECAL_LeftFrontWingGreen": "b8a3bfa540c0046a50c7889a31bbb396996bc0dc27500d521d785e8d4474b3a7",
+    "GEO_CHASSIS_DECAL_LeftFrontWingRed": "d752df78a34a7c502996b2f73001533b6b85708abcf1eac31d1686b06fe82f4e",
+    "GEO_CHASSIS_DECAL_LeftFrontWingWhite": "2790d289aa6e295640b61e8bacf83cc8439242b7d1468c5067dbfec631594525",
+    "GEO_CHASSIS_DECAL_LeftHewlettPackard0": "d543f553b314d9673c7c678f6da2b45e30eeda71278b42beb539779e3352ae27",
+    "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": "9c00bb11ef2e5845239518a48ee8c898f03238307bcf5b34eed7922c90114784",
+    "GEO_CHASSIS_DECAL_LeftPeroni14": "738a81c546b2b1b7ebed70ba09ca09340148cef5a10b38da4a8b690aa0fd8dca",
+    "GEO_CHASSIS_DECAL_LeftRichardMille6": "31f82cdd520a730ff9eb1495fb46f84a25411434db5c1c8a38050a90764386e8",
+    "GEO_CHASSIS_DECAL_LeftShell3": "bf4500b43608df41026c6e6b925efd4099aeffb00fbe97a02f7fb9c08aaefb2a",
+    "GEO_CHASSIS_DECAL_LeftUniCredit11": "5c6fc3f797fde3060c88b5a49bc36dcb7c1ecc5466c685f198915002e2d7976b",
+    "GEO_CHASSIS_DECAL_LeftUniCredit12": "e2ad25d5b9707f8c3d6836d050800573df5b5d7a2f1284ec6b0223493be88803",
+    "GEO_CHASSIS_DECAL_LeftUniCredit2": "69566a73fadba0b82037bc217c628a989cdc723ed28864c14baf2a16b4a607b4",
+    "GEO_CHASSIS_DECAL_LeftVPower13": "a82ed1b52916aa09a5847023c75231f8132f6046a198ea36958eaea3a25f9cab",
+    "GEO_CHASSIS_DECAL_LeftZyn8": "592236ec9ef540b9df23d2e8d6b6e1133397dbfe8688f9379f3a6d1e15c5d39a",
+    "GEO_CHASSIS_DECAL_NoseDriverNumber": "132bb9f3ad8856863d3f5843c2fe99b3906ec10de5629340b7ddfffece7a6228",
+    "GEO_CHASSIS_DECAL_NoseShell": "260ad686425de5fb8cb4c30f6672a93a440f82034fc3e610dfcaaabaf5fa352c",
+    "GEO_CHASSIS_DECAL_RightAmbipar15": "ebd74defafb2b0f23b6c9654ffdbcbdb817533ee352b1192aba3223ccb7ae73e",
+    "GEO_CHASSIS_DECAL_RightCevaLogistics4": "fdbed24f9301a539c1b35736aa5d9195c826d5308c002bcc6fa81ef66e518aa7",
+    "GEO_CHASSIS_DECAL_RightDriverNumber1": "100a13688f0f146cdb3e0186e8f6745b98b8c9cb99c006c9f36ece5a8a1166bb",
+    "GEO_CHASSIS_DECAL_RightDxc10": "5fb80b7b2dced4468e84619c4b1e6b7b617226196baa1dd474d57e51130f86ef",
+    "GEO_CHASSIS_DECAL_RightFerrariShield5": "f8341298eabf4a99d3efcab258310a2e2d4f59d50e347f8904cce7bcac052333",
+    "GEO_CHASSIS_DECAL_RightFrontWingGreen": "cb743bd258b88e1ea589336196eb18a43b535c2f8ceb992d7593678e0a9725fb",
+    "GEO_CHASSIS_DECAL_RightFrontWingRed": "cabf7c542096f6d560b20d2b1fae39ecf54fcc7d88ccc3ac8cf78d2e5e7b5fbb",
+    "GEO_CHASSIS_DECAL_RightFrontWingWhite": "0768a80a034f7616d1a310f5c718987e0ab4b58eaf49289c1669978c6b63ecf6",
+    "GEO_CHASSIS_DECAL_RightHewlettPackard0": "e92493e544d4ff9b1a1b24deda69f4db4164bf87fbbc146b326566f9f4908332",
+    "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": "17bb5c1fc20def133740c3c4bb18859bf9d0810263b943daac77da9db2fd6cb8",
+    "GEO_CHASSIS_DECAL_RightPeroni14": "26b0ca371f8209528cff0be00d8ce70be72b9b9633322d92951acbd24d64eef6",
+    "GEO_CHASSIS_DECAL_RightRichardMille6": "9c486414d7eaac5187b18fd4ff805a3bef4fc120eee90a911546e47f85b9b1c4",
+    "GEO_CHASSIS_DECAL_RightShell3": "ab38a46431bc46d46451fd5c57f1db79a5f93fac36d77f4d17f55d70ac6c08bb",
+    "GEO_CHASSIS_DECAL_RightUniCredit11": "dc71dc10a36e2d6e884bf9fad70679fcb7c4c28dcfe9cbfe22ea01626bc0de3e",
+    "GEO_CHASSIS_DECAL_RightUniCredit12": "db1c45cbd63506791cf9668ef756fbed3854930a74e4da24f6f526a5980e9843",
+    "GEO_CHASSIS_DECAL_RightUniCredit2": "ea648c219bddffb1f05ecbf4395fde977e81c2fa5f20cff14ed61e73f32cf3b2",
+    "GEO_CHASSIS_DECAL_RightVPower13": "bb1bf37c6fdf17223553393eb7beeddd8be2425d473897fe976c2be0942ed74f",
+    "GEO_CHASSIS_DECAL_RightZyn8": "2668c247ca366137f3c0b7023976a07b49abb8aa818176789ec4401484676236",
+    "GEO_CHASSIS_ENDPLATE": "9469f252ac4d243e9d29f65a3cd296c8812bcf5d15d56efffac8c5e3b565b179",
+    "GEO_CHASSIS_EXHAUST_TUBE_LEFT": "e78746105bd2d259a9e7d367334a9bc78869ff25c93f36886893a54dbdd0648f",
+    "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": "f0b8a3d0f74f85c6a93187cbcacd16e3bbaca3534d38a31b58418b567f1ca653",
+    "GEO_CHASSIS_FLOOR": "957cae5a31d33120f86a03c92ed8dfcc758894b2c798b8f02a05a0b7b15d640f",
+    "GEO_CHASSIS_FRONT_SUSPENSION": "9e1f2ff995192cf09b960b402adac37da32d9cca98d43ef1c1ed349f68a9053e",
+    "GEO_CHASSIS_FRONTSUPPORT": "62d8204156f6d58ce2b5f095902656f9177cee11713914932d59ae615b97d392",
+    "GEO_CHASSIS_FRONTWING": "19fda6aee6b5e6c41a1ca45aa047d9f209c9895b3d867355ced48f3cf9bc0830",
+    "GEO_CHASSIS_INTERIOR": "fcaa2793ef4a164fca965a49725237fdb033cf144f7af50ca57dd3194db632d0",
+    "GEO_CHASSIS_LATERALCAM": "c23a6761f46e303f0b8c00df66ac90eeb6f7ca71d3bcce8dd8edf4790599c32a",
+    "GEO_CHASSIS_MIRRORS": "4a54984b2db420dc7b46c347222d355c1e43073650f5ef208921f778e61f87cc",
+    "GEO_CHASSIS_ONBOARDCAM": "4b8d4d7f5de59f527fc1a232030420744958f11e8ac0f59c854772d2c814fce0",
+    "GEO_CHASSIS_REAR_SUSPENSION": "324a8dc4d000c48a3ed483db167e969a92d94ebadd2bebf558ae534ae19ce2e2",
+    "GEO_CHASSIS_REAR_WING": "8444a8e9c7dcd11b69958e155e3377dd3b444484d96532d6012fd90868df1ecb",
+    "GEO_CHASSIS_REAR_WING_MID": "325a8f3476e28ce99ec801a5417b1e4595fe4cf5a95ccddcee8d3ced87c907de",
+    "GEO_CHASSIS_REARLIGHT": "34ebb9fc8ed7457c0e90bd76af72e08ffc79ab77a3c61221545f413fa2c57624",
+    "GEO_CHASSIS_REARSUPPORT": "e88549ca54127017727759b4b8a01c4ce8ef234a159be0a0506b740592d588df",
+    "GEO_CHASSIS_SCREEN": "a36ee5231cdebb314f09091831beef5babea548ecc91dc27e880620cece49854",
+    "GEO_CHASSIS_SEAT": "508cd1bfa1d171ce5ea8a9bb9e8a8af53759447f82c904f6bf93a9e4aa3157c6",
+    "GEO_CHASSIS_SHIFTERBRAK": "1469322041f970c06af9acd202c2d86fedbc235f801dd1683fc9ebaf8abd7140",
+    "GEO_CHASSIS_SHIFTERTHRO": "9d7deb7832f26ed9a578e62802df6af0369f362b32fdf1d3e4645da1b5e59008",
+    "GEO_CHASSIS_STEER": "5548d9e0d51e1d05edf1dbd259ce50f9adef5e5e412da21982f59a15362bd939",
+    "GEO_CHASSIS_STEERCOLUM": "238e2d32a7bbab08311d6857c1a1008c958080547877fc6e22494e4a0c9ff0b6",
+    "GEO_WHEEL_FRONT_L_DECAL_Pirelli": "61caf307198a607a91984f7d582e20ed04b64ea998f8d784ef2fa14dce2a2a04",
+    "GEO_WHEEL_FRONT_L_DECAL_PZero": "ef771447f53caf84ac2707275ab139e59a68aa78a4d88a4de7bc8b65e4d03055",
+    "GEO_WHEEL_FRONT_L_NUT_02": "a78f88349dce3e9922f211ea1b679e3ae88c24a006dfcc75cbbb205b8c4da7e2",
+    "GEO_WHEEL_FRONT_L_NUT_05": "a3c44cd3fe0ba9c0b1f3838565c842ddbd0659b7f6827435cb8f2df27891036c",
+    "GEO_WHEEL_FRONT_L_RIM_01": "cb1a73f644e41d09021dee63725fc5f63f5696f4d266fbc4457ce5ae2ce2fcbf",
+    "GEO_WHEEL_FRONT_L_RIM_03": "b1f638ed749e69c7d16495344342ca99a5ac28ee03fa16ad0ed0247957d9e06f",
+    "GEO_WHEEL_FRONT_L_RIM_04": "e56539f8524f34b1d9c801b3b51a88a442bc71900431dad034544e6838e8307b",
+    "GEO_WHEEL_FRONT_L_RIM_06": "3ecd3567623a468a2da97772221f26e2af040e857a7227d095d3eb03ed379143",
+    "GEO_WHEEL_FRONT_L_TIRE": "7e5274e36c1525dab2a40a1f8f41ce8c44eebf2dc8e1d613054f82a7830b8fb3",
+    "GEO_WHEEL_FRONT_R_DECAL_Pirelli": "ee71ad313d7cf826f21887d16dc591ac05ef5ce385e4626a36937cb5a12c10fa",
+    "GEO_WHEEL_FRONT_R_DECAL_PZero": "3f03b4ef2a61417c7c70ddee4bb93118e9d7281b751e46b7702766cb00d0078b",
+    "GEO_WHEEL_FRONT_R_NUT_02": "70bbe2c6888c4424221c0c52dfb78bc2501766210f38a38c9c02faeaa20eb98f",
+    "GEO_WHEEL_FRONT_R_NUT_05": "feabf77d583c09461fe5cad1a8bb447b0c5db1c5eedc725dfc074f874e451555",
+    "GEO_WHEEL_FRONT_R_RIM_01": "daba24951ca0ea3060ac3b6920d2b001a34890fd68403eb1950a90888c66a309",
+    "GEO_WHEEL_FRONT_R_RIM_03": "07f54115e8cc667427a0cbeda55d22ede14c04e35d1b7249ffd65f881d5fbc29",
+    "GEO_WHEEL_FRONT_R_RIM_04": "61f66dec7af6e2f6dfdb492c4023047b95d0733e54014e0a75f9b767cd9880f2",
+    "GEO_WHEEL_FRONT_R_RIM_06": "75ed739dece47c5a0dacb262811c52a2399749a31952ba7fb6c38ff3b4884f07",
+    "GEO_WHEEL_FRONT_R_TIRE": "1918204027bfd1c954c0c1d86e7463b91d3bf8dd8641c113747dfe873d92c47a",
+    "GEO_WHEEL_REAR_L_DECAL_Pirelli": "9bd3d27fb7d81a7ca02ea8abf48eeb68ca3428eb2a13a3c19f4a4c38b8240481",
+    "GEO_WHEEL_REAR_L_DECAL_PZero": "6b451af75bec4fdad0d156aa589e469bff65fa8736f8bee9afaabaacb242adad",
+    "GEO_WHEEL_REAR_L_NUT_02": "5f84fd4a56d1449f2b4a3c871e9fccef57024ff4247e595388662b2a89c01aa9",
+    "GEO_WHEEL_REAR_L_NUT_05": "5e5d3a68c6e8575e918b8dcbeb5fe628b383f92e583699f699771c7aab4f0c4f",
+    "GEO_WHEEL_REAR_L_RIM_01": "d64142ac0e6d441d5577c1868767bea6ba66944a3f56794fd333b93653405050",
+    "GEO_WHEEL_REAR_L_RIM_03": "3a083ecdb1f4c1e6f365b96980fea14f1b515b08b8bd934abfc9c32d23481298",
+    "GEO_WHEEL_REAR_L_RIM_04": "5149663f9b0072eee65d9378049782238c1782f8bf2da4886f4810dbbc2cb74d",
+    "GEO_WHEEL_REAR_L_RIM_06": "09868c6bfc0a07e2980b4ff5561b51901ea262da28d29c37a4b624883399df3a",
+    "GEO_WHEEL_REAR_L_TIRE": "7aa305155afe668058b4daac2ba24d3954972fa077fa7954ba7eaeb52113f9fc",
+    "GEO_WHEEL_REAR_R_DECAL_Pirelli": "1926a0355f97e28f89afe0648a901f1a521f1df0be36f83123ffe334eb5e7864",
+    "GEO_WHEEL_REAR_R_DECAL_PZero": "c596e50bac5204fd0e3e384ad69c420831176312f2240c47795437161a1367a5",
+    "GEO_WHEEL_REAR_R_NUT_02": "c66dc4cdd698a6fde99ac89491069832bb1b3263fda686da6275dd800a88a0ad",
+    "GEO_WHEEL_REAR_R_NUT_05": "a51fe4b4f4073f89d5199fb0d10939933840200381f2d8b97e3d90998574bcb4",
+    "GEO_WHEEL_REAR_R_RIM_01": "f61b9eed460cf94858c7d7822c802c9968fe64ca87172e1b03baf9485acf4d1b",
+    "GEO_WHEEL_REAR_R_RIM_03": "423572be2883427c5e0dc3feb58cb0b79db8cb3614e093e2af71863d0bcaac49",
+    "GEO_WHEEL_REAR_R_RIM_04": "c34a85567700ee8c3446f69661882e880234d6a9872c67c2b81e701e0407bb76",
+    "GEO_WHEEL_REAR_R_RIM_06": "b97f18591e270392de8c100b82841e89e54e5ef0a3b14347a6195c86d27a7f70",
+    "GEO_WHEEL_REAR_R_TIRE": "4c7aa9ea1df0c882007b8a010be7ebf0551a791fecf7b9a76034a9e70863b42b"
+  },
+  "adjusted_geometry": {},
+  "generated_albedo_prompt": "Uniform Ferrari racing red, seamless unlit albedo, extremely subtle pigment grain, no reflections, shadows, gradients or decals.",
+  "ambient_occlusion": {
+    "only_local": true,
+    "distance_meters": 0.12,
+    "moving_part_shadows_baked": false
+  },
+  "decals_preserved_as_editable_layers": true,
+  "source_after": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "material_family_rebaked": "champagne_gold",
+  "previous_manifest_sha256": "0ca9dd2cf64ab848754854f82fa079c189dfef0555ecd19e32c941f9f2ed6c9d",
+  "subtle_finish_variations": [
+    {
+      "family": "red_lacquer",
+      "color_peak_to_peak": 0.012,
+      "roughness_peak_to_peak": 0.016,
+      "microtexture_scale_per_meter": 1400,
+      "maps_rebaked": [
+        "base_color",
+        "occlusion_roughness_metallic"
+      ],
+      "normal_map_preserved": true
+    },
+    {
+      "family": "satin_carbon",
+      "color_peak_to_peak": 0.04,
+      "roughness_peak_to_peak": 0.05,
+      "microtexture_scale_per_meter": 450,
+      "maps_rebaked": [
+        "base_color",
+        "occlusion_roughness_metallic"
+      ],
+      "normal_map_preserved": true
+    }
+  ]
+}

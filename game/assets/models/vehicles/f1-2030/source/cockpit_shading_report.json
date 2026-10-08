@@ -1,0 +1,612 @@
+{
+  "source_before_sha256": "6a27efccdc66d0f82d419cefb59f5d0347c4e11ed0d10a39569211d0962e14cf",
+  "source_commit": "e949272e9b21a480805ec8f4aa2e6c551b6d0cc4",
+  "source_branch": "main-clean",
+  "source_status": [
+    " M game/BUILD_SOURCE",
+    " M game/addons/formula90s/bin/formula90_core.dll",
+    " M game/addons/formula90s/bin/formula90_core.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/game_sim.dll",
+    " M game/addons/formula90s/bin/game_sim.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/libformula90s.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/psx_art_plugin.dll",
+    " M game/addons/formula90s/bin/psx_art_plugin.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/vehicle_audio_engine.dll",
+    " M game/addons/formula90s/bin/vehicle_audio_engine.windows.template_debug.x86_64.dll",
+    " M game/addons/formula90s/bin/vehicle_physics_engine.windows.template_debug.x86_64.dll",
+    " M game/assets/models/vehicles/f1-2030/export_report.json",
+    " M game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb",
+    " M game/assets/models/vehicles/f1-2030/manifest.json",
+    " M game/assets/models/vehicles/f1-2030/source/AGENTS.md",
+    " M game/assets/models/vehicles/f1-2030/source/f1_2030.blend",
+    " M instrucciones.md",
+    " M tools/blender/export_f1_2030_v10.py",
+    "?? game/assets/fonts/BarlowCondensed-Medium.ttf.import",
+    "?? game/assets/models/drivers/driver.glb.import",
+    "?? game/assets/models/pit_crew/racer/source/",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_chassis_red_lacquer_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_chassis_red_lacquer_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_normal.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_normal.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_occlusion_roughness_metallic.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_polished_chrome_occlusion_roughness_metallic.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_normal.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_normal.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_occlusion_roughness_metallic.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_red_lacquer_occlusion_roughness_metallic.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_normal.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_normal.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_occlusion_roughness_metallic.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis_satin_carbon_occlusion_roughness_metallic.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FL_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_FR_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RL_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_reference_sponsor_decals.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_reference_sponsor_decals.png.import",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_wheel_champagne_gold_base_color.png",
+    "?? game/assets/models/vehicles/f1-2030/f1_2030_v10_wheel_RR_wheel_champagne_gold_base_color.png.import",
+    "?? game/assets/models/vehicles/f1-2030/source/cockpit_interior_sealing_report.json",
+    "?? game/assets/models/vehicles/f1-2030/source/textures/baked_physical_materials/",
+    "?? game/features/retro_hud/assets/digital_segment.svg.import",
+    "?? game/features/retro_hud/assets/divider.svg.import",
+    "?? game/features/retro_hud/assets/fuel_icon.svg.import",
+    "?? game/features/retro_hud/assets/fuel_segment.svg.import",
+    "?? game/features/retro_hud/assets/rpm_segment.svg.import",
+    "?? reference/",
+    "?? tools/blender/bake_f1_2030_physical_materials.py",
+    "?? tools/blender/refine_vehicle_finishes_and_save_studio.py",
+    "?? tools/blender/seal_formula_one_2030_cockpit_interior.py",
+    "?? tools/blender/shade_formula_one_2030_cockpit_surfaces.py",
+    "?? tools/blender/validate_formula_one_2030_cockpit_geometry.py"
+  ],
+  "protected_mesh_fingerprints": {
+    "GEO_CHASSIS_ACTIVEFRONT": "dd92d952ab944f675d42856b04f698a209c3c7297abdbcb33cda210686a0c48a",
+    "GEO_CHASSIS_AERO2": "339d146a5abaee067caddd2aac1f5970e228f43e7224ebfda926fe0ad4a2cc05",
+    "GEO_CHASSIS_AEROPART1": "6566b1fb231a6eae4ff360479ecda63d6c514895494d68ed133f1e54d0a9e072",
+    "GEO_CHASSIS_AEROPART2": "e3796f4d6e809b774e41d2550d2d9868ac1c35983bf5693feaec9c9252b1cd69",
+    "GEO_CHASSIS_AEROPART3": "8ac24e3046d2443f92e24c1197949bf06ca9728a126b67d8b2fd9068f3e11e90",
+    "GEO_CHASSIS_BODY": "9215e4b15461548313a3c9504f69f3a04cbbb428476c07f697ece688237aa693",
+    "GEO_CHASSIS_CARBON3": "60020c54054deb580dcc70be8e1f678a2a2857dbc97750f0eeb7469f31d0b011",
+    "GEO_CHASSIS_CARBON4": "fa8fddfc453a044cf53a31013b97591d174ea4629f322f0b92b3c517e5971be5",
+    "GEO_CHASSIS_CARBON5": "fd5cffb164bc907138288de5b6b32706f8aa3f943f2c522ef4d87e8b0829ee95",
+    "GEO_CHASSIS_CYLINDER_001": "6f98cb2df3c22223afbbe0e9da4997ab376848143c4badc2243d6bac65d6205b",
+    "GEO_CHASSIS_DECAL_LeftAmbipar15": "e81d735b59688296e4f6d356e51ba64860b052d41c3fa4472cf68a90eed7a107",
+    "GEO_CHASSIS_DECAL_LeftCevaLogistics4": "5cc3802250afd327a2b954f96101578a514d201b27f431917dda3294e82e129b",
+    "GEO_CHASSIS_DECAL_LeftDriverNumber1": "4a752dfca438f3143658ae89a3f3960159881a94324795bd90c33430ab30127d",
+    "GEO_CHASSIS_DECAL_LeftDxc10": "6554ecca6f5b16c078633497bf0ea88c8d6d22af639d92d08a408af0f8a91afb",
+    "GEO_CHASSIS_DECAL_LeftFerrariShield5": "b6009871b4d82c26f50b4e7c25acb2bf9a8f8a18da690e79cd71c75bf53b458e",
+    "GEO_CHASSIS_DECAL_LeftFrontWingGreen": "61e3c202ef68d1c51c6abdd9570ff78aa6573c3e3ec1f94a2c893e2658d2e8a7",
+    "GEO_CHASSIS_DECAL_LeftFrontWingRed": "22ea1bbe7ad212db135c224b95a08232eb20a6bf3708e37e25b840b4411540b1",
+    "GEO_CHASSIS_DECAL_LeftFrontWingWhite": "ee219ffe3a6fddcc336b5f7b8c54a1777f39b9f8f2d2f3f8399d28d9e44e5431",
+    "GEO_CHASSIS_DECAL_LeftHewlettPackard0": "83cec8e947dc58ea237ad6b311452ee1ffbfcaa1171a31907d020fcb53ff3d1a",
+    "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": "e0044aab0b9acfa3348e47e12bbfce093bf66e58d16e3ba6565c3c39b8298054",
+    "GEO_CHASSIS_DECAL_LeftPeroni14": "e7158e530d76bc08a82feb0eca8e2e297c6e2594623f3f202fbd3fc8123c1035",
+    "GEO_CHASSIS_DECAL_LeftRichardMille6": "d3c006885ddd6cc53748a241956ae66d1e2802368b727139790c9576fa72cc0b",
+    "GEO_CHASSIS_DECAL_LeftShell3": "93c7cd08b27ce0dcf04e2bf8ebf74042904f545de56b5f0ec8a8832513cb20db",
+    "GEO_CHASSIS_DECAL_LeftUniCredit11": "d38f8571d0b222002b470b548544913a2bf99095b9e5b85d0a8f38afd54995d8",
+    "GEO_CHASSIS_DECAL_LeftUniCredit12": "51a074add48de1fdd9a4ff258303504b3a6c5aa273b5ab9a230179776068ad21",
+    "GEO_CHASSIS_DECAL_LeftUniCredit2": "67462883dfce105e994e8c8a260edaf69aac9e58a2b9e6eca9eda1349b73dfb4",
+    "GEO_CHASSIS_DECAL_LeftVPower13": "c24e16808dc2f382ec885f62f26a387926c5e9527f9e6f532f923f2f506001a4",
+    "GEO_CHASSIS_DECAL_LeftZyn8": "f98eda1b333b89a894a6d8f9950616a30a62d34987499ad6a7ce8cb124bb8650",
+    "GEO_CHASSIS_DECAL_NoseDriverNumber": "d232028d8121679b6fb19cda4c443fef7aca8caa25d26188a16e2f2b8e608d0d",
+    "GEO_CHASSIS_DECAL_NoseShell": "00fc542f977ca30afbaa508e87a689eae42e628f955bc056bc6744812ba18d82",
+    "GEO_CHASSIS_DECAL_RightAmbipar15": "30cc0321aa74e8411ea4247c630469134089ec7df0ed317998ef01bf65b0ae50",
+    "GEO_CHASSIS_DECAL_RightCevaLogistics4": "4b2367869492a0e6857e16212ab99be99673b7d1800ff10017678ebee4e65ab6",
+    "GEO_CHASSIS_DECAL_RightDriverNumber1": "a7e468a0f64f0416aa81817742f12df646967b7924d7b33ce4dd0ceddd205779",
+    "GEO_CHASSIS_DECAL_RightDxc10": "e59bb340f72bde7b419a56c47c78244f291492eb51e0fcbc13f4d195a827b8b8",
+    "GEO_CHASSIS_DECAL_RightFerrariShield5": "ce3f67863c6970438f386eeb12a11f159479cb55e3b3a2a175d09b6d0f06dd42",
+    "GEO_CHASSIS_DECAL_RightFrontWingGreen": "e885c0e44c6d226f10e0ee46324c3cfc78f6fb92c045f114aa1686dfe667d9e2",
+    "GEO_CHASSIS_DECAL_RightFrontWingRed": "509daee760f1f3def0f071a6f031f3f7e892bac4c982e70c731a92d0948f6d3d",
+    "GEO_CHASSIS_DECAL_RightFrontWingWhite": "7c6dff90a694a5586eb7020a0d84d0358fc9066b054a47009b7f473f6a634be9",
+    "GEO_CHASSIS_DECAL_RightHewlettPackard0": "032858d6e6891529c08e8cbf8dac268fc6fccb5a078152409b5ac71d274e5e37",
+    "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": "634af9f7276260f873ada75586acb80e6f8bcea7150d884b3b67540c8bfc3db9",
+    "GEO_CHASSIS_DECAL_RightPeroni14": "72fe35d1d4c21d47abb8a55f8f0b9b06c7a9f8f73a8f649aad2e686fc86520d3",
+    "GEO_CHASSIS_DECAL_RightRichardMille6": "fbfc30414bc211209b491eb57c3a7d2767f4366702ba62d18f4ed5385812d58b",
+    "GEO_CHASSIS_DECAL_RightShell3": "437d25a99c11071280e446e68a7304281beadcf7d04625f79109db931aee62ce",
+    "GEO_CHASSIS_DECAL_RightUniCredit11": "ed3b3a8aa3808764ad889b7de96fc263529dbd99e65a98d93cd8c51a71b304bc",
+    "GEO_CHASSIS_DECAL_RightUniCredit12": "e182f6bb075eec033a38c579dab436cff70b5da55e39cacee6b24f85586e0d33",
+    "GEO_CHASSIS_DECAL_RightUniCredit2": "4e865397b31accd3e7431e614afc10f2ea173d4bbfb2319d024a58190d593719",
+    "GEO_CHASSIS_DECAL_RightVPower13": "f50991383997acd7cf2926ea8376423202632119d62033b72d3bfaa1aa20a9fc",
+    "GEO_CHASSIS_DECAL_RightZyn8": "dae4c109fe8410ed96f58f8dd9e459d69bd721d28b2366ecde2007051df8179c",
+    "GEO_CHASSIS_ENDPLATE": "275312db05b1bfca043925ec220c6cff04392420de20e1ef3a3c07aa66c20004",
+    "GEO_CHASSIS_EXHAUST_TUBE_LEFT": "a8c665e21163d8f7d84063b252c95f090f9177ec13bca827bec87764d6aa172d",
+    "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": "6d2ecf336086f082ccc4d43cccaa76e528d42b1b464a1901663cfd6c06d02b77",
+    "GEO_CHASSIS_FLOOR": "1a988a2a9b4a729493852f1320ea1e22d282088f1932b49511717b3d4d5426c0",
+    "GEO_CHASSIS_FRONT_SUSPENSION": "c106cf75ffe8edc37f60d1ab9705ba40a1ded9a9bddf9eabd0c84986029bf5f9",
+    "GEO_CHASSIS_FRONTSUPPORT": "4978450fb622f4905be14a72605edae126f82477c12209c6744e33fa79233cd3",
+    "GEO_CHASSIS_FRONTWING": "e3452b86c7dce68452d18a72b66755c7fff66ce031ce95fab9b3b01be757e193",
+    "GEO_CHASSIS_INTERIOR": "fd34235a59377a50fc21210fd6a21f315ce4ce73e6d1f8c8b2f1f3c3bcf44b43",
+    "GEO_CHASSIS_LATERALCAM": "6a3797b2776425f7a2fbc37832f7a67950812a715f6ab8d317409d6992334085",
+    "GEO_CHASSIS_MIRRORS": "7cfebe7871f0bb13a4762ac6fc2e218ff6d65e684e8243677f9b77acd235be13",
+    "GEO_CHASSIS_ONBOARDCAM": "3498d7de18ff5e34820cd0b3be25533dc9a3fcec8308884ee3601a96dfed3c2a",
+    "GEO_CHASSIS_REAR_SUSPENSION": "6f61380ea895bf20fe1c3825c84f015a0f4588771cd7563026e01933572fc48e",
+    "GEO_CHASSIS_REAR_WING": "4dc48f6e033981ae9d844b57a1687e0b4718aad3c9e3c10b3ab541c96e0188aa",
+    "GEO_CHASSIS_REAR_WING_MID": "52216ecd9cddf92c035464fbf658bc4411bc642ac2352a02bdd9f5860936079c",
+    "GEO_CHASSIS_REARLIGHT": "47bb450d00f29b61c02043d453d326e8070ecbb551a41df96d8ef677d2833044",
+    "GEO_CHASSIS_REARSUPPORT": "722dc7f72d80537a55e6b262b6ce8f7c1f6704e8d93c145c386c0d44aeca355b",
+    "GEO_CHASSIS_SCREEN": "cae286c400fd5823fa222f5b48b3f68870e6b0c78436693368e52ff2ff59ffc8",
+    "GEO_CHASSIS_SHIFTERBRAK": "f210d87fb438a9dbc54757debbc48f3c5fbb99e62be5f68359b85bf23dbddd42",
+    "GEO_CHASSIS_SHIFTERTHRO": "dece7e1154043609f0e48e93d07da313068c4b8d20a8616f5e4c7ec493f6b593",
+    "GEO_CHASSIS_STEER": "9a04936ba220431247521ef84b9c535899ec0081ac4cdde1436361b55d92b2a5",
+    "GEO_CHASSIS_STEERCOLUM": "1672385515893be0b032d69597115d758c3e76c611e5104e0208056f75bcca39",
+    "GEO_WHEEL_FRONT_L_DECAL_Pirelli": "04118b2b659b50ef705b93647872fe2ba211712afd969ff1296ddf364c272e3f",
+    "GEO_WHEEL_FRONT_L_DECAL_PZero": "028ea51db591261d7cb758d744ed132b4454c9fcd07215d6c422135e3c5ae855",
+    "GEO_WHEEL_FRONT_L_NUT_02": "1db63d21f286343957854c599bb488106790a62ebeb62c2e58dcea5e8cc0da25",
+    "GEO_WHEEL_FRONT_L_NUT_05": "7cf77179421a8fdff26d9f1f28d5e671124090efccf56cbabb1249fc67649ee8",
+    "GEO_WHEEL_FRONT_L_RIM_01": "5f49da8b4b4cb02600f29b78fac969b2f7d803e76825b021dea09ff54701b29c",
+    "GEO_WHEEL_FRONT_L_RIM_03": "fa28adcee08f6e5f265075a53411e33eec57bbc80b75c476f79bafb971a15f3d",
+    "GEO_WHEEL_FRONT_L_RIM_04": "3145b7945cba02ca1c149944f2907e2fe48ca8ce3db143ee0d3d297e68f9613f",
+    "GEO_WHEEL_FRONT_L_RIM_06": "ee78ad20cc20c539815cbf3e539ffeb2777c7d52d97724b4fdfc39a1a65efd6b",
+    "GEO_WHEEL_FRONT_L_TIRE": "3a3a97ebf5b398d1735dd915dbb8fe32c658974b068cf3cd278ce7ec26037539",
+    "GEO_WHEEL_FRONT_R_DECAL_Pirelli": "aef7d79aeae93e733e72fb24dec57507047ca1424c5a08c6d8c383ef88564164",
+    "GEO_WHEEL_FRONT_R_DECAL_PZero": "50aa2f40441fc2b7c9dfa938d8fdb7e85232f840d21304d9f1b7b82736de447f",
+    "GEO_WHEEL_FRONT_R_NUT_02": "60569fa5e35fca1fbcf5291e898540c02d77d76740cdf318976e83c01adae197",
+    "GEO_WHEEL_FRONT_R_NUT_05": "1a32e6f7e05d204271f6ac23008be6b4c56cff414560bea05f7c4cdcec7dd4b0",
+    "GEO_WHEEL_FRONT_R_RIM_01": "c667db1b0aa40d8ba9cafa4791f0da6405083dca2c1c7c4059cae9941817f3be",
+    "GEO_WHEEL_FRONT_R_RIM_03": "0fd258cd47b5d2ac8d3528913d52b5e687676533df3887ba14a492b86f00690b",
+    "GEO_WHEEL_FRONT_R_RIM_04": "a84606b9e499bc2b8959105926dfb0d3dab31bd3771eddcb2ea1c25ffec23588",
+    "GEO_WHEEL_FRONT_R_RIM_06": "968f1578c7f9b1666a9f575a0bec250838877b11fe91b3cf896df82f00197839",
+    "GEO_WHEEL_FRONT_R_TIRE": "241e908cca4b02040e2700807c723e0f3e72480c6ea18e2b45dc96492e8884f4",
+    "GEO_WHEEL_REAR_L_DECAL_Pirelli": "0452adf58a9bac060d86d13870b0307e23680d89bffd64dbb00019a760f627b8",
+    "GEO_WHEEL_REAR_L_DECAL_PZero": "9dc0ff2617f86d5b2feff44c8bcbc24e2a74ad3c6145039adc867af622a707b0",
+    "GEO_WHEEL_REAR_L_NUT_02": "75a8c292e53af18a0da33621d9977225008e22a66e43bfae864aaf3a296972c4",
+    "GEO_WHEEL_REAR_L_NUT_05": "a88e328b2b98c77a6776b7bf6f8b9ad49ca3cfc479e9b00f446c22b72fd77c68",
+    "GEO_WHEEL_REAR_L_RIM_01": "593932a07f65b53859b1e90be148121e0e1b125ac0965a902961505a91dc0b91",
+    "GEO_WHEEL_REAR_L_RIM_03": "05b7624223a1d8c10d64982edd9ffbb5379b639f1f9de3c4bd344121f5cecced",
+    "GEO_WHEEL_REAR_L_RIM_04": "67a4c815e7d8bb1daac059a1a2d1f1069b1d865740e230164be7067125bc617b",
+    "GEO_WHEEL_REAR_L_RIM_06": "a8a0a8d625ad3cc26bd8e4a3108c6c6fc4c0b91dfe768ca7a47b1b770173240d",
+    "GEO_WHEEL_REAR_L_TIRE": "0b83d1ff84921ddd371d97c5116ef1bc416badbe9246d65ddc6dc5a52ec45579",
+    "GEO_WHEEL_REAR_R_DECAL_Pirelli": "b285c476de5181a6d3dc777e5d605c14c6e62d88c1264d619575d7a2b1822035",
+    "GEO_WHEEL_REAR_R_DECAL_PZero": "6707eb042c9ed1e6e274495c99e06e722c19f8b3ae859d655bd166ebdd888ede",
+    "GEO_WHEEL_REAR_R_NUT_02": "91a80ffa1ca1648c7b2bf9424f612bf5419f066bb2be082c11443cdbd9f42575",
+    "GEO_WHEEL_REAR_R_NUT_05": "12124b0684a891f6daa21217ed1e3c5598e295276fd057d9b5dfb34ca25fbf7b",
+    "GEO_WHEEL_REAR_R_RIM_01": "2dd2f96fd68b1c5e6bb7b98c13d40af3755710897f12b6f053681608f542de81",
+    "GEO_WHEEL_REAR_R_RIM_03": "47ffd0ccdfc801791b3cc0566ac5302a084d0f0ea3aacf8845c610df6f4be06d",
+    "GEO_WHEEL_REAR_R_RIM_04": "45a0afb00000c8aff26fe6c00c4fd0fb3cf80ec751676ca81fff52eef33356f4",
+    "GEO_WHEEL_REAR_R_RIM_06": "56c87a9f7fbaaf0cccb8419c6f544b2e5dcfe9082db9ff32505959d8de5fe5ad",
+    "GEO_WHEEL_REAR_R_TIRE": "4b36165dc2ad7a6fc312814899e8a7eb98457a9c0e357d25f85db16c1a901776",
+    "StudioGround": "6d2a97663cc19a1657d272fce0648c4ec26c7af45a660e01e3b83fe168ead2db"
+  },
+  "surfaces": {
+    "GEO_CHASSIS_CockpitUpperLining": {
+      "vertices": 1246,
+      "polygons": 2151,
+      "triangles": 2492,
+      "geometry_sha256": "caec66610e1bd65df2e51d396cdf42b801f0240e2e6475aea8b4a782679292b4",
+      "geometry_texture_coordinates_material_assignments_unchanged": true,
+      "smooth_faces": 2151,
+      "sharp_edges": 894,
+      "preserved_skin_rim_edges": 682,
+      "steep_edges_preserved": 714,
+      "sharp_angle_degrees": 35,
+      "maximum_smooth_edge_corner_normal_difference": 0
+    },
+    "GEO_CHASSIS_SEAT": {
+      "vertices": 600,
+      "polygons": 598,
+      "triangles": 1196,
+      "geometry_sha256": "6c69f405e6fcc9c799a6bc41fd472da5573b8827b72f2bf481bd85630e46cc09",
+      "geometry_texture_coordinates_material_assignments_unchanged": true,
+      "smooth_faces": 598,
+      "sharp_edges": 208,
+      "preserved_skin_rim_edges": 132,
+      "steep_edges_preserved": 206,
+      "sharp_angle_degrees": 35,
+      "maximum_smooth_edge_corner_normal_difference": 0
+    }
+  },
+  "chassis_mesh_statistics": {
+    "GEO_CHASSIS_ACTIVEFRONT": {
+      "vertices": 288,
+      "polygons": 490
+    },
+    "GEO_CHASSIS_AERO2": {
+      "vertices": 896,
+      "polygons": 448
+    },
+    "GEO_CHASSIS_AEROPART1": {
+      "vertices": 1460,
+      "polygons": 2656
+    },
+    "GEO_CHASSIS_AEROPART2": {
+      "vertices": 5424,
+      "polygons": 9632
+    },
+    "GEO_CHASSIS_AEROPART3": {
+      "vertices": 2624,
+      "polygons": 4608
+    },
+    "GEO_CHASSIS_BODY": {
+      "vertices": 8177,
+      "polygons": 14342
+    },
+    "GEO_CHASSIS_CARBON3": {
+      "vertices": 25,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_CARBON4": {
+      "vertices": 50,
+      "polygons": 64
+    },
+    "GEO_CHASSIS_CARBON5": {
+      "vertices": 1564,
+      "polygons": 1562
+    },
+    "GEO_CHASSIS_CYLINDER_001": {
+      "vertices": 196,
+      "polygons": 252
+    },
+    "GEO_CHASSIS_CockpitUpperLining": {
+      "vertices": 1246,
+      "polygons": 2151
+    },
+    "GEO_CHASSIS_DECAL_LeftAmbipar15": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftCevaLogistics4": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftDriverNumber1": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftDxc10": {
+      "vertices": 325,
+      "polygons": 282
+    },
+    "GEO_CHASSIS_DECAL_LeftFerrariShield5": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftFrontWingGreen": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_LeftFrontWingRed": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_LeftFrontWingWhite": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_LeftHewlettPackard0": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftPeroni14": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_DECAL_LeftRichardMille6": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftShell3": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftUniCredit11": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftUniCredit12": {
+      "vertices": 325,
+      "polygons": 279
+    },
+    "GEO_CHASSIS_DECAL_LeftUniCredit2": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftVPower13": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_LeftZyn8": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_DECAL_NoseDriverNumber": {
+      "vertices": 1221,
+      "polygons": 1152
+    },
+    "GEO_CHASSIS_DECAL_NoseShell": {
+      "vertices": 625,
+      "polygons": 576
+    },
+    "GEO_CHASSIS_DECAL_RightAmbipar15": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightCevaLogistics4": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightDriverNumber1": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightDxc10": {
+      "vertices": 325,
+      "polygons": 282
+    },
+    "GEO_CHASSIS_DECAL_RightFerrariShield5": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightFrontWingGreen": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_RightFrontWingRed": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_RightFrontWingWhite": {
+      "vertices": 36,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_DECAL_RightHewlettPackard0": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightPeroni14": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_DECAL_RightRichardMille6": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightShell3": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightUniCredit11": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightUniCredit12": {
+      "vertices": 325,
+      "polygons": 279
+    },
+    "GEO_CHASSIS_DECAL_RightUniCredit2": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightVPower13": {
+      "vertices": 325,
+      "polygons": 288
+    },
+    "GEO_CHASSIS_DECAL_RightZyn8": {
+      "vertices": 325,
+      "polygons": 272
+    },
+    "GEO_CHASSIS_ENDPLATE": {
+      "vertices": 2008,
+      "polygons": 3712
+    },
+    "GEO_CHASSIS_EXHAUST_TUBE_LEFT": {
+      "vertices": 832,
+      "polygons": 832
+    },
+    "GEO_CHASSIS_EXHAUST_TUBE_RIGHT": {
+      "vertices": 832,
+      "polygons": 832
+    },
+    "GEO_CHASSIS_FLOOR": {
+      "vertices": 4991,
+      "polygons": 9952
+    },
+    "GEO_CHASSIS_FRONTSUPPORT": {
+      "vertices": 224,
+      "polygons": 384
+    },
+    "GEO_CHASSIS_FRONTWING": {
+      "vertices": 972,
+      "polygons": 1656
+    },
+    "GEO_CHASSIS_FRONT_SUSPENSION": {
+      "vertices": 432,
+      "polygons": 224
+    },
+    "GEO_CHASSIS_INTERIOR": {
+      "vertices": 4686,
+      "polygons": 9368
+    },
+    "GEO_CHASSIS_LATERALCAM": {
+      "vertices": 40,
+      "polygons": 72
+    },
+    "GEO_CHASSIS_MIRRORS": {
+      "vertices": 665,
+      "polygons": 840
+    },
+    "GEO_CHASSIS_ONBOARDCAM": {
+      "vertices": 78,
+      "polygons": 104
+    },
+    "GEO_CHASSIS_REARLIGHT": {
+      "vertices": 79,
+      "polygons": 128
+    },
+    "GEO_CHASSIS_REARSUPPORT": {
+      "vertices": 1752,
+      "polygons": 1730
+    },
+    "GEO_CHASSIS_REAR_SUSPENSION": {
+      "vertices": 252,
+      "polygons": 136
+    },
+    "GEO_CHASSIS_REAR_WING": {
+      "vertices": 11707,
+      "polygons": 19711
+    },
+    "GEO_CHASSIS_REAR_WING_MID": {
+      "vertices": 2082,
+      "polygons": 2112
+    },
+    "GEO_CHASSIS_SCREEN": {
+      "vertices": 32,
+      "polygons": 24
+    },
+    "GEO_CHASSIS_SEAT": {
+      "vertices": 600,
+      "polygons": 598
+    },
+    "GEO_CHASSIS_SHIFTERBRAK": {
+      "vertices": 152,
+      "polygons": 88
+    },
+    "GEO_CHASSIS_SHIFTERTHRO": {
+      "vertices": 152,
+      "polygons": 88
+    },
+    "GEO_CHASSIS_STEER": {
+      "vertices": 980,
+      "polygons": 1752
+    },
+    "GEO_CHASSIS_STEERCOLUM": {
+      "vertices": 196,
+      "polygons": 252
+    }
+  },
+  "unrelated_export_tangent_rounding_restored": [
+    "GEO_CHASSIS_BODY"
+  ],
+  "candidate_sha256": "f91957a0f175494d6cb918a303cadc997ac6982148e4c340309d369dfe7fbe74",
+  "chassis_sha256": "b5a91831ee689508e751649aba73f8dbbbc4b6ed44a5455a2c7c14a173a31284",
+  "passed": true,
+  "export_validation": {
+    "unchanged_materials_and_embedded_textures": true,
+    "unchanged_other_meshes": 69,
+    "surfaces": {
+      "GEO_CHASSIS_CockpitUpperLining": {
+        "triangles": 2492,
+        "constant_normal_triangles_before": 2492,
+        "constant_normal_triangles_after": 262,
+        "triangle_positions_texture_coordinates_and_materials_unchanged": true,
+        "maximum_source_export_position_error_meters": 6.664001972467304e-08,
+        "maximum_corner_normal_error": 0.00011396029408356893,
+        "corner_normal_comparison_tolerance": 0.0002,
+        "all_smooth_and_split_source_corner_normals_preserved": true
+      },
+      "GEO_CHASSIS_SEAT": {
+        "triangles": 1196,
+        "constant_normal_triangles_before": 1196,
+        "constant_normal_triangles_after": 124,
+        "triangle_positions_texture_coordinates_and_materials_unchanged": true,
+        "maximum_source_export_position_error_meters": 2.2351741790771484e-08,
+        "maximum_corner_normal_error": 7.53489368079365e-05,
+        "corner_normal_comparison_tolerance": 0.0002,
+        "all_smooth_and_split_source_corner_normals_preserved": true
+      }
+    }
+  },
+  "backup_directory": "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\backup",
+  "source_geometry_validation_carried_forward": "Vertex positions, connectivity, transformations, texture coordinates and material assignments are identical to the previously validated source. Existing cockpit and driver clearances remain unchanged.",
+  "source_after_sha256": "6cf022230aa986d043020c4b5c0deccb0b47240a39fe8b7708a7bc28bec7ee53",
+  "promoted_chassis": {
+    "path": "f1_2030_v10_chassis.glb",
+    "sha256": "B5A91831EE689508E751649ABA73F8DBBBC4B6ED44A5455A2C7C14A173A31284",
+    "size_bytes": 17388440
+  },
+  "target_mesh_fingerprints_after_shading": {
+    "GEO_CHASSIS_CockpitUpperLining": "de8923fffcb9d5ef0fd4f9be8b7b75556edfe50a006cd700c6ab8608989dcbd2",
+    "GEO_CHASSIS_SEAT": "b869167a816a0342e07f607a4381402318a1a17937a287c1614d82a3611c2ede"
+  },
+  "restorable_source_backup": "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\backup\\f1_2030_texture_resolved.blend",
+  "saved_source_validation": {
+    "passed": true,
+    "saved_source_sha256": "6cf022230aa986d043020c4b5c0deccb0b47240a39fe8b7708a7bc28bec7ee53",
+    "preserved_other_source_meshes": 106,
+    "geometry_and_hard_edges_preserved": true,
+    "resolvable_external_textures": 13,
+    "all_five_runtime_hashes_valid": true,
+    "four_wheel_exports_unchanged": true
+  },
+  "runtime_import_validation": {
+    "passed": true,
+    "command": "scripts/run_f1_94.ps1 -ValidateRuntimeOnly",
+    "log": "scratch/cockpit_shading_correction_20261007/runtime_validation.log",
+    "source_commit": "e949272e9b21a480805ec8f4aa2e6c551b6d0cc4",
+    "source_sha256": "6cf022230aa986d043020c4b5c0deccb0b47240a39fe8b7708a7bc28bec7ee53",
+    "chassis_sha256": "b5a91831ee689508e751649aba73f8dbbbc4b6ed44a5455a2c7c14a173a31284",
+    "visual_review_in_game_performed": false
+  },
+  "visual_review_images": [
+    "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\review\\before_cockpit.png",
+    "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\review\\before_lining.png",
+    "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\review\\before_seat.png",
+    "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\review\\after_cockpit.png",
+    "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\review\\after_lining.png",
+    "D:\\Formula90s\\scratch\\cockpit_shading_correction_20261007\\review\\after_seat.png"
+  ],
+  "subsequent_lining_reconstruction": {
+    "report": "cockpit_lining_reconstruction_report.json",
+    "source_sha256": "3c42cc3be23f53902e36bf65d94d44ecdab7f4e956d2c3cacb72f3a358da5f2f",
+    "seat_geometry_and_shading_unchanged": true,
+    "lining_shading_retained_with_protected_crease_edges": true
+  },
+  "subsequent_chassis_decal_texture_conversion": {
+    "report": "chassis_flat_decal_report.json",
+    "source_sha256": "1a9a311f2f2d17a6e194ae14f20e9c9cc68d2a8d26df7d4272bb6e917fbd88fb",
+    "chassis_sha256": "641be5b299d3e90870f42577feff46829299e7fdf688ceccde42ca8c1152456e",
+    "removed_chassis_decal_meshes": 38,
+    "removed_triangles": 20836,
+    "retained_geometry_normals_sharp_edges_and_texture_coordinates_unchanged": true,
+    "authorized_material_aliases": {
+      "BakedPhysicalRedLacquer": "BakedPhysicalRedLacquerWithFlatChassisDecals",
+      "BakedPhysicalSatinCarbon": "BakedPhysicalSatinCarbonWithFlatChassisDecals"
+    },
+    "historical_report_backup": "D:\\Formula90s\\scratch\\chassis_decal_texture_conversion_20261007\\backup\\cockpit_shading_report.json"
+  },
+  "subsequent_authorized_reference_finish": {
+    "report": "reference_finish_report.json",
+    "source_sha256": "f3a25098fcca49aa38ee815631fe0c4303de3d57f5e1517d89774654f5509d2f",
+    "chassis_sha256": "DFD3219571448DF12E6C8E53C0938966C6CEB5D9A9AAEC44B28F55A5BF8920AF",
+    "retained_source_geometry_shading_and_sharp_edges_preserved": true,
+    "only_tires_receive_new_texture_coordinates": true,
+    "flat_chassis_decal_triangles": 0,
+    "removed_wheel_decal_meshes": [
+      "GEO_WHEEL_FRONT_L_DECAL_Pirelli",
+      "GEO_WHEEL_FRONT_L_DECAL_PZero",
+      "GEO_WHEEL_FRONT_R_DECAL_Pirelli",
+      "GEO_WHEEL_FRONT_R_DECAL_PZero",
+      "GEO_WHEEL_REAR_L_DECAL_Pirelli",
+      "GEO_WHEEL_REAR_L_DECAL_PZero",
+      "GEO_WHEEL_REAR_R_DECAL_Pirelli",
+      "GEO_WHEEL_REAR_R_DECAL_PZero"
+    ],
+    "removed_wheel_decal_triangles": 4416,
+    "runtime_triangle_total": 110105,
+    "historical_report_backup": "D:\\Formula90s\\scratch\\reference_finish_implementation_20261007\\backup\\game\\assets\\models\\vehicles\\f1-2030\\source\\cockpit_shading_report.json"
+  }
+}
