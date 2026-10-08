@@ -1,28 +1,52 @@
 {
-  "character": "driver",
-  "source": "game\\assets\\models\\pit_crew\\racer\\source\\Racer.fbx",
-  "source_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
-  "model_sha256": "a0bdda02a9e69c8a396fcb9302c56c9cba074600cbb3bf9a013d2f45df4e7cbc",
+  "character": "low_polygon_race_car_driver",
+  "source": "game/assets/models/drivers/source/source/driver.blend",
+  "source_sha256": "28eded787a300e10bae2f955431f49b9a7a62be9dcc81dbee4e1f011dcaab12b",
+  "source_files": {
+    "source/driver.blend": "28eded787a300e10bae2f955431f49b9a7a62be9dcc81dbee4e1f011dcaab12b",
+    "reference_skeleton.blend": "cf7e4dc6b7a0435293773f150a85910fb1494323c81bb6471d5106e75cdeedaa",
+    "textures/alpinestars_red_gp_suit.png": "b004079abebcacb1a6a506014710e54092ac180faf6610cbe6e1fefa0442fe87",
+    "textures/alpinestars_star_red_blue_driver_gloves.png": "9b8e2b798440b39727f693ad228180a2a04d72328927d98faa0268cdbe5c7c54",
+    "textures/driver_face.png": "daf5a3614e3699b89640ffbd4d4c79815f267ce6a653fd15a12c2e572e574d6d",
+    "textures/hans.png": "78d89b727610c6d039516bc9bdf7eeeb01a4c2e08693625bde26a3b9a9635f85",
+    "textures/helmet_2012_glass.png": "ed9c7bf19bf744fc204628da967fc79177d872729d09330f12d9d0a91fe161eb",
+    "textures/stinger_helmet_red_2012.png": "0b3944b17db1b1266078ff350a6cca0ce8451903f33b93d3b45327b71ea5bd37"
+  },
+  "model_sha256": "81c17904565e184dfd89def4a6d714ee0692d726b7dcff824a056161c632685f",
   "bone_count": 55,
+  "triangle_count": 1725,
   "pose": "seated",
-  "separate_finger_bones": true,
+  "hand_geometry": "authored_fixed_grip_following_wrist",
   "finger_bones_per_hand": 15,
-  "glove_geometry": "articulated_palm_four_fingers_opposable_thumb",
-  "thumb_segments": [
-    "Metacarpal",
-    "Proximal",
-    "Distal"
-  ],
-  "body_radial_scale": 0.85,
-  "seat_recline_degrees": 70.64100648156666,
+  "finger_geometry_deformation": false,
   "torso_recline_degrees": 79.86680690888585,
-  "head_pitch_degrees": 0.0,
-  "seat_model_sha256": "3e23deac45cf6954d2c53b31adf31251f1c658d0d3a745f7fa09bfe558d470ab",
+  "seat_recline_degrees": 70.64100648156666,
+  "seat_model_sha256": "dfd3219571448df12e6c8e53c0938966c6ceb5d9a9aaec44b28f55a5bf8920af",
   "separate_head_and_neck": true,
   "eye_point": "DriverEyePoint",
   "eye_position_in_head_space_meters": [
-    7.450580596923828e-09,
-    0.13961851596832275,
-    0.16398879885673523
-  ]
+    0.0,
+    0.10953152179718018,
+    0.08626562356948853
+  ],
+  "lower_leg_floor_fit": {
+    "adjusted_vertices": 8,
+    "maximum_displacement_meters": 0.0077005124092102,
+    "floor_separation_meters": 0.01
+  },
+  "seated_position_meters": [
+    0.0,
+    -0.011,
+    -0.24
+  ],
+  "source_provenance": {
+    "archive_name": "race-car-driver-low-poly.zip",
+    "archive_sha256": "580baff34af52f50372fcbaab2d35209022b3c58bb0b94f66d27e8203d6bd9f5",
+    "reference_skeleton_origin": "game/assets/models/pit_crew/racer/source/Racer.fbx",
+    "reference_skeleton_origin_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
+    "supplied_mesh_count": 21,
+    "supplied_triangle_count": 1445,
+    "supplied_armature_count": 0,
+    "source_revision_before_implementation": "d850544d97eaf0baf95e479a1ed8433ed61b502b"
+  }
 }

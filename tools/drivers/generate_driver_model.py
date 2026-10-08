@@ -115,8 +115,15 @@ def main():
     parser.add_argument("--output-directory", required=True)
     parser.add_argument("--mode", choices=["preview", "promote"], required=True)
     parser.add_argument("--torso-recline-degrees", type=float, default=CALIBRATED_TORSO_RECLINE_DEGREES)
+    parser.add_argument("--character-model", choices=["original", "low_polygon"], default="low_polygon")
+    parser.add_argument("--source-directory", type=Path)
     options = parser.parse_args(arguments)
     destination = validate_output_path(PROJECT_DIRECTORY, options.output_directory, options.mode).path
+    if options.character_model == "low_polygon":
+        from low_polygon_driver_model import generate_low_polygon_driver
+        source_directory = options.source_directory or PROJECT_DIRECTORY / "game/assets/models/drivers/source"
+        generate_low_polygon_driver(PROJECT_DIRECTORY, destination, options.mode, source_directory, options.torso_recline_degrees)
+        return
     source_path = PROJECT_DIRECTORY / "game/assets/models/pit_crew/racer/source/Racer.fbx"
     chassis_path = PROJECT_DIRECTORY / "game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb"
     seat_recline_degrees = measure_seat_recline(chassis_path)

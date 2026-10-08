@@ -1,0 +1,10 @@
+{
+  "archive_name": "race-car-driver-low-poly.zip",
+  "archive_sha256": "580baff34af52f50372fcbaab2d35209022b3c58bb0b94f66d27e8203d6bd9f5",
+  "reference_skeleton_origin": "game/assets/models/pit_crew/racer/source/Racer.fbx",
+  "reference_skeleton_origin_sha256": "477dacbebe11a654f5e559e90db028eb0001f4318c4b17a07e351bc8657bb56e",
+  "supplied_mesh_count": 21,
+  "supplied_triangle_count": 1445,
+  "supplied_armature_count": 0,
+  "source_revision_before_implementation": "d850544d97eaf0baf95e479a1ed8433ed61b502b"
+}
