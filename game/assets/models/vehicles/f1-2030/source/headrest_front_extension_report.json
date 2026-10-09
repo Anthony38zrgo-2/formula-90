@@ -1,0 +1,33 @@
+{
+  "source_before_sha256": "e72769717f98100c89f7e795e1f3aba2e7a273d0b9e22f51bd8460ed198418cd",
+  "source_after_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "restoration_source_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+  "extension_length_millimeters": 95.13587266206741,
+  "cockpit_middle_longitudinal_meters": 0.0634710043668747,
+  "rear_crown_vertices_preserved": true,
+  "protected_meshes_unchanged": true,
+  "studio_settings_preserved": true,
+  "geometry": {
+    "object": "GEO_CHASSIS_CockpitHeadrestPadding",
+    "vertices": 21406,
+    "polygons": 29144,
+    "triangles": 42808,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "zero_area_faces": 0,
+    "zero_length_edges": 0,
+    "minimum_triangle_area_square_meters": 3.284415794890805e-10,
+    "signed_volume_cubic_meters": 0.008694331061383271,
+    "bounding_pairs_inspected_including_adjacent_triangles": 245132,
+    "intersection_boundary_tolerance_meters": 5e-07,
+    "triangle_crossing_pairs": [],
+    "coplanar_overlap_pairs": [],
+    "passed": true
+  },
+  "front_tapered_to_chassis": true,
+  "front_transition_end_longitudinal_meters": 0.185,
+  "front_terminal_width_millimeters": 2.0,
+  "cut_center_longitudinal_meters": -0.4312057199777349,
+  "cut_lateral_slope": 2.480030105145973
+}

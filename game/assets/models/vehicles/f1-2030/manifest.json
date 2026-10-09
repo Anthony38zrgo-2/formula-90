@@ -28,8 +28,8 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "9D04E1EA51FAD6FEC5B005E90F509B9C16E3F77286429383E3B7C67BD7066FA6",
-      "size_bytes": 23170056
+      "sha256": "8FD4C70E3E669DE65390EC6B409F8E0756490FC5C7E1533AAC2BD983322879B0",
+      "size_bytes": 21972680
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -54,6 +54,6 @@
   },
   "validation": {
     "status": "EXPORT_PASS",
-    "note": "Five canonical GLBs; every wheel contains separate SpinVisual and BrakeStatic groups. Chassis includes the attached carbon headrest and its 75 millimeter radius rear crown."
+    "note": "Carbon headrest front arms taper symmetrically toward the marked chassis rim region, ending with a two millimeter visible width. The rear crown and other vehicle meshes are preserved."
   }
 }

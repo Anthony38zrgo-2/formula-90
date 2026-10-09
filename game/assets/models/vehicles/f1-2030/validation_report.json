@@ -12,8 +12,8 @@
   "assets": {
     "chassis": {
       "mesh_count": 34,
-      "vertices": 93653,
-      "polygons": 143425,
+      "vertices": 93037,
+      "polygons": 141921,
       "bounds_min": [
         -0.859598,
         -2.535136,

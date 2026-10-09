@@ -219,18 +219,18 @@
   },
   "topology": {
     "object": "GEO_CHASSIS_CockpitHeadrestPadding",
-    "vertices": 22158,
-    "polygons": 29962,
-    "triangles": 44312,
+    "vertices": 21406,
+    "polygons": 29144,
+    "triangles": 42808,
     "boundary_edges": 0,
     "nonmanifold_edges": 0,
     "inconsistent_winding_edges": 0,
     "zero_area_faces": 0,
     "zero_length_edges": 0,
-    "minimum_triangle_area_square_meters": 2.8266416984834564E-10,
-    "signed_volume_cubic_meters": 0.008723669707024175,
-    "bounding_pairs_inspected_including_adjacent_triangles": 253562,
-    "intersection_boundary_tolerance_meters": 5E-07,
+    "minimum_triangle_area_square_meters": 3.284415794890805e-10,
+    "signed_volume_cubic_meters": 0.008694331061383271,
+    "bounding_pairs_inspected_including_adjacent_triangles": 245132,
+    "intersection_boundary_tolerance_meters": 5e-07,
     "triangle_crossing_pairs": [],
     "coplanar_overlap_pairs": [],
     "passed": true
@@ -613,7 +613,7 @@
     "attachment_edge_samples": 240039,
     "maximum_attachment_edge_gap_meters": 0.0008766758255660534,
     "visible_seam_samples": 2144,
-    "maximum_visible_seam_gap_meters": 1.4976195416238625E-05,
+    "maximum_visible_seam_gap_meters": 1.4976195416238625e-05,
     "minimum_exposed_padding_recess_below_rim_meters": 0.0009999871253967285,
     "minimum_exposed_front_padding_recess_below_rim_meters": 0.0014079809188842773,
     "outer_top_edge_flush_with_cockpit_rim": true,
@@ -626,20 +626,20 @@
   "historical_rear_height_request_superseded_by_cockpit_rim_fit": true,
   "minor_animated_head_clipping_limit_meters": 0.012,
   "passed": true,
-  "candidate_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\candidate\\f1_2030.blend",
-  "candidate_sha256": "60a7f855e46375ec323a6ff14d5a5637454504fd4f7105caccba0e8f0767a917",
-  "headrest_mesh_fingerprint": "e716b2066a10582d09bb564a816b7b0df8992d625f61acaa7893aa5235ef0a48",
-  "topology_verified_geometry_fingerprint": "e716b2066a10582d09bb564a816b7b0df8992d625f61acaa7893aa5235ef0a48",
+  "candidate_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "candidate_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "headrest_mesh_fingerprint": "4e08bb1e0fb74732d2cbceff21a15e07a961dde1dadf8e0a4506e9cc2b76fcc9",
+  "topology_verified_geometry_fingerprint": "4e08bb1e0fb74732d2cbceff21a15e07a961dde1dadf8e0a4506e9cc2b76fcc9",
   "upper_seam_vertex_count": 716,
-  "source_after_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+  "source_after_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
   "promoted_to_authoring_source": true,
   "saved_source_reopened_and_verified": true,
   "studio_settings_preserved": true,
   "new_object_count": 0,
   "previous_headrest_replaced": true,
-  "runtime_chassis_sha256": "9d04e1ea51fad6fec5b005e90f509b9c16e3f77286429383e3b7c67bd7066fa6",
+  "runtime_chassis_sha256": "8fd4c70e3e669de65390ec6b409f8e0756490fc5c7e1533aac2bd983322879b0",
   "runtime_chassis_unchanged": false,
-  "source_backup_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\original\\f1_2030.blend",
+  "source_backup_path": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\original\\f1_2030.blend",
   "review_images_directory": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\review",
   "review_driver_is_temporary_geometry_proxy": true,
   "fitted_dimensions_note": "The central rear crown has a 75 millimeter circular radius and 150 millimeter nominal diameter. Rounded transitions merge into the existing padding. Its crown reaches 374.709 millimeters in the exported chassis coordinate frame. All original attachment vertices and the recessed front ends remain unchanged.",
@@ -655,21 +655,1741 @@
   },
   "previous_headrest_report_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\original\\cockpit_headrest_report.json",
   "upper_support_generator": "tools/blender/raise_formula_one_2030_headrest_support.py",
-  "runtime_driver_sha256": "81c17904565e184dfd89def4a6d714ee0692d726b7dcff824a056161c632685f",
+  "runtime_driver_sha256": "56f1ae8fcc0e40499593677d697283ec49a696fd4d50bbe525ecc2e44eec250d",
   "runtime_driver_unchanged": true,
-  "runtime_export_source_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+  "runtime_export_source_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
   "runtime_headrest_material": {
     "material": "FormulaOne2030HeadrestExportCarbon",
     "texture_resolution": 2048,
     "baked_textures": {
-      "HeadrestCarbonBaseColor": "D:\\Formula90s\\scratch\\headrest_glb_export_20261008\\candidate\\HeadrestCarbonBaseColor.png",
-      "HeadrestCarbonNormal": "D:\\Formula90s\\scratch\\headrest_glb_export_20261008\\candidate\\HeadrestCarbonNormal.png"
+      "HeadrestCarbonBaseColor": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\exports\\HeadrestCarbonBaseColor.png",
+      "HeadrestCarbonNormal": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\exports\\HeadrestCarbonNormal.png"
     },
     "roughness": 0.44,
-    "metallic": 0.0,
-    "baked_textures_embedded_in_chassis": true
+    "metallic": 0.0
   },
   "runtime_export_validation_passed": true,
   "runtime_export_report_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\export_report.json",
-  "runtime_export_backup_directory": "D:\\Formula90s\\scratch\\headrest_glb_export_20261008\\original"
+  "runtime_export_backup_directory": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\original",
+  "geometry": {
+    "object": "GEO_CHASSIS_CockpitHeadrestPadding",
+    "vertices": 14595,
+    "polygons": 20307,
+    "triangles": 29186,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "zero_area_faces": 0,
+    "zero_length_edges": 0,
+    "minimum_triangle_area_square_meters": 8.883651626823141e-12,
+    "signed_volume_cubic_meters": 0.007218704771405603,
+    "bounding_pairs_inspected_including_adjacent_triangles": 167438,
+    "intersection_boundary_tolerance_meters": 5e-07,
+    "triangle_crossing_pairs": [],
+    "coplanar_overlap_pairs": [],
+    "passed": true
+  },
+  "current_driver_animation_clearance_revalidated": false,
+  "preceding_clearance_measurements_are_historical": true,
+  "front_extension": {
+    "source_before_sha256": "e72769717f98100c89f7e795e1f3aba2e7a273d0b9e22f51bd8460ed198418cd",
+    "source_after_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+    "restoration_source_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+    "extension_length_millimeters": 95.13587266206741,
+    "cockpit_middle_longitudinal_meters": 0.0634710043668747,
+    "rear_crown_vertices_preserved": true,
+    "protected_meshes_unchanged": true,
+    "studio_settings_preserved": true,
+    "geometry": {
+      "object": "GEO_CHASSIS_CockpitHeadrestPadding",
+      "vertices": 21406,
+      "polygons": 29144,
+      "triangles": 42808,
+      "boundary_edges": 0,
+      "nonmanifold_edges": 0,
+      "inconsistent_winding_edges": 0,
+      "zero_area_faces": 0,
+      "zero_length_edges": 0,
+      "minimum_triangle_area_square_meters": 3.284415794890805e-10,
+      "signed_volume_cubic_meters": 0.008694331061383271,
+      "bounding_pairs_inspected_including_adjacent_triangles": 245132,
+      "intersection_boundary_tolerance_meters": 5e-07,
+      "triangle_crossing_pairs": [],
+      "coplanar_overlap_pairs": [],
+      "passed": true
+    },
+    "front_tapered_to_chassis": true,
+    "front_transition_end_longitudinal_meters": 0.185,
+    "front_terminal_width_millimeters": 2.0,
+    "cut_center_longitudinal_meters": -0.4312057199777349,
+    "cut_lateral_slope": 2.480030105145973
+  },
+  "current_driver_clearance": {
+    "original": {
+      "chassis_intersections": {},
+      "intentional_cockpit_attachment_contacts": {
+        "GEO_CHASSIS_BODY": {
+          "triangle_pairs": 594,
+          "kind": "Shared cockpit rim interface"
+        },
+        "GEO_CHASSIS_CockpitUpperLining": {
+          "triangle_pairs": 9142,
+          "headrest_triangle_indices": [
+            7,
+            8,
+            21,
+            32,
+            33,
+            35,
+            36,
+            64,
+            65,
+            148,
+            149,
+            151,
+            872,
+            874,
+            875,
+            912,
+            913,
+            914,
+            915,
+            916,
+            956,
+            957,
+            958,
+            992,
+            993,
+            994,
+            995,
+            996,
+            997,
+            998,
+            999,
+            1000,
+            1035,
+            1036,
+            1037,
+            1038,
+            1039,
+            1040,
+            1077,
+            1078
+          ]
+        },
+        "GEO_CHASSIS_INTERIOR": {
+          "triangle_pairs": 9109,
+          "headrest_triangle_indices": [
+            9,
+            10,
+            20,
+            21,
+            24,
+            25,
+            42,
+            81,
+            82,
+            123,
+            127,
+            128,
+            129,
+            157,
+            158,
+            159,
+            160,
+            161,
+            1077,
+            1078,
+            1079,
+            1080,
+            1123,
+            1124,
+            1171,
+            1218,
+            1219,
+            1220,
+            1273,
+            1274,
+            1275,
+            1323,
+            1324,
+            1325,
+            1326,
+            1374,
+            1375,
+            1376,
+            1377,
+            1422
+          ]
+        }
+      },
+      "driver_intersections": [
+        {
+          "steering_degrees": 20.0,
+          "triangle_pairs": 21,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00047040521167218685
+        },
+        {
+          "steering_degrees": 25.0,
+          "triangle_pairs": 37,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.001366275129839778
+        },
+        {
+          "steering_degrees": 30.0,
+          "triangle_pairs": 53,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0022237456869333982
+        },
+        {
+          "steering_degrees": 35.0,
+          "triangle_pairs": 69,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003034612163901329
+        },
+        {
+          "steering_degrees": 40.0,
+          "triangle_pairs": 83,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0037712391931563616
+        },
+        {
+          "steering_degrees": 45.0,
+          "triangle_pairs": 95,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004452366381883621
+        },
+        {
+          "steering_degrees": 50.0,
+          "triangle_pairs": 115,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005084239412099123
+        },
+        {
+          "steering_degrees": 55.0,
+          "triangle_pairs": 131,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00563708646222949
+        },
+        {
+          "steering_degrees": 60.0,
+          "triangle_pairs": 151,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006115332245826721
+        },
+        {
+          "steering_degrees": 65.0,
+          "triangle_pairs": 170,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006531944032758474
+        },
+        {
+          "steering_degrees": 70.0,
+          "triangle_pairs": 190,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006889204494655132
+        },
+        {
+          "steering_degrees": 75.0,
+          "triangle_pairs": 204,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007158832158893347
+        },
+        {
+          "steering_degrees": 80.0,
+          "triangle_pairs": 210,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007364468649029732
+        },
+        {
+          "steering_degrees": 85.0,
+          "triangle_pairs": 216,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007514973171055317
+        },
+        {
+          "steering_degrees": 90.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007625419180840254
+        },
+        {
+          "steering_degrees": 95.0,
+          "triangle_pairs": 220,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00788876973092556
+        },
+        {
+          "steering_degrees": 100.0,
+          "triangle_pairs": 216,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008239001967012882
+        },
+        {
+          "steering_degrees": 105.0,
+          "triangle_pairs": 216,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008610984310507774
+        },
+        {
+          "steering_degrees": 110.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008962197229266167
+        },
+        {
+          "steering_degrees": 115.0,
+          "triangle_pairs": 222,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008980696089565754
+        },
+        {
+          "steering_degrees": 120.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008626848459243774
+        },
+        {
+          "steering_degrees": 125.0,
+          "triangle_pairs": 174,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007268880028277636
+        },
+        {
+          "steering_degrees": 160.0,
+          "triangle_pairs": 13,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0002623477193992585
+        },
+        {
+          "steering_degrees": 155.0,
+          "triangle_pairs": 21,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0004982682876288891
+        },
+        {
+          "steering_degrees": 110.0,
+          "triangle_pairs": 103,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003933638334274292
+        },
+        {
+          "steering_degrees": 105.0,
+          "triangle_pairs": 170,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006222529802471399
+        },
+        {
+          "steering_degrees": 100.0,
+          "triangle_pairs": 194,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006878790911287069
+        },
+        {
+          "steering_degrees": 95.0,
+          "triangle_pairs": 202,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006931699812412262
+        },
+        {
+          "steering_degrees": 90.0,
+          "triangle_pairs": 204,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006906762719154358
+        },
+        {
+          "steering_degrees": 85.0,
+          "triangle_pairs": 204,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006937653291970491
+        },
+        {
+          "steering_degrees": 80.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0069253998808562756
+        },
+        {
+          "steering_degrees": 75.0,
+          "triangle_pairs": 194,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006838946603238583
+        },
+        {
+          "steering_degrees": 70.0,
+          "triangle_pairs": 182,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0066894409246742725
+        },
+        {
+          "steering_degrees": 65.0,
+          "triangle_pairs": 170,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006478642579168081
+        },
+        {
+          "steering_degrees": 60.0,
+          "triangle_pairs": 151,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006208706181496382
+        },
+        {
+          "steering_degrees": 55.0,
+          "triangle_pairs": 137,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005875464994460344
+        },
+        {
+          "steering_degrees": 50.0,
+          "triangle_pairs": 121,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005486640613526106
+        },
+        {
+          "steering_degrees": 45.0,
+          "triangle_pairs": 103,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005018255673348904
+        },
+        {
+          "steering_degrees": 40.0,
+          "triangle_pairs": 89,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004484962671995163
+        },
+        {
+          "steering_degrees": 35.0,
+          "triangle_pairs": 75,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003880675882101059
+        },
+        {
+          "steering_degrees": 30.0,
+          "triangle_pairs": 61,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0031795059330761433
+        },
+        {
+          "steering_degrees": 25.0,
+          "triangle_pairs": 47,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0024096472188830376
+        },
+        {
+          "steering_degrees": 20.0,
+          "triangle_pairs": 33,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0015769278397783637
+        },
+        {
+          "steering_degrees": 15.0,
+          "triangle_pairs": 25,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0006905519985593855
+        },
+        {
+          "steering_degrees": -20.0,
+          "triangle_pairs": 13,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0001718440471449867
+        },
+        {
+          "steering_degrees": -25.0,
+          "triangle_pairs": 33,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0011147564509883523
+        },
+        {
+          "steering_degrees": -30.0,
+          "triangle_pairs": 55,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.002009524032473564
+        },
+        {
+          "steering_degrees": -35.0,
+          "triangle_pairs": 71,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0028492764104157686
+        },
+        {
+          "steering_degrees": -40.0,
+          "triangle_pairs": 87,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00360957533121109
+        },
+        {
+          "steering_degrees": -45.0,
+          "triangle_pairs": 101,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004312045406550169
+        },
+        {
+          "steering_degrees": -50.0,
+          "triangle_pairs": 119,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004962737672030926
+        },
+        {
+          "steering_degrees": -55.0,
+          "triangle_pairs": 135,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005533444229513407
+        },
+        {
+          "steering_degrees": -60.0,
+          "triangle_pairs": 151,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006023723166435957
+        },
+        {
+          "steering_degrees": -65.0,
+          "triangle_pairs": 174,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00645757419988513
+        },
+        {
+          "steering_degrees": -70.0,
+          "triangle_pairs": 190,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006827871780842543
+        },
+        {
+          "steering_degrees": -75.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0071076517924666405
+        },
+        {
+          "steering_degrees": -80.0,
+          "triangle_pairs": 206,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007322316057980061
+        },
+        {
+          "steering_degrees": -85.0,
+          "triangle_pairs": 210,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007479808758944273
+        },
+        {
+          "steering_degrees": -90.0,
+          "triangle_pairs": 212,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007596262730658054
+        },
+        {
+          "steering_degrees": -95.0,
+          "triangle_pairs": 214,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007863344624638557
+        },
+        {
+          "steering_degrees": -100.0,
+          "triangle_pairs": 212,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008215691894292831
+        },
+        {
+          "steering_degrees": -105.0,
+          "triangle_pairs": 212,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008589399047195911
+        },
+        {
+          "steering_degrees": -110.0,
+          "triangle_pairs": 214,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008943670429289341
+        },
+        {
+          "steering_degrees": -115.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008965514600276947
+        },
+        {
+          "steering_degrees": -120.0,
+          "triangle_pairs": 214,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00861202273517847
+        },
+        {
+          "steering_degrees": -125.0,
+          "triangle_pairs": 180,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007251344621181488
+        },
+        {
+          "steering_degrees": -160.0,
+          "triangle_pairs": 13,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.000263214111328125
+        },
+        {
+          "steering_degrees": -155.0,
+          "triangle_pairs": 21,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0004988801665604115
+        },
+        {
+          "steering_degrees": -110.0,
+          "triangle_pairs": 109,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0039310636930167675
+        },
+        {
+          "steering_degrees": -105.0,
+          "triangle_pairs": 178,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006226596888154745
+        },
+        {
+          "steering_degrees": -100.0,
+          "triangle_pairs": 192,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006876228377223015
+        },
+        {
+          "steering_degrees": -95.0,
+          "triangle_pairs": 198,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006929993629455566
+        },
+        {
+          "steering_degrees": -90.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006905542686581612
+        },
+        {
+          "steering_degrees": -85.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006936859339475632
+        },
+        {
+          "steering_degrees": -80.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006924011278897524
+        },
+        {
+          "steering_degrees": -75.0,
+          "triangle_pairs": 196,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006837049033492804
+        },
+        {
+          "steering_degrees": -70.0,
+          "triangle_pairs": 186,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006695073563605547
+        },
+        {
+          "steering_degrees": -65.0,
+          "triangle_pairs": 174,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00647598784416914
+        },
+        {
+          "steering_degrees": -60.0,
+          "triangle_pairs": 155,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006205865181982517
+        },
+        {
+          "steering_degrees": -55.0,
+          "triangle_pairs": 139,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0058724661357700825
+        },
+        {
+          "steering_degrees": -50.0,
+          "triangle_pairs": 127,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0054835425689816475
+        },
+        {
+          "steering_degrees": -45.0,
+          "triangle_pairs": 109,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005014981608837843
+        },
+        {
+          "steering_degrees": -40.0,
+          "triangle_pairs": 95,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004482332617044449
+        },
+        {
+          "steering_degrees": -35.0,
+          "triangle_pairs": 79,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003864593803882599
+        },
+        {
+          "steering_degrees": -30.0,
+          "triangle_pairs": 63,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003177960868924856
+        },
+        {
+          "steering_degrees": -25.0,
+          "triangle_pairs": 49,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0024085042532533407
+        },
+        {
+          "steering_degrees": -20.0,
+          "triangle_pairs": 35,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0015767302829772234
+        },
+        {
+          "steering_degrees": -15.0,
+          "triangle_pairs": 23,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0006900602602399886
+        }
+      ],
+      "driver_pose_count": 250,
+      "minimum_neutral_head_surface_separation_meters": 0.013328034430742264,
+      "bounds": {
+        "minimum_meters": [
+          -0.32245302200317383,
+          -0.40000003576278687,
+          0.16999998688697815
+        ],
+        "maximum_meters": [
+          0.3288755714893341,
+          0.08986412733793259,
+          0.37470880150794983
+        ],
+        "dimensions_meters": [
+          0.6513285934925079,
+          0.48986416310071945,
+          0.20470881462097168
+        ]
+      },
+      "triangle_count": 39400
+    },
+    "candidate": {
+      "chassis_intersections": {},
+      "intentional_cockpit_attachment_contacts": {
+        "GEO_CHASSIS_BODY": {
+          "triangle_pairs": 780,
+          "kind": "Shared cockpit rim interface"
+        },
+        "GEO_CHASSIS_CockpitUpperLining": {
+          "triangle_pairs": 10856,
+          "headrest_triangle_indices": [
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            37,
+            38,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            64,
+            65,
+            86,
+            94,
+            95,
+            96,
+            97,
+            99,
+            100,
+            101,
+            102,
+            103,
+            132,
+            133,
+            134,
+            158,
+            159,
+            160,
+            161
+          ]
+        },
+        "GEO_CHASSIS_INTERIOR": {
+          "triangle_pairs": 10285,
+          "headrest_triangle_indices": [
+            12,
+            13,
+            14,
+            16,
+            17,
+            46,
+            47,
+            48,
+            49,
+            50,
+            90,
+            91,
+            92,
+            93,
+            95,
+            128,
+            129,
+            130,
+            131,
+            132,
+            159,
+            160,
+            181,
+            182,
+            183,
+            199,
+            200,
+            201,
+            202,
+            218,
+            219,
+            220,
+            235,
+            236,
+            237,
+            238,
+            239,
+            255,
+            256,
+            257
+          ]
+        }
+      },
+      "driver_intersections": [
+        {
+          "steering_degrees": 20.0,
+          "triangle_pairs": 21,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00047040521167218685
+        },
+        {
+          "steering_degrees": 25.0,
+          "triangle_pairs": 37,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.001366275129839778
+        },
+        {
+          "steering_degrees": 30.0,
+          "triangle_pairs": 53,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0022237456869333982
+        },
+        {
+          "steering_degrees": 35.0,
+          "triangle_pairs": 69,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003034612163901329
+        },
+        {
+          "steering_degrees": 40.0,
+          "triangle_pairs": 83,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0037712391931563616
+        },
+        {
+          "steering_degrees": 45.0,
+          "triangle_pairs": 95,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004452366381883621
+        },
+        {
+          "steering_degrees": 50.0,
+          "triangle_pairs": 115,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005084239412099123
+        },
+        {
+          "steering_degrees": 55.0,
+          "triangle_pairs": 131,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00563708646222949
+        },
+        {
+          "steering_degrees": 60.0,
+          "triangle_pairs": 151,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006115332245826721
+        },
+        {
+          "steering_degrees": 65.0,
+          "triangle_pairs": 170,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006531944032758474
+        },
+        {
+          "steering_degrees": 70.0,
+          "triangle_pairs": 190,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006889204494655132
+        },
+        {
+          "steering_degrees": 75.0,
+          "triangle_pairs": 204,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007158832158893347
+        },
+        {
+          "steering_degrees": 80.0,
+          "triangle_pairs": 210,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007364468649029732
+        },
+        {
+          "steering_degrees": 85.0,
+          "triangle_pairs": 216,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007514973171055317
+        },
+        {
+          "steering_degrees": 90.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007625419180840254
+        },
+        {
+          "steering_degrees": 95.0,
+          "triangle_pairs": 220,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00788876973092556
+        },
+        {
+          "steering_degrees": 100.0,
+          "triangle_pairs": 216,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008239001967012882
+        },
+        {
+          "steering_degrees": 105.0,
+          "triangle_pairs": 216,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008610984310507774
+        },
+        {
+          "steering_degrees": 110.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008962197229266167
+        },
+        {
+          "steering_degrees": 115.0,
+          "triangle_pairs": 222,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008980696089565754
+        },
+        {
+          "steering_degrees": 120.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008626848459243774
+        },
+        {
+          "steering_degrees": 125.0,
+          "triangle_pairs": 174,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007268880028277636
+        },
+        {
+          "steering_degrees": 160.0,
+          "triangle_pairs": 13,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0002623477193992585
+        },
+        {
+          "steering_degrees": 155.0,
+          "triangle_pairs": 21,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0004982682876288891
+        },
+        {
+          "steering_degrees": 110.0,
+          "triangle_pairs": 103,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003933638334274292
+        },
+        {
+          "steering_degrees": 105.0,
+          "triangle_pairs": 170,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006222529802471399
+        },
+        {
+          "steering_degrees": 100.0,
+          "triangle_pairs": 194,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006878790911287069
+        },
+        {
+          "steering_degrees": 95.0,
+          "triangle_pairs": 202,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006931699812412262
+        },
+        {
+          "steering_degrees": 90.0,
+          "triangle_pairs": 204,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006906762719154358
+        },
+        {
+          "steering_degrees": 85.0,
+          "triangle_pairs": 204,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006937653291970491
+        },
+        {
+          "steering_degrees": 80.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0069253998808562756
+        },
+        {
+          "steering_degrees": 75.0,
+          "triangle_pairs": 194,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006838946603238583
+        },
+        {
+          "steering_degrees": 70.0,
+          "triangle_pairs": 182,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0066894409246742725
+        },
+        {
+          "steering_degrees": 65.0,
+          "triangle_pairs": 170,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006478642579168081
+        },
+        {
+          "steering_degrees": 60.0,
+          "triangle_pairs": 151,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006208706181496382
+        },
+        {
+          "steering_degrees": 55.0,
+          "triangle_pairs": 137,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005875464994460344
+        },
+        {
+          "steering_degrees": 50.0,
+          "triangle_pairs": 121,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005486640613526106
+        },
+        {
+          "steering_degrees": 45.0,
+          "triangle_pairs": 103,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005018255673348904
+        },
+        {
+          "steering_degrees": 40.0,
+          "triangle_pairs": 89,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004484962671995163
+        },
+        {
+          "steering_degrees": 35.0,
+          "triangle_pairs": 75,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003880675882101059
+        },
+        {
+          "steering_degrees": 30.0,
+          "triangle_pairs": 61,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0031795059330761433
+        },
+        {
+          "steering_degrees": 25.0,
+          "triangle_pairs": 47,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0024096472188830376
+        },
+        {
+          "steering_degrees": 20.0,
+          "triangle_pairs": 33,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0015769278397783637
+        },
+        {
+          "steering_degrees": 15.0,
+          "triangle_pairs": 25,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0006905519985593855
+        },
+        {
+          "steering_degrees": -20.0,
+          "triangle_pairs": 13,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0001718440471449867
+        },
+        {
+          "steering_degrees": -25.0,
+          "triangle_pairs": 33,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0011147564509883523
+        },
+        {
+          "steering_degrees": -30.0,
+          "triangle_pairs": 55,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.002009524032473564
+        },
+        {
+          "steering_degrees": -35.0,
+          "triangle_pairs": 71,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0028492764104157686
+        },
+        {
+          "steering_degrees": -40.0,
+          "triangle_pairs": 87,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00360957533121109
+        },
+        {
+          "steering_degrees": -45.0,
+          "triangle_pairs": 101,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004312045406550169
+        },
+        {
+          "steering_degrees": -50.0,
+          "triangle_pairs": 119,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004962737672030926
+        },
+        {
+          "steering_degrees": -55.0,
+          "triangle_pairs": 135,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005533444229513407
+        },
+        {
+          "steering_degrees": -60.0,
+          "triangle_pairs": 151,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006023723166435957
+        },
+        {
+          "steering_degrees": -65.0,
+          "triangle_pairs": 174,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00645757419988513
+        },
+        {
+          "steering_degrees": -70.0,
+          "triangle_pairs": 190,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006827871780842543
+        },
+        {
+          "steering_degrees": -75.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0071076517924666405
+        },
+        {
+          "steering_degrees": -80.0,
+          "triangle_pairs": 206,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007322316057980061
+        },
+        {
+          "steering_degrees": -85.0,
+          "triangle_pairs": 210,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007479808758944273
+        },
+        {
+          "steering_degrees": -90.0,
+          "triangle_pairs": 212,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007596262730658054
+        },
+        {
+          "steering_degrees": -95.0,
+          "triangle_pairs": 214,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007863344624638557
+        },
+        {
+          "steering_degrees": -100.0,
+          "triangle_pairs": 212,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008215691894292831
+        },
+        {
+          "steering_degrees": -105.0,
+          "triangle_pairs": 212,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008589399047195911
+        },
+        {
+          "steering_degrees": -110.0,
+          "triangle_pairs": 214,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008943670429289341
+        },
+        {
+          "steering_degrees": -115.0,
+          "triangle_pairs": 218,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.008965514600276947
+        },
+        {
+          "steering_degrees": -120.0,
+          "triangle_pairs": 214,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00861202273517847
+        },
+        {
+          "steering_degrees": -125.0,
+          "triangle_pairs": 180,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.007251344621181488
+        },
+        {
+          "steering_degrees": -160.0,
+          "triangle_pairs": 13,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.000263214111328125
+        },
+        {
+          "steering_degrees": -155.0,
+          "triangle_pairs": 21,
+          "bones": [
+            "mixamorig_RightArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0004988801665604115
+        },
+        {
+          "steering_degrees": -110.0,
+          "triangle_pairs": 109,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0039310636930167675
+        },
+        {
+          "steering_degrees": -105.0,
+          "triangle_pairs": 178,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006226596888154745
+        },
+        {
+          "steering_degrees": -100.0,
+          "triangle_pairs": 192,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006876228377223015
+        },
+        {
+          "steering_degrees": -95.0,
+          "triangle_pairs": 198,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006929993629455566
+        },
+        {
+          "steering_degrees": -90.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006905542686581612
+        },
+        {
+          "steering_degrees": -85.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006936859339475632
+        },
+        {
+          "steering_degrees": -80.0,
+          "triangle_pairs": 200,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006924011278897524
+        },
+        {
+          "steering_degrees": -75.0,
+          "triangle_pairs": 196,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006837049033492804
+        },
+        {
+          "steering_degrees": -70.0,
+          "triangle_pairs": 186,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006695073563605547
+        },
+        {
+          "steering_degrees": -65.0,
+          "triangle_pairs": 174,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.00647598784416914
+        },
+        {
+          "steering_degrees": -60.0,
+          "triangle_pairs": 155,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.006205865181982517
+        },
+        {
+          "steering_degrees": -55.0,
+          "triangle_pairs": 139,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0058724661357700825
+        },
+        {
+          "steering_degrees": -50.0,
+          "triangle_pairs": 127,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0054835425689816475
+        },
+        {
+          "steering_degrees": -45.0,
+          "triangle_pairs": 109,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.005014981608837843
+        },
+        {
+          "steering_degrees": -40.0,
+          "triangle_pairs": 95,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.004482332617044449
+        },
+        {
+          "steering_degrees": -35.0,
+          "triangle_pairs": 79,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003864593803882599
+        },
+        {
+          "steering_degrees": -30.0,
+          "triangle_pairs": 63,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.003177960868924856
+        },
+        {
+          "steering_degrees": -25.0,
+          "triangle_pairs": 49,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0024085042532533407
+        },
+        {
+          "steering_degrees": -20.0,
+          "triangle_pairs": 35,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0015767302829772234
+        },
+        {
+          "steering_degrees": -15.0,
+          "triangle_pairs": 23,
+          "bones": [
+            "mixamorig_LeftArm"
+          ],
+          "maximum_sampled_penetration_meters": 0.0006900602602399886
+        }
+      ],
+      "driver_pose_count": 250,
+      "minimum_neutral_head_surface_separation_meters": 0.013328034430742264,
+      "bounds": {
+        "minimum_meters": [
+          -0.32245302200317383,
+          -0.40000003576278687,
+          0.16999998688697815
+        ],
+        "maximum_meters": [
+          0.3288755714893341,
+          0.2143656313419342,
+          0.37470880150794983
+        ],
+        "dimensions_meters": [
+          0.6513285934925079,
+          0.6143656671047211,
+          0.20470881462097168
+        ]
+      },
+      "triangle_count": 42808
+    },
+    "attachment": {
+      "cockpit_attachment_vertex_indices": {
+        "maximum_gap_meters": 0.0008766758255660534,
+        "sample_count": 240039
+      },
+      "cockpit_upper_seam_vertex_indices": {
+        "maximum_gap_meters": 1.4976195416238625e-05,
+        "sample_count": 2144
+      }
+    },
+    "maximum_original_driver_penetration_millimeters": 8.980696089565754,
+    "maximum_candidate_driver_penetration_millimeters": 8.980696089565754,
+    "passed": true
+  },
+  "preceding_clearance_reports_are_historical": true,
+  "review_capture_directory": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009",
+  "review_capture_environment": "Isolated Godot scene with canonical visual controllers and camera configuration; no race simulation or native extensions"
 }
