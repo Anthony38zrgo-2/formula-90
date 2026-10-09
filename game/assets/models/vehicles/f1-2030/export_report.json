@@ -1,11 +1,11 @@
 {
-  "operation": "Export f1_2030_v10 as chassis plus four independent wheel GLBs",
+  "operation": "Export fitted source meshes and replace only the headrest, cockpit interior and seat primitive geometry in the canonical chassis container",
   "passed": true,
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "8FD4C70E3E669DE65390EC6B409F8E0756490FC5C7E1533AAC2BD983322879B0",
-      "size_bytes": 21972680
+      "sha256": "28F49482BA667E86B9935C8D5928C113551AC72F6A72E3D60DBCED6A59FCC9B2",
+      "size_bytes": 23458380
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -71,8 +71,8 @@
         "polygons": 252
       },
       "GEO_CHASSIS_CockpitHeadrestPadding": {
-        "vertices": 21406,
-        "polygons": 29144
+        "vertices": 22923,
+        "polygons": 42808
       },
       "GEO_CHASSIS_CockpitUpperLining": {
         "vertices": 1074,
@@ -107,8 +107,8 @@
         "polygons": 224
       },
       "GEO_CHASSIS_INTERIOR": {
-        "vertices": 4686,
-        "polygons": 9368
+        "vertices": 7312,
+        "polygons": 10792
       },
       "GEO_CHASSIS_LATERALCAM": {
         "vertices": 40,
@@ -147,8 +147,8 @@
         "polygons": 24
       },
       "GEO_CHASSIS_SEAT": {
-        "vertices": 600,
-        "polygons": 598
+        "vertices": 1418,
+        "polygons": 1532
       },
       "GEO_CHASSIS_SHIFTERBRAK": {
         "vertices": 152,
@@ -347,7 +347,7 @@
     "chassis_vertical_offset": 0.10500002279877663
   },
   "source_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
-  "source_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "source_sha256": "f1c9d22df391c375bd87b77ecaba6abf328ae987f0acc267af20ac4388f16312",
   "headrest_material": {
     "material": "FormulaOne2030HeadrestExportCarbon",
     "texture_resolution": 2048,
@@ -358,65 +358,109 @@
     "roughness": 0.44,
     "metallic": 0.0
   },
-  "original_geometry_attributes_preserved": true,
+  "original_geometry_attributes_preserved": false,
   "original_materials_and_texture_bytes_preserved": true,
   "original_body_tangent_values_preserved": true,
   "protected_mesh_comparison": {
     "chassis": {
-      "changed_attributes": [],
-      "added_meshes": [],
-      "original_mesh_count": 34,
-      "candidate_mesh_count": 34,
-      "byte_identical": false,
-      "headrest_material": {
-        "doubleSided": true,
-        "extensions": {
-          "KHR_materials_clearcoat": {
-            "clearcoatFactor": 0.03999999910593033
-          }
-        },
-        "name": "FormulaOne2030HeadrestExportCarbon",
-        "normalTexture": {
-          "index": 7
-        },
-        "pbrMetallicRoughness": {
-          "baseColorTexture": {
-            "index": 8
-          },
-          "metallicFactor": 0,
-          "roughnessFactor": 0.4399999976158142
-        }
-      },
-      "headrest_triangle_count": 42808
+      "authorized_changed_meshes": [
+        "GEO_CHASSIS_CockpitHeadrestPadding",
+        "GEO_CHASSIS_INTERIOR",
+        "GEO_CHASSIS_SEAT"
+      ],
+      "all_other_mesh_documents_and_geometry_bytes_preserved": true
     },
-    "wheel_FL": {
-      "changed_attributes": [],
-      "added_meshes": [],
-      "original_mesh_count": 7,
-      "candidate_mesh_count": 7,
-      "byte_identical": true
-    },
-    "wheel_FR": {
-      "changed_attributes": [],
-      "added_meshes": [],
-      "original_mesh_count": 7,
-      "candidate_mesh_count": 7,
-      "byte_identical": true
-    },
-    "wheel_RL": {
-      "changed_attributes": [],
-      "added_meshes": [],
-      "original_mesh_count": 7,
-      "candidate_mesh_count": 7,
-      "byte_identical": true
-    },
-    "wheel_RR": {
-      "changed_attributes": [],
-      "added_meshes": [],
-      "original_mesh_count": 7,
-      "candidate_mesh_count": 7,
-      "byte_identical": true
+    "wheels": {
+      "all_four_exports_byte_identical": true
     }
   },
-  "backup_directory": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\original"
+  "backup_directory": "D:\\Formula90s\\scratch\\driver_steering_clearance_adjustment_20261009\\original",
+  "baseline_source_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "baseline_chassis_sha256": "8fd4c70e3e669de65390ec6b409f8e0756490fc5c7e1533aac2bd983322879b0",
+  "changes": {
+    "GEO_CHASSIS_CockpitHeadrestPadding": {
+      "runtime_vertex_count": 22923,
+      "triangle_count": 42808,
+      "material_index_preserved": true
+    },
+    "GEO_CHASSIS_INTERIOR": {
+      "runtime_vertex_count": 7312,
+      "triangle_count": 10792,
+      "material_index_preserved": true
+    },
+    "GEO_CHASSIS_SEAT": {
+      "runtime_vertex_count": 1418,
+      "triangle_count": 1532,
+      "material_index_preserved": true
+    }
+  },
+  "protected_geometry_attributes_preserved": true,
+  "materials_and_embedded_texture_bytes_preserved": true,
+  "wheel_exports_byte_identical": true,
+  "previous_export_protection_evidence": {
+    "source_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+    "protected_mesh_comparison": {
+      "chassis": {
+        "changed_attributes": [],
+        "added_meshes": [],
+        "original_mesh_count": 34,
+        "candidate_mesh_count": 34,
+        "byte_identical": false,
+        "headrest_material": {
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_clearcoat": {
+              "clearcoatFactor": 0.03999999910593033
+            }
+          },
+          "name": "FormulaOne2030HeadrestExportCarbon",
+          "normalTexture": {
+            "index": 7
+          },
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 8
+            },
+            "metallicFactor": 0,
+            "roughnessFactor": 0.4399999976158142
+          }
+        },
+        "headrest_triangle_count": 42808
+      },
+      "wheel_FL": {
+        "changed_attributes": [],
+        "added_meshes": [],
+        "original_mesh_count": 7,
+        "candidate_mesh_count": 7,
+        "byte_identical": true
+      },
+      "wheel_FR": {
+        "changed_attributes": [],
+        "added_meshes": [],
+        "original_mesh_count": 7,
+        "candidate_mesh_count": 7,
+        "byte_identical": true
+      },
+      "wheel_RL": {
+        "changed_attributes": [],
+        "added_meshes": [],
+        "original_mesh_count": 7,
+        "candidate_mesh_count": 7,
+        "byte_identical": true
+      },
+      "wheel_RR": {
+        "changed_attributes": [],
+        "added_meshes": [],
+        "original_mesh_count": 7,
+        "candidate_mesh_count": 7,
+        "byte_identical": true
+      }
+    },
+    "backup_directory": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\original"
+  },
+  "authorized_changed_meshes": [
+    "GEO_CHASSIS_CockpitHeadrestPadding",
+    "GEO_CHASSIS_INTERIOR",
+    "GEO_CHASSIS_SEAT"
+  ]
 }

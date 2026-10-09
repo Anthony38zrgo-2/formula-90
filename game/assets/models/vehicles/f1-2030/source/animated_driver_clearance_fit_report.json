@@ -1,0 +1,347 @@
+{
+  "source_before_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "driver_surface_sha256": "dc1fb4fef94b81213417fe12414cdf66e88c47148d1f0a92c4743db360414393",
+  "capture_provenance": {
+    "branch": "main-clean",
+    "head": "4ad4882111bda7dee0ab7b335fda5fe8c1ac78fc",
+    "posture": {
+      "seated_position": "Vector3(0.0, -0.011, -0.24)",
+      "additional_torso_recline_degrees": "-19.866807",
+      "pelvis_position_offset_meters": "Vector3(0.0, -0.055, -0.055)",
+      "additional_pelvis_recline_degrees": "-5.0"
+    },
+    "sha256": {
+      "game/scripts/vehicle/driver_visual_controller.gd": "a4f2f1d598605274221a18229c1a7483f49eb7acbcf0071242384e0e0f81c6af",
+      "game/scripts/vehicle/driver_arm_inverse_kinematics_modifier.gd": "8bc25e63bd6bc879d8ab72da983533a701456b7398ba911ffffca2f37a314127",
+      "game/scripts/vehicle/steering_wheel_visual_controller.gd": "a0286c08e09a8236572438b8269e1f92bca2b80b0b729a86886f73c649439e51",
+      "game/scripts/vehicle/driver_head_motion_modifier.gd": "4aeb1915cb1958b86b8b3c467eb9581fcff93edcd8026d4e2f88eacd125a47a3",
+      "game/scripts/runtime/wheel_gun_arm_inverse_kinematics_modifier.gd": "c0cfcbdd9042189143e9571eb489db79cfe4d211303f637a42210d436a36767c",
+      "game/scripts/camera/cockpit_driver_motion_state.gd": "6c2510970fbdffe6a3fda735f76d9e6c8adf1e0533db1e68efa1d5e9aca2b245",
+      "game/scripts/camera/cockpit_camera_configuration.gd": "70941c6d052fc661f0db39a34f4eae2d5a9e66cd5f7b907d899d95ff1506ad43",
+      "game/data/cameras/formula_one_2030_cockpit_camera.json": "9b461dbcbefa5bb5f28a4f22ede45911c3f3981114c70a71f051bcf1f64b61ba",
+      "game/assets/models/drivers/driver.glb": "86373d0936ac7970ce1c62f801bdf7a113540ca7cb8b5de847feedc9fceb2557",
+      "game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb": "8fd4c70e3e669de65390ec6b409f8e0756490fc5c7e1533aac2bd983322879b0",
+      "game/assets/models/vehicles/f1-2030/source/f1_2030.blend": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+      "game/scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn": "c3205bc8396517daad1393284a18026585c50cfd6f77b98a0c892fe13e49cc00"
+    }
+  },
+  "minimum_required_clearance_millimeters": 5,
+  "convex_cutter_padding_millimeters": 8.0,
+  "source_point_deduplication_cell_millimeters": 0.5,
+  "headrest_construction_allowance_millimeters": 10,
+  "headrest_moved_vertices": 788,
+  "headrest_maximum_displacement_millimeters": 19.679988026618965,
+  "headrest_attachments_preserved": true,
+  "rear_crown_preserved": true,
+  "protected_meshes_unchanged": true,
+  "changes": {
+    "GEO_CHASSIS_INTERIOR": {
+      "original_vertices": 4686,
+      "candidate_vertices": 5390,
+      "operation": "Closed local difference against padded convex swept upper-arm and forearm volumes; no original surface translated"
+    },
+    "GEO_CHASSIS_SEAT": {
+      "original_vertices": 600,
+      "candidate_vertices": 768,
+      "operation": "Closed local difference against padded convex swept upper-arm and forearm volumes; no original surface translated"
+    }
+  },
+  "source_after_sha256": "f1c9d22df391c375bd87b77ecaba6abf328ae987f0acc267af20ac4388f16312",
+  "passed": true,
+  "source_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "runtime_chassis_sha256": "28f49482ba667e86b9935c8d5928c113551ac72f6a72e3d60dbced6a59fcc9b2",
+  "source_geometry_validation": {
+    "elapsed_seconds": 31.681496699999116,
+    "geometry": {
+      "GEO_CHASSIS_CockpitHeadrestPadding": {
+        "object": "GEO_CHASSIS_CockpitHeadrestPadding",
+        "vertices": 21406,
+        "polygons": 29144,
+        "triangles": 42808,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "inconsistent_winding_edges": 0,
+        "zero_area_faces": 0,
+        "zero_length_edges": 0,
+        "minimum_triangle_area_square_meters": 3.284415794890805e-10,
+        "signed_volume_cubic_meters": 0.008637003147048123,
+        "bounding_pairs_inspected_including_adjacent_triangles": 245140,
+        "intersection_boundary_tolerance_meters": 5e-07,
+        "triangle_crossing_pairs": [],
+        "coplanar_overlap_pairs": [],
+        "passed": true,
+        "unchanged_baseline_triangle_crossing_pairs": 0,
+        "new_triangle_crossing_pairs": [],
+        "passes_without_new_geometry_defects": true
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "object": "GEO_CHASSIS_INTERIOR",
+        "vertices": 5390,
+        "polygons": 9601,
+        "triangles": 10792,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "inconsistent_winding_edges": 0,
+        "zero_area_faces": 0,
+        "zero_length_edges": 0,
+        "minimum_triangle_area_square_meters": 3.887140446762888e-13,
+        "signed_volume_cubic_meters": 0.010287657310068256,
+        "bounding_pairs_inspected_including_adjacent_triangles": 65671,
+        "intersection_boundary_tolerance_meters": 5e-07,
+        "triangle_crossing_pairs": [],
+        "coplanar_overlap_pairs": [],
+        "passed": true,
+        "unchanged_baseline_triangle_crossing_pairs": 0,
+        "new_triangle_crossing_pairs": [],
+        "passes_without_new_geometry_defects": true
+      },
+      "GEO_CHASSIS_SEAT": {
+        "object": "GEO_CHASSIS_SEAT",
+        "vertices": 768,
+        "polygons": 1157,
+        "triangles": 1532,
+        "boundary_edges": 0,
+        "nonmanifold_edges": 0,
+        "inconsistent_winding_edges": 0,
+        "zero_area_faces": 0,
+        "zero_length_edges": 0,
+        "minimum_triangle_area_square_meters": 4.4183550047816045e-12,
+        "signed_volume_cubic_meters": 0.0012403360514789174,
+        "bounding_pairs_inspected_including_adjacent_triangles": 9201,
+        "intersection_boundary_tolerance_meters": 5e-07,
+        "triangle_crossing_pairs": [
+          [
+            96,
+            98
+          ],
+          [
+            96,
+            99
+          ],
+          [
+            97,
+            98
+          ],
+          [
+            97,
+            99
+          ],
+          [
+            272,
+            274
+          ],
+          [
+            272,
+            275
+          ],
+          [
+            273,
+            274
+          ],
+          [
+            273,
+            275
+          ]
+        ],
+        "coplanar_overlap_pairs": [],
+        "passed": false,
+        "unchanged_baseline_triangle_crossing_pairs": 8,
+        "new_triangle_crossing_pairs": [],
+        "passes_without_new_geometry_defects": true
+      }
+    },
+    "clearance": {
+      "GEO_CHASSIS_CockpitHeadrestPadding": {
+        "minimum_sampled_surface_distance_millimeters": 8.456706069409847,
+        "conservative_clearance_lower_bound_millimeters": 5.0009788762066645,
+        "closest_surface_point_meters": [
+          -0.18017007410526276,
+          -0.09679108113050461,
+          0.20064523816108704
+        ],
+        "probe_count": 29214,
+        "passes_five_millimeter_clearance": true
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "minimum_sampled_surface_distance_millimeters": 10.55827271193266,
+        "conservative_clearance_lower_bound_millimeters": 5.002356258683714,
+        "closest_surface_point_meters": [
+          -0.2151719331741333,
+          -0.1431901603937149,
+          0.14825817942619324
+        ],
+        "probe_count": 12373,
+        "passes_five_millimeter_clearance": true
+      },
+      "GEO_CHASSIS_SEAT": {
+        "minimum_sampled_surface_distance_millimeters": 11.343450285494328,
+        "conservative_clearance_lower_bound_millimeters": 5.013992092322752,
+        "closest_surface_point_meters": [
+          -0.1003635823726654,
+          0.12856562435626984,
+          -0.09681884944438934
+        ],
+        "probe_count": 2202,
+        "passes_five_millimeter_clearance": true
+      }
+    },
+    "occupied_surface_subset": {
+      "GEO_CHASSIS_CockpitHeadrestPadding": {
+        "surface_probes": 64214,
+        "maximum_outward_signed_distance_millimeters": 0.014837014091995115,
+        "exterior_probe_count": 0,
+        "first_exterior_probes": [],
+        "passed": true
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "surface_probes": 16182,
+        "maximum_outward_signed_distance_millimeters": 0.00014279900639735388,
+        "exterior_probe_count": 0,
+        "first_exterior_probes": [],
+        "passed": true
+      },
+      "GEO_CHASSIS_SEAT": {
+        "surface_probes": 2300,
+        "maximum_outward_signed_distance_millimeters": 3.4483420563447e-05,
+        "exterior_probe_count": 0,
+        "first_exterior_probes": [],
+        "passed": true
+      }
+    },
+    "interfaces": {
+      "GEO_CHASSIS_CockpitHeadrestPadding / GEO_CHASSIS_BODY": {
+        "original_triangle_overlap_pairs": 780,
+        "candidate_triangle_overlap_pairs": 780,
+        "current_crossing_pair_count": 6,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_CockpitHeadrestPadding / GEO_CHASSIS_FLOOR": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_CockpitHeadrestPadding / GEO_CHASSIS_CockpitUpperLining": {
+        "original_triangle_overlap_pairs": 10856,
+        "candidate_triangle_overlap_pairs": 10856,
+        "current_crossing_pair_count": 6035,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_CockpitHeadrestPadding / GEO_CHASSIS_INTERIOR": {
+        "original_triangle_overlap_pairs": 10285,
+        "candidate_triangle_overlap_pairs": 10281,
+        "current_crossing_pair_count": 5732,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_CockpitHeadrestPadding / GEO_CHASSIS_SEAT": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_INTERIOR / GEO_CHASSIS_BODY": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_INTERIOR / GEO_CHASSIS_FLOOR": {
+        "original_triangle_overlap_pairs": 312,
+        "candidate_triangle_overlap_pairs": 312,
+        "current_crossing_pair_count": 308,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_INTERIOR / GEO_CHASSIS_CockpitUpperLining": {
+        "original_triangle_overlap_pairs": 281,
+        "candidate_triangle_overlap_pairs": 263,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_INTERIOR / GEO_CHASSIS_SEAT": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_SEAT / GEO_CHASSIS_BODY": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_SEAT / GEO_CHASSIS_FLOOR": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      },
+      "GEO_CHASSIS_SEAT / GEO_CHASSIS_CockpitUpperLining": {
+        "original_triangle_overlap_pairs": 0,
+        "candidate_triangle_overlap_pairs": 0,
+        "current_crossing_pair_count": 0,
+        "new_crossing_pairs": [],
+        "classification": "Candidate occupied surfaces remain inside the original closed solids; shared attachment intersections cannot add occupied overlap volume. Triangle identifiers are not comparable after local Boolean cuts."
+      }
+    },
+    "minimum_required_clearance_millimeters": 5,
+    "method": "All 1205 animated arm surfaces in one triangle tree. Adaptive four-way triangle subdivision uses the 1-Lipschitz distance bound: maximum corner distance minus longest edge. Subdivide unresolved triangles until the bound proves 5 mm or a sampled violation is found; residual triangles below 1 mm cannot pass unless their bound also proves clearance.",
+    "passed": true
+  },
+  "runtime_validation": {
+    "passed": true,
+    "steering_pose_count": 1205,
+    "configured_head_pose_count": 16,
+    "maximum_steering_degrees": 180,
+    "steering_speeds_degrees_per_second": [
+      60,
+      180
+    ],
+    "minimum_required_clearance_millimeters": 5,
+    "maximum_driver_pose_deviation_from_baseline_millimeters": 0.0,
+    "arm_clearance": {
+      "GEO_CHASSIS_CockpitHeadrestPadding": {
+        "minimum_sampled_surface_distance_millimeters": 8.456706069409847,
+        "conservative_clearance_lower_bound_millimeters": 5.0009788762066645,
+        "probes": 28867,
+        "passed": true
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "minimum_sampled_surface_distance_millimeters": 10.570323094725609,
+        "conservative_clearance_lower_bound_millimeters": 5.001773481254052,
+        "probes": 10257,
+        "passed": true
+      },
+      "GEO_CHASSIS_SEAT": {
+        "minimum_sampled_surface_distance_millimeters": 11.343451216816902,
+        "conservative_clearance_lower_bound_millimeters": 5.024613379166241,
+        "probes": 1562,
+        "passed": true
+      }
+    },
+    "headrest_to_configured_head_clearance": {
+      "minimum_sampled_surface_distance_millimeters": 13.731053099036217,
+      "conservative_clearance_lower_bound_millimeters": 5.000461939048989,
+      "probes": 25468,
+      "passed": true
+    },
+    "chassis_sha256": "28f49482ba667e86b9935c8d5928c113551ac72f6a72e3d60dbced6a59fcc9b2",
+    "driver_sha256": "86373d0936ac7970ce1c62f801bdf7a113540ca7cb8b5de847feedc9fceb2557",
+    "scope": "Actual Godot skinned surfaces; full steering sweeps and reversals on a level chassis, configured head pitch +/-6 degrees and roll +/-3 degrees. Steering column and unrelated static body contacts retain their baseline behavior. No in-race simulation validation."
+  },
+  "export_validation_passed": true,
+  "backup_directory": "D:\\Formula90s\\scratch\\driver_steering_clearance_adjustment_20261009\\original",
+  "review_images_directory": "D:\\Formula90s\\scratch\\driver_steering_clearance_adjustment_20261009",
+  "baseline_seat_self_intersections_preserved": 8,
+  "baseline_seat_note": "Eight existing seat triangle crossings remain at their unchanged original geometry. They are unrelated to animated arm clearance; no new self intersections or manifold defects are introduced."
+}

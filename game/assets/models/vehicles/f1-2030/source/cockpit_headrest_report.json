@@ -624,20 +624,20 @@
     "original_attachment_vertices_unchanged": true
   },
   "historical_rear_height_request_superseded_by_cockpit_rim_fit": true,
-  "minor_animated_head_clipping_limit_meters": 0.012,
+  "minor_animated_head_clipping_limit_meters": 0,
   "passed": true,
   "candidate_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
-  "candidate_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "candidate_sha256": "f1c9d22df391c375bd87b77ecaba6abf328ae987f0acc267af20ac4388f16312",
   "headrest_mesh_fingerprint": "4e08bb1e0fb74732d2cbceff21a15e07a961dde1dadf8e0a4506e9cc2b76fcc9",
   "topology_verified_geometry_fingerprint": "4e08bb1e0fb74732d2cbceff21a15e07a961dde1dadf8e0a4506e9cc2b76fcc9",
   "upper_seam_vertex_count": 716,
-  "source_after_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "source_after_sha256": "f1c9d22df391c375bd87b77ecaba6abf328ae987f0acc267af20ac4388f16312",
   "promoted_to_authoring_source": true,
   "saved_source_reopened_and_verified": true,
   "studio_settings_preserved": true,
   "new_object_count": 0,
   "previous_headrest_replaced": true,
-  "runtime_chassis_sha256": "8fd4c70e3e669de65390ec6b409f8e0756490fc5c7e1533aac2bd983322879b0",
+  "runtime_chassis_sha256": "28f49482ba667e86b9935c8d5928c113551ac72f6a72e3d60dbced6a59fcc9b2",
   "runtime_chassis_unchanged": false,
   "source_backup_path": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009\\original\\f1_2030.blend",
   "review_images_directory": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\review",
@@ -655,9 +655,9 @@
   },
   "previous_headrest_report_path": "D:\\Formula90s\\scratch\\headrest_upper_arc_20261008\\original\\cockpit_headrest_report.json",
   "upper_support_generator": "tools/blender/raise_formula_one_2030_headrest_support.py",
-  "runtime_driver_sha256": "56f1ae8fcc0e40499593677d697283ec49a696fd4d50bbe525ecc2e44eec250d",
+  "runtime_driver_sha256": "86373d0936ac7970ce1c62f801bdf7a113540ca7cb8b5de847feedc9fceb2557",
   "runtime_driver_unchanged": true,
-  "runtime_export_source_sha256": "8bc5a49632a6eb7ef9fc51170b79cff24e995cde0a46abcca012d2a657fb5837",
+  "runtime_export_source_sha256": "f1c9d22df391c375bd87b77ecaba6abf328ae987f0acc267af20ac4388f16312",
   "runtime_headrest_material": {
     "material": "FormulaOne2030HeadrestExportCarbon",
     "texture_resolution": 2048,
@@ -689,7 +689,7 @@
     "coplanar_overlap_pairs": [],
     "passed": true
   },
-  "current_driver_animation_clearance_revalidated": false,
+  "current_driver_animation_clearance_revalidated": true,
   "preceding_clearance_measurements_are_historical": true,
   "front_extension": {
     "source_before_sha256": "e72769717f98100c89f7e795e1f3aba2e7a273d0b9e22f51bd8460ed198418cd",
@@ -725,6 +725,57 @@
     "cut_lateral_slope": 2.480030105145973
   },
   "current_driver_clearance": {
+    "passed": true,
+    "steering_pose_count": 1205,
+    "configured_head_pose_count": 16,
+    "maximum_steering_degrees": 180,
+    "steering_speeds_degrees_per_second": [
+      60,
+      180
+    ],
+    "minimum_required_clearance_millimeters": 5,
+    "maximum_driver_pose_deviation_from_baseline_millimeters": 0.0,
+    "arm_clearance": {
+      "GEO_CHASSIS_CockpitHeadrestPadding": {
+        "minimum_sampled_surface_distance_millimeters": 8.456706069409847,
+        "conservative_clearance_lower_bound_millimeters": 5.0009788762066645,
+        "probes": 28867,
+        "passed": true
+      },
+      "GEO_CHASSIS_INTERIOR": {
+        "minimum_sampled_surface_distance_millimeters": 10.570323094725609,
+        "conservative_clearance_lower_bound_millimeters": 5.001773481254052,
+        "probes": 10257,
+        "passed": true
+      },
+      "GEO_CHASSIS_SEAT": {
+        "minimum_sampled_surface_distance_millimeters": 11.343451216816902,
+        "conservative_clearance_lower_bound_millimeters": 5.024613379166241,
+        "probes": 1562,
+        "passed": true
+      }
+    },
+    "headrest_to_configured_head_clearance": {
+      "minimum_sampled_surface_distance_millimeters": 13.731053099036217,
+      "conservative_clearance_lower_bound_millimeters": 5.000461939048989,
+      "probes": 25468,
+      "passed": true
+    },
+    "chassis_sha256": "28f49482ba667e86b9935c8d5928c113551ac72f6a72e3d60dbced6a59fcc9b2",
+    "driver_sha256": "86373d0936ac7970ce1c62f801bdf7a113540ca7cb8b5de847feedc9fceb2557",
+    "scope": "Actual Godot skinned surfaces; full steering sweeps and reversals on a level chassis, configured head pitch +/-6 degrees and roll +/-3 degrees. Steering column and unrelated static body contacts retain their baseline behavior. No in-race simulation validation."
+  },
+  "preceding_clearance_reports_are_historical": true,
+  "review_capture_directory": "D:\\Formula90s\\scratch\\driver_steering_clearance_adjustment_20261009",
+  "review_capture_environment": "Actual Godot skinned surfaces; full steering sweeps and reversals on a level chassis, configured head pitch +/-6 degrees and roll +/-3 degrees. Steering column and unrelated static body contacts retain their baseline behavior. No in-race simulation validation.",
+  "animated_driver_clearance_fit_report_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\animated_driver_clearance_fit_report.json",
+  "latest_authorized_changed_meshes": [
+    "GEO_CHASSIS_CockpitHeadrestPadding",
+    "GEO_CHASSIS_INTERIOR",
+    "GEO_CHASSIS_SEAT"
+  ],
+  "minimum_current_animated_clearance_meters": 0.005,
+  "preceding_current_driver_clearance": {
     "original": {
       "chassis_intersections": {},
       "intentional_cockpit_attachment_contacts": {
@@ -2389,7 +2440,5 @@
     "maximum_candidate_driver_penetration_millimeters": 8.980696089565754,
     "passed": true
   },
-  "preceding_clearance_reports_are_historical": true,
-  "review_capture_directory": "D:\\Formula90s\\scratch\\headrest_fine_transition_20261009",
-  "review_capture_environment": "Isolated Godot scene with canonical visual controllers and camera configuration; no race simulation or native extensions"
+  "preceding_headrest_measurements_are_historical": true
 }

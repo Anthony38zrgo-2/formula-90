@@ -28,8 +28,8 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "8FD4C70E3E669DE65390EC6B409F8E0756490FC5C7E1533AAC2BD983322879B0",
-      "size_bytes": 21972680
+      "sha256": "28F49482BA667E86B9935C8D5928C113551AC72F6A72E3D60DBCED6A59FCC9B2",
+      "size_bytes": 23458380
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -54,6 +54,6 @@
   },
   "validation": {
     "status": "EXPORT_PASS",
-    "note": "Carbon headrest front arms taper symmetrically toward the marked chassis rim region, ending with a two millimeter visible width. The rear crown and other vehicle meshes are preserved."
+    "note": "Headrest underside and local cockpit interior and seat cavities preserve at least five millimeters of clearance to the current animated arms across 1205 steering poses and to the configured head-motion envelope. Driver anatomy, seated posture, rear crown, attachments, exterior geometry, materials and four wheel exports are preserved."
   }
 }
