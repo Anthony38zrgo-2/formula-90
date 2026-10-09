@@ -20,7 +20,7 @@ const REGRIP_RIM_CLEARANCE_METERS := 0.025
 @export var chassis_visual: Node3D
 @export var steering_wheel_controller: Node
 @export var seated_position := Vector3(0.0, -0.011, -0.34)
-@export_range(-20.0, 20.0, 0.5) var additional_torso_recline_degrees := 0.0
+@export_range(-30.0, 20.0, 0.5) var additional_torso_recline_degrees := 0.0
 @export var pelvis_position_offset_meters := Vector3.ZERO
 @export_range(-15.0, 15.0, 0.5) var additional_pelvis_recline_degrees := 0.0
 @export_file("*.json") var cockpit_configuration_path: String
