@@ -63,7 +63,10 @@ script = ExtResource("10_driver_controller")
 driver_model = ExtResource("11_driver_model")
 chassis_visual = NodePath("../ChassisVisual")
 steering_wheel_controller = NodePath("../SteeringWheelVisualController")
-seated_position = Vector3(0.0, -0.011, -0.24)
+seated_position = Vector3(0.0, 0.089, -0.24)
+additional_torso_recline_degrees = 10.0
+pelvis_position_offset_meters = Vector3(0.0, -0.015, 0.015)
+additional_pelvis_recline_degrees = 2.0
 cockpit_configuration_path = "res://data/cameras/formula_one_2030_cockpit_camera.json"
 
 [node name="CollisionTub" type="CollisionShape3D" parent="VehicleRigidBody"]

@@ -117,12 +117,20 @@ def main():
     parser.add_argument("--torso-recline-degrees", type=float, default=CALIBRATED_TORSO_RECLINE_DEGREES)
     parser.add_argument("--character-model", choices=["original", "low_polygon"], default="low_polygon")
     parser.add_argument("--source-directory", type=Path)
+    parser.add_argument("--driver-appearance", choices=["original", "lewis_hamilton_inspired"], default="lewis_hamilton_inspired")
     options = parser.parse_args(arguments)
     destination = validate_output_path(PROJECT_DIRECTORY, options.output_directory, options.mode).path
+    if options.mode == "promote" and options.character_model != "low_polygon":
+        raise RuntimeError("Deprecated Racer geometry cannot be promoted as the game driver; use low_polygon with uniformly preserved original geometry")
     if options.character_model == "low_polygon":
         from low_polygon_driver_model import generate_low_polygon_driver
         source_directory = options.source_directory or PROJECT_DIRECTORY / "game/assets/models/drivers/source"
         generate_low_polygon_driver(PROJECT_DIRECTORY, destination, options.mode, source_directory, options.torso_recline_degrees)
+        if options.driver_appearance == "lewis_hamilton_inspired":
+            from apply_lewis_hamilton_driver_skin import apply_driver_skin
+            prepared_directory = destination / "source" if options.mode == "promote" else destination
+            appearance_profile = PROJECT_DIRECTORY / "game/assets/models/drivers/skins/lewis_hamilton_inspired/appearance_profile.json"
+            apply_driver_skin(prepared_directory / "prepared_driver.blend", appearance_profile, destination, options.mode, destination / "driver_manifest.json")
         return
     source_path = PROJECT_DIRECTORY / "game/assets/models/pit_crew/racer/source/Racer.fbx"
     chassis_path = PROJECT_DIRECTORY / "game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb"

@@ -12,31 +12,55 @@
     "textures/helmet_2012_glass.png": "ed9c7bf19bf744fc204628da967fc79177d872729d09330f12d9d0a91fe161eb",
     "textures/stinger_helmet_red_2012.png": "0b3944b17db1b1266078ff350a6cca0ce8451903f33b93d3b45327b71ea5bd37"
   },
-  "model_sha256": "81c17904565e184dfd89def4a6d714ee0692d726b7dcff824a056161c632685f",
+  "model_sha256": "56f1ae8fcc0e40499593677d697283ec49a696fd4d50bbe525ecc2e44eec250d",
   "bone_count": 55,
-  "triangle_count": 1725,
+  "triangle_count": 1445,
   "pose": "seated",
   "hand_geometry": "authored_fixed_grip_following_wrist",
   "finger_bones_per_hand": 15,
   "finger_geometry_deformation": false,
   "torso_recline_degrees": 79.86680690888585,
   "seat_recline_degrees": 70.64100648156666,
-  "seat_model_sha256": "dfd3219571448df12e6c8e53c0938966c6ceb5d9a9aaec44b28f55a5bf8920af",
+  "seat_model_sha256": "d522775598a3486570462487f53273812cc4dcd94ca059a13f6072fdf0803bf5",
   "separate_head_and_neck": true,
   "eye_point": "DriverEyePoint",
   "eye_position_in_head_space_meters": [
     0.0,
-    0.10953152179718018,
-    0.08626562356948853
+    0.10801414400339127,
+    0.09350191056728363
   ],
+  "uniform_source_geometry": {
+    "uniform_scale": 0.40267577434104096,
+    "neutral_height_meters": 1.75,
+    "source_origin": [
+      0.0,
+      -0.2199999988079071,
+      0.10000000149011612
+    ],
+    "maximum_position_error_meters": 0.0,
+    "source_triangle_count": 1445,
+    "preserved_triangle_count": 1445,
+    "individual_part_scaling": false,
+    "geometry_sculpting": false,
+    "skeleton_adapted_to_original_anatomy": true
+  },
+  "original_geometry_verification": {
+    "verified": true,
+    "vertex_count": 1171,
+    "triangle_count": 1445,
+    "maximum_error_meters": 0.0,
+    "neutral_geometry_sha256": "05e71d264c5ab0f022bb126c8cf31b9a455dc9a809398ec2403dbca8b93a6ac4"
+  },
+  "geometry_contract_version": 1,
+  "prepared_source_sha256": "d66d0fc12d834d214d22a0825329239acc57868b3c9e3f2ef42725611daef39a",
   "lower_leg_floor_fit": {
-    "adjusted_vertices": 8,
-    "maximum_displacement_meters": 0.0077005124092102,
-    "floor_separation_meters": 0.01
+    "adjusted_vertices": 0,
+    "maximum_displacement_meters": 0.0,
+    "method": "skeletal_pose_without_geometry_edits"
   },
   "seated_position_meters": [
     0.0,
-    -0.011,
+    0.089,
     -0.24
   ],
   "source_provenance": {
@@ -48,5 +72,60 @@
     "supplied_triangle_count": 1445,
     "supplied_armature_count": 0,
     "source_revision_before_implementation": "d850544d97eaf0baf95e479a1ed8433ed61b502b"
-  }
+  },
+  "appearance": "lewis_hamilton_inspired",
+  "appearance_profile": "D:\\Formula90s\\game\\assets\\models\\drivers\\skins\\lewis_hamilton_inspired\\appearance_profile.json",
+  "appearance_profile_sha256": "a14772bcd2643c8f5ff1dd8f883b5900c7ce59d5313be81dd162a4fa3693474a",
+  "appearance_textures": {
+    "LewisHamiltonInspiredHelmet.png": {
+      "path": "D:\\Formula90s\\game\\assets\\models\\drivers\\skins\\lewis_hamilton_inspired\\LewisHamiltonInspiredHelmet.png",
+      "sha256": "76a60ece58ef3f1ddd83e7f47d9377610b4706b36f715730a7749fc515dcd379",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "coordinate_scale": [
+        1.0,
+        0.75
+      ],
+      "coordinate_offset": [
+        0.0,
+        0.125
+      ]
+    },
+    "LewisHamiltonInspiredSuit.png": {
+      "path": "D:\\Formula90s\\game\\assets\\models\\drivers\\skins\\lewis_hamilton_inspired\\LewisHamiltonInspiredSuit.png",
+      "sha256": "70ea832c9cd437d7dba388c3a2f869bdd4af2fc479f45cd1fe227af59b4bb13d",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "coordinate_scale": [
+        1.0,
+        1.0
+      ],
+      "coordinate_offset": [
+        0.0,
+        0.0
+      ]
+    },
+    "LewisHamiltonInspiredGloves.png": {
+      "path": "D:\\Formula90s\\game\\assets\\models\\drivers\\skins\\lewis_hamilton_inspired\\LewisHamiltonInspiredGloves.png",
+      "sha256": "98497dd40d98ff8bee0d3f4ec3412e751b5524967cc94de6626d183a4a1d34b7",
+      "dimensions": [
+        1774,
+        887
+      ],
+      "coordinate_scale": [
+        1.0,
+        1.0
+      ],
+      "coordinate_offset": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "geometry_and_rig_preserved": true,
+  "geometry_and_rig_fingerprint": "7324a0dd013d6b5ad35e0e4fb5407e5d82402a5a4695f1db0d8cb09484ab49fb"
 }

@@ -1,0 +1,11 @@
+{
+  "appearance": "lewis_hamilton_inspired",
+  "textures": [
+    {"original_image": "stinger_helmet_red_2012", "path": "LewisHamiltonInspiredHelmet.png", "original_aspect_ratio": 4.0},
+    {"original_image": "alpinestars_red_gp_suit", "path": "LewisHamiltonInspiredSuit.png", "original_aspect_ratio": 1.0},
+    {"original_image": "alpinestars_star_red_blue_driver_gloves", "path": "LewisHamiltonInspiredGloves.png", "original_aspect_ratio": 2.0}
+  ],
+  "visor": {"metallic": 0.72, "roughness": 0.13, "lower_color": [0.12, 0.045, 0.012], "middle_color": [0.48, 0.25, 0.055], "upper_color": [0.3, 0.14, 0.24]},
+  "references": ["codex-clipboard-03bd8273-1721-48f6-a09f-0c72b0cb5223.png", "codex-clipboard-674d63af-ad7b-4d04-9467-933f65d11961.png"],
+  "generation_method": "Built-in image generation applied to the original UV atlases; editable visor material uses vertex colors"
+}

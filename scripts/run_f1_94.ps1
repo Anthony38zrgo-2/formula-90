@@ -91,6 +91,7 @@ function Get-Sha256Hex([string]$Path) {
     }
 }
 
+& (Join-Path $root 'tools/drivers/validate_driver_geometry_contract.ps1') -ProjectDirectory $root
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw "Manifest de vehiculo faltante: $manifestPath" }
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
 $runtimeDir = Split-Path -Parent $manifestPath

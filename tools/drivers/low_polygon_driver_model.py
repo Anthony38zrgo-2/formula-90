@@ -1,12 +1,13 @@
 import hashlib
 import json
 import math
+import shutil
+import tempfile
 from pathlib import Path
 
 import bpy
-import bmesh
 from mathutils import Matrix, Vector
-from mathutils.bvhtree import BVHTree
+from mathutils.kdtree import KDTree
 
 from common.output_policy import validate_output_path
 
@@ -34,8 +35,8 @@ SOURCE_PIECE_NAMES = {
 }
 SOURCE_LIMB_JOINTS = {
     "Arm": ((0.43, -0.16, 1.28), (0.78, -0.18, 0.53)),
-    "ForeArm": ((0.78, -0.18, 0.53), (0.92, -0.22, 0.28)),
-    "Hand": ((0.92, -0.22, 0.28), (1.09, -0.22, -0.17)),
+    "ForeArm": ((0.78, -0.18, 0.53), (0.98, -0.22, 0.10)),
+    "Hand": ((0.98, -0.22, 0.10), (1.09, -0.22, -0.20)),
     "UpLeg": ((0.22, -0.22, 0.02), (0.26, -0.22, -1.04)),
     "Leg": ((0.26, -0.22, -1.04), (0.27, -0.22, -1.96)),
     "Foot": ((0.27, -0.22, -1.96), (0.27, -0.49, -2.09)),
@@ -75,59 +76,47 @@ def make_segment_basis(direction):
     return Matrix((lateral_direction, longitudinal_direction, front_direction)).transposed()
 
 
-def map_limb_position(armature, source_position, side, limb_name):
-    side_sign = 1.0 if side == "Left" else -1.0
-    source_head, source_tail = (Vector(position) for position in SOURCE_LIMB_JOINTS[limb_name])
-    source_head.x *= side_sign
-    source_tail.x *= side_sign
-    source_basis = make_segment_basis(source_tail - source_head)
-    local_position = source_basis.transposed() @ (source_position - source_head)
-    target_bone = armature.data.bones["mixamorig:" + side + limb_name]
-    if limb_name == "Hand":
-        local_position.x *= 0.22
-        local_position.y *= 0.27
-        local_position.z *= 0.18
-        local_position.z += 0.008
-        if local_position.y > 0.065:
-            curl_angle = min(math.pi * 0.85, (local_position.y - 0.065) * math.pi * 0.85 / 0.085)
-            local_position.y = 0.065 + 0.030 * math.sin(curl_angle)
-            local_position.z += 0.030 * (1.0 - math.cos(curl_angle))
-        return target_bone.matrix_local @ local_position
-    if limb_name == "Foot":
-        target_direction = (target_bone.tail_local - target_bone.head_local).normalized()
-        target_basis = make_segment_basis(armature.matrix_world.to_3x3() @ target_direction)
-        local_position *= 0.25
-        target_world_position = armature.matrix_world @ target_bone.head_local + target_basis @ local_position
-        target_world_position.x -= side_sign * 0.040
-        return armature.matrix_world.inverted() @ target_world_position
-    local_position.x *= 0.23
-    local_position.z *= 0.23
-    local_position.y *= target_bone.length / (source_tail - source_head).length
-    target_direction = armature.matrix_world.to_3x3() @ (target_bone.tail_local - target_bone.head_local)
-    target_basis = make_segment_basis(target_direction)
-    target_world_position = armature.matrix_world @ target_bone.head_local + target_basis @ local_position
-    if limb_name in ("UpLeg", "Leg"):
-        target_world_position.x -= side_sign * 0.040
-    return armature.matrix_world.inverted() @ target_world_position
-
-
-def map_body_position(armature, source_position):
-    source_height = source_position.z
-    for joint_index in range(len(SOURCE_BODY_JOINTS) - 1):
-        lower_height, lower_name = SOURCE_BODY_JOINTS[joint_index]
-        upper_height, upper_name = SOURCE_BODY_JOINTS[joint_index + 1]
-        if source_height <= upper_height or joint_index == len(SOURCE_BODY_JOINTS) - 2:
-            position_progress = (source_height - lower_height) / (upper_height - lower_height)
-            progress = min(1.0, max(0.0, position_progress))
-            lower_bone = armature.data.bones["mixamorig:" + lower_name]
-            upper_bone = armature.data.bones["mixamorig:" + upper_name]
-            center = lower_bone.head_local.lerp(upper_bone.head_local, position_progress)
-            radial_position = armature.matrix_world.inverted().to_3x3() @ Vector((source_position.x * 0.28, (source_position.y + 0.22) * 0.18, 0.0))
-            upper_weight_name = "mixamorig:Spine2" if upper_name == "Neck" else upper_bone.name
-            weights = {lower_bone.name: 1.0 - progress}
-            weights[upper_weight_name] = weights.get(upper_weight_name, 0.0) + progress
-            return center + radial_position, weights
-    raise RuntimeError("Driver torso requires a supported source height")
+def adapt_skeleton_to_source_anatomy(armature, uniform_scale):
+    source_origin = Vector((0.0, -0.22, 0.10))
+    inverse_transform = armature.matrix_world.inverted()
+    def joint_position(position):
+        return inverse_transform @ ((Vector(position) - source_origin) * uniform_scale)
+    anatomical_segments = {
+        "Hips": ((0.0, -0.22, 0.10), (0.0, -0.22, 0.48)),
+        "Spine": ((0.0, -0.22, 0.48), (0.0, -0.22, 0.85)),
+        "Spine1": ((0.0, -0.22, 0.85), (0.0, -0.22, 1.22)),
+        "Spine2": ((0.0, -0.22, 1.22), (0.0, -0.22, 1.42)),
+        "Neck": ((0.0, -0.22, 1.42), (0.0, -0.27, 1.52)),
+        "Head": ((0.0, -0.27, 1.52), (0.0, -0.27, 2.10)),
+    }
+    for side in ("Left", "Right"):
+        side_sign = 1.0 if side == "Left" else -1.0
+        anatomical_segments[side + "Shoulder"] = ((0.0, -0.16, 1.28), (side_sign * 0.43, -0.16, 1.28))
+        for limb_name, segment in SOURCE_LIMB_JOINTS.items():
+            anatomical_segments[side + limb_name] = tuple((side_sign * position[0], position[1], position[2]) for position in segment)
+    previous_hand_transforms = {side: armature.data.bones["mixamorig:" + side + "Hand"].matrix_local.copy() for side in ("Left", "Right")}
+    previous_finger_positions = {bone.name: (bone.head_local.copy(), bone.tail_local.copy()) for bone in armature.data.bones if any(token in bone.name for token in ("Thumb", "Index", "Middle", "Ring", "Little", "Pinky"))}
+    bpy.context.view_layer.objects.active = armature
+    armature.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    for bone_name, segment in anatomical_segments.items():
+        bone = armature.data.edit_bones["mixamorig:" + bone_name]
+        bone.use_connect = False
+        bone.head = joint_position(segment[0])
+        bone.tail = joint_position(segment[1])
+        bone.align_roll(inverse_transform.to_3x3() @ Vector((0.0, -1.0, 0.0)))
+    for bone_name, positions in previous_finger_positions.items():
+        side = "Left" if "Left" in bone_name else "Right"
+        hand = armature.data.edit_bones["mixamorig:" + side + "Hand"]
+        previous_inverse = previous_hand_transforms[side].inverted()
+        bone = armature.data.edit_bones[bone_name]
+        bone.use_connect = False
+        bone.head = hand.matrix @ (previous_inverse @ positions[0])
+        bone.tail = hand.matrix @ (previous_inverse @ positions[1])
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for bone in armature.pose.bones:
+        bone.matrix_basis.identity()
+    return source_origin
 
 
 def smooth_joint_progress(value, lower_limit, upper_limit):
@@ -135,45 +124,27 @@ def smooth_joint_progress(value, lower_limit, upper_limit):
     return progress * progress * (3.0 - 2.0 * progress)
 
 
-def map_character_position(armature, source_position, limb_configuration):
+def source_anatomical_weights(source_position, limb_configuration):
     side = "Left" if source_position.x >= 0.0 else "Right"
-    if limb_configuration and limb_configuration[1] in ("Hand", "Foot"):
+    if limb_configuration:
         side, limb_name = limb_configuration
-        return map_limb_position(armature, source_position, side, limb_name), {"mixamorig:" + side + limb_name: 1.0}
-    if limb_configuration and limb_configuration[1] in ("Arm", "ForeArm"):
-        side = limb_configuration[0]
-        elbow_progress = smooth_joint_progress(0.53 - source_position.z, -0.16, 0.16)
-        upper_position = map_limb_position(armature, source_position, side, "Arm")
-        lower_position = map_limb_position(armature, source_position, side, "ForeArm")
-        position = upper_position.lerp(lower_position, elbow_progress)
-        weights = {"mixamorig:" + side + "Arm": 1.0 - elbow_progress, "mixamorig:" + side + "ForeArm": elbow_progress}
-        shoulder_progress = smooth_joint_progress(abs(source_position.x), 0.28, 0.52)
-        if source_position.z > 0.90 and shoulder_progress < 1.0:
-            body_position, body_weights = map_body_position(armature, source_position)
-            position = body_position.lerp(position, shoulder_progress)
-            weights = {bone_name: weight * shoulder_progress for bone_name, weight in weights.items()}
-            for bone_name, weight in body_weights.items():
-                weights[bone_name] = weights.get(bone_name, 0.0) + weight * (1.0 - shoulder_progress)
-        return position, weights
-    body_position, body_weights = map_body_position(armature, source_position)
-    if source_position.z < 0.20:
-        knee_progress = smooth_joint_progress(-1.04 - source_position.z, -0.20, 0.20)
-        thigh_position = map_limb_position(armature, source_position, side, "UpLeg")
-        shin_position = map_limb_position(armature, source_position, side, "Leg")
-        leg_position = thigh_position.lerp(shin_position, knee_progress)
-        leg_weights = {"mixamorig:" + side + "UpLeg": 1.0 - knee_progress, "mixamorig:" + side + "Leg": knee_progress}
-        hip_progress = smooth_joint_progress(source_position.z, -0.25, 0.20)
-        weights = {bone_name: weight * (1.0 - hip_progress) for bone_name, weight in leg_weights.items()}
-        for bone_name, weight in body_weights.items():
-            weights[bone_name] = weights.get(bone_name, 0.0) + weight * hip_progress
-        return leg_position.lerp(body_position, hip_progress), weights
-    if source_position.z > 0.90 and abs(source_position.x) > 0.28:
-        shoulder_progress = smooth_joint_progress(abs(source_position.x), 0.28, 0.52)
-        arm_position = map_limb_position(armature, source_position, side, "Arm")
-        weights = {bone_name: weight * (1.0 - shoulder_progress) for bone_name, weight in body_weights.items()}
-        weights["mixamorig:" + side + "Arm"] = shoulder_progress
-        return body_position.lerp(arm_position, shoulder_progress), weights
-    return body_position, body_weights
+        if limb_name in ("Hand", "Foot"):
+            return {"mixamorig:" + side + limb_name: 1.0}
+        if limb_name in ("Arm", "ForeArm"):
+            progress = smooth_joint_progress(0.53 - source_position.z, -0.10, 0.10)
+            return {"mixamorig:" + side + "Arm": 1.0 - progress, "mixamorig:" + side + "ForeArm": progress}
+        progress = smooth_joint_progress(-1.04 - source_position.z, -0.13, 0.13)
+        return {"mixamorig:" + side + "UpLeg": 1.0 - progress, "mixamorig:" + side + "Leg": progress}
+    for joint_index in range(len(SOURCE_BODY_JOINTS) - 1):
+        lower_height, lower_name = SOURCE_BODY_JOINTS[joint_index]
+        upper_height, upper_name = SOURCE_BODY_JOINTS[joint_index + 1]
+        if source_position.z <= upper_height:
+            progress = smooth_joint_progress(source_position.z, lower_height, upper_height)
+            upper_name = "Spine2" if upper_name == "Neck" else upper_name
+            if lower_name == upper_name:
+                return {"mixamorig:" + lower_name: 1.0}
+            return {"mixamorig:" + lower_name: 1.0 - progress, "mixamorig:" + upper_name: progress}
+    return {"mixamorig:Spine2": 1.0}
 
 
 def prepare_materials(source_directory):
@@ -199,6 +170,44 @@ def prepare_materials(source_directory):
             surface.inputs["Metallic"].default_value = 0.15
 
 
+def verify_original_uniform_geometry(source_path, uniform_scale, source_origin):
+    bpy.context.view_layer.update()
+    prepared_positions = [character.matrix_world @ vertex.co for character in bpy.data.objects if character.type == "MESH" for vertex in character.data.vertices]
+    prepared_triangle_count = 0
+    for character in bpy.data.objects:
+        if character.type == "MESH":
+            character.data.calc_loop_triangles()
+            prepared_triangle_count += len(character.data.loop_triangles)
+    with tempfile.TemporaryDirectory(prefix="driver_original_geometry_") as reference_directory:
+        reference_path = Path(reference_directory) / "original_driver.blend"
+        shutil.copyfile(source_path, reference_path)
+        with bpy.data.libraries.load(str(reference_path), link=False) as (available_data, loaded_data):
+            loaded_data.objects = available_data.objects
+    original_objects = [character for character in loaded_data.objects if character]
+    for character in original_objects:
+        bpy.context.collection.objects.link(character)
+    bpy.context.view_layer.update()
+    original_positions = [(character.matrix_world @ vertex.co - source_origin) * uniform_scale for character in original_objects if character.type == "MESH" for vertex in character.data.vertices]
+    original_triangle_count = 0
+    for character in original_objects:
+        if character.type == "MESH":
+            character.data.calc_loop_triangles()
+            original_triangle_count += len(character.data.loop_triangles)
+    maximum_error = 0.0
+    for reference_positions, measured_positions in ((original_positions, prepared_positions), (prepared_positions, original_positions)):
+        reference_tree = KDTree(len(reference_positions))
+        for position_index, position in enumerate(reference_positions):
+            reference_tree.insert(position, position_index)
+        reference_tree.balance()
+        maximum_error = max(maximum_error, max(reference_tree.find(position)[2] for position in measured_positions))
+    for character in original_objects:
+        bpy.data.objects.remove(character, do_unlink=True)
+    if len(prepared_positions) != len(original_positions) or prepared_triangle_count != original_triangle_count or maximum_error > 0.000001:
+        raise RuntimeError("Prepared driver no longer preserves the uniformly scaled original geometry: " + str((len(prepared_positions), len(original_positions), prepared_triangle_count, original_triangle_count, maximum_error)))
+    geometry_digest = hashlib.sha256(json.dumps(sorted(tuple(round(coordinate, 6) for coordinate in position) for position in prepared_positions)).encode()).hexdigest()
+    return {"verified": True, "vertex_count": len(prepared_positions), "triangle_count": prepared_triangle_count, "maximum_error_meters": maximum_error, "neutral_geometry_sha256": geometry_digest}
+
+
 def join_character_parts(parts, name, armature):
     bpy.ops.object.select_all(action="DESELECT")
     for character_object in parts:
@@ -213,47 +222,6 @@ def join_character_parts(parts, name, armature):
     modifier = character_object.modifiers.new("DriverSkeletalDeformation", "ARMATURE")
     modifier.object = armature
     return character_object
-
-
-def fit_lower_legs_to_cockpit_floor(armature, body, chassis_path, seated_position):
-    editable_mesh = bmesh.new()
-    editable_mesh.from_mesh(body.data)
-    deformation_weights = editable_mesh.verts.layers.deform.active
-    lower_leg_groups = {group.index for group in body.vertex_groups if group.name in ("mixamorig:LeftLeg", "mixamorig:RightLeg")}
-    lower_leg_edges = [edge for edge in editable_mesh.edges if edge.calc_length() > 0.14 and all(sum(weight for group_index, weight in vertex[deformation_weights].items() if group_index in lower_leg_groups) > 0.4 for vertex in edge.verts)]
-    bmesh.ops.subdivide_edges(editable_mesh, edges=lower_leg_edges, cuts=7, use_grid_fill=True)
-    editable_mesh.to_mesh(body.data)
-    editable_mesh.free()
-    body.data.update()
-    existing_objects = set(bpy.data.objects)
-    bpy.ops.import_scene.gltf(filepath=str(chassis_path))
-    interior = bpy.data.objects["GEO_CHASSIS_INTERIOR"]
-    floor_surface = BVHTree.FromPolygons([interior.matrix_world @ vertex.co for vertex in interior.data.vertices], [list(polygon.vertices) for polygon in interior.data.polygons])
-    for imported_object in set(bpy.data.objects) - existing_objects:
-        bpy.data.objects.remove(imported_object, do_unlink=True)
-    bpy.context.view_layer.update()
-    adjusted_vertices = 0
-    maximum_displacement = 0.0
-    for vertex in body.data.vertices:
-        if not any(body.vertex_groups[group.group].name in ("mixamorig:LeftLeg", "mixamorig:RightLeg") and group.weight > 0.5 for group in vertex.groups):
-            continue
-        skin_transform = Matrix(((0.0,) * 4,) * 4)
-        for group in vertex.groups:
-            bone_name = body.vertex_groups[group.group].name
-            skin_transform += (armature.pose.bones[bone_name].matrix @ armature.data.bones[bone_name].matrix_local.inverted()) * group.weight
-        posed_position = armature.matrix_world @ skin_transform @ vertex.co
-        chassis_position = Vector((seated_position[0] - posed_position.x, -seated_position[2] - posed_position.y, posed_position.z + seated_position[1]))
-        floor_hit = floor_surface.ray_cast(Vector((chassis_position.x, chassis_position.y, 0.15)), Vector((0.0, 0.0, -1.0)), 0.5)[0]
-        if floor_hit is None:
-            continue
-        displacement = max(0.0, floor_hit.z + 0.010 - chassis_position.z)
-        if displacement > 0.0:
-            posed_position.z += displacement
-            vertex.co = skin_transform.inverted() @ armature.matrix_world.inverted() @ posed_position
-            adjusted_vertices += 1
-            maximum_displacement = max(maximum_displacement, displacement)
-    body.data.update()
-    return {"adjusted_vertices": adjusted_vertices, "maximum_displacement_meters": maximum_displacement, "floor_separation_meters": 0.010}
 
 
 def generate_low_polygon_driver(project_directory, destination, output_mode, source_directory, torso_recline_degrees):
@@ -279,6 +247,12 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
     armature = loaded_data.objects[0]
     bpy.context.collection.objects.link(armature)
     bpy.context.view_layer.update()
+    original_positions = [character.matrix_world @ vertex.co for character in bpy.data.objects if character.type == "MESH" for vertex in character.data.vertices]
+    original_height = max(position.z for position in original_positions) - min(position.z for position in original_positions)
+    uniform_scale = 1.75 / original_height
+    source_origin = adapt_skeleton_to_source_anatomy(armature, uniform_scale)
+    source_triangle_count = 0
+    maximum_uniform_scale_error = 0.0
     body_parts = []
     head_parts = []
     glove_parts = []
@@ -293,19 +267,20 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
         character_object.matrix_world = Matrix.Identity(4)
         is_head = piece_name == "DRIVER:head" or "HELMET" in piece_name
         limb_configuration = SOURCE_PIECE_NAMES.get(piece_name)
+        character_object.data.calc_loop_triangles()
+        source_triangle_count += len(character_object.data.loop_triangles)
         for vertex, source_position in zip(character_object.data.vertices, positions):
+            expected_position = (source_position - source_origin) * uniform_scale
+            vertex.co = armature.matrix_world.inverted() @ expected_position
+            maximum_uniform_scale_error = max(maximum_uniform_scale_error, (armature.matrix_world @ vertex.co - expected_position).length)
             if is_head:
-                target_head = armature.data.bones["mixamorig:Head"].head_local
-                displacement = Vector((source_position.x * 0.38, (source_position.y + 0.27) * 0.38, (source_position.z - 1.50) * 0.38))
-                vertex.co = target_head + armature.matrix_world.inverted().to_3x3() @ displacement
                 weights = {"mixamorig:Head": 1.0}
                 if piece_name == "DRIVER:HELMET_GLASS_SUB1":
                     visor_positions.append(vertex.co.copy())
             elif piece_name == "DRIVER:COLLARE_HANS1":
-                vertex.co, weights = map_body_position(armature, source_position)
-                vertex.co += armature.matrix_world.inverted().to_3x3() @ Vector((0.0, -0.075, 0.0))
+                weights = {"mixamorig:Spine2": 1.0}
             else:
-                vertex.co, weights = map_character_position(armature, source_position, limb_configuration)
+                weights = source_anatomical_weights(source_position, limb_configuration)
             for bone_name, weight in weights.items():
                 if weight > 0.00001:
                     vertex_group = character_object.vertex_groups.get(bone_name) or character_object.vertex_groups.new(name=bone_name)
@@ -324,6 +299,14 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
     body = join_character_parts(body_parts, "DriverBody", armature)
     head = join_character_parts(head_parts, "DriverHeadAndNeck", armature)
     gloves = join_character_parts(glove_parts, "DriverArticulatedGloves", armature)
+    original_geometry_verification = verify_original_uniform_geometry(source_path, uniform_scale, source_origin)
+    geometry_contract = bpy.data.objects.new("DriverOriginalUniformGeometryContract", None)
+    bpy.context.collection.objects.link(geometry_contract)
+    geometry_contract.parent = armature
+    geometry_contract["contract_version"] = 1
+    geometry_contract["source_sha256"] = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    geometry_contract["neutral_geometry_sha256"] = original_geometry_verification["neutral_geometry_sha256"]
+    geometry_contract["uniform_scale"] = uniform_scale
     hips = armature.pose.bones["mixamorig:Hips"]
     hips.rotation_mode = "XYZ"
     hips.rotation_euler.x = math.radians(-torso_recline_degrees)
@@ -337,7 +320,7 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
         move_bone_towards(armature, "mixamorig:" + side + "Foot", Vector((0.0, 0.08, 0.10)))
     armature.location -= armature.matrix_world @ hips.head
     bpy.context.view_layer.update()
-    lower_leg_floor_fit = fit_lower_legs_to_cockpit_floor(armature, body, chassis_path, seated_position)
+    lower_leg_floor_fit = {"adjusted_vertices": 0, "maximum_displacement_meters": 0.0, "method": "skeletal_pose_without_geometry_edits"}
     head_bone = armature.pose.bones["mixamorig:Head"]
     head_inverse = armature.data.bones[head_bone.name].matrix_local.inverted()
     local_visor_positions = [head_inverse @ position for position in visor_positions]
@@ -360,7 +343,7 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(prepared_source_path))
     model_path = validate_output_path(project_directory, destination / "driver.glb", output_mode).path
-    bpy.ops.export_scene.gltf(filepath=str(model_path), export_format="GLB", use_selection=True, export_animations=False, export_skins=True, export_yup=True, export_current_frame=True, export_rest_position_armature=False)
+    bpy.ops.export_scene.gltf(filepath=str(model_path), export_format="GLB", use_selection=True, export_animations=False, export_skins=True, export_yup=True, export_current_frame=True, export_rest_position_armature=False, export_extras=True)
     triangle_count = 0
     for character_object in (body, head, gloves):
         character_object.data.calc_loop_triangles()
@@ -386,6 +369,22 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
         "eye_point": "DriverEyePoint",
         "eye_position_in_head_space_meters": list(eye_position),
     }
+    if triangle_count != source_triangle_count or maximum_uniform_scale_error > 0.000001:
+        raise RuntimeError("Uniform original geometry fidelity verification failed")
+    manifest["uniform_source_geometry"] = {
+        "uniform_scale": uniform_scale,
+        "neutral_height_meters": 1.75,
+        "source_origin": list(source_origin),
+        "maximum_position_error_meters": maximum_uniform_scale_error,
+        "source_triangle_count": source_triangle_count,
+        "preserved_triangle_count": triangle_count,
+        "individual_part_scaling": False,
+        "geometry_sculpting": False,
+        "skeleton_adapted_to_original_anatomy": True,
+    }
+    manifest["original_geometry_verification"] = original_geometry_verification
+    manifest["geometry_contract_version"] = 1
+    manifest["prepared_source_sha256"] = hashlib.sha256(prepared_source_path.read_bytes()).hexdigest()
     manifest["lower_leg_floor_fit"] = lower_leg_floor_fit
     manifest["seated_position_meters"] = seated_position
     provenance_path = source_directory / "source_provenance.json"

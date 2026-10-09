@@ -20,6 +20,9 @@ const REGRIP_RIM_CLEARANCE_METERS := 0.025
 @export var chassis_visual: Node3D
 @export var steering_wheel_controller: Node
 @export var seated_position := Vector3(0.0, -0.011, -0.34)
+@export_range(-20.0, 20.0, 0.5) var additional_torso_recline_degrees := 0.0
+@export var pelvis_position_offset_meters := Vector3.ZERO
+@export_range(-15.0, 15.0, 0.5) var additional_pelvis_recline_degrees := 0.0
 @export_file("*.json") var cockpit_configuration_path: String
 
 var driver_instance: Node3D
@@ -53,6 +56,11 @@ func _ready() -> void:
 	chassis_visual.add_child(driver_instance)
 	driver_instance.position = seated_position
 	driver_instance.rotation.y = PI
+	if not validate_driver_geometry_contract():
+		driver_instance.queue_free()
+		driver_instance = null
+		set_process(false)
+		return
 	for descendant in driver_instance.find_children("*", "Skeleton3D", true, false):
 		driver_skeleton = descendant as Skeleton3D
 		break
@@ -60,6 +68,8 @@ func _ready() -> void:
 		push_error("Driver model requires a skeleton.")
 		set_process(false)
 		return
+	apply_pelvis_and_leg_posture()
+	apply_additional_torso_recline()
 	arm_modifier = DRIVER_ARM_INVERSE_KINEMATICS_SCRIPT.new()
 	arm_modifier.name = "DriverArmInverseKinematics"
 	driver_skeleton.add_child(arm_modifier)
@@ -115,6 +125,93 @@ func _ready() -> void:
 
 func _process(elapsed_seconds: float) -> void:
 	update_driver_hand_targets(elapsed_seconds)
+
+func validate_driver_geometry_contract() -> bool:
+	var geometry_contract := driver_instance.find_child("DriverOriginalUniformGeometryContract", true, false)
+	var contract_properties: Dictionary = geometry_contract.get_meta("extras", {}) if geometry_contract != null else {}
+	if geometry_contract == null or int(contract_properties.get("contract_version", 0)) != 1 or str(contract_properties.get("source_sha256", "")) != "28eded787a300e10bae2f955431f49b9a7a62be9dcc81dbee4e1f011dcaab12b" or float(contract_properties.get("uniform_scale", 0.0)) <= 0.0 or str(contract_properties.get("neutral_geometry_sha256", "")).length() != 64:
+		push_error("Driver rejected: only verified uniformly scaled original geometry is supported. Regenerate the canonical driver asset.")
+		return false
+	return true
+
+func find_driver_bone(bone_name: String) -> int:
+	var bone_index := driver_skeleton.find_bone("mixamorig_" + bone_name)
+	if bone_index < 0:
+		bone_index = driver_skeleton.find_bone("mixamorig:" + bone_name)
+	return bone_index
+
+func apply_pelvis_and_leg_posture() -> void:
+	if pelvis_position_offset_meters.is_zero_approx() and is_zero_approx(additional_pelvis_recline_degrees):
+		return
+	var pelvis_index := find_driver_bone("Hips")
+	var neck_index := find_driver_bone("Neck")
+	if pelvis_index < 0 or neck_index < 0:
+		push_error("Driver pelvis posture requires hips and neck bones.")
+		return
+	var original_neck_basis := driver_skeleton.get_bone_global_pose(neck_index).basis
+	var original_foot_poses: Dictionary = {}
+	for side in ["Left", "Right"]:
+		var foot_index := find_driver_bone(side + "Foot")
+		if foot_index < 0 or find_driver_bone(side + "UpLeg") < 0 or find_driver_bone(side + "Leg") < 0:
+			push_error("Driver pelvis posture requires both complete leg chains.")
+			return
+		original_foot_poses[side] = driver_skeleton.get_bone_global_pose(foot_index)
+	var skeleton_lateral_direction := (driver_skeleton.global_basis.inverse() * chassis_visual.global_basis.x).normalized()
+	var pelvis_pose := driver_skeleton.get_bone_global_pose(pelvis_index)
+	pelvis_pose.origin += driver_skeleton.global_basis.inverse() * chassis_visual.global_basis * pelvis_position_offset_meters
+	pelvis_pose.basis = Basis(skeleton_lateral_direction, deg_to_rad(additional_pelvis_recline_degrees)) * pelvis_pose.basis
+	driver_skeleton.set_bone_global_pose(pelvis_index, pelvis_pose)
+	for side in ["Left", "Right"]:
+		var thigh_index := find_driver_bone(side + "UpLeg")
+		var lower_leg_index := find_driver_bone(side + "Leg")
+		var foot_index := find_driver_bone(side + "Foot")
+		var thigh_pose := driver_skeleton.get_bone_global_pose(thigh_index)
+		var lower_leg_pose := driver_skeleton.get_bone_global_pose(lower_leg_index)
+		var current_foot_pose := driver_skeleton.get_bone_global_pose(foot_index)
+		var original_foot_pose: Transform3D = original_foot_poses[side]
+		var thigh_length := thigh_pose.origin.distance_to(lower_leg_pose.origin)
+		var lower_leg_length := lower_leg_pose.origin.distance_to(current_foot_pose.origin)
+		var hip_to_ankle := original_foot_pose.origin - thigh_pose.origin
+		var target_distance := clampf(hip_to_ankle.length(), absf(thigh_length - lower_leg_length) + 0.0001, thigh_length + lower_leg_length - 0.0001)
+		var leg_direction := hip_to_ankle.normalized()
+		var knee_projection := (thigh_length * thigh_length - lower_leg_length * lower_leg_length + target_distance * target_distance) / (2.0 * target_distance)
+		var knee_height := sqrt(maxf(0.0, thigh_length * thigh_length - knee_projection * knee_projection))
+		var knee_direction := lower_leg_pose.origin - thigh_pose.origin
+		knee_direction = (knee_direction - leg_direction * knee_direction.dot(leg_direction)).normalized()
+		var desired_knee := thigh_pose.origin + leg_direction * knee_projection + knee_direction * knee_height
+		thigh_pose.basis = Basis(Quaternion((lower_leg_pose.origin - thigh_pose.origin).normalized(), (desired_knee - thigh_pose.origin).normalized())) * thigh_pose.basis
+		driver_skeleton.set_bone_global_pose(thigh_index, thigh_pose)
+		lower_leg_pose = driver_skeleton.get_bone_global_pose(lower_leg_index)
+		current_foot_pose = driver_skeleton.get_bone_global_pose(foot_index)
+		lower_leg_pose.basis = Basis(Quaternion((current_foot_pose.origin - lower_leg_pose.origin).normalized(), (original_foot_pose.origin - lower_leg_pose.origin).normalized())) * lower_leg_pose.basis
+		driver_skeleton.set_bone_global_pose(lower_leg_index, lower_leg_pose)
+		current_foot_pose = driver_skeleton.get_bone_global_pose(foot_index)
+		current_foot_pose.basis = original_foot_pose.basis
+		driver_skeleton.set_bone_global_pose(foot_index, current_foot_pose)
+	var neck_pose := driver_skeleton.get_bone_global_pose(neck_index)
+	neck_pose.basis = original_neck_basis
+	driver_skeleton.set_bone_global_pose(neck_index, neck_pose)
+
+func apply_additional_torso_recline() -> void:
+	if is_zero_approx(additional_torso_recline_degrees):
+		return
+	var spine_bone_index := driver_skeleton.find_bone("mixamorig_Spine")
+	var neck_bone_index := driver_skeleton.find_bone("mixamorig_Neck")
+	if spine_bone_index < 0:
+		spine_bone_index = driver_skeleton.find_bone("mixamorig:Spine")
+	if neck_bone_index < 0:
+		neck_bone_index = driver_skeleton.find_bone("mixamorig:Neck")
+	if spine_bone_index < 0 or neck_bone_index < 0:
+		push_error("Driver torso recline requires spine and neck bones.")
+		return
+	var skeleton_lateral_direction := (driver_skeleton.global_basis.inverse() * chassis_visual.global_basis.x).normalized()
+	var torso_rotation := Basis(skeleton_lateral_direction, deg_to_rad(additional_torso_recline_degrees))
+	var spine_pose := driver_skeleton.get_bone_global_pose(spine_bone_index)
+	spine_pose.basis = torso_rotation * spine_pose.basis
+	driver_skeleton.set_bone_global_pose(spine_bone_index, spine_pose)
+	var neck_pose := driver_skeleton.get_bone_global_pose(neck_bone_index)
+	neck_pose.basis = torso_rotation.inverse() * neck_pose.basis
+	driver_skeleton.set_bone_global_pose(neck_bone_index, neck_pose)
 
 func configure_head_motion() -> void:
 	if cockpit_configuration_path.is_empty():

@@ -53,6 +53,26 @@ func _process_modification_with_delta(elapsed_seconds: float) -> void:
 		hand_target.global_basis = chassis.global_basis * Basis(hand_rotation)
 		hand_target.global_position = palm_world_position - hand_target.global_basis * palm_offset
 		_solve_arm_to_hand_target(skeleton, arm_configuration)
+		for adjustment_index in range(12):
+			var constrained_hand_pose := skeleton.get_bone_global_pose(hand_bone_index)
+			var constrained_elbow_pose := skeleton.get_bone_global_pose(elbow_bone_index)
+			var forearm_direction := (skeleton.global_basis * (constrained_hand_pose.origin - constrained_elbow_pose.origin)).normalized()
+			var hand_direction := hand_target.global_basis.y.normalized()
+			var wrist_bend := forearm_direction.angle_to(hand_direction)
+			if wrist_bend <= deg_to_rad(MAXIMUM_TARGET_WRIST_BEND_DEGREES) + 0.0001:
+				break
+			var constrained_direction := forearm_direction.slerp(hand_direction, deg_to_rad(MAXIMUM_TARGET_WRIST_BEND_DEGREES) / wrist_bend).normalized()
+			hand_target.global_basis = Basis(Quaternion(hand_direction, constrained_direction)) * hand_target.global_basis
+			hand_target.global_position = palm_world_position - hand_target.global_basis * palm_offset
+			_solve_arm_to_hand_target(skeleton, arm_configuration)
+		var final_hand_direction := hand_target.global_basis.y.normalized()
+		var desired_palm_normal := desired_hand_basis.z.normalized()
+		var final_palm_normal := (desired_palm_normal - final_hand_direction * desired_palm_normal.dot(final_hand_direction)).normalized()
+		if final_palm_normal.length_squared() > 0.5:
+			hand_target.global_basis = Basis(final_hand_direction.cross(final_palm_normal).normalized(), final_hand_direction, final_palm_normal)
+			hand_target.global_position = palm_world_position - hand_target.global_basis * palm_offset
+			_solve_arm_to_hand_target(skeleton, arm_configuration)
+		hand_rotations[hand_bone_index] = (chassis.global_basis.inverse() * hand_target.global_basis).get_rotation_quaternion()
 		var hand_pose := skeleton.get_bone_global_pose(hand_bone_index)
 		hand_pose.basis = skeleton.global_basis.inverse() * hand_target.global_basis
 		skeleton.set_bone_global_pose(hand_bone_index, hand_pose)
