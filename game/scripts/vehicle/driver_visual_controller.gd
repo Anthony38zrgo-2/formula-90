@@ -5,16 +5,19 @@ const DRIVER_HEAD_MOTION_SCRIPT := preload("res://scripts/vehicle/driver_head_mo
 const COCKPIT_CONFIGURATION_SCRIPT := preload("res://scripts/camera/cockpit_camera_configuration.gd")
 const GRIP_TRANSFER_START_DEGREES := 60.0
 const GRIP_TRANSFER_END_DEGREES := 180.0
-const FIRST_HAND_TRANSFER_END := 0.30
+const FIRST_HAND_TRANSFER_END := 0.18
 const SECOND_HAND_TRANSFER_END := 0.70
-const FINAL_HAND_TRANSFER_END := 0.86
+const FINAL_HAND_TRANSFER_END := 0.90
 const MAXIMUM_GRIP_TRANSFER_SPEED := 6.0
 const GRIP_TRANSFER_RESPONSE_RATE := 60.0
 const GRIP_TRANSFER_INTEGRATION_STEP_SECONDS := 1.0 / 240.0
-const STEERING_GRIP_HALF_WIDTH_METERS := 0.132
-const STEERING_GRIP_HALF_HEIGHT_METERS := 0.084
-const STEERING_GRIP_DEPTH_METERS := -0.018
-const REGRIP_RIM_CLEARANCE_METERS := 0.025
+const STEERING_GRIP_HALF_WIDTH_METERS := 0.118
+const STEERING_GRIP_HALF_HEIGHT_METERS := 0.075
+const STEERING_GRIP_DEPTH_METERS := -0.012
+const NEUTRAL_GRIP_VERTICAL_OFFSET_METERS := -0.020
+const REGRIP_RIM_CLEARANCE_METERS := 0.020
+const GRIP_TRANSFER_DEPTH_CLEARANCE_METERS := 0.035
+const ELBOW_TARGET_LATERAL_DISTANCE_METERS := 0.180
 
 @export var driver_model: PackedScene
 @export var chassis_visual: Node3D
@@ -31,6 +34,8 @@ var arm_modifier: SkeletonModifier3D
 var hand_targets: Array[Node3D] = []
 var elbow_targets: Array[Node3D] = []
 var neutral_hand_bases: Array[Basis] = []
+var steering_surface_vertices: PackedVector3Array
+var steering_surface := TriangleMesh.new()
 var steering_pivot: Node3D
 var grip_transfer_progress: float = 0.0
 var grip_transfer_direction: float = 1.0
@@ -51,6 +56,7 @@ func _ready() -> void:
 		push_error("Driver cannot attach hands without the steering wheel pivot.")
 		set_process(false)
 		return
+	initialize_steering_surface()
 	driver_instance = driver_model.instantiate() as Node3D
 	driver_instance.name = "Driver"
 	chassis_visual.add_child(driver_instance)
@@ -73,6 +79,12 @@ func _ready() -> void:
 	arm_modifier = DRIVER_ARM_INVERSE_KINEMATICS_SCRIPT.new()
 	arm_modifier.name = "DriverArmInverseKinematics"
 	driver_skeleton.add_child(arm_modifier)
+	var glove_contract := driver_instance.find_child("DriverOriginalGloveGripContract", true, false)
+	var glove_properties: Dictionary = glove_contract.get_meta("extras", {}) if glove_contract != null else {}
+	if int(glove_properties.get("contract_version", 0)) != 1:
+		push_error("Driver requires the original glove palm and minimal finger rig contract.")
+		set_process(false)
+		return
 	var arm_configurations: Array[Dictionary] = []
 	for side in ["Left", "Right"]:
 		var side_sign := -1.0 if side == "Left" else 1.0
@@ -83,7 +95,7 @@ func _ready() -> void:
 		var elbow_target := Node3D.new()
 		elbow_target.name = side + "DriverElbowTarget"
 		chassis_visual.add_child(elbow_target)
-		elbow_target.position = seated_position + Vector3(side_sign * 0.20, 0.091, 0.26)
+		elbow_target.position = seated_position + Vector3(side_sign * ELBOW_TARGET_LATERAL_DISTANCE_METERS, 0.091, 0.26)
 		elbow_targets.append(elbow_target)
 		var hand_bone_index := driver_skeleton.find_bone("mixamorig_" + side + "Hand")
 		if hand_bone_index < 0:
@@ -94,7 +106,11 @@ func _ready() -> void:
 			return
 		var hand_bone_name := driver_skeleton.get_bone_name(hand_bone_index)
 		var prefix := hand_bone_name.trim_suffix(side + "Hand")
-		var hand_basis := Basis(Vector3.DOWN, Vector3.FORWARD, Vector3.RIGHT) if side == "Left" else Basis(Vector3.UP, Vector3.FORWARD, Vector3.LEFT)
+		var palm_coordinates: Array = glove_properties[side.to_lower() + "_palm_position"]
+		var palm_normal_coordinates: Array = glove_properties[side.to_lower() + "_palm_normal"]
+		var palm_offset := Vector3(palm_coordinates[0], palm_coordinates[1], palm_coordinates[2])
+		var palm_normal := Vector3(palm_normal_coordinates[0], palm_normal_coordinates[1], palm_normal_coordinates[2]).normalized()
+		var hand_basis := create_neutral_hand_basis(side, palm_normal)
 		neutral_hand_bases.append(hand_basis)
 		var finger_chains: Array[Dictionary] = []
 		for finger_name in ["Index", "Middle", "Ring", "Little", "Thumb"]:
@@ -114,7 +130,10 @@ func _ready() -> void:
 			"end_bone_name": hand_bone_name,
 			"hand_target": hand_target,
 			"pole_target": elbow_target,
-			"palm_offset": Vector3(0.0, 0.066, 0.013),
+			"palm_offset": palm_offset,
+			"palm_surface_normal": palm_normal,
+			"original_closed_glove": true,
+			"thumb_opening_sign": -1.0 if side == "Left" else 1.0,
 			"finger_chains": finger_chains,
 			"finger_closure": 1.0,
 		})
@@ -281,28 +300,26 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 				var upper_transfer_angle := PI * 0.5 * smoothstep(0.0, 1.0, first_transfer_progress)
 				grip_orientation_angle = -grip_transfer_direction * upper_transfer_angle
 				grip_position = steering_rim_grip_position(initial_side_sign * cos(upper_transfer_angle), sin(upper_transfer_angle))
-				grip_position.z += sin(first_transfer_progress * PI) * 0.025
 			else:
 				finger_opening = sin(final_transfer_progress * PI)
 				var upper_transfer_angle := PI * 0.5 * smoothstep(0.0, 1.0, final_transfer_progress)
 				grip_orientation_angle = -grip_transfer_direction * (PI * 0.5 + upper_transfer_angle)
 				grip_position = steering_rim_grip_position(-initial_side_sign * sin(upper_transfer_angle), cos(upper_transfer_angle))
-				grip_position.z += sin(final_transfer_progress * PI) * 0.025
 		else:
 			finger_opening = sin(hand_progress * PI)
-			grip_position.z += sin(hand_progress * PI) * 0.030
+		grip_position.z += GRIP_TRANSFER_DEPTH_CLEARANCE_METERS * smoothstep(0.0, 0.3, finger_opening)
 		var rim_outward_direction := Vector3(grip_position.x, grip_position.y, 0.0).normalized()
 		grip_position += rim_outward_direction * REGRIP_RIM_CLEARANCE_METERS * finger_opening
 		var wrist_angle := steering_angle + grip_orientation_angle
 		hand_targets[hand_index].global_basis = chassis_visual.global_basis * Basis(Vector3.BACK, wrist_angle) * neutral_hand_bases[hand_index]
 		var arm_configurations: Array = arm_modifier.get("arm_configurations")
 		arm_configurations[hand_index]["finger_closure"] = 1.0 - finger_opening
-		var palm_offset := Vector3(0.0, 0.066, 0.013)
+		var palm_offset: Vector3 = arm_configurations[hand_index]["palm_offset"]
 		hand_targets[hand_index].global_position = steering_pivot.global_transform * grip_position - hand_targets[hand_index].global_basis * palm_offset
 		var palm_chassis_position := steering_pivot.transform * grip_position
 		var side_sign := -1.0 if hand_index == 0 else 1.0
 		var elbow_height := clampf((palm_chassis_position.y - steering_pivot.position.y) * 0.4, -0.04, 0.04)
-		var desired_elbow_position := seated_position + Vector3(side_sign * 0.20, 0.091 + elbow_height, 0.26)
+		var desired_elbow_position := seated_position + Vector3(side_sign * ELBOW_TARGET_LATERAL_DISTANCE_METERS, 0.091 + elbow_height, 0.26)
 		elbow_targets[hand_index].position = elbow_targets[hand_index].position.lerp(desired_elbow_position, 1.0 - exp(-10.0 * maxf(elapsed_seconds, 0.0)))
 
 func update_grip_transfer_progress(target_progress: float, elapsed_seconds: float) -> void:
@@ -331,4 +348,56 @@ func update_grip_transfer_progress(target_progress: float, elapsed_seconds: floa
 	grip_transfer_velocity = signed_velocity * grip_transfer_direction
 
 func steering_rim_grip_position(horizontal_direction: float, vertical_direction: float) -> Vector3:
-	return Vector3(signf(horizontal_direction) * sqrt(absf(horizontal_direction)) * STEERING_GRIP_HALF_WIDTH_METERS, signf(vertical_direction) * sqrt(absf(vertical_direction)) * STEERING_GRIP_HALF_HEIGHT_METERS, STEERING_GRIP_DEPTH_METERS)
+	var desired_position := Vector3(signf(horizontal_direction) * sqrt(absf(horizontal_direction)) * STEERING_GRIP_HALF_WIDTH_METERS, signf(vertical_direction) * sqrt(absf(vertical_direction)) * STEERING_GRIP_HALF_HEIGHT_METERS, STEERING_GRIP_DEPTH_METERS)
+	desired_position.y += NEUTRAL_GRIP_VERTICAL_OFFSET_METERS * absf(horizontal_direction)
+	return steering_grip_surface_position(desired_position)
+
+func create_neutral_hand_basis(side: String, palm_surface_normal: Vector3) -> Basis:
+	var inward_direction := Vector3.RIGHT if side == "Left" else Vector3.LEFT
+	var hand_direction := Vector3.FORWARD
+	var perpendicular_direction := hand_direction.cross(inward_direction)
+	var palm_projection := Vector2(palm_surface_normal.x, palm_surface_normal.z).normalized()
+	return Basis(palm_projection.y * perpendicular_direction + palm_projection.x * inward_direction, hand_direction, palm_projection.y * inward_direction - palm_projection.x * perpendicular_direction)
+
+func initialize_steering_surface() -> void:
+	var steering_mesh := chassis_visual.find_child("GEO_CHASSIS_STEER", true, false) as MeshInstance3D
+	var mesh_to_pivot := steering_pivot.global_transform.affine_inverse() * steering_mesh.global_transform
+	for vertex in steering_mesh.mesh.get_faces():
+		steering_surface_vertices.append(mesh_to_pivot * vertex)
+	steering_surface.create_from_faces(steering_surface_vertices)
+
+func steering_grip_surface_position(position: Vector3) -> Vector3:
+	var outward_direction := Vector3(position.x, position.y, 0.0).normalized()
+	var ray_start := outward_direction * 0.3 + Vector3(0.0, 0.0, STEERING_GRIP_DEPTH_METERS)
+	var ray_end := Vector3(0.0, 0.0, STEERING_GRIP_DEPTH_METERS)
+	var surface_contact := steering_surface.intersect_segment(ray_start, ray_end)
+	if not surface_contact.is_empty():
+		return surface_contact["position"]
+	var closest_position := Vector3.ZERO
+	var closest_distance_squared := INF
+	for triangle_start in range(0, steering_surface_vertices.size(), 3):
+		var first_vertex := steering_surface_vertices[triangle_start]
+		var second_vertex := steering_surface_vertices[triangle_start + 1]
+		var third_vertex := steering_surface_vertices[triangle_start + 2]
+		var first_edge := second_vertex - first_vertex
+		var second_edge := third_vertex - first_vertex
+		var surface_normal := first_edge.cross(second_edge)
+		if surface_normal.length_squared() < 0.0000000000000001:
+			continue
+		var projected_position := Plane(first_vertex, second_vertex, third_vertex).project(position)
+		var projected_offset := projected_position - first_vertex
+		var second_vertex_weight := projected_offset.cross(second_edge).dot(surface_normal) / surface_normal.length_squared()
+		var third_vertex_weight := first_edge.cross(projected_offset).dot(surface_normal) / surface_normal.length_squared()
+		var candidates := PackedVector3Array()
+		if second_vertex_weight >= 0.0 and third_vertex_weight >= 0.0 and second_vertex_weight + third_vertex_weight <= 1.0:
+			candidates.append(projected_position)
+		else:
+			candidates.append(Geometry3D.get_closest_point_to_segment(position, first_vertex, second_vertex))
+			candidates.append(Geometry3D.get_closest_point_to_segment(position, second_vertex, third_vertex))
+			candidates.append(Geometry3D.get_closest_point_to_segment(position, third_vertex, first_vertex))
+		for candidate in candidates:
+			var distance_squared := candidate.distance_squared_to(position)
+			if distance_squared < closest_distance_squared:
+				closest_position = candidate
+				closest_distance_squared = distance_squared
+	return closest_position

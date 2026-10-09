@@ -14,7 +14,7 @@ var maximum_elbow_flexion_degrees: float = 0.0
 var maximum_wrist_bend_degrees: float = 0.0
 var maximum_finger_bone_length_error: float = 0.0
 var minimum_closed_palm_alignment: float = 1.0
-var maximum_closed_thumb_extension_alignment: float = -1.0
+var maximum_closed_thumb_pose_error_degrees: float = 0.0
 var minimum_finger_closure: float = 1.0
 var maximum_simultaneously_open_hands: int = 0
 var maximum_shoulder_protraction_degrees: float = 0.0
@@ -26,6 +26,7 @@ var maximum_hand_rotation_step_degrees: float = 0.0
 var maximum_shoulder_rotation_step_degrees: float = 0.0
 var measure_rotation_steps := false
 var maximum_final_supporting_hand_rim_error_meters: float = 0.0
+var minimum_wrist_transition_scale: float = 1.0
 
 func _init() -> void:
 	call_deferred("run_validation")
@@ -120,14 +121,16 @@ func run_validation() -> void:
 		failures.append("Driver hands overlap during regrip.")
 	if maximum_elbow_flexion_degrees > 150.0:
 		failures.append("Driver elbows exceed the allowed flexion.")
-	if maximum_wrist_bend_degrees > 35.0:
+	if maximum_wrist_bend_degrees > 27.0:
 		failures.append("Driver wrists exceed the allowed bend.")
+	if minimum_wrist_transition_scale < 0.95:
+		failures.append("Driver wrist transition collapses under forearm and hand rotation.")
 	if maximum_finger_bone_length_error > 0.0001:
 		failures.append("Driver grip stretches finger bones.")
 	if minimum_closed_palm_alignment < 0.70:
 		failures.append("Driver closed palms do not face the steering rim.")
-	if maximum_closed_thumb_extension_alignment > -0.50:
-		failures.append("Driver closed thumbs do not fold around the steering rim.")
+	if maximum_closed_thumb_pose_error_degrees > 0.1:
+		failures.append("Driver closed thumb does not recover its authored grip pose.")
 	if minimum_finger_closure > 0.15:
 		failures.append("Driver fingers do not open while changing grip.")
 	if maximum_simultaneously_open_hands > 1:
@@ -143,6 +146,7 @@ func run_validation() -> void:
 	if livery_instance.get_node("VehicleRigidBody").has_node("DriverVisualController"):
 		failures.append("Driver was added to the unrequested livery variant.")
 	livery_instance.free()
+	print("DRIVER_MINIMUM_WRIST_TRANSITION_SCALE=" + str(minimum_wrist_transition_scale))
 	print("DRIVER_MAXIMUM_WRIST_ERROR_METERS=" + str(maximum_wrist_error))
 	print("DRIVER_MAXIMUM_BONE_LENGTH_ERROR_METERS=" + str(maximum_bone_length_error))
 	print("DRIVER_MINIMUM_HAND_SEPARATION_METERS=" + str(minimum_hand_separation))
@@ -150,7 +154,7 @@ func run_validation() -> void:
 	print("DRIVER_MAXIMUM_WRIST_BEND_DEGREES=" + str(maximum_wrist_bend_degrees))
 	print("DRIVER_MAXIMUM_FINGER_BONE_LENGTH_ERROR_METERS=" + str(maximum_finger_bone_length_error))
 	print("DRIVER_MINIMUM_CLOSED_PALM_ALIGNMENT=" + str(minimum_closed_palm_alignment))
-	print("DRIVER_MAXIMUM_CLOSED_THUMB_EXTENSION_ALIGNMENT=" + str(maximum_closed_thumb_extension_alignment))
+	print("DRIVER_MAXIMUM_CLOSED_THUMB_POSE_ERROR_DEGREES=" + str(maximum_closed_thumb_pose_error_degrees))
 	print("DRIVER_MINIMUM_FINGER_CLOSURE=" + str(minimum_finger_closure))
 	print("DRIVER_MAXIMUM_SIMULTANEOUSLY_OPEN_HANDS=" + str(maximum_simultaneously_open_hands))
 	print("DRIVER_MAXIMUM_FINAL_SUPPORTING_HAND_RIM_ERROR_METERS=" + str(maximum_final_supporting_hand_rim_error_meters))
@@ -233,7 +237,7 @@ func validate_final_hand_transfer(steering_telemetry: SteeringTelemetryVehicle, 
 			steering_controller.call("update_steering_wheel_pose")
 			driver_controller.call("update_driver_hand_targets", 0.0)
 			var arm_configurations: Array = driver_controller.get("arm_modifier").get("arm_configurations")
-			if transfer_step >= 86:
+			if transfer_step >= 90:
 				for arm_configuration in arm_configurations:
 					if float(arm_configuration["finger_closure"]) < 0.999:
 						failures.append("Driver final regrip does not finish before the last steering segment ends.")
@@ -315,8 +319,7 @@ func measure_hand_rim_error(arm_configuration: Dictionary) -> float:
 	var target := arm_configuration["hand_target"] as Node3D
 	var steering_pivot := driver_controller.get("steering_pivot") as Node3D
 	var palm_position: Vector3 = steering_pivot.global_transform.affine_inverse() * (target.global_transform * arm_configuration["palm_offset"])
-	var rim_direction := Vector2(signf(palm_position.x) * pow(absf(palm_position.x) / 0.132, 2.0), signf(palm_position.y) * pow(absf(palm_position.y) / 0.084, 2.0)).normalized()
-	var contact_position := Vector3(signf(rim_direction.x) * sqrt(absf(rim_direction.x)) * 0.132, signf(rim_direction.y) * sqrt(absf(rim_direction.y)) * 0.084, -0.018)
+	var contact_position: Vector3 = driver_controller.call("steering_grip_surface_position", palm_position)
 	return palm_position.distance_to(contact_position)
 
 func validate_arm_pose() -> void:
@@ -347,6 +350,10 @@ func validate_arm_pose() -> void:
 		maximum_shoulder_bone_length_error = maxf(maximum_shoulder_bone_length_error, absf(shoulder.distance_to(collarbone_pose.origin) - skeleton.get_bone_rest(shoulder_index).origin.length()))
 		var elbow := skeleton.get_bone_global_pose(elbow_index).origin
 		var wrist := skeleton.get_bone_global_pose(wrist_index).origin
+		var forearm_skinning_basis := skeleton.get_bone_global_pose(elbow_index).basis * skeleton.get_bone_global_rest(elbow_index).basis.inverse()
+		var hand_skinning_basis := skeleton.get_bone_global_pose(wrist_index).basis * skeleton.get_bone_global_rest(wrist_index).basis.inverse()
+		var relative_wrist_rotation := forearm_skinning_basis.get_rotation_quaternion().angle_to(hand_skinning_basis.get_rotation_quaternion())
+		minimum_wrist_transition_scale = minf(minimum_wrist_transition_scale, cos(relative_wrist_rotation * 0.5))
 		var target := arm_configuration["hand_target"] as Node3D
 		maximum_elbow_flexion_degrees = maxf(maximum_elbow_flexion_degrees, rad_to_deg((elbow - shoulder).angle_to(wrist - elbow)))
 		var hand_forward := skeleton.get_bone_global_pose(wrist_index).basis.y
@@ -367,14 +374,15 @@ func validate_arm_pose() -> void:
 			var steering_pivot := driver_controller.get("steering_pivot") as Node3D
 			var inward_direction := steering_pivot.global_position - palm_world_position
 			inward_direction -= steering_pivot.global_basis.z * inward_direction.dot(steering_pivot.global_basis.z)
-			var palm_normal := skeleton.global_basis * skeleton.get_bone_global_pose(wrist_index).basis.z
+			var palm_normal: Vector3 = skeleton.global_basis * skeleton.get_bone_global_pose(wrist_index).basis * arm_configuration["palm_surface_normal"]
 			minimum_closed_palm_alignment = minf(minimum_closed_palm_alignment, palm_normal.normalized().dot(inward_direction.normalized()))
 		for finger_chain in arm_configuration["finger_chains"]:
 			if finger_chain["is_thumb"] and finger_closure > 0.999:
 				var thumb_root_index: int = finger_chain["bone_indices"][0]
-				var thumb_direction := skeleton.get_bone_global_pose(thumb_root_index).basis.y.normalized()
-				var thumb_comparison_hand_direction := skeleton.get_bone_global_pose(wrist_index).basis.y.normalized()
-				maximum_closed_thumb_extension_alignment = maxf(maximum_closed_thumb_extension_alignment, thumb_direction.dot(thumb_comparison_hand_direction))
+				var thumb_parent_index := skeleton.get_bone_parent(thumb_root_index)
+				var thumb_local_pose := skeleton.get_bone_global_pose(thumb_parent_index).affine_inverse() * skeleton.get_bone_global_pose(thumb_root_index)
+				var thumb_rest_rotation := skeleton.get_bone_rest(thumb_root_index).basis.get_rotation_quaternion()
+				maximum_closed_thumb_pose_error_degrees = maxf(maximum_closed_thumb_pose_error_degrees, rad_to_deg(thumb_local_pose.basis.get_rotation_quaternion().angle_to(thumb_rest_rotation)))
 			for bone_index in finger_chain["bone_indices"]:
 				var parent_index := skeleton.get_bone_parent(bone_index)
 				var actual_length := skeleton.get_bone_global_pose(bone_index).origin.distance_to(skeleton.get_bone_global_pose(parent_index).origin)

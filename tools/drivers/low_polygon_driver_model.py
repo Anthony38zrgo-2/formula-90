@@ -299,6 +299,8 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
     body = join_character_parts(body_parts, "DriverBody", armature)
     head = join_character_parts(head_parts, "DriverHeadAndNeck", armature)
     gloves = join_character_parts(glove_parts, "DriverArticulatedGloves", armature)
+    from original_driver_glove_rig import prepare_original_glove_rig
+    glove_grip_contract = prepare_original_glove_rig(armature, gloves)
     original_geometry_verification = verify_original_uniform_geometry(source_path, uniform_scale, source_origin)
     geometry_contract = bpy.data.objects.new("DriverOriginalUniformGeometryContract", None)
     bpy.context.collection.objects.link(geometry_contract)
@@ -359,9 +361,10 @@ def generate_low_polygon_driver(project_directory, destination, output_mode, sou
         "bone_count": len(armature.data.bones),
         "triangle_count": triangle_count,
         "pose": "seated",
-        "hand_geometry": "authored_fixed_grip_following_wrist",
+        "hand_geometry": "original_glove_with_minimal_skeletal_grip",
         "finger_bones_per_hand": 15,
-        "finger_geometry_deformation": False,
+        "finger_geometry_deformation": True,
+        "glove_grip_contract": glove_grip_contract,
         "torso_recline_degrees": torso_recline_degrees,
         "seat_recline_degrees": seat_recline_degrees,
         "seat_model_sha256": hashlib.sha256(chassis_path.read_bytes()).hexdigest(),

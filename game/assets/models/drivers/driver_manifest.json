@@ -12,16 +12,47 @@
     "textures/helmet_2012_glass.png": "ed9c7bf19bf744fc204628da967fc79177d872729d09330f12d9d0a91fe161eb",
     "textures/stinger_helmet_red_2012.png": "0b3944b17db1b1266078ff350a6cca0ce8451903f33b93d3b45327b71ea5bd37"
   },
-  "model_sha256": "56f1ae8fcc0e40499593677d697283ec49a696fd4d50bbe525ecc2e44eec250d",
+  "model_sha256": "86373d0936ac7970ce1c62f801bdf7a113540ca7cb8b5de847feedc9fceb2557",
   "bone_count": 55,
   "triangle_count": 1445,
   "pose": "seated",
-  "hand_geometry": "authored_fixed_grip_following_wrist",
+  "hand_geometry": "original_glove_with_minimal_skeletal_grip",
   "finger_bones_per_hand": 15,
-  "finger_geometry_deformation": false,
+  "finger_geometry_deformation": true,
+  "glove_grip_contract": {
+    "added_bones": 0,
+    "deforming_finger_bones_per_hand": 6,
+    "palm_surfaces": {
+      "Left": {
+        "position": [
+          0.0030139554291963577,
+          0.09000000357627869,
+          0.0
+        ],
+        "normal": [
+          0.9837537407875061,
+          0.13974572718143463,
+          0.11269241571426392
+        ]
+      },
+      "Right": {
+        "position": [
+          -0.0030139293521642685,
+          0.09000000357627869,
+          0.0
+        ],
+        "normal": [
+          -0.9837538599967957,
+          0.13974572718143463,
+          0.11269160360097885
+        ]
+      }
+    },
+    "closed_grip_is_rest_pose": true
+  },
   "torso_recline_degrees": 79.86680690888585,
   "seat_recline_degrees": 70.64100648156666,
-  "seat_model_sha256": "d522775598a3486570462487f53273812cc4dcd94ca059a13f6072fdf0803bf5",
+  "seat_model_sha256": "8fd4c70e3e669de65390ec6b409f8e0756490fc5c7e1533aac2bd983322879b0",
   "separate_head_and_neck": true,
   "eye_point": "DriverEyePoint",
   "eye_position_in_head_space_meters": [
@@ -52,7 +83,7 @@
     "neutral_geometry_sha256": "05e71d264c5ab0f022bb126c8cf31b9a455dc9a809398ec2403dbca8b93a6ac4"
   },
   "geometry_contract_version": 1,
-  "prepared_source_sha256": "d66d0fc12d834d214d22a0825329239acc57868b3c9e3f2ef42725611daef39a",
+  "prepared_source_sha256": "7f95c8fb5d5a3c9553a633dbb82fc7aad7192c0da2291bbc59abb5da606a53f5",
   "lower_leg_floor_fit": {
     "adjusted_vertices": 0,
     "maximum_displacement_meters": 0.0,
@@ -60,7 +91,7 @@
   },
   "seated_position_meters": [
     0.0,
-    0.089,
+    -0.011,
     -0.24
   ],
   "source_provenance": {
@@ -127,5 +158,5 @@
     }
   },
   "geometry_and_rig_preserved": true,
-  "geometry_and_rig_fingerprint": "7324a0dd013d6b5ad35e0e4fb5407e5d82402a5a4695f1db0d8cb09484ab49fb"
+  "geometry_and_rig_fingerprint": "3e77f0bed5ebddace2db48ca6e7267172dc087bc4d0546e0c87b3a560924016b"
 }
