@@ -315,10 +315,24 @@ func update_driver_hand_targets(elapsed_seconds: float = 1.0 / 60.0) -> void:
 		var arm_configurations: Array = arm_modifier.get("arm_configurations")
 		arm_configurations[hand_index]["finger_closure"] = 1.0 - finger_opening
 		var palm_offset: Vector3 = arm_configurations[hand_index]["palm_offset"]
+		var palm_surface_normal: Vector3 = arm_configurations[hand_index]["palm_surface_normal"]
+		var rim_center_direction := steering_pivot.global_position - steering_pivot.global_transform * grip_position
+		rim_center_direction -= steering_pivot.global_basis.z * rim_center_direction.dot(steering_pivot.global_basis.z)
+		var palm_alignment_fraction := smoothstep(45.0, 75.0, rad_to_deg(absf(steering_angle))) * (1.0 - smoothstep(95.0, 110.0, rad_to_deg(absf(steering_angle))))
+		if rim_center_direction.length_squared() > 0.000001 and palm_alignment_fraction > 0.0:
+			var hand_direction := hand_targets[hand_index].global_basis.y.normalized()
+			var current_palm_direction := hand_targets[hand_index].global_basis * palm_surface_normal
+			var desired_palm_direction := current_palm_direction.slerp(rim_center_direction.normalized(), palm_alignment_fraction)
+			desired_palm_direction = (desired_palm_direction - hand_direction * desired_palm_direction.dot(hand_direction)).normalized()
+			var perpendicular_direction := hand_direction.cross(desired_palm_direction).normalized()
+			var palm_projection := Vector2(palm_surface_normal.x, palm_surface_normal.z).normalized()
+			hand_targets[hand_index].global_basis = Basis(palm_projection.y * perpendicular_direction + palm_projection.x * desired_palm_direction, hand_direction, palm_projection.y * desired_palm_direction - palm_projection.x * perpendicular_direction)
 		hand_targets[hand_index].global_position = steering_pivot.global_transform * grip_position - hand_targets[hand_index].global_basis * palm_offset
 		var palm_chassis_position := steering_pivot.transform * grip_position
 		var side_sign := -1.0 if hand_index == 0 else 1.0
-		var elbow_height := clampf((palm_chassis_position.y - steering_pivot.position.y) * 0.4, -0.04, 0.04)
+		var elbow_assistance_fraction := smoothstep(20.0, 55.0, rad_to_deg(absf(steering_angle))) * (1.0 - smoothstep(95.0, 110.0, rad_to_deg(absf(steering_angle))))
+		var elbow_height_factor := 0.4 + 0.3 * elbow_assistance_fraction
+		var elbow_height := clampf((palm_chassis_position.y - steering_pivot.position.y) * elbow_height_factor, -0.04, 0.08)
 		var desired_elbow_position := seated_position + Vector3(side_sign * ELBOW_TARGET_LATERAL_DISTANCE_METERS, 0.091 + elbow_height, 0.26)
 		elbow_targets[hand_index].position = elbow_targets[hand_index].position.lerp(desired_elbow_position, 1.0 - exp(-10.0 * maxf(elapsed_seconds, 0.0)))
 
