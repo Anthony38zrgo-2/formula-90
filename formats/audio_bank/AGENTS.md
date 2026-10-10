@@ -44,6 +44,15 @@ Every WAV referenced by a runtime bank manifest must be exactly:
   SHA-256 values; engine events are triggered by the sampler, not by the shared
   commons bank.
 
+- Schema-1 sampler manifests may provide `transmission_whine` as a separate
+  continuous recording. It declares source and derived hashes, frame count,
+  full-file loop bounds, preparation crossfade frames, authored mesh frequency
+  in hertz, calibrated gain, and minimum and maximum playback rates. Engine
+  cycle and revolutions coverage invariants do not apply to this recording.
+  It obeys the same mono16 44100 hertz WAV contract. The maximum playback rate
+  is at most 4.0. Invalid declared assets fail initialization; an absent entry
+  preserves the legacy whine. Prepared loop crossfading is baked into the WAV.
+
 - `limiter_cut_window` is an additional sampler trigger value. Its group uses
   one fixed-pitch limiter variant and zero timing offset. The decoded recording
   is a gated looping layer driven by finite physical cut intervals; event

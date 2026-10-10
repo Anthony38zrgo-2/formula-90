@@ -29,6 +29,7 @@ pub mod grand_prix_sample_bank;
 pub mod grand_prix_sampler;
 pub mod mixer;
 pub mod powertrain;
+pub mod sampled_transmission_whine;
 pub mod state;
 pub mod synth;
 pub mod telemetry;

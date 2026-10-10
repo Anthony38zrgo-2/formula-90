@@ -199,6 +199,7 @@ pub struct GrandPrixSampler {
     coast_zone_anti_alias: Vec<Biquad>,
     coast_zone_filter_cutoffs: Vec<f32>,
     gearbox_whine_gear_phase: f64,
+    transmission_whine_cursor: f64,
     gearbox_whine_final_phase: f64,
     gearbox_whine_gear_pulse_harmonic_gains: Vec<f32>,
     gearbox_whine_final_pulse_harmonic_gains: Vec<f32>,
@@ -333,6 +334,7 @@ impl GrandPrixSampler {
                 .collect(),
             coast_zone_filter_cutoffs: vec![19_000.0; coast_loop_count],
             gearbox_whine_gear_phase: 0.0,
+            transmission_whine_cursor: 0.0,
             gearbox_whine_final_phase: 0.0,
             gearbox_whine_gear_pulse_harmonic_gains: tooth_pulse_harmonic_gains(
                 GRAND_PRIX_GEARBOX_WHINE_TOOTH_CONTACT_DUTY_CYCLE,
@@ -575,6 +577,7 @@ impl GrandPrixSampler {
             *cursor = 0.0;
         }
         self.gearbox_whine_gear_phase = 0.0;
+        self.transmission_whine_cursor = 0.0;
         self.gearbox_whine_final_phase = 0.0;
         self.gearbox_whine_gear_mesh_frequency_hertz = 0.0;
         self.gearbox_whine_final_mesh_frequency_hertz = 0.0;
@@ -1006,10 +1009,6 @@ impl GrandPrixSampler {
         self.gearbox_whine_final_mesh_frequency_hertz += (target_final_mesh_frequency_hertz
             - self.gearbox_whine_final_mesh_frequency_hertz)
             * self.rpm_alpha as f32;
-        self.update_gearbox_noise_filters(
-            self.gearbox_whine_gear_mesh_frequency_hertz,
-            self.gearbox_whine_final_mesh_frequency_hertz,
-        );
 
         let target_whine_envelope = smoothstep(100.0, 900.0, self.smoothed_rpm) as f32;
         let whine_envelope_alpha = if target_whine_envelope > self.gearbox_whine_envelope {
@@ -1020,36 +1019,50 @@ impl GrandPrixSampler {
         self.gearbox_whine_envelope +=
             (target_whine_envelope - self.gearbox_whine_envelope) * whine_envelope_alpha;
 
-        let sample_rate = self.output_sample_rate as f32;
-        let gear_mesh_tone = render_band_limited_tooth_pulse(
-            self.gearbox_whine_gear_phase,
-            self.gearbox_whine_gear_mesh_frequency_hertz,
-            &self.gearbox_whine_gear_pulse_harmonic_gains,
-            sample_rate,
-        );
-        let final_mesh_tone = render_band_limited_tooth_pulse(
-            self.gearbox_whine_final_phase,
-            self.gearbox_whine_final_mesh_frequency_hertz,
-            &self.gearbox_whine_final_pulse_harmonic_gains,
-            sample_rate,
-        );
-        let tone_sample = gear_mesh_tone + final_mesh_tone;
-        self.gearbox_whine_gear_phase = advance_phase(
-            self.gearbox_whine_gear_phase,
-            self.gearbox_whine_gear_mesh_frequency_hertz,
-            sample_rate,
-        );
-        self.gearbox_whine_final_phase = advance_phase(
-            self.gearbox_whine_final_phase,
-            self.gearbox_whine_final_mesh_frequency_hertz,
-            sample_rate,
-        );
+        let whine_sample = if let Some(recording) = &self.bank.transmission_whine {
+            recording.render(
+                &mut self.transmission_whine_cursor,
+                self.gearbox_whine_gear_mesh_frequency_hertz,
+                self.output_sample_rate,
+            )
+        } else {
+            self.update_gearbox_noise_filters(
+                self.gearbox_whine_gear_mesh_frequency_hertz,
+                self.gearbox_whine_final_mesh_frequency_hertz,
+            );
+            let sample_rate = self.output_sample_rate as f32;
+            let gear_mesh_tone = render_band_limited_tooth_pulse(
+                self.gearbox_whine_gear_phase,
+                self.gearbox_whine_gear_mesh_frequency_hertz,
+                &self.gearbox_whine_gear_pulse_harmonic_gains,
+                sample_rate,
+            );
+            let final_mesh_tone = render_band_limited_tooth_pulse(
+                self.gearbox_whine_final_phase,
+                self.gearbox_whine_final_mesh_frequency_hertz,
+                &self.gearbox_whine_final_pulse_harmonic_gains,
+                sample_rate,
+            );
+            let tone_sample = gear_mesh_tone + final_mesh_tone;
+            self.gearbox_whine_gear_phase = advance_phase(
+                self.gearbox_whine_gear_phase,
+                self.gearbox_whine_gear_mesh_frequency_hertz,
+                sample_rate,
+            );
+            self.gearbox_whine_final_phase = advance_phase(
+                self.gearbox_whine_final_phase,
+                self.gearbox_whine_final_mesh_frequency_hertz,
+                sample_rate,
+            );
 
-        self.gearbox_noise_state = next_rng_state(self.gearbox_noise_state.max(1));
-        let white_noise = (self.gearbox_noise_state >> 40) as f32 / 8_388_607.5 - 1.0;
-        let high_frequency_noise = self
-            .gearbox_noise_low_pass
-            .process(self.gearbox_noise_high_pass.process(white_noise));
+            self.gearbox_noise_state = next_rng_state(self.gearbox_noise_state.max(1));
+            let white_noise = (self.gearbox_noise_state >> 40) as f32 / 8_388_607.5 - 1.0;
+            let high_frequency_noise = self
+                .gearbox_noise_low_pass
+                .process(self.gearbox_noise_high_pass.process(white_noise));
+            tone_sample * self.gearbox_whine_tone_gain
+                + high_frequency_noise * self.gearbox_whine_noise_gain
+        };
         let transmission_side_gain = if self.transmitted_torque_sign < 0 {
             0.78
         } else {
@@ -1062,8 +1075,7 @@ impl GrandPrixSampler {
         };
         self.gearbox_whine_gear_level +=
             (target_gear_level - self.gearbox_whine_gear_level) * self.load_alpha;
-        output.gearbox_whine = (tone_sample * self.gearbox_whine_tone_gain
-            + high_frequency_noise * self.gearbox_whine_noise_gain)
+        output.gearbox_whine = whine_sample
             * self.gearbox_whine_gain
             * self.gearbox_whine_envelope
             * self.gearbox_whine_gear_level
@@ -1529,6 +1541,31 @@ fn smoothstep(edge_start: f64, edge_end: f64, value: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn sampled_whine_replaces_both_synthetic_components_and_resets_repeatably() {
+        let mut sampler = shipped_sampler();
+        assert!(sampler.bank.transmission_whine.is_some());
+        sampler.set_gearbox_whine_gain(0.137826425);
+        sampler.set_gearbox_whine_component_gains(0.0, 0.0);
+        let mut recordings = Vec::new();
+        for _ in 0..2 {
+            sampler.reset();
+            sampler.set_output_shaft_speed_hertz(Some(100.0));
+            sampler.ingest(&GrandPrixTelemetry {
+                rpm: 12_000.0,
+                gear: 3,
+                normalized_transmitted_load: 1.0,
+                dt_seconds: 0.01,
+                ..GrandPrixTelemetry::default()
+            });
+            recordings.push((0..8820).map(|_| sampler.render_sample_components().gearbox_whine).collect::<Vec<_>>());
+        }
+        assert_eq!(recordings[0], recordings[1]);
+        assert!(recordings[0].iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(sampler.gearbox_whine_gear_phase, 0.0);
+        assert_eq!(sampler.gearbox_whine_final_phase, 0.0);
+    }
+
     use super::*;
     use std::path::{Path, PathBuf};
 
@@ -2519,6 +2556,7 @@ mod tests {
     #[test]
     fn gearbox_whine_tracks_profile_gear_mesh_frequencies() {
         let mut sampler = shipped_sampler();
+        sampler.bank.transmission_whine = None;
         sampler.set_gearbox_whine_transmission(
             &[3.45, 2.75, 2.30, 1.95, 1.68, 1.46],
             4.25,

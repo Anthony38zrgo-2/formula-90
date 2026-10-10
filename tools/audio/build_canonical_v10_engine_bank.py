@@ -42,7 +42,7 @@ DEFAULT_REPORT_DIRECTORY = ROOT / "scratch/audio/v10-v2-bank"
 SAMPLE_RATE = 44100
 SCHEMA_VERSION = 1
 TOOL_NAME = "tools/audio/build_canonical_v10_engine_bank.py"
-TOOL_REVISION = 11
+TOOL_REVISION = 12
 BANK_ID = "v10_v2_engine_bank"
 EVENT_SELECTION_SEED = 1
 
@@ -695,6 +695,63 @@ def remove_internal_fields(asset: dict) -> dict:
     return {key: value for key, value in asset.items() if key not in internal_fields}
 
 
+def prepare_transmission_whine(bank_directory: Path) -> tuple[dict, bytes]:
+    source_path = bank_directory / "transmission_whine_source.wav"
+    sample_rate, recording = read_wave_mono(source_path)
+    if sample_rate != SAMPLE_RATE or recording.size < 5 * SAMPLE_RATE:
+        raise ValueError("transmission whine source must provide at least five seconds at 44100 hertz")
+    window_frames = 3 * SAMPLE_RATE
+    measurement_frames = SAMPLE_RATE // 4
+    candidates = []
+    for start_frame in range(SAMPLE_RATE, recording.size - window_frames - SAMPLE_RATE, measurement_frames):
+        candidate = recording[start_frame:start_frame + window_frames]
+        levels = np.array([rms_value(candidate[offset:offset + measurement_frames]) for offset in range(0, window_frames, measurement_frames)])
+        frequencies, spectrum = welch(candidate, SAMPLE_RATE, nperseg=8192)
+        selected_band = (frequencies >= 4500.0) & (frequencies <= 7500.0)
+        band_presence = float(np.sum(spectrum[selected_band]) / max(np.sum(spectrum), 1e-12))
+        score = float(np.std(levels) / max(np.mean(levels), 1e-9)) + (1.0 - band_presence)
+        candidates.append((score, start_frame))
+    if not candidates:
+        raise ValueError("transmission whine source has no stable candidate window")
+    stability_score, start_frame = min(candidates)
+    selected = recording[start_frame:start_frame + window_frames].copy()
+    selected -= float(np.mean(selected))
+    crossfade_frames = round(0.060 * SAMPLE_RATE)
+    blend = np.linspace(0.0, 1.0, crossfade_frames, endpoint=True)
+    seam = selected[-crossfade_frames:] * (1.0 - blend) + selected[:crossfade_frames] * blend
+    prepared = np.concatenate((selected[crossfade_frames:-crossfade_frames], seam))
+    prepared *= 0.04 / max(rms_value(prepared), 1e-9)
+    if float(np.max(np.abs(prepared))) >= 0.95:
+        raise ValueError("transmission whine calibration would clip")
+    payload = wave_mono16_bytes(prepared)
+    frequencies, spectrum = welch(prepared, SAMPLE_RATE, nperseg=32768)
+    dominant_frequency_hertz = float(frequencies[np.argmax(spectrum)])
+    asset = {
+        "source_filename": source_path.name,
+        "source_sha256": sha256_file(source_path),
+        "derived_filename": "transmission_whine_loop.wav",
+        "derived_sha256": sha256_bytes(payload),
+        "derived_frames": int(prepared.size),
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": int(prepared.size),
+        "loop_crossfade_frames": crossfade_frames,
+        "reference_mesh_frequency_hertz": 2000.0,
+        "reference_method": "authored_mesh_anchor_preserving_recorded_third_order_character",
+        "measured_dominant_frequency_hertz": dominant_frequency_hertz,
+        "calibrated_gain": 1.5,
+        "minimum_playback_rate": 0.1,
+        "maximum_playback_rate": 4.0,
+        "selected_start_frame": start_frame,
+        "selected_frames": window_frames,
+        "stability_score": stability_score,
+        "derived_root_mean_square": rms_value(prepared),
+        "derived_peak": float(np.max(np.abs(prepared))),
+        "seam": measure_seam(prepared),
+        "preparation_recipe": "stable_three_second_window_mean_removed_sixty_millisecond_overlap_linear_crossfade_level_calibrated_v1",
+    }
+    return asset, payload
+
+
 def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[dict, dict[str, bytes]]:
     coverage = {
         "minimum_revolutions_per_minute": MINIMUM_REVOLUTIONS_PER_MINUTE,
@@ -787,11 +844,13 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
         if "generation_recipe" in asset:
             source_record["generation_recipe"] = asset["generation_recipe"]
         engine_source_inventory.append(source_record)
+    transmission_whine, transmission_whine_payload = prepare_transmission_whine(bank_directory)
     source_inventory = {
         "bank_id": BANK_ID,
         "engine_source_directory": bank_directory.relative_to(ROOT).as_posix(),
         "engine_sources": engine_source_inventory,
         "preserved_events": inventory_events,
+        "transmission_whine": transmission_whine,
     }
     inventory_bytes = serialize_json(source_inventory)
     event_groups = source_manifest["event_groups"]
@@ -812,6 +871,7 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
         "transitions": powered_transitions,
         "coast_loops": [remove_internal_fields(asset) for asset in coast],
         "coast_transitions": coast_transitions,
+        "transmission_whine": transmission_whine,
         "events": events,
         "event_groups": event_groups,
         "event_trigger_policy": source_manifest["event_trigger_policy"],
@@ -835,6 +895,7 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
     outputs = {
         "manifest.json": manifest_bytes,
         "source_inventory.json": inventory_bytes,
+        transmission_whine["derived_filename"]: transmission_whine_payload,
     }
     for asset in prepared_assets:
         outputs[asset["derived_filename"]] = loop_payloads[asset["id"]]

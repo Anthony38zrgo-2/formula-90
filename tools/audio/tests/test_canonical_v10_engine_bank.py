@@ -25,6 +25,24 @@ def manifest() -> dict:
     return json.loads((BANK_DIR / "manifest.json").read_text(encoding="utf-8"))
 
 
+def test_transmission_whine_preserves_supplied_source_and_prepares_a_repeatable_loop(manifest: dict) -> None:
+    recording = manifest["transmission_whine"]
+    source_path = BANK_DIR / recording["source_filename"]
+    derived_path = BANK_DIR / recording["derived_filename"]
+    assert hashlib.sha256(source_path.read_bytes()).hexdigest() == "088aff70a08bec48df03576000a73a5fe86b2641e17e67e57467a4a3db4ee58a"
+    assert sha256(derived_path) == recording["derived_sha256"]
+    assert read_wav_format(derived_path) == (1, 2, 44100, recording["derived_frames"])
+    assert recording["loop_start_frame"] == 0
+    assert recording["loop_end_frame_exclusive"] == recording["derived_frames"]
+    assert recording["loop_crossfade_frames"] == 2646
+    assert recording["seam"]["seam_contract_holds"]
+    assert math.isclose(recording["derived_root_mean_square"], 0.04, abs_tol=1e-6)
+    assert recording["derived_peak"] < 0.95
+    rebuilt_recording, rebuilt_payload = canonical.prepare_transmission_whine(BANK_DIR)
+    assert rebuilt_recording == recording
+    assert rebuilt_payload == derived_path.read_bytes()
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 

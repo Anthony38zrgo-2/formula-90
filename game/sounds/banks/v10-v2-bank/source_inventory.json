@@ -220,5 +220,32 @@
       "preparation_recipe": "canonical_limiter_mono16_peak_headroom_v2",
       "preparation_source_bank": "v10-v2-bank"
     }
-  ]
+  ],
+  "transmission_whine": {
+    "source_filename": "transmission_whine_source.wav",
+    "source_sha256": "088aff70a08bec48df03576000a73a5fe86b2641e17e67e57467a4a3db4ee58a",
+    "derived_filename": "transmission_whine_loop.wav",
+    "derived_sha256": "57dc100592d3c974386a20c33f55ea9646042c79f43efb7ea9c33ed86c354c5e",
+    "derived_frames": 129654,
+    "loop_start_frame": 0,
+    "loop_end_frame_exclusive": 129654,
+    "loop_crossfade_frames": 2646,
+    "reference_mesh_frequency_hertz": 2000.0,
+    "reference_method": "authored_mesh_anchor_preserving_recorded_third_order_character",
+    "measured_dominant_frequency_hertz": 5990.2679443359375,
+    "calibrated_gain": 1.5,
+    "minimum_playback_rate": 0.1,
+    "maximum_playback_rate": 4.0,
+    "selected_start_frame": 209475,
+    "selected_frames": 132300,
+    "stability_score": 0.2866012232684787,
+    "derived_root_mean_square": 0.04,
+    "derived_peak": 0.2102666191754823,
+    "seam": {
+      "wrap_step": 1058,
+      "local_slope": 2942,
+      "seam_contract_holds": true
+    },
+    "preparation_recipe": "stable_three_second_window_mean_removed_sixty_millisecond_overlap_linear_crossfade_level_calibrated_v1"
+  }
 }

@@ -175,9 +175,27 @@ pub struct GrandPrixManifest {
     pub coast_loops: Vec<GrandPrixLoopAsset>,
     #[serde(default)]
     pub coast_transitions: Vec<GrandPrixTransition>,
+    #[serde(default)]
+    pub transmission_whine: Option<TransmissionWhineAsset>,
     pub events: Vec<GrandPrixEventAsset>,
     pub event_groups: Vec<GrandPrixEventGroup>,
     pub event_trigger_policy: GrandPrixEventTriggerPolicy,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TransmissionWhineAsset {
+    pub source_filename: String,
+    pub source_sha256: String,
+    pub derived_filename: String,
+    pub derived_sha256: String,
+    pub derived_frames: u64,
+    pub loop_start_frame: u64,
+    pub loop_end_frame_exclusive: u64,
+    pub loop_crossfade_frames: u64,
+    pub reference_mesh_frequency_hertz: f64,
+    pub calibrated_gain: f64,
+    pub minimum_playback_rate: f64,
+    pub maximum_playback_rate: f64,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -299,6 +317,7 @@ pub struct GrandPrixSampleBank {
     pub transitions: Vec<GrandPrixTransition>,
     pub coast_loops: Vec<GrandPrixDecodedLoop>,
     pub coast_transitions: Vec<GrandPrixTransition>,
+    pub transmission_whine: Option<crate::sampled_transmission_whine::SampledTransmissionWhine>,
     pub events: Vec<GrandPrixDecodedEvent>,
     pub groups: Vec<GrandPrixDecodedGroup>,
     pub lift_edge_policy: GrandPrixLiftEdgePolicy,
@@ -852,6 +871,28 @@ impl GrandPrixManifest {
                 }
             }
         }
+        if let Some(recording) = &self.transmission_whine {
+            if recording.derived_frames < 64
+                || recording.derived_frames > 44_100 * 60
+                || recording.loop_start_frame != 0
+                || recording.loop_end_frame_exclusive != recording.derived_frames
+                || recording.loop_crossfade_frames == 0
+                || recording.loop_crossfade_frames > recording.derived_frames / 4
+                || !is_finite_positive(recording.reference_mesh_frequency_hertz)
+                || !is_finite_positive(recording.minimum_playback_rate)
+                || !is_finite_positive(recording.maximum_playback_rate)
+                || recording.minimum_playback_rate >= recording.maximum_playback_rate
+                || recording.maximum_playback_rate > 4.0
+                || !recording.calibrated_gain.is_finite()
+                || !(0.0..=16.0).contains(&recording.calibrated_gain)
+                || !is_hex_sha256(&recording.source_sha256)
+                || !is_hex_sha256(&recording.derived_sha256)
+                || Path::new(&recording.derived_filename).components().count() != 1
+                || !matches!(Path::new(&recording.derived_filename).components().next(), Some(std::path::Component::Normal(_)))
+            {
+                return Err(GrandPrixBankError::InvalidManifest("transmission whine metadata invalid".to_string()));
+            }
+        }
         let policy = &self.event_trigger_policy;
         if !in_unit_range(policy.lift_edge.previous_throttle_min)
             || !in_unit_range(policy.lift_edge.throttle_max)
@@ -1008,6 +1049,21 @@ impl GrandPrixSampleBank {
             });
         }
 
+        let transmission_whine = if let Some(recording) = &manifest.transmission_whine {
+            let samples = load_verified_pcm(bank_directory, &recording.derived_filename, &recording.derived_sha256)?;
+            if samples.len() as u64 != recording.derived_frames {
+                return Err(GrandPrixBankError::InvalidManifest("transmission whine frame count disagrees with manifest".to_string()));
+            }
+            Some(crate::sampled_transmission_whine::SampledTransmissionWhine::new(
+                samples,
+                recording.reference_mesh_frequency_hertz,
+                recording.calibrated_gain as f32,
+                recording.minimum_playback_rate,
+                recording.maximum_playback_rate,
+            ))
+        } else {
+            None
+        };
         Ok(Self {
             bank_id: manifest.bank_id.clone(),
             bank_sha256,
@@ -1022,6 +1078,7 @@ impl GrandPrixSampleBank {
             transitions: manifest.transitions.clone(),
             coast_loops,
             coast_transitions: manifest.coast_transitions.clone(),
+            transmission_whine,
             events,
             groups,
             lift_edge_policy: manifest.event_trigger_policy.lift_edge.clone(),
@@ -1056,6 +1113,36 @@ fn load_verified_pcm(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn transmission_whine_metadata_rejects_invalid_boundaries_rates_and_paths() {
+        let manifest: GrandPrixManifest = serde_json::from_slice(
+            &fs::read(shipped_bank_directory().join("manifest.json")).expect("manifest"),
+        ).expect("parse manifest");
+        for invalid_kind in 0..5 {
+            let mut invalid_manifest = manifest.clone();
+            let recording = invalid_manifest.transmission_whine.as_mut().expect("sampled whine");
+            match invalid_kind {
+                0 => recording.loop_end_frame_exclusive += 1,
+                1 => recording.maximum_playback_rate = 5.0,
+                2 => recording.reference_mesh_frequency_hertz = f64::NAN,
+                3 => recording.derived_filename = "../outside.wav".to_string(),
+                _ => recording.calibrated_gain = f64::INFINITY,
+            }
+            assert!(invalid_manifest.validate().is_err());
+        }
+    }
+
+    #[test]
+    fn manifests_without_transmission_recording_retain_legacy_compatibility() {
+        let mut manifest: serde_json::Value = serde_json::from_slice(
+            &fs::read(shipped_bank_directory().join("manifest.json")).expect("manifest"),
+        ).expect("parse manifest");
+        manifest.as_object_mut().expect("object").remove("transmission_whine");
+        let manifest: GrandPrixManifest = serde_json::from_value(manifest).expect("legacy manifest");
+        assert!(manifest.transmission_whine.is_none());
+        manifest.validate().expect("legacy validation");
+    }
 
     fn shipped_bank_directory() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10-v2-bank")
@@ -1215,6 +1302,36 @@ mod tests {
             other => panic!("unexpected error variant: {other:?}"),
         }
         let _ = fs::remove_dir_all(&target);
+    }
+
+    #[test]
+    fn transmission_recording_hash_and_frame_count_are_verified() {
+        let source_directory = shipped_bank_directory();
+        let target_directory = temporary_directory("transmission_verification");
+        for entry in fs::read_dir(&source_directory).expect("bank directory") {
+            let entry = entry.expect("entry");
+            if entry.path().is_file() {
+                fs::copy(entry.path(), target_directory.join(entry.file_name())).expect("copy asset");
+            }
+        }
+        let recording_path = target_directory.join("transmission_whine_loop.wav");
+        let original_recording = fs::read(&recording_path).expect("recording");
+        let mut corrupted_recording = original_recording.clone();
+        let last_index = corrupted_recording.len() - 1;
+        corrupted_recording[last_index] ^= 0xFF;
+        fs::write(&recording_path, corrupted_recording).expect("corrupt recording");
+        let error = GrandPrixSampleBank::load(&target_directory).expect_err("corrupt whine must fail");
+        assert!(matches!(error, GrandPrixBankError::Sha256Mismatch(_)));
+        fs::write(&recording_path, original_recording).expect("restore recording");
+        let manifest_path = target_directory.join("manifest.json");
+        let mut manifest: GrandPrixManifest = serde_json::from_slice(&fs::read(&manifest_path).expect("manifest")).expect("parse");
+        let recording = manifest.transmission_whine.as_mut().expect("recording metadata");
+        recording.derived_frames += 1;
+        recording.loop_end_frame_exclusive += 1;
+        fs::write(&manifest_path, serde_json::to_vec(&manifest).expect("serialize")).expect("write manifest");
+        let error = GrandPrixSampleBank::load(&target_directory).expect_err("incorrect whine frame count must fail");
+        assert!(error.to_string().contains("transmission whine frame count"));
+        fs::remove_dir_all(&target_directory).expect("remove temporary fixture");
     }
 
     #[test]
