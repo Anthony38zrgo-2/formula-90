@@ -35,6 +35,39 @@ pub struct GrandPrixCoverage {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct EngineLoopPresencePoint {
+    pub revolutions_per_minute: f64,
+    pub relative_weight: f64,
+}
+
+pub fn engine_loop_presence_weight(
+    presence_curve: &[EngineLoopPresencePoint],
+    revolutions_per_minute: f64,
+) -> f64 {
+    let Some(first_point) = presence_curve.first() else {
+        return 0.0;
+    };
+    let last_point = presence_curve.last().expect("nonempty presence curve");
+    if revolutions_per_minute < first_point.revolutions_per_minute
+        || revolutions_per_minute > last_point.revolutions_per_minute
+    {
+        return 0.0;
+    }
+    for neighboring_points in presence_curve.windows(2) {
+        let lower_point = &neighboring_points[0];
+        let upper_point = &neighboring_points[1];
+        if revolutions_per_minute <= upper_point.revolutions_per_minute {
+            let position = (revolutions_per_minute - lower_point.revolutions_per_minute)
+                / (upper_point.revolutions_per_minute - lower_point.revolutions_per_minute);
+            let smooth_position = position * position * (3.0 - 2.0 * position);
+            return lower_point.relative_weight
+                + (upper_point.relative_weight - lower_point.relative_weight) * smooth_position;
+        }
+    }
+    last_point.relative_weight
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GrandPrixLoopAsset {
     pub id: String,
     pub role: String,
@@ -53,6 +86,8 @@ pub struct GrandPrixLoopAsset {
     pub valid_playback_rate_min: f64,
     pub valid_playback_rate_max: f64,
     pub active_coverage_revolutions_per_minute: [f64; 2],
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub presence_curve: Vec<EngineLoopPresencePoint>,
     pub loop_start_frame: u64,
     pub loop_end_frame_exclusive: u64,
     pub loop_crossfade_frames: u64,
@@ -225,6 +260,7 @@ pub struct GrandPrixDecodedLoop {
     pub loop_start_frame: usize,
     pub loop_end_frame_exclusive: usize,
     pub crossfade_frames: usize,
+    pub presence_curve: Vec<EngineLoopPresencePoint>,
 }
 
 #[derive(Debug, Clone)]
@@ -296,6 +332,82 @@ fn in_unit_range(value: f64) -> bool {
     value.is_finite() && (0.0..=1.0).contains(&value)
 }
 
+fn validate_engine_loop_presence_curve(
+    loop_asset: &GrandPrixLoopAsset,
+    coverage: &GrandPrixCoverage,
+) -> Result<(), GrandPrixBankError> {
+    let presence_curve = &loop_asset.presence_curve;
+    if !(2..=32).contains(&presence_curve.len()) {
+        return Err(GrandPrixBankError::InvalidAsset(
+            loop_asset.id.clone(),
+            "presence curve must contain between two and thirty-two points".to_string(),
+        ));
+    }
+    let mut previous_revolutions_per_minute = 0.0;
+    let mut has_positive_weight = false;
+    for point in presence_curve {
+        if !is_finite_positive(point.revolutions_per_minute)
+            || point.revolutions_per_minute <= previous_revolutions_per_minute
+            || point.revolutions_per_minute < coverage.minimum_revolutions_per_minute
+            || point.revolutions_per_minute > coverage.maximum_revolutions_per_minute
+            || !point.relative_weight.is_finite()
+            || !(0.0..=1.0).contains(&point.relative_weight)
+        {
+            return Err(GrandPrixBankError::InvalidAsset(
+                loop_asset.id.clone(),
+                "presence curve points must be ordered, finite and within coverage and unit weight"
+                    .to_string(),
+            ));
+        }
+        previous_revolutions_per_minute = point.revolutions_per_minute;
+        has_positive_weight |= point.relative_weight > 0.0;
+    }
+    let first_point = &presence_curve[0];
+    let last_point = presence_curve
+        .last()
+        .expect("validated presence point count");
+    if !has_positive_weight
+        || (first_point.revolutions_per_minute > coverage.minimum_revolutions_per_minute
+            && first_point.relative_weight != 0.0)
+        || (last_point.revolutions_per_minute < coverage.maximum_revolutions_per_minute
+            && last_point.relative_weight != 0.0)
+    {
+        return Err(GrandPrixBankError::InvalidAsset(
+            loop_asset.id.clone(),
+            "presence curve must be audible and enter and leave continuously".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_powered_presence_coverage(
+    loops: &[GrandPrixLoopAsset],
+    coverage: &GrandPrixCoverage,
+) -> Result<(), GrandPrixBankError> {
+    let mut boundary_revolutions_per_minute = vec![
+        coverage.minimum_revolutions_per_minute,
+        coverage.maximum_revolutions_per_minute,
+    ];
+    boundary_revolutions_per_minute.extend(loops.iter().flat_map(|loop_asset| {
+        loop_asset
+            .presence_curve
+            .iter()
+            .map(|point| point.revolutions_per_minute)
+    }));
+    boundary_revolutions_per_minute.sort_by(f64::total_cmp);
+    boundary_revolutions_per_minute.dedup();
+    for revolutions_per_minute in boundary_revolutions_per_minute {
+        if !loops.iter().any(|loop_asset| {
+            engine_loop_presence_weight(&loop_asset.presence_curve, revolutions_per_minute) > 0.0
+        }) {
+            return Err(GrandPrixBankError::InvalidManifest(format!(
+                "powered presence curves leave a coverage gap at {revolutions_per_minute} revolutions per minute"
+            )));
+        }
+    }
+    Ok(())
+}
+
 impl GrandPrixManifest {
     pub fn validate(&self) -> Result<(), GrandPrixBankError> {
         if self.schema_version != GRAND_PRIX_SCHEMA_VERSION {
@@ -339,6 +451,25 @@ impl GrandPrixManifest {
         {
             return Err(GrandPrixBankError::InvalidManifest(
                 "coverage range invalid".to_string(),
+            ));
+        }
+        if self.transitions.len() != self.loops.len() - 1 {
+            return Err(GrandPrixBankError::InvalidManifest(
+                "transition count does not match loop count".to_string(),
+            ));
+        }
+        let uses_presence_curves = self
+            .loops
+            .iter()
+            .any(|asset| !asset.presence_curve.is_empty());
+        if uses_presence_curves
+            && self
+                .loops
+                .iter()
+                .any(|asset| asset.presence_curve.is_empty())
+        {
+            return Err(GrandPrixBankError::InvalidManifest(
+                "powered presence curves must be provided for every loop".to_string(),
             ));
         }
         let mut loop_ids = BTreeSet::new();
@@ -415,12 +546,35 @@ impl GrandPrixManifest {
                 ));
             }
             let active_coverage = loop_asset.active_coverage_revolutions_per_minute;
-            let expected_coverage_start = if index == 0 {
+            if !active_coverage
+                .iter()
+                .all(|value| is_finite_positive(*value))
+                || active_coverage[0] >= active_coverage[1]
+                || active_coverage[0] < coverage.minimum_revolutions_per_minute
+                || active_coverage[1] > coverage.maximum_revolutions_per_minute
+            {
+                return Err(GrandPrixBankError::InvalidAsset(
+                    loop_asset.id.clone(),
+                    "active coverage range invalid".to_string(),
+                ));
+            }
+            if uses_presence_curves {
+                validate_engine_loop_presence_curve(loop_asset, coverage)?;
+            }
+            let expected_coverage_start = if uses_presence_curves {
+                loop_asset.presence_curve[0].revolutions_per_minute
+            } else if index == 0 {
                 coverage.minimum_revolutions_per_minute
             } else {
                 self.transitions[index - 1].start_revolutions_per_minute
             };
-            let expected_coverage_end = if index == self.loops.len() - 1 {
+            let expected_coverage_end = if uses_presence_curves {
+                loop_asset
+                    .presence_curve
+                    .last()
+                    .expect("validated presence curve")
+                    .revolutions_per_minute
+            } else if index == self.loops.len() - 1 {
                 coverage.maximum_revolutions_per_minute
             } else {
                 self.transitions[index].end_revolutions_per_minute
@@ -430,7 +584,7 @@ impl GrandPrixManifest {
             {
                 return Err(GrandPrixBankError::InvalidAsset(
                     loop_asset.id.clone(),
-                    "active coverage disagrees with transitions".to_string(),
+                    "active coverage disagrees with transitions or presence curve".to_string(),
                 ));
             }
             let reference = loop_asset.reference_revolutions_per_minute;
@@ -463,10 +617,8 @@ impl GrandPrixManifest {
                 ));
             }
         }
-        if self.transitions.len() != self.loops.len() - 1 {
-            return Err(GrandPrixBankError::InvalidManifest(
-                "transition count does not match loop count".to_string(),
-            ));
+        if uses_presence_curves {
+            validate_powered_presence_coverage(&self.loops, coverage)?;
         }
         for (index, transition) in self.transitions.iter().enumerate() {
             if transition.from_loop_id != self.loops[index].id
@@ -524,6 +676,7 @@ impl GrandPrixManifest {
                     .zone_revolutions_per_minute
                     .unwrap_or(coast_loop.reference_revolutions_per_minute);
                 if coast_loop.role != "engine_coast_loop"
+                    || !coast_loop.presence_curve.is_empty()
                     || !coast_ids.insert(coast_loop.id.clone())
                     || loop_ids.contains(&coast_loop.id)
                     || !is_hex_sha256(&coast_loop.source_sha256)
@@ -769,6 +922,7 @@ impl GrandPrixSampleBank {
                 loop_start_frame: loop_asset.loop_start_frame as usize,
                 loop_end_frame_exclusive: loop_asset.loop_end_frame_exclusive as usize,
                 crossfade_frames: loop_asset.loop_crossfade_frames as usize,
+                presence_curve: loop_asset.presence_curve.clone(),
             });
         }
 
@@ -795,6 +949,7 @@ impl GrandPrixSampleBank {
                 loop_start_frame: coast_asset.loop_start_frame as usize,
                 loop_end_frame_exclusive: coast_asset.loop_end_frame_exclusive as usize,
                 crossfade_frames: coast_asset.loop_crossfade_frames as usize,
+                presence_curve: Vec::new(),
             });
         }
 
@@ -922,8 +1077,8 @@ mod tests {
         let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("shipped bank");
         assert_eq!(bank.bank_id, "v10_v2_engine_bank");
         assert_eq!(bank.bank_sha256.len(), 64);
-        assert_eq!(bank.loops.len(), 7);
-        assert_eq!(bank.transitions.len(), 6);
+        assert_eq!(bank.loops.len(), 6);
+        assert_eq!(bank.transitions.len(), 5);
         assert_eq!(bank.events.len(), 8);
         assert_eq!(bank.groups.len(), 4);
         assert_eq!(bank.coverage_minimum_revolutions_per_minute, 4500.0);
@@ -938,8 +1093,8 @@ mod tests {
                 reference / 120.0 * loop_asset.pcm.len() as f64 / GRAND_PRIX_SAMPLE_RATE as f64;
             assert!((cycle_count - cycle_count.round()).abs() < 1e-8);
         }
-        assert_eq!(bank.coast_loops.len(), 5);
-        assert_eq!(bank.coast_transitions.len(), 4);
+        assert_eq!(bank.coast_loops.len(), 3);
+        assert_eq!(bank.coast_transitions.len(), 2);
         let downshift = bank.group("downshift").expect("downshift group");
         assert_eq!(downshift.selection, GrandPrixSelection::SingleVariant);
         assert_eq!(downshift.variants.len(), 1);
@@ -956,6 +1111,87 @@ mod tests {
         assert_eq!(limiter.trigger_event, GrandPrixTriggerEvent::LimiterCutWindow);
         assert_eq!(limiter_event.pcm.len(), 324106);
         assert_eq!(limiter_event.id, "limiter_event");
+    }
+
+    #[test]
+    fn incomplete_or_invalid_presence_curves_are_rejected() {
+        let manifest: GrandPrixManifest = serde_json::from_slice(
+            &fs::read(shipped_bank_directory().join("manifest.json")).expect("manifest"),
+        )
+        .expect("parse manifest");
+        let mut missing_curve = manifest.clone();
+        missing_curve.loops[1].presence_curve.clear();
+        assert!(missing_curve.validate().is_err());
+        let mut unordered_curve = manifest.clone();
+        unordered_curve.loops[1].presence_curve[1].revolutions_per_minute = 4800.0;
+        assert!(unordered_curve.validate().is_err());
+        let mut negative_weight = manifest.clone();
+        negative_weight.loops[1].presence_curve[1].relative_weight = -0.1;
+        assert!(negative_weight.validate().is_err());
+        let mut nonfinite_weight = manifest.clone();
+        nonfinite_weight.loops[1].presence_curve[1].relative_weight = f64::NAN;
+        assert!(nonfinite_weight.validate().is_err());
+        let mut discontinuous_entry = manifest.clone();
+        discontinuous_entry.loops[1].presence_curve[0].relative_weight = 0.1;
+        assert!(discontinuous_entry.validate().is_err());
+        let mut mismatched_coverage = manifest.clone();
+        mismatched_coverage.loops[1].active_coverage_revolutions_per_minute[1] = 16000.0;
+        assert!(mismatched_coverage.validate().is_err());
+        let mut insufficient_playback_range = manifest.clone();
+        insufficient_playback_range.loops[1].valid_playback_rate_min =
+            manifest.loops[1].active_coverage_revolutions_per_minute[0]
+                / manifest.loops[1].reference_revolutions_per_minute
+                * 1.1;
+        assert!(insufficient_playback_range.validate().is_err());
+        let mut missing_transition = manifest;
+        missing_transition.transitions.clear();
+        assert!(missing_transition.validate().is_err());
+    }
+
+    #[test]
+    fn powered_presence_coverage_gaps_are_rejected() {
+        let mut manifest: GrandPrixManifest = serde_json::from_slice(
+            &fs::read(shipped_bank_directory().join("manifest.json")).expect("manifest"),
+        )
+        .expect("parse manifest");
+        let reference_revolutions_per_minute = manifest.loops[1].reference_revolutions_per_minute;
+        manifest.loops[1].presence_curve[0].revolutions_per_minute = 5600.0;
+        manifest.loops[1].presence_curve[1].revolutions_per_minute = 6000.0;
+        manifest.loops[1].active_coverage_revolutions_per_minute[0] = 5600.0;
+        manifest.loops[1].valid_playback_rate_min = 5600.0 / reference_revolutions_per_minute;
+        let error = manifest.validate().expect_err("silent boundary must fail");
+        assert!(error.to_string().contains("coverage gap"));
+    }
+
+    #[test]
+    fn sequential_manifests_without_optional_presence_curves_remain_valid() {
+        let mut manifest: GrandPrixManifest = serde_json::from_slice(
+            &fs::read(shipped_bank_directory().join("manifest.json")).expect("manifest"),
+        )
+        .expect("parse manifest");
+        let loop_count = manifest.loops.len();
+        for (index, loop_asset) in manifest.loops.iter_mut().enumerate() {
+            loop_asset.presence_curve.clear();
+            let minimum_revolutions_per_minute = if index == 0 {
+                manifest.coverage.minimum_revolutions_per_minute
+            } else {
+                manifest.transitions[index - 1].start_revolutions_per_minute
+            };
+            let maximum_revolutions_per_minute = if index + 1 == loop_count {
+                manifest.coverage.maximum_revolutions_per_minute
+            } else {
+                manifest.transitions[index].end_revolutions_per_minute
+            };
+            loop_asset.active_coverage_revolutions_per_minute = [
+                minimum_revolutions_per_minute,
+                maximum_revolutions_per_minute,
+            ];
+            loop_asset.valid_playback_rate_min =
+                minimum_revolutions_per_minute / loop_asset.reference_revolutions_per_minute;
+            loop_asset.valid_playback_rate_max =
+                maximum_revolutions_per_minute / loop_asset.reference_revolutions_per_minute;
+        }
+        manifest.validate().expect("legacy sequential manifest");
     }
 
     #[test]

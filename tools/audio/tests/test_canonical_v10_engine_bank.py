@@ -63,7 +63,7 @@ def test_canonical_bank_check_mode_accepts_shipped_artifacts() -> None:
     assert completed.returncode == 0, completed.stderr
 
 
-def test_canonical_bank_declares_format_and_intermediate_loops(manifest: dict) -> None:
+def test_canonical_bank_declares_five_powered_three_coast_samples_and_separate_idle(manifest: dict) -> None:
     assert manifest["bank_id"] == "v10_v2_engine_bank"
     assert manifest["schema_version"] == 1
     assert manifest["output_sample_rate"] == 44100
@@ -74,19 +74,16 @@ def test_canonical_bank_declares_format_and_intermediate_loops(manifest: dict) -
     powered_ids = [asset["id"] for asset in manifest["loops"]]
     assert powered_ids == [
         "engine_idle_loop",
-        "engine_on_idle_low_loop",
-        "engine_low_on_loop",
-        "engine_on_low_med_loop",
+        "engine_powered_low_loop",
         "engine_mid_on_loop",
-        "engine_on_med_high_loop",
-        "engine_high_on_loop",
+        "engine_powered_medium_high_loop",
+        "engine_powered_high_loop",
+        "engine_powered_maximum_loop",
     ]
     coast_ids = [asset["id"] for asset in manifest["coast_loops"]]
     assert coast_ids == [
         "engine_low_off_loop",
-        "engine_off_low_med_loop",
         "engine_mid_off_loop",
-        "engine_off_med_high_loop",
         "engine_off_maximum_loop",
     ]
     assert len(manifest["transitions"]) == len(powered_ids) - 1
@@ -100,6 +97,66 @@ def test_canonical_bank_declares_format_and_intermediate_loops(manifest: dict) -
         for item in manifest["coast_transitions"]
     ]
     assert coast_transitions == list(itertools.pairwise(coast_ids))
+
+
+def test_powered_presence_curves_match_approved_revolutions_per_minute_limits(manifest: dict) -> None:
+    expected_presence_curves = {'engine_idle_loop': [(4500.0, 1.0), (4800.0, 1.0), (5600.0, 0.0)],
+     'engine_powered_low_loop': [(4800.0, 0.0), (5600.0, 1.0), (9500.0, 1.0), (11500.0, 0.0)],
+     'engine_mid_on_loop': [(9500.0, 0.0), (11500.0, 1.0), (12000.0, 1.0), (13000.0, 0.0)],
+     'engine_powered_medium_high_loop': [(12000.0, 0.0), (13000.0, 1.0), (14500.0, 1.0), (16000.0, 0.0)],
+     'engine_powered_high_loop': [(14500.0, 0.0), (16000.0, 1.0), (16500.0, 1.0), (17500.0, 0.0)],
+     'engine_powered_maximum_loop': [(16500.0, 0.0), (17500.0, 1.0), (18000.0, 1.0)]}
+    for asset in manifest["loops"]:
+        actual_presence_curve = [
+            (point["revolutions_per_minute"], point["relative_weight"])
+            for point in asset["presence_curve"]
+        ]
+        assert actual_presence_curve == expected_presence_curves[asset["id"]]
+        assert asset["active_coverage_revolutions_per_minute"] == [
+            actual_presence_curve[0][0], actual_presence_curve[-1][0],
+        ]
+    medium_sample = next(asset for asset in manifest["loops"] if asset["id"] == "engine_mid_on_loop")
+    assert medium_sample["source_filename"] == "engine_on_med.wav"
+    assert math.isclose(medium_sample["reference_revolutions_per_minute"], 12750.48991699179)
+
+
+def test_powered_calibrated_gains_preserve_existing_anchors_and_match_new_sample_levels(manifest: dict) -> None:
+    assets = {asset["id"]: asset for asset in manifest["loops"]}
+    assert assets["engine_idle_loop"]["calibrated_gain"] == 1.0
+    assert assets["engine_mid_on_loop"]["calibrated_gain"] == 0.756190541567477
+    assert assets["engine_powered_maximum_loop"]["calibrated_gain"] == 0.6050664636291578
+    medium_level = assets["engine_mid_on_loop"]["derived_band_rms_300_6000"] * 0.756190541567477
+    for identifier in ["engine_powered_low_loop", "engine_powered_medium_high_loop", "engine_powered_high_loop"]:
+        asset = assets[identifier]
+        assert math.isclose(asset["derived_band_rms_300_6000"] * asset["calibrated_gain"], medium_level)
+
+
+def test_coast_samples_and_transitions_match_approved_revolutions_per_minute_limits(manifest: dict) -> None:
+    assert manifest["coast_loops"][0]["calibrated_gain"] == 0.7889246022157463
+    assert {asset["source_filename"]: asset["active_coverage_revolutions_per_minute"] for asset in manifest["coast_loops"]} == {
+        "engine_off_low.wav": [4500.0, 11500.0],
+        "engine_off_med.wav": [9500.0, 16000.0],
+        "engine_off_maximum.wav": [14000.0, 18000.0],
+    }
+    assert [
+        (transition["start_revolutions_per_minute"], transition["end_revolutions_per_minute"])
+        for transition in manifest["coast_transitions"]
+    ] == [(9500.0, 11500.0), (14000.0, 16000.0)]
+
+
+@pytest.mark.parametrize(
+    ("preserved_field", "expected_hash"),
+    [
+        ("events", "0c9f4af44be1b5b5c15e720426942825c934f2a8730156cd8f4fd663cfa8d24a"),
+        ("event_groups", "e205803c77158f9dc951e6686318fb7f3c3098d5a92ee4f68309b9c73dd5e1c7"),
+        ("event_trigger_policy", "36c0941c3a5fdb30abb66b8622d618ef5a59488961f9f8e852ac62435f5b975c"),
+    ],
+)
+def test_engine_sample_reduction_preserves_event_goldens(
+    manifest: dict, preserved_field: str, expected_hash: str,
+) -> None:
+    payload = json.dumps(manifest[preserved_field], sort_keys=True, separators=(",", ":")).encode()
+    assert hashlib.sha256(payload).hexdigest() == expected_hash
 
 
 def test_canonical_loop_zones_and_transitions_are_ordered(manifest: dict) -> None:

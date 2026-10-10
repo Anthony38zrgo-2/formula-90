@@ -26,9 +26,20 @@ Every WAV referenced by a runtime bank manifest must be exactly:
   every loop must contain an integer number of engine cycles so loop wraps stay
   phase-coherent across zones.
 - `coverage` spans 4500 to 18000 revolutions per minute; loop zones are strictly
-  ascending; transition windows use `smoothstep` and `equal_power`, never
-  overlap, and each loop's active coverage must match its neighboring
+  ascending; transition windows use `smoothstep` and `equal_power` and never
+  overlap. Sequential banks match each loop's active coverage to its neighboring
   transition windows.
+- Powered loops may provide the optional `presence_curve` array, with ordered
+  `revolutions_per_minute` and `relative_weight` points. All powered loops must
+  provide curves together. Weights are finite within 0 to 1, curves start and
+  end at their declared active coverage, and interior coverage boundaries have
+  zero weight so entry and exit remain continuous. Combined curves must cover
+  the entire engine range without silent boundaries. The sampler interpolates
+  each curve with smoothstep and normalizes the squared weight sum to one.
+  Sequential transition metadata remains ordered for compatibility, but curves
+  determine powered weights and active coverage. Coast loops remain sequential
+  and must not carry presence curves. This optional schema-1 extension requires
+  a rebuilt runtime; older loaders reject the new active coverage.
 - Events are mono16 as well and keep their recorded preparation recipes and
   SHA-256 values; engine events are triggered by the sampler, not by the shared
   commons bank.

@@ -2,8 +2,9 @@ use std::collections::VecDeque;
 
 use crate::dsp::biquad::Biquad;
 use crate::grand_prix_sample_bank::{
-    GrandPrixDecodedLoop, GrandPrixDecodedVariant, GrandPrixEventRole, GrandPrixSampleBank,
-    GrandPrixSelection, GrandPrixTransition, GrandPrixTriggerEvent, GRAND_PRIX_MAXIMUM_LOOP_COUNT,
+    engine_loop_presence_weight, GrandPrixDecodedLoop, GrandPrixDecodedVariant, GrandPrixEventRole,
+    GrandPrixSampleBank, GrandPrixSelection, GrandPrixTransition, GrandPrixTriggerEvent,
+    GRAND_PRIX_MAXIMUM_LOOP_COUNT,
 };
 
 pub const GRAND_PRIX_MAX_LOOPS: usize = GRAND_PRIX_MAXIMUM_LOOP_COUNT;
@@ -372,7 +373,10 @@ impl GrandPrixSampler {
             limiter_cut_windows: VecDeque::with_capacity(GRAND_PRIX_LIMITER_CUT_WINDOW_CAPACITY),
             limiter_cut_envelope: 0.0,
             limiter_cut_cursor: 0.0,
-            limiter_high_pass: Biquad::highpass(output_sample_rate as f32, GRAND_PRIX_LIMITER_HIGH_PASS_CUTOFF_HERTZ),
+            limiter_high_pass: Biquad::highpass(
+                output_sample_rate as f32,
+                GRAND_PRIX_LIMITER_HIGH_PASS_CUTOFF_HERTZ,
+            ),
             target_rpm: 0.0,
             smoothed_rpm: 0.0,
             target_throttle: 0.0,
@@ -673,7 +677,11 @@ impl GrandPrixSampler {
                     + (0.5 * self.output_sample_rate as f64) as u64;
             } else if telemetry.shift_phase != SHIFT_PHASE_UPSHIFT_CUT
                 && telemetry.normalized_transmitted_load > 0.0
-                && self.upshift_departure.is_some_and(|(previous_gear, previous_speed, _)| telemetry.gear > previous_gear && previous_speed > telemetry.rpm)
+                && self
+                    .upshift_departure
+                    .is_some_and(|(previous_gear, previous_speed, _)| {
+                        telemetry.gear > previous_gear && previous_speed > telemetry.rpm
+                    })
             {
                 if let Some((previous_gear, previous_speed, previous_load)) =
                     self.upshift_departure.take()
@@ -904,8 +912,8 @@ impl GrandPrixSampler {
             self.bank.coverage_minimum_revolutions_per_minute,
             self.bank.coverage_maximum_revolutions_per_minute,
         );
-        let (weight_from, weight_to, transition_index) =
-            zone_blend(&self.bank.transitions, rendered_rpm);
+        let powered_loop_weights =
+            powered_engine_loop_weights(&self.bank, playback_revolutions_per_minute);
         let mut loop_mix = 0.0f32;
         let mut active_zones = 0u8;
         let loop_count = self.bank.loops.len();
@@ -913,13 +921,7 @@ impl GrandPrixSampler {
             let reference = self.bank.loops[index].reference_revolutions_per_minute;
             let minimum = self.bank.loops[index].valid_playback_rate_min;
             let maximum = self.bank.loops[index].valid_playback_rate_max;
-            let weight = if index == transition_index {
-                weight_from
-            } else if index == transition_index + 1 {
-                weight_to
-            } else {
-                0.0
-            };
+            let weight = powered_loop_weights[index];
             let rate = playback_revolutions_per_minute / reference;
             if (rate < minimum || rate > maximum) && weight > 0.0 {
                 let within_rounding =
@@ -1404,6 +1406,36 @@ fn read_loop_sample(
     sample
 }
 
+fn powered_engine_loop_weights(
+    bank: &GrandPrixSampleBank,
+    revolutions_per_minute: f64,
+) -> [f32; GRAND_PRIX_MAXIMUM_LOOP_COUNT] {
+    let mut weights = [0.0; GRAND_PRIX_MAXIMUM_LOOP_COUNT];
+    if bank.loops[0].presence_curve.is_empty() {
+        let (weight_from, weight_to, transition_index) =
+            zone_blend(&bank.transitions, revolutions_per_minute);
+        weights[transition_index] = weight_from;
+        if transition_index + 1 < bank.loops.len() {
+            weights[transition_index + 1] = weight_to;
+        }
+        return weights;
+    }
+    let mut squared_weight_sum = 0.0;
+    for (index, loop_asset) in bank.loops.iter().enumerate() {
+        let relative_weight =
+            engine_loop_presence_weight(&loop_asset.presence_curve, revolutions_per_minute) as f32;
+        weights[index] = relative_weight;
+        squared_weight_sum += relative_weight * relative_weight;
+    }
+    if squared_weight_sum > 0.0 {
+        let normalization = squared_weight_sum.sqrt().recip();
+        for weight in weights.iter_mut().take(bank.loops.len()) {
+            *weight *= normalization;
+        }
+    }
+    weights
+}
+
 fn zone_blend(transitions: &[GrandPrixTransition], rpm: f64) -> (f32, f32, usize) {
     let mut transition_index = 0usize;
     for (index, transition) in transitions.iter().enumerate() {
@@ -1773,7 +1805,7 @@ mod tests {
             assert!(peak > 0.02, "rpm {rpm} rendered almost silence: {peak}");
             let diagnostics = sampler.diagnostics();
             assert!(
-                diagnostics.active_zone_count == 1 || diagnostics.active_zone_count == 2,
+                (1..=3).contains(&diagnostics.active_zone_count),
                 "rpm {rpm} active zones {}",
                 diagnostics.active_zone_count
             );
@@ -1861,21 +1893,62 @@ mod tests {
     }
 
     #[test]
-    fn zone_weights_crossfade_without_steps() {
+    fn powered_presence_weights_remain_continuous_and_normalized() {
         let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
-        let transition = &bank.transitions[0];
-        let mut previous_from: Option<f32> = None;
-        let mut rpm = transition.start_revolutions_per_minute - 100.0;
-        while rpm < transition.end_revolutions_per_minute - 1.0 {
-            let (from, to, index) = zone_blend(&bank.transitions, rpm);
-            assert_eq!(index, 0);
-            assert!((from * from + to * to - 1.0).abs() < 1e-6);
-            assert!((0.0..=1.0).contains(&from) && (0.0..=1.0).contains(&to));
-            if let Some(previous) = previous_from {
-                assert!((previous - from).abs() < 0.05, "weight step at {rpm}");
+        let mut previous_weights = powered_engine_loop_weights(&bank, 4500.0);
+        for revolutions_per_minute in 4500..=18000 {
+            let weights = powered_engine_loop_weights(&bank, revolutions_per_minute as f64);
+            let squared_weight_sum: f32 = weights.iter().map(|weight| weight * weight).sum();
+            assert!((squared_weight_sum - 1.0).abs() < 1e-6);
+            for (weight, previous_weight) in weights.iter().zip(previous_weights) {
+                assert!((0.0..=1.0).contains(weight));
+                assert!((weight - previous_weight).abs() < 0.01);
             }
-            previous_from = Some(from);
-            rpm += 10.0;
+            previous_weights = weights;
+        }
+    }
+
+    #[test]
+    fn five_powered_samples_crossfade_and_medium_exits_at_thirteen_thousand() {
+        let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
+        assert_eq!(bank.loops[0].id, "engine_idle_loop");
+        assert_eq!(bank.loops[2].id, "engine_mid_on_loop");
+        for (revolutions_per_minute, sample_index) in [
+            (4500.0, 0), (4800.0, 0), (5600.0, 1), (9000.0, 1),
+            (11500.0, 2), (12000.0, 2), (13000.0, 3), (14000.0, 3),
+            (16000.0, 4), (16500.0, 4), (17500.0, 5), (18000.0, 5),
+        ] {
+            let weights = powered_engine_loop_weights(&bank, revolutions_per_minute);
+            assert_eq!(weights[sample_index], 1.0);
+            assert_eq!(weights.iter().filter(|weight| **weight > 0.0).count(), 1);
+        }
+        for (revolutions_per_minute, sample_index) in [
+            (5200.0, 0), (10500.0, 1), (12500.0, 2), (15250.0, 3), (17000.0, 4),
+        ] {
+            let weights = powered_engine_loop_weights(&bank, revolutions_per_minute);
+            assert!((weights[sample_index] - weights[sample_index + 1]).abs() < 1e-6);
+            assert_eq!(weights.iter().filter(|weight| **weight > 0.0).count(), 2);
+        }
+        for revolutions_per_minute in [13000.0, 14000.0, 15000.0, 16000.0, 18000.0] {
+            let weights = powered_engine_loop_weights(&bank, revolutions_per_minute);
+            assert_eq!(weights[2], 0.0);
+        }
+    }
+
+    #[test]
+    fn banks_without_presence_curves_keep_the_sequential_transition_mixer() {
+        let mut bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
+        for loop_asset in &mut bank.loops {
+            loop_asset.presence_curve.clear();
+        }
+        for revolutions_per_minute in (4500..=18000).step_by(25) {
+            let weights = powered_engine_loop_weights(&bank, revolutions_per_minute as f64);
+            let (weight_from, weight_to, transition_index) =
+                zone_blend(&bank.transitions, revolutions_per_minute as f64);
+            assert_eq!(weights[transition_index], weight_from);
+            if transition_index + 1 < bank.loops.len() {
+                assert_eq!(weights[transition_index + 1], weight_to);
+            }
         }
     }
 
@@ -1957,9 +2030,30 @@ mod tests {
     }
 
     #[test]
+    fn three_coast_samples_remain_audible_across_transition_boundaries() {
+        let mut sampler = shipped_sampler();
+        for revolutions_per_minute in [
+            4500.0, 9000.0, 9500.0, 10500.0, 11500.0,
+            13000.0, 14000.0, 15000.0, 16000.0, 18000.0,
+        ] {
+            sampler.reset();
+            ingest_steady(&mut sampler, revolutions_per_minute, 0.0, 4410);
+            advance(&mut sampler, 4410);
+            let samples = advance(&mut sampler, 4410);
+            assert!(samples.iter().all(|sample| sample.is_finite() && sample.abs() < 1.0));
+            assert!(samples.iter().any(|sample| sample.abs() > 0.02));
+            let (weight_from, weight_to, transition_index) =
+                zone_blend(&sampler.bank.coast_transitions, revolutions_per_minute);
+            assert!((weight_from * weight_from + weight_to * weight_to - 1.0).abs() < 1e-6);
+            assert!(transition_index < 3);
+            assert_eq!(sampler.diagnostics().clamped_rate_samples, 0);
+        }
+    }
+
+    #[test]
     fn closed_throttle_uses_coast_loops_above_idle() {
         let mut sampler = shipped_sampler();
-        assert_eq!(sampler.bank.coast_loops.len(), 5);
+        assert_eq!(sampler.bank.coast_loops.len(), 3);
         sampler.set_coast_gain(1.0);
         ingest_steady(&mut sampler, 12_000.0, 0.0, 441);
         advance(&mut sampler, 8_820);
@@ -2139,7 +2233,11 @@ mod tests {
             let mut sampler = shipped_sampler();
             let event_index = sampler.limiter_cut_variant.expect("limiter variant").event_index;
             sampler.bank.events[event_index].pcm = (0..44_100)
-                .map(|frame| (16_000.0 * (std::f64::consts::TAU * frequency_hertz * frame as f64 / 44_100.0).sin()) as i16)
+                .map(|frame| {
+                    (16_000.0
+                        * (std::f64::consts::TAU * frequency_hertz * frame as f64 / 44_100.0).sin())
+                        as i16
+                })
                 .collect();
             ingest_limiter_cut(&mut sampler, true, 20_000);
             let mut energy = 0.0_f64;

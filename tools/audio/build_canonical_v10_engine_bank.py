@@ -42,7 +42,7 @@ DEFAULT_REPORT_DIRECTORY = ROOT / "scratch/audio/v10-v2-bank"
 SAMPLE_RATE = 44100
 SCHEMA_VERSION = 1
 TOOL_NAME = "tools/audio/build_canonical_v10_engine_bank.py"
-TOOL_REVISION = 6
+TOOL_REVISION = 11
 BANK_ID = "v10_v2_engine_bank"
 EVENT_SELECTION_SEED = 1
 
@@ -76,36 +76,14 @@ ENGINE_SOURCES = [
         "zone_revolutions_per_minute": 4500.0,
     },
     {
-        "source_filename": "engine_on_idle_low.wav",
-        "asset_id": "engine_on_idle_low_loop",
-        "derived_filename": "engine_on_idle_low_loop.wav",
+        "source_filename": "engine_powered_low.wav",
+        "asset_id": "engine_powered_low_loop",
+        "derived_filename": "engine_powered_low_loop.wav",
         "role": "engine_loop",
         "collection": "loops",
-        "cycle_frequency_hertz": SAMPLE_RATE / 882.0,
-        "reference_method": "generated_spectral_morph_integer_cycles",
-        "zone_revolutions_per_minute": 6000.0,
-        "generation_recipe": "spectral_magnitude_morph_integer_cycles",
-    },
-    {
-        "source_filename": "engine_on_low.wav",
-        "asset_id": "engine_low_on_loop",
-        "derived_filename": "engine_low_on_loop.wav",
-        "role": "engine_loop",
-        "collection": "loops",
-        "cycle_frequency_hertz": 9135.225375626043 / REVOLUTIONS_PER_MINUTE_PER_HERTZ,
-        "reference_method": "authored_reference_integer_cycles",
-        "zone_revolutions_per_minute": 8000.0,
-    },
-    {
-        "source_filename": "engine_on_low_med.wav",
-        "asset_id": "engine_on_low_med_loop",
-        "derived_filename": "engine_on_low_med_loop.wav",
-        "role": "engine_loop",
-        "collection": "loops",
-        "cycle_frequency_hertz": SAMPLE_RATE / 523.0,
-        "reference_method": "generated_spectral_morph_integer_cycles",
-        "zone_revolutions_per_minute": 10119.288,
-        "generation_recipe": "spectral_magnitude_morph_integer_cycles",
+        "cycle_frequency_hertz": 76.219,
+        "reference_method": "measured_dominant_period_integer_cycles",
+        "zone_revolutions_per_minute": 7500.0
     },
     {
         "source_filename": "engine_on_med.wav",
@@ -115,28 +93,37 @@ ENGINE_SOURCES = [
         "collection": "loops",
         "cycle_frequency_hertz": 106.265,
         "reference_method": "measured_dominant_period_integer_cycles",
-        "zone_revolutions_per_minute": 12800.0,
+        "zone_revolutions_per_minute": 11750.0
     },
     {
-        "source_filename": "engine_on_med_high.wav",
-        "asset_id": "engine_on_med_high_loop",
-        "derived_filename": "engine_on_med_high_loop.wav",
+        "source_filename": "engine_powered_medium_high.wav",
+        "asset_id": "engine_powered_medium_high_loop",
+        "derived_filename": "engine_powered_medium_high_loop.wav",
         "role": "engine_loop",
         "collection": "loops",
-        "cycle_frequency_hertz": SAMPLE_RATE / 375.0,
-        "reference_method": "generated_spectral_morph_integer_cycles",
-        "zone_revolutions_per_minute": 14130.818,
-        "generation_recipe": "spectral_magnitude_morph_integer_cycles",
+        "cycle_frequency_hertz": 111.969,
+        "reference_method": "measured_dominant_period_integer_cycles",
+        "zone_revolutions_per_minute": 13750.0
+    },
+    {
+        "source_filename": "engine_powered_high.wav",
+        "asset_id": "engine_powered_high_loop",
+        "derived_filename": "engine_powered_high_loop.wav",
+        "role": "engine_loop",
+        "collection": "loops",
+        "cycle_frequency_hertz": 141.042,
+        "reference_method": "measured_dominant_period_integer_cycles",
+        "zone_revolutions_per_minute": 16250.0
     },
     {
         "source_filename": "engine_on_high.wav",
-        "asset_id": "engine_high_on_loop",
-        "derived_filename": "engine_high_on_loop.wav",
+        "asset_id": "engine_powered_maximum_loop",
+        "derived_filename": "engine_powered_maximum_loop.wav",
         "role": "engine_loop",
         "collection": "loops",
         "cycle_frequency_hertz": 148.889,
         "reference_method": "measured_dominant_period_integer_cycles",
-        "zone_revolutions_per_minute": 15600.0,
+        "zone_revolutions_per_minute": 17750.0
     },
     {
         "source_filename": "engine_off_low.wav",
@@ -149,17 +136,6 @@ ENGINE_SOURCES = [
         "zone_revolutions_per_minute": 8000.0,
     },
     {
-        "source_filename": "engine_off_low_med.wav",
-        "asset_id": "engine_off_low_med_loop",
-        "derived_filename": "engine_off_low_med_loop.wav",
-        "role": "engine_coast_loop",
-        "collection": "coast_loops",
-        "cycle_frequency_hertz": SAMPLE_RATE / 523.0,
-        "reference_method": "generated_spectral_morph_integer_cycles",
-        "zone_revolutions_per_minute": 10119.288,
-        "generation_recipe": "spectral_magnitude_morph_integer_cycles",
-    },
-    {
         "source_filename": "engine_off_med.wav",
         "asset_id": "engine_mid_off_loop",
         "derived_filename": "engine_mid_off_loop.wav",
@@ -168,17 +144,6 @@ ENGINE_SOURCES = [
         "cycle_frequency_hertz": 107.039,
         "reference_method": "measured_dominant_period_integer_cycles",
         "zone_revolutions_per_minute": 12800.0,
-    },
-    {
-        "source_filename": "engine_off_med_high.wav",
-        "asset_id": "engine_off_med_high_loop",
-        "derived_filename": "engine_off_med_high_loop.wav",
-        "role": "engine_coast_loop",
-        "collection": "coast_loops",
-        "cycle_frequency_hertz": SAMPLE_RATE / 375.0,
-        "reference_method": "generated_spectral_morph_integer_cycles",
-        "zone_revolutions_per_minute": 14130.818,
-        "generation_recipe": "spectral_magnitude_morph_integer_cycles",
     },
     {
         "source_filename": "engine_off_maximum.wav",
@@ -624,10 +589,17 @@ def transition_half_widths(zones: list[float]) -> list[float]:
     return widths
 
 
-def build_collection(assets: list[dict], audio: dict[str, np.ndarray], coverage: dict) -> list[dict]:
+def build_collection(
+    assets: list[dict],
+    audio: dict[str, np.ndarray],
+    coverage: dict,
+    transition_windows: list[tuple[float, float]] | None = None,
+) -> list[dict]:
     transitions: list[dict] = []
-    widths = transition_half_widths(
-        [asset["zone_revolutions_per_minute"] for asset in assets]
+    widths = (
+        [0.0] * (len(assets) - 1)
+        if transition_windows is not None
+        else transition_half_widths([asset["zone_revolutions_per_minute"] for asset in assets])
     )
     for index in range(len(assets) - 1):
         center = math.sqrt(
@@ -635,9 +607,14 @@ def build_collection(assets: list[dict], audio: dict[str, np.ndarray], coverage:
             * assets[index + 1]["zone_revolutions_per_minute"]
         )
         half_width = center * widths[index]
+        start, end = (
+            transition_windows[index]
+            if transition_windows is not None
+            else (center - half_width, center + half_width)
+        )
         transitions.append(
             transition(
-                assets[index]["id"], assets[index + 1]["id"], center - half_width, center + half_width, 0.0
+                assets[index]["id"], assets[index + 1]["id"], start, end, 0.0
             )
         )
     gains = [1.0]
@@ -674,6 +651,45 @@ def build_collection(assets: list[dict], audio: dict[str, np.ndarray], coverage:
     return transitions
 
 
+POWERED_ENGINE_PRESENCE_CURVES = {'engine_idle_loop': [(4500.0, 1.0), (4800.0, 1.0), (5600.0, 0.0)],
+ 'engine_powered_low_loop': [(4800.0, 0.0), (5600.0, 1.0), (9500.0, 1.0), (11500.0, 0.0)],
+ 'engine_mid_on_loop': [(9500.0, 0.0), (11500.0, 1.0), (12000.0, 1.0), (13000.0, 0.0)],
+ 'engine_powered_medium_high_loop': [(12000.0, 0.0),
+                                     (13000.0, 1.0),
+                                     (14500.0, 1.0),
+                                     (16000.0, 0.0)],
+ 'engine_powered_high_loop': [(14500.0, 0.0), (16000.0, 1.0), (16500.0, 1.0), (17500.0, 0.0)],
+ 'engine_powered_maximum_loop': [(16500.0, 0.0), (17500.0, 1.0), (18000.0, 1.0)]}
+
+
+POWERED_ENGINE_CALIBRATED_GAINS = {'engine_idle_loop': 1.0,
+ 'engine_mid_on_loop': 0.756190541567477,
+ 'engine_powered_maximum_loop': 0.6050664636291578}
+
+COAST_ENGINE_CALIBRATION_ANCHOR_GAIN = 0.7889246022157463
+
+
+def apply_powered_engine_presence_curves(assets: list[dict]) -> None:
+    medium_asset = next(asset for asset in assets if asset["id"] == "engine_mid_on_loop")
+    reference_band_level = medium_asset["derived_band_rms_300_6000"]
+    reference_gain = POWERED_ENGINE_CALIBRATED_GAINS["engine_mid_on_loop"]
+    for asset in assets:
+        presence_points = POWERED_ENGINE_PRESENCE_CURVES[asset["id"]]
+        asset["presence_curve"] = [
+            {"revolutions_per_minute": revolutions_per_minute, "relative_weight": relative_weight}
+            for revolutions_per_minute, relative_weight in presence_points
+        ]
+        asset["calibrated_gain"] = POWERED_ENGINE_CALIBRATED_GAINS.get(
+            asset["id"], reference_gain * reference_band_level / max(asset["derived_band_rms_300_6000"], 1e-9),
+        )
+        start = presence_points[0][0]
+        end = presence_points[-1][0]
+        reference = asset["reference_revolutions_per_minute"]
+        asset["active_coverage_revolutions_per_minute"] = [start, end]
+        asset["valid_playback_rate_min"] = start / reference * (1.0 - 1e-6)
+        asset["valid_playback_rate_max"] = end / reference * (1.0 + 1e-6)
+
+
 def remove_internal_fields(asset: dict) -> dict:
     internal_fields = {"collection", "generation_recipe"}
     return {key: value for key, value in asset.items() if key not in internal_fields}
@@ -699,8 +715,16 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
         zones = [asset["zone_revolutions_per_minute"] for asset in collection]
         if zones != sorted(zones) or len(set(zones)) != len(zones):
             raise ValueError(f"engine zones must be strictly ascending: {zones}")
-    powered_transitions = build_collection(powered, loop_audio, coverage)
-    coast_transitions = build_collection(coast, loop_audio, coverage)
+    powered_transitions = build_collection(
+        powered, loop_audio, coverage,
+        [(4800.0, 5600.0), (9500.0, 11500.0), (12000.0, 13000.0), (14500.0, 16000.0), (16500.0, 17500.0)],
+    )
+    apply_powered_engine_presence_curves(powered)
+    coast_transitions = build_collection(
+        coast, loop_audio, coverage, [(9500.0, 11500.0), (14000.0, 16000.0)],
+    )
+    for coast_asset in coast:
+        coast_asset["calibrated_gain"] *= COAST_ENGINE_CALIBRATION_ANCHOR_GAIN
 
     source_manifest = json.loads(
         (event_source_directory / "manifest.json").read_text(encoding="utf-8")
