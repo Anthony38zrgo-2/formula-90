@@ -1291,6 +1291,13 @@ mod abi_tests {
         assert!(pulled > 0, "worker must have produced PCM for the pull");
 
         let mut stats = AudioWorkerStats::default();
+        for _ in 0..100 {
+            assert!(unsafe { f90_core_audio_worker_stats(h, &mut stats) });
+            if stats.packets_applied > 0 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
         assert!(unsafe { f90_core_audio_worker_stats(h, &mut stats) });
         assert_eq!(stats.healthy, 1);
         assert!(stats.produced_frames > 0);

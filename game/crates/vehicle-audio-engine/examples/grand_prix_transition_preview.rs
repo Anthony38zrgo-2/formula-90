@@ -30,6 +30,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             sampler.ingest(&GrandPrixTelemetry {
                 rpm: revolutions_per_minute,
                 throttle,
+                normalized_transmitted_load: throttle,
+                transmitted_torque_sign: 1,
                 gear: 3,
                 shift_phase: 0,
                 rev_limiter_active: false,

@@ -32,6 +32,9 @@
     }
   },
   "sounds": {
+    "neutral_first_gear_transition": {
+      "volume": 0.70794578
+    },
     "impact_barrier": {
       "volume": 0.8,
       "pan": 0.0,

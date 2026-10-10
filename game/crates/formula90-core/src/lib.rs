@@ -724,7 +724,8 @@ impl CoreFacade {
             frame.force[1] += self.underfloor.force_world[1];
             frame.force[2] += self.underfloor.force_world[2];
             frame.throttle = input.throttle;
-            mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config);
+            mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config)
+            .with_driven_wheel_angular_velocities_radians_per_second(ent.sim.state.tires.wheels.each_ref().map(|wheel| wheel.spin), &ent.sim.config);
         }
         let surface = dominant_surface(samples);
         let slip = frame.front_slip.abs().max(frame.rear_slip.abs()) as f32;
@@ -783,7 +784,8 @@ impl CoreFacade {
         let mut mechanical_audio = audio_telemetry::MechanicalAudioState::default();
         if let Some(ent) = self.world.entities.iter().find(|e| e.id == id) {
             Self::fill_frame_from_entity(&mut frame, ent, dt);
-            mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config);
+            mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&ent.sim.state.powertrain, &ent.sim.config)
+            .with_driven_wheel_angular_velocities_radians_per_second(ent.sim.state.tires.wheels.each_ref().map(|wheel| wheel.spin), &ent.sim.config);
         }
         frame.throttle = input.throttle;
         let surface = dominant_surface(samples);
@@ -821,7 +823,8 @@ impl CoreFacade {
         frame.throttle = snapshot.driver_input.throttle;
         let surface = entity.sim.state.suspension.wheels.iter().find(|wheel| wheel.is_grounded)
             .map_or(SurfaceType::Road, |wheel| wheel.effective_surface);
-        let mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&entity.sim.state.powertrain, &entity.sim.config);
+        let mechanical_audio = audio_telemetry::MechanicalAudioState::from_physics(&entity.sim.state.powertrain, &entity.sim.config)
+            .with_driven_wheel_angular_velocities_radians_per_second(entity.sim.state.tires.wheels.each_ref().map(|wheel| wheel.spin), &entity.sim.config);
         self.world.time = time_seconds;
         self.physical_world_entity_identifier = Some(snapshot.entity_identifier);
         if duration_seconds == 0.0 {

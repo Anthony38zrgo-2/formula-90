@@ -478,6 +478,10 @@ pub struct VehicleAudioEngine {
     last_speed_kph: f64,
     last_slip: f32,
     last_gear: i32,
+    received_gear_telemetry: bool,
+    neutral_first_gear_render_frame: u64,
+    neutral_first_gear_start_frames: std::collections::VecDeque<u64>,
+    neutral_first_gear_sample_cursor: Option<usize>,
     last_trigger: String,
     last_normalized_engine_load: f32,
     last_normalized_engine_torque: f32,
@@ -783,6 +787,10 @@ struct BlockRenderState {
 
 impl VehicleAudioEngine {
     /// Load the bank and build the mixer. `bank_dir` must contain `bank_manifest.json`.
+    pub fn output_sample_rate(&self) -> u32 {
+        self.sample_rate
+    }
+
     pub fn new(bank_dir: &Path) -> Result<Self, BankError> {
         let bank = VehicleSoundBank::load(bank_dir)?;
         let engine_bands = bank.engine_bands.clone();
@@ -959,6 +967,10 @@ impl VehicleAudioEngine {
             last_speed_kph: 0.0,
             last_slip: 0.0,
             last_gear: 0,
+            received_gear_telemetry: false,
+            neutral_first_gear_render_frame: 0,
+            neutral_first_gear_start_frames: std::collections::VecDeque::with_capacity(64),
+            neutral_first_gear_sample_cursor: None,
             last_trigger: String::new(),
             last_normalized_engine_load: 0.0,
             last_normalized_engine_torque: 0.0,
@@ -1192,6 +1204,23 @@ impl VehicleAudioEngine {
         self.target_bed_gain = sgain;
         self.bed_key = skey.map(|s| s.to_string());
 
+        let neutral_first_gear_transition =
+            self.received_gear_telemetry && matches!((self.last_gear, telem.gear), (0, 1) | (1, 0));
+        self.received_gear_telemetry = true;
+        if neutral_first_gear_transition && self.bank.get("neutral_first_gear_transition").is_some()
+        {
+            let delay_frames = if let Some(sampler) = &mut self.grand_prix {
+                let delay_frames = sampler.pending_event_delay_frames();
+                sampler.ingest_direct(GrandPrixEventKind::Upshift, telem.rpm);
+                delay_frames
+            } else {
+                0
+            };
+            if self.neutral_first_gear_start_frames.len() < 64 {
+                self.neutral_first_gear_start_frames
+                    .push_back(self.neutral_first_gear_render_frame + delay_frames);
+            }
+        }
         if telem.gear != self.last_gear {
             self.last_gear = telem.gear;
         }
@@ -1207,6 +1236,8 @@ impl VehicleAudioEngine {
             let packet = GrandPrixTelemetry {
                 rpm: telem.rpm.clamp(0.0, 25_000.0),
                 throttle: telem.throttle.clamp(0.0, 1.0),
+                normalized_transmitted_load: telem.normalized_engine_load,
+                transmitted_torque_sign: telem.torque_sign,
                 gear: telem.gear.clamp(-1, 12),
                 shift_phase: telem.shift_phase,
                 rev_limiter_active: telem.rev_limiter_active != 0,
@@ -1803,6 +1834,42 @@ impl VehicleAudioEngine {
     /// sample) en el bus (CLEAN-10).
     #[inline]
     fn mix_one_shots(&mut self, mixed_l: &mut f32, mixed_r: &mut f32) {
+        while self
+            .neutral_first_gear_start_frames
+            .front()
+            .is_some_and(|frame| *frame <= self.neutral_first_gear_render_frame)
+        {
+            self.neutral_first_gear_start_frames.pop_front();
+            self.neutral_first_gear_sample_cursor = Some(0);
+            if let Some(strip) = self.strips.get_mut("neutral_first_gear_transition") {
+                strip.note_on();
+            }
+        }
+        if let Some(cursor) = self.neutral_first_gear_sample_cursor {
+            if let Some(sample) = self.bank.get("neutral_first_gear_transition") {
+                if let Some(value) = sample.pcm.get(cursor) {
+                    let source = *value as f32 / 32768.0
+                        * self.sample_gain("neutral_first_gear_transition")
+                        * self.cfg.shift_gain;
+                    mix_through_strip(
+                        &mut self.strips,
+                        &mut self.reverb_buses,
+                        "neutral_first_gear_transition",
+                        source,
+                        mixed_l,
+                        mixed_r,
+                    );
+                    self.neutral_first_gear_sample_cursor = Some(cursor + 1);
+                } else {
+                    self.neutral_first_gear_sample_cursor = None;
+                    if let Some(strip) = self.strips.get_mut("neutral_first_gear_transition") {
+                        strip.note_off();
+                    }
+                }
+            }
+        }
+        self.neutral_first_gear_render_frame =
+            self.neutral_first_gear_render_frame.saturating_add(1);
         for o in self.one_shots.iter_mut() {
             if !o.active {
                 continue;
@@ -2042,6 +2109,19 @@ impl VehicleAudioEngine {
     pub fn last_throttle(&self) -> f32 {
         self.last_throttle
     }
+    pub fn set_grand_prix_mechanical_state(
+        &mut self,
+        speed_hertz: Option<f64>,
+        torque_sign: Option<i32>,
+        target_gear: Option<i32>,
+    ) {
+        if let Some(sampler) = &mut self.grand_prix {
+            sampler.set_output_shaft_speed_hertz(speed_hertz);
+            sampler.set_transmitted_torque_sign(torque_sign);
+            sampler.set_target_gear(target_gear);
+        }
+    }
+
     pub fn last_speed_kph(&self) -> f64 {
         self.last_speed_kph
     }
@@ -2504,6 +2584,10 @@ impl VehicleAudioEngine {
         self.tc_cooldown_samples = 0;
         self.last_throttle = 0.0;
         self.last_gear = 0;
+        self.received_gear_telemetry = false;
+        self.neutral_first_gear_render_frame = 0;
+        self.neutral_first_gear_start_frames.clear();
+        self.neutral_first_gear_sample_cursor = None;
         self.last_trigger.clear();
         self.last_normalized_engine_load = 0.0;
         self.last_normalized_engine_torque = 0.0;
@@ -3026,6 +3110,10 @@ mod tests {
             last_speed_kph: 0.0,
             last_slip: 0.0,
             last_gear: 0,
+            received_gear_telemetry: false,
+            neutral_first_gear_render_frame: 0,
+            neutral_first_gear_start_frames: std::collections::VecDeque::with_capacity(64),
+            neutral_first_gear_sample_cursor: None,
             last_trigger: String::new(),
             last_normalized_engine_load: 0.0,
             last_normalized_engine_torque: 0.0,
@@ -4555,6 +4643,90 @@ mod tests {
 
     fn grand_prix_bank_directory() -> std::path::PathBuf {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10-v2-bank")
+    }
+
+    #[test]
+    fn neutral_first_gear_transition_layers_upshift_only_on_confirmed_boundaries() {
+        let commons =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/commons");
+        let mut engine = VehicleAudioEngine::new(&commons).unwrap();
+        engine
+            .enable_grand_prix_sampler(
+                &grand_prix_bank_directory(),
+                &GrandPrixSamplerTuning::default(),
+            )
+            .unwrap();
+        let mut left = [0.0; 3528];
+        let mut right = [0.0; 3528];
+        for (gear, target, phase, expected) in [
+            (0, 0, 0, 0),
+            (0, 1, 1, 0),
+            (1, 1, 2, 1),
+            (1, 1, 0, 1),
+            (1, 2, 1, 2),
+            (2, 2, 2, 2),
+            (1, 1, 0, 2),
+            (1, 0, 3, 2),
+            (0, 0, 0, 3),
+            (0, 0, 0, 3),
+        ] {
+            let mut packet = grand_prix_packet(4500.0, 0.0, phase);
+            packet.gear = gear;
+            engine.set_grand_prix_mechanical_state(Some(0.0), Some(0), Some(target));
+            engine.set_telemetry_timed(&packet, "asphalt", 0.08);
+            engine.render(&mut left, &mut right, 3528);
+            let diagnostics = engine.grand_prix.as_ref().unwrap().diagnostics();
+            assert_eq!(diagnostics.accepted_upshift_events, expected);
+            assert_eq!(diagnostics.accepted_downshift_events, 0);
+            if matches!((gear, phase), (1, 2) | (0, 0)) && expected > 0 {
+                assert!(engine.neutral_first_gear_sample_cursor.is_some());
+            }
+        }
+        engine.reset_audio_state().unwrap();
+        assert!(engine.neutral_first_gear_start_frames.is_empty());
+        assert!(engine.neutral_first_gear_sample_cursor.is_none());
+        assert!(!engine.received_gear_telemetry);
+        let mut packet = grand_prix_packet(4500.0, 0.0, 0);
+        packet.gear = 1;
+        engine.set_telemetry_timed(&packet, "asphalt", 0.01);
+        assert!(engine.neutral_first_gear_start_frames.is_empty());
+    }
+
+    #[test]
+    fn neutral_first_gear_transition_preserves_batched_start_timing_without_allocating() {
+        let commons =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/commons");
+        let mut engine = VehicleAudioEngine::new(&commons).unwrap();
+        engine
+            .enable_grand_prix_sampler(
+                &grand_prix_bank_directory(),
+                &GrandPrixSamplerTuning::default(),
+            )
+            .unwrap();
+        let mut packet = grand_prix_packet(4500.0, 0.0, 0);
+        packet.gear = 0;
+        engine.set_telemetry_timed(&packet, "asphalt", 0.01);
+        packet.gear = 1;
+        engine.set_telemetry_timed(&packet, "asphalt", 0.01);
+        assert_eq!(engine.neutral_first_gear_start_frames.front(), Some(&441));
+        let mut left = [0.0; 441];
+        let mut right = [0.0; 441];
+        crate::allocation_probe::start();
+        engine.render(&mut left, &mut right, 441);
+        assert!(engine.neutral_first_gear_sample_cursor.is_none());
+        engine.render(&mut left, &mut right, 441);
+        let (allocations, _) = crate::allocation_probe::stop();
+        assert_eq!(allocations, 0);
+        assert_eq!(engine.neutral_first_gear_sample_cursor, Some(441));
+        assert_eq!(
+            engine
+                .grand_prix
+                .as_ref()
+                .unwrap()
+                .diagnostics()
+                .accepted_upshift_events,
+            1
+        );
     }
 
     fn grand_prix_packet(

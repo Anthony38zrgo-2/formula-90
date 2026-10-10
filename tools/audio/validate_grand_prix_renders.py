@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import wave
 from pathlib import Path
 
@@ -144,6 +145,28 @@ def main(
         "shared nonlinear master alters the sum as expected",
     )
     stem_energy = {key: rms(value) for key, value in stems.items()}
+    if manifest.get("limiter_playback") == "physics_cut_windows":
+        limiter_samples = stems["limiter"]
+        allowed_frames = np.zeros(len(limiter_samples), dtype=bool)
+        transition_frames = math.ceil(0.00025 * SAMPLE_RATE)
+        cut_windows = manifest.get("limiter_cut_windows", [])
+        cut_levels = []
+        for cut_window in cut_windows:
+            start_frame = cut_window["start_frame"]
+            end_frame = cut_window["end_frame_exclusive"]
+            allowed_frames[start_frame:end_frame + transition_frames] = True
+            cut_levels.append(rms(limiter_samples[start_frame:end_frame]))
+        outside_peak = float(np.max(np.abs(limiter_samples[~allowed_frames])))
+        check(
+            "limiter_silent_outside_physical_cut_windows",
+            bool(cut_windows) and outside_peak == 0.0,
+            f"outside peak {outside_peak:.6f}; transition allowance {transition_frames} frames",
+        )
+        check(
+            "every_physical_cut_window_has_limiter_audio",
+            bool(cut_levels) and min(cut_levels) > 1e-5,
+            f"audible cut windows {len(cut_levels)}",
+        )
     check(
         "engine_and_event_stems_non_silent",
         stem_energy["engine"] > 1e-4
@@ -226,7 +249,8 @@ def main(
         diagnostics.get("accepted_upshift_events", 0) == 5
         and diagnostics.get("accepted_downshift_events", 0) == 3
         and diagnostics.get("accepted_backfire_events", 0) == 1
-        and diagnostics.get("accepted_limiter_events", 0) == 1,
+        and diagnostics.get("accepted_limiter_events", 0)
+        == (0 if manifest.get("limiter_playback") == "physics_cut_windows" else 1),
         f"upshifts={diagnostics.get('accepted_upshift_events')} "
         f"downshifts={diagnostics.get('accepted_downshift_events')} "
         f"backfires={diagnostics.get('accepted_backfire_events')} "

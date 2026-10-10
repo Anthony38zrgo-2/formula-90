@@ -32,3 +32,9 @@ Every WAV referenced by a runtime bank manifest must be exactly:
 - Events are mono16 as well and keep their recorded preparation recipes and
   SHA-256 values; engine events are triggered by the sampler, not by the shared
   commons bank.
+
+- `limiter_cut_window` is an additional sampler trigger value. Its group uses
+  one fixed-pitch limiter variant and zero timing offset. The decoded recording
+  is a gated looping layer driven by finite physical cut intervals; event
+  cooldown and retrigger settings do not apply. `limiter_entry_edge` retains
+  its historical event behavior.

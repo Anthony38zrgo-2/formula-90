@@ -5,6 +5,9 @@ use v10_engine_synth::ShiftPhase;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct MechanicalAudioState {
+    pub output_shaft_speed_hertz: Option<f64>,
+    pub transmitted_torque_sign: Option<i32>,
+    pub target_gear: Option<i32>,
     pub load: f32,
     pub torque: f32,
     pub clutch: f32,
@@ -15,6 +18,29 @@ pub(crate) struct MechanicalAudioState {
 }
 
 impl MechanicalAudioState {
+    pub fn with_driven_wheel_angular_velocities_radians_per_second(
+        mut self,
+        wheel_angular_velocities_radians_per_second: [f64; 4],
+        configuration: &VehicleConfig,
+    ) -> Self {
+        let mut angular_velocity = 0.0;
+        let mut driven_wheel_count = 0.0;
+        for (wheel_index, wheel_angular_velocity) in wheel_angular_velocities_radians_per_second.into_iter().enumerate() {
+            let driven = if wheel_index < 2 {
+                configuration.front_torque_split > 0.0
+            } else {
+                configuration.front_torque_split < 1.0
+            };
+            if driven {
+                angular_velocity += wheel_angular_velocity;
+                driven_wheel_count += 1.0;
+            }
+        }
+        self.output_shaft_speed_hertz = (driven_wheel_count > 0.0)
+            .then(|| angular_velocity / driven_wheel_count * configuration.final_drive / std::f64::consts::TAU);
+        self
+    }
+
     pub fn from_physics(p: &PowertrainState, config: &VehicleConfig) -> Self {
         let torque = (p.engine_torque / config.max_torque.max(1.0)).clamp(-1.0, 1.0) as f32;
         // Clutch torque already contains engagement. Preserve braking magnitude.
@@ -24,7 +50,10 @@ impl MechanicalAudioState {
             (p.clutch_torque.abs() / config.max_torque.max(1.0)).clamp(0.0, 1.0)
         } else { 0.0 };
         if p.engine_torque > 0.0 { load *= 1.0 - p.tc_cut_ratio_smoothed.clamp(0.0, 1.0); }
-        Self { load: load as f32, torque,
+        Self { output_shaft_speed_hertz: None,
+            target_gear: Some(i32::from(p.target_gear)),
+            transmitted_torque_sign: Some(if p.clutch_torque > 0.0 { 1 } else if p.clutch_torque < 0.0 { -1 } else { 0 }),
+            load: load as f32, torque,
             clutch: p.clutch_engagement.clamp(0.0, 1.0) as f32,
             tc: p.tc_cut_ratio_smoothed.clamp(0.0, 1.0) as f32,
             limiter: p.is_rev_limited, shifting: p.shift_timer > 0.0,
@@ -132,6 +161,24 @@ mod tests {
     }
 
     const SHIFT_TICK: f32 = 1.0 / 120.0;
+
+    #[test]
+    fn transmission_audio_uses_driven_wheel_rotation_and_actual_clutch_torque_side() {
+        let mut configuration = VehicleConfig::default();
+        configuration.front_torque_split = 0.0;
+        configuration.final_drive = 4.25;
+        let mut powertrain = PowertrainState::new(&configuration);
+        powertrain.clutch_engagement = 1.0;
+        powertrain.engine_torque = configuration.max_torque;
+        powertrain.clutch_torque = -configuration.max_torque * 0.5;
+        let mechanical = MechanicalAudioState::from_physics(&powertrain, &configuration)
+            .with_driven_wheel_angular_velocities_radians_per_second([500.0, 500.0, 100.0, 120.0], &configuration);
+        assert!((mechanical.output_shaft_speed_hertz.unwrap() - 110.0 * 4.25 / std::f64::consts::TAU).abs() < 1e-10);
+        assert_eq!(mechanical.transmitted_torque_sign, Some(-1));
+        assert_eq!(mechanical.load, 0.5);
+        assert_eq!(powertrain.engine_torque, configuration.max_torque);
+        assert_eq!(powertrain.clutch_torque, -configuration.max_torque * 0.5);
+    }
 
     fn update_phase(adapter: &mut AudioTelemetryAdapter, physical: MechanicalAudioState) -> i32 {
         adapter

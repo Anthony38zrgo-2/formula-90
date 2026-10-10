@@ -83,7 +83,7 @@ fn telemetry_sequence() -> Vec<TelemetryTick> {
                 }
             }
             if time >= 12.2 && time < 12.8 {
-                tick.rev_limiter_active = 1;
+                tick.rev_limiter_active = u32::from((time * 40.0).sin() >= 0.0);
                 tick.rpm = 17_900.0 + 60.0 * ((time * 40.0).sin());
             } else if time >= 12.5 {
                 tick.rpm = 17_900.0;
@@ -637,7 +637,14 @@ fn run() {
         "sample_rate_hz": SAMPLE_RATE,
         "tick_seconds": TICK_SECONDS,
         "total_seconds": TOTAL_SECONDS,
-        "sequence": "idle -> progressive full-load acceleration with five upshifts -> limiter entry/exit -> lift backfire -> three downshifts -> coast -> curb/sand/grass with tire scrub and one impact -> return to idle",
+        "sequence": "idle -> progressive full-load acceleration with five upshifts -> limiter cut pulses -> lift backfire -> three downshifts -> coast -> curb/sand/grass with tire scrub and one impact -> return to idle",
+        "limiter_playback": "physics_cut_windows",
+        "limiter_cut_windows": ticks.iter().enumerate()
+            .filter(|(_, telemetry)| telemetry.rev_limiter_active != 0)
+            .map(|(index, _)| serde_json::json!({
+                "start_frame": index * TICK_FRAMES,
+                "end_frame_exclusive": (index + 1) * TICK_FRAMES,
+            })).collect::<Vec<_>>(),
         "loudness_match_gain_sampler_to_reference": sampler_match_gain,
         "loudness_match_gain_reference_to_sampler": reference_match_gain,
         "sampler_diagnostics": sampler_diagnostics.map(|diagnostics| serde_json::json!({

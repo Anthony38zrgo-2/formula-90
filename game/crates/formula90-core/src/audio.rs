@@ -506,6 +506,10 @@ impl AudioModule {
     }
 
     /// True when the mixer is actually usable (bank loaded).
+    pub fn output_sample_rate(&self) -> u32 {
+        self.engine.as_ref().map_or(44_100, VehicleAudioEngine::output_sample_rate)
+    }
+
     pub fn healthy(&self) -> bool {
         self.enabled && self.engine.is_some()
     }
@@ -902,6 +906,7 @@ impl AudioModule {
         );
         if let Some(eng) = self.engine.as_mut() {
             let prev_code = code_from_bank_key(eng.last_trigger());
+            eng.set_grand_prix_mechanical_state(mechanical.output_shaft_speed_hertz, mechanical.transmitted_torque_sign, mechanical.target_gear);
             eng.set_telemetry_timed(&packet, surface_token(surface), dt_seconds);
             let now_tag = eng.last_trigger();
             self.last_trigger_code =

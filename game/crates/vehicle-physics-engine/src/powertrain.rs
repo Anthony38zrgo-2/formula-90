@@ -395,10 +395,7 @@ impl PowertrainState {
         let constant_brake = config.max_torque * config.constant_brake_ratio * (1.0 - throttle);
         let mut torque_output = positive_torque - variable_drag - constant_brake;
 
-        self.is_rev_limited = self.rpm >= config.max_rpm;
-        if self.rpm >= config.max_rpm {
-            torque_output = torque_output.min(0.0);
-        }
+        self.is_rev_limited = false;
         if self.shift_timer > 0.0 {
             torque_output = torque_output.min(0.0);
         }
@@ -423,9 +420,13 @@ impl PowertrainState {
                 .min(maximum_blip_torque)
                 - variable_drag
                 - constant_brake;
-            if self.rpm >= config.max_rpm {
-                torque_output = torque_output.min(0.0);
-            }
+        }
+        let maximum_accelerating_torque = (config.max_rpm - self.rpm).max(0.0)
+            * config.motor_moment.max(1e-6)
+            / (RAD_S_TO_RPM * dt.max(1e-9));
+        if torque_output > maximum_accelerating_torque {
+            self.is_rev_limited = true;
+            torque_output = maximum_accelerating_torque;
         }
         self.engine_torque = torque_output;
 
@@ -859,6 +860,41 @@ mod tc_tests {
 #[cfg(test)]
 mod engine_torque_attack_tests {
     use super::*;
+
+    #[test]
+    fn limiter_reports_positive_torque_removed_at_the_integration_ceiling() {
+        let configuration = VehicleConfig::default();
+        let mut state = PowertrainState::new(&configuration);
+        state.current_gear = 0;
+        state.target_gear = 0;
+        state.rpm = configuration.max_rpm - 1.0;
+        step_one(&configuration, &mut state, 1.0, 1.0 / 120.0);
+        assert!(state.is_rev_limited);
+        assert!(state.rpm <= configuration.max_rpm);
+        let expected_accelerating_torque = configuration.motor_moment
+            / (RAD_S_TO_RPM * (1.0 / 120.0));
+        assert!((state.engine_torque - expected_accelerating_torque).abs() < 1e-9);
+        state.rpm = configuration.max_rpm;
+        step_one(&configuration, &mut state, 0.0, 1.0 / 120.0);
+        assert!(!state.is_rev_limited);
+        assert!(state.engine_torque <= 0.0);
+    }
+
+    #[test]
+    fn wheels_backdriving_the_engine_at_the_ceiling_do_not_report_combustion_cuts() {
+        let configuration = VehicleConfig::default();
+        let mut state = PowertrainState::new(&configuration);
+        state.rpm = configuration.max_rpm;
+        let wheel_speed = configuration.max_rpm * 1.1
+            / (RAD_S_TO_RPM * configuration.gear_ratios[0] * configuration.final_drive);
+        let input = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
+        state.step(&configuration, &input, &[wheel_speed; 4],
+            wheel_speed * configuration.rear_tire_radius, 1.0 / 120.0);
+        assert!(!state.is_rev_limited);
+        assert!(state.engine_torque <= 0.0);
+        assert!(state.clutch_torque < 0.0);
+        assert!(state.rpm <= configuration.max_rpm);
+    }
 
     fn step_one(config: &VehicleConfig, state: &mut PowertrainState, throttle: f64, dt: f64) {
         let input = VehicleInput {

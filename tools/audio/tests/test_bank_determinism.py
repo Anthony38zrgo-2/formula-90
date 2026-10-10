@@ -14,7 +14,7 @@ from tools.audio.promote_f1_2030_backfire_sounds import SOURCES as BACKFIRE_SOUR
 SOURCE = Path("game/sounds/bank_sources/legacy_formula_one_1998")
 BACKFIRE_BANK_FILES = set(BACKFIRE_SOURCES)
 LIMITER_BANK_FILES = set(LIMITER_SOURCES)
-COMMONS_FILE_COUNT = 11
+COMMONS_FILE_COUNT = 12
 
 
 def test_bank_is_byte_deterministic(tmp_path):
@@ -103,6 +103,12 @@ def test_bank_matches_declared_source_spec():
             assert hashlib.sha256(src.read_bytes()).hexdigest() == entry.synthesis["source_sha256"]
             continue
         key = entry.file[:-4]
+        if entry.synthesis.get("promotion_recipe") == "neutral_first_gear_transition_v1":
+            source = Path(entry.synthesis["source_file"])
+            assert entry.role == "neutral_first_gear_transition"
+            assert not entry.loop
+            assert hashlib.sha256(source.read_bytes()).hexdigest() == entry.synthesis["source_sha256"]
+            continue
         if entry.synthesis.get("promotion_recipe") == "f1_2026_2008_replacement_overlay_v1":
             role, loop, _category = REPLACEMENTS[entry.file]
             assert entry.role == role

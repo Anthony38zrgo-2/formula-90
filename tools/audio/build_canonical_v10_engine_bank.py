@@ -30,18 +30,19 @@ from pathlib import Path
 
 import numpy as np
 from scipy.signal import butter, resample_poly, sosfiltfilt, welch
+from tools.common.output_policy import validate_output_path
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BANK_DIRECTORY = ROOT / "game/sounds/banks/v10-v2-bank"
 EVENT_SOURCE_DIRECTORY = (
     ROOT / "game/audio/formula_one_2030_grand_prix_sampler/formula_one_2030_five_engine_sample_bank"
 )
-DEFAULT_REPORT_DIRECTORY = ROOT / "reports/audio-v10/v10-v2-bank"
+DEFAULT_REPORT_DIRECTORY = ROOT / "scratch/audio/v10-v2-bank"
 
 SAMPLE_RATE = 44100
 SCHEMA_VERSION = 1
 TOOL_NAME = "tools/audio/build_canonical_v10_engine_bank.py"
-TOOL_REVISION = 4
+TOOL_REVISION = 6
 BANK_ID = "v10_v2_engine_bank"
 EVENT_SELECTION_SEED = 1
 
@@ -202,7 +203,7 @@ EVENT_SOURCE_BY_ASSET_ID = {
     "downshift_event": "geardn.wav",
     "limiter_event": "limiter.wav",
 }
-CANONICAL_SOURCE_EVENT_IDENTIFIERS = frozenset({"upshift_event", "downshift_event"})
+CANONICAL_SOURCE_EVENT_IDENTIFIERS = frozenset({"upshift_event", "downshift_event", "limiter_event"})
 CANONICAL_SOURCE_EVENT_RECIPE = "canonical_mono16_source_event_v1"
 
 
@@ -297,6 +298,11 @@ def prepare_event_from_source(source_path: Path, event_template: dict) -> tuple[
     if source_samples.size == 0:
         raise ValueError(f"{source_path} must contain audio samples")
 
+    if event_template.get("role") == "limiter_event":
+        source_peak = float(np.max(np.abs(source_samples)))
+        if source_peak > 0.92:
+            source_samples = source_samples * (0.92 / source_peak)
+
     derived_payload = wave_mono16_bytes(source_samples)
     prepared_event = {key: value for key, value in event_template.items()}
     prepared_event.update(
@@ -309,7 +315,11 @@ def prepare_event_from_source(source_path: Path, event_template: dict) -> tuple[
             "derived_rms_dbfs": decibels_full_scale(rms_value(source_samples)),
             "derived_peak_dbfs": decibels_full_scale(float(np.max(np.abs(source_samples)))),
             "derived_band_rms_300_6000": band_rms(source_samples, *LEVEL_BAND_HZ),
-            "preparation_recipe": CANONICAL_SOURCE_EVENT_RECIPE,
+            "preparation_recipe": (
+                "canonical_limiter_mono16_peak_headroom_v2"
+                if event_template.get("role") == "limiter_event"
+                else CANONICAL_SOURCE_EVENT_RECIPE
+            ),
         }
     )
     return prepared_event, derived_payload
@@ -704,6 +714,8 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
             raise ValueError(f"unexpected event asset {asset_id}")
         canon_source_name = EVENT_SOURCE_BY_ASSET_ID[asset_id]
         canon_source_path = bank_directory / canon_source_name
+        if asset_id == "limiter_event":
+            event = {**event, "derived_filename": "limiter_cut_loop.wav"}
         if asset_id in CANONICAL_SOURCE_EVENT_IDENTIFIERS:
             copied, payload = prepare_event_from_source(canon_source_path, event)
             preparation_source_bank = bank_directory.name
@@ -758,6 +770,10 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
         "preserved_events": inventory_events,
     }
     inventory_bytes = serialize_json(source_inventory)
+    event_groups = source_manifest["event_groups"]
+    for group in event_groups:
+        if group["id"] == "limiter":
+            group["trigger_event"] = "limiter_cut_window"
 
     manifest = {
         "schema_version": SCHEMA_VERSION,
@@ -773,7 +789,7 @@ def build_manifest(bank_directory: Path, event_source_directory: Path) -> tuple[
         "coast_loops": [remove_internal_fields(asset) for asset in coast],
         "coast_transitions": coast_transitions,
         "events": events,
-        "event_groups": source_manifest["event_groups"],
+        "event_groups": event_groups,
         "event_trigger_policy": source_manifest["event_trigger_policy"],
         "reference_ladder": {
             "method": "authored_and_measured_reference_integer_cycles",
@@ -840,6 +856,7 @@ def source_format_table(bank_directory: Path) -> list[dict]:
             "upshift_event.wav",
             "downshift_event.wav",
             "limiter_event.wav",
+            "limiter_cut_loop.wav",
         ) or path.name.startswith("backfire_burst_"):
             continue
         with wave.open(str(path), "rb") as reader:
@@ -941,9 +958,16 @@ def main() -> int:
         print(f"verified {len(outputs)} canonical bank files in {arguments.bank_directory}")
         return 0
 
+    for filename in outputs:
+        validate_output_path(ROOT, arguments.bank_directory / filename, "promote")
+    validate_output_path(ROOT, arguments.report_directory / "build_report.json", "preview")
+    retired_limiter_recording_path = arguments.bank_directory / "limiter_event.wav"
+    validate_output_path(ROOT, retired_limiter_recording_path, "promote")
     arguments.bank_directory.mkdir(parents=True, exist_ok=True)
     for filename, payload in outputs.items():
         (arguments.bank_directory / filename).write_bytes(payload)
+    if retired_limiter_recording_path.exists():
+        retired_limiter_recording_path.unlink()
     arguments.report_directory.mkdir(parents=True, exist_ok=True)
     (arguments.report_directory / "build_report.json").write_bytes(
         serialize_json(build_report(manifest, arguments.bank_directory))

@@ -263,12 +263,12 @@
     {
       "asset_id": "limiter_event",
       "role": "limiter_event",
-      "derived_filename": "limiter_event.wav",
-      "derived_sha256": "6fc1b7368976057c7191b24b0d200405102d64e18b01223c4f145c61e6369147",
+      "derived_filename": "limiter_cut_loop.wav",
+      "derived_sha256": "8d1be4d148e69a2d42bb7b38712cd1682599d57b32f597bf5bf29b21f429264b",
       "source_filename": "limiter.wav",
-      "source_sha256": "db1551e2f30e5ad4f8ba01967120d73b67200994be5cda73fb140b166ef52ea3",
-      "preparation_recipe": "limiter_overlay_recipe_v1",
-      "preparation_source_bank": "formula_one_2030_five_engine_sample_bank"
+      "source_sha256": "a4706922a925323749ff7b9dd54459dcdd9f1383b229100bdcfae887fcf54f3a",
+      "preparation_recipe": "canonical_limiter_mono16_peak_headroom_v2",
+      "preparation_source_bank": "v10-v2-bank"
     }
   ]
 }

@@ -195,6 +195,7 @@ pub enum GrandPrixTriggerEvent {
     DownshiftCutEntry,
     LiftEdge,
     LimiterEntryEdge,
+    LimiterCutWindow,
 }
 
 impl GrandPrixTriggerEvent {
@@ -204,6 +205,7 @@ impl GrandPrixTriggerEvent {
             "downshift_cut_entry" => Ok(Self::DownshiftCutEntry),
             "lift_edge" => Ok(Self::LiftEdge),
             "limiter_entry_edge" => Ok(Self::LimiterEntryEdge),
+            "limiter_cut_window" => Ok(Self::LimiterCutWindow),
             other => Err(GrandPrixBankError::InvalidAsset(
                 other.to_string(),
                 "unknown trigger event".to_string(),
@@ -634,7 +636,18 @@ impl GrandPrixManifest {
             }
             let group_role = GrandPrixEventRole::from_role_name(&group.role)?;
             GrandPrixSelection::from_selection_name(&group.selection)?;
-            GrandPrixTriggerEvent::from_trigger_name(&group.trigger_event)?;
+            let trigger = GrandPrixTriggerEvent::from_trigger_name(&group.trigger_event)?;
+            if trigger == GrandPrixTriggerEvent::LimiterCutWindow
+                && (group_role != GrandPrixEventRole::LimiterEvent
+                    || group.variants.len() != 1
+                    || group.timing_offset_seconds != 0.0
+                    || group.variants[0].trigger_pitch_reference_revolutions_per_minute.is_some())
+            {
+                return Err(GrandPrixBankError::InvalidAsset(
+                    group.id.clone(),
+                    "limiter cut window requires one fixed-pitch limiter variant without timing offset".to_string(),
+                ));
+            }
             if group.voice_limit == 0 || group.voice_limit > 8 {
                 return Err(GrandPrixBankError::InvalidAsset(
                     group.id.clone(),
@@ -940,7 +953,8 @@ mod tests {
             .iter()
             .find(|event| event.role == GrandPrixEventRole::LimiterEvent)
             .expect("limiter event");
-        assert_eq!(limiter_event.pcm.len(), 15939);
+        assert_eq!(limiter.trigger_event, GrandPrixTriggerEvent::LimiterCutWindow);
+        assert_eq!(limiter_event.pcm.len(), 324106);
         assert_eq!(limiter_event.id, "limiter_event");
     }
 

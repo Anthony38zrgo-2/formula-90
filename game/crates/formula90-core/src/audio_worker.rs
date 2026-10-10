@@ -255,6 +255,8 @@ impl SpscRing {
 /// host never contends for it.
 struct WorkerState {
     module: AudioModule,
+    packet_remaining_frames: usize,
+    packet_frame_remainder: f64,
     scratch_l: Vec<f32>,
     scratch_r: Vec<f32>,
     interleaved: Vec<f32>,
@@ -306,6 +308,8 @@ impl AudioWorker {
         Self {
             state: Mutex::new(WorkerState {
                 module,
+                packet_remaining_frames: 0,
+                packet_frame_remainder: 0.0,
                 scratch_l: vec![0.0; chunk],
                 scratch_r: vec![0.0; chunk],
                 interleaved: vec![0.0; chunk * 2],
@@ -431,6 +435,8 @@ impl AudioWorker {
         // both scratch buffers mutably at once.
         let WorkerState {
             module,
+            packet_remaining_frames,
+            packet_frame_remainder,
             scratch_l,
             scratch_r,
             interleaved,
@@ -456,25 +462,13 @@ impl AudioWorker {
                     // Mirror `CoreFacade::reset`: clear the scrape first, then the mixer.
                     module.set_scrape_state(false, 0.0, 0.0, 0.0);
                     module.reset();
+                    *packet_remaining_frames = 0;
+                    *packet_frame_remainder = 0.0;
                     commands += 1;
                 }
                 None => break,
             }
         }
-        loop {
-            let packet = { lock(&self.packets).pop_front() };
-            match packet {
-                Some(packet) => {
-                    module.apply_step_packet(&packet);
-                    applied += 1;
-                }
-                None => break,
-            }
-        }
-        if applied > 0 || commands > 0 {
-            *lock(&self.readouts) = module.readouts();
-        }
-
         let mut produced = 0usize;
         let mut render_usec = 0u64;
         let mut remaining = frames_requested;
@@ -483,7 +477,26 @@ impl AudioWorker {
             if free == 0 {
                 break;
             }
-            let n = remaining.min(free).min(self.config.chunk_frames).max(1);
+            while *packet_remaining_frames == 0 {
+                let packet = { lock(&self.packets).pop_front() };
+                let Some(packet) = packet else { break };
+                let duration_frames = if packet.dt.is_finite() {
+                    packet.dt.max(0.0) as f64 * module.output_sample_rate() as f64
+                        + *packet_frame_remainder
+                } else {
+                    0.0
+                };
+                *packet_remaining_frames = duration_frames.round().max(0.0) as usize;
+                *packet_frame_remainder = duration_frames - *packet_remaining_frames as f64;
+                module.apply_step_packet(&packet);
+                applied += 1;
+            }
+            let packet_limit = if *packet_remaining_frames > 0 {
+                *packet_remaining_frames
+            } else {
+                remaining
+            };
+            let n = remaining.min(free).min(self.config.chunk_frames).min(packet_limit).max(1);
             if scratch_l.len() < n {
                 scratch_l.resize(n, 0.0);
                 scratch_r.resize(n, 0.0);
@@ -498,10 +511,15 @@ impl AudioWorker {
             }
             let wrote = self.ring.write_frames(&interleaved[..n * 2]);
             produced += wrote;
+            *packet_remaining_frames = packet_remaining_frames.saturating_sub(wrote);
             if wrote < n {
                 break;
             }
             remaining -= n;
+        }
+
+        if applied > 0 || commands > 0 {
+            *lock(&self.readouts) = module.readouts();
         }
 
         self.counters
@@ -616,6 +634,9 @@ mod tests {
             slip: 0.05 + 0.1 * t,
             dt: 1.0 / 120.0,
             mechanical: MechanicalAudioState {
+                output_shaft_speed_hertz: None,
+                transmitted_torque_sign: None,
+                target_gear: None,
                 load: 0.6 + 0.3 * t,
                 torque: 0.5 - t,
                 clutch: 1.0,
@@ -686,6 +707,7 @@ mod tests {
         let mut got_r = vec![0.0f32; frames];
         for step in 0..400 {
             let packet = test_packet(step);
+            let packet = AudioStepPacket { dt: frames as f32 / 44_100.0, ..packet };
             reference.apply_step_packet(&packet);
             worker.push_step(packet);
             reference.render(&mut ref_l, &mut ref_r, frames);
@@ -729,5 +751,46 @@ mod tests {
         worker.pump_once(0);
         let stats = worker.stats();
         assert_eq!(stats.commands_applied, 3);
+    }
+
+    #[test]
+    fn batched_physics_packets_preserve_per_tick_audio_timing() {
+        let Some(mut reference) = test_module() else { panic!("audio bank unavailable") };
+        let Some(module) = test_module() else { panic!("audio bank unavailable") };
+        let worker = AudioWorker::new(module, AudioWorkerConfig {
+            ring_capacity_frames: 8192, chunk_frames: 256,
+            ..AudioWorkerConfig::default()
+        });
+        let mut expected_left = Vec::new();
+        let mut expected_right = Vec::new();
+        let mut frame_remainder = 0.0_f64;
+        for step in 0..12 {
+            let mut packet = test_packet(step);
+            packet.rpm = if step < 7 { 18_000.0 } else { 15_375.0 };
+            packet.gear = if step < 7 { 3 } else { 4 };
+            packet.mechanical.shifting = (2..7).contains(&step);
+            packet.mechanical.limiter = step == 1 || step == 10;
+            packet.mechanical.load = if packet.mechanical.shifting { 0.0 } else { 0.8 };
+            let duration_frames = packet.dt as f64 * reference.output_sample_rate() as f64 + frame_remainder;
+            let frames = duration_frames.round() as usize;
+            frame_remainder = duration_frames - frames as f64;
+            let mut rendered_left = vec![0.0; frames];
+            let mut rendered_right = vec![0.0; frames];
+            reference.apply_step_packet(&packet);
+            reference.render(&mut rendered_left, &mut rendered_right, frames);
+            expected_left.extend(rendered_left);
+            expected_right.extend(rendered_right);
+            worker.push_step(packet);
+        }
+        let mut received_left = vec![0.0; expected_left.len()];
+        let mut received_right = vec![0.0; expected_right.len()];
+        let mut produced = 0;
+        while produced < expected_left.len() {
+            produced += worker.pump_once((expected_left.len() - produced).min(173));
+        }
+        assert_eq!(worker.pull(&mut received_left, &mut received_right, produced), produced);
+        assert_eq!(received_left, expected_left);
+        assert_eq!(received_right, expected_right);
+        assert_eq!(worker.stats().packets_applied, 12);
     }
 }

@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use crate::dsp::biquad::Biquad;
 use crate::grand_prix_sample_bank::{
     GrandPrixDecodedLoop, GrandPrixDecodedVariant, GrandPrixEventRole, GrandPrixSampleBank,
-    GrandPrixSelection, GrandPrixTransition, GRAND_PRIX_MAXIMUM_LOOP_COUNT,
+    GrandPrixSelection, GrandPrixTransition, GrandPrixTriggerEvent, GRAND_PRIX_MAXIMUM_LOOP_COUNT,
 };
 
 pub const GRAND_PRIX_MAX_LOOPS: usize = GRAND_PRIX_MAXIMUM_LOOP_COUNT;
@@ -24,6 +24,13 @@ pub const GRAND_PRIX_UPSHIFT_ENGINE_GAIN: f32 = 0.18;
 pub const GRAND_PRIX_DOWNSHIFT_ENGINE_GAIN: f32 = 0.42;
 pub const GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS: f64 = 0.5;
 pub const GRAND_PRIX_COAST_GAIN_DEFAULT: f32 = 0.55;
+const GRAND_PRIX_LIMITER_CUT_WINDOW_CAPACITY: usize = 256;
+const GRAND_PRIX_LIMITER_CUT_TRANSITION_SECONDS: f64 = 0.00025;
+const GRAND_PRIX_LIMITER_LOOP_CROSSFADE_SECONDS: f64 = 0.002;
+const GRAND_PRIX_LIMITER_HIGH_PASS_CUTOFF_HERTZ: f32 = 600.0;
+const UPSHIFT_ACOUSTIC_RECOVERY_DURATION_SECONDS: f64 = 0.350;
+const UPSHIFT_ACOUSTIC_RECOVERY_DECAY_SECONDS: f64 = 0.150;
+const UPSHIFT_ACOUSTIC_RECOVERY_MAXIMUM_PITCH_DEPTH: f64 = 0.035;
 const GRAND_PRIX_GEARBOX_WHINE_TOOTH_CONTACT_DUTY_CYCLE: f32 = 0.125;
 const GRAND_PRIX_GEARBOX_WHINE_GEAR_CASING_RESONANCE_GAINS: [f32; 8] =
     [0.15, 0.35, 0.82, 1.0, 0.78, 0.50, 0.27, 0.12];
@@ -51,6 +58,8 @@ pub enum GrandPrixSamplerError {
 pub struct GrandPrixTelemetry {
     pub rpm: f64,
     pub throttle: f32,
+    pub normalized_transmitted_load: f32,
+    pub transmitted_torque_sign: i32,
     pub gear: i32,
     pub shift_phase: i32,
     pub rev_limiter_active: bool,
@@ -79,6 +88,11 @@ impl GrandPrixEventKind {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct GrandPrixDiagnostics {
     pub rendered_revolutions_per_minute: f32,
+    pub upshift_acoustic_pitch_modulation: f32,
+    pub upshift_acoustic_amplitude_modulation: f32,
+    pub gear_mesh_frequency_hertz: f32,
+    pub final_mesh_frequency_hertz: f32,
+    pub transmitted_load_gain: f32,
     pub engine_gain: f32,
     pub load_gain: f32,
     pub gate: f32,
@@ -109,6 +123,20 @@ struct ScheduledEvent {
     event_index: usize,
     gain: f32,
     ratio: f64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct LimiterCutWindow {
+    start_frame: u64,
+    end_frame_exclusive: u64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct UpshiftAcousticRecovery {
+    start_frame: u64,
+    pitch_depth: f64,
+    amplitude_depth: f64,
+    frequency_hertz: f64,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -153,6 +181,14 @@ impl GrandPrixSampleOutput {
 
 pub struct GrandPrixSampler {
     bank: GrandPrixSampleBank,
+    output_shaft_speed_hertz: Option<f64>,
+    physical_transmitted_torque_sign: Option<i32>,
+    target_gear: Option<i32>,
+    target_transmitted_load: f32,
+    transmitted_torque_sign: i32,
+    upshift_acoustic_recoveries: VecDeque<UpshiftAcousticRecovery>,
+    upshift_departure: Option<(i32, f64, f32)>,
+    upshift_departure_expires_frame: u64,
     output_sample_rate: u32,
     loop_cursors: Vec<f64>,
     zone_rates: Vec<f64>,
@@ -188,6 +224,11 @@ pub struct GrandPrixSampler {
     group_indices: [Option<usize>; 4],
     event_voices: Vec<EventVoice>,
     event_queue: VecDeque<ScheduledEvent>,
+    limiter_cut_variant: Option<GrandPrixDecodedVariant>,
+    limiter_cut_windows: VecDeque<LimiterCutWindow>,
+    limiter_cut_envelope: f32,
+    limiter_cut_cursor: f64,
+    limiter_high_pass: Biquad,
     target_rpm: f64,
     smoothed_rpm: f64,
     target_throttle: f32,
@@ -209,6 +250,7 @@ pub struct GrandPrixSampler {
     coast_gain: f32,
     render_frame: u64,
     ingest_frame_cursor: u64,
+    ingest_frame_remainder: f64,
     retrigger_until_frames: [u64; 4],
     lift_edge_cooldown_frames: u64,
     limiter_edge_cooldown_frames: u64,
@@ -258,12 +300,25 @@ impl GrandPrixSampler {
             }
         }
         let sample_rate = output_sample_rate as f64;
+        let limiter_cut_variant = group_indices[3].and_then(|group_index| {
+            let group = &bank.groups[group_index];
+            (group.trigger_event == GrandPrixTriggerEvent::LimiterCutWindow)
+                .then(|| group.variants[0])
+        });
         let event_voices = (0..GRAND_PRIX_VOICE_COUNT)
             .map(|_| EventVoice::default())
             .collect();
         let rng_state = bank.event_selection_seed.max(1);
         Ok(Self {
             bank,
+            output_shaft_speed_hertz: None,
+            physical_transmitted_torque_sign: None,
+            target_gear: None,
+            target_transmitted_load: 0.0,
+            transmitted_torque_sign: 0,
+            upshift_acoustic_recoveries: VecDeque::with_capacity(GRAND_PRIX_EVENT_QUEUE_CAPACITY),
+            upshift_departure: None,
+            upshift_departure_expires_frame: 0,
             output_sample_rate,
             loop_cursors: vec![0.0; loop_count],
             zone_rates: vec![1.0; loop_count],
@@ -303,7 +358,7 @@ impl GrandPrixSampler {
             gearbox_noise_low_cutoff_hertz: 1.0,
             gearbox_noise_high_cutoff_hertz: 2.0,
             current_gear: 0,
-            gearbox_whine_gear_level: 1.0,
+            gearbox_whine_gear_level: 0.10,
             gearbox_whine_attack_alpha: (1.0
                 - (-1.0 / (sample_rate * GRAND_PRIX_GEARBOX_WHINE_ATTACK_SECONDS)).exp())
                 as f32,
@@ -313,6 +368,11 @@ impl GrandPrixSampler {
             group_indices,
             event_voices,
             event_queue: VecDeque::with_capacity(GRAND_PRIX_EVENT_QUEUE_CAPACITY),
+            limiter_cut_variant,
+            limiter_cut_windows: VecDeque::with_capacity(GRAND_PRIX_LIMITER_CUT_WINDOW_CAPACITY),
+            limiter_cut_envelope: 0.0,
+            limiter_cut_cursor: 0.0,
+            limiter_high_pass: Biquad::highpass(output_sample_rate as f32, GRAND_PRIX_LIMITER_HIGH_PASS_CUTOFF_HERTZ),
             target_rpm: 0.0,
             smoothed_rpm: 0.0,
             target_throttle: 0.0,
@@ -342,6 +402,7 @@ impl GrandPrixSampler {
             coast_gain: GRAND_PRIX_COAST_GAIN_DEFAULT,
             render_frame: 0,
             ingest_frame_cursor: 0,
+            ingest_frame_remainder: 0.0,
             retrigger_until_frames: [0; 4],
             lift_edge_cooldown_frames: 0,
             limiter_edge_cooldown_frames: 0,
@@ -353,6 +414,22 @@ impl GrandPrixSampler {
             last_rev_limiter_active: false,
             diagnostics: GrandPrixDiagnostics::default(),
         })
+    }
+
+    pub fn set_output_shaft_speed_hertz(&mut self, speed_hertz: Option<f64>) {
+        self.output_shaft_speed_hertz = speed_hertz.filter(|speed| speed.is_finite()).map(f64::abs);
+    }
+
+    pub fn set_transmitted_torque_sign(&mut self, torque_sign: Option<i32>) {
+        self.physical_transmitted_torque_sign = torque_sign.map(i32::signum);
+    }
+
+    pub fn set_target_gear(&mut self, target_gear: Option<i32>) {
+        self.target_gear = target_gear;
+    }
+
+    pub fn pending_event_delay_frames(&self) -> u64 {
+        self.ingest_frame_cursor.saturating_sub(self.render_frame)
     }
 
     pub fn bank(&self) -> &GrandPrixSampleBank {
@@ -438,7 +515,10 @@ impl GrandPrixSampler {
                 .copied()
                 .unwrap_or(1.0)
         };
-        let output_shaft_hertz = (revolutions_per_minute.max(0.0) as f32 / 60.0) / gear_ratio;
+        let output_shaft_hertz = self
+            .output_shaft_speed_hertz
+            .map(|speed| speed as f32)
+            .unwrap_or((revolutions_per_minute.max(0.0) as f32 / 60.0) / gear_ratio);
         let gear_mesh_hertz = output_shaft_hertz * self.gearbox_whine_gear_teeth;
         let final_mesh_hertz =
             output_shaft_hertz / self.gearbox_whine_final_drive * self.gearbox_whine_final_teeth;
@@ -476,6 +556,14 @@ impl GrandPrixSampler {
     }
 
     pub fn reset(&mut self) {
+        self.output_shaft_speed_hertz = None;
+        self.physical_transmitted_torque_sign = None;
+        self.target_gear = None;
+        self.target_transmitted_load = 0.0;
+        self.transmitted_torque_sign = 0;
+        self.upshift_acoustic_recoveries.clear();
+        self.upshift_departure = None;
+        self.upshift_departure_expires_frame = 0;
         for cursor in &mut self.loop_cursors {
             *cursor = 0.0;
         }
@@ -493,7 +581,7 @@ impl GrandPrixSampler {
         self.gearbox_noise_low_cutoff_hertz = 1.0;
         self.gearbox_noise_high_cutoff_hertz = 2.0;
         self.current_gear = 0;
-        self.gearbox_whine_gear_level = 1.0;
+        self.gearbox_whine_gear_level = 0.10;
         for filter in self
             .zone_anti_alias
             .iter_mut()
@@ -517,6 +605,7 @@ impl GrandPrixSampler {
         self.shift_engine_gain = 1.0;
         self.render_frame = 0;
         self.ingest_frame_cursor = 0;
+        self.ingest_frame_remainder = 0.0;
         self.retrigger_until_frames = [0; 4];
         self.lift_edge_cooldown_frames = 0;
         self.limiter_edge_cooldown_frames = 0;
@@ -525,6 +614,10 @@ impl GrandPrixSampler {
         self.last_throttle = 0.0;
         self.last_shift_phase = 0;
         self.last_rev_limiter_active = false;
+        self.limiter_cut_windows.clear();
+        self.limiter_cut_envelope = 0.0;
+        self.limiter_cut_cursor = 0.0;
+        self.limiter_high_pass.reset();
         self.diagnostics = GrandPrixDiagnostics::default();
     }
 
@@ -540,17 +633,87 @@ impl GrandPrixSampler {
         let bounded_gap = telemetry
             .dt_seconds
             .min(GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS);
-        let dt_frames = (bounded_gap * self.output_sample_rate as f64).round() as u64;
         if telemetry.dt_seconds > GRAND_PRIX_MAXIMUM_INGEST_GAP_SECONDS {
             self.diagnostics.stale_input_holds =
                 self.diagnostics.stale_input_holds.saturating_add(1);
+            self.upshift_acoustic_recoveries.clear();
+            self.upshift_departure = None;
+            self.received_telemetry = false;
             self.ingest_frame_cursor = self.render_frame;
+            self.ingest_frame_remainder = 0.0;
+            self.limiter_cut_windows.clear();
+            self.limiter_cut_envelope = 0.0;
+            self.limiter_high_pass.reset();
         }
+        let duration_frames =
+            bounded_gap * self.output_sample_rate as f64 + self.ingest_frame_remainder;
+        let dt_frames = duration_frames.round().max(0.0) as u64;
+        self.ingest_frame_remainder = duration_frames - dt_frames as f64;
         let scheduled_frame = self.render_frame.max(self.ingest_frame_cursor);
+        if self.limiter_cut_variant.is_some() && telemetry.rev_limiter_active && dt_frames > 0 {
+            self.schedule_limiter_cut_window(scheduled_frame, dt_frames);
+        }
         self.lift_edge_cooldown_frames = self.lift_edge_cooldown_frames.saturating_sub(dt_frames);
         self.limiter_edge_cooldown_frames =
             self.limiter_edge_cooldown_frames.saturating_sub(dt_frames);
 
+        if self.received_telemetry {
+            if scheduled_frame > self.upshift_departure_expires_frame {
+                self.upshift_departure = None;
+            }
+            if telemetry.shift_phase == SHIFT_PHASE_UPSHIFT_CUT
+                && self.last_shift_phase != SHIFT_PHASE_UPSHIFT_CUT
+            {
+                self.upshift_departure = Some((
+                    self.current_gear,
+                    self.target_rpm,
+                    self.target_transmitted_load,
+                ));
+                self.upshift_departure_expires_frame = scheduled_frame
+                    + (0.5 * self.output_sample_rate as f64) as u64;
+            } else if telemetry.shift_phase != SHIFT_PHASE_UPSHIFT_CUT
+                && telemetry.normalized_transmitted_load > 0.0
+                && self.upshift_departure.is_some_and(|(previous_gear, previous_speed, _)| telemetry.gear > previous_gear && previous_speed > telemetry.rpm)
+            {
+                if let Some((previous_gear, previous_speed, previous_load)) =
+                    self.upshift_departure.take()
+                {
+                    let recovery_load = previous_load.max(telemetry.normalized_transmitted_load.clamp(0.0, 1.0));
+                    if previous_gear > 0
+                        && telemetry.gear > previous_gear
+                        && previous_speed > telemetry.rpm
+                    {
+                        let speed_drop = ((previous_speed - telemetry.rpm)
+                            / previous_speed.max(1.0))
+                        .clamp(0.0, 0.5);
+                        if self.upshift_acoustic_recoveries.len() < GRAND_PRIX_EVENT_QUEUE_CAPACITY
+                        {
+                            self.upshift_acoustic_recoveries
+                                .push_back(UpshiftAcousticRecovery {
+                                    start_frame: scheduled_frame,
+                                    pitch_depth: (speed_drop * 1.5 * recovery_load as f64)
+                                        .min(UPSHIFT_ACOUSTIC_RECOVERY_MAXIMUM_PITCH_DEPTH),
+                                    amplitude_depth: 0.20 * recovery_load as f64,
+                                    frequency_hertz: 22.0,
+                                });
+                        } else {
+                            self.diagnostics.overflowed_events =
+                                self.diagnostics.overflowed_events.saturating_add(1);
+                        }
+                    }
+                }
+            } else if telemetry.shift_phase == SHIFT_PHASE_DOWNSHIFT_CUT {
+                self.upshift_departure = None;
+            }
+        }
+        self.target_transmitted_load = if telemetry.normalized_transmitted_load.is_finite() {
+            telemetry.normalized_transmitted_load.clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        self.transmitted_torque_sign = self
+            .physical_transmitted_torque_sign
+            .unwrap_or(telemetry.transmitted_torque_sign.signum());
         self.target_rpm = telemetry.rpm.clamp(0.0, 30_000.0);
         self.current_gear = telemetry.gear;
         self.target_throttle = telemetry.throttle.clamp(0.0, 1.0);
@@ -580,6 +743,8 @@ impl GrandPrixSampler {
 
         if telemetry.shift_phase == SHIFT_PHASE_UPSHIFT_CUT
             && self.last_shift_phase != SHIFT_PHASE_UPSHIFT_CUT
+            && self.current_gear > 0
+            && self.target_gear != Some(0)
         {
             self.schedule_event(
                 GrandPrixEventKind::Upshift,
@@ -588,6 +753,7 @@ impl GrandPrixSampler {
             );
         } else if telemetry.shift_phase == SHIFT_PHASE_DOWNSHIFT_CUT
             && self.last_shift_phase != SHIFT_PHASE_DOWNSHIFT_CUT
+            && self.target_gear != Some(0)
         {
             self.schedule_event(
                 GrandPrixEventKind::Downshift,
@@ -615,7 +781,8 @@ impl GrandPrixSampler {
         }
 
         let limiter_cooldown_seconds = self.bank.limiter_edge_policy.cooldown_seconds;
-        if telemetry.rev_limiter_active
+        if self.limiter_cut_variant.is_none()
+            && telemetry.rev_limiter_active
             && !self.last_rev_limiter_active
             && self.limiter_edge_cooldown_frames == 0
         {
@@ -641,6 +808,9 @@ impl GrandPrixSampler {
     }
 
     fn schedule_event(&mut self, kind: GrandPrixEventKind, frame: u64, rpm: f64) {
+        if kind == GrandPrixEventKind::Limiter && self.limiter_cut_variant.is_some() {
+            return;
+        }
         let index = kind.index();
         if frame < self.retrigger_until_frames[index] {
             self.diagnostics.suppressed_events =
@@ -727,7 +897,9 @@ impl GrandPrixSampler {
 
         self.drain_due_events();
 
-        let rendered_rpm = self.smoothed_rpm;
+        let (recovery_modulation, recovery_amplitude_modulation) =
+            self.render_upshift_acoustic_recovery();
+        let rendered_rpm = self.smoothed_rpm * (1.0 + recovery_modulation);
         let playback_revolutions_per_minute = rendered_rpm.clamp(
             self.bank.coverage_minimum_revolutions_per_minute,
             self.bank.coverage_maximum_revolutions_per_minute,
@@ -814,14 +986,18 @@ impl GrandPrixSampler {
                 engine_weight + coast_weight,
             )
         };
-        let engine_sample = engine_mix * self.gate * self.shift_engine_gain * self.engine_gain;
+        let engine_sample = engine_mix
+            * self.gate
+            * self.shift_engine_gain
+            * self.engine_gain
+            * (1.0 + recovery_amplitude_modulation as f32);
 
         let mut output = GrandPrixSampleOutput {
             engine: engine_sample,
             ..GrandPrixSampleOutput::default()
         };
         let (target_gear_mesh_frequency_hertz, target_final_mesh_frequency_hertz) =
-            self.gearbox_mesh_frequencies(self.smoothed_rpm, self.current_gear);
+            self.gearbox_mesh_frequencies(self.target_rpm, self.current_gear);
         self.gearbox_whine_gear_mesh_frequency_hertz += (target_gear_mesh_frequency_hertz
             - self.gearbox_whine_gear_mesh_frequency_hertz)
             * self.rpm_alpha as f32;
@@ -872,19 +1048,24 @@ impl GrandPrixSampler {
         let high_frequency_noise = self
             .gearbox_noise_low_pass
             .process(self.gearbox_noise_high_pass.process(white_noise));
-        let target_gear_level = if self.current_gear == 0 { 0.72 } else { 1.0 };
-        let gear_level_alpha = if target_gear_level > self.gearbox_whine_gear_level {
-            self.gearbox_whine_attack_alpha
+        let transmission_side_gain = if self.transmitted_torque_sign < 0 {
+            0.78
         } else {
-            self.gearbox_whine_release_alpha
+            1.0
+        };
+        let target_gear_level = if self.current_gear == 0 {
+            0.10
+        } else {
+            (0.10 + 0.90 * self.target_transmitted_load.sqrt()) * transmission_side_gain
         };
         self.gearbox_whine_gear_level +=
-            (target_gear_level - self.gearbox_whine_gear_level) * gear_level_alpha;
+            (target_gear_level - self.gearbox_whine_gear_level) * self.load_alpha;
         output.gearbox_whine = (tone_sample * self.gearbox_whine_tone_gain
             + high_frequency_noise * self.gearbox_whine_noise_gain)
             * self.gearbox_whine_gain
             * self.gearbox_whine_envelope
-            * self.gearbox_whine_gear_level;
+            * self.gearbox_whine_gear_level
+            * (1.0 + recovery_modulation as f32 * 4.0);
         let mut active_voices = 0u8;
         for index in 0..self.event_voices.len() {
             if self.event_voices[index].active {
@@ -900,7 +1081,19 @@ impl GrandPrixSampler {
             }
         }
 
+        if self.limiter_cut_variant.is_some() {
+            output.limiter = self.render_limiter_cut_sample();
+            if self.limiter_cut_envelope > 0.0 {
+                active_voices = active_voices.saturating_add(1);
+            }
+        }
+
         self.diagnostics.rendered_revolutions_per_minute = rendered_rpm as f32;
+        self.diagnostics.upshift_acoustic_pitch_modulation = recovery_modulation as f32;
+        self.diagnostics.upshift_acoustic_amplitude_modulation = recovery_amplitude_modulation as f32;
+        self.diagnostics.gear_mesh_frequency_hertz = self.gearbox_whine_gear_mesh_frequency_hertz;
+        self.diagnostics.final_mesh_frequency_hertz = self.gearbox_whine_final_mesh_frequency_hertz;
+        self.diagnostics.transmitted_load_gain = self.gearbox_whine_gear_level;
         self.diagnostics.engine_gain = self.engine_gain;
         self.diagnostics.load_gain = load_gain;
         self.diagnostics.gate = self.gate;
@@ -908,8 +1101,8 @@ impl GrandPrixSampler {
         self.diagnostics.active_voice_count = active_voices;
         self.diagnostics.queued_events = self.event_queue.len() as u32;
         self.diagnostics.output_peak = self.diagnostics.output_peak.max(output.sum().abs());
-        self.diagnostics.limiter_voice_active =
-            self.event_voices[GRAND_PRIX_LIMITER_VOICE_INDEX].active;
+        self.diagnostics.limiter_voice_active = self.limiter_cut_envelope > 0.0
+            || self.event_voices[GRAND_PRIX_LIMITER_VOICE_INDEX].active;
         self.diagnostics.backfire_voice_active =
             self.event_voices[GRAND_PRIX_BACKFIRE_VOICE_INDEX].active;
         self.render_frame = self.render_frame.saturating_add(1);
@@ -918,6 +1111,90 @@ impl GrandPrixSampler {
 
     pub fn render_sample(&mut self) -> f32 {
         self.render_sample_components().sum()
+    }
+
+    fn schedule_limiter_cut_window(&mut self, start_frame: u64, duration_frames: u64) {
+        let end_frame_exclusive = start_frame.saturating_add(duration_frames);
+        if let Some(previous_window) = self.limiter_cut_windows.back_mut() {
+            if previous_window.end_frame_exclusive == start_frame {
+                previous_window.end_frame_exclusive = end_frame_exclusive;
+                return;
+            }
+        }
+        if self.limiter_cut_windows.len() == GRAND_PRIX_LIMITER_CUT_WINDOW_CAPACITY {
+            self.diagnostics.overflowed_events =
+                self.diagnostics.overflowed_events.saturating_add(1);
+            self.limiter_cut_windows.clear();
+            self.limiter_cut_envelope = 0.0;
+            return;
+        }
+        self.limiter_cut_windows.push_back(LimiterCutWindow {
+            start_frame,
+            end_frame_exclusive,
+        });
+    }
+
+    fn render_limiter_cut_sample(&mut self) -> f32 {
+        while self
+            .limiter_cut_windows
+            .front()
+            .is_some_and(|window| window.end_frame_exclusive <= self.render_frame)
+        {
+            self.limiter_cut_windows.pop_front();
+        }
+        let cut_active = self
+            .limiter_cut_windows
+            .front()
+            .is_some_and(|window| window.start_frame <= self.render_frame);
+        let transition_frames = (GRAND_PRIX_LIMITER_CUT_TRANSITION_SECONDS
+            * self.output_sample_rate as f64)
+            .round()
+            .max(1.0) as f32;
+        let envelope_step = 1.0 / transition_frames;
+        self.limiter_cut_envelope = if cut_active {
+            (self.limiter_cut_envelope + envelope_step).min(1.0)
+        } else {
+            (self.limiter_cut_envelope - envelope_step).max(0.0)
+        };
+        if self.limiter_cut_envelope == 0.0 {
+            self.limiter_high_pass.reset();
+            return 0.0;
+        }
+        let Some(variant) = self.limiter_cut_variant else {
+            return 0.0;
+        };
+        let recording = &self.bank.events[variant.event_index].pcm;
+        if recording.is_empty() {
+            return 0.0;
+        }
+        let crossfade_frames = ((GRAND_PRIX_LIMITER_LOOP_CROSSFADE_SECONDS * 44_100.0).round()
+            as usize)
+            .min(recording.len() / 4);
+        let recording_sample_at = |position: f64| {
+            let first_frame = position.floor() as usize;
+            let second_frame = (first_frame + 1).min(recording.len() - 1);
+            let fraction = (position - first_frame as f64) as f32;
+            let first_sample = recording[first_frame] as f32 / 32768.0;
+            let second_sample = recording[second_frame] as f32 / 32768.0;
+            first_sample + (second_sample - first_sample) * fraction
+        };
+        let recording_frame = self.limiter_cut_cursor as usize;
+        let mut sample = recording_sample_at(self.limiter_cut_cursor);
+        let crossfade_start = recording.len() - crossfade_frames;
+        if crossfade_frames > 0 && recording_frame >= crossfade_start {
+            let crossfade_position = self.limiter_cut_cursor - crossfade_start as f64;
+            let blend = crossfade_position as f32 / crossfade_frames as f32;
+            let beginning = recording_sample_at(crossfade_position);
+            sample = sample * (1.0 - blend) + beginning * blend;
+        }
+        self.limiter_cut_cursor += 44_100.0 / self.output_sample_rate as f64;
+        if self.limiter_cut_cursor >= recording.len() as f64 {
+            self.limiter_cut_cursor = crossfade_frames as f64
+                + (self.limiter_cut_cursor - recording.len() as f64)
+                    % (recording.len() - crossfade_frames) as f64;
+        }
+        self.limiter_high_pass.process(sample)
+            * variant.gain * self.limiter_gain * self.limiter_cut_envelope
     }
 
     fn drain_due_events(&mut self) {
@@ -989,6 +1266,46 @@ impl GrandPrixSampler {
                     .start(&event, GRAND_PRIX_EVENT_FADE_FRAMES);
             }
         }
+    }
+
+    fn render_upshift_acoustic_recovery(&mut self) -> (f64, f64) {
+        let duration_frames =
+            (UPSHIFT_ACOUSTIC_RECOVERY_DURATION_SECONDS * self.output_sample_rate as f64) as u64;
+        while self
+            .upshift_acoustic_recoveries
+            .front()
+            .is_some_and(|recovery| {
+                self.render_frame >= recovery.start_frame.saturating_add(duration_frames)
+            })
+        {
+            self.upshift_acoustic_recoveries.pop_front();
+        }
+        let mut pitch_modulation = 0.0;
+        let mut amplitude_modulation = 0.0;
+        for recovery in &self.upshift_acoustic_recoveries {
+            if recovery.start_frame > self.render_frame {
+                continue;
+            }
+            let elapsed_seconds = (self.render_frame - recovery.start_frame) as f64
+                / self.output_sample_rate as f64;
+            let oscillation = (-elapsed_seconds / UPSHIFT_ACOUSTIC_RECOVERY_DECAY_SECONDS).exp()
+                * (std::f64::consts::TAU * recovery.frequency_hertz * elapsed_seconds).sin()
+                * (1.0
+                    - smoothstep(
+                        0.300,
+                        UPSHIFT_ACOUSTIC_RECOVERY_DURATION_SECONDS,
+                        elapsed_seconds,
+                    ));
+            pitch_modulation += recovery.pitch_depth * oscillation;
+            amplitude_modulation += recovery.amplitude_depth * oscillation;
+        }
+        (
+            pitch_modulation.clamp(
+                -UPSHIFT_ACOUSTIC_RECOVERY_MAXIMUM_PITCH_DEPTH,
+                UPSHIFT_ACOUSTIC_RECOVERY_MAXIMUM_PITCH_DEPTH,
+            ),
+            amplitude_modulation.clamp(-0.20, 0.20),
+        )
     }
 
     fn render_event_voice(&mut self, voice_index: usize) -> f32 {
@@ -1183,6 +1500,240 @@ mod tests {
     use super::*;
     use std::path::{Path, PathBuf};
 
+    fn schedule_loaded_upshift(sampler: &mut GrandPrixSampler, load: f32, next_gear: i32) {
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 18_000.0,
+            gear: 3,
+            throttle: 1.0,
+            normalized_transmitted_load: load,
+            dt_seconds: 0.01,
+            ..GrandPrixTelemetry::default()
+        });
+        for _ in 0..441 {
+            sampler.render_sample_components();
+        }
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 17_500.0,
+            gear: 3,
+            shift_phase: SHIFT_PHASE_UPSHIFT_CUT,
+            dt_seconds: 0.06,
+            ..GrandPrixTelemetry::default()
+        });
+        for _ in 0..2646 {
+            sampler.render_sample_components();
+        }
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 15_375.0,
+            gear: next_gear,
+            shift_phase: 2,
+            throttle: 1.0,
+            normalized_transmitted_load: load,
+            dt_seconds: 0.01,
+            ..GrandPrixTelemetry::default()
+        });
+    }
+
+    #[test]
+    fn acoustic_upshift_recovery_decays_without_changing_telemetry_speed() {
+        let mut sampler = shipped_sampler();
+        schedule_loaded_upshift(&mut sampler, 1.0, 4);
+        let mut early_peak = 0.0_f64;
+        let mut late_peak = 0.0_f64;
+        for frame in 0..17_640 {
+            sampler.render_sample_components();
+            let modulation = sampler.diagnostics.upshift_acoustic_pitch_modulation.abs() as f64;
+            if frame < 2205 {
+                early_peak = early_peak.max(modulation);
+            }
+            if frame > 13_230 {
+                late_peak = late_peak.max(modulation);
+            }
+        }
+        assert!(early_peak > 0.005 && early_peak <= 0.035);
+        assert!(late_peak < early_peak * 0.20);
+        assert_eq!(sampler.target_rpm, 15_375.0);
+        assert!((sampler.smoothed_rpm - 15_375.0).abs() < 0.01);
+        assert!(sampler.upshift_acoustic_recoveries.is_empty());
+    }
+
+    #[test]
+    fn upshift_amplitude_tracks_load_independently_of_saturated_pitch() {
+        let mut full_load_sampler = shipped_sampler();
+        let mut light_load_sampler = shipped_sampler();
+        schedule_loaded_upshift(&mut full_load_sampler, 1.0, 4);
+        schedule_loaded_upshift(&mut light_load_sampler, 0.25, 4);
+        let mut amplitude_peak = 0.0_f32;
+        for _ in 0..17_640 {
+            full_load_sampler.render_sample_components();
+            light_load_sampler.render_sample_components();
+            let full_load = full_load_sampler.diagnostics;
+            let light_load = light_load_sampler.diagnostics;
+            assert!((full_load.upshift_acoustic_pitch_modulation
+                - light_load.upshift_acoustic_pitch_modulation).abs() < 0.000001);
+            assert!((full_load.upshift_acoustic_amplitude_modulation * 0.25
+                - light_load.upshift_acoustic_amplitude_modulation).abs() < 0.000001);
+            amplitude_peak = amplitude_peak.max(full_load.upshift_acoustic_amplitude_modulation.abs());
+        }
+        assert!(amplitude_peak > 0.17 && amplitude_peak <= 0.20);
+        assert_eq!(full_load_sampler.diagnostics.upshift_acoustic_amplitude_modulation, 0.0);
+        assert_eq!(full_load_sampler.diagnostics.upshift_acoustic_pitch_modulation, 0.0);
+    }
+
+    #[test]
+    fn acoustic_upshift_recovery_requires_load_and_confirmed_higher_gear() {
+        for (load, next_gear) in [(0.0, 4), (1.0, 3), (1.0, 2), (1.0, 0)] {
+            let mut sampler = shipped_sampler();
+            schedule_loaded_upshift(&mut sampler, load, next_gear);
+            for _ in 0..2205 {
+                sampler.render_sample_components();
+                assert_eq!(sampler.diagnostics.upshift_acoustic_pitch_modulation, 0.0);
+            }
+        }
+    }
+
+    #[test]
+    fn physical_output_shaft_pitch_survives_engine_speed_and_gear_changes() {
+        let mut sampler = shipped_sampler();
+        sampler.set_gearbox_whine_transmission(&[3.0, 2.0], 4.0, 3.0, 20.0, 40.0);
+        sampler.set_output_shaft_speed_hertz(Some(100.0));
+        for (speed, gear) in [(18_000.0, 1), (12_000.0, 2), (7000.0, 0)] {
+            assert_eq!(
+                sampler.gearbox_mesh_frequencies(speed, gear),
+                (2000.0, 1000.0)
+            );
+        }
+        sampler.set_output_shaft_speed_hertz(Some(150.0));
+        assert_eq!(
+            sampler.gearbox_mesh_frequencies(12_000.0, 2),
+            (3000.0, 1500.0)
+        );
+    }
+
+    #[test]
+    fn upshift_flutter_waits_for_manual_clutch_reengagement() {
+        let mut sampler = shipped_sampler();
+        for (gear, speed, phase, load) in [
+            (3, 18_000.0, 0, 0.0),
+            (3, 18_000.0, 1, 0.0),
+            (4, 18_000.0, 2, 0.0),
+        ] {
+            sampler.ingest(&GrandPrixTelemetry {
+                rpm: speed, gear, shift_phase: phase,
+                throttle: 1.0, normalized_transmitted_load: load,
+                dt_seconds: 0.02, ..GrandPrixTelemetry::default()
+            });
+            for _ in 0..882 {
+                sampler.render_sample_components();
+                assert_eq!(sampler.diagnostics.upshift_acoustic_pitch_modulation, 0.0);
+            }
+        }
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 15_375.0, gear: 4, throttle: 1.0,
+            normalized_transmitted_load: 0.8, dt_seconds: 0.02,
+            ..GrandPrixTelemetry::default()
+        });
+        let mut peak_modulation = 0.0_f32;
+        for _ in 0..2205 {
+            sampler.render_sample_components();
+            peak_modulation = peak_modulation.max(sampler.diagnostics.upshift_acoustic_pitch_modulation.abs());
+        }
+        assert!(peak_modulation > 0.005);
+        assert_eq!(sampler.target_rpm, 15_375.0);
+    }
+
+    #[test]
+    fn gearbox_whine_responds_to_transmitted_load_and_drive_side() {
+        let mut levels = Vec::new();
+        for (load, sign) in [(0.0, 1), (1.0, 1), (1.0, -1)] {
+            let mut sampler = shipped_sampler();
+            sampler.set_output_shaft_speed_hertz(Some(100.0));
+            sampler.set_transmitted_torque_sign(Some(sign));
+            sampler.ingest(&GrandPrixTelemetry {
+                rpm: 12_000.0,
+                gear: 3,
+                normalized_transmitted_load: load,
+                transmitted_torque_sign: 1,
+                dt_seconds: 0.01,
+                ..GrandPrixTelemetry::default()
+            });
+            for _ in 0..88_200 {
+                sampler.render_sample_components();
+            }
+            levels.push(sampler.diagnostics.transmitted_load_gain);
+        }
+        assert!(levels[1] > levels[0] * 8.0);
+        assert!((levels[2] / levels[1] - 0.78).abs() < 0.01);
+    }
+
+    #[test]
+    fn loaded_upshift_recovery_is_allocation_free_and_resettable() {
+        let mut sampler = shipped_sampler();
+        crate::allocation_probe::start();
+        schedule_loaded_upshift(&mut sampler, 1.0, 4);
+        for _ in 0..11_025 {
+            sampler.render_sample_components();
+        }
+        let (allocations, _) = crate::allocation_probe::stop();
+        assert_eq!(allocations, 0);
+        schedule_loaded_upshift(&mut sampler, 1.0, 4);
+        sampler.reset();
+        assert!(sampler.upshift_acoustic_recoveries.is_empty());
+        assert!(sampler.upshift_departure.is_none());
+        assert_eq!(sampler.output_shaft_speed_hertz, None);
+    }
+
+    #[test]
+    fn batched_upshift_recovery_starts_at_the_scheduled_completion_frame() {
+        let mut sampler = shipped_sampler();
+        for (gear, speed, phase, load) in [
+            (3, 18_000.0, 0, 1.0),
+            (3, 17_500.0, 1, 0.0),
+            (4, 15_375.0, 2, 1.0),
+        ] {
+            sampler.ingest(&GrandPrixTelemetry {
+                rpm: speed,
+                gear,
+                shift_phase: phase,
+                normalized_transmitted_load: load,
+                dt_seconds: 0.01,
+                ..GrandPrixTelemetry::default()
+            });
+        }
+        for _ in 0..882 {
+            sampler.render_sample_components();
+            assert_eq!(sampler.diagnostics.upshift_acoustic_pitch_modulation, 0.0);
+        }
+        let mut peak_modulation = 0.0_f32;
+        for _ in 0..882 {
+            sampler.render_sample_components();
+            peak_modulation =
+                peak_modulation.max(sampler.diagnostics.upshift_acoustic_pitch_modulation.abs());
+        }
+        assert!(peak_modulation > 0.005);
+    }
+
+    #[test]
+    fn upshift_recording_preserves_its_audible_tail() {
+        let mut sampler = shipped_sampler();
+        sampler.ingest_direct(GrandPrixEventKind::Upshift, 18_000.0);
+        let mut contact_peak = 0.0_f32;
+        for _ in 0..1200 {
+            contact_peak = contact_peak.max(sampler.render_sample_components().gearbox.abs());
+        }
+        assert!(contact_peak > 0.0);
+        let mut tail_peak = 0.0_f32;
+        for _ in 0..4410 {
+            tail_peak = tail_peak.max(sampler.render_sample_components().gearbox.abs());
+        }
+        assert!(tail_peak > 0.01);
+        for _ in 0..22050 {
+            sampler.render_sample_components();
+        }
+        for _ in 0..4410 {
+            assert_eq!(sampler.render_sample_components().gearbox, 0.0);
+        }
+    }
+
     fn shipped_bank_directory() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("../../sounds/banks/v10-v2-bank")
     }
@@ -1204,6 +1755,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: frames as f64 / 44_100.0,
+
+            ..GrandPrixTelemetry::default()
         });
     }
 
@@ -1338,6 +1891,8 @@ mod tests {
             shift_phase: 1,
             rev_limiter_active: false,
             dt_seconds: 0.01,
+
+            ..GrandPrixTelemetry::default()
         });
         for _ in 0..4 {
             sampler.ingest(&GrandPrixTelemetry {
@@ -1347,6 +1902,8 @@ mod tests {
                 shift_phase: 1,
                 rev_limiter_active: false,
                 dt_seconds: 0.01,
+
+                ..GrandPrixTelemetry::default()
             });
         }
         advance(&mut sampler, 4410);
@@ -1367,6 +1924,8 @@ mod tests {
             shift_phase: SHIFT_PHASE_UPSHIFT_CUT,
             rev_limiter_active: false,
             dt_seconds: 0.02,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 1_323);
         assert!(sampler.shift_engine_gain < 0.30);
@@ -1377,6 +1936,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.08,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 8_820);
         assert!(sampler.shift_engine_gain > 0.98);
@@ -1387,6 +1948,8 @@ mod tests {
             shift_phase: SHIFT_PHASE_DOWNSHIFT_CUT,
             rev_limiter_active: false,
             dt_seconds: 0.02,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 1_323);
         assert!(sampler.shift_engine_gain > 0.40);
@@ -1444,6 +2007,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.01,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 4410);
         assert_eq!(sampler.diagnostics().accepted_events, before);
@@ -1460,6 +2025,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.01,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 4410);
         assert_eq!(sampler.diagnostics().accepted_events, 1);
@@ -1470,6 +2037,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.2,
+
+            ..GrandPrixTelemetry::default()
         });
         sampler.ingest(&GrandPrixTelemetry {
             rpm: 14_000.0,
@@ -1478,6 +2047,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.01,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 8820);
         assert_eq!(sampler.diagnostics().accepted_events, 1);
@@ -1486,7 +2057,14 @@ mod tests {
 
     #[test]
     fn limiter_entry_triggers_once_per_edge() {
-        let mut sampler = shipped_sampler();
+        let mut bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
+        let limiter_group = bank
+            .groups
+            .iter_mut()
+            .find(|group| group.role == GrandPrixEventRole::LimiterEvent)
+            .expect("limiter group");
+        limiter_group.trigger_event = GrandPrixTriggerEvent::LimiterEntryEdge;
+        let mut sampler = GrandPrixSampler::new(bank, 44_100, None, None).expect("sampler");
         ingest_steady(&mut sampler, 17_500.0, 1.0, 441);
         sampler.ingest(&GrandPrixTelemetry {
             rpm: 17_500.0,
@@ -1495,6 +2073,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: true,
             dt_seconds: 0.01,
+
+            ..GrandPrixTelemetry::default()
         });
         for _ in 0..10 {
             sampler.ingest(&GrandPrixTelemetry {
@@ -1504,10 +2084,193 @@ mod tests {
                 shift_phase: 0,
                 rev_limiter_active: true,
                 dt_seconds: 0.01,
+
+                ..GrandPrixTelemetry::default()
             });
         }
         advance(&mut sampler, 4410);
         assert_eq!(sampler.diagnostics().accepted_events, 1);
+    }
+
+    fn ingest_limiter_cut(
+        sampler: &mut GrandPrixSampler,
+        cut_active: bool,
+        duration_frames: usize,
+    ) {
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 18_500.0,
+            throttle: 1.0,
+            gear: 6,
+            shift_phase: 0,
+            rev_limiter_active: cut_active,
+            dt_seconds: duration_frames as f64 / 44_100.0,
+
+            ..GrandPrixTelemetry::default()
+        });
+    }
+
+    #[test]
+    fn limiter_cut_windows_preserve_batched_pulses_without_cooldown() {
+        let mut sampler = shipped_sampler();
+        for cut_active in [false, true, false, true, false] {
+            ingest_limiter_cut(&mut sampler, cut_active, 100);
+        }
+        let limiter_samples: Vec<f32> = (0..550)
+            .map(|_| sampler.render_sample_components().limiter)
+            .collect();
+        assert!(limiter_samples[..100].iter().all(|sample| *sample == 0.0));
+        assert!(limiter_samples[112..200]
+            .iter()
+            .any(|sample| sample.abs() > 0.01));
+        assert!(limiter_samples[212..300]
+            .iter()
+            .all(|sample| *sample == 0.0));
+        assert!(limiter_samples[312..400]
+            .iter()
+            .any(|sample| sample.abs() > 0.01));
+        assert!(limiter_samples[412..].iter().all(|sample| *sample == 0.0));
+        assert_eq!(sampler.diagnostics().accepted_limiter_events, 0);
+    }
+
+    #[test]
+    fn limiter_high_pass_rejects_bass_and_preserves_high_frequencies() {
+        let mut band_levels = Vec::new();
+        for frequency_hertz in [150.0_f64, 3000.0] {
+            let mut sampler = shipped_sampler();
+            let event_index = sampler.limiter_cut_variant.expect("limiter variant").event_index;
+            sampler.bank.events[event_index].pcm = (0..44_100)
+                .map(|frame| (16_000.0 * (std::f64::consts::TAU * frequency_hertz * frame as f64 / 44_100.0).sin()) as i16)
+                .collect();
+            ingest_limiter_cut(&mut sampler, true, 20_000);
+            let mut energy = 0.0_f64;
+            for frame in 0..20_000 {
+                let sample = sampler.render_sample_components().limiter as f64;
+                if frame >= 5000 {
+                    energy += sample * sample;
+                }
+            }
+            band_levels.push((energy / 15_000.0).sqrt());
+            for _ in 0..20 {
+                sampler.render_sample_components();
+            }
+            assert_eq!(sampler.render_sample_components().limiter, 0.0);
+        }
+        assert!(band_levels[0] < band_levels[1] * 0.1);
+        assert!(band_levels[1] > 0.1);
+    }
+
+    #[test]
+    fn limiter_cut_audio_expires_even_without_recovery_telemetry() {
+        let mut sampler = shipped_sampler();
+        ingest_limiter_cut(&mut sampler, true, 100);
+        let limiter_samples: Vec<f32> = (0..200)
+            .map(|_| sampler.render_sample_components().limiter)
+            .collect();
+        assert!(limiter_samples[..100]
+            .iter()
+            .any(|sample| sample.abs() > 0.01));
+        assert!(limiter_samples[112..].iter().all(|sample| *sample == 0.0));
+        assert!(!sampler.diagnostics().limiter_voice_active);
+    }
+
+    #[test]
+    fn limiter_cut_audio_never_uses_revolutions_threshold_or_direct_event() {
+        let mut sampler = shipped_sampler();
+        ingest_limiter_cut(&mut sampler, false, 100);
+        sampler.ingest_direct(GrandPrixEventKind::Limiter, 19_000.0);
+        for _ in 0..200 {
+            assert_eq!(sampler.render_sample_components().limiter, 0.0);
+        }
+        assert_eq!(sampler.diagnostics().accepted_limiter_events, 0);
+        assert!(sampler.event_queue.is_empty());
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 9_000.0,
+            rev_limiter_active: true,
+            dt_seconds: 0.01,
+            ..GrandPrixTelemetry::default()
+        });
+        assert!((0..100).any(|_| sampler.render_sample_components().limiter.abs() > 0.01));
+    }
+
+    #[test]
+    fn limiter_cut_windows_retain_fractional_physics_step_timing() {
+        let mut sampler = shipped_sampler();
+        for _ in 0..600 {
+            sampler.ingest(&GrandPrixTelemetry {
+                rpm: 18_000.0,
+                rev_limiter_active: true,
+                dt_seconds: 1.0 / 600.0,
+                ..GrandPrixTelemetry::default()
+            });
+        }
+        assert_eq!(sampler.ingest_frame_cursor, 44_100);
+        assert_eq!(sampler.limiter_cut_windows.len(), 1);
+        assert_eq!(sampler.limiter_cut_windows[0].end_frame_exclusive, 44_100);
+    }
+
+    #[test]
+    fn limiter_cut_recording_preserves_pitch_at_alternate_output_sample_rate() {
+        let bank = GrandPrixSampleBank::load(&shipped_bank_directory()).expect("bank");
+        let mut sampler = GrandPrixSampler::new(bank, 48_000, None, None).expect("sampler");
+        sampler.ingest(&GrandPrixTelemetry {
+            rpm: 18_000.0,
+            rev_limiter_active: true,
+            dt_seconds: 0.1,
+            ..GrandPrixTelemetry::default()
+        });
+        advance(&mut sampler, 4800);
+        assert!((sampler.limiter_cut_cursor - 4410.0).abs() < 1e-6);
+        advance(&mut sampler, 12);
+        assert_eq!(sampler.render_sample_components().limiter, 0.0);
+    }
+
+    #[test]
+    fn limiter_cut_window_overflow_fails_silent_without_allocating() {
+        let mut sampler = shipped_sampler();
+        crate::allocation_probe::start();
+        for _ in 0..=GRAND_PRIX_LIMITER_CUT_WINDOW_CAPACITY {
+            ingest_limiter_cut(&mut sampler, true, 100);
+            ingest_limiter_cut(&mut sampler, false, 100);
+        }
+        for _ in 0..100 {
+            assert_eq!(sampler.render_sample_components().limiter, 0.0);
+        }
+        let (allocations, _) = crate::allocation_probe::stop();
+        assert_eq!(allocations, 0);
+        assert_eq!(sampler.diagnostics().overflowed_events, 1);
+    }
+
+    #[test]
+    fn limiter_cut_audio_wraps_recording_during_sustained_physical_cut() {
+        let mut sampler = shipped_sampler();
+        let variant = sampler.limiter_cut_variant.expect("cut variant");
+        let recording_length = sampler.bank.events[variant.event_index].pcm.len();
+        for _ in 0..20 {
+            ingest_limiter_cut(&mut sampler, true, 20_000);
+        }
+        advance(&mut sampler, recording_length - 5);
+        let wrap_samples: Vec<f32> = (0..20)
+            .map(|_| sampler.render_sample_components().limiter)
+            .collect();
+        assert!(wrap_samples.iter().all(|sample| sample.is_finite()));
+        assert!(wrap_samples.iter().any(|sample| sample.abs() > 0.01));
+        assert!(wrap_samples
+            .windows(2)
+            .all(|pair| (pair[1] - pair[0]).abs() < 0.2));
+        assert_eq!(sampler.diagnostics().accepted_limiter_events, 0);
+    }
+
+    #[test]
+    fn limiter_cut_reset_clears_pending_audio_and_playback_position() {
+        let mut sampler = shipped_sampler();
+        ingest_limiter_cut(&mut sampler, true, 100);
+        advance(&mut sampler, 50);
+        sampler.reset();
+        assert!(sampler.limiter_cut_windows.is_empty());
+        assert_eq!(sampler.limiter_cut_cursor, 0.0);
+        for _ in 0..100 {
+            assert_eq!(sampler.render_sample_components().limiter, 0.0);
+        }
     }
 
     #[test]
@@ -1521,6 +2284,8 @@ mod tests {
             shift_phase: 1,
             rev_limiter_active: false,
             dt_seconds: 0.05,
+
+            ..GrandPrixTelemetry::default()
         });
         sampler.ingest(&GrandPrixTelemetry {
             rpm: 8800.0,
@@ -1529,6 +2294,8 @@ mod tests {
             shift_phase: 3,
             rev_limiter_active: false,
             dt_seconds: 0.05,
+
+            ..GrandPrixTelemetry::default()
         });
         assert_eq!(sampler.event_queue.len(), 2);
         let events: Vec<(GrandPrixEventKind, u64)> = sampler
@@ -1567,6 +2334,7 @@ mod tests {
                 shift_phase: if packet % 2 == 0 { 1 } else { 0 },
                 rev_limiter_active: false,
                 dt_seconds: 0.05,
+                ..GrandPrixTelemetry::default()
             });
         }
         assert!(sampler.event_queue.len() <= GRAND_PRIX_EVENT_QUEUE_CAPACITY);
@@ -1596,6 +2364,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.5,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 176_400);
         assert!(sampler.diagnostics().gate <= 1e-3);
@@ -1613,6 +2383,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.1,
+
+            ..GrandPrixTelemetry::default()
         });
         let neutral_energy: f32 = (0..4_410)
             .map(|_| sampler.render_sample_components().gearbox_whine.abs())
@@ -1625,6 +2397,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.01,
+
+            ..GrandPrixTelemetry::default()
         });
         let in_gear_energy: f32 = (0..4_410)
             .map(|_| sampler.render_sample_components().gearbox_whine.abs())
@@ -1637,6 +2411,8 @@ mod tests {
             shift_phase: 0,
             rev_limiter_active: false,
             dt_seconds: 0.5,
+
+            ..GrandPrixTelemetry::default()
         });
         advance(&mut sampler, 176_400);
         assert!(sampler.render_sample_components().gearbox_whine.abs() < 1e-4);
@@ -1662,6 +2438,8 @@ mod tests {
                 shift_phase: 0,
                 rev_limiter_active: false,
                 dt_seconds: 0.1,
+
+                ..GrandPrixTelemetry::default()
             });
             advance(&mut sampler, 4_410);
             assert!(
@@ -1705,8 +2483,10 @@ mod tests {
             throttle: 0.2,
             gear: 5,
             shift_phase: 0,
-            rev_limiter_active: false,
+            rev_limiter_active: true,
             dt_seconds: 0.05,
+
+            ..GrandPrixTelemetry::default()
         });
         for _ in 0..20_000 {
             let _ = sampler.render_sample();

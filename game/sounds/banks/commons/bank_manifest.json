@@ -180,6 +180,27 @@
     },
     {
       "dc_offset": 0.0,
+      "duration_s": 0.741338,
+      "file": "neutral_first_gear_transition.wav",
+      "loop": false,
+      "loop_end_s": null,
+      "loop_start_s": null,
+      "loudness_dbfs": -22.64,
+      "peak": 0.705968,
+      "provenance": "derived from original user-supplied replacement samples",
+      "role": "neutral_first_gear_transition",
+      "sha256": "b268f1fa879d6305d56f4db01900d8f05b4930e280b9ce467fac75a4b1c6970b",
+      "synthesis": {
+        "category": "shift",
+        "promotion_recipe": "neutral_first_gear_transition_v1",
+        "source_file": "game/sounds/bank_sources/neutral_first_gear_transition_source.wav",
+        "source_rate": 48000,
+        "source_sha256": "2ed935b08d633d5179c08336b71e733524f42c1f5d47d03c2072f1b89e22d0fc",
+        "tool_revision": 1
+      }
+    },
+    {
+      "dc_offset": 0.0,
       "duration_s": 1.547846,
       "file": "surf_grass.wav",
       "loop": true,

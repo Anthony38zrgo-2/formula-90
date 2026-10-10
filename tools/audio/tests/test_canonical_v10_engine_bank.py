@@ -189,6 +189,7 @@ def test_canonical_event_groups_cover_every_event(manifest: dict) -> None:
     }
     event_ids = {asset["id"] for asset in manifest["events"]}
     assert variant_ids == event_ids
+    assert groups["limiter"]["trigger_event"] == "limiter_cut_window"
     for event in manifest["events"]:
         source_name = event["source_filename"]
         assert (BANK_DIR / source_name).is_file()
@@ -199,6 +200,19 @@ def test_canonical_event_groups_cover_every_event(manifest: dict) -> None:
             )
             assert event == expected_event
             assert (BANK_DIR / event["derived_filename"]).read_bytes() == expected_payload
+
+
+def test_limiter_cut_recording_matches_replacement_source(manifest: dict) -> None:
+    limiter_recording = next(asset for asset in manifest["events"] if asset["id"] == "limiter_event")
+    assert limiter_recording["derived_filename"] == "limiter_cut_loop.wav"
+    assert limiter_recording["source_sha256"] == "a4706922a925323749ff7b9dd54459dcdd9f1383b229100bdcfae887fcf54f3a"
+    assert limiter_recording["derived_frames"] == 324106
+    assert math.isclose(limiter_recording["duration_seconds"], 7.349342403628118)
+    assert limiter_recording["preparation_recipe"] == "canonical_limiter_mono16_peak_headroom_v2"
+    with wave.open(str(BANK_DIR / limiter_recording["derived_filename"]), "rb") as reader:
+        raw = reader.readframes(reader.getnframes())
+    sample_peak = max(abs(int.from_bytes(raw[index:index + 2], "little", signed=True)) for index in range(0, len(raw), 2))
+    assert sample_peak <= math.ceil(0.92 * 32768)
 
 
 def test_canonical_source_inventory_hash_matches(manifest: dict) -> None:
