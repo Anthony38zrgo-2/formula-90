@@ -1,6 +1,11 @@
 # f1_2030 — 2030 vehicle data
 
 Scope: physics, geometric, and suspension-mesh data for the 2030 V10 car.
+The `underfloor_contact` profile section owns the approximation, activation and
+release clearances, progressive contact rates, rigid-contact eligibility and
+hold/filter times. Rust validates and evaluates these values; the native bridge
+only submits raw probes and rigid contacts. The current clearances are 35 mm,
+25 mm and 50 mm respectively. Loaded individual probes can activate scrape audio.
 Consumers: the physics engine, suspension visuals, and 2030 vehicle scenes.
 Rules: geometry and physics stay consistent by construction; a mesh change revalidates the packaging tests.
 

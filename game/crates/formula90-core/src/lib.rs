@@ -449,7 +449,17 @@ pub struct CoreFacade {
 }
 
 impl CoreFacade {
-    pub fn new(config: CoreConfig) -> Result<Self, CoreError> {
+    pub fn new(mut config: CoreConfig) -> Result<Self, CoreError> {
+        if !config.use_canonical {
+            if let Some(profile_path) = config.config_json_path.as_ref() {
+                let vehicle_configuration = VehicleConfig::from_json_path(profile_path)
+                    .map_err(|error| CoreError::Config(format!("invalid vehicle profile: {error}")))?;
+                if let Some(contact_configuration) = vehicle_configuration.underfloor_contact {
+                    config.underfloor_contact = contact_configuration;
+                }
+            }
+        }
+        config.underfloor_contact.validate().map_err(CoreError::Config)?;
         let audio = AudioModule::new(config.bank_dir.as_deref(), config.enable_audio);
         let world = World::new(config.fixed_dt);
         let mut registry = ModuleRegistry::new();
@@ -758,7 +768,7 @@ impl CoreFacade {
             present: true,
             active: scrape_active,
             intensity: self.underfloor.scrape_intensity as f32,
-            speed_m_s: underfloor_sample.rigid_contact.tangential_speed_m_s as f32,
+            speed_m_s: body.linear_velocity.length() as f32,
             onset_strength: self.underfloor.onset_strength as f32,
         };
         self.finish_frame(dt, frame, surface, slip, mechanical_audio, scrape)
@@ -1243,4 +1253,62 @@ fn dominant_surface(samples: &[TriRaycastSample; 4]) -> SurfaceType {
     } else {
         Road
     }
+}
+
+#[cfg(test)]
+mod underfloor_profile_configuration_tests {
+    use super::*;
+
+    #[test]
+    fn vehicle_profile_overrides_conflicting_programmatic_contact_thresholds() {
+        let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut configuration = CoreConfig {
+            config_json_path: Some(repository.join("game/data/vehicles/f1_2030/f1_2030_v10_geometric.json")),
+            use_canonical: false,
+            enable_audio: false,
+            ..Default::default()
+        };
+        configuration.underfloor_contact.activation_clearance_m = 0.001;
+        let core = CoreFacade::new(configuration).unwrap();
+        assert_eq!(core.config.underfloor_contact.activation_clearance_m, 0.025);
+        assert_eq!(core.config.underfloor_contact.release_clearance_m, 0.050);
+    }
+    #[test]
+    fn localized_probe_contact_reaches_sampled_scrape_audio_rendering() {
+        let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut core = CoreFacade::new(CoreConfig {
+            config_json_path: Some(repository.join("game/data/vehicles/f1_2030/f1_2030_v10_geometric.json")),
+            bank_dir: Some(repository.join("game/sounds/banks/commons")),
+            use_canonical: false,
+            enable_audio: true,
+            ..Default::default()
+        }).unwrap();
+        let identifier = core.ensure_spawned().unwrap();
+        let suspension_samples = core.flat_samples(identifier);
+        let mut sample = underfloor::UnderfloorSample::default();
+        sample.rays[0] = underfloor::UnderfloorRayHit {
+            valid: true, clearance_m: 0.020,
+            normal_world: [0.0, 1.0, 0.0],
+            point_world: [-0.45, 0.0, -0.90],
+            ..Default::default()
+        };
+        let body = BodyKinematics {
+            transform: Transform3D::new(Vec3::new(0.0, 0.4, 0.0), Mat3::IDENTITY),
+            orientation: vehicle_physics_engine::Quat::IDENTITY,
+            linear_velocity: Vec3::new(0.0, 0.0, -30.0),
+            angular_velocity: Vec3::ZERO,
+        };
+        let frame = core.step_with_underfloor(identifier, body, &VehicleInput::default(), 0,
+            &suspension_samples, &sample, 1.0 / 120.0);
+        assert!(frame.underfloor_scrape_intensity > 0.0);
+        let mut left = vec![0.0; 1024];
+        let mut right = vec![0.0; 1024];
+        assert_eq!(core.audio_render(&mut left, &mut right, 1024), 1024);
+        let engine = core.audio.mut_engine().unwrap();
+        assert!(engine.scrape_gain() > 0.0);
+        assert!(engine.scrape_cursor() > 0.0);
+        assert!(left.iter().any(|sample| sample.abs() > 0.00001));
+        assert!(left.iter().all(|sample| sample.is_finite()));
+    }
+
 }

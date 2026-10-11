@@ -172,12 +172,17 @@ typedef struct F90UnderfloorRayHit {
     double surface_code;
 } F90UnderfloorRayHit;
 
+typedef struct F90UnderfloorRawContact {
+    double local_position[3];
+    double local_normal[3];
+    double impulse_newton_seconds;
+    double tangential_speed_metres_per_second;
+} F90UnderfloorRawContact;
+
 typedef struct F90UnderfloorSample {
     F90UnderfloorRayHit rays[5];
-    double rigid_confirmed;
-    double rigid_local_x, rigid_local_y, rigid_local_z;
-    double rigid_normal_impulse_ns;
-    double rigid_tangential_speed_m_s;
+    uint32_t raw_contact_count;
+    F90UnderfloorRawContact raw_contacts[32];
 } F90UnderfloorSample;
 
 typedef uint32_t (*FnCoreAbiVersion)(void);

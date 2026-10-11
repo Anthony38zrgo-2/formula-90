@@ -474,7 +474,7 @@ void F194RustVehicle::_ready() {
 	set_freeze_enabled(false);
 	set_gravity_scale(1.0);
 	set_contact_monitor(true);
-	set_max_contacts_reported(4);
+	set_max_contacts_reported(32);
 
 	// 2. Synchronize config from authoritative Rust backend
 	sync_runtime_config_from_rust();
@@ -1643,69 +1643,30 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
 	if (!p_state) {
 		return;
 	}
-	const Vector3 body_velocity = p_state->get_linear_velocity();
-	constexpr int RIGID_ENTER_FRAMES = 2;
-	constexpr int RIGID_RELEASE_FRAMES = 4;
-	// Near-floor chatter produces tiny impulses; only real loads count.
-	constexpr double RIGID_MIN_IMPULSE_NS = 8.0;
-	double strongest_impulse = 0.0;
-	bool raw_confirmed = false;
-	for (int i = 0; i < p_state->get_contact_count(); ++i) {
-		const Vector3 local_position = p_state->get_contact_local_position(i);
-		const Vector3 local_normal = p_state->get_contact_local_normal(i);
-		// Collision proxies bottom at roughly -0.16..-0.20 m. Reject side/nose hits.
-		if (local_position.y > -0.12 || local_normal.y < 0.55) {
-			continue;
-		}
-		const Vector3 impulse = p_state->get_contact_impulse(i);
-		const double impulse_magnitude = impulse.length();
-		if (impulse_magnitude < RIGID_MIN_IMPULSE_NS) {
-			continue;
-		}
-		if (raw_confirmed && impulse_magnitude <= strongest_impulse) {
-			continue;
-		}
-		strongest_impulse = impulse_magnitude;
-		const Vector3 collider_velocity = p_state->get_contact_collider_velocity_at_position(i);
-		const Vector3 relative_velocity = body_velocity - collider_velocity;
-		const Vector3 world_normal = p_state->get_transform().basis.xform(local_normal);
-		const Vector3 tangent = relative_velocity - world_normal * relative_velocity.dot(world_normal);
-		raw_confirmed = true;
-		underfloor_rigid_local_[0] = local_position.x;
-		underfloor_rigid_local_[1] = local_position.y;
-		underfloor_rigid_local_[2] = local_position.z;
-		underfloor_rigid_impulse_ns_ = impulse_magnitude;
-		underfloor_rigid_tangent_m_s_ = tangent.length();
-	}
-
-	// Debounce: confirm only after consecutive contact frames and release after a
-	// short run of clear frames, so the host cannot toggle at frame rate.
-	if (raw_confirmed) {
-		if (underfloor_rigid_enter_streak_ < RIGID_ENTER_FRAMES) {
-			underfloor_rigid_enter_streak_++;
-		}
-		underfloor_rigid_release_streak_ = 0;
-	} else {
-		if (underfloor_rigid_release_streak_ < RIGID_RELEASE_FRAMES) {
-			underfloor_rigid_release_streak_++;
-		}
-		underfloor_rigid_enter_streak_ = 0;
-	}
-	if (underfloor_rigid_latched_) {
-		if (underfloor_rigid_release_streak_ >= RIGID_RELEASE_FRAMES) {
-			underfloor_rigid_latched_ = false;
-		}
-	} else if (underfloor_rigid_enter_streak_ >= RIGID_ENTER_FRAMES) {
-		underfloor_rigid_latched_ = true;
-	}
-	if (underfloor_rigid_latched_) {
-		p_sample->rigid_confirmed = 1.0;
-		p_sample->rigid_local_x = underfloor_rigid_local_[0];
-		p_sample->rigid_local_y = underfloor_rigid_local_[1];
-		p_sample->rigid_local_z = underfloor_rigid_local_[2];
-		p_sample->rigid_normal_impulse_ns = underfloor_rigid_impulse_ns_;
-		p_sample->rigid_tangential_speed_m_s = underfloor_rigid_tangent_m_s_;
-	}
+    const Vector3 body_velocity = p_state->get_linear_velocity();
+    const Vector3 angular_velocity = p_state->get_angular_velocity();
+    const Transform3D body_transform = p_state->get_transform();
+    const int contact_count = MIN(p_state->get_contact_count(), 32);
+    p_sample->raw_contact_count = contact_count;
+    for (int contact_index = 0; contact_index < contact_count; ++contact_index) {
+        F90UnderfloorRawContact &contact = p_sample->raw_contacts[contact_index];
+        const Vector3 local_position = p_state->get_contact_local_position(contact_index);
+        const Vector3 local_normal = p_state->get_contact_local_normal(contact_index);
+        const Vector3 world_lever = body_transform.basis.xform(local_position);
+        const Vector3 point_velocity = body_velocity + angular_velocity.cross(world_lever);
+        const Vector3 collider_velocity = p_state->get_contact_collider_velocity_at_position(contact_index);
+        const Vector3 relative_velocity = point_velocity - collider_velocity;
+        const Vector3 world_normal = body_transform.basis.xform(local_normal);
+        const Vector3 tangent = relative_velocity - world_normal * relative_velocity.dot(world_normal);
+        contact.local_position[0] = local_position.x;
+        contact.local_position[1] = local_position.y;
+        contact.local_position[2] = local_position.z;
+        contact.local_normal[0] = local_normal.x;
+        contact.local_normal[1] = local_normal.y;
+        contact.local_normal[2] = local_normal.z;
+        contact.impulse_newton_seconds = p_state->get_contact_impulse(contact_index).length();
+        contact.tangential_speed_metres_per_second = tangent.length();
+    }
 }
 
 void F194RustVehicle::apply_core_motion(const Vector3 &p_lin_vel, const Vector3 &p_ang_vel) {

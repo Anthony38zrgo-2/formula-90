@@ -124,7 +124,7 @@ class F90Core : public Node3D {
 	GDCLASS(F90Core, Node3D)
 
 public:
-	static constexpr uint32_t EXPECTED_ABI_VERSION = 18;
+	static constexpr uint32_t EXPECTED_ABI_VERSION = 19;
 	/// Audio output rate driven by the AudioStreamGenerator (Hz).
 	static constexpr int kAudioMixRate = 44100;
 	/// Legacy fixed per-pump sample cap. Kept only for the `audio_pump_mode == 0`

@@ -1,11 +1,11 @@
-//! C-ABI surface of the orchestrator — the SINGLE handshake Godot uses.
+//! C-ABI surface of the orchestrator â€” the SINGLE handshake Godot uses.
 //!
 //! Replaces the three per-module DLLs (vehicle_physics_engine, game_sim,
 //! vehicle_audio_engine) with one artifact and one ABI version. Structs here are
 //! mirrored EXACTLY in `native/include/formula90s/core/f90_core.h`.
 //!
 //! Extension rule: adding a module only adds additive `f90_core_module_<name>_*`
-//! symbols — the core loop and this ABI are stable.
+//! symbols â€” the core loop and this ABI are stable.
 #![allow(clippy::not_unsafe_ptr_arg_deref)] // Limite ABI C: los punteros llegan del bridge Godot y se validan en la entrada.
 
 use std::ffi::{c_char, c_void, CStr};
@@ -18,12 +18,12 @@ use vehicle_physics_engine::{
 
 use crate::audio_worker::{AudioWorker, AudioWorkerStats};
 use crate::frame::AudioReadouts;
-use crate::underfloor::{UnderfloorRayHit, UnderfloorRigidContact, UnderfloorSample};
+use crate::underfloor::{UnderfloorRayHit, UnderfloorRawContact, UnderfloorSample};
 use crate::{CoreConfig, CoreFacade};
 
 /// ABI v5: brake energy diagnostics were appended after the brake thermal tail.
 /// v13: added `f90_core_audio_set_ambient` (listener distance + TC/limiter downlink).
-pub const F90_CORE_ABI_VERSION: u32 = 18;
+pub const F90_CORE_ABI_VERSION: u32 = 19;
 
 /// Reuses the mirrored `game_sim` tri-ray sample struct (already mirrored as
 /// `F90SimTriRaycastSample` in `f90_sim_bridge.h`); here it is `F90TriRaycastSample`
@@ -48,12 +48,8 @@ pub struct F90UnderfloorRayHit {
 #[derive(Default, Clone, Copy)]
 pub struct F90UnderfloorSample {
     pub rays: [F90UnderfloorRayHit; 5],
-    pub rigid_confirmed: f64,
-    pub rigid_local_x: f64,
-    pub rigid_local_y: f64,
-    pub rigid_local_z: f64,
-    pub rigid_normal_impulse_ns: f64,
-    pub rigid_tangential_speed_m_s: f64,
+    pub raw_contact_count: u32,
+    pub raw_contacts: [UnderfloorRawContact; 32],
 }
 
 /// Single output block of `f90_core_step`. Mirrored in `f90_core.h`.
@@ -266,7 +262,6 @@ struct Opts {
     vehicle_scene: Option<String>,
     track_scene: Option<String>,
     modules: Vec<String>,
-    underfloor_contact: Option<crate::underfloor::UnderfloorContactConfig>,
 }
 
 fn parse_opts(s: &str) -> Result<CoreConfig, String> {
@@ -292,9 +287,6 @@ fn parse_opts(s: &str) -> Result<CoreConfig, String> {
         cfg.track_scene = v;
     }
     cfg.modules = o.modules;
-    if let Some(v) = o.underfloor_contact {
-        cfg.underfloor_contact = v;
-    }
     Ok(cfg)
 }
 
@@ -496,12 +488,8 @@ pub unsafe extern "C" fn f90_core_step(
                 surface_code: ray.surface_code.clamp(0.0, 255.0) as u8,
             };
         }
-        result.rigid_contact = UnderfloorRigidContact {
-            confirmed: src.rigid_confirmed > 0.5,
-            local_position: [src.rigid_local_x, src.rigid_local_y, src.rigid_local_z],
-            normal_impulse_ns: src.rigid_normal_impulse_ns,
-            tangential_speed_m_s: src.rigid_tangential_speed_m_s,
-        };
+        result.raw_contact_count = (src.raw_contact_count as usize).min(32);
+        result.raw_contacts = src.raw_contacts;
         result
     };
     let frame = facade_mut(h).step_with_underfloor(
@@ -1354,5 +1342,19 @@ mod abi_tests {
         assert_eq!(step_with_gear(-1), -1, "gear_request=-1 must reach Reverse");
 
         unsafe { f90_core_destroy(h) };
+    }
+}
+
+#[cfg(test)]
+mod raw_contact_layout_tests {
+    use super::*;
+    use std::mem::{offset_of, size_of};
+
+    #[test]
+    fn raw_contact_input_layout_matches_native_interface() {
+        assert_eq!(size_of::<UnderfloorRawContact>(), 64);
+        assert_eq!(offset_of!(F90UnderfloorSample, raw_contact_count), 360);
+        assert_eq!(offset_of!(F90UnderfloorSample, raw_contacts), 368);
+        assert_eq!(size_of::<F90UnderfloorSample>(), 2416);
     }
 }

@@ -1,6 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 pub mod aero;
+pub mod underfloor_contact_configuration;
 pub mod bin_support;
 pub mod brake_thermals;
 pub mod calibration;

@@ -153,29 +153,30 @@
       }
     },
     {
-      "dc_offset": 2.2274025984091552e-07,
-      "duration_s": 0.32,
+      "dc_offset": 0.0,
+      "duration_s": 2.586667,
       "file": "impact_scrape.wav",
       "loop": false,
       "loop_end_s": null,
       "loop_start_s": null,
-      "loudness_dbfs": -15.370525121094637,
-      "peak": 0.885833740234375,
-      "provenance": "normalized from the pre-existing 48000 Hz stereo 24-bit workspace asset for runtime bank compatibility",
+      "loudness_dbfs": -17.74,
+      "peak": 0.693695,
+      "provenance": "derived from user-supplied undertray_scrape_metallic_p Edit 1 Export 1.wav",
       "role": "impact_scrape",
-      "sha256": "a52e9557646b3d9d78f4611cd9c6af9392a72716ea12f71736e51f65ebcf0a19",
+      "sha256": "8a03e8c95c9858d783547a42f89d0bc65628508684de2177b12e4f4f670ecece",
       "synthesis": {
         "category": "impact",
-        "components": [
-          "arithmetic_stereo_downmix",
-          "polyphase_resample_48000_to_44100_hz",
-          "pcm16_quantization"
-        ],
-        "duration_s": 0.32,
-        "recipe": "runtime_format_normalization_v1",
-        "source_channels": 2,
-        "source_rate": 48000,
-        "source_sample_width_bits": 24
+        "processing": {
+          "arithmetic_stereo_downmix": true,
+          "attenuation_decibels": -3.124036380875561,
+          "remove_mean_offset": true,
+          "true_peak_ceiling_decibels_full_scale": -3.0
+        },
+        "promotion_recipe": "underfloor_metallic_scrape_v1",
+        "source_file": "game/sounds/bank_sources/underfloor_metallic_scrape_source.wav",
+        "source_rate": 44100,
+        "source_sha256": "164f2ca76fc1625308583a2af20f09dee0a23cfca0924e7f60be406e56ae5164",
+        "tool_revision": 1
       }
     },
     {

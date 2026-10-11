@@ -316,6 +316,8 @@ pub struct VehicleConfig {
     pub physical_mass_inventory: Option<crate::vehicle_mass_inventory::VehicleMassInventory>,
     #[serde(default)]
     pub coupled_world: Option<crate::coupled_vehicle_world::CoupledVehicleWorldConfiguration>,
+    #[serde(default)]
+    pub underfloor_contact: Option<crate::underfloor_contact_configuration::UnderfloorContactConfig>,
 }
 
 /// Schema v3 steady tire force curve (parser-only until TIRE-100/TIRE-200).
@@ -700,6 +702,7 @@ impl VehicleConfig {
             geometric_suspension: None,
             physical_mass_inventory: None,
             coupled_world: None,
+            underfloor_contact: None,
             front_torque_split: 0.0,
 
             // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
@@ -889,6 +892,7 @@ impl VehicleConfig {
             geometric_suspension: None,
             physical_mass_inventory: None,
             coupled_world: None,
+            underfloor_contact: None,
             front_torque_split: 0.0, // RWD
 
             // Differential (Salisbury Clutch-Pack LSD)
@@ -1214,6 +1218,8 @@ struct JsonVehicleSpec {
     physical_mass_inventory: Option<crate::vehicle_mass_inventory::VehicleMassInventory>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     coupled_world: Option<crate::coupled_vehicle_world::CoupledVehicleWorldConfiguration>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    underfloor_contact: Option<crate::underfloor_contact_configuration::UnderfloorContactConfig>,
 }
 
 fn default_schema_version() -> u32 {
@@ -3355,6 +3361,9 @@ fn validate_brake_duct(name: &str, c: &BrakeDuctAxleConfig) -> Result<(), String
 impl JsonVehicleSpec {
     fn validate(&self) -> Result<(), String> {
         self.validate_core()?;
+        if let Some(configuration) = self.underfloor_contact.as_ref() {
+            configuration.validate()?;
+        }
         self.validate_tires()?;
         self.validate_suspension_geometry()?;
         let brake_thermal = self
@@ -4094,6 +4103,7 @@ impl JsonVehicleSpec {
             audio: self.audio.clone(),
             physical_mass_inventory: self.physical_mass_inventory.clone(),
             coupled_world: self.coupled_world.clone(),
+            underfloor_contact: self.underfloor_contact,
             suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
                 .unwrap_or(SuspensionModelKind::Legacy1Dof),
             suspension_model_version: self.suspension.model_version,
@@ -4136,6 +4146,7 @@ impl JsonVehicleSpec {
         Self {
             physical_mass_inventory: cfg.physical_mass_inventory.clone(),
             coupled_world: cfg.coupled_world.clone(),
+            underfloor_contact: cfg.underfloor_contact,
             schema_version: cfg.schema_version,
             vehicle_id: "f1_94".to_string(),
             profile_name: cfg.vehicle_name.clone(),
