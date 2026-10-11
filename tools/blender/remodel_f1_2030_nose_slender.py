@@ -1,22 +1,27 @@
 """Make the F1 2030 nose slender and upward-pitched, stretching the supports.
 
-The nose region of GEO_CHASSIS_BODY (x < -1.75) is transformed with a single
+The nose region of GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER (x < -1.75) is transformed with a single
 analytic map driven by a smooth longitudinal weight w (0 at the blend start,
 1 at the nose tip): lateral slimming toward y=0, vertical thinning toward the
 local section midline c(x), and a uniform tip rise. The front wing plane is
 left untouched, so the nose-to-wing clearance grows.
 
-GEO_CHASSIS_FRONTSUPPORT receives the exact same map (a function of the
+GEO_FRONT_WING_MOUNTING_PYLONS receives the exact same map (a function of the
 original world position), which keeps its top flange flush with the new nose
 underside, and is then re-parameterized between the deformed nose underside
 and the fixed wing surface (1 mm overlap), stretching both blades uniformly.
 """
 
 import bpy
-import bisect
-import math
+
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
+import bisect
+import math
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -27,9 +32,9 @@ NOSE_TIP_RISE_M = 0.055
 NOSE_LATERAL_SLIM = 0.25
 NOSE_VERTICAL_THIN = 0.15
 SUPPORT_WING_OVERLAP_M = 0.001
-BODY_NAME = "GEO_CHASSIS_BODY"
-SUPPORT_NAME = "GEO_CHASSIS_FRONTSUPPORT"
-WING_NAME = "GEO_CHASSIS_FRONTWING"
+BODY_NAME = "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
+SUPPORT_NAME = "GEO_FRONT_WING_MOUNTING_PYLONS"
+WING_NAME = "GEO_FRONT_WING_MAIN_ELEMENT"
 MODIFIED_OBJECTS = {BODY_NAME, SUPPORT_NAME}
 
 

@@ -60,11 +60,11 @@ func _run() -> void:
 			var brake_static := visual.get_node_or_null("BrakeStatic") if visual != null else null
 			if hub == null or steer == null or camber == null or spinner == null or visual == null or brake_static == null:
 				_fail("Incomplete wheel visual hierarchy at %s." % wheel_name, failures)
-			elif brake_static.find_children("*_NUT_05", "MeshInstance3D", true, false).size() != 1 \
-				or brake_static.find_children("*_RIM_06", "MeshInstance3D", true, false).size() != 1:
+			elif brake_static.find_children("*_CALIPER", "MeshInstance3D", true, false).size() != 1 \
+				or brake_static.find_children("*_INBOARD_DUCT_COVER", "MeshInstance3D", true, false).size() != 1:
 				_fail("BrakeStatic must contain one caliper and one inboard duct at %s." % wheel_name, failures)
-			elif not spinner.find_children("*_NUT_05", "MeshInstance3D", true, false).is_empty() \
-				or not spinner.find_children("*_RIM_06", "MeshInstance3D", true, false).is_empty():
+			elif not spinner.find_children("*_CALIPER", "MeshInstance3D", true, false).is_empty() \
+				or not spinner.find_children("*_INBOARD_DUCT_COVER", "MeshInstance3D", true, false).is_empty():
 				_fail("Caliper or brake duct remains inside SpinVisual at %s." % wheel_name, failures)
 			elif hub.get_node_or_null("TireSmokeEmitter") == null:
 				_fail("Shared tire-smoke emitter is missing at %s." % wheel_name, failures)

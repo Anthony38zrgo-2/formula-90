@@ -5,7 +5,7 @@
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2030_V10",
   "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json",
-  "physics_sha256": "cfb9d9607ec87176c52ea66ba45db3167a675679920ed0d3666b2076dc04891d",
+  "physics_sha256": "fedd49246eb2ff64173bf5d9621483f4d37972b22be91921e443c8c0d945b976",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -28,28 +28,28 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "418B393A014CFDFC586416C564BB29B8EB1977F555A9695D532B226B36ECFA7A",
-      "size_bytes": 19261704
+      "sha256": "501A61069F3D1FEE5EE7B4A9AE407E38D87EB72B34D9A542F9303EAD3F1365E1",
+      "size_bytes": 46727776
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "5D6C02FADD9A7759D610EC026C761B903DF642478139EA5541DC11CFAE1FE742",
-      "size_bytes": 7826344
+      "sha256": "9CB62DB79CB862BF56A252BC87E587C2635D0F49D9B1FC14757200A353E89165",
+      "size_bytes": 8029300
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "9C39EC19E6461BB080DDA1CB165781F1AE0263AA82BD3C7559E4C0B3329992DC",
-      "size_bytes": 7826348
+      "sha256": "561FF279EC912956C6BC1B49C54CEA95BC94ADAA1A5D0D6CC04732904173949C",
+      "size_bytes": 8029320
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "A051A4300DDA684AE7504B2B8807FE394FC37140F8F8EA033FA2E0E5F22F1BB4",
-      "size_bytes": 7826328
+      "sha256": "6BB3E922B8CFFECF43F78B88FCD1FB0987D3641BB5CAF10C2BA264A72B89DBCF",
+      "size_bytes": 8029288
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "0D5485185C70FA5936E210561D13D4903C1F0028A833A9700F7D83FB78D9F098",
-      "size_bytes": 7826312
+      "sha256": "1B09246E44D5E460078671DA787DE81F9C1CD462428BC6595C9FDD9DD0CAD509",
+      "size_bytes": 8029284
     }
   },
   "validation": {
@@ -64,5 +64,799 @@
     "source_visual_commit": "62e16480",
     "mass_properties": "Uniform thin-shell surface integration calibrated to preceding estimated component masses; no ballast compensation.",
     "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171"
+  },
+  "current_chassis_source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171",
+  "object_name_migration": {
+    "operation": "Rename runtime nodes and meshes while preserving all geometry, materials, images, transforms and hierarchy",
+    "assets": {
+      "chassis": {
+        "source_sha256": "0a9e4294aa281201dcf5545eb96ae6552eb1209a9a2502e9e8ed10e204802216",
+        "output_sha256": "501a61069f3d1fee5ee7b4a9ae407e38d87eb72b34d9a542f9303ead3f1365e1",
+        "binary_chunk_sha256": [
+          "1bb5de08743563e02d358bccec670978ae31de2727a7cfed61516f1796892a6b"
+        ],
+        "non_name_document_fields_preserved": true,
+        "binary_chunks_preserved": true,
+        "renamed_objects": [
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_ACTIVEFRONT",
+            "current_name": "GEO_FRONT_WING_INTERMEDIATE_ELEMENT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_AERO2",
+            "current_name": "GEO_FRONT_WING_UPPER_ELEMENT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_AEROPART1",
+            "current_name": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_AEROPART2",
+            "current_name": "GEO_REAR_WING_UPPER_ELEMENT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_AEROPART3",
+            "current_name": "GEO_REAR_WING_LOWER_BEAM_ELEMENT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_BODY",
+            "current_name": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_CARBON3",
+            "current_name": "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_CARBON4",
+            "current_name": "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_CARBON5",
+            "current_name": "GEO_ENGINE_COVER_REAR_CLOSURE"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_CYLINDER_001",
+            "current_name": "GEO_STEERING_WHEEL_CENTER_FASTENER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_ENDPLATE",
+            "current_name": "GEO_FRONT_WING_ENDPLATES"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_FLOOR",
+            "current_name": "GEO_UNDERBODY_FLOOR_AND_DIFFUSER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_FRONT_SUSPENSION",
+            "current_name": "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_FRONTSUPPORT",
+            "current_name": "GEO_FRONT_WING_MOUNTING_PYLONS"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_FRONTWING",
+            "current_name": "GEO_FRONT_WING_MAIN_ELEMENT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_INTERIOR",
+            "current_name": "GEO_COCKPIT_INTERIOR_SHELL"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_LATERALCAM",
+            "current_name": "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_MIRRORS",
+            "current_name": "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_ONBOARDCAM",
+            "current_name": "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_REAR_SUSPENSION",
+            "current_name": "GEO_SUSPENSION_REAR_LINK_ASSEMBLY"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_REAR_WING",
+            "current_name": "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_REAR_WING_MID",
+            "current_name": "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_REARLIGHT",
+            "current_name": "GEO_REAR_SAFETY_LIGHT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_REARSUPPORT",
+            "current_name": "GEO_REAR_WING_CENTRAL_SUPPORT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_SCREEN",
+            "current_name": "GEO_STEERING_WHEEL_DISPLAY"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_SEAT",
+            "current_name": "GEO_COCKPIT_DRIVER_SEAT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_SHIFTERBRAK",
+            "current_name": "GEO_STEERING_WHEEL_PADDLE_LEFT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_SHIFTERTHRO",
+            "current_name": "GEO_STEERING_WHEEL_PADDLE_RIGHT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_STEER",
+            "current_name": "GEO_STEERING_WHEEL_BODY"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_STEERCOLUM",
+            "current_name": "GEO_STEERING_COLUMN_SHAFT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_EXHAUST_TUBE_LEFT",
+            "current_name": "GEO_EXHAUST_OUTLET_TUBE_LEFT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_CockpitHeadrestPadding",
+            "current_name": "GEO_COCKPIT_HeadrestPadding"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_CockpitUpperLining",
+            "current_name": "GEO_COCKPIT_UpperInteriorLining"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_CHASSIS_EXHAUST_TUBE_RIGHT",
+            "current_name": "GEO_EXHAUST_OUTLET_TUBE_RIGHT"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_ACTIVEFRONT_MESH.001",
+            "current_name": "GEO_FRONT_WING_INTERMEDIATE_ELEMENT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_AERO2_MESH.001",
+            "current_name": "GEO_FRONT_WING_UPPER_ELEMENT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_AEROPART1_MESH.001",
+            "current_name": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_AEROPART2_MESH",
+            "current_name": "GEO_REAR_WING_UPPER_ELEMENT_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_AEROPART3_MESH",
+            "current_name": "GEO_REAR_WING_LOWER_BEAM_ELEMENT_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_BODY_MESH.001",
+            "current_name": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_CARBON3_MESH.001",
+            "current_name": "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_CARBON4_MESH.001",
+            "current_name": "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_CARBON5_MESH.001",
+            "current_name": "GEO_ENGINE_COVER_REAR_CLOSURE_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_CYLINDER_001_MESH.001",
+            "current_name": "GEO_STEERING_WHEEL_CENTER_FASTENER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_ENDPLATE_MESH.001",
+            "current_name": "GEO_FRONT_WING_ENDPLATES_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_FLOOR_MESH.001",
+            "current_name": "GEO_UNDERBODY_FLOOR_AND_DIFFUSER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_FRONT_SUSPENSION_MESH.001",
+            "current_name": "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_FRONTSUPPORT_MESH",
+            "current_name": "GEO_FRONT_WING_MOUNTING_PYLONS_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_FRONTWING_MESH.001",
+            "current_name": "GEO_FRONT_WING_MAIN_ELEMENT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_INTERIOR_MESH.001",
+            "current_name": "GEO_COCKPIT_INTERIOR_SHELL_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_LATERALCAM_MESH.001",
+            "current_name": "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_MIRRORS_MESH.001",
+            "current_name": "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_ONBOARDCAM_MESH.001",
+            "current_name": "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_REAR_SUSPENSION_MESH.001",
+            "current_name": "GEO_SUSPENSION_REAR_LINK_ASSEMBLY_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_REAR_WING_MESH",
+            "current_name": "GEO_REAR_WING_ENDPLATE_ASSEMBLY_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_REAR_WING_MID_MESH.001",
+            "current_name": "GEO_REAR_WING_INTERMEDIATE_ELEMENT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_REARLIGHT_MESH.001",
+            "current_name": "GEO_REAR_SAFETY_LIGHT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_REARSUPPORT_MESH",
+            "current_name": "GEO_REAR_WING_CENTRAL_SUPPORT_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_SCREEN_MESH.001",
+            "current_name": "GEO_STEERING_WHEEL_DISPLAY_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_SEAT_MESH.001",
+            "current_name": "GEO_COCKPIT_DRIVER_SEAT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_SHIFTERBRAK_MESH.001",
+            "current_name": "GEO_STEERING_WHEEL_PADDLE_LEFT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_SHIFTERTHRO_MESH.001",
+            "current_name": "GEO_STEERING_WHEEL_PADDLE_RIGHT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_STEER_MESH.001",
+            "current_name": "GEO_STEERING_WHEEL_BODY_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_STEERCOLUM_MESH.001",
+            "current_name": "GEO_STEERING_COLUMN_SHAFT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_EXHAUST_TUBE_LEFT_MESH",
+            "current_name": "GEO_EXHAUST_OUTLET_TUBE_LEFT_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_CockpitHeadrestPadding_MESH",
+            "current_name": "GEO_COCKPIT_HeadrestPadding_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_CockpitUpperLining_MESH",
+            "current_name": "GEO_COCKPIT_UpperInteriorLining_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_CHASSIS_EXHAUST_TUBE_RIGHT_MESH",
+            "current_name": "GEO_EXHAUST_OUTLET_TUBE_RIGHT_MESH"
+          }
+        ]
+      },
+      "wheel_FL": {
+        "source_sha256": "5d6c02fadd9a7759d610ec026c761b903df642478139ea5541dc11cfae1fe742",
+        "output_sha256": "f9b532ed75973e5b86533dd9798bff2b9042796fbe8f8787caa0c1ccbc4f4b04",
+        "binary_chunk_sha256": [
+          "0ae2cce7060b40528517e6b77b5dab5d3d5f864b3ae4731bfa5cfc2f65d4f651"
+        ],
+        "non_name_document_fields_preserved": true,
+        "binary_chunks_preserved": true,
+        "renamed_objects": [
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_NUT_05",
+            "current_name": "GEO_BRAKE_FRONT_LEFT_CALIPER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_06",
+            "current_name": "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_NUT_02",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_01",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_HUB"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_03",
+            "current_name": "GEO_BRAKE_FRONT_LEFT_DISC"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_04",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_L_TIRE",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_TIRE"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_NUT_05_MESH.001",
+            "current_name": "GEO_BRAKE_FRONT_LEFT_CALIPER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_06_MESH.001",
+            "current_name": "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_NUT_02_MESH.001",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_01_MESH.001",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_HUB_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_03_MESH.001",
+            "current_name": "GEO_BRAKE_FRONT_LEFT_DISC_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_RIM_04_MESH",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_L_TIRE_MESH.001",
+            "current_name": "GEO_WHEEL_FRONT_LEFT_TIRE_MESH.001"
+          }
+        ]
+      },
+      "wheel_FR": {
+        "source_sha256": "9c39ec19e6461bb080dda1cb165781f1ae0263aa82bd3c7559e4c0b3329992dc",
+        "output_sha256": "b590454817fec625742f0327875008a32304cd202789c66bb35da92f46fa4ba0",
+        "binary_chunk_sha256": [
+          "1df4ff54bfbea324e6196d3075341a441420d615066e38c0426379bd107bca27"
+        ],
+        "non_name_document_fields_preserved": true,
+        "binary_chunks_preserved": true,
+        "renamed_objects": [
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_NUT_05",
+            "current_name": "GEO_BRAKE_FRONT_RIGHT_CALIPER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_06",
+            "current_name": "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_NUT_02",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_01",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_HUB"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_03",
+            "current_name": "GEO_BRAKE_FRONT_RIGHT_DISC"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_04",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_FRONT_R_TIRE",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_TIRE"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_NUT_05_MESH.001",
+            "current_name": "GEO_BRAKE_FRONT_RIGHT_CALIPER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_06_MESH.001",
+            "current_name": "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_NUT_02_MESH.001",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_01_MESH.001",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_HUB_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_03_MESH.001",
+            "current_name": "GEO_BRAKE_FRONT_RIGHT_DISC_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_RIM_04_MESH",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_FRONT_R_TIRE_MESH.001",
+            "current_name": "GEO_WHEEL_FRONT_RIGHT_TIRE_MESH.001"
+          }
+        ]
+      },
+      "wheel_RL": {
+        "source_sha256": "a051a4300dda684ae7504b2b8807fe394fc37140f8f8ea033fa2e0e5f22f1bb4",
+        "output_sha256": "242168e618f5f735716b2f65bb968b76cde66c8f251f3f59d7a7427c7bf4f7f4",
+        "binary_chunk_sha256": [
+          "2052099a6cc8e906657cb059210e85e95b11edc65acf65c44703f504c23825d6"
+        ],
+        "non_name_document_fields_preserved": true,
+        "binary_chunks_preserved": true,
+        "renamed_objects": [
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_NUT_05",
+            "current_name": "GEO_BRAKE_REAR_LEFT_CALIPER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_06",
+            "current_name": "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_NUT_02",
+            "current_name": "GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_01",
+            "current_name": "GEO_WHEEL_REAR_LEFT_HUB"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_03",
+            "current_name": "GEO_BRAKE_REAR_LEFT_DISC"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_04",
+            "current_name": "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_L_TIRE",
+            "current_name": "GEO_WHEEL_REAR_LEFT_TIRE"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_NUT_05_MESH.001",
+            "current_name": "GEO_BRAKE_REAR_LEFT_CALIPER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_06_MESH.001",
+            "current_name": "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_NUT_02_MESH.001",
+            "current_name": "GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_01_MESH.001",
+            "current_name": "GEO_WHEEL_REAR_LEFT_HUB_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_03_MESH.001",
+            "current_name": "GEO_BRAKE_REAR_LEFT_DISC_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_RIM_04_MESH",
+            "current_name": "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_L_TIRE_MESH.001",
+            "current_name": "GEO_WHEEL_REAR_LEFT_TIRE_MESH.001"
+          }
+        ]
+      },
+      "wheel_RR": {
+        "source_sha256": "0d5485185c70fa5936e210561d13d4903c1f0028a833a9700f7d83fb78d9f098",
+        "output_sha256": "132b11637fbad4575fe33552a8b9fc91076dd3b1cf1e5f5a2be65321e460fc3e",
+        "binary_chunk_sha256": [
+          "1a5c77a8563d216ebd13f683afea964b9a4dbf61d49a2472c24868c8fab660e3"
+        ],
+        "non_name_document_fields_preserved": true,
+        "binary_chunks_preserved": true,
+        "renamed_objects": [
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_NUT_05",
+            "current_name": "GEO_BRAKE_REAR_RIGHT_CALIPER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_06",
+            "current_name": "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_NUT_02",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_01",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_HUB"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_03",
+            "current_name": "GEO_BRAKE_REAR_RIGHT_DISC"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_04",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES"
+          },
+          {
+            "collection": "nodes",
+            "previous_name": "GEO_WHEEL_REAR_R_TIRE",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_TIRE"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_NUT_05_MESH.001",
+            "current_name": "GEO_BRAKE_REAR_RIGHT_CALIPER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_06_MESH.001",
+            "current_name": "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_NUT_02_MESH.001",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_01_MESH.001",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_HUB_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_03_MESH.001",
+            "current_name": "GEO_BRAKE_REAR_RIGHT_DISC_MESH.001"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_RIM_04_MESH",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES_MESH"
+          },
+          {
+            "collection": "meshes",
+            "previous_name": "GEO_WHEEL_REAR_R_TIRE_MESH.001",
+            "current_name": "GEO_WHEEL_REAR_RIGHT_TIRE_MESH.001"
+          }
+        ]
+      }
+    },
+    "physics_parameters_preserved": true
+  },
+  "optimized_tire_geometry": {
+    "operation": "Replace tire surfaces using optimized geometry with physical diameter and width preserved",
+    "authoring_source_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+    "authoring_source_sha256": "595ca31166391c3236b6d1806ac6fbc431812288d96b681d442f771168407b9f",
+    "changes": {
+      "wheel_FL": {
+        "previous_triangles": 960,
+        "current_triangles": 960,
+        "previous_vertices": 2880,
+        "current_vertices": 2880,
+        "previous_bytes": 7826436,
+        "current_bytes": 8029300,
+        "original_tire_bounds": {
+          "bufferView": 68,
+          "componentType": 5126,
+          "count": 2880,
+          "max": [
+            0.16500000655651093,
+            0.3349999785423279,
+            0.33500000834465027
+          ],
+          "min": [
+            -0.16500000655651093,
+            -0.3349999785423279,
+            -0.33500000834465027
+          ],
+          "type": "VEC3"
+        },
+        "materials_images_nodes_and_other_meshes_preserved": true,
+        "source_geometry_sha256": "6e44a78d55a05b437b8564c69dd800d8e878c11a8586769f34848dfeda4b2b74"
+      },
+      "wheel_FR": {
+        "previous_triangles": 960,
+        "current_triangles": 960,
+        "previous_vertices": 2880,
+        "current_vertices": 2880,
+        "previous_bytes": 7826456,
+        "current_bytes": 8029320,
+        "original_tire_bounds": {
+          "bufferView": 68,
+          "componentType": 5126,
+          "count": 2880,
+          "max": [
+            0.16500000655651093,
+            0.3349999785423279,
+            0.33500000834465027
+          ],
+          "min": [
+            -0.16500000655651093,
+            -0.3349999785423279,
+            -0.33500000834465027
+          ],
+          "type": "VEC3"
+        },
+        "materials_images_nodes_and_other_meshes_preserved": true,
+        "source_geometry_sha256": "c477b27e5ba9ba709258aba1dd1ed4f895c9909b9ad3baf5f49f554a6316ace7"
+      },
+      "wheel_RL": {
+        "previous_triangles": 960,
+        "current_triangles": 960,
+        "previous_vertices": 2880,
+        "current_vertices": 2880,
+        "previous_bytes": 7826420,
+        "current_bytes": 8029288,
+        "original_tire_bounds": {
+          "bufferView": 68,
+          "componentType": 5126,
+          "count": 2880,
+          "max": [
+            0.20999999344348907,
+            0.33500000834465027,
+            0.33500000834465027
+          ],
+          "min": [
+            -0.20999999344348907,
+            -0.33500000834465027,
+            -0.33500000834465027
+          ],
+          "type": "VEC3"
+        },
+        "materials_images_nodes_and_other_meshes_preserved": true,
+        "source_geometry_sha256": "6f7794b32f878879d83dad164c7553af21586608045667d22f5ca88ab4746512"
+      },
+      "wheel_RR": {
+        "previous_triangles": 960,
+        "current_triangles": 960,
+        "previous_vertices": 2880,
+        "current_vertices": 2880,
+        "previous_bytes": 7826420,
+        "current_bytes": 8029284,
+        "original_tire_bounds": {
+          "bufferView": 68,
+          "componentType": 5126,
+          "count": 2880,
+          "max": [
+            0.20999999344348907,
+            0.33500000834465027,
+            0.33500003814697266
+          ],
+          "min": [
+            -0.20999999344348907,
+            -0.33500000834465027,
+            -0.33500000834465027
+          ],
+          "type": "VEC3"
+        },
+        "materials_images_nodes_and_other_meshes_preserved": true,
+        "source_geometry_sha256": "95c399394b98efcc6fcb939a1d905fc442b921148eff8995fda3ae2b72e3eeb8"
+      }
+    },
+    "physics_parameters_preserved": true
   }
 }

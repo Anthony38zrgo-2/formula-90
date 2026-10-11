@@ -6,6 +6,11 @@ import sys
 import time
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
@@ -29,17 +34,17 @@ conversion = Matrix.Translation((0, 0, 0.10500002279877663)) @ Matrix.Rotation(-
 original_geometry = {}
 original_inspections = {}
 bpy.ops.wm.open_mainfile(filepath=str(options.baseline_source_file.resolve()), load_ui=False, use_scripts=False)
-for original_name in ['GEO_CHASSIS_CockpitHeadrestPadding', 'GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_SEAT', 'GEO_CHASSIS_BODY', 'GEO_CHASSIS_FLOOR', 'GEO_CHASSIS_CockpitUpperLining']:
+for original_name in ['GEO_COCKPIT_HeadrestPadding', 'GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_DRIVER_SEAT', 'GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER', 'GEO_UNDERBODY_FLOOR_AND_DIFFUSER', 'GEO_COCKPIT_UpperInteriorLining']:
     original_object = bpy.data.objects[original_name]
     original_object.data.calc_loop_triangles()
     original_geometry[original_name] = {'vertices': [list(conversion @ original_object.matrix_world @ vertex.co) for vertex in original_object.data.vertices], 'triangles': [list(triangle.vertices) for triangle in original_object.data.loop_triangles]}
-    if original_name in ('GEO_CHASSIS_CockpitHeadrestPadding', 'GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_SEAT'):
+    if original_name in ('GEO_COCKPIT_HeadrestPadding', 'GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_DRIVER_SEAT'):
         original_inspections[original_name] = inspect_mesh_geometry(original_object)
 bpy.ops.wm.open_mainfile(filepath=str(source_path), load_ui=False, use_scripts=False)
-samples = json.loads(options.driver_surfaces.read_text())['samples']
+samples = normalize_object_name_document(json.loads(options.driver_surfaces.read_text()))['samples']
 swept_surface = prepare_swept_arm_surface(samples)
 conversion = Matrix.Translation((0, 0, 0.10500002279877663)) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
-names = ['GEO_CHASSIS_CockpitHeadrestPadding', 'GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_SEAT']
+names = ['GEO_COCKPIT_HeadrestPadding', 'GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_DRIVER_SEAT']
 geometry_records = {}
 clearance_records = {}
 candidate_geometry = {}
@@ -107,7 +112,7 @@ for name in names:
             exterior_samples.append(list(position))
     subset_records[name] = {'surface_probes': len(probes), 'maximum_outward_signed_distance_millimeters': maximum_outward_distance * 1000, 'exterior_probe_count': len(exterior_samples), 'first_exterior_probes': exterior_samples[:20], 'passed': not exterior_samples}
     print('SUBSET=' + name + ' ' + json.dumps(subset_records[name]), flush=True)
-protected_names = ['GEO_CHASSIS_BODY', 'GEO_CHASSIS_FLOOR', 'GEO_CHASSIS_CockpitUpperLining']
+protected_names = ['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER', 'GEO_UNDERBODY_FLOOR_AND_DIFFUSER', 'GEO_COCKPIT_UpperInteriorLining']
 interface_records = {}
 for name in names:
     for other_name in protected_names + [other for other in names if other > name]:

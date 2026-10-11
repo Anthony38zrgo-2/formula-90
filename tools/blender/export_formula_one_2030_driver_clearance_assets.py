@@ -8,6 +8,11 @@ import shutil
 import sys
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 from mathutils import Matrix
 
 PROJECT_DIRECTORY = Path(__file__).resolve().parents[2]
@@ -17,7 +22,7 @@ from common.output_policy import validate_output_path
 from export_f1_2030_v10 import clear_export_objects, duplicate_group, export_selected, restore_sources
 from glb_util import read_glb, write_glb
 
-AFFECTED_OBJECT_NAMES = ('GEO_CHASSIS_CockpitHeadrestPadding', 'GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_SEAT')
+AFFECTED_OBJECT_NAMES = ('GEO_COCKPIT_HeadrestPadding', 'GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_DRIVER_SEAT')
 
 
 def export_fitted_geometry(source_path, conversion, output_path):
@@ -74,12 +79,13 @@ def main():
     options = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     output_directory = validate_output_path(PROJECT_DIRECTORY, options.output_directory, 'preview').path
     output_directory.mkdir(parents=True, exist_ok=True)
-    manifest = json.loads(options.baseline_manifest_file.read_text())
+    manifest = normalize_object_name_document(json.loads(options.baseline_manifest_file.read_text()))
     conversion = Matrix.Translation((0, 0, manifest['authored_alignment']['chassis_vertical_offset'])) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
     geometry_path = validate_output_path(PROJECT_DIRECTORY, output_directory / 'fitted_driver_clearance_geometry.glb', 'preview').path
     export_fitted_geometry(options.source_file, conversion, geometry_path)
     geometry_document, geometry_buffer = read_glb(geometry_path)
     document, buffer = read_glb(options.baseline_chassis_file)
+    document = normalize_object_name_document(document)
     original_buffer = bytes(buffer)
     original_document = copy.deepcopy(document)
     fitted_meshes = {node['name']: geometry_document['meshes'][node['mesh']] for node in geometry_document['nodes'] if 'mesh' in node}

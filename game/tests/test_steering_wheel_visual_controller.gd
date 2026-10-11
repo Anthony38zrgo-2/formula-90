@@ -52,8 +52,8 @@ func validate_model(controller_script: Script, model_relative_path: String) -> v
 	vehicle.transform = Transform3D(Basis(Vector3.UP, 0.6), Vector3(3.0, 2.0, -4.0))
 	root.add_child(vehicle)
 	vehicle.add_child(chassis_visual)
-	var steering_wheel := chassis_visual.find_child("GEO_CHASSIS_STEER", true, false) as MeshInstance3D
-	var steering_column := chassis_visual.find_child("GEO_CHASSIS_STEERCOLUM", true, false) as MeshInstance3D
+	var steering_wheel := chassis_visual.find_child("GEO_STEERING_WHEEL_BODY", true, false) as MeshInstance3D
+	var steering_column := chassis_visual.find_child("GEO_STEERING_COLUMN_SHAFT", true, false) as MeshInstance3D
 	verify(steering_wheel != null and steering_column != null, model_relative_path + ": steering meshes missing")
 	if steering_wheel == null or steering_column == null:
 		vehicle.free()
@@ -63,7 +63,7 @@ func validate_model(controller_script: Script, model_relative_path: String) -> v
 	var steering_wheel_components: Array[MeshInstance3D] = []
 	var neutral_component_transforms: Array[Transform3D] = []
 	var component_transforms_relative_to_wheel: Array[Transform3D] = []
-	for component_name in ["GEO_CHASSIS_SHIFTERBRAK", "GEO_CHASSIS_SHIFTERTHRO", "GEO_CHASSIS_SCREEN"]:
+	for component_name in ["GEO_STEERING_WHEEL_PADDLE_LEFT", "GEO_STEERING_WHEEL_PADDLE_RIGHT", "GEO_STEERING_WHEEL_DISPLAY"]:
 		var steering_wheel_component := chassis_visual.find_child(component_name, true, false) as MeshInstance3D
 		verify(steering_wheel_component != null, model_relative_path + ": missing steering wheel component " + component_name)
 		if steering_wheel_component == null:

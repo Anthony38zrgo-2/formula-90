@@ -7,6 +7,11 @@ from pathlib import Path
 
 import bmesh
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, is_chassis_object
+enable_legacy_source_names()
+
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
@@ -18,7 +23,7 @@ from fit_f1_2030_driver_seat import mesh_fingerprint
 from validate_formula_one_2030_cockpit_geometry import inspect_mesh_geometry
 from seal_formula_one_2030_cockpit_interior import cockpit_opening_contour
 
-HEADREST_OBJECT_NAME = 'GEO_CHASSIS_CockpitHeadrestPadding'
+HEADREST_OBJECT_NAME = 'GEO_COCKPIT_HeadrestPadding'
 SURFACE_COORDINATE_NAME = 'CockpitHeadrestSurfaceCoordinates'
 
 
@@ -89,7 +94,7 @@ def headrest_sections(conversion):
 def create_headrest_mesh(conversion, sections):
     from cockpit_headrest_support_profiles import prepare_support_triangles, support_profile, cross_section_positions, closest_support_point
 
-    support_triangles = prepare_support_triangles([bpy.data.objects[name] for name in ('GEO_CHASSIS_CockpitUpperLining', 'GEO_CHASSIS_INTERIOR')], conversion)
+    support_triangles = prepare_support_triangles([bpy.data.objects[name] for name in ('GEO_COCKPIT_UpperInteriorLining', 'GEO_COCKPIT_INTERIOR_SHELL')], conversion)
     vertices = []
     faces = []
     section_indices = []
@@ -168,7 +173,7 @@ def create_headrest_mesh(conversion, sections):
         vertex[attachment_layer] = 1.0 if vertex.index in attached_set else 0.0
         vertex[rim_layer] = vertex_rim_limits[vertex.index]
         vertex[seam_layer] = 1.0 if vertex.index in seam_set else 0.0
-    support_surfaces = [object_surface(bpy.data.objects[name], conversion)[0] for name in ('GEO_CHASSIS_CockpitUpperLining', 'GEO_CHASSIS_INTERIOR')]
+    support_surfaces = [object_surface(bpy.data.objects[name], conversion)[0] for name in ('GEO_COCKPIT_UpperInteriorLining', 'GEO_COCKPIT_INTERIOR_SHELL')]
     contour = [conversion @ point for point in cockpit_opening_contour()]
     for iteration in range(3):
         selected_edges = []
@@ -196,7 +201,7 @@ def create_headrest_mesh(conversion, sections):
     collection = bpy.data.collections.new('FormulaOne2030CockpitHeadrest')
     collection.objects.link(headrest)
     for scene in bpy.data.scenes:
-        if bpy.data.objects['GEO_CHASSIS_BODY'].name in scene.objects:
+        if bpy.data.objects['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER'].name in scene.objects:
             scene.collection.children.link(collection)
     headrest['cockpit_attachment_vertex_indices'] = attachment_vertices
     headrest['cockpit_rim_height_limits'] = vertex_rim_limits
@@ -209,7 +214,7 @@ def create_headrest_mesh(conversion, sections):
 
 
 def prepare_head_motion_surfaces(conversion, captured_head_motion):
-    protected_surfaces = [object_surface(scene_object, conversion)[0] for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_')]
+    protected_surfaces = [object_surface(scene_object, conversion)[0] for scene_object in bpy.data.objects if scene_object.type == 'MESH' and is_chassis_object(scene_object.name)]
     usable_samples = []
     baseline_intersections = []
     for sample in captured_head_motion['samples']:
@@ -306,7 +311,7 @@ def object_surface(scene_object, conversion):
 
 
 def measure_cockpit_attachment(headrest, conversion):
-    surfaces = [object_surface(bpy.data.objects[name], conversion)[0] for name in ('GEO_CHASSIS_CockpitUpperLining', 'GEO_CHASSIS_INTERIOR')]
+    surfaces = [object_surface(bpy.data.objects[name], conversion)[0] for name in ('GEO_COCKPIT_UpperInteriorLining', 'GEO_COCKPIT_INTERIOR_SHELL')]
     attached = set(headrest['cockpit_attachment_vertex_indices'])
     positions = [conversion @ headrest.matrix_world @ vertex.co for vertex in headrest.data.vertices]
     maximum_gap = 0.0
@@ -321,7 +326,7 @@ def measure_cockpit_attachment(headrest, conversion):
                 sample_count += 1
     recesses = [limit - position.z for index, (limit, position) in enumerate(zip(headrest['cockpit_rim_height_limits'], positions)) if index not in attached]
     front_recesses = [limit - position.z for index, (limit, position) in enumerate(zip(headrest['cockpit_rim_height_limits'], positions)) if index not in attached and position.y > 0.10]
-    body = object_surface(bpy.data.objects['GEO_CHASSIS_BODY'], conversion)[0]
+    body = object_surface(bpy.data.objects['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER'], conversion)[0]
     rim_vertices = set(headrest['cockpit_upper_seam_vertex_indices'])
     maximum_visible_seam_gap = 0.0
     visible_seam_samples = 0
@@ -343,10 +348,10 @@ def measure_clearance(headrest, conversion, captured_surfaces):
     attachment_contacts = {}
     rim_vertices = set(headrest['cockpit_upper_seam_vertex_indices'])
     for scene_object in bpy.data.objects:
-        if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_') and scene_object != headrest:
+        if scene_object.type == 'MESH' and is_chassis_object(scene_object.name) and scene_object != headrest:
             protected_surface = object_surface(scene_object, conversion)[0]
             intersections = protected_surface.overlap(headrest_surface)
-            if scene_object.name == 'GEO_CHASSIS_BODY' and intersections:
+            if scene_object.name == 'GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER' and intersections:
                 seam_contacts = [pair for pair in intersections if any(index in rim_vertices for index in headrest_triangles[pair[1]])]
                 if seam_contacts:
                     attachment_contacts[scene_object.name] = {'triangle_pairs': len(seam_contacts), 'kind': 'Shared cockpit rim interface'}
@@ -354,7 +359,7 @@ def measure_clearance(headrest, conversion, captured_surfaces):
                     intersections = [pair for pair in intersections if pair not in accepted]
             if intersections:
                 measurements = {'triangle_pairs': len(intersections), 'headrest_triangle_indices': sorted({second for first, second in intersections})[:40]}
-                if scene_object.name in ('GEO_CHASSIS_CockpitUpperLining', 'GEO_CHASSIS_INTERIOR'):
+                if scene_object.name in ('GEO_COCKPIT_UpperInteriorLining', 'GEO_COCKPIT_INTERIOR_SHELL'):
                     attachment_contacts[scene_object.name] = measurements
                 else:
                     chassis_intersections[scene_object.name] = measurements
@@ -417,15 +422,15 @@ def main():
             if not collection.objects and collection.name == 'FormulaOne2030CockpitHeadrest':
                 bpy.data.collections.remove(collection)
     protected_fingerprints = {scene_object.name: mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH'}
-    captured_surfaces = json.loads(options.driver_surfaces.read_text(encoding='utf-8-sig'))
-    captured_head_motion = json.loads(options.head_motion_surfaces.read_text(encoding='utf-8-sig'))
+    captured_surfaces = normalize_object_name_document(json.loads(options.driver_surfaces.read_text(encoding='utf-8-sig')))
+    captured_head_motion = normalize_object_name_document(json.loads(options.head_motion_surfaces.read_text(encoding='utf-8-sig')))
     if captured_head_motion['driver_sha256'] != hashlib.sha256((PROJECT_DIRECTORY / 'game/assets/models/drivers/driver.glb').read_bytes()).hexdigest():
         raise RuntimeError('Head motion capture does not describe the current driver model')
     if captured_head_motion['modifier_sha256'] != hashlib.sha256((PROJECT_DIRECTORY / 'game/scripts/vehicle/driver_head_motion_modifier.gd').read_bytes()).hexdigest():
         raise RuntimeError('Head motion capture does not describe the current head animation')
     if captured_head_motion['configuration_sha256'] != hashlib.sha256((PROJECT_DIRECTORY / 'game/data/cameras/formula_one_2030_cockpit_camera.json').read_bytes()).hexdigest():
         raise RuntimeError('Head motion capture does not describe the current camera configuration')
-    manifest = json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     conversion = Matrix.Translation((0, 0, manifest['authored_alignment']['chassis_vertical_offset'])) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
     head_motion_surfaces, baseline_intersections = prepare_head_motion_surfaces(conversion, captured_head_motion)
     fitted_sections, lower_edge_fit = fit_headrest_sections(conversion)

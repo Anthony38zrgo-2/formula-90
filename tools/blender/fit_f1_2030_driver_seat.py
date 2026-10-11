@@ -8,6 +8,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
@@ -47,7 +52,7 @@ def create_driver_surfaces():
     ], cwd=PROJECT_DIRECTORY, capture_output=True, text=True, timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
     if capture.returncode != 0:
         raise RuntimeError("Animated driver surface capture failed: " + capture.stdout + capture.stderr)
-    samples = json.loads(surface_path.read_text(encoding="utf-8"))["samples"]
+    samples = normalize_object_name_document(json.loads(surface_path.read_text(encoding="utf-8")))["samples"]
     driver_surfaces = [(sample["steering_degrees"], BVHTree.FromPolygons([Vector(position) for position in sample["vertices"]], sample["triangles"], all_triangles=True)) for sample in samples]
     return driver_surfaces
 
@@ -110,7 +115,7 @@ def reshape_seat(seat, conversion, driver_surfaces):
             print("SEAT_INTERSECTION_CENTERS=" + str([tuple(round(value, 4) for value in position) for position in intersection_centers[:24]]))
             raise RuntimeError("Fitted seat intersects the animated driver at " + str(steering_degrees) + " degrees: " + str(len(intersections)) + " triangle pairs")
     original_mesh = seat.data
-    fitted_mesh = bpy.data.meshes.new("GEO_CHASSIS_SEAT_MESH")
+    fitted_mesh = bpy.data.meshes.new("GEO_COCKPIT_DRIVER_SEAT_MESH")
     fitted_mesh.from_pydata([runtime_to_seat @ position for position in vertices], [], faces)
     for material in original_mesh.materials:
         fitted_mesh.materials.append(material)
@@ -142,11 +147,11 @@ def main():
     source_path = PROJECT_DIRECTORY / "game/assets/models/vehicles/f1-2030/source/f1_2030.blend"
     driver_path = PROJECT_DIRECTORY / "game/assets/models/drivers/driver.glb"
     program_directory = source_path.parents[1]
-    manifest = json.loads((program_directory / "manifest.json").read_text(encoding="utf-8"))
-    export_report = json.loads((program_directory / "export_report.json").read_text(encoding="utf-8"))
+    manifest = normalize_object_name_document(json.loads((program_directory / "manifest.json").read_text(encoding="utf-8")))
+    export_report = normalize_object_name_document(json.loads((program_directory / "export_report.json").read_text(encoding="utf-8")))
     source_sha256 = hashlib.sha256(source_path.read_bytes()).hexdigest()
     bpy.ops.wm.open_mainfile(filepath=str(source_path))
-    seat = bpy.data.objects["GEO_CHASSIS_SEAT"]
+    seat = bpy.data.objects["GEO_COCKPIT_DRIVER_SEAT"]
     protected_meshes = {scene_object.name: mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == "MESH" and scene_object != seat}
     conversion = Matrix.Translation((0.0, 0.0, manifest["authored_alignment"]["chassis_vertical_offset"])) @ Matrix.Rotation(-math.pi / 2, 4, "Z")
     original_upper_edge_height = max((conversion @ seat.matrix_world @ vertex.co).z for vertex in seat.data.vertices)
@@ -169,7 +174,7 @@ def main():
     export_report["files"]["chassis"] = chassis_record
     export_report["mesh_stats"]["chassis"] = mesh_statistics
     report = {
-        "operation": "Fit and lower GEO_CHASSIS_SEAT around the original F1 2030 driver", "passed": True,
+        "operation": "Fit and lower GEO_COCKPIT_DRIVER_SEAT around the original F1 2030 driver", "passed": True,
         "source_before_sha256": source_sha256,
         "source_after_sha256": hashlib.sha256(output_source.read_bytes()).hexdigest(),
         "driver_sha256": hashlib.sha256(driver_path.read_bytes()).hexdigest(),

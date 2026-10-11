@@ -9,6 +9,9 @@ import sys
 from pathlib import Path
 
 import bpy
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
 from math import copysign
 from mathutils import Vector
 
@@ -126,7 +129,7 @@ def main():
         ("FRONT", ("FL", "FR"), ("upper", "lower", "pushrod", "trackrod")),
         ("REAR", ("RL", "RR"), ("driveshaft", "upper", "lower")),
     ]:
-        parts = extract(bpy.data.objects[f"GEO_CHASSIS_{axle}_SUSPENSION"])
+        parts = extract(bpy.data.objects[f"GEO_SUSPENSION_{axle}_LINK_ASSEMBLY"])
         if len(parts) != len(keys) * len(roles):
             raise RuntimeError(f"Source topology changed: inspect {axle} before assigning component roles")
         for index, part in enumerate(parts):

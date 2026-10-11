@@ -1,4 +1,4 @@
-"""Raise GEO_CHASSIS_REAR_WING_MID rigidly to a requested world top height.
+"""Raise GEO_REAR_WING_INTERMEDIATE_ELEMENT rigidly to a requested world top height.
 
 Usage:
   blender --background --python raise_f1_2030_mid_plane.py -- TARGET.blend OUTPUT.blend TARGET_TOP_M
@@ -12,8 +12,11 @@ from pathlib import Path
 
 import bpy
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
 
-PLANE_NAME = "GEO_CHASSIS_REAR_WING_MID"
+PLANE_NAME = "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
 
 
 def arguments():

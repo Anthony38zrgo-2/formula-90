@@ -7,6 +7,11 @@ from pathlib import Path
 
 import bmesh
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, is_chassis_object
+enable_legacy_source_names()
+
 from mathutils import Matrix
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
@@ -51,7 +56,7 @@ def studio_settings():
 
 
 def original_chassis_head_motion_surfaces(conversion, captured_head_motion, headrest):
-    protected_surfaces = [object_surface(scene_object, conversion)[0] for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_') and scene_object != headrest]
+    protected_surfaces = [object_surface(scene_object, conversion)[0] for scene_object in bpy.data.objects if scene_object.type == 'MESH' and is_chassis_object(scene_object.name) and scene_object != headrest]
     usable_samples = []
     baseline_intersections = []
     for sample in captured_head_motion['samples']:
@@ -75,13 +80,13 @@ def main():
     output_directory.mkdir(parents=True, exist_ok=True)
     source_digest = hashlib.sha256(options.source_file.read_bytes()).hexdigest()
     bpy.ops.wm.open_mainfile(filepath=str(options.source_file), load_ui=False, use_scripts=False)
-    headrest = bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding']
+    headrest = bpy.data.objects['GEO_COCKPIT_HeadrestPadding']
     if 'raised_rear_support_radius_meters' in headrest:
         raise RuntimeError('Use the source before the upper support was raised')
     protected_fingerprints = {scene_object.name: mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object != headrest}
     original_studio = studio_settings()
     original_objects = sorted(bpy.data.objects.keys())
-    manifest = json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     conversion = Matrix.Translation((0, 0, manifest['authored_alignment']['chassis_vertical_offset'])) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
     inverse_conversion = conversion.inverted()
     attachment_vertices = set(headrest['cockpit_attachment_vertex_indices'])
@@ -142,10 +147,10 @@ def main():
     attachment_report['original_attachment_vertices_unchanged'] = attachment_unchanged
     attachment_report['passed'] = attachment_unchanged and attachment_report['maximum_attachment_edge_gap_meters'] <= 0.001 and attachment_report['maximum_visible_seam_gap_meters'] <= 0.00002 and minimum_unchanged_recess >= 0.00099 and attachment_report['minimum_exposed_front_padding_recess_below_rim_meters'] >= 0.0014 and not attachment_report['uncovered_support_vertices']
     driver_capture_path = options.driver_surfaces
-    captured_driver = json.loads(driver_capture_path.read_text())
+    captured_driver = normalize_object_name_document(json.loads(driver_capture_path.read_text()))
     clearance_report = measure_clearance(headrest, conversion, captured_driver)
     head_capture_path = options.head_motion_surfaces
-    usable_samples, baseline_intersections = original_chassis_head_motion_surfaces(conversion, json.loads(head_capture_path.read_text()), headrest)
+    usable_samples, baseline_intersections = original_chassis_head_motion_surfaces(conversion, normalize_object_name_document(json.loads(head_capture_path.read_text())), headrest)
     head_motion_report = measure_head_motion_clearance(headrest, conversion, usable_samples, baseline_intersections)
     driver_accepted = all(measurement['maximum_sampled_penetration_meters'] <= (0.012 if all('Head' in bone or 'Neck' in bone for bone in measurement['bones']) else 0.004) for measurement in clearance_report['driver_intersections'])
     protected_unchanged = all(mesh_fingerprint(bpy.data.objects[name]) == fingerprint for name, fingerprint in protected_fingerprints.items())

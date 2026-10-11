@@ -4,7 +4,7 @@ The original swan neck carries the upper wing with its rear arm resting on the
 upper plane top, embedded a few millimetres (the authored grip). This script
 optionally restores that original mesh from a donor blend and then compresses
 the support vertically about its floor base until the arm grips the TOP of
-GEO_CHASSIS_REAR_WING_MID with the same embed, leaving the arm shape intact.
+GEO_REAR_WING_INTERMEDIATE_ELEMENT with the same embed, leaving the arm shape intact.
 
 Usage:
   blender --background --python shorten_f1_2030_rear_support_top.py -- TARGET.blend OUTPUT.blend [DONOR.blend]
@@ -17,15 +17,20 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 
-SUPPORT_NAME = "GEO_CHASSIS_REARSUPPORT"
-PLANE_NAME = "GEO_CHASSIS_REAR_WING_MID"
-UPPER_NAME = "GEO_CHASSIS_REAR_WING"
-BEAM_NAME = "GEO_CHASSIS_AEROPART3"
-ENDPLATE_NAME = "GEO_CHASSIS_ENDPLATE"
+SUPPORT_NAME = "GEO_REAR_WING_CENTRAL_SUPPORT"
+PLANE_NAME = "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
+UPPER_NAME = "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
+BEAM_NAME = "GEO_REAR_WING_LOWER_BEAM_ELEMENT"
+ENDPLATE_NAME = "GEO_FRONT_WING_ENDPLATES"
 EXPECTED_TOPOLOGY = (1752, 1730)
 CONTACT_EMBED_M = 0.008
 SCALE_MIN = 0.20

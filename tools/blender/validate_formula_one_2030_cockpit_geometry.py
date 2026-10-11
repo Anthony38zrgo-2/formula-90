@@ -5,6 +5,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 import bmesh
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
@@ -163,8 +168,8 @@ def inspect_contour_attachment(contour, surface):
 
 def validate_cockpit_geometry():
     from seal_formula_one_2030_cockpit_interior import cockpit_opening_contour, surface_for_object
-    lining = bpy.data.objects['GEO_CHASSIS_CockpitUpperLining']
-    interior = bpy.data.objects['GEO_CHASSIS_INTERIOR']
+    lining = bpy.data.objects['GEO_COCKPIT_UpperInteriorLining']
+    interior = bpy.data.objects['GEO_COCKPIT_INTERIOR_SHELL']
     opening = cockpit_opening_contour()
     lower_contour = [interior.matrix_world @ interior.data.vertices[row * 33].co for row in range(71)]
     lower_contour += [interior.matrix_world @ interior.data.vertices[row * 33 + 32].co for row in reversed(range(71))]
@@ -173,7 +178,7 @@ def validate_cockpit_geometry():
     interior_measurements = inspect_mesh_geometry(interior)
     opening_measurements = inspect_contour_attachment(opening, surface)
     lower_measurements = inspect_contour_attachment(lower_contour, surface)
-    body_surface = surface_for_object(bpy.data.objects['GEO_CHASSIS_BODY'])
+    body_surface = surface_for_object(bpy.data.objects['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER'])
     roof_clearance_samples = []
     for vertex in lining.data.vertices:
         position = lining.matrix_world @ vertex.co

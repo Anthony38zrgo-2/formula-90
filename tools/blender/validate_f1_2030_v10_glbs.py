@@ -1,9 +1,14 @@
 import bpy
-import json
+
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
+import json
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
-from pathlib import Path
 
 
 def clear_scene():
@@ -44,9 +49,10 @@ def world_bvh(obj):
 def rear_support_grip(path):
     clear_scene()
     bpy.ops.import_scene.gltf(filepath=str(path))
-    support = bpy.data.objects.get("GEO_CHASSIS_REARSUPPORT")
-    mid = bpy.data.objects.get("GEO_CHASSIS_REAR_WING_MID")
-    upper = bpy.data.objects.get("GEO_CHASSIS_REAR_WING")
+    enable_legacy_source_names()
+    support = bpy.data.objects.get("GEO_REAR_WING_CENTRAL_SUPPORT")
+    mid = bpy.data.objects.get("GEO_REAR_WING_INTERMEDIATE_ELEMENT")
+    upper = bpy.data.objects.get("GEO_REAR_WING_ENDPLATE_ASSEMBLY")
     if support is None or mid is None or upper is None:
         return {"present": False, "errors": ["rear support, mid plane or upper wing missing from the chassis GLB"]}
     support_tree = world_bvh(support)
@@ -84,6 +90,7 @@ def rear_support_grip(path):
 def inspect(path):
     clear_scene()
     bpy.ops.import_scene.gltf(filepath=str(path))
+    enable_legacy_source_names()
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     minimum, maximum, dimensions = bounds(meshes)
     tire_meshes = [obj for obj in meshes if obj.name.endswith("_TIRE")]
@@ -112,8 +119,8 @@ def main():
     if len(args) != 2:
         raise SystemExit("usage: blender --background --python SCRIPT -- ASSET_DIR PHYSICS.json")
     asset_dir = Path(args[0]).resolve()
-    physics = json.loads(Path(args[1]).read_text(encoding="utf-8"))
-    manifest = json.loads((asset_dir / "manifest.json").read_text(encoding="utf-8"))
+    physics = normalize_object_name_document(json.loads(Path(args[1]).read_text(encoding="utf-8")))
+    manifest = normalize_object_name_document(json.loads((asset_dir / "manifest.json").read_text(encoding="utf-8")))
     names = ["chassis", "wheel_FL", "wheel_FR", "wheel_RL", "wheel_RR"]
     results = {name: inspect(asset_dir / f"f1_2030_v10_{name}.glb") for name in names}
     grip = rear_support_grip(asset_dir / "f1_2030_v10_chassis.glb")
@@ -127,10 +134,10 @@ def main():
     for key in ("front_track", "rear_track", "wheelbase"):
         if abs(float(alignment.get(key, -1.0)) - float(physics["geometry"][key])) > 0.001:
             errors.append(f"authored {key} does not match physics geometry")
-    floor = results["chassis"]["objects"].get("GEO_CHASSIS_FLOOR")
+    floor = results["chassis"]["objects"].get("GEO_UNDERBODY_FLOOR_AND_DIFFUSER")
     if floor is None or abs(float(floor["bounds_min"][2]) + float(physics["tires"]["front"]["radius"])) > 0.02:
         errors.append("chassis floor is not vertically aligned to the wheel contact plane")
-    for suspension_name in ("GEO_CHASSIS_FRONT_SUSPENSION", "GEO_CHASSIS_REAR_SUSPENSION"):
+    for suspension_name in ("GEO_SUSPENSION_FRONT_LINK_ASSEMBLY", "GEO_SUSPENSION_REAR_LINK_ASSEMBLY"):
         suspension = results["chassis"]["objects"].get(suspension_name)
         if suspension is None or not (suspension["bounds_min"][2] <= 0.0 <= suspension["bounds_max"][2]):
             errors.append(f"{suspension_name} does not cross the wheel-center plane")
@@ -149,8 +156,8 @@ def main():
         structural_mesh_names = [name for name in result["objects"] if "_DECAL_" not in name]
         if len(structural_mesh_names) != 7:
             errors.append(f"wheel {short} expected 7 structural meshes, got {len(structural_mesh_names)}")
-        wheel_prefix = f"GEO_WHEEL_{'FRONT' if short.startswith('F') else 'REAR'}_{'L' if short.endswith('L') else 'R'}"
-        expected_static = [f"{wheel_prefix}_NUT_05", f"{wheel_prefix}_RIM_06"]
+        wheel_prefix = f"GEO_WHEEL_{'FRONT' if short.startswith('F') else 'REAR'}_{'LEFT' if short.endswith('L') else 'RIGHT'}"
+        expected_static = [f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_CALIPER", f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_INBOARD_DUCT_COVER"]
         if result["visual_groups"].get("BrakeStatic") != expected_static:
             errors.append(f"wheel {short} static brake group is wrong: {result['visual_groups'].get('BrakeStatic')}")
         if any(name in result["visual_groups"].get("SpinVisual", []) for name in expected_static):
@@ -162,7 +169,7 @@ def main():
         tire_decal_names = [name for name in result["objects"] if "_DECAL_" in name]
         if any(not name.startswith(wheel_prefix + "_DECAL_") or name not in rotating_mesh_names for name in tire_decal_names):
             errors.append(f"wheel {short} tire decals do not follow their spinning wheel")
-        rim_key = next((name for name in result["objects"] if name.endswith("_RIM_03")), None)
+        rim_key = next((name for name in result["objects"] if name.startswith("GEO_BRAKE_") and name.endswith("_DISC")), None)
         if rim_key is None:
             errors.append(f"wheel {short} reference rim disc is missing")
         else:

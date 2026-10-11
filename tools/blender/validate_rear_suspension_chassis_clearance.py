@@ -3,6 +3,12 @@ import math
 from pathlib import Path
 
 import bpy
+
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -10,12 +16,13 @@ from mathutils.bvhtree import BVHTree
 repository_directory = Path(__file__).resolve().parents[2]
 vehicle_profile_path = repository_directory / "game/data/vehicles/f1_2030/f1_2030_v10_geometric.json"
 chassis_model_path = repository_directory / "game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb"
-vehicle_profile = json.loads(vehicle_profile_path.read_text(encoding="utf-8"))
+vehicle_profile = normalize_object_name_document(json.loads(vehicle_profile_path.read_text(encoding="utf-8")))
 rear_corner = vehicle_profile["suspension"]["geometry_physical"]["corners"]["RL"]
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(chassis_model_path))
-body_object = bpy.data.objects["GEO_CHASSIS_BODY"]
+enable_legacy_source_names()
+body_object = bpy.data.objects["GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"]
 body_surface = BVHTree.FromObject(body_object, bpy.context.evaluated_depsgraph_get())
 inverse_body_transform = body_object.matrix_world.inverted()
 vertical_ray = inverse_body_transform.to_3x3() @ Vector((0.0, 0.0, -1.0))

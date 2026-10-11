@@ -87,7 +87,7 @@ func run() -> void:
 	quit(0)
 
 func hide_baked(node: Node) -> void:
-	if node is Node3D and (node.name.begins_with("GEO_CHASSIS_FRONT_SUSPENSION") or node.name.begins_with("GEO_CHASSIS_REAR_SUSPENSION")):
+	if node is Node3D and (node.name.begins_with("GEO_SUSPENSION_FRONT_LINK_ASSEMBLY") or node.name.begins_with("GEO_SUSPENSION_REAR_LINK_ASSEMBLY")):
 		node.visible = false
 	for child in node.get_children():
 		hide_baked(child)

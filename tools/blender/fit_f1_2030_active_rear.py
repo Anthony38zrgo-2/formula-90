@@ -3,17 +3,22 @@
 This correction preserves the active flap's topology, chord section, span,
 materials, UVs and endpoint placement. Each lateral row is translated only in
 world Z so its centerline keeps the original closed-flap edge clearance from
-GEO_CHASSIS_AEROPART2 across the full span.
+GEO_REAR_WING_UPPER_ELEMENT across the full span.
 """
 
 import bpy
+
 import sys
-from collections import defaultdict
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
+from collections import defaultdict
 
 
-ACTIVE_NAME = "GEO_CHASSIS_ACTIVEREAR"
-LOWER_NAME = "GEO_CHASSIS_AEROPART2"
+ACTIVE_NAME = "GEO_REAR_WING_MAIN_ELEMENT"
+LOWER_NAME = "GEO_REAR_WING_UPPER_ELEMENT"
 GROUP_PRECISION = 6
 MODIFIED_OBJECTS = {ACTIVE_NAME}
 
@@ -105,7 +110,7 @@ def main():
             raise RuntimeError(f"protected object changed: {name}")
 
     bpy.context.scene["f1_2030_active_rear_scope"] = (
-        "GEO_CHASSIS_ACTIVEREAR vertical row fit to GEO_CHASSIS_AEROPART2; "
+        "GEO_REAR_WING_MAIN_ELEMENT vertical row fit to GEO_REAR_WING_UPPER_ELEMENT; "
         "closed edge clearance preserved"
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)

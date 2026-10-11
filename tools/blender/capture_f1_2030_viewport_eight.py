@@ -9,8 +9,13 @@ from __future__ import annotations
 import sys
 
 import bpy
-from mathutils import Vector
+
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
+from mathutils import Vector
 
 
 SOURCE = Path(r"D:\Formula90s\game\assets\models\vehicles\f1-2030\source\f1_2030.blend")
@@ -34,7 +39,7 @@ def select_car_meshes():
         obj.select_set(True)
     if meshes:
         bpy.context.view_layer.objects.active = next(
-            (obj for obj in meshes if obj.name == "GEO_CHASSIS_BODY"), meshes[0]
+            (obj for obj in meshes if obj.name == "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"), meshes[0]
         )
 
 

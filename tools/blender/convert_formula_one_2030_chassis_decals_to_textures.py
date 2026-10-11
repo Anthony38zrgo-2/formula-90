@@ -6,6 +6,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, is_chassis_object
+enable_legacy_source_names()
+
 import numpy
 
 PROJECT_DIRECTORY = Path(__file__).resolve().parents[2]
@@ -44,7 +49,7 @@ def bake_flat_decal_colors(scene, decal_objects, source_material, destination, r
     corner_normals = []
     recipients = []
     for scene_object in bpy.data.objects:
-        if scene_object.type != 'MESH' or not scene_object.name.startswith('GEO_CHASSIS_') or scene_object in decal_objects:
+        if scene_object.type != 'MESH' or not is_chassis_object(scene_object.name) or scene_object in decal_objects:
             continue
         if source_material not in list(scene_object.data.materials):
             continue
@@ -147,7 +152,7 @@ def main():
     destination = validate_output_path(PROJECT_DIRECTORY, options.output_directory, 'preview').path
     destination.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.open_mainfile(filepath=str(options.source_file.resolve()))
-    decal_objects = [scene_object for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_DECAL_')]
+    decal_objects = [scene_object for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_BODYWORK_DECAL_')]
     if not decal_objects:
         raise RuntimeError('Chassis decals are already textures or the source has no decal meshes')
     source_meshes = [scene_object for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object not in decal_objects]
@@ -212,11 +217,11 @@ def main():
             raise RuntimeError('Decal conversion modified existing geometry, shading or texture coordinates: ' + scene_object.name)
         for index, material in enumerate(current_materials):
             scene_object.data.materials[index] = material
-    if any(scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_DECAL_') for scene_object in bpy.data.objects):
+    if any(scene_object.type == 'MESH' and scene_object.name.startswith('GEO_BODYWORK_DECAL_') for scene_object in bpy.data.objects):
         raise RuntimeError('Chassis decal geometry remains in the source')
     candidate_path = validate_output_path(PROJECT_DIRECTORY, destination / 'f1_2030_flat_chassis_decals.blend', 'preview').path
     bpy.ops.wm.save_as_mainfile(filepath=str(candidate_path), relative_remap=True)
-    manifest = json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     chassis_path = validate_output_path(PROJECT_DIRECTORY, destination / 'f1_2030_v10_chassis.glb', 'preview').path
     report['chassis_mesh_statistics'] = export_chassis(chassis_path, manifest['authored_alignment']['chassis_vertical_offset'])
     report['candidate_sha256'] = hashlib.sha256(candidate_path.read_bytes()).hexdigest()

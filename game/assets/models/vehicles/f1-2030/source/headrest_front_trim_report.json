@@ -1,0 +1,28 @@
+{
+  "source_before_sha256": "f14f1b73109865e799968a6f9ad1edea649aa636a38be833404c2fdb48c47495",
+  "source_after_sha256": "7dd97d02a63af0af41778d4edf491287cea886b6a340309d3a7926746c7f2aed",
+  "original_vertex_count": 22158,
+  "trimmed_vertex_count": 14595,
+  "cut_caps": 2,
+  "cut_center_longitudinal_meters": -0.175,
+  "cut_lateral_slope": 0.38,
+  "protected_meshes_unchanged": true,
+  "geometry": {
+    "object": "GEO_CHASSIS_CockpitHeadrestPadding",
+    "vertices": 14595,
+    "polygons": 20307,
+    "triangles": 29186,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "inconsistent_winding_edges": 0,
+    "zero_area_faces": 0,
+    "zero_length_edges": 0,
+    "minimum_triangle_area_square_meters": 8.883651626823141e-12,
+    "signed_volume_cubic_meters": 0.007218704771405603,
+    "bounding_pairs_inspected_including_adjacent_triangles": 167438,
+    "intersection_boundary_tolerance_meters": 5e-07,
+    "triangle_crossing_pairs": [],
+    "coplanar_overlap_pairs": [],
+    "passed": true
+  }
+}

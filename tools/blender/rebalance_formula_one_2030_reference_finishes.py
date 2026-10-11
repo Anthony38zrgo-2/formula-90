@@ -7,6 +7,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, is_chassis_object, is_wheel_object, normalize_imported_object_names
+enable_legacy_source_names()
+
 import numpy
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -88,7 +93,7 @@ def clean_chassis_material(source_material, family, destination):
     shader.inputs['Coat Weight'].default_value = 0.28 if family == 'red_lacquer' else 0.16
     shader.inputs['Coat Roughness'].default_value = 0.18 if family == 'red_lacquer' else 0.26
     for scene_object in bpy.data.objects:
-        if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_'):
+        if scene_object.type == 'MESH' and is_chassis_object(scene_object.name):
             for index, current_material in enumerate(scene_object.data.materials):
                 if current_material == source_material:
                     scene_object.data.materials[index] = material
@@ -188,6 +193,7 @@ def preserve_runtime_wheel_surfaces(scene_object, position, original_wheel_path,
         current_material.name = 'AuthoringMaterialPreserved_' + name
     bpy.ops.import_scene.gltf(filepath=str(original_wheel_path))
     imported_objects = set(bpy.data.objects) - existing_objects
+    normalize_imported_object_names(imported_objects)
     center = bbox_center_world(scene_object)
     corners = [scene_object.matrix_world @ Vector(corner) for corner in scene_object.bound_box]
     extents = Vector(tuple(max(corner[axis] for corner in corners) - min(corner[axis] for corner in corners) for axis in range(3)))
@@ -197,7 +203,7 @@ def preserve_runtime_wheel_surfaces(scene_object, position, original_wheel_path,
     export_transformation = Matrix.Diagonal((width_scale, radial_scale, radial_scale, 1)) @ wheel_conversion @ Matrix.Translation(-center) @ scene_object.matrix_world
     records = {}
     prefix = 'GEO_WHEEL_' + position + '_'
-    authored_objects = [current_object for current_object in existing_objects if current_object.type == 'MESH' and current_object.name.startswith(prefix) and '_DECAL_' not in current_object.name]
+    authored_objects = [current_object for current_object in existing_objects if current_object.type == 'MESH' and is_wheel_object(current_object.name, position) and '_DECAL_' not in current_object.name]
     for authored_object in authored_objects:
         runtime_object = next(current_object for current_object in imported_objects if current_object.type == 'MESH' and current_object.name.startswith(authored_object.name))
         authored_export = Matrix.Diagonal((width_scale, radial_scale, radial_scale, 1)) @ wheel_conversion @ Matrix.Translation(-center) @ authored_object.matrix_world
@@ -251,11 +257,11 @@ def main():
     sponsor_atlas = image_pixels(sponsor_shader.inputs['Base Color'].links[0].from_node.image)
     lettering = {}
     for label in ('Pirelli', 'PZero'):
-        scene_object = bpy.data.objects['GEO_WHEEL_FRONT_L_DECAL_' + label]
+        scene_object = bpy.data.objects['GEO_WHEEL_FRONT_LEFT_DECAL_' + label]
         coordinates = numpy.array([tuple(corner.uv) for corner in scene_object.data.uv_layers.active.data])
         lettering[label] = coordinates.min(axis=0), coordinates.max(axis=0)
     for scene_object in bpy.data.objects:
-        if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_CHASSIS_DECAL_'):
+        if scene_object.type == 'MESH' and scene_object.name.startswith('GEO_BODYWORK_DECAL_'):
             material = scene_object.active_material
             shader = next(node for node in material.node_tree.nodes if node.type == 'BSDF_PRINCIPLED')
             decal_records.append({'name': scene_object.name, 'positions': [list(scene_object.matrix_world @ vertex.co) for vertex in scene_object.data.vertices], 'faces': [list(polygon.vertices) for polygon in scene_object.data.polygons], 'coordinates': [list(corner.uv) for corner in scene_object.data.uv_layers.active.data], 'color': list(shader.inputs['Base Color'].default_value), 'printed': shader.inputs['Base Color'].is_linked})
@@ -270,7 +276,7 @@ def main():
     report['texture_resolved_source_backup'] = str(backup)
     paint = clean_chassis_material(bpy.data.materials['BakedPhysicalRedLacquerWithFlatChassisDecals'], 'red_lacquer', destination)
     carbon = clean_chassis_material(bpy.data.materials['BakedPhysicalSatinCarbonWithFlatChassisDecals'], 'satin_carbon', destination)
-    receiver_names = json.loads(options.projection_receivers.read_text())['receivers_by_design']
+    receiver_names = normalize_object_name_document(json.loads(options.projection_receivers.read_text()))['receivers_by_design']
     if set(receiver_names) != {record['name'] for record in decal_records}:
         raise RuntimeError('Projection receiver layout does not match the source sponsor designs')
     original_scene = bpy.context.scene
@@ -359,8 +365,8 @@ def main():
     tire_material.node_tree.links.new(separator.outputs['Green'], shader.inputs['Roughness'])
     shader.inputs['Metallic'].default_value = 0
     shader.inputs['Specular IOR Level'].default_value = 0.35
-    wheel_specs = json.loads((PROJECT_DIRECTORY / 'game/data/vehicles/f1_2030/f1_2030_v10_geometric.json').read_text())['tires']
-    for short_name, position in [('FL', 'FRONT_L'), ('FR', 'FRONT_R'), ('RL', 'REAR_L'), ('RR', 'REAR_R')]:
+    wheel_specs = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/data/vehicles/f1_2030/f1_2030_v10_geometric.json').read_text()))['tires']
+    for short_name, position in [('FL', 'FRONT_LEFT'), ('FR', 'FRONT_RIGHT'), ('RL', 'REAR_LEFT'), ('RR', 'REAR_RIGHT')]:
         scene_object = bpy.data.objects['GEO_WHEEL_' + position + '_TIRE']
         center = bbox_center_world(scene_object)
         world_positions = numpy.array([list(scene_object.matrix_world @ vertex.co) for vertex in scene_object.data.vertices])
@@ -391,9 +397,9 @@ def main():
     report['tires'] = {'color_texture': str(Path(tire_color.filepath_raw)), 'parameters_texture': str(Path(tire_parameters.filepath_raw)), 'color_resolution': 2048, 'parameters_resolution': 1024, 'lettering_and_white_band_are_color_only': True, 'shared_material': tire_material.name, 'new_texture_coordinates_only_on_tires': True}
     candidate_path = validate_output_path(PROJECT_DIRECTORY, destination / 'f1_2030_rebalanced_finishes.blend', 'preview').path
     bpy.ops.wm.save_as_mainfile(filepath=str(candidate_path), relative_remap=True)
-    manifest = json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     report['mesh_statistics'] = {'chassis': export_chassis(destination / 'f1_2030_v10_chassis.glb', manifest['authored_alignment']['chassis_vertical_offset'])}
-    for short_name, position in [('FL', 'FRONT_L'), ('FR', 'FRONT_R'), ('RL', 'REAR_L'), ('RR', 'REAR_R')]:
+    for short_name, position in [('FL', 'FRONT_LEFT'), ('FR', 'FRONT_RIGHT'), ('RL', 'REAR_LEFT'), ('RR', 'REAR_RIGHT')]:
         specification = wheel_specs['front' if short_name.startswith('F') else 'rear']
         report['mesh_statistics']['wheel_' + short_name] = export_wheel(position, destination / ('f1_2030_v10_wheel_' + short_name + '.glb'), specification['radius'], specification['width'])
     report['candidate_sha256'] = hashlib.sha256(candidate_path.read_bytes()).hexdigest()

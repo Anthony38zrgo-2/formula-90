@@ -1,7 +1,7 @@
 """Raise the F1 2030 nose and deepen the fixed lower front-wing plane.
 
 This is an incremental refinement of the existing R25-inspired front assembly.
-Only GEO_CHASSIS_BODY, GEO_CHASSIS_FRONTSUPPORT and GEO_CHASSIS_FRONTWING are
+Only GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER, GEO_FRONT_WING_MOUNTING_PYLONS and GEO_FRONT_WING_MAIN_ELEMENT are
 edited. The lower plane keeps its object transform and outer position; its
 central span is depressed smoothly to add concavity and clearance.
 """
@@ -13,10 +13,13 @@ from pathlib import Path
 
 import bpy
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
 
-BODY_NAME = "GEO_CHASSIS_BODY"
-SUPPORT_NAME = "GEO_CHASSIS_FRONTSUPPORT"
-LOWER_PLANE_NAME = "GEO_CHASSIS_FRONTWING"
+BODY_NAME = "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
+SUPPORT_NAME = "GEO_FRONT_WING_MOUNTING_PYLONS"
+LOWER_PLANE_NAME = "GEO_FRONT_WING_MAIN_ELEMENT"
 MODIFIED_OBJECTS = {BODY_NAME, SUPPORT_NAME, LOWER_PLANE_NAME}
 
 REVISION = "nose_up_lower_plane_concave_v2"

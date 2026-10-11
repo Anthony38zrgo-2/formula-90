@@ -11,7 +11,7 @@ const LEGACY_JSON := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
 const MESHES_JSON := "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json"
 
 ## Measured f1_2030.blend monocoque/nose top envelope in chassis-local metres
-## (5 cm z bins, GEO_CHASSIS_BODY/INTERIOR/FLOOR/STEERCOLUM vertices, read-only
+## (5 cm z bins, GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER/INTERIOR/FLOOR/STEERCOLUM vertices, read-only
 ## Blender dump). Piecewise-linear top height and half width per z anchor.
 const NOSE_ENVELOPE_Z := [-1.70, -1.50, -1.30, -1.15, -1.00, -0.85]
 const NOSE_ENVELOPE_TOP := [0.218, 0.251, 0.277, 0.296, 0.308, 0.312]

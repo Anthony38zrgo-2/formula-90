@@ -1,11 +1,16 @@
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 import hashlib
 import json
 import shutil
 import struct
 import subprocess
-import sys
-from pathlib import Path
 from mathutils import Vector
 
 project_directory = Path(__file__).resolve().parents[2]
@@ -41,7 +46,7 @@ def surface_digest(scene_object):
 vehicle_objects = list(bpy.context.scene.objects)
 protected_surfaces = {scene_object.name:surface_digest(scene_object) for scene_object in vehicle_objects if scene_object.type=='MESH'}
 manifest_path = texture_directory / 'baking_manifest.json'
-manifest = json.loads(manifest_path.read_text())
+manifest = normalize_object_name_document(json.loads(manifest_path.read_text()))
 authoring_scene = bpy.context.scene
 authoring_scene.name = 'VehicleAuthoring'
 authoring_scene.render.engine = 'CYCLES'
@@ -161,18 +166,18 @@ world.use_nodes = True
 world.node_tree.nodes['Background'].inputs['Color'].default_value = (0.16,0.17,0.19,1)
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = 0.25
 studio_scene.world = world
-floor_mesh = bpy.data.meshes.new('StudioGroundSurface')
+floor_mesh = bpy.data.meshes.new('StudioGroundPlaneSurface')
 floor_mesh.from_pydata([(-15,-15,-0.463),(15,-15,-0.463),(15,15,-0.463),(-15,15,-0.463)],[],[(0,1,2,3)])
-floor_object = bpy.data.objects.new('StudioGround',floor_mesh)
+floor_object = bpy.data.objects.new('StudioGroundPlane',floor_mesh)
 studio_collection.objects.link(floor_object)
-floor_material = bpy.data.materials.new('NeutralMatteStudioGround')
+floor_material = bpy.data.materials.new('NeutralMatteStudioGroundPlane')
 floor_material.use_nodes = True
 floor_shader = floor_material.node_tree.nodes.get('Principled BSDF')
 floor_shader.inputs['Base Color'].default_value = (0.055,0.06,0.07,1)
 floor_shader.inputs['Roughness'].default_value = 0.72
 floor_mesh.materials.append(floor_material)
 light_records = []
-for name,position,power,width,height in (('StudioKeySoftbox',(-3.5,-4.5,5.5),1100,5,3),('StudioFillSoftbox',(-1,4,3.5),650,4,3),('StudioRearContourSoftbox',(4,-1.5,4),1000,3,2),('StudioOverheadStrip',(0,0,6),700,6,1)):
+for name,position,power,width,height in (('StudioKeySoftbox',(-3.5,-4.5,5.5),1100,5,3),('StudioFillSoftbox',(-1,4,3.5),650,4,3),('StudioRearContourSoftbox',(4,-1.5,4),1000,3,2),('StudioOverheadStripLight',(0,0,6),700,6,1)):
     light = bpy.data.lights.new(name,'AREA')
     light.energy = power
     light.shape = 'RECTANGLE'
@@ -184,7 +189,7 @@ for name,position,power,width,height in (('StudioKeySoftbox',(-3.5,-4.5,5.5),110
     scene_object.rotation_euler = (Vector((0,0,0.1))-scene_object.location).to_track_quat('-Z','Y').to_euler()
     light_records.append({'name':name,'position':position,'power_watts':power,'dimensions_meters':[width,height]})
 camera_records = []
-for name,position,target,scale in (('StudioFrontThreeQuarter',(-4.8,-6,3.2),(0,0,0.05),6.7),('StudioRearThreeQuarter',(4.8,-6,2.8),(0,0,0.05),6.7),('StudioSide',(0,-8,0.5),(0,0,0.05),6.4),('StudioTop',(0,0,8),(0,0,0),6.4)):
+for name,position,target,scale in (('StudioFrontThreeQuarterCamera',(-4.8,-6,3.2),(0,0,0.05),6.7),('StudioRearThreeQuarterCamera',(4.8,-6,2.8),(0,0,0.05),6.7),('StudioSideCamera',(0,-8,0.5),(0,0,0.05),6.4),('StudioTopCamera',(0,0,8),(0,0,0),6.4)):
     camera = bpy.data.cameras.new(name)
     camera.type = 'ORTHO'
     camera.ortho_scale = scale
@@ -193,7 +198,7 @@ for name,position,target,scale in (('StudioFrontThreeQuarter',(-4.8,-6,3.2),(0,0
     scene_object.location = position
     scene_object.rotation_euler = (Vector(target)-scene_object.location).to_track_quat('-Z','Y').to_euler()
     camera_records.append({'name':name,'position':position,'target':target,'orthographic_scale':scale})
-studio_scene.camera = bpy.data.objects['StudioFrontThreeQuarter']
+studio_scene.camera = bpy.data.objects['StudioFrontThreeQuarterCamera']
 studio_scene.render.engine = 'CYCLES'
 studio_scene.cycles.device = 'CPU'
 studio_scene.cycles.samples = 512
@@ -235,7 +240,7 @@ bpy.ops.wm.open_mainfile(filepath=str(source_path))
 for name,digest in protected_surfaces.items():
     assert surface_digest(bpy.data.objects[name])==digest,name
 studio_scene = bpy.data.scenes['FinalVehicleStudio']
-assert studio_scene.camera.name=='StudioFrontThreeQuarter'
+assert studio_scene.camera.name=='StudioFrontThreeQuarterCamera'
 assert studio_scene.cycles.samples==512 and studio_scene.render.resolution_x==3840
 assert len([scene_object for scene_object in studio_scene.objects if scene_object.type=='LIGHT'])==4
 assert not any(scene_object.name.startswith('Studio') for scene_object in bpy.data.scenes['VehicleAuthoring'].objects)

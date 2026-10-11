@@ -8,6 +8,11 @@ from pathlib import Path
 from functools import lru_cache
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 import bmesh
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -246,7 +251,7 @@ def reconstruct_lining(lining, maximum_deviation):
 
 
 def validate_driver_clearance(lining, driver_path, conversion):
-    provenance = json.loads(driver_path.with_suffix('.provenance.json').read_text())
+    provenance = normalize_object_name_document(json.loads(driver_path.with_suffix('.provenance.json').read_text()))
     if any(provenance.get(name) != value for name, value in driver_capture_provenance().items()):
         raise RuntimeError('Driver animation capture does not match current sources')
     for relative_path, expected_digest in provenance['camera_dependencies_sha256'].items():
@@ -254,7 +259,7 @@ def validate_driver_clearance(lining, driver_path, conversion):
             raise RuntimeError('Driver camera dependency changed')
     if hashlib.sha256(driver_path.read_bytes()).hexdigest() != provenance['surfaces_sha256'] or provenance['seated_position'] != [0, -0.011, -0.24]:
         raise RuntimeError('Driver capture content or position differs from recorded provenance')
-    captured = json.loads(driver_path.read_text())
+    captured = normalize_object_name_document(json.loads(driver_path.read_text()))
     if len(captured['samples']) < 1000 or min(sample['steering_degrees'] for sample in captured['samples']) != -180 or max(sample['steering_degrees'] for sample in captured['samples']) != 180:
         raise RuntimeError('Driver animation capture does not cover the required steering sequence')
     lining_surface = surface_for_object(lining, conversion)
@@ -281,9 +286,9 @@ def main():
     destination = validate_output_path(PROJECT_DIRECTORY, options.output_directory, 'preview').path
     destination.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.open_mainfile(filepath=str(options.source_file.resolve()))
-    protected_meshes = {scene_object.name:mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name != 'GEO_CHASSIS_CockpitUpperLining'}
+    protected_meshes = {scene_object.name:mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name != 'GEO_COCKPIT_UpperInteriorLining'}
     report = {'source_before_sha256':hashlib.sha256(options.source_file.read_bytes()).hexdigest(), 'source_commit':subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=PROJECT_DIRECTORY, text=True).strip(), 'source_branch':subprocess.check_output(['git', 'branch', '--show-current'], cwd=PROJECT_DIRECTORY, text=True).strip(), 'source_status':subprocess.check_output(['git', 'status', '--short'], cwd=PROJECT_DIRECTORY, text=True).splitlines(), 'protected_mesh_fingerprints':protected_meshes}
-    lining = bpy.data.objects['GEO_CHASSIS_CockpitUpperLining']
+    lining = bpy.data.objects['GEO_COCKPIT_UpperInteriorLining']
     if lining.get('cockpit_lining_preserved_crease_vertex_pairs'):
         raise RuntimeError('This lining was already reconstructed; use the texture-resolved source_before_reconstruction.blend recorded by the reconstruction report')
     report['backup_texture_resolved_source'] = str(destination / 'source_before_reconstruction.blend')
@@ -291,10 +296,10 @@ def main():
     bpy.ops.wm.save_as_mainfile(filepath=str(validate_output_path(PROJECT_DIRECTORY, destination / 'source_before_reconstruction.blend', 'preview').path), relative_remap=True)
     report['lining'] = reconstruct_lining(lining, options.maximum_deviation_millimeters / 1000)
     report['full_geometry_validation'] = validate_cockpit_geometry()
-    manifest = json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     conversion = Matrix.Translation((0, 0, manifest['authored_alignment']['chassis_vertical_offset'])) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
     lining_surface = surface_for_object(lining, conversion)
-    report['seat_intersection_pairs'] = len(lining_surface.overlap(surface_for_object(bpy.data.objects['GEO_CHASSIS_SEAT'], conversion)))
+    report['seat_intersection_pairs'] = len(lining_surface.overlap(surface_for_object(bpy.data.objects['GEO_COCKPIT_DRIVER_SEAT'], conversion)))
     report['steering_intersections'] = validate_steering_sweep(lining_surface, conversion)
     report['sealed_side_samples'] = validate_side_sealing(lining)
     report['protected_meshes_unchanged'] = all(mesh_fingerprint(bpy.data.objects[name]) == fingerprint for name, fingerprint in protected_meshes.items())

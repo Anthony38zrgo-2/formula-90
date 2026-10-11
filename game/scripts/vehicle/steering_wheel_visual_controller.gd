@@ -12,11 +12,11 @@ func _ready() -> void:
 		push_error("Steering wheel animation requires a chassis and effective steering telemetry.")
 		set_process(false)
 		return
-	var steering_wheel := chassis_visual.find_child("GEO_CHASSIS_STEER", true, false) as MeshInstance3D
-	var steering_column := chassis_visual.find_child("GEO_CHASSIS_STEERCOLUM", true, false) as MeshInstance3D
-	var left_shift_paddle := chassis_visual.find_child("GEO_CHASSIS_SHIFTERBRAK", true, false) as MeshInstance3D
-	var right_shift_paddle := chassis_visual.find_child("GEO_CHASSIS_SHIFTERTHRO", true, false) as MeshInstance3D
-	var steering_wheel_display := chassis_visual.find_child("GEO_CHASSIS_SCREEN", true, false) as MeshInstance3D
+	var steering_wheel := chassis_visual.find_child("GEO_STEERING_WHEEL_BODY", true, false) as MeshInstance3D
+	var steering_column := chassis_visual.find_child("GEO_STEERING_COLUMN_SHAFT", true, false) as MeshInstance3D
+	var left_shift_paddle := chassis_visual.find_child("GEO_STEERING_WHEEL_PADDLE_LEFT", true, false) as MeshInstance3D
+	var right_shift_paddle := chassis_visual.find_child("GEO_STEERING_WHEEL_PADDLE_RIGHT", true, false) as MeshInstance3D
+	var steering_wheel_display := chassis_visual.find_child("GEO_STEERING_WHEEL_DISPLAY", true, false) as MeshInstance3D
 	if steering_wheel == null or steering_column == null or left_shift_paddle == null or right_shift_paddle == null or steering_wheel_display == null:
 		push_error("Steering wheel animation requires the steering wheel, column, shift paddles, and display meshes.")
 		set_process(false)

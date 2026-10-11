@@ -1,14 +1,21 @@
 import json
 
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 
-MID_NAME = "GEO_CHASSIS_REAR_WING_MID"
+MID_NAME = "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
 LATERAL_OBJECTS = (
-    "GEO_CHASSIS_REAR_WING",
-    "GEO_CHASSIS_ENDPLATE",
+    "GEO_REAR_WING_ENDPLATE_ASSEMBLY",
+    "GEO_FRONT_WING_ENDPLATES",
 )
 
 

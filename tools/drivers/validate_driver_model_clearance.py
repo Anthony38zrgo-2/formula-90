@@ -5,6 +5,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -21,11 +26,12 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     options = parser.parse_args(sys.argv[sys.argv.index("--") + 1:])
     output_path = validate_output_path(PROJECT_DIRECTORY, options.output, "preview").path
-    captured_surfaces = json.loads(options.driver_surfaces.read_text(encoding="utf-8-sig"))
+    captured_surfaces = normalize_object_name_document(json.loads(options.driver_surfaces.read_text(encoding="utf-8-sig")))
     chassis_path = PROJECT_DIRECTORY / "game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb"
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(chassis_path))
-    protected_names = ("GEO_CHASSIS_BODY", "GEO_CHASSIS_INTERIOR", "GEO_CHASSIS_FLOOR", "GEO_CHASSIS_SEAT", "GEO_CHASSIS_CockpitUpperLining", "GEO_CHASSIS_STEERCOLUM")
+    enable_legacy_source_names()
+    protected_names = ("GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER", "GEO_COCKPIT_INTERIOR_SHELL", "GEO_UNDERBODY_FLOOR_AND_DIFFUSER", "GEO_COCKPIT_DRIVER_SEAT", "GEO_COCKPIT_UpperInteriorLining", "GEO_STEERING_COLUMN_SHAFT")
     cockpit_surfaces = {}
     for object_name in protected_names:
         character_object = bpy.data.objects.get(object_name)

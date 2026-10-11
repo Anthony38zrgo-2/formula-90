@@ -16,15 +16,20 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 
-SUPPORT_NAME = "GEO_CHASSIS_REARSUPPORT"
-PLANE_NAME = "GEO_CHASSIS_REAR_WING_MID"
-UPPER_NAME = "GEO_CHASSIS_REAR_WING"
-BEAM_NAME = "GEO_CHASSIS_AEROPART3"
-ENDPLATE_NAME = "GEO_CHASSIS_ENDPLATE"
+SUPPORT_NAME = "GEO_REAR_WING_CENTRAL_SUPPORT"
+PLANE_NAME = "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
+UPPER_NAME = "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
+BEAM_NAME = "GEO_REAR_WING_LOWER_BEAM_ELEMENT"
+ENDPLATE_NAME = "GEO_FRONT_WING_ENDPLATES"
 EXPECTED_TOPOLOGY = (1752, 1730)
 STATION_STEP_M = 0.004
 SMOOTH_RADIUS = 1

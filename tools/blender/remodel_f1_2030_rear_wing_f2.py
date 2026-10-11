@@ -6,11 +6,16 @@ modified. Run from Blender with an input .blend and output .blend after `--`.
 """
 
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 import bmesh
 import math
-import sys
 from collections import defaultdict
-from pathlib import Path
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -18,10 +23,10 @@ from mathutils.bvhtree import BVHTree
 TARGETS = {
     # Both planes share the same crown so the closed flap follows the main
     # plane without opening an artificial center gap.
-    "GEO_CHASSIS_ACTIVEREAR": 0.115,
-    "GEO_CHASSIS_AEROPART2": 0.115,
+    "GEO_REAR_WING_MAIN_ELEMENT": 0.115,
+    "GEO_REAR_WING_UPPER_ELEMENT": 0.115,
 }
-SUPPORT_NAME = "GEO_CHASSIS_REARSUPPORT"
+SUPPORT_NAME = "GEO_REAR_WING_CENTRAL_SUPPORT"
 MODIFIED_OBJECTS = {*TARGETS, SUPPORT_NAME}
 PROFILE_EXPONENT = 1.35
 GROUP_PRECISION = 6
@@ -166,7 +171,7 @@ def main():
     support = bpy.data.objects.get(SUPPORT_NAME)
     if support is None or support.type != "MESH":
         raise RuntimeError(f"required rear-wing support missing: {SUPPORT_NAME}")
-    reports[SUPPORT_NAME] = extend_support_to_plane(support, bpy.data.objects["GEO_CHASSIS_AEROPART2"])
+    reports[SUPPORT_NAME] = extend_support_to_plane(support, bpy.data.objects["GEO_REAR_WING_UPPER_ELEMENT"])
 
     for name, matrix_values in protected.items():
         current = tuple(round(value, 9) for row in bpy.data.objects[name].matrix_world for value in row)

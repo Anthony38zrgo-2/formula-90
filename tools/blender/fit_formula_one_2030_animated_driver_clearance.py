@@ -6,6 +6,11 @@ from pathlib import Path
 import sys
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 import bmesh
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -161,7 +166,7 @@ def carve_cockpit_surfaces(samples, conversion, clearance):
         for collection in list(cutter.users_collection):
             collection.objects.unlink(cutter)
         cutting_collection.objects.link(cutter)
-    for name in ['GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_SEAT']:
+    for name in ['GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_DRIVER_SEAT']:
         scene_object = bpy.data.objects[name]
         original_count = len(scene_object.data.vertices)
         preserve_surface_triangulation(scene_object)
@@ -202,7 +207,7 @@ def main():
         raise RuntimeError('The verified construction allowance must be at least eight millimeters')
     output_directory = validate_output_path(PROJECT_DIRECTORY, options.output_directory, 'preview').path
     output_directory.mkdir(parents=True, exist_ok=True)
-    provenance = json.loads(options.capture_provenance.read_text())
+    provenance = normalize_object_name_document(json.loads(options.capture_provenance.read_text()))
     baseline_paths = {
         'game/assets/models/vehicles/f1-2030/source/f1_2030.blend': options.source_file,
         'game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb': options.baseline_chassis_file,
@@ -213,15 +218,15 @@ def main():
             raise RuntimeError('Capture provenance mismatch: ' + relative_path)
     bpy.ops.wm.open_mainfile(filepath=str(options.source_file.resolve()), load_ui=False, use_scripts=False)
     bpy.ops.file.make_paths_absolute()
-    if bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding'].get('animated_driver_clearance_fitted', False):
+    if bpy.data.objects['GEO_COCKPIT_HeadrestPadding'].get('animated_driver_clearance_fitted', False):
         raise RuntimeError('Refusing to apply driver clearance fitting twice')
-    affected_names = {'GEO_CHASSIS_CockpitHeadrestPadding', 'GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_SEAT'}
+    affected_names = {'GEO_COCKPIT_HeadrestPadding', 'GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_DRIVER_SEAT'}
     protected_fingerprints = {scene_object.name: mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name not in affected_names}
-    manifest = json.loads(options.baseline_manifest_file.read_text())
+    manifest = normalize_object_name_document(json.loads(options.baseline_manifest_file.read_text()))
     conversion = Matrix.Translation((0, 0, manifest['authored_alignment']['chassis_vertical_offset'])) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
-    samples = json.loads(options.driver_surfaces.read_text())['samples']
+    samples = normalize_object_name_document(json.loads(options.driver_surfaces.read_text()))['samples']
     swept_surface = prepare_swept_arm_surface(samples)
-    headrest_displacements = reshape_headrest(bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding'], conversion, swept_surface, 0.010)
+    headrest_displacements = reshape_headrest(bpy.data.objects['GEO_COCKPIT_HeadrestPadding'], conversion, swept_surface, 0.010)
     del swept_surface
     if any(record['attachment_vertex'] for record in headrest_displacements):
         raise RuntimeError('A protected headrest attachment was displaced')
@@ -229,7 +234,7 @@ def main():
     for name, digest in protected_fingerprints.items():
         if mesh_fingerprint(bpy.data.objects[name]) != digest:
             raise RuntimeError('Protected mesh changed: ' + name)
-    bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding']['animated_driver_clearance_fitted'] = True
+    bpy.data.objects['GEO_COCKPIT_HeadrestPadding']['animated_driver_clearance_fitted'] = True
     report = {
         'source_before_sha256': hashlib.sha256(options.source_file.read_bytes()).hexdigest(),
         'driver_surface_sha256': hashlib.sha256(options.driver_surfaces.read_bytes()).hexdigest(),

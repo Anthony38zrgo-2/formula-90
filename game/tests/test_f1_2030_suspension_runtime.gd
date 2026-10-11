@@ -79,7 +79,7 @@ func _run() -> void:
 	# Baked suspension meshes from the chassis GLB must be hidden.
 	var chassis := vehicle.get_node_or_null("ChassisVisual") as Node3D
 	if chassis != null:
-		var baked := _find_first(chassis, "GEO_CHASSIS_FRONT_SUSPENSION")
+		var baked := _find_first(chassis, "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY")
 		_check(baked != null, "baked FRONT_SUSPENSION mesh must exist in the GLB")
 		if baked != null:
 			_check(not (baked as Node3D).visible, "baked FRONT_SUSPENSION must be hidden")

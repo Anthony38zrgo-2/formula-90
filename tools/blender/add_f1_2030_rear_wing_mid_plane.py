@@ -14,17 +14,24 @@ import json
 import math
 
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 from mathutils import Euler, Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 
-SOURCE_NAME = "GEO_CHASSIS_REAR_WING"
-BEAM_NAME = "GEO_CHASSIS_AEROPART3"
-TARGET_NAME = "GEO_CHASSIS_REAR_WING_MID"
+SOURCE_NAME = "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
+BEAM_NAME = "GEO_REAR_WING_LOWER_BEAM_ELEMENT"
+TARGET_NAME = "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
 
 # The endpoint profile is projected against the existing lateral surfaces.
 # A 0.2 mm inset prevents numerical penetration while remaining visually joined.
-SIDE_OBJECT_NAMES = (SOURCE_NAME, "GEO_CHASSIS_ENDPLATE")
+SIDE_OBJECT_NAMES = (SOURCE_NAME, "GEO_FRONT_WING_ENDPLATES")
 SIDE_CONTACT_INSET_M = 0.0002
 CHORD_M = 0.220
 THICKNESS_RATIO = 0.115

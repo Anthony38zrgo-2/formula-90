@@ -374,7 +374,7 @@ func create_neutral_hand_basis(side: String, palm_surface_normal: Vector3) -> Ba
 	return Basis(palm_projection.y * perpendicular_direction + palm_projection.x * inward_direction, hand_direction, palm_projection.y * inward_direction - palm_projection.x * perpendicular_direction)
 
 func initialize_steering_surface() -> void:
-	var steering_mesh := chassis_visual.find_child("GEO_CHASSIS_STEER", true, false) as MeshInstance3D
+	var steering_mesh := chassis_visual.find_child("GEO_STEERING_WHEEL_BODY", true, false) as MeshInstance3D
 	var mesh_to_pivot := steering_pivot.global_transform.affine_inverse() * steering_mesh.global_transform
 	for vertex in steering_mesh.mesh.get_faces():
 		steering_surface_vertices.append(mesh_to_pivot * vertex)

@@ -298,7 +298,7 @@ func _hide_baked_suspension() -> void:
 func _recursive_hide_suspension(node: Node) -> void:
 	if node is Node3D:
 		var node_name: String = node.name
-		if node_name.begins_with("GEO_CHASSIS_FRONT_SUSPENSION") or node_name.begins_with("GEO_CHASSIS_REAR_SUSPENSION"):
+		if node_name.begins_with("GEO_SUSPENSION_FRONT_LINK_ASSEMBLY") or node_name.begins_with("GEO_SUSPENSION_REAR_LINK_ASSEMBLY"):
 			(node as Node3D).visible = false
 			_hidden_baked_nodes.append(node)
 	for child in node.get_children():

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "field_of_view_degrees": 70.0,
-  "viewpoint_elevation_meters": 0.14,
+  "viewpoint_elevation_meters": 0.04,
   "near_clip_distance_meters": 0.015,
   "far_clip_distance_meters": 2500.0,
   "force_response_strength": 1.0,

@@ -3,12 +3,19 @@
 import json
 
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 from mathutils.bvhtree import BVHTree
 
 
-BODY_NAME = "GEO_CHASSIS_BODY"
-SUPPORT_NAME = "GEO_CHASSIS_FRONTSUPPORT"
-WING_NAME = "GEO_CHASSIS_FRONTWING"
+BODY_NAME = "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
+SUPPORT_NAME = "GEO_FRONT_WING_MOUNTING_PYLONS"
+WING_NAME = "GEO_FRONT_WING_MAIN_ELEMENT"
 
 
 def world_points(obj):

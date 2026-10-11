@@ -1,121 +1,121 @@
 {
   "schema_version": 1,
   "receivers_by_design": {
-    "GEO_CHASSIS_DECAL_LeftAmbipar15": [
-      "GEO_CHASSIS_AEROPART1"
+    "GEO_BODYWORK_DECAL_LeftAmbipar15": [
+      "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS"
     ],
-    "GEO_CHASSIS_DECAL_LeftCevaLogistics4": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftCevaLogistics4": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftDriverNumber1": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftDriverNumber1": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftDxc10": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftDxc10": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftFerrariShield5": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftFerrariShield5": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftFrontWingGreen": [
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_LeftFrontWingGreen": [
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_LeftFrontWingRed": [
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_LeftFrontWingRed": [
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_LeftFrontWingWhite": [
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_LeftFrontWingWhite": [
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_LeftHewlettPackard0": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftHewlettPackard0": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftInternationalBusinessMachines7": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftPeroni14": [
-      "GEO_CHASSIS_REAR_WING"
+    "GEO_BODYWORK_DECAL_LeftPeroni14": [
+      "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
     ],
-    "GEO_CHASSIS_DECAL_LeftRichardMille6": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftRichardMille6": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftShell3": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftShell3": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftUniCredit11": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftUniCredit11": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftUniCredit12": [
-      "GEO_CHASSIS_AERO2",
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_LeftUniCredit12": [
+      "GEO_FRONT_WING_UPPER_ELEMENT",
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_LeftUniCredit2": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftUniCredit2": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_LeftVPower13": [
-      "GEO_CHASSIS_REAR_WING"
+    "GEO_BODYWORK_DECAL_LeftVPower13": [
+      "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
     ],
-    "GEO_CHASSIS_DECAL_LeftZyn8": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_LeftZyn8": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_NoseDriverNumber": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_NoseDriverNumber": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_NoseShell": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_NoseShell": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightAmbipar15": [
-      "GEO_CHASSIS_AEROPART1"
+    "GEO_BODYWORK_DECAL_RightAmbipar15": [
+      "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS"
     ],
-    "GEO_CHASSIS_DECAL_RightCevaLogistics4": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightCevaLogistics4": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightDriverNumber1": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightDriverNumber1": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightDxc10": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightDxc10": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightFerrariShield5": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightFerrariShield5": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightFrontWingGreen": [
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_RightFrontWingGreen": [
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_RightFrontWingRed": [
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_RightFrontWingRed": [
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_RightFrontWingWhite": [
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_RightFrontWingWhite": [
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_RightHewlettPackard0": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightHewlettPackard0": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightInternationalBusinessMachines7": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightPeroni14": [
-      "GEO_CHASSIS_REAR_WING"
+    "GEO_BODYWORK_DECAL_RightPeroni14": [
+      "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
     ],
-    "GEO_CHASSIS_DECAL_RightRichardMille6": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightRichardMille6": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightShell3": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightShell3": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightUniCredit11": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightUniCredit11": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightUniCredit12": [
-      "GEO_CHASSIS_AERO2",
-      "GEO_CHASSIS_ENDPLATE"
+    "GEO_BODYWORK_DECAL_RightUniCredit12": [
+      "GEO_FRONT_WING_UPPER_ELEMENT",
+      "GEO_FRONT_WING_ENDPLATES"
     ],
-    "GEO_CHASSIS_DECAL_RightUniCredit2": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightUniCredit2": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ],
-    "GEO_CHASSIS_DECAL_RightVPower13": [
-      "GEO_CHASSIS_REAR_WING"
+    "GEO_BODYWORK_DECAL_RightVPower13": [
+      "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
     ],
-    "GEO_CHASSIS_DECAL_RightZyn8": [
-      "GEO_CHASSIS_BODY"
+    "GEO_BODYWORK_DECAL_RightZyn8": [
+      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
     ]
   }
 }

@@ -7,6 +7,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 import bmesh
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -26,7 +31,7 @@ def surface_for_object(scene_object, conversion=Matrix.Identity(4)):
 
 
 def cockpit_opening_contour():
-    body = bpy.data.objects['GEO_CHASSIS_BODY']
+    body = bpy.data.objects['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER']
     topology = bmesh.new()
     topology.from_mesh(body.data)
     bmesh.ops.transform(topology, matrix=body.matrix_world, verts=list(topology.verts))
@@ -88,7 +93,7 @@ def interior_texture_samples(mesh):
 
 
 def create_upper_lining():
-    interior=bpy.data.objects['GEO_CHASSIS_INTERIOR']
+    interior=bpy.data.objects['GEO_COCKPIT_INTERIOR_SHELL']
     if len(interior.data.vertices)!=4686:
         raise RuntimeError('Unexpected interior topology')
     original_positions=[vertex.co.copy() for vertex in interior.data.vertices]
@@ -129,7 +134,7 @@ def create_upper_lining():
     outer_rear=max(position.x for position in lower_contour)
     vertices=[]
     faces=[]
-    body_surface=surface_for_object(bpy.data.objects['GEO_CHASSIS_BODY'])
+    body_surface=surface_for_object(bpy.data.objects['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER'])
     for side_sign in (-1,1):
         stations=sorted(set([round(position.x,7) for position in opening_contour+lower_contour if opening_front-1e-6<=position.x<=opening_rear+1e-6]+[opening_front,opening_rear]))
         stations=[value for index,value in enumerate(stations) if index==0 or value-stations[index-1]>1e-6]
@@ -183,14 +188,14 @@ def create_upper_lining():
                 first_index=start_index+row*6+lateral_index
                 second_index=first_index+6
                 faces.append((first_index,second_index,second_index+1,first_index+1))
-    previous_lining=bpy.data.objects.get('GEO_CHASSIS_CockpitUpperLining')
+    previous_lining=bpy.data.objects.get('GEO_COCKPIT_UpperInteriorLining')
     collections=list(previous_lining.users_collection) if previous_lining else list(interior.users_collection)
     if previous_lining:
         bpy.data.objects.remove(previous_lining,do_unlink=True)
     lining_mesh=bpy.data.meshes.new('StationMatchedCockpitContourTransition')
     lining_mesh.from_pydata(vertices,[],faces)
     lining_mesh.materials.append(interior.data.materials[0])
-    lining=bpy.data.objects.new('GEO_CHASSIS_CockpitUpperLining',lining_mesh)
+    lining=bpy.data.objects.new('GEO_COCKPIT_UpperInteriorLining',lining_mesh)
     for collection in collections:
         collection.objects.link(lining)
     lining_topology=bmesh.new()
@@ -252,17 +257,17 @@ def validate_side_sealing(lining):
 
 
 def validate_steering_sweep(lining_surface, conversion):
-    steering_wheel = bpy.data.objects['GEO_CHASSIS_STEER']
-    steering_column = bpy.data.objects['GEO_CHASSIS_STEERCOLUM']
+    steering_wheel = bpy.data.objects['GEO_STEERING_WHEEL_BODY']
+    steering_column = bpy.data.objects['GEO_STEERING_COLUMN_SHAFT']
     wheel_positions = [conversion @ steering_wheel.matrix_world @ vertex.co for vertex in steering_wheel.data.vertices]
     column_positions = [conversion @ steering_column.matrix_world @ vertex.co for vertex in steering_column.data.vertices]
     pivot = Vector(((min(position.x for position in column_positions) + max(position.x for position in column_positions)) / 2, (min(position.y for position in wheel_positions) + max(position.y for position in wheel_positions)) / 2, (min(position.z for position in column_positions) + max(position.z for position in column_positions)) / 2))
     failures = []
-    for object_name in ('GEO_CHASSIS_STEER', 'GEO_CHASSIS_SCREEN', 'GEO_CHASSIS_SHIFTERBRAK', 'GEO_CHASSIS_SHIFTERTHRO', 'GEO_CHASSIS_STEERCOLUM', 'GEO_CHASSIS_CYLINDER_001'):
+    for object_name in ('GEO_STEERING_WHEEL_BODY', 'GEO_STEERING_WHEEL_DISPLAY', 'GEO_STEERING_WHEEL_PADDLE_LEFT', 'GEO_STEERING_WHEEL_PADDLE_RIGHT', 'GEO_STEERING_COLUMN_SHAFT', 'GEO_STEERING_WHEEL_CENTER_FASTENER'):
         scene_object = bpy.data.objects[object_name]
         original_positions = [conversion @ scene_object.matrix_world @ vertex.co for vertex in scene_object.data.vertices]
         polygons = [list(polygon.vertices) for polygon in scene_object.data.polygons]
-        rotates = object_name not in ('GEO_CHASSIS_STEERCOLUM', 'GEO_CHASSIS_CYLINDER_001')
+        rotates = object_name not in ('GEO_STEERING_COLUMN_SHAFT', 'GEO_STEERING_WHEEL_CENTER_FASTENER')
         for steering_degrees in range(-180, 181, 3) if rotates else (0,):
             rotation = Matrix.Rotation(math.radians(-steering_degrees), 4, 'Y')
             positions = [pivot + rotation @ (position - pivot) for position in original_positions] if rotates else original_positions
@@ -286,32 +291,32 @@ def main():
         if source_image.source == 'FILE' and source_image.filepath and not source_image.packed_file:
             if not Path(bpy.path.abspath(source_image.filepath)).is_file():
                 raise RuntimeError('Source texture is missing; open the Blender source from its authored directory: ' + source_image.filepath)
-    protected_meshes = {scene_object.name:mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name not in ('GEO_CHASSIS_INTERIOR', 'GEO_CHASSIS_CockpitUpperLining')}
+    protected_meshes = {scene_object.name:mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH' and scene_object.name not in ('GEO_COCKPIT_INTERIOR_SHELL', 'GEO_COCKPIT_UpperInteriorLining')}
     report = {'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=PROJECT_DIRECTORY,text=True).strip(),'source_before_sha256':hashlib.sha256(Path(bpy.data.filepath).read_bytes()).hexdigest()}
     report['source_branch'] = subprocess.check_output(['git','branch','--show-current'],cwd=PROJECT_DIRECTORY,text=True).strip()
     report['source_status'] = subprocess.check_output(['git','status','--short'],cwd=PROJECT_DIRECTORY,text=True).splitlines()
     report['protected_mesh_fingerprints'] = protected_meshes
-    report['interior_before_fingerprint'] = mesh_fingerprint(bpy.data.objects['GEO_CHASSIS_INTERIOR'])
-    report['interior_geometry_before'] = inspect_mesh_geometry(bpy.data.objects['GEO_CHASSIS_INTERIOR'])
+    report['interior_before_fingerprint'] = mesh_fingerprint(bpy.data.objects['GEO_COCKPIT_INTERIOR_SHELL'])
+    report['interior_geometry_before'] = inspect_mesh_geometry(bpy.data.objects['GEO_COCKPIT_INTERIOR_SHELL'])
     lining, measurements = create_upper_lining()
     report['lining'] = measurements
-    report['interior_after_fingerprint'] = mesh_fingerprint(bpy.data.objects['GEO_CHASSIS_INTERIOR'])
+    report['interior_after_fingerprint'] = mesh_fingerprint(bpy.data.objects['GEO_COCKPIT_INTERIOR_SHELL'])
     report['full_geometry_validation'] = validate_cockpit_geometry()
     if not report['full_geometry_validation']['passed']:
         raise RuntimeError('Reconstructed cockpit geometry or full perimeter failed validation')
     report['protected_meshes_unchanged'] = all(mesh_fingerprint(bpy.data.objects[name]) == fingerprint for name,fingerprint in protected_meshes.items())
     if not report['protected_meshes_unchanged']:
         raise RuntimeError('An existing mesh changed')
-    manifest = json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     vertical_offset = manifest['authored_alignment']['chassis_vertical_offset']
     conversion = Matrix.Translation((0,0,vertical_offset)) @ Matrix.Rotation(-math.pi / 2,4,'Z')
     lining_surface = surface_for_object(lining, conversion)
-    interior_surface = surface_for_object(bpy.data.objects['GEO_CHASSIS_INTERIOR'], conversion)
-    report['seat_intersection_pairs'] = len(lining_surface.overlap(surface_for_object(bpy.data.objects['GEO_CHASSIS_SEAT'], conversion)))
-    report['interior_seat_intersection_pairs'] = len(interior_surface.overlap(surface_for_object(bpy.data.objects['GEO_CHASSIS_SEAT'], conversion)))
+    interior_surface = surface_for_object(bpy.data.objects['GEO_COCKPIT_INTERIOR_SHELL'], conversion)
+    report['seat_intersection_pairs'] = len(lining_surface.overlap(surface_for_object(bpy.data.objects['GEO_COCKPIT_DRIVER_SEAT'], conversion)))
+    report['interior_seat_intersection_pairs'] = len(interior_surface.overlap(surface_for_object(bpy.data.objects['GEO_COCKPIT_DRIVER_SEAT'], conversion)))
     if options.driver_surfaces:
         driver_path = options.driver_surfaces.resolve()
-        provenance = json.loads(driver_path.with_suffix('.provenance.json').read_text())
+        provenance = normalize_object_name_document(json.loads(driver_path.with_suffix('.provenance.json').read_text()))
         fresh = all(provenance.get(name) == value for name,value in driver_capture_provenance().items())
         report['driver_capture_matches_current_sources'] = fresh
         if not fresh:
@@ -323,7 +328,7 @@ def main():
         for relative_path, expected_digest in provenance['camera_dependencies_sha256'].items():
             if hashlib.sha256((PROJECT_DIRECTORY / 'game' / relative_path).read_bytes()).hexdigest() != expected_digest:
                 raise RuntimeError('Driver capture camera dependencies changed')
-        captured = json.loads(driver_path.read_text())
+        captured = normalize_object_name_document(json.loads(driver_path.read_text()))
         if len(captured['samples']) < 1000 or min(sample['steering_degrees'] for sample in captured['samples']) != -180 or max(sample['steering_degrees'] for sample in captured['samples']) != 180:
             raise RuntimeError('Driver capture does not cover the complete steering validation sequence')
         failures = []
@@ -334,7 +339,7 @@ def main():
                 failures.append({'object':lining.name,'sample':index,'steering_degrees':sample['steering_degrees'],'pairs':len(intersections)})
             interior_intersections = interior_surface.overlap(surface)
             if interior_intersections:
-                failures.append({'object':'GEO_CHASSIS_INTERIOR','sample':index,'steering_degrees':sample['steering_degrees'],'pairs':len(interior_intersections)})
+                failures.append({'object':'GEO_COCKPIT_INTERIOR_SHELL','sample':index,'steering_degrees':sample['steering_degrees'],'pairs':len(interior_intersections)})
         report['driver_samples'] = len(captured['samples'])
         report['driver_intersections'] = failures
         report['driver_surfaces_sha256'] = hashlib.sha256(driver_path.read_bytes()).hexdigest()

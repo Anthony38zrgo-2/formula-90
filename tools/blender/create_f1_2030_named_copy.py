@@ -1,57 +1,62 @@
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, canonical_object_name
+enable_legacy_source_names()
+
 import hashlib
 import json
 import re
-import sys
-from pathlib import Path
 
 
 CHASSIS_NAMES = {
-    "ActiveFront": "GEO_CHASSIS_ACTIVEFRONT",
-    "ActiveRear": "GEO_CHASSIS_ACTIVEREAR",
-    "Aero2": "GEO_CHASSIS_AERO2",
-    "AeroPart1": "GEO_CHASSIS_AEROPART1",
-    "AeroPart2": "GEO_CHASSIS_AEROPART2",
-    "AeroPart3": "GEO_CHASSIS_AEROPART3",
-    "Body": "GEO_CHASSIS_BODY",
-    "Carbon3": "GEO_CHASSIS_CARBON3",
-    "Carbon4": "GEO_CHASSIS_CARBON4",
-    "Carbon5": "GEO_CHASSIS_CARBON5",
-    "Cylinder.001": "GEO_CHASSIS_CYLINDER_001",
-    "Endplate": "GEO_CHASSIS_ENDPLATE",
-    "Floor": "GEO_CHASSIS_FLOOR",
-    "Front Suspension": "GEO_CHASSIS_FRONT_SUSPENSION",
-    "FrontSupport": "GEO_CHASSIS_FRONTSUPPORT",
-    "FrontWing": "GEO_CHASSIS_FRONTWING",
-    "Interior": "GEO_CHASSIS_INTERIOR",
-    "LateralCam": "GEO_CHASSIS_LATERALCAM",
-    "Mirrors": "GEO_CHASSIS_MIRRORS",
-    "OnboardCam": "GEO_CHASSIS_ONBOARDCAM",
-    "Rear Suspension": "GEO_CHASSIS_REAR_SUSPENSION",
-    "Rear Wing": "GEO_CHASSIS_REAR_WING",
-    "RearLight": "GEO_CHASSIS_REARLIGHT",
-    "RearSupport": "GEO_CHASSIS_REARSUPPORT",
-    "Screen": "GEO_CHASSIS_SCREEN",
-    "Seat": "GEO_CHASSIS_SEAT",
-    "ShifterBrak": "GEO_CHASSIS_SHIFTERBRAK",
-    "ShifterThro": "GEO_CHASSIS_SHIFTERTHRO",
-    "Steer": "GEO_CHASSIS_STEER",
-    "SteerColum": "GEO_CHASSIS_STEERCOLUM",
+    "ActiveFront": "GEO_FRONT_WING_INTERMEDIATE_ELEMENT",
+    "ActiveRear": "GEO_REAR_WING_MAIN_ELEMENT",
+    "Aero2": "GEO_FRONT_WING_UPPER_ELEMENT",
+    "AeroPart1": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS",
+    "AeroPart2": "GEO_REAR_WING_UPPER_ELEMENT",
+    "AeroPart3": "GEO_REAR_WING_LOWER_BEAM_ELEMENT",
+    "Body": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
+    "Carbon3": "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE",
+    "Carbon4": "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES",
+    "Carbon5": "GEO_ENGINE_COVER_REAR_CLOSURE",
+    "Cylinder.001": "GEO_STEERING_WHEEL_CENTER_FASTENER",
+    "Endplate": "GEO_FRONT_WING_ENDPLATES",
+    "Floor": "GEO_UNDERBODY_FLOOR_AND_DIFFUSER",
+    "Front Suspension": "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY",
+    "FrontSupport": "GEO_FRONT_WING_MOUNTING_PYLONS",
+    "FrontWing": "GEO_FRONT_WING_MAIN_ELEMENT",
+    "Interior": "GEO_COCKPIT_INTERIOR_SHELL",
+    "LateralCam": "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS",
+    "Mirrors": "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS",
+    "OnboardCam": "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING",
+    "Rear Suspension": "GEO_SUSPENSION_REAR_LINK_ASSEMBLY",
+    "Rear Wing": "GEO_REAR_WING_ENDPLATE_ASSEMBLY",
+    "RearLight": "GEO_REAR_SAFETY_LIGHT",
+    "RearSupport": "GEO_REAR_WING_CENTRAL_SUPPORT",
+    "Screen": "GEO_STEERING_WHEEL_DISPLAY",
+    "Seat": "GEO_COCKPIT_DRIVER_SEAT",
+    "ShifterBrak": "GEO_STEERING_WHEEL_PADDLE_LEFT",
+    "ShifterThro": "GEO_STEERING_WHEEL_PADDLE_RIGHT",
+    "Steer": "GEO_STEERING_WHEEL_BODY",
+    "SteerColum": "GEO_STEERING_COLUMN_SHAFT",
 }
 
 CONTROL_NAMES = {
     "CARAXIS": "DATUM_VEHICLE_ORIGIN",
-    "FL": "WHEEL_FRONT_L_CONTROL",
-    "FR": "WHEEL_FRONT_R_CONTROL",
-    "RL": "WHEEL_REAR_L_CONTROL",
-    "RR": "WHEEL_REAR_R_CONTROL",
+    "FL": "WHEEL_FRONT_LEFT_CONTROL",
+    "FR": "WHEEL_FRONT_RIGHT_CONTROL",
+    "RL": "WHEEL_REAR_LEFT_CONTROL",
+    "RR": "WHEEL_REAR_RIGHT_CONTROL",
 }
 
 WHEEL_POSITIONS = {
-    "FL": "FRONT_L",
-    "FR": "FRONT_R",
-    "RL": "REAR_L",
-    "RR": "REAR_R",
+    "FL": "FRONT_LEFT",
+    "FR": "FRONT_RIGHT",
+    "RL": "REAR_LEFT",
+    "RR": "REAR_RIGHT",
 }
 
 
@@ -89,7 +94,7 @@ def target_name(old_name):
     match = re.fullmatch(r"GEO_INDY2010_(FL|FR|RL|RR)_(.+)", old_name)
     if match:
         position, component = match.groups()
-        return f"GEO_WHEEL_{WHEEL_POSITIONS[position]}_{component}"
+        return canonical_object_name(f"GEO_WHEEL_{WHEEL_POSITIONS[position]}_{component}")
     raise RuntimeError(f"No naming rule for object: {old_name}")
 
 
@@ -148,7 +153,7 @@ def main():
         "asset": "f1_2030",
         "reference_blend": str(reference_path),
         "reference_convention": {
-            "chassis_geometry": "GEO_CHASSIS_*",
+            "chassis_geometry": "GEO_<ASSEMBLY>_<COMPONENT>",
             "wheel_geometry": "GEO_WHEEL_<POSITION>_<COMPONENT>",
             "wheel_controls": "WHEEL_<POSITION>_CONTROL",
             "datums": "DATUM_*",

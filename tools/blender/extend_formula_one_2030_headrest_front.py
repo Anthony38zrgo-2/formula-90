@@ -7,6 +7,11 @@ from pathlib import Path
 
 import bmesh
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, library_object_name
+enable_legacy_source_names()
+
 from mathutils import Matrix, Vector
 
 project_directory = Path(__file__).resolve().parents[2]
@@ -80,12 +85,12 @@ def main():
     output_directory = validate_output_path(project_directory, options.output_directory, 'preview').path
     output_directory.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.open_mainfile(filepath=str(options.source_file), load_ui=False, use_scripts=False)
-    headrest = bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding']
+    headrest = bpy.data.objects['GEO_COCKPIT_HeadrestPadding']
     if headrest.get('front_tapered_to_chassis') or (headrest.get('front_extended_to_cockpit_middle') and not options.taper_front_ends):
         raise RuntimeError('Use the source preceding the front extension')
     protected = {character.name: mesh_fingerprint(character) for character in bpy.data.objects if character.type == 'MESH' and character != headrest}
     original_settings = studio_settings()
-    manifest = json.loads((project_directory / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((project_directory / 'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     conversion = Matrix.Translation((0, 0, manifest['authored_alignment']['chassis_vertical_offset'])) @ Matrix.Rotation(-math.pi / 2, 4, 'Z')
     contour = [conversion @ position for position in cockpit_opening_contour()]
     original_positions = [conversion @ headrest.matrix_world @ vertex.co for vertex in headrest.data.vertices]
@@ -110,7 +115,7 @@ def main():
         cut_center = 0.04 - cut_slope * 0.19
         extension_length = transition_end - max(position.y for position in original_positions)
     with bpy.data.libraries.load(str(options.untrimmed_source_file), link=False) as (available, requested):
-        requested.objects = ['GEO_CHASSIS_CockpitHeadrestPadding']
+        requested.objects = [library_object_name(available.objects, 'GEO_COCKPIT_HeadrestPadding')]
     restored_headrest = requested.objects[0]
     if restored_headrest is None or restored_headrest.get('front_trimmed'):
         raise RuntimeError('The restoration source must contain the untrimmed headrest')
@@ -130,7 +135,7 @@ def main():
     restored_path = validate_output_path(project_directory, output_directory / 'source_with_restored_front.blend', 'preview').path
     bpy.ops.wm.save_as_mainfile(filepath=str(restored_path))
     geometry = trim_restored_headrest(headrest, conversion, cut_center, cut_slope, -0.12 if options.taper_front_ends else float('-inf'))
-    headrest = bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding']
+    headrest = bpy.data.objects['GEO_COCKPIT_HeadrestPadding']
     rear_preserved = original_rear_positions.issubset({tuple(vertex.co) for vertex in headrest.data.vertices})
     protected_unchanged = all(mesh_fingerprint(bpy.data.objects[name]) == fingerprint for name, fingerprint in protected.items())
     settings_preserved = studio_settings() == original_settings

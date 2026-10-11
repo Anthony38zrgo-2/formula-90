@@ -8,7 +8,7 @@
   ],
   "decals": [
     {
-      "object": "GEO_CHASSIS_DECAL_LeftHewlettPackard0",
+      "object": "GEO_BODYWORK_DECAL_LeftHewlettPackard0",
       "logo": "HewlettPackard",
       "center": [
         0.7,
@@ -22,7 +22,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftDriverNumber1",
+      "object": "GEO_BODYWORK_DECAL_LeftDriverNumber1",
       "logo": "DriverNumber",
       "center": [
         1.08,
@@ -36,7 +36,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftUniCredit2",
+      "object": "GEO_BODYWORK_DECAL_LeftUniCredit2",
       "logo": "UniCredit",
       "center": [
         0.77,
@@ -50,7 +50,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftShell3",
+      "object": "GEO_BODYWORK_DECAL_LeftShell3",
       "logo": "Shell",
       "center": [
         0.31,
@@ -64,7 +64,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftCevaLogistics4",
+      "object": "GEO_BODYWORK_DECAL_LeftCevaLogistics4",
       "logo": "CevaLogistics",
       "center": [
         0.8,
@@ -78,7 +78,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftFerrariShield5",
+      "object": "GEO_BODYWORK_DECAL_LeftFerrariShield5",
       "logo": "FerrariShield",
       "center": [
         -0.72,
@@ -92,7 +92,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftRichardMille6",
+      "object": "GEO_BODYWORK_DECAL_LeftRichardMille6",
       "logo": "RichardMille",
       "center": [
         -1.03,
@@ -106,7 +106,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftInternationalBusinessMachines7",
+      "object": "GEO_BODYWORK_DECAL_LeftInternationalBusinessMachines7",
       "logo": "InternationalBusinessMachines",
       "center": [
         0.33,
@@ -120,7 +120,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftZyn8",
+      "object": "GEO_BODYWORK_DECAL_LeftZyn8",
       "logo": "Zyn",
       "center": [
         0.075,
@@ -134,7 +134,7 @@
       "polygons": 272
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftDxc10",
+      "object": "GEO_BODYWORK_DECAL_LeftDxc10",
       "logo": "Dxc",
       "center": [
         -0.12,
@@ -148,7 +148,7 @@
       "polygons": 282
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftUniCredit11",
+      "object": "GEO_BODYWORK_DECAL_LeftUniCredit11",
       "logo": "UniCredit",
       "center": [
         -1.91,
@@ -162,7 +162,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftUniCredit12",
+      "object": "GEO_BODYWORK_DECAL_LeftUniCredit12",
       "logo": "UniCredit",
       "center": [
         -2.31,
@@ -176,7 +176,7 @@
       "polygons": 279
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftVPower13",
+      "object": "GEO_BODYWORK_DECAL_LeftVPower13",
       "logo": "VPower",
       "center": [
         2.3,
@@ -190,7 +190,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftPeroni14",
+      "object": "GEO_BODYWORK_DECAL_LeftPeroni14",
       "logo": "Peroni",
       "center": [
         2.3,
@@ -204,7 +204,7 @@
       "polygons": 272
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftAmbipar15",
+      "object": "GEO_BODYWORK_DECAL_LeftAmbipar15",
       "logo": "Ambipar",
       "center": [
         -0.5800374746322632,
@@ -216,10 +216,10 @@
       ],
       "side": -1,
       "polygons": 288,
-      "surface": "GEO_CHASSIS_AEROPART1"
+      "surface": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS"
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightHewlettPackard0",
+      "object": "GEO_BODYWORK_DECAL_RightHewlettPackard0",
       "logo": "HewlettPackard",
       "center": [
         0.7,
@@ -233,7 +233,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightDriverNumber1",
+      "object": "GEO_BODYWORK_DECAL_RightDriverNumber1",
       "logo": "DriverNumber",
       "center": [
         1.08,
@@ -247,7 +247,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightUniCredit2",
+      "object": "GEO_BODYWORK_DECAL_RightUniCredit2",
       "logo": "UniCredit",
       "center": [
         0.77,
@@ -261,7 +261,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightShell3",
+      "object": "GEO_BODYWORK_DECAL_RightShell3",
       "logo": "Shell",
       "center": [
         0.31,
@@ -275,7 +275,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightCevaLogistics4",
+      "object": "GEO_BODYWORK_DECAL_RightCevaLogistics4",
       "logo": "CevaLogistics",
       "center": [
         0.8,
@@ -289,7 +289,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightFerrariShield5",
+      "object": "GEO_BODYWORK_DECAL_RightFerrariShield5",
       "logo": "FerrariShield",
       "center": [
         -0.72,
@@ -303,7 +303,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightRichardMille6",
+      "object": "GEO_BODYWORK_DECAL_RightRichardMille6",
       "logo": "RichardMille",
       "center": [
         -1.03,
@@ -317,7 +317,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightInternationalBusinessMachines7",
+      "object": "GEO_BODYWORK_DECAL_RightInternationalBusinessMachines7",
       "logo": "InternationalBusinessMachines",
       "center": [
         0.33,
@@ -331,7 +331,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightZyn8",
+      "object": "GEO_BODYWORK_DECAL_RightZyn8",
       "logo": "Zyn",
       "center": [
         0.075,
@@ -345,7 +345,7 @@
       "polygons": 272
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightDxc10",
+      "object": "GEO_BODYWORK_DECAL_RightDxc10",
       "logo": "Dxc",
       "center": [
         -0.12,
@@ -359,7 +359,7 @@
       "polygons": 282
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightUniCredit11",
+      "object": "GEO_BODYWORK_DECAL_RightUniCredit11",
       "logo": "UniCredit",
       "center": [
         -1.91,
@@ -373,7 +373,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightUniCredit12",
+      "object": "GEO_BODYWORK_DECAL_RightUniCredit12",
       "logo": "UniCredit",
       "center": [
         -2.31,
@@ -387,7 +387,7 @@
       "polygons": 279
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightVPower13",
+      "object": "GEO_BODYWORK_DECAL_RightVPower13",
       "logo": "VPower",
       "center": [
         2.3,
@@ -401,7 +401,7 @@
       "polygons": 288
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightPeroni14",
+      "object": "GEO_BODYWORK_DECAL_RightPeroni14",
       "logo": "Peroni",
       "center": [
         2.3,
@@ -415,7 +415,7 @@
       "polygons": 272
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightAmbipar15",
+      "object": "GEO_BODYWORK_DECAL_RightAmbipar15",
       "logo": "Ambipar",
       "center": [
         -0.5800374746322632,
@@ -427,10 +427,10 @@
       ],
       "side": 1,
       "polygons": 288,
-      "surface": "GEO_CHASSIS_AEROPART1"
+      "surface": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS"
     },
     {
-      "object": "GEO_CHASSIS_DECAL_NoseDriverNumber",
+      "object": "GEO_BODYWORK_DECAL_NoseDriverNumber",
       "logo": "DriverNumber",
       "center": [
         -2.2,
@@ -445,7 +445,7 @@
       "projection": "top"
     },
     {
-      "object": "GEO_WHEEL_FRONT_L_DECAL_Pirelli",
+      "object": "GEO_WHEEL_FRONT_LEFT_DECAL_Pirelli",
       "logo": "Pirelli",
       "center": [
         -1.4750001430511475,
@@ -459,7 +459,7 @@
       "polygons": 284
     },
     {
-      "object": "GEO_WHEEL_FRONT_L_DECAL_PZero",
+      "object": "GEO_WHEEL_FRONT_LEFT_DECAL_PZero",
       "logo": "PZero",
       "center": [
         -1.4750001430511475,
@@ -473,7 +473,7 @@
       "polygons": 268
     },
     {
-      "object": "GEO_WHEEL_FRONT_R_DECAL_Pirelli",
+      "object": "GEO_WHEEL_FRONT_RIGHT_DECAL_Pirelli",
       "logo": "Pirelli",
       "center": [
         -1.4750001430511475,
@@ -487,7 +487,7 @@
       "polygons": 284
     },
     {
-      "object": "GEO_WHEEL_FRONT_R_DECAL_PZero",
+      "object": "GEO_WHEEL_FRONT_RIGHT_DECAL_PZero",
       "logo": "PZero",
       "center": [
         -1.4750001430511475,
@@ -501,7 +501,7 @@
       "polygons": 268
     },
     {
-      "object": "GEO_WHEEL_REAR_L_DECAL_Pirelli",
+      "object": "GEO_WHEEL_REAR_LEFT_DECAL_Pirelli",
       "logo": "Pirelli",
       "center": [
         1.4750001430511475,
@@ -515,7 +515,7 @@
       "polygons": 284
     },
     {
-      "object": "GEO_WHEEL_REAR_L_DECAL_PZero",
+      "object": "GEO_WHEEL_REAR_LEFT_DECAL_PZero",
       "logo": "PZero",
       "center": [
         1.4750001430511475,
@@ -529,7 +529,7 @@
       "polygons": 268
     },
     {
-      "object": "GEO_WHEEL_REAR_R_DECAL_Pirelli",
+      "object": "GEO_WHEEL_REAR_RIGHT_DECAL_Pirelli",
       "logo": "Pirelli",
       "center": [
         1.4750001430511475,
@@ -543,7 +543,7 @@
       "polygons": 284
     },
     {
-      "object": "GEO_WHEEL_REAR_R_DECAL_PZero",
+      "object": "GEO_WHEEL_REAR_RIGHT_DECAL_PZero",
       "logo": "PZero",
       "center": [
         1.4750001430511475,
@@ -557,7 +557,7 @@
       "polygons": 268
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftFrontWingGreen",
+      "object": "GEO_BODYWORK_DECAL_LeftFrontWingGreen",
       "logo": "ItalianFlagGreen",
       "center": [
         -2.3983333333333334,
@@ -571,7 +571,7 @@
       "polygons": 24
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightFrontWingGreen",
+      "object": "GEO_BODYWORK_DECAL_RightFrontWingGreen",
       "logo": "ItalianFlagGreen",
       "center": [
         -2.2216666666666667,
@@ -585,7 +585,7 @@
       "polygons": 24
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftFrontWingWhite",
+      "object": "GEO_BODYWORK_DECAL_LeftFrontWingWhite",
       "logo": "ItalianFlagWhite",
       "center": [
         -2.31,
@@ -599,7 +599,7 @@
       "polygons": 24
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightFrontWingWhite",
+      "object": "GEO_BODYWORK_DECAL_RightFrontWingWhite",
       "logo": "ItalianFlagWhite",
       "center": [
         -2.31,
@@ -613,7 +613,7 @@
       "polygons": 24
     },
     {
-      "object": "GEO_CHASSIS_DECAL_LeftFrontWingRed",
+      "object": "GEO_BODYWORK_DECAL_LeftFrontWingRed",
       "logo": "ItalianFlagRed",
       "center": [
         -2.2216666666666667,
@@ -627,7 +627,7 @@
       "polygons": 24
     },
     {
-      "object": "GEO_CHASSIS_DECAL_RightFrontWingRed",
+      "object": "GEO_BODYWORK_DECAL_RightFrontWingRed",
       "logo": "ItalianFlagRed",
       "center": [
         -2.3983333333333334,
@@ -641,7 +641,7 @@
       "polygons": 24
     },
     {
-      "object": "GEO_CHASSIS_DECAL_NoseShell",
+      "object": "GEO_BODYWORK_DECAL_NoseShell",
       "logo": "Shell",
       "center": [
         -1.94,

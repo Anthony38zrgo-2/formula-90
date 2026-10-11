@@ -8,6 +8,11 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 import bmesh
 import mathutils
 
@@ -18,14 +23,14 @@ from common.output_policy import validate_output_path
 from export_f1_2030_v10 import export_chassis
 from fit_f1_2030_driver_seat import mesh_fingerprint
 
-TARGET_OBJECT_NAMES = ('GEO_CHASSIS_CockpitUpperLining', 'GEO_CHASSIS_SEAT')
+TARGET_OBJECT_NAMES = ('GEO_COCKPIT_UpperInteriorLining', 'GEO_COCKPIT_DRIVER_SEAT')
 
 
 def preserve_unrelated_export_tangents(reference_path, exported_path):
     def load_export(path):
         contents = bytearray(path.read_bytes())
         document_length = struct.unpack_from('<I', contents, 12)[0]
-        document = json.loads(contents[20:20 + document_length])
+        document = normalize_object_name_document(json.loads(contents[20:20 + document_length]))
         binary_offset = 28 + document_length
         def accessor_layout(index):
             accessor = document['accessors'][index]
@@ -92,9 +97,9 @@ def shade_surface_with_preserved_rims(scene_object, additional_sharp_edges=()):
     mesh.calc_loop_triangles()
     original_triangles = len(mesh.loop_triangles)
     layer_vertex_count = len(mesh.vertices) // 2
-    if len(mesh.vertices) % 2 or (scene_object.name == 'GEO_CHASSIS_SEAT' and len(mesh.vertices) != 600):
+    if len(mesh.vertices) % 2 or (scene_object.name == 'GEO_COCKPIT_DRIVER_SEAT' and len(mesh.vertices) != 600):
         raise RuntimeError('Unexpected shell topology: ' + scene_object.name)
-    if scene_object.name == 'GEO_CHASSIS_CockpitUpperLining' and any((mesh.vertices[index + layer_vertex_count].co - mesh.vertices[index].co - mathutils.Vector((0, 0, 0.0015))).length > 1e-7 for index in range(layer_vertex_count)):
+    if scene_object.name == 'GEO_COCKPIT_UpperInteriorLining' and any((mesh.vertices[index + layer_vertex_count].co - mesh.vertices[index].co - mathutils.Vector((0, 0, 0.0015))).length > 1e-7 for index in range(layer_vertex_count)):
         raise RuntimeError('Unexpected lining shell separation')
     edge_regions = [set() for edge in mesh.edges]
     for polygon in mesh.polygons:
@@ -167,7 +172,7 @@ def main():
     bpy.context.preferences.filepaths.save_version = 0
     candidate = validate_output_path(PROJECT_DIRECTORY, destination / 'f1_2030_cockpit_shaded.blend', 'preview').path
     bpy.ops.wm.save_as_mainfile(filepath=str(candidate), relative_remap=True)
-    manifest = json.loads((PROJECT_DIRECTORY/'game/assets/models/vehicles/f1-2030/manifest.json').read_text())
+    manifest = normalize_object_name_document(json.loads((PROJECT_DIRECTORY/'game/assets/models/vehicles/f1-2030/manifest.json').read_text()))
     chassis_path = validate_output_path(PROJECT_DIRECTORY, destination / 'f1_2030_v10_chassis.glb', 'preview').path
     report['chassis_mesh_statistics'] = export_chassis(chassis_path, manifest['authored_alignment']['chassis_vertical_offset'])
     report['unrelated_export_tangent_rounding_restored'] = preserve_unrelated_export_tangents(PROJECT_DIRECTORY / 'game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb', chassis_path)

@@ -13,10 +13,10 @@ const WHEEL_MODEL_FILES := [
 	"f1_2030_v10_wheel_RR.glb",
 ]
 const WHEEL_CENTER_NUT_MESH_NAMES := [
-	"GEO_WHEEL_FRONT_L_NUT_02",
-	"GEO_WHEEL_FRONT_R_NUT_02",
-	"GEO_WHEEL_REAR_L_NUT_02",
-	"GEO_WHEEL_REAR_R_NUT_02",
+	"GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT",
+	"GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT",
+	"GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT",
+	"GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT",
 ]
 const VEHICLE_WHEEL_PATHS := [
 	"FrontLeftWheel/SteerPivot/CamberPivot/Visual",
@@ -698,7 +698,7 @@ func _find_transferable_wheel_parts(wheel_root: Node3D) -> Array[Node3D]:
 	if spin_visual == null:
 		return transferable_parts
 	for wheel_part in spin_visual.get_children():
-		if wheel_part is Node3D and (wheel_part.name.ends_with("_RIM_04") or wheel_part.name.ends_with("_TIRE")):
+		if wheel_part is Node3D and (wheel_part.name.ends_with("_RIM_AND_SPOKES") or wheel_part.name.ends_with("_TIRE")):
 			transferable_parts.append(wheel_part)
 	return transferable_parts
 

@@ -1,22 +1,27 @@
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, is_chassis_object, is_wheel_object
+enable_legacy_source_names()
+
 import hashlib
 import json
-import sys
 from mathutils import Matrix, Vector
-from pathlib import Path
 
 
 ASSET_ID = "f1_2030_v10"
 WHEELS = {
-    "FL": "FRONT_L",
-    "FR": "FRONT_R",
-    "RL": "REAR_L",
-    "RR": "REAR_R",
+    "FL": "FRONT_LEFT",
+    "FR": "FRONT_RIGHT",
+    "RL": "REAR_LEFT",
+    "RR": "REAR_RIGHT",
 }
 
 # NUT_05 is the red caliper and RIM_06 is the inboard brake-duct cover. Both
 # follow hub travel, steering and camber, but never longitudinal wheel spin.
-STATIC_WHEEL_SUFFIXES = ("_NUT_05", "_RIM_06")
+STATIC_WHEEL_SUFFIXES = ("_CALIPER", "_INBOARD_DUCT_COVER")
 
 
 def sha256(path):
@@ -38,7 +43,7 @@ def duplicate_mesh_object(source, source_name, matrix_world):
     runtime_surface_name = source.get("formula_one_2030_runtime_surface_mesh")
     source_surface = bpy.data.meshes[runtime_surface_name] if runtime_surface_name else source.data
     duplicate.data = source_surface.copy()
-    lining_corner_normals = [normal.vector.copy() for normal in source_surface.corner_normals] if source_name == "GEO_CHASSIS_CockpitUpperLining" or runtime_surface_name else None
+    lining_corner_normals = [normal.vector.copy() for normal in source_surface.corner_normals] if source_name == "GEO_COCKPIT_UpperInteriorLining" or runtime_surface_name else None
     duplicate.data.transform(matrix_world)
     duplicate.data.update()
     if lining_corner_normals is not None:
@@ -105,7 +110,7 @@ def export_chassis(output, vertical_offset):
     # Source axes: X longitudinal, Y lateral, Z up. Rotate -90 degrees around
     # Blender Z so the glTF Y-up conversion yields Godot X right/Y up/Z rear.
     conversion = Matrix.Translation((0.0, 0.0, vertical_offset)) @ Matrix.Rotation(-1.5707963267948966, 4, "Z")
-    sources = sorted((obj for obj in bpy.data.objects if obj.type == "MESH" and obj.name.startswith("GEO_CHASSIS_")), key=lambda obj: obj.name)
+    sources = sorted((obj for obj in bpy.data.objects if obj.type == "MESH" and is_chassis_object(obj.name)), key=lambda obj: obj.name)
     duplicates, records = duplicate_group(sources, [conversion @ obj.matrix_world for obj in sources])
     export_selected(duplicates, output)
     stats = {obj.name: {"vertices": len(obj.data.vertices), "polygons": len(obj.data.polygons)} for obj in duplicates}
@@ -116,7 +121,7 @@ def export_chassis(output, vertical_offset):
 
 def export_wheel(position, output, tire_radius, tire_width):
     prefix = f"GEO_WHEEL_{position}_"
-    sources = sorted((obj for obj in bpy.data.objects if obj.type == "MESH" and obj.name.startswith(prefix)), key=lambda obj: obj.name)
+    sources = sorted((obj for obj in bpy.data.objects if obj.type == "MESH" and is_wheel_object(obj.name, position)), key=lambda obj: obj.name)
     tire = next((obj for obj in sources if obj.name.endswith("_TIRE")), None)
     if not sources or tire is None:
         raise RuntimeError(f"Incomplete wheel group: {position}")
@@ -138,10 +143,19 @@ def export_wheel(position, output, tire_radius, tire_width):
     # performs the final Blender Z-up to Godot/glTF Y-up conversion.
     wheel_to_blender = Matrix(((0, 1, 0, 0), (-1, 0, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)))
     target_scale = Matrix.Diagonal((width_scale, radial_scale, radial_scale, 1.0))
-    # target_scale already derives the exact wheel dimensions from evaluated
-    # world bounds. Do not normalize the tire a second time: that can make its
-    # AABB plausible while leaving the rim topology on the wrong axle.
     duplicates, records = duplicate_group(sources, [target_scale @ wheel_to_blender @ translate @ obj.matrix_world for obj in sources])
+    exported_tire = next(duplicate for duplicate in duplicates if duplicate.name.endswith("_TIRE"))
+    tire_coordinates = [vertex.co.copy() for vertex in exported_tire.data.vertices]
+    tire_minimum = Vector(tuple(min(coordinate[axis] for coordinate in tire_coordinates) for axis in range(3)))
+    tire_maximum = Vector(tuple(max(coordinate[axis] for coordinate in tire_coordinates) for axis in range(3)))
+    tire_center = (tire_minimum + tire_maximum) * 0.5
+    tire_dimensions = tire_maximum - tire_minimum
+    tire_correction = Matrix.Diagonal((tire_width / tire_dimensions.x, 2.0 * tire_radius / tire_dimensions.y, 2.0 * tire_radius / tire_dimensions.z, 1.0))
+    tire_normals = [normal.vector.copy() for normal in exported_tire.data.corner_normals]
+    exported_tire.data.transform(tire_correction @ Matrix.Translation(-tire_center))
+    exported_tire.data.update()
+    normal_correction = tire_correction.to_3x3().inverted().transposed()
+    exported_tire.data.normals_split_custom_set([(normal_correction @ normal).normalized() for normal in tire_normals])
     spin_root = bpy.data.objects.new("SpinVisual", None)
     brake_root = bpy.data.objects.new("BrakeStatic", None)
     for root in (spin_root, brake_root):
@@ -167,7 +181,7 @@ def main():
     output_dir = Path(args[0]).resolve()
     physics_path = Path(args[1]).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    physics = json.loads(physics_path.read_text(encoding="utf-8"))
+    physics = normalize_object_name_document(json.loads(physics_path.read_text(encoding="utf-8")))
 
     wheel_centers = {}
     for short, position in WHEELS.items():

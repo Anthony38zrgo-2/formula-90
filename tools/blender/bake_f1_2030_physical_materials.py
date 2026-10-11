@@ -1,12 +1,17 @@
 import bpy
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 import hashlib
 import json
 import math
 import shutil
 import struct
 import subprocess
-import sys
-from pathlib import Path
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -36,7 +41,7 @@ if requested_family is not None:
     assert requested_material in material_sources,requested_family
     material_sources = {requested_material:material_sources[requested_material]}
 previous_manifest_path = texture_directory / 'baking_manifest.json'
-previous_manifest = json.loads(previous_manifest_path.read_text()) if previous_manifest_path.exists() else None
+previous_manifest = normalize_object_name_document(json.loads(previous_manifest_path.read_text())) if previous_manifest_path.exists() else None
 for scene_object in bpy.data.objects:
     if scene_object.type != 'MESH':
         continue
@@ -62,10 +67,10 @@ def geometry_digest(scene_object):
     return digest.hexdigest()
 
 original_geometry = {scene_object.name: geometry_digest(scene_object) for scene_object in bpy.data.objects if scene_object.type == 'MESH'}
-body = bpy.data.objects['GEO_CHASSIS_BODY']
+body = bpy.data.objects['GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER']
 surface = BVHTree.FromPolygons([body.matrix_world @ vertex.co for vertex in body.data.vertices], [list(polygon.vertices) for polygon in body.data.polygons])
 layout_path = source_path.parent / 'textures/reference_red_and_gold/sponsor_decal_layout.json'
-layout = json.loads(layout_path.read_text())
+layout = normalize_object_name_document(json.loads(layout_path.read_text()))
 for record in layout['decals']:
     if requested_family is not None:
         continue

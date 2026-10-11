@@ -6,12 +6,18 @@ import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 import bmesh
 from mathutils import Matrix, Vector
 
 
 PROJECT_DIRECTORY = Path(__file__).resolve().parents[2]
 CALIBRATED_TORSO_RECLINE_DEGREES = 79.86680690888585
+DRIVER_HELMET_LINEAR_SCALE = 0.88
 sys.path.insert(0, str(PROJECT_DIRECTORY / "tools"))
 sys.path.insert(0, str(PROJECT_DIRECTORY / "tools/drivers"))
 from common.output_policy import validate_output_path
@@ -29,7 +35,8 @@ def move_bone_towards(armature, bone_name, direction):
 def measure_seat_recline(chassis_path):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=str(chassis_path))
-    seat = bpy.data.objects["GEO_CHASSIS_SEAT"]
+    enable_legacy_source_names()
+    seat = bpy.data.objects["GEO_COCKPIT_DRIVER_SEAT"]
     profile = {}
     for vertex in seat.data.vertices:
         position = seat.matrix_world @ vertex.co
@@ -60,6 +67,48 @@ def slim_character_body(armature, body, radial_scale):
         center_on_bone = bone.head_local + bone_direction * (position - bone.head_local).dot(bone_direction)
         vertex.co = armature_to_body @ (center_on_bone + (position - center_on_bone) * radial_scale)
     body.data.update()
+
+
+def resize_driver_helmet(armature, body, linear_scale):
+    head_group_index = body.vertex_groups["mixamorig:Head"].index
+    helmet_polygon_indices = {
+        polygon.index for polygon in body.data.polygons
+        if body.data.materials[polygon.material_index].name in ("White_Mat", "Blue_Mat")
+        and sum(group.weight for vertex_index in polygon.vertices for group in body.data.vertices[vertex_index].groups if group.group == head_group_index) / len(polygon.vertices) >= 0.5
+    }
+    if not helmet_polygon_indices:
+        raise RuntimeError("Driver requires helmet shell and visor geometry")
+    editable_mesh = bmesh.new()
+    editable_mesh.from_mesh(body.data)
+    editable_mesh.faces.ensure_lookup_table()
+    helmet_faces = {face for face in editable_mesh.faces if face.index in helmet_polygon_indices}
+    boundary_edges = [edge for edge in editable_mesh.edges if any(face in helmet_faces for face in edge.link_faces) and any(face not in helmet_faces for face in edge.link_faces)]
+    bmesh.ops.split_edges(editable_mesh, edges=boundary_edges)
+    helmet_vertices = {vertex for face in helmet_faces for vertex in face.verts}
+    deformation_weights = editable_mesh.verts.layers.deform.active
+    body_to_armature = armature.matrix_world.inverted() @ body.matrix_world
+    armature_to_body = body_to_armature.inverted()
+    helmet_anchor = armature.pose.bones["mixamorig:Head"].head.copy()
+    for vertex in helmet_vertices:
+        skin_deformation = Matrix(((0.0,) * 4,) * 4)
+        total_weight = 0.0
+        for group_index, weight in vertex[deformation_weights].items():
+            bone_name = body.vertex_groups[group_index].name
+            pose_bone = armature.pose.bones.get(bone_name)
+            if pose_bone is None:
+                continue
+            skin_deformation += (pose_bone.matrix @ pose_bone.bone.matrix_local.inverted()) * weight
+            total_weight += weight
+        if total_weight <= 0.0:
+            raise RuntimeError("Driver helmet vertex requires skeletal deformation weights")
+        skin_deformation *= 1.0 / total_weight
+        posed_position = skin_deformation @ (body_to_armature @ vertex.co)
+        resized_position = helmet_anchor + (posed_position - helmet_anchor) * linear_scale
+        vertex.co = armature_to_body @ (skin_deformation.inverted() @ resized_position)
+    editable_mesh.to_mesh(body.data)
+    editable_mesh.free()
+    body.data.update()
+    bpy.context.view_layer.update()
 
 
 def separate_driver_head_and_neck(body):
@@ -171,6 +220,7 @@ def main():
     hips_world = armature.matrix_world @ hips.head
     armature.location -= hips_world
     bpy.context.view_layer.update()
+    resize_driver_helmet(armature, body, DRIVER_HELMET_LINEAR_SCALE)
     eye_position = create_driver_eye_point(armature, body)
     separate_driver_head_and_neck(body)
     bpy.context.view_layer.update()
@@ -190,6 +240,7 @@ def main():
         "finger_bones_per_hand": 15, "glove_geometry": "articulated_palm_four_fingers_opposable_thumb",
         "thumb_segments": ["Metacarpal", "Proximal", "Distal"],
         "body_radial_scale": 0.85, "seat_recline_degrees": seat_recline_degrees,
+        "helmet_linear_scale": DRIVER_HELMET_LINEAR_SCALE,
         "torso_recline_degrees": torso_recline_degrees, "head_pitch_degrees": 0.0,
         "seat_model_sha256": hashlib.sha256(chassis_path.read_bytes()).hexdigest(),
         "separate_head_and_neck": True,

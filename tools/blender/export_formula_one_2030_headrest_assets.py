@@ -6,6 +6,10 @@ from pathlib import Path
 
 import bpy
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 PROJECT_DIRECTORY = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_DIRECTORY / 'tools'))
 sys.path.insert(0, str(PROJECT_DIRECTORY / 'tools/blender'))
@@ -14,7 +18,7 @@ import export_f1_2030_v10
 
 
 def bake_headrest_material(output_directory):
-    headrest = bpy.data.objects['GEO_CHASSIS_CockpitHeadrestPadding']
+    headrest = bpy.data.objects['GEO_COCKPIT_HeadrestPadding']
     headrest.data = headrest.data.copy()
     original_coordinates = headrest.data.uv_layers['CockpitHeadrestSurfaceCoordinates']
     export_coordinates = headrest.data.uv_layers.new(name='HeadrestExportTextureCoordinates')
@@ -93,7 +97,7 @@ def main():
     sys.argv = [sys.argv[0], '--', str(output_directory), str(options.physics_profile)]
     export_f1_2030_v10.main()
     report_path = output_directory / 'export_report.json'
-    report = json.loads(report_path.read_text())
+    report = normalize_object_name_document(json.loads(report_path.read_text()))
     report['source_path'] = str(source_path)
     report['source_sha256'] = source_digest
     report['headrest_material'] = material_report

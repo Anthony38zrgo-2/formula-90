@@ -8,10 +8,15 @@ short blades fitted between the remodeled wing and nose underside.
 """
 
 import bpy
-import bmesh
-import math
+
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
+import bmesh
+import math
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -22,18 +27,18 @@ CENTER_BLEND_HALF_WIDTH_M = 0.42
 NOSE_UNDERSIDE_LIFT_M = 0.030
 NOSE_LOCAL_RAISE_M = 0.035
 WING_OBJECTS = {
-    "GEO_CHASSIS_FRONTWING",
-    "GEO_CHASSIS_ACTIVEFRONT",
-    "GEO_CHASSIS_AERO2",
-    "GEO_CHASSIS_ENDPLATE",
+    "GEO_FRONT_WING_MAIN_ELEMENT",
+    "GEO_FRONT_WING_INTERMEDIATE_ELEMENT",
+    "GEO_FRONT_WING_UPPER_ELEMENT",
+    "GEO_FRONT_WING_ENDPLATES",
 }
 CENTER_PROFILE_OBJECTS = {
-    "GEO_CHASSIS_FRONTWING",
-    "GEO_CHASSIS_ACTIVEFRONT",
-    "GEO_CHASSIS_AERO2",
+    "GEO_FRONT_WING_MAIN_ELEMENT",
+    "GEO_FRONT_WING_INTERMEDIATE_ELEMENT",
+    "GEO_FRONT_WING_UPPER_ELEMENT",
 }
-BODY_NAME = "GEO_CHASSIS_BODY"
-SUPPORT_NAME = "GEO_CHASSIS_FRONTSUPPORT"
+BODY_NAME = "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"
+SUPPORT_NAME = "GEO_FRONT_WING_MOUNTING_PYLONS"
 MODIFIED_OBJECTS = WING_OBJECTS | {BODY_NAME, SUPPORT_NAME}
 
 
@@ -279,7 +284,7 @@ def main():
     reports[BODY_NAME] = remodel_nose_underside(body)
     reports[SUPPORT_NAME] = extract_body_supports(
         support,
-        bpy.data.objects["GEO_CHASSIS_FRONTWING"],
+        bpy.data.objects["GEO_FRONT_WING_MAIN_ELEMENT"],
         body,
     )
 

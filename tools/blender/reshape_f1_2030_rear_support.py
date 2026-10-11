@@ -1,22 +1,27 @@
 """Lower the F1 2030 rear support so it carries the intermediate plane.
 
 The rear support is compressed vertically about its base until its arch apex
-reaches the underside of GEO_CHASSIS_REAR_WING_MID instead of the upper wing
+reaches the underside of GEO_REAR_WING_INTERMEDIATE_ELEMENT instead of the upper wing
 region, then the top contact band is snapped onto that underside with a 0.5 mm
 embed. The base attachment to the floor and every other object stay untouched.
 """
 
 import bpy
+
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names
+enable_legacy_source_names()
+
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 
-SUPPORT_NAME = "GEO_CHASSIS_REARSUPPORT"
-MID_NAME = "GEO_CHASSIS_REAR_WING_MID"
-UPPER_NAME = "GEO_CHASSIS_AEROPART2"
-REAR_WING_NAME = "GEO_CHASSIS_REAR_WING"
+SUPPORT_NAME = "GEO_REAR_WING_CENTRAL_SUPPORT"
+MID_NAME = "GEO_REAR_WING_INTERMEDIATE_ELEMENT"
+UPPER_NAME = "GEO_REAR_WING_UPPER_ELEMENT"
+REAR_WING_NAME = "GEO_REAR_WING_ENDPLATE_ASSEMBLY"
 CONTACT_BAND_M = 0.002
 CONTACT_EMBED_M = 0.0005
 EXPECTED_TOPOLOGY = (1752, 1730)

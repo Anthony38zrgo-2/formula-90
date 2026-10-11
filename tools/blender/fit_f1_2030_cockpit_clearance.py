@@ -10,6 +10,11 @@ from functools import lru_cache
 from pathlib import Path
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
+from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+enable_legacy_source_names()
+
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
@@ -94,7 +99,7 @@ def mesh_surface(scene_object, conversion):
 
 
 def move_driving_assembly(conversion, rearward_distance):
-    moved_object_names = ("GEO_CHASSIS_SEAT", "GEO_CHASSIS_STEER", "GEO_CHASSIS_SCREEN", "GEO_CHASSIS_SHIFTERBRAK", "GEO_CHASSIS_SHIFTERTHRO", "GEO_CHASSIS_CYLINDER_001")
+    moved_object_names = ("GEO_COCKPIT_DRIVER_SEAT", "GEO_STEERING_WHEEL_BODY", "GEO_STEERING_WHEEL_DISPLAY", "GEO_STEERING_WHEEL_PADDLE_LEFT", "GEO_STEERING_WHEEL_PADDLE_RIGHT", "GEO_STEERING_WHEEL_CENTER_FASTENER")
     for object_name in moved_object_names:
         scene_object = bpy.data.objects[object_name]
         source_to_runtime = conversion @ scene_object.matrix_world
@@ -102,7 +107,7 @@ def move_driving_assembly(conversion, rearward_distance):
         for vertex in scene_object.data.vertices:
             vertex.co = runtime_to_source @ (source_to_runtime @ vertex.co - Vector((0.0, rearward_distance, 0.0)))
         scene_object.data.update()
-    steering_column = bpy.data.objects["GEO_CHASSIS_STEERCOLUM"]
+    steering_column = bpy.data.objects["GEO_STEERING_COLUMN_SHAFT"]
     source_to_runtime = conversion @ steering_column.matrix_world
     runtime_to_source = source_to_runtime.inverted()
     column_positions = [source_to_runtime @ vertex.co for vertex in steering_column.data.vertices]
@@ -262,7 +267,7 @@ def rebuild_interior(interior, conversion, seat_surface, driver_surfaces, rearwa
 
 def validate_driver_clearance(conversion, driver_surfaces, driver_samples):
     intersections = {}
-    for object_name in ("GEO_CHASSIS_BODY", "GEO_CHASSIS_INTERIOR", "GEO_CHASSIS_FLOOR", "GEO_CHASSIS_SEAT"):
+    for object_name in ("GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER", "GEO_COCKPIT_INTERIOR_SHELL", "GEO_UNDERBODY_FLOOR_AND_DIFFUSER", "GEO_COCKPIT_DRIVER_SEAT"):
         surface = mesh_surface(bpy.data.objects[object_name], conversion)
         failures = []
         for sample_index, driver_surface in enumerate(driver_surfaces):
@@ -274,17 +279,17 @@ def validate_driver_clearance(conversion, driver_surfaces, driver_samples):
 
 
 def validate_steering_clearance(conversion, driver_surfaces, driver_samples):
-    steering_wheel = bpy.data.objects["GEO_CHASSIS_STEER"]
-    steering_column = bpy.data.objects["GEO_CHASSIS_STEERCOLUM"]
+    steering_wheel = bpy.data.objects["GEO_STEERING_WHEEL_BODY"]
+    steering_column = bpy.data.objects["GEO_STEERING_COLUMN_SHAFT"]
     wheel_positions = [conversion @ steering_wheel.matrix_world @ vertex.co for vertex in steering_wheel.data.vertices]
     column_positions = [conversion @ steering_column.matrix_world @ vertex.co for vertex in steering_column.data.vertices]
     pivot = Vector(((min(position.x for position in column_positions) + max(position.x for position in column_positions)) * 0.5, (min(position.y for position in wheel_positions) + max(position.y for position in wheel_positions)) * 0.5, (min(position.z for position in column_positions) + max(position.z for position in column_positions)) * 0.5))
     intersections = {}
-    for object_name in ("GEO_CHASSIS_STEER", "GEO_CHASSIS_SCREEN", "GEO_CHASSIS_SHIFTERBRAK", "GEO_CHASSIS_SHIFTERTHRO", "GEO_CHASSIS_STEERCOLUM", "GEO_CHASSIS_CYLINDER_001"):
+    for object_name in ("GEO_STEERING_WHEEL_BODY", "GEO_STEERING_WHEEL_DISPLAY", "GEO_STEERING_WHEEL_PADDLE_LEFT", "GEO_STEERING_WHEEL_PADDLE_RIGHT", "GEO_STEERING_COLUMN_SHAFT", "GEO_STEERING_WHEEL_CENTER_FASTENER"):
         scene_object = bpy.data.objects[object_name]
         original_positions = [conversion @ scene_object.matrix_world @ vertex.co for vertex in scene_object.data.vertices]
         polygons = [list(polygon.vertices) for polygon in scene_object.data.polygons]
-        rotating = object_name not in ("GEO_CHASSIS_STEERCOLUM", "GEO_CHASSIS_CYLINDER_001")
+        rotating = object_name not in ("GEO_STEERING_COLUMN_SHAFT", "GEO_STEERING_WHEEL_CENTER_FASTENER")
         @lru_cache(maxsize=None)
         def rotated_surface(steering_degrees):
             rotation = Matrix.Rotation(math.radians(-steering_degrees), 4, "Y")
@@ -315,15 +320,15 @@ def main():
     canonical_source_path = PROJECT_DIRECTORY / "game/assets/models/vehicles/f1-2030/source/f1_2030.blend"
     source_path = options.source_file.resolve() if options.source_file else canonical_source_path
     program_directory = canonical_source_path.parents[1]
-    manifest = json.loads((program_directory / "manifest.json").read_text())
-    export_report = json.loads((program_directory / "export_report.json").read_text())
+    manifest = normalize_object_name_document(json.loads((program_directory / "manifest.json").read_text()))
+    export_report = normalize_object_name_document(json.loads((program_directory / "export_report.json").read_text()))
     existing_report_path = program_directory / "source/cockpit_clearance_report.json"
     if existing_report_path.exists() and not options.source_file:
-        existing_report = json.loads(existing_report_path.read_text())
+        existing_report = normalize_object_name_document(json.loads(existing_report_path.read_text()))
         if existing_report.get("source_after_sha256") == hashlib.sha256(source_path.read_bytes()).hexdigest():
             raise RuntimeError("Cockpit is already fitted; supply --source-file with the recorded original source to regenerate")
     bpy.ops.wm.open_mainfile(filepath=str(source_path))
-    changed_object_names = {"GEO_CHASSIS_BODY", "GEO_CHASSIS_INTERIOR", "GEO_CHASSIS_FLOOR", "GEO_CHASSIS_SEAT", "GEO_CHASSIS_STEER", "GEO_CHASSIS_SCREEN", "GEO_CHASSIS_SHIFTERBRAK", "GEO_CHASSIS_SHIFTERTHRO", "GEO_CHASSIS_CYLINDER_001", "GEO_CHASSIS_STEERCOLUM"}
+    changed_object_names = {"GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER", "GEO_COCKPIT_INTERIOR_SHELL", "GEO_UNDERBODY_FLOOR_AND_DIFFUSER", "GEO_COCKPIT_DRIVER_SEAT", "GEO_STEERING_WHEEL_BODY", "GEO_STEERING_WHEEL_DISPLAY", "GEO_STEERING_WHEEL_PADDLE_LEFT", "GEO_STEERING_WHEEL_PADDLE_RIGHT", "GEO_STEERING_WHEEL_CENTER_FASTENER", "GEO_STEERING_COLUMN_SHAFT"}
     protected_meshes = {scene_object.name: mesh_fingerprint(scene_object) for scene_object in bpy.data.objects if scene_object.type == "MESH" and scene_object.name not in changed_object_names}
     conversion = Matrix.Translation((0.0, 0.0, manifest["authored_alignment"]["chassis_vertical_offset"])) @ Matrix.Rotation(-math.pi / 2.0, 4, "Z")
     driving_assembly = move_driving_assembly(conversion, options.rearward_distance)
@@ -338,7 +343,7 @@ def main():
         capture_chassis_path.parent.mkdir(parents=True, exist_ok=True)
         export_chassis(capture_chassis_path, manifest["authored_alignment"]["chassis_vertical_offset"])
         driver_surfaces_path = capture_driver_surfaces(capture_chassis_path, seated_position)
-    captured_provenance = json.loads(driver_surfaces_path.with_suffix(".provenance.json").read_text())
+    captured_provenance = normalize_object_name_document(json.loads(driver_surfaces_path.with_suffix(".provenance.json").read_text()))
     for field_name, expected_value in driver_capture_provenance().items():
         if captured_provenance.get(field_name) != expected_value:
             raise RuntimeError("Driver surface capture is stale: " + field_name)
@@ -346,22 +351,22 @@ def main():
         raise RuntimeError("Driver surface capture does not match its recorded hash")
     if captured_provenance.get("seated_position") != list(seated_position):
         raise RuntimeError("Driver surface capture does not match the driver scene position")
-    captured_driver = json.loads(driver_surfaces_path.read_text())
+    captured_driver = normalize_object_name_document(json.loads(driver_surfaces_path.read_text()))
     driver_samples = captured_driver["samples"]
     required_glove_bones = {"Driver" + side + finger + segment for side in ("Left", "Right") for finger in ("Index", "Middle", "Ring", "Little", "Thumb") for segment in (("Metacarpal", "Proximal", "Distal") if finger == "Thumb" else ("Proximal", "Middle", "Distal"))}
     if any(not required_glove_bones.issubset(sample["dominant_bones"]) for sample in driver_samples):
         raise RuntimeError("Driver surface capture does not include both complete articulated gloves")
     driver_surfaces = [BVHTree.FromPolygons([Vector(position) for position in sample["vertices"]], sample["triangles"], all_triangles=True) for sample in driver_samples]
-    seat_surface = mesh_surface(bpy.data.objects["GEO_CHASSIS_SEAT"], conversion)
-    body_changes = reshape_body(bpy.data.objects["GEO_CHASSIS_BODY"], conversion, options.rearward_distance)
-    floor_changes = reshape_floor(bpy.data.objects["GEO_CHASSIS_FLOOR"], conversion, seat_surface, options.rearward_distance)
-    interior_measurements = rebuild_interior(bpy.data.objects["GEO_CHASSIS_INTERIOR"], conversion, seat_surface, driver_surfaces, options.rearward_distance)
+    seat_surface = mesh_surface(bpy.data.objects["GEO_COCKPIT_DRIVER_SEAT"], conversion)
+    body_changes = reshape_body(bpy.data.objects["GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"], conversion, options.rearward_distance)
+    floor_changes = reshape_floor(bpy.data.objects["GEO_UNDERBODY_FLOOR_AND_DIFFUSER"], conversion, seat_surface, options.rearward_distance)
+    interior_measurements = rebuild_interior(bpy.data.objects["GEO_COCKPIT_INTERIOR_SHELL"], conversion, seat_surface, driver_surfaces, options.rearward_distance)
     for object_name, original_fingerprint in protected_meshes.items():
         if mesh_fingerprint(bpy.data.objects[object_name]) != original_fingerprint:
             raise RuntimeError("Cockpit fitting changed protected mesh: " + object_name)
     intersections = validate_driver_clearance(conversion, driver_surfaces, driver_samples)
     steering_intersections = validate_steering_clearance(conversion, driver_surfaces, driver_samples)
-    seat_intersections = {object_name: len(seat_surface.overlap(mesh_surface(bpy.data.objects[object_name], conversion))) for object_name in ("GEO_CHASSIS_BODY", "GEO_CHASSIS_INTERIOR", "GEO_CHASSIS_FLOOR")}
+    seat_intersections = {object_name: len(seat_surface.overlap(mesh_surface(bpy.data.objects[object_name], conversion))) for object_name in ("GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER", "GEO_COCKPIT_INTERIOR_SHELL", "GEO_UNDERBODY_FLOOR_AND_DIFFUSER")}
     passed = not any(intersections.values()) and not any(seat_intersections.values()) and not any(steering_intersections.values())
     report = {
         "operation": "Fit F1 2030 cockpit around the animated driver",
