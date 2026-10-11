@@ -422,6 +422,10 @@ impl VehicleSimulator {
                 state.unsprung_velocity_m_s = context.wheel_travel_velocity_metres_per_second[index];
                 let radius = if wheel.is_front() { cfg.front_tire_radius } else { cfg.rear_tire_radius };
                 state.tire_deflection_m = if state.is_grounded { (radius - sample.distance).max(0.0) } else { 0.0 };
+                state.tire_deflection_velocity_m_s = if state.is_grounded {
+                    -(context.hub_velocity_world_metres_per_second[index]
+                        - context.surface_velocity_world_metres_per_second[index]).dot(sample.normal)
+                } else { 0.0 };
             }
         } else {
             st.suspension.step_with_modifiers(cfg, &thermal_modifiers, samples, dt);
@@ -814,6 +818,15 @@ impl VehicleSimulator {
             let wear_longitudinal_force = tire.longitudinal_force;
             let wear_lateral_force = tire.lateral_force;
             let wear_longitudinal_slip_velocity = tire.spin_velocity_diff.abs();
+            let coupled_carcass_heat_watts = if brake_dissipated_energy_joules.is_some() {
+                let damping = configuration.coupled_world.as_ref()
+                    .ok_or("Coupled thermal advancement requires suspension damping settings")?
+                    .suspension.tire_vertical_damping_newton_seconds_per_metre[wheel_index];
+                if suspension.total_normal_force > 0.0 {
+                    damping * suspension.tire_deflection_velocity_m_s.powi(2)
+                        * tire_thermal.carcass_hysteresis_efficiency.clamp(0.0, 1.0)
+                } else { 0.0 }
+            } else { 0.0 };
             let thermal_input = TireThermalInput {
                 normal_force_n: suspension.total_normal_force.max(0.0),
                 longitudinal_force_n: tire.longitudinal_force,
@@ -821,12 +834,15 @@ impl VehicleSimulator {
                 slip_velocity_long_ms: tire.spin_velocity_diff.abs(),
                 slip_velocity_lat_ms: wheel_lateral_slip_metres_per_second[wheel_index],
                 tire_deflection_m: suspension.tire_deflection_m,
-                tire_deflection_velocity_m_s: suspension.tire_deflection_velocity_m_s,
+                tire_deflection_velocity_m_s: if brake_dissipated_energy_joules.is_some() {
+                    0.0
+                } else { suspension.tire_deflection_velocity_m_s },
                 max_tire_deflection_m: tuning.max_tire_deflection_m
                     * thermal_modifiers[wheel_index].max_deflection_scale.max(0.05),
                 dynamic_camber_rad: suspension.dynamic_camber,
                 vehicle_speed_ms: vehicle_speed_metres_per_second,
-                external_carcass_heat_w: brake_to_tire_heat[wheel_index].carcass_heat_w,
+                external_carcass_heat_w: brake_to_tire_heat[wheel_index].carcass_heat_w
+                    + coupled_carcass_heat_watts,
                 external_gas_heat_w: brake_to_tire_heat[wheel_index].gas_heat_w,
                 zone_contact_weights,
             };
