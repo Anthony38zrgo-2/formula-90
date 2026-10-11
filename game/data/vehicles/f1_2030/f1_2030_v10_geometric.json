@@ -34,10 +34,10 @@
         0.8
       ],
       "tire_vertical_damping_newton_seconds_per_metre": [
-        1200,
-        1200,
-        1200,
-        1200
+        1250,
+        1250,
+        1300,
+        1300
       ],
       "gravity_world_metres_per_second_squared": {
         "y": -9.80665,
@@ -45,10 +45,10 @@
         "x": 0
       },
       "tire_vertical_stiffness_newtons_per_metre": [
-        180000,
-        180000,
-        180000,
-        180000
+        144000,
+        144000,
+        153000,
+        153000
       ],
       "travel_stop_stiffness_newtons_per_cubic_metre": [
         100000000,
@@ -1478,9 +1478,9 @@
         "combined_longitudinal_peak_migration": 0.25,
         "contact_ramp_tau_s": 0.06,
         "falloff_sharpness": 2.0,
-        "min_relaxation_tau_s": 0.035,
+        "min_relaxation_tau_s": 0.045,
         "relaxation_recovery_scale": 1.6,
-        "lateral_peak_slip_angle_rad": 0.1,
+        "lateral_peak_slip_angle_rad": 0.115,
         "lateral_slide_mu_ratio": 0.88,
         "longitudinal_peak_slip_ratio": 0.12,
         "longitudinal_slide_mu_ratio": 0.88,
@@ -1493,9 +1493,9 @@
         "combined_longitudinal_peak_migration": 0.25,
         "contact_ramp_tau_s": 0.06,
         "falloff_sharpness": 2.0,
-        "min_relaxation_tau_s": 0.035,
+        "min_relaxation_tau_s": 0.045,
         "relaxation_recovery_scale": 1.6,
-        "lateral_peak_slip_angle_rad": 0.1,
+        "lateral_peak_slip_angle_rad": 0.115,
         "lateral_slide_mu_ratio": 0.88,
         "longitudinal_peak_slip_ratio": 0.12,
         "longitudinal_slide_mu_ratio": 0.88,
