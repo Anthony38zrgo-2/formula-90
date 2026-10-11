@@ -19,9 +19,7 @@ WHEELS = {
     "RR": "REAR_RIGHT",
 }
 
-# NUT_05 is the red caliper and RIM_06 is the inboard brake-duct cover. Both
-# follow hub travel, steering and camber, but never longitudinal wheel spin.
-STATIC_WHEEL_SUFFIXES = ("_CALIPER", "_INBOARD_DUCT_COVER")
+STATIC_WHEEL_SUFFIXES = ("_CALIPER", "_INBOARD_DUCT_COVER", "_DUCT")
 
 
 def sha256(path):

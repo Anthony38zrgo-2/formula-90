@@ -35,7 +35,11 @@ func _mesh_bounds_in(mesh_instance: MeshInstance3D, local_root: Node3D) -> AABB:
 
 func _run() -> void:
 	var failures: Array[String] = []
-	var packed := load(VEHICLE_SCENE) as PackedScene
+	var vehicle_scene_path := VEHICLE_SCENE
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--vehicle-scene="):
+			vehicle_scene_path = argument.trim_prefix("--vehicle-scene=")
+	var packed := load(vehicle_scene_path) as PackedScene
 	if packed == null:
 		_fail("Canonical F1 2030 V10 scene could not load.", failures)
 		quit(1)
@@ -61,10 +65,12 @@ func _run() -> void:
 			if hub == null or steer == null or camber == null or spinner == null or visual == null or brake_static == null:
 				_fail("Incomplete wheel visual hierarchy at %s." % wheel_name, failures)
 			elif brake_static.find_children("*_CALIPER", "MeshInstance3D", true, false).size() != 1 \
-				or brake_static.find_children("*_INBOARD_DUCT_COVER", "MeshInstance3D", true, false).size() != 1:
-				_fail("BrakeStatic must contain one caliper and one inboard duct at %s." % wheel_name, failures)
+				or brake_static.find_children("*_INBOARD_DUCT_COVER", "MeshInstance3D", true, false).size() != 1 \
+				or brake_static.find_children("*_DUCT", "MeshInstance3D", true, false).size() != 1:
+				_fail("BrakeStatic must contain one caliper, cover and cooling intake at %s." % wheel_name, failures)
 			elif not spinner.find_children("*_CALIPER", "MeshInstance3D", true, false).is_empty() \
-				or not spinner.find_children("*_INBOARD_DUCT_COVER", "MeshInstance3D", true, false).is_empty():
+				or not spinner.find_children("*_INBOARD_DUCT_COVER", "MeshInstance3D", true, false).is_empty() \
+				or not spinner.find_children("*_DUCT", "MeshInstance3D", true, false).is_empty():
 				_fail("Caliper or brake duct remains inside SpinVisual at %s." % wheel_name, failures)
 			elif hub.get_node_or_null("TireSmokeEmitter") == null:
 				_fail("Shared tire-smoke emitter is missing at %s." % wheel_name, failures)

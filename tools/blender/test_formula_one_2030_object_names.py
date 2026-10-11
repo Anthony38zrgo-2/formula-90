@@ -30,8 +30,8 @@ class FormulaOne2030ObjectNamesTest(unittest.TestCase):
     def test_every_wheel_contains_its_brakes_and_five_rotating_components(self):
         for previous_position, current_position in WHEEL_POSITIONS.items():
             names = wheel_source_object_names(current_position)
-            self.assertEqual(len(names), 7)
-            self.assertEqual(sum(name.endswith(('_CALIPER', '_INBOARD_DUCT_COVER')) for name in names), 2)
+            self.assertEqual(len(names), 8)
+            self.assertEqual(sum(name.endswith(('_CALIPER', '_INBOARD_DUCT_COVER', '_DUCT')) for name in names), 3)
             for name in names:
                 self.assertTrue(is_wheel_object(name, previous_position))
                 self.assertTrue(is_wheel_object(name, current_position))

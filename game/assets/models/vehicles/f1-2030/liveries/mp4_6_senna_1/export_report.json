@@ -9,23 +9,23 @@
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "9CB62DB79CB862BF56A252BC87E587C2635D0F49D9B1FC14757200A353E89165",
-      "size_bytes": 8029300
+      "sha256": "884D217C090A3356EEE29B25FE1673C42AA0E7DE1015D6E5AF1CA74B098FF9E5",
+      "size_bytes": 8498892
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "561FF279EC912956C6BC1B49C54CEA95BC94ADAA1A5D0D6CC04732904173949C",
-      "size_bytes": 8029320
+      "sha256": "D902294B5EADFF568BB261EF4B868BDD325AC98A93A33FE49800662733C8A042",
+      "size_bytes": 8498656
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "6BB3E922B8CFFECF43F78B88FCD1FB0987D3641BB5CAF10C2BA264A72B89DBCF",
-      "size_bytes": 8029288
+      "sha256": "CA114E5DAB7792B2FB54313F7447AB747E9E9BF611A0BE6C0818AD5D71DB3EBF",
+      "size_bytes": 8499180
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "1B09246E44D5E460078671DA787DE81F9C1CD462428BC6595C9FDD9DD0CAD509",
-      "size_bytes": 8029284
+      "sha256": "078258AB52CC2245E753409E2A0BB69F6B875F579698A77D69C075911F2046A3",
+      "size_bytes": 8499400
     }
   },
   "mesh_stats": {
@@ -3444,5 +3444,35 @@
       }
     },
     "physics_parameters_preserved": true
+  },
+  "brake_assembly_export": {
+    "source_sha256": "bd19eb650a4150bcc66f5f9b9502ce08b928f29748df8b832b69903325559784",
+    "changes": {
+      "wheel_FL": [
+        "GEO_BRAKE_FRONT_LEFT_CALIPER",
+        "GEO_BRAKE_FRONT_LEFT_DUCT",
+        "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER",
+        "GEO_BRAKE_FRONT_LEFT_DISC"
+      ],
+      "wheel_FR": [
+        "GEO_BRAKE_FRONT_RIGHT_CALIPER",
+        "GEO_BRAKE_FRONT_RIGHT_DUCT",
+        "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER",
+        "GEO_BRAKE_FRONT_RIGHT_DISC"
+      ],
+      "wheel_RL": [
+        "GEO_BRAKE_REAR_LEFT_CALIPER",
+        "GEO_BRAKE_REAR_LEFT_DUCT",
+        "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER",
+        "GEO_BRAKE_REAR_LEFT_DISC"
+      ],
+      "wheel_RR": [
+        "GEO_BRAKE_REAR_RIGHT_CALIPER",
+        "GEO_BRAKE_REAR_RIGHT_DUCT",
+        "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER",
+        "GEO_BRAKE_REAR_RIGHT_DISC"
+      ]
+    },
+    "protected_chassis_and_tires_preserved": true
   }
 }

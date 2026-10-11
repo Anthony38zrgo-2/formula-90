@@ -154,11 +154,11 @@ def main():
         if max(abs(v) for v in center) > 0.002:
             errors.append(f"wheel {short} is not centered: {center}")
         structural_mesh_names = [name for name in result["objects"] if "_DECAL_" not in name]
-        if len(structural_mesh_names) != 7:
-            errors.append(f"wheel {short} expected 7 structural meshes, got {len(structural_mesh_names)}")
+        if len(structural_mesh_names) != 8:
+            errors.append(f"wheel {short} expected 8 structural meshes, got {len(structural_mesh_names)}")
         wheel_prefix = f"GEO_WHEEL_{'FRONT' if short.startswith('F') else 'REAR'}_{'LEFT' if short.endswith('L') else 'RIGHT'}"
-        expected_static = [f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_CALIPER", f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_INBOARD_DUCT_COVER"]
-        if result["visual_groups"].get("BrakeStatic") != expected_static:
+        expected_static = [f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_CALIPER", f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_INBOARD_DUCT_COVER", f"{wheel_prefix.replace('GEO_WHEEL_', 'GEO_BRAKE_')}_DUCT"]
+        if sorted(result["visual_groups"].get("BrakeStatic", [])) != sorted(expected_static):
             errors.append(f"wheel {short} static brake group is wrong: {result['visual_groups'].get('BrakeStatic')}")
         if any(name in result["visual_groups"].get("SpinVisual", []) for name in expected_static):
             errors.append(f"wheel {short} caliper or brake duct still inherits wheel spin")

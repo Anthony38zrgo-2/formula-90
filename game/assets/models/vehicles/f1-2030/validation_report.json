@@ -905,26 +905,26 @@
       }
     },
     "wheel_FL": {
-      "mesh_count": 7,
-      "vertices": 8244,
-      "polygons": 2748,
+      "mesh_count": 8,
+      "vertices": 9570,
+      "polygons": 4828,
       "bounds_min": [
         -0.165,
         -0.335,
         -0.335
       ],
       "bounds_max": [
-        0.165,
+        0.221094,
         0.335,
         0.335
       ],
       "dimensions": [
-        0.33,
+        0.386094,
         0.67,
         0.67
       ],
       "center": [
-        0.0,
+        0.028047,
         0.0,
         0.0
       ],
@@ -941,7 +941,7 @@
       "objects": {
         "GEO_BRAKE_FRONT_LEFT_CALIPER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Red.003"
+            "FormulaOne2030RedBrakeCaliperPaint"
           ],
           "bounds_min": [
             0.118477,
@@ -989,9 +989,34 @@
             0.0
           ]
         },
+        "GEO_BRAKE_FRONT_LEFT_DUCT": {
+          "materials": [
+            "GEO_BRAKE_FRONT_LEFT_DUCT_ExportCarbon"
+          ],
+          "bounds_min": [
+            0.150077,
+            0.058206,
+            0.015996
+          ],
+          "bounds_max": [
+            0.221094,
+            0.1454,
+            0.092787
+          ],
+          "dimensions": [
+            0.071017,
+            0.087195,
+            0.076791
+          ],
+          "center": [
+            0.185586,
+            0.101803,
+            0.054391
+          ]
+        },
         "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.006"
+            "FormulaOne2030CompleteGoldWheelFinish"
           ],
           "bounds_min": [
             0.097,
@@ -1126,16 +1151,17 @@
         ],
         "BrakeStatic": [
           "GEO_BRAKE_FRONT_LEFT_CALIPER",
+          "GEO_BRAKE_FRONT_LEFT_DUCT",
           "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER"
         ]
       }
     },
     "wheel_FR": {
-      "mesh_count": 7,
-      "vertices": 8244,
-      "polygons": 2748,
+      "mesh_count": 8,
+      "vertices": 9570,
+      "polygons": 4828,
       "bounds_min": [
-        -0.165,
+        -0.221094,
         -0.335,
         -0.335
       ],
@@ -1145,12 +1171,12 @@
         0.335
       ],
       "dimensions": [
-        0.33,
+        0.386094,
         0.67,
         0.67
       ],
       "center": [
-        0.0,
+        -0.028047,
         0.0,
         0.0
       ],
@@ -1167,7 +1193,7 @@
       "objects": {
         "GEO_BRAKE_FRONT_RIGHT_CALIPER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Red.002"
+            "FormulaOne2030RedBrakeCaliperPaint.001"
           ],
           "bounds_min": [
             -0.145523,
@@ -1215,9 +1241,34 @@
             -0.0
           ]
         },
+        "GEO_BRAKE_FRONT_RIGHT_DUCT": {
+          "materials": [
+            "GEO_BRAKE_FRONT_RIGHT_DUCT_ExportCarbon"
+          ],
+          "bounds_min": [
+            -0.221094,
+            0.058206,
+            0.015996
+          ],
+          "bounds_max": [
+            -0.150077,
+            0.1454,
+            0.092787
+          ],
+          "dimensions": [
+            0.071017,
+            0.087195,
+            0.076791
+          ],
+          "center": [
+            -0.185585,
+            0.101803,
+            0.054391
+          ]
+        },
         "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.004"
+            "FormulaOne2030CompleteGoldWheelFinish.001"
           ],
           "bounds_min": [
             -0.101,
@@ -1352,31 +1403,32 @@
         ],
         "BrakeStatic": [
           "GEO_BRAKE_FRONT_RIGHT_CALIPER",
+          "GEO_BRAKE_FRONT_RIGHT_DUCT",
           "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER"
         ]
       }
     },
     "wheel_RL": {
-      "mesh_count": 7,
-      "vertices": 8244,
-      "polygons": 2748,
+      "mesh_count": 8,
+      "vertices": 9570,
+      "polygons": 4828,
       "bounds_min": [
         -0.21,
         -0.335,
         -0.335
       ],
       "bounds_max": [
-        0.21,
+        0.259869,
         0.335,
         0.335
       ],
       "dimensions": [
-        0.42,
+        0.469868,
         0.67,
         0.67
       ],
       "center": [
-        0.0,
+        0.024934,
         0.0,
         0.0
       ],
@@ -1393,7 +1445,7 @@
       "objects": {
         "GEO_BRAKE_REAR_LEFT_CALIPER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Red.001"
+            "FormulaOne2030RedBrakeCaliperPaint.002"
           ],
           "bounds_min": [
             0.150788,
@@ -1441,9 +1493,34 @@
             0.0
           ]
         },
+        "GEO_BRAKE_REAR_LEFT_DUCT": {
+          "materials": [
+            "GEO_BRAKE_REAR_LEFT_DUCT_ExportCarbon"
+          ],
+          "bounds_min": [
+            0.188852,
+            0.058213,
+            0.015997
+          ],
+          "bounds_max": [
+            0.259869,
+            0.145418,
+            0.092798
+          ],
+          "dimensions": [
+            0.071017,
+            0.087205,
+            0.0768
+          ],
+          "center": [
+            0.22436,
+            0.101815,
+            0.054398
+          ]
+        },
         "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.002"
+            "FormulaOne2030CompleteGoldWheelFinish.002"
           ],
           "bounds_min": [
             0.124,
@@ -1578,16 +1655,17 @@
         ],
         "BrakeStatic": [
           "GEO_BRAKE_REAR_LEFT_CALIPER",
+          "GEO_BRAKE_REAR_LEFT_DUCT",
           "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER"
         ]
       }
     },
     "wheel_RR": {
-      "mesh_count": 7,
-      "vertices": 8244,
-      "polygons": 2748,
+      "mesh_count": 8,
+      "vertices": 9570,
+      "polygons": 4828,
       "bounds_min": [
-        -0.21,
+        -0.259869,
         -0.335,
         -0.335
       ],
@@ -1597,12 +1675,12 @@
         0.335
       ],
       "dimensions": [
-        0.42,
+        0.469868,
         0.67,
         0.67
       ],
       "center": [
-        0.0,
+        -0.024934,
         -0.0,
         0.0
       ],
@@ -1619,7 +1697,7 @@
       "objects": {
         "GEO_BRAKE_REAR_RIGHT_CALIPER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Red"
+            "FormulaOne2030RedBrakeCaliperPaint.003"
           ],
           "bounds_min": [
             -0.185211,
@@ -1667,9 +1745,34 @@
             -0.0
           ]
         },
+        "GEO_BRAKE_REAR_RIGHT_DUCT": {
+          "materials": [
+            "GEO_BRAKE_REAR_RIGHT_DUCT_ExportCarbon"
+          ],
+          "bounds_min": [
+            -0.259869,
+            0.058213,
+            0.015997
+          ],
+          "bounds_max": [
+            -0.188852,
+            0.145418,
+            0.092798
+          ],
+          "dimensions": [
+            0.071017,
+            0.087205,
+            0.0768
+          ],
+          "center": [
+            -0.22436,
+            0.101815,
+            0.054398
+          ]
+        },
         "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal"
+            "FormulaOne2030CompleteGoldWheelFinish.003"
           ],
           "bounds_min": [
             -0.128,
@@ -1804,6 +1907,7 @@
         ],
         "BrakeStatic": [
           "GEO_BRAKE_REAR_RIGHT_CALIPER",
+          "GEO_BRAKE_REAR_RIGHT_DUCT",
           "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER"
         ]
       }

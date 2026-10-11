@@ -104,7 +104,7 @@ def normalize_object_name_document(value):
 
 def wheel_source_object_names(position):
     current_position = WHEEL_POSITIONS.get(position, position)
-    return tuple(f"GEO_{assembly}_{current_position}_{component}" for assembly, component in WHEEL_COMPONENTS.values())
+    return tuple(f"GEO_{assembly}_{current_position}_{component}" for assembly, component in WHEEL_COMPONENTS.values()) + (f"GEO_BRAKE_{current_position}_DUCT",)
 
 
 def is_chassis_object(name):
