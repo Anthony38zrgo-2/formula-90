@@ -47,12 +47,12 @@ fn body_mass_contract_adds_each_wheel_once_and_preserves_axle_moments() {
     let mut configuration = vehicle_configuration();
     configuration.fuel.current_kg = 0.0;
     configuration.fuel.initial_kg = 0.0;
-    assert_eq!(configuration.complete_dry_vehicle_mass(), 698.0);
-    assert_eq!(configuration.total_vehicle_mass(), 698.0);
+    assert!((configuration.complete_dry_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
+    assert!((configuration.total_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
     let front_supported_mass = configuration.vehicle_mass * configuration.front_weight_distribution
         + 2.0 * configuration.front_wheel_mass;
     assert!(
-        (configuration.effective_front_weight_distribution() * 698.0 - front_supported_mass).abs()
+        (configuration.effective_front_weight_distribution() * 678.3378962698143 - front_supported_mass).abs()
             < 1e-10
     );
     let serialized = configuration.to_json_value();

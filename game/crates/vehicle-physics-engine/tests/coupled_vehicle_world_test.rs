@@ -38,9 +38,9 @@ fn actual_inventory_closes_every_budget_and_round_trips() {
     inventory.validate(&configuration).unwrap();
     let audit = inventory.audit();
     assert_eq!(inventory.components.len(), 80);
-    assert!((audit.base_mass_kilograms - 600.0).abs() < 1e-6);
-    assert!((audit.complete_unfueled_mass_kilograms - 698.0).abs() < 1e-6);
-    assert_eq!(audit.rim_and_tire_mass_kilograms, [21.0, 21.0, 28.0, 28.0]);
+    assert!((audit.base_mass_kilograms - 597.7950900124142).abs() < 1e-6);
+    assert!((audit.complete_unfueled_mass_kilograms - 678.3378962698143).abs() < 1e-6);
+    assert_eq!(audit.rim_and_tire_mass_kilograms, [16.807653495880544, 16.807653495880544, 23.46374963281952, 23.46374963281952]);
     let restored = VehicleConfig::from_json_str(&configuration.to_json_value().to_string()).unwrap();
     assert_eq!(serde_json::to_value(restored.physical_mass_inventory).unwrap(), serde_json::to_value(&configuration.physical_mass_inventory).unwrap());
 }
@@ -175,7 +175,7 @@ fn fuel_exchange_changes_mass_without_changing_any_generalized_velocity() {
     let before = state.velocity();
     model.update_fuel_mass(&mut state, &CoupledSuspensionInput::default(), 0.0).unwrap();
     assert_eq!(state.velocity(), before);
-    assert_eq!(model.configuration.total_vehicle_mass(), 698.0);
+    assert!((model.configuration.total_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
     assert!(state.fuel_exchange_energy_joules.is_finite());
 }
 
@@ -416,8 +416,8 @@ fn uncertainty_variants_preserve_every_budget_and_physical_rotor_inertia() {
     let directions = (0..inventory.components.len()).map(|index| if index % 3 == 0 { 1.0 } else { -0.5 }).collect::<Vec<_>>();
     let variant = inventory.budget_constrained_mass_variant(&configuration, &directions).unwrap();
     let audit = variant.audit();
-    assert!((audit.base_mass_kilograms - 600.0).abs() < 1e-10);
-    assert!((audit.complete_unfueled_mass_kilograms - 698.0).abs() < 1e-10);
+    assert!((audit.base_mass_kilograms - 597.7950900124142).abs() < 1e-10);
+    assert!((audit.complete_unfueled_mass_kilograms - 678.3378962698143).abs() < 1e-10);
     assert!(variant.components.iter().zip(&inventory.components).any(|(variant, original)|
         (variant.properties.mass_kilograms - original.properties.mass_kilograms).abs() > 0.1));
     for (variant, original) in variant.components.iter().zip(&inventory.components) {

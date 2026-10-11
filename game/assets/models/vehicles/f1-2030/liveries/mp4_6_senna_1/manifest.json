@@ -5,7 +5,7 @@
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2030_V10",
   "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json",
-  "physics_sha256": "DECDEDA38B2BCDF4B8B38556DCEAC4B83C3DB47C2947E7F7C96D3916D001D453",
+  "physics_sha256": "cfb9d9607ec87176c52ea66ba45db3167a675679920ed0d3666b2076dc04891d",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -33,27 +33,36 @@
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "85BCE3BC876878D0624ADD6D3CFB4150886E4AA89BDBF270C492CFC4E0C48D7C",
-      "size_bytes": 4201260
+      "sha256": "5D6C02FADD9A7759D610EC026C761B903DF642478139EA5541DC11CFAE1FE742",
+      "size_bytes": 7826344
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "F5E6ED9BAED733B7DDB9802B48166614620691145D6252C18486D8D43A23A72D",
-      "size_bytes": 4201260
+      "sha256": "9C39EC19E6461BB080DDA1CB165781F1AE0263AA82BD3C7559E4C0B3329992DC",
+      "size_bytes": 7826348
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "03357CD5CCEF5D2D5B466B7112BA1AA635112200D6A8D9FC0F6D641954BD9FA3",
-      "size_bytes": 4201240
+      "sha256": "A051A4300DDA684AE7504B2B8807FE394FC37140F8F8EA033FA2E0E5F22F1BB4",
+      "size_bytes": 7826328
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "98230846A76986285DA27C9E0D26462B6783C09E620F52323B27074A70C7BB49",
-      "size_bytes": 4201240
+      "sha256": "0D5485185C70FA5936E210561D13D4903C1F0028A833A9700F7D83FB78D9F098",
+      "size_bytes": 7826312
     }
   },
   "validation": {
     "status": "EXPORT_PASS",
     "note": "Five canonical GLBs; every wheel contains separate SpinVisual and BrakeStatic groups."
+  },
+  "thirteen_inch_wheel_package": {
+    "tire_diameter_metres": 0.67,
+    "front_tire_width_metres": 0.33,
+    "rear_tire_width_metres": 0.42,
+    "brake_disc_diameter_metres": 0.28,
+    "source_visual_commit": "62e16480",
+    "mass_properties": "Uniform thin-shell surface integration calibrated to preceding estimated component masses; no ballast compensation.",
+    "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171"
   }
 }

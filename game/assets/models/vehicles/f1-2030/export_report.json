@@ -9,23 +9,23 @@
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "8AE1E8CA092DCFBCBB7B1D11B4C79EEF66A0BAD10616A5055A63FC6A7C2FED95",
-      "size_bytes": 6353392
+      "sha256": "5D6C02FADD9A7759D610EC026C761B903DF642478139EA5541DC11CFAE1FE742",
+      "size_bytes": 7826344
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "0F12E9C37A4D5646BCC15F17D3DC9CD5530A04FD694859225B8F8C2A5D3B70B1",
-      "size_bytes": 6353392
+      "sha256": "9C39EC19E6461BB080DDA1CB165781F1AE0263AA82BD3C7559E4C0B3329992DC",
+      "size_bytes": 7826348
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "18028AD8C0735C98410C60A91760D0A0A2238216805066DDC47DBF70F6B08579",
-      "size_bytes": 6353372
+      "sha256": "A051A4300DDA684AE7504B2B8807FE394FC37140F8F8EA033FA2E0E5F22F1BB4",
+      "size_bytes": 7826328
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "EE4B15C23B0DE26C43CCC3DFAE21845D5A8B2A1C9051E7B1239D88980E09B3FF",
-      "size_bytes": 6353356
+      "sha256": "0D5485185C70FA5936E210561D13D4903C1F0028A833A9700F7D83FB78D9F098",
+      "size_bytes": 7826312
     }
   },
   "mesh_stats": {
@@ -462,5 +462,345 @@
     "GEO_CHASSIS_CockpitHeadrestPadding",
     "GEO_CHASSIS_INTERIOR",
     "GEO_CHASSIS_SEAT"
-  ]
+  ],
+  "thirteen_inch_wheel_update": {
+    "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171",
+    "physics_sha256": "cfb9d9607ec87176c52ea66ba45db3167a675679920ed0d3666b2076dc04891d",
+    "wheel_exports": {
+      "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171",
+      "wheel_surfaces": {
+        "FL": {
+          "GEO_WHEEL_FRONT_L_NUT_02": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_FRONT_L_NUT_05": {
+            "vertices": 108,
+            "polygons": 36
+          },
+          "GEO_WHEEL_FRONT_L_RIM_01": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_FRONT_L_RIM_03": {
+            "vertices": 900,
+            "polygons": 300
+          },
+          "GEO_WHEEL_FRONT_L_RIM_04": {
+            "vertices": 3168,
+            "polygons": 1056
+          },
+          "GEO_WHEEL_FRONT_L_RIM_06": {
+            "vertices": 468,
+            "polygons": 156
+          },
+          "GEO_WHEEL_FRONT_L_TIRE": {
+            "vertices": 2880,
+            "polygons": 960
+          },
+          "visual_groups": {
+            "spin": [
+              "GEO_WHEEL_FRONT_L_NUT_02",
+              "GEO_WHEEL_FRONT_L_RIM_01",
+              "GEO_WHEEL_FRONT_L_RIM_03",
+              "GEO_WHEEL_FRONT_L_RIM_04",
+              "GEO_WHEEL_FRONT_L_TIRE"
+            ],
+            "static_brake": [
+              "GEO_WHEEL_FRONT_L_NUT_05",
+              "GEO_WHEEL_FRONT_L_RIM_06"
+            ]
+          }
+        },
+        "FR": {
+          "GEO_WHEEL_FRONT_R_NUT_02": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_FRONT_R_NUT_05": {
+            "vertices": 108,
+            "polygons": 36
+          },
+          "GEO_WHEEL_FRONT_R_RIM_01": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_FRONT_R_RIM_03": {
+            "vertices": 900,
+            "polygons": 300
+          },
+          "GEO_WHEEL_FRONT_R_RIM_04": {
+            "vertices": 3168,
+            "polygons": 1056
+          },
+          "GEO_WHEEL_FRONT_R_RIM_06": {
+            "vertices": 468,
+            "polygons": 156
+          },
+          "GEO_WHEEL_FRONT_R_TIRE": {
+            "vertices": 2880,
+            "polygons": 960
+          },
+          "visual_groups": {
+            "spin": [
+              "GEO_WHEEL_FRONT_R_NUT_02",
+              "GEO_WHEEL_FRONT_R_RIM_01",
+              "GEO_WHEEL_FRONT_R_RIM_03",
+              "GEO_WHEEL_FRONT_R_RIM_04",
+              "GEO_WHEEL_FRONT_R_TIRE"
+            ],
+            "static_brake": [
+              "GEO_WHEEL_FRONT_R_NUT_05",
+              "GEO_WHEEL_FRONT_R_RIM_06"
+            ]
+          }
+        },
+        "RL": {
+          "GEO_WHEEL_REAR_L_NUT_02": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_REAR_L_NUT_05": {
+            "vertices": 108,
+            "polygons": 36
+          },
+          "GEO_WHEEL_REAR_L_RIM_01": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_REAR_L_RIM_03": {
+            "vertices": 900,
+            "polygons": 300
+          },
+          "GEO_WHEEL_REAR_L_RIM_04": {
+            "vertices": 3168,
+            "polygons": 1056
+          },
+          "GEO_WHEEL_REAR_L_RIM_06": {
+            "vertices": 468,
+            "polygons": 156
+          },
+          "GEO_WHEEL_REAR_L_TIRE": {
+            "vertices": 2880,
+            "polygons": 960
+          },
+          "visual_groups": {
+            "spin": [
+              "GEO_WHEEL_REAR_L_NUT_02",
+              "GEO_WHEEL_REAR_L_RIM_01",
+              "GEO_WHEEL_REAR_L_RIM_03",
+              "GEO_WHEEL_REAR_L_RIM_04",
+              "GEO_WHEEL_REAR_L_TIRE"
+            ],
+            "static_brake": [
+              "GEO_WHEEL_REAR_L_NUT_05",
+              "GEO_WHEEL_REAR_L_RIM_06"
+            ]
+          }
+        },
+        "RR": {
+          "GEO_WHEEL_REAR_R_NUT_02": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_REAR_R_NUT_05": {
+            "vertices": 108,
+            "polygons": 36
+          },
+          "GEO_WHEEL_REAR_R_RIM_01": {
+            "vertices": 360,
+            "polygons": 120
+          },
+          "GEO_WHEEL_REAR_R_RIM_03": {
+            "vertices": 900,
+            "polygons": 300
+          },
+          "GEO_WHEEL_REAR_R_RIM_04": {
+            "vertices": 3168,
+            "polygons": 1056
+          },
+          "GEO_WHEEL_REAR_R_RIM_06": {
+            "vertices": 468,
+            "polygons": 156
+          },
+          "GEO_WHEEL_REAR_R_TIRE": {
+            "vertices": 2880,
+            "polygons": 960
+          },
+          "visual_groups": {
+            "spin": [
+              "GEO_WHEEL_REAR_R_NUT_02",
+              "GEO_WHEEL_REAR_R_RIM_01",
+              "GEO_WHEEL_REAR_R_RIM_03",
+              "GEO_WHEEL_REAR_R_RIM_04",
+              "GEO_WHEEL_REAR_R_TIRE"
+            ],
+            "static_brake": [
+              "GEO_WHEEL_REAR_R_NUT_05",
+              "GEO_WHEEL_REAR_R_RIM_06"
+            ]
+          }
+        }
+      },
+      "shared_texture_updated": true
+    },
+    "travel_validation": {
+      "pose_count": 152,
+      "minimum_conservative_clearance_metres": 0.007673959791660309,
+      "limiting_pose": {
+        "wheel_index": 0,
+        "travel_metres": -0.04,
+        "steering_radians": 0.35,
+        "segment_index": 2,
+        "wheel_surface": "_RIM_04"
+      },
+      "component_clearances": {
+        "_TIRE": 0.015515075609087943,
+        "_RIM_04": 0.007673959791660309,
+        "_RIM_03": 0.017322439312934874,
+        "_NUT_05": 0.023686833292245864,
+        "_RIM_06": 0.05305271929502487
+      },
+      "assumed_link_envelope_radius_metres": 0.008,
+      "sampling_allowance_metres": 0.001,
+      "passed": true
+    },
+    "mass_recalculation": {
+      "mass_estimation_model": "Uniform thin shells calibrated to preceding per-component masses; total mass is recalculated without ballast.",
+      "base_mass_kilograms": 597.7950900124142,
+      "rim_and_tire_mass_kilograms": [
+        16.807653495880544,
+        16.807653495880544,
+        23.46374963281952,
+        23.46374963281952
+      ],
+      "dry_mass_kilograms": 678.3378962698143,
+      "changes": [
+        {
+          "component": "front_left_brake_caliper",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.2260924871201218,
+          "surface_area_ratio": 0.8173949051562853
+        },
+        {
+          "component": "front_left_brake_disc",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.1998338572887146,
+          "surface_area_ratio": 0.799889304089335
+        },
+        {
+          "component": "front_left_rim",
+          "previous_mass_kilograms": 8,
+          "mass_kilograms": 5.10281876686116,
+          "surface_area_ratio": 0.6378521898763609
+        },
+        {
+          "component": "front_left_tire",
+          "previous_mass_kilograms": 13,
+          "mass_kilograms": 11.704834729019383,
+          "surface_area_ratio": 0.9003718491929464
+        },
+        {
+          "component": "front_right_brake_caliper",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.2260924871201218,
+          "surface_area_ratio": 0.8173950776705438
+        },
+        {
+          "component": "front_right_brake_disc",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.1998338572887146,
+          "surface_area_ratio": 0.7998891722956178
+        },
+        {
+          "component": "front_right_rim",
+          "previous_mass_kilograms": 8,
+          "mass_kilograms": 5.10281876686116,
+          "surface_area_ratio": 0.637852501838929
+        },
+        {
+          "component": "front_right_tire",
+          "previous_mass_kilograms": 13,
+          "mass_kilograms": 11.704834729019383,
+          "surface_area_ratio": 0.900371955271574
+        },
+        {
+          "component": "rear_left_brake_caliper",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.2664444257137912,
+          "surface_area_ratio": 0.844296673501935
+        },
+        {
+          "component": "rear_left_brake_disc",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.205174236084575,
+          "surface_area_ratio": 0.8034495310018986
+        },
+        {
+          "component": "rear_left_rim",
+          "previous_mass_kilograms": 10,
+          "mass_kilograms": 6.839999457921616,
+          "surface_area_ratio": 0.6840000055453814
+        },
+        {
+          "component": "rear_left_tire",
+          "previous_mass_kilograms": 18,
+          "mass_kilograms": 16.623750174897907,
+          "surface_area_ratio": 0.9235418165447549
+        },
+        {
+          "component": "rear_right_brake_caliper",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.2664444257137912,
+          "surface_area_ratio": 0.8442958941164532
+        },
+        {
+          "component": "rear_right_brake_disc",
+          "previous_mass_kilograms": 1.5,
+          "mass_kilograms": 1.205174236084575,
+          "surface_area_ratio": 0.8034494504442015
+        },
+        {
+          "component": "rear_right_rim",
+          "previous_mass_kilograms": 10,
+          "mass_kilograms": 6.839999457921616,
+          "surface_area_ratio": 0.6839998860389418
+        },
+        {
+          "component": "rear_right_tire",
+          "previous_mass_kilograms": 18,
+          "mass_kilograms": 16.623750174897907,
+          "surface_area_ratio": 0.9235415362216793
+        }
+      ],
+      "hardpoints": "Retained pending travel-envelope packaging validation; outboard joints are inboard of the reduced rim barrel. Wheel centers, tracks and wheelbase are preserved."
+    },
+    "brake_duct_shields": [
+      {
+        "wheel": "FRONT_L",
+        "shield_width_metres": 0.004,
+        "axial_center_metres": 0.099,
+        "minimum_suspension_centerline_distance_metres": 0.062052756547927856
+      },
+      {
+        "wheel": "FRONT_R",
+        "shield_width_metres": 0.004,
+        "axial_center_metres": -0.099,
+        "minimum_suspension_centerline_distance_metres": 0.062052756547927856
+      },
+      {
+        "wheel": "REAR_L",
+        "shield_width_metres": 0.004,
+        "axial_center_metres": 0.126,
+        "minimum_suspension_centerline_distance_metres": 0.08220832049846649
+      },
+      {
+        "wheel": "REAR_R",
+        "shield_width_metres": 0.004,
+        "axial_center_metres": -0.126,
+        "minimum_suspension_centerline_distance_metres": 0.08220832049846649
+      }
+    ],
+    "validated_working_profile_sha256": "fedd49246eb2ff64173bf5d9621483f4d37972b22be91921e443c8c0d945b976"
+  }
 }

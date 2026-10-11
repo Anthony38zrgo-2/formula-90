@@ -5,7 +5,7 @@
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2030_V10",
   "physics_profile": "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json",
-  "physics_sha256": "DECDEDA38B2BCDF4B8B38556DCEAC4B83C3DB47C2947E7F7C96D3916D001D453",
+  "physics_sha256": "cfb9d9607ec87176c52ea66ba45db3167a675679920ed0d3666b2076dc04891d",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -33,27 +33,36 @@
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "8AE1E8CA092DCFBCBB7B1D11B4C79EEF66A0BAD10616A5055A63FC6A7C2FED95",
-      "size_bytes": 6353392
+      "sha256": "5D6C02FADD9A7759D610EC026C761B903DF642478139EA5541DC11CFAE1FE742",
+      "size_bytes": 7826344
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "0F12E9C37A4D5646BCC15F17D3DC9CD5530A04FD694859225B8F8C2A5D3B70B1",
-      "size_bytes": 6353392
+      "sha256": "9C39EC19E6461BB080DDA1CB165781F1AE0263AA82BD3C7559E4C0B3329992DC",
+      "size_bytes": 7826348
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "18028AD8C0735C98410C60A91760D0A0A2238216805066DDC47DBF70F6B08579",
-      "size_bytes": 6353372
+      "sha256": "A051A4300DDA684AE7504B2B8807FE394FC37140F8F8EA033FA2E0E5F22F1BB4",
+      "size_bytes": 7826328
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "EE4B15C23B0DE26C43CCC3DFAE21845D5A8B2A1C9051E7B1239D88980E09B3FF",
-      "size_bytes": 6353356
+      "sha256": "0D5485185C70FA5936E210561D13D4903C1F0028A833A9700F7D83FB78D9F098",
+      "size_bytes": 7826312
     }
   },
   "validation": {
     "status": "EXPORT_PASS",
     "note": "Headrest underside and local cockpit interior and seat cavities preserve at least five millimeters of clearance to the current animated arms across 1205 steering poses and to the configured head-motion envelope. Driver anatomy, seated posture, rear crown, attachments, exterior geometry, materials and four wheel exports are preserved."
+  },
+  "thirteen_inch_wheel_package": {
+    "tire_diameter_metres": 0.67,
+    "front_tire_width_metres": 0.33,
+    "rear_tire_width_metres": 0.42,
+    "brake_disc_diameter_metres": 0.28,
+    "source_visual_commit": "62e16480",
+    "mass_properties": "Uniform thin-shell surface integration calibrated to preceding estimated component masses; no ballast compensation.",
+    "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171"
   }
 }

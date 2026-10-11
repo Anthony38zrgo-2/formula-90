@@ -40,7 +40,7 @@ fn radiation_rejects_heat_without_creating_mechanical_braking_energy() {
     assert_eq!(cooling_rates[0], 0.0);
     assert!(cooling_rates[1] > 0.0);
     assert!(cooling_rates[2] > cooling_rates[1] * 10.0);
-    assert!((cooling_rates[2] - 5.91).abs() < 0.02);
+    assert!((cooling_rates[2] - 6.79).abs() < 0.02, "Measured radiation cooling rate: {}", cooling_rates[2]);
 }
 
 #[test]
