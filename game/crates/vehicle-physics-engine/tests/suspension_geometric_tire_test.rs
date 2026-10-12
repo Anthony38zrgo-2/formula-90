@@ -147,7 +147,7 @@ fn geometric_profile() -> String {
         g = serde_json::to_string(&g0).unwrap()
     );
     let cfg0 = VehicleConfig::from_json_str(&p0).unwrap();
-    let geo0 = cfg0.geometric_suspension.unwrap();
+    let geo0 = cfg0.suspension.geometric_suspension.unwrap();
     let r0f = jacobian(&geo0.corners.fl, 0.0, 0.0, true).unwrap().motion_ratio;
     let r0r = jacobian(&geo0.corners.rl, 0.0, 0.0, false).unwrap().motion_ratio;
     assert!(r0f > 0.05 && r0r > 0.05);
@@ -188,9 +188,9 @@ fn linkage_pose_matches_statics_at_rest() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
@@ -219,9 +219,9 @@ fn pose_finite_continuous_and_mirrored() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
@@ -286,7 +286,7 @@ fn legacy_gain_path_untouched() {
     let cfg = VehicleConfig::from_json_str(r#"{"schema_version": 3}"#).unwrap();
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
-    let rest = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
+    let rest = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
         center: flat_hit(d),
@@ -320,7 +320,7 @@ fn f1_2030_linkage_pose_sweep_is_sane_and_mirrored() {
     // to rule out large bump-steer or camber swings exactly where the car lives.
     let cfg = f1_2030_geometric_config();
     let geo = cfg
-        .geometric_suspension
+        .suspension.geometric_suspension
         .as_ref()
         .expect("geometric suspension present");
 

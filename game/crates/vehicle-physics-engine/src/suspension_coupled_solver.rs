@@ -255,7 +255,7 @@ impl CoupledSuspensionModel {
     ) -> Result<Self, String> {
         inventory.validate()?;
         settings.validate()?;
-        if configuration.geometric_suspension.is_none() {
+        if configuration.suspension.geometric_suspension.is_none() {
             return Err("Coupled dynamics requires geometric hardpoints".into());
         }
         if (configuration.complete_dry_vehicle_mass()
@@ -265,7 +265,7 @@ impl CoupledSuspensionModel {
         {
             return Err("Inventory dry mass disagrees with vehicle profile mass contract".into());
         }
-        let geometry = configuration.geometric_suspension.as_ref().unwrap();
+        let geometry = configuration.suspension.geometric_suspension.as_ref().unwrap();
         let mut wheel_travel_limits_metres = [(0.0, 0.0); 4];
         for wheel in WheelIndex::ALL {
             let axle = geometry.axle(wheel);
@@ -339,7 +339,7 @@ impl CoupledSuspensionModel {
     ) -> Result<CoupledSuspensionEvaluation, String> {
         let geometry = self
             .configuration
-            .geometric_suspension
+            .suspension.geometric_suspension
             .as_ref()
             .ok_or("Missing geometric suspension")?;
         if [

@@ -37,8 +37,8 @@ fn flat_hit(distance: f64) -> RaycastHit {
 fn geometric_profile_loads_and_legacy_is_preserved() {
     let geo_text = std::fs::read_to_string(geo_path()).unwrap();
     let cfg = VehicleConfig::from_json_str(&geo_text).unwrap();
-    assert_eq!(cfg.suspension_model, SuspensionModelKind::Geometric);
-    let geo = cfg.geometric_suspension.as_ref().unwrap();
+    assert_eq!(cfg.suspension.suspension_model, SuspensionModelKind::Geometric);
+    let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
     assert_eq!(geo.version, 1);
     // Mirrors resolve to audited hardpoints.
     assert!((geo.corners.fl.hub_center.x + 0.753).abs() < 1e-9);
@@ -53,7 +53,7 @@ fn geometric_profile_loads_and_legacy_is_preserved() {
     // Round-trip preserves the physical contract.
     let v = cfg.to_json_value();
     let cfg2 = VehicleConfig::from_json_str(&serde_json::to_string(&v).unwrap()).unwrap();
-    assert_eq!(cfg2.geometric_suspension.unwrap(), *geo);
+    assert_eq!(cfg2.suspension.geometric_suspension.unwrap(), *geo);
 
     // Legacy reference is byte-identical behaviour: still legacy, no model key.
     let legacy_text = std::fs::read_to_string(legacy_path()).unwrap();
@@ -61,17 +61,17 @@ fn geometric_profile_loads_and_legacy_is_preserved() {
     assert!(legacy_json["suspension"].get("model").is_none());
     assert!(legacy_json["suspension"].get("geometry_physical").is_none());
     let legacy = VehicleConfig::from_json_str(&legacy_text).unwrap();
-    assert_eq!(legacy.suspension_model, SuspensionModelKind::Legacy1Dof);
-    assert!((legacy.front_spring_length - 0.3).abs() < 1e-12);
+    assert_eq!(legacy.suspension.suspension_model, SuspensionModelKind::Legacy1Dof);
+    assert!((legacy.suspension.front_spring_length - 0.3).abs() < 1e-12);
     // Calibrated wheel rates reproduce the legacy static stance.
-    assert!((cfg.front_spring_length - 0.3).abs() < 1e-12);
+    assert!((cfg.suspension.front_spring_length - 0.3).abs() < 1e-12);
 }
 
 #[test]
 fn f1_motion_ratio_healthy_across_envelope_and_steer() {
     let cfg =
         VehicleConfig::from_json_str(&std::fs::read_to_string(geo_path()).unwrap()).unwrap();
-    let geo = cfg.geometric_suspension.as_ref().unwrap();
+    let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
     for wheel in WheelIndex::ALL {
         let c = geo.corners.get(wheel);
         let axle = geo.axle(wheel);
@@ -99,7 +99,7 @@ fn f1_motion_ratio_healthy_across_envelope_and_steer() {
 fn rear_damper_redesign_preserves_motion_ratio_across_wheel_travel() {
     let profile_text = std::fs::read_to_string(geo_path()).unwrap();
     let vehicle_configuration = VehicleConfig::from_json_str(&profile_text).unwrap();
-    let suspension_configuration = vehicle_configuration.geometric_suspension.as_ref().unwrap();
+    let suspension_configuration = vehicle_configuration.suspension.geometric_suspension.as_ref().unwrap();
     let reference_motion_ratios = [
         (-0.04, 0.521904),
         (-0.02, 0.441559),
@@ -134,9 +134,9 @@ fn f1_geometric_settles_at_design() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
@@ -155,9 +155,9 @@ fn f1_geometric_settles_at_design() {
             st.total_normal_force
         );
         let rest = if wheel.is_front() {
-            cfg.front_spring_length * cfg.front_resting_ratio
+            cfg.suspension.front_spring_length * cfg.suspension.front_resting_ratio
         } else {
-            cfg.rear_spring_length * cfg.rear_resting_ratio
+            cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio
         };
         assert!(
             (st.suspension_compression_m - rest).abs() < 0.010,
@@ -190,9 +190,9 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
         m / k
     };
     let road = |cfg: &VehicleConfig| {
-        let rf = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius
+        let rf = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
             - stat(cfg, WheelIndex::FrontLeft);
-        let rr = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius
+        let rr = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
             - stat(cfg, WheelIndex::RearLeft);
         [mk(rf), mk(rf), mk(rr), mk(rr)]
     };
@@ -257,7 +257,7 @@ fn godot_scene_points_at_geometric_by_default() {
 fn f1_tables_generate_with_parity() {
     let cfg =
         VehicleConfig::from_json_str(&std::fs::read_to_string(geo_path()).unwrap()).unwrap();
-    let geo = cfg.geometric_suspension.as_ref().unwrap();
+    let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
     for wheel in WheelIndex::ALL {
         let (n_q, n_r) = if wheel.is_front() { (33, 9) } else { (33, 1) };
         let t = generate_table(geo, wheel, n_q, n_r, 0.02).expect("table");

@@ -104,10 +104,10 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             inertia_multiplier_x: sim.config.chassis.inertia_multipliers.x,
             inertia_multiplier_y: sim.config.chassis.inertia_multipliers.y,
             inertia_multiplier_z: sim.config.chassis.inertia_multipliers.z,
-            suspension_front_spring_length: sim.config.front_spring_length,
-            suspension_rear_spring_length: sim.config.rear_spring_length,
-            suspension_front_resting_ratio: sim.config.front_resting_ratio,
-            suspension_rear_resting_ratio: sim.config.rear_resting_ratio,
+            suspension_front_spring_length: sim.config.suspension.front_spring_length,
+            suspension_rear_spring_length: sim.config.suspension.rear_spring_length,
+            suspension_front_resting_ratio: sim.config.suspension.front_resting_ratio,
+            suspension_rear_resting_ratio: sim.config.suspension.rear_resting_ratio,
             powertrain_cooling_duct_openings_supplied: false,
             water_cooling_duct_opening: sim.config.powertrain_thermal.water_cooling_duct.opening,
             oil_cooling_duct_opening: sim.config.powertrain_thermal.oil_cooling_duct.opening,
@@ -212,16 +212,16 @@ fn apply_inertia_and_suspension_config(sim: &mut VehicleSimulator, cfg: &FfiRunt
         sim.config.chassis.inertia_multipliers.z = cfg.inertia_multiplier_z;
     }
     if cfg.suspension_front_spring_length.is_finite() && cfg.suspension_front_spring_length > 0.0 {
-        sim.config.front_spring_length = cfg.suspension_front_spring_length;
+        sim.config.suspension.front_spring_length = cfg.suspension_front_spring_length;
     }
     if cfg.suspension_rear_spring_length.is_finite() && cfg.suspension_rear_spring_length > 0.0 {
-        sim.config.rear_spring_length = cfg.suspension_rear_spring_length;
+        sim.config.suspension.rear_spring_length = cfg.suspension_rear_spring_length;
     }
     if cfg.suspension_front_resting_ratio.is_finite() && cfg.suspension_front_resting_ratio > 0.0 {
-        sim.config.front_resting_ratio = cfg.suspension_front_resting_ratio;
+        sim.config.suspension.front_resting_ratio = cfg.suspension_front_resting_ratio;
     }
     if cfg.suspension_rear_resting_ratio.is_finite() && cfg.suspension_rear_resting_ratio > 0.0 {
-        sim.config.rear_resting_ratio = cfg.suspension_rear_resting_ratio;
+        sim.config.suspension.rear_resting_ratio = cfg.suspension_rear_resting_ratio;
     }
 }
 
@@ -778,7 +778,7 @@ pub extern "C" fn f1_94_physics_get_tri_ray_span(sim_ptr: *const c_void, wheel_i
     } else {
         sim.config.rear_tire_width
     };
-    tire_w * sim.config.tri_ray_spacing_ratio
+    tire_w * sim.config.suspension.tri_ray_spacing_ratio
 }
 
 #[no_mangle]
@@ -821,9 +821,9 @@ pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     if wheel.is_front() {
-        sim.config.front_spring_length + sim.config.front_tire_radius
+        sim.config.suspension.front_spring_length + sim.config.front_tire_radius
     } else {
-        sim.config.rear_spring_length + sim.config.rear_tire_radius
+        sim.config.suspension.rear_spring_length + sim.config.rear_tire_radius
     }
 }
 

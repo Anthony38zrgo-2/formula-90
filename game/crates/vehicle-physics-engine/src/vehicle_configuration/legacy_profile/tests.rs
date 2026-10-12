@@ -142,8 +142,8 @@ fn suspension_geometry_parser_only_accepted_and_ignored() {
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
     // Geometry is visual-only: it must not disturb any force-facing config value.
-    assert!((cfg.front_spring_length - 0.3).abs() < 1e-9);
-    assert!((cfg.front_resting_ratio - 0.15).abs() < 1e-9);
+    assert!((cfg.suspension.front_spring_length - 0.3).abs() < 1e-9);
+    assert!((cfg.suspension.front_resting_ratio - 0.15).abs() < 1e-9);
     // And it must not leak into the serialized force config round-trip.
     let re_emitted = cfg.to_json_value();
     assert!(re_emitted.get("suspension").is_some());
@@ -598,10 +598,10 @@ fn schema_v3_full_profile_parses_and_round_trips() {
         cfg.pressure_mechanics.rolling_resistance_sensitivity,
         -0.35
     );
-    assert_eq!(cfg.front_camber_gain_rad_per_m, -0.021);
-    assert_eq!(cfg.front_toe_gain_rad_per_m, 0.004);
-    assert_eq!(cfg.rear_camber_gain_rad_per_m, 0.018);
-    assert_eq!(cfg.rear_toe_gain_rad_per_m, -0.002);
+    assert_eq!(cfg.suspension.front_camber_gain_rad_per_m, -0.021);
+    assert_eq!(cfg.suspension.front_toe_gain_rad_per_m, 0.004);
+    assert_eq!(cfg.suspension.rear_camber_gain_rad_per_m, 0.018);
+    assert_eq!(cfg.suspension.rear_toe_gain_rad_per_m, -0.002);
 
     let round_trip = VehicleConfig::from_json_str(
         &serde_json::to_string(&cfg.to_json_value()).unwrap(),
@@ -613,8 +613,8 @@ fn schema_v3_full_profile_parses_and_round_trips() {
     assert_eq!(round_trip.front_tire_force.slip_recovery_tau_s, 0.22);
     assert_eq!(round_trip.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
     assert_eq!(round_trip.pressure_mechanics.compliance_sensitivity, 0.72);
-    assert_eq!(round_trip.front_camber_gain_rad_per_m, -0.021);
-    assert_eq!(round_trip.rear_toe_gain_rad_per_m, -0.002);
+    assert_eq!(round_trip.suspension.front_camber_gain_rad_per_m, -0.021);
+    assert_eq!(round_trip.suspension.rear_toe_gain_rad_per_m, -0.002);
 }
 
 #[test]
@@ -644,8 +644,8 @@ fn schema_v3_absent_sections_use_parser_defaults() {
         cfg.pressure_mechanics,
         PressureMechanicsSensitivity::default()
     );
-    assert_eq!(cfg.front_camber_gain_rad_per_m, 0.0);
-    assert_eq!(cfg.rear_toe_gain_rad_per_m, 0.0);
+    assert_eq!(cfg.suspension.front_camber_gain_rad_per_m, 0.0);
+    assert_eq!(cfg.suspension.rear_toe_gain_rad_per_m, 0.0);
 }
 
 #[test]

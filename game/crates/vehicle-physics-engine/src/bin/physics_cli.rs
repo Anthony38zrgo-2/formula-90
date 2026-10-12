@@ -20,7 +20,7 @@ fn flat_ground_samples(sim: &VehicleSimulator, wheel_lift: [f64; 4]) -> [TriRayc
         } else {
             sim.config.rear_tire_width
         };
-        let span = tire_w * sim.config.tri_ray_spacing_ratio;
+        let span = tire_w * sim.config.suspension.tri_ray_spacing_ratio;
 
         let left_offset = sim
             .state

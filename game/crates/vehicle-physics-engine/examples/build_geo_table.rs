@@ -20,9 +20,9 @@ fn main() {
     }
     let text = std::fs::read_to_string(&args[1]).expect("read profile");
     let cfg = VehicleConfig::from_json_str(&text).expect("parse profile");
-    assert_eq!(cfg.suspension_model, SuspensionModelKind::Geometric);
+    assert_eq!(cfg.suspension.suspension_model, SuspensionModelKind::Geometric);
     let geo: &GeometricSuspensionConfig =
-        cfg.geometric_suspension.as_ref().expect("physical geometry");
+        cfg.suspension.geometric_suspension.as_ref().expect("physical geometry");
     let mut tables = BTreeMap::new();
     for wheel in WheelIndex::ALL {
         let (n_q, n_r) = if wheel.is_front() { (33, 9) } else { (33, 1) };

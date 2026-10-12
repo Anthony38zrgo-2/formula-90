@@ -503,8 +503,8 @@ impl VehicleSimulator {
         let braking = effective_input.brake > 0.0 || effective_input.handbrake > 0.0;
         // SUS-GEO-05: geometric mode replaces contact-patch application with
         // chassis anchor reactions (same load, transmitted). Legacy untouched.
-        let is_geo = matches!(cfg.suspension_model, SuspensionModelKind::Geometric)
-            && cfg.geometric_suspension.is_some();
+        let is_geo = matches!(cfg.suspension.suspension_model, SuspensionModelKind::Geometric)
+            && cfg.suspension.geometric_suspension.is_some();
         let cg_local = center_of_mass_local(cfg);
         let body_transform = st.transform;
         for wheel in WheelIndex::ALL {
@@ -551,7 +551,7 @@ impl VehicleSimulator {
                 // hanging unsprung weight distributes to the anchors instead
                 // of vanishing (legacy `continue`s with no body load).
                 if is_geo && coupled_context.is_none() {
-                    if let Some(geo) = cfg.geometric_suspension.as_ref() {
+                    if let Some(geo) = cfg.suspension.geometric_suspension.as_ref() {
                         let ws = &st.suspension.wheels[i];
                         let q = ws.suspension_compression_m
                             - rest_compression_m(cfg, wheel);
@@ -651,7 +651,7 @@ impl VehicleSimulator {
             if is_geo {
                 // SUS-GEO-05: same tyre/contact load, transmitted through the
                 // linkage anchors (moments from hardpoints, not the patch).
-                if let Some(geo) = cfg.geometric_suspension.as_ref() {
+                if let Some(geo) = cfg.suspension.geometric_suspension.as_ref() {
                     let ws = &st.suspension.wheels[i];
                     let q = ws.suspension_compression_m
                         - rest_compression_m(cfg, wheel);
@@ -1350,14 +1350,14 @@ pub const MAX_EFFECTIVE_TOE_RAD: f64 = 0.05;
 /// `MAX_EFFECTIVE_TOE_RAD`.
 pub fn effective_toe_rad(config: &VehicleConfig, wheel: WheelIndex, travel_delta_m: f64) -> f64 {
     let static_toe = if wheel.is_front() {
-        config.front_toe
+        config.suspension.front_toe
     } else {
-        config.rear_toe
+        config.suspension.rear_toe
     };
     let gain = if wheel.is_front() {
-        config.front_toe_gain_rad_per_m
+        config.suspension.front_toe_gain_rad_per_m
     } else {
-        config.rear_toe_gain_rad_per_m
+        config.suspension.rear_toe_gain_rad_per_m
     };
     (static_toe + gain * travel_delta_m).clamp(-MAX_EFFECTIVE_TOE_RAD, MAX_EFFECTIVE_TOE_RAD)
 }

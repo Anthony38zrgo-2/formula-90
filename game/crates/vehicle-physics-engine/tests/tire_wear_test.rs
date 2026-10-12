@@ -299,7 +299,7 @@ fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
             sim.config.front_tire_width
         } else {
             sim.config.rear_tire_width
-        } * sim.config.tri_ray_spacing_ratio;
+        } * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |offset_x: f64| RaycastHit {
             is_colliding: true,

@@ -25,8 +25,8 @@ fn flat_static_surface_600_ticks_stability() {
     let dt = 1.0 / 120.0;
 
     // Nominal ground distance corresponding to resting compression
-    let resting_dist_fl = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-    let resting_dist_rl = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
 
     let samples = [
         make_sample(resting_dist_fl),
@@ -67,7 +67,7 @@ fn upward_step_increases_compression_and_settles_at_geometric_target() {
     let mut suspension = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
 
-    let base_dist = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
+    let base_dist = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
     let initial_samples = [make_sample(base_dist); 4];
 
     // Settle for 120 frames
@@ -120,7 +120,7 @@ fn downward_step_rebound_remains_bounded_by_max_spring_length() {
     let mut suspension = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
 
-    let base_dist = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
+    let base_dist = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
     let initial_samples = [make_sample(base_dist); 4];
 
     for _ in 0..20 {
@@ -138,7 +138,7 @@ fn downward_step_rebound_remains_bounded_by_max_spring_length() {
             wheel.spring_current_length,
             wheel.max_spring_length
         );
-        assert!(wheel.max_spring_length <= cfg.front_spring_length + 1e-6);
+        assert!(wheel.max_spring_length <= cfg.suspension.front_spring_length + 1e-6);
     }
 }
 
@@ -149,7 +149,7 @@ fn contact_outside_reachable_suspension_travel_produces_zero_force() {
     let dt = 1.0 / 120.0;
 
     // Distance far beyond max ray length (spring_length + radius + 0.50m)
-    let out_of_reach_dist = cfg.front_spring_length + cfg.front_tire_radius + 0.50;
+    let out_of_reach_dist = cfg.suspension.front_spring_length + cfg.front_tire_radius + 0.50;
     let unreachable_samples = [make_sample(out_of_reach_dist); 4];
 
     suspension.step(&cfg, &unreachable_samples, dt);
@@ -169,7 +169,7 @@ fn one_ray_temporarily_losing_contact_does_not_triple_load() {
     let mut suspension = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
 
-    let resting_dist = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
+    let resting_dist = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
 
     // All 3 rays colliding
     let sample_3rays = make_sample(resting_dist);

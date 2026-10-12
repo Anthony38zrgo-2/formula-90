@@ -18,7 +18,7 @@ pub struct SharedSuspensionGeometrySolutions {
 
 impl SharedSuspensionGeometrySolutions {
     pub fn new(configuration: &VehicleConfig) -> Result<Self, String> {
-        Ok(Self { geometry: configuration.geometric_suspension.clone().ok_or("Missing physical geometry")?,
+        Ok(Self { geometry: configuration.suspension.geometric_suspension.clone().ok_or("Missing physical geometry")?,
             solutions: Arc::new(Mutex::new(HashMap::new())) })
     }
 }
@@ -40,7 +40,7 @@ impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
 
     pub fn with_shared_solutions(configuration: &'configuration VehicleConfig,
         shared_solutions: &'configuration SharedSuspensionGeometrySolutions) -> Result<Self, String> {
-        if configuration.geometric_suspension.as_ref() != Some(&shared_solutions.geometry) {
+        if configuration.suspension.geometric_suspension.as_ref() != Some(&shared_solutions.geometry) {
             return Err("Shared geometry cache does not match the configured hardpoints".into());
         }
         Ok(Self { configuration, solutions: HashMap::new(), shared_solutions: Some(shared_solutions) })
@@ -72,7 +72,7 @@ impl<'configuration> SuspensionGeometryEvaluationCache<'configuration> {
         }
         let geometry = self
             .configuration
-            .geometric_suspension
+            .suspension.geometric_suspension
             .as_ref()
             .ok_or("Missing physical geometry")?;
         let solution = solve_corner(
@@ -166,7 +166,7 @@ fn component_pose_with_geometry_cache(
         )?;
         let geometry = cache
             .configuration
-            .geometric_suspension
+            .suspension.geometric_suspension
             .as_ref()
             .ok_or("Physical component trajectories require geometric suspension")?;
         let corner = geometry.corners.get(wheel);
@@ -174,8 +174,8 @@ fn component_pose_with_geometry_cache(
             MassComponentAttachment::Upright { .. } => (solution.hub, solution.upright_basis),
             MassComponentAttachment::WheelRotor { .. } => {
                 let configuration = cache.configuration;
-                let camber = if wheel.is_front() { configuration.front_camber } else { configuration.rear_camber };
-                let toe = if wheel.is_front() { configuration.front_toe } else { configuration.rear_toe };
+                let camber = if wheel.is_front() { configuration.suspension.front_camber } else { configuration.suspension.rear_camber };
+                let toe = if wheel.is_front() { configuration.suspension.front_toe } else { configuration.suspension.rear_toe };
                 let side = if wheel.is_left() { 1.0 } else { -1.0 };
                 let alignment = multiply_rotations(Mat3::from_axis_angle(Vec3::UP, toe * side),
                     Mat3::from_axis_angle(Vec3::BACK, camber * side));

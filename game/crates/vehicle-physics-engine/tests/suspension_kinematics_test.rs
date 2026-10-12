@@ -11,7 +11,7 @@ fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
             sim.config.front_tire_width
         } else {
             sim.config.rear_tire_width
-        } * sim.config.tri_ray_spacing_ratio;
+        } * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |x: f64| RaycastHit {
             is_colliding: true,
@@ -39,10 +39,10 @@ fn toe_gain_zero_preserves_legacy_static_steer() {
     let rl = steering_angle_for_wheel(&cfg, WheelIndex::RearLeft, 0.0, 0.0);
     let rr = steering_angle_for_wheel(&cfg, WheelIndex::RearRight, 0.0, 0.0);
     assert!(
-        (fl - -cfg.front_toe).abs() < 1e-12,
+        (fl - -cfg.suspension.front_toe).abs() < 1e-12,
         "left wheel must negate signed toe, got {fl}"
     );
-    assert!((fr - cfg.front_toe).abs() < 1e-12);
+    assert!((fr - cfg.suspension.front_toe).abs() < 1e-12);
     assert!((fl + fr).abs() < 1e-12, "front axle must be neutral at rest");
     assert!((rl + rr).abs() < 1e-12, "rear axle must be neutral at rest");
     // Gains default to 0.0: travel must not affect the angle at all.
@@ -55,10 +55,10 @@ fn toe_gain_bump_rebound_and_rear_zero_ratio() {
     let mut cfg = VehicleConfig::f1_94_canonical();
     cfg.steering.front_steering_ratio = 1.0;
     cfg.steering.rear_steering_ratio = 0.0;
-    cfg.front_toe = 0.0;
-    cfg.rear_toe = 0.0;
-    cfg.front_toe_gain_rad_per_m = -0.02;
-    cfg.rear_toe_gain_rad_per_m = 0.012;
+    cfg.suspension.front_toe = 0.0;
+    cfg.suspension.rear_toe = 0.0;
+    cfg.suspension.front_toe_gain_rad_per_m = -0.02;
+    cfg.suspension.rear_toe_gain_rad_per_m = 0.012;
 
     // Bump +20 mm on the front-left: effective toe = -0.02 * 0.020 = -0.0004 rad.
     let bump_left = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 0.0, 0.020);
@@ -98,8 +98,8 @@ fn toe_gain_bump_rebound_and_rear_zero_ratio() {
 fn toe_gain_past_clamp_is_bounded() {
     let mut cfg = VehicleConfig::f1_94_canonical();
     cfg.steering.front_steering_ratio = 1.0;
-    cfg.front_toe = 0.0;
-    cfg.front_toe_gain_rad_per_m = -0.02;
+    cfg.suspension.front_toe = 0.0;
+    cfg.suspension.front_toe_gain_rad_per_m = -0.02;
     let angle = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 0.0, 10.0);
     assert!(
         angle.abs() <= MAX_EFFECTIVE_TOE_RAD + 1e-12,
@@ -115,8 +115,8 @@ fn toe_gain_past_clamp_is_bounded() {
 #[test]
 fn one_wheel_curb_transient_toe_stays_smooth_and_asymmetric() {
     let mut cfg = VehicleConfig::f1_94_canonical();
-    cfg.front_toe_gain_rad_per_m = -0.02;
-    cfg.rear_toe_gain_rad_per_m = 0.012;
+    cfg.suspension.front_toe_gain_rad_per_m = -0.02;
+    cfg.suspension.rear_toe_gain_rad_per_m = 0.012;
     let spawn = default_spawn_height(&cfg);
     let mut sim = VehicleSimulator::new(cfg.clone(), Vec3::new(0.0, spawn, 0.0), 0.0);
     let dt = 1.0 / 120.0;

@@ -196,25 +196,39 @@ impl JsonVehicleSpec {
             diff_coast_ramp_angle_deg: self.powertrain.differential.coast_ramp_angle_deg,
             diff_clutches: self.powertrain.differential.clutches,
             diff_clutch_friction_coeff: self.powertrain.differential.clutch_friction_coefficient,
-            front_spring_length: self.suspension.front.spring_length,
-            front_resting_ratio: self.suspension.front.resting_ratio,
-            front_damping_ratio: self.suspension.front.damping_ratio,
-            front_bump_damp_multiplier: self.suspension.front.bump_damp_multiplier,
-            front_rebound_damp_multiplier: self.suspension.front.rebound_damp_multiplier,
-            front_arb_ratio: self.suspension.front.arb_ratio,
-            front_toe: self.suspension.front.toe,
-            front_camber: self.suspension.front.camber,
-            front_bump_stop_multiplier: self.suspension.front.bump_stop_multiplier,
-            rear_spring_length: self.suspension.rear.spring_length,
-            rear_resting_ratio: self.suspension.rear.resting_ratio,
-            rear_damping_ratio: self.suspension.rear.damping_ratio,
-            rear_bump_damp_multiplier: self.suspension.rear.bump_damp_multiplier,
-            rear_rebound_damp_multiplier: self.suspension.rear.rebound_damp_multiplier,
-            rear_arb_ratio: self.suspension.rear.arb_ratio,
-            rear_toe: self.suspension.rear.toe,
-            rear_camber: self.suspension.rear.camber,
-            rear_bump_stop_multiplier: self.suspension.rear.bump_stop_multiplier,
-            tri_ray_spacing_ratio: self.suspension.tri_ray_spacing_ratio,
+            suspension: SuspensionConfiguration {
+                front_spring_length: self.suspension.front.spring_length,
+                front_resting_ratio: self.suspension.front.resting_ratio,
+                front_damping_ratio: self.suspension.front.damping_ratio,
+                front_bump_damp_multiplier: self.suspension.front.bump_damp_multiplier,
+                front_rebound_damp_multiplier: self.suspension.front.rebound_damp_multiplier,
+                front_arb_ratio: self.suspension.front.arb_ratio,
+                front_toe: self.suspension.front.toe,
+                front_camber: self.suspension.front.camber,
+                front_bump_stop_multiplier: self.suspension.front.bump_stop_multiplier,
+                rear_spring_length: self.suspension.rear.spring_length,
+                rear_resting_ratio: self.suspension.rear.resting_ratio,
+                rear_damping_ratio: self.suspension.rear.damping_ratio,
+                rear_bump_damp_multiplier: self.suspension.rear.bump_damp_multiplier,
+                rear_rebound_damp_multiplier: self.suspension.rear.rebound_damp_multiplier,
+                rear_arb_ratio: self.suspension.rear.arb_ratio,
+                rear_toe: self.suspension.rear.toe,
+                rear_camber: self.suspension.rear.camber,
+                rear_bump_stop_multiplier: self.suspension.rear.bump_stop_multiplier,
+                tri_ray_spacing_ratio: self.suspension.tri_ray_spacing_ratio,
+                front_camber_gain_rad_per_m: self.suspension.front.camber_gain_rad_per_m.unwrap_or(0.0),
+                rear_camber_gain_rad_per_m: self.suspension.rear.camber_gain_rad_per_m.unwrap_or(0.0),
+                front_toe_gain_rad_per_m: self.suspension.front.toe_gain_rad_per_m.unwrap_or(0.0),
+                rear_toe_gain_rad_per_m: self.suspension.rear.toe_gain_rad_per_m.unwrap_or(0.0),
+                suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
+                    .unwrap_or(SuspensionModelKind::Legacy1Dof),
+                suspension_model_version: self.suspension.model_version,
+                geometric_suspension: self
+                    .suspension
+                    .geometry_physical
+                    .as_ref()
+                    .map(|v| geometric_from_json_value(v).expect("validated geometry_physical must parse")),
+            },
             front_tire_radius: self.tires.front.radius,
             rear_tire_radius: self.tires.rear.radius,
             front_tire_width: self.tires.front.width,
@@ -297,10 +311,6 @@ impl JsonVehicleSpec {
                     rolling_resistance_sensitivity: pm.rolling_resistance_sensitivity,
                 })
                 .unwrap_or_default(),
-            front_camber_gain_rad_per_m: self.suspension.front.camber_gain_rad_per_m.unwrap_or(0.0),
-            rear_camber_gain_rad_per_m: self.suspension.rear.camber_gain_rad_per_m.unwrap_or(0.0),
-            front_toe_gain_rad_per_m: self.suspension.front.toe_gain_rad_per_m.unwrap_or(0.0),
-            rear_toe_gain_rad_per_m: self.suspension.rear.toe_gain_rad_per_m.unwrap_or(0.0),
             brakes: BrakesConfiguration {
                 front_brake_bias: self.brakes.front_brake_bias,
                 max_brake_torque: self.brakes.max_brake_torque,
@@ -405,14 +415,6 @@ impl JsonVehicleSpec {
             audio: self.audio.clone(),
             coupled_world: self.coupled_world.clone(),
             underfloor_contact: self.underfloor_contact,
-            suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
-                .unwrap_or(SuspensionModelKind::Legacy1Dof),
-            suspension_model_version: self.suspension.model_version,
-            geometric_suspension: self
-                .suspension
-                .geometry_physical
-                .as_ref()
-                .map(|v| geometric_from_json_value(v).expect("validated geometry_physical must parse")),
         }
     }
 
@@ -533,41 +535,41 @@ impl JsonVehicleSpec {
             },
             suspension: JsonSuspension {
                 front: JsonSuspensionAxle {
-                    spring_length: cfg.front_spring_length,
-                    resting_ratio: cfg.front_resting_ratio,
-                    damping_ratio: cfg.front_damping_ratio,
-                    bump_damp_multiplier: cfg.front_bump_damp_multiplier,
-                    rebound_damp_multiplier: cfg.front_rebound_damp_multiplier,
-                    arb_ratio: cfg.front_arb_ratio,
-                    toe: cfg.front_toe,
-                    camber: cfg.front_camber,
-                    bump_stop_multiplier: cfg.front_bump_stop_multiplier,
+                    spring_length: cfg.suspension.front_spring_length,
+                    resting_ratio: cfg.suspension.front_resting_ratio,
+                    damping_ratio: cfg.suspension.front_damping_ratio,
+                    bump_damp_multiplier: cfg.suspension.front_bump_damp_multiplier,
+                    rebound_damp_multiplier: cfg.suspension.front_rebound_damp_multiplier,
+                    arb_ratio: cfg.suspension.front_arb_ratio,
+                    toe: cfg.suspension.front_toe,
+                    camber: cfg.suspension.front_camber,
+                    bump_stop_multiplier: cfg.suspension.front_bump_stop_multiplier,
                     camber_gain_rad_per_m: (cfg.schema_version >= 3)
-                        .then(|| cfg.front_camber_gain_rad_per_m),
-                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.front_toe_gain_rad_per_m),
+                        .then(|| cfg.suspension.front_camber_gain_rad_per_m),
+                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.suspension.front_toe_gain_rad_per_m),
                 },
                 rear: JsonSuspensionAxle {
-                    spring_length: cfg.rear_spring_length,
-                    resting_ratio: cfg.rear_resting_ratio,
-                    damping_ratio: cfg.rear_damping_ratio,
-                    bump_damp_multiplier: cfg.rear_bump_damp_multiplier,
-                    rebound_damp_multiplier: cfg.rear_rebound_damp_multiplier,
-                    arb_ratio: cfg.rear_arb_ratio,
-                    toe: cfg.rear_toe,
-                    camber: cfg.rear_camber,
-                    bump_stop_multiplier: cfg.rear_bump_stop_multiplier,
+                    spring_length: cfg.suspension.rear_spring_length,
+                    resting_ratio: cfg.suspension.rear_resting_ratio,
+                    damping_ratio: cfg.suspension.rear_damping_ratio,
+                    bump_damp_multiplier: cfg.suspension.rear_bump_damp_multiplier,
+                    rebound_damp_multiplier: cfg.suspension.rear_rebound_damp_multiplier,
+                    arb_ratio: cfg.suspension.rear_arb_ratio,
+                    toe: cfg.suspension.rear_toe,
+                    camber: cfg.suspension.rear_camber,
+                    bump_stop_multiplier: cfg.suspension.rear_bump_stop_multiplier,
                     camber_gain_rad_per_m: (cfg.schema_version >= 3)
-                        .then(|| cfg.rear_camber_gain_rad_per_m),
-                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.rear_toe_gain_rad_per_m),
+                        .then(|| cfg.suspension.rear_camber_gain_rad_per_m),
+                    toe_gain_rad_per_m: (cfg.schema_version >= 3).then(|| cfg.suspension.rear_toe_gain_rad_per_m),
                 },
-                tri_ray_spacing_ratio: cfg.tri_ray_spacing_ratio,
+                tri_ray_spacing_ratio: cfg.suspension.tri_ray_spacing_ratio,
                 // Visual-only geometry is not part of the force config; it is
                 // never re-emitted by to_json_value.
                 geometry: None,
-                model: cfg.suspension_model.as_str_name().to_string(),
-                model_version: cfg.suspension_model_version,
+                model: cfg.suspension.suspension_model.as_str_name().to_string(),
+                model_version: cfg.suspension.suspension_model_version,
                 geometry_physical: cfg
-                    .geometric_suspension
+                    .suspension.geometric_suspension
                     .as_ref()
                     .map(geometric_to_json_value),
             },

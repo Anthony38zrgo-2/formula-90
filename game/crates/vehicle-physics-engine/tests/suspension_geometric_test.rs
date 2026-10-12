@@ -117,8 +117,8 @@ fn geometric_profile_json() -> String {
 #[test]
 fn geometric_round_trip_preserves_physical() {
     let cfg = VehicleConfig::from_json_str(&geometric_profile_json()).unwrap();
-    assert_eq!(cfg.suspension_model, SuspensionModelKind::Geometric);
-    let geo = cfg.geometric_suspension.as_ref().unwrap();
+    assert_eq!(cfg.suspension.suspension_model, SuspensionModelKind::Geometric);
+    let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
     assert_eq!(geo.version, 1);
     assert!((geo.front.spring_rate_N_per_m - 29419.9).abs() < 1e-9);
     assert_eq!(geo.corners.fr_source, "mirror_of:FL");
@@ -136,7 +136,7 @@ fn geometric_round_trip_preserves_physical() {
         .get("geometry_physical")
         .expect("physical geometry must be re-emitted");
     let cfg2 = VehicleConfig::from_json_str(&serde_json::to_string(&v).unwrap()).unwrap();
-    let geo2 = cfg2.geometric_suspension.unwrap();
+    let geo2 = cfg2.suspension.geometric_suspension.unwrap();
     assert_eq!(geo2, *geo);
     // Visual geometry stays dropped; physical is the preserved contract.
     assert!(v
@@ -150,17 +150,17 @@ fn geometric_round_trip_preserves_physical() {
 fn legacy_profiles_preserve_behavior() {
     // Minimal stays legacy with no physical.
     let minimal = VehicleConfig::from_json_str(r#"{"schema_version": 3}"#).unwrap();
-    assert_eq!(minimal.suspension_model, SuspensionModelKind::Legacy1Dof);
-    assert!(minimal.geometric_suspension.is_none());
+    assert_eq!(minimal.suspension.suspension_model, SuspensionModelKind::Legacy1Dof);
+    assert!(minimal.suspension.geometric_suspension.is_none());
     // Shipped F1 2030 (visual geometry only) stays legacy.
     let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../data/vehicles/f1_2030/f1_2030_v10_physics.json");
     let text = std::fs::read_to_string(&manifest)
         .unwrap_or_else(|e| panic!("f1 2030 profile must exist at {}: {e}", manifest.display()));
     let cfg = VehicleConfig::from_json_str(&text).unwrap();
-    assert_eq!(cfg.suspension_model, SuspensionModelKind::Legacy1Dof);
-    assert!(cfg.geometric_suspension.is_none());
-    assert!((cfg.front_spring_length - 0.3).abs() < 1e-12);
+    assert_eq!(cfg.suspension.suspension_model, SuspensionModelKind::Legacy1Dof);
+    assert!(cfg.suspension.geometric_suspension.is_none());
+    assert!((cfg.suspension.front_spring_length - 0.3).abs() < 1e-12);
     // Legacy emission carries the explicit model but no physical block.
     let v = cfg.to_json_value();
     let s = v.get("suspension").unwrap();
@@ -214,7 +214,7 @@ fn invalid_physical_fails_with_wheel_and_field() {
 #[test]
 fn push_pull_label_has_no_physical_effect() {
     let cfg = VehicleConfig::from_json_str(&geometric_profile_json()).unwrap();
-    let geo = cfg.geometric_suspension.unwrap();
+    let geo = cfg.suspension.geometric_suspension.unwrap();
     // Identical hardpoints, only the informational label differs.
     let mut pull = geo.corners.fl.clone();
     pull.rod_kind_label = RodKindLabel::Pullrod;
@@ -236,7 +236,7 @@ fn push_pull_label_has_no_physical_effect() {
 fn test_geo() -> GeometricSuspensionConfig {
     VehicleConfig::from_json_str(&geometric_profile_json())
         .unwrap()
-        .geometric_suspension
+        .suspension.geometric_suspension
         .unwrap()
 }
 
@@ -414,7 +414,7 @@ fn shipped_visual_vertical_rocker_is_blocked_for_activation() {
     // Schema validation passes (lengths are plausible); kinematics reveals the
     // wrong-sign ratio that blocks activation.
     let cfg = VehicleConfig::from_json_str(&prof).unwrap();
-    let geo = cfg.geometric_suspension.unwrap();
+    let geo = cfg.suspension.geometric_suspension.unwrap();
     let j = jacobian(&geo.corners.fl, 0.0, 0.0, true).unwrap();
     assert!(
         j.motion_ratio < 0.0,

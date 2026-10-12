@@ -135,7 +135,7 @@ fn matched_profile() -> (String, f64, f64) {
         g = serde_json::to_string(&g0).unwrap()
     );
     let cfg0 = VehicleConfig::from_json_str(&p0).unwrap();
-    let geo0 = cfg0.geometric_suspension.unwrap();
+    let geo0 = cfg0.suspension.geometric_suspension.unwrap();
     let r0f = jacobian(&geo0.corners.fl, 0.0, 0.0, true).unwrap().motion_ratio;
     let r0r = jacobian(&geo0.corners.rl, 0.0, 0.0, false).unwrap().motion_ratio;
     assert!(r0f > 0.05 && r0r > 0.05, "fixtures must give r>0 (f={r0f}, r={r0r})");
@@ -157,7 +157,7 @@ fn matched_profile() -> (String, f64, f64) {
     );
     // Validate before returning.
     let cfg1 = VehicleConfig::from_json_str(&p1).unwrap();
-    assert_eq!(cfg1.suspension_model, SuspensionModelKind::Geometric);
+    assert_eq!(cfg1.suspension.suspension_model, SuspensionModelKind::Geometric);
     (p1, r0f, r0r)
 }
 
@@ -175,7 +175,7 @@ fn flat_hit(distance: f64) -> RaycastHit {
 fn constant_ratio_reproduces_analytic() {
     let (prof, r0f, _) = matched_profile();
     let cfg = VehicleConfig::from_json_str(&prof).unwrap();
-    let geo = cfg.geometric_suspension.unwrap();
+    let geo = cfg.suspension.geometric_suspension.unwrap();
     // Small window where r ≈ const: F_wheel ≈ (preload + k*r0*q) * r0.
     let axle = &geo.front;
     let preload = axle.spring_rate_N_per_m * (axle.spring_free_length_m - axle.spring_installed_length_m);
@@ -201,7 +201,7 @@ fn constant_ratio_reproduces_analytic() {
 fn variable_ratio_tangent_includes_geometric_term() {
     let (prof, _, _) = matched_profile();
     let cfg = VehicleConfig::from_json_str(&prof).unwrap();
-    let geo = cfg.geometric_suspension.unwrap();
+    let geo = cfg.suspension.geometric_suspension.unwrap();
     // Tangent k*r^2 + F*dr/dq must match numeric dF/dq; and the geometric term
     // must matter away from rest (i.e. tangent != k*r^2 alone).
     for (wheel, q) in [(WheelIndex::FrontLeft, 0.015), (WheelIndex::RearLeft, 0.015)] {
@@ -246,7 +246,7 @@ fn variable_ratio_tangent_includes_geometric_term() {
 fn damper_dissipates_energy() {
     let (prof, _, _) = matched_profile();
     let cfg = VehicleConfig::from_json_str(&prof).unwrap();
-    let geo = cfg.geometric_suspension.as_ref().unwrap();
+    let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
     // Element damper opposes shaft velocity; wheel power F*v >= 0 dissipates.
     for wheel in [WheelIndex::FrontLeft, WheelIndex::RearLeft] {
         let corner = geo.corners.get(wheel);
@@ -284,8 +284,8 @@ fn damper_dissipates_energy() {
     // Pin the road far away (no contact → no tire force) is not useful; drive
     // the wheel DOF directly through alternating road targets and accumulate
     // damper power from solver telemetry.
-    let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
         center: flat_hit(d),
@@ -319,9 +319,9 @@ fn static_equilibrium_correct() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let samples = [
         TriRaycastSample {
@@ -358,9 +358,9 @@ fn static_equilibrium_correct() {
         );
         // Matched preload puts equilibrium at design (q ≈ 0): legacy rest.
         let rest = if wheel.is_front() {
-            cfg.front_spring_length * cfg.front_resting_ratio
+            cfg.suspension.front_spring_length * cfg.suspension.front_resting_ratio
         } else {
-            cfg.rear_spring_length * cfg.rear_resting_ratio
+            cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio
         };
         assert!(
             (st.suspension_compression_m - rest).abs() < 0.010,
@@ -394,8 +394,8 @@ fn push_pull_labels_identical_response() {
     let dt = 1.0 / 120.0;
     let mut sa = SuspensionSystem::new(&a);
     let mut sb = SuspensionSystem::new(&b);
-    let rest_f = a.front_spring_length * (1.0 - a.front_resting_ratio) + a.front_tire_radius;
-    let rest_r = a.rear_spring_length * (1.0 - a.rear_resting_ratio) + a.rear_tire_radius;
+    let rest_f = a.suspension.front_spring_length * (1.0 - a.suspension.front_resting_ratio) + a.front_tire_radius;
+    let rest_r = a.suspension.rear_spring_length * (1.0 - a.suspension.rear_resting_ratio) + a.rear_tire_radius;
     for i in 0..120 {
         let bump = if i < 60 { -0.015 } else { 0.010 };
         let mk = |d: f64| TriRaycastSample {
@@ -424,8 +424,8 @@ fn travel_stops_engage_on_overtravel() {
     // Slam all wheels 120 mm into bump (beyond the 100 mm physical bump):
     // solver must engage progressive + hard stops, clamp travel to the
     // physical envelope + measurable overtravel, and flag it — without NaN.
-    let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
     let slam = [
         TriRaycastSample {
             inner: flat_hit(rest_f - 0.120),
@@ -458,11 +458,11 @@ fn travel_stops_engage_on_overtravel() {
         assert!(st.total_normal_force.is_finite() && st.total_normal_force >= 0.0);
         // Physical envelope + overtravel (0.03), not the legacy spring_len.
         let rest = if wheel.is_front() {
-            cfg.front_spring_length * cfg.front_resting_ratio
+            cfg.suspension.front_spring_length * cfg.suspension.front_resting_ratio
         } else {
-            cfg.rear_spring_length * cfg.rear_resting_ratio
+            cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio
         };
-        let geo = cfg.geometric_suspension.as_ref().unwrap();
+        let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
         let axle = geo.axle(wheel);
         let x_max = rest + axle.wheel_bump_m + 0.030 + 1e-9;
         assert!(

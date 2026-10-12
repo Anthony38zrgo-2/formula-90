@@ -56,8 +56,8 @@ fn zero_throttle_at_forward_speed_does_not_accelerate_wheel() {
         sim.state.tires.wheels[i].spin = 20.0 / r;
     }
     let input_zero = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
-    let resting_dist_fl = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-    let resting_dist_rl = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
     let samples = [
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },

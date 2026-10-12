@@ -165,7 +165,7 @@ impl CoupledVehicleModel {
         let inventory = configuration.chassis.physical_mass_inventory.clone().ok_or("Coupled vehicle requires a complete physical mass inventory")?;
         inventory.validate(&configuration)?;
         let suspension_model = CoupledSuspensionModel::new(configuration.clone(), inventory.reference_inventory(), settings.clone())?;
-        let geometry = configuration.geometric_suspension.as_ref().ok_or("Missing coupled vehicle hardpoints")?;
+        let geometry = configuration.suspension.geometric_suspension.as_ref().ok_or("Missing coupled vehicle hardpoints")?;
         let mut travel_limits_metres = [(0.0, 0.0); 4];
         for wheel in WheelIndex::ALL {
             let axle = geometry.axle(wheel);
@@ -231,12 +231,12 @@ impl CoupledVehicleModel {
         let mut rotating_axes = vec![None; reference.components.len()];
         let mut rotating_kinetic_energy_joules = 0.0;
         let mut wheel_axes_world = [Vec3::ZERO; 4];
-        let geometry = self.configuration.geometric_suspension.as_ref().ok_or("Coupled spin requires physical hardpoints")?;
+        let geometry = self.configuration.suspension.geometric_suspension.as_ref().ok_or("Coupled spin requires physical hardpoints")?;
         for wheel in WheelIndex::ALL {
             let solution = solve_corner(geometry.corners.get(wheel), state.suspension.wheel_travel_metres[wheel as usize],
                 input.steering_rack_metres, wheel.is_front(),
-                if wheel.is_front() { self.configuration.front_camber } else { self.configuration.rear_camber },
-                if wheel.is_front() { self.configuration.front_toe } else { self.configuration.rear_toe },
+                if wheel.is_front() { self.configuration.suspension.front_camber } else { self.configuration.suspension.rear_camber },
+                if wheel.is_front() { self.configuration.suspension.front_toe } else { self.configuration.suspension.rear_toe },
                 if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Wheel spin frame is unreachable")?;
             if !solution.converged || solution.rocker_clamped || solution.steering_clamped { return Err("Wheel spin frame is outside the supported domain".into()); }
             wheel_axes_world[wheel as usize] = state.suspension.body_orientation_world.to_mat3().transform_vector(solution.wheel_basis.x);

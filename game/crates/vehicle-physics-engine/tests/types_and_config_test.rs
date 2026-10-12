@@ -44,9 +44,9 @@ fn spring_rate_supports_static_wheel_load() {
     for wheel in WheelIndex::ALL {
         let k = cfg.calculate_spring_rate(wheel);
         let travel = if wheel.is_front() {
-            cfg.front_spring_length * cfg.front_resting_ratio
+            cfg.suspension.front_spring_length * cfg.suspension.front_resting_ratio
         } else {
-            cfg.rear_spring_length * cfg.rear_resting_ratio
+            cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio
         };
         let supported = k * travel;
         let expected = cfg.mass_over_wheel(wheel) * 9.80665;

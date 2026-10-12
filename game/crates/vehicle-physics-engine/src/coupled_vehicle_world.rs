@@ -228,11 +228,11 @@ impl CoupledVehicleWorld {
 
     pub fn snapshots(&self) -> Result<Vec<CoupledWorldSnapshot>, String> {
         self.vehicles.iter().map(|(identifier, vehicle)| {
-            let geometry = vehicle.model.configuration.geometric_suspension.as_ref().ok_or("Missing snapshot geometry")?;
+            let geometry = vehicle.model.configuration.suspension.geometric_suspension.as_ref().ok_or("Missing snapshot geometry")?;
             let solved_suspension_corners = WheelIndex::ALL.iter().map(|wheel| solve_corner(geometry.corners.get(*wheel),
                 vehicle.state.suspension.wheel_travel_metres[*wheel as usize], vehicle.last_force_input.steering_rack_metres, wheel.is_front(),
-                if wheel.is_front() { vehicle.model.configuration.front_camber } else { vehicle.model.configuration.rear_camber },
-                if wheel.is_front() { vehicle.model.configuration.front_toe } else { vehicle.model.configuration.rear_toe },
+                if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber },
+                if wheel.is_front() { vehicle.model.configuration.suspension.front_toe } else { vehicle.model.configuration.suspension.rear_toe },
                 if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Invalid solved snapshot corner".to_string())).collect::<Result<Vec<_>, _>>()?;
             if solved_suspension_corners.iter().any(|corner| !corner.converged) { return Err("Physical snapshot has unconverged suspension geometry".into()); }
             Ok(CoupledWorldSnapshot { entity_identifier: *identifier,
@@ -307,7 +307,7 @@ impl CoupledVehicleWorld {
         let target_rack = vehicle.input.steering * settings.steering_rack_travel_metres;
         let maximum_rack_change = vehicle.model.configuration.steering.steering_speed * settings.steering_rack_travel_metres * duration;
         input.steering_rack_velocity_metres_per_second = (target_rack - input.steering_rack_metres).clamp(-maximum_rack_change, maximum_rack_change) / duration;
-        let geometry = vehicle.model.configuration.geometric_suspension.as_ref().unwrap();
+        let geometry = vehicle.model.configuration.suspension.geometric_suspension.as_ref().unwrap();
         let rotation = vehicle.state.suspension.body_orientation_world.to_mat3();
         let mut samples = [TriRaycastSample::default(); 4];
         let mut forwards = [Vec3::FORWARD; 4];
@@ -315,13 +315,13 @@ impl CoupledVehicleWorld {
             let index = wheel as usize;
             let solution = solve_corner(geometry.corners.get(wheel), vehicle.state.suspension.wheel_travel_metres[index],
                 input.steering_rack_metres, wheel.is_front(),
-                if wheel.is_front() { vehicle.model.configuration.front_camber } else { vehicle.model.configuration.rear_camber },
-                if wheel.is_front() { vehicle.model.configuration.front_toe } else { vehicle.model.configuration.rear_toe },
+                if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber },
+                if wheel.is_front() { vehicle.model.configuration.suspension.front_toe } else { vehicle.model.configuration.suspension.rear_toe },
                 if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Coupled wheel trajectory failed")?;
             if !solution.converged || solution.steering_clamped || solution.rocker_clamped { return Err("Coupled wheel trajectory is outside its supported domain".into()); }
             forwards[index] = rotation.transform_vector(solution.wheel_basis.transform_vector(Vec3::FORWARD));
             let side = if wheel.is_left() { 1.0 } else { -1.0 };
-            let static_camber = if wheel.is_front() { vehicle.model.configuration.front_camber } else { vehicle.model.configuration.rear_camber };
+            let static_camber = if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber };
             let kinematic_camber = static_camber + side * solution.upright_basis.x.y.clamp(-1.0, 1.0).asin();
             let suspension = &mut vehicle.systems.state.suspension.wheels[index];
             suspension.geometric_camber_rad = kinematic_camber;
@@ -453,12 +453,12 @@ impl CoupledVehicleWorld {
                     pose: physical_pose(vehicle.state.suspension.body_origin_world_metres + rotation.transform_vector(definition.center_local_metres), rotation),
                     shape: SharedShape::cuboid(definition.half_extents_metres.x, definition.half_extents_metres.y, definition.half_extents_metres.z) });
             }
-            let geometry = vehicle.model.configuration.geometric_suspension.as_ref().unwrap();
+            let geometry = vehicle.model.configuration.suspension.geometric_suspension.as_ref().unwrap();
             for wheel in WheelIndex::ALL {
                 let solution = solve_corner(geometry.corners.get(wheel), vehicle.state.suspension.wheel_travel_metres[wheel as usize],
                     vehicle.last_force_input.steering_rack_metres, wheel.is_front(),
-                    if wheel.is_front() { vehicle.model.configuration.front_camber } else { vehicle.model.configuration.rear_camber },
-                    if wheel.is_front() { vehicle.model.configuration.front_toe } else { vehicle.model.configuration.rear_toe },
+                    if wheel.is_front() { vehicle.model.configuration.suspension.front_camber } else { vehicle.model.configuration.suspension.rear_camber },
+                    if wheel.is_front() { vehicle.model.configuration.suspension.front_toe } else { vehicle.model.configuration.suspension.rear_toe },
                     if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Collision wheel trajectory failed")?;
                 let local = solution.wheel_basis;
                 let basis = Mat3::from_cols(rotation.transform_vector(local.y), rotation.transform_vector(local.x), -rotation.transform_vector(local.z));

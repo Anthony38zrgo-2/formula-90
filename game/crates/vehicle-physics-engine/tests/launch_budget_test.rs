@@ -10,7 +10,7 @@ fn launch_budget_reports_clutch_vs_longitudinal_grip() {
     let rear_mass_per_wheel = cfg.mass_over_wheel(WheelIndex::RearLeft);
     let static_normal = rear_mass_per_wheel * 9.80665;
     let rear_k = cfg.calculate_spring_rate(WheelIndex::RearLeft);
-    let observed_rear_compression_m = (0.110 - cfg.rear_spring_length * cfg.rear_resting_ratio).max(0.0);
+    let observed_rear_compression_m = (0.110 - cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio).max(0.0);
     let squat_normal = observed_rear_compression_m * rear_k;
     let normal = static_normal + squat_normal;
     let friction_budget = (road_friction(&cfg) * normal

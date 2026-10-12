@@ -255,7 +255,7 @@ impl WheelSuspensionState {
             spring_energy_j: 0.0,
             damper_dissipated_j: 0.0,
             geometric_camber_rad: camber(config, wheel),
-            geometric_toe_rad: if wheel.is_front() { config.front_toe } else { config.rear_toe },
+            geometric_toe_rad: if wheel.is_front() { config.suspension.front_toe } else { config.suspension.rear_toe },
             hub_lateral_m: 0.0,
             hub_long_m: 0.0,
         }
@@ -404,11 +404,11 @@ impl SuspensionSystem {
     /// SUS-GEO-11: prepared envelopes derived only from
     /// `VehicleConfig::geometric_suspension` (hardpoints + droop/bump).
     fn prepare_geometric(config: &VehicleConfig) -> Option<PreparedGeometricSuspension> {
-        if !matches!(config.suspension_model, SuspensionModelKind::Geometric) {
+        if !matches!(config.suspension.suspension_model, SuspensionModelKind::Geometric) {
             return None;
         }
         config
-            .geometric_suspension
+            .suspension.geometric_suspension
             .as_ref()
             .map(PreparedGeometricSuspension::build)
     }
@@ -499,9 +499,9 @@ impl SuspensionSystem {
         ];
         self.transfer_front_n = fz[1] - fz[0];
         self.transfer_rear_n = fz[3] - fz[2];
-        if let Some(geo) = config.geometric_suspension.as_ref() {
+        if let Some(geo) = config.suspension.geometric_suspension.as_ref() {
             if matches!(
-                config.suspension_model,
+                config.suspension.suspension_model,
                 crate::suspension_geo_config::SuspensionModelKind::Geometric
             ) {
                 self.rc_front_m =
@@ -656,7 +656,7 @@ impl SuspensionSystem {
             base_camber + camber_gain(config, wheel) * travel_delta_m
         };
         state.kinematic_camber_rad = kinematic_camber;
-        let span = tire_width(config, wheel) * config.tri_ray_spacing_ratio * 2.0;
+        let span = tire_width(config, wheel) * config.suspension.tri_ray_spacing_ratio * 2.0;
         if sample.inner.is_colliding && sample.outer.is_colliding && span > 1e-6 {
             let delta_h = sample.inner.distance - sample.outer.distance;
             let incline = (delta_h / span).atan();
@@ -678,8 +678,8 @@ impl SuspensionSystem {
         opposite_compression_m: f64,
         dt: f64,
     ) {
-        let is_geo = matches!(config.suspension_model, SuspensionModelKind::Geometric)
-            && config.geometric_suspension.is_some();
+        let is_geo = matches!(config.suspension.suspension_model, SuspensionModelKind::Geometric)
+            && config.suspension.geometric_suspension.is_some();
         if is_geo {
             self.ensure_geometric_prepared(config);
             self.solve_force_geometric(config, wheel, modifiers, opposite_compression_m, dt);
@@ -702,9 +702,9 @@ impl SuspensionSystem {
         let tuning = WheelMechanicalTuning::for_wheel(config, wheel);
         let unsprung_mass = tuning.unsprung_mass_kg.max(1.0);
         let arb_ratio = if wheel.is_front() {
-            config.front_arb_ratio
+            config.suspension.front_arb_ratio
         } else {
-            config.rear_arb_ratio
+            config.suspension.rear_arb_ratio
         };
 
         let previous_compression = state.suspension_compression_m;
@@ -887,7 +887,7 @@ impl SuspensionSystem {
         opposite_compression_m: f64,
         dt: f64,
     ) {
-        let geo = match config.geometric_suspension.as_ref() {
+        let geo = match config.suspension.geometric_suspension.as_ref() {
             Some(g) => g,
             None => return,
         };
@@ -1107,9 +1107,9 @@ impl SuspensionSystem {
             None => (0.0, 0.0, 0.0, 0.0),
         };
         let static_toe = if wheel.is_front() {
-            config.front_toe
+            config.suspension.front_toe
         } else {
-            config.rear_toe
+            config.suspension.rear_toe
         };
         state.geometric_camber_rad = camber(config, wheel) + link_camber;
         state.geometric_toe_rad = static_toe + link_toe;
@@ -1472,24 +1472,24 @@ fn suspension_element_forces(
 ) -> (f64, f64, f64) {
     let mass = config.mass_over_wheel(wheel).max(1.0);
     let damping_ratio = if wheel.is_front() {
-        config.front_damping_ratio
+        config.suspension.front_damping_ratio
     } else {
-        config.rear_damping_ratio
+        config.suspension.rear_damping_ratio
     };
     let bump_mult = if wheel.is_front() {
-        config.front_bump_damp_multiplier
+        config.suspension.front_bump_damp_multiplier
     } else {
-        config.rear_bump_damp_multiplier
+        config.suspension.rear_bump_damp_multiplier
     };
     let rebound_mult = if wheel.is_front() {
-        config.front_rebound_damp_multiplier
+        config.suspension.front_rebound_damp_multiplier
     } else {
-        config.rear_rebound_damp_multiplier
+        config.suspension.rear_rebound_damp_multiplier
     };
     let bump_stop_mult = if wheel.is_front() {
-        config.front_bump_stop_multiplier
+        config.suspension.front_bump_stop_multiplier
     } else {
-        config.rear_bump_stop_multiplier
+        config.suspension.rear_bump_stop_multiplier
     };
 
     let spring_force = compression_m.max(0.0) * spring_k;
@@ -1540,30 +1540,30 @@ fn suspension_element_forces(
 
 fn spring_length(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_spring_length
+        config.suspension.front_spring_length
     } else {
-        config.rear_spring_length
+        config.suspension.rear_spring_length
     }
 }
 fn resting_ratio(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_resting_ratio
+        config.suspension.front_resting_ratio
     } else {
-        config.rear_resting_ratio
+        config.suspension.rear_resting_ratio
     }
 }
 fn camber(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_camber
+        config.suspension.front_camber
     } else {
-        config.rear_camber
+        config.suspension.rear_camber
     }
 }
 fn camber_gain(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_camber_gain_rad_per_m
+        config.suspension.front_camber_gain_rad_per_m
     } else {
-        config.rear_camber_gain_rad_per_m
+        config.suspension.rear_camber_gain_rad_per_m
     }
 }
 
@@ -1577,9 +1577,9 @@ pub fn rest_compression_m(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
 /// SUS-GEO-06: true when the validated geometric path drives this wheel.
 fn is_geometric(config: &VehicleConfig) -> bool {
     matches!(
-        config.suspension_model,
+        config.suspension.suspension_model,
         crate::suspension_geo_config::SuspensionModelKind::Geometric
-    ) && config.geometric_suspension.is_some()
+    ) && config.suspension.geometric_suspension.is_some()
 }
 
 fn ray_compression(hit: &RaycastHit, max_ray_length: f64) -> f64 {
@@ -1695,7 +1695,7 @@ mod tests {
     #[test]
     fn arb_loads_more_compressed_wheel_and_is_axle_neutral() {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_arb_ratio = 0.20;
+        cfg.suspension.front_arb_ratio = 0.20;
         let mut sus = SuspensionSystem::new(&cfg);
         sus.wheels[WheelIndex::FrontLeft as usize].suspension_compression_m = 0.050;
         sus.wheels[WheelIndex::FrontRight as usize].suspension_compression_m = 0.090;
@@ -1712,7 +1712,7 @@ mod tests {
     fn bump_stop_activates_before_and_beyond_full_travel() {
         let cfg = VehicleConfig::f1_94_canonical();
         let wheel = WheelIndex::FrontLeft;
-        let spring_len = cfg.front_spring_length;
+        let spring_len = cfg.suspension.front_spring_length;
         let k = cfg.calculate_spring_rate(wheel);
         let tuning = WheelMechanicalTuning::for_wheel(&cfg, wheel);
         let (_, _, before) = suspension_element_forces(
@@ -1780,10 +1780,10 @@ mod tests {
         let static_deflection = static_wheel_load(&cfg, WheelIndex::FrontLeft)
             / WheelMechanicalTuning::for_wheel(&cfg, WheelIndex::FrontLeft)
                 .tire_vertical_stiffness_n_m;
-        let rest_fl = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio)
+        let rest_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio)
             + cfg.front_tire_radius
             - static_deflection;
-        let rest_rl = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio)
+        let rest_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio)
             + cfg.rear_tire_radius
             - static_deflection;
         let samples = [
@@ -1804,7 +1804,7 @@ mod tests {
                 wheel, s.total_normal_force, static_load
             );
             // Suspension settles at rest travel; the carcass absorbs the static deflection.
-            let rest_travel = if wheel.is_front() { cfg.front_spring_length * cfg.front_resting_ratio } else { cfg.rear_spring_length * cfg.rear_resting_ratio };
+            let rest_travel = if wheel.is_front() { cfg.suspension.front_spring_length * cfg.suspension.front_resting_ratio } else { cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio };
             assert!(
                 (s.compression_mm - rest_travel * 1000.0).abs() < 2.0,
                 "wheel {:?} compression {}mm must approach rest travel {}mm",
@@ -1823,8 +1823,8 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut suspension = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
-        let rest_fl = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-        let rest_rl = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+        let rest_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+        let rest_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
         let flat = [
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
@@ -1863,7 +1863,7 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut sus = SuspensionSystem::new(&cfg);
         let wheel = WheelIndex::FrontLeft;
-        let max_len = cfg.front_spring_length + cfg.front_tire_radius;
+        let max_len = cfg.suspension.front_spring_length + cfg.front_tire_radius;
         let rest = rest_compression_m(&cfg, wheel);
         let dt = 1.0 / 120.0;
         let sample = TriRaycastSample {
@@ -1878,22 +1878,22 @@ mod tests {
         sus.sample_contact(&cfg, wheel, &sample, dt);
         let s = &sus.wheels[wheel as usize];
         assert!(
-            (s.kinematic_camber_rad - cfg.front_camber).abs() < 1e-12,
+            (s.kinematic_camber_rad - cfg.suspension.front_camber).abs() < 1e-12,
             "kinematic camber at rest must equal static camber, got {}",
             s.kinematic_camber_rad
         );
-        assert!((s.effective_contact_camber_rad - cfg.front_camber).abs() < 1e-12);
-        assert!((s.dynamic_camber - cfg.front_camber).abs() < 1e-12);
+        assert!((s.effective_contact_camber_rad - cfg.suspension.front_camber).abs() < 1e-12);
+        assert!((s.dynamic_camber - cfg.suspension.front_camber).abs() < 1e-12);
     }
 
     #[test]
     fn camber_gain_bump_rebound_direction_and_flat_mirror_symmetry() {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_camber_gain_rad_per_m = -0.021;
-        cfg.rear_camber_gain_rad_per_m = 0.0;
+        cfg.suspension.front_camber_gain_rad_per_m = -0.021;
+        cfg.suspension.rear_camber_gain_rad_per_m = 0.0;
         let mut sus = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
-        let max_len = cfg.front_spring_length + cfg.front_tire_radius;
+        let max_len = cfg.suspension.front_spring_length + cfg.front_tire_radius;
         let rest = rest_compression_m(&cfg, WheelIndex::FrontLeft);
         let sample_at =
             |x: f64| TriRaycastSample {
@@ -1915,7 +1915,7 @@ mod tests {
         sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(bump), dt);
         let fl = &sus.wheels[WheelIndex::FrontLeft as usize];
         let fr = &sus.wheels[WheelIndex::FrontRight as usize];
-        let expected = cfg.front_camber + (-0.021 * 0.020);
+        let expected = cfg.suspension.front_camber + (-0.021 * 0.020);
         assert!(
             (fl.kinematic_camber_rad - expected).abs() < 1e-9,
             "bump must shift kinematic camber by gain*travel, got {} expected {}",
@@ -1935,7 +1935,7 @@ mod tests {
         sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample_at(rebound), dt);
         let rl = &sus.wheels[WheelIndex::FrontLeft as usize];
         let rr = &sus.wheels[WheelIndex::FrontRight as usize];
-        let expected_rebound = cfg.front_camber + (-0.021 * -0.010);
+        let expected_rebound = cfg.suspension.front_camber + (-0.021 * -0.010);
         assert!(
             (rl.kinematic_camber_rad - expected_rebound).abs() < 1e-9,
             "rebound must shift camber opposite to bump, got {}",
@@ -1949,9 +1949,9 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut sus = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
-        let max_len = cfg.front_spring_length + cfg.front_tire_radius;
+        let max_len = cfg.suspension.front_spring_length + cfg.front_tire_radius;
         let rest = rest_compression_m(&cfg, WheelIndex::FrontLeft);
-        let span = cfg.front_tire_width * cfg.tri_ray_spacing_ratio * 2.0;
+        let span = cfg.front_tire_width * cfg.suspension.tri_ray_spacing_ratio * 2.0;
         // Inner ray 10 mm closer than the outer: a road-plane incline of atan(0.010/span).
         let sample = TriRaycastSample {
             inner: flat_hit(max_len - rest - 0.010),
@@ -1961,11 +1961,11 @@ mod tests {
         sus.sample_contact(&cfg, WheelIndex::FrontLeft, &sample, dt);
         let fl = &sus.wheels[WheelIndex::FrontLeft as usize];
         assert!(
-            (fl.kinematic_camber_rad - cfg.front_camber).abs() < 1e-12,
+            (fl.kinematic_camber_rad - cfg.suspension.front_camber).abs() < 1e-12,
             "kinematic camber must ignore the road plane"
         );
         let incline = (0.010_f64 / span).atan();
-        let expected_effective = cfg.front_camber - incline;
+        let expected_effective = cfg.suspension.front_camber - incline;
         assert!(
             (fl.effective_contact_camber_rad - expected_effective).abs() < 1e-9,
             "effective camber must combine kinematic camber with the road incline"
@@ -1978,7 +1978,7 @@ mod tests {
         // keeping the axle symmetric across identical (mirrored) road shapes.
         sus.sample_contact(&cfg, WheelIndex::FrontRight, &sample, dt);
         let fr = &sus.wheels[WheelIndex::FrontRight as usize];
-        let expected_right = cfg.front_camber + incline;
+        let expected_right = cfg.suspension.front_camber + incline;
         assert!(
             (fr.effective_contact_camber_rad - expected_right).abs() < 1e-9,
             "right wheel must mirror the incline, got {}",
@@ -1986,7 +1986,7 @@ mod tests {
         );
         assert!((fl_kinematic - fr.kinematic_camber_rad).abs() < 1e-12);
         assert!(
-            (fl_dynamic + fr.dynamic_camber - 2.0 * cfg.front_camber).abs() < 1e-9,
+            (fl_dynamic + fr.dynamic_camber - 2.0 * cfg.suspension.front_camber).abs() < 1e-9,
             "symmetric banked samples must keep the axle camber neutral"
         );
     }
@@ -1994,14 +1994,14 @@ mod tests {
     #[test]
     fn curb_strike_camber_stays_continuous() {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_camber_gain_rad_per_m = -0.021;
-        cfg.rear_camber_gain_rad_per_m = -0.015;
+        cfg.suspension.front_camber_gain_rad_per_m = -0.021;
+        cfg.suspension.rear_camber_gain_rad_per_m = -0.015;
         let mut suspension = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
         let rest_fl =
-            cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
+            cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
         let rest_rl =
-            cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+            cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
         let flat = [
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
@@ -2032,7 +2032,7 @@ mod tests {
             );
         }
         assert!(
-            suspension.wheels[0].kinematic_camber_rad < cfg.front_camber,
+            suspension.wheels[0].kinematic_camber_rad < cfg.suspension.front_camber,
             "negative gain on a bump must shift camber toward negative"
         );
     }
@@ -2057,10 +2057,10 @@ mod tests {
             center: flat_hit(d),
             outer: flat_hit(d),
         };
-        let rest_f = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio)
+        let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio)
             + cfg.front_tire_radius
             - stat(WheelIndex::FrontLeft);
-        let rest_r = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio)
+        let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio)
             + cfg.rear_tire_radius
             - stat(WheelIndex::RearLeft);
         [mk(rest_f), mk(rest_f), mk(rest_r), mk(rest_r)]
@@ -2086,7 +2086,7 @@ mod tests {
         use crate::suspension_kinematics::counters;
 
         let cfg = f1_2030_geometric_config();
-        let geo = cfg.geometric_suspension.as_ref().unwrap();
+        let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
 
         counters::reset();
         let mut sus = SuspensionSystem::new(&cfg);
@@ -2148,12 +2148,12 @@ mod tests {
 
         // Halve the front bump travel: the prepared envelope must follow the
         // new configuration, not the cached original.
-        cfg.geometric_suspension.as_mut().unwrap().front.wheel_bump_m *= 0.5;
+        cfg.suspension.geometric_suspension.as_mut().unwrap().front.wheel_bump_m *= 0.5;
         let after = SuspensionSystem::new(&cfg)
             .prepared_geometric()
             .unwrap()
             .for_wheel(WheelIndex::FrontLeft);
-        let geo = cfg.geometric_suspension.as_ref().unwrap();
+        let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
         let (lo, hi) = direct_q_limits(geo, WheelIndex::FrontLeft);
         assert_eq!(after.q_min.to_bits(), lo.to_bits());
         assert_eq!(after.q_max.to_bits(), hi.to_bits());
@@ -2197,7 +2197,7 @@ mod tests {
         for _ in 0..40 {
             sus.step(&cfg, &samples, dt);
         }
-        let geo = cfg.geometric_suspension.as_ref().unwrap();
+        let geo = cfg.suspension.geometric_suspension.as_ref().unwrap();
         for wheel in WheelIndex::ALL {
             let st = &sus.wheels[wheel as usize];
             let q = st.suspension_compression_m - rest_compression_m(&cfg, wheel);
@@ -2208,9 +2208,9 @@ mod tests {
             let tl = side * sol.upright_basis.z.x.clamp(-1.0, 1.0).asin();
             let expected_camber = camber(&cfg, wheel) + cl;
             let expected_toe = if wheel.is_front() {
-                cfg.front_toe
+                cfg.suspension.front_toe
             } else {
-                cfg.rear_toe
+                cfg.suspension.rear_toe
             } + tl;
             assert!(
                 (st.geometric_camber_rad - expected_camber).abs() < 1e-12,

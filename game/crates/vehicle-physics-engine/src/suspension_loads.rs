@@ -893,7 +893,7 @@ mod tests {
         ))
         .expect("checked-in f1_2030 profile must be valid");
         let geo = cfg
-            .geometric_suspension
+            .suspension.geometric_suspension
             .as_ref()
             .expect("geometry_physical present");
         let body = crate::types::Transform3D::IDENTITY;

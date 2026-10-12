@@ -47,7 +47,7 @@ fn report(label: &str, value: &Value, target_tangent: f64) {
             return;
         }
     };
-    let geo = match cfg.geometric_suspension.as_ref() {
+    let geo = match cfg.suspension.geometric_suspension.as_ref() {
         Some(g) => g,
         None => {
             println!("{label}: no geometric suspension");
@@ -115,7 +115,7 @@ fn main() {
     {
         let text = serde_json::to_string(&base).unwrap();
         let cfg = VehicleConfig::from_json_str(&text).expect("base config");
-        let geo = cfg.geometric_suspension.as_ref().expect("geometric");
+        let geo = cfg.suspension.geometric_suspension.as_ref().expect("geometric");
         let (r0, _dm, _fs, tangent) = tangent_and_static(&geo.corners.fl, &geo.front);
         println!("target: r0={r0:.6} tangent_kw={tangent:.2}");
         report("current", &base, tangent);

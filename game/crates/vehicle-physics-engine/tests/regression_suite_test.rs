@@ -8,7 +8,7 @@ fn make_flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() { sim.config.front_tire_width } else { sim.config.rear_tire_width }
-            * sim.config.tri_ray_spacing_ratio;
+            * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |x: f64| RaycastHit {
             is_colliding: true,
@@ -146,8 +146,8 @@ fn test_suspension_behavior_parity() {
 
     // 1. Static rest settled with stable normal force and compression
     let mut suspension = SuspensionSystem::new(&cfg);
-    let resting_dist_fl = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-    let resting_dist_rl = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
     let static_samples = [
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },
@@ -174,7 +174,7 @@ fn test_suspension_behavior_parity() {
 
     let telem = sim.step(&input, &bump_samples, dt);
     assert!(
-        telem.fl_comp_mm > 0.0 && telem.fl_comp_mm < cfg.front_spring_length * 1000.0,
+        telem.fl_comp_mm > 0.0 && telem.fl_comp_mm < cfg.suspension.front_spring_length * 1000.0,
         "50mm bump compression must be bounded: {} mm",
         telem.fl_comp_mm
     );
@@ -186,7 +186,7 @@ fn test_suspension_behavior_parity() {
     }
     for w in 0..4 {
         let max_len = sim.state.suspension.wheels[w].max_spring_length;
-        let rest_len = if w < 2 { cfg.front_spring_length } else { cfg.rear_spring_length };
+        let rest_len = if w < 2 { cfg.suspension.front_spring_length } else { cfg.suspension.rear_spring_length };
         assert!(
             (max_len - rest_len).abs() < 1e-4,
             "Airborne max spring length must smoothly reach rest length"

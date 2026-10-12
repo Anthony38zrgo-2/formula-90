@@ -454,6 +454,6 @@ fn shared_geometry_cache_preserves_exact_solutions_and_rejects_changed_hardpoint
         }
     }
     let mut changed = configuration.clone();
-    changed.geometric_suspension.as_mut().unwrap().corners.fl.damper_chassis.y += 0.001;
+    changed.suspension.geometric_suspension.as_mut().unwrap().corners.fl.damper_chassis.y += 0.001;
     assert!(SuspensionGeometryEvaluationCache::with_shared_solutions(&changed, &shared).is_err());
 }

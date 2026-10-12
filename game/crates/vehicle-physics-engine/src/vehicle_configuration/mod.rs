@@ -28,6 +28,7 @@ pub use aerodynamics::configuration::AerodynamicsConfiguration;
 pub use brakes::configuration::BrakesConfiguration;
 pub use chassis::configuration::ChassisConfiguration;
 pub use steering::configuration::SteeringConfiguration;
+pub use suspension::configuration::SuspensionConfiguration;
 
 pub use loader::{
     load_physical_configuration, resolve_domain_document_path, LoadedPhysicalConfiguration,

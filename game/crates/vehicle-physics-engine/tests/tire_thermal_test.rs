@@ -9,7 +9,7 @@ fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() { sim.config.front_tire_width } else { sim.config.rear_tire_width }
-            * sim.config.tri_ray_spacing_ratio;
+            * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |x: f64| RaycastHit {
             is_colliding: true,
@@ -92,8 +92,8 @@ fn pressure_sweep_mechanical_modifiers_are_monotonic() {
 fn pressure_sweep_vertical_deflection_decreases() {
     let cfg = VehicleConfig::f1_94_canonical();
     let dt = 1.0 / 120.0;
-    let rest_fl = cfg.front_spring_length * (1.0 - cfg.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_rl = cfg.rear_spring_length * (1.0 - cfg.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let rest_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
     let hit = |d: f64| RaycastHit {
         is_colliding: true,
         distance: d,
