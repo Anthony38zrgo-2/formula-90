@@ -26,6 +26,7 @@ pub mod frame;
 pub mod module;
 pub mod modules;
 pub mod underfloor;
+pub mod vehicle_profile;
 
 #[cfg(test)]
 mod aud04_integration {

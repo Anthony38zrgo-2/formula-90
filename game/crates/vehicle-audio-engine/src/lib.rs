@@ -34,6 +34,7 @@ pub mod state;
 pub mod synth;
 pub mod telemetry;
 pub mod tire_scrub;
+pub mod vehicle_audio_configuration;
 
 pub use adapter::{surface_token, GevpTelemetry};
 pub use bank::{BankError, Sample, VehicleSoundBank};
