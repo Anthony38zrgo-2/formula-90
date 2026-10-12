@@ -2,6 +2,9 @@ use crate::coupled_vehicle_world::{CoupledVehicleWorld, CoupledVehicleWorldConfi
 use crate::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPackage};
 use crate::types::Vec3;
 use crate::vehicle_config::VehicleConfig;
+use crate::vehicle_configuration::{
+    load_physical_configuration, ResolvedVehicleConfiguration, VehicleProfileLoadRequest,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ffi::{c_char, CString};
@@ -14,6 +17,7 @@ pub const COUPLED_VEHICLE_WORLD_INTERFACE_VERSION: u32 = 1;
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CoupledVehicleWorldRequest {
+    ResolveVehicleProfile { interface_version: u32, repository_root: PathBuf, vehicle_profile_path: PathBuf },
     CreateWorld { interface_version: u32, repository_root: PathBuf, physical_package_path: PathBuf, #[serde(default)] configuration: Option<CoupledVehicleWorldConfiguration>, #[serde(default)] vehicle_profile: Option<String> },
     DestroyWorld { world_identifier: u64 },
     RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64 },
@@ -47,6 +51,14 @@ impl CoupledVehicleWorldRegistry {
 
     fn execute(&mut self, request: CoupledVehicleWorldRequest) -> Result<serde_json::Value, String> {
         match request {
+            CoupledVehicleWorldRequest::ResolveVehicleProfile { interface_version, repository_root, vehicle_profile_path } => {
+                if interface_version != COUPLED_VEHICLE_WORLD_INTERFACE_VERSION { return Err("Physical-world native interface version mismatch".into()); }
+                let loaded = load_physical_configuration(&VehicleProfileLoadRequest::new(&vehicle_profile_path, &repository_root))
+                    .map_err(|error| error.to_string())?;
+                let resolved = ResolvedVehicleConfiguration::from_loaded(loaded);
+                let document = serde_json::to_value(&resolved).map_err(|error| format!("Resolved vehicle configuration could not serialize: {error}"))?;
+                Ok(serde_json::json!({"resolved_vehicle_configuration": document}))
+            }
             CoupledVehicleWorldRequest::CreateWorld { interface_version, repository_root, physical_package_path, configuration, vehicle_profile } => {
                 if interface_version != COUPLED_VEHICLE_WORLD_INTERFACE_VERSION { return Err("Physical-world native interface version mismatch".into()); }
                 let document = std::fs::read_to_string(physical_package_path).map_err(|error| format!("Cannot read physical-world package: {error}"))?;

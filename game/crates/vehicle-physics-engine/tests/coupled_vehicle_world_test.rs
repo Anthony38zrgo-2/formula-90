@@ -241,6 +241,45 @@ fn physical_interface_rejects_invalid_documents_versions_and_buffers() {
 }
 
 #[test]
+fn resolve_vehicle_profile_returns_the_loader_document() {
+    use vehicle_physics_engine::vehicle_configuration::{
+        load_physical_configuration, VehicleProfileLoadRequest,
+    };
+    use vehicle_physics_engine::coupled_vehicle_world_interface::execute_coupled_vehicle_world_request;
+
+    let repository_data = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/vehicles");
+    let manifest = repository_data.join("f1_2030/profiles/geometric/vehicle.json");
+    let request = serde_json::json!({
+        "operation": "resolve_vehicle_profile",
+        "interface_version": 1,
+        "repository_root": repository_data.to_string_lossy(),
+        "vehicle_profile_path": manifest.to_string_lossy(),
+    });
+    let response: serde_json::Value =
+        serde_json::from_str(&execute_coupled_vehicle_world_request(&request.to_string())).unwrap();
+    assert_eq!(response["success"], true);
+    let resolved = &response["result"]["resolved_vehicle_configuration"];
+    assert_eq!(resolved["document_kind"], "resolved_vehicle_configuration");
+    assert!(resolved["configuration"]["coupled_world"].is_object());
+    let expected = load_physical_configuration(&VehicleProfileLoadRequest::new(&manifest, &repository_data))
+        .expect("geometric manifest must load");
+    assert_eq!(
+        resolved["provenance"]["global_digest_sha256"],
+        expected.provenance.global_digest_sha256
+    );
+
+    let mismatched = serde_json::json!({
+        "operation": "resolve_vehicle_profile",
+        "interface_version": 999,
+        "repository_root": repository_data.to_string_lossy(),
+        "vehicle_profile_path": manifest.to_string_lossy(),
+    });
+    let response: serde_json::Value =
+        serde_json::from_str(&execute_coupled_vehicle_world_request(&mismatched.to_string())).unwrap();
+    assert!(response["error"].as_str().unwrap().contains("version mismatch"));
+}
+
+#[test]
 fn unconverged_contact_does_not_commit_partial_impulses_or_velocity() {
     let mut matrix = diagonal_mass(100.0);
     matrix[1][1] = 2.0;
