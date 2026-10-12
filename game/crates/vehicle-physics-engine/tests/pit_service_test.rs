@@ -31,7 +31,7 @@ fn set_fuel_kg_clamps_to_tank_limits_and_restarts_consumption_counting() {
     sim.set_fuel_kg(37.95);
     assert!((sim.config.fuel.effective_current_kg() - 37.95).abs() < 1e-12);
     assert_eq!(sim.config.fuel.consumed_kg, 0.0);
-    assert!((sim.config.total_vehicle_mass() - 637.95).abs() < 1e-9);
+    assert!((sim.config.chassis.total_vehicle_mass(&sim.config.tires, &sim.config.fuel) - 637.95).abs() < 1e-9);
 
     sim.config.fuel.consumed_kg = 12.0;
     sim.set_fuel_kg(20.0);
@@ -116,7 +116,7 @@ fn refueled_tank_burn_resumes_from_the_service_target() {
         let anchor = sim
             .state
             .transform
-            .transform_point(sim.config.wheel_anchor_local(wheel));
+            .transform_point(sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, wheel));
         let hit = RaycastHit {
             is_colliding: true,
             distance: anchor.y.max(0.0),

@@ -147,7 +147,7 @@ fn measure(configuration: &VehicleConfig, irregularity: bool) -> Result<Value, S
     Ok(
         json!({"samples":samples,"peak_vertical_acceleration_metres_per_second_squared":peak_vertical_acceleration,
         "peak_yaw_rate_radians_per_second":peak_yaw_rate,"minimum_contact_force_newtons":minimum_contact_force,
-        "dry_vehicle_mass_kilograms":configuration.complete_dry_vehicle_mass()}),
+        "dry_vehicle_mass_kilograms":configuration.chassis.complete_dry_vehicle_mass(&configuration.tires)}),
     )
 }
 

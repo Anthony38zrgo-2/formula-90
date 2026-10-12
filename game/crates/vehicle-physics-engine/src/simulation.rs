@@ -742,7 +742,7 @@ impl VehicleSimulator {
 
         // In external mode this is force-derived acceleration for telemetry only;
         // Godot will add gravity itself.
-        let total_mass = cfg.total_vehicle_mass().max(1e-6);
+        let total_mass = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel).max(1e-6);
         st.linear_acceleration = total_force / total_mass;
         let engine_mechanical_power_watts = st.powertrain.engine_torque.max(0.0)
             * st.powertrain.rpm
@@ -991,7 +991,7 @@ impl VehicleSimulator {
         let cg_local = center_of_mass_local(cfg);
         let mut cg_world = st.transform.origin + old_basis.transform_vector(cg_local);
 
-        let total_mass = cfg.total_vehicle_mass();
+        let total_mass = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel);
         let gravity_force = Vec3::new(0.0, -9.80665 * total_mass, 0.0);
         st.linear_acceleration = (forces.force_world + gravity_force) / total_mass.max(1e-6);
         st.linear_velocity += st.linear_acceleration * dt;
@@ -1312,14 +1312,14 @@ impl VehicleSimulator {
                 .oil_critical_temperature_celsius,
             fuel_remaining_kg: cfg.fuel.effective_current_kg(),
             fuel_capacity_kg: cfg.fuel.capacity_kg,
-            total_vehicle_mass_kg: cfg.total_vehicle_mass(),
-            effective_front_weight_distribution: cfg.effective_front_weight_distribution(),
+            total_vehicle_mass_kg: cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel),
+            effective_front_weight_distribution: cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel),
         }
     }
 }
 
 pub fn center_of_mass_local(config: &VehicleConfig) -> Vec3 {
-    let com_z = (0.50 - config.effective_front_weight_distribution()) * config.chassis.wheelbase;
+    let com_z = (0.50 - config.chassis.effective_front_weight_distribution(&config.tires, &config.fuel)) * config.chassis.wheelbase;
     Vec3::new(0.0, config.chassis.center_of_gravity_height_offset, com_z)
 }
 
@@ -1452,7 +1452,7 @@ fn principal_inertia(config: &VehicleConfig) -> Vec3 {
     let w = (config.chassis.front_track + config.chassis.rear_track) * 0.5;
     let h = 0.75;
     let l = config.chassis.wheelbase;
-    let mass = config.total_vehicle_mass();
+    let mass = config.chassis.total_vehicle_mass(&config.tires, &config.fuel);
     Vec3::new(
         (mass / 12.0) * (h * h + l * l) * config.chassis.inertia_multipliers.x,
         (mass / 12.0) * (w * w + l * l) * config.chassis.inertia_multipliers.y,

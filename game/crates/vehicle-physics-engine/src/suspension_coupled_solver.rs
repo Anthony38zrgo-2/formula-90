@@ -258,10 +258,10 @@ impl CoupledSuspensionModel {
         if configuration.suspension.geometric_suspension.is_none() {
             return Err("Coupled dynamics requires geometric hardpoints".into());
         }
-        if (configuration.complete_dry_vehicle_mass()
+        if (configuration.chassis.complete_dry_vehicle_mass(&configuration.tires)
             - inventory.declared_complete_dry_mass_kilograms)
             .abs()
-            > 1e-8 * configuration.complete_dry_vehicle_mass()
+            > 1e-8 * configuration.chassis.complete_dry_vehicle_mass(&configuration.tires)
         {
             return Err("Inventory dry mass disagrees with vehicle profile mass contract".into());
         }

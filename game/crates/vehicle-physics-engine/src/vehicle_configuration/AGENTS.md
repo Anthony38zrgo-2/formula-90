@@ -1,5 +1,5 @@
-# vehicle_configuration — Domain-split vehicle configuration
+# vehicle_configuration — Domain-owned vehicle configuration
 
-Scope: domain modules, the versioned manifest contract, the profile loader with deterministic provenance, the resolved transport document and the temporary legacy adapter.
+Scope: the `VehicleConfiguration` aggregate, its domain modules, the versioned manifest contract, the profile loader with deterministic provenance, the resolved transport document and the temporary legacy adapter.
 Consumers: the physics crate, game-sim, formula90-core and offline diagnostics.
-Rules: values, defaults and rounding move verbatim from the legacy monolith; behavior must stay identical until the domain migration completes. The loader never reads the audio or suspension presentation domains; formula90-core coordinates those owners.
+Rules: values, defaults and rounding move verbatim from the legacy monolith; behavior must stay identical until the domain migration completes. Each domain owns its semantics: `ChassisConfiguration` owns the mass helpers, `TiresConfiguration` the wheel anchors and `SuspensionConfiguration` the legacy spring rate; `VehicleConfig` is a temporary alias for consumers. `fuel` stays a direct aggregate field; `schema_version` and the opaque `audio` field remain until the legacy adapter and the Sprint 6 consumers retire them; `coupled_world` and `underfloor_contact` stay aggregate options. The loader never reads the audio or suspension presentation domains; formula90-core coordinates those owners.

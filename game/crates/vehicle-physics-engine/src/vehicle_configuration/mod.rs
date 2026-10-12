@@ -22,7 +22,7 @@ pub use driving_assistance::configuration::AidsConfig;
 pub use fuel::configuration::FuelConfig;
 pub use powertrain::configuration::AutomaticShift;
 pub use tires::configuration::TireForceProfile;
-pub use vehicle_configuration::VehicleConfig;
+pub use vehicle_configuration::{VehicleConfig, VehicleConfiguration};
 
 pub use aerodynamics::configuration::AerodynamicsConfiguration;
 pub use brakes::configuration::BrakesConfiguration;

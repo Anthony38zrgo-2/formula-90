@@ -12,7 +12,7 @@ fn positive_drive_torque_produces_opposing_reaction_torque() {
     tires.wheels[wheel as usize].spin = 50.0;
     tires.wheels[wheel as usize].applied_torque = 500.0;
 
-    let normal_force = cfg.mass_over_wheel(wheel) * 9.80665;
+    let normal_force = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
     tires.process_wheel_forces(
         &cfg,
         wheel,

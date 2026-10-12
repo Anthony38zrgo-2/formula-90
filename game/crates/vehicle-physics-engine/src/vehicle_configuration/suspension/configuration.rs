@@ -55,3 +55,33 @@ pub struct SuspensionConfiguration {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub geometric_suspension: Option<GeometricSuspensionConfig>,
 }
+
+impl SuspensionConfiguration {
+    /// Helper to get suspension spring rate in N/m for a wheel based on rest target.
+    pub fn calculate_spring_rate(
+        &self,
+        chassis: &ChassisConfiguration,
+        tires: &TiresConfiguration,
+        fuel: &FuelConfig,
+        wheel: WheelIndex,
+    ) -> f64 {
+        let mass = chassis.mass_over_wheel(tires, fuel, wheel);
+        let g = 9.80665;
+        let spring_length = if wheel.is_front() {
+            self.front_spring_length
+        } else {
+            self.rear_spring_length
+        };
+        let resting_ratio = if wheel.is_front() {
+            self.front_resting_ratio
+        } else {
+            self.rear_resting_ratio
+        };
+        let rest_travel = spring_length * resting_ratio;
+        if rest_travel > 1e-4 {
+            (mass * g) / rest_travel
+        } else {
+            50000.0
+        }
+    }
+}

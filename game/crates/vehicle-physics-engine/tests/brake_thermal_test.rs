@@ -261,7 +261,7 @@ fn simulate_vehicle_braking_at_temperature(temperature_celsius: f64) -> Telemetr
         let anchor = simulator
             .state
             .transform
-            .transform_point(configuration.wheel_anchor_local(wheel));
+            .transform_point(configuration.tires.wheel_anchor_local(&configuration.chassis, &configuration.suspension, wheel));
         let hit = RaycastHit {
             is_colliding: true,
             distance: anchor.y.max(0.0),

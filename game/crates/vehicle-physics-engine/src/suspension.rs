@@ -242,7 +242,7 @@ impl WheelSuspensionState {
             damper_velocity_m_s: 0.0,
             motion_ratio: 1.0,
             motion_ratio_rate_per_m: 0.0,
-            tangent_wheel_rate_n_per_m: config.calculate_spring_rate(wheel).max(1.0),
+            tangent_wheel_rate_n_per_m: config.suspension.calculate_spring_rate(&config.chassis, &config.tires, &config.fuel, wheel).max(1.0),
             rod_axial_force_n: 0.0,
             geometric_clamped: false,
             geometric_max_residual_m: 0.0,
@@ -698,7 +698,7 @@ impl SuspensionSystem {
     ) {
         let state = &mut self.wheels[wheel as usize];
         let spring_len = spring_length(config, wheel);
-        let spring_k = config.calculate_spring_rate(wheel).max(1.0);
+        let spring_k = config.suspension.calculate_spring_rate(&config.chassis, &config.tires, &config.fuel, wheel).max(1.0);
         let tuning = WheelMechanicalTuning::for_wheel(config, wheel);
         let unsprung_mass = tuning.unsprung_mass_kg.max(1.0);
         let arb_ratio = if wheel.is_front() {
@@ -1470,7 +1470,7 @@ fn suspension_element_forces(
     spring_len: f64,
     tuning: WheelMechanicalTuning,
 ) -> (f64, f64, f64) {
-    let mass = config.mass_over_wheel(wheel).max(1.0);
+    let mass = config.chassis.mass_over_wheel(&config.tires, &config.fuel, wheel).max(1.0);
     let damping_ratio = if wheel.is_front() {
         config.suspension.front_damping_ratio
     } else {
@@ -1713,7 +1713,7 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let wheel = WheelIndex::FrontLeft;
         let spring_len = cfg.suspension.front_spring_length;
-        let k = cfg.calculate_spring_rate(wheel);
+        let k = cfg.suspension.calculate_spring_rate(&cfg.chassis, &cfg.tires, &cfg.fuel, wheel);
         let tuning = WheelMechanicalTuning::for_wheel(&cfg, wheel);
         let (_, _, before) = suspension_element_forces(
             &cfg, wheel, spring_len * 0.70, 0.0, k, spring_len, tuning,

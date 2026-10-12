@@ -184,7 +184,7 @@ fn linkage_pose_matches_statics_at_rest() {
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
     let stat = |wheel: WheelIndex| {
-        let m = cfg.mass_over_wheel(wheel) * 9.80665;
+        let m = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
@@ -215,7 +215,7 @@ fn pose_finite_continuous_and_mirrored() {
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
     let stat = |wheel: WheelIndex| {
-        let m = cfg.mass_over_wheel(wheel) * 9.80665;
+        let m = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };

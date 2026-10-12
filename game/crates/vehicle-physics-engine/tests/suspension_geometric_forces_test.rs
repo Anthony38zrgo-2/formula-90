@@ -315,7 +315,7 @@ fn static_equilibrium_correct() {
     // Flat road at design minus static carcass squash (same construction as
     // the legacy equilibrium test).
     let stat = |wheel: WheelIndex| {
-        let m = cfg.mass_over_wheel(wheel) * 9.80665;
+        let m = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
@@ -350,7 +350,7 @@ fn static_equilibrium_correct() {
     }
     for wheel in WheelIndex::ALL {
         let st = &sim.wheels[wheel as usize];
-        let load = cfg.mass_over_wheel(wheel) * 9.80665;
+        let load = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         assert!(
             (st.total_normal_force - load).abs() < load * 0.05,
             "{wheel:?} Fz {} vs static {load}",

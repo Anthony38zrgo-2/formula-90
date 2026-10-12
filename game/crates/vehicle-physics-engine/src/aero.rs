@@ -737,7 +737,7 @@ impl AeroForces {
         let cg = Vec3::new(
             0.0,
             config.chassis.center_of_gravity_height_offset,
-            (0.5 - config.effective_front_weight_distribution()) * config.chassis.wheelbase,
+            (0.5 - config.chassis.effective_front_weight_distribution(&config.tires, &config.fuel)) * config.chassis.wheelbase,
         );
         self.step_with_kinematics(
             config,
@@ -830,7 +830,7 @@ impl AeroForces {
             + rw.downforce()
             + floor_loads[0].downforce()
             + floor_loads[1].downforce();
-        let weight = config.total_vehicle_mass() * 9.81;
+        let weight = config.chassis.total_vehicle_mass(&config.tires, &config.fuel) * 9.81;
         let hard = (weight * m.limits.hard_max_load_ratio).min(m.limits.hard_max_downforce_n);
         let soft = (weight * m.limits.soft_max_load_ratio).min(hard);
         let limited = soft_limit(raw, soft, hard);
@@ -865,7 +865,7 @@ impl AeroForces {
         self.wing_and_floor_drag_force = drag_magnitude - self.body_drag_force;
         for wheel in WheelIndex::ALL {
             let wheel_index = wheel as usize;
-            let wheel_position = config.wheel_anchor_local(wheel);
+            let wheel_position = config.tires.wheel_anchor_local(&config.chassis, &config.suspension, wheel);
             let wheel_air = AirFlow::at(config, k, wheel_position);
             let wheel_width = if wheel.is_front() {
                 config.tires.front_tire_width

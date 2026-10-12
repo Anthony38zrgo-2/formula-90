@@ -4,7 +4,7 @@ fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
     let mut out = [TriRaycastSample::default(); 4];
     for wheel in WheelIndex::ALL {
         let i = wheel as usize;
-        let anchor_local = sim.config.wheel_anchor_local(wheel);
+        let anchor_local = sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, wheel);
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() {

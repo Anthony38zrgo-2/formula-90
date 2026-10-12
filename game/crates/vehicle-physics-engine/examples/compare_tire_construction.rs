@@ -182,7 +182,7 @@ fn measure(configuration: &VehicleConfig) -> Result<Value, String> {
             "vertical_cycle": clamped_hub_cycle(configuration, wheel, load)?}));
     }
     Ok(
-        json!({"dry_vehicle_mass_kilograms": configuration.complete_dry_vehicle_mass(), "axles": axles}),
+        json!({"dry_vehicle_mass_kilograms": configuration.chassis.complete_dry_vehicle_mass(&configuration.tires), "axles": axles}),
     )
 }
 

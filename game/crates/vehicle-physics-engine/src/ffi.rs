@@ -755,7 +755,7 @@ pub extern "C" fn f1_94_physics_get_wheel_anchor_local(
     // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
-    let anchor = sim.config.wheel_anchor_local(wheel);
+    let anchor = sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, wheel);
     // SAFETY: `out_x`/`out_y`/`out_z` are non-null (checked above) and point to writable `f64`s.
     unsafe {
         *out_x = anchor.x;
@@ -836,7 +836,7 @@ pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     // Live total mass (dry + remaining fuel). The host uses this for the Godot
     // body mass while the runtime config keeps reporting the dry tuning value.
-    sim.config.total_vehicle_mass()
+    sim.config.chassis.total_vehicle_mass(&sim.config.tires, &sim.config.fuel)
 }
 
 #[no_mangle]

@@ -7,9 +7,9 @@ fn road_friction(cfg: &VehicleConfig) -> f64 {
 #[test]
 fn launch_budget_reports_clutch_vs_longitudinal_grip() {
     let cfg = VehicleConfig::f1_94_canonical();
-    let rear_mass_per_wheel = cfg.mass_over_wheel(WheelIndex::RearLeft);
+    let rear_mass_per_wheel = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, WheelIndex::RearLeft);
     let static_normal = rear_mass_per_wheel * 9.80665;
-    let rear_k = cfg.calculate_spring_rate(WheelIndex::RearLeft);
+    let rear_k = cfg.suspension.calculate_spring_rate(&cfg.chassis, &cfg.tires, &cfg.fuel, WheelIndex::RearLeft);
     let observed_rear_compression_m = (0.110 - cfg.suspension.rear_spring_length * cfg.suspension.rear_resting_ratio).max(0.0);
     let squat_normal = observed_rear_compression_m * rear_k;
     let normal = static_normal + squat_normal;
@@ -34,7 +34,7 @@ fn launch_budget_reports_clutch_vs_longitudinal_grip() {
 fn brush_lateral_force_is_degraded_by_longitudinal_slip() {
     let cfg = VehicleConfig::f1_94_canonical();
     let wheel = WheelIndex::RearLeft;
-    let normal = cfg.mass_over_wheel(wheel) * 9.80665;
+    let normal = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
     let friction = *cfg.tires.surface_friction.get(&SurfaceType::Road).unwrap();
     let stiffness = *cfg.tires.surface_stiffness.get(&SurfaceType::Road).unwrap();
     let rolling = *cfg.tires.surface_rolling_resistance.get(&SurfaceType::Road).unwrap();

@@ -175,7 +175,7 @@ fn fuel_exchange_changes_mass_without_changing_any_generalized_velocity() {
     let before = state.velocity();
     model.update_fuel_mass(&mut state, &CoupledSuspensionInput::default(), 0.0).unwrap();
     assert_eq!(state.velocity(), before);
-    assert!((model.configuration.total_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
+    assert!((model.configuration.chassis.total_vehicle_mass(&model.configuration.tires, &model.configuration.fuel) - 678.3378962698143).abs() < 1e-9);
     assert!(state.fuel_exchange_energy_joules.is_finite());
 }
 

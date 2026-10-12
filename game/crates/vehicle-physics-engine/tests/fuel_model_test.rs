@@ -25,7 +25,7 @@ fn flat_ground_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
     let mut out = [TriRaycastSample::default(); 4];
     for wheel in WheelIndex::ALL {
         let i = wheel as usize;
-        let anchor_local = sim.config.wheel_anchor_local(wheel);
+        let anchor_local = sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, wheel);
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() {
@@ -54,9 +54,9 @@ fn flat_ground_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
 fn profile_without_fuel_keeps_dry_mass_and_distribution() {
     let cfg = VehicleConfig::f1_94_canonical();
     assert_eq!(cfg.fuel.effective_current_kg(), 0.0);
-    assert_eq!(cfg.total_vehicle_mass(), cfg.chassis.vehicle_mass);
+    assert_eq!(cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel), cfg.chassis.vehicle_mass);
     assert_eq!(
-        cfg.effective_front_weight_distribution(),
+        cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel),
         cfg.chassis.front_weight_distribution
     );
 }
@@ -66,28 +66,28 @@ fn tank_load_raises_mass_and_moves_distribution_rearward() {
     let mut cfg = fueled_config();
     assert!((cfg.fuel.current_kg - 7.6).abs() < 1e-12);
 
-    let loaded_mass = cfg.total_vehicle_mass();
+    let loaded_mass = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel);
     assert!((loaded_mass - 607.6).abs() < 1e-9);
-    assert!(cfg.effective_front_weight_distribution() < cfg.chassis.front_weight_distribution);
+    assert!(cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel) < cfg.chassis.front_weight_distribution);
 
     cfg.fuel.current_kg = cfg.fuel.capacity_kg;
-    let total_mass = cfg.total_vehicle_mass();
+    let total_mass = cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel);
     let dry_center_of_mass_z = (0.5 - cfg.chassis.front_weight_distribution) * cfg.chassis.wheelbase;
     let combined_center_of_mass_z =
         (cfg.chassis.vehicle_mass * dry_center_of_mass_z + 110.0 * 0.60) / total_mass;
     let expected = 0.5 - combined_center_of_mass_z / cfg.chassis.wheelbase;
     assert!(
-        (cfg.effective_front_weight_distribution() - expected).abs() < 1e-12,
+        (cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel) - expected).abs() < 1e-12,
         "effective distribution must follow the blended center of mass"
     );
     assert!(
-        (cfg.effective_front_weight_distribution() - 0.4262).abs() < 0.001,
+        (cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel) - 0.4262).abs() < 0.001,
         "a full 110 kg tank must drop the front share near 42.6%, got {}",
-        cfg.effective_front_weight_distribution()
+        cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel)
     );
     let summed_wheel_mass: f64 = WheelIndex::ALL
         .iter()
-        .map(|wheel| cfg.mass_over_wheel(*wheel))
+        .map(|wheel| cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, *wheel))
         .sum();
     assert!((summed_wheel_mass - total_mass).abs() < 1e-6);
 }
@@ -200,9 +200,9 @@ fn shipped_f1_2030_profile_declares_the_three_lap_load() {
     assert!((cfg.fuel.estimated_lap_consumption_kg - 2.53).abs() < 1e-9);
     assert!((cfg.fuel.reference_lap_time_s - 90.0).abs() < 1e-9);
     assert!(cfg.chassis.vehicle_mass_excludes_wheel_assemblies);
-    assert!((cfg.complete_dry_vehicle_mass() - 698.0).abs() < 1e-9);
-    assert!((cfg.total_vehicle_mass() - 705.6).abs() < 1e-9);
-    assert!(cfg.effective_front_weight_distribution() < 0.45);
+    assert!((cfg.chassis.complete_dry_vehicle_mass(&cfg.tires) - 698.0).abs() < 1e-9);
+    assert!((cfg.chassis.total_vehicle_mass(&cfg.tires, &cfg.fuel) - 705.6).abs() < 1e-9);
+    assert!(cfg.chassis.effective_front_weight_distribution(&cfg.tires, &cfg.fuel) < 0.45);
 }
 
 #[test]

@@ -57,13 +57,13 @@ impl SuspensionMassAudit {
             });
         }
         Ok(Self {
-            dry_vehicle_mass_kilograms: configuration.complete_dry_vehicle_mass(),
+            dry_vehicle_mass_kilograms: configuration.chassis.complete_dry_vehicle_mass(&configuration.tires),
             configured_body_and_driver_mass_kilograms: configuration
                 .chassis
                 .vehicle_mass_excludes_wheel_assemblies
                 .then_some(configuration.chassis.vehicle_mass),
             current_fuel_mass_kilograms,
-            total_vehicle_mass_kilograms: configuration.total_vehicle_mass(),
+            total_vehicle_mass_kilograms: configuration.chassis.total_vehicle_mass(&configuration.tires, &configuration.fuel),
             total_rotating_assembly_mass_kilograms: corners
                 .iter()
                 .map(|corner| corner.configured_rotating_assembly_mass_kilograms)

@@ -822,7 +822,7 @@ impl CoreFacade {
         let entity = self.world.entities.iter_mut().find(|entity| entity.id == presentation_entity_identifier)
             .ok_or("Unknown presentation entity")?;
         if snapshot.fuel_mass_kilograms > entity.sim.config.fuel.capacity_kg
-            || (snapshot.operating_mass_kilograms - entity.sim.config.complete_dry_vehicle_mass() - snapshot.fuel_mass_kilograms).abs() > 1e-6
+            || (snapshot.operating_mass_kilograms - entity.sim.config.chassis.complete_dry_vehicle_mass(&entity.sim.config.tires) - snapshot.fuel_mass_kilograms).abs() > 1e-6
         { return Err("Physical snapshot disagrees with presentation vehicle mass perimeter".into()); }
         let duration_seconds = time_seconds - self.world.time;
         entity.sim.state = snapshot.systems_state.clone();
@@ -987,9 +987,9 @@ impl CoreFacade {
             .oil_critical_temperature_celsius;
         frame.fuel_remaining_kg = ent.sim.config.fuel.effective_current_kg();
         frame.fuel_capacity_kg = ent.sim.config.fuel.capacity_kg;
-        frame.total_vehicle_mass_kg = ent.sim.config.total_vehicle_mass();
+        frame.total_vehicle_mass_kg = ent.sim.config.chassis.total_vehicle_mass(&ent.sim.config.tires, &ent.sim.config.fuel);
         frame.effective_front_weight_distribution =
-            ent.sim.config.effective_front_weight_distribution();
+            ent.sim.config.chassis.effective_front_weight_distribution(&ent.sim.config.tires, &ent.sim.config.fuel);
 
         // Tire pressure + thermal state (WheelIndex order FL/FR/RL/RR).
         for (i, w) in ent.sim.state.tire_thermal.wheels.iter().enumerate() {

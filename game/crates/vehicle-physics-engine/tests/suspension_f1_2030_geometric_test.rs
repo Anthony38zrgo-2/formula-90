@@ -130,7 +130,7 @@ fn f1_geometric_settles_at_design() {
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
     let stat = |wheel: WheelIndex| {
-        let m = cfg.mass_over_wheel(wheel) * 9.80665;
+        let m = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
@@ -148,7 +148,7 @@ fn f1_geometric_settles_at_design() {
     }
     for wheel in WheelIndex::ALL {
         let st = &sus.wheels[wheel as usize];
-        let load = cfg.mass_over_wheel(wheel) * 9.80665;
+        let load = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         assert!(
             (st.total_normal_force - load).abs() < load * 0.05,
             "{wheel:?} Fz {}",
@@ -185,7 +185,7 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
         outer: flat_hit(d),
     };
     let stat = |cfg: &VehicleConfig, wheel: WheelIndex| {
-        let m = cfg.mass_over_wheel(wheel) * 9.80665;
+        let m = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         let k = WheelMechanicalTuning::for_wheel(cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
@@ -206,7 +206,7 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
         sg.step(&geo, &rg, dt);
     }
     for wheel in WheelIndex::ALL {
-        let load = legacy.mass_over_wheel(wheel) * 9.80665;
+        let load = legacy.chassis.mass_over_wheel(&legacy.tires, &legacy.fuel, wheel) * 9.80665;
         let fl = sl.wheels[wheel as usize].total_normal_force;
         let fg = sg.wheels[wheel as usize].total_normal_force;
         assert!((fl - load).abs() < load * 0.05, "legacy static {wheel:?}");

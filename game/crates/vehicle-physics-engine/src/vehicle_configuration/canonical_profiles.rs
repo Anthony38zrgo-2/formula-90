@@ -4,7 +4,7 @@ use super::powertrain::document::{default_gear_inertia, default_torque_attack_ra
 use super::steering::document::default_counter_speed;
 use super::aerodynamics::configuration::{default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau};
 
-impl VehicleConfig {
+impl VehicleConfiguration {
     /// Resolved F1 2030 geometric profile embedded at build time from its domain manifest.
     pub fn f1_2030_v10_geometric_embedded_document() -> &'static str {
         include_str!(concat!(

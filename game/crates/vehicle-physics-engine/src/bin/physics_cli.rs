@@ -12,7 +12,7 @@ use vehicle_physics_engine::*;
 fn flat_ground_samples(sim: &VehicleSimulator, wheel_lift: [f64; 4]) -> [TriRaycastSample; 4] {
     let mut samples = [TriRaycastSample::default(); 4];
     for (sample, &wheel) in samples.iter_mut().zip(WheelIndex::ALL.iter()) {
-        let hub_local = sim.config.wheel_anchor_local(wheel);
+        let hub_local = sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, wheel);
         let hub_world = sim.state.transform.transform_point(hub_local);
 
         let tire_w = if wheel.is_front() {

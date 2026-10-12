@@ -894,7 +894,7 @@ mod tests {
         let wheel = WheelIndex::RearLeft;
         let mut tires = TireSystem::new(&cfg);
         tires.wheels[wheel as usize].spin = 50.0;
-        let normal = cfg.mass_over_wheel(wheel) * 9.80665;
+        let normal = cfg.chassis.mass_over_wheel(&cfg.tires, &cfg.fuel, wheel) * 9.80665;
         tires.process_wheel_forces(
             &cfg,
             wheel,

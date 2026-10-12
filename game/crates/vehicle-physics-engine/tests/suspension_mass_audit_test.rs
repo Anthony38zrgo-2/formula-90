@@ -47,12 +47,12 @@ fn body_mass_contract_adds_each_wheel_once_and_preserves_axle_moments() {
     let mut configuration = vehicle_configuration();
     configuration.fuel.current_kg = 0.0;
     configuration.fuel.initial_kg = 0.0;
-    assert!((configuration.complete_dry_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
-    assert!((configuration.total_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
+    assert!((configuration.chassis.complete_dry_vehicle_mass(&configuration.tires) - 678.3378962698143).abs() < 1e-9);
+    assert!((configuration.chassis.total_vehicle_mass(&configuration.tires, &configuration.fuel) - 678.3378962698143).abs() < 1e-9);
     let front_supported_mass = configuration.chassis.vehicle_mass * configuration.chassis.front_weight_distribution
         + 2.0 * configuration.tires.front_wheel_mass;
     assert!(
-        (configuration.effective_front_weight_distribution() * 678.3378962698143 - front_supported_mass).abs()
+        (configuration.chassis.effective_front_weight_distribution(&configuration.tires, &configuration.fuel) * 678.3378962698143 - front_supported_mass).abs()
             < 1e-10
     );
     let serialized = configuration.to_json_value();
@@ -60,8 +60,8 @@ fn body_mass_contract_adds_each_wheel_once_and_preserves_axle_moments() {
         VehicleConfig::from_json_str(&serde_json::to_string(&serialized).unwrap()).unwrap();
     assert!(reloaded.chassis.vehicle_mass_excludes_wheel_assemblies);
     assert_eq!(
-        reloaded.total_vehicle_mass(),
-        configuration.total_vehicle_mass()
+        reloaded.chassis.total_vehicle_mass(&reloaded.tires, &reloaded.fuel),
+        configuration.chassis.total_vehicle_mass(&configuration.tires, &configuration.fuel)
     );
 }
 
@@ -73,7 +73,7 @@ fn profiles_without_new_contract_keep_complete_dry_mass_semantics() {
     .unwrap();
     assert!(!configuration.chassis.vehicle_mass_excludes_wheel_assemblies);
     assert_eq!(
-        configuration.complete_dry_vehicle_mass(),
+        configuration.chassis.complete_dry_vehicle_mass(&configuration.tires),
         configuration.chassis.vehicle_mass
     );
 }

@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", serde_json::json!({"integration_owner": "rust_world_candidate", "simulated_time_seconds": world.time_seconds,
         "unconsumed_host_time_seconds": world.accumulated_host_time_seconds, "elapsed_wall_time_seconds": started.elapsed().as_secs_f64(),
         "spawn_origin_height_above_metadata_metres": origin_height, "state": vehicle.state,
-        "operating_mass_kilograms": vehicle.model.configuration.total_vehicle_mass(), "suspension_diagnostics": evaluation.suspension_diagnostics,
+        "operating_mass_kilograms": vehicle.model.configuration.chassis.total_vehicle_mass(&vehicle.model.configuration.tires, &vehicle.model.configuration.fuel), "suspension_diagnostics": evaluation.suspension_diagnostics,
         "kinetic_energy_joules": evaluation.kinetic_energy_joules,
         "vehicle_count": vehicle_count,
         "collision_event_count_last_interval": world.collision_events.len()}));

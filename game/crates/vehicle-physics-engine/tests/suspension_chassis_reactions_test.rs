@@ -165,7 +165,7 @@ fn flat_samples_for(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
     let mut out = [TriRaycastSample::default(); 4];
     for wheel in WheelIndex::ALL {
         let i = wheel as usize;
-        let anchor_local = sim.config.wheel_anchor_local(wheel);
+        let anchor_local = sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, wheel);
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() {
@@ -213,7 +213,7 @@ fn symmetric_settle_gives_symmetric_anchors_and_balance() {
     // Must actually be settled before the anchor comparison means anything.
     for wheel in WheelIndex::ALL {
         let w = &st.wheels[wheel as usize];
-        let load = sim.config.mass_over_wheel(wheel) * 9.80665;
+        let load = sim.config.chassis.mass_over_wheel(&sim.config.tires, &sim.config.fuel, wheel) * 9.80665;
         assert!(
             (w.total_normal_force - load).abs() < load * 0.40,
             "{wheel:?} unsettled Fz {}",
@@ -394,7 +394,7 @@ fn arb_increases_roll_restoring_torque() {
             // Recompute samples against the TILTED pose, not the sim pose.
             let mut s2 = samples;
             for (wi, s) in WheelIndex::ALL.iter().zip(s2.iter_mut()) {
-                let anchor_local = sim.config.wheel_anchor_local(*wi);
+                let anchor_local = sim.config.tires.wheel_anchor_local(&sim.config.chassis, &sim.config.suspension, *wi);
                 let anchor_world = body.transform.transform_point(anchor_local);
                 let distance = anchor_world.y.max(0.0);
                 let span = if wi.is_front() {

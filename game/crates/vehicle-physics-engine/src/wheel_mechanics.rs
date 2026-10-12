@@ -112,7 +112,7 @@ impl WheelMechanicalTuning {
 
 #[inline]
 pub fn static_wheel_load(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
-    config.mass_over_wheel(wheel) * GRAVITY_M_S2
+    config.chassis.mass_over_wheel(&config.tires, &config.fuel, wheel) * GRAVITY_M_S2
 }
 
 #[inline]

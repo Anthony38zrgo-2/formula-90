@@ -240,7 +240,7 @@ impl CoupledVehicleWorld {
             systems_state: vehicle.systems.state.clone(), steering_rack_metres: vehicle.last_force_input.steering_rack_metres,
             fuel_mass_kilograms: vehicle.model.configuration.fuel.effective_current_kg(), driver_input: vehicle.input,
             driving_aids_mask: vehicle.driving_aids_mask,
-            operating_mass_kilograms: vehicle.model.configuration.total_vehicle_mass(), solved_suspension_corners })
+            operating_mass_kilograms: vehicle.model.configuration.chassis.total_vehicle_mass(&vehicle.model.configuration.tires, &vehicle.model.configuration.fuel), solved_suspension_corners })
         }).collect()
     }
 

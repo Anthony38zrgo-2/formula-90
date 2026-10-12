@@ -112,3 +112,51 @@ pub struct TiresConfiguration {
     #[serde(default)]
     pub surface_transition_tau_s: f64,
 }
+
+impl TiresConfiguration {
+    /// Nominal suspension-ray origin in vehicle-local geometric space (-Z forward, +Y up, +X right),
+    /// where origin (0, 0, 0) is centered between axles at mean wheel-center height.
+    pub fn wheel_anchor_local(
+        &self,
+        chassis: &ChassisConfiguration,
+        suspension: &SuspensionConfiguration,
+        wheel: WheelIndex,
+    ) -> Vec3 {
+        let z = if wheel.is_front() {
+            -chassis.wheelbase * 0.5
+        } else {
+            chassis.wheelbase * 0.5
+        };
+        let x = if wheel.is_front() {
+            if wheel.is_right() {
+                chassis.front_track * 0.5
+            } else {
+                -chassis.front_track * 0.5
+            }
+        } else if wheel.is_right() {
+            chassis.rear_track * 0.5
+        } else {
+            -chassis.rear_track * 0.5
+        };
+
+        let mean_radius = (self.front_tire_radius + self.rear_tire_radius) * 0.5;
+        let hub_y = if wheel.is_front() {
+            self.front_tire_radius - mean_radius
+        } else {
+            self.rear_tire_radius - mean_radius
+        };
+        let spring_length = if wheel.is_front() {
+            suspension.front_spring_length
+        } else {
+            suspension.rear_spring_length
+        };
+        let resting_ratio = if wheel.is_front() {
+            suspension.front_resting_ratio
+        } else {
+            suspension.rear_resting_ratio
+        };
+        let anchor_y = hub_y + spring_length * (1.0 - resting_ratio);
+
+        Vec3::new(x, anchor_y, z)
+    }
+}
