@@ -1,0 +1,81 @@
+{
+  "brakes": {
+    "abs_pulse_time": 0.03,
+    "abs_spin_diff_threshold": 12.0,
+    "enable_abs": false,
+    "front_brake_bias": 0.56,
+    "max_brake_torque": 3967.5,
+    "wheel_lock_blend_spin_rad_s": 8.0,
+    "wheel_lock_stick_tau_s": 0.02,
+    "thermal": {
+      "braking_heat_fraction": 0.97,
+      "cold_efficiency": 0.78,
+      "critical_temperature_c": 1100.0,
+      "fade_start_temperature_c": 900.0,
+      "front": {
+        "cooling_profile": "open_wheel_ducted",
+        "installation_airflow_scale": 0.7,
+        "model": "scaled_two_node_v1",
+        "rim_base_air_w_k": 7.0,
+        "rim_heat_capacity_j_k": 4200.0,
+        "rim_to_tire_carcass_w_k": 55.0,
+        "rim_to_tire_gas_w_k": 38.0,
+        "rotor_inner_diameter_m": 0.105,
+        "rotor_mass_kg": 1.35,
+        "rotor_material": "carbon_carbon",
+        "rotor_outer_diameter_m": 0.278,
+        "rotor_to_rim_w_k": 40.05769230769231,
+        "rotor_ventilation": "vented",
+        "thermal_mass_scale": 1.0
+      },
+      "front_duct": {
+        "air_specific_heat_j_kg_k": 1005.0,
+        "area_response_exponent": 1.15,
+        "cooling_flow_exponent": 0.8,
+        "cooling_reference_speed_ms": 50.0,
+        "discharge_coefficient": 0.72,
+        "drag_coefficient": 0.2,
+        "heat_exchanger_ua_w_k": 400.0,
+        "max_inlet_area_m2_per_wheel": 0.006,
+        "minimum_cooling_flow_ratio": 0.12,
+        "opening": 0.02,
+        "pressure_recovery": 0.65,
+        "rotor_cooling_fraction": 0.873
+      },
+      "initial_temperature_c": 25.0,
+      "minimum_fade_efficiency": 0.58,
+      "optimal_max_temperature_c": 800.0,
+      "optimal_min_temperature_c": 400.0,
+      "rear": {
+        "cooling_profile": "open_wheel_ducted",
+        "installation_airflow_scale": 0.85,
+        "model": "scaled_two_node_v1",
+        "rim_base_air_w_k": 10.0,
+        "rim_heat_capacity_j_k": 6000.0,
+        "rim_to_tire_carcass_w_k": 18.0,
+        "rim_to_tire_gas_w_k": 12.0,
+        "rotor_inner_diameter_m": 0.1,
+        "rotor_mass_kg": 1.8,
+        "rotor_material": "carbon_carbon",
+        "rotor_outer_diameter_m": 0.25,
+        "rotor_to_rim_w_k": 33.62962962962963,
+        "rotor_ventilation": "vented",
+        "thermal_mass_scale": 1.0
+      },
+      "rear_duct": {
+        "air_specific_heat_j_kg_k": 1005.0,
+        "area_response_exponent": 1.15,
+        "cooling_flow_exponent": 0.8,
+        "cooling_reference_speed_ms": 50.0,
+        "discharge_coefficient": 0.72,
+        "drag_coefficient": 0.1,
+        "heat_exchanger_ua_w_k": 400.0,
+        "max_inlet_area_m2_per_wheel": 0.005,
+        "minimum_cooling_flow_ratio": 0.12,
+        "opening": 0.04,
+        "pressure_recovery": 0.65,
+        "rotor_cooling_fraction": 0.873
+      }
+    }
+  }
+}

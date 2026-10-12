@@ -1,0 +1,101 @@
+{
+  "aero": {
+    "air_density": 1.225,
+    "blend_full_speed_mps": 41.667,
+    "blend_min_speed_mps": 5.556,
+    "drag_coefficient": 0.58,
+    "frontal_area": 1.25,
+    "lag_tau_s": 0.03,
+    "model": {
+      "front_wing": {
+        "area_m2": 0.58,
+        "incidence_deg": 11.5,
+        "max_angle_deg": 20.0,
+        "min_angle_deg": 4.0,
+        "polar": [
+          {
+            "angle_deg": 4.0,
+            "cd": 0.05,
+            "cl": 0.3
+          },
+          {
+            "angle_deg": 8.0,
+            "cd": 0.075,
+            "cl": 0.55
+          },
+          {
+            "angle_deg": 12.0,
+            "cd": 0.11,
+            "cl": 0.8
+          },
+          {
+            "angle_deg": 16.0,
+            "cd": 0.165,
+            "cl": 0.95
+          },
+          {
+            "angle_deg": 20.0,
+            "cd": 0.245,
+            "cl": 0.88
+          }
+        ],
+        "yaw_decay_exponent": 1.1
+      },
+      "limits": {
+        "hard_max_downforce_n": 10800.0,
+        "hard_max_load_ratio": 1.85,
+        "profile": "f1_1994_post_safety",
+        "soft_max_load_ratio": 1.65
+      },
+      "rear_wing": {
+        "area_m2": 0.95,
+        "incidence_deg": 21.0,
+        "max_angle_deg": 26.0,
+        "min_angle_deg": 6.0,
+        "polar": [
+          {
+            "angle_deg": 6.0,
+            "cd": 0.07,
+            "cl": 0.4
+          },
+          {
+            "angle_deg": 10.0,
+            "cd": 0.1,
+            "cl": 0.7
+          },
+          {
+            "angle_deg": 16.0,
+            "cd": 0.16,
+            "cl": 1.0
+          },
+          {
+            "angle_deg": 21.0,
+            "cd": 0.24,
+            "cl": 1.15
+          },
+          {
+            "angle_deg": 26.0,
+            "cd": 0.34,
+            "cl": 1.05
+          }
+        ],
+        "yaw_decay_exponent": 1.05
+      },
+      "underfloor": {
+        "bottoming_factor": 0.35,
+        "choke_height_m": 0.014,
+        "high_height_m": 0.165,
+        "induced_drag_ratio": 0.13,
+        "lift_area_m2": 1.58,
+        "optimal_height_m": 0.052,
+        "optimal_rake_deg": 0.6,
+        "rake_window_deg": 3.25,
+        "seal_asymmetry_m": 0.1,
+        "seal_roll_rad": 0.15,
+        "stall_attack_tau_s": 0.065,
+        "stall_recovery_tau_s": 0.105,
+        "yaw_decay_exponent": 1.2
+      }
+    }
+  }
+}

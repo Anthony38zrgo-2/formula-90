@@ -1,0 +1,18 @@
+{
+  "chassis": {
+    "center_of_gravity_height_offset": -0.12,
+    "front_weight_distribution": 0.44,
+    "inertia_multipliers": {
+      "x": 1.05,
+      "y": 1.26,
+      "z": 1.05
+    },
+    "vehicle_mass": 650.0,
+    "vehicle_name": "F1 2030 Retro-V10 (3.5L NA, 900cv)"
+  },
+  "geometry": {
+    "front_track": 1.708,
+    "rear_track": 1.59,
+    "wheelbase": 3.5
+  }
+}
