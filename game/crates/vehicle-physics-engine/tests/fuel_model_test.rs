@@ -29,9 +29,9 @@ fn flat_ground_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() {
-            sim.config.front_tire_width
+            sim.config.tires.front_tire_width
         } else {
-            sim.config.rear_tire_width
+            sim.config.tires.rear_tire_width
         } * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |x: f64| RaycastHit {

@@ -212,7 +212,7 @@ fn run_lateral_slide_recovery(
 #[test]
 fn f1_2030_profile_declares_grip_transition_parameters() {
     let cfg = f1_2030_config();
-    let front = cfg.front_tire_force;
+    let front = cfg.tires.front_tire_force;
     assert!((front.budget_blend_width - 0.1).abs() < 1e-12);
     assert!((front.falloff_sharpness - 2.0).abs() < 1e-12);
     assert!((front.slip_loss_tau_s - 0.06).abs() < 1e-12);
@@ -224,8 +224,8 @@ fn f1_2030_profile_declares_grip_transition_parameters() {
     assert!((front.min_relaxation_tau_s - 0.035).abs() < 1e-12);
     assert!((front.relaxation_recovery_scale - 1.6).abs() < 1e-12);
     assert!((front.contact_ramp_tau_s - 0.06).abs() < 1e-12);
-    assert!((cfg.surface_transition_tau_s - 0.08).abs() < 1e-12);
-    assert_eq!(cfg.rear_tire_force, front);
+    assert!((cfg.tires.surface_transition_tau_s - 0.08).abs() < 1e-12);
+    assert_eq!(cfg.tires.rear_tire_force, front);
     assert!((cfg.brakes.wheel_lock_blend_spin_rad_s - 8.0).abs() < 1e-12);
     assert!((cfg.brakes.wheel_lock_stick_tau_s - 0.02).abs() < 1e-12);
 }
@@ -234,9 +234,9 @@ fn f1_2030_profile_declares_grip_transition_parameters() {
 fn f1_2030_combined_peak_migration_is_progressive() {
     let base = f1_2030_config();
     let mut no_mig = base.clone();
-    no_mig.front_tire_force.combined_lateral_peak_migration = 0.0;
-    no_mig.front_tire_force.combined_longitudinal_peak_migration = 0.0;
-    no_mig.rear_tire_force = no_mig.front_tire_force;
+    no_mig.tires.front_tire_force.combined_lateral_peak_migration = 0.0;
+    no_mig.tires.front_tire_force.combined_longitudinal_peak_migration = 0.0;
+    no_mig.tires.rear_tire_force = no_mig.tires.front_tire_force;
     let wheel = WheelIndex::FrontLeft;
     let fz = reference_load_n(&base, wheel);
     let dt = 1.0 / 120.0;
@@ -288,9 +288,9 @@ fn f1_2030_combined_peak_migration_is_progressive() {
 fn f1_2030_relaxation_is_bounded_at_speed_and_asymmetric() {
     let shipped = f1_2030_config();
     let mut legacy = shipped.clone();
-    legacy.front_tire_force.min_relaxation_tau_s = 0.0;
-    legacy.front_tire_force.relaxation_recovery_scale = 1.0;
-    legacy.rear_tire_force = legacy.front_tire_force;
+    legacy.tires.front_tire_force.min_relaxation_tau_s = 0.0;
+    legacy.tires.front_tire_force.relaxation_recovery_scale = 1.0;
+    legacy.tires.rear_tire_force = legacy.tires.front_tire_force;
     let dt = 1.0 / 120.0;
     let phases = [(0.10, 60), (0.0, 60)];
 
@@ -377,6 +377,7 @@ fn f1_2030_applied_force_respects_budget_with_smoothing() {
     let wheel = WheelIndex::FrontLeft;
     let reference = reference_load_n(&cfg, wheel);
     let long_ratio = cfg
+        .tires
         .surface_longitudinal_grip_ratio
         .get(&SurfaceType::Road)
         .copied()
@@ -509,9 +510,9 @@ fn flat_samples_with_surface(
         let hub_local = sim.config.wheel_anchor_local(wheel);
         let hub_world = sim.state.transform.transform_point(hub_local);
         let tire_w = if wheel.is_front() {
-            sim.config.front_tire_width
+            sim.config.tires.front_tire_width
         } else {
-            sim.config.rear_tire_width
+            sim.config.tires.rear_tire_width
         };
         let span = tire_w * sim.config.suspension.tri_ray_spacing_ratio;
         *sample = TriRaycastSample {
@@ -545,8 +546,9 @@ fn flat_samples_with_surface(
 fn f1_2030_surface_transition_filters_kerb_steps() {
     let run_step = |tau: f64| -> (f64, f64, f64) {
         let mut cfg = f1_2030_config();
-        cfg.surface_transition_tau_s = tau;
+        cfg.tires.surface_transition_tau_s = tau;
         let grass = cfg
+            .tires
             .surface_friction
             .get(&SurfaceType::Grass)
             .copied()
@@ -689,7 +691,7 @@ fn f1_2030_full_vehicle_braking_stays_stable_with_regularized_lock() {
 #[test]
 fn f1_2030_zero_taus_reproduce_pure_axes_under_asymmetric_slip() {
     let mut cfg = f1_2030_config();
-    for profile in [&mut cfg.front_tire_force, &mut cfg.rear_tire_force] {
+    for profile in [&mut cfg.tires.front_tire_force, &mut cfg.tires.rear_tire_force] {
         profile.slip_loss_tau_s = 0.0;
         profile.slip_recovery_tau_s = 0.0;
         // GRIP-04 migration is intentionally disabled here: this test isolates

@@ -158,17 +158,34 @@ impl VehicleConfig {
             },
 
             // Tires & Contact
-            front_tire_radius: 0.31695,
-            rear_tire_radius: 0.32901,
-            front_tire_width: 0.30030,
-            rear_tire_width: 0.36832,
-            front_wheel_mass: 12.0,
-            rear_wheel_mass: 16.0,
-            contact_patch: 0.21,
-            front_contact_patch: 0.21,
-            rear_contact_patch: 0.21,
-            front_airborne_decay: 2.0,
-            rear_airborne_decay: 2.0,
+            tires: TiresConfiguration {
+                front_tire_radius: 0.31695,
+                rear_tire_radius: 0.32901,
+                front_tire_width: 0.30030,
+                rear_tire_width: 0.36832,
+                front_wheel_mass: 12.0,
+                rear_wheel_mass: 16.0,
+                contact_patch: 0.21,
+                front_contact_patch: 0.21,
+                rear_contact_patch: 0.21,
+                front_airborne_decay: 2.0,
+                rear_airborne_decay: 2.0,
+
+                // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
+                tire_pressure: TirePressureConfig::default(),
+                tire_thermal: TireThermalAxleConfig::default(),
+                tire_wear: TireWearAxleConfig::default(),
+                front_tire_force: TireForceProfile::default(),
+                rear_tire_force: TireForceProfile::default(),
+                pressure_mechanics: PressureMechanicsSensitivity::default(),
+
+                // Surface Maps
+                surface_friction: surface_friction.clone(),
+                surface_stiffness: surface_stiffness.clone(),
+                surface_rolling_resistance: surface_rolling_resistance.clone(),
+                surface_longitudinal_grip_ratio: surface_longitudinal_grip_ratio.clone(),
+                surface_transition_tau_s: 0.0,
+            },
             brakes: BrakesConfiguration {
                 front_brake_bias: 0.57,
                 max_brake_torque: 2800.0,
@@ -179,21 +196,6 @@ impl VehicleConfig {
                 wheel_lock_blend_spin_rad_s: 0.0,
                 wheel_lock_stick_tau_s: 0.0,
             },
-
-            // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
-            tire_pressure: TirePressureConfig::default(),
-            tire_thermal: TireThermalAxleConfig::default(),
-            tire_wear: TireWearAxleConfig::default(),
-            front_tire_force: TireForceProfile::default(),
-            rear_tire_force: TireForceProfile::default(),
-            pressure_mechanics: PressureMechanicsSensitivity::default(),
-
-            // Surface Maps
-            surface_friction: surface_friction.clone(),
-            surface_stiffness: surface_stiffness.clone(),
-            surface_rolling_resistance: surface_rolling_resistance.clone(),
-            surface_longitudinal_grip_ratio: surface_longitudinal_grip_ratio.clone(),
-            surface_transition_tau_s: 0.0,
 
             // Driving aids
             aids: default_aids(),
@@ -346,17 +348,34 @@ impl VehicleConfig {
             },
 
             // Tires & Brakes
-            front_tire_radius: 0.324,
-            rear_tire_radius: 0.324,
-            front_tire_width: 0.308, // 308 mm
-            rear_tire_width: 0.358,  // 358 mm
-            front_wheel_mass: 12.0,
-            rear_wheel_mass: 16.0,
-            contact_patch: 0.20,
-            front_contact_patch: 0.20,
-            rear_contact_patch: 0.20,
-            front_airborne_decay: 2.0,
-            rear_airborne_decay: 2.0,
+            tires: TiresConfiguration {
+                front_tire_radius: 0.324,
+                rear_tire_radius: 0.324,
+                front_tire_width: 0.308, // 308 mm
+                rear_tire_width: 0.358,  // 358 mm
+                front_wheel_mass: 12.0,
+                rear_wheel_mass: 16.0,
+                contact_patch: 0.20,
+                front_contact_patch: 0.20,
+                rear_contact_patch: 0.20,
+                front_airborne_decay: 2.0,
+                rear_airborne_decay: 2.0,
+
+                // Tire pressure + thermal (legacy Jordan uses canonical defaults)
+                tire_pressure: TirePressureConfig::default(),
+                tire_thermal: TireThermalAxleConfig::default(),
+                tire_wear: TireWearAxleConfig::default(),
+                front_tire_force: TireForceProfile::default(),
+                rear_tire_force: TireForceProfile::default(),
+                pressure_mechanics: PressureMechanicsSensitivity::default(),
+
+                // Surface Maps
+                surface_friction,
+                surface_stiffness,
+                surface_rolling_resistance,
+                surface_longitudinal_grip_ratio: HashMap::new(),
+                surface_transition_tau_s: 0.0,
+            },
             brakes: BrakesConfiguration {
                 front_brake_bias: 0.58,
                 max_brake_torque: 2800.0,
@@ -367,21 +386,6 @@ impl VehicleConfig {
                 wheel_lock_blend_spin_rad_s: 0.0,
                 wheel_lock_stick_tau_s: 0.0,
             },
-
-            // Tire pressure + thermal (legacy Jordan uses canonical defaults)
-            tire_pressure: TirePressureConfig::default(),
-            tire_thermal: TireThermalAxleConfig::default(),
-            tire_wear: TireWearAxleConfig::default(),
-            front_tire_force: TireForceProfile::default(),
-            rear_tire_force: TireForceProfile::default(),
-            pressure_mechanics: PressureMechanicsSensitivity::default(),
-
-            // Surface Maps
-            surface_friction,
-            surface_stiffness,
-            surface_rolling_resistance,
-            surface_longitudinal_grip_ratio: HashMap::new(),
-            surface_transition_tau_s: 0.0,
 
             // Driving aids
             aids: default_aids(),

@@ -63,9 +63,9 @@ fn test_inventory(configuration: &VehicleConfig) -> SuspensionMassInventory {
     )];
     for wheel in WheelIndex::ALL {
         let mass = if wheel.is_front() {
-            configuration.front_wheel_mass
+            configuration.tires.front_wheel_mass
         } else {
-            configuration.rear_wheel_mass
+            configuration.tires.rear_wheel_mass
         };
         components.push(test_component(
             &format!("{wheel:?}"),
@@ -295,7 +295,7 @@ fn normal_contact_is_unilateral_and_uses_current_relative_hub_velocity() {
         test_settings(),
     )
     .unwrap();
-    let mut state = CoupledSuspensionState::at_rest(Vec3::UP * configuration.front_tire_radius);
+    let mut state = CoupledSuspensionState::at_rest(Vec3::UP * configuration.tires.front_tire_radius);
     let mut input = CoupledSuspensionInput::default();
     let contact = CoupledWheelContact {
         surface_point_world_metres: Vec3::UP * 0.01,

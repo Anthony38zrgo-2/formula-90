@@ -20,8 +20,8 @@ fn steering_trace(
     comparison_configuration.chassis.vehicle_mass = 698.0;
     comparison_configuration.chassis.vehicle_mass_excludes_wheel_assemblies = false;
     let mut thermal = TireThermalSystem::new_with_axles(
-        &configuration.tire_pressure,
-        &configuration.tire_thermal,
+        &configuration.tires.tire_pressure,
+        &configuration.tires.tire_thermal,
     );
     for state in &mut thermal.wheels {
         state.tread_inner_c = 95.0;
@@ -33,9 +33,9 @@ fn steering_trace(
     }
     let modifiers = thermal.mechanical_modifiers(
         wheel,
-        &configuration.tire_pressure,
-        configuration.tire_thermal.for_wheel(wheel),
-        configuration.pressure_mechanics,
+        &configuration.tires.tire_pressure,
+        configuration.tires.tire_thermal.for_wheel(wheel),
+        configuration.tires.pressure_mechanics,
     );
     let mut tires = TireSystem::new(&comparison_configuration);
     tires.set_mechanical_state(
@@ -62,8 +62,8 @@ fn steering_trace(
             wheel,
             normal_force,
             SurfaceType::Road,
-            configuration.surface_friction[&SurfaceType::Road],
-            configuration.surface_stiffness[&SurfaceType::Road],
+            configuration.tires.surface_friction[&SurfaceType::Road],
+            configuration.tires.surface_stiffness[&SurfaceType::Road],
             1.0,
             false,
             velocity,
@@ -108,9 +108,9 @@ fn clamped_hub_cycle(
     let mut input = CoupledSuspensionInput::default();
     let hub = wheel_contact_component(configuration, wheel, model.kinematic_input(&state, &input))?;
     let radius = if wheel.is_front() {
-        configuration.front_tire_radius
+        configuration.tires.front_tire_radius
     } else {
-        configuration.rear_tire_radius
+        configuration.tires.rear_tire_radius
     };
     let static_deflection = normal_force / stiffness;
     let mut loop_energy = 0.0;
@@ -168,9 +168,9 @@ fn measure(configuration: &VehicleConfig) -> Result<Value, String> {
         let trace = steering_trace(configuration, wheel, load, load / stiffness, 0.02);
         let small_angle = steering_trace(configuration, wheel, load, load / stiffness, 0.001);
         let peak_angle = if wheel.is_front() {
-            configuration.front_tire_force.lateral_peak_slip_angle_rad
+            configuration.tires.front_tire_force.lateral_peak_slip_angle_rad
         } else {
-            configuration.rear_tire_force.lateral_peak_slip_angle_rad
+            configuration.tires.rear_tire_force.lateral_peak_slip_angle_rad
         };
         let peak_trace = steering_trace(configuration, wheel, load, load / stiffness, peak_angle);
         axles.push(json!({"axle": name, "normal_force_newtons": load,

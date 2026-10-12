@@ -32,8 +32,8 @@ fn configured_center_of_mass_is_live() {
 #[test]
 fn spawn_height_accounts_for_both_axles() {
     let cfg = VehicleConfig::f1_94_canonical();
-    let front = cfg.front_tire_radius;
-    let rear = cfg.rear_tire_radius;
+    let front = cfg.tires.front_tire_radius;
+    let rear = cfg.tires.rear_tire_radius;
     let h = default_spawn_height(&cfg);
     assert!(h >= front.min(rear) && h <= front.max(rear));
 }

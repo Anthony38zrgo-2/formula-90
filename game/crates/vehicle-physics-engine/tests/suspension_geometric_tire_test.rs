@@ -188,9 +188,9 @@ fn linkage_pose_matches_statics_at_rest() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
@@ -219,9 +219,9 @@ fn pose_finite_continuous_and_mirrored() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
@@ -286,7 +286,7 @@ fn legacy_gain_path_untouched() {
     let cfg = VehicleConfig::from_json_str(r#"{"schema_version": 3}"#).unwrap();
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
-    let rest = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+    let rest = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
         center: flat_hit(d),

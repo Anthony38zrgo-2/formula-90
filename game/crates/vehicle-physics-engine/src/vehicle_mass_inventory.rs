@@ -150,7 +150,7 @@ impl VehicleMassInventory {
             return Err("Vehicle-and-driver membership does not close the base budget".into());
         }
         for wheel in WheelIndex::ALL {
-            let expected = if wheel.is_front() { configuration.front_wheel_mass } else { configuration.rear_wheel_mass };
+            let expected = if wheel.is_front() { configuration.tires.front_wheel_mass } else { configuration.tires.rear_wheel_mass };
             let declared = self.rim_and_tire_mass_kilograms[wheel as usize];
             if !declared.is_finite() || declared <= 0.0
                 || (declared - expected).abs() > 0.000001

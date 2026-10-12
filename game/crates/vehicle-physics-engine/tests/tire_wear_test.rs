@@ -246,9 +246,10 @@ fn worn_tread_reduces_delivered_longitudinal_force() {
                 wheel,
                 normal,
                 SurfaceType::Road,
-                *config.surface_friction.get(&SurfaceType::Road).unwrap(),
-                *config.surface_stiffness.get(&SurfaceType::Road).unwrap(),
+                *config.tires.surface_friction.get(&SurfaceType::Road).unwrap(),
+                *config.tires.surface_stiffness.get(&SurfaceType::Road).unwrap(),
                 *config
+                    .tires
                     .surface_rolling_resistance
                     .get(&SurfaceType::Road)
                     .unwrap(),
@@ -282,11 +283,11 @@ fn wear_profile_parses_front_and_rear_independently() {
         }
     }"#;
     let config = VehicleConfig::from_json_str(json).expect("wear profile must parse");
-    assert!((config.tire_wear.front.tread_wear_per_megajoule_millimeters - 0.8).abs() < 1e-9);
-    assert!((config.tire_wear.rear.tread_wear_per_megajoule_millimeters - 0.4).abs() < 1e-9);
-    assert!((config.tire_wear.rear.end_of_life_grip_scale - 0.45).abs() < 1e-9);
-    assert!((config.tire_wear.front.end_of_life_grip_scale - 0.55).abs() < 1e-9);
-    assert!((config.tire_wear.front.cliff_start_wear_fraction - 0.7).abs() < 1e-9);
+    assert!((config.tires.tire_wear.front.tread_wear_per_megajoule_millimeters - 0.8).abs() < 1e-9);
+    assert!((config.tires.tire_wear.rear.tread_wear_per_megajoule_millimeters - 0.4).abs() < 1e-9);
+    assert!((config.tires.tire_wear.rear.end_of_life_grip_scale - 0.45).abs() < 1e-9);
+    assert!((config.tires.tire_wear.front.end_of_life_grip_scale - 0.55).abs() < 1e-9);
+    assert!((config.tires.tire_wear.front.cliff_start_wear_fraction - 0.7).abs() < 1e-9);
 }
 
 fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
@@ -296,9 +297,9 @@ fn flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
         let anchor_world = sim.state.transform.transform_point(sim.config.wheel_anchor_local(wheel));
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() {
-            sim.config.front_tire_width
+            sim.config.tires.front_tire_width
         } else {
-            sim.config.rear_tire_width
+            sim.config.tires.rear_tire_width
         } * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |offset_x: f64| RaycastHit {
@@ -323,8 +324,8 @@ fn canon_profile_wears_under_a_cornering_stint() {
         "../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json"
     ))
     .expect("checked-in f1_2030 geometric profile must be valid");
-    assert!(config.tire_wear.front.is_enabled());
-    assert!(config.tire_wear.rear.is_enabled());
+    assert!(config.tires.tire_wear.front.is_enabled());
+    assert!(config.tires.tire_wear.rear.is_enabled());
 
     let mut sim = VehicleSimulator::new(config, Vec3::new(0.0, 0.40, 0.0), 0.0);
     let dt = 1.0 / 120.0;
@@ -367,7 +368,7 @@ fn canon_profile_wears_under_a_cornering_stint() {
         );
     }
     let front_left_wear_millimeters = front_left.inner_wear_fraction
-        * sim.config.tire_wear.front.usable_tread_millimeters();
+        * sim.config.tires.tire_wear.front.usable_tread_millimeters();
     println!(
         "wear front_left_mm_per_90s_lap={:.3}",
         front_left_wear_millimeters

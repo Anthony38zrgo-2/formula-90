@@ -774,9 +774,9 @@ pub extern "C" fn f1_94_physics_get_tri_ray_span(sim_ptr: *const c_void, wheel_i
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     let tire_w = if wheel.is_front() {
-        sim.config.front_tire_width
+        sim.config.tires.front_tire_width
     } else {
-        sim.config.rear_tire_width
+        sim.config.tires.rear_tire_width
     };
     tire_w * sim.config.suspension.tri_ray_spacing_ratio
 }
@@ -821,9 +821,9 @@ pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };
     let wheel = WheelIndex::ALL[(wheel_idx as usize).min(3)];
     if wheel.is_front() {
-        sim.config.suspension.front_spring_length + sim.config.front_tire_radius
+        sim.config.suspension.front_spring_length + sim.config.tires.front_tire_radius
     } else {
-        sim.config.suspension.rear_spring_length + sim.config.rear_tire_radius
+        sim.config.suspension.rear_spring_length + sim.config.tires.rear_tire_radius
     }
 }
 

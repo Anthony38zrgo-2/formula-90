@@ -913,7 +913,7 @@ mod tests {
                         corner, q, 0.0, false, 0.0, 0.0, 1.0,
                     )
                     .expect("rear linkage solves inside travel");
-                    let contact = sol.hub - Vec3::new(0.0, cfg.rear_tire_radius, 0.0);
+                    let contact = sol.hub - Vec3::new(0.0, cfg.tires.rear_tire_radius, 0.0);
                     let wrench = geometric_wheel_wrench(
                         geo,
                         wheel,

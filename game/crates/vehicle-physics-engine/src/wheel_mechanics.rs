@@ -54,21 +54,21 @@ pub struct WheelMechanicalTuning {
 impl WheelMechanicalTuning {
     pub fn for_wheel(config: &VehicleConfig, wheel: WheelIndex) -> Self {
         let wheel_mass = if wheel.is_front() {
-            config.front_wheel_mass
+            config.tires.front_wheel_mass
         } else {
-            config.rear_wheel_mass
+            config.tires.rear_wheel_mass
         }
         .max(1.0);
         let radius = if wheel.is_front() {
-            config.front_tire_radius
+            config.tires.front_tire_radius
         } else {
-            config.rear_tire_radius
+            config.tires.rear_tire_radius
         }
         .max(0.05);
         let contact_patch = if wheel.is_front() {
-            config.front_contact_patch
+            config.tires.front_contact_patch
         } else {
-            config.rear_contact_patch
+            config.tires.rear_contact_patch
         }
         .max(0.05);
 
@@ -118,35 +118,35 @@ pub fn static_wheel_load(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
 #[inline]
 pub fn tire_radius(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_tire_radius
+        config.tires.front_tire_radius
     } else {
-        config.rear_tire_radius
+        config.tires.rear_tire_radius
     }
 }
 
 #[inline]
 pub fn tire_width(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_tire_width
+        config.tires.front_tire_width
     } else {
-        config.rear_tire_width
+        config.tires.rear_tire_width
     }
 }
 
 #[inline]
 pub fn base_contact_patch(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_contact_patch
+        config.tires.front_contact_patch
     } else {
-        config.rear_contact_patch
+        config.tires.rear_contact_patch
     }
 }
 
 #[inline]
 pub fn wheel_mass(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_wheel_mass
+        config.tires.front_wheel_mass
     } else {
-        config.rear_wheel_mass
+        config.tires.rear_wheel_mass
     }
 }

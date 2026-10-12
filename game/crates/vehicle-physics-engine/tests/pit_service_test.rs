@@ -84,9 +84,9 @@ fn replace_tire_set_restores_fresh_cold_tires_without_touching_the_brakes() {
     }
     for (index, wheel) in sim.state.tire_thermal.wheels.iter().enumerate() {
         let axle_initial = if index < 2 {
-            sim.config.tire_thermal.front.initial_temperature_c
+            sim.config.tires.tire_thermal.front.initial_temperature_c
         } else {
-            sim.config.tire_thermal.rear.initial_temperature_c
+            sim.config.tires.tire_thermal.rear.initial_temperature_c
         };
         assert_eq!(wheel.tread_inner_c, axle_initial, "wheel {index} inner temp");
         assert_eq!(wheel.tread_center_c, axle_initial, "wheel {index} center temp");
@@ -95,7 +95,7 @@ fn replace_tire_set_restores_fresh_cold_tires_without_touching_the_brakes() {
         assert_eq!(wheel.gas_c, axle_initial, "wheel {index} gas temp");
         assert_eq!(
             wheel.pressure_kpa_gauge,
-            sim.config.tire_pressure.cold_kpa_gauge[index],
+            sim.config.tires.tire_pressure.cold_kpa_gauge[index],
             "wheel {index} cold pressure"
         );
         assert_eq!(wheel.deflection_ratio, 0.0);

@@ -169,9 +169,9 @@ fn flat_samples_for(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
         let span = if wheel.is_front() {
-            sim.config.front_tire_width
+            sim.config.tires.front_tire_width
         } else {
-            sim.config.rear_tire_width
+            sim.config.tires.rear_tire_width
         } * sim.config.suspension.tri_ray_spacing_ratio;
         let hit = |x: f64| RaycastHit {
             is_colliding: true,
@@ -349,8 +349,8 @@ fn asymmetric_load_transfers_through_anchors_matching_contacts() {
     // Modal decomposition reports the roll (suspension-level, cheap).
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
     for _ in 0..45 {
         let bump = |d: f64, left: bool| {
             let dd = if left { d - 0.025 } else { d };
@@ -398,9 +398,9 @@ fn arb_increases_roll_restoring_torque() {
                 let anchor_world = body.transform.transform_point(anchor_local);
                 let distance = anchor_world.y.max(0.0);
                 let span = if wi.is_front() {
-                    sim.config.front_tire_width
+                    sim.config.tires.front_tire_width
                 } else {
-                    sim.config.rear_tire_width
+                    sim.config.tires.rear_tire_width
                 } * sim.config.suspension.tri_ray_spacing_ratio;
                 let hit = |x: f64| RaycastHit {
                     is_colliding: true,
@@ -451,7 +451,7 @@ fn airborne_wheel_hangs_on_linkage_without_nan() {
     // Drop the road under FL far away for 30 ticks.
     for _ in 0..30 {
         let mut samples = flat_samples_for(&sim);
-        let far = cfg.suspension.front_spring_length + cfg.front_tire_radius + 0.50;
+        let far = cfg.suspension.front_spring_length + cfg.tires.front_tire_radius + 0.50;
         samples[0] = TriRaycastSample {
             inner: flat_hit(far),
             center: flat_hit(far),
@@ -486,8 +486,8 @@ fn energy_audit_is_consistent() {
     let cfg = sim_config(&prof);
     let mut sus = SuspensionSystem::new(&cfg);
     let dt = 1.0 / 120.0;
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
         center: flat_hit(d),

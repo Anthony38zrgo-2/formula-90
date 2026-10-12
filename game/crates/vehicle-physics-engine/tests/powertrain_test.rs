@@ -72,7 +72,7 @@ fn traction_control_inactive_without_slip() {
     let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
     // Wheel surface speed matches road speed => no slip.
     let road = 20.0;
-    let radius = cfg.rear_tire_radius;
+    let radius = cfg.tires.rear_tire_radius;
     let spin = road / radius;
     let spins = [0.0, 0.0, spin, spin];
     let reactions = [0.0; 4];

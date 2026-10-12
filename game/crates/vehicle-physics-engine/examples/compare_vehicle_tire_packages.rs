@@ -64,7 +64,7 @@ fn measure(configuration: &VehicleConfig, irregularity: bool) -> Result<Value, S
     let mut configuration = configuration.clone();
     configuration.fuel.current_kg = 0.0;
     configuration.fuel.initial_kg = 0.0;
-    let radius = configuration.front_tire_radius;
+    let radius = configuration.tires.front_tire_radius;
     let settings = configuration.coupled_world.clone().unwrap();
     let mut world = CoupledVehicleWorld::new(comparison_road(irregularity), settings)?;
     let identifier = world.register_vehicle(

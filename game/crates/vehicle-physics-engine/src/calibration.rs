@@ -59,16 +59,19 @@ pub fn steady_tire_force(
     tires.wheels[wheel as usize].camber_rad = 0.0;
 
     let friction = config
+        .tires
         .surface_friction
         .get(&SurfaceType::Road)
         .copied()
         .unwrap_or(1.0);
     let stiffness = config
+        .tires
         .surface_stiffness
         .get(&SurfaceType::Road)
         .copied()
         .unwrap_or(5.0);
     let rolling_resistance = config
+        .tires
         .surface_rolling_resistance
         .get(&SurfaceType::Road)
         .copied()

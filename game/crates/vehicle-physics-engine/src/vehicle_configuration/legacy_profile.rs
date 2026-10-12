@@ -241,88 +241,99 @@ impl JsonVehicleSpec {
                     .as_ref()
                     .map(|v| geometric_from_json_value(v).expect("validated geometry_physical must parse")),
             },
-            front_tire_radius: self.tires.front.radius,
-            rear_tire_radius: self.tires.rear.radius,
-            front_tire_width: self.tires.front.width,
-            rear_tire_width: self.tires.rear.width,
-            front_wheel_mass: self.tires.front.wheel_mass,
-            rear_wheel_mass: self.tires.rear.wheel_mass,
-            contact_patch: self.tires.contact_patch,
-            front_contact_patch: self
-                .tires
-                .front
-                .contact_patch
-                .unwrap_or(self.tires.contact_patch),
-            rear_contact_patch: self
-                .tires
-                .rear
-                .contact_patch
-                .unwrap_or(self.tires.contact_patch),
-            front_airborne_decay: self
-                .tires
-                .front
-                .airborne_spin_decay_torque
-                .unwrap_or(self.tires.airborne_spin_decay_torque),
-            rear_airborne_decay: self
-                .tires
-                .rear
-                .airborne_spin_decay_torque
-                .unwrap_or(self.tires.airborne_spin_decay_torque),
-            tire_pressure: tire_pressure_from_json(&self.tires.pressure),
-            tire_thermal: tire_thermal_from_json(&self.tires.thermal),
-            tire_wear: tire_wear_from_json(&self.tires.wear),
-            front_tire_force: self
-                .tires
-                .force_model
-                .as_ref()
-                .map(|fm| TireForceProfile {
-                    lateral_peak_slip_angle_rad: fm.front.lateral_peak_slip_angle_rad,
-                    longitudinal_peak_slip_ratio: fm.front.longitudinal_peak_slip_ratio,
-                    lateral_slide_mu_ratio: fm.front.lateral_slide_mu_ratio,
-                    longitudinal_slide_mu_ratio: fm.front.longitudinal_slide_mu_ratio,
-                    budget_blend_width: fm.front.budget_blend_width,
-                    falloff_sharpness: fm.front.falloff_sharpness,
-                    slip_loss_tau_s: fm.front.slip_loss_tau_s,
-                    slip_recovery_tau_s: fm.front.slip_recovery_tau_s,
-                    combined_lateral_peak_migration: fm.front.combined_lateral_peak_migration,
-                    combined_longitudinal_peak_migration: fm.front
-                        .combined_longitudinal_peak_migration,
-                    min_relaxation_tau_s: fm.front.min_relaxation_tau_s,
-                    relaxation_recovery_scale: fm.front.relaxation_recovery_scale,
-                    contact_ramp_tau_s: fm.front.contact_ramp_tau_s,
-                })
-                .unwrap_or_default(),
-            rear_tire_force: self
-                .tires
-                .force_model
-                .as_ref()
-                .map(|fm| TireForceProfile {
-                    lateral_peak_slip_angle_rad: fm.rear.lateral_peak_slip_angle_rad,
-                    longitudinal_peak_slip_ratio: fm.rear.longitudinal_peak_slip_ratio,
-                    lateral_slide_mu_ratio: fm.rear.lateral_slide_mu_ratio,
-                    longitudinal_slide_mu_ratio: fm.rear.longitudinal_slide_mu_ratio,
-                    budget_blend_width: fm.rear.budget_blend_width,
-                    falloff_sharpness: fm.rear.falloff_sharpness,
-                    slip_loss_tau_s: fm.rear.slip_loss_tau_s,
-                    slip_recovery_tau_s: fm.rear.slip_recovery_tau_s,
-                    combined_lateral_peak_migration: fm.rear.combined_lateral_peak_migration,
-                    combined_longitudinal_peak_migration: fm.rear
-                        .combined_longitudinal_peak_migration,
-                    min_relaxation_tau_s: fm.rear.min_relaxation_tau_s,
-                    relaxation_recovery_scale: fm.rear.relaxation_recovery_scale,
-                    contact_ramp_tau_s: fm.rear.contact_ramp_tau_s,
-                })
-                .unwrap_or_default(),
-            pressure_mechanics: self
-                .tires
-                .pressure_mechanics
-                .as_ref()
-                .map(|pm| PressureMechanicsSensitivity {
-                    compliance_sensitivity: pm.compliance_sensitivity,
-                    response_sensitivity: pm.response_sensitivity,
-                    rolling_resistance_sensitivity: pm.rolling_resistance_sensitivity,
-                })
-                .unwrap_or_default(),
+            tires: TiresConfiguration {
+                front_tire_radius: self.tires.front.radius,
+                rear_tire_radius: self.tires.rear.radius,
+                front_tire_width: self.tires.front.width,
+                rear_tire_width: self.tires.rear.width,
+                front_wheel_mass: self.tires.front.wheel_mass,
+                rear_wheel_mass: self.tires.rear.wheel_mass,
+                contact_patch: self.tires.contact_patch,
+                front_contact_patch: self
+                    .tires
+                    .front
+                    .contact_patch
+                    .unwrap_or(self.tires.contact_patch),
+                rear_contact_patch: self
+                    .tires
+                    .rear
+                    .contact_patch
+                    .unwrap_or(self.tires.contact_patch),
+                front_airborne_decay: self
+                    .tires
+                    .front
+                    .airborne_spin_decay_torque
+                    .unwrap_or(self.tires.airborne_spin_decay_torque),
+                rear_airborne_decay: self
+                    .tires
+                    .rear
+                    .airborne_spin_decay_torque
+                    .unwrap_or(self.tires.airborne_spin_decay_torque),
+                tire_pressure: tire_pressure_from_json(&self.tires.pressure),
+                tire_thermal: tire_thermal_from_json(&self.tires.thermal),
+                tire_wear: tire_wear_from_json(&self.tires.wear),
+                front_tire_force: self
+                    .tires
+                    .force_model
+                    .as_ref()
+                    .map(|fm| TireForceProfile {
+                        lateral_peak_slip_angle_rad: fm.front.lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: fm.front.longitudinal_peak_slip_ratio,
+                        lateral_slide_mu_ratio: fm.front.lateral_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: fm.front.longitudinal_slide_mu_ratio,
+                        budget_blend_width: fm.front.budget_blend_width,
+                        falloff_sharpness: fm.front.falloff_sharpness,
+                        slip_loss_tau_s: fm.front.slip_loss_tau_s,
+                        slip_recovery_tau_s: fm.front.slip_recovery_tau_s,
+                        combined_lateral_peak_migration: fm.front.combined_lateral_peak_migration,
+                        combined_longitudinal_peak_migration: fm.front
+                            .combined_longitudinal_peak_migration,
+                        min_relaxation_tau_s: fm.front.min_relaxation_tau_s,
+                        relaxation_recovery_scale: fm.front.relaxation_recovery_scale,
+                        contact_ramp_tau_s: fm.front.contact_ramp_tau_s,
+                    })
+                    .unwrap_or_default(),
+                rear_tire_force: self
+                    .tires
+                    .force_model
+                    .as_ref()
+                    .map(|fm| TireForceProfile {
+                        lateral_peak_slip_angle_rad: fm.rear.lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: fm.rear.longitudinal_peak_slip_ratio,
+                        lateral_slide_mu_ratio: fm.rear.lateral_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: fm.rear.longitudinal_slide_mu_ratio,
+                        budget_blend_width: fm.rear.budget_blend_width,
+                        falloff_sharpness: fm.rear.falloff_sharpness,
+                        slip_loss_tau_s: fm.rear.slip_loss_tau_s,
+                        slip_recovery_tau_s: fm.rear.slip_recovery_tau_s,
+                        combined_lateral_peak_migration: fm.rear.combined_lateral_peak_migration,
+                        combined_longitudinal_peak_migration: fm.rear
+                            .combined_longitudinal_peak_migration,
+                        min_relaxation_tau_s: fm.rear.min_relaxation_tau_s,
+                        relaxation_recovery_scale: fm.rear.relaxation_recovery_scale,
+                        contact_ramp_tau_s: fm.rear.contact_ramp_tau_s,
+                    })
+                    .unwrap_or_default(),
+                pressure_mechanics: self
+                    .tires
+                    .pressure_mechanics
+                    .as_ref()
+                    .map(|pm| PressureMechanicsSensitivity {
+                        compliance_sensitivity: pm.compliance_sensitivity,
+                        response_sensitivity: pm.response_sensitivity,
+                        rolling_resistance_sensitivity: pm.rolling_resistance_sensitivity,
+                    })
+                    .unwrap_or_default(),
+                surface_friction,
+                surface_stiffness,
+                surface_rolling_resistance,
+                // Surface longitudinal grip ratio (lateral_grip_assist is removed in v3 and
+                // never reaches runtime config).
+                surface_longitudinal_grip_ratio: build_surface_assist_map(&self.tires.surfaces, |e| {
+                    e.longitudinal_grip_ratio
+                }),
+                surface_transition_tau_s: self.tires.surface_transition_tau_s.unwrap_or(0.0),
+            },
             brakes: BrakesConfiguration {
                 front_brake_bias: self.brakes.front_brake_bias,
                 max_brake_torque: self.brakes.max_brake_torque,
@@ -338,9 +349,6 @@ impl JsonVehicleSpec {
                 wheel_lock_blend_spin_rad_s: self.brakes.wheel_lock_blend_spin_rad_s.unwrap_or(0.0),
                 wheel_lock_stick_tau_s: self.brakes.wheel_lock_stick_tau_s.unwrap_or(0.0),
             },
-            surface_friction,
-            surface_stiffness,
-            surface_rolling_resistance,
             aerodynamics: AerodynamicsConfiguration {
                 coefficient_of_drag: self.aero.drag_coefficient,
                 frontal_area: self.aero.frontal_area,
@@ -350,13 +358,6 @@ impl JsonVehicleSpec {
                 aero_blend_min_speed: self.aero.blend_min_speed_mps,
                 aero_blend_full_speed: self.aero.blend_full_speed_mps,
             },
-
-            // Surface longitudinal grip ratio (lateral_grip_assist is removed in v3 and
-            // never reaches runtime config).
-            surface_longitudinal_grip_ratio: build_surface_assist_map(&self.tires.surfaces, |e| {
-                e.longitudinal_grip_ratio
-            }),
-            surface_transition_tau_s: self.tires.surface_transition_tau_s.unwrap_or(0.0),
 
             // Driving aids
             aids: AidsConfig {
@@ -420,15 +421,17 @@ impl JsonVehicleSpec {
 
     pub(crate) fn from_config(cfg: &VehicleConfig) -> Self {
         let mut surfaces = HashMap::new();
-        for (st, friction) in &cfg.surface_friction {
+        for (st, friction) in &cfg.tires.surface_friction {
             let name = surface_type_name(*st);
-            let stiffness = cfg.surface_stiffness.get(st).copied().unwrap_or(1.0);
+            let stiffness = cfg.tires.surface_stiffness.get(st).copied().unwrap_or(1.0);
             let rolling = cfg
+                .tires
                 .surface_rolling_resistance
                 .get(st)
                 .copied()
                 .unwrap_or(1.0);
             let long = cfg
+                .tires
                 .surface_longitudinal_grip_ratio
                 .get(st)
                 .copied()
@@ -575,87 +578,91 @@ impl JsonVehicleSpec {
             },
             tires: JsonTires {
                 front: JsonTireAxle {
-                    radius: cfg.front_tire_radius,
-                    width: cfg.front_tire_width,
-                    wheel_mass: cfg.front_wheel_mass,
-                    contact_patch: Some(cfg.front_contact_patch),
+                    radius: cfg.tires.front_tire_radius,
+                    width: cfg.tires.front_tire_width,
+                    wheel_mass: cfg.tires.front_wheel_mass,
+                    contact_patch: Some(cfg.tires.front_contact_patch),
                     // DEPRECATED (TIRE-600): legacy key parsed for compatibility only;
                     // runtime config no longer carries a braking grip multiplier.
                     braking_grip_multiplier: None,
-                    airborne_spin_decay_torque: Some(cfg.front_airborne_decay),
+                    airborne_spin_decay_torque: Some(cfg.tires.front_airborne_decay),
                 },
                 rear: JsonTireAxle {
-                    radius: cfg.rear_tire_radius,
-                    width: cfg.rear_tire_width,
-                    wheel_mass: cfg.rear_wheel_mass,
-                    contact_patch: Some(cfg.rear_contact_patch),
+                    radius: cfg.tires.rear_tire_radius,
+                    width: cfg.tires.rear_tire_width,
+                    wheel_mass: cfg.tires.rear_wheel_mass,
+                    contact_patch: Some(cfg.tires.rear_contact_patch),
                     // DEPRECATED (TIRE-600): see front axle note.
                     braking_grip_multiplier: None,
-                    airborne_spin_decay_torque: Some(cfg.rear_airborne_decay),
+                    airborne_spin_decay_torque: Some(cfg.tires.rear_airborne_decay),
                 },
-                contact_patch: cfg.contact_patch,
+                contact_patch: cfg.tires.contact_patch,
                 // DEPRECATED (TIRE-600): emitted neutral (1.0) for legacy v2 compatibility
                 // only; schema-v3 payloads must not carry deprecated keys (CAL-1300).
                 braking_grip_multiplier: (cfg.schema_version < 3).then_some(1.0),
-                airborne_spin_decay_torque: cfg.front_airborne_decay,
+                airborne_spin_decay_torque: cfg.tires.front_airborne_decay,
                 surfaces,
                 surface_transition_tau_s: (cfg.schema_version >= 3)
-                    .then_some(cfg.surface_transition_tau_s),
+                    .then_some(cfg.tires.surface_transition_tau_s),
                 pressure: Some(JsonTirePressure {
                     units: Some("kPa_gauge".to_string()),
-                    cold_kpa_gauge: Some(wheel_name_map(cfg.tire_pressure.cold_kpa_gauge)),
+                    cold_kpa_gauge: Some(wheel_name_map(cfg.tires.tire_pressure.cold_kpa_gauge)),
                     reference_hot_kpa_gauge: Some(wheel_name_map(
-                        cfg.tire_pressure.reference_hot_kpa_gauge,
+                        cfg.tires.tire_pressure.reference_hot_kpa_gauge,
                     )),
-                    reference_temperature_c: Some(cfg.tire_pressure.reference_temperature_c),
-                    atmospheric_pressure_kpa: Some(cfg.tire_pressure.atmospheric_pressure_kpa),
+                    reference_temperature_c: Some(cfg.tires.tire_pressure.reference_temperature_c),
+                    atmospheric_pressure_kpa: Some(cfg.tires.tire_pressure.atmospheric_pressure_kpa),
                 }),
-                thermal: Some(JsonTireThermal::from_config(&cfg.tire_thermal)),
-                wear: (cfg.schema_version >= 3).then(|| JsonTireWear::from_config(&cfg.tire_wear)),
+                thermal: Some(JsonTireThermal::from_config(&cfg.tires.tire_thermal)),
+                wear: (cfg.schema_version >= 3).then(|| JsonTireWear::from_config(&cfg.tires.tire_wear)),
                 force_model: (cfg.schema_version >= 3).then(|| JsonTireForceModel {
                     front: JsonTireForceProfile {
-                        lateral_peak_slip_angle_rad: cfg.front_tire_force.lateral_peak_slip_angle_rad,
-                        longitudinal_peak_slip_ratio: cfg.front_tire_force.longitudinal_peak_slip_ratio,
-                        lateral_slide_mu_ratio: cfg.front_tire_force.lateral_slide_mu_ratio,
-                        longitudinal_slide_mu_ratio: cfg.front_tire_force.longitudinal_slide_mu_ratio,
-                        budget_blend_width: cfg.front_tire_force.budget_blend_width,
-                        falloff_sharpness: cfg.front_tire_force.falloff_sharpness,
-                        slip_loss_tau_s: cfg.front_tire_force.slip_loss_tau_s,
-                        slip_recovery_tau_s: cfg.front_tire_force.slip_recovery_tau_s,
+                        lateral_peak_slip_angle_rad: cfg.tires.front_tire_force.lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: cfg.tires.front_tire_force.longitudinal_peak_slip_ratio,
+                        lateral_slide_mu_ratio: cfg.tires.front_tire_force.lateral_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: cfg.tires.front_tire_force.longitudinal_slide_mu_ratio,
+                        budget_blend_width: cfg.tires.front_tire_force.budget_blend_width,
+                        falloff_sharpness: cfg.tires.front_tire_force.falloff_sharpness,
+                        slip_loss_tau_s: cfg.tires.front_tire_force.slip_loss_tau_s,
+                        slip_recovery_tau_s: cfg.tires.front_tire_force.slip_recovery_tau_s,
                         combined_lateral_peak_migration: cfg
+                            .tires
                             .front_tire_force
                             .combined_lateral_peak_migration,
                         combined_longitudinal_peak_migration: cfg
+                            .tires
                             .front_tire_force
                             .combined_longitudinal_peak_migration,
-                        min_relaxation_tau_s: cfg.front_tire_force.min_relaxation_tau_s,
-                        relaxation_recovery_scale: cfg.front_tire_force.relaxation_recovery_scale,
-                        contact_ramp_tau_s: cfg.front_tire_force.contact_ramp_tau_s,
+                        min_relaxation_tau_s: cfg.tires.front_tire_force.min_relaxation_tau_s,
+                        relaxation_recovery_scale: cfg.tires.front_tire_force.relaxation_recovery_scale,
+                        contact_ramp_tau_s: cfg.tires.front_tire_force.contact_ramp_tau_s,
                     },
                     rear: JsonTireForceProfile {
-                        lateral_peak_slip_angle_rad: cfg.rear_tire_force.lateral_peak_slip_angle_rad,
-                        longitudinal_peak_slip_ratio: cfg.rear_tire_force.longitudinal_peak_slip_ratio,
-                        lateral_slide_mu_ratio: cfg.rear_tire_force.lateral_slide_mu_ratio,
-                        longitudinal_slide_mu_ratio: cfg.rear_tire_force.longitudinal_slide_mu_ratio,
-                        budget_blend_width: cfg.rear_tire_force.budget_blend_width,
-                        falloff_sharpness: cfg.rear_tire_force.falloff_sharpness,
-                        slip_loss_tau_s: cfg.rear_tire_force.slip_loss_tau_s,
-                        slip_recovery_tau_s: cfg.rear_tire_force.slip_recovery_tau_s,
+                        lateral_peak_slip_angle_rad: cfg.tires.rear_tire_force.lateral_peak_slip_angle_rad,
+                        longitudinal_peak_slip_ratio: cfg.tires.rear_tire_force.longitudinal_peak_slip_ratio,
+                        lateral_slide_mu_ratio: cfg.tires.rear_tire_force.lateral_slide_mu_ratio,
+                        longitudinal_slide_mu_ratio: cfg.tires.rear_tire_force.longitudinal_slide_mu_ratio,
+                        budget_blend_width: cfg.tires.rear_tire_force.budget_blend_width,
+                        falloff_sharpness: cfg.tires.rear_tire_force.falloff_sharpness,
+                        slip_loss_tau_s: cfg.tires.rear_tire_force.slip_loss_tau_s,
+                        slip_recovery_tau_s: cfg.tires.rear_tire_force.slip_recovery_tau_s,
                         combined_lateral_peak_migration: cfg
+                            .tires
                             .rear_tire_force
                             .combined_lateral_peak_migration,
                         combined_longitudinal_peak_migration: cfg
+                            .tires
                             .rear_tire_force
                             .combined_longitudinal_peak_migration,
-                        min_relaxation_tau_s: cfg.rear_tire_force.min_relaxation_tau_s,
-                        relaxation_recovery_scale: cfg.rear_tire_force.relaxation_recovery_scale,
-                        contact_ramp_tau_s: cfg.rear_tire_force.contact_ramp_tau_s,
+                        min_relaxation_tau_s: cfg.tires.rear_tire_force.min_relaxation_tau_s,
+                        relaxation_recovery_scale: cfg.tires.rear_tire_force.relaxation_recovery_scale,
+                        contact_ramp_tau_s: cfg.tires.rear_tire_force.contact_ramp_tau_s,
                     },
                 }),
                 pressure_mechanics: (cfg.schema_version >= 3).then(|| JsonPressureMechanics {
-                    compliance_sensitivity: cfg.pressure_mechanics.compliance_sensitivity,
-                    response_sensitivity: cfg.pressure_mechanics.response_sensitivity,
-                    rolling_resistance_sensitivity: cfg.pressure_mechanics.rolling_resistance_sensitivity,
+                    compliance_sensitivity: cfg.tires.pressure_mechanics.compliance_sensitivity,
+                    response_sensitivity: cfg.tires.pressure_mechanics.response_sensitivity,
+                    rolling_resistance_sensitivity: cfg.tires.pressure_mechanics.rolling_resistance_sensitivity,
                 }),
             },
             brakes: JsonBrakes {

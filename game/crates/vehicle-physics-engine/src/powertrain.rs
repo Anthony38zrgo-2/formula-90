@@ -250,7 +250,7 @@ impl PowertrainState {
                 let ratio = self.get_total_gear_ratio(config).abs();
                 if ratio > 0.0 {
                     let wheel_spin = self.drivetrain_spin(config, wheel_spins).abs();
-                    let road_spin = forward_speed_m_s.abs() / config.rear_tire_radius.max(1e-6);
+                    let road_spin = forward_speed_m_s.abs() / config.tires.rear_tire_radius.max(1e-6);
                     let target_spin = if (wheel_spin - road_spin).abs() > config.powertrain.automatic_shift.wheel_road_spin_blend_threshold_rads {
                         road_spin * config.powertrain.automatic_shift.road_spin_weight + wheel_spin * config.powertrain.automatic_shift.wheel_spin_weight
                     } else {
@@ -277,7 +277,7 @@ impl PowertrainState {
         let max_gear = config.powertrain.gear_ratios.len() as i8;
         let autoshift = &config.powertrain.automatic_shift;
         let total_ratio = self.get_total_gear_ratio(config).abs();
-        let radius = config.rear_tire_radius;
+        let radius = config.tires.rear_tire_radius;
         let wheel_speed = self.drivetrain_spin(config, wheel_spins).abs() * radius;
         let road_speed = forward_speed_m_s.abs();
 
@@ -353,7 +353,7 @@ impl PowertrainState {
     ) -> f64 {
         let wheel_angular_velocity = self.drivetrain_spin(config, wheel_spins).abs();
         let road_angular_velocity =
-            forward_speed_meters_per_second.abs() / config.rear_tire_radius.max(1e-6);
+            forward_speed_meters_per_second.abs() / config.tires.rear_tire_radius.max(1e-6);
         let total_gear_ratio = config.powertrain.gear_ratios[(gear - 1) as usize] * config.powertrain.final_drive;
         wheel_angular_velocity.max(road_angular_velocity) * total_gear_ratio.abs() * RAD_S_TO_RPM
     }
@@ -571,9 +571,9 @@ impl PowertrainState {
             }
             let i = wheel as usize;
             let radius = if wheel.is_front() {
-                config.front_tire_radius
+                config.tires.front_tire_radius
             } else {
-                config.rear_tire_radius
+                config.tires.rear_tire_radius
             };
             if radius <= 1e-6 {
                 continue;
@@ -715,8 +715,8 @@ fn driven_wheel_inertia(config: &VehicleConfig) -> f64 {
     let mut inertia = 0.0;
     for wheel in WheelIndex::ALL {
         if wheel_is_driven(config, wheel) {
-            let radius = if wheel.is_front() { config.front_tire_radius } else { config.rear_tire_radius };
-            let mass = if wheel.is_front() { config.front_wheel_mass } else { config.rear_wheel_mass };
+            let radius = if wheel.is_front() { config.tires.front_tire_radius } else { config.tires.rear_tire_radius };
+            let mass = if wheel.is_front() { config.tires.front_wheel_mass } else { config.tires.rear_wheel_mass };
             inertia += 0.5 * mass * radius * radius;
         }
     }
@@ -797,7 +797,7 @@ mod tc_tests {
         state.clutch_torque = 100.0;
         state.engine_torque = 100.0;
         let road_speed = 20.0;
-        let driven_spin = 30.0 / cfg.rear_tire_radius;
+        let driven_spin = 30.0 / cfg.tires.rear_tire_radius;
         let wheel_spins = [0.0, 0.0, driven_spin, driven_spin];
         for _ in 0..120 {
             state.distribute_drive_torque(&cfg, &wheel_spins, true, road_speed, 1.0 / 120.0);
@@ -833,7 +833,7 @@ mod tc_tests {
         state.current_gear = 5;
         state.clutch_torque = 100.0;
         state.engine_torque = 100.0;
-        let driven_spin = 30.0 / cfg.rear_tire_radius;
+        let driven_spin = 30.0 / cfg.tires.rear_tire_radius;
         state.distribute_drive_torque(
             &cfg,
             &[0.0, 0.0, driven_spin, driven_spin],
@@ -889,7 +889,7 @@ mod engine_torque_attack_tests {
             / (RAD_S_TO_RPM * configuration.powertrain.gear_ratios[0] * configuration.powertrain.final_drive);
         let input = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
         state.step(&configuration, &input, &[wheel_speed; 4],
-            wheel_speed * configuration.rear_tire_radius, 1.0 / 120.0);
+            wheel_speed * configuration.tires.rear_tire_radius, 1.0 / 120.0);
         assert!(!state.is_rev_limited);
         assert!(state.engine_torque <= 0.0);
         assert!(state.clutch_torque < 0.0);

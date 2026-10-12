@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let yaw = spawn["yaw_radians"].as_f64().ok_or("Track spawn yaw is missing")?;
     let geometry = configuration.suspension.geometric_suspension.as_ref().ok_or("Diagnostic requires physical hardpoints")?;
     let origin_height = WheelIndex::ALL.iter().map(|wheel| {
-        let radius = if wheel.is_front() { configuration.front_tire_radius } else { configuration.rear_tire_radius };
+        let radius = if wheel.is_front() { configuration.tires.front_tire_radius } else { configuration.tires.rear_tire_radius };
         radius - geometry.corners.get(*wheel).hub_center.y
     }).fold(0.0, f64::max);
     position.y += origin_height;

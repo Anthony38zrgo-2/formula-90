@@ -38,7 +38,7 @@ fn positive_drive_torque_produces_opposing_reaction_torque() {
         state.reaction_torque
     );
     assert!(
-        (state.reaction_torque + state.longitudinal_force * cfg.rear_tire_radius).abs() < 1e-6,
+        (state.reaction_torque + state.longitudinal_force * cfg.tires.rear_tire_radius).abs() < 1e-6,
         "reaction_torque must equal -longitudinal_force * radius"
     );
 }
@@ -52,12 +52,12 @@ fn zero_throttle_at_forward_speed_does_not_accelerate_wheel() {
     let mut sim = VehicleSimulator::new(cfg.clone(), Vec3::ZERO, 0.0);
     sim.state.linear_velocity = Vec3::new(0.0, 0.0, -20.0);
     for i in 0..4 {
-        let r = if i < 2 { cfg.front_tire_radius } else { cfg.rear_tire_radius };
+        let r = if i < 2 { cfg.tires.front_tire_radius } else { cfg.tires.rear_tire_radius };
         sim.state.tires.wheels[i].spin = 20.0 / r;
     }
     let input_zero = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
-    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
     let samples = [
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },
@@ -174,7 +174,7 @@ fn kick_down_under_full_throttle_downshifts_when_bogged() {
 
     // Full throttle at 25 m/s (~90 km/h)
     let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
-    let wheel_spin = 25.0 / cfg.rear_tire_radius;
+    let wheel_spin = 25.0 / cfg.tires.rear_tire_radius;
     let spins = [0.0, 0.0, wheel_spin, wheel_spin];
 
     pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 25.0, true, true, cfg.brakes.enable_abs, dt);
@@ -215,7 +215,7 @@ fn manual_transmission_does_not_auto_shift() {
     pt.target_gear = 1;
     pt.rpm = cfg.powertrain.max_rpm * 0.95; // at/above typical upshift rpm
     let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
-    let wheel_spin = 40.0 / cfg.rear_tire_radius;
+    let wheel_spin = 40.0 / cfg.tires.rear_tire_radius;
     let spins = [0.0, 0.0, wheel_spin, wheel_spin];
     for _ in 0..5 {
         pt.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -100.0, -100.0], 40.0, true, true, cfg.brakes.enable_abs, dt);

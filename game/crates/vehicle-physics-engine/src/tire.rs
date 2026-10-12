@@ -467,6 +467,7 @@ impl TireSystem {
             * modifiers.grip_scale.clamp(0.05, 2.0)
             * modifiers.wear_grip_scale.clamp(0.05, 1.0);
         let longitudinal_ratio = config
+            .tires
             .surface_longitudinal_grip_ratio
             .get(&surface)
             .copied()
@@ -698,8 +699,9 @@ impl TireSystem {
             dt,
         );
         let surface = SurfaceType::Road;
-        let stiffness = *config.surface_stiffness.get(&surface).unwrap_or(&5.0);
+        let stiffness = *config.tires.surface_stiffness.get(&surface).unwrap_or(&5.0);
         let rolling = *config
+            .tires
             .surface_rolling_resistance
             .get(&surface)
             .unwrap_or(&1.0);
@@ -724,9 +726,9 @@ impl TireSystem {
 
 fn tire_force_profile(config: &VehicleConfig, wheel: WheelIndex) -> &TireForceProfile {
     if wheel.is_front() {
-        &config.front_tire_force
+        &config.tires.front_tire_force
     } else {
-        &config.rear_tire_force
+        &config.tires.rear_tire_force
     }
 }
 
@@ -835,9 +837,9 @@ pub fn is_driven(config: &VehicleConfig, wheel: WheelIndex) -> bool {
 
 fn tire_airborne_decay(config: &VehicleConfig, wheel: WheelIndex) -> f64 {
     if wheel.is_front() {
-        config.front_airborne_decay
+        config.tires.front_airborne_decay
     } else {
-        config.rear_airborne_decay
+        config.tires.rear_airborne_decay
     }
 }
 
@@ -859,8 +861,8 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let wheel = WheelIndex::FrontLeft;
         let mut tires = TireSystem::new(&cfg);
-        let base_radius = cfg.front_tire_radius;
-        let base_patch = cfg.front_contact_patch;
+        let base_radius = cfg.tires.front_tire_radius;
+        let base_patch = cfg.tires.front_contact_patch;
         let fz = static_wheel_load(&cfg, wheel) * 1.5;
         tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.015, 1.0);
         let s = &tires.wheels[wheel as usize];
@@ -1232,15 +1234,15 @@ mod tests {
         let profile = curve_profile();
         let run = |blend_width: f64, alpha: f64, kappa: f64| -> (f64, f64, f64) {
             let mut cfg = VehicleConfig::f1_94_canonical();
-            cfg.front_tire_force = TireForceProfile {
+            cfg.tires.front_tire_force = TireForceProfile {
                 budget_blend_width: blend_width,
                 ..profile
             };
-            cfg.rear_tire_force = cfg.front_tire_force;
+            cfg.tires.rear_tire_force = cfg.tires.front_tire_force;
             let wheel = WheelIndex::FrontLeft;
             let fz = static_wheel_load(&cfg, wheel);
             let dt = 1.0 / 120.0;
-            let radius = cfg.front_tire_radius.max(0.05);
+            let radius = cfg.tires.front_tire_radius.max(0.05);
             let mut tires = TireSystem::new(&cfg);
             tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
             tires.wheels[wheel as usize].spin = 20.0 * (1.0 + kappa) / radius;
@@ -1328,11 +1330,11 @@ mod tests {
         dt: f64,
     ) -> Vec<(f64, f64)> {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
-        let radius = cfg.front_tire_radius.max(0.05);
+        let radius = cfg.tires.front_tire_radius.max(0.05);
         let mut tires = TireSystem::new(&cfg);
         tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
         tires.wheels[wheel as usize].spin = 20.0 / radius;
@@ -1448,11 +1450,11 @@ mod tests {
     fn sliding_memory_cannot_create_force_at_zero_slip() {
         let mut cfg = VehicleConfig::f1_94_canonical();
         let profile = grip02_profile(0.06, 0.30, 0.6);
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
-        let radius = cfg.front_tire_radius.max(0.05);
+        let radius = cfg.tires.front_tire_radius.max(0.05);
         let mut tires = TireSystem::new(&cfg);
         tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
         tires.wheels[wheel as usize].spin = 20.0 / radius;
@@ -1479,8 +1481,8 @@ mod tests {
         ticks: usize,
     ) -> (f64, f64, f64, f64) {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let dt = 1.0 / 120.0;
@@ -1671,8 +1673,8 @@ mod tests {
         dt: f64,
     ) -> Vec<(f64, f64)> {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let mut tires = TireSystem::new(&cfg);
@@ -1805,8 +1807,8 @@ mod tests {
         dt: f64,
     ) -> (f64, f64) {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let mut tires = TireSystem::new(&cfg);
@@ -1865,8 +1867,8 @@ mod tests {
 
         // Unloaded wheel: blend snaps to zero and the legay branch zeroes forces.
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.front_tire_force = legacy;
-        cfg.rear_tire_force = legacy;
+        cfg.tires.front_tire_force = legacy;
+        cfg.tires.rear_tire_force = legacy;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let mut tires = TireSystem::new(&cfg);
@@ -2051,14 +2053,15 @@ mod tests {
             budget_blend_width: 0.1,
             ..curve_profile()
         };
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
 
         let wheel = WheelIndex::FrontLeft;
         let reference = static_wheel_load(&cfg, wheel);
         let alpha_max = profile.lateral_peak_slip_angle_rad * 2.0;
         let kappa_max = profile.longitudinal_peak_slip_ratio * 2.0;
         let long_ratio = cfg
+            .tires
             .surface_longitudinal_grip_ratio
             .get(&SurfaceType::Road)
             .copied()
@@ -2127,7 +2130,7 @@ mod tests {
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let dt = 1.0 / 120.0;
-        let radius = cfg.front_tire_radius.max(0.05);
+        let radius = cfg.tires.front_tire_radius.max(0.05);
 
         let run_ws = |lat_speed: f64, wheel_speed: f64| -> (f64, f64, f64) {
             let mut tires = TireSystem::new(&cfg);
@@ -2167,12 +2170,12 @@ mod tests {
         // Same Fz and slip angle: adding brake slip must reduce |Fy|.
         let mut cfg = VehicleConfig::f1_94_canonical();
         let profile = curve_profile();
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let dt = 1.0 / 120.0;
-        let radius = cfg.front_tire_radius.max(0.05);
+        let radius = cfg.tires.front_tire_radius.max(0.05);
         let alpha_peak = profile.lateral_peak_slip_angle_rad;
 
         let fy_at_alpha = move |kappa: f64| -> f64 {
@@ -2201,12 +2204,12 @@ mod tests {
         // Same Fz and slip ratio: adding lateral slip must reduce |Fx|.
         let mut cfg = VehicleConfig::f1_94_canonical();
         let profile = curve_profile();
-        cfg.front_tire_force = profile;
-        cfg.rear_tire_force = profile;
+        cfg.tires.front_tire_force = profile;
+        cfg.tires.rear_tire_force = profile;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let dt = 1.0 / 120.0;
-        let radius = cfg.front_tire_radius.max(0.05);
+        let radius = cfg.tires.front_tire_radius.max(0.05);
         let kappa = 0.30;
 
         let fx_at_kappa = move |alpha: f64| -> f64 {
@@ -2259,7 +2262,7 @@ mod tests {
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let dt = 1.0 / 120.0;
-        let radius = cfg.front_tire_radius.max(0.05);
+        let radius = cfg.tires.front_tire_radius.max(0.05);
         let mut tires = TireSystem::new(&cfg);
         tires.set_mechanical_state(&cfg, wheel, fz, 0.0, 0.008, 1.0);
         tires.wheels[wheel as usize].spin = 20.0 * 1.5 / radius;

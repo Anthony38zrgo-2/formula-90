@@ -281,7 +281,7 @@ impl CoupledVehicleModel {
             force[10 + index] += relative_actuator_torque_newton_metres[index];
             if let Some(contact) = input.contacts[index] {
                 if reference.diagnostics.normal_force_newtons[index] > 0.0 {
-                    let radius = if wheel.is_front() { self.configuration.front_tire_radius } else { self.configuration.rear_tire_radius };
+                    let radius = if wheel.is_front() { self.configuration.tires.front_tire_radius } else { self.configuration.tires.rear_tire_radius };
                     let tangent = contact.tangential_force_world_newtons
                         - contact.surface_normal_world * contact.tangential_force_world_newtons.dot(contact.surface_normal_world);
                     let spin_torque = (-contact.surface_normal_world * radius).cross(tangent).dot(wheel_axes_world[index]);

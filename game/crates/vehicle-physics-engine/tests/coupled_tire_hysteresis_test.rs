@@ -14,17 +14,18 @@ fn coupled_carcass_heat_matches_radial_damper_loss_without_elastic_work() {
         .unwrap();
         configuration.fuel.current_kg = 0.0;
         configuration.fuel.initial_kg = 0.0;
-        configuration.tire_thermal.front.tread_to_carcass_w_k = 0.0;
-        configuration.tire_thermal.front.carcass_to_air_w_k = 0.0;
-        configuration.tire_thermal.front.carcass_to_gas_w_k = 0.0;
+        configuration.tires.tire_thermal.front.tread_to_carcass_w_k = 0.0;
+        configuration.tires.tire_thermal.front.carcass_to_air_w_k = 0.0;
+        configuration.tires.tire_thermal.front.carcass_to_gas_w_k = 0.0;
         configuration.brakes.brake_thermal.front.rim_to_tire_carcass_w_k = 0.0;
         let settings = configuration.coupled_world.clone().unwrap();
         let duration = 1.0 / settings.physical_frequency_hertz as f64;
         let damping = settings
             .suspension
             .tire_vertical_damping_newton_seconds_per_metre[0];
-        let capacity = configuration.tire_thermal.front.carcass_heat_capacity_j_k;
+        let capacity = configuration.tires.tire_thermal.front.carcass_heat_capacity_j_k;
         let fraction = configuration
+            .tires
             .tire_thermal
             .front
             .carcass_hysteresis_efficiency;
@@ -39,7 +40,7 @@ fn coupled_carcass_heat_matches_radial_damper_loss_without_elastic_work() {
                 wheel_impact_shape: None,
             }],
         };
-        let height = 1.0 + configuration.front_tire_radius - 0.015;
+        let height = 1.0 + configuration.tires.front_tire_radius - 0.015;
         let mut world = CoupledVehicleWorld::new(terrain, settings).unwrap();
         let identifier = world
             .register_vehicle(configuration, Vec3::new(0.0, height, 0.0), 0.0)

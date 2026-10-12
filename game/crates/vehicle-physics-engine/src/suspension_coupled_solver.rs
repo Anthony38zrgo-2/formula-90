@@ -572,9 +572,9 @@ impl CoupledSuspensionModel {
                     return Err("Invalid coupled tire contact".into());
                 }
                 let radius = if wheel.is_front() {
-                    self.configuration.front_tire_radius
+                    self.configuration.tires.front_tire_radius
                 } else {
-                    self.configuration.rear_tire_radius
+                    self.configuration.tires.rear_tire_radius
                 };
                 let deflection = (radius
                     - (hub.center_of_mass_world_metres - contact.surface_point_world_metres)

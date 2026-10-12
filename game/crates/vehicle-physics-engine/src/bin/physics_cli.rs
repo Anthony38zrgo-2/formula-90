@@ -16,9 +16,9 @@ fn flat_ground_samples(sim: &VehicleSimulator, wheel_lift: [f64; 4]) -> [TriRayc
         let hub_world = sim.state.transform.transform_point(hub_local);
 
         let tire_w = if wheel.is_front() {
-            sim.config.front_tire_width
+            sim.config.tires.front_tire_width
         } else {
-            sim.config.rear_tire_width
+            sim.config.tires.rear_tire_width
         };
         let span = tire_w * sim.config.suspension.tri_ray_spacing_ratio;
 

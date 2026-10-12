@@ -7,7 +7,7 @@ fn make_flat_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
         let anchor_local = sim.config.wheel_anchor_local(wheel);
         let anchor_world = sim.state.transform.transform_point(anchor_local);
         let distance = anchor_world.y.max(0.0);
-        let span = if wheel.is_front() { sim.config.front_tire_width } else { sim.config.rear_tire_width }
+        let span = if wheel.is_front() { sim.config.tires.front_tire_width } else { sim.config.tires.rear_tire_width }
             * sim.config.suspension.tri_ray_spacing_ratio;
         let side = if wheel.is_left() { 1.0 } else { -1.0 };
         let hit = |x: f64| RaycastHit {
@@ -123,7 +123,7 @@ fn test_steering_response_parity() {
     let mut sim = VehicleSimulator::new(cfg.clone(), Vec3::new(0.0, spawn, 0.0), 0.0);
     sim.state.linear_velocity = Vec3::new(0.0, 0.0, -27.78); // 100 km/h
     for i in 0..4 {
-        let r = if i < 2 { cfg.front_tire_radius } else { cfg.rear_tire_radius };
+        let r = if i < 2 { cfg.tires.front_tire_radius } else { cfg.tires.rear_tire_radius };
         sim.state.tires.wheels[i].spin = 27.78 / r;
     }
 
@@ -146,8 +146,8 @@ fn test_suspension_behavior_parity() {
 
     // 1. Static rest settled with stable normal force and compression
     let mut suspension = SuspensionSystem::new(&cfg);
-    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+    let resting_dist_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+    let resting_dist_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
     let static_samples = [
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },
         TriRaycastSample { inner: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, center: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road }, outer: RaycastHit { is_colliding: true, distance: resting_dist_fl, point: Vec3::ZERO, normal: Vec3::UP, surface: SurfaceType::Road } },

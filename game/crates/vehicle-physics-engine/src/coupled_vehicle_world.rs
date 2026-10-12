@@ -332,7 +332,7 @@ impl CoupledVehicleWorld {
             suspension.hub_lateral_m = solution.hub.x - geometry.corners.get(wheel).hub_center.x;
             suspension.hub_long_m = solution.hub.z - geometry.corners.get(wheel).hub_center.z;
             let hub = wheel_contact_component(&vehicle.model.configuration, wheel, vehicle.model.kinematic_input(&vehicle.state, &input))?;
-            let radius = if wheel.is_front() { vehicle.model.configuration.front_tire_radius } else { vehicle.model.configuration.rear_tire_radius };
+            let radius = if wheel.is_front() { vehicle.model.configuration.tires.front_tire_radius } else { vehicle.model.configuration.tires.rear_tire_radius };
             let direction = -rotation.y;
             if let Some(hit) = world.raycast_driveable(hub.center_of_mass_world_metres + rotation.y * radius,
                 direction, radius * 2.0 + settings.road_query_extension_metres)? {
@@ -408,7 +408,7 @@ impl CoupledVehicleWorld {
             let unconstrained_velocity = velocity;
             let result = crate::coupled_vehicle_dynamics::apply_generalized_wheel_braking(&evaluation.mass_matrix, &mut velocity,
                 brake_torque_limits, duration, settings.contacts.maximum_iterations,
-                settings.contacts.velocity_tolerance_metres_per_second / vehicle.model.configuration.front_tire_radius.min(vehicle.model.configuration.rear_tire_radius))?;
+                settings.contacts.velocity_tolerance_metres_per_second / vehicle.model.configuration.tires.front_tire_radius.min(vehicle.model.configuration.tires.rear_tire_radius))?;
             let velocity_change = std::array::from_fn(|coordinate| velocity[coordinate] - unconstrained_velocity[coordinate]);
             vehicle.state.suspension.steering_actuator_work_joules += crate::coupled_vehicle_dynamics::generalized_projection(
                 evaluation.prescribed_generalized_momentum, velocity_change);
@@ -462,8 +462,8 @@ impl CoupledVehicleWorld {
                     if wheel.is_left() { 1.0 } else { -1.0 }).ok_or("Collision wheel trajectory failed")?;
                 let local = solution.wheel_basis;
                 let basis = Mat3::from_cols(rotation.transform_vector(local.y), rotation.transform_vector(local.x), -rotation.transform_vector(local.z));
-                let radius = if wheel.is_front() { vehicle.model.configuration.front_tire_radius } else { vehicle.model.configuration.rear_tire_radius };
-                let width = if wheel.is_front() { vehicle.model.configuration.front_tire_width } else { vehicle.model.configuration.rear_tire_width };
+                let radius = if wheel.is_front() { vehicle.model.configuration.tires.front_tire_radius } else { vehicle.model.configuration.tires.rear_tire_radius };
+                let width = if wheel.is_front() { vehicle.model.configuration.tires.front_tire_width } else { vehicle.model.configuration.tires.rear_tire_width };
                 shapes.push(AttachedVehicleShape { entity_index, identifier: format!("wheel_{wheel:?}"), wheel: Some(wheel),
                     pose: physical_pose(vehicle.state.suspension.body_origin_world_metres + rotation.transform_vector(solution.hub), basis), shape: SharedShape::cylinder(width * 0.5, radius) });
             }

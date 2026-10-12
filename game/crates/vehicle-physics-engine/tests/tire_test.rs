@@ -33,16 +33,16 @@ fn surface_stiffness_changes_brush_force() {
 
     road.process_wheel_forces(
         &cfg, wheel, 1500.0, SurfaceType::Road,
-        *cfg.surface_friction.get(&SurfaceType::Road).unwrap(),
-        *cfg.surface_stiffness.get(&SurfaceType::Road).unwrap(),
-        *cfg.surface_rolling_resistance.get(&SurfaceType::Road).unwrap(),
+        *cfg.tires.surface_friction.get(&SurfaceType::Road).unwrap(),
+        *cfg.tires.surface_stiffness.get(&SurfaceType::Road).unwrap(),
+        *cfg.tires.surface_rolling_resistance.get(&SurfaceType::Road).unwrap(),
         false, Vec3::new(2.0, 0.0, -20.0), 1.0 / 120.0,
     );
     dirt.process_wheel_forces(
         &cfg, wheel, 1500.0, SurfaceType::Dirt,
-        *cfg.surface_friction.get(&SurfaceType::Dirt).unwrap(),
-        *cfg.surface_stiffness.get(&SurfaceType::Dirt).unwrap(),
-        *cfg.surface_rolling_resistance.get(&SurfaceType::Dirt).unwrap(),
+        *cfg.tires.surface_friction.get(&SurfaceType::Dirt).unwrap(),
+        *cfg.tires.surface_stiffness.get(&SurfaceType::Dirt).unwrap(),
+        *cfg.tires.surface_rolling_resistance.get(&SurfaceType::Dirt).unwrap(),
         false, Vec3::new(2.0, 0.0, -20.0), 1.0 / 120.0,
     );
 
@@ -59,8 +59,8 @@ fn airborne_spin_decay_uses_configured_per_axle_torque() {
     // Regression: tire.rs previously hard-coded 2.0 and ignored the config value,
     // so changing airborne_spin_decay_torque in JSON had no effect. This fails pre-fix.
     let mut cfg = VehicleConfig::f1_94_canonical();
-    cfg.front_airborne_decay = 5.0;
-    cfg.rear_airborne_decay = 1.0;
+    cfg.tires.front_airborne_decay = 5.0;
+    cfg.tires.rear_airborne_decay = 1.0;
     let mut tires = TireSystem::new(&cfg);
     let dt = 1.0 / 120.0;
 
@@ -73,7 +73,7 @@ fn airborne_spin_decay_uses_configured_per_axle_torque() {
     let expected_front = 100.0 - 5.0 / tires.wheels[fw].wheel_moment * dt;
     assert!(
         (tires.wheels[fw].spin - expected_front).abs() < 1e-9,
-        "front airborne decay must track cfg.front_airborne_decay (got {}, expected {})",
+        "front airborne decay must track cfg.tires.front_airborne_decay (got {}, expected {})",
         tires.wheels[fw].spin, expected_front
     );
 
@@ -86,7 +86,7 @@ fn airborne_spin_decay_uses_configured_per_axle_torque() {
     let expected_rear = 100.0 - 1.0 / tires.wheels[rw].wheel_moment * dt;
     assert!(
         (tires.wheels[rw].spin - expected_rear).abs() < 1e-9,
-        "rear airborne decay must track cfg.rear_airborne_decay (got {}, expected {})",
+        "rear airborne decay must track cfg.tires.rear_airborne_decay (got {}, expected {})",
         tires.wheels[rw].spin, expected_rear
     );
 }
@@ -98,14 +98,14 @@ fn contact_patch_scales_relaxation_and_converges_in_steady_state() {
     // same saturated force in steady state. The patch no longer multiplies peak grip.
     let fr = SurfaceType::Road;
     let base = VehicleConfig::f1_94_canonical();
-    let ef = *base.surface_friction.get(&fr).unwrap();
-    let es = *base.surface_stiffness.get(&fr).unwrap();
-    let er = *base.surface_rolling_resistance.get(&fr).unwrap();
+    let ef = *base.tires.surface_friction.get(&fr).unwrap();
+    let es = *base.tires.surface_stiffness.get(&fr).unwrap();
+    let er = *base.tires.surface_rolling_resistance.get(&fr).unwrap();
 
     let mut high = VehicleConfig::f1_94_canonical();
-    high.front_contact_patch = 0.60;
+    high.tires.front_contact_patch = 0.60;
     let mut low = VehicleConfig::f1_94_canonical();
-    low.front_contact_patch = 0.10;
+    low.tires.front_contact_patch = 0.10;
 
     let mut t_high = TireSystem::new(&high);
     let mut t_low = TireSystem::new(&low);
@@ -152,9 +152,9 @@ fn brake_input_does_not_change_available_mu() {
     // Same tire/Fz/slip state must produce identical forces with braking on or off.
     let fr = SurfaceType::Road;
     let base = VehicleConfig::f1_94_canonical();
-    let ef = *base.surface_friction.get(&fr).unwrap();
-    let es = *base.surface_stiffness.get(&fr).unwrap();
-    let er = *base.surface_rolling_resistance.get(&fr).unwrap();
+    let ef = *base.tires.surface_friction.get(&fr).unwrap();
+    let es = *base.tires.surface_stiffness.get(&fr).unwrap();
+    let er = *base.tires.surface_rolling_resistance.get(&fr).unwrap();
 
     let mut braking = TireSystem::new(&base);
     let mut coasting = TireSystem::new(&base);

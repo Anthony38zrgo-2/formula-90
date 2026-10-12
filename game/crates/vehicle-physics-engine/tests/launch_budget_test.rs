@@ -1,7 +1,7 @@
 use vehicle_physics_engine::*;
 
 fn road_friction(cfg: &VehicleConfig) -> f64 {
-    *cfg.surface_friction.get(&SurfaceType::Road).unwrap()
+    *cfg.tires.surface_friction.get(&SurfaceType::Road).unwrap()
 }
 
 #[test]
@@ -14,12 +14,12 @@ fn launch_budget_reports_clutch_vs_longitudinal_grip() {
     let squat_normal = observed_rear_compression_m * rear_k;
     let normal = static_normal + squat_normal;
     let friction_budget = (road_friction(&cfg) * normal
-        - normal / (cfg.rear_tire_width * 1000.0 * cfg.contact_patch * 0.2))
+        - normal / (cfg.tires.rear_tire_width * 1000.0 * cfg.tires.contact_patch * 0.2))
         .max(0.0);
     let longitudinal_budget = friction_budget * 0.5;
     let first_ratio = cfg.powertrain.gear_ratios[0] * cfg.powertrain.final_drive;
     let clutch_limit = cfg.powertrain.max_torque * 1.6;
-    let drive_force_per_wheel = clutch_limit * first_ratio / 2.0 / cfg.rear_tire_radius;
+    let drive_force_per_wheel = clutch_limit * first_ratio / 2.0 / cfg.tires.rear_tire_radius;
     let ratio = drive_force_per_wheel / longitudinal_budget.max(1e-6);
 
     println!("normal_static_n={static_normal:.3}");
@@ -35,9 +35,9 @@ fn brush_lateral_force_is_degraded_by_longitudinal_slip() {
     let cfg = VehicleConfig::f1_94_canonical();
     let wheel = WheelIndex::RearLeft;
     let normal = cfg.mass_over_wheel(wheel) * 9.80665;
-    let friction = *cfg.surface_friction.get(&SurfaceType::Road).unwrap();
-    let stiffness = *cfg.surface_stiffness.get(&SurfaceType::Road).unwrap();
-    let rolling = *cfg.surface_rolling_resistance.get(&SurfaceType::Road).unwrap();
+    let friction = *cfg.tires.surface_friction.get(&SurfaceType::Road).unwrap();
+    let stiffness = *cfg.tires.surface_stiffness.get(&SurfaceType::Road).unwrap();
+    let rolling = *cfg.tires.surface_rolling_resistance.get(&SurfaceType::Road).unwrap();
     let dt = 1.0 / 120.0;
     let forward = 36.0;
     let mut values = Vec::new();
@@ -46,7 +46,7 @@ fn brush_lateral_force_is_degraded_by_longitudinal_slip() {
         let wheel_speed = forward * (1.0 + slip_ratio);
         let mut tires = TireSystem::new(&cfg);
         tires.process_wheel_torque(&cfg, wheel, 2000.0, 5.0, 0.0, dt);
-        tires.wheels[wheel as usize].spin = wheel_speed / cfg.rear_tire_radius;
+        tires.wheels[wheel as usize].spin = wheel_speed / cfg.tires.rear_tire_radius;
         tires.process_wheel_forces(
             &cfg,
             wheel,

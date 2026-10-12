@@ -134,9 +134,9 @@ fn f1_geometric_settles_at_design() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
@@ -190,9 +190,9 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
         m / k
     };
     let road = |cfg: &VehicleConfig| {
-        let rf = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
+        let rf = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius
             - stat(cfg, WheelIndex::FrontLeft);
-        let rr = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
+        let rr = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius
             - stat(cfg, WheelIndex::RearLeft);
         [mk(rf), mk(rf), mk(rr), mk(rr)]
     };

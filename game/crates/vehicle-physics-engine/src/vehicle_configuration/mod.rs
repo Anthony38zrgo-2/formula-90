@@ -30,6 +30,7 @@ pub use chassis::configuration::ChassisConfiguration;
 pub use powertrain::configuration::PowertrainConfiguration;
 pub use steering::configuration::SteeringConfiguration;
 pub use suspension::configuration::SuspensionConfiguration;
+pub use tires::configuration::TiresConfiguration;
 
 pub use loader::{
     load_physical_configuration, resolve_domain_document_path, LoadedPhysicalConfiguration,

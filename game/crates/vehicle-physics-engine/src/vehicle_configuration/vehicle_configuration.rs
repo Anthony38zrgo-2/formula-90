@@ -18,46 +18,8 @@ pub struct VehicleConfig {
     pub suspension: SuspensionConfiguration,
 
     // Tires & Contact
-    pub front_tire_radius: f64,
-    pub rear_tire_radius: f64,
-    pub front_tire_width: f64, // meters
-    pub rear_tire_width: f64,  // meters
-    pub front_wheel_mass: f64,
-    pub rear_wheel_mass: f64,
-    // Global fallback (used when a per-axle value is omitted in JSON).
-    pub contact_patch: f64,
-    // Per-axle contact patch (front/rear).
-    pub front_contact_patch: f64,
-    pub rear_contact_patch: f64,
-    pub front_airborne_decay: f64,
-    pub rear_airborne_decay: f64,
+    pub tires: TiresConfiguration,
     pub brakes: BrakesConfiguration,
-
-    // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
-    pub tire_pressure: TirePressureConfig,
-    pub tire_thermal: TireThermalAxleConfig,
-
-    #[serde(default)]
-    pub tire_wear: TireWearAxleConfig,
-
-    // Schema v3: per-axle steady tire force envelope (consumed by tire.rs).
-    #[serde(default)]
-    pub front_tire_force: TireForceProfile,
-    #[serde(default)]
-    pub rear_tire_force: TireForceProfile,
-    #[serde(default)]
-    pub pressure_mechanics: PressureMechanicsSensitivity,
-
-    // Surface properties
-    pub surface_friction: HashMap<SurfaceType, f64>,
-    pub surface_stiffness: HashMap<SurfaceType, f64>,
-    pub surface_rolling_resistance: HashMap<SurfaceType, f64>,
-    pub surface_longitudinal_grip_ratio: HashMap<SurfaceType, f64>,
-    /// GRIP-06: first-order filter tau (s) for the per-wheel effective surface
-    /// friction/stiffness/rolling values, so kerb and grass crossings are
-    /// gradual. `0.0` keeps instantaneous surface steps (legacy).
-    #[serde(default)]
-    pub surface_transition_tau_s: f64,
 
     // Driving aids (canonical model + policy). Runtime enablement is held
     // separately in the simulator's aids_enabled_mask, not here.
@@ -95,7 +57,7 @@ impl VehicleConfig {
 
     pub fn additional_wheel_assembly_mass(&self) -> f64 {
         if self.chassis.vehicle_mass_excludes_wheel_assemblies {
-            2.0 * (self.front_wheel_mass + self.rear_wheel_mass)
+            2.0 * (self.tires.front_wheel_mass + self.tires.rear_wheel_mass)
         } else {
             0.0
         }
@@ -119,7 +81,7 @@ impl VehicleConfig {
             self.chassis.front_weight_distribution
         };
         let additional_front_wheel_mass = if self.chassis.vehicle_mass_excludes_wheel_assemblies {
-            2.0 * self.front_wheel_mass
+            2.0 * self.tires.front_wheel_mass
         } else {
             0.0
         };
@@ -182,11 +144,11 @@ impl VehicleConfig {
             -self.chassis.rear_track * 0.5
         };
 
-        let mean_radius = (self.front_tire_radius + self.rear_tire_radius) * 0.5;
+        let mean_radius = (self.tires.front_tire_radius + self.tires.rear_tire_radius) * 0.5;
         let hub_y = if wheel.is_front() {
-            self.front_tire_radius - mean_radius
+            self.tires.front_tire_radius - mean_radius
         } else {
-            self.rear_tire_radius - mean_radius
+            self.tires.rear_tire_radius - mean_radius
         };
         let spring_length = if wheel.is_front() {
             self.suspension.front_spring_length

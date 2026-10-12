@@ -43,8 +43,8 @@ fn round_trip_preserves_all_fields() {
         (loaded.chassis.front_weight_distribution - original.chassis.front_weight_distribution).abs() < 1e-10
     );
     assert_eq!(
-        loaded.surface_friction.len(),
-        original.surface_friction.len()
+        loaded.tires.surface_friction.len(),
+        original.tires.surface_friction.len()
     );
 }
 
@@ -195,20 +195,20 @@ fn tire_pressure_thermal_json_round_trip() {
         }
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert!((cfg.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.cold_kpa_gauge[1] - 112.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.cold_kpa_gauge[2] - 106.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.cold_kpa_gauge[3] - 107.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.reference_temperature_c - 26.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.atmospheric_pressure_kpa - 102.0).abs() < 1e-9);
-    assert!((cfg.tire_thermal.front.optimal_tread_temperature_c - 96.0).abs() < 1e-9);
-    assert!((cfg.tire_thermal.front.overheat_tread_temperature_c - 122.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[1] - 112.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[2] - 106.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[3] - 107.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.reference_temperature_c - 26.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.atmospheric_pressure_kpa - 102.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_thermal.front.optimal_tread_temperature_c - 96.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_thermal.front.overheat_tread_temperature_c - 122.0).abs() < 1e-9);
     // THERM-700: the legacy pressure_stiffness_exponent key is accepted purely
     // for schema-v2 compatibility and is ignored; only the three
     // pressure_mechanics sensitivities apply (defaults here).
-    assert_eq!(cfg.pressure_mechanics, PressureMechanicsSensitivity::default());
+    assert_eq!(cfg.tires.pressure_mechanics, PressureMechanicsSensitivity::default());
     // Fields not present keep module defaults.
-    assert!((cfg.tire_thermal.front.initial_temperature_c - 25.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_thermal.front.initial_temperature_c - 25.0).abs() < 1e-9);
     // Round trip through JSON drops the deprecated exponent key (never emitted
     // for new profiles) and preserves the parsed values.
     let json_val = cfg.to_json_value();
@@ -218,8 +218,8 @@ fn tire_pressure_thermal_json_round_trip() {
     );
     let loaded =
         VehicleConfig::from_json_str(&serde_json::to_string(&json_val).unwrap()).unwrap();
-    assert!((loaded.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
-    assert_eq!(loaded.pressure_mechanics, PressureMechanicsSensitivity::default());
+    assert!((loaded.tires.tire_pressure.cold_kpa_gauge[0] - 111.0).abs() < 1e-9);
+    assert_eq!(loaded.tires.pressure_mechanics, PressureMechanicsSensitivity::default());
 }
 
 #[test]
@@ -240,20 +240,20 @@ fn tire_thermal_front_and_rear_profiles_are_independent() {
         }
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert_eq!(cfg.tire_thermal.front.tread_zone_heat_capacity_j_k, 3000.0);
-    assert_eq!(cfg.tire_thermal.rear.tread_zone_heat_capacity_j_k, 6000.0);
-    assert_eq!(cfg.tire_thermal.front.slip_heat_efficiency, 0.95);
-    assert_eq!(cfg.tire_thermal.rear.slip_heat_efficiency, 0.75);
+    assert_eq!(cfg.tires.tire_thermal.front.tread_zone_heat_capacity_j_k, 3000.0);
+    assert_eq!(cfg.tires.tire_thermal.rear.tread_zone_heat_capacity_j_k, 6000.0);
+    assert_eq!(cfg.tires.tire_thermal.front.slip_heat_efficiency, 0.95);
+    assert_eq!(cfg.tires.tire_thermal.rear.slip_heat_efficiency, 0.75);
 
     let round_trip =
         VehicleConfig::from_json_str(&serde_json::to_string(&cfg.to_json_value()).unwrap())
             .unwrap();
     assert_eq!(
-        round_trip.tire_thermal.front.tread_zone_heat_capacity_j_k,
+        round_trip.tires.tire_thermal.front.tread_zone_heat_capacity_j_k,
         3000.0
     );
     assert_eq!(
-        round_trip.tire_thermal.rear.tread_zone_heat_capacity_j_k,
+        round_trip.tires.tire_thermal.rear.tread_zone_heat_capacity_j_k,
         6000.0
     );
 }
@@ -271,12 +271,12 @@ fn fl_only_pressure_change_does_not_alter_other_wheels() {
         }
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert!((cfg.tire_pressure.cold_kpa_gauge[0] - 120.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.cold_kpa_gauge[1] - 110.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.cold_kpa_gauge[2] - 105.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.cold_kpa_gauge[3] - 105.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.reference_hot_kpa_gauge[0] - 150.0).abs() < 1e-9);
-    assert!((cfg.tire_pressure.reference_hot_kpa_gauge[1] - 145.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[0] - 120.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[1] - 110.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[2] - 105.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.cold_kpa_gauge[3] - 105.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.reference_hot_kpa_gauge[0] - 150.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.reference_hot_kpa_gauge[1] - 145.0).abs() < 1e-9);
 }
 
 #[test]
@@ -284,11 +284,11 @@ fn missing_thermal_section_uses_stable_defaults() {
     let json = r#"{"schema_version": 2}"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
     assert_eq!(
-        cfg.tire_pressure.cold_kpa_gauge,
+        cfg.tires.tire_pressure.cold_kpa_gauge,
         [110.0, 110.0, 105.0, 105.0]
     );
-    assert!((cfg.tire_thermal.front.optimal_tread_temperature_c - 95.0).abs() < 1e-9);
-    assert_eq!(cfg.pressure_mechanics, PressureMechanicsSensitivity::default());
+    assert!((cfg.tires.tire_thermal.front.optimal_tread_temperature_c - 95.0).abs() < 1e-9);
+    assert_eq!(cfg.tires.pressure_mechanics, PressureMechanicsSensitivity::default());
 }
 
 #[test]
@@ -331,15 +331,15 @@ fn tire_pressure_validation_rejects_invalid_values() {
 fn canonical_uses_f1_94_pressure_and_thermal_defaults() {
     let cfg = VehicleConfig::f1_94_canonical();
     assert_eq!(
-        cfg.tire_pressure.cold_kpa_gauge,
+        cfg.tires.tire_pressure.cold_kpa_gauge,
         [110.0, 110.0, 105.0, 105.0]
     );
     assert_eq!(
-        cfg.tire_pressure.reference_hot_kpa_gauge,
+        cfg.tires.tire_pressure.reference_hot_kpa_gauge,
         [145.0, 145.0, 140.0, 140.0]
     );
-    assert!((cfg.tire_pressure.reference_temperature_c - 25.0).abs() < 1e-9);
-    assert!((cfg.tire_thermal.front.initial_temperature_c - 25.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_pressure.reference_temperature_c - 25.0).abs() < 1e-9);
+    assert!((cfg.tires.tire_thermal.front.initial_temperature_c - 25.0).abs() < 1e-9);
 }
 
 #[test]
@@ -580,22 +580,22 @@ fn schema_v3_full_profile_parses_and_round_trips() {
     }"#;
     let cfg = VehicleConfig::from_json_str(json).expect("v3 profile must validate");
     assert_eq!(cfg.schema_version, 3);
-    assert_eq!(cfg.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
-    assert_eq!(cfg.front_tire_force.longitudinal_peak_slip_ratio, 0.14);
-    assert_eq!(cfg.front_tire_force.lateral_slide_mu_ratio, 0.92);
-    assert_eq!(cfg.front_tire_force.longitudinal_slide_mu_ratio, 0.88);
-    assert_eq!(cfg.front_tire_force.budget_blend_width, 0.12);
-    assert_eq!(cfg.front_tire_force.falloff_sharpness, 1.5);
-    assert_eq!(cfg.front_tire_force.slip_loss_tau_s, 0.04);
-    assert_eq!(cfg.front_tire_force.slip_recovery_tau_s, 0.22);
-    assert_eq!(cfg.rear_tire_force.lateral_peak_slip_angle_rad, 0.21);
-    assert_eq!(cfg.rear_tire_force.longitudinal_peak_slip_ratio, 0.16);
-    assert_eq!(cfg.rear_tire_force.lateral_slide_mu_ratio, 0.95);
-    assert_eq!(cfg.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
-    assert_eq!(cfg.pressure_mechanics.compliance_sensitivity, 0.72);
-    assert_eq!(cfg.pressure_mechanics.response_sensitivity, -0.18);
+    assert_eq!(cfg.tires.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
+    assert_eq!(cfg.tires.front_tire_force.longitudinal_peak_slip_ratio, 0.14);
+    assert_eq!(cfg.tires.front_tire_force.lateral_slide_mu_ratio, 0.92);
+    assert_eq!(cfg.tires.front_tire_force.longitudinal_slide_mu_ratio, 0.88);
+    assert_eq!(cfg.tires.front_tire_force.budget_blend_width, 0.12);
+    assert_eq!(cfg.tires.front_tire_force.falloff_sharpness, 1.5);
+    assert_eq!(cfg.tires.front_tire_force.slip_loss_tau_s, 0.04);
+    assert_eq!(cfg.tires.front_tire_force.slip_recovery_tau_s, 0.22);
+    assert_eq!(cfg.tires.rear_tire_force.lateral_peak_slip_angle_rad, 0.21);
+    assert_eq!(cfg.tires.rear_tire_force.longitudinal_peak_slip_ratio, 0.16);
+    assert_eq!(cfg.tires.rear_tire_force.lateral_slide_mu_ratio, 0.95);
+    assert_eq!(cfg.tires.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
+    assert_eq!(cfg.tires.pressure_mechanics.compliance_sensitivity, 0.72);
+    assert_eq!(cfg.tires.pressure_mechanics.response_sensitivity, -0.18);
     assert_eq!(
-        cfg.pressure_mechanics.rolling_resistance_sensitivity,
+        cfg.tires.pressure_mechanics.rolling_resistance_sensitivity,
         -0.35
     );
     assert_eq!(cfg.suspension.front_camber_gain_rad_per_m, -0.021);
@@ -608,11 +608,11 @@ fn schema_v3_full_profile_parses_and_round_trips() {
     )
     .expect("v3 round trip must validate");
     assert_eq!(round_trip.schema_version, 3);
-    assert_eq!(round_trip.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
-    assert_eq!(round_trip.front_tire_force.falloff_sharpness, 1.5);
-    assert_eq!(round_trip.front_tire_force.slip_recovery_tau_s, 0.22);
-    assert_eq!(round_trip.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
-    assert_eq!(round_trip.pressure_mechanics.compliance_sensitivity, 0.72);
+    assert_eq!(round_trip.tires.front_tire_force.lateral_peak_slip_angle_rad, 0.18);
+    assert_eq!(round_trip.tires.front_tire_force.falloff_sharpness, 1.5);
+    assert_eq!(round_trip.tires.front_tire_force.slip_recovery_tau_s, 0.22);
+    assert_eq!(round_trip.tires.rear_tire_force.longitudinal_slide_mu_ratio, 0.90);
+    assert_eq!(round_trip.tires.pressure_mechanics.compliance_sensitivity, 0.72);
     assert_eq!(round_trip.suspension.front_camber_gain_rad_per_m, -0.021);
     assert_eq!(round_trip.suspension.rear_toe_gain_rad_per_m, -0.002);
 }
@@ -622,7 +622,7 @@ fn schema_v3_absent_sections_use_parser_defaults() {
     let cfg = VehicleConfig::from_json_str(r#"{"schema_version": 3}"#).unwrap();
     assert_eq!(cfg.schema_version, 3);
     assert_eq!(
-        cfg.front_tire_force,
+        cfg.tires.front_tire_force,
         TireForceProfile {
             lateral_peak_slip_angle_rad: 0.10,
             longitudinal_peak_slip_ratio: 0.12,
@@ -639,9 +639,9 @@ fn schema_v3_absent_sections_use_parser_defaults() {
             contact_ramp_tau_s: 0.0,
         }
     );
-    assert_eq!(cfg.rear_tire_force, cfg.front_tire_force);
+    assert_eq!(cfg.tires.rear_tire_force, cfg.tires.front_tire_force);
     assert_eq!(
-        cfg.pressure_mechanics,
+        cfg.tires.pressure_mechanics,
         PressureMechanicsSensitivity::default()
     );
     assert_eq!(cfg.suspension.front_camber_gain_rad_per_m, 0.0);
@@ -704,8 +704,8 @@ fn relaxation_parameters_are_validated() {
         r#"{"schema_version": 3, "tires": {"force_model": {"front": {"min_relaxation_tau_s": 0.035, "relaxation_recovery_scale": 1.6}}}}"#,
     )
     .expect("valid relaxation parameters must parse");
-    assert_eq!(ok.front_tire_force.min_relaxation_tau_s, 0.035);
-    assert_eq!(ok.front_tire_force.relaxation_recovery_scale, 1.6);
+    assert_eq!(ok.tires.front_tire_force.min_relaxation_tau_s, 0.035);
+    assert_eq!(ok.tires.front_tire_force.relaxation_recovery_scale, 1.6);
 }
 
 #[test]
@@ -725,8 +725,8 @@ fn contact_and_surface_ramp_parameters_are_validated() {
         r#"{"schema_version": 3, "tires": {"force_model": {"front": {"contact_ramp_tau_s": 0.06}}, "surface_transition_tau_s": 0.08}}"#,
     )
     .expect("valid ramp parameters must parse");
-    assert_eq!(ok.front_tire_force.contact_ramp_tau_s, 0.06);
-    assert_eq!(ok.surface_transition_tau_s, 0.08);
+    assert_eq!(ok.tires.front_tire_force.contact_ramp_tau_s, 0.06);
+    assert_eq!(ok.tires.surface_transition_tau_s, 0.08);
 }
 
 #[test]

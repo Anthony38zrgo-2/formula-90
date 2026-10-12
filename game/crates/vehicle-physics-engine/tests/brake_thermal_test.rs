@@ -184,9 +184,9 @@ fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> 
                 1.0 - configuration.brakes.front_brake_bias
             };
             let radius = if wheel.is_front() {
-                configuration.front_tire_radius
+                configuration.tires.front_tire_radius
             } else {
-                configuration.rear_tire_radius
+                configuration.tires.rear_tire_radius
             };
             system.step_after_braking(
                 wheel,
@@ -250,9 +250,9 @@ fn simulate_vehicle_braking_at_temperature(temperature_celsius: f64) -> Telemetr
     for wheel in WheelIndex::ALL {
         let index = wheel as usize;
         let radius = if wheel.is_front() {
-            configuration.front_tire_radius
+            configuration.tires.front_tire_radius
         } else {
-            configuration.rear_tire_radius
+            configuration.tires.rear_tire_radius
         };
         simulator.state.tires.wheels[index].spin = 70.0 / radius;
         simulator.state.brake_thermal.wheels[index].disc_c = temperature_celsius;

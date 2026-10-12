@@ -101,8 +101,8 @@ fn loads_minimal_manifest_with_complete_provenance() {
     assert_eq!(loaded.provenance.dependencies.len(), 9);
     assert_eq!(loaded.provenance.global_digest_sha256.len(), 64);
     assert_eq!(loaded.configuration.chassis.vehicle_mass, 575.0);
-    assert_eq!(loaded.configuration.front_tire_radius, 0.33);
-    assert_eq!(loaded.configuration.rear_tire_radius, 0.34);
+    assert_eq!(loaded.configuration.tires.front_tire_radius, 0.33);
+    assert_eq!(loaded.configuration.tires.rear_tire_radius, 0.34);
     assert!(loaded
         .provenance
         .dependencies
@@ -273,7 +273,7 @@ fn resolved_document_round_trips_and_tracks_provenance() {
     );
     let restored_configuration = restored.configuration().unwrap();
     assert_eq!(restored_configuration.chassis.vehicle_mass, 575.0);
-    assert_eq!(restored_configuration.front_tire_radius, 0.33);
+    assert_eq!(restored_configuration.tires.front_tire_radius, 0.33);
 }
 
 #[test]

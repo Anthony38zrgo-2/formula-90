@@ -33,9 +33,9 @@ fn corner_normal_forces_include_fuel_once_and_balance_vehicle_weight() {
 #[test]
 fn audit_rejects_invalid_physical_masses_before_tuning_clamps_hide_them() {
     let mut configuration = vehicle_configuration();
-    configuration.front_wheel_mass = -1.0;
+    configuration.tires.front_wheel_mass = -1.0;
     assert!(SuspensionMassAudit::from_vehicle_configuration(&configuration).is_err());
-    configuration.front_wheel_mass = f64::NAN;
+    configuration.tires.front_wheel_mass = f64::NAN;
     assert!(SuspensionMassAudit::from_vehicle_configuration(&configuration).is_err());
     configuration = vehicle_configuration();
     configuration.chassis.vehicle_mass = f64::INFINITY;
@@ -50,7 +50,7 @@ fn body_mass_contract_adds_each_wheel_once_and_preserves_axle_moments() {
     assert!((configuration.complete_dry_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
     assert!((configuration.total_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
     let front_supported_mass = configuration.chassis.vehicle_mass * configuration.chassis.front_weight_distribution
-        + 2.0 * configuration.front_wheel_mass;
+        + 2.0 * configuration.tires.front_wheel_mass;
     assert!(
         (configuration.effective_front_weight_distribution() * 678.3378962698143 - front_supported_mass).abs()
             < 1e-10

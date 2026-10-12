@@ -72,10 +72,10 @@ impl VehicleState {
             suspension: SuspensionSystem::new(config),
             tires: TireSystem::new(config),
             tire_thermal: TireThermalSystem::new_with_axles(
-                &config.tire_pressure,
-                &config.tire_thermal,
+                &config.tires.tire_pressure,
+                &config.tires.tire_thermal,
             ),
-            tire_wear: TireWearSystem::new_with_axles(&config.tire_wear),
+            tire_wear: TireWearSystem::new_with_axles(&config.tires.tire_wear),
             brake_thermal: BrakeThermalSystem::new(&config.brakes.brake_thermal),
             powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain.powertrain_thermal),
             aero: AeroForces::zero(),
@@ -232,10 +232,10 @@ impl VehicleSimulator {
     pub fn replace_tire_set(&mut self) {
         self.state
             .tire_wear
-            .reset_with_axles(&self.config.tire_wear);
+            .reset_with_axles(&self.config.tires.tire_wear);
         self.state
             .tire_thermal
-            .reset_with_axles(&self.config.tire_pressure, &self.config.tire_thermal);
+            .reset_with_axles(&self.config.tires.tire_pressure, &self.config.tires.tire_thermal);
     }
 
     /// Legacy standalone step. It uses the same GEVP force solver as external mode,
@@ -375,27 +375,27 @@ impl VehicleSimulator {
         let mut thermal_modifiers = [
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::FrontLeft,
-                &cfg.tire_pressure,
-                &cfg.tire_thermal.front,
-                cfg.pressure_mechanics,
+                &cfg.tires.tire_pressure,
+                &cfg.tires.tire_thermal.front,
+                cfg.tires.pressure_mechanics,
             ),
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::FrontRight,
-                &cfg.tire_pressure,
-                &cfg.tire_thermal.front,
-                cfg.pressure_mechanics,
+                &cfg.tires.tire_pressure,
+                &cfg.tires.tire_thermal.front,
+                cfg.tires.pressure_mechanics,
             ),
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::RearLeft,
-                &cfg.tire_pressure,
-                &cfg.tire_thermal.rear,
-                cfg.pressure_mechanics,
+                &cfg.tires.tire_pressure,
+                &cfg.tires.tire_thermal.rear,
+                cfg.tires.pressure_mechanics,
             ),
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::RearRight,
-                &cfg.tire_pressure,
-                &cfg.tire_thermal.rear,
-                cfg.pressure_mechanics,
+                &cfg.tires.tire_pressure,
+                &cfg.tires.tire_thermal.rear,
+                cfg.tires.pressure_mechanics,
             ),
         ];
         for wheel in WheelIndex::ALL {
@@ -415,12 +415,12 @@ impl VehicleSimulator {
                 state.effective_contact_point = sample.point;
                 state.effective_normal = sample.normal;
                 state.effective_surface = sample.surface;
-                state.effective_friction = cfg.surface_friction.get(&sample.surface).copied().unwrap_or(1.0);
-                state.effective_stiffness = cfg.surface_stiffness.get(&sample.surface).copied().unwrap_or(1.0);
-                state.effective_rolling_resistance = cfg.surface_rolling_resistance.get(&sample.surface).copied().unwrap_or(1.0);
+                state.effective_friction = cfg.tires.surface_friction.get(&sample.surface).copied().unwrap_or(1.0);
+                state.effective_stiffness = cfg.tires.surface_stiffness.get(&sample.surface).copied().unwrap_or(1.0);
+                state.effective_rolling_resistance = cfg.tires.surface_rolling_resistance.get(&sample.surface).copied().unwrap_or(1.0);
                 state.suspension_compression_m = rest_compression_m(cfg, wheel) + context.wheel_travel_metres[index];
                 state.unsprung_velocity_m_s = context.wheel_travel_velocity_metres_per_second[index];
-                let radius = if wheel.is_front() { cfg.front_tire_radius } else { cfg.rear_tire_radius };
+                let radius = if wheel.is_front() { cfg.tires.front_tire_radius } else { cfg.tires.rear_tire_radius };
                 state.tire_deflection_m = if state.is_grounded { (radius - sample.distance).max(0.0) } else { 0.0 };
                 state.tire_deflection_velocity_m_s = if state.is_grounded {
                     -(context.hub_velocity_world_metres_per_second[index]
@@ -774,7 +774,7 @@ impl VehicleSimulator {
         let mut brake_to_tire_heat = [BrakeToTireHeat::default(); 4];
         for wheel in WheelIndex::ALL {
             let wheel_index = wheel as usize;
-            let tire_thermal = configuration.tire_thermal.for_wheel(wheel);
+            let tire_thermal = configuration.tires.tire_thermal.for_wheel(wheel);
             let tire_state = state.tire_thermal.wheels[wheel_index];
             let brake_thermal_input = BrakeThermalInput {
                 applied_brake_torque_nm: context.applied_brake_torque_newton_metres[wheel_index],
@@ -796,7 +796,7 @@ impl VehicleSimulator {
         }
         for wheel in WheelIndex::ALL {
             let wheel_index = wheel as usize;
-            let tire_thermal = configuration.tire_thermal.for_wheel(wheel);
+            let tire_thermal = configuration.tires.tire_thermal.for_wheel(wheel);
             let tire_environment = TireEnvironment::fallback(tire_thermal);
             let suspension = &state.suspension.wheels[wheel_index];
             let tire = &state.tires.wheels[wheel_index];
@@ -809,11 +809,11 @@ impl VehicleSimulator {
             let wear_zone_weights = normalized_contact_zone_weights(
                 zone_contact_weights,
                 (state.tire_thermal.wheels[wheel_index].pressure_kpa_gauge
-                    / configuration.tire_pressure.reference_hot_kpa_gauge[wheel_index].max(20.0))
+                    / configuration.tires.tire_pressure.reference_hot_kpa_gauge[wheel_index].max(20.0))
                     .clamp(0.45, 1.80),
                 suspension.dynamic_camber,
             );
-            let wear_config = configuration.tire_wear.for_wheel(wheel);
+            let wear_config = configuration.tires.tire_wear.for_wheel(wheel);
             let wear_surface_friction = suspension.effective_friction;
             let wear_longitudinal_force = tire.longitudinal_force;
             let wear_lateral_force = tire.lateral_force;
@@ -848,7 +848,7 @@ impl VehicleSimulator {
             };
             state.tire_thermal.step_after_forces(
                 wheel,
-                &configuration.tire_pressure,
+                &configuration.tires.tire_pressure,
                 tire_thermal,
                 tire_environment,
                 thermal_input,
@@ -880,7 +880,7 @@ impl VehicleSimulator {
                 driver_throttle_fraction: driver_throttle_fraction,
                 vehicle_speed_meters_per_second: vehicle_speed_metres_per_second,
                 air_density_kilograms_per_cubic_meter: configuration.aerodynamics.air_density,
-                ambient_temperature_celsius: configuration.tire_thermal.front.ambient_fallback_c,
+                ambient_temperature_celsius: configuration.tires.tire_thermal.front.ambient_fallback_c,
             },
             duration_seconds,
         );
@@ -1328,7 +1328,7 @@ pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> 
 }
 
 pub fn default_spawn_height(config: &VehicleConfig) -> f64 {
-    (config.front_tire_radius + config.rear_tire_radius) * 0.5
+    (config.tires.front_tire_radius + config.tires.rear_tire_radius) * 0.5
 }
 
 pub fn diffuser_center_local(config: &VehicleConfig) -> Vec3 {

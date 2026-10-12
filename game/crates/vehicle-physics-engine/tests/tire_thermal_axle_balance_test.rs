@@ -138,8 +138,8 @@ fn run_single_wheel_cycle(
 fn rear_profile_warms_into_window_without_one_lap_cooling() {
     let config = geometric_config();
     let rear = run_single_wheel_cycle(
-        &config.tire_pressure,
-        &config.tire_thermal.rear,
+        &config.tires.tire_pressure,
+        &config.tires.tire_thermal.rear,
         WheelIndex::RearLeft,
     );
 
@@ -187,7 +187,7 @@ fn rear_profile_warms_into_window_without_one_lap_cooling() {
 #[test]
 fn front_profile_stays_on_its_checked_in_calibration() {
     let config = geometric_config();
-    let front = &config.tire_thermal.front;
+    let front = &config.tires.tire_thermal.front;
 
     assert_eq!(front.tread_zone_heat_capacity_j_k, 2100.0);
     assert_eq!(front.carcass_heat_capacity_j_k, 5300.0);
@@ -200,7 +200,7 @@ fn front_profile_stays_on_its_checked_in_calibration() {
     assert_eq!(front.lateral_tread_conductance_w_k, 24.0);
     assert_eq!(front.slip_heat_efficiency, 1.1);
 
-    let run = run_single_wheel_cycle(&config.tire_pressure, front, WheelIndex::FrontLeft);
+    let run = run_single_wheel_cycle(&config.tires.tire_pressure, front, WheelIndex::FrontLeft);
     assert!(
         run.second_corner_tread_c >= 98.0,
         "front corner equilibrium must stay hot: {}",
@@ -216,13 +216,13 @@ fn front_profile_stays_on_its_checked_in_calibration() {
 fn rear_tracks_front_within_construction_offset() {
     let config = geometric_config();
     let front = run_single_wheel_cycle(
-        &config.tire_pressure,
-        &config.tire_thermal.front,
+        &config.tires.tire_pressure,
+        &config.tires.tire_thermal.front,
         WheelIndex::FrontLeft,
     );
     let rear = run_single_wheel_cycle(
-        &config.tire_pressure,
-        &config.tire_thermal.rear,
+        &config.tires.tire_pressure,
+        &config.tires.tire_thermal.rear,
         WheelIndex::RearLeft,
     );
 
@@ -241,7 +241,7 @@ fn rear_tracks_front_within_construction_offset() {
 #[test]
 fn legacy_rear_calibration_still_demonstrates_the_cooling_failure() {
     let config = geometric_config();
-    let mut legacy_rear = config.tire_thermal.rear;
+    let mut legacy_rear = config.tires.tire_thermal.rear;
     legacy_rear.tread_zone_heat_capacity_j_k = 5200.0;
     legacy_rear.carcass_heat_capacity_j_k = 12500.0;
     legacy_rear.gas_heat_capacity_j_k = 1800.0;
@@ -253,7 +253,7 @@ fn legacy_rear_calibration_still_demonstrates_the_cooling_failure() {
     legacy_rear.road_conductance_w_k = 62.0;
 
     let run = run_single_wheel_cycle(
-        &config.tire_pressure,
+        &config.tires.tire_pressure,
         &legacy_rear,
         WheelIndex::RearLeft,
     );

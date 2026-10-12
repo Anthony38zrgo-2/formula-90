@@ -1,4 +1,6 @@
-use super::*;
+use serde::{Deserialize, Serialize};
+
+use super::super::*;
 
 /// Schema v3 steady tire force curve (parser-only until TIRE-100/TIRE-200).
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -66,4 +68,47 @@ impl Default for TireForceProfile {
             contact_ramp_tau_s: 0.0,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TiresConfiguration {
+    pub front_tire_radius: f64,
+    pub rear_tire_radius: f64,
+    pub front_tire_width: f64, // meters
+    pub rear_tire_width: f64,  // meters
+    pub front_wheel_mass: f64,
+    pub rear_wheel_mass: f64,
+    // Global fallback (used when a per-axle value is omitted in JSON).
+    pub contact_patch: f64,
+    // Per-axle contact patch (front/rear).
+    pub front_contact_patch: f64,
+    pub rear_contact_patch: f64,
+    pub front_airborne_decay: f64,
+    pub rear_airborne_decay: f64,
+
+    // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
+    pub tire_pressure: TirePressureConfig,
+    pub tire_thermal: TireThermalAxleConfig,
+
+    #[serde(default)]
+    pub tire_wear: TireWearAxleConfig,
+
+    // Schema v3: per-axle steady tire force envelope (consumed by tire.rs).
+    #[serde(default)]
+    pub front_tire_force: TireForceProfile,
+    #[serde(default)]
+    pub rear_tire_force: TireForceProfile,
+    #[serde(default)]
+    pub pressure_mechanics: PressureMechanicsSensitivity,
+
+    // Surface properties
+    pub surface_friction: HashMap<SurfaceType, f64>,
+    pub surface_stiffness: HashMap<SurfaceType, f64>,
+    pub surface_rolling_resistance: HashMap<SurfaceType, f64>,
+    pub surface_longitudinal_grip_ratio: HashMap<SurfaceType, f64>,
+    /// GRIP-06: first-order filter tau (s) for the per-wheel effective surface
+    /// friction/stiffness/rolling values, so kerb and grass crossings are
+    /// gradual. `0.0` keeps instantaneous surface steps (legacy).
+    #[serde(default)]
+    pub surface_transition_tau_s: f64,
 }

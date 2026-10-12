@@ -284,8 +284,8 @@ fn damper_dissipates_energy() {
     // Pin the road far away (no contact → no tire force) is not useful; drive
     // the wheel DOF directly through alternating road targets and accumulate
     // damper power from solver telemetry.
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
     let mk = |d: f64| TriRaycastSample {
         inner: flat_hit(d),
         center: flat_hit(d),
@@ -319,9 +319,9 @@ fn static_equilibrium_correct() {
         let k = WheelMechanicalTuning::for_wheel(&cfg, wheel).tire_vertical_stiffness_n_m;
         m / k
     };
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius
         - stat(WheelIndex::FrontLeft);
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius
         - stat(WheelIndex::RearLeft);
     let samples = [
         TriRaycastSample {
@@ -394,8 +394,8 @@ fn push_pull_labels_identical_response() {
     let dt = 1.0 / 120.0;
     let mut sa = SuspensionSystem::new(&a);
     let mut sb = SuspensionSystem::new(&b);
-    let rest_f = a.suspension.front_spring_length * (1.0 - a.suspension.front_resting_ratio) + a.front_tire_radius;
-    let rest_r = a.suspension.rear_spring_length * (1.0 - a.suspension.rear_resting_ratio) + a.rear_tire_radius;
+    let rest_f = a.suspension.front_spring_length * (1.0 - a.suspension.front_resting_ratio) + a.tires.front_tire_radius;
+    let rest_r = a.suspension.rear_spring_length * (1.0 - a.suspension.rear_resting_ratio) + a.tires.rear_tire_radius;
     for i in 0..120 {
         let bump = if i < 60 { -0.015 } else { 0.010 };
         let mk = |d: f64| TriRaycastSample {
@@ -424,8 +424,8 @@ fn travel_stops_engage_on_overtravel() {
     // Slam all wheels 120 mm into bump (beyond the 100 mm physical bump):
     // solver must engage progressive + hard stops, clamp travel to the
     // physical envelope + measurable overtravel, and flag it — without NaN.
-    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+    let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+    let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
     let slam = [
         TriRaycastSample {
             inner: flat_hit(rest_f - 0.120),

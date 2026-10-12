@@ -868,14 +868,14 @@ impl AeroForces {
             let wheel_position = config.wheel_anchor_local(wheel);
             let wheel_air = AirFlow::at(config, k, wheel_position);
             let wheel_width = if wheel.is_front() {
-                config.front_tire_width
+                config.tires.front_tire_width
             } else {
-                config.rear_tire_width
+                config.tires.rear_tire_width
             };
             let wheel_radius = if wheel.is_front() {
-                config.front_tire_radius
+                config.tires.front_tire_radius
             } else {
-                config.rear_tire_radius
+                config.tires.rear_tire_radius
             };
             let wheel_drag_coefficient = if wheel.is_front() {
                 m.wheels.front_drag_coefficient
@@ -1542,8 +1542,8 @@ mod tests {
         separated_configuration.aerodynamics.aero_model.wheels.rear_drag_coefficient = 0.08;
         separated_configuration.aerodynamics.aero_model.body.wheel_reference_drag_area_m2 = 0.08
             * 2.0
-            * (separated_configuration.front_tire_width * separated_configuration.front_tire_radius * 2.0
-                + separated_configuration.rear_tire_width * separated_configuration.rear_tire_radius * 2.0);
+            * (separated_configuration.tires.front_tire_width * separated_configuration.tires.front_tire_radius * 2.0
+                + separated_configuration.tires.rear_tire_width * separated_configuration.tires.rear_tire_radius * 2.0);
         let velocity = Vec3::new(0.0, 0.0, -80.0);
         let environment = AeroEnvironment::default();
         let mut reference_forces = AeroForces::zero();
@@ -1559,7 +1559,7 @@ mod tests {
             - separated_forces.wing_and_floor_drag_force
             - separated_forces.wheel_drag_forces.iter().sum::<f64>()).abs() < 1e-8);
 
-        separated_configuration.front_tire_width -= 0.01;
+        separated_configuration.tires.front_tire_width -= 0.01;
         let mut narrower_forces = AeroForces::zero();
         for _ in 0..60 {
             narrower_forces.step_with_environment(&separated_configuration, velocity, &environment, 0.0, 1.0 / 120.0);
@@ -1578,13 +1578,13 @@ mod tests {
         let configuration = VehicleConfig::from_json_path(&profile_path).unwrap();
         let wheels = &configuration.aerodynamics.aero_model.wheels;
         let reference_drag_area = 2.0
-            * (configuration.front_tire_width
+            * (configuration.tires.front_tire_width
                 * 2.0
-                * configuration.front_tire_radius
+                * configuration.tires.front_tire_radius
                 * wheels.front_drag_coefficient
-                + configuration.rear_tire_width
+                + configuration.tires.rear_tire_width
                     * 2.0
-                    * configuration.rear_tire_radius
+                    * configuration.tires.rear_tire_radius
                     * wheels.rear_drag_coefficient);
         assert!((configuration.aerodynamics.aero_model.body.wheel_reference_drag_area_m2 - reference_drag_area).abs() < 1e-10);
         assert!(reference_drag_area > 0.0);

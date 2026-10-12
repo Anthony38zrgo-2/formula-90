@@ -197,10 +197,10 @@ impl WheelSuspensionState {
             effective_contact_point: Vec3::ZERO,
             effective_normal: Vec3::UP,
             effective_surface: SurfaceType::Road,
-            effective_friction: surface_value(&config.surface_friction, SurfaceType::Road, 1.0),
-            effective_stiffness: surface_value(&config.surface_stiffness, SurfaceType::Road, 5.0),
+            effective_friction: surface_value(&config.tires.surface_friction, SurfaceType::Road, 1.0),
+            effective_stiffness: surface_value(&config.tires.surface_stiffness, SurfaceType::Road, 5.0),
             effective_rolling_resistance: surface_value(
-                &config.surface_rolling_resistance,
+                &config.tires.surface_rolling_resistance,
                 SurfaceType::Road,
                 1.0,
             ),
@@ -224,17 +224,17 @@ impl WheelSuspensionState {
             // tau = 0.0 remains an exact pass-through.
             surface_filter_initialized: true,
             filtered_surface_friction: surface_value(
-                &config.surface_friction,
+                &config.tires.surface_friction,
                 SurfaceType::Road,
                 1.0,
             ),
             filtered_surface_stiffness: surface_value(
-                &config.surface_stiffness,
+                &config.tires.surface_stiffness,
                 SurfaceType::Road,
                 5.0,
             ),
             filtered_surface_rolling_resistance: surface_value(
-                &config.surface_rolling_resistance,
+                &config.tires.surface_rolling_resistance,
                 SurfaceType::Road,
                 1.0,
             ),
@@ -274,7 +274,7 @@ fn filter_surface_values(
     raw_rolling: f64,
     dt: f64,
 ) {
-    let tau = config.surface_transition_tau_s.max(0.0);
+    let tau = config.tires.surface_transition_tau_s.max(0.0);
     if tau <= 1e-9 {
         state.filtered_surface_friction = raw_friction;
         state.filtered_surface_stiffness = raw_stiffness;
@@ -605,9 +605,9 @@ impl SuspensionSystem {
             filter_surface_values(
                 config,
                 state,
-                surface_value(&config.surface_friction, SurfaceType::Road, 1.0),
-                surface_value(&config.surface_stiffness, SurfaceType::Road, 5.0),
-                surface_value(&config.surface_rolling_resistance, SurfaceType::Road, 1.0),
+                surface_value(&config.tires.surface_friction, SurfaceType::Road, 1.0),
+                surface_value(&config.tires.surface_stiffness, SurfaceType::Road, 5.0),
+                surface_value(&config.tires.surface_rolling_resistance, SurfaceType::Road, 1.0),
                 dt,
             );
             // No road plane: effective camber equals the wheel-kinematic camber derived
@@ -640,9 +640,9 @@ impl SuspensionSystem {
         filter_surface_values(
             config,
             state,
-            blended_surface(sample, &config.surface_friction, 1.0),
-            blended_surface(sample, &config.surface_stiffness, 5.0),
-            blended_surface(sample, &config.surface_rolling_resistance, 1.0),
+            blended_surface(sample, &config.tires.surface_friction, 1.0),
+            blended_surface(sample, &config.tires.surface_stiffness, 5.0),
+            blended_surface(sample, &config.tires.surface_rolling_resistance, 1.0),
             dt,
         );
 
@@ -1735,7 +1735,7 @@ mod tests {
         let wheel = WheelIndex::FrontLeft;
 
         // tau = 0.0 is an exact pass-through.
-        cfg.surface_transition_tau_s = 0.0;
+        cfg.tires.surface_transition_tau_s = 0.0;
         let mut pass = WheelSuspensionState::new(&cfg, wheel);
         filter_surface_values(&cfg, &mut pass, 0.5, 2.0, 2.0, 1.0 / 120.0);
         assert_eq!(pass.effective_friction, 0.5);
@@ -1743,7 +1743,7 @@ mod tests {
         assert_eq!(pass.effective_rolling_resistance, 2.0);
 
         // A positive tau eases from the current values toward the raw sample.
-        cfg.surface_transition_tau_s = 0.08;
+        cfg.tires.surface_transition_tau_s = 0.08;
         let mut filtered = WheelSuspensionState::new(&cfg, wheel);
         let start = filtered.effective_friction;
         assert!(start > 0.5, "test assumes the road value is above grass");
@@ -1781,10 +1781,10 @@ mod tests {
             / WheelMechanicalTuning::for_wheel(&cfg, WheelIndex::FrontLeft)
                 .tire_vertical_stiffness_n_m;
         let rest_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio)
-            + cfg.front_tire_radius
+            + cfg.tires.front_tire_radius
             - static_deflection;
         let rest_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio)
-            + cfg.rear_tire_radius
+            + cfg.tires.rear_tire_radius
             - static_deflection;
         let samples = [
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
@@ -1823,8 +1823,8 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut suspension = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
-        let rest_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
-        let rest_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+        let rest_fl = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
+        let rest_rl = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
         let flat = [
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
@@ -1863,7 +1863,7 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut sus = SuspensionSystem::new(&cfg);
         let wheel = WheelIndex::FrontLeft;
-        let max_len = cfg.suspension.front_spring_length + cfg.front_tire_radius;
+        let max_len = cfg.suspension.front_spring_length + cfg.tires.front_tire_radius;
         let rest = rest_compression_m(&cfg, wheel);
         let dt = 1.0 / 120.0;
         let sample = TriRaycastSample {
@@ -1893,7 +1893,7 @@ mod tests {
         cfg.suspension.rear_camber_gain_rad_per_m = 0.0;
         let mut sus = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
-        let max_len = cfg.suspension.front_spring_length + cfg.front_tire_radius;
+        let max_len = cfg.suspension.front_spring_length + cfg.tires.front_tire_radius;
         let rest = rest_compression_m(&cfg, WheelIndex::FrontLeft);
         let sample_at =
             |x: f64| TriRaycastSample {
@@ -1949,9 +1949,9 @@ mod tests {
         let cfg = VehicleConfig::f1_94_canonical();
         let mut sus = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
-        let max_len = cfg.suspension.front_spring_length + cfg.front_tire_radius;
+        let max_len = cfg.suspension.front_spring_length + cfg.tires.front_tire_radius;
         let rest = rest_compression_m(&cfg, WheelIndex::FrontLeft);
-        let span = cfg.front_tire_width * cfg.suspension.tri_ray_spacing_ratio * 2.0;
+        let span = cfg.tires.front_tire_width * cfg.suspension.tri_ray_spacing_ratio * 2.0;
         // Inner ray 10 mm closer than the outer: a road-plane incline of atan(0.010/span).
         let sample = TriRaycastSample {
             inner: flat_hit(max_len - rest - 0.010),
@@ -1999,9 +1999,9 @@ mod tests {
         let mut suspension = SuspensionSystem::new(&cfg);
         let dt = 1.0 / 120.0;
         let rest_fl =
-            cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.front_tire_radius;
+            cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio) + cfg.tires.front_tire_radius;
         let rest_rl =
-            cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.rear_tire_radius;
+            cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio) + cfg.tires.rear_tire_radius;
         let flat = [
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
             TriRaycastSample { inner: flat_hit(rest_fl), center: flat_hit(rest_fl), outer: flat_hit(rest_fl) },
@@ -2058,10 +2058,10 @@ mod tests {
             outer: flat_hit(d),
         };
         let rest_f = cfg.suspension.front_spring_length * (1.0 - cfg.suspension.front_resting_ratio)
-            + cfg.front_tire_radius
+            + cfg.tires.front_tire_radius
             - stat(WheelIndex::FrontLeft);
         let rest_r = cfg.suspension.rear_spring_length * (1.0 - cfg.suspension.rear_resting_ratio)
-            + cfg.rear_tire_radius
+            + cfg.tires.rear_tire_radius
             - stat(WheelIndex::RearLeft);
         [mk(rest_f), mk(rest_f), mk(rest_r), mk(rest_r)]
     }

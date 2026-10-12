@@ -16,7 +16,7 @@ fn road_speed_for_engine_revolutions_per_minute(
 ) -> f64 {
     let engine_radians_per_second =
         engine_revolutions_per_minute * 2.0 * std::f64::consts::PI / 60.0;
-    engine_radians_per_second * configuration.rear_tire_radius
+    engine_radians_per_second * configuration.tires.rear_tire_radius
         / (configuration.powertrain.gear_ratios[gear - 1] * configuration.powertrain.final_drive)
 }
 
@@ -26,7 +26,7 @@ fn advance_powertrain(
     requested_gear: Option<i8>,
     road_speed_meters_per_second: f64,
 ) {
-    let wheel_angular_velocity = road_speed_meters_per_second / configuration.rear_tire_radius;
+    let wheel_angular_velocity = road_speed_meters_per_second / configuration.tires.rear_tire_radius;
     let input = VehicleInput {
         gear_request: requested_gear,
         brake: 0.5,
