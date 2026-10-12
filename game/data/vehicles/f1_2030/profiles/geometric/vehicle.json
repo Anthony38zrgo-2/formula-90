@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "vehicle_identifier": "f1_2030_v10",
+  "profile_name": "F1 2030 V10 3.5L NA (900cv) (Geometric prototype)",
+  "units": "SI",
+  "coordinate_contract": {
+    "forward": "-Z",
+    "right": "+X",
+    "up": "+Y"
+  },
+  "domains": {
+    "chassis": "chassis.json",
+    "fuel": "fuel.json",
+    "steering": "steering.json",
+    "powertrain": "powertrain.json",
+    "suspension": "suspension.json",
+    "tires": "tires.json",
+    "brakes": "brakes.json",
+    "aerodynamics": "aerodynamics.json",
+    "driving_assistance": "driving_assistance.json",
+    "underfloor_contact": "underfloor_contact.json",
+    "coupled_world": "coupled_world.json",
+    "audio": "audio.json",
+    "suspension_presentation": "suspension_presentation.json"
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "tires": {
+    "airborne_spin_decay_torque": 1.0,
+    "contact_patch": 0.35,
+    "surface_transition_tau_s": 0.08,
+    "force_model": {
+      "front": {
+        "budget_blend_width": 0.1,
+        "combined_lateral_peak_migration": 0.35,
+        "combined_longitudinal_peak_migration": 0.25,
+        "contact_ramp_tau_s": 0.06,
+        "falloff_sharpness": 2.0,
+        "min_relaxation_tau_s": 0.045,
+        "relaxation_recovery_scale": 1.6,
+        "lateral_peak_slip_angle_rad": 0.115,
+        "lateral_slide_mu_ratio": 0.88,
+        "longitudinal_peak_slip_ratio": 0.12,
+        "longitudinal_slide_mu_ratio": 0.88,
+        "slip_loss_tau_s": 0.06,
+        "slip_recovery_tau_s": 0.25
+      },
+      "rear": {
+        "budget_blend_width": 0.1,
+        "combined_lateral_peak_migration": 0.35,
+        "combined_longitudinal_peak_migration": 0.25,
+        "contact_ramp_tau_s": 0.06,
+        "falloff_sharpness": 2.0,
+        "min_relaxation_tau_s": 0.045,
+        "relaxation_recovery_scale": 1.6,
+        "lateral_peak_slip_angle_rad": 0.115,
+        "lateral_slide_mu_ratio": 0.88,
+        "longitudinal_peak_slip_ratio": 0.12,
+        "longitudinal_slide_mu_ratio": 0.88,
+        "slip_loss_tau_s": 0.06,
+        "slip_recovery_tau_s": 0.25
+      }
+    },
+    "front": {
+      "airborne_spin_decay_torque": 1.0,
+      "contact_patch": 0.32,
+      "radius": 0.335,
+      "wheel_mass": 16.807653495880544,
+      "width": 0.33
+    },
+    "pressure": {
+      "atmospheric_pressure_kpa": 101.325,
+      "cold_kpa_gauge": {
+        "FL": 80.0,
+        "FR": 80.0,
+        "RL": 80.0,
+        "RR": 80.0
+      },
+      "reference_hot_kpa_gauge": {
+        "FL": 160.0,
+        "FR": 160.0,
+        "RL": 150.0,
+        "RR": 150.0
+      },
+      "reference_temperature_c": 25.0,
+      "units": "kPa_gauge"
+    },
+    "pressure_mechanics": {
+      "compliance_sensitivity": 0.72,
+      "response_sensitivity": -0.18,
+      "rolling_resistance_sensitivity": -0.35
+    },
+    "rear": {
+      "airborne_spin_decay_torque": 1.0,
+      "contact_patch": 0.4,
+      "radius": 0.335,
+      "wheel_mass": 23.46374963281952,
+      "width": 0.42
+    },
+    "surfaces": {
+      "Curb": {
+        "friction": 2.05,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.56,
+        "rolling_resistance": 1.5,
+        "stiffness": 5.9
+      },
+      "Dirt": {
+        "friction": 1.2,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.42,
+        "rolling_resistance": 2.4,
+        "stiffness": 0.45
+      },
+      "Grass": {
+        "friction": 0.75,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.35,
+        "rolling_resistance": 4.2,
+        "stiffness": 0.35
+      },
+      "Gravel": {
+        "friction": 1.0,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.4,
+        "rolling_resistance": 3.0,
+        "stiffness": 0.45
+      },
+      "Road": {
+        "friction": 2.7,
+        "lateral_grip_assist": 0.0,
+        "longitudinal_grip_ratio": 0.95,
+        "rolling_resistance": 1.0,
+        "stiffness": 7.2
+      }
+    },
+    "thermal": {
+      "ambient_fallback_c": 25.0,
+      "carcass_heat_capacity_j_k": 5300.0,
+      "carcass_hysteresis_efficiency": 1.0,
+      "carcass_to_air_w_k": 3.5,
+      "carcass_to_gas_w_k": 50.0,
+      "front": {
+        "ambient_fallback_c": 25.0,
+        "carcass_heat_capacity_j_k": 5300.0,
+        "carcass_hysteresis_efficiency": 1.0,
+        "carcass_to_air_w_k": 3.5,
+        "carcass_to_gas_w_k": 50.0,
+        "gas_heat_capacity_j_k": 750.0,
+        "initial_temperature_c": 70.0,
+        "lateral_tread_conductance_w_k": 24.0,
+        "maximum_pressure_kpa_gauge": 260.0,
+        "minimum_pressure_kpa_gauge": 55.0,
+        "optimal_carcass_temperature_c": 80.0,
+        "optimal_tread_temperature_c": 95.0,
+        "optimal_tread_window_c": 12.0,
+        "overheat_tread_temperature_c": 120.0,
+        "road_conductance_w_k": 60.0,
+        "slip_heat_efficiency": 1.1,
+        "track_fallback_c": 35.0,
+        "tread_to_air_w_k": 4.5,
+        "tread_to_carcass_w_k": 75.0,
+        "tread_zone_heat_capacity_j_k": 2100.0,
+        "volume_deflection_gain": 0.04
+      },
+      "gas_heat_capacity_j_k": 750.0,
+      "initial_temperature_c": 70.0,
+      "lateral_tread_conductance_w_k": 24.0,
+      "maximum_pressure_kpa_gauge": 260.0,
+      "minimum_pressure_kpa_gauge": 55.0,
+      "optimal_carcass_temperature_c": 80.0,
+      "optimal_tread_temperature_c": 95.0,
+      "optimal_tread_window_c": 12.0,
+      "overheat_tread_temperature_c": 120.0,
+      "rear": {
+        "ambient_fallback_c": 25.0,
+        "carcass_heat_capacity_j_k": 8000.0,
+        "carcass_hysteresis_efficiency": 1.0,
+        "carcass_to_air_w_k": 4.5,
+        "carcass_to_gas_w_k": 36.0,
+        "gas_heat_capacity_j_k": 1200.0,
+        "initial_temperature_c": 70.0,
+        "lateral_tread_conductance_w_k": 22.0,
+        "maximum_pressure_kpa_gauge": 260.0,
+        "minimum_pressure_kpa_gauge": 55.0,
+        "optimal_carcass_temperature_c": 80.0,
+        "optimal_tread_temperature_c": 95.0,
+        "optimal_tread_window_c": 12.0,
+        "overheat_tread_temperature_c": 120.0,
+        "road_conductance_w_k": 60.0,
+        "slip_heat_efficiency": 0.9,
+        "track_fallback_c": 35.0,
+        "tread_to_air_w_k": 7.0,
+        "tread_to_carcass_w_k": 64.0,
+        "tread_zone_heat_capacity_j_k": 2800.0,
+        "volume_deflection_gain": 0.04
+      },
+      "road_conductance_w_k": 60.0,
+      "slip_heat_efficiency": 1.0,
+      "track_fallback_c": 35.0,
+      "tread_to_air_w_k": 4.5,
+      "tread_to_carcass_w_k": 75.0,
+      "tread_zone_heat_capacity_j_k": 2100.0,
+      "volume_deflection_gain": 0.04
+    },
+    "wear": {
+      "center_wear_multiplier": 0.85,
+      "cliff_start_wear_fraction": 0.75,
+      "cold_temperature_wear_multiplier": 0.45,
+      "cold_tread_temperature_celsius": 60.0,
+      "end_of_life_grip_scale": 0.55,
+      "extreme_temperature_wear_multiplier": 3.0,
+      "extreme_tread_temperature_celsius": 160.0,
+      "friction_reference_coefficient": 2.7,
+      "friction_sensitivity_exponent": 0.6,
+      "front": {
+        "tread_wear_per_megajoule_millimeters": 0.9
+      },
+      "initial_tread_depth_millimeters": 6.0,
+      "inner_shoulder_wear_multiplier": 1.0,
+      "minimum_tread_depth_millimeters": 0.5,
+      "optimal_tread_temperature_celsius": 95.0,
+      "outer_shoulder_wear_multiplier": 1.0,
+      "overheat_temperature_wear_multiplier": 1.6,
+      "overheat_tread_temperature_celsius": 120.0,
+      "progressive_grip_loss_fraction": 0.05,
+      "rear": {
+        "tread_wear_per_megajoule_millimeters": 1.05
+      },
+      "tread_wear_per_megajoule_millimeters": 1.0
+    }
+  }
+}

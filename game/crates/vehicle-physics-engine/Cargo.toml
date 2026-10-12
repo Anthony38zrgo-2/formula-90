@@ -30,4 +30,7 @@ serde_json = { version = "1", features = ["float_roundtrip"] }
 sha2 = "0.10"
 thiserror = "2"
 
+[build-dependencies]
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
 [dev-dependencies]
