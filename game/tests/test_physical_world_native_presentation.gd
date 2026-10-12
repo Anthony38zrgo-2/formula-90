@@ -58,9 +58,12 @@ func run_native_contract() -> void:
 	require_condition(vehicle.freeze and vehicle.collision_layer == 0 and vehicle.collision_mask == 0 and vehicle.gravity_scale == 0.0, "Godot retained physical response ownership")
 	var pose: Dictionary = snapshot["state"]["suspension"]["body_origin_world_metres"]
 	require_condition(vehicle.global_position.distance_to(Vector3(pose["x"], pose["y"], pose["z"])) < 0.00001, "Presentation body disagrees with Rust pose")
+	var operating_mass_before_refuel := float(snapshot["operating_mass_kilograms"])
+	var fuel_mass_before_refuel := float(snapshot["fuel_mass_kilograms"])
 	vehicle.set_fuel_kg(20.0)
 	snapshot = vehicle.get_physical_world_snapshot()
-	require_condition(is_equal_approx(float(snapshot["fuel_mass_kilograms"]), 20.0) and is_equal_approx(float(snapshot["operating_mass_kilograms"]), 718.0), "Native refuel did not update the coupled mass")
+	var expected_operating_mass := operating_mass_before_refuel - fuel_mass_before_refuel + 20.0
+	require_condition(is_equal_approx(float(snapshot["fuel_mass_kilograms"]), 20.0) and is_equal_approx(float(snapshot["operating_mass_kilograms"]), expected_operating_mass), "Native refuel did not update the coupled mass")
 	vehicle.replace_tires()
 	vehicle.reset_vehicle(Vector3(1.0, 10.0, 2.0), 0.2)
 	require_condition(vehicle.global_position.distance_to(Vector3(1.0, 10.0, 2.0)) < 0.00001, "Native reset lost the requested pose")

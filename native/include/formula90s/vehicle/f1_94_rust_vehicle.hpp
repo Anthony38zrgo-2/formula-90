@@ -32,6 +32,7 @@ using FfiTelemetryOutput = F90TelemetryOutput;
 // Rust FFI Function Pointers (C-ABI)
 typedef void *(*FnPhysicsCreateDefault)(void);
 typedef void *(*FnPhysicsCreateFromJson)(const uint8_t *json_utf8, uint32_t json_len, uint8_t *error_buffer, uint32_t error_buffer_len);
+using PhysicsCreateFromVehicleProfileFunction = decltype(&formula_one_physics_create_from_vehicle_profile_v1);
 typedef void *(*FnPhysicsCreateWithPos)(double pos_x, double pos_y, double pos_z, double yaw_rad);
 typedef void (*FnPhysicsReset)(void *sim_ptr, double pos_x, double pos_y, double pos_z, double yaw_rad);
 typedef void (*FnPhysicsSolveForces)(
@@ -69,7 +70,7 @@ private:
 	void *sim_ptr_ = nullptr;
 	void *dll_handle_ = nullptr;
 	bool inertia_initialized_ = false;
-	String physics_config_path_ = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json";
+	String physics_config_path_ = "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json";
 
 	// FFI function pointers
 	FnPhysicsAbiVersion fn_abi_version_ = nullptr;
@@ -78,6 +79,7 @@ private:
 	FnPhysicsApplyRuntimeConfig fn_apply_runtime_config_ = nullptr;
 	FnPhysicsCreateDefault fn_create_default_ = nullptr;
 	FnPhysicsCreateFromJson fn_create_from_json_ = nullptr;
+	PhysicsCreateFromVehicleProfileFunction physics_create_from_vehicle_profile_ = nullptr;
 	FnPhysicsCreateWithPos fn_create_with_pos_ = nullptr;
 	FnPhysicsReset fn_reset_ = nullptr;
 	FnPhysicsSolveForces fn_solve_forces_ = nullptr;

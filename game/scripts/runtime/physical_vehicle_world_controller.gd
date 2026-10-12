@@ -69,7 +69,7 @@ func initialize_physical_world() -> bool:
 		presentation_cores.append(presentation_core)
 	if has_unregistered_dynamic_body(get_tree().root, vehicles):
 		return fail_physical_world("Moving Godot collision bodies must be registered with the Rust world")
-	var created := request_physical_world({"operation": "create_world", "interface_version": 1, "repository_root": repository_root, "physical_package_path": ProjectSettings.globalize_path(physical_package_path), "vehicle_profile": JSON.stringify(profiles[0])})
+	var created := request_physical_world({"operation": "create_world", "interface_version": 1, "repository_root": repository_root, "physical_package_path": ProjectSettings.globalize_path(physical_package_path), "vehicle_profile": profiles[0]})
 	if failed:
 		return false
 	world_identifier = int(created["world_identifier"])
@@ -77,7 +77,7 @@ func initialize_physical_world() -> bool:
 		if profiles[binding_index].get("coupled_world") != profiles[0].get("coupled_world"):
 			return fail_physical_world("All vehicles must share one world configuration")
 		var vehicle: Node3D = vehicles[binding_index]
-		var registered := request_physical_world({"operation": "register_vehicle", "vehicle_profile": JSON.stringify(profiles[binding_index]), "position_world_metres": vector_document(vehicle.global_position), "yaw_radians": vehicle.global_rotation.y})
+		var registered := request_physical_world({"operation": "register_vehicle", "vehicle_profile": profiles[binding_index], "position_world_metres": vector_document(vehicle.global_position), "yaw_radians": vehicle.global_rotation.y})
 		if failed:
 			return false
 		var entity_identifier := int(registered["entity_identifier"])

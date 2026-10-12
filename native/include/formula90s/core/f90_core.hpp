@@ -321,7 +321,7 @@ private:
 	FnCoreAudioWorkerSetTarget fn_audio_worker_set_target_ = nullptr;
 
 	double fixed_dt_ = 1.0 / 120.0;
-	String config_json_path_ = "res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json";
+	String config_json_path_ = "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json";
 	bool use_canonical_config_ = false;
 	NodePath target_vehicle_path_;
 	F194RustVehicle *cached_veh_ = nullptr;

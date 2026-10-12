@@ -283,6 +283,7 @@ bool F194RustVehicle::load_rust_dll() {
 	fn_apply_runtime_config_ = reinterpret_cast<FnPhysicsApplyRuntimeConfig>(GetProcAddress(hDll, "f1_94_physics_apply_runtime_config"));
 	fn_create_default_ = reinterpret_cast<FnPhysicsCreateDefault>(GetProcAddress(hDll, "f1_94_physics_create_default"));
 	fn_create_from_json_ = reinterpret_cast<FnPhysicsCreateFromJson>(GetProcAddress(hDll, "f1_94_physics_create_from_json"));
+	physics_create_from_vehicle_profile_ = reinterpret_cast<PhysicsCreateFromVehicleProfileFunction>(GetProcAddress(hDll, "formula_one_physics_create_from_vehicle_profile_v1"));
 	fn_create_with_pos_ = reinterpret_cast<FnPhysicsCreateWithPos>(GetProcAddress(hDll, "f1_94_physics_create_with_pos"));
 	fn_reset_ = reinterpret_cast<FnPhysicsReset>(GetProcAddress(hDll, "f1_94_physics_reset"));
 	fn_solve_forces_ = reinterpret_cast<FnPhysicsSolveForces>(GetProcAddress(hDll, "f1_94_physics_solve_forces"));
@@ -297,6 +298,14 @@ bool F194RustVehicle::load_rust_dll() {
 
 	uint32_t abi_ver = fn_abi_version_ ? fn_abi_version_() : 0;
 	const char *build_sha = fn_build_sha_ ? fn_build_sha_() : "unknown";
+	const FnPhysicsBuildSha physics_source_identifier_function = reinterpret_cast<FnPhysicsBuildSha>(GetProcAddress(hDll, "coupled_vehicle_world_build_source"));
+	const String physics_source_identifier = physics_source_identifier_function ? String::utf8(physics_source_identifier_function()) : String();
+	const String recorded_source_identifier = FileAccess::get_file_as_string("res://BUILD_SOURCE").strip_edges();
+	if (physics_source_identifier.length() != 40 || physics_source_identifier != recorded_source_identifier || recorded_source_identifier != String(FORMULA90_BUILD_SHA)) {
+		UtilityFunctions::printerr("[F194RustVehicle] Physics library source identifier does not match the native build and BUILD_SOURCE.");
+		unload_rust_dll();
+		return false;
+	}
 
 	UtilityFunctions::print(String("[F194Physics]\nDLL=") + loaded_path + "\nABI=" + String::num_int64(abi_ver) + "\nBUILD=" + String(build_sha));
 
@@ -306,7 +315,7 @@ bool F194RustVehicle::load_rust_dll() {
 		return false;
 	}
 
-	if (!fn_solve_forces_ || !fn_destroy_) {
+	if (!fn_solve_forces_ || !fn_destroy_ || !physics_create_from_vehicle_profile_) {
 		UtilityFunctions::printerr("[F194RustVehicle] Missing required exported symbols in vehicle_physics_engine.dll!");
 		unload_rust_dll();
 		return false;
@@ -430,9 +439,28 @@ void F194RustVehicle::_ready() {
 		return;
 	}
 
-	if (fn_create_from_json_) {
+	if (physics_create_from_vehicle_profile_) {
+		ProjectSettings *project_settings = ProjectSettings::get_singleton();
+		const String profile_path = physics_config_path_.is_empty()
+			? String("res://data/vehicles/f1_2030/profiles/geometric/vehicle.json")
+			: physics_config_path_;
+		const String authorized_root = project_settings->globalize_path("res://..");
+		const String global_profile_path = project_settings->globalize_path(profile_path);
+		const CharString authorized_root_bytes = authorized_root.utf8();
+		const CharString profile_path_bytes = global_profile_path.utf8();
+		uint8_t error_buffer[512] = {};
+		sim_ptr_ = physics_create_from_vehicle_profile_(
+			reinterpret_cast<const uint8_t *>(authorized_root_bytes.get_data()), authorized_root_bytes.length(),
+			reinterpret_cast<const uint8_t *>(profile_path_bytes.get_data()), profile_path_bytes.length(),
+			error_buffer, sizeof(error_buffer));
+		if (sim_ptr_) {
+			UtilityFunctions::print(String("[F194RustVehicle] Loaded vehicle profile: ") + profile_path);
+		} else {
+			UtilityFunctions::printerr(String("[F194RustVehicle] Vehicle profile load failed: ") + profile_path + ": " + String(reinterpret_cast<const char *>(error_buffer)));
+		}
+	} else if (fn_create_from_json_) {
 		const String json_path = physics_config_path_.is_empty()
-			? String("res://data/vehicles/f1_2026_2008/f1_2026_2008_physics.json")
+			? String("res://data/vehicles/f1_2030/profiles/geometric/vehicle.json")
 			: physics_config_path_;
 		Ref<FileAccess> f = FileAccess::open(json_path, FileAccess::READ);
 		if (f.is_valid()) {
@@ -458,7 +486,7 @@ void F194RustVehicle::_ready() {
 
 	if (!sim_ptr_ && fn_create_default_) {
 		sim_ptr_ = fn_create_default_();
-		UtilityFunctions::printerr("[F194RustVehicle] WARNING: JSON physics load failed; falling back to canonical defaults.");
+		UtilityFunctions::printerr("[F194RustVehicle] WARNING: Vehicle profile load failed; falling back to canonical defaults.");
 	} else if (!sim_ptr_ && fn_create_with_pos_) {
 		Vector3 pos = get_global_position();
 		Vector3 rot = get_global_rotation();

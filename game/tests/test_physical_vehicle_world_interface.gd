@@ -29,6 +29,25 @@ func _initialize() -> void:
 	var resolved: Variant = resolution["result"]["resolved_vehicle_configuration"]
 	if not _require(resolved is Dictionary and resolved["configuration"].has("coupled_world"), "Candidate world settings are missing"):
 		return
+	for profile_document in [resolved["configuration"], JSON.stringify(resolved["configuration"])]:
+		var profile_creation: Dictionary = world_interface.call("execute_request", {
+			"operation": "create_world", "interface_version": 1,
+			"repository_root": repository_root, "physical_package_path": arguments[1],
+			"vehicle_profile": profile_document})
+		if not _require(profile_creation.get("success", false), "Serialized profile creation failed: " + str(profile_creation.get("error"))):
+			return
+		var profile_destruction: Dictionary = world_interface.call("execute_request", {
+			"operation": "destroy_world", "world_identifier": profile_creation["result"]["world_identifier"]})
+		if not _require(profile_destruction.get("success", false), "Profile world destruction failed"):
+			return
+	var fractional_profile: Dictionary = resolved["configuration"].duplicate(true)
+	fractional_profile["coupled_world"]["contacts"]["maximum_events_per_step"] = 128.5
+	var rejected_profile: Dictionary = world_interface.call("execute_request", {
+		"operation": "create_world", "interface_version": 1,
+		"repository_root": repository_root, "physical_package_path": arguments[1],
+		"vehicle_profile": fractional_profile})
+	if not _require(not rejected_profile.get("success", true), "Fractional integer setting was silently accepted"):
+		return
 	var creation: Dictionary = world_interface.call("execute_request", {
 		"operation": "create_world", "interface_version": 1,
 		"repository_root": repository_root,

@@ -192,6 +192,7 @@ bool f1_94_physics_apply_runtime_config(void *sim, const F90RuntimeConfig *confi
 
 void *f1_94_physics_create_default(void);
 void *f1_94_physics_create_from_json(const uint8_t *json_utf8, uint32_t json_len, uint8_t *error_buffer, uint32_t error_buffer_len);
+void *formula_one_physics_create_from_vehicle_profile_v1(const uint8_t *authorized_root_pointer, uint32_t authorized_root_length, const uint8_t *profile_path_pointer, uint32_t profile_path_length, uint8_t *error_buffer, uint32_t error_buffer_length);
 void *f1_94_physics_create_with_pos(double pos_x, double pos_y, double pos_z, double yaw_rad);
 void f1_94_physics_reset(void *sim, double pos_x, double pos_y, double pos_z, double yaw_rad);
 

@@ -631,6 +631,54 @@ pub extern "C" fn f1_94_physics_create_from_json(
     Box::into_raw(sim) as *mut c_void
 }
 
+#[no_mangle]
+pub extern "C" fn formula_one_physics_create_from_vehicle_profile_v1(
+    authorized_root_pointer: *const u8,
+    authorized_root_length: u32,
+    profile_path_pointer: *const u8,
+    profile_path_length: u32,
+    error_buffer: *mut u8,
+    error_buffer_length: u32,
+) -> *mut c_void {
+    let configuration = (|| -> Result<VehicleConfig, String> {
+        let authorized_root = read_vehicle_profile_path(authorized_root_pointer, authorized_root_length, "authorized root")?;
+        let profile_path = read_vehicle_profile_path(profile_path_pointer, profile_path_length, "vehicle profile")?;
+        crate::vehicle_configuration::load_vehicle_configuration_from_authorized_root(
+            std::path::Path::new(&profile_path),
+            std::path::Path::new(&authorized_root),
+        )
+    })();
+    match configuration {
+        Ok(configuration) => {
+            let spawn_height = default_spawn_height(&configuration);
+            let simulator = Box::new(VehicleSimulator::new(
+                configuration,
+                Vec3::new(0.0, spawn_height, 0.0),
+                0.0,
+            ));
+            write_error(error_buffer, error_buffer_length, "");
+            Box::into_raw(simulator) as *mut c_void
+        }
+        Err(error) => {
+            write_error(error_buffer, error_buffer_length, &error);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+fn read_vehicle_profile_path(pointer: *const u8, length: u32, description: &str) -> Result<String, String> {
+    if pointer.is_null() || length == 0 {
+        return Err(format!("null or empty {description} path"));
+    }
+    let bytes = unsafe { std::slice::from_raw_parts(pointer, length as usize) };
+    let path = std::str::from_utf8(bytes)
+        .map_err(|error| format!("invalid UTF-8 {description} path: {error}"))?;
+    if path.contains('\0') {
+        return Err(format!("{description} path contains a null byte"));
+    }
+    Ok(path.to_string())
+}
+
 fn write_error(buf: *mut u8, buf_len: u32, msg: &str) {
     if buf.is_null() || buf_len == 0 {
         return;

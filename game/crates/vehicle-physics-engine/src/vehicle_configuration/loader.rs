@@ -16,12 +16,26 @@ use super::vehicle_configuration::VehicleConfig;
 /// Loads a physical configuration from a profile manifest or a legacy flat document.
 /// Manifest resolution uses the manifest directory as the authorized root.
 pub fn load_vehicle_configuration(path: &Path) -> Result<VehicleConfig, String> {
+    let authorized_root = path.parent().filter(|directory| !directory.as_os_str().is_empty()).unwrap_or(Path::new("."));
+    load_vehicle_configuration_from_authorized_root(path, authorized_root)
+}
+
+pub fn load_vehicle_configuration_from_authorized_root(
+    path: &Path,
+    authorized_root: &Path,
+) -> Result<VehicleConfig, String> {
+    let canonical_root = std::fs::canonicalize(authorized_root)
+        .map_err(|error| format!("authorized root {} is not accessible: {error}", authorized_root.display()))?;
+    let canonical_path = std::fs::canonicalize(path)
+        .map_err(|error| format!("vehicle configuration {} is not accessible: {error}", path.display()))?;
+    if !canonical_path.starts_with(&canonical_root) {
+        return Err(format!("vehicle configuration {} resolves outside the authorized root {}", path.display(), authorized_root.display()));
+    }
     let text = std::fs::read_to_string(path)
         .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
     let document: serde_json::Value = serde_json::from_str(&text)
         .map_err(|error| format!("failed to parse config: {error}"))?;
     if document.get("domains").is_some() {
-        let authorized_root = path.parent().unwrap_or(Path::new("."));
         load_physical_configuration(&VehicleProfileLoadRequest::new(path, authorized_root))
             .map(|loaded| loaded.configuration)
             .map_err(|error| error.to_string())
