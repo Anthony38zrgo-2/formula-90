@@ -5,7 +5,7 @@
 ## DRIVESHAFT). Runs without the native DLLs: only the physics JSON + the pure
 ## RefCounted solver are exercised.
 
-const PHYSICS_JSON := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
+const PHYSICS_JSON := "res://data/vehicles/f1_2030/profiles/legacy/suspension_presentation.json"
 const GEOMETRY_SCRIPT := "res://scripts/vehicle/suspension_geometry.gd"
 
 const TOL_RADIUS := 0.01

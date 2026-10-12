@@ -19,13 +19,20 @@ func _initialize() -> void:
 		return
 	if not _require(world_interface.call("initialize_library", arguments[0]), "Physical world library failed version or symbol validation"):
 		return
-	var profile: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"))
-	if not _require(profile is Dictionary and profile.has("coupled_world"), "Candidate world settings are missing"):
+	var repository_root: String = ProjectSettings.globalize_path("res://").path_join("..").simplify_path()
+	var resolution: Dictionary = world_interface.call("execute_request", {
+		"operation": "resolve_vehicle_profile", "interface_version": 1,
+		"repository_root": repository_root,
+		"vehicle_profile_path": ProjectSettings.globalize_path("res://data/vehicles/f1_2030/profiles/geometric/vehicle.json")})
+	if not _require(resolution.get("success", false), "Profile resolution failed: " + str(resolution.get("error"))):
+		return
+	var resolved: Variant = resolution["result"]["resolved_vehicle_configuration"]
+	if not _require(resolved is Dictionary and resolved["configuration"].has("coupled_world"), "Candidate world settings are missing"):
 		return
 	var creation: Dictionary = world_interface.call("execute_request", {
 		"operation": "create_world", "interface_version": 1,
-		"repository_root": ProjectSettings.globalize_path("res://").path_join("..").simplify_path(),
-		"physical_package_path": arguments[1], "configuration": profile["coupled_world"]})
+		"repository_root": repository_root,
+		"physical_package_path": arguments[1], "configuration": resolved["configuration"]["coupled_world"]})
 	if not _require(creation.get("success", false), "World creation failed: " + str(creation.get("error"))):
 		return
 	var world_identifier: int = creation["result"]["world_identifier"]

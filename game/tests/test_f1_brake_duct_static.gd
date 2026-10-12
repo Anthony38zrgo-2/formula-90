@@ -114,7 +114,7 @@ func _check_controller_leaves_ducts() -> void:
 	var vehicle := TelemetryVehicle.new()
 	var controller := Node.new()
 	controller.set_script(controller_script)
-	controller.set("physics_config_path", _source_root.path_join("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"))
+	controller.set("physics_config_path", _source_root.path_join("data/vehicles/f1_2026_2008/profiles/default/vehicle.json"))
 	vehicle.add_child(controller)
 	for wheel in WHEELS:
 		var hub := Node3D.new()

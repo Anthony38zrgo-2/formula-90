@@ -10,12 +10,12 @@ session_config = ExtResource("2_config")
 psx_enabled = false
 
 [node name="F90Core" type="F90Core" parent="."]
-config_json_path = "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+config_json_path = "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json"
 enable_audio = true
 bank_dir = "res://sounds/banks/commons"
 
 [node name="PhysicalVehicleWorldController" type="Node" parent="."]
 script = ExtResource("3_physical_world")
-vehicle_profile_paths = Array[String](["res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"])
+vehicle_profile_paths = Array[String](["res://data/vehicles/f1_2030/profiles/geometric/vehicle.json"])
 vehicle_paths = Array[NodePath]([NodePath("../WorldViewport/RaceSession/VehicleContainer/ActiveVehicle/VehicleRigidBody")])
 presentation_core_paths = Array[NodePath]([NodePath("../F90Core")])

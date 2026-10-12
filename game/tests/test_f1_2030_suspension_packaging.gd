@@ -2,7 +2,7 @@ extends SceneTree
 
 ## Visual-only regression; run in an isolated project without native DLLs.
 ## Checks rendered volumes, rigid rod closure and continuity through travel.
-const CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+const CONFIG := "res://data/vehicles/f1_2030/profiles/geometric/suspension_presentation.json"
 var failures: Array[String] = []
 
 func check(ok: bool, message: String) -> void:

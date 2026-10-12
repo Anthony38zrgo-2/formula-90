@@ -13,6 +13,9 @@ extends Node
 
 @export var vehicle: Node3D
 @export_file("*.json") var physics_config_path: String = ""
+## Visual suspension geometry document (`suspension_presentation.json`). When
+## empty it is derived from the profile directory next to `physics_config_path`.
+@export_file("*.json") var suspension_presentation_path: String = ""
 
 @export var hub_fl: Node3D
 @export var hub_fr: Node3D
@@ -151,14 +154,8 @@ func _ready() -> void:
 func _load_physics_specs() -> void:
 	if physics_config_path.is_empty() or not FileAccess.file_exists(physics_config_path):
 		return
-	var file := FileAccess.open(physics_config_path, FileAccess.READ)
-	if file == null:
-		return
-	var json_data: Variant = JSON.parse_string(file.get_as_text())
-	if not (json_data is Dictionary):
-		return
 
-	var suspension: Variant = json_data.get("suspension", {})
+	var suspension: Variant = _read_profile_section(physics_config_path, "suspension")
 	if suspension is Dictionary:
 		var front: Variant = suspension.get("front", {})
 		if front is Dictionary:
@@ -175,11 +172,11 @@ func _load_physics_specs() -> void:
 			rear_camber_gain = float(rear.get("camber_gain_rad_per_m", rear_camber_gain))
 			rear_toe = float(rear.get("toe", rear_toe))
 
-	var steering: Variant = json_data.get("steering", {})
+	var steering: Variant = _read_profile_section(physics_config_path, "steering")
 	if steering is Dictionary:
 		max_steering_angle = float(steering.get("max_steering_angle", max_steering_angle))
 
-	var tires: Variant = json_data.get("tires", {})
+	var tires: Variant = _read_profile_section(physics_config_path, "tires")
 	if tires is Dictionary:
 		var front_tire: Variant = tires.get("front", {})
 		if front_tire is Dictionary:
@@ -187,6 +184,39 @@ func _load_physics_specs() -> void:
 		var rear_tire: Variant = tires.get("rear", {})
 		if rear_tire is Dictionary:
 			rear_tire_radius = float(rear_tire.get("radius", rear_tire_radius))
+
+## Reads one domain section from a profile manifest (sibling domain documents)
+## or from a legacy flat profile document.
+func _read_profile_section(path: String, section: String) -> Variant:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return null
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary):
+		return null
+	if parsed.has("domains"):
+		var domain_path := path.get_base_dir().path_join(section + ".json")
+		if not FileAccess.file_exists(domain_path):
+			return null
+		var domain_file := FileAccess.open(domain_path, FileAccess.READ)
+		if domain_file == null:
+			return null
+		var domain_parsed: Variant = JSON.parse_string(domain_file.get_as_text())
+		if not (domain_parsed is Dictionary):
+			return null
+		return domain_parsed.get(section, null)
+	return parsed.get(section, null)
+
+## Presentation geometry document for the active profile: explicit path when
+## set, else the manifest-directory `suspension_presentation.json`, else the
+## profile document itself (legacy flat profiles carry the authored geometry).
+func _suspension_geometry_path() -> String:
+	if not suspension_presentation_path.is_empty():
+		return suspension_presentation_path
+	var derived := physics_config_path.get_base_dir().path_join("suspension_presentation.json")
+	if FileAccess.file_exists(derived):
+		return derived
+	return physics_config_path
 
 func _resolve_nodes() -> void:
 	if vehicle == null:
@@ -248,9 +278,10 @@ func _refresh_physics_anchors() -> void:
 func _setup_suspension_geometry() -> void:
 	if not enable_suspension_geometry:
 		return
-	if vehicle == null or physics_config_path.is_empty() or not FileAccess.file_exists(physics_config_path):
+	var geometry_path := _suspension_geometry_path()
+	if vehicle == null or geometry_path.is_empty() or not FileAccess.file_exists(geometry_path):
 		return
-	var geometry := SuspensionGeometry.from_json_path(physics_config_path)
+	var geometry := SuspensionGeometry.from_json_path(geometry_path)
 	if geometry == null:
 		return
 	for wheel_index in range(4):
@@ -703,7 +734,7 @@ func update_authoritative_suspension_visuals() -> void:
 	if snapshot.is_empty() or _suspension_geometry == null or _suspension_links == null:
 		return
 	if not physical_geometry_selected:
-		_suspension_geometry = SuspensionGeometry.from_json_path(physics_config_path)
+		_suspension_geometry = SuspensionGeometry.from_json_path(_suspension_geometry_path())
 		_suspension_links.setup(_suspension_geometry, true)
 		physical_geometry_selected = true
 	var corners: Array = snapshot["solved_suspension_corners"]

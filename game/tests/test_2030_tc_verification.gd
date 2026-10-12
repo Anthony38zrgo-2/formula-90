@@ -68,7 +68,7 @@ func _run() -> void:
 	var veh_cfg_path: String = str(veh_info.get("configuration", ""))
 	assert(not engine_cfg_path.is_empty(), "engine_config no debe estar vacio")
 	assert(not veh_cfg_path.is_empty(), "vehicle.configuration no debe estar vacio")
-	assert(engine_cfg_path.contains("f1_2030_v10_geometric.json"), "engine_config debe apuntar al perfil activo f1_2030_v10 geometrico")
+	assert(engine_cfg_path.contains("profiles/geometric/vehicle.json"), "engine_config debe apuntar al perfil activo f1_2030 geometrico")
 	assert(float(chassis.get("vehicle_mass", 0.0)) == 600.0, "Masa seca del perfil f1_2030_v10 geometrico debe ser 600 kg")
 	var fuel_state: Dictionary = vehicle.call(&"get_fuel_state_snapshot")
 	assert(float(fuel_state.get("capacity_kg", 0.0)) == 110.0, "Capacidad de combustible del f1_2030_v10 debe ser 110 kg")

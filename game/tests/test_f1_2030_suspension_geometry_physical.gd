@@ -6,8 +6,8 @@ extends SceneTree
 ## `suspension.geometry` fallback. This guards the SUS-GEO-11 follow-up that
 ## fixed the visually misaligned rocker/damper.
 
-const GEOMETRIC_JSON := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
-const LEGACY_JSON := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
+const GEOMETRIC_JSON := "res://data/vehicles/f1_2030/profiles/geometric/suspension.json"
+const LEGACY_JSON := "res://data/vehicles/f1_2030/profiles/legacy/suspension_presentation.json"
 const MESHES_JSON := "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json"
 
 ## Measured f1_2030.blend monocoque/nose top envelope in chassis-local metres

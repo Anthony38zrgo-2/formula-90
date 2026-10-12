@@ -2,7 +2,7 @@ extends GdUnitTestSuite
 
 const LAP_TIMING_SCRIPT := preload("res://scripts/runtime/lap_timing_controller.gd")
 const FUJI_TRACK_DEFINITION := "res://data/tracks/fuji76_77.tres"
-const F1_2030_PROFILE := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+const F1_2030_PROFILE := "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json"
 
 var _crossing_position := Vector3(-294.278, 0.095, -275.19)
 var _crossing_forward := Vector3(-0.0069, 0.0, -0.99998).normalized()

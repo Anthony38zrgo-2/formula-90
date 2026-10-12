@@ -18,7 +18,7 @@ var _setup_json := ""
 const LOG_MS := 50
 const BUFFER_SIZE := 100
 const VEHICLE_SEARCH_INTERVAL := 1.0
-const DEFAULT_PHYSICS_CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+const DEFAULT_PHYSICS_CONFIG := "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json"
 const CSV_COLUMNS := [
     "Time_ms", "Speed_kmh", "RPM", "Gear",
     "Throttle", "Brake", "Steering",
@@ -482,20 +482,39 @@ func _get_active_physics_config_path() -> String:
             return c_path
     return DEFAULT_PHYSICS_CONFIG
 
+## Reads one domain section from a profile manifest (sibling domain documents)
+## or from a legacy flat profile document.
+func _read_profile_section(path: String, section: String) -> Variant:
+    if not FileAccess.file_exists(path):
+        return null
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        return null
+    var parsed: Variant = JSON.parse_string(file.get_as_text())
+    if not (parsed is Dictionary):
+        return null
+    if parsed.has("domains"):
+        var domain_path := path.get_base_dir().path_join(section + ".json")
+        if not FileAccess.file_exists(domain_path):
+            return null
+        var domain_file := FileAccess.open(domain_path, FileAccess.READ)
+        if domain_file == null:
+            return null
+        var domain_parsed: Variant = JSON.parse_string(domain_file.get_as_text())
+        if not (domain_parsed is Dictionary):
+            return null
+        return domain_parsed.get(section, null)
+    return parsed.get(section, null)
+
 func _build_engine_snapshot() -> Dictionary:
     var fields: Array[String] = ["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]
     var snapshot := _snapshot_properties(fields)
-    var config_path := _get_active_physics_config_path()
-    if _is_rust and FileAccess.file_exists(config_path):
-        var file := FileAccess.open(config_path, FileAccess.READ)
-        if file != null:
-            var parsed: Variant = JSON.parse_string(file.get_as_text())
-            if parsed is Dictionary:
-                var powertrain: Variant = parsed.get("powertrain", {})
-                if powertrain is Dictionary:
-                    for field in fields:
-                        if snapshot.get(field) == null and powertrain.has(field):
-                            snapshot[field] = powertrain[field]
+    if _is_rust:
+        var powertrain: Variant = _read_profile_section(_get_active_physics_config_path(), "powertrain")
+        if powertrain is Dictionary:
+            for field in fields:
+                if snapshot.get(field) == null and powertrain.has(field):
+                    snapshot[field] = powertrain[field]
     return snapshot
 
 func _build_brake_thermal_snapshot() -> Dictionary:
@@ -526,17 +545,10 @@ func _snapshot_properties(property_names: Array[String]) -> Dictionary:
 func _build_transmission_snapshot() -> Dictionary:
     var fields: Array[String] = ["gear_ratios", "final_drive", "reverse_ratio", "shift_time", "automatic_transmission", "automatic_time_between_shifts", "gear_inertia"]
     var snapshot := _snapshot_properties(fields)
-    var config_path := _get_active_physics_config_path()
-    if not _is_rust or not FileAccess.file_exists(config_path):
+    if not _is_rust:
         return snapshot
 
-    var file := FileAccess.open(config_path, FileAccess.READ)
-    if file == null:
-        return snapshot
-    var parsed: Variant = JSON.parse_string(file.get_as_text())
-    if not (parsed is Dictionary):
-        return snapshot
-    var powertrain: Variant = parsed.get("powertrain", {})
+    var powertrain: Variant = _read_profile_section(_get_active_physics_config_path(), "powertrain")
     if not (powertrain is Dictionary):
         return snapshot
     for field in fields:

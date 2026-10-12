@@ -26,7 +26,7 @@ itself in its own AGENTS.md.
   (`*_loop.wav`, `*_event.wav`, `backfire_burst_*.wav`) are runtime assets.
 - The F1 2030 V10 vehicle profile must point at the canon through
   `audio.grand_prix_sampler.manifest = "sounds/banks/v10-v2-bank/manifest.json"`
-  in `game/data/vehicles/f1_2030/f1_2030_v10_geometric.json`. The runtime
+  in `game/data/vehicles/f1_2030/profiles/geometric/audio.json`. The runtime
   resolves this path relative to the Godot project root.
 - `bank_sources/`, `banks/v10-v2-bank/`, and `banks/v10-gp3/backup/` each
   carry a `.gdignore`: Godot must not import those WAVs. The Rust runtime

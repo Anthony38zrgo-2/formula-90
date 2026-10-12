@@ -1,7 +1,8 @@
 extends SceneTree
 
 ## Native-free regression: rigid attachment closure and the actual visual owner.
-const CONFIG := "res://data/vehicles/f1_2030/f1_2030_v10_physics.json"
+const CONFIG := "res://data/vehicles/f1_2030/profiles/legacy/vehicle.json"
+const PRESENTATION := "res://data/vehicles/f1_2030/profiles/legacy/suspension_presentation.json"
 var failures: Array[String] = []
 
 func _init() -> void:
@@ -16,7 +17,7 @@ func rigid(basis: Basis) -> bool:
 	return absf(basis.determinant() - 1.0) < 0.00001 and (basis.transposed() * basis).is_equal_approx(Basis.IDENTITY)
 
 func run() -> void:
-	var geometry := SuspensionGeometry.from_json_path(CONFIG)
+	var geometry := SuspensionGeometry.from_json_path(PRESENTATION)
 	var maximum := {"pushrod": 0.0, "trackrod": 0.0, "hub": 0.0, "tri_lu": 0.0}
 	var clamped_rockers := 0
 	var clamped_steering := 0
