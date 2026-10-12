@@ -4,6 +4,9 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
 from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document, is_chassis_object, is_wheel_object
+from vehicle_profile_configuration import load_vehicle_configuration, vehicle_profile_asset_contract
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from common.output_policy import validate_output_path
 enable_legacy_source_names()
 
 import hashlib
@@ -174,12 +177,23 @@ def export_wheel(position, output, tire_radius, tire_width):
 
 def main():
     args = sys.argv[sys.argv.index("--") + 1 :]
+    refresh_profile_contract_only = "--refresh-profile-contract-only" in args
+    promote = "--promote" in args
+    args = [argument for argument in args if argument not in ["--refresh-profile-contract-only", "--promote"]]
     if len(args) != 2:
         raise SystemExit("usage: blender --background SOURCE.blend --python SCRIPT -- OUTPUT_DIR PHYSICS.json")
     output_dir = Path(args[0]).resolve()
+    validate_output_path(Path(__file__).resolve().parents[2], output_dir, "promote" if promote else "preview")
     physics_path = Path(args[1]).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    physics = normalize_object_name_document(json.loads(physics_path.read_text(encoding="utf-8")))
+    profile_contract = vehicle_profile_asset_contract(physics_path)
+    if refresh_profile_contract_only:
+        manifest_path = output_dir / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.update(profile_contract)
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        return
+    physics = normalize_object_name_document(load_vehicle_configuration(physics_path))
 
     wheel_centers = {}
     for short, position in WHEELS.items():
@@ -220,8 +234,7 @@ def main():
         "vehicle_id": ASSET_ID,
         "standard": "Formula-90 GEVP decoupled visual asset",
         "asset": "F1_2030_V10",
-        "physics_profile": "res://" + physics_path.relative_to(Path(__file__).resolve().parents[2] / "game").as_posix(),
-        "physics_sha256": sha256(physics_path),
+        **profile_contract,
         "coordinate_contract": {"right": "+X", "left": "-X", "up": "+Y", "front": "-Z", "rear": "+Z", "units": "meters", "transformations_applied": True},
         "authored_alignment": {
             "front_track": authored_geometry["front_track"],

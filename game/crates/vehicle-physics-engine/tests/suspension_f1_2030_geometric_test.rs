@@ -3,12 +3,16 @@ use vehicle_physics_engine::*;
 
 #[test]
 fn every_vehicle_livery_manifest_matches_the_selected_physics_profile_digest() {
-    use sha2::{Digest, Sha256};
-    let expected_digest = format!("{:x}", Sha256::digest(include_bytes!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")));
+    use vehicle_physics_engine::vehicle_configuration::{load_physical_configuration, VehicleProfileLoadRequest};
+    let repository_root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let profile_path = repository_root.join("game/data/vehicles/f1_2030/profiles/geometric/vehicle.json");
+    let expected_digest = load_physical_configuration(&VehicleProfileLoadRequest::new(&profile_path, &repository_root))
+        .unwrap().provenance.global_digest_sha256;
     for document in [include_str!("../../../assets/models/vehicles/f1-2030/manifest.json"),
         include_str!("../../../assets/models/vehicles/f1-2030/liveries/mp4_6_senna_1/manifest.json")] {
         let manifest: serde_json::Value = serde_json::from_str(document).unwrap();
-        assert_eq!(manifest["physics_profile"], "res://data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+        assert_eq!(manifest["physics_profile"], "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json");
+        assert_eq!(manifest["physics_digest_contract"], "vehicle_profile_provenance_v1");
         assert_eq!(manifest["physics_sha256"].as_str().unwrap().to_lowercase(), expected_digest);
     }
 }
@@ -239,10 +243,6 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
 
 #[test]
 fn godot_scene_points_at_geometric_by_default() {
-    // Geometric is the default profile: the shipped scene binds the versioned
-    // manifest; the legacy file stays alongside as the identifiable reference
-    // (covered by the legacy test above). The asset manifest keeps the frozen
-    // monolith reference until the asset workflow regenerates its digests.
     let tscn = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn");
     let text = std::fs::read_to_string(tscn).unwrap();
@@ -251,7 +251,7 @@ fn godot_scene_points_at_geometric_by_default() {
         "../../assets/models/vehicles/f1-2030/manifest.json",
     );
     let manifest_text = std::fs::read_to_string(manifest).unwrap();
-    assert!(manifest_text.contains("f1_2030_v10_geometric.json"));
+    assert!(manifest_text.contains("profiles/geometric/vehicle.json"));
 }
 
 #[test]

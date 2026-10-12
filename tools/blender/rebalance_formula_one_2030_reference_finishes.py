@@ -22,6 +22,7 @@ sys.path.insert(0, str(PROJECT_DIRECTORY / 'tools/blender'))
 from common.output_policy import validate_output_path
 from convert_formula_one_2030_chassis_decals_to_textures import bake_flat_decal_colors, decode_color_channel_values, encode_color_channel_values, mesh_shading_fingerprint
 from export_f1_2030_v10 import export_chassis, export_wheel, bbox_center_world
+from vehicle_profile_configuration import GEOMETRIC_PROFILE_PATH, load_vehicle_configuration
 from fit_f1_2030_driver_seat import mesh_fingerprint
 
 
@@ -365,7 +366,7 @@ def main():
     tire_material.node_tree.links.new(separator.outputs['Green'], shader.inputs['Roughness'])
     shader.inputs['Metallic'].default_value = 0
     shader.inputs['Specular IOR Level'].default_value = 0.35
-    wheel_specs = normalize_object_name_document(json.loads((PROJECT_DIRECTORY / 'game/data/vehicles/f1_2030/f1_2030_v10_geometric.json').read_text()))['tires']
+    wheel_specs = normalize_object_name_document(load_vehicle_configuration(GEOMETRIC_PROFILE_PATH))['tires']
     for short_name, position in [('FL', 'FRONT_LEFT'), ('FR', 'FRONT_RIGHT'), ('RL', 'REAR_LEFT'), ('RR', 'REAR_RIGHT')]:
         scene_object = bpy.data.objects['GEO_WHEEL_' + position + '_TIRE']
         center = bbox_center_world(scene_object)

@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
 from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+from vehicle_profile_configuration import load_vehicle_configuration
 enable_legacy_source_names()
 
 import json
@@ -119,7 +120,7 @@ def main():
     if len(args) != 2:
         raise SystemExit("usage: blender --background --python SCRIPT -- ASSET_DIR PHYSICS.json")
     asset_dir = Path(args[0]).resolve()
-    physics = normalize_object_name_document(json.loads(Path(args[1]).read_text(encoding="utf-8")))
+    physics = normalize_object_name_document(load_vehicle_configuration(Path(args[1])))
     manifest = normalize_object_name_document(json.loads((asset_dir / "manifest.json").read_text(encoding="utf-8")))
     names = ["chassis", "wheel_FL", "wheel_FR", "wheel_RL", "wheel_RR"]
     results = {name: inspect(asset_dir / f"f1_2030_v10_{name}.glb") for name in names}

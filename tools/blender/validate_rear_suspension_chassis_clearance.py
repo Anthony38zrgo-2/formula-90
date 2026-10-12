@@ -7,6 +7,7 @@ import bpy
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blender"))
 from formula_one_2030_object_names import enable_legacy_source_names, normalize_object_name_document
+from vehicle_profile_configuration import GEOMETRIC_PROFILE_PATH, load_vehicle_configuration
 enable_legacy_source_names()
 
 from mathutils import Vector
@@ -14,9 +15,9 @@ from mathutils.bvhtree import BVHTree
 
 
 repository_directory = Path(__file__).resolve().parents[2]
-vehicle_profile_path = repository_directory / "game/data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+vehicle_profile_path = GEOMETRIC_PROFILE_PATH
 chassis_model_path = repository_directory / "game/assets/models/vehicles/f1-2030/f1_2030_v10_chassis.glb"
-vehicle_profile = normalize_object_name_document(json.loads(vehicle_profile_path.read_text(encoding="utf-8")))
+vehicle_profile = normalize_object_name_document(load_vehicle_configuration(vehicle_profile_path))
 rear_corner = vehicle_profile["suspension"]["geometry_physical"]["corners"]["RL"]
 
 bpy.ops.wm.read_factory_settings(use_empty=True)

@@ -108,9 +108,18 @@ if ($expectedAssets.Count -ne 5) { throw "El F1 2030 V10 debe declarar exactamen
 $physicsRelative = ([string]$manifest.physics_profile).Replace('res://', '').Replace('/', '\')
 $physicsPath = Join-Path $game $physicsRelative
 if (-not (Test-Path -LiteralPath $physicsPath -PathType Leaf)) { throw "Perfil fisico de $vehicleId faltante: $physicsPath" }
-$physicsHash = Get-Sha256Hex $physicsPath
+$physicsDocument = Get-Content -LiteralPath $physicsPath -Raw | ConvertFrom-Json
+if ($physicsDocument.PSObject.Properties.Name -contains 'domains') {
+    if ([string]$manifest.physics_digest_contract -ne 'vehicle_profile_provenance_v1') { throw 'Contrato de digest del perfil versionado ausente o incompatible.' }
+    $profileResolutionOutput = & cargo run --quiet --manifest-path (Join-Path $game 'crates/Cargo.toml') --package vehicle_physics_engine --bin resolve_vehicle_configuration -- $root $physicsPath
+    if ($LASTEXITCODE -ne 0) { throw "No se pudo resolver el perfil fisico: $physicsPath" }
+    $resolvedProfile = ($profileResolutionOutput -join "`n") | ConvertFrom-Json
+    $physicsHash = [string]$resolvedProfile.provenance.global_digest_sha256
+} else {
+    $physicsHash = Get-Sha256Hex $physicsPath
+}
 if (-not $physicsHash.Equals([string]$manifest.physics_sha256, [StringComparison]::OrdinalIgnoreCase)) {
-    Write-Warning ('Perfil fisico modificado: hashes difieren del manifest. Si el cambio es intencional, refresca physics_sha256 en el manifest. actual=' + $physicsHash)
+    Write-Warning ('Perfil fisico modificado: digest difiere del manifest. Regenera el contrato con el workflow Blender. actual=' + $physicsHash)
 }
 foreach ($relativePath in $expectedAssets.Keys) {
     $assetPath = Join-Path $runtimeDir $relativePath

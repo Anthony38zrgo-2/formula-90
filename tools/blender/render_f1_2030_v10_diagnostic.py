@@ -4,13 +4,16 @@ import bpy
 import json
 import math
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from vehicle_profile_configuration import GEOMETRIC_PROFILE_PATH, load_vehicle_configuration
 from mathutils import Vector
 
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "game/assets/models/vehicles/f1-2030"
 REPORT = ROOT / "reports/2026-09-09-f1-2030-wheel-import"
-PHYSICS = ROOT / "game/data/vehicles/f1_2030/f1_2030_v10_physics.json"
+PHYSICS = GEOMETRIC_PROFILE_PATH
 
 
 def import_at(filename, location):
@@ -23,7 +26,7 @@ def import_at(filename, location):
 
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
-physics = json.loads(PHYSICS.read_text(encoding="utf-8"))
+physics = load_vehicle_configuration(PHYSICS)
 halfbase = float(physics["geometry"]["wheelbase"]) * 0.5
 front_half = float(physics["geometry"]["front_track"]) * 0.5
 rear_half = float(physics["geometry"]["rear_track"]) * 0.5

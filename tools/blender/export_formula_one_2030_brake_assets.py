@@ -8,6 +8,7 @@ import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from export_f1_2030_v10 import export_wheel, WHEELS
+from vehicle_profile_configuration import GEOMETRIC_PROFILE_PATH, load_vehicle_configuration, vehicle_profile_asset_contract
 from glb_util import read_glb, write_glb
 from restore_formula_one_2030_original_tire_geometry import append_accessor
 
@@ -141,8 +142,8 @@ def main():
     from common.output_policy import validate_output_path
     validate_output_path(project_directory, output_directory, 'preview')
     output_directory.mkdir(parents=True, exist_ok=True)
-    physics_path = project_directory / 'game/data/vehicles/f1_2030/f1_2030_v10_geometric.json'
-    physics = json.loads(physics_path.read_text())
+    physics_path = GEOMETRIC_PROFILE_PATH
+    physics = load_vehicle_configuration(physics_path)
     source_path = Path(bpy.data.filepath)
     source_hash = hashlib.sha256(source_path.read_bytes()).hexdigest()
     bpy.context.scene.render.engine = 'CYCLES'
@@ -161,6 +162,7 @@ def main():
         variant_directory = output_directory / variant
         variant_directory.mkdir(exist_ok=True)
         manifest = json.loads((baseline_directory / 'manifest.json').read_text())
+        manifest.update(vehicle_profile_asset_contract(physics_path))
         changes = {}
         for asset_name, asset in manifest['geometry_assets'].items():
             if asset_name == 'chassis':
