@@ -239,13 +239,14 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
 
 #[test]
 fn godot_scene_points_at_geometric_by_default() {
-    // Geometric is the default profile: the shipped scene, session, vehicle
-    // resource and manifest all point at it; the legacy file stays alongside
-    // as the identifiable reference (covered by the legacy test above).
+    // Geometric is the default profile: the shipped scene binds the versioned
+    // manifest; the legacy file stays alongside as the identifiable reference
+    // (covered by the legacy test above). The asset manifest keeps the frozen
+    // monolith reference until the asset workflow regenerates its digests.
     let tscn = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../scenes/vehicles/f1_2030_v10/f1_2030_v10_rust.tscn");
     let text = std::fs::read_to_string(tscn).unwrap();
-    assert!(text.contains("f1_2030_v10_geometric.json"));
+    assert!(text.contains("profiles/geometric/vehicle.json"));
     let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(
         "../../assets/models/vehicles/f1-2030/manifest.json",
     );
