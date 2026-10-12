@@ -38,38 +38,46 @@ func initialize_physical_world() -> bool:
 		return fail_physical_world("Explicit package, vehicle, profile and presentation core bindings are required")
 	if not ClassDB.class_exists("PhysicalVehicleWorldInterface"):
 		return fail_physical_world("Native physical world interface is unavailable")
+	physical_world_interface = ClassDB.instantiate("PhysicalVehicleWorldInterface")
+	if not physical_world_interface.initialize_library(ProjectSettings.globalize_path(native_library_path)):
+		return fail_physical_world("Cannot initialize physical world library")
+	var repository_root := ProjectSettings.globalize_path("res://..") if repository_root_path.is_empty() else ProjectSettings.globalize_path(repository_root_path)
 	var profiles: Array[Dictionary] = []
 	var presentation_cores: Array[Node] = []
 	var vehicles: Array[Node3D] = []
 	for binding_index in range(vehicle_paths.size()):
 		var vehicle := get_node_or_null(vehicle_paths[binding_index]) as Node3D
 		var presentation_core := get_node_or_null(presentation_core_paths[binding_index])
-		var profile_document := FileAccess.get_file_as_string(vehicle_profile_paths[binding_index])
-		var parsed_profile: Variant = JSON.parse_string(profile_document)
-		if vehicle == null or presentation_core == null or not vehicle.has_method("set_physical_world_controlled") or not presentation_core.has_method("supports_physical_world_snapshots") or not presentation_core.supports_physical_world_snapshots() or not parsed_profile is Dictionary or not parsed_profile.has("coupled_world"):
-			return fail_physical_world("Unsupported vehicle, presentation core or coupled profile")
+		if vehicle == null or presentation_core == null or not vehicle.has_method("set_physical_world_controlled") or not presentation_core.has_method("supports_physical_world_snapshots") or not presentation_core.supports_physical_world_snapshots():
+			return fail_physical_world("Unsupported vehicle or presentation core")
 		if presentation_core.config_json_path != vehicle_profile_paths[binding_index] or presentation_core.use_canonical_config or vehicle.physics_config_path != vehicle_profile_paths[binding_index]:
 			return fail_physical_world("Presentation and vehicle profiles must match the physical profile")
+		var resolved := request_physical_world({"operation": "resolve_vehicle_profile", "interface_version": 1, "repository_root": repository_root, "vehicle_profile_path": ProjectSettings.globalize_path(vehicle_profile_paths[binding_index])})
+		if failed:
+			return false
+		var resolved_document: Variant = resolved.get("resolved_vehicle_configuration", {})
+		if not resolved_document is Dictionary:
+			return fail_physical_world("Resolved vehicle profile is unavailable")
+		var configuration: Variant = resolved_document.get("configuration", {})
+		if not configuration is Dictionary or not configuration.get("coupled_world") is Dictionary:
+			return fail_physical_world("Unsupported coupled profile")
 		if vehicles.has(vehicle) or presentation_cores.has(presentation_core):
 			return fail_physical_world("Each vehicle requires a unique presentation core")
-		profiles.append(parsed_profile)
+		profiles.append(configuration)
 		presentation_core.target_vehicle_path = presentation_core.get_path_to(vehicle)
 		vehicles.append(vehicle)
 		presentation_cores.append(presentation_core)
 	if has_unregistered_dynamic_body(get_tree().root, vehicles):
 		return fail_physical_world("Moving Godot collision bodies must be registered with the Rust world")
-	physical_world_interface = ClassDB.instantiate("PhysicalVehicleWorldInterface")
-	if not physical_world_interface.initialize_library(ProjectSettings.globalize_path(native_library_path)):
-		return fail_physical_world("Cannot initialize physical world library")
-	var created := request_physical_world({"operation": "create_world", "interface_version": 1, "repository_root": ProjectSettings.globalize_path("res://..") if repository_root_path.is_empty() else ProjectSettings.globalize_path(repository_root_path), "physical_package_path": ProjectSettings.globalize_path(physical_package_path), "vehicle_profile": FileAccess.get_file_as_string(vehicle_profile_paths[0])})
+	var created := request_physical_world({"operation": "create_world", "interface_version": 1, "repository_root": repository_root, "physical_package_path": ProjectSettings.globalize_path(physical_package_path), "vehicle_profile": JSON.stringify(profiles[0])})
 	if failed:
 		return false
 	world_identifier = int(created["world_identifier"])
 	for binding_index in range(vehicles.size()):
-		if profiles[binding_index]["coupled_world"] != profiles[0]["coupled_world"]:
+		if profiles[binding_index].get("coupled_world") != profiles[0].get("coupled_world"):
 			return fail_physical_world("All vehicles must share one world configuration")
 		var vehicle: Node3D = vehicles[binding_index]
-		var registered := request_physical_world({"operation": "register_vehicle", "vehicle_profile": FileAccess.get_file_as_string(vehicle_profile_paths[binding_index]), "position_world_metres": vector_document(vehicle.global_position), "yaw_radians": vehicle.global_rotation.y})
+		var registered := request_physical_world({"operation": "register_vehicle", "vehicle_profile": JSON.stringify(profiles[binding_index]), "position_world_metres": vector_document(vehicle.global_position), "yaw_radians": vehicle.global_rotation.y})
 		if failed:
 			return false
 		var entity_identifier := int(registered["entity_identifier"])
