@@ -50,7 +50,7 @@ pub struct PowertrainState {
 impl PowertrainState {
     pub fn new(config: &VehicleConfig) -> Self {
         Self {
-            rpm: config.idle_rpm,
+            rpm: config.powertrain.idle_rpm,
             current_gear: 1,
             target_gear: 1,
             clutch_engagement: 1.0,
@@ -60,7 +60,7 @@ impl PowertrainState {
             engine_torque: 0.0,
             clutch_torque: 0.0,
             is_rev_limited: false,
-            drive_inertia: config.motor_moment,
+            drive_inertia: config.powertrain.motor_moment,
             drive_torques: [0.0; 4],
             brake_torques: [0.0; 4],
             abs_active: [false; 4],
@@ -194,18 +194,18 @@ impl PowertrainState {
             return;
         }
 
-        let max_gear = config.gear_ratios.len() as i8;
+        let max_gear = config.powertrain.gear_ratios.len() as i8;
         let mut desired = self.current_gear;
         if let Some(req) = input.gear_request {
             if req >= -1 && req <= max_gear { desired = req; }
-        } else if config.automatic_transmission {
+        } else if config.powertrain.automatic_transmission {
             if self.current_gear <= 0 && forward_speed_m_s >= -0.5 {
                 desired = 1;
             } else if self.current_gear > 0 {
                 desired = self.automatic_desired_in_drive(config, input, wheel_spins, forward_speed_m_s);
             }
             // Reverse only below the max reverse-engage speed; auto-resume to 1st when crawling forward out of park.
-            let autoshift = &config.automatic_shift;
+            let autoshift = &config.powertrain.automatic_shift;
             if self.current_gear == 1 && input.brake > 0.75 && forward_speed_m_s.abs() < autoshift.reverse_max_speed_ms {
                 desired = -1;
             } else if self.current_gear == -1 && input.throttle > 0.1 && forward_speed_m_s.abs() < autoshift.parked_resume_speed_ms {
@@ -213,16 +213,16 @@ impl PowertrainState {
             }
         }
 
-        if config.downshift_rev_matching_enabled && desired > 0 && desired < self.current_gear {
+        if config.powertrain.downshift_rev_matching_enabled && desired > 0 && desired < self.current_gear {
             let target_revolutions_per_minute =
                 self.target_revolutions_per_minute_for_gear(config, wheel_spins, forward_speed_m_s, desired);
             if self.downshift_minimum_interval_remaining_seconds > 0.0
                 || target_revolutions_per_minute
-                    > config.max_rpm * config.downshift_maximum_target_revolutions_per_minute_fraction
+                    > config.powertrain.max_rpm * config.powertrain.downshift_maximum_target_revolutions_per_minute_fraction
             {
                 return;
             }
-            self.downshift_minimum_interval_remaining_seconds = config.downshift_minimum_interval_seconds;
+            self.downshift_minimum_interval_remaining_seconds = config.powertrain.downshift_minimum_interval_seconds;
         }
         self.apply_gear_change(config, desired);
     }
@@ -243,21 +243,21 @@ impl PowertrainState {
         if self.shift_timer == 0.0 {
             let completed_downshift = self.target_gear > 0 && self.target_gear < self.current_gear;
             self.current_gear = self.target_gear;
-            if completed_downshift && config.downshift_rev_matching_enabled {
+            if completed_downshift && config.powertrain.downshift_rev_matching_enabled {
                 self.downshift_clutch_reengagement_remaining_seconds =
-                    config.downshift_clutch_reengagement_seconds;
+                    config.powertrain.downshift_clutch_reengagement_seconds;
             } else {
                 let ratio = self.get_total_gear_ratio(config).abs();
                 if ratio > 0.0 {
                     let wheel_spin = self.drivetrain_spin(config, wheel_spins).abs();
                     let road_spin = forward_speed_m_s.abs() / config.rear_tire_radius.max(1e-6);
-                    let target_spin = if (wheel_spin - road_spin).abs() > config.automatic_shift.wheel_road_spin_blend_threshold_rads {
-                        road_spin * config.automatic_shift.road_spin_weight + wheel_spin * config.automatic_shift.wheel_spin_weight
+                    let target_spin = if (wheel_spin - road_spin).abs() > config.powertrain.automatic_shift.wheel_road_spin_blend_threshold_rads {
+                        road_spin * config.powertrain.automatic_shift.road_spin_weight + wheel_spin * config.powertrain.automatic_shift.wheel_spin_weight
                     } else {
                         wheel_spin
                     };
                     self.rpm = (target_spin * ratio * RAD_S_TO_RPM)
-                        .clamp(config.idle_rpm, config.max_rpm);
+                        .clamp(config.powertrain.idle_rpm, config.powertrain.max_rpm);
                 }
             }
         }
@@ -274,8 +274,8 @@ impl PowertrainState {
         forward_speed_m_s: f64,
     ) -> i8 {
         let mut desired = self.current_gear;
-        let max_gear = config.gear_ratios.len() as i8;
-        let autoshift = &config.automatic_shift;
+        let max_gear = config.powertrain.gear_ratios.len() as i8;
+        let autoshift = &config.powertrain.automatic_shift;
         let total_ratio = self.get_total_gear_ratio(config).abs();
         let radius = config.rear_tire_radius;
         let wheel_speed = self.drivetrain_spin(config, wheel_spins).abs() * radius;
@@ -300,29 +300,29 @@ impl PowertrainState {
         // Traction-aware gate: don't upshift while the driven wheels are breaking loose.
         let traction_ok = (wheel_speed - road_speed) < autoshift.wheel_road_spin_blend_threshold_rads;
 
-        let is_at_redline = self.rpm >= config.max_rpm * autoshift.upshift_target_rpm_margin_high;
+        let is_at_redline = self.rpm >= config.powertrain.max_rpm * autoshift.upshift_target_rpm_margin_high;
         let mut can_upshift = self.current_gear < max_gear
-            && ((self.rpm > config.max_rpm * up_norm && traction_ok) || is_at_redline);
+            && ((self.rpm > config.powertrain.max_rpm * up_norm && traction_ok) || is_at_redline);
 
         // Speed gate (retained from prior logic) prevents lugging / early upshifts in low gears.
         let shift_speed_ratio = if self.current_gear == 1 { 0.45 } else { 0.65 };
-        let min_shift_speed = (config.max_rpm * shift_speed_ratio / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
+        let min_shift_speed = (config.powertrain.max_rpm * shift_speed_ratio / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
         can_upshift = can_upshift && (road_speed >= min_shift_speed || traction_ok);
 
         let lower_ratio = if self.current_gear > 1 {
-            (config.gear_ratios[(self.current_gear - 2) as usize] * config.final_drive).abs()
+            (config.powertrain.gear_ratios[(self.current_gear - 2) as usize] * config.powertrain.final_drive).abs()
         } else { 0.0 };
         let lower_rpm_est = (road_speed / radius.max(1e-6)) * lower_ratio * RAD_S_TO_RPM;
 
         // Kick-down engages under heavy throttle when bogged; the throttle window scales with
         // aggression, and the engage RPM is relaxed by the (inverse) kick-down delay factor.
         let kickdown_throttle = (0.60 + (1.0 - autoshift.downshift_throttle_aggression_factor) * 0.4).clamp(0.0, 1.0);
-        let kickdown_engage_rpm = config.max_rpm
+        let kickdown_engage_rpm = config.powertrain.max_rpm
             * autoshift.downshift_target_rpm_margin_high
             * (1.0 - (1.0 - autoshift.kickdown_delay_factor) * 0.15);
         let can_downshift = self.current_gear > 1 && (
-            (self.rpm < config.max_rpm * down_norm && input.throttle < 0.35)
-            || (self.rpm < kickdown_engage_rpm && input.throttle > kickdown_throttle && lower_rpm_est < config.max_rpm * 0.88)
+            (self.rpm < config.powertrain.max_rpm * down_norm && input.throttle < 0.35)
+            || (self.rpm < kickdown_engage_rpm && input.throttle > kickdown_throttle && lower_rpm_est < config.powertrain.max_rpm * 0.88)
         );
 
         if can_upshift {
@@ -340,7 +340,7 @@ impl PowertrainState {
         }
         self.downshift_clutch_reengagement_remaining_seconds = 0.0;
         self.target_gear = desired;
-        self.shift_timer = (config.shift_time + config.gear_inertia).max(0.0);
+        self.shift_timer = (config.powertrain.shift_time + config.powertrain.gear_inertia).max(0.0);
         if self.shift_timer == 0.0 { self.current_gear = desired; }
     }
 
@@ -354,7 +354,7 @@ impl PowertrainState {
         let wheel_angular_velocity = self.drivetrain_spin(config, wheel_spins).abs();
         let road_angular_velocity =
             forward_speed_meters_per_second.abs() / config.rear_tire_radius.max(1e-6);
-        let total_gear_ratio = config.gear_ratios[(gear - 1) as usize] * config.final_drive;
+        let total_gear_ratio = config.powertrain.gear_ratios[(gear - 1) as usize] * config.powertrain.final_drive;
         wheel_angular_velocity.max(road_angular_velocity) * total_gear_ratio.abs() * RAD_S_TO_RPM
     }
 
@@ -371,10 +371,10 @@ impl PowertrainState {
     ) {
         let throttle = input.throttle.clamp(0.0, 1.0);
         self.driver_throttle = throttle;
-        let rpm_factor = (self.rpm / config.max_rpm.max(1.0)).clamp(0.0, 1.0);
-        let curve = config.evaluate_torque_curve(rpm_factor);
+        let rpm_factor = (self.rpm / config.powertrain.max_rpm.max(1.0)).clamp(0.0, 1.0);
+        let curve = config.powertrain.evaluate_torque_curve(rpm_factor);
         let mut positive_torque = curve
-            * config.max_torque
+            * config.powertrain.max_torque
             * throttle
             * available_engine_torque_fraction.clamp(0.0, 1.0);
 
@@ -382,24 +382,24 @@ impl PowertrainState {
         // Nm/s, so throttle no longer slams the drivetrain in a single tick. Release
         // follows instantly because `min(target, prev + rate*dt)` snaps down when
         // the target drops below the previous value. 0.0 = disabled (legacy).
-        if config.torque_attack_rate_nm_s > 0.0 {
+        if config.powertrain.torque_attack_rate_nm_s > 0.0 {
             self.engine_attack_limited_torque = (self.engine_attack_limited_torque
-                + config.torque_attack_rate_nm_s * dt)
+                + config.powertrain.torque_attack_rate_nm_s * dt)
                 .min(positive_torque);
             positive_torque = self.engine_attack_limited_torque;
         }
 
         // GEVP has variable motor drag and a constant motor brake term. These values
         // are now profile-tunable via JSON (variable_drag_ratio / constant_brake_ratio).
-        let variable_drag = rpm_factor * config.max_torque * config.variable_drag_ratio;
-        let constant_brake = config.max_torque * config.constant_brake_ratio * (1.0 - throttle);
+        let variable_drag = rpm_factor * config.powertrain.max_torque * config.powertrain.variable_drag_ratio;
+        let constant_brake = config.powertrain.max_torque * config.powertrain.constant_brake_ratio * (1.0 - throttle);
         let mut torque_output = positive_torque - variable_drag - constant_brake;
 
         self.is_rev_limited = false;
         if self.shift_timer > 0.0 {
             torque_output = torque_output.min(0.0);
         }
-        let rev_matching_active = config.downshift_rev_matching_enabled
+        let rev_matching_active = config.powertrain.downshift_rev_matching_enabled
             && self.target_gear > 0
             && ((self.shift_timer > 0.0 && self.target_gear < self.current_gear)
                 || self.downshift_clutch_reengagement_remaining_seconds > 0.0);
@@ -409,20 +409,20 @@ impl PowertrainState {
                 wheel_spins,
                 forward_speed_meters_per_second,
                 self.target_gear,
-            ).min(config.max_rpm * config.downshift_maximum_target_revolutions_per_minute_fraction);
+            ).min(config.powertrain.max_rpm * config.powertrain.downshift_maximum_target_revolutions_per_minute_fraction);
             let torque_required_to_match =
                 (target_revolutions_per_minute - self.rpm).max(0.0)
-                    * config.motor_moment.max(1e-6)
+                    * config.powertrain.motor_moment.max(1e-6)
                     / (RAD_S_TO_RPM * dt);
             let maximum_blip_torque =
-                config.max_torque * config.downshift_blip_torque_fraction;
+                config.powertrain.max_torque * config.powertrain.downshift_blip_torque_fraction;
             torque_output = (torque_required_to_match + variable_drag + constant_brake)
                 .min(maximum_blip_torque)
                 - variable_drag
                 - constant_brake;
         }
-        let maximum_accelerating_torque = (config.max_rpm - self.rpm).max(0.0)
-            * config.motor_moment.max(1e-6)
+        let maximum_accelerating_torque = (config.powertrain.max_rpm - self.rpm).max(0.0)
+            * config.powertrain.motor_moment.max(1e-6)
             / (RAD_S_TO_RPM * dt.max(1e-9));
         if torque_output > maximum_accelerating_torque {
             self.is_rev_limited = true;
@@ -431,8 +431,8 @@ impl PowertrainState {
         self.engine_torque = torque_output;
 
         // Free engine integration occurs before clutch reaction, as in GEVP.
-        self.rpm += RAD_S_TO_RPM * dt * torque_output / config.motor_moment.max(1e-6);
-        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm);
+        self.rpm += RAD_S_TO_RPM * dt * torque_output / config.powertrain.motor_moment.max(1e-6);
+        self.rpm = self.rpm.clamp(config.powertrain.idle_rpm, config.powertrain.max_rpm);
 
         if self.current_gear == 0 {
             self.clutch_engagement = 0.0;
@@ -444,9 +444,9 @@ impl PowertrainState {
         let total_ratio = self.get_total_gear_ratio(config);
         let manual_clutch = input.clutch.clamp(0.0, 1.0);
         let shift_clutch = if self.shift_timer > 0.0 { 1.0 } else { 0.0 };
-        let downshift_reengagement_disengagement = if config.downshift_clutch_reengagement_seconds > 0.0 {
+        let downshift_reengagement_disengagement = if config.powertrain.downshift_clutch_reengagement_seconds > 0.0 {
             self.downshift_clutch_reengagement_remaining_seconds
-                / config.downshift_clutch_reengagement_seconds
+                / config.powertrain.downshift_clutch_reengagement_seconds
         } else {
             0.0
         };
@@ -455,8 +455,8 @@ impl PowertrainState {
         // GEVP anti-stall clutch: at idle (or below clutch-out RPM when launching from rest),
         // disengage clutch completely so idle governor does not produce artificial creep torque.
         // Hysteresis and offset are now profile-tunable via JSON.
-        let clutch_out_rpm = config.idle_rpm + config.clutch_out_rpm_offset;
-        let idle_floor = config.idle_rpm + config.idle_disengagement_hysteresis_rpm;
+        let clutch_out_rpm = config.powertrain.idle_rpm + config.powertrain.clutch_out_rpm_offset;
+        let idle_floor = config.powertrain.idle_rpm + config.powertrain.idle_disengagement_hysteresis_rpm;
         let idle_disengagement = if self.rpm <= idle_floor {
             1.0
         } else if self.rpm >= clutch_out_rpm {
@@ -471,7 +471,7 @@ impl PowertrainState {
         self.clutch_engagement = 1.0 - clutch_disengagement;
 
         let drive_axles_inertia = driven_wheel_inertia(config);
-        let drivetrain_inertia = config.motor_moment
+        let drivetrain_inertia = config.powertrain.motor_moment
             + total_ratio.powi(2) * GEVP_GEAR_INERTIA
             + drive_axles_inertia;
         let ratio_sq = total_ratio.powi(2).max(1e-8);
@@ -481,22 +481,22 @@ impl PowertrainState {
         let mut speed_difference = (self.rpm / RAD_S_TO_RPM) - drivetrain_spin * total_ratio;
         if speed_difference < 0.0 { speed_difference = -(-speed_difference).sqrt(); }
 
-        let a = (config.motor_moment * drivetrain_inertia_reflected * speed_difference) / dt;
-        let b = config.motor_moment * reaction_torque;
+        let a = (config.powertrain.motor_moment * drivetrain_inertia_reflected * speed_difference) / dt;
+        let b = config.powertrain.motor_moment * reaction_torque;
         let c = drivetrain_inertia_reflected * torque_output;
         let clutch_factor = self.clutch_engagement;
-        let max_clutch_torque = config.max_torque * config.max_clutch_torque_ratio * clutch_factor;
+        let max_clutch_torque = config.powertrain.max_torque * config.powertrain.max_clutch_torque_ratio * clutch_factor;
         let raw_clutch = ((a - b + c)
-            / (config.motor_moment + drivetrain_inertia_reflected).max(1e-8))
+            / (config.powertrain.motor_moment + drivetrain_inertia_reflected).max(1e-8))
             * clutch_factor;
         self.clutch_torque = raw_clutch.clamp(-max_clutch_torque, max_clutch_torque);
 
-        self.rpm -= RAD_S_TO_RPM * dt * self.clutch_torque / config.motor_moment.max(1e-6);
-        self.rpm = self.rpm.clamp(config.idle_rpm, config.max_rpm);
+        self.rpm -= RAD_S_TO_RPM * dt * self.clutch_torque / config.powertrain.motor_moment.max(1e-6);
+        self.rpm = self.rpm.clamp(config.powertrain.idle_rpm, config.powertrain.max_rpm);
 
         // This is the inertia passed to each driven wheel's torque integration,
         // equivalent in purpose to GEVP process_drive/process_torque.
-        self.drive_inertia = config.motor_moment + total_ratio.powi(2) * GEVP_GEAR_INERTIA;
+        self.drive_inertia = config.powertrain.motor_moment + total_ratio.powi(2) * GEVP_GEAR_INERTIA;
     }
 
     fn distribute_drive_torque(
@@ -510,27 +510,27 @@ impl PowertrainState {
         self.drive_torques = [0.0; 4];
         if self.current_gear == 0 { return; }
         let wheel_torque = self.clutch_torque * self.get_total_gear_ratio(config);
-        let front_total = wheel_torque * config.front_torque_split;
-        let rear_total = wheel_torque * (1.0 - config.front_torque_split);
+        let front_total = wheel_torque * config.powertrain.front_torque_split;
+        let rear_total = wheel_torque * (1.0 - config.powertrain.front_torque_split);
 
         // Front axle (open 50/50 split if driven, e.g. AWD)
-        if config.front_torque_split > 0.0 {
+        if config.powertrain.front_torque_split > 0.0 {
             self.drive_torques[0] = front_total * 0.5;
             self.drive_torques[1] = front_total * 0.5;
         }
 
         // Rear axle: Salisbury Clutch-Pack LSD (AMS2 / Reiza aligned 1.5-Way differential)
-        if config.front_torque_split < 1.0 {
+        if config.powertrain.front_torque_split < 1.0 {
             let (t_rl, t_rr) = solve_salisbury_differential(
                 rear_total,
                 wheel_spins[2], // Rear Left
                 wheel_spins[3], // Rear Right
-                config.diff_preload,
-                config.diff_power_ramp_angle_deg,
-                config.diff_coast_ramp_angle_deg,
-                config.diff_clutches,
-                config.diff_clutch_friction_coeff,
-                config.diff_slip_transition_threshold_rad_s,
+                config.powertrain.diff_preload,
+                config.powertrain.diff_power_ramp_angle_deg,
+                config.powertrain.diff_coast_ramp_angle_deg,
+                config.powertrain.diff_clutches,
+                config.powertrain.diff_clutch_friction_coeff,
+                config.powertrain.diff_slip_transition_threshold_rad_s,
             );
             self.drive_torques[2] = t_rl;
             self.drive_torques[3] = t_rr;
@@ -547,9 +547,9 @@ impl PowertrainState {
         self.tc_raw_cut_ratio = 0.0;
 
         let gear_index = (self.current_gear - 1) as usize;
-        let is_rwd = config.front_torque_split < 1.0;
+        let is_rwd = config.powertrain.front_torque_split < 1.0;
         let gear_valid = self.current_gear > 0
-            && gear_index < config.gear_ratios.len()
+            && gear_index < config.powertrain.gear_ratios.len()
             && gear_index < config.aids.traction_control_gear_authority.len()
             && gear_index < config.aids.traction_control_gear_slip_target.len()
             && gear_index < config.aids.traction_control_gear_max_cut.len();
@@ -654,7 +654,7 @@ impl PowertrainState {
         let total = input.brake.clamp(0.0, 1.0) * config.brakes.max_brake_torque * assist_mult;
         let front_each = total * config.brakes.front_brake_bias * 0.5;
         let rear_each = total * (1.0 - config.brakes.front_brake_bias) * 0.5;
-        let hand_each = input.handbrake.clamp(0.0, 1.0) * config.brakes.max_brake_torque * config.handbrake_torque_fraction;
+        let hand_each = input.handbrake.clamp(0.0, 1.0) * config.brakes.max_brake_torque * config.powertrain.handbrake_torque_fraction;
 
         if abs_enabled && input.brake > 0.05 {
             let avg = wheel_spins.iter().map(|v| v.abs()).sum::<f64>() * 0.25;
@@ -681,17 +681,17 @@ impl PowertrainState {
     }
 
     pub fn get_current_gear_ratio(&self, config: &VehicleConfig) -> f64 {
-        if self.current_gear > 0 && (self.current_gear as usize) <= config.gear_ratios.len() {
-            config.gear_ratios[(self.current_gear - 1) as usize]
+        if self.current_gear > 0 && (self.current_gear as usize) <= config.powertrain.gear_ratios.len() {
+            config.powertrain.gear_ratios[(self.current_gear - 1) as usize]
         } else if self.current_gear == -1 {
-            -config.reverse_ratio
+            -config.powertrain.reverse_ratio
         } else {
             0.0
         }
     }
 
     pub fn get_total_gear_ratio(&self, config: &VehicleConfig) -> f64 {
-        self.get_current_gear_ratio(config) * config.final_drive
+        self.get_current_gear_ratio(config) * config.powertrain.final_drive
     }
 
     fn drivetrain_spin(&self, config: &VehicleConfig, wheel_spins: &[f64; 4]) -> f64 {
@@ -708,7 +708,7 @@ impl PowertrainState {
 }
 
 fn wheel_is_driven(config: &VehicleConfig, wheel: WheelIndex) -> bool {
-    if wheel.is_front() { config.front_torque_split > 0.0 } else { config.front_torque_split < 1.0 }
+    if wheel.is_front() { config.powertrain.front_torque_split > 0.0 } else { config.powertrain.front_torque_split < 1.0 }
 }
 
 fn driven_wheel_inertia(config: &VehicleConfig) -> f64 {
@@ -867,14 +867,14 @@ mod engine_torque_attack_tests {
         let mut state = PowertrainState::new(&configuration);
         state.current_gear = 0;
         state.target_gear = 0;
-        state.rpm = configuration.max_rpm - 1.0;
+        state.rpm = configuration.powertrain.max_rpm - 1.0;
         step_one(&configuration, &mut state, 1.0, 1.0 / 120.0);
         assert!(state.is_rev_limited);
-        assert!(state.rpm <= configuration.max_rpm);
-        let expected_accelerating_torque = configuration.motor_moment
+        assert!(state.rpm <= configuration.powertrain.max_rpm);
+        let expected_accelerating_torque = configuration.powertrain.motor_moment
             / (RAD_S_TO_RPM * (1.0 / 120.0));
         assert!((state.engine_torque - expected_accelerating_torque).abs() < 1e-9);
-        state.rpm = configuration.max_rpm;
+        state.rpm = configuration.powertrain.max_rpm;
         step_one(&configuration, &mut state, 0.0, 1.0 / 120.0);
         assert!(!state.is_rev_limited);
         assert!(state.engine_torque <= 0.0);
@@ -884,16 +884,16 @@ mod engine_torque_attack_tests {
     fn wheels_backdriving_the_engine_at_the_ceiling_do_not_report_combustion_cuts() {
         let configuration = VehicleConfig::default();
         let mut state = PowertrainState::new(&configuration);
-        state.rpm = configuration.max_rpm;
-        let wheel_speed = configuration.max_rpm * 1.1
-            / (RAD_S_TO_RPM * configuration.gear_ratios[0] * configuration.final_drive);
+        state.rpm = configuration.powertrain.max_rpm;
+        let wheel_speed = configuration.powertrain.max_rpm * 1.1
+            / (RAD_S_TO_RPM * configuration.powertrain.gear_ratios[0] * configuration.powertrain.final_drive);
         let input = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
         state.step(&configuration, &input, &[wheel_speed; 4],
             wheel_speed * configuration.rear_tire_radius, 1.0 / 120.0);
         assert!(!state.is_rev_limited);
         assert!(state.engine_torque <= 0.0);
         assert!(state.clutch_torque < 0.0);
-        assert!(state.rpm <= configuration.max_rpm);
+        assert!(state.rpm <= configuration.powertrain.max_rpm);
     }
 
     fn step_one(config: &VehicleConfig, state: &mut PowertrainState, throttle: f64, dt: f64) {
@@ -917,7 +917,7 @@ mod engine_torque_attack_tests {
     #[test]
     fn attack_rate_caps_torque_rise_on_first_tick() {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.torque_attack_rate_nm_s = 1200.0;
+        cfg.powertrain.torque_attack_rate_nm_s = 1200.0;
         let mut state = PowertrainState::new(&cfg);
         let dt = 1.0 / 600.0;
 
@@ -939,7 +939,7 @@ mod engine_torque_attack_tests {
     #[test]
     fn attack_rate_ramps_toward_target_then_release_is_instant() {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.torque_attack_rate_nm_s = 1200.0;
+        cfg.powertrain.torque_attack_rate_nm_s = 1200.0;
         let mut state = PowertrainState::new(&cfg);
         let dt = 1.0 / 600.0;
 
@@ -967,14 +967,14 @@ mod engine_torque_attack_tests {
     #[test]
     fn zero_rate_preserves_legacy_instant_delivery() {
         let cfg = VehicleConfig::f1_94_canonical();
-        assert_eq!(cfg.torque_attack_rate_nm_s, 0.0);
+        assert_eq!(cfg.powertrain.torque_attack_rate_nm_s, 0.0);
         let mut state = PowertrainState::new(&cfg);
         let dt = 1.0 / 600.0;
 
         step_one(&cfg, &mut state, 1.0, dt);
 
-        let target = cfg.evaluate_torque_curve(cfg.idle_rpm / cfg.max_rpm) * cfg.max_torque;
-        let instantaneous = target - cfg.variable_drag_ratio * (cfg.idle_rpm / cfg.max_rpm) * cfg.max_torque;
+        let target = cfg.powertrain.evaluate_torque_curve(cfg.powertrain.idle_rpm / cfg.powertrain.max_rpm) * cfg.powertrain.max_torque;
+        let instantaneous = target - cfg.powertrain.variable_drag_ratio * (cfg.powertrain.idle_rpm / cfg.powertrain.max_rpm) * cfg.powertrain.max_torque;
         assert!(
             state.engine_torque > instantaneous - 1.0,
             "legacy path must deliver engine torque (nearly) instantly"
@@ -999,12 +999,12 @@ mod differential_tests {
             axle_torque,
             delta_omega,
             0.0,
-            cfg.diff_preload,
-            cfg.diff_power_ramp_angle_deg,
-            cfg.diff_coast_ramp_angle_deg,
-            cfg.diff_clutches,
-            cfg.diff_clutch_friction_coeff,
-            cfg.diff_slip_transition_threshold_rad_s,
+            cfg.powertrain.diff_preload,
+            cfg.powertrain.diff_power_ramp_angle_deg,
+            cfg.powertrain.diff_coast_ramp_angle_deg,
+            cfg.powertrain.diff_clutches,
+            cfg.powertrain.diff_clutch_friction_coeff,
+            cfg.powertrain.diff_slip_transition_threshold_rad_s,
         );
         ((right - left) * 0.5).abs()
     }
@@ -1017,7 +1017,7 @@ mod differential_tests {
     #[test]
     fn f1_2030_differential_is_progressive_not_instant_lock() {
         let cfg = f1_2030_config();
-        let threshold = cfg.diff_slip_transition_threshold_rad_s;
+        let threshold = cfg.powertrain.diff_slip_transition_threshold_rad_s;
         assert!(
             threshold >= 4.0,
             "shipped LSD threshold must stay progressive, got {threshold} rad/s"
@@ -1044,7 +1044,7 @@ mod differential_tests {
             "lock must saturate at the transition threshold"
         );
         assert!(
-            full <= axle_torque * 0.5 + cfg.diff_preload + 1e-9,
+            full <= axle_torque * 0.5 + cfg.powertrain.diff_preload + 1e-9,
             "lock cannot exceed half the axle torque + preload"
         );
     }

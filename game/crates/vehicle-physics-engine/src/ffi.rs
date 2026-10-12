@@ -87,19 +87,19 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             vehicle_mass: sim.config.chassis.vehicle_mass,
             front_brake_bias: sim.config.brakes.front_brake_bias,
             max_steering_angle: sim.config.steering.max_steering_angle,
-            max_torque: sim.config.max_torque,
+            max_torque: sim.config.powertrain.max_torque,
             coefficient_of_drag: sim.config.aerodynamics.coefficient_of_drag,
             frontal_area: sim.config.aerodynamics.frontal_area,
             air_density: sim.config.aerodynamics.air_density,
             steering_exponent: sim.config.steering.steering_exponent,
             steering_speed: sim.config.steering.steering_speed,
             countersteer_speed: sim.config.steering.countersteer_speed,
-            automatic_transmission: sim.config.automatic_transmission,
-            diff_preload: sim.config.diff_preload,
-            diff_power_ramp_angle_deg: sim.config.diff_power_ramp_angle_deg,
-            diff_coast_ramp_angle_deg: sim.config.diff_coast_ramp_angle_deg,
-            diff_clutches: sim.config.diff_clutches,
-            diff_clutch_friction_coeff: sim.config.diff_clutch_friction_coeff,
+            automatic_transmission: sim.config.powertrain.automatic_transmission,
+            diff_preload: sim.config.powertrain.diff_preload,
+            diff_power_ramp_angle_deg: sim.config.powertrain.diff_power_ramp_angle_deg,
+            diff_coast_ramp_angle_deg: sim.config.powertrain.diff_coast_ramp_angle_deg,
+            diff_clutches: sim.config.powertrain.diff_clutches,
+            diff_clutch_friction_coeff: sim.config.powertrain.diff_clutch_friction_coeff,
             aids_enabled_mask: sim.aids.to_bits(),
             inertia_multiplier_x: sim.config.chassis.inertia_multipliers.x,
             inertia_multiplier_y: sim.config.chassis.inertia_multipliers.y,
@@ -109,8 +109,8 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             suspension_front_resting_ratio: sim.config.suspension.front_resting_ratio,
             suspension_rear_resting_ratio: sim.config.suspension.rear_resting_ratio,
             powertrain_cooling_duct_openings_supplied: false,
-            water_cooling_duct_opening: sim.config.powertrain_thermal.water_cooling_duct.opening,
-            oil_cooling_duct_opening: sim.config.powertrain_thermal.oil_cooling_duct.opening,
+            water_cooling_duct_opening: sim.config.powertrain.powertrain_thermal.water_cooling_duct.opening,
+            oil_cooling_duct_opening: sim.config.powertrain.powertrain_thermal.oil_cooling_duct.opening,
         };
     }
     true
@@ -127,13 +127,13 @@ pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeC
         if cfg.water_cooling_duct_opening.is_finite()
             && (0.0..=1.0).contains(&cfg.water_cooling_duct_opening)
         {
-            sim.config.powertrain_thermal.water_cooling_duct.opening =
+            sim.config.powertrain.powertrain_thermal.water_cooling_duct.opening =
                 cfg.water_cooling_duct_opening;
         }
         if cfg.oil_cooling_duct_opening.is_finite()
             && (0.0..=1.0).contains(&cfg.oil_cooling_duct_opening)
         {
-            sim.config.powertrain_thermal.oil_cooling_duct.opening =
+            sim.config.powertrain.powertrain_thermal.oil_cooling_duct.opening =
                 cfg.oil_cooling_duct_opening;
         }
     }
@@ -155,7 +155,7 @@ fn apply_chassis_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
         sim.config.steering.max_steering_angle = cfg.max_steering_angle;
     }
     if cfg.max_torque.is_finite() && cfg.max_torque > 0.0 {
-        sim.config.max_torque = cfg.max_torque;
+        sim.config.powertrain.max_torque = cfg.max_torque;
     }
     if cfg.coefficient_of_drag.is_finite() && cfg.coefficient_of_drag >= 0.0 {
         sim.config.aerodynamics.coefficient_of_drag = cfg.coefficient_of_drag;
@@ -175,7 +175,7 @@ fn apply_chassis_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.countersteer_speed.is_finite() && cfg.countersteer_speed > 0.0 {
         sim.config.steering.countersteer_speed = cfg.countersteer_speed;
     }
-    sim.config.automatic_transmission = cfg.automatic_transmission;
+    sim.config.powertrain.automatic_transmission = cfg.automatic_transmission;
 }
 
 fn apply_drivetrain_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
@@ -185,19 +185,19 @@ fn apply_drivetrain_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
 
 fn apply_differential_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.diff_preload.is_finite() && cfg.diff_preload > 0.0 {
-        sim.config.diff_preload = cfg.diff_preload;
+        sim.config.powertrain.diff_preload = cfg.diff_preload;
     }
     if cfg.diff_power_ramp_angle_deg.is_finite() && cfg.diff_power_ramp_angle_deg > 0.0 {
-        sim.config.diff_power_ramp_angle_deg = cfg.diff_power_ramp_angle_deg;
+        sim.config.powertrain.diff_power_ramp_angle_deg = cfg.diff_power_ramp_angle_deg;
     }
     if cfg.diff_coast_ramp_angle_deg.is_finite() && cfg.diff_coast_ramp_angle_deg > 0.0 {
-        sim.config.diff_coast_ramp_angle_deg = cfg.diff_coast_ramp_angle_deg;
+        sim.config.powertrain.diff_coast_ramp_angle_deg = cfg.diff_coast_ramp_angle_deg;
     }
     if cfg.diff_clutches.is_finite() && cfg.diff_clutches > 0.0 {
-        sim.config.diff_clutches = cfg.diff_clutches;
+        sim.config.powertrain.diff_clutches = cfg.diff_clutches;
     }
     if cfg.diff_clutch_friction_coeff.is_finite() && cfg.diff_clutch_friction_coeff >= 0.0 {
-        sim.config.diff_clutch_friction_coeff = cfg.diff_clutch_friction_coeff;
+        sim.config.powertrain.diff_clutch_friction_coeff = cfg.diff_clutch_friction_coeff;
     }
 }
 

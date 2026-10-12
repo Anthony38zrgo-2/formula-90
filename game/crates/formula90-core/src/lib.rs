@@ -46,7 +46,7 @@ mod aud04_integration {
             core.step_standalone(id, &game_sim::DriverInput { throttle: 0.9, ..Default::default() }, &samples, 1.0 / 120.0);
         }
         let ent = &core.world.entities[0];
-        let expected = (ent.sim.state.powertrain.engine_torque / ent.sim.config.max_torque).clamp(-1.0, 1.0) as f32;
+        let expected = (ent.sim.state.powertrain.engine_torque / ent.sim.config.powertrain.max_torque).clamp(-1.0, 1.0) as f32;
         assert!(expected.abs() > 0.01);
         let received = core.audio.mut_engine().unwrap().last_normalized_engine_torque();
         assert!((received - expected).abs() < 1e-6, "physical={expected}, audio={received}");
@@ -89,7 +89,7 @@ mod aud04_integration {
         let check_transport = |core: &mut CoreFacade, label: &str| {
             let (powertrain, max_torque, rpm, throttle) = {
                 let ent = &core.world.entities[0];
-                (ent.sim.state.powertrain.clone(), ent.sim.config.max_torque,
+                (ent.sim.state.powertrain.clone(), ent.sim.config.powertrain.max_torque,
                  ent.last.as_ref().map(|t| t.rpm).unwrap_or(0.0), core.frame.throttle)
             };
             let (exp_load, exp_torque, exp_clutch, exp_tc, exp_limiter, exp_shifting, exp_down) =
@@ -179,7 +179,7 @@ mod aud04_integration {
             }
         };
         settle(&mut core, id);
-        let max_gear = core.world.entities[0].sim.config.gear_ratios.len() as i8;
+        let max_gear = core.world.entities[0].sim.config.powertrain.gear_ratios.len() as i8;
         // Move away from the top gear so upshift then downshift are both real.
         if core.world.entities[0].sim.state.powertrain.current_gear >= max_gear {
             let samples = core.flat_samples(id);
@@ -933,7 +933,7 @@ impl CoreFacade {
         frame.aero_load_ratio = aero.load_ratio;
         frame.aero_balance_front = aero.balance_front;
         let powertrain_thermal = ent.sim.state.powertrain_thermal;
-        let powertrain_thermal_config = &ent.sim.config.powertrain_thermal;
+        let powertrain_thermal_config = &ent.sim.config.powertrain.powertrain_thermal;
         frame.engine_block_temperature_celsius =
             powertrain_thermal.engine_block_temperature_celsius;
         frame.water_temperature_celsius = powertrain_thermal.water_temperature_celsius;

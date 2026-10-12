@@ -17,8 +17,8 @@ fn launch_budget_reports_clutch_vs_longitudinal_grip() {
         - normal / (cfg.rear_tire_width * 1000.0 * cfg.contact_patch * 0.2))
         .max(0.0);
     let longitudinal_budget = friction_budget * 0.5;
-    let first_ratio = cfg.gear_ratios[0] * cfg.final_drive;
-    let clutch_limit = cfg.max_torque * 1.6;
+    let first_ratio = cfg.powertrain.gear_ratios[0] * cfg.powertrain.final_drive;
+    let clutch_limit = cfg.powertrain.max_torque * 1.6;
     let drive_force_per_wheel = clutch_limit * first_ratio / 2.0 / cfg.rear_tire_radius;
     let ratio = drive_force_per_wheel / longitudinal_budget.max(1e-6);
 

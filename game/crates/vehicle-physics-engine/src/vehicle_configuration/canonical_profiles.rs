@@ -78,43 +78,55 @@ impl VehicleConfig {
             },
 
             // Powertrain & Gearing
-            max_torque: 455.0,
-            max_rpm: 15000.0,
-            idle_rpm: 4500.0,
-            motor_moment: 0.12,
-            torque_curve: vec![
-                (0.00, 0.20),
-                (0.265, 0.28),
-                (0.44, 0.58),
-                (0.62, 0.85),
-                (0.79, 0.98),
-                (0.88, 1.00),
-                (0.97, 0.95),
-                (1.00, 0.88),
-            ],
-            gear_ratios: vec![2.65, 2.10, 1.75, 1.50, 1.32, 1.18],
-            final_drive: 6.30,
-            reverse_ratio: 3.00,
-            shift_time: 0.12,
-            automatic_transmission: false,
-            downshift_rev_matching_enabled: false,
-            downshift_maximum_target_revolutions_per_minute_fraction: 1.0,
-            downshift_blip_torque_fraction: 0.0,
-            downshift_minimum_interval_seconds: 0.0,
-            downshift_clutch_reengagement_seconds: 0.0,
-            automatic_shift: AutomaticShift::default(),
-            gear_inertia: default_gear_inertia(),
+            powertrain: PowertrainConfiguration {
+                max_torque: 455.0,
+                max_rpm: 15000.0,
+                idle_rpm: 4500.0,
+                motor_moment: 0.12,
+                torque_curve: vec![
+                    (0.00, 0.20),
+                    (0.265, 0.28),
+                    (0.44, 0.58),
+                    (0.62, 0.85),
+                    (0.79, 0.98),
+                    (0.88, 1.00),
+                    (0.97, 0.95),
+                    (1.00, 0.88),
+                ],
+                gear_ratios: vec![2.65, 2.10, 1.75, 1.50, 1.32, 1.18],
+                final_drive: 6.30,
+                reverse_ratio: 3.00,
+                shift_time: 0.12,
+                automatic_transmission: false,
+                downshift_rev_matching_enabled: false,
+                downshift_maximum_target_revolutions_per_minute_fraction: 1.0,
+                downshift_blip_torque_fraction: 0.0,
+                downshift_minimum_interval_seconds: 0.0,
+                downshift_clutch_reengagement_seconds: 0.0,
+                front_torque_split: 0.0,
+
+                // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
+                diff_preload: 170.0,
+                diff_power_ramp_angle_deg: 65.0,
+                diff_coast_ramp_angle_deg: 75.0,
+                diff_clutches: 4.0,
+                diff_clutch_friction_coeff: 0.0,
+
+                max_clutch_torque_ratio: 1.6,
+                clutch_out_rpm_offset: 1000.0,
+                idle_disengagement_hysteresis_rpm: 50.0,
+                variable_drag_ratio: 0.10,
+                constant_brake_ratio: 0.02,
+                handbrake_torque_fraction: 0.4,
+                torque_attack_rate_nm_s: default_torque_attack_rate(),
+                diff_slip_transition_threshold_rad_s: 0.5,
+                automatic_shift: AutomaticShift::default(),
+                gear_inertia: default_gear_inertia(),
+                powertrain_thermal: PowertrainThermalConfig::default(),
+            },
             audio: None,
             coupled_world: None,
             underfloor_contact: None,
-            front_torque_split: 0.0,
-
-            // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned) — CORR-03 candidate B: 170/65/75/mu0.0
-            diff_preload: 170.0,
-            diff_power_ramp_angle_deg: 65.0,
-            diff_coast_ramp_angle_deg: 75.0,
-            diff_clutches: 4.0,
-            diff_clutch_friction_coeff: 0.0,
 
             suspension: SuspensionConfiguration {
                 front_spring_length: 0.250,
@@ -167,7 +179,6 @@ impl VehicleConfig {
                 wheel_lock_blend_spin_rad_s: 0.0,
                 wheel_lock_stick_tau_s: 0.0,
             },
-            powertrain_thermal: PowertrainThermalConfig::default(),
 
             // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
             tire_pressure: TirePressureConfig::default(),
@@ -176,18 +187,6 @@ impl VehicleConfig {
             front_tire_force: TireForceProfile::default(),
             rear_tire_force: TireForceProfile::default(),
             pressure_mechanics: PressureMechanicsSensitivity::default(),
-
-            // Auto-clutch / launch (previously hardcoded in powertrain)
-            max_clutch_torque_ratio: 1.6,
-            clutch_out_rpm_offset: 1000.0,
-            idle_disengagement_hysteresis_rpm: 50.0,
-            variable_drag_ratio: 0.10,
-            constant_brake_ratio: 0.02,
-            handbrake_torque_fraction: 0.4,
-            torque_attack_rate_nm_s: default_torque_attack_rate(),
-
-            // Differential slip transition threshold (was hardcoded 0.50)
-            diff_slip_transition_threshold_rad_s: 0.5,
 
             // Surface Maps
             surface_friction: surface_friction.clone(),
@@ -269,41 +268,53 @@ impl VehicleConfig {
             },
 
             // Powertrain & Gearing
-            max_torque: 430.0,
-            max_rpm: 13000.0,
-            idle_rpm: 3500.0,
-            motor_moment: 0.22,
-            torque_curve: vec![
-                (0.00, 0.38),
-                (0.30, 0.65),
-                (0.55, 0.88),
-                (0.72, 1.00),
-                (0.90, 0.92),
-                (1.00, 0.76),
-            ],
-            gear_ratios: vec![3.00, 2.25, 1.75, 1.42, 1.20, 1.03],
-            final_drive: 3.10,
-            reverse_ratio: 3.00,
-            shift_time: 0.16,
-            automatic_transmission: true,
-            downshift_rev_matching_enabled: false,
-            downshift_maximum_target_revolutions_per_minute_fraction: 1.0,
-            downshift_blip_torque_fraction: 0.0,
-            downshift_minimum_interval_seconds: 0.0,
-            downshift_clutch_reengagement_seconds: 0.0,
-            automatic_shift: AutomaticShift::default(),
-            gear_inertia: default_gear_inertia(),
+            powertrain: PowertrainConfiguration {
+                max_torque: 430.0,
+                max_rpm: 13000.0,
+                idle_rpm: 3500.0,
+                motor_moment: 0.22,
+                torque_curve: vec![
+                    (0.00, 0.38),
+                    (0.30, 0.65),
+                    (0.55, 0.88),
+                    (0.72, 1.00),
+                    (0.90, 0.92),
+                    (1.00, 0.76),
+                ],
+                gear_ratios: vec![3.00, 2.25, 1.75, 1.42, 1.20, 1.03],
+                final_drive: 3.10,
+                reverse_ratio: 3.00,
+                shift_time: 0.16,
+                automatic_transmission: true,
+                downshift_rev_matching_enabled: false,
+                downshift_maximum_target_revolutions_per_minute_fraction: 1.0,
+                downshift_blip_torque_fraction: 0.0,
+                downshift_minimum_interval_seconds: 0.0,
+                downshift_clutch_reengagement_seconds: 0.0,
+                front_torque_split: 0.0, // RWD
+
+                // Differential (Salisbury Clutch-Pack LSD)
+                diff_preload: 90.0,
+                diff_power_ramp_angle_deg: 45.0,
+                diff_coast_ramp_angle_deg: 60.0,
+                diff_clutches: 4.0,
+                diff_clutch_friction_coeff: 0.25,
+
+                max_clutch_torque_ratio: 1.6,
+                clutch_out_rpm_offset: 1000.0,
+                idle_disengagement_hysteresis_rpm: 50.0,
+                variable_drag_ratio: 0.10,
+                constant_brake_ratio: 0.02,
+                handbrake_torque_fraction: 0.4,
+                torque_attack_rate_nm_s: default_torque_attack_rate(),
+                diff_slip_transition_threshold_rad_s: 0.5,
+                automatic_shift: AutomaticShift::default(),
+                gear_inertia: default_gear_inertia(),
+                powertrain_thermal: PowertrainThermalConfig::default(),
+            },
             audio: None,
             coupled_world: None,
             underfloor_contact: None,
-            front_torque_split: 0.0, // RWD
-
-            // Differential (Salisbury Clutch-Pack LSD)
-            diff_preload: 90.0,
-            diff_power_ramp_angle_deg: 45.0,
-            diff_coast_ramp_angle_deg: 60.0,
-            diff_clutches: 4.0,
-            diff_clutch_friction_coeff: 0.25,
 
             suspension: SuspensionConfiguration {
                 front_spring_length: 0.100,
@@ -356,7 +367,6 @@ impl VehicleConfig {
                 wheel_lock_blend_spin_rad_s: 0.0,
                 wheel_lock_stick_tau_s: 0.0,
             },
-            powertrain_thermal: PowertrainThermalConfig::default(),
 
             // Tire pressure + thermal (legacy Jordan uses canonical defaults)
             tire_pressure: TirePressureConfig::default(),
@@ -365,18 +375,6 @@ impl VehicleConfig {
             front_tire_force: TireForceProfile::default(),
             rear_tire_force: TireForceProfile::default(),
             pressure_mechanics: PressureMechanicsSensitivity::default(),
-
-            // Auto-clutch / launch (previously hardcoded in powertrain)
-            max_clutch_torque_ratio: 1.6,
-            clutch_out_rpm_offset: 1000.0,
-            idle_disengagement_hysteresis_rpm: 50.0,
-            variable_drag_ratio: 0.10,
-            constant_brake_ratio: 0.02,
-            handbrake_torque_fraction: 0.4,
-            torque_attack_rate_nm_s: default_torque_attack_rate(),
-
-            // Differential slip transition threshold (was hardcoded 0.50)
-            diff_slip_transition_threshold_rad_s: 0.5,
 
             // Surface Maps
             surface_friction,

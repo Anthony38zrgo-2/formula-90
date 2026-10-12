@@ -400,6 +400,7 @@ fn apply_powertrain_transmission(
     if tuning.transmission_gear_ratios.is_none() {
         tuning.transmission_gear_ratios = Some(
             config
+                .powertrain
                 .gear_ratios
                 .iter()
                 .map(|value| *value as f32)
@@ -407,10 +408,10 @@ fn apply_powertrain_transmission(
         );
     }
     if tuning.transmission_final_drive.is_none() {
-        tuning.transmission_final_drive = Some(config.final_drive as f32);
+        tuning.transmission_final_drive = Some(config.powertrain.final_drive as f32);
     }
     if tuning.transmission_reverse_ratio.is_none() {
-        tuning.transmission_reverse_ratio = Some(config.reverse_ratio as f32);
+        tuning.transmission_reverse_ratio = Some(config.powertrain.reverse_ratio as f32);
     }
 }
 
@@ -758,15 +759,16 @@ impl AudioModule {
             }
         }
         if let Some(config) = powertrain {
-            tuning.required_minimum_revolutions_per_minute = Some(config.idle_rpm);
-            tuning.required_maximum_revolutions_per_minute = Some(config.max_rpm);
+            tuning.required_minimum_revolutions_per_minute = Some(config.powertrain.idle_rpm);
+            tuning.required_maximum_revolutions_per_minute = Some(config.powertrain.max_rpm);
             tuning.gearbox_whine_gear_ratios = config
+                .powertrain
                 .gear_ratios
                 .iter()
                 .map(|ratio| *ratio as f32)
                 .collect();
-            tuning.gearbox_whine_final_drive = config.final_drive as f32;
-            tuning.gearbox_whine_reverse_ratio = config.reverse_ratio as f32;
+            tuning.gearbox_whine_final_drive = config.powertrain.final_drive as f32;
+            tuning.gearbox_whine_reverse_ratio = config.powertrain.reverse_ratio as f32;
         }
         if let Some(transmission) = audio
             .get("gf509")
@@ -1243,15 +1245,15 @@ mod tests {
         apply_powertrain_transmission(&mut tuning, &config);
         assert_eq!(
             tuning.transmission_gear_ratios.as_ref().map(Vec::len),
-            Some(config.gear_ratios.len())
+            Some(config.powertrain.gear_ratios.len())
         );
         assert_eq!(
             tuning.transmission_final_drive,
-            Some(config.final_drive as f32)
+            Some(config.powertrain.final_drive as f32)
         );
         assert_eq!(
             tuning.transmission_reverse_ratio,
-            Some(config.reverse_ratio as f32)
+            Some(config.powertrain.reverse_ratio as f32)
         );
 
         let mut declared = vehicle_audio_engine::V10LayerTuning {

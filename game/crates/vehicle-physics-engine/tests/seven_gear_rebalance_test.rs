@@ -29,7 +29,7 @@ fn road_speed_for_engine_revolutions_per_minute(
     let engine_radians_per_second =
         engine_revolutions_per_minute * 2.0 * std::f64::consts::PI / 60.0;
     engine_radians_per_second * configuration.rear_tire_radius
-        / (configuration.gear_ratios[gear - 1] * configuration.final_drive)
+        / (configuration.powertrain.gear_ratios[gear - 1] * configuration.powertrain.final_drive)
 }
 
 fn advance_powertrain(
@@ -67,18 +67,19 @@ fn assert_close(actual: f64, expected: f64) {
 #[test]
 fn canonical_f1_2030_profile_exposes_seven_gears_and_complete_maps() {
     let configuration = canonical_f1_2030_configuration();
-    assert_eq!(configuration.gear_ratios.len(), 7);
+    assert_eq!(configuration.powertrain.gear_ratios.len(), 7);
     for (actual, expected) in configuration
+        .powertrain
         .gear_ratios
         .iter()
         .zip(EXPECTED_GEAR_RATIOS)
     {
         assert_close(*actual, expected);
     }
-    assert_close(configuration.final_drive, 4.25);
-    assert_close(configuration.max_rpm, 18000.0);
-    assert_close(configuration.max_torque, 432.0);
-    assert!(!configuration.automatic_transmission);
+    assert_close(configuration.powertrain.final_drive, 4.25);
+    assert_close(configuration.powertrain.max_rpm, 18000.0);
+    assert_close(configuration.powertrain.max_torque, 432.0);
+    assert!(!configuration.powertrain.automatic_transmission);
     assert_eq!(
         configuration.aids.traction_control_gear_authority.len(),
         7
@@ -150,7 +151,7 @@ fn traction_maps_must_match_the_seven_ratio_count() {
 #[test]
 fn legacy_six_speed_profile_still_rejects_a_seventh_gear() {
     let configuration = legacy_six_speed_configuration();
-    assert_eq!(configuration.gear_ratios.len(), 6);
+    assert_eq!(configuration.powertrain.gear_ratios.len(), 6);
     assert_eq!(configuration.aids.traction_control_gear_authority.len(), 6);
 
     let mut powertrain = PowertrainState::new(&configuration);
@@ -185,7 +186,7 @@ fn seventh_gear_engages_and_an_eighth_request_is_ignored() {
         }
     }
     assert_eq!(powertrain.current_gear, 7);
-    assert!(powertrain.rpm < configuration.max_rpm);
+    assert!(powertrain.rpm < configuration.powertrain.max_rpm);
 
     advance_powertrain(&mut powertrain, &configuration, Some(8), road_speed);
     assert_eq!(powertrain.current_gear, 7);
@@ -228,7 +229,7 @@ fn downshift_from_seventh_requires_a_safe_revolution_target() {
         }
     }
     assert_eq!(powertrain.current_gear, 6);
-    assert!(powertrain.rpm < configuration.max_rpm);
+    assert!(powertrain.rpm < configuration.powertrain.max_rpm);
 }
 
 #[test]

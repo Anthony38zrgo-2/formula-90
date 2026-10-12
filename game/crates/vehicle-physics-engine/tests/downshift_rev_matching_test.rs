@@ -17,7 +17,7 @@ fn road_speed_for_engine_revolutions_per_minute(
     let engine_radians_per_second =
         engine_revolutions_per_minute * 2.0 * std::f64::consts::PI / 60.0;
     engine_radians_per_second * configuration.rear_tire_radius
-        / (configuration.gear_ratios[gear - 1] * configuration.final_drive)
+        / (configuration.powertrain.gear_ratios[gear - 1] * configuration.powertrain.final_drive)
 }
 
 fn advance_powertrain(
@@ -97,7 +97,7 @@ fn safe_downshift_blips_the_engine_before_progressive_clutch_reengagement() {
     assert_eq!(powertrain.current_gear, 2);
     assert!(powertrain.downshift_clutch_reengagement_remaining_seconds > 0.0);
     assert!(powertrain.clutch_engagement < 1.0);
-    assert!(powertrain.rpm < configuration.max_rpm);
+    assert!(powertrain.rpm < configuration.powertrain.max_rpm);
 
     for _ in 0..20 {
         advance_powertrain(&mut powertrain, &configuration, None, road_speed_meters_per_second);

@@ -28,13 +28,13 @@ fn round_trip_preserves_all_fields() {
     assert_eq!(loaded.chassis.vehicle_name, original.chassis.vehicle_name);
     assert_eq!(loaded.chassis.vehicle_mass, original.chassis.vehicle_mass);
     assert_eq!(loaded.chassis.wheelbase, original.chassis.wheelbase);
-    assert_eq!(loaded.diff_preload, original.diff_preload);
+    assert_eq!(loaded.powertrain.diff_preload, original.powertrain.diff_preload);
     assert_eq!(
-        loaded.diff_clutch_friction_coeff,
-        original.diff_clutch_friction_coeff
+        loaded.powertrain.diff_clutch_friction_coeff,
+        original.powertrain.diff_clutch_friction_coeff
     );
-    assert_eq!(loaded.gear_ratios, original.gear_ratios);
-    assert_eq!(loaded.torque_curve, original.torque_curve);
+    assert_eq!(loaded.powertrain.gear_ratios, original.powertrain.gear_ratios);
+    assert_eq!(loaded.powertrain.torque_curve, original.powertrain.torque_curve);
     assert_eq!(
         loaded.aerodynamics.coefficient_of_drag,
         original.aerodynamics.coefficient_of_drag
@@ -58,8 +58,8 @@ fn golden_json_matches_canonical() {
     let canonical = VehicleConfig::f1_2026_2008_canonical();
     assert_eq!(loaded.chassis.vehicle_mass, canonical.chassis.vehicle_mass);
     assert_eq!(loaded.chassis.wheelbase, canonical.chassis.wheelbase);
-    assert_eq!(loaded.diff_preload, canonical.diff_preload);
-    assert_eq!(loaded.gear_ratios, canonical.gear_ratios);
+    assert_eq!(loaded.powertrain.diff_preload, canonical.powertrain.diff_preload);
+    assert_eq!(loaded.powertrain.gear_ratios, canonical.powertrain.gear_ratios);
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn minimal_json_uses_defaults() {
     let json = r#"{"schema_version": 1}"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
     assert_eq!(cfg.chassis.vehicle_mass, 575.0);
-    assert_eq!(cfg.diff_preload, 170.0);
+    assert_eq!(cfg.powertrain.diff_preload, 170.0);
 }
 
 #[test]
@@ -168,11 +168,11 @@ fn fidelity_fields_consumed_from_json() {
         return;
     }
     let loaded = VehicleConfig::from_json_path(path).unwrap();
-    assert!((loaded.max_clutch_torque_ratio - 1.1).abs() < 1e-9);
-    assert!((loaded.clutch_out_rpm_offset - 1100.0).abs() < 1e-9);
-    assert!((loaded.handbrake_torque_fraction - 0.0).abs() < 1e-9);
-    assert!((loaded.diff_slip_transition_threshold_rad_s - 1.0).abs() < 1e-9);
-    assert!((loaded.variable_drag_ratio - 0.10).abs() < 1e-9);
+    assert!((loaded.powertrain.max_clutch_torque_ratio - 1.1).abs() < 1e-9);
+    assert!((loaded.powertrain.clutch_out_rpm_offset - 1100.0).abs() < 1e-9);
+    assert!((loaded.powertrain.handbrake_torque_fraction - 0.0).abs() < 1e-9);
+    assert!((loaded.powertrain.diff_slip_transition_threshold_rad_s - 1.0).abs() < 1e-9);
+    assert!((loaded.powertrain.variable_drag_ratio - 0.10).abs() < 1e-9);
 }
 
 #[test]
@@ -484,7 +484,7 @@ fn tc_gear_curve_accepts_seven_gears_data_driven() {
         }
     }"#;
     let cfg = VehicleConfig::from_json_str(json).expect("7-speed config must validate");
-    assert_eq!(cfg.gear_ratios.len(), 7);
+    assert_eq!(cfg.powertrain.gear_ratios.len(), 7);
     assert_eq!(cfg.aids.traction_control_gear_authority.len(), 7);
     assert_eq!(cfg.aids.traction_control_gear_max_cut.len(), 7);
 }
@@ -499,7 +499,7 @@ fn f1_2026_2008_physics_json_is_data_driven_seven_gears() {
         .unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
     let cfg = VehicleConfig::from_json_str(&json)
         .unwrap_or_else(|e| panic!("2026 physics JSON must validate: {e}"));
-    assert_eq!(cfg.gear_ratios.len(), 7, "2026 car must have 7 gears");
+    assert_eq!(cfg.powertrain.gear_ratios.len(), 7, "2026 car must have 7 gears");
     assert_eq!(
         cfg.aids.traction_control_gear_authority.len(),
         7,
@@ -507,7 +507,7 @@ fn f1_2026_2008_physics_json_is_data_driven_seven_gears() {
     );
     assert_eq!(cfg.aids.traction_control_gear_max_cut.len(), 7);
     assert_eq!(
-        cfg.torque_attack_rate_nm_s, 1100.0,
+        cfg.powertrain.torque_attack_rate_nm_s, 1100.0,
         "2026 car must ship with the engine torque attack limiter enabled"
     );
     let audio = cfg

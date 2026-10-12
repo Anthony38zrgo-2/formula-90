@@ -77,7 +77,7 @@ impl VehicleState {
             ),
             tire_wear: TireWearSystem::new_with_axles(&config.tire_wear),
             brake_thermal: BrakeThermalSystem::new(&config.brakes.brake_thermal),
-            powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain_thermal),
+            powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain.powertrain_thermal),
             aero: AeroForces::zero(),
             sim_time: 0.0,
             physics_hz: 120,
@@ -351,7 +351,7 @@ impl VehicleSimulator {
             vehicle_speed_ms,
         );
         st.powertrain_thermal
-            .update_available_engine_torque_fraction(&cfg.powertrain_thermal);
+            .update_available_engine_torque_fraction(&cfg.powertrain.powertrain_thermal);
         let available_engine_torque_fraction =
             st.powertrain_thermal.available_engine_torque_fraction;
         // FUEL-100: an empty tank cuts positive engine torque (engine braking
@@ -360,7 +360,7 @@ impl VehicleSimulator {
         let effective_engine_torque_fraction =
             available_engine_torque_fraction * fuel_cutoff_fraction;
         st.powertrain_thermal.evaluate_cooling_ducts(
-            &cfg.powertrain_thermal,
+            &cfg.powertrain.powertrain_thermal,
             cfg.aerodynamics.air_density,
             vehicle_speed_ms,
         );
@@ -873,7 +873,7 @@ impl VehicleSimulator {
             );
         }
         state.powertrain_thermal.advance_temperatures(
-            &configuration.powertrain_thermal,
+            &configuration.powertrain.powertrain_thermal,
             PowertrainThermalInput {
                 engine_speed_revolutions_per_minute: state.powertrain.rpm,
                 engine_torque_newton_meters: state.powertrain.engine_torque,
@@ -1253,8 +1253,8 @@ impl VehicleSimulator {
                 * 2.0
                 * std::f64::consts::PI
                 / 60.0,
-            water_cooling_duct_opening: cfg.powertrain_thermal.water_cooling_duct.opening,
-            oil_cooling_duct_opening: cfg.powertrain_thermal.oil_cooling_duct.opening,
+            water_cooling_duct_opening: cfg.powertrain.powertrain_thermal.water_cooling_duct.opening,
+            oil_cooling_duct_opening: cfg.powertrain.powertrain_thermal.oil_cooling_duct.opening,
             water_cooling_mass_flow_kilograms_per_second: st
                 .powertrain_thermal
                 .water_cooling_duct_flow
@@ -1286,28 +1286,28 @@ impl VehicleSimulator {
             available_engine_torque_fraction: st
                 .powertrain_thermal
                 .available_engine_torque_fraction,
-            water_optimal_minimum_temperature_celsius: cfg
+            water_optimal_minimum_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .water_optimal_minimum_temperature_celsius,
-            water_optimal_maximum_temperature_celsius: cfg
+            water_optimal_maximum_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .water_optimal_maximum_temperature_celsius,
-            water_hot_derating_temperature_celsius: cfg
+            water_hot_derating_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .water_hot_derating_temperature_celsius,
-            water_critical_temperature_celsius: cfg
+            water_critical_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .water_critical_temperature_celsius,
-            oil_optimal_minimum_temperature_celsius: cfg
+            oil_optimal_minimum_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .oil_optimal_minimum_temperature_celsius,
-            oil_optimal_maximum_temperature_celsius: cfg
+            oil_optimal_maximum_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .oil_optimal_maximum_temperature_celsius,
-            oil_hot_derating_temperature_celsius: cfg
+            oil_hot_derating_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .oil_hot_derating_temperature_celsius,
-            oil_critical_temperature_celsius: cfg
+            oil_critical_temperature_celsius: cfg.powertrain
                 .powertrain_thermal
                 .oil_critical_temperature_celsius,
             fuel_remaining_kg: cfg.fuel.effective_current_kg(),
@@ -1504,7 +1504,7 @@ mod tests {
     #[test]
     fn gear_request_sentinel_neutral_and_reverse() {
         let mut cfg = VehicleConfig::f1_94_canonical();
-        cfg.automatic_transmission = false; // match data/vehicles/f1_94/f1_94_physics.json
+        cfg.powertrain.automatic_transmission = false; // match data/vehicles/f1_94/f1_94_physics.json
         let mut sim = VehicleSimulator::new(cfg, Vec3::ZERO, 0.0);
 
         // Initially in gear 1 (or whatever the powertrain starts at).

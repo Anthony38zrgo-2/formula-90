@@ -27,6 +27,7 @@ pub use vehicle_configuration::VehicleConfig;
 pub use aerodynamics::configuration::AerodynamicsConfiguration;
 pub use brakes::configuration::BrakesConfiguration;
 pub use chassis::configuration::ChassisConfiguration;
+pub use powertrain::configuration::PowertrainConfiguration;
 pub use steering::configuration::SteeringConfiguration;
 pub use suspension::configuration::SuspensionConfiguration;
 

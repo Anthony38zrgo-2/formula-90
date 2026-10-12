@@ -193,7 +193,7 @@ impl CoupledVehicleWorld {
             || [input.input.throttle, input.input.brake, input.input.handbrake, input.input.clutch].iter().any(|value| !value.is_finite() || !(0.0..=1.0).contains(value))
         { return Err("Invalid or late timestamped vehicle input".into()); }
         let vehicle = self.vehicles.get_mut(&identifier).ok_or("Stale or unknown coupled vehicle identifier")?;
-        if input.input.gear_request.is_some_and(|gear| gear < -1 || gear as isize > vehicle.model.configuration.gear_ratios.len() as isize) {
+        if input.input.gear_request.is_some_and(|gear| gear < -1 || gear as isize > vehicle.model.configuration.powertrain.gear_ratios.len() as isize) {
             return Err("Requested gear lies outside the configured transmission".into());
         }
         if vehicle.pending_inputs.back().is_some_and(|previous| previous.time_seconds >= input.time_seconds) {

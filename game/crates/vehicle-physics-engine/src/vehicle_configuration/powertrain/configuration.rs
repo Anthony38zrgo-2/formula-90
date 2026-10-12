@@ -1,4 +1,6 @@
-use super::*;
+use serde::{Deserialize, Serialize};
+
+use super::super::*;
 use super::document::JsonAutomaticShift;
 
 /// Automatic transmission shift logic parameters, sourced from `f1_94_physics.json`
@@ -65,5 +67,79 @@ impl AutomaticShift {
             upshift_target_rpm_margin_high: j.upshift_target_rpm_margin_high,
             downshift_target_rpm_margin_high: j.downshift_target_rpm_margin_high,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PowertrainConfiguration {
+    pub max_torque: f64,               // N·m
+    pub max_rpm: f64,                  // RPM
+    pub idle_rpm: f64,                 // RPM
+    pub motor_moment: f64,             // kg·m²
+    pub torque_curve: Vec<(f64, f64)>, // (normalized_rpm, normalized_torque)
+    pub gear_ratios: Vec<f64>,
+    pub final_drive: f64,
+    pub reverse_ratio: f64,
+    pub shift_time: f64, // seconds
+    pub automatic_transmission: bool,
+    pub downshift_rev_matching_enabled: bool,
+    pub downshift_maximum_target_revolutions_per_minute_fraction: f64,
+    pub downshift_blip_torque_fraction: f64,
+    pub downshift_minimum_interval_seconds: f64,
+    pub downshift_clutch_reengagement_seconds: f64,
+    pub front_torque_split: f64, // 0.0 = pure RWD, 1.0 = pure FWD
+
+    // Differential (Salisbury Clutch-Pack LSD, AMS2/Reiza aligned)
+    pub diff_preload: f64,               // Static preload torque (N·m)
+    pub diff_power_ramp_angle_deg: f64,  // Power lock ramp angle (degrees)
+    pub diff_coast_ramp_angle_deg: f64,  // Coast lock ramp angle (degrees)
+    pub diff_clutches: f64,              // Number of friction plate surfaces
+    pub diff_clutch_friction_coeff: f64, // Clutch plate friction coefficient
+
+    // Auto-clutch / launch (previously hardcoded in powertrain)
+    pub max_clutch_torque_ratio: f64,
+    pub clutch_out_rpm_offset: f64,
+    pub idle_disengagement_hysteresis_rpm: f64,
+    pub variable_drag_ratio: f64,
+    pub constant_brake_ratio: f64,
+    pub handbrake_torque_fraction: f64,
+
+    // Engine torque attack limiter: caps the RISE of positive engine torque in Nm/s
+    // so throttle no longer slams the drivetrain. 0.0 = disabled (legacy behavior).
+    pub torque_attack_rate_nm_s: f64,
+
+    // Differential slip transition threshold (was hardcoded 0.50)
+    pub diff_slip_transition_threshold_rad_s: f64,
+
+    // Automatic transmission shift logic (from f1_94_physics.json `automatic_shift`)
+    pub automatic_shift: AutomaticShift,
+    pub gear_inertia: f64,
+    pub powertrain_thermal: PowertrainThermalConfig,
+}
+
+impl PowertrainConfiguration {
+    /// Evaluates normalized engine torque from normalized RPM (0.0 to 1.0) using piecewise linear interpolation.
+    pub fn evaluate_torque_curve(&self, normalized_rpm: f64) -> f64 {
+        let rpm_clamped = normalized_rpm.clamp(0.0, 1.0);
+        if self.torque_curve.is_empty() {
+            return 1.0;
+        }
+        if rpm_clamped <= self.torque_curve[0].0 {
+            return self.torque_curve[0].1;
+        }
+        let last_idx = self.torque_curve.len() - 1;
+        if rpm_clamped >= self.torque_curve[last_idx].0 {
+            return self.torque_curve[last_idx].1;
+        }
+
+        for i in 0..last_idx {
+            let (r0, t0) = self.torque_curve[i];
+            let (r1, t1) = self.torque_curve[i + 1];
+            if rpm_clamped >= r0 && rpm_clamped <= r1 {
+                let frac = (rpm_clamped - r0) / (r1 - r0).max(1e-6);
+                return t0 + frac * (t1 - t0);
+            }
+        }
+        self.torque_curve[last_idx].1
     }
 }

@@ -679,9 +679,9 @@ impl TireSystem {
         effective_gear_ratio: f64,
         clutch_engagement: f64,
     ) {
-        let total_ratio = effective_gear_ratio * config.final_drive;
+        let total_ratio = effective_gear_ratio * config.powertrain.final_drive;
         let drive_inertia = if is_driven(config, wheel) {
-            (config.motor_moment
+            (config.powertrain.motor_moment
                 * total_ratio
                 * total_ratio
                 * clutch_engagement.clamp(0.0, 1.0))
@@ -827,9 +827,9 @@ fn default_contact_blend() -> f64 {
 
 pub fn is_driven(config: &VehicleConfig, wheel: WheelIndex) -> bool {
     if wheel.is_front() {
-        config.front_torque_split > 0.0
+        config.powertrain.front_torque_split > 0.0
     } else {
-        config.front_torque_split < 1.0
+        config.powertrain.front_torque_split < 1.0
     }
 }
 

@@ -145,7 +145,7 @@ fn main() {
 
     println!(
         "TC default enabled: {} | max_clutch_torque_ratio: {} | max_torque: {} N·m",
-        cfg.aids.traction_control_default_enabled, cfg.max_clutch_torque_ratio, cfg.max_torque
+        cfg.aids.traction_control_default_enabled, cfg.powertrain.max_clutch_torque_ratio, cfg.powertrain.max_torque
     );
 
     let raw_aids_note = if raw_aids {
@@ -255,7 +255,7 @@ fn main() {
         };
         let gear_request = if mode == "acceleration_upshift"
             && sim.state.powertrain.current_gear > 0
-            && (sim.state.powertrain.current_gear as usize) < sim.config.gear_ratios.len()
+            && (sim.state.powertrain.current_gear as usize) < sim.config.powertrain.gear_ratios.len()
             && sim.state.powertrain.rpm >= upshift_rpm
         {
             Some(sim.state.powertrain.current_gear + 1)

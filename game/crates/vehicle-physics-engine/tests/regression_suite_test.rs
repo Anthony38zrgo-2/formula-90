@@ -221,8 +221,8 @@ fn test_powertrain_drivetrain_parity() {
     tires.wheels[3].spin = 50.0;
 
     // Apply handbrake (max_brake_torque to rear wheels, 0 to front wheels)
-    tires.process_wheel_torque(&cfg, WheelIndex::RearLeft, 0.0, cfg.motor_moment, cfg.brakes.max_brake_torque, dt);
-    tires.process_wheel_torque(&cfg, WheelIndex::FrontLeft, 0.0, cfg.motor_moment, 0.0, dt);
+    tires.process_wheel_torque(&cfg, WheelIndex::RearLeft, 0.0, cfg.powertrain.motor_moment, cfg.brakes.max_brake_torque, dt);
+    tires.process_wheel_torque(&cfg, WheelIndex::FrontLeft, 0.0, cfg.powertrain.motor_moment, 0.0, dt);
 
     assert!(
         tires.wheels[WheelIndex::RearLeft as usize].spin < tires.wheels[WheelIndex::FrontLeft as usize].spin - 10.0,
