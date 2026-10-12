@@ -131,7 +131,7 @@ fn simulate(
     repetitions: usize,
     brake_demand_scale: f64,
 ) -> ScenarioResult {
-    let thermal_configuration = &configuration.brake_thermal;
+    let thermal_configuration = &configuration.brakes.brake_thermal;
     let mut system = BrakeThermalSystem::new(thermal_configuration);
     let first_time = samples[0].time_seconds;
     let cycle_duration = samples.last().unwrap().time_seconds - first_time;
@@ -265,8 +265,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         scenarios.push(simulate(&configuration, &samples, 5, 1.0));
         for opening in [0.0, 0.02, 0.04, 0.08, 0.12, 0.25, 0.5, 1.0] {
             let mut varied = configuration.clone();
-            varied.brake_thermal.front_duct.opening = opening;
-            varied.brake_thermal.rear_duct.opening = opening;
+            varied.brakes.brake_thermal.front_duct.opening = opening;
+            varied.brakes.brake_thermal.rear_duct.opening = opening;
             scenarios.push(simulate(&varied, &samples, 5, 1.0));
         }
         for brake_demand_scale in [0.5, 1.5, 2.0] {
@@ -283,7 +283,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         "{}",
         serde_json::to_string_pretty(&serde_json::json!({
             "vehicle_profile": arguments[0],
-            "thermal_configuration": configuration.brake_thermal,
+            "thermal_configuration": configuration.brakes.brake_thermal,
             "integration_frequency_hertz": 120,
             "wheel_order": ["front_left", "front_right", "rear_left", "rear_right"],
             "method": "Recorded wheel torque divided by recorded thermal efficiency, interpolated at 120 Hz and multiplied by simulated efficiency. Recorded wheel speeds and tire boundary temperatures remain prescribed. Repeated traces retain thermal state.",

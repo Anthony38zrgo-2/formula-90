@@ -1015,10 +1015,10 @@ impl CoreFacade {
             frame.duct_drag_n[i] = w.duct.drag_force_n;
             frame.total_brake_duct_drag_n += w.duct.drag_force_n;
         }
-        frame.brake_optimal_min_c = ent.sim.config.brake_thermal.optimal_min_temperature_c;
-        frame.brake_optimal_max_c = ent.sim.config.brake_thermal.optimal_max_temperature_c;
-        frame.brake_fade_start_c = ent.sim.config.brake_thermal.fade_start_temperature_c;
-        frame.brake_critical_c = ent.sim.config.brake_thermal.critical_temperature_c;
+        frame.brake_optimal_min_c = ent.sim.config.brakes.brake_thermal.optimal_min_temperature_c;
+        frame.brake_optimal_max_c = ent.sim.config.brakes.brake_thermal.optimal_max_temperature_c;
+        frame.brake_fade_start_c = ent.sim.config.brakes.brake_thermal.fade_start_temperature_c;
+        frame.brake_critical_c = ent.sim.config.brakes.brake_thermal.critical_temperature_c;
         for (i, w) in ent.sim.state.brake_thermal.wheels.iter().enumerate() {
             frame.brake_torque_nm[i] = w.applied_brake_torque_nm;
             frame.brake_spin_pre_rad_s[i] = w.wheel_spin_pre_rad_s;

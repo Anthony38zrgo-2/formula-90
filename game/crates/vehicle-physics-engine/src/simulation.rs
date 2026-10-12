@@ -76,7 +76,7 @@ impl VehicleState {
                 &config.tire_thermal,
             ),
             tire_wear: TireWearSystem::new_with_axles(&config.tire_wear),
-            brake_thermal: BrakeThermalSystem::new(&config.brake_thermal),
+            brake_thermal: BrakeThermalSystem::new(&config.brakes.brake_thermal),
             powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain_thermal),
             aero: AeroForces::zero(),
             sim_time: 0.0,
@@ -346,7 +346,7 @@ impl VehicleSimulator {
         );
         let vehicle_speed_ms = st.linear_velocity.length();
         let brake_duct_drag_n = st.brake_thermal.total_duct_drag_force_n(
-            &cfg.brake_thermal,
+            &cfg.brakes.brake_thermal,
             cfg.aerodynamics.air_density,
             vehicle_speed_ms,
         );
@@ -787,10 +787,10 @@ impl VehicleSimulator {
                 tire_gas_temperature_c: tire_state.gas_c,
             };
             brake_to_tire_heat[wheel_index] = if let Some(work) = brake_dissipated_energy_joules {
-                state.brake_thermal.step_after_mechanical_work(wheel, &configuration.brake_thermal,
+                state.brake_thermal.step_after_mechanical_work(wheel, &configuration.brakes.brake_thermal,
                     brake_thermal_input, work[wheel_index], duration_seconds)?
             } else {
-                state.brake_thermal.step_after_braking(wheel, &configuration.brake_thermal,
+                state.brake_thermal.step_after_braking(wheel, &configuration.brakes.brake_thermal,
                     brake_thermal_input, duration_seconds)
             };
         }

@@ -17,7 +17,7 @@ fn coupled_carcass_heat_matches_radial_damper_loss_without_elastic_work() {
         configuration.tire_thermal.front.tread_to_carcass_w_k = 0.0;
         configuration.tire_thermal.front.carcass_to_air_w_k = 0.0;
         configuration.tire_thermal.front.carcass_to_gas_w_k = 0.0;
-        configuration.brake_thermal.front.rim_to_tire_carcass_w_k = 0.0;
+        configuration.brakes.brake_thermal.front.rim_to_tire_carcass_w_k = 0.0;
         let settings = configuration.coupled_world.clone().unwrap();
         let duration = 1.0 / settings.physical_frequency_hertz as f64;
         let damping = settings

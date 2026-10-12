@@ -96,7 +96,7 @@ impl PowertrainState {
             forward_speed_m_s,
             true,
             true,
-            config.enable_abs,
+            config.brakes.enable_abs,
             dt,
         );
     }
@@ -651,16 +651,16 @@ impl PowertrainState {
         } else {
             1.0
         };
-        let total = input.brake.clamp(0.0, 1.0) * config.max_brake_torque * assist_mult;
-        let front_each = total * config.front_brake_bias * 0.5;
-        let rear_each = total * (1.0 - config.front_brake_bias) * 0.5;
-        let hand_each = input.handbrake.clamp(0.0, 1.0) * config.max_brake_torque * config.handbrake_torque_fraction;
+        let total = input.brake.clamp(0.0, 1.0) * config.brakes.max_brake_torque * assist_mult;
+        let front_each = total * config.brakes.front_brake_bias * 0.5;
+        let rear_each = total * (1.0 - config.brakes.front_brake_bias) * 0.5;
+        let hand_each = input.handbrake.clamp(0.0, 1.0) * config.brakes.max_brake_torque * config.handbrake_torque_fraction;
 
         if abs_enabled && input.brake > 0.05 {
             let avg = wheel_spins.iter().map(|v| v.abs()).sum::<f64>() * 0.25;
             for i in 0..4 {
-                if avg - wheel_spins[i].abs() > config.abs_spin_diff_threshold && self.abs_timers[i] <= 0.0 {
-                    self.abs_timers[i] = config.abs_pulse_time;
+                if avg - wheel_spins[i].abs() > config.brakes.abs_spin_diff_threshold && self.abs_timers[i] <= 0.0 {
+                    self.abs_timers[i] = config.brakes.abs_pulse_time;
                 }
             }
         }

@@ -25,6 +25,7 @@ pub use tires::configuration::TireForceProfile;
 pub use vehicle_configuration::VehicleConfig;
 
 pub use aerodynamics::configuration::AerodynamicsConfiguration;
+pub use brakes::configuration::BrakesConfiguration;
 pub use steering::configuration::SteeringConfiguration;
 
 pub use loader::{

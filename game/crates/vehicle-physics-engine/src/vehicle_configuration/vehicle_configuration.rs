@@ -85,9 +85,7 @@ pub struct VehicleConfig {
     pub rear_contact_patch: f64,
     pub front_airborne_decay: f64,
     pub rear_airborne_decay: f64,
-    pub front_brake_bias: f64,
-    pub max_brake_torque: f64,
-    pub brake_thermal: BrakeThermalConfig,
+    pub brakes: BrakesConfiguration,
     pub powertrain_thermal: PowertrainThermalConfig,
 
     // Tire pressure + thermal (pressure-aware carcass + 5-node thermal model)
@@ -126,19 +124,6 @@ pub struct VehicleConfig {
     /// Same sign convention and bump/rebound behaviour as `front_toe_gain_rad_per_m`.
     #[serde(default)]
     pub rear_toe_gain_rad_per_m: f64,
-    // ABS
-    pub enable_abs: bool,
-    pub abs_pulse_time: f64,
-    pub abs_spin_diff_threshold: f64,
-    /// GRIP-03: wheel-spin band (rad/s) where brake torque fades linearly to
-    /// zero and sticking is regularized. `0.0` keeps the legacy hard stick.
-    #[serde(default)]
-    pub wheel_lock_blend_spin_rad_s: f64,
-    /// GRIP-03: time constant (s) of the extra stiction pull that parks the wheel
-    /// once the brake can hold the unbraked torque. `0.0` means the implicit
-    /// band damping alone parks it.
-    #[serde(default)]
-    pub wheel_lock_stick_tau_s: f64,
 
     // Auto-clutch / launch (previously hardcoded in powertrain)
     pub max_clutch_torque_ratio: f64,

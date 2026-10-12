@@ -85,7 +85,7 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
     unsafe {
         *out_config = FfiRuntimeConfig {
             vehicle_mass: sim.config.vehicle_mass,
-            front_brake_bias: sim.config.front_brake_bias,
+            front_brake_bias: sim.config.brakes.front_brake_bias,
             max_steering_angle: sim.config.steering.max_steering_angle,
             max_torque: sim.config.max_torque,
             coefficient_of_drag: sim.config.aerodynamics.coefficient_of_drag,
@@ -149,7 +149,7 @@ fn apply_chassis_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
         && cfg.front_brake_bias >= 0.0
         && cfg.front_brake_bias <= 1.0
     {
-        sim.config.front_brake_bias = cfg.front_brake_bias;
+        sim.config.brakes.front_brake_bias = cfg.front_brake_bias;
     }
     if cfg.max_steering_angle.is_finite() && cfg.max_steering_angle > 0.0 {
         sim.config.steering.max_steering_angle = cfg.max_steering_angle;
@@ -968,10 +968,10 @@ fn write_telemetry(
             fr_duct_drag_n: sim.state.brake_thermal.wheels[1].duct.drag_force_n,
             rl_duct_drag_n: sim.state.brake_thermal.wheels[2].duct.drag_force_n,
             rr_duct_drag_n: sim.state.brake_thermal.wheels[3].duct.drag_force_n,
-            brake_optimal_min_c: sim.config.brake_thermal.optimal_min_temperature_c,
-            brake_optimal_max_c: sim.config.brake_thermal.optimal_max_temperature_c,
-            brake_fade_start_c: sim.config.brake_thermal.fade_start_temperature_c,
-            brake_critical_c: sim.config.brake_thermal.critical_temperature_c,
+            brake_optimal_min_c: sim.config.brakes.brake_thermal.optimal_min_temperature_c,
+            brake_optimal_max_c: sim.config.brakes.brake_thermal.optimal_max_temperature_c,
+            brake_fade_start_c: sim.config.brakes.brake_thermal.fade_start_temperature_c,
+            brake_critical_c: sim.config.brakes.brake_thermal.critical_temperature_c,
             fl_brake_torque_nm: sim.state.brake_thermal.wheels[0].applied_brake_torque_nm,
             fr_brake_torque_nm: sim.state.brake_thermal.wheels[1].applied_brake_torque_nm,
             rl_brake_torque_nm: sim.state.brake_thermal.wheels[2].applied_brake_torque_nm,

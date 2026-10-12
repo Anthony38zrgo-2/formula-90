@@ -357,15 +357,15 @@ fn bounded_braking_does_not_reverse_a_free_wheel() {
 fn brake_heat_uses_resolved_work_and_the_actual_event_duration() {
     use vehicle_physics_engine::brake_thermals::{BrakeThermalInput, BrakeThermalSystem};
     let configuration = actual_configuration();
-    let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+    let mut system = BrakeThermalSystem::new(&configuration.brakes.brake_thermal);
     let duration_seconds = 0.00001;
-    system.step_after_mechanical_work(WheelIndex::FrontLeft, &configuration.brake_thermal,
+    system.step_after_mechanical_work(WheelIndex::FrontLeft, &configuration.brakes.brake_thermal,
         BrakeThermalInput { wheel_spin_pre_rad_s: 50.0, wheel_spin_post_rad_s: 0.0,
             ambient_temperature_c: 25.0, tire_carcass_temperature_c: 25.0,
             tire_gas_temperature_c: 25.0, ..Default::default() }, 12.5, duration_seconds).unwrap();
     assert!((system.wheels[0].brake_energy_j - 12.5).abs() < 1e-12);
     assert!((system.wheels[0].brake_power_w * duration_seconds - 12.5).abs() < 1e-12);
-    assert!(system.step_after_mechanical_work(WheelIndex::FrontLeft, &configuration.brake_thermal,
+    assert!(system.step_after_mechanical_work(WheelIndex::FrontLeft, &configuration.brakes.brake_thermal,
         BrakeThermalInput::default(), -1.0, duration_seconds).is_err());
     assert!((system.wheels[0].brake_energy_j - 12.5).abs() < 1e-12);
 }

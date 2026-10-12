@@ -5,7 +5,7 @@ fn rwd_drive_torque_is_only_sent_to_rear_axle() {
     let cfg = VehicleConfig::f1_94_canonical();
     let mut pt = PowertrainState::new(&cfg);
     let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
-    pt.step_with_reaction(&cfg, &input, &[0.0; 4], &[0.0; 4], 0.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    pt.step_with_reaction(&cfg, &input, &[0.0; 4], &[0.0; 4], 0.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert_eq!(pt.drive_torques[0], 0.0);
     assert_eq!(pt.drive_torques[1], 0.0);
     assert!(pt.drive_torques[2].is_finite());
@@ -20,12 +20,12 @@ fn tire_reaction_torque_feeds_back_into_clutch() {
 
     let mut unloaded = PowertrainState::new(&cfg);
     unloaded.rpm = 9000.0;
-    unloaded.step_with_reaction(&cfg, &input, &spins, &[0.0; 4], 10.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    unloaded.step_with_reaction(&cfg, &input, &spins, &[0.0; 4], 10.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
 
     let mut loaded = PowertrainState::new(&cfg);
     loaded.rpm = 9000.0;
     // Road exerts resisting reaction torque (negative) on rear wheels
-    loaded.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -200.0, -200.0], 10.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    loaded.step_with_reaction(&cfg, &input, &spins, &[0.0, 0.0, -200.0, -200.0], 10.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
 
     assert!(
         loaded.clutch_torque > unloaded.clutch_torque,
@@ -47,7 +47,7 @@ fn traction_control_reduces_drive_torque_when_enabled() {
     let mut enabled = PowertrainState::new(&cfg);
     enabled.rpm = 12000.0;
     enabled.current_gear = 2;
-    enabled.step_with_reaction(&cfg, &input, &spins, &reactions, 2.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    enabled.step_with_reaction(&cfg, &input, &spins, &reactions, 2.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(enabled.tc_active, "TC must be active under high slip");
     let enabled_drive = enabled.drive_torques[2].abs();
 
@@ -55,7 +55,7 @@ fn traction_control_reduces_drive_torque_when_enabled() {
     let mut disabled = PowertrainState::new(&cfg);
     disabled.rpm = 12000.0;
     disabled.current_gear = 2;
-    disabled.step_with_reaction(&cfg, &input, &spins, &reactions, 2.0, false, true, cfg.enable_abs, 1.0 / 120.0);
+    disabled.step_with_reaction(&cfg, &input, &spins, &reactions, 2.0, false, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(!disabled.tc_active, "TC must not be active (cut) when disabled");
     let disabled_drive = disabled.drive_torques[2].abs();
 
@@ -80,7 +80,7 @@ fn traction_control_inactive_without_slip() {
     let mut pt = PowertrainState::new(&cfg);
     pt.rpm = 12000.0;
     pt.current_gear = 2;
-    pt.step_with_reaction(&cfg, &input, &spins, &reactions, road, true, true, cfg.enable_abs, 1.0 / 120.0);
+    pt.step_with_reaction(&cfg, &input, &spins, &reactions, road, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(!pt.tc_active, "TC must be inactive when slip is below threshold");
     assert_eq!(pt.tc_cut_ratio, 0.0);
 }
@@ -96,14 +96,14 @@ fn traction_control_eligibility_contract() {
     pt.rpm = 8000.0;
     pt.current_gear = 1;
     let input = VehicleInput { throttle: 0.5, ..VehicleInput::default() };
-    pt.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    pt.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(pt.tc_eligible, "TC must be eligible when enabled, in gear, and throttle applied");
 
     // 2. Ineligible: TC disabled
     let mut pt_disabled = PowertrainState::new(&cfg);
     pt_disabled.rpm = 8000.0;
     pt_disabled.current_gear = 1;
-    pt_disabled.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, false, true, cfg.enable_abs, 1.0 / 120.0);
+    pt_disabled.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, false, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(!pt_disabled.tc_eligible, "TC must be ineligible when TC is disabled");
 
     // 3. Ineligible: zero throttle
@@ -111,14 +111,14 @@ fn traction_control_eligibility_contract() {
     pt_no_throttle.rpm = 8000.0;
     pt_no_throttle.current_gear = 1;
     let input_idle = VehicleInput { throttle: 0.0, ..VehicleInput::default() };
-    pt_no_throttle.step_with_reaction(&cfg, &input_idle, &spins, &reactions, 15.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    pt_no_throttle.step_with_reaction(&cfg, &input_idle, &spins, &reactions, 15.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(!pt_no_throttle.tc_eligible, "TC must be ineligible when throttle is not applied");
 
     // 4. Ineligible: neutral gear (0)
     let mut pt_neutral = PowertrainState::new(&cfg);
     pt_neutral.rpm = 8000.0;
     pt_neutral.current_gear = 0;
-    pt_neutral.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, true, true, cfg.enable_abs, 1.0 / 120.0);
+    pt_neutral.step_with_reaction(&cfg, &input, &spins, &reactions, 15.0, true, true, cfg.brakes.enable_abs, 1.0 / 120.0);
     assert!(!pt_neutral.tc_eligible, "TC must be ineligible in neutral");
 }
 

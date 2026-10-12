@@ -11,20 +11,20 @@ fn current_vehicle_configuration() -> VehicleConfig {
 #[test]
 fn radiation_rejects_heat_without_creating_mechanical_braking_energy() {
     let mut configuration = current_vehicle_configuration();
-    configuration.brake_thermal.front.installation_airflow_scale = 0.0;
+    configuration.brakes.brake_thermal.front.installation_airflow_scale = 0.0;
     configuration
-        .brake_thermal
+        .brakes.brake_thermal
         .front
         .rotor_radiation_ambient_view_factor = 1.0;
-    configuration.brake_thermal.front.rotor_to_rim_w_k = 0.0;
-    configuration.brake_thermal.front_duct.opening = 0.0;
-    let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+    configuration.brakes.brake_thermal.front.rotor_to_rim_w_k = 0.0;
+    configuration.brakes.brake_thermal.front_duct.opening = 0.0;
+    let mut system = BrakeThermalSystem::new(&configuration.brakes.brake_thermal);
     let mut cooling_rates = Vec::new();
     for temperature in [25.0, 350.0, 900.0] {
         system.wheels[0].disc_c = temperature;
         system.step_after_braking(
             WheelIndex::FrontLeft,
-            &configuration.brake_thermal,
+            &configuration.brakes.brake_thermal,
             BrakeThermalInput {
                 ambient_temperature_c: 25.0,
                 tire_carcass_temperature_c: 25.0,
@@ -48,27 +48,27 @@ fn radiation_is_optional_validated_and_preserved_by_serialization() {
     let configuration = current_vehicle_configuration();
     let serialized = configuration.to_json_value();
     let restored = VehicleConfig::from_json_str(&serialized.to_string()).unwrap();
-    assert_eq!(restored.brake_thermal.front.rotor_radiation_emissivity, 0.8);
-    assert_eq!(restored.brake_thermal.rear.rotor_radiation_emissivity, 0.8);
+    assert_eq!(restored.brakes.brake_thermal.front.rotor_radiation_emissivity, 0.8);
+    assert_eq!(restored.brakes.brake_thermal.rear.rotor_radiation_emissivity, 0.8);
     assert_eq!(
         restored
-            .brake_thermal
+            .brakes.brake_thermal
             .front
             .rotor_radiation_ambient_view_factor,
         0.5
     );
     assert_eq!(
         restored
-            .brake_thermal
+            .brakes.brake_thermal
             .rear
             .rotor_radiation_ambient_view_factor,
         0.5
     );
     let legacy = VehicleConfig::from_json_str(r#"{"schema_version":3}"#).unwrap();
-    assert_eq!(legacy.brake_thermal.front.rotor_radiation_emissivity, 0.0);
+    assert_eq!(legacy.brakes.brake_thermal.front.rotor_radiation_emissivity, 0.0);
     assert_eq!(
         legacy
-            .brake_thermal
+            .brakes.brake_thermal
             .front
             .rotor_radiation_ambient_view_factor,
         1.0
@@ -87,7 +87,7 @@ fn radiation_is_optional_validated_and_preserved_by_serialization() {
 
 #[test]
 fn internal_ventilation_does_not_multiply_external_face_convection() {
-    let mut axle = current_vehicle_configuration().brake_thermal.front;
+    let mut axle = current_vehicle_configuration().brakes.brake_thermal.front;
     axle.rotor_ventilation = BrakeRotorVentilation::Solid;
     let solid_external = axle.resolve();
     axle.rotor_ventilation = BrakeRotorVentilation::Vented;
@@ -114,20 +114,20 @@ fn internal_ventilation_does_not_multiply_external_face_convection() {
 #[test]
 fn ambient_view_factor_scales_only_radiative_heat_exchange() {
     let mut configuration = current_vehicle_configuration();
-    configuration.brake_thermal.front.installation_airflow_scale = 0.0;
-    configuration.brake_thermal.front.rotor_to_rim_w_k = 0.0;
-    configuration.brake_thermal.front_duct.opening = 0.0;
+    configuration.brakes.brake_thermal.front.installation_airflow_scale = 0.0;
+    configuration.brakes.brake_thermal.front.rotor_to_rim_w_k = 0.0;
+    configuration.brakes.brake_thermal.front_duct.opening = 0.0;
     let mut extracted_energies = Vec::new();
     for ambient_view_factor in [0.0, 0.5, 1.0] {
         configuration
-            .brake_thermal
+            .brakes.brake_thermal
             .front
             .rotor_radiation_ambient_view_factor = ambient_view_factor;
-        let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+        let mut system = BrakeThermalSystem::new(&configuration.brakes.brake_thermal);
         system.wheels[0].disc_c = 450.0;
         system.step_after_braking(
             WheelIndex::FrontLeft,
-            &configuration.brake_thermal,
+            &configuration.brakes.brake_thermal,
             BrakeThermalInput {
                 ambient_temperature_c: 25.0,
                 tire_carcass_temperature_c: 25.0,
@@ -139,7 +139,7 @@ fn ambient_view_factor_scales_only_radiative_heat_exchange() {
         extracted_energies.push(
             (450.0 - system.wheels[0].disc_c)
                 * configuration
-                    .brake_thermal
+                    .brakes.brake_thermal
                     .front
                     .resolve()
                     .rotor_capacity_j_k,
@@ -151,7 +151,7 @@ fn ambient_view_factor_scales_only_radiative_heat_exchange() {
     assert!((extracted_energies[1] * 2.0 - extracted_energies[2]).abs() < 1e-8);
     let expected_radiated_energy = 0.8
         * configuration
-            .brake_thermal
+            .brakes.brake_thermal
             .front
             .resolve()
             .rotor_radiating_area_square_meters
@@ -164,10 +164,10 @@ fn ambient_view_factor_scales_only_radiative_heat_exchange() {
 fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> BrakeThermalSystem {
     let mut configuration = current_vehicle_configuration();
     if let Some(duct_opening) = opening {
-        configuration.brake_thermal.front_duct.opening = duct_opening;
-        configuration.brake_thermal.rear_duct.opening = duct_opening;
+        configuration.brakes.brake_thermal.front_duct.opening = duct_opening;
+        configuration.brakes.brake_thermal.rear_duct.opening = duct_opening;
     }
-    let mut system = BrakeThermalSystem::new(&configuration.brake_thermal);
+    let mut system = BrakeThermalSystem::new(&configuration.brakes.brake_thermal);
     for tick in 0..seconds * 120 {
         let braking = tick % (20 * 120) < 3 * 120;
         let speed = if braking {
@@ -179,9 +179,9 @@ fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> 
         for wheel in WheelIndex::ALL {
             let index = wheel as usize;
             let axle_share = if wheel.is_front() {
-                configuration.front_brake_bias
+                configuration.brakes.front_brake_bias
             } else {
-                1.0 - configuration.front_brake_bias
+                1.0 - configuration.brakes.front_brake_bias
             };
             let radius = if wheel.is_front() {
                 configuration.front_tire_radius
@@ -190,10 +190,10 @@ fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> 
             };
             system.step_after_braking(
                 wheel,
-                &configuration.brake_thermal,
+                &configuration.brakes.brake_thermal,
                 BrakeThermalInput {
                     applied_brake_torque_nm: if braking {
-                        configuration.max_brake_torque
+                        configuration.brakes.max_brake_torque
                             * axle_share
                             * 0.5
                             * pedal
@@ -205,7 +205,7 @@ fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> 
                     wheel_spin_post_rad_s: speed / radius,
                     vehicle_speed_ms: speed,
                     air_density_kg_m3: configuration.aerodynamics.air_density,
-                    ambient_temperature_c: configuration.brake_thermal.initial_temperature_c,
+                    ambient_temperature_c: configuration.brakes.brake_thermal.initial_temperature_c,
                     tire_carcass_temperature_c: 70.0,
                     tire_gas_temperature_c: 70.0,
                 },
@@ -257,7 +257,7 @@ fn simulate_vehicle_braking_at_temperature(temperature_celsius: f64) -> Telemetr
         simulator.state.tires.wheels[index].spin = 70.0 / radius;
         simulator.state.brake_thermal.wheels[index].disc_c = temperature_celsius;
         simulator.state.brake_thermal.wheels[index].efficiency =
-            brake_efficiency(temperature_celsius, &configuration.brake_thermal);
+            brake_efficiency(temperature_celsius, &configuration.brakes.brake_thermal);
         let anchor = simulator
             .state
             .transform
@@ -290,15 +290,15 @@ fn vehicle_solver_uses_temperature_efficiency_for_torque_power_and_heat() {
     let configuration = current_vehicle_configuration();
     for temperature in [25.0, 450.0, 1050.0] {
         let telemetry = simulate_vehicle_braking_at_temperature(temperature);
-        let efficiency = brake_efficiency(temperature, &configuration.brake_thermal);
+        let efficiency = brake_efficiency(temperature, &configuration.brakes.brake_thermal);
         for wheel in WheelIndex::ALL {
             let index = wheel as usize;
             let axle_share = if wheel.is_front() {
-                configuration.front_brake_bias
+                configuration.brakes.front_brake_bias
             } else {
-                1.0 - configuration.front_brake_bias
+                1.0 - configuration.brakes.front_brake_bias
             };
-            let expected_torque = configuration.max_brake_torque * axle_share * 0.5 * efficiency;
+            let expected_torque = configuration.brakes.max_brake_torque * axle_share * 0.5 * efficiency;
             assert!((telemetry.brake_torque_nm[index] - expected_torque).abs() < 1e-6);
             let average_spin = (telemetry.brake_spin_pre_rad_s[index]
                 + telemetry.brake_spin_post_rad_s[index])
@@ -374,18 +374,18 @@ fn legacy_v2_canonical_brakes_map_to_compact_two_node() {
     let cfg = VehicleConfig::from_json_str(json).unwrap();
     let front_series = 1.0 / (1.0 / 38.0 + 1.0 / 170.0);
     let rear_series = 1.0 / (1.0 / 38.0 + 1.0 / 70.0);
-    assert!((cfg.brake_thermal.front.rotor_to_rim_w_k - (front_series + 9.0)).abs() < 1e-9);
-    assert!((cfg.brake_thermal.rear.rotor_to_rim_w_k - (rear_series + 9.0)).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rim_heat_capacity_j_k - 4200.0).abs() < 1e-9);
-    assert!((cfg.brake_thermal.rear.rim_heat_capacity_j_k - 6000.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_to_rim_w_k - (front_series + 9.0)).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.rear.rotor_to_rim_w_k - (rear_series + 9.0)).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rim_heat_capacity_j_k - 4200.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.rear.rim_heat_capacity_j_k - 6000.0).abs() < 1e-9);
     // Duct weights lump into the single rotor_cooling_fraction (sums to 1.0).
-    assert!((cfg.brake_thermal.front_duct.rotor_cooling_fraction - 0.873).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front_duct.rotor_cooling_fraction - 0.873).abs() < 1e-9);
     assert_eq!(
-        cfg.brake_thermal.front.model,
+        cfg.brakes.brake_thermal.front.model,
         BrakeThermalModelKind::ScaledTwoNodeV1
     );
-    assert!((cfg.brake_thermal.front.resolve().rotor_capacity_j_k - 1500.0).abs() < 0.1);
-    assert!((cfg.brake_thermal.rear.resolve().rotor_capacity_j_k - 2000.0).abs() < 0.1);
+    assert!((cfg.brakes.brake_thermal.front.resolve().rotor_capacity_j_k - 1500.0).abs() < 0.1);
+    assert!((cfg.brakes.brake_thermal.rear.resolve().rotor_capacity_j_k - 2000.0).abs() < 0.1);
 }
 
 #[test]
@@ -405,13 +405,13 @@ fn v3_compact_axle_overrides_load_directly() {
         }}
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert!((cfg.brake_thermal.front.rotor_to_rim_w_k - 42.0).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rim_heat_capacity_j_k - 7000.0).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rim_base_air_w_k - 12.0).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front_duct.rotor_cooling_fraction - 0.9).abs() < 1e-9);
-    let capacity = cfg.brake_thermal.front.resolve().rotor_capacity_j_k;
+    assert!((cfg.brakes.brake_thermal.front.rotor_to_rim_w_k - 42.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rim_heat_capacity_j_k - 7000.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rim_base_air_w_k - 12.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front_duct.rotor_cooling_fraction - 0.9).abs() < 1e-9);
+    let capacity = cfg.brakes.brake_thermal.front.resolve().rotor_capacity_j_k;
     assert!((capacity - 2222.222).abs() < 0.5);
-    assert!((cfg.brake_thermal.rear.rotor_to_rim_w_k - 34.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.rear.rotor_to_rim_w_k - 34.0).abs() < 1e-9);
 }
 
 #[test]
@@ -431,22 +431,22 @@ fn single_stop_energy_is_conserved_through_rotor_and_rim() {
         }}
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    let mut system = BrakeThermalSystem::new(&cfg.brake_thermal);
+    let mut system = BrakeThermalSystem::new(&cfg.brakes.brake_thermal);
     let ticks = 180;
     let dt = 1.0 / 120.0;
     for _ in 0..ticks {
         system.step_after_braking(
             WheelIndex::FrontLeft,
-            &cfg.brake_thermal,
+            &cfg.brakes.brake_thermal,
             stop_input(1_000.0, 80.0, 0.0),
             dt,
         );
     }
     let w = system.wheels[0];
-    let rotor_capacity = cfg.brake_thermal.front.resolve().rotor_capacity_j_k;
+    let rotor_capacity = cfg.brakes.brake_thermal.front.resolve().rotor_capacity_j_k;
     let stored = (w.disc_c - 25.0) * rotor_capacity
-        + (w.rim_c - 25.0) * cfg.brake_thermal.front.rim_heat_capacity_j_k;
-    let generated = 1_000.0 * 80.0 * cfg.brake_thermal.braking_heat_fraction * (ticks as f64) * dt;
+        + (w.rim_c - 25.0) * cfg.brakes.brake_thermal.front.rim_heat_capacity_j_k;
+    let generated = 1_000.0 * 80.0 * cfg.brakes.brake_thermal.braking_heat_fraction * (ticks as f64) * dt;
     assert!(
         (stored / generated - 1.0).abs() < 0.05,
         "stored={stored} generated={generated}"
@@ -469,28 +469,28 @@ fn repeated_braking_enters_window_then_fades_with_insufficient_cooling() {
         }}
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    let mut system = BrakeThermalSystem::new(&cfg.brake_thermal);
+    let mut system = BrakeThermalSystem::new(&cfg.brakes.brake_thermal);
     let dt = 1.0 / 120.0;
     let mut saw_optimal_window = false;
     for _ in 0..2_400 {
         let w = system.wheels[0];
-        if w.disc_c >= cfg.brake_thermal.optimal_min_temperature_c
-            && w.disc_c <= cfg.brake_thermal.optimal_max_temperature_c
+        if w.disc_c >= cfg.brakes.brake_thermal.optimal_min_temperature_c
+            && w.disc_c <= cfg.brakes.brake_thermal.optimal_max_temperature_c
         {
             saw_optimal_window = true;
         }
         system.step_after_braking(
             WheelIndex::FrontLeft,
-            &cfg.brake_thermal,
+            &cfg.brakes.brake_thermal,
             stop_input(1_200.0, 100.0, 40.0),
             dt,
         );
     }
     let w = system.wheels[0];
     assert!(saw_optimal_window);
-    assert!(w.disc_c > cfg.brake_thermal.fade_start_temperature_c);
+    assert!(w.disc_c > cfg.brakes.brake_thermal.fade_start_temperature_c);
     assert!(w.efficiency < 1.0);
-    assert!(w.efficiency >= cfg.brake_thermal.minimum_fade_efficiency);
+    assert!(w.efficiency >= cfg.brakes.brake_thermal.minimum_fade_efficiency);
     assert!(w.disc_c > w.rim_c);
     assert!(system.efficiency_scales()[0] == w.efficiency);
     assert_eq!(system.efficiency_scales().len(), 4);
@@ -533,7 +533,7 @@ fn brake_rim_soak_raises_tire_carcass_and_gas() {
         }}
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    let mut brakes = BrakeThermalSystem::new(&cfg.brake_thermal);
+    let mut brakes = BrakeThermalSystem::new(&cfg.brakes.brake_thermal);
     brakes.wheels[0].rim_c = 200.0;
     let tire_pressure = TirePressureConfig::default();
     let tire_cfg = TireThermalConfig::default();
@@ -543,7 +543,7 @@ fn brake_rim_soak_raises_tire_carcass_and_gas() {
     for _ in 0..120 {
         let heat = brakes.step_after_braking(
             WheelIndex::FrontLeft,
-            &cfg.brake_thermal,
+            &cfg.brakes.brake_thermal,
             BrakeThermalInput {
                 ambient_temperature_c: 25.0,
                 tire_carcass_temperature_c: tires.wheels[0].carcass_c,
@@ -624,9 +624,9 @@ fn legacy_v2_deprecated_fields_are_accepted_and_ignored() {
         }}
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    let mut system = BrakeThermalSystem::new(&cfg.brake_thermal);
-    assert!((cfg.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rotor_to_rim_w_k - 26.0).abs() < 1e-9);
-    assert_eq!(system.wheels[0].disc_c, cfg.brake_thermal.initial_temperature_c);
-    assert_eq!(system.wheels[0].rim_c, cfg.brake_thermal.initial_temperature_c);
+    let mut system = BrakeThermalSystem::new(&cfg.brakes.brake_thermal);
+    assert!((cfg.brakes.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_to_rim_w_k - 26.0).abs() < 1e-9);
+    assert_eq!(system.wheels[0].disc_c, cfg.brakes.brake_thermal.initial_temperature_c);
+    assert_eq!(system.wheels[0].rim_c, cfg.brakes.brake_thermal.initial_temperature_c);
 }

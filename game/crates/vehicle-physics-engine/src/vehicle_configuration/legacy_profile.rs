@@ -298,19 +298,21 @@ impl JsonVehicleSpec {
             rear_camber_gain_rad_per_m: self.suspension.rear.camber_gain_rad_per_m.unwrap_or(0.0),
             front_toe_gain_rad_per_m: self.suspension.front.toe_gain_rad_per_m.unwrap_or(0.0),
             rear_toe_gain_rad_per_m: self.suspension.rear.toe_gain_rad_per_m.unwrap_or(0.0),
-            front_brake_bias: self.brakes.front_brake_bias,
-            max_brake_torque: self.brakes.max_brake_torque,
-            brake_thermal: self
-                .brakes
-                .thermal
-                .as_ref()
-                .map(JsonBrakeThermal::to_config)
-                .unwrap_or_default(),
-            enable_abs: self.brakes.enable_abs,
-            abs_pulse_time: self.brakes.abs_pulse_time,
-            abs_spin_diff_threshold: self.brakes.abs_spin_diff_threshold,
-            wheel_lock_blend_spin_rad_s: self.brakes.wheel_lock_blend_spin_rad_s.unwrap_or(0.0),
-            wheel_lock_stick_tau_s: self.brakes.wheel_lock_stick_tau_s.unwrap_or(0.0),
+            brakes: BrakesConfiguration {
+                front_brake_bias: self.brakes.front_brake_bias,
+                max_brake_torque: self.brakes.max_brake_torque,
+                brake_thermal: self
+                    .brakes
+                    .thermal
+                    .as_ref()
+                    .map(JsonBrakeThermal::to_config)
+                    .unwrap_or_default(),
+                enable_abs: self.brakes.enable_abs,
+                abs_pulse_time: self.brakes.abs_pulse_time,
+                abs_spin_diff_threshold: self.brakes.abs_spin_diff_threshold,
+                wheel_lock_blend_spin_rad_s: self.brakes.wheel_lock_blend_spin_rad_s.unwrap_or(0.0),
+                wheel_lock_stick_tau_s: self.brakes.wheel_lock_stick_tau_s.unwrap_or(0.0),
+            },
             surface_friction,
             surface_stiffness,
             surface_rolling_resistance,
@@ -653,16 +655,16 @@ impl JsonVehicleSpec {
                 }),
             },
             brakes: JsonBrakes {
-                front_brake_bias: cfg.front_brake_bias,
-                max_brake_torque: cfg.max_brake_torque,
-                enable_abs: cfg.enable_abs,
-                abs_pulse_time: cfg.abs_pulse_time,
-                abs_spin_diff_threshold: cfg.abs_spin_diff_threshold,
+                front_brake_bias: cfg.brakes.front_brake_bias,
+                max_brake_torque: cfg.brakes.max_brake_torque,
+                enable_abs: cfg.brakes.enable_abs,
+                abs_pulse_time: cfg.brakes.abs_pulse_time,
+                abs_spin_diff_threshold: cfg.brakes.abs_spin_diff_threshold,
                 wheel_lock_blend_spin_rad_s: (cfg.schema_version >= 3)
-                    .then_some(cfg.wheel_lock_blend_spin_rad_s),
+                    .then_some(cfg.brakes.wheel_lock_blend_spin_rad_s),
                 wheel_lock_stick_tau_s: (cfg.schema_version >= 3)
-                    .then_some(cfg.wheel_lock_stick_tau_s),
-                thermal: Some(JsonBrakeThermal::from_config(&cfg.brake_thermal)),
+                    .then_some(cfg.brakes.wheel_lock_stick_tau_s),
+                thermal: Some(JsonBrakeThermal::from_config(&cfg.brakes.brake_thermal)),
             },
             aero: JsonAero {
                 model: cfg.aerodynamics.aero_model.clone(),

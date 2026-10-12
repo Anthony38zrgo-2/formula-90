@@ -353,10 +353,10 @@ fn brake_thermal_partial_json_keeps_omitted_defaults() {
         }
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert!((cfg.brake_thermal.front_duct.opening - 0.72).abs() < 1e-9);
-    assert!((cfg.brake_thermal.rear_duct.opening - 0.40).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rotor_to_rim_w_k - 26.0).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front_duct.opening - 0.72).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.rear_duct.opening - 0.40).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_to_rim_w_k - 26.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
 }
 
 #[test]
@@ -377,14 +377,14 @@ fn brake_thermal_v2_lumping_maps_into_compact_v3() {
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
     let series = 1.0 / (1.0 / 38.0 + 1.0 / 170.0);
-    assert!((cfg.brake_thermal.front.rotor_to_rim_w_k - (series + 9.0)).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_to_rim_w_k - (series + 9.0)).abs() < 1e-9);
     let total = 0.6 + 0.3 + 0.095 + 0.127;
     assert!(
-        (cfg.brake_thermal.front_duct.rotor_cooling_fraction - (0.6 + 0.3 + 0.095) / total)
+        (cfg.brakes.brake_thermal.front_duct.rotor_cooling_fraction - (0.6 + 0.3 + 0.095) / total)
             .abs()
             < 1e-9
     );
-    assert!((cfg.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
 }
 
 #[test]
@@ -414,8 +414,8 @@ fn brake_thermal_v2_deprecated_fields_are_accepted_and_ignored() {
         }}
     }"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert!((cfg.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
-    assert!((cfg.brake_thermal.front.rotor_to_rim_w_k - 26.0).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_mass_kg - 1.35).abs() < 1e-9);
+    assert!((cfg.brakes.brake_thermal.front.rotor_to_rim_w_k - 26.0).abs() < 1e-9);
 }
 
 #[test]
@@ -439,12 +439,12 @@ fn brake_thermal_opening_is_validated() {
 #[test]
 fn brake_thermal_round_trip_preserves_axle_openings() {
     let mut original = VehicleConfig::f1_94_canonical();
-    original.brake_thermal.front_duct.opening = 0.63;
-    original.brake_thermal.rear_duct.opening = 0.21;
+    original.brakes.brake_thermal.front_duct.opening = 0.63;
+    original.brakes.brake_thermal.rear_duct.opening = 0.21;
     let json = serde_json::to_string(&original.to_json_value()).unwrap();
     let loaded = VehicleConfig::from_json_str(&json).unwrap();
-    assert!((loaded.brake_thermal.front_duct.opening - 0.63).abs() < 1e-9);
-    assert!((loaded.brake_thermal.rear_duct.opening - 0.21).abs() < 1e-9);
+    assert!((loaded.brakes.brake_thermal.front_duct.opening - 0.63).abs() < 1e-9);
+    assert!((loaded.brakes.brake_thermal.rear_duct.opening - 0.21).abs() < 1e-9);
 }
 
 #[test]
@@ -684,8 +684,8 @@ fn wheel_lock_parameters_are_validated() {
         r#"{"schema_version": 3, "brakes": {"wheel_lock_blend_spin_rad_s": 8.0, "wheel_lock_stick_tau_s": 0.02}}"#,
     )
     .expect("valid wheel lock parameters must parse");
-    assert_eq!(ok.wheel_lock_blend_spin_rad_s, 8.0);
-    assert_eq!(ok.wheel_lock_stick_tau_s, 0.02);
+    assert_eq!(ok.brakes.wheel_lock_blend_spin_rad_s, 8.0);
+    assert_eq!(ok.brakes.wheel_lock_stick_tau_s, 0.02);
 }
 
 #[test]

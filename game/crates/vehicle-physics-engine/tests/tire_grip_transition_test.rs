@@ -134,8 +134,8 @@ fn run_wheel_lock(
     dt: f64,
 ) -> Vec<f64> {
     let mut cfg = cfg.clone();
-    cfg.wheel_lock_blend_spin_rad_s = blend;
-    cfg.wheel_lock_stick_tau_s = stick_tau;
+    cfg.brakes.wheel_lock_blend_spin_rad_s = blend;
+    cfg.brakes.wheel_lock_stick_tau_s = stick_tau;
     let wheel = WheelIndex::FrontLeft;
     let fz = reference_load_n(&cfg, wheel);
     let mut tires = TireSystem::new(&cfg);
@@ -226,8 +226,8 @@ fn f1_2030_profile_declares_grip_transition_parameters() {
     assert!((front.contact_ramp_tau_s - 0.06).abs() < 1e-12);
     assert!((cfg.surface_transition_tau_s - 0.08).abs() < 1e-12);
     assert_eq!(cfg.rear_tire_force, front);
-    assert!((cfg.wheel_lock_blend_spin_rad_s - 8.0).abs() < 1e-12);
-    assert!((cfg.wheel_lock_stick_tau_s - 0.02).abs() < 1e-12);
+    assert!((cfg.brakes.wheel_lock_blend_spin_rad_s - 8.0).abs() < 1e-12);
+    assert!((cfg.brakes.wheel_lock_stick_tau_s - 0.02).abs() < 1e-12);
 }
 
 #[test]
@@ -608,8 +608,8 @@ fn f1_2030_full_vehicle_braking_stays_stable_with_regularized_lock() {
     }
     let run = |blend: f64, stick: f64| -> Outcome {
         let mut cfg = base.clone();
-        cfg.wheel_lock_blend_spin_rad_s = blend;
-        cfg.wheel_lock_stick_tau_s = stick;
+        cfg.brakes.wheel_lock_blend_spin_rad_s = blend;
+        cfg.brakes.wheel_lock_stick_tau_s = stick;
         let spawn = default_spawn_height(&cfg);
         let mut sim = VehicleSimulator::new(cfg, Vec3::new(0.0, spawn, 0.0), 0.0);
         sim.state.linear_velocity = Vec3::new(0.0, 0.0, -27.78);

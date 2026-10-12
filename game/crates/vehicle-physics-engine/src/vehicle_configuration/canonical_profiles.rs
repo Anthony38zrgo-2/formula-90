@@ -156,9 +156,16 @@ impl VehicleConfig {
             rear_contact_patch: 0.21,
             front_airborne_decay: 2.0,
             rear_airborne_decay: 2.0,
-            front_brake_bias: 0.57,
-            max_brake_torque: 2800.0,
-            brake_thermal: BrakeThermalConfig::default(),
+            brakes: BrakesConfiguration {
+                front_brake_bias: 0.57,
+                max_brake_torque: 2800.0,
+                brake_thermal: BrakeThermalConfig::default(),
+                enable_abs: false,
+                abs_pulse_time: 0.03,
+                abs_spin_diff_threshold: 12.0,
+                wheel_lock_blend_spin_rad_s: 0.0,
+                wheel_lock_stick_tau_s: 0.0,
+            },
             powertrain_thermal: PowertrainThermalConfig::default(),
 
             // Tire pressure + thermal (F1-94 cold setup + nominal hot reference)
@@ -172,13 +179,6 @@ impl VehicleConfig {
             rear_camber_gain_rad_per_m: 0.0,
             front_toe_gain_rad_per_m: 0.0,
             rear_toe_gain_rad_per_m: 0.0,
-
-            // ABS
-            enable_abs: false,
-            abs_pulse_time: 0.03,
-            abs_spin_diff_threshold: 12.0,
-            wheel_lock_blend_spin_rad_s: 0.0,
-            wheel_lock_stick_tau_s: 0.0,
 
             // Auto-clutch / launch (previously hardcoded in powertrain)
             max_clutch_torque_ratio: 1.6,
@@ -348,9 +348,16 @@ impl VehicleConfig {
             rear_contact_patch: 0.20,
             front_airborne_decay: 2.0,
             rear_airborne_decay: 2.0,
-            front_brake_bias: 0.58,
-            max_brake_torque: 2800.0,
-            brake_thermal: BrakeThermalConfig::default(),
+            brakes: BrakesConfiguration {
+                front_brake_bias: 0.58,
+                max_brake_torque: 2800.0,
+                brake_thermal: BrakeThermalConfig::default(),
+                enable_abs: false,
+                abs_pulse_time: 0.03,
+                abs_spin_diff_threshold: 12.0,
+                wheel_lock_blend_spin_rad_s: 0.0,
+                wheel_lock_stick_tau_s: 0.0,
+            },
             powertrain_thermal: PowertrainThermalConfig::default(),
 
             // Tire pressure + thermal (legacy Jordan uses canonical defaults)
@@ -364,13 +371,6 @@ impl VehicleConfig {
             rear_camber_gain_rad_per_m: 0.0,
             front_toe_gain_rad_per_m: 0.0,
             rear_toe_gain_rad_per_m: 0.0,
-
-            // ABS
-            enable_abs: false,
-            abs_pulse_time: 0.03,
-            abs_spin_diff_threshold: 12.0,
-            wheel_lock_blend_spin_rad_s: 0.0,
-            wheel_lock_stick_tau_s: 0.0,
 
             // Auto-clutch / launch (previously hardcoded in powertrain)
             max_clutch_torque_ratio: 1.6,

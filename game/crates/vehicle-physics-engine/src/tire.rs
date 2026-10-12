@@ -248,7 +248,7 @@ impl TireSystem {
         .max(1e-6);
         let previous_spin = state.spin;
         let unbraked_torque = drive_torque_nm + state.reaction_torque;
-        let blend = config.wheel_lock_blend_spin_rad_s.max(0.0);
+        let blend = config.brakes.wheel_lock_blend_spin_rad_s.max(0.0);
 
         if blend <= 1e-9 {
             Self::legacy_wheel_torque_step(
@@ -277,8 +277,8 @@ impl TireSystem {
         // Static friction balances the unbraked torque as long as the brake
         // capacity covers it; otherwise the soft kinetic band drives the spin.
         let brake_holds = brake_torque_nm >= unbraked_torque.abs();
-        let park_rate = if config.wheel_lock_stick_tau_s > 1e-9 {
-            1.0 / config.wheel_lock_stick_tau_s
+        let park_rate = if config.brakes.wheel_lock_stick_tau_s > 1e-9 {
+            1.0 / config.brakes.wheel_lock_stick_tau_s
         } else {
             brake_torque_nm / (blend * inertia)
         };
@@ -1926,8 +1926,8 @@ mod tests {
         dt: f64,
     ) -> Vec<(f64, f64)> {
         let mut cfg = cfg.clone();
-        cfg.wheel_lock_blend_spin_rad_s = blend;
-        cfg.wheel_lock_stick_tau_s = stick_tau;
+        cfg.brakes.wheel_lock_blend_spin_rad_s = blend;
+        cfg.brakes.wheel_lock_stick_tau_s = stick_tau;
         let wheel = WheelIndex::FrontLeft;
         let fz = static_wheel_load(&cfg, wheel);
         let mut tires = TireSystem::new(&cfg);
@@ -2007,8 +2007,8 @@ mod tests {
     fn regularized_wheel_lock_releases_without_snap() {
         let run_release = |blend: f64, stick: f64| -> Vec<f64> {
             let mut cfg = VehicleConfig::f1_94_canonical();
-            cfg.wheel_lock_blend_spin_rad_s = blend;
-            cfg.wheel_lock_stick_tau_s = stick;
+            cfg.brakes.wheel_lock_blend_spin_rad_s = blend;
+            cfg.brakes.wheel_lock_stick_tau_s = stick;
             let wheel = WheelIndex::FrontLeft;
             let fz = static_wheel_load(&cfg, wheel);
             let mut tires = TireSystem::new(&cfg);
