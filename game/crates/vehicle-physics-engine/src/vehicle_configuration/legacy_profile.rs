@@ -137,20 +137,23 @@ impl JsonVehicleSpec {
 
         VehicleConfig {
             schema_version: self.schema_version,
-            vehicle_name: self.chassis.vehicle_name,
-            vehicle_mass: self.chassis.vehicle_mass,
-            vehicle_mass_excludes_wheel_assemblies: self.chassis.vehicle_mass_excludes_wheel_assemblies,
-            front_weight_distribution: self.chassis.front_weight_distribution,
-            center_of_gravity_height_offset: self.chassis.center_of_gravity_height_offset,
+            chassis: ChassisConfiguration {
+                vehicle_name: self.chassis.vehicle_name,
+                vehicle_mass: self.chassis.vehicle_mass,
+                vehicle_mass_excludes_wheel_assemblies: self.chassis.vehicle_mass_excludes_wheel_assemblies,
+                front_weight_distribution: self.chassis.front_weight_distribution,
+                center_of_gravity_height_offset: self.chassis.center_of_gravity_height_offset,
+                inertia_multipliers: Vec3::new(
+                    self.chassis.inertia_multipliers.x,
+                    self.chassis.inertia_multipliers.y,
+                    self.chassis.inertia_multipliers.z,
+                ),
+                wheelbase: self.geometry.wheelbase,
+                front_track: self.geometry.front_track,
+                rear_track: self.geometry.rear_track,
+                physical_mass_inventory: self.physical_mass_inventory.clone(),
+            },
             fuel,
-            inertia_multipliers: Vec3::new(
-                self.chassis.inertia_multipliers.x,
-                self.chassis.inertia_multipliers.y,
-                self.chassis.inertia_multipliers.z,
-            ),
-            wheelbase: self.geometry.wheelbase,
-            front_track: self.geometry.front_track,
-            rear_track: self.geometry.rear_track,
             steering: SteeringConfiguration {
                 max_steering_angle: self.steering.max_steering_angle,
                 front_steering_ratio: self.steering.front_steering_ratio,
@@ -400,7 +403,6 @@ impl JsonVehicleSpec {
                 input_smoothing_brake_rate: self.aids.input_smoothing_brake_rate,
             },
             audio: self.audio.clone(),
-            physical_mass_inventory: self.physical_mass_inventory.clone(),
             coupled_world: self.coupled_world.clone(),
             underfloor_contact: self.underfloor_contact,
             suspension_model: SuspensionModelKind::from_str_name(self.suspension.model.as_str())
@@ -443,24 +445,24 @@ impl JsonVehicleSpec {
             );
         }
         Self {
-            physical_mass_inventory: cfg.physical_mass_inventory.clone(),
+            physical_mass_inventory: cfg.chassis.physical_mass_inventory.clone(),
             coupled_world: cfg.coupled_world.clone(),
             underfloor_contact: cfg.underfloor_contact,
             schema_version: cfg.schema_version,
             vehicle_id: "f1_94".to_string(),
-            profile_name: cfg.vehicle_name.clone(),
+            profile_name: cfg.chassis.vehicle_name.clone(),
             units: "SI".to_string(),
             audio: cfg.audio.clone(),
             chassis: JsonChassis {
-                vehicle_name: cfg.vehicle_name.clone(),
-                vehicle_mass: cfg.vehicle_mass,
-                vehicle_mass_excludes_wheel_assemblies: cfg.vehicle_mass_excludes_wheel_assemblies,
-                front_weight_distribution: cfg.front_weight_distribution,
-                center_of_gravity_height_offset: cfg.center_of_gravity_height_offset,
+                vehicle_name: cfg.chassis.vehicle_name.clone(),
+                vehicle_mass: cfg.chassis.vehicle_mass,
+                vehicle_mass_excludes_wheel_assemblies: cfg.chassis.vehicle_mass_excludes_wheel_assemblies,
+                front_weight_distribution: cfg.chassis.front_weight_distribution,
+                center_of_gravity_height_offset: cfg.chassis.center_of_gravity_height_offset,
                 inertia_multipliers: JsonVec3 {
-                    x: cfg.inertia_multipliers.x,
-                    y: cfg.inertia_multipliers.y,
-                    z: cfg.inertia_multipliers.z,
+                    x: cfg.chassis.inertia_multipliers.x,
+                    y: cfg.chassis.inertia_multipliers.y,
+                    z: cfg.chassis.inertia_multipliers.z,
                 },
             },
             fuel: JsonFuel {
@@ -477,9 +479,9 @@ impl JsonVehicleSpec {
                 reference_lap_time_s: cfg.fuel.reference_lap_time_s,
             },
             geometry: JsonGeometry {
-                wheelbase: cfg.wheelbase,
-                front_track: cfg.front_track,
-                rear_track: cfg.rear_track,
+                wheelbase: cfg.chassis.wheelbase,
+                front_track: cfg.chassis.front_track,
+                rear_track: cfg.chassis.rear_track,
                 wheel_hubs: None,
             },
             steering: JsonSteering {

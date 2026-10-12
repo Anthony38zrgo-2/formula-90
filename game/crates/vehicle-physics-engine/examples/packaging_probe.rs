@@ -94,7 +94,7 @@ fn report(label: &str, value: &Value, target_tangent: f64) {
     // Recalibration: preserve the SHIPPED rest tangent wheel rate
     // (target_tangent) and the static stance under the new r0.
     let (_r0_t, dm_dq, _fs_t, _tangent_t) = tangent_and_static(corner, axle);
-    let static_load = cfg.vehicle_mass * 9.81 * cfg.front_weight_distribution / 2.0;
+    let static_load = cfg.chassis.vehicle_mass * 9.81 * cfg.chassis.front_weight_distribution / 2.0;
     let force_rest_needed = static_load / r0;
     // k' such that k'*r0'^2 + F_s'*dm/dq' = target_tangent.
     let k_new = (target_tangent - force_rest_needed * dm_dq) / (r0 * r0);

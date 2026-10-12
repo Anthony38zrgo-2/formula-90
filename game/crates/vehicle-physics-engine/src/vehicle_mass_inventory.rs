@@ -110,11 +110,11 @@ impl VehicleMassInventory {
         if self.schema_version != 2 {
             return Err("Vehicle mass inventory schema_version must be 2".into());
         }
-        if !configuration.vehicle_mass_excludes_wheel_assemblies {
+        if !configuration.chassis.vehicle_mass_excludes_wheel_assemblies {
             return Err("Physical inventory requires explicit wheel-excluded base semantics".into());
         }
         if !self.base_budget_kilograms.is_finite()
-            || (self.base_budget_kilograms - configuration.vehicle_mass).abs() > 0.000001
+            || (self.base_budget_kilograms - configuration.chassis.vehicle_mass).abs() > 0.000001
         {
             return Err("Inventory base budget disagrees with vehicle configuration".into());
         }

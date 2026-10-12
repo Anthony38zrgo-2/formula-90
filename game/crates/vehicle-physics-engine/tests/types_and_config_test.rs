@@ -25,8 +25,8 @@ fn tri_raycast_uses_center_biased_weighting() {
 #[test]
 fn configured_center_of_mass_is_live() {
     let cfg = VehicleConfig::f1_94_canonical();
-    assert_eq!(center_of_mass_local(&cfg).y, cfg.center_of_gravity_height_offset);
-    assert!(cfg.center_of_gravity_height_offset < 0.0);
+    assert_eq!(center_of_mass_local(&cfg).y, cfg.chassis.center_of_gravity_height_offset);
+    assert!(cfg.chassis.center_of_gravity_height_offset < 0.0);
 }
 
 #[test]

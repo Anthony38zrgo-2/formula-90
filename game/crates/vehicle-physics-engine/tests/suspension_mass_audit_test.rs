@@ -38,7 +38,7 @@ fn audit_rejects_invalid_physical_masses_before_tuning_clamps_hide_them() {
     configuration.front_wheel_mass = f64::NAN;
     assert!(SuspensionMassAudit::from_vehicle_configuration(&configuration).is_err());
     configuration = vehicle_configuration();
-    configuration.vehicle_mass = f64::INFINITY;
+    configuration.chassis.vehicle_mass = f64::INFINITY;
     assert!(SuspensionMassAudit::from_vehicle_configuration(&configuration).is_err());
 }
 
@@ -49,7 +49,7 @@ fn body_mass_contract_adds_each_wheel_once_and_preserves_axle_moments() {
     configuration.fuel.initial_kg = 0.0;
     assert!((configuration.complete_dry_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
     assert!((configuration.total_vehicle_mass() - 678.3378962698143).abs() < 1e-9);
-    let front_supported_mass = configuration.vehicle_mass * configuration.front_weight_distribution
+    let front_supported_mass = configuration.chassis.vehicle_mass * configuration.chassis.front_weight_distribution
         + 2.0 * configuration.front_wheel_mass;
     assert!(
         (configuration.effective_front_weight_distribution() * 678.3378962698143 - front_supported_mass).abs()
@@ -58,7 +58,7 @@ fn body_mass_contract_adds_each_wheel_once_and_preserves_axle_moments() {
     let serialized = configuration.to_json_value();
     let reloaded =
         VehicleConfig::from_json_str(&serde_json::to_string(&serialized).unwrap()).unwrap();
-    assert!(reloaded.vehicle_mass_excludes_wheel_assemblies);
+    assert!(reloaded.chassis.vehicle_mass_excludes_wheel_assemblies);
     assert_eq!(
         reloaded.total_vehicle_mass(),
         configuration.total_vehicle_mass()
@@ -71,9 +71,9 @@ fn profiles_without_new_contract_keep_complete_dry_mass_semantics() {
         "../../../data/vehicles/f1_2030/f1_2030_v10_physics.json"
     ))
     .unwrap();
-    assert!(!configuration.vehicle_mass_excludes_wheel_assemblies);
+    assert!(!configuration.chassis.vehicle_mass_excludes_wheel_assemblies);
     assert_eq!(
         configuration.complete_dry_vehicle_mass(),
-        configuration.vehicle_mass
+        configuration.chassis.vehicle_mass
     );
 }

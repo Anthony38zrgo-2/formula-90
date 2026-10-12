@@ -26,6 +26,7 @@ pub use vehicle_configuration::VehicleConfig;
 
 pub use aerodynamics::configuration::AerodynamicsConfiguration;
 pub use brakes::configuration::BrakesConfiguration;
+pub use chassis::configuration::ChassisConfiguration;
 pub use steering::configuration::SteeringConfiguration;
 
 pub use loader::{

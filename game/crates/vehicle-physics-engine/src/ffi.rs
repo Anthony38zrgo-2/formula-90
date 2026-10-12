@@ -84,7 +84,7 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
     // SAFETY: `out_config` is non-null (checked above) and points to a writable `FfiRuntimeConfig`.
     unsafe {
         *out_config = FfiRuntimeConfig {
-            vehicle_mass: sim.config.vehicle_mass,
+            vehicle_mass: sim.config.chassis.vehicle_mass,
             front_brake_bias: sim.config.brakes.front_brake_bias,
             max_steering_angle: sim.config.steering.max_steering_angle,
             max_torque: sim.config.max_torque,
@@ -101,9 +101,9 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
             diff_clutches: sim.config.diff_clutches,
             diff_clutch_friction_coeff: sim.config.diff_clutch_friction_coeff,
             aids_enabled_mask: sim.aids.to_bits(),
-            inertia_multiplier_x: sim.config.inertia_multipliers.x,
-            inertia_multiplier_y: sim.config.inertia_multipliers.y,
-            inertia_multiplier_z: sim.config.inertia_multipliers.z,
+            inertia_multiplier_x: sim.config.chassis.inertia_multipliers.x,
+            inertia_multiplier_y: sim.config.chassis.inertia_multipliers.y,
+            inertia_multiplier_z: sim.config.chassis.inertia_multipliers.z,
             suspension_front_spring_length: sim.config.front_spring_length,
             suspension_rear_spring_length: sim.config.rear_spring_length,
             suspension_front_resting_ratio: sim.config.front_resting_ratio,
@@ -143,7 +143,7 @@ pub fn apply_runtime_config_to_sim(sim: &mut VehicleSimulator, cfg: &FfiRuntimeC
 
 fn apply_chassis_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.vehicle_mass.is_finite() && cfg.vehicle_mass > 0.0 {
-        sim.config.vehicle_mass = cfg.vehicle_mass;
+        sim.config.chassis.vehicle_mass = cfg.vehicle_mass;
     }
     if cfg.front_brake_bias.is_finite()
         && cfg.front_brake_bias >= 0.0
@@ -203,13 +203,13 @@ fn apply_differential_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig)
 
 fn apply_inertia_and_suspension_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
     if cfg.inertia_multiplier_x.is_finite() && cfg.inertia_multiplier_x > 0.0 {
-        sim.config.inertia_multipliers.x = cfg.inertia_multiplier_x;
+        sim.config.chassis.inertia_multipliers.x = cfg.inertia_multiplier_x;
     }
     if cfg.inertia_multiplier_y.is_finite() && cfg.inertia_multiplier_y > 0.0 {
-        sim.config.inertia_multipliers.y = cfg.inertia_multiplier_y;
+        sim.config.chassis.inertia_multipliers.y = cfg.inertia_multiplier_y;
     }
     if cfg.inertia_multiplier_z.is_finite() && cfg.inertia_multiplier_z > 0.0 {
-        sim.config.inertia_multipliers.z = cfg.inertia_multiplier_z;
+        sim.config.chassis.inertia_multipliers.z = cfg.inertia_multiplier_z;
     }
     if cfg.suspension_front_spring_length.is_finite() && cfg.suspension_front_spring_length > 0.0 {
         sim.config.front_spring_length = cfg.suspension_front_spring_length;
@@ -830,7 +830,7 @@ pub extern "C" fn f1_94_physics_get_ray_length(sim_ptr: *const c_void, wheel_idx
 #[no_mangle]
 pub extern "C" fn f1_94_physics_get_vehicle_mass(sim_ptr: *const c_void) -> f64 {
     if sim_ptr.is_null() {
-        return VehicleConfig::f1_94_canonical().vehicle_mass;
+        return VehicleConfig::f1_94_canonical().chassis.vehicle_mass;
     }
     // SAFETY: `sim_ptr` is non-null (checked above) and, per the C ABI contract, points to a live `VehicleSimulator`.
     let sim = unsafe { &*(sim_ptr as *const VehicleSimulator) };

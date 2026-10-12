@@ -177,6 +177,6 @@ fn embedded_document_is_deterministic_across_parses() {
     )
     .unwrap();
     assert_eq!(first.to_json_value(), second.to_json_value());
-    assert_eq!(first.vehicle_mass, second.vehicle_mass);
+    assert_eq!(first.chassis.vehicle_mass, second.chassis.vehicle_mass);
     assert_eq!(first.gear_ratios, second.gear_ratios);
 }

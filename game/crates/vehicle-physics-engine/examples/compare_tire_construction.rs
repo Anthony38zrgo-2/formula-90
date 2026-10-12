@@ -17,8 +17,8 @@ fn steering_trace(
     angle: f64,
 ) -> Vec<f64> {
     let mut comparison_configuration = configuration.clone();
-    comparison_configuration.vehicle_mass = 698.0;
-    comparison_configuration.vehicle_mass_excludes_wheel_assemblies = false;
+    comparison_configuration.chassis.vehicle_mass = 698.0;
+    comparison_configuration.chassis.vehicle_mass_excludes_wheel_assemblies = false;
     let mut thermal = TireThermalSystem::new_with_axles(
         &configuration.tire_pressure,
         &configuration.tire_thermal,

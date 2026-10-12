@@ -25,9 +25,9 @@ fn round_trip_preserves_all_fields() {
     let json_val = original.to_json_value();
     let json_str = serde_json::to_string_pretty(&json_val).unwrap();
     let loaded = VehicleConfig::from_json_str(&json_str).unwrap();
-    assert_eq!(loaded.vehicle_name, original.vehicle_name);
-    assert_eq!(loaded.vehicle_mass, original.vehicle_mass);
-    assert_eq!(loaded.wheelbase, original.wheelbase);
+    assert_eq!(loaded.chassis.vehicle_name, original.chassis.vehicle_name);
+    assert_eq!(loaded.chassis.vehicle_mass, original.chassis.vehicle_mass);
+    assert_eq!(loaded.chassis.wheelbase, original.chassis.wheelbase);
     assert_eq!(loaded.diff_preload, original.diff_preload);
     assert_eq!(
         loaded.diff_clutch_friction_coeff,
@@ -40,7 +40,7 @@ fn round_trip_preserves_all_fields() {
         original.aerodynamics.coefficient_of_drag
     );
     assert!(
-        (loaded.front_weight_distribution - original.front_weight_distribution).abs() < 1e-10
+        (loaded.chassis.front_weight_distribution - original.chassis.front_weight_distribution).abs() < 1e-10
     );
     assert_eq!(
         loaded.surface_friction.len(),
@@ -56,8 +56,8 @@ fn golden_json_matches_canonical() {
     }
     let loaded = VehicleConfig::from_json_path(path).unwrap();
     let canonical = VehicleConfig::f1_2026_2008_canonical();
-    assert_eq!(loaded.vehicle_mass, canonical.vehicle_mass);
-    assert_eq!(loaded.wheelbase, canonical.wheelbase);
+    assert_eq!(loaded.chassis.vehicle_mass, canonical.chassis.vehicle_mass);
+    assert_eq!(loaded.chassis.wheelbase, canonical.chassis.wheelbase);
     assert_eq!(loaded.diff_preload, canonical.diff_preload);
     assert_eq!(loaded.gear_ratios, canonical.gear_ratios);
 }
@@ -78,7 +78,7 @@ fn rejects_non_positive_mass() {
 fn minimal_json_uses_defaults() {
     let json = r#"{"schema_version": 1}"#;
     let cfg = VehicleConfig::from_json_str(json).unwrap();
-    assert_eq!(cfg.vehicle_mass, 575.0);
+    assert_eq!(cfg.chassis.vehicle_mass, 575.0);
     assert_eq!(cfg.diff_preload, 170.0);
 }
 

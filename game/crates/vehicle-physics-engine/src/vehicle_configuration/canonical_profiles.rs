@@ -49,18 +49,19 @@ impl VehicleConfig {
 
         Self {
             schema_version: 2,
-            vehicle_name: "F1 1994 (V10)".to_string(),
-
-            // Mass & Geometry
-            vehicle_mass: 575.0,
-            vehicle_mass_excludes_wheel_assemblies: false,
-            front_weight_distribution: 0.45,
-            center_of_gravity_height_offset: -0.12,
+            chassis: ChassisConfiguration {
+                vehicle_name: "F1 1994 (V10)".to_string(),
+                vehicle_mass: 575.0,
+                vehicle_mass_excludes_wheel_assemblies: false,
+                front_weight_distribution: 0.45,
+                center_of_gravity_height_offset: -0.12,
+                inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
+                wheelbase: 2.92065,
+                front_track: 1.5925,
+                rear_track: 1.5246,
+                physical_mass_inventory: None,
+            },
             fuel: FuelConfig::default(),
-            inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
-            wheelbase: 2.92065,
-            front_track: 1.5925,
-            rear_track: 1.5246,
 
             // Steering
             steering: SteeringConfiguration {
@@ -107,7 +108,6 @@ impl VehicleConfig {
             suspension_model: SuspensionModelKind::Legacy1Dof,
             suspension_model_version: default_suspension_model_version(),
             geometric_suspension: None,
-            physical_mass_inventory: None,
             coupled_world: None,
             underfloor_contact: None,
             front_torque_split: 0.0,
@@ -243,18 +243,19 @@ impl VehicleConfig {
 
         Self {
             schema_version: 2,
-            vehicle_name: "Jordan 197 (V10)".to_string(),
-
-            // Mass & Geometry
-            vehicle_mass: 505.0,
-            vehicle_mass_excludes_wheel_assemblies: false,
-            front_weight_distribution: 0.45,
-            center_of_gravity_height_offset: -0.12,
+            chassis: ChassisConfiguration {
+                vehicle_name: "Jordan 197 (V10)".to_string(),
+                vehicle_mass: 505.0,
+                vehicle_mass_excludes_wheel_assemblies: false,
+                front_weight_distribution: 0.45,
+                center_of_gravity_height_offset: -0.12,
+                inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
+                wheelbase: 2.950,
+                front_track: 1.762,
+                rear_track: 1.748,
+                physical_mass_inventory: None,
+            },
             fuel: FuelConfig::default(),
-            inertia_multipliers: Vec3::new(1.10, 1.10, 1.10),
-            wheelbase: 2.950,
-            front_track: 1.762,
-            rear_track: 1.748,
 
             // Steering
             steering: SteeringConfiguration {
@@ -299,7 +300,6 @@ impl VehicleConfig {
             suspension_model: SuspensionModelKind::Legacy1Dof,
             suspension_model_version: default_suspension_model_version(),
             geometric_suspension: None,
-            physical_mass_inventory: None,
             coupled_world: None,
             underfloor_contact: None,
             front_torque_split: 0.0, // RWD

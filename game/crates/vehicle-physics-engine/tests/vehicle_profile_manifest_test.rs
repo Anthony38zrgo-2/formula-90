@@ -100,7 +100,7 @@ fn loads_minimal_manifest_with_complete_provenance() {
     assert_eq!(loaded.provenance.profile_name, "test profile");
     assert_eq!(loaded.provenance.dependencies.len(), 9);
     assert_eq!(loaded.provenance.global_digest_sha256.len(), 64);
-    assert_eq!(loaded.configuration.vehicle_mass, 575.0);
+    assert_eq!(loaded.configuration.chassis.vehicle_mass, 575.0);
     assert_eq!(loaded.configuration.front_tire_radius, 0.33);
     assert_eq!(loaded.configuration.rear_tire_radius, 0.34);
     assert!(loaded
@@ -137,7 +137,7 @@ fn resolution_is_independent_from_the_process_working_directory() {
         &fixture.profile_directory,
     ))
     .expect("absolute manifest path with relative references must load");
-    assert_eq!(loaded.configuration.vehicle_mass, 575.0);
+    assert_eq!(loaded.configuration.chassis.vehicle_mass, 575.0);
 }
 
 #[test]
@@ -272,7 +272,7 @@ fn resolved_document_round_trips_and_tracks_provenance() {
         resolved.provenance.global_digest_sha256
     );
     let restored_configuration = restored.configuration().unwrap();
-    assert_eq!(restored_configuration.vehicle_mass, 575.0);
+    assert_eq!(restored_configuration.chassis.vehicle_mass, 575.0);
     assert_eq!(restored_configuration.front_tire_radius, 0.33);
 }
 

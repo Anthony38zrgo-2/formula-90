@@ -175,8 +175,8 @@ fn ab_legacy_vs_geometric_static_matches_dynamic_differs_sanely() {
         VehicleConfig::from_json_str(&std::fs::read_to_string(legacy_path()).unwrap()).unwrap();
     let geo =
         VehicleConfig::from_json_str(&std::fs::read_to_string(geo_path()).unwrap()).unwrap();
-    legacy.vehicle_mass = geo.vehicle_mass;
-    legacy.vehicle_mass_excludes_wheel_assemblies = geo.vehicle_mass_excludes_wheel_assemblies;
+    legacy.chassis.vehicle_mass = geo.chassis.vehicle_mass;
+    legacy.chassis.vehicle_mass_excludes_wheel_assemblies = geo.chassis.vehicle_mass_excludes_wheel_assemblies;
     legacy.fuel = geo.fuel;
     let dt = 1.0 / 120.0;
     let mk = |d: f64| TriRaycastSample {

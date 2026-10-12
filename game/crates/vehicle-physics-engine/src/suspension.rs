@@ -505,10 +505,10 @@ impl SuspensionSystem {
                 crate::suspension_geo_config::SuspensionModelKind::Geometric
             ) {
                 self.rc_front_m =
-                    crate::suspension_loads::roll_centre_height(&geo.corners.fl, &geo.corners.fr, config.front_track * 0.5)
+                    crate::suspension_loads::roll_centre_height(&geo.corners.fl, &geo.corners.fr, config.chassis.front_track * 0.5)
                         .unwrap_or(0.0);
                 self.rc_rear_m =
-                    crate::suspension_loads::roll_centre_height(&geo.corners.rl, &geo.corners.rr, config.rear_track * 0.5)
+                    crate::suspension_loads::roll_centre_height(&geo.corners.rl, &geo.corners.rr, config.chassis.rear_track * 0.5)
                         .unwrap_or(0.0);
                 let dq_f = q[0] - q[1];
                 let dq_r = q[2] - q[3];

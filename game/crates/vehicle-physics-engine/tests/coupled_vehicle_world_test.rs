@@ -34,7 +34,7 @@ fn normal_constraint(second: Option<usize>) -> GeneralizedContactConstraint {
 #[test]
 fn actual_inventory_closes_every_budget_and_round_trips() {
     let configuration = actual_configuration();
-    let inventory = configuration.physical_mass_inventory.as_ref().unwrap();
+    let inventory = configuration.chassis.physical_mass_inventory.as_ref().unwrap();
     inventory.validate(&configuration).unwrap();
     let audit = inventory.audit();
     assert_eq!(inventory.components.len(), 80);
@@ -42,19 +42,19 @@ fn actual_inventory_closes_every_budget_and_round_trips() {
     assert!((audit.complete_unfueled_mass_kilograms - 678.3378962698143).abs() < 1e-6);
     assert_eq!(audit.rim_and_tire_mass_kilograms, [16.807653495880544, 16.807653495880544, 23.46374963281952, 23.46374963281952]);
     let restored = VehicleConfig::from_json_str(&configuration.to_json_value().to_string()).unwrap();
-    assert_eq!(serde_json::to_value(restored.physical_mass_inventory).unwrap(), serde_json::to_value(&configuration.physical_mass_inventory).unwrap());
+    assert_eq!(serde_json::to_value(restored.chassis.physical_mass_inventory).unwrap(), serde_json::to_value(&configuration.chassis.physical_mass_inventory).unwrap());
 }
 
 #[test]
 fn inventory_rejects_budget_reassignment_rotation_mismatch_and_invalid_uncertainty() {
     let configuration = actual_configuration();
-    let mut inventory = configuration.physical_mass_inventory.clone().unwrap();
+    let mut inventory = configuration.chassis.physical_mass_inventory.clone().unwrap();
     inventory.components[0].budget = vehicle_physics_engine::vehicle_mass_inventory::VehicleMassBudget::RimAndTire;
     assert!(inventory.validate(&configuration).is_err());
-    let mut inventory = configuration.physical_mass_inventory.clone().unwrap();
+    let mut inventory = configuration.chassis.physical_mass_inventory.clone().unwrap();
     inventory.components[0].rotating_wheel = Some(WheelIndex::FrontLeft);
     assert!(inventory.validate(&configuration).is_err());
-    let mut inventory = configuration.physical_mass_inventory.clone().unwrap();
+    let mut inventory = configuration.chassis.physical_mass_inventory.clone().unwrap();
     inventory.components[0].uncertainty.lower_mass_kilograms = 100.0;
     assert!(inventory.validate(&configuration).is_err());
 }
@@ -412,7 +412,7 @@ fn world_brake_thermal_energy_matches_coupled_mechanical_dissipation() {
 #[test]
 fn uncertainty_variants_preserve_every_budget_and_physical_rotor_inertia() {
     let configuration = actual_configuration();
-    let inventory = configuration.physical_mass_inventory.as_ref().unwrap();
+    let inventory = configuration.chassis.physical_mass_inventory.as_ref().unwrap();
     let directions = (0..inventory.components.len()).map(|index| if index % 3 == 0 { 1.0 } else { -0.5 }).collect::<Vec<_>>();
     let variant = inventory.budget_constrained_mass_variant(&configuration, &directions).unwrap();
     let audit = variant.audit();
@@ -430,7 +430,7 @@ fn uncertainty_variants_preserve_every_budget_and_physical_rotor_inertia() {
         }
     }
     let mut variant_configuration = configuration.clone();
-    variant_configuration.physical_mass_inventory = Some(variant);
+    variant_configuration.chassis.physical_mass_inventory = Some(variant);
     let model = CoupledVehicleModel::new(variant_configuration, configuration.coupled_world.clone().unwrap().suspension).unwrap();
     let evaluation = model.evaluate(&CoupledVehicleState::at_rest(Vec3::ZERO), &CoupledSuspensionInput::default(), [0.0; 4]).unwrap();
     factor_generalized_vehicle_matrix(&evaluation.mass_matrix).unwrap();

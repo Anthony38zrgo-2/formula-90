@@ -5,18 +5,8 @@ use super::legacy_profile::JsonVehicleSpec;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VehicleConfig {
     pub schema_version: u32,
-    pub vehicle_name: String,
-
-    // Mass & Geometry
-    pub vehicle_mass: f64,
-    pub vehicle_mass_excludes_wheel_assemblies: bool,
-    pub front_weight_distribution: f64,
-    pub center_of_gravity_height_offset: f64,
+    pub chassis: ChassisConfiguration,
     pub fuel: FuelConfig,
-    pub inertia_multipliers: Vec3,
-    pub wheelbase: f64,
-    pub front_track: f64,
-    pub rear_track: f64,
 
     // Steering
     pub steering: SteeringConfiguration,
@@ -177,8 +167,6 @@ pub struct VehicleConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub geometric_suspension: Option<GeometricSuspensionConfig>,
     #[serde(default)]
-    pub physical_mass_inventory: Option<crate::vehicle_mass_inventory::VehicleMassInventory>,
-    #[serde(default)]
     pub coupled_world: Option<crate::coupled_vehicle_world::CoupledVehicleWorldConfiguration>,
     #[serde(default)]
     pub underfloor_contact: Option<crate::underfloor_contact_configuration::UnderfloorContactConfig>,
@@ -222,11 +210,11 @@ impl VehicleConfig {
     }
 
     pub fn complete_dry_vehicle_mass(&self) -> f64 {
-        self.vehicle_mass + self.additional_wheel_assembly_mass()
+        self.chassis.vehicle_mass + self.additional_wheel_assembly_mass()
     }
 
     pub fn additional_wheel_assembly_mass(&self) -> f64 {
-        if self.vehicle_mass_excludes_wheel_assemblies {
+        if self.chassis.vehicle_mass_excludes_wheel_assemblies {
             2.0 * (self.front_wheel_mass + self.rear_wheel_mass)
         } else {
             0.0
@@ -238,24 +226,24 @@ impl VehicleConfig {
     /// distribution migrates toward the tank as the tank drains or fills.
     pub fn effective_front_weight_distribution(&self) -> f64 {
         let fuel_kg = self.fuel.effective_current_kg();
-        if !self.vehicle_mass_excludes_wheel_assemblies && fuel_kg <= 0.0 {
-            return self.front_weight_distribution;
+        if !self.chassis.vehicle_mass_excludes_wheel_assemblies && fuel_kg <= 0.0 {
+            return self.chassis.front_weight_distribution;
         }
         let total_mass = self.total_vehicle_mass();
         if total_mass <= 1e-9 {
-            return self.front_weight_distribution;
+            return self.chassis.front_weight_distribution;
         }
-        let fuel_front_distribution = if self.wheelbase.abs() > 1e-9 {
-            0.5 - self.fuel.tank_position_local_m.z / self.wheelbase
+        let fuel_front_distribution = if self.chassis.wheelbase.abs() > 1e-9 {
+            0.5 - self.fuel.tank_position_local_m.z / self.chassis.wheelbase
         } else {
-            self.front_weight_distribution
+            self.chassis.front_weight_distribution
         };
-        let additional_front_wheel_mass = if self.vehicle_mass_excludes_wheel_assemblies {
+        let additional_front_wheel_mass = if self.chassis.vehicle_mass_excludes_wheel_assemblies {
             2.0 * self.front_wheel_mass
         } else {
             0.0
         };
-        ((self.vehicle_mass * self.front_weight_distribution
+        ((self.chassis.vehicle_mass * self.chassis.front_weight_distribution
             + additional_front_wheel_mass
             + fuel_kg * fuel_front_distribution)
             / total_mass).clamp(0.0, 1.0)
@@ -298,20 +286,20 @@ impl VehicleConfig {
     /// where origin (0, 0, 0) is centered between axles at mean wheel-center height.
     pub fn wheel_anchor_local(&self, wheel: WheelIndex) -> Vec3 {
         let z = if wheel.is_front() {
-            -self.wheelbase * 0.5
+            -self.chassis.wheelbase * 0.5
         } else {
-            self.wheelbase * 0.5
+            self.chassis.wheelbase * 0.5
         };
         let x = if wheel.is_front() {
             if wheel.is_right() {
-                self.front_track * 0.5
+                self.chassis.front_track * 0.5
             } else {
-                -self.front_track * 0.5
+                -self.chassis.front_track * 0.5
             }
         } else if wheel.is_right() {
-            self.rear_track * 0.5
+            self.chassis.rear_track * 0.5
         } else {
-            -self.rear_track * 0.5
+            -self.chassis.rear_track * 0.5
         };
 
         let mean_radius = (self.front_tire_radius + self.rear_tire_radius) * 0.5;
@@ -359,12 +347,12 @@ impl VehicleConfig {
         spec.validate()?;
         let config = spec.to_config();
         crate::aero::validate_aero_config(&config)?;
-        if let Some(inventory) = &config.physical_mass_inventory {
+        if let Some(inventory) = &config.chassis.physical_mass_inventory {
             inventory.validate(&config)?;
         }
         if let Some(world) = &config.coupled_world {
             world.validate()?;
-            if config.physical_mass_inventory.is_none() { return Err("Coupled world requires a physical mass inventory".into()); }
+            if config.chassis.physical_mass_inventory.is_none() { return Err("Coupled world requires a physical mass inventory".into()); }
         }
         Ok(config)
     }

@@ -736,8 +736,8 @@ impl AeroForces {
     ) {
         let cg = Vec3::new(
             0.0,
-            config.center_of_gravity_height_offset,
-            (0.5 - config.effective_front_weight_distribution()) * config.wheelbase,
+            config.chassis.center_of_gravity_height_offset,
+            (0.5 - config.effective_front_weight_distribution()) * config.chassis.wheelbase,
         );
         self.step_with_kinematics(
             config,
@@ -771,15 +771,15 @@ impl AeroForces {
         let front_point =
             m.front_wing
                 .position_m
-                .unwrap_or(Vec3::new(0.0, 0.0, -0.5 * config.wheelbase));
+                .unwrap_or(Vec3::new(0.0, 0.0, -0.5 * config.chassis.wheelbase));
         let rear_point =
             m.rear_wing
                 .position_m
-                .unwrap_or(Vec3::new(0.0, 0.0, 0.5 * config.wheelbase));
+                .unwrap_or(Vec3::new(0.0, 0.0, 0.5 * config.chassis.wheelbase));
         let floor_point =
             floor
                 .position_m
-                .unwrap_or(Vec3::new(0.0, config.center_of_gravity_height_offset, 0.0));
+                .unwrap_or(Vec3::new(0.0, config.chassis.center_of_gravity_height_offset, 0.0));
         let body_point = m.body.position_m.unwrap_or(k.center_of_mass_m);
         let fw_air = AirFlow::at(config, k, front_point);
         let rw_air = AirFlow::at(config, k, rear_point);
@@ -913,7 +913,7 @@ impl AeroForces {
         let axle_load = -force.y;
         let moment_at_origin = torque + k.center_of_mass_m.cross(force);
         self.front_axle_downforce =
-            (0.5 * config.wheelbase * axle_load - moment_at_origin.x) / config.wheelbase;
+            (0.5 * config.chassis.wheelbase * axle_load - moment_at_origin.x) / config.chassis.wheelbase;
         self.rear_axle_downforce = axle_load - self.front_axle_downforce;
         self.balance_front = if axle_load > 1e-8 {
             self.front_axle_downforce / axle_load
@@ -1273,7 +1273,7 @@ pub fn validate_aero_config(c: &VehicleConfig) -> Result<(), String> {
             return Err("aero density/Cd must be finite and nonnegative".into());
         }
     }
-    for value in [c.aerodynamics.frontal_area, c.vehicle_mass, c.wheelbase, c.aerodynamics.aero_lag_tau] {
+    for value in [c.aerodynamics.frontal_area, c.chassis.vehicle_mass, c.chassis.wheelbase, c.aerodynamics.aero_lag_tau] {
         if !value.is_finite() || value <= 0.0 {
             return Err(
                 "aero reference area, mass, wheelbase and lag must be positive and finite".into(),
@@ -1287,12 +1287,12 @@ pub fn validate_aero_config(c: &VehicleConfig) -> Result<(), String> {
     {
         return Err("aero blend speeds must satisfy 0 <= min < full".into());
     }
-    if !c.center_of_gravity_height_offset.is_finite() || !c.front_weight_distribution.is_finite() {
+    if !c.chassis.center_of_gravity_height_offset.is_finite() || !c.chassis.front_weight_distribution.is_finite() {
         return Err("aero center of mass must be finite".into());
     }
     let floor = &c.aerodynamics.aero_model.underfloor;
     let floor_z = floor.position_m.map_or(0.0, |p| p.z);
-    if floor_z.abs() + 0.5 * floor.pressure_span_m + floor.max_pressure_shift_m > 0.5 * c.wheelbase
+    if floor_z.abs() + 0.5 * floor.pressure_span_m + floor.max_pressure_shift_m > 0.5 * c.chassis.wheelbase
     {
         return Err(
             "aero floor pressure patches and allowed shift must stay between the axles".into(),
@@ -1605,7 +1605,7 @@ mod tests {
                 1.0 / 120.0,
             );
         }
-        let hard = (cfg.vehicle_mass * 9.81 * cfg.aerodynamics.aero_model.limits.hard_max_load_ratio)
+        let hard = (cfg.chassis.vehicle_mass * 9.81 * cfg.aerodynamics.aero_model.limits.hard_max_load_ratio)
             .min(cfg.aerodynamics.aero_model.limits.hard_max_downforce_n);
         assert!(aero.total_downforce <= hard + 1e-6);
     }

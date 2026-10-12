@@ -949,7 +949,7 @@ impl VehicleSimulator {
         // below is always negative in fast corners and the aid stays idle while
         // the rear steps out under torque (power-on oversteer).
         let ay_max = cfg.aids.stability_reference_lateral_accel_m_s2;
-        let kinematic_yaw = forward_speed * steer.tan() / cfg.wheelbase.max(1e-3);
+        let kinematic_yaw = forward_speed * steer.tan() / cfg.chassis.wheelbase.max(1e-3);
         let target_yaw = if ay_max.is_finite() && ay_max > 0.0 {
             let cap = ay_max / forward_speed.max(1.0);
             kinematic_yaw.clamp(-cap, cap)
@@ -1319,8 +1319,8 @@ impl VehicleSimulator {
 }
 
 pub fn center_of_mass_local(config: &VehicleConfig) -> Vec3 {
-    let com_z = (0.50 - config.effective_front_weight_distribution()) * config.wheelbase;
-    Vec3::new(0.0, config.center_of_gravity_height_offset, com_z)
+    let com_z = (0.50 - config.effective_front_weight_distribution()) * config.chassis.wheelbase;
+    Vec3::new(0.0, config.chassis.center_of_gravity_height_offset, com_z)
 }
 
 pub fn center_of_mass_world(config: &VehicleConfig, transform: &Transform3D) -> Vec3 {
@@ -1332,7 +1332,7 @@ pub fn default_spawn_height(config: &VehicleConfig) -> f64 {
 }
 
 pub fn diffuser_center_local(config: &VehicleConfig) -> Vec3 {
-    Vec3::new(0.0, config.center_of_gravity_height_offset, 0.0)
+    Vec3::new(0.0, config.chassis.center_of_gravity_height_offset, 0.0)
 }
 
 /// Generous final-bound clamp on effective toe (rad) that protects against corrupt
@@ -1379,15 +1379,15 @@ pub fn steering_angle_for_wheel(
     // angle, then mirrors the sign on the right wheel. Keep `config.steering.ackermann` as a
     // compatibility fallback only for degenerate geometry.
     let track = if wheel.is_front() {
-        config.front_track
+        config.chassis.front_track
     } else {
-        config.rear_track
+        config.chassis.rear_track
     };
     let tan_max = config.steering.max_steering_angle.tan();
-    let denominator = config.wheelbase - track * 0.5 * tan_max;
+    let denominator = config.chassis.wheelbase - track * 0.5 * tan_max;
     let geometric_ackermann = if config.steering.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
     {
-        ((config.wheelbase * tan_max) / denominator).atan() / config.steering.max_steering_angle - 1.0
+        ((config.chassis.wheelbase * tan_max) / denominator).atan() / config.steering.max_steering_angle - 1.0
     } else {
         config.steering.ackermann
     };
@@ -1420,15 +1420,15 @@ pub fn steering_angle_for_wheel_geo(
     };
     let input = steering.signum() * steering.abs().powf(config.steering.steering_exponent) * ratio;
     let track = if wheel.is_front() {
-        config.front_track
+        config.chassis.front_track
     } else {
-        config.rear_track
+        config.chassis.rear_track
     };
     let tan_max = config.steering.max_steering_angle.tan();
-    let denominator = config.wheelbase - track * 0.5 * tan_max;
+    let denominator = config.chassis.wheelbase - track * 0.5 * tan_max;
     let geometric_ackermann = if config.steering.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
     {
-        ((config.wheelbase * tan_max) / denominator).atan() / config.steering.max_steering_angle - 1.0
+        ((config.chassis.wheelbase * tan_max) / denominator).atan() / config.steering.max_steering_angle - 1.0
     } else {
         config.steering.ackermann
     };
@@ -1449,14 +1449,14 @@ pub fn steering_angle_for_wheel_geo(
 }
 
 fn principal_inertia(config: &VehicleConfig) -> Vec3 {
-    let w = (config.front_track + config.rear_track) * 0.5;
+    let w = (config.chassis.front_track + config.chassis.rear_track) * 0.5;
     let h = 0.75;
-    let l = config.wheelbase;
+    let l = config.chassis.wheelbase;
     let mass = config.total_vehicle_mass();
     Vec3::new(
-        (mass / 12.0) * (h * h + l * l) * config.inertia_multipliers.x,
-        (mass / 12.0) * (w * w + l * l) * config.inertia_multipliers.y,
-        (mass / 12.0) * (w * w + h * h) * config.inertia_multipliers.z,
+        (mass / 12.0) * (h * h + l * l) * config.chassis.inertia_multipliers.x,
+        (mass / 12.0) * (w * w + l * l) * config.chassis.inertia_multipliers.y,
+        (mass / 12.0) * (w * w + h * h) * config.chassis.inertia_multipliers.z,
     )
 }
 

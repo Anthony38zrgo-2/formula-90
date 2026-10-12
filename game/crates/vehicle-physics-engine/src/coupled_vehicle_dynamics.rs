@@ -162,7 +162,7 @@ pub fn generalized_projection(first: GeneralizedVehicleVelocity, second: General
 
 impl CoupledVehicleModel {
     pub fn new(configuration: VehicleConfig, settings: CoupledSuspensionSettings) -> Result<Self, String> {
-        let inventory = configuration.physical_mass_inventory.clone().ok_or("Coupled vehicle requires a complete physical mass inventory")?;
+        let inventory = configuration.chassis.physical_mass_inventory.clone().ok_or("Coupled vehicle requires a complete physical mass inventory")?;
         inventory.validate(&configuration)?;
         let suspension_model = CoupledSuspensionModel::new(configuration.clone(), inventory.reference_inventory(), settings.clone())?;
         let geometry = configuration.geometric_suspension.as_ref().ok_or("Missing coupled vehicle hardpoints")?;

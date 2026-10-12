@@ -54,10 +54,10 @@ fn flat_ground_samples(sim: &VehicleSimulator) -> [TriRaycastSample; 4] {
 fn profile_without_fuel_keeps_dry_mass_and_distribution() {
     let cfg = VehicleConfig::f1_94_canonical();
     assert_eq!(cfg.fuel.effective_current_kg(), 0.0);
-    assert_eq!(cfg.total_vehicle_mass(), cfg.vehicle_mass);
+    assert_eq!(cfg.total_vehicle_mass(), cfg.chassis.vehicle_mass);
     assert_eq!(
         cfg.effective_front_weight_distribution(),
-        cfg.front_weight_distribution
+        cfg.chassis.front_weight_distribution
     );
 }
 
@@ -68,14 +68,14 @@ fn tank_load_raises_mass_and_moves_distribution_rearward() {
 
     let loaded_mass = cfg.total_vehicle_mass();
     assert!((loaded_mass - 607.6).abs() < 1e-9);
-    assert!(cfg.effective_front_weight_distribution() < cfg.front_weight_distribution);
+    assert!(cfg.effective_front_weight_distribution() < cfg.chassis.front_weight_distribution);
 
     cfg.fuel.current_kg = cfg.fuel.capacity_kg;
     let total_mass = cfg.total_vehicle_mass();
-    let dry_center_of_mass_z = (0.5 - cfg.front_weight_distribution) * cfg.wheelbase;
+    let dry_center_of_mass_z = (0.5 - cfg.chassis.front_weight_distribution) * cfg.chassis.wheelbase;
     let combined_center_of_mass_z =
-        (cfg.vehicle_mass * dry_center_of_mass_z + 110.0 * 0.60) / total_mass;
-    let expected = 0.5 - combined_center_of_mass_z / cfg.wheelbase;
+        (cfg.chassis.vehicle_mass * dry_center_of_mass_z + 110.0 * 0.60) / total_mass;
+    let expected = 0.5 - combined_center_of_mass_z / cfg.chassis.wheelbase;
     assert!(
         (cfg.effective_front_weight_distribution() - expected).abs() < 1e-12,
         "effective distribution must follow the blended center of mass"
@@ -194,12 +194,12 @@ fn shipped_f1_2030_profile_declares_the_three_lap_load() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
     let cfg = VehicleConfig::from_json_path(&path).expect("shipped profile must load");
-    assert_eq!(cfg.vehicle_mass, 600.0);
+    assert_eq!(cfg.chassis.vehicle_mass, 600.0);
     assert_eq!(cfg.fuel.capacity_kg, 110.0);
     assert!((cfg.fuel.initial_kg - 7.6).abs() < 1e-9);
     assert!((cfg.fuel.estimated_lap_consumption_kg - 2.53).abs() < 1e-9);
     assert!((cfg.fuel.reference_lap_time_s - 90.0).abs() < 1e-9);
-    assert!(cfg.vehicle_mass_excludes_wheel_assemblies);
+    assert!(cfg.chassis.vehicle_mass_excludes_wheel_assemblies);
     assert!((cfg.complete_dry_vehicle_mass() - 698.0).abs() < 1e-9);
     assert!((cfg.total_vehicle_mass() - 705.6).abs() < 1e-9);
     assert!(cfg.effective_front_weight_distribution() < 0.45);
