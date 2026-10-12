@@ -340,7 +340,7 @@ mod aud04_integration {
     }
 }
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use game_sim::snapshot::{EntityTelemetry, Snapshot};
@@ -361,9 +361,9 @@ use crate::module::{ModuleCtx, ModuleRegistry, SimModule};
 pub struct CoreConfig {
     /// OS path to the `commons` sound bank dir. `None` disables the mixer.
     pub bank_dir: Option<PathBuf>,
-    /// OS path to the vehicle JSON config. Ignored when `use_canonical`.
+    /// OS path to the vehicle profile manifest or legacy flat config. Ignored when `use_canonical`.
     pub config_json_path: Option<PathBuf>,
-    /// Spawn the built-in canonical F1-94 config instead of a JSON file.
+    /// Spawn the built-in canonical F1 2030 geometric config instead of a profile file.
     pub use_canonical: bool,
     /// Fixed simulation timestep (seconds).
     pub fixed_dt: f64,
@@ -394,6 +394,38 @@ impl Default for CoreConfig {
             modules: Vec::new(),
             underfloor_contact: underfloor::UnderfloorContactConfig::default(),
         }
+    }
+}
+
+/// Loads a vehicle configuration from a profile manifest or a legacy flat document.
+/// Manifest resolution uses the manifest directory as the authorized root and
+/// returns the audio domain document as the profile `audio` section value.
+fn load_vehicle_configuration_document(
+    path: &Path,
+) -> Result<(VehicleConfig, Option<serde_json::Value>), CoreError> {
+    let text = std::fs::read_to_string(path)
+        .map_err(|error| CoreError::Config(format!("failed to read {}: {error}", path.display())))?;
+    let document: serde_json::Value = serde_json::from_str(&text)
+        .map_err(|error| CoreError::Config(format!("failed to parse config: {error}")))?;
+    if document.get("domains").is_some() {
+        let authorized_root = path.parent().unwrap_or(Path::new("."));
+        let complete = crate::vehicle_profile::load_complete_vehicle_profile(path, authorized_root)
+            .map_err(|error| {
+                CoreError::Config(format!("failed to resolve vehicle profile: {error}"))
+            })?;
+        let configuration = complete.physical_configuration.configuration().map_err(|error| {
+            CoreError::Config(format!("resolved vehicle profile is invalid: {error}"))
+        })?;
+        let audio_section = complete
+            .audio_document
+            .as_ref()
+            .and_then(|document| serde_json::to_value(document).ok());
+        Ok((configuration, audio_section))
+    } else {
+        let configuration = VehicleConfig::from_json_str(&text)
+            .map_err(|error| CoreError::Config(format!("failed to parse config: {error}")))?;
+        let audio_section = configuration.audio.clone();
+        Ok((configuration, audio_section))
     }
 }
 
@@ -453,8 +485,7 @@ impl CoreFacade {
     pub fn new(mut config: CoreConfig) -> Result<Self, CoreError> {
         if !config.use_canonical {
             if let Some(profile_path) = config.config_json_path.as_ref() {
-                let vehicle_configuration = VehicleConfig::from_json_path(profile_path)
-                    .map_err(|error| CoreError::Config(format!("invalid vehicle profile: {error}")))?;
+                let (vehicle_configuration, _) = load_vehicle_configuration_document(profile_path)?;
                 if let Some(contact_configuration) = vehicle_configuration.underfloor_contact {
                     config.underfloor_contact = contact_configuration;
                 }
@@ -497,22 +528,22 @@ impl CoreFacade {
                 .map(|e| e.id)
                 .ok_or_else(|| CoreError::Spawn("world has no entities".to_string()));
         }
-        let (id, cfg) = if self.config.use_canonical {
+        let (id, cfg, audio_section) = if self.config.use_canonical {
 			let cfg = VehicleConfig::f1_2030_geometric_canonical();
-            (self.spawn(&cfg), cfg)
+            let audio_section = cfg.audio.clone();
+            (self.spawn(&cfg), cfg, audio_section)
         } else {
-            let json = self.config.config_json_path.as_ref().ok_or_else(|| {
+            let json_path = self.config.config_json_path.as_ref().ok_or_else(|| {
                 CoreError::Config(
                     "config_json_path is required when use_canonical=false".to_string(),
                 )
             })?;
-            let cfg = VehicleConfig::from_json_path(json)
-                .map_err(|e| CoreError::Spawn(format!("failed to parse config: {e}")))?;
-            (self.spawn(&cfg), cfg)
+            let (cfg, audio_section) = load_vehicle_configuration_document(json_path)?;
+            (self.spawn(&cfg), cfg, audio_section)
         };
         // Enable the procedural powertrain synth from the profile `audio` section
         // (best-effort: a missing/disabled section silently keeps the sampled path).
-        self.audio.enable_synth_from_profile(cfg.audio.as_ref(), Some(&cfg));
+        self.audio.enable_synth_from_profile(audio_section.as_ref(), Some(&cfg));
         self.spawned = true;
         Ok(id)
     }
@@ -1312,4 +1343,31 @@ mod underfloor_profile_configuration_tests {
         assert!(left.iter().all(|sample| sample.is_finite()));
     }
 
+}
+
+#[cfg(test)]
+mod vehicle_profile_manifest_resolution_tests {
+    use super::*;
+
+    #[test]
+    fn manifest_profile_resolves_physical_and_underfloor_domains() {
+        let repository = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let manifest =
+            repository.join("game/data/vehicles/f1_2030/profiles/geometric/vehicle.json");
+        let mut core = CoreFacade::new(CoreConfig {
+            config_json_path: Some(manifest),
+            use_canonical: false,
+            enable_audio: false,
+            ..Default::default()
+        })
+        .unwrap();
+        assert_eq!(core.config.underfloor_contact.activation_clearance_m, 0.025);
+        assert_eq!(core.config.underfloor_contact.release_clearance_m, 0.050);
+        let identifier = core.ensure_spawned().unwrap();
+        assert_eq!(identifier, 1);
+        let entity = &core.world.entities[0];
+        let canonical = VehicleConfig::f1_2030_geometric_canonical();
+        assert_eq!(entity.sim.config.to_json_value(), canonical.to_json_value());
+        assert!(entity.sim.config.coupled_world.is_some());
+    }
 }
