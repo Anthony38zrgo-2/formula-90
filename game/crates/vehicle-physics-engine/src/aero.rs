@@ -487,7 +487,7 @@ impl AirFlow {
         let active = speed > 1e-8;
         Self {
             direction: if active { velocity / speed } else { Vec3::ZERO },
-            q: 0.5 * config.air_density * speed * speed,
+            q: 0.5 * config.aerodynamics.air_density * speed * speed,
             angle_deg: if active {
                 (-velocity.y).atan2(-velocity.z).to_degrees()
             } else {
@@ -505,8 +505,8 @@ impl AirFlow {
                 0.0
             },
             blend: smoothstep(
-                (forward - config.aero_blend_min_speed)
-                    / (config.aero_blend_full_speed - config.aero_blend_min_speed),
+                (forward - config.aerodynamics.aero_blend_min_speed)
+                    / (config.aerodynamics.aero_blend_full_speed - config.aerodynamics.aero_blend_min_speed),
             ),
         }
     }
@@ -766,7 +766,7 @@ impl AeroForces {
             self.invalid_input = true;
             return;
         }
-        let m = &config.aero_model;
+        let m = &config.aerodynamics.aero_model;
         let floor = &m.underfloor;
         let front_point =
             m.front_wing
@@ -788,7 +788,7 @@ impl AeroForces {
         let rw_angle = m.rear_wing.incidence_deg + rw_air.angle_deg;
         let fw = wing_load(
             &m.front_wing,
-            config.aero_lag_tau,
+            config.aerodynamics.aero_lag_tau,
             &mut self.state.front_wing,
             fw_air,
             front_point,
@@ -797,7 +797,7 @@ impl AeroForces {
         );
         let rw = wing_load(
             &m.rear_wing,
-            config.aero_lag_tau,
+            config.aerodynamics.aero_lag_tau,
             &mut self.state.rear_wing,
             rw_air,
             rear_point,
@@ -836,7 +836,7 @@ impl AeroForces {
         let limited = soft_limit(raw, soft, hard);
         let limit_factor = if raw > 1e-8 { limited / raw } else { 1.0 };
 
-        let mut body_drag_area = config.coefficient_of_drag * config.frontal_area;
+        let mut body_drag_area = config.aerodynamics.coefficient_of_drag * config.aerodynamics.frontal_area;
         if m.body.drag_coefficient_scope == DragCoefficientScope::WholeVehicleReference {
             let fw_cd = polar_at(&m.front_wing.polar, m.front_wing.incidence_deg).1;
             let rw_cd = polar_at(&m.rear_wing.polar, m.rear_wing.incidence_deg).1;
@@ -920,8 +920,8 @@ impl AeroForces {
         } else {
             0.5
         };
-        self.effective_cl = if body_air.q * config.frontal_area > 1e-8 {
-            self.total_downforce / (body_air.q * config.frontal_area)
+        self.effective_cl = if body_air.q * config.aerodynamics.frontal_area > 1e-8 {
+            self.total_downforce / (body_air.q * config.aerodynamics.frontal_area)
         } else {
             0.0
         };
@@ -1267,30 +1267,30 @@ impl GroundEffectMap {
 
 /// Shared JSON/programmatic validation. Success does not allocate.
 pub fn validate_aero_config(c: &VehicleConfig) -> Result<(), String> {
-    c.aero_model.validate()?;
-    for value in [c.air_density, c.coefficient_of_drag] {
+    c.aerodynamics.aero_model.validate()?;
+    for value in [c.aerodynamics.air_density, c.aerodynamics.coefficient_of_drag] {
         if !value.is_finite() || value < 0.0 {
             return Err("aero density/Cd must be finite and nonnegative".into());
         }
     }
-    for value in [c.frontal_area, c.vehicle_mass, c.wheelbase, c.aero_lag_tau] {
+    for value in [c.aerodynamics.frontal_area, c.vehicle_mass, c.wheelbase, c.aerodynamics.aero_lag_tau] {
         if !value.is_finite() || value <= 0.0 {
             return Err(
                 "aero reference area, mass, wheelbase and lag must be positive and finite".into(),
             );
         }
     }
-    if !c.aero_blend_min_speed.is_finite()
-        || c.aero_blend_min_speed < 0.0
-        || !c.aero_blend_full_speed.is_finite()
-        || c.aero_blend_full_speed <= c.aero_blend_min_speed
+    if !c.aerodynamics.aero_blend_min_speed.is_finite()
+        || c.aerodynamics.aero_blend_min_speed < 0.0
+        || !c.aerodynamics.aero_blend_full_speed.is_finite()
+        || c.aerodynamics.aero_blend_full_speed <= c.aerodynamics.aero_blend_min_speed
     {
         return Err("aero blend speeds must satisfy 0 <= min < full".into());
     }
     if !c.center_of_gravity_height_offset.is_finite() || !c.front_weight_distribution.is_finite() {
         return Err("aero center of mass must be finite".into());
     }
-    let floor = &c.aero_model.underfloor;
+    let floor = &c.aerodynamics.aero_model.underfloor;
     let floor_z = floor.position_m.map_or(0.0, |p| p.z);
     if floor_z.abs() + 0.5 * floor.pressure_span_m + floor.max_pressure_shift_m > 0.5 * c.wheelbase
     {
@@ -1298,8 +1298,8 @@ pub fn validate_aero_config(c: &VehicleConfig) -> Result<(), String> {
             "aero floor pressure patches and allowed shift must stay between the axles".into(),
         );
     }
-    let m = &c.aero_model;
-    let mut available_body_drag_area = c.coefficient_of_drag * c.frontal_area;
+    let m = &c.aerodynamics.aero_model;
+    let mut available_body_drag_area = c.aerodynamics.coefficient_of_drag * c.aerodynamics.frontal_area;
     if m.body.drag_coefficient_scope == DragCoefficientScope::WholeVehicleReference {
         let nominal_element_drag_area = m.front_wing.area_m2
             * polar_at(&m.front_wing.polar, m.front_wing.incidence_deg).1
@@ -1538,9 +1538,9 @@ mod tests {
     fn wheel_drag_is_independent_and_preserves_reference_total() {
         let reference_configuration = VehicleConfig::f1_94_canonical();
         let mut separated_configuration = reference_configuration.clone();
-        separated_configuration.aero_model.wheels.front_drag_coefficient = 0.08;
-        separated_configuration.aero_model.wheels.rear_drag_coefficient = 0.08;
-        separated_configuration.aero_model.body.wheel_reference_drag_area_m2 = 0.08
+        separated_configuration.aerodynamics.aero_model.wheels.front_drag_coefficient = 0.08;
+        separated_configuration.aerodynamics.aero_model.wheels.rear_drag_coefficient = 0.08;
+        separated_configuration.aerodynamics.aero_model.body.wheel_reference_drag_area_m2 = 0.08
             * 2.0
             * (separated_configuration.front_tire_width * separated_configuration.front_tire_radius * 2.0
                 + separated_configuration.rear_tire_width * separated_configuration.rear_tire_radius * 2.0);
@@ -1576,7 +1576,7 @@ mod tests {
         let profile_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
         let configuration = VehicleConfig::from_json_path(&profile_path).unwrap();
-        let wheels = &configuration.aero_model.wheels;
+        let wheels = &configuration.aerodynamics.aero_model.wheels;
         let reference_drag_area = 2.0
             * (configuration.front_tire_width
                 * 2.0
@@ -1586,7 +1586,7 @@ mod tests {
                     * 2.0
                     * configuration.rear_tire_radius
                     * wheels.rear_drag_coefficient);
-        assert!((configuration.aero_model.body.wheel_reference_drag_area_m2 - reference_drag_area).abs() < 1e-10);
+        assert!((configuration.aerodynamics.aero_model.body.wheel_reference_drag_area_m2 - reference_drag_area).abs() < 1e-10);
         assert!(reference_drag_area > 0.0);
     }
 
@@ -1605,8 +1605,8 @@ mod tests {
                 1.0 / 120.0,
             );
         }
-        let hard = (cfg.vehicle_mass * 9.81 * cfg.aero_model.limits.hard_max_load_ratio)
-            .min(cfg.aero_model.limits.hard_max_downforce_n);
+        let hard = (cfg.vehicle_mass * 9.81 * cfg.aerodynamics.aero_model.limits.hard_max_load_ratio)
+            .min(cfg.aerodynamics.aero_model.limits.hard_max_downforce_n);
         assert!(aero.total_downforce <= hard + 1e-6);
     }
 

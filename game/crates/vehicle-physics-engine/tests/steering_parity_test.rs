@@ -50,8 +50,8 @@ fn countersteer_correction_opposes_lateral_velocity() {
 #[test]
 fn front_slip_assist_limits_steering_into_slip_and_permits_countersteer() {
     let mut cfg = VehicleConfig::f1_94_canonical();
-    cfg.steering_slip_assist = 0.30;
-    cfg.countersteer_assist = 0.0; // Isolate slip assist test
+    cfg.steering.steering_slip_assist = 0.30;
+    cfg.steering.countersteer_assist = 0.0; // Isolate slip assist test
     let dt = 1.0 / 120.0;
     let samples = [TriRaycastSample::default(); 4];
 

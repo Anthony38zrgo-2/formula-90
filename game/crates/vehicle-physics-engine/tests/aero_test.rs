@@ -24,7 +24,7 @@ fn full_efficiency_environment() -> AeroEnvironment {
 /// computed with dt = aero_lag_tau so alpha = 1.
 fn element_raw_target(config: &VehicleConfig, env: &AeroEnvironment, v_fwd: f64, v_lat: f64) -> f64 {
     let mut aero = AeroForces::zero();
-    aero.step_with_environment(config, vel_local(v_fwd, v_lat), env, 0.0, config.aero_lag_tau);
+    aero.step_with_environment(config, vel_local(v_fwd, v_lat), env, 0.0, config.aerodynamics.aero_lag_tau);
     aero.raw_downforce
 }
 
@@ -41,7 +41,7 @@ fn settle(config: &VehicleConfig, env: &AeroEnvironment, v_fwd: f64, v_lat: f64)
 fn test_aerodynamic_lag_exponential_decay() {
     // Verify step velocity input reaches 63.2% of target in tau seconds (±5% per human gate)
     let cfg = VehicleConfig::f1_94_canonical();
-    let tau = cfg.aero_lag_tau;
+    let tau = cfg.aerodynamics.aero_lag_tau;
     assert!((tau - 0.048).abs() < 1e-9, "tau must be 0.048");
 
     let env = full_efficiency_environment();
@@ -100,7 +100,7 @@ fn test_smoothstep_speed_blending_monotonicity() {
 
     // Sample blend_factor across speed range with alpha=1 for instant target
     // Use dt = tau so filtered = target immediately, blend diagnostics are direct
-    let dt = cfg.aero_lag_tau;
+    let dt = cfg.aerodynamics.aero_lag_tau;
     let mut prev_blend = -1.0;
     let mut samples: Vec<(f64, f64)> = Vec::new();
     let mut speeds = vec![0.0, 1.0, 2.0, 4.167, 8.0, 12.0, 16.0, 20.0, 27.778, 30.0, 35.0, 40.0];
@@ -123,18 +123,18 @@ fn test_smoothstep_speed_blending_monotonicity() {
             assert!(s.abs() < 1e-9, "S(0) must be 0, got {}", s);
         }
         // zero below blend_min
-        if v <= cfg.aero_blend_min_speed + 1e-9 {
+        if v <= cfg.aerodynamics.aero_blend_min_speed + 1e-9 {
             // At exactly blend_min, S should be ~0 (smoothstep starts)
-            if v == cfg.aero_blend_min_speed {
+            if v == cfg.aerodynamics.aero_blend_min_speed {
                 assert!(s.abs() < 1e-9, "S(blend_min) must be 0, got {}", s);
             }
         }
         // one at full
-        if v >= cfg.aero_blend_full_speed {
+        if v >= cfg.aerodynamics.aero_blend_full_speed {
             assert!((s - 1.0).abs() < 1e-9, "S(>=full) must be 1, got {} at v={}", s, v);
         }
         // strictly monotonic between min and full
-        if v > cfg.aero_blend_min_speed && v < cfg.aero_blend_full_speed {
+        if v > cfg.aerodynamics.aero_blend_min_speed && v < cfg.aerodynamics.aero_blend_full_speed {
             assert!(s > 0.0 && s < 1.0, "S intermediate must be (0,1), got {} at {}", s, v);
         }
         // global monotonic non-decreasing
@@ -150,7 +150,7 @@ fn test_smoothstep_speed_blending_monotonicity() {
     // Use central difference around blend_min and blend_full
     let eps = 1e-4;
     // Approximate derivative dS/dv at blend_min
-    let v0 = cfg.aero_blend_min_speed;
+    let v0 = cfg.aerodynamics.aero_blend_min_speed;
     // Evaluate S analytically via aero diagnostics: create two nearby points
     let mut a_low = AeroForces::zero();
     let mut a_high = AeroForces::zero();
@@ -162,7 +162,7 @@ fn test_smoothstep_speed_blending_monotonicity() {
         "C1 at blend_min: derivative should be ~0, got {}",
         deriv_min
     );
-    let v1 = cfg.aero_blend_full_speed;
+    let v1 = cfg.aerodynamics.aero_blend_full_speed;
     a_low.step_with_environment(&cfg, vel_local(v1 - eps, 0.0), &env, 0.0, dt);
     a_high.step_with_environment(&cfg, vel_local(v1 + eps, 0.0), &env, 0.0, dt);
     let deriv_full = (a_high.blend_factor - a_low.blend_factor) / (2.0 * eps);
@@ -185,7 +185,7 @@ fn test_smoothstep_speed_blending_monotonicity() {
 fn test_sideslip_yaw_decay_under_drift() {
     let cfg = VehicleConfig::f1_94_canonical();
     let env = AeroEnvironment::default();
-    let dt = cfg.aero_lag_tau; // instant convergence for monotonic check
+    let dt = cfg.aerodynamics.aero_lag_tau; // instant convergence for monotonic check
     let v_fwd = 20.0;
     let target_zero_slip = element_raw_target(&cfg, &env, v_fwd, 0.0);
 
@@ -270,7 +270,7 @@ fn test_aero_distribution_and_balance_from_elements() {
     let env = AeroEnvironment::default();
     let mut aero = AeroForces::zero();
     // Drive to steady state at speed to get non-zero downforce
-    let dt = cfg.aero_lag_tau;
+    let dt = cfg.aerodynamics.aero_lag_tau;
     for _ in 0..10 {
         aero.step_with_environment(&cfg, vel_local(25.0, 0.0), &env, 0.0, dt);
     }
@@ -342,7 +342,7 @@ fn test_wing_cl_speed_independent_no_flex() {
 fn test_reverse_and_zero_velocity_gives_no_downforce() {
     let cfg = VehicleConfig::f1_94_canonical();
     let env = AeroEnvironment::default();
-    let dt = cfg.aero_lag_tau;
+    let dt = cfg.aerodynamics.aero_lag_tau;
     // Zero velocity
     let mut aero = AeroForces::zero();
     aero.step_with_environment(&cfg, vel_local(0.0, 0.0), &env, 0.0, dt);

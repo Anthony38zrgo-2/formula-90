@@ -204,7 +204,7 @@ fn simulate_current_brakes(opening: Option<f64>, pedal: f64, seconds: usize) -> 
                     wheel_spin_pre_rad_s: speed / radius,
                     wheel_spin_post_rad_s: speed / radius,
                     vehicle_speed_ms: speed,
-                    air_density_kg_m3: configuration.air_density,
+                    air_density_kg_m3: configuration.aerodynamics.air_density,
                     ambient_temperature_c: configuration.brake_thermal.initial_temperature_c,
                     tire_carcass_temperature_c: 70.0,
                     tire_gas_temperature_c: 70.0,

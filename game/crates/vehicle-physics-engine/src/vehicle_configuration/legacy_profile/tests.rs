@@ -35,7 +35,10 @@ fn round_trip_preserves_all_fields() {
     );
     assert_eq!(loaded.gear_ratios, original.gear_ratios);
     assert_eq!(loaded.torque_curve, original.torque_curve);
-    assert_eq!(loaded.coefficient_of_drag, original.coefficient_of_drag);
+    assert_eq!(
+        loaded.aerodynamics.coefficient_of_drag,
+        original.aerodynamics.coefficient_of_drag
+    );
     assert!(
         (loaded.front_weight_distribution - original.front_weight_distribution).abs() < 1e-10
     );

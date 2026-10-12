@@ -305,7 +305,7 @@ impl CoupledVehicleWorld {
         let mut input = CoupledSuspensionInput::default();
         input.steering_rack_metres = vehicle.last_force_input.steering_rack_metres;
         let target_rack = vehicle.input.steering * settings.steering_rack_travel_metres;
-        let maximum_rack_change = vehicle.model.configuration.steering_speed * settings.steering_rack_travel_metres * duration;
+        let maximum_rack_change = vehicle.model.configuration.steering.steering_speed * settings.steering_rack_travel_metres * duration;
         input.steering_rack_velocity_metres_per_second = (target_rack - input.steering_rack_metres).clamp(-maximum_rack_change, maximum_rack_change) / duration;
         let geometry = vehicle.model.configuration.geometric_suspension.as_ref().unwrap();
         let rotation = vehicle.state.suspension.body_orientation_world.to_mat3();

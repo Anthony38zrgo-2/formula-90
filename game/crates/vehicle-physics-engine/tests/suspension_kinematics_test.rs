@@ -53,8 +53,8 @@ fn toe_gain_zero_preserves_legacy_static_steer() {
 #[test]
 fn toe_gain_bump_rebound_and_rear_zero_ratio() {
     let mut cfg = VehicleConfig::f1_94_canonical();
-    cfg.front_steering_ratio = 1.0;
-    cfg.rear_steering_ratio = 0.0;
+    cfg.steering.front_steering_ratio = 1.0;
+    cfg.steering.rear_steering_ratio = 0.0;
     cfg.front_toe = 0.0;
     cfg.rear_toe = 0.0;
     cfg.front_toe_gain_rad_per_m = -0.02;
@@ -97,7 +97,7 @@ fn toe_gain_bump_rebound_and_rear_zero_ratio() {
 #[test]
 fn toe_gain_past_clamp_is_bounded() {
     let mut cfg = VehicleConfig::f1_94_canonical();
-    cfg.front_steering_ratio = 1.0;
+    cfg.steering.front_steering_ratio = 1.0;
     cfg.front_toe = 0.0;
     cfg.front_toe_gain_rad_per_m = -0.02;
     let angle = steering_angle_for_wheel(&cfg, WheelIndex::FrontLeft, 0.0, 10.0);

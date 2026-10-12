@@ -24,6 +24,9 @@ pub use powertrain::configuration::AutomaticShift;
 pub use tires::configuration::TireForceProfile;
 pub use vehicle_configuration::VehicleConfig;
 
+pub use aerodynamics::configuration::AerodynamicsConfiguration;
+pub use steering::configuration::SteeringConfiguration;
+
 pub use loader::{
     load_physical_configuration, resolve_domain_document_path, LoadedPhysicalConfiguration,
     VehicleConfigurationLoadError, VehicleProfileLoadRequest,

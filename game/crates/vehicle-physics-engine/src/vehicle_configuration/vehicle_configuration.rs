@@ -19,16 +19,7 @@ pub struct VehicleConfig {
     pub rear_track: f64,
 
     // Steering
-    pub max_steering_angle: f64, // radians
-    pub front_steering_ratio: f64,
-    pub rear_steering_ratio: f64,
-    pub steering_speed: f64,
-    pub countersteer_speed: f64,
-    pub steering_speed_decay: f64,
-    pub steering_slip_assist: f64,
-    pub countersteer_assist: f64,
-    pub steering_exponent: f64,
-    pub ackermann: f64,
+    pub steering: SteeringConfiguration,
 
     // Powertrain & Gearing
     pub max_torque: f64,               // N·m
@@ -180,20 +171,7 @@ pub struct VehicleConfig {
     pub aids: AidsConfig,
 
     // Aerodynamics
-    pub coefficient_of_drag: f64,
-    pub frontal_area: f64,
-    /// Element-based aerodynamic model.
-    #[serde(default)]
-    pub aero_model: AeroModelConfig,
-    pub air_density: f64,
-
-    // Progressive Aerodynamic Extensions (F1-94 canon, Jordan legacy stub uses same defaults)
-    #[serde(default = "default_aero_lag_tau")]
-    pub aero_lag_tau: f64,
-    #[serde(default = "default_aero_blend_min_speed")]
-    pub aero_blend_min_speed: f64,
-    #[serde(default = "default_aero_blend_full_speed")]
-    pub aero_blend_full_speed: f64,
+    pub aerodynamics: AerodynamicsConfiguration,
 
     // Automatic transmission shift logic (from f1_94_physics.json `automatic_shift`)
     pub automatic_shift: AutomaticShift,
@@ -219,16 +197,6 @@ pub struct VehicleConfig {
     pub coupled_world: Option<crate::coupled_vehicle_world::CoupledVehicleWorldConfiguration>,
     #[serde(default)]
     pub underfloor_contact: Option<crate::underfloor_contact_configuration::UnderfloorContactConfig>,
-}
-
-pub(crate) fn default_aero_lag_tau() -> f64 {
-    0.030
-}
-pub(crate) fn default_aero_blend_min_speed() -> f64 {
-    5.556
-}
-pub(crate) fn default_aero_blend_full_speed() -> f64 {
-    41.667
 }
 
 impl Default for VehicleConfig {

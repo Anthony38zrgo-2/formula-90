@@ -1,7 +1,5 @@
 use super::*;
-use super::super::vehicle_configuration::{
-    default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau,
-};
+use super::configuration::{default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]

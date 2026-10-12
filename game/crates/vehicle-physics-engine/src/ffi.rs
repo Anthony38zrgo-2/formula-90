@@ -86,14 +86,14 @@ pub extern "C" fn f1_94_physics_get_runtime_config(
         *out_config = FfiRuntimeConfig {
             vehicle_mass: sim.config.vehicle_mass,
             front_brake_bias: sim.config.front_brake_bias,
-            max_steering_angle: sim.config.max_steering_angle,
+            max_steering_angle: sim.config.steering.max_steering_angle,
             max_torque: sim.config.max_torque,
-            coefficient_of_drag: sim.config.coefficient_of_drag,
-            frontal_area: sim.config.frontal_area,
-            air_density: sim.config.air_density,
-            steering_exponent: sim.config.steering_exponent,
-            steering_speed: sim.config.steering_speed,
-            countersteer_speed: sim.config.countersteer_speed,
+            coefficient_of_drag: sim.config.aerodynamics.coefficient_of_drag,
+            frontal_area: sim.config.aerodynamics.frontal_area,
+            air_density: sim.config.aerodynamics.air_density,
+            steering_exponent: sim.config.steering.steering_exponent,
+            steering_speed: sim.config.steering.steering_speed,
+            countersteer_speed: sim.config.steering.countersteer_speed,
             automatic_transmission: sim.config.automatic_transmission,
             diff_preload: sim.config.diff_preload,
             diff_power_ramp_angle_deg: sim.config.diff_power_ramp_angle_deg,
@@ -152,28 +152,28 @@ fn apply_chassis_config(sim: &mut VehicleSimulator, cfg: &FfiRuntimeConfig) {
         sim.config.front_brake_bias = cfg.front_brake_bias;
     }
     if cfg.max_steering_angle.is_finite() && cfg.max_steering_angle > 0.0 {
-        sim.config.max_steering_angle = cfg.max_steering_angle;
+        sim.config.steering.max_steering_angle = cfg.max_steering_angle;
     }
     if cfg.max_torque.is_finite() && cfg.max_torque > 0.0 {
         sim.config.max_torque = cfg.max_torque;
     }
     if cfg.coefficient_of_drag.is_finite() && cfg.coefficient_of_drag >= 0.0 {
-        sim.config.coefficient_of_drag = cfg.coefficient_of_drag;
+        sim.config.aerodynamics.coefficient_of_drag = cfg.coefficient_of_drag;
     }
     if cfg.frontal_area.is_finite() && cfg.frontal_area > 0.0 {
-        sim.config.frontal_area = cfg.frontal_area;
+        sim.config.aerodynamics.frontal_area = cfg.frontal_area;
     }
     if cfg.air_density.is_finite() && cfg.air_density > 0.0 {
-        sim.config.air_density = cfg.air_density;
+        sim.config.aerodynamics.air_density = cfg.air_density;
     }
     if cfg.steering_exponent.is_finite() && cfg.steering_exponent > 0.0 {
-        sim.config.steering_exponent = cfg.steering_exponent;
+        sim.config.steering.steering_exponent = cfg.steering_exponent;
     }
     if cfg.steering_speed.is_finite() && cfg.steering_speed > 0.0 {
-        sim.config.steering_speed = cfg.steering_speed;
+        sim.config.steering.steering_speed = cfg.steering_speed;
     }
     if cfg.countersteer_speed.is_finite() && cfg.countersteer_speed > 0.0 {
-        sim.config.countersteer_speed = cfg.countersteer_speed;
+        sim.config.steering.countersteer_speed = cfg.countersteer_speed;
     }
     sim.config.automatic_transmission = cfg.automatic_transmission;
 }

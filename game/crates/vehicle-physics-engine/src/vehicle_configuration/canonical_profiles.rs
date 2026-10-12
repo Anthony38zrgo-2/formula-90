@@ -2,7 +2,7 @@ use super::*;
 use super::driving_assistance::configuration::default_aids;
 use super::powertrain::document::{default_gear_inertia, default_torque_attack_rate};
 use super::steering::document::default_counter_speed;
-use super::vehicle_configuration::{default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau};
+use super::aerodynamics::configuration::{default_aero_blend_full_speed, default_aero_blend_min_speed, default_aero_lag_tau};
 
 impl VehicleConfig {
     /// Resolved F1 2030 geometric profile embedded at build time from its domain manifest.
@@ -63,16 +63,18 @@ impl VehicleConfig {
             rear_track: 1.5246,
 
             // Steering
-            max_steering_angle: 0.436332,
-            front_steering_ratio: 1.0,
-            rear_steering_ratio: 0.0,
-            steering_speed: 4.25,
-            countersteer_speed: default_counter_speed(),
-            steering_speed_decay: 0.20,
-            steering_slip_assist: 0.54,
-            countersteer_assist: 0.89,
-            steering_exponent: 1.50,
-            ackermann: 0.15,
+            steering: SteeringConfiguration {
+                max_steering_angle: 0.436332,
+                front_steering_ratio: 1.0,
+                rear_steering_ratio: 0.0,
+                steering_speed: 4.25,
+                countersteer_speed: default_counter_speed(),
+                steering_speed_decay: 0.20,
+                steering_slip_assist: 0.54,
+                countersteer_assist: 0.89,
+                steering_exponent: 1.50,
+                ackermann: 0.15,
+            },
 
             // Powertrain & Gearing
             max_torque: 455.0,
@@ -201,15 +203,15 @@ impl VehicleConfig {
             aids: default_aids(),
 
             // Aerodynamics (element-based model)
-            coefficient_of_drag: 0.78,
-            frontal_area: 1.25,
-            aero_model: AeroModelConfig::default(),
-            air_density: 1.225,
-
-            // Progressive Aero (Pillars A-D)
-            aero_lag_tau: default_aero_lag_tau(),
-            aero_blend_min_speed: default_aero_blend_min_speed(),
-            aero_blend_full_speed: default_aero_blend_full_speed(),
+            aerodynamics: AerodynamicsConfiguration {
+                coefficient_of_drag: 0.78,
+                frontal_area: 1.25,
+                aero_model: AeroModelConfig::default(),
+                air_density: 1.225,
+                aero_lag_tau: default_aero_lag_tau(),
+                aero_blend_min_speed: default_aero_blend_min_speed(),
+                aero_blend_full_speed: default_aero_blend_full_speed(),
+            },
         }
     }
 
@@ -255,16 +257,18 @@ impl VehicleConfig {
             rear_track: 1.748,
 
             // Steering
-            max_steering_angle: 0.436332, // ~25.0 degrees
-            front_steering_ratio: 1.0,
-            rear_steering_ratio: 0.0,
-            steering_speed: 3.7,
-            countersteer_speed: default_counter_speed(),
-            steering_speed_decay: 0.26,
-            steering_slip_assist: 0.11,
-            countersteer_assist: 0.70,
-            steering_exponent: 1.70,
-            ackermann: 0.15,
+            steering: SteeringConfiguration {
+                max_steering_angle: 0.436332, // ~25.0 degrees
+                front_steering_ratio: 1.0,
+                rear_steering_ratio: 0.0,
+                steering_speed: 3.7,
+                countersteer_speed: default_counter_speed(),
+                steering_speed_decay: 0.26,
+                steering_slip_assist: 0.11,
+                countersteer_assist: 0.70,
+                steering_exponent: 1.70,
+                ackermann: 0.15,
+            },
 
             // Powertrain & Gearing
             max_torque: 430.0,
@@ -391,15 +395,15 @@ impl VehicleConfig {
             aids: default_aids(),
 
             // Aerodynamics (element-based model)
-            coefficient_of_drag: 0.75,
-            frontal_area: 1.20,
-            aero_model: AeroModelConfig::default(),
-            air_density: 1.225,
-
-            // Progressive Aero (stub defaults, not validated for Jordan)
-            aero_lag_tau: default_aero_lag_tau(),
-            aero_blend_min_speed: default_aero_blend_min_speed(),
-            aero_blend_full_speed: default_aero_blend_full_speed(),
+            aerodynamics: AerodynamicsConfiguration {
+                coefficient_of_drag: 0.75,
+                frontal_area: 1.20,
+                aero_model: AeroModelConfig::default(),
+                air_density: 1.225,
+                aero_lag_tau: default_aero_lag_tau(),
+                aero_blend_min_speed: default_aero_blend_min_speed(),
+                aero_blend_full_speed: default_aero_blend_full_speed(),
+            },
         }
     }
 }

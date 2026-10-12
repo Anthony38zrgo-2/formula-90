@@ -184,7 +184,7 @@ fn simulate(
                             before.speed_meters_per_second,
                             after.speed_meters_per_second,
                         ),
-                        air_density_kg_m3: configuration.air_density,
+                        air_density_kg_m3: configuration.aerodynamics.air_density,
                         ambient_temperature_c: thermal_configuration.initial_temperature_c,
                         tire_carcass_temperature_c: interpolate(
                             before.tire_carcass_temperature[index],

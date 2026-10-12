@@ -347,7 +347,7 @@ impl VehicleSimulator {
         let vehicle_speed_ms = st.linear_velocity.length();
         let brake_duct_drag_n = st.brake_thermal.total_duct_drag_force_n(
             &cfg.brake_thermal,
-            cfg.air_density,
+            cfg.aerodynamics.air_density,
             vehicle_speed_ms,
         );
         st.powertrain_thermal
@@ -361,7 +361,7 @@ impl VehicleSimulator {
             available_engine_torque_fraction * fuel_cutoff_fraction;
         st.powertrain_thermal.evaluate_cooling_ducts(
             &cfg.powertrain_thermal,
-            cfg.air_density,
+            cfg.aerodynamics.air_density,
             vehicle_speed_ms,
         );
         let total_cooling_drag_force_newtons = brake_duct_drag_n
@@ -781,7 +781,7 @@ impl VehicleSimulator {
                 wheel_spin_pre_rad_s: wheel_spin_before_radians_per_second[wheel_index],
                 wheel_spin_post_rad_s: state.tires.wheels[wheel_index].spin,
                 vehicle_speed_ms: vehicle_speed_metres_per_second,
-                air_density_kg_m3: configuration.air_density,
+                air_density_kg_m3: configuration.aerodynamics.air_density,
                 ambient_temperature_c: tire_thermal.ambient_fallback_c,
                 tire_carcass_temperature_c: tire_state.carcass_c,
                 tire_gas_temperature_c: tire_state.gas_c,
@@ -879,7 +879,7 @@ impl VehicleSimulator {
                 engine_torque_newton_meters: state.powertrain.engine_torque,
                 driver_throttle_fraction: driver_throttle_fraction,
                 vehicle_speed_meters_per_second: vehicle_speed_metres_per_second,
-                air_density_kilograms_per_cubic_meter: configuration.air_density,
+                air_density_kilograms_per_cubic_meter: configuration.aerodynamics.air_density,
                 ambient_temperature_celsius: configuration.tire_thermal.front.ambient_fallback_c,
             },
             duration_seconds,
@@ -1036,8 +1036,8 @@ impl VehicleSimulator {
         let requested = input.steering.clamp(-1.0, 1.0);
         let mut target = requested;
 
-        let slip_assist_on = steering_slip_assist_on && cfg.steering_slip_assist > 0.0;
-        let countersteer_on = countersteer_on && cfg.countersteer_assist > 0.0;
+        let slip_assist_on = steering_slip_assist_on && cfg.steering.steering_slip_assist > 0.0;
+        let countersteer_on = countersteer_on && cfg.steering.countersteer_assist > 0.0;
 
         // Same purpose as GEVP steering_slip_assist: refuse additional steering into
         // excessive front slip, but still allow countersteer/recovery.
@@ -1047,7 +1047,7 @@ impl VehicleSimulator {
             st.tires.wheels[0].slip_angle_rad,
             st.tires.wheels[1].slip_angle_rad,
         );
-        if slip_assist_on && front_slip.abs() > cfg.steering_slip_assist {
+        if slip_assist_on && front_slip.abs() > cfg.steering.steering_slip_assist {
             if target.signum() == front_slip.signum()
                 && target.abs() > st.steer_input_smoothed.abs()
             {
@@ -1059,8 +1059,8 @@ impl VehicleSimulator {
             let speed = (forward_speed * forward_speed + lateral_speed * lateral_speed).sqrt();
             if speed > 1e-6 {
                 let travel_angle = (lateral_speed / speed).clamp(-1.0, 1.0).asin();
-                let countersteer_correction = -(travel_angle / cfg.max_steering_angle.max(1e-5))
-                    * cfg.countersteer_assist
+                let countersteer_correction = -(travel_angle / cfg.steering.max_steering_angle.max(1e-5))
+                    * cfg.steering.countersteer_assist
                     * (1.0 - requested.abs());
                 target = (target + countersteer_correction).clamp(-1.0, 1.0);
             }
@@ -1068,11 +1068,11 @@ impl VehicleSimulator {
 
         let countersteering = target.signum() != st.steer_input_smoothed.signum();
         let base_rate = if countersteering {
-            cfg.countersteer_speed
+            cfg.steering.countersteer_speed
         } else {
-            cfg.steering_speed
+            cfg.steering.steering_speed
         };
-        let speed_decay = 1.0 + forward_speed.abs() * cfg.steering_speed_decay;
+        let speed_decay = 1.0 + forward_speed.abs() * cfg.steering.steering_speed_decay;
         let max_delta = (base_rate / speed_decay.max(1.0)) * dt;
         st.steer_input_smoothed =
             move_toward(st.steer_input_smoothed, target, max_delta).clamp(-1.0, 1.0);
@@ -1369,27 +1369,27 @@ pub fn steering_angle_for_wheel(
     travel_delta_m: f64,
 ) -> f64 {
     let ratio = if wheel.is_front() {
-        config.front_steering_ratio
+        config.steering.front_steering_ratio
     } else {
-        config.rear_steering_ratio
+        config.steering.rear_steering_ratio
     };
-    let input = steering.signum() * steering.abs().powf(config.steering_exponent) * ratio;
+    let input = steering.signum() * steering.abs().powf(config.steering.steering_exponent) * ratio;
 
     // GEVP derives the Ackermann coefficient from wheelbase, track and max steering
-    // angle, then mirrors the sign on the right wheel. Keep `config.ackermann` as a
+    // angle, then mirrors the sign on the right wheel. Keep `config.steering.ackermann` as a
     // compatibility fallback only for degenerate geometry.
     let track = if wheel.is_front() {
         config.front_track
     } else {
         config.rear_track
     };
-    let tan_max = config.max_steering_angle.tan();
+    let tan_max = config.steering.max_steering_angle.tan();
     let denominator = config.wheelbase - track * 0.5 * tan_max;
-    let geometric_ackermann = if config.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
+    let geometric_ackermann = if config.steering.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
     {
-        ((config.wheelbase * tan_max) / denominator).atan() / config.max_steering_angle - 1.0
+        ((config.wheelbase * tan_max) / denominator).atan() / config.steering.max_steering_angle - 1.0
     } else {
-        config.ackermann
+        config.steering.ackermann
     };
     let ackermann = if wheel.is_left() {
         geometric_ackermann
@@ -1398,7 +1398,7 @@ pub fn steering_angle_for_wheel(
     };
     let toe = effective_toe_rad(config, wheel, travel_delta_m);
     let signed_toe = if wheel.is_left() { -toe } else { toe };
-    config.max_steering_angle
+    config.steering.max_steering_angle
         * (input + (1.0 - (input * 0.5 * std::f64::consts::PI).cos()) * ackermann)
         + signed_toe
 }
@@ -1414,23 +1414,23 @@ pub fn steering_angle_for_wheel_geo(
     geo_toe_total_rad: f64,
 ) -> f64 {
     let ratio = if wheel.is_front() {
-        config.front_steering_ratio
+        config.steering.front_steering_ratio
     } else {
-        config.rear_steering_ratio
+        config.steering.rear_steering_ratio
     };
-    let input = steering.signum() * steering.abs().powf(config.steering_exponent) * ratio;
+    let input = steering.signum() * steering.abs().powf(config.steering.steering_exponent) * ratio;
     let track = if wheel.is_front() {
         config.front_track
     } else {
         config.rear_track
     };
-    let tan_max = config.max_steering_angle.tan();
+    let tan_max = config.steering.max_steering_angle.tan();
     let denominator = config.wheelbase - track * 0.5 * tan_max;
-    let geometric_ackermann = if config.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
+    let geometric_ackermann = if config.steering.max_steering_angle.abs() > 1e-6 && denominator.abs() > 1e-6
     {
-        ((config.wheelbase * tan_max) / denominator).atan() / config.max_steering_angle - 1.0
+        ((config.wheelbase * tan_max) / denominator).atan() / config.steering.max_steering_angle - 1.0
     } else {
-        config.ackermann
+        config.steering.ackermann
     };
     let ackermann = if wheel.is_left() {
         geometric_ackermann
@@ -1443,7 +1443,7 @@ pub fn steering_angle_for_wheel_geo(
         0.0
     };
     let signed_toe = if wheel.is_left() { -toe } else { toe };
-    config.max_steering_angle
+    config.steering.max_steering_angle
         * (input + (1.0 - (input * 0.5 * std::f64::consts::PI).cos()) * ackermann)
         + signed_toe
 }
