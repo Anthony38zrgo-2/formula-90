@@ -498,7 +498,7 @@ impl CoreFacade {
                 .ok_or_else(|| CoreError::Spawn("world has no entities".to_string()));
         }
         let (id, cfg) = if self.config.use_canonical {
-			let cfg = VehicleConfig::f1_2026_2008_canonical();
+			let cfg = VehicleConfig::f1_2030_geometric_canonical();
             (self.spawn(&cfg), cfg)
         } else {
             let json = self.config.config_json_path.as_ref().ok_or_else(|| {

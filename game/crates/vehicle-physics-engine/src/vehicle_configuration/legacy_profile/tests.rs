@@ -50,12 +50,10 @@ fn round_trip_preserves_all_fields() {
 
 #[test]
 fn golden_json_matches_canonical() {
-    let path = Path::new("data/vehicles/f1_2026_2008/f1_2026_2008_physics.json");
-    if !path.exists() {
-        return;
-    }
-    let loaded = VehicleConfig::from_json_path(path).unwrap();
-    let canonical = VehicleConfig::f1_2026_2008_canonical();
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../data/vehicles/f1_2030/f1_2030_v10_geometric.json");
+    let loaded = VehicleConfig::from_json_path(&path).unwrap();
+    let canonical = VehicleConfig::f1_2030_geometric_canonical();
     assert_eq!(loaded.chassis.vehicle_mass, canonical.chassis.vehicle_mass);
     assert_eq!(loaded.chassis.wheelbase, canonical.chassis.wheelbase);
     assert_eq!(loaded.powertrain.diff_preload, canonical.powertrain.diff_preload);

@@ -135,10 +135,10 @@ pub extern "C" fn sim_world_spawn_from_json(world: *mut c_void, json_path: *cons
     )
 }
 
-/// Spawn using the built-in canonical F1-94 config (no file needed). For tests.
+/// Spawn using the built-in canonical F1 2030 geometric config (no file needed). For tests.
 #[no_mangle]
 pub extern "C" fn sim_world_spawn_canonical(world: *mut c_void) -> u32 {
-	let cfg = VehicleConfig::f1_2026_2008_canonical();
+	let cfg = VehicleConfig::f1_2030_geometric_canonical();
     let spawn = Transform3D {
         origin: Vec3::new(0.0, default_spawn_height(&cfg), 0.0),
         basis: Mat3::IDENTITY,

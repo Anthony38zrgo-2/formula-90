@@ -577,7 +577,7 @@ pub struct FfiTelemetryOutput {
 
 #[no_mangle]
 pub extern "C" fn f1_94_physics_create_default() -> *mut c_void {
-    let cfg = VehicleConfig::f1_2026_2008_canonical();
+    let cfg = VehicleConfig::f1_2030_geometric_canonical();
     let spawn_height = default_spawn_height(&cfg);
     let sim = Box::new(VehicleSimulator::new(
         cfg,
@@ -652,7 +652,7 @@ pub extern "C" fn f1_94_physics_create_with_pos(
     pos_z: f64,
     yaw_rad: f64,
 ) -> *mut c_void {
-    let cfg = VehicleConfig::f1_2026_2008_canonical();
+    let cfg = VehicleConfig::f1_2030_geometric_canonical();
     let sim = Box::new(VehicleSimulator::new(
         cfg,
         Vec3::new(pos_x, pos_y, pos_z),

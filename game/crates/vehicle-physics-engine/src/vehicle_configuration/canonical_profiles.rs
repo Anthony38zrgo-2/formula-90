@@ -13,6 +13,12 @@ impl VehicleConfiguration {
         ))
     }
 
+    /// Canonical F1 2030 geometric configuration from the embedded domain manifest.
+    pub fn f1_2030_geometric_canonical() -> Self {
+        Self::from_json_str(Self::f1_2030_v10_geometric_embedded_document())
+            .expect("embedded f1_2030 geometric document must be valid")
+    }
+
     /// Canonical F1-94 specification matching data/vehicles/f1_94/ resources.
     pub fn f1_94_canonical() -> Self {
         let mut surface_friction = HashMap::new();
@@ -213,7 +219,7 @@ impl VehicleConfiguration {
         }
     }
 
-    /// Canonical active vehicle profile loaded from the checked-in runtime JSON.
+    /// F1 2026-2008 data profile loaded from the checked-in runtime JSON; no longer the embedded canonical.
     pub fn f1_2026_2008_canonical() -> Self {
         Self::from_json_str(include_str!("../../../../data/vehicles/f1_2026_2008/f1_2026_2008_physics.json"))
             .expect("checked-in f1_2026_2008 physics profile must be valid")
