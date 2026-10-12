@@ -33,8 +33,8 @@ pub use suspension::configuration::SuspensionConfiguration;
 pub use tires::configuration::TiresConfiguration;
 
 pub use loader::{
-    load_physical_configuration, resolve_domain_document_path, LoadedPhysicalConfiguration,
-    VehicleConfigurationLoadError, VehicleProfileLoadRequest,
+    load_physical_configuration, load_vehicle_configuration, resolve_domain_document_path,
+    LoadedPhysicalConfiguration, VehicleConfigurationLoadError, VehicleProfileLoadRequest,
 };
 pub use manifest::{
     is_known_domain_name, is_physical_domain_name, VehicleProfileManifest,

@@ -5,7 +5,8 @@ use vehicle_physics_engine::coupled_vehicle_dynamics::{CoupledVehicleModel, Coup
 use vehicle_physics_engine::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPackage};
 use vehicle_physics_engine::suspension_component_kinematics::{moving_inventory, wheel_contact_component};
 use vehicle_physics_engine::suspension_coupled_solver::CoupledSuspensionInput;
-use vehicle_physics_engine::{Vec3, VehicleConfig, WheelIndex};
+use vehicle_physics_engine::vehicle_configuration::load_vehicle_configuration;
+use vehicle_physics_engine::{Vec3, WheelIndex};
 
 fn measure_stage<T>(repetitions: usize, mut evaluate: impl FnMut(usize) -> Result<T, String>) -> Result<f64, String> {
     let started = Instant::now();
@@ -16,7 +17,7 @@ fn measure_stage<T>(repetitions: usize, mut evaluate: impl FnMut(usize) -> Resul
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     if arguments.len() != 3 { return Err("Expected repository root, vehicle profile and physical package".into()); }
-    let configuration = VehicleConfig::from_json_path(Path::new(&arguments[1]))?;
+    let configuration = load_vehicle_configuration(Path::new(&arguments[1]))?;
     let settings = configuration.coupled_world.as_ref().ok_or("Missing physical world settings")?.suspension.clone();
     let model = CoupledVehicleModel::new(configuration, settings)?;
     let package: PhysicalWorldPackage = serde_json::from_str(&std::fs::read_to_string(&arguments[2])?)?;

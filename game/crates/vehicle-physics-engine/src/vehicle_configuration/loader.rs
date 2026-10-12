@@ -11,6 +11,24 @@ use super::resolved_profile::{
     sha256_hex, VehicleProfileDependencyDigest, VehicleProfileProvenance,
     RESOLVED_VEHICLE_CONFIGURATION_SCHEMA_VERSION,
 };
+use super::vehicle_configuration::VehicleConfig;
+
+/// Loads a physical configuration from a profile manifest or a legacy flat document.
+/// Manifest resolution uses the manifest directory as the authorized root.
+pub fn load_vehicle_configuration(path: &Path) -> Result<VehicleConfig, String> {
+    let text = std::fs::read_to_string(path)
+        .map_err(|error| format!("failed to read {}: {error}", path.display()))?;
+    let document: serde_json::Value = serde_json::from_str(&text)
+        .map_err(|error| format!("failed to parse config: {error}"))?;
+    if document.get("domains").is_some() {
+        let authorized_root = path.parent().unwrap_or(Path::new("."));
+        load_physical_configuration(&VehicleProfileLoadRequest::new(path, authorized_root))
+            .map(|loaded| loaded.configuration)
+            .map_err(|error| error.to_string())
+    } else {
+        VehicleConfig::from_json_str(&text)
+    }
+}
 
 pub const LEGACY_ASSEMBLY_SCHEMA_VERSION: u32 = 3;
 

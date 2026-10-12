@@ -17,7 +17,7 @@ from tools.audio import build_canonical_v10_engine_bank as canonical
 
 ROOT = Path(__file__).resolve().parents[3]
 BANK_DIR = ROOT / "game/sounds/banks/v10-v2-bank"
-VEHICLE_PROFILE = ROOT / "game/data/vehicles/f1_2030/f1_2030_v10_geometric.json"
+VEHICLE_AUDIO_DOCUMENT = ROOT / "game/data/vehicles/f1_2030/profiles/geometric/audio.json"
 
 
 @pytest.fixture(scope="module")
@@ -303,7 +303,7 @@ def test_canonical_source_inventory_hash_matches(manifest: dict) -> None:
 
 
 def test_vehicle_profile_points_at_the_canonical_manifest() -> None:
-    profile = json.loads(VEHICLE_PROFILE.read_text(encoding="utf-8"))
-    manifest_relative = profile["audio"]["grand_prix_sampler"]["manifest"]
+    audio_document = json.loads(VEHICLE_AUDIO_DOCUMENT.read_text(encoding="utf-8"))
+    manifest_relative = audio_document["grand_prix_sampler"]["manifest"]
     assert manifest_relative == "sounds/banks/v10-v2-bank/manifest.json"
     assert (ROOT / "game" / manifest_relative).is_file()

@@ -2,12 +2,13 @@ use std::path::Path;
 use std::time::Instant;
 use vehicle_physics_engine::coupled_vehicle_world::CoupledVehicleWorld;
 use vehicle_physics_engine::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPackage};
-use vehicle_physics_engine::{Vec3, VehicleConfig, WheelIndex};
+use vehicle_physics_engine::vehicle_configuration::load_vehicle_configuration;
+use vehicle_physics_engine::{Vec3, WheelIndex};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     if !(5..=6).contains(&arguments.len()) { return Err("Expected repository root, vehicle profile, physical package, track metadata, duration seconds and optional vehicle count".into()); }
-    let configuration = VehicleConfig::from_json_path(Path::new(&arguments[1]))?;
+    let configuration = load_vehicle_configuration(Path::new(&arguments[1]))?;
     let package: PhysicalWorldPackage = serde_json::from_str(&std::fs::read_to_string(&arguments[2])?)?;
     let collision = PhysicalCollisionWorld::from_package(package, Path::new(&arguments[0]))?;
     let metadata: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(&arguments[3])?)?;

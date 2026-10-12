@@ -49,7 +49,7 @@ def execute_command(command, log_path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--vehicle-profile", type=Path, default=Path("game/data/vehicles/f1_2030/f1_2030_v10_geometric.json"))
+    parser.add_argument("--vehicle-profile", type=Path, default=Path("game/data/vehicles/f1_2030/profiles/geometric/vehicle.json"))
     parser.add_argument("--track-source", type=Path, default=Path("game/tracks/fuji76_77/fuji76_77_collision.glb"))
     parser.add_argument("--track-metadata", type=Path, default=Path("game/tracks/fuji76_77/metadata/track.json"))
     parser.add_argument("--duration-seconds", type=float, default=0.2)
