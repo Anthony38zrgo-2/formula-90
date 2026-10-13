@@ -9,6 +9,7 @@ extends SceneTree
 const GEOMETRIC_JSON := "res://data/vehicles/f1_2030/profiles/geometric/suspension.json"
 const LEGACY_JSON := "res://data/vehicles/f1_2030/profiles/legacy/suspension_presentation.json"
 const MESHES_JSON := "res://data/vehicles/f1_2030/f1_2030_suspension_meshes.json"
+const PRESENTATION_CONFIGURATION := "res://data/vehicles/f1_2030/profiles/geometric/suspension_presentation.json"
 
 ## Measured f1_2030.blend monocoque/nose top envelope in chassis-local metres
 ## (5 cm z bins, GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER/INTERIOR/FLOOR/STEERCOLUM vertices, read-only
@@ -154,7 +155,9 @@ func run() -> void:
 		check(false, "Could not parse the geometric profile")
 		quit(1)
 		return
-	var geometry := SuspensionGeometry.from_json_path(GEOMETRIC_JSON)
+	var presentation_document := _load_json(PRESENTATION_CONFIGURATION)
+	geo_json["suspension"]["geometry"] = presentation_document.get("suspension", {}).get("geometry", {})
+	var geometry := SuspensionGeometry.from_json_dict(geo_json)
 	check(geometry != null, "Geometric profile failed to build the visual geometry")
 	if geometry == null:
 		quit(1)

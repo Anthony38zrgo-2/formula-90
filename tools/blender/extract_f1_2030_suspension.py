@@ -12,7 +12,6 @@ import bpy
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from formula_one_2030_object_names import enable_legacy_source_names
 enable_legacy_source_names()
-from math import copysign
 from mathutils import Vector
 
 
@@ -70,51 +69,33 @@ def append_blade(part, start, end, width=0.065, thickness=0.014):
     part["indices"].extend(base + index for index in faces)
 
 
-def retarget_front_pushrod(part, outer, arm):
-    """Re-anchor the authored pushrod blade onto the physical mechanism.
-
-    The authored blade runs from the measured outboard hardpoint to the legacy
-    vertical-axis rocker arm (`legacy_arm`, the authored `suspension.geometry`
-    `rocker.pushrod_arm`). The geometric mechanism keeps the same outboard
-    hardpoint but the rocker arm sits further forward with a longer pushrod,
-    so the authored blade would render detached from the rocker. Map every
-    blade vertex by rotating the authored axis onto the new one about the
-    outboard hardpoint and stretching the axial coordinate by the length
-    ratio; radial offsets keep their authored shape, and the inboard ring
-    lands exactly on the physical rocker arm.
-    """
-    outer, arm = Vector(outer), Vector(arm)
-    legacy_arm = Vector([copysign(0.182718, arm.x), 0.2204355, -1.3562085])
-    old_axis = legacy_arm - outer
-    old_length = old_axis.length
-    new_axis = arm - outer
-    new_length = new_axis.length
-    if old_length < 1e-9 or new_length < 1e-9:
-        raise RuntimeError("Degenerate pushrod axis")
-    old_dir = old_axis / old_length
-    new_dir = new_axis / new_length
-    rotation = old_dir.rotation_difference(new_dir).to_matrix()
-    points = [Vector(v) for v in part["vertices"]]
-    remapped = []
-    for point in points:
-        rotated = rotation @ (point - outer)
-        offset = rotated
-        along = new_dir * offset.dot(new_dir)
-        final = outer + along * (new_length / old_length) + (offset - along)
-        remapped.append([round(c, 7) for c in final])
-    part["vertices"] = remapped
-
-
-FRONT_PUSHROD = {
-    "FL": {
-        "outer": [-0.549739, -0.019274, -1.4389295],
-        "arm": [-0.162718, 0.2204355, -1.6062085],
-    },
-    "FR": {
-        "outer": [0.549739, -0.019274, -1.4389295],
-        "arm": [0.162718, 0.2204355, -1.6062085],
-    },
-}
+def retarget_front_pushrod(component_mesh, outboard_attachment, rocker_attachment):
+    unique_positions = [Vector(position) for position in sorted(set(tuple(position) for position in component_mesh["vertices"]))]
+    minimum_lateral_distance = min(abs(position.x) for position in unique_positions)
+    maximum_lateral_distance = max(abs(position.x) for position in unique_positions)
+    endpoint_band = (maximum_lateral_distance - minimum_lateral_distance) * 0.02
+    inboard_ring = [position for position in unique_positions if abs(position.x) <= minimum_lateral_distance + endpoint_band]
+    outboard_ring = [position for position in unique_positions if abs(position.x) >= maximum_lateral_distance - endpoint_band]
+    if len(inboard_ring) != 4 or len(outboard_ring) != 4:
+        raise RuntimeError("Front pushrod must have two measured four-corner attachment rings")
+    measured_inboard_center = sum(inboard_ring, Vector()) / len(inboard_ring)
+    measured_outboard_center = sum(outboard_ring, Vector()) / len(outboard_ring)
+    original_axis = measured_inboard_center - measured_outboard_center
+    target_outboard_center = Vector(outboard_attachment)
+    target_axis = Vector(rocker_attachment) - target_outboard_center
+    if original_axis.length < 1e-9 or target_axis.length < 1e-9:
+        raise RuntimeError("Degenerate front pushrod attachment axis")
+    original_direction = original_axis.normalized()
+    target_direction = target_axis.normalized()
+    alignment_rotation = original_direction.rotation_difference(target_direction).to_matrix()
+    longitudinal_scale = target_axis.length / original_axis.length
+    remapped_positions = []
+    for position in component_mesh["vertices"]:
+        rotated_offset = alignment_rotation @ (Vector(position) - measured_outboard_center)
+        longitudinal_offset = target_direction * rotated_offset.dot(target_direction)
+        remapped_position = target_outboard_center + longitudinal_offset * longitudinal_scale + rotated_offset - longitudinal_offset
+        remapped_positions.append([round(coordinate, 7) for coordinate in remapped_position])
+    component_mesh["vertices"] = remapped_positions
 
 
 def main():
@@ -138,9 +119,21 @@ def main():
             if any(vertex[0] * expected_sign < 0 for vertex in part["vertices"]):
                 raise RuntimeError(f"Unexpected source component order: {key}")
             result["corners"].setdefault(key, {})[roles[index % len(roles)]] = part
-    for key in ("FL", "FR"):
-        anchor = FRONT_PUSHROD[key]
-        retarget_front_pushrod(result["corners"][key]["pushrod"], anchor["outer"], anchor["arm"])
+    physical_profile_path = Path(__file__).resolve().parents[2] / "game/data/vehicles/f1_2030/profiles/geometric/suspension.json"
+    result["physical_suspension_source"] = physical_profile_path.relative_to(Path(__file__).resolve().parents[2]).as_posix()
+    result["physical_suspension_source_digest"] = hashlib.sha256(physical_profile_path.read_bytes()).hexdigest()
+    physical_corners = json.loads(physical_profile_path.read_text(encoding="utf-8"))["suspension"]["geometry_physical"]["corners"]
+    for wheel_key in ("FL", "FR"):
+        physical_corner = physical_corners[wheel_key]
+        mirrored_corner = "mirror_of" in physical_corner
+        if mirrored_corner:
+            physical_corner = physical_corners[physical_corner["mirror_of"]]
+        target_outboard_attachment = list(physical_corner["rod"]["outer"])
+        target_rocker_attachment = list(physical_corner["rocker"]["pushrod_arm"])
+        if mirrored_corner:
+            target_outboard_attachment[0] *= -1
+            target_rocker_attachment[0] *= -1
+        retarget_front_pushrod(result["corners"][wheel_key]["pushrod"], target_outboard_attachment, target_rocker_attachment)
     for key, sign in [("RL", 1), ("RR", -1)]:
         def mirror(value):
             return [value[0] * sign, value[1], value[2]]
@@ -151,7 +144,7 @@ def main():
     result["reconstructed"] = [
         "Rear lower outer bridge and rear leg; original front leg retained",
         "Rear inboard pullrod/rocker/damper and toe link are completed in the visual hardpoints, not measured from the source",
-        "Front pushrod blades re-anchored onto the physical rocker arm (station rotation + axial stretch about the measured outboard hardpoint); the authored blade targeted the rejected vertical-axis rocker",
+        "Front pushrod attachment rings measured from the source surface and mapped onto the current physical suspension profile; rotation and longitudinal scaling preserve the authored blade section",
     ]
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")

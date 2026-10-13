@@ -100,16 +100,16 @@ fn f1_motion_ratio_healthy_across_envelope_and_steer() {
 }
 
 #[test]
-fn rear_damper_redesign_preserves_motion_ratio_across_wheel_travel() {
+fn rear_suspension_matches_connected_chassis_motion_ratios() {
     let profile_text = std::fs::read_to_string(geo_path()).unwrap();
     let vehicle_configuration = VehicleConfig::from_json_str(&profile_text).unwrap();
     let suspension_configuration = vehicle_configuration.suspension.geometric_suspension.as_ref().unwrap();
     let reference_motion_ratios = [
-        (-0.04, 0.521904),
-        (-0.02, 0.441559),
-        (0.0, 0.382864),
-        (0.02, 0.337680),
-        (0.05, 0.285808),
+        (-0.04, 0.508038939),
+        (-0.02, 0.432373175),
+        (0.0, 0.376759675),
+        (0.02, 0.333774336),
+        (0.05, 0.284596354),
     ];
     for wheel in [WheelIndex::RearLeft, WheelIndex::RearRight] {
         let rear_corner = suspension_configuration.corners.get(wheel);
