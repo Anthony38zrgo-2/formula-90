@@ -280,6 +280,33 @@ fn resolve_vehicle_profile_returns_the_loader_document() {
 }
 
 #[test]
+fn profile_resolver_validates_flat_documents_and_preserves_their_powertrain() {
+    use vehicle_physics_engine::coupled_vehicle_world_interface::execute_coupled_vehicle_world_request;
+    let profiles_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/vehicles");
+    let profile_path = profiles_directory.join("f1_2030/f1_2030_v10_geometric.json");
+    let request = serde_json::json!({
+        "operation": "resolve_vehicle_profile", "interface_version": 1,
+        "repository_root": profiles_directory, "vehicle_profile_path": profile_path
+    });
+    let response: serde_json::Value = serde_json::from_str(&execute_coupled_vehicle_world_request(&request.to_string())).unwrap();
+    assert_eq!(response["success"], true);
+    assert_eq!(response["result"]["configuration"]["powertrain"]["gear_inertia"], 0.014);
+    let invalid_directory = std::env::temp_dir().join(format!("formula90_invalid_flat_profile_{}", std::process::id()));
+    std::fs::create_dir_all(&invalid_directory).unwrap();
+    let invalid_path = invalid_directory.join("invalid_vehicle.json");
+    std::fs::write(&invalid_path, r#"{"powertrain":{"gear_ratios":["invalid"]}}"#).unwrap();
+    let request = serde_json::json!({
+        "operation": "resolve_vehicle_profile", "interface_version": 1,
+        "repository_root": invalid_directory, "vehicle_profile_path": invalid_path
+    });
+    let response: serde_json::Value = serde_json::from_str(&execute_coupled_vehicle_world_request(&request.to_string())).unwrap();
+    std::fs::remove_file(&invalid_path).unwrap();
+    std::fs::remove_dir(&invalid_directory).unwrap();
+    assert_eq!(response["success"], false);
+    assert!(response["error"].as_str().unwrap().contains("expected f64"));
+}
+
+#[test]
 fn unconverged_contact_does_not_commit_partial_impulses_or_velocity() {
     let mut matrix = diagonal_mass(100.0);
     matrix[1][1] = 2.0;

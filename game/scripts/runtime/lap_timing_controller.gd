@@ -56,6 +56,8 @@ func configure(
 	if vehicle == null or track_definition == null:
 		return false
 	var fuel_plan := _load_fuel_plan(physics_config_path)
+	if not physics_config_path.is_empty() and fuel_plan.is_empty():
+		return false
 	_estimated_lap_consumption_kg = float(fuel_plan.get("estimated_lap_consumption_kg", 0.0))
 	_reference_lap_time_seconds = float(fuel_plan.get("reference_lap_time_s", 0.0))
 	var start_finish := track_definition.load_start_finish_data()
@@ -271,11 +273,8 @@ func _sample_remaining_fuel_kg() -> float:
 func _load_fuel_plan(physics_config_path: String) -> Dictionary:
 	if physics_config_path.is_empty():
 		return {}
-	var file := FileAccess.open(physics_config_path, FileAccess.READ)
-	if file == null:
-		return {}
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not (parsed is Dictionary):
+	var parsed: Dictionary = preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(physics_config_path)
+	if parsed.is_empty():
 		return {}
 	var fuel_data: Variant = parsed.get("fuel", {})
 	if not (fuel_data is Dictionary):

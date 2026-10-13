@@ -73,7 +73,7 @@ pub struct ResolvedVehicleConfiguration {
 
 impl ResolvedVehicleConfiguration {
     pub fn from_loaded(loaded: LoadedPhysicalConfiguration) -> Self {
-        let configuration = loaded.configuration.to_json_value();
+        let configuration = loaded.configuration.to_resolved_configuration_value();
         Self {
             schema_version: RESOLVED_VEHICLE_CONFIGURATION_SCHEMA_VERSION,
             document_kind: RESOLVED_VEHICLE_CONFIGURATION_DOCUMENT_KIND.to_string(),

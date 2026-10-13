@@ -16,11 +16,8 @@ func is_valid_definition() -> bool:
 func load_fuel_plan() -> Dictionary:
 	if physics_config_path.is_empty():
 		return {}
-	var file := FileAccess.open(physics_config_path, FileAccess.READ)
-	if file == null:
-		return {}
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not (parsed is Dictionary):
+	var parsed: Dictionary = preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(physics_config_path)
+	if parsed.is_empty():
 		return {}
 	var fuel_data: Variant = parsed.get("fuel", {})
 	if not (fuel_data is Dictionary):

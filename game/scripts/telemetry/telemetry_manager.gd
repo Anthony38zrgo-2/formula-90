@@ -482,29 +482,8 @@ func _get_active_physics_config_path() -> String:
             return c_path
     return DEFAULT_PHYSICS_CONFIG
 
-## Reads one domain section from a profile manifest (sibling domain documents)
-## or from a legacy flat profile document.
 func _read_profile_section(path: String, section: String) -> Variant:
-    if not FileAccess.file_exists(path):
-        return null
-    var file := FileAccess.open(path, FileAccess.READ)
-    if file == null:
-        return null
-    var parsed: Variant = JSON.parse_string(file.get_as_text())
-    if not (parsed is Dictionary):
-        return null
-    if parsed.has("domains"):
-        var domain_path := path.get_base_dir().path_join(section + ".json")
-        if not FileAccess.file_exists(domain_path):
-            return null
-        var domain_file := FileAccess.open(domain_path, FileAccess.READ)
-        if domain_file == null:
-            return null
-        var domain_parsed: Variant = JSON.parse_string(domain_file.get_as_text())
-        if not (domain_parsed is Dictionary):
-            return null
-        return domain_parsed.get(section, null)
-    return parsed.get(section, null)
+    return preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(path).get(section, null)
 
 func _build_engine_snapshot() -> Dictionary:
     var fields: Array[String] = ["max_torque", "max_rpm", "idle_rpm", "motor_drag", "motor_brake", "motor_moment", "clutch_out_rpm", "max_clutch_torque_ratio", "throttle_speed", "throttle_steering_adjust"]
@@ -560,17 +539,12 @@ func _build_chassis_snapshot() -> Dictionary:
     var snapshot := _snapshot_properties(["vehicle_mass", "front_weight_distribution", "center_of_gravity_height_offset", "inertia_multiplier"])
     snapshot["rigid_body_mass"] = vehicle.mass
     var config_path := _get_active_physics_config_path()
-    if _is_rust and FileAccess.file_exists(config_path):
-        var file := FileAccess.open(config_path, FileAccess.READ)
-        if file != null:
-            var parsed: Variant = JSON.parse_string(file.get_as_text())
-            if parsed is Dictionary:
-                var chassis: Variant = parsed.get("chassis", {})
-                if chassis is Dictionary:
-                    if snapshot.get("vehicle_mass") == null and chassis.has("vehicle_mass"):
-                        snapshot["vehicle_mass"] = chassis["vehicle_mass"]
-                    if snapshot.get("front_weight_distribution") == null and chassis.has("front_weight_distribution"):
-                        snapshot["front_weight_distribution"] = chassis["front_weight_distribution"]
+    if _is_rust:
+        var chassis: Variant = _read_profile_section(config_path, "chassis")
+        if chassis is Dictionary:
+            for field in ["vehicle_mass", "front_weight_distribution"]:
+                if snapshot.get(field) == null and chassis.has(field):
+                    snapshot[field] = chassis[field]
     if vehicle.front_left_wheel and vehicle.front_right_wheel and vehicle.rear_left_wheel and vehicle.rear_right_wheel:
         var front_center: Vector3 = (vehicle.front_left_wheel.position + vehicle.front_right_wheel.position) * 0.5
         var rear_center: Vector3 = (vehicle.rear_left_wheel.position + vehicle.rear_right_wheel.position) * 0.5
@@ -631,16 +605,7 @@ func _build_assists_snapshot() -> Dictionary:
 # load time; report those values instead of the stale C++ property mirrors.
 func _merge_aids_profile_tuning(snapshot: Dictionary) -> void:
     var config_path := _get_active_physics_config_path()
-    if not FileAccess.file_exists(config_path):
-        return
-    var file := FileAccess.open(config_path, FileAccess.READ)
-    if file == null:
-        return
-    var parsed: Variant = JSON.parse_string(file.get_as_text())
-    file.close()
-    if not parsed is Dictionary:
-        return
-    var aids: Variant = (parsed as Dictionary).get("aids", {})
+    var aids: Variant = _read_profile_section(config_path, "aids")
     if not aids is Dictionary:
         return
     var aids_config: Dictionary = aids

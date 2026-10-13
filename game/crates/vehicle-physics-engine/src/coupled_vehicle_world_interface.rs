@@ -3,7 +3,8 @@ use crate::physical_collision_world::{PhysicalCollisionWorld, PhysicalWorldPacka
 use crate::types::Vec3;
 use crate::vehicle_config::VehicleConfig;
 use crate::vehicle_configuration::{
-    load_physical_configuration, ResolvedVehicleConfiguration, VehicleProfileLoadRequest,
+    load_physical_configuration, load_vehicle_configuration_from_authorized_root,
+    resolve_domain_document_path, ResolvedVehicleConfiguration, VehicleProfileLoadRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -17,7 +18,7 @@ pub const COUPLED_VEHICLE_WORLD_INTERFACE_VERSION: u32 = 1;
 #[derive(Deserialize)]
 #[serde(tag = "operation", rename_all = "snake_case", deny_unknown_fields)]
 pub enum CoupledVehicleWorldRequest {
-    ResolveVehicleProfile { interface_version: u32, repository_root: PathBuf, vehicle_profile_path: PathBuf },
+    ResolveVehicleProfile { interface_version: u32, repository_root: PathBuf, vehicle_profile_path: PathBuf, #[serde(default)] resolve_suspension_presentation: bool },
     CreateWorld { interface_version: u32, repository_root: PathBuf, physical_package_path: PathBuf, #[serde(default)] configuration: Option<CoupledVehicleWorldConfiguration>, #[serde(default)] vehicle_profile: Option<String> },
     DestroyWorld { world_identifier: u64 },
     RegisterVehicle { world_identifier: u64, vehicle_profile: String, position_world_metres: Vec3, yaw_radians: f64 },
@@ -51,13 +52,26 @@ impl CoupledVehicleWorldRegistry {
 
     fn execute(&mut self, request: CoupledVehicleWorldRequest) -> Result<serde_json::Value, String> {
         match request {
-            CoupledVehicleWorldRequest::ResolveVehicleProfile { interface_version, repository_root, vehicle_profile_path } => {
+            CoupledVehicleWorldRequest::ResolveVehicleProfile { interface_version, repository_root, vehicle_profile_path, resolve_suspension_presentation } => {
                 if interface_version != COUPLED_VEHICLE_WORLD_INTERFACE_VERSION { return Err("Physical-world native interface version mismatch".into()); }
-                let loaded = load_physical_configuration(&VehicleProfileLoadRequest::new(&vehicle_profile_path, &repository_root))
-                    .map_err(|error| error.to_string())?;
-                let resolved = ResolvedVehicleConfiguration::from_loaded(loaded);
-                let document = serde_json::to_value(&resolved).map_err(|error| format!("Resolved vehicle configuration could not serialize: {error}"))?;
-                Ok(serde_json::json!({"resolved_vehicle_configuration": document}))
+                let configuration = load_vehicle_configuration_from_authorized_root(&vehicle_profile_path, &repository_root)?;
+                let principal: serde_json::Value = serde_json::from_str(
+                    &std::fs::read_to_string(&vehicle_profile_path).map_err(|error| error.to_string())?
+                ).map_err(|error| error.to_string())?;
+                let mut result = serde_json::json!({"configuration": configuration.to_resolved_configuration_value()});
+                if principal.get("domains").is_some() {
+                    let loaded = load_physical_configuration(&VehicleProfileLoadRequest::new(&vehicle_profile_path, &repository_root))
+                        .map_err(|error| error.to_string())?;
+                    result["resolved_vehicle_configuration"] = serde_json::to_value(ResolvedVehicleConfiguration::from_loaded(loaded))
+                        .map_err(|error| error.to_string())?;
+                    if let Some(reference) = principal["domains"]["suspension_presentation"].as_str().filter(|_| resolve_suspension_presentation) {
+                        let presentation_path = resolve_domain_document_path(
+                            &repository_root, vehicle_profile_path.parent().ok_or("Profile has no directory")?, reference
+                        ).map_err(|error| error.to_string())?;
+                        result["suspension_presentation_path"] = serde_json::json!(presentation_path.to_string_lossy());
+                    }
+                }
+                Ok(result)
             }
             CoupledVehicleWorldRequest::CreateWorld { interface_version, repository_root, physical_package_path, configuration, vehicle_profile } => {
                 if interface_version != COUPLED_VEHICLE_WORLD_INTERFACE_VERSION { return Err("Physical-world native interface version mismatch".into()); }

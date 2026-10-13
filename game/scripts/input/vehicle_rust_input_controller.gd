@@ -18,7 +18,7 @@ class_name VehicleRustInputController
 var _has_required_interface: bool = false
 var _spawn_pos: Vector3 = Vector3()
 var _spawn_yaw: float = 0.0
-var _max_gear: int = 6
+var maximum_forward_gear: int = 0
 var _steering_return_speed_pending: bool = false
 var _throttle_release_value: float = 0.0
 var _brake_release_value: float = 0.0
@@ -48,7 +48,9 @@ func _ready() -> void:
 
 	_has_required_interface = true
 
-	_resolve_max_gear()
+	if not resolve_maximum_forward_gear():
+		_has_required_interface = false
+		return
 	var rumble_controller := GamepadRumbleController.new()
 	rumble_controller.name = "GamepadRumbleController"
 	rumble_controller.vehicle_node = vehicle_node
@@ -134,7 +136,7 @@ func _physics_process(delta: float) -> void:
 	if shift_up:
 		if current_gear == -1:
 			next_gear = 0
-		elif current_gear < _max_gear:
+		elif current_gear < maximum_forward_gear:
 			next_gear = current_gear + 1
 	elif shift_down:
 		if current_gear > 0:
@@ -226,38 +228,29 @@ func _toggle_traction_control() -> void:
 		vehicle_node.set_aids_enabled_mask(mask)
 
 
-func _resolve_max_gear() -> void:
-	# Derive the number of forward gears from the active vehicle's physics config
-	# (data-driven: a 7-gear car just needs a 7-element gear_ratios array, no code
-	# change). Falls back to 6 if the F90Core/config cannot be read.
-	_max_gear = 6
-	var core := _find_f90_core()
-	if core == null:
-		return
-	if not core.has_method("get_config_json_path"):
-		return
-	var cfg_path: String = core.get_config_json_path()
-	if cfg_path.is_empty():
-		return
-	var global_p := cfg_path
-	if cfg_path.begins_with("res://"):
-		global_p = ProjectSettings.globalize_path(cfg_path)
-	if not FileAccess.file_exists(global_p):
-		return
-	var f := FileAccess.open(global_p, FileAccess.READ)
-	if f == null:
-		return
-	var text := f.get_as_text()
-	f.close()
-	var parsed: Variant = JSON.parse_string(text)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return
-	var pt: Dictionary = parsed.get("powertrain", {})
-	if typeof(pt) != TYPE_DICTIONARY:
-		return
-	var ratios: Variant = pt.get("gear_ratios", [])
-	if typeof(ratios) == TYPE_ARRAY and ratios.size() > 0:
-		_max_gear = ratios.size()
+func resolve_maximum_forward_gear() -> bool:
+	maximum_forward_gear = 0
+	var configuration_path := ""
+	if vehicle_node != null and vehicle_node.has_method("get_physics_config_path"):
+		configuration_path = vehicle_node.get_physics_config_path()
+	else:
+		var presentation_core := _find_f90_core()
+		if presentation_core != null and presentation_core.has_method("get_config_json_path"):
+			configuration_path = presentation_core.get_config_json_path()
+	if configuration_path.is_empty():
+		push_error("Vehicle input cannot determine the active physics profile")
+		return false
+	var configuration: Dictionary = preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(configuration_path)
+	if configuration.is_empty():
+		return false
+	var powertrain: Variant = configuration.get("powertrain")
+	if powertrain is Dictionary:
+		var forward_gear_ratios: Variant = powertrain.get("gear_ratios")
+		if forward_gear_ratios is Array and not forward_gear_ratios.is_empty():
+			maximum_forward_gear = forward_gear_ratios.size()
+			return true
+	push_error("Vehicle input profile has no forward gear ratios: " + configuration_path)
+	return false
 
 
 func _find_f90_core() -> Node:

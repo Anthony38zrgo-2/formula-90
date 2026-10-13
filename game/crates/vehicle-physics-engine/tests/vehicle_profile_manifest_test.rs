@@ -324,6 +324,32 @@ fn provenance_helpers_are_deterministic() {
 }
 
 #[test]
+fn resolved_transport_preserves_effective_powertrain_parameters() {
+    let fixture = ProfileFixture::create("powertrain_transport");
+    let mut loaded = fixture.load().expect("fixture manifest must load");
+    loaded.configuration.powertrain.gear_inertia = 0.014;
+    loaded.configuration.powertrain.automatic_shift.upshift_normalized_rpm_full_throttle = 0.85;
+    let expected = serde_json::to_value(&loaded.configuration).unwrap();
+    let resolved = ResolvedVehicleConfiguration::from_loaded(loaded);
+    let restored = resolved.configuration().unwrap();
+    assert_eq!(serde_json::to_value(&restored).unwrap(), expected);
+    assert_eq!(restored.powertrain.shift_time + restored.powertrain.gear_inertia,
+        resolved.configuration["powertrain"]["shift_time"].as_f64().unwrap() + 0.014);
+}
+
+#[test]
+fn resolved_transport_preserves_each_production_profile_configuration() {
+    let profiles_directory = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/vehicles");
+    for profile_name in ["f1_2030/profiles/geometric", "f1_2030/profiles/legacy", "f1_2026_2008/profiles/default"] {
+        let profile_path = profiles_directory.join(profile_name).join("vehicle.json");
+        let loaded = load_physical_configuration(&VehicleProfileLoadRequest::new(&profile_path, &profiles_directory)).unwrap();
+        let expected = serde_json::to_value(&loaded.configuration).unwrap();
+        let restored = ResolvedVehicleConfiguration::from_loaded(loaded).configuration().unwrap();
+        assert_eq!(serde_json::to_value(restored).unwrap(), expected, "{profile_name}");
+    }
+}
+
+#[test]
 fn manifest_document_paths_stay_inside_the_profile_directory() {
     let fixture = ProfileFixture::create("paths");
     let loaded = fixture.load().expect("fixture manifest must load");

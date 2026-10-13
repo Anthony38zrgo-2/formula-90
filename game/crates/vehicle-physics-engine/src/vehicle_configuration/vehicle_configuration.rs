@@ -68,6 +68,14 @@ impl VehicleConfiguration {
         serde_json::to_value(spec).unwrap_or_default()
     }
 
+    pub fn to_resolved_configuration_value(&self) -> serde_json::Value {
+        let mut configuration = self.to_json_value();
+        configuration["powertrain"]["gear_inertia"] = serde_json::json!(self.powertrain.gear_inertia);
+        configuration["powertrain"]["automatic_shift"] =
+            serde_json::to_value(&self.powertrain.automatic_shift).expect("automatic shift parameters serialize");
+        configuration
+    }
+
     fn from_json_spec(spec: JsonVehicleSpec) -> Result<Self, String> {
         spec.validate()?;
         let config = spec.to_config();

@@ -185,38 +185,14 @@ func _load_physics_specs() -> void:
 		if rear_tire is Dictionary:
 			rear_tire_radius = float(rear_tire.get("radius", rear_tire_radius))
 
-## Reads one domain section from a profile manifest (sibling domain documents)
-## or from a legacy flat profile document.
 func _read_profile_section(path: String, section: String) -> Variant:
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return null
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not (parsed is Dictionary):
-		return null
-	if parsed.has("domains"):
-		var domain_path := path.get_base_dir().path_join(section + ".json")
-		if not FileAccess.file_exists(domain_path):
-			return null
-		var domain_file := FileAccess.open(domain_path, FileAccess.READ)
-		if domain_file == null:
-			return null
-		var domain_parsed: Variant = JSON.parse_string(domain_file.get_as_text())
-		if not (domain_parsed is Dictionary):
-			return null
-		return domain_parsed.get(section, null)
-	return parsed.get(section, null)
+	return preload("res://scripts/vehicle/vehicle_profile_configuration.gd").load_configuration(path).get(section, null)
 
-## Presentation geometry document for the active profile: explicit path when
-## set, else the manifest-directory `suspension_presentation.json`, else the
-## profile document itself (legacy flat profiles carry the authored geometry).
 func _suspension_geometry_path() -> String:
 	if not suspension_presentation_path.is_empty():
 		return suspension_presentation_path
-	var derived := physics_config_path.get_base_dir().path_join("suspension_presentation.json")
-	if FileAccess.file_exists(derived):
-		return derived
-	return physics_config_path
+	var resolution: Dictionary = preload("res://scripts/vehicle/vehicle_profile_configuration.gd").resolve_profile(physics_config_path, true)
+	return str(resolution.get("suspension_presentation_path", physics_config_path)).replace("\\", "/").trim_prefix("//?/")
 
 func _resolve_nodes() -> void:
 	if vehicle == null:

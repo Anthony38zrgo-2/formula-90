@@ -105,6 +105,9 @@ func configure(
 	_compound_labels = _parse_compounds()
 	selected_compound_index = 0
 	var fuel_plan := vehicle_definition.load_fuel_plan() if vehicle_definition != null else {}
+	if fuel_plan.is_empty():
+		push_error("Pit stop configuration requires a valid vehicle fuel plan")
+		return false
 	_estimated_lap_consumption_kg = float(fuel_plan.get("estimated_lap_consumption_kg", 0.0))
 	_fuel_capacity_kg = _read_fuel_capacity(fuel_plan)
 	_minimum_fuel_laps = maxi(rules.minimum_fuel_laps, 1)
