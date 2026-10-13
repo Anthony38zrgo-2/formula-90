@@ -1,11 +1,14 @@
 {
-  "operation": "Export f1_2030_v10 as chassis plus four independent wheel GLBs",
+  "operation": "Publish separated bodywork, oval intake, rear engine cover taper and front wing leading arc",
   "passed": true,
+  "source_file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "source_digest": "58E2E1B81B0373A62F71D65574525155646CC2B1A207F735D8CEA0B8FD7C6E95",
+  "baseline_chassis_digest": "95B2B519370F08DEA25AC5A8AE94C9B10194A01F7206F060A8EBDF1F4750A671",
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "95B2B519370F08DEA25AC5A8AE94C9B10194A01F7206F060A8EBDF1F4750A671",
-      "size_bytes": 38996180
+      "sha256": "62133FC0CECE06489FD39D7F17524E1899D00C7DDC42A25249F147C6D26E28F7",
+      "size_bytes": 40308600
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -28,506 +31,53 @@
       "size_bytes": 5348864
     }
   },
-  "mesh_stats": {
-    "chassis": {
-      "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER": {
-        "vertices": 13048,
-        "polygons": 15977
-      },
-      "GEO_COCKPIT_DRIVER_SEAT": {
-        "vertices": 768,
-        "polygons": 1157
-      },
-      "GEO_COCKPIT_HALO": {
-        "vertices": 697,
-        "polygons": 1060
-      },
-      "GEO_COCKPIT_HeadrestPadding": {
-        "vertices": 21406,
-        "polygons": 29144
-      },
-      "GEO_COCKPIT_INTERIOR_SHELL": {
-        "vertices": 4686,
-        "polygons": 9368
-      },
-      "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS": {
-        "vertices": 665,
-        "polygons": 840
-      },
-      "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES": {
-        "vertices": 50,
-        "polygons": 64
-      },
-      "GEO_COCKPIT_UpperInteriorLining": {
-        "vertices": 1074,
-        "polygons": 1807
-      },
-      "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE": {
-        "vertices": 25,
-        "polygons": 24
-      },
-      "GEO_ENGINE_COVER_REAR_CLOSURE": {
-        "vertices": 692,
-        "polygons": 519
-      },
-      "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS": {
-        "vertices": 40,
-        "polygons": 72
-      },
-      "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING": {
-        "vertices": 78,
-        "polygons": 104
-      },
-      "GEO_EXHAUST_OUTLET_TUBE_LEFT": {
-        "vertices": 832,
-        "polygons": 832
-      },
-      "GEO_EXHAUST_OUTLET_TUBE_RIGHT": {
-        "vertices": 832,
-        "polygons": 832
-      },
-      "GEO_FRONT_WING_ENDPLATES": {
-        "vertices": 2008,
-        "polygons": 3712
-      },
-      "GEO_FRONT_WING_INTERMEDIATE_ELEMENT": {
-        "vertices": 288,
-        "polygons": 490
-      },
-      "GEO_FRONT_WING_MAIN_ELEMENT": {
-        "vertices": 972,
-        "polygons": 1656
-      },
-      "GEO_FRONT_WING_MOUNTING_PYLONS": {
-        "vertices": 224,
-        "polygons": 384
-      },
-      "GEO_FRONT_WING_UPPER_ELEMENT": {
-        "vertices": 896,
-        "polygons": 448
-      },
-      "GEO_REAR_SAFETY_LIGHT": {
-        "vertices": 79,
-        "polygons": 128
-      },
-      "GEO_REAR_WING_CENTRAL_SUPPORT": {
-        "vertices": 1752,
-        "polygons": 1730
-      },
-      "GEO_REAR_WING_ENDPLATE_ASSEMBLY": {
-        "vertices": 11707,
-        "polygons": 19711
-      },
-      "GEO_REAR_WING_INTERMEDIATE_ELEMENT": {
-        "vertices": 5592,
-        "polygons": 5622
-      },
-      "GEO_REAR_WING_LOWER_BEAM_ELEMENT": {
-        "vertices": 2624,
-        "polygons": 4608
-      },
-      "GEO_REAR_WING_UPPER_ELEMENT": {
-        "vertices": 5424,
-        "polygons": 9632
-      },
-      "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS": {
-        "vertices": 1460,
-        "polygons": 2656
-      },
-      "GEO_STEERING_COLUMN_SHAFT": {
-        "vertices": 196,
-        "polygons": 252
-      },
-      "GEO_STEERING_WHEEL_BODY": {
-        "vertices": 980,
-        "polygons": 1752
-      },
-      "GEO_STEERING_WHEEL_CENTER_FASTENER": {
-        "vertices": 196,
-        "polygons": 252
-      },
-      "GEO_STEERING_WHEEL_DISPLAY": {
-        "vertices": 32,
-        "polygons": 24
-      },
-      "GEO_STEERING_WHEEL_PADDLE_LEFT": {
-        "vertices": 152,
-        "polygons": 88
-      },
-      "GEO_STEERING_WHEEL_PADDLE_RIGHT": {
-        "vertices": 152,
-        "polygons": 88
-      },
-      "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY": {
-        "vertices": 432,
-        "polygons": 224
-      },
-      "GEO_SUSPENSION_REAR_LINK_ASSEMBLY": {
-        "vertices": 252,
-        "polygons": 136
-      },
-      "GEO_UNDERBODY_FLOOR_AND_DIFFUSER": {
-        "vertices": 4991,
-        "polygons": 9952
-      }
+  "changes": {
+    "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE": {
+      "triangles": 24,
+      "materials_reused": true
     },
-    "wheel_FL": {
-      "GEO_BRAKE_FRONT_LEFT_CALIPER": {
-        "vertices": 108,
-        "polygons": 36
-      },
-      "GEO_BRAKE_FRONT_LEFT_DISC": {
-        "vertices": 900,
-        "polygons": 300
-      },
-      "GEO_BRAKE_FRONT_LEFT_DUCT": {
-        "vertices": 1040,
-        "polygons": 1040
-      },
-      "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER": {
-        "vertices": 1218,
-        "polygons": 1101
-      },
-      "GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_FRONT_LEFT_HUB": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES": {
-        "vertices": 504,
-        "polygons": 826
-      },
-      "GEO_WHEEL_FRONT_LEFT_TIRE": {
-        "vertices": 3264,
-        "polygons": 3168
-      },
-      "visual_groups": {
-        "spin": [
-          "GEO_BRAKE_FRONT_LEFT_DISC",
-          "GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT",
-          "GEO_WHEEL_FRONT_LEFT_HUB",
-          "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES",
-          "GEO_WHEEL_FRONT_LEFT_TIRE"
-        ],
-        "static_brake": [
-          "GEO_BRAKE_FRONT_LEFT_CALIPER",
-          "GEO_BRAKE_FRONT_LEFT_DUCT",
-          "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER"
-        ]
-      }
+    "GEO_ENGINE_COVER_REAR_CLOSURE": {
+      "triangles": 1380,
+      "materials_reused": true
     },
-    "wheel_FR": {
-      "GEO_BRAKE_FRONT_RIGHT_CALIPER": {
-        "vertices": 108,
-        "polygons": 36
-      },
-      "GEO_BRAKE_FRONT_RIGHT_DISC": {
-        "vertices": 900,
-        "polygons": 300
-      },
-      "GEO_BRAKE_FRONT_RIGHT_DUCT": {
-        "vertices": 1040,
-        "polygons": 1040
-      },
-      "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER": {
-        "vertices": 1218,
-        "polygons": 1101
-      },
-      "GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_FRONT_RIGHT_HUB": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES": {
-        "vertices": 504,
-        "polygons": 826
-      },
-      "GEO_WHEEL_FRONT_RIGHT_TIRE": {
-        "vertices": 3264,
-        "polygons": 3168
-      },
-      "visual_groups": {
-        "spin": [
-          "GEO_BRAKE_FRONT_RIGHT_DISC",
-          "GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT",
-          "GEO_WHEEL_FRONT_RIGHT_HUB",
-          "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES",
-          "GEO_WHEEL_FRONT_RIGHT_TIRE"
-        ],
-        "static_brake": [
-          "GEO_BRAKE_FRONT_RIGHT_CALIPER",
-          "GEO_BRAKE_FRONT_RIGHT_DUCT",
-          "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER"
-        ]
-      }
+    "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS": {
+      "triangles": 72,
+      "materials_reused": true
     },
-    "wheel_RL": {
-      "GEO_BRAKE_REAR_LEFT_CALIPER": {
-        "vertices": 108,
-        "polygons": 36
-      },
-      "GEO_BRAKE_REAR_LEFT_DISC": {
-        "vertices": 900,
-        "polygons": 300
-      },
-      "GEO_BRAKE_REAR_LEFT_DUCT": {
-        "vertices": 1040,
-        "polygons": 1040
-      },
-      "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER": {
-        "vertices": 1152,
-        "polygons": 1043
-      },
-      "GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_REAR_LEFT_HUB": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES": {
-        "vertices": 504,
-        "polygons": 826
-      },
-      "GEO_WHEEL_REAR_LEFT_TIRE": {
-        "vertices": 3264,
-        "polygons": 3168
-      },
-      "visual_groups": {
-        "spin": [
-          "GEO_BRAKE_REAR_LEFT_DISC",
-          "GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT",
-          "GEO_WHEEL_REAR_LEFT_HUB",
-          "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES",
-          "GEO_WHEEL_REAR_LEFT_TIRE"
-        ],
-        "static_brake": [
-          "GEO_BRAKE_REAR_LEFT_CALIPER",
-          "GEO_BRAKE_REAR_LEFT_DUCT",
-          "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER"
-        ]
-      }
+    "GEO_FRONT_WING_MAIN_ELEMENT": {
+      "triangles": 1656,
+      "materials_reused": true
     },
-    "wheel_RR": {
-      "GEO_BRAKE_REAR_RIGHT_CALIPER": {
-        "vertices": 108,
-        "polygons": 36
-      },
-      "GEO_BRAKE_REAR_RIGHT_DISC": {
-        "vertices": 900,
-        "polygons": 300
-      },
-      "GEO_BRAKE_REAR_RIGHT_DUCT": {
-        "vertices": 1040,
-        "polygons": 1040
-      },
-      "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER": {
-        "vertices": 1152,
-        "polygons": 1043
-      },
-      "GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_REAR_RIGHT_HUB": {
-        "vertices": 360,
-        "polygons": 120
-      },
-      "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES": {
-        "vertices": 504,
-        "polygons": 826
-      },
-      "GEO_WHEEL_REAR_RIGHT_TIRE": {
-        "vertices": 3264,
-        "polygons": 3168
-      },
-      "visual_groups": {
-        "spin": [
-          "GEO_BRAKE_REAR_RIGHT_DISC",
-          "GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT",
-          "GEO_WHEEL_REAR_RIGHT_HUB",
-          "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES",
-          "GEO_WHEEL_REAR_RIGHT_TIRE"
-        ],
-        "static_brake": [
-          "GEO_BRAKE_REAR_RIGHT_CALIPER",
-          "GEO_BRAKE_REAR_RIGHT_DUCT",
-          "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER"
-        ]
-      }
+    "GEO_FRONT_WING_UPPER_ELEMENT": {
+      "triangles": 448,
+      "materials_reused": true
+    },
+    "BodyworkNose": {
+      "triangles": 2680,
+      "materials_reused": true
+    },
+    "BodyworkMonocoqueExterior": {
+      "triangles": 2606,
+      "materials_reused": true
+    },
+    "BodyworkSidepodLeft": {
+      "triangles": 7658,
+      "materials_reused": true
+    },
+    "BodyworkSidepodRight": {
+      "triangles": 7658,
+      "materials_reused": true
+    },
+    "BodyworkEngineCover": {
+      "triangles": 3806,
+      "materials_reused": true
+    },
+    "BodyworkEngineCoverCentralFin": {
+      "triangles": 148,
+      "materials_reused": true
     }
   },
-  "authored_alignment": {
-    "front_track": 1.5059996843338013,
-    "rear_track": 1.431999683380127,
-    "wheelbase": 2.950000584125519,
-    "chassis_vertical_offset": 0.10500012338161469
-  },
-  "source_sha256": "30ceccc06db5b5c69d23abebe9d6929586ef8c82c083d545d2238f90b6156aea",
-  "source_path": "source/f1_2030.blend",
-  "material_conversion": [
-    {
-      "object": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
-      "resolution": 2048
-    },
-    {
-      "object": "GEO_BRAKE_FRONT_LEFT_DUCT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_FRONT_RIGHT_DUCT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_REAR_LEFT_DUCT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_REAR_RIGHT_DUCT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_DRIVER_SEAT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_HALO",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_HeadrestPadding",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_INTERIOR_SHELL",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_COCKPIT_UpperInteriorLining",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_ENGINE_COVER_REAR_CLOSURE",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_FRONT_WING_ENDPLATES",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_FRONT_WING_INTERMEDIATE_ELEMENT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_FRONT_WING_MAIN_ELEMENT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_FRONT_WING_MOUNTING_PYLONS",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_FRONT_WING_UPPER_ELEMENT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_REAR_WING_CENTRAL_SUPPORT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_REAR_WING_ENDPLATE_ASSEMBLY",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_REAR_WING_INTERMEDIATE_ELEMENT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_REAR_WING_LOWER_BEAM_ELEMENT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_REAR_WING_UPPER_ELEMENT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_STEERING_COLUMN_SHAFT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_STEERING_WHEEL_BODY",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_STEERING_WHEEL_CENTER_FASTENER",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_STEERING_WHEEL_PADDLE_LEFT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_STEERING_WHEEL_PADDLE_RIGHT",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_SUSPENSION_REAR_LINK_ASSEMBLY",
-      "resolution": 1024
-    },
-    {
-      "object": "GEO_UNDERBODY_FLOOR_AND_DIFFUSER",
-      "resolution": 1024
-    }
-  ]
+  "protected_geometry_and_material_bytes_preserved": true,
+  "wheel_exports_byte_identical": true,
+  "bodywork_assembly_retained_as_parent": true
 }

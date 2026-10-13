@@ -11,9 +11,9 @@
   },
   "assets": {
     "chassis": {
-      "mesh_count": 35,
-      "vertices": 109380,
-      "polygons": 157669,
+      "mesh_count": 40,
+      "vertices": 110915,
+      "polygons": 158157,
       "bounds_min": [
         -0.859598,
         -2.535136,
@@ -21,17 +21,17 @@
       ],
       "bounds_max": [
         0.859598,
-        2.532359,
+        2.597359,
         0.743344
       ],
       "dimensions": [
         1.719196,
-        5.067495,
+        5.132496,
         1.080606
       ],
       "center": [
         0.0,
-        -0.001388,
+        0.031112,
         0.203041
       ],
       "tire_dimensions": [
@@ -45,29 +45,155 @@
         0.0
       ],
       "objects": {
-        "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER": {
+        "BodyworkEngineCover": {
+          "materials": [
+            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial",
+            "GEO_ENGINE_AIR_INTAKE_INLET_SURFACEExportPhysicalMaterial"
+          ],
+          "bounds_min": [
+            -0.340532,
+            -1.99,
+            -0.109143
+          ],
+          "bounds_max": [
+            0.340532,
+            -0.270746,
+            0.67087
+          ],
+          "dimensions": [
+            0.681063,
+            1.719254,
+            0.780012
+          ],
+          "center": [
+            -0.0,
+            -1.130373,
+            0.280863
+          ]
+        },
+        "BodyworkEngineCoverCentralFin": {
+          "materials": [
+            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+          ],
+          "bounds_min": [
+            -0.006,
+            -2.04,
+            0.325
+          ],
+          "bounds_max": [
+            0.006,
+            -0.765323,
+            0.656396
+          ],
+          "dimensions": [
+            0.012,
+            1.274677,
+            0.331396
+          ],
+          "center": [
+            -0.0,
+            -1.402661,
+            0.490698
+          ]
+        },
+        "BodyworkMonocoqueExterior": {
+          "materials": [
+            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+          ],
+          "bounds_min": [
+            -0.638565,
+            -0.288408,
+            -0.121381
+          ],
+          "bounds_max": [
+            0.638565,
+            1.12364,
+            0.405484
+          ],
+          "dimensions": [
+            1.27713,
+            1.412049,
+            0.526864
+          ],
+          "center": [
+            0.0,
+            0.417616,
+            0.142052
+          ]
+        },
+        "BodyworkNose": {
+          "materials": [
+            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+          ],
+          "bounds_min": [
+            -0.21546,
+            1.118357,
+            -0.121381
+          ],
+          "bounds_max": [
+            0.21546,
+            2.439632,
+            0.296028
+          ],
+          "dimensions": [
+            0.430919,
+            1.321275,
+            0.417408
+          ],
+          "center": [
+            0.0,
+            1.778994,
+            0.087324
+          ]
+        },
+        "BodyworkSidepodLeft": {
           "materials": [
             "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.654279,
-            -2.04,
+            -1.737805,
+            -0.256338
+          ],
+          "bounds_max": [
+            -0.059219,
+            0.433178,
+            0.288572
+          ],
+          "dimensions": [
+            0.59506,
+            2.170984,
+            0.544911
+          ],
+          "center": [
+            -0.356749,
+            -0.652314,
+            0.016117
+          ]
+        },
+        "BodyworkSidepodRight": {
+          "materials": [
+            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+          ],
+          "bounds_min": [
+            0.059219,
+            -1.737819,
             -0.256338
           ],
           "bounds_max": [
             0.654279,
-            2.439632,
-            0.67087
+            0.433178,
+            0.288573
           ],
           "dimensions": [
-            1.308558,
-            4.479631,
-            0.927208
+            0.59506,
+            2.170997,
+            0.544911
           ],
           "center": [
-            0.0,
-            0.199816,
-            0.207266
+            0.356749,
+            -0.652321,
+            0.016117
           ]
         },
         "GEO_COCKPIT_DRIVER_SEAT": {
@@ -250,23 +376,23 @@
             "GEO_ENGINE_AIR_INTAKE_INLET_SURFACEExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.101783,
-            -0.472341,
-            0.502667
+            -0.043506,
+            -0.517341,
+            0.504177
           ],
           "bounds_max": [
-            0.101783,
-            -0.472341,
-            0.653608
+            0.043506,
+            -0.517341,
+            0.652099
           ],
           "dimensions": [
-            0.203565,
+            0.087013,
             0.0,
-            0.150941
+            0.147922
           ],
           "center": [
             -0.0,
-            -0.472341,
+            -0.517341,
             0.578138
           ]
         },
@@ -275,17 +401,17 @@
             "GEO_ENGINE_COVER_REAR_CLOSUREExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.109496,
+            -0.068548,
             -1.73555,
             -0.099183
           ],
           "bounds_max": [
-            0.109496,
+            0.068547,
             -1.73355,
             0.231432
           ],
           "dimensions": [
-            0.218991,
+            0.137095,
             0.002,
             0.330615
           ],
@@ -300,17 +426,17 @@
             "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGSExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.238421,
+            -0.189372,
             -0.644974,
             0.552382
           ],
           "bounds_max": [
-            0.238421,
+            0.189372,
             -0.501827,
             0.602817
           ],
           "dimensions": [
-            0.476843,
+            0.378744,
             0.143147,
             0.050435
           ],
@@ -458,17 +584,17 @@
           ],
           "bounds_max": [
             0.580175,
-            2.519877,
+            2.597359,
             -0.014117
           ],
           "dimensions": [
             1.16035,
-            0.507019,
+            0.584501,
             0.20939
           ],
           "center": [
             0.0,
-            2.266368,
+            2.305109,
             -0.118812
           ]
         },
@@ -508,17 +634,17 @@
           ],
           "bounds_max": [
             0.85591,
-            2.355818,
+            2.566729,
             0.005477
           ],
           "dimensions": [
             1.71182,
-            0.256623,
+            0.467534,
             0.052564
           ],
           "center": [
             0.0,
-            2.227506,
+            2.332962,
             -0.020805
           ]
         },
