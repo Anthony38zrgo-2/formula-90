@@ -11,9 +11,9 @@
   },
   "assets": {
     "chassis": {
-      "mesh_count": 34,
-      "vertices": 99480,
-      "polygons": 150849,
+      "mesh_count": 35,
+      "vertices": 109380,
+      "polygons": 157669,
       "bounds_min": [
         -0.859598,
         -2.535136,
@@ -21,18 +21,18 @@
       ],
       "bounds_max": [
         0.859598,
-        2.789632,
-        0.708344
+        2.532359,
+        0.743344
       ],
       "dimensions": [
         1.719196,
-        5.324768,
-        1.045606
+        5.067495,
+        1.080606
       ],
       "center": [
         0.0,
-        0.127248,
-        0.185541
+        -0.001388,
+        0.203041
       ],
       "tire_dimensions": [
         0.0,
@@ -47,33 +47,32 @@
       "objects": {
         "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER": {
           "materials": [
-            "FormulaOne2030BlenderKitFerrariMetallicWithProtectedDecals",
-            "FormulaOne2030BlenderKitCarbonWithProtectedDecals"
+            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.654279,
             -2.04,
-            -0.268532
+            -0.256338
           ],
           "bounds_max": [
             0.654279,
-            2.789632,
-            0.635869
+            2.439632,
+            0.67087
           ],
           "dimensions": [
             1.308558,
-            4.829632,
-            0.904401
+            4.479631,
+            0.927208
           ],
           "center": [
             0.0,
-            0.374816,
-            0.183669
+            0.199816,
+            0.207266
           ]
         },
         "GEO_COCKPIT_DRIVER_SEAT": {
           "materials": [
-            "Carbon.003"
+            "GEO_COCKPIT_DRIVER_SEATExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.16,
@@ -93,12 +92,37 @@
           "center": [
             -0.0,
             0.0375,
-            -0.036176
+            -0.036175
+          ]
+        },
+        "GEO_COCKPIT_HALO": {
+          "materials": [
+            "GEO_COCKPIT_HALOExportPhysicalMaterial"
+          ],
+          "bounds_min": [
+            -0.34401,
+            -0.30237,
+            0.302737
+          ],
+          "bounds_max": [
+            0.34401,
+            0.66372,
+            0.528128
+          ],
+          "dimensions": [
+            0.688021,
+            0.96609,
+            0.225391
+          ],
+          "center": [
+            0.0,
+            0.180675,
+            0.415432
           ]
         },
         "GEO_COCKPIT_HeadrestPadding": {
           "materials": [
-            "FormulaOne2030HeadrestExportCarbon"
+            "GEO_COCKPIT_HeadrestPaddingExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.322453,
@@ -123,7 +147,7 @@
         },
         "GEO_COCKPIT_INTERIOR_SHELL": {
           "materials": [
-            "Carbon Fiber Black"
+            "GEO_COCKPIT_INTERIOR_SHELLExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.3612,
@@ -148,7 +172,7 @@
         },
         "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS": {
           "materials": [
-            "FormulaOne2030BlenderKitFerrariMetallicWithProtectedDecals"
+            "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTSExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.648605,
@@ -173,7 +197,7 @@
         },
         "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES": {
           "materials": [
-            "Carbon Fiber Black"
+            "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACESExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.598853,
@@ -198,7 +222,7 @@
         },
         "GEO_COCKPIT_UpperInteriorLining": {
           "materials": [
-            "Carbon Fiber Black"
+            "GEO_COCKPIT_UpperInteriorLiningExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.288382,
@@ -223,17 +247,17 @@
         },
         "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE": {
           "materials": [
-            "Carbon Fiber Black"
+            "GEO_ENGINE_AIR_INTAKE_INLET_SURFACEExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.101783,
             -0.472341,
-            0.467667
+            0.502667
           ],
           "bounds_max": [
             0.101783,
             -0.472341,
-            0.618608
+            0.653608
           ],
           "dimensions": [
             0.203565,
@@ -243,47 +267,47 @@
           "center": [
             -0.0,
             -0.472341,
-            0.543138
+            0.578138
           ]
         },
         "GEO_ENGINE_COVER_REAR_CLOSURE": {
           "materials": [
-            "FormulaOne2030BlenderKitCarbonWithProtectedDecals"
+            "GEO_ENGINE_COVER_REAR_CLOSUREExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.199482,
-            -1.988699,
-            -0.144629
+            -0.109496,
+            -1.73555,
+            -0.099183
           ],
           "bounds_max": [
-            0.199482,
+            0.109496,
             -1.73355,
-            0.284942
+            0.231432
           ],
           "dimensions": [
-            0.398964,
-            0.255149,
-            0.429571
+            0.218991,
+            0.002,
+            0.330615
           ],
           "center": [
             -0.0,
-            -1.861124,
-            0.070157
+            -1.73455,
+            0.066124
           ]
         },
         "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS": {
           "materials": [
-            "Carbon Fiber Black.001"
+            "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGSExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.238421,
             -0.644974,
-            0.517382
+            0.552382
           ],
           "bounds_max": [
             0.238421,
             -0.501827,
-            0.567817
+            0.602817
           ],
           "dimensions": [
             0.476843,
@@ -293,22 +317,22 @@
           "center": [
             -0.0,
             -0.5734,
-            0.542599
+            0.5776
           ]
         },
         "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING": {
           "materials": [
-            "Carbon Fiber Black"
+            "GEO_ENGINE_COVER_TOP_CAMERA_HOUSINGExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.095403,
             -0.590958,
-            0.631279
+            0.666279
           ],
           "bounds_max": [
             0.095403,
             -0.450371,
-            0.708344
+            0.743344
           ],
           "dimensions": [
             0.190807,
@@ -318,7 +342,7 @@
           "center": [
             -0.0,
             -0.520665,
-            0.669811
+            0.704812
           ]
         },
         "GEO_EXHAUST_OUTLET_TUBE_LEFT": {
@@ -375,7 +399,7 @@
         },
         "GEO_FRONT_WING_ENDPLATES": {
           "materials": [
-            "FormulaOne2030BlenderKitFerrariMetallicWingsWithProtectedDecals"
+            "GEO_FRONT_WING_ENDPLATESExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.859598,
@@ -400,102 +424,102 @@
         },
         "GEO_FRONT_WING_INTERMEDIATE_ELEMENT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_FRONT_WING_INTERMEDIATE_ELEMENTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.488734,
-            2.137447,
-            -0.188079
+            2.089178,
+            -0.178965
           ],
           "bounds_max": [
             0.488735,
-            2.56354,
-            -0.014628
+            2.351555,
+            -0.013499
           ],
           "dimensions": [
             0.977469,
-            0.426093,
-            0.17345
+            0.262377,
+            0.165466
           ],
           "center": [
             0.0,
-            2.350493,
-            -0.101354
+            2.220366,
+            -0.096232
           ]
         },
         "GEO_FRONT_WING_MAIN_ELEMENT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_FRONT_WING_MAIN_ELEMENTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.580175,
-            2.106925,
-            -0.237154
+            2.012858,
+            -0.223507
           ],
           "bounds_max": [
             0.580175,
-            2.779502,
-            -0.014149
+            2.519877,
+            -0.014117
           ],
           "dimensions": [
             1.16035,
-            0.672577,
-            0.223005
+            0.507019,
+            0.20939
           ],
           "center": [
             0.0,
-            2.443214,
-            -0.125651
+            2.266368,
+            -0.118812
           ]
         },
         "GEO_FRONT_WING_MOUNTING_PYLONS": {
           "materials": [
-            "FormulaOne2030BlenderKitFerrariMetallicWingsWithProtectedDecals"
+            "GEO_FRONT_WING_MOUNTING_PYLONSExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.079987,
-            2.558584,
-            -0.218547
+            -0.062983,
+            2.250957,
+            -0.20693
           ],
           "bounds_max": [
-            0.079988,
-            2.751084,
-            0.029696
+            0.062984,
+            2.431749,
+            0.02985
           ],
           "dimensions": [
-            0.159975,
-            0.1925,
-            0.248244
+            0.125967,
+            0.180792,
+            0.23678
           ],
           "center": [
             0.0,
-            2.654834,
-            -0.094425
+            2.341353,
+            -0.08854
           ]
         },
         "GEO_FRONT_WING_UPPER_ELEMENT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_FRONT_WING_UPPER_ELEMENTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.85591,
-            2.12252,
-            -0.03976
+            2.099195,
+            -0.047087
           ],
           "bounds_max": [
             0.85591,
             2.355818,
-            0.006641
+            0.005477
           ],
           "dimensions": [
             1.71182,
-            0.233297,
-            0.046401
+            0.256623,
+            0.052564
           ],
           "center": [
             0.0,
-            2.239169,
-            -0.016559
+            2.227506,
+            -0.020805
           ]
         },
         "GEO_REAR_SAFETY_LIGHT": {
@@ -525,7 +549,7 @@
         },
         "GEO_REAR_WING_CENTRAL_SUPPORT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_REAR_WING_CENTRAL_SUPPORTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.065,
@@ -550,7 +574,7 @@
         },
         "GEO_REAR_WING_ENDPLATE_ASSEMBLY": {
           "materials": [
-            "FormulaOne2030BlenderKitFerrariMetallicWingsWithProtectedDecals"
+            "GEO_REAR_WING_ENDPLATE_ASSEMBLYExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.56228,
@@ -575,7 +599,7 @@
         },
         "GEO_REAR_WING_INTERMEDIATE_ELEMENT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_REAR_WING_INTERMEDIATE_ELEMENTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.403855,
@@ -585,7 +609,7 @@
           "bounds_max": [
             0.406723,
             -2.146101,
-            0.339748
+            0.339749
           ],
           "dimensions": [
             0.810579,
@@ -600,7 +624,7 @@
         },
         "GEO_REAR_WING_LOWER_BEAM_ELEMENT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_REAR_WING_LOWER_BEAM_ELEMENTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.360802,
@@ -625,7 +649,7 @@
         },
         "GEO_REAR_WING_UPPER_ELEMENT": {
           "materials": [
-            "FormulaOne2030BlenderKitFineCarbonAeroWithProtectedDecals"
+            "GEO_REAR_WING_UPPER_ELEMENTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.496448,
@@ -650,7 +674,7 @@
         },
         "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS": {
           "materials": [
-            "FormulaOne2030BlenderKitFerrariMetallicWingsWithProtectedDecals"
+            "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORSExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.840054,
@@ -675,7 +699,7 @@
         },
         "GEO_STEERING_COLUMN_SHAFT": {
           "materials": [
-            "Carbon.002"
+            "GEO_STEERING_COLUMN_SHAFTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.007495,
@@ -700,7 +724,7 @@
         },
         "GEO_STEERING_WHEEL_BODY": {
           "materials": [
-            "Carbon.001"
+            "GEO_STEERING_WHEEL_BODYExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.116547,
@@ -725,7 +749,7 @@
         },
         "GEO_STEERING_WHEEL_CENTER_FASTENER": {
           "materials": [
-            "Carbon Fiber Black"
+            "GEO_STEERING_WHEEL_CENTER_FASTENERExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.007495,
@@ -775,7 +799,7 @@
         },
         "GEO_STEERING_WHEEL_PADDLE_LEFT": {
           "materials": [
-            "Carbon.001"
+            "GEO_STEERING_WHEEL_PADDLE_LEFTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.078549,
@@ -800,7 +824,7 @@
         },
         "GEO_STEERING_WHEEL_PADDLE_RIGHT": {
           "materials": [
-            "Carbon.001"
+            "GEO_STEERING_WHEEL_PADDLE_RIGHTExportPhysicalMaterial"
           ],
           "bounds_min": [
             0.007805,
@@ -825,7 +849,7 @@
         },
         "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY": {
           "materials": [
-            "FormulaOne2030BlenderKitCarbonWithProtectedDecals"
+            "GEO_SUSPENSION_FRONT_LINK_ASSEMBLYExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.586605,
@@ -835,27 +859,27 @@
           "bounds_max": [
             0.586605,
             1.639826,
-            0.224101
+            0.223476
           ],
           "dimensions": [
             1.17321,
             0.62124,
-            0.263495
+            0.26287
           ],
           "center": [
             0.0,
             1.329206,
-            0.092354
+            0.092041
           ]
         },
         "GEO_SUSPENSION_REAR_LINK_ASSEMBLY": {
           "materials": [
-            "FormulaOne2030BlenderKitCarbonWithProtectedDecals"
+            "GEO_SUSPENSION_REAR_LINK_ASSEMBLYExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.510495,
             -1.664112,
-            -0.130479
+            -0.089499
           ],
           "bounds_max": [
             0.510495,
@@ -865,17 +889,17 @@
           "dimensions": [
             1.02099,
             0.548991,
-            0.256648
+            0.215668
           ],
           "center": [
             -0.0,
             -1.389616,
-            -0.002155
+            0.018335
           ]
         },
         "GEO_UNDERBODY_FLOOR_AND_DIFFUSER": {
           "materials": [
-            "FormulaOne2030BlenderKitCarbonWithProtectedDecals"
+            "GEO_UNDERBODY_FLOOR_AND_DIFFUSERExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.716683,
@@ -906,8 +930,8 @@
     },
     "wheel_FL": {
       "mesh_count": 8,
-      "vertices": 9570,
-      "polygons": 4828,
+      "vertices": 15445,
+      "polygons": 12262,
       "bounds_min": [
         -0.165,
         -0.335,
@@ -925,7 +949,7 @@
       ],
       "center": [
         0.028047,
-        0.0,
+        -0.0,
         0.0
       ],
       "tire_dimensions": [
@@ -934,8 +958,8 @@
         0.67
       ],
       "tire_center": [
-        0.0,
-        0.0,
+        -0.0,
+        -0.0,
         0.0
       ],
       "objects": {
@@ -949,7 +973,7 @@
             -0.078562
           ],
           "bounds_max": [
-            0.145524,
+            0.145523,
             -0.071452,
             0.078562
           ],
@@ -961,7 +985,7 @@
           "center": [
             0.132,
             -0.108038,
-            -0.0
+            0.0
           ]
         },
         "GEO_BRAKE_FRONT_LEFT_DISC": {
@@ -971,12 +995,12 @@
           "bounds_min": [
             0.121822,
             -0.139999,
-            -0.139233
+            -0.139232
           ],
           "bounds_max": [
             0.142177,
             0.14,
-            0.139233
+            0.139232
           ],
           "dimensions": [
             0.020355,
@@ -984,18 +1008,18 @@
             0.278465
           ],
           "center": [
-            0.132,
+            0.131999,
             1e-06,
             0.0
           ]
         },
         "GEO_BRAKE_FRONT_LEFT_DUCT": {
           "materials": [
-            "GEO_BRAKE_FRONT_LEFT_DUCT_ExportCarbon"
+            "GEO_BRAKE_FRONT_LEFT_DUCTExportPhysicalMaterial"
           ],
           "bounds_min": [
             0.150077,
-            0.058206,
+            0.058205,
             0.015996
           ],
           "bounds_max": [
@@ -1009,39 +1033,39 @@
             0.076791
           ],
           "center": [
-            0.185586,
+            0.185585,
             0.101803,
             0.054391
           ]
         },
         "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030CompleteGoldWheelFinish"
+            "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVERExportPhysicalMaterial"
           ],
           "bounds_min": [
-            0.097,
-            -0.140507,
-            -0.139729
+            0.095042,
+            -0.146667,
+            -0.146888
           ],
           "bounds_max": [
-            0.101,
-            0.140507,
-            0.139755
+            0.150077,
+            0.147,
+            0.146888
           ],
           "dimensions": [
-            0.004,
-            0.281014,
-            0.279483
+            0.055035,
+            0.293667,
+            0.293777
           ],
           "center": [
-            0.099,
-            0.0,
-            1.3e-05
+            0.122559,
+            0.000167,
+            0.0
           ]
         },
         "GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Metal.003"
+            "FormulaOne2030CompleteGoldWheelFinish"
           ],
           "bounds_min": [
             -0.157681,
@@ -1066,7 +1090,7 @@
         },
         "GEO_WHEEL_FRONT_LEFT_HUB": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.003"
+            "FormulaOne2030CompleteGoldWheelFinish"
           ],
           "bounds_min": [
             -0.109045,
@@ -1086,38 +1110,37 @@
           "center": [
             0.017452,
             -0.0,
-            1.7e-05
+            1.8e-05
           ]
         },
         "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.003",
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.007"
+            "McLarenMp48OriginalRimMaterial"
           ],
           "bounds_min": [
-            -0.149294,
-            -0.16945,
-            -0.16888
+            -0.150103,
+            -0.1698,
+            -0.169785
           ],
           "bounds_max": [
-            0.149294,
-            0.16945,
-            0.16888
+            0.148485,
+            0.1698,
+            0.169815
           ],
           "dimensions": [
             0.298589,
-            0.3389,
-            0.33776
+            0.3396,
+            0.3396
           ],
           "center": [
-            0.0,
-            0.0,
-            0.0
+            -0.000809,
+            -0.0,
+            1.5e-05
           ]
         },
         "GEO_WHEEL_FRONT_LEFT_TIRE": {
           "materials": [
-            "FormulaOne2030ThirteenInchTireSurface"
+            "McLarenMp48OriginalTireMaterial"
           ],
           "bounds_min": [
             -0.165,
@@ -1135,8 +1158,8 @@
             0.67
           ],
           "center": [
-            0.0,
-            0.0,
+            -0.0,
+            -0.0,
             0.0
           ]
         }
@@ -1158,8 +1181,8 @@
     },
     "wheel_FR": {
       "mesh_count": 8,
-      "vertices": 9570,
-      "polygons": 4828,
+      "vertices": 15437,
+      "polygons": 12262,
       "bounds_min": [
         -0.221094,
         -0.335,
@@ -1171,13 +1194,13 @@
         0.335
       ],
       "dimensions": [
-        0.386094,
+        0.386093,
         0.67,
         0.67
       ],
       "center": [
         -0.028047,
-        0.0,
+        -0.0,
         0.0
       ],
       "tire_dimensions": [
@@ -1186,8 +1209,8 @@
         0.67
       ],
       "tire_center": [
-        0.0,
-        0.0,
+        -0.0,
+        -0.0,
         0.0
       ],
       "objects": {
@@ -1201,7 +1224,7 @@
             -0.078562
           ],
           "bounds_max": [
-            -0.118477,
+            -0.118476,
             -0.071452,
             0.078562
           ],
@@ -1223,7 +1246,7 @@
           "bounds_min": [
             -0.142177,
             -0.139999,
-            -0.139233
+            -0.139232
           ],
           "bounds_max": [
             -0.121822,
@@ -1236,18 +1259,18 @@
             0.278465
           ],
           "center": [
-            -0.132,
+            -0.131999,
             1e-06,
-            -0.0
+            0.0
           ]
         },
         "GEO_BRAKE_FRONT_RIGHT_DUCT": {
           "materials": [
-            "GEO_BRAKE_FRONT_RIGHT_DUCT_ExportCarbon"
+            "GEO_BRAKE_FRONT_RIGHT_DUCTExportPhysicalMaterial"
           ],
           "bounds_min": [
             -0.221094,
-            0.058206,
+            0.058205,
             0.015996
           ],
           "bounds_max": [
@@ -1268,32 +1291,32 @@
         },
         "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030CompleteGoldWheelFinish.001"
+            "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVERExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.101,
-            -0.140507,
-            -0.139729
+            -0.150077,
+            -0.146667,
+            -0.146888
           ],
           "bounds_max": [
-            -0.097,
-            0.140507,
-            0.139754
+            -0.095042,
+            0.147,
+            0.146888
           ],
           "dimensions": [
-            0.004,
-            0.281014,
-            0.279483
+            0.055035,
+            0.293667,
+            0.293776
           ],
           "center": [
-            -0.099,
-            0.0,
-            1.3e-05
+            -0.122559,
+            0.000167,
+            0.0
           ]
         },
         "GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Metal.002"
+            "FormulaOne2030CompleteGoldWheelFinish.001"
           ],
           "bounds_min": [
             0.127333,
@@ -1318,7 +1341,7 @@
         },
         "GEO_WHEEL_FRONT_RIGHT_HUB": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.002"
+            "FormulaOne2030CompleteGoldWheelFinish.001"
           ],
           "bounds_min": [
             -0.143949,
@@ -1343,33 +1366,32 @@
         },
         "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.002",
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.005"
+            "McLarenMp48OriginalRimMaterial.001"
           ],
           "bounds_min": [
-            -0.149294,
-            -0.16945,
-            -0.16888
+            -0.148486,
+            -0.1698,
+            -0.169785
           ],
           "bounds_max": [
-            0.149294,
-            0.16945,
-            0.16888
+            0.150103,
+            0.1698,
+            0.169815
           ],
           "dimensions": [
             0.298589,
-            0.3389,
-            0.33776
+            0.3396,
+            0.3396
           ],
           "center": [
+            0.000809,
             -0.0,
-            0.0,
-            0.0
+            1.5e-05
           ]
         },
         "GEO_WHEEL_FRONT_RIGHT_TIRE": {
           "materials": [
-            "FormulaOne2030ThirteenInchTireSurface.001"
+            "McLarenMp48OriginalTireMaterial.001"
           ],
           "bounds_min": [
             -0.165,
@@ -1387,8 +1409,8 @@
             0.67
           ],
           "center": [
-            0.0,
-            0.0,
+            -0.0,
+            -0.0,
             0.0
           ]
         }
@@ -1410,15 +1432,15 @@
     },
     "wheel_RL": {
       "mesh_count": 8,
-      "vertices": 9570,
-      "polygons": 4828,
+      "vertices": 15338,
+      "polygons": 12130,
       "bounds_min": [
         -0.21,
         -0.335,
         -0.335
       ],
       "bounds_max": [
-        0.259869,
+        0.259868,
         0.335,
         0.335
       ],
@@ -1438,7 +1460,7 @@
         0.67
       ],
       "tire_center": [
-        0.0,
+        -0.0,
         0.0,
         0.0
       ],
@@ -1449,22 +1471,22 @@
           ],
           "bounds_min": [
             0.150788,
-            -0.144641,
-            -0.078572
+            -0.144624,
+            -0.078562
           ],
           "bounds_max": [
             0.185211,
-            -0.071461,
-            0.078572
+            -0.071452,
+            0.078562
           ],
           "dimensions": [
             0.034424,
-            0.07318,
-            0.157144
+            0.073171,
+            0.157124
           ],
           "center": [
             0.167999,
-            -0.108051,
+            -0.108038,
             0.0
           ]
         },
@@ -1474,18 +1496,18 @@
           ],
           "bounds_min": [
             0.155045,
-            -0.140015,
-            -0.139249
+            -0.139998,
+            -0.139231
           ],
           "bounds_max": [
             0.180952,
-            0.140016,
-            0.139249
+            0.139999,
+            0.139232
           ],
           "dimensions": [
             0.025907,
-            0.280031,
-            0.278497
+            0.279997,
+            0.278463
           ],
           "center": [
             0.167998,
@@ -1495,97 +1517,97 @@
         },
         "GEO_BRAKE_REAR_LEFT_DUCT": {
           "materials": [
-            "GEO_BRAKE_REAR_LEFT_DUCT_ExportCarbon"
+            "GEO_BRAKE_REAR_LEFT_DUCTExportPhysicalMaterial"
           ],
           "bounds_min": [
             0.188852,
-            0.058213,
-            0.015997
+            0.058205,
+            0.015996
           ],
           "bounds_max": [
-            0.259869,
-            0.145418,
-            0.092798
+            0.259868,
+            0.1454,
+            0.092787
           ],
           "dimensions": [
             0.071017,
-            0.087205,
-            0.0768
+            0.087195,
+            0.076791
           ],
           "center": [
             0.22436,
-            0.101815,
-            0.054398
+            0.101803,
+            0.054391
           ]
         },
         "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030CompleteGoldWheelFinish.002"
+            "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVERExportPhysicalMaterial"
           ],
           "bounds_min": [
-            0.124,
-            -0.136337,
-            -0.135581
+            0.137806,
+            -0.146652,
+            -0.146888
           ],
           "bounds_max": [
-            0.128,
-            0.136336,
-            0.135606
+            0.188852,
+            0.147,
+            0.146888
           ],
           "dimensions": [
-            0.004,
-            0.272674,
-            0.271188
+            0.051046,
+            0.293652,
+            0.293776
           ],
           "center": [
-            0.126,
-            -0.0,
-            1.3e-05
+            0.163329,
+            0.000174,
+            0.0
           ]
         },
         "GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Metal.001"
+            "FormulaOne2030CompleteGoldWheelFinish.002"
           ],
           "bounds_min": [
             -0.200686,
-            -0.049684,
-            -0.049413
+            -0.049678,
+            -0.049407
           ],
           "bounds_max": [
-            -0.16206,
-            0.049683,
-            0.049411
+            -0.162061,
+            0.049677,
+            0.049405
           ],
           "dimensions": [
             0.038626,
-            0.099367,
-            0.098824
+            0.099355,
+            0.098812
           ],
           "center": [
-            -0.181373,
-            -1e-06,
+            -0.181374,
+            -0.0,
             -1e-06
           ]
         },
         "GEO_WHEEL_REAR_LEFT_HUB": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.001"
+            "FormulaOne2030CompleteGoldWheelFinish.002"
           ],
           "bounds_min": [
             -0.138786,
-            -0.035258,
-            -0.035047
+            -0.035254,
+            -0.035043
           ],
           "bounds_max": [
             0.183208,
-            0.035257,
-            0.035082
+            0.035253,
+            0.035078
           ],
           "dimensions": [
             0.321994,
-            0.070516,
-            0.07013
+            0.070507,
+            0.070121
           ],
           "center": [
             0.022211,
@@ -1595,33 +1617,32 @@
         },
         "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal.001",
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.003"
+            "McLarenMp48OriginalRimMaterial.002"
           ],
           "bounds_min": [
-            -0.190011,
-            -0.169472,
-            -0.168901
+            -0.189636,
+            -0.169785,
+            -0.169799
           ],
           "bounds_max": [
-            0.190011,
-            0.16947,
-            0.168901
+            0.190386,
+            0.169814,
+            0.1698
           ],
           "dimensions": [
             0.380022,
-            0.338942,
-            0.337801
+            0.339599,
+            0.339599
           ],
           "center": [
-            0.0,
-            -1e-06,
-            -0.0
+            0.000375,
+            1.5e-05,
+            0.0
           ]
         },
         "GEO_WHEEL_REAR_LEFT_TIRE": {
           "materials": [
-            "FormulaOne2030ThirteenInchTireSurface.002"
+            "McLarenMp48OriginalTireMaterial.002"
           ],
           "bounds_min": [
             -0.21,
@@ -1639,7 +1660,7 @@
             0.67
           ],
           "center": [
-            0.0,
+            -0.0,
             0.0,
             0.0
           ]
@@ -1662,10 +1683,10 @@
     },
     "wheel_RR": {
       "mesh_count": 8,
-      "vertices": 9570,
-      "polygons": 4828,
+      "vertices": 15334,
+      "polygons": 12130,
       "bounds_min": [
-        -0.259869,
+        -0.259868,
         -0.335,
         -0.335
       ],
@@ -1681,7 +1702,7 @@
       ],
       "center": [
         -0.024934,
-        -0.0,
+        0.0,
         0.0
       ],
       "tire_dimensions": [
@@ -1690,8 +1711,8 @@
         0.67
       ],
       "tire_center": [
-        0.0,
         -0.0,
+        0.0,
         0.0
       ],
       "objects": {
@@ -1701,23 +1722,23 @@
           ],
           "bounds_min": [
             -0.185211,
-            -0.144641,
-            -0.078572
+            -0.144623,
+            -0.078562
           ],
           "bounds_max": [
             -0.150788,
-            -0.071461,
-            0.078572
+            -0.071452,
+            0.078562
           ],
           "dimensions": [
             0.034424,
-            0.07318,
-            0.157144
+            0.073171,
+            0.157124
           ],
           "center": [
             -0.167999,
-            -0.108051,
-            -0.0
+            -0.108038,
+            0.0
           ]
         },
         "GEO_BRAKE_REAR_RIGHT_DISC": {
@@ -1726,93 +1747,93 @@
           ],
           "bounds_min": [
             -0.180952,
-            -0.140015,
-            -0.139248
+            -0.139997,
+            -0.139231
           ],
           "bounds_max": [
             -0.155045,
-            0.140016,
-            0.139248
+            0.139999,
+            0.139231
           ],
           "dimensions": [
             0.025907,
-            0.280031,
-            0.278497
+            0.279996,
+            0.278462
           ],
           "center": [
             -0.167998,
             1e-06,
-            -0.0
+            0.0
           ]
         },
         "GEO_BRAKE_REAR_RIGHT_DUCT": {
           "materials": [
-            "GEO_BRAKE_REAR_RIGHT_DUCT_ExportCarbon"
+            "GEO_BRAKE_REAR_RIGHT_DUCTExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.259869,
-            0.058213,
-            0.015997
+            -0.259868,
+            0.058205,
+            0.015996
           ],
           "bounds_max": [
             -0.188852,
-            0.145418,
-            0.092798
+            0.1454,
+            0.092787
           ],
           "dimensions": [
             0.071017,
-            0.087205,
-            0.0768
+            0.087195,
+            0.076791
           ],
           "center": [
             -0.22436,
-            0.101815,
-            0.054398
+            0.101803,
+            0.054391
           ]
         },
         "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER": {
           "materials": [
-            "FormulaOne2030CompleteGoldWheelFinish.003"
+            "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVERExportPhysicalMaterial"
           ],
           "bounds_min": [
-            -0.128,
-            -0.136337,
-            -0.135581
+            -0.188852,
+            -0.146652,
+            -0.146888
           ],
           "bounds_max": [
-            -0.124,
-            0.136337,
-            0.135606
+            -0.137806,
+            0.147001,
+            0.146888
           ],
           "dimensions": [
-            0.004,
-            0.272673,
-            0.271188
+            0.051046,
+            0.293652,
+            0.293776
           ],
           "center": [
-            -0.126,
-            -0.0,
-            1.2e-05
+            -0.163329,
+            0.000174,
+            0.0
           ]
         },
         "GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT": {
           "materials": [
-            "FormulaOne2030PreservedWheelReference_Hub_Metal"
+            "FormulaOne2030CompleteGoldWheelFinish.003"
           ],
           "bounds_min": [
             0.162061,
-            -0.049684,
-            -0.049413
+            -0.049678,
+            -0.049407
           ],
           "bounds_max": [
             0.200686,
-            0.049684,
-            0.049411
+            0.049677,
+            0.049405
           ],
           "dimensions": [
             0.038626,
-            0.099367,
-            0.098824
+            0.099355,
+            0.098812
           ],
           "center": [
             0.181373,
@@ -1822,58 +1843,57 @@
         },
         "GEO_WHEEL_REAR_RIGHT_HUB": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal"
+            "FormulaOne2030CompleteGoldWheelFinish.003"
           ],
           "bounds_min": [
             -0.183208,
-            -0.035258,
-            -0.035047
+            -0.035254,
+            -0.035043
           ],
           "bounds_max": [
             0.138786,
-            0.035258,
-            0.035082
+            0.035253,
+            0.035078
           ],
           "dimensions": [
             0.321994,
-            0.070516,
-            0.07013
+            0.070507,
+            0.070121
           ],
           "center": [
             -0.022211,
             -0.0,
-            1.7e-05
+            1.8e-05
           ]
         },
         "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES": {
           "materials": [
-            "FormulaOne2030PreservedWheelReferenceGraphiteWheelMetal",
-            "FormulaOne2030PreservedWheelReferenceChampagneGoldWheelMetal.001"
+            "McLarenMp48OriginalRimMaterial.003"
           ],
           "bounds_min": [
-            -0.190011,
-            -0.169472,
-            -0.168901
+            -0.190386,
+            -0.169785,
+            -0.1698
           ],
           "bounds_max": [
-            0.190011,
-            0.16947,
-            0.168901
+            0.189636,
+            0.169814,
+            0.1698
           ],
           "dimensions": [
             0.380022,
-            0.338942,
-            0.337801
+            0.339599,
+            0.339599
           ],
           "center": [
-            0.0,
-            -1e-06,
-            -0.0
+            -0.000375,
+            1.5e-05,
+            0.0
           ]
         },
         "GEO_WHEEL_REAR_RIGHT_TIRE": {
           "materials": [
-            "FormulaOne2030ThirteenInchTireSurface.003"
+            "McLarenMp48OriginalTireMaterial.003"
           ],
           "bounds_min": [
             -0.21,
@@ -1891,8 +1911,8 @@
             0.67
           ],
           "center": [
-            0.0,
             -0.0,
+            0.0,
             0.0
           ]
         }

@@ -17,10 +17,10 @@
     "transformations_applied": true
   },
   "authored_alignment": {
-    "front_track": 1.5059999227523804,
-    "rear_track": 1.4319999814033508,
-    "wheelbase": 2.950000286102295,
-    "chassis_vertical_offset": 0.10500002279877663
+    "front_track": 1.5059996843338013,
+    "rear_track": 1.431999683380127,
+    "wheelbase": 2.950000584125519,
+    "chassis_vertical_offset": 0.10500012338161469
   },
   "wheel_visual_contract": {
     "SpinVisual": "tire, rim, hub and brake disc rotate about local X",
@@ -29,33 +29,33 @@
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "7B58BAA0CD7B5D321D0FA0FBE3EE4B38AA818DDD193252C48EB70C5BDC0AE559",
-      "size_bytes": 22260480
+      "sha256": "95B2B519370F08DEA25AC5A8AE94C9B10194A01F7206F060A8EBDF1F4750A671",
+      "size_bytes": 38996180
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "884D217C090A3356EEE29B25FE1673C42AA0E7DE1015D6E5AF1CA74B098FF9E5",
-      "size_bytes": 8498892
+      "sha256": "2EBEC61370BD94DC392EBE2D0947370329B701E9D20BE6D8BA3F224C86DC9C8D",
+      "size_bytes": 4969628
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "D902294B5EADFF568BB261EF4B868BDD325AC98A93A33FE49800662733C8A042",
-      "size_bytes": 8498656
+      "sha256": "4BE2516AC2D04B38459371CA7A2E589EB291AA678F233247ABB5271FB3F83BAE",
+      "size_bytes": 5279616
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "CA114E5DAB7792B2FB54313F7447AB747E9E9BF611A0BE6C0818AD5D71DB3EBF",
-      "size_bytes": 8499180
+      "sha256": "325B0CCAF5305D809B4B8A8CB8F625077E1A75DA6174FBB27374C7F171289BE0",
+      "size_bytes": 5348892
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "078258AB52CC2245E753409E2A0BB69F6B875F579698A77D69C075911F2046A3",
-      "size_bytes": 8499400
+      "sha256": "A2603191289DA16D15F74A0FDF3BFA36D6023F549E2F899BAF94D7436B5D7174",
+      "size_bytes": 5348864
     }
   },
   "validation": {
     "status": "EXPORT_PASS",
-    "note": "Headrest underside and local cockpit interior and seat cavities preserve at least five millimeters of clearance to the current animated arms across 1205 steering poses and to the configured head-motion envelope. Driver anatomy, seated posture, rear crown, attachments, exterior geometry, materials and four wheel exports are preserved."
+    "note": "Blender geometry, dimensions, wheel hierarchy and GLB structure validated; in-game visual review pending."
   },
   "thirteen_inch_wheel_package": {
     "tire_diameter_metres": 0.67,
@@ -889,5 +889,20 @@
       ]
     },
     "protected_chassis_and_tires_preserved": true
+  },
+  "source_sha256": "30ceccc06db5b5c69d23abebe9d6929586ef8c82c083d545d2238f90b6156aea",
+  "source_path": "source/f1_2030.blend",
+  "latest_canonical_export": {
+    "date": "2026-10-13",
+    "source_sha256": "30ceccc06db5b5c69d23abebe9d6929586ef8c82c083d545d2238f90b6156aea",
+    "files": [
+      "chassis",
+      "wheel_FL",
+      "wheel_FR",
+      "wheel_RL",
+      "wheel_RR"
+    ],
+    "evidence": "scratch/glb_export_20261013/candidate/validation_report.json",
+    "materials": "Baked base color, tangent normal, roughness and metallic from current authoring materials"
   }
 }
