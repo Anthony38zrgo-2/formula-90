@@ -1,0 +1,3050 @@
+{
+  "triangles_before": 3320,
+  "triangles_after": 3760,
+  "triangle_budget": 4000,
+  "subdivided_edges": 220,
+  "new_vertices": 220,
+  "moved_preceding_vertices": 276,
+  "maximum_preceding_vertex_displacement_meters": 0.004000045028895628,
+  "maximum_allowed_displacement_meters": 0.004,
+  "protected_vertex_count": 1664,
+  "protected_vertices_unchanged": true,
+  "sharp_edges_before": 418,
+  "sharp_edges_after": 350,
+  "texture_coordinate_layer_names": [
+    "UVMap",
+    "HornetBakeUV",
+    "ReferenceBakeUV",
+    "CarbonSurfaceCoordinates",
+    "BakedPhysicalMaterialCoordinates",
+    "UniformCarbonFiberCoordinates"
+  ],
+  "maximum_retained_texture_coordinate_difference": 0,
+  "degenerate_triangles_before": 0,
+  "degenerate_triangles_after": 0,
+  "smoothing_iterations": 12,
+  "attachment_boundary_segments_unchanged": true,
+  "overall_bounds_unchanged": true,
+  "inverted_polygons": 0,
+  "preceding_nonadjacent_overlap_parent_pairs": 261,
+  "new_nonadjacent_overlap_parent_pairs": 0,
+  "corner_normal_policy": "Area weighted exterior normals with preceding normals retained on attachment boundaries, accessory contacts and the lower transition material.",
+  "source_file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "source_digest": "15166e2c64cbf04d93352df8557eaf5080d031bdf6933c6f070d22a819b40e20",
+  "output_file": "D:\\Formula90s\\scratch\\formula_one_2030_engine_cover_smoothing_20261013\\candidate\\f1_2030.blend",
+  "output_digest": "deea6d4f6cdbd9f819ae282e609d3718c32af15f44eb9fa7323818f9c5fce786",
+  "original_cover_mesh_fingerprint": "7c5c5004971662e2ea4b191fc3cbacb26696d57fc27eb7d616362c94001cccaa",
+  "corrected_cover_mesh_fingerprint": "3a8567c20521390c1b69138d2fda8cd2bdf9f8a3508d7dd4d9fe5c03b916e18d",
+  "protected_object_fingerprints": {
+    "BodyworkEngineCoverCentralFin": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "2a36c0f178472af75c3caf7e0eb52986175b826261d54c9786bea7137210591e"
+    },
+    "BodyworkMonocoqueExterior": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "c0fd391e1aa5514a8addc62ae0257b7d1bd84866d3eba223a3f9cb5e56117e47"
+    },
+    "BodyworkNose": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "de5521301cacc504efd3923596550d4c7877c0150fc6b6014e3b659becb425b0"
+    },
+    "BodyworkSidepodLeft": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "be8cd5f075461ccbf5c5110a3ddbad07cafc57660ba5c4bac9a0654ab1224f5b"
+    },
+    "BodyworkSidepodRight": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "f6b252e7838814bae60568e4d56c9f804c46a7630755cdc20d1e3f66b4f1bd9e"
+    },
+    "DATUM_VEHICLE_ORIGIN": {
+      "type": "EMPTY",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": null
+    },
+    "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER": {
+      "type": "EMPTY",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": null
+    },
+    "GEO_BRAKE_FRONT_LEFT_CALIPER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "0017313b8dc246d50220f1b01ae2482a43607a167799391f684adfe0588d3f65"
+    },
+    "GEO_BRAKE_FRONT_LEFT_DISC": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "37ba8cb5ffdba307276e2b8471b9864387effe8ebb5e6e741b8111546da80209"
+    },
+    "GEO_BRAKE_FRONT_LEFT_DUCT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.1586771011352539
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.12644094228744507
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.16276796162128448
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "2ac824713e880ab8c51b71383c1081ad58521776dc71f4894f74f5bf868bdb2f"
+    },
+    "GEO_BRAKE_FRONT_LEFT_INBOARD_DUCT_COVER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "c1269c6ce7d2ddbab07dc9d5a83439806940cc24f04ad82e298ff57399057129"
+    },
+    "GEO_BRAKE_FRONT_RIGHT_CALIPER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "c486900cb8898e5e3e46cdbf3b60deb81ee26c5d279b3f4c73899624ab64200a"
+    },
+    "GEO_BRAKE_FRONT_RIGHT_DISC": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "830e21df67413b5e307116552edbe49a8b36dbe431f4f66c01e8eeaa50b090ec"
+    },
+    "GEO_BRAKE_FRONT_RIGHT_DUCT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727727890014648
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "1436db54fb4db6d4c1619432e6124ca2a197a873e5d228eba50c00ac3d5615c6"
+    },
+    "GEO_BRAKE_FRONT_RIGHT_INBOARD_DUCT_COVER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "026be88fa5bc3b409fe52a24cc14502ca19f31cb1f5780e5853b694edc8c5dec"
+    },
+    "GEO_BRAKE_REAR_LEFT_CALIPER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "badc4c3752d9c03378cda9b04eac6501b076a97e923bba58278db0c156951ac9"
+    },
+    "GEO_BRAKE_REAR_LEFT_DISC": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "400da66e868bf073d103a8c35e3e314441f57ea979f0b2cb8aa4c2c2aac62327"
+    },
+    "GEO_BRAKE_REAR_LEFT_DUCT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.3354642391204834
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014792203903198
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "70140734a2658b2237165ddfa7c8b7fe9f0098385da9d9411cb617891c769286"
+    },
+    "GEO_BRAKE_REAR_LEFT_INBOARD_DUCT_COVER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "4d7882c48c3dc7e82291d7a1570ff027d3077510898e21b7e8b88ba165957f28"
+    },
+    "GEO_BRAKE_REAR_RIGHT_CALIPER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "ebffe1eeea7cc05b011e5bdfbd206350c8f12bc7d7a1a32550a7993537cd3368"
+    },
+    "GEO_BRAKE_REAR_RIGHT_DISC": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "9d53c78d0c8afd3c73a509366c16e6e360af9f43037e711cb0cc1ffa49c33a9b"
+    },
+    "GEO_BRAKE_REAR_RIGHT_DUCT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.3354642391204834
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014792203903198
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "da8e411f9176a03dab1ec12f2ecbdfbed31f6f247783a5f74d641ae51ff9e01f"
+    },
+    "GEO_BRAKE_REAR_RIGHT_INBOARD_DUCT_COVER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "a79025763867c44f16f58da2503b98aa59fa961939e0f8c13bc04ff3fb286f1c"
+    },
+    "GEO_COCKPIT_DRIVER_SEAT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.09235668927431107
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.11422981321811676
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "0613211e2e0070bcc1ee0de6c89fc81ad9ccd713644362823ee852eabd904c7f"
+    },
+    "GEO_COCKPIT_HALO": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection"
+      ],
+      "mesh": "235b9e13299f3835782cce46cbc747bee26e0af6c2773fef502695331b641be3"
+    },
+    "GEO_COCKPIT_HeadrestPadding": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "FormulaOne2030CockpitHeadrest"
+      ],
+      "mesh": "df4f2eca09097e2984702e2d84a16af0e564ce20446aa5d480769d1f3e0087f5"
+    },
+    "GEO_COCKPIT_INTERIOR_SHELL": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "34c5cc210f1498320b2f8fbd3422680b5f3d5d364562c9c030c84f72501c51e2"
+    },
+    "GEO_COCKPIT_MIRROR_HOUSINGS_AND_SUPPORTS": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "5982fc8245efca1301cd4599e4c45763dd6af8adc263d215a74ec5fa11474e1d"
+    },
+    "GEO_COCKPIT_MIRROR_REFLECTIVE_SURFACES": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "e2b58588dbe58ed81e26693c3a7502f2aa91841cce0f6d0cbdb11f1df8c09d0a"
+    },
+    "GEO_COCKPIT_UpperInteriorLining": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "7828979d258d313a21b47173cd981fa60b5f8367e3784a7a48357fa1dbd4580a"
+    },
+    "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "a43f33a4525d2f2b4daf46f41f091b53a2894703d19995c548dc874f6a179c03"
+    },
+    "GEO_ENGINE_COVER_REAR_CLOSURE": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.3205414116382599
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "f6c815e6c336c76695660929f7b47e52b021c076eedbe843497e922660c8aa58"
+    },
+    "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "62722cd54bb7ac862c79a83e4817816fab4f5e2800f2f2203a1bcbcafe0ee11d"
+    },
+    "GEO_ENGINE_COVER_TOP_CAMERA_HOUSING": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "6655a3033ca797c7a4ec67d845d3bf989d5e682441372d3dd0480bccea8463af"
+    },
+    "GEO_EXHAUST_OUTLET_TUBE_LEFT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_ENGINE_COVER_REAR_CLOSURE",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "9f9ba99c2b803ffe6f7a841327a3491e92913e14b9b60f881e49395260cff9fa"
+    },
+    "GEO_EXHAUST_OUTLET_TUBE_RIGHT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_ENGINE_COVER_REAR_CLOSURE",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "322d44cb27bfa25625289b7cac785148d2b7e09f7e81b1e4eada2ae914b5d21a"
+    },
+    "GEO_FRONT_WING_ENDPLATES": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -2.691457986831665
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.30000001192092896
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "329c9e3ef266e70ce413c9b03289219ad6b8455544534b04bab1d5527ea8a5b3"
+    },
+    "GEO_FRONT_WING_INTERMEDIATE_ELEMENT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -2.43078351020813
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -0.30920469760894775
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.2604418098926544
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "3b9a6b6f57d7143619afc447bd1e7e4279ac9ecae4434dd220197d4e943d70c6"
+    },
+    "GEO_FRONT_WING_MAIN_ELEMENT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "60fe3f5fa94b135748903a92348c58db810a1121f7a50f5192fffee53256e4c2"
+    },
+    "GEO_FRONT_WING_MOUNTING_PYLONS": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "ab80502df2a6fb583224dc03fb18e5ee63d2f40eed266e82c89d3404d75a1ef9"
+    },
+    "GEO_FRONT_WING_UPPER_ELEMENT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "66e294db0b2fa7fd72875ff8796238d23351b4434a730b1c81fca44f20959c71"
+    },
+    "GEO_REAR_SAFETY_LIGHT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.08999999612569809
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "a2aea5d445e231712f8542fcfcc92d4091d23745dd51a2cb4ac79fba2656dc96"
+    },
+    "GEO_REAR_WING_CENTRAL_SUPPORT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "aee26757dd808e4b18bc4528067f35ea64d357fc00e68d299231a5d72a5dcd77"
+    },
+    "GEO_REAR_WING_ENDPLATE_ASSEMBLY": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "8f09e0f21d985e9ee0f723456c082d6231d30e3ad22c437ba87fd1bc8a1b547f"
+    },
+    "GEO_REAR_WING_INTERMEDIATE_ELEMENT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.9999991059303284,
+          -0.0013381368480622768,
+          5.355199391487986e-06,
+          -0.004863321781158447
+        ],
+        [
+          0.00133814150467515,
+          0.9999741911888123,
+          -0.007039225660264492,
+          0.0
+        ],
+        [
+          4.064386303070933e-06,
+          0.007039226125925779,
+          0.9999751448631287,
+          -0.06549867987632751
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "a0191a00e13147553c9c0e6ac80f99ed4490709bf9cfa2a5aa4b3d3234d15854"
+    },
+    "GEO_REAR_WING_LOWER_BEAM_ELEMENT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.10117829591035843
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "bf672bf1b7506bd58ad3836b3b5f7c1bbca4f2e7a56e6fc6fed3f93e57a1dcaf"
+    },
+    "GEO_REAR_WING_UPPER_ELEMENT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "65392379563316ae053892c03bc0376868e6a397c67f7767a1a2c379bb924a0c"
+    },
+    "GEO_SIDEPOD_FRONT_FLOW_DEFLECTORS": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "c2ac44b050c1651c56318b82ec786d913ffe58a4723aa216e1525e43f539e94d"
+    },
+    "GEO_STEERING_COLUMN_SHAFT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          -1.150327832988296e-08,
+          0.0,
+          -0.010999999940395355,
+          -0.47960788011550903
+        ],
+        [
+          0.0,
+          -0.010999999940395355,
+          0.0,
+          0.0
+        ],
+        [
+          0.010999999940395355,
+          0.0,
+          -1.150327832988296e-08,
+          0.13874304294586182
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "4509fc96347fb2671e1a0ef26c81e34c5f7ba1393186690af33e38a0c896d009"
+    },
+    "GEO_STEERING_WHEEL_BODY": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.010999999940395355,
+          0.0,
+          0.0,
+          -0.4819999933242798
+        ],
+        [
+          0.0,
+          0.010999999940395355,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.010999999940395355,
+          0.1379999965429306
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "b89cfe7060f9425acfd03fba7b5fce5cb0ebf280d5173725dc5682cda4ad585a"
+    },
+    "GEO_STEERING_WHEEL_CENTER_FASTENER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          -5.939897018691909e-09,
+          0.0,
+          -0.01099999900907278,
+          -0.4795799255371094
+        ],
+        [
+          0.0,
+          -0.010999999940395355,
+          0.0,
+          0.0
+        ],
+        [
+          0.01099999900907278,
+          0.0,
+          -5.939897018691909e-09,
+          0.1379999965429306
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_STEERING_WHEEL_BODY",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "fd7296f3e1a1419977c66e4c61ad0fe51b6bba92864ac0bbea53633b6cef0b8b"
+    },
+    "GEO_STEERING_WHEEL_DISPLAY": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.010999999940395355,
+          0.0,
+          0.0,
+          -0.4819999039173126
+        ],
+        [
+          0.0,
+          0.010999999940395355,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.010999999940395355,
+          0.1379999965429306
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_STEERING_WHEEL_BODY",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "4fce33b1419c798c65852a514c7701f68e7723bd9fc862b67ecd5c8e7465471b"
+    },
+    "GEO_STEERING_WHEEL_PADDLE_LEFT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.010999999940395355,
+          0.0,
+          0.0,
+          -0.4819999039173126
+        ],
+        [
+          0.0,
+          0.010999999940395355,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.010999999940395355,
+          0.12699998915195465
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_STEERING_WHEEL_BODY",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "20649dd441a479f5b5506daa15af312303fd13c3e6533bfca78be3b72a5e5545"
+    },
+    "GEO_STEERING_WHEEL_PADDLE_RIGHT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.010999999940395355,
+          0.0,
+          1.6609539299494713e-09,
+          -0.4819999039173126
+        ],
+        [
+          0.0,
+          -0.010999999940395355,
+          0.0,
+          0.0
+        ],
+        [
+          -1.6609539299494713e-09,
+          0.0,
+          0.010999999940395355,
+          0.12699998915195465
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "GEO_STEERING_WHEEL_BODY",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "dcea8bec26a7d2818ea24b5041e75baabb3a10c3171aeed125a010431c205c93"
+    },
+    "GEO_SUSPENSION_FRONT_LINK_ASSEMBLY": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -1.3799999952316284
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "4b71546e5c7a9e797e8e44037c46123dcc66eb3cb20e1244968df7629341e328"
+    },
+    "GEO_SUSPENSION_REAR_LINK_ASSEMBLY": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          1.850000023841858
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "2a2db6eac43adcb04018ee33aca42aca1cc7fdf4a4dc384ab525f6c83938e839"
+    },
+    "GEO_UNDERBODY_FLOOR_AND_DIFFUSER": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.08999999612569809
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "5afe27f80e91ed538542b5f8629ec7379605dfd644a32627b0e7cf6db387203a"
+    },
+    "GEO_WHEEL_FRONT_LEFT_CENTER_LOCK_NUT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "f33a7eda348cce8ee02d804b3ec1cf1fa4b032a9064096bfbb99c30fef1d9802"
+    },
+    "GEO_WHEEL_FRONT_LEFT_HUB": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "3d9befca7d13f999707bf80ebad3dbda2b60ea1fb782a7a45837ed2445faa04e"
+    },
+    "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "64073d584a918d7881f4fb55557cd34b35124ecd36ec9987c057bdcfd3cd34e1"
+    },
+    "GEO_WHEEL_FRONT_LEFT_TIRE": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "3bc32e2fa4ba65297f4e24281c365d3ad04c737f3374dee609eb9acfca9405f9"
+    },
+    "GEO_WHEEL_FRONT_RIGHT_CENTER_LOCK_NUT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "afd830cb69f0fe183737250455a774c6316aeb95a70d92049c2d8323ed7123dc"
+    },
+    "GEO_WHEEL_FRONT_RIGHT_HUB": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "4c01667ec0c51c4c873a229618c482789dd29844643ad8fe534504a0380b58e9"
+    },
+    "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "b771bccd705edd65ee8be7973ff5ff704271561509098c00cd81e440e8c410b1"
+    },
+    "GEO_WHEEL_FRONT_RIGHT_TIRE": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.22727717459201813
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.07667398452758789
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_FRONT_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "8408fde0198516b0f0f3174619d96ad8fc73b6bce5de41306919241cf5659804"
+    },
+    "GEO_WHEEL_REAR_LEFT_CENTER_LOCK_NUT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "53cb8e492ae2dffb1265093681d1c5fc939e5e790de833224c82415ec767a218"
+    },
+    "GEO_WHEEL_REAR_LEFT_HUB": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "cf9a81535867c5eaf382d29dfd5c840a349b9c8071aaec4210b82cb36b5b47c8"
+    },
+    "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "dc8def58e790cf68be997d1660d0f1dc254879ee0f05daaa6541309abed0ef84"
+    },
+    "GEO_WHEEL_REAR_LEFT_TIRE": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_LEFT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "32f1443a351293afc5a6022dbed9718785ae717e22a4f41831d215f95d64a56f"
+    },
+    "GEO_WHEEL_REAR_RIGHT_CENTER_LOCK_NUT": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "c32ccf8df8273d229c4cbf8288533797fd0bd584d3a5943ae7d37ddf37ab1448"
+    },
+    "GEO_WHEEL_REAR_RIGHT_HUB": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "b8880a27c4a20c2eaba945001cd2a20b35f9f77880ce9a1c4831cb96f62a049f"
+    },
+    "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "a4d36fded66ea7356bb150b967cdca4efb6fe1023bcdfba4ddf0c2f0ac4d2bca"
+    },
+    "GEO_WHEEL_REAR_RIGHT_TIRE": {
+      "type": "MESH",
+      "matrix": [
+        [
+          0.009999999776482582,
+          0.0,
+          0.0,
+          -0.33546435832977295
+        ],
+        [
+          0.0,
+          7.549790237426635e-10,
+          -0.009999999776482582,
+          -0.08014798164367676
+        ],
+        [
+          0.0,
+          0.009999999776482582,
+          7.549790237426635e-10,
+          -0.2051590085029602
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "WHEEL_REAR_RIGHT_CONTROL",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": "0a209be5585fb4aabb270566f1b78b9ecc2f4b851e9eb34b24b27de1a009c9f5"
+    },
+    "StudioFillSoftbox": {
+      "type": "LIGHT",
+      "matrix": [
+        [
+          -0.9701425433158875,
+          0.15430328249931335,
+          -0.1871202439069748,
+          -1.0
+        ],
+        [
+          -0.2425355464220047,
+          -0.6172136068344116,
+          0.748481035232544,
+          4.0
+        ],
+        [
+          -6.950836706209884e-08,
+          0.7715166211128235,
+          0.6362091898918152,
+          3.5
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioFrontThreeQuarterCamera": {
+      "type": "CAMERA",
+      "matrix": [
+        [
+          0.7808687090873718,
+          0.23695844411849976,
+          -0.578009307384491,
+          -4.800000190734863
+        ],
+        [
+          -0.6246951818466187,
+          0.29619792103767395,
+          -0.7225114107131958,
+          -6.0
+        ],
+        [
+          -2.8815261288173133e-08,
+          0.9252661466598511,
+          0.3793184757232666,
+          3.200000047683716
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioGroundPlane": {
+      "type": "MESH",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": "6ce74f3f6db60bb0689bdc502b1810587ec4ca2aede0992a4403145d60101dcf"
+    },
+    "StudioKeySoftbox": {
+      "type": "LIGHT",
+      "matrix": [
+        [
+          0.7893521189689636,
+          0.42220011353492737,
+          -0.4457244277000427,
+          -3.5
+        ],
+        [
+          -0.6139407157897949,
+          0.5428286194801331,
+          -0.5730741024017334,
+          -4.5
+        ],
+        [
+          3.860500896735175e-08,
+          0.7260056138038635,
+          0.6876887679100037,
+          5.5
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioOverheadStripLight": {
+      "type": "LIGHT",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          6.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioRearContourSoftbox": {
+      "type": "LIGHT",
+      "matrix": [
+        [
+          0.3511234521865845,
+          -0.6312918066978455,
+          0.6915077567100525,
+          4.0
+        ],
+        [
+          0.936329185962677,
+          0.23673440515995026,
+          -0.2593154311180115,
+          -1.5
+        ],
+        [
+          4.7425654514654525e-08,
+          0.7385305762290955,
+          0.6742199659347534,
+          4.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioRearThreeQuarterCamera": {
+      "type": "CAMERA",
+      "matrix": [
+        [
+          0.7808687686920166,
+          -0.21050162613391876,
+          0.5881606936454773,
+          4.800000190734863
+        ],
+        [
+          0.6246950626373291,
+          0.263126939535141,
+          -0.735200822353363,
+          -6.0
+        ],
+        [
+          5.121761148529913e-08,
+          0.9415164589881897,
+          0.33696693181991577,
+          2.799999952316284
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioSideCamera": {
+      "type": "CAMERA",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.056161120533943176,
+          -0.9984217286109924,
+          -8.0
+        ],
+        [
+          0.0,
+          0.9984217286109924,
+          0.056161120533943176,
+          0.5
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "StudioTopCamera": {
+      "type": "CAMERA",
+      "matrix": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          8.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": null,
+      "collections": [
+        "StudioLightingAndCameras"
+      ],
+      "mesh": null
+    },
+    "WHEEL_FRONT_LEFT_CONTROL": {
+      "type": "EMPTY",
+      "matrix": [
+        [
+          0.3499999940395355,
+          0.0,
+          0.0,
+          -1.475000023841858
+        ],
+        [
+          0.0,
+          0.3499999940395355,
+          0.0,
+          -0.5730000138282776
+        ],
+        [
+          0.0,
+          0.0,
+          0.3499999940395355,
+          -0.10499999672174454
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": null
+    },
+    "WHEEL_FRONT_RIGHT_CONTROL": {
+      "type": "EMPTY",
+      "matrix": [
+        [
+          0.3499999940395355,
+          0.0,
+          0.0,
+          -1.475000023841858
+        ],
+        [
+          0.0,
+          0.3499999940395355,
+          0.0,
+          0.5730000138282776
+        ],
+        [
+          0.0,
+          0.0,
+          0.3499999940395355,
+          -0.10499999672174454
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": null
+    },
+    "WHEEL_REAR_LEFT_CONTROL": {
+      "type": "EMPTY",
+      "matrix": [
+        [
+          0.3499999940395355,
+          0.0,
+          0.0,
+          1.475000023841858
+        ],
+        [
+          0.0,
+          0.3499999940395355,
+          0.0,
+          -0.7160000205039978
+        ],
+        [
+          0.0,
+          0.0,
+          0.3499999940395355,
+          -0.10499999672174454
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": null
+    },
+    "WHEEL_REAR_RIGHT_CONTROL": {
+      "type": "EMPTY",
+      "matrix": [
+        [
+          0.3499999940395355,
+          0.0,
+          0.0,
+          1.475000023841858
+        ],
+        [
+          0.0,
+          0.3499999940395355,
+          0.0,
+          0.7160000205039978
+        ],
+        [
+          0.0,
+          0.0,
+          0.3499999940395355,
+          -0.10499999672174454
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "parent": "DATUM_VEHICLE_ORIGIN",
+      "collections": [
+        "Scene Collection",
+        "Scene Collection"
+      ],
+      "mesh": null
+    }
+  },
+  "protected_objects_preserved": true,
+  "saved_source_reopened_and_protected_objects_verified": true,
+  "preceding_exported_engine_cover_triangles": 3318,
+  "exported_engine_cover_triangles": 3758,
+  "chassis_export_review": "D:\\Formula90s\\scratch\\formula_one_2030_engine_cover_smoothing_20261013\\candidate\\engine_cover_corrected_chassis_review.glb",
+  "promoted_source": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+  "promoted_source_digest": "0b181c898f0f285022c61b5788525de5619c65a69c480ca4dfe0f3938fa99fdf",
+  "promoted_source_reopened_and_verified": true,
+  "source_backup": "D:\\Formula90s\\scratch\\formula_one_2030_engine_cover_smoothing_20261013\\saved_source_before_engine_cover_correction_with_resolved_textures.blend",
+  "live_scene_backup": "D:\\Formula90s\\scratch\\formula_one_2030_engine_cover_smoothing_20261013\\live_source_before_engine_cover_correction.blend",
+  "runtime_vehicle_assets_promoted": false
+}

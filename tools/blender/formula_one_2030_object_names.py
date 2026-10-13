@@ -57,6 +57,15 @@ WHEEL_COMPONENTS = {
     "TIRE": ("WHEEL", "TIRE"),
 }
 
+BODYWORK_COMPONENT_NAMES = (
+    "BodyworkNose",
+    "BodyworkMonocoqueExterior",
+    "BodyworkSidepodLeft",
+    "BodyworkSidepodRight",
+    "BodyworkEngineCover",
+    "BodyworkEngineCoverCentralFin",
+)
+
 OBJECT_NAME_MIGRATION = dict(CHASSIS_OBJECT_NAMES)
 for previous_position, current_position in WHEEL_POSITIONS.items():
     OBJECT_NAME_MIGRATION[f"WHEEL_{previous_position}_CONTROL"] = f"WHEEL_{current_position}_CONTROL"
@@ -108,7 +117,18 @@ def wheel_source_object_names(position):
 
 
 def is_chassis_object(name):
-    return canonical_object_name(name) in CHASSIS_OBJECT_NAMES.values() or name.startswith(("GEO_CHASSIS_", "GEO_BODYWORK_DECAL_"))
+    return canonical_object_name(name) in CHASSIS_OBJECT_NAMES.values() or name in BODYWORK_COMPONENT_NAMES or name.startswith(("GEO_CHASSIS_", "GEO_BODYWORK_DECAL_"))
+
+
+def bodywork_mesh_objects():
+    import bpy
+    assembly = bpy.data.objects["GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVER"]
+    if assembly.type == "MESH":
+        return (assembly,)
+    components = tuple(bpy.data.objects[name] for name in BODYWORK_COMPONENT_NAMES)
+    if any(component.type != "MESH" or component.parent != assembly for component in components):
+        raise ValueError("Incomplete separated bodywork assembly")
+    return components
 
 
 def is_wheel_object(name, position):

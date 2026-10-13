@@ -5,6 +5,7 @@ from pathlib import Path
 
 from formula_one_2030_object_names import (
     CHASSIS_OBJECT_NAMES,
+    BODYWORK_COMPONENT_NAMES,
     OBJECT_NAME_MIGRATION,
     WHEEL_POSITIONS,
     canonical_object_name,
@@ -45,6 +46,11 @@ class FormulaOne2030ObjectNamesTest(unittest.TestCase):
         self.assertEqual(record['path'], document['GEO_CHASSIS_BODY']['path'])
         self.assertEqual(record['sha256'], '1234')
         self.assertIn('GEO_CHASSIS_BODY', document)
+
+    def test_separated_bodywork_components_remain_exportable(self):
+        for component_name in BODYWORK_COMPONENT_NAMES:
+            self.assertTrue(is_chassis_object(component_name), component_name)
+        self.assertFalse(is_chassis_object('BodyworkSeparationOriginalTemporary'))
 
     def test_mesh_suffixes_and_historical_decals_preserve_component_identity(self):
         self.assertEqual(canonical_object_name('GEO_CHASSIS_REAR_WING_MID_MESH.001'), 'GEO_REAR_WING_INTERMEDIATE_ELEMENT_MESH.001')
