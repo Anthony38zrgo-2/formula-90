@@ -1,9 +1,11 @@
-"""Contract tests for the generated v10 engine intermediate sources."""
+"""Contract tests for the historical GP3 provisioning of the canonical bank."""
 
 from __future__ import annotations
 
 import hashlib
-import wave
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -21,19 +23,7 @@ def generated() -> tuple[dict, dict[str, bytes]]:
     return generator.build_intermediates(BANK_DIR, HISTORICAL_BANK_DIR)
 
 
-def test_generated_intermediates_match_shipped_bank(
-    generated: tuple[dict, dict[str, bytes]],
-) -> None:
-    metadata, outputs = generated
-    for filename, payload in outputs.items():
-        path = BANK_DIR / filename
-        assert path.is_file(), filename
-        assert path.read_bytes() == payload, filename
-    metadata_path = BANK_DIR / generator.METADATA_FILENAME
-    assert metadata_path.read_bytes() == canonical.serialize_json(metadata)
-
-
-def test_generated_intermediates_are_deterministic(
+def test_historical_provisioning_is_deterministic(
     generated: tuple[dict, dict[str, bytes]],
 ) -> None:
     metadata, outputs = generated
@@ -41,69 +31,32 @@ def test_generated_intermediates_are_deterministic(
         BANK_DIR, HISTORICAL_BANK_DIR
     )
     assert second_metadata == metadata
-    assert sorted(second_outputs) == sorted(outputs)
-    for filename, payload in outputs.items():
-        assert payload == second_outputs[filename], filename
+    assert second_outputs == outputs
 
 
-def test_generated_intermediates_use_integer_cycle_grids(
-    generated: tuple[dict, dict[str, bytes]],
-) -> None:
-    metadata, _ = generated
-    for record in metadata["intermediates"]:
-        if record["recipe"] != "spectral_magnitude_morph_integer_cycles":
-            continue
-        frames = record["integer_cycle_count"] * record["samples_per_cycle"]
-        assert record["frames"] == frames
-        assert record["cycle_frequency_hertz"] == pytest.approx(
-            generator.SAMPLE_RATE / record["samples_per_cycle"], rel=1e-12
-        )
-        assert record["reference_revolutions_per_minute"] == pytest.approx(
-            record["cycle_frequency_hertz"]
-            * canonical.REVOLUTIONS_PER_MINUTE_PER_HERTZ,
-            rel=1e-12,
-        )
-        with wave.open(str(BANK_DIR / record["output_filename"]), "rb") as reader:
-            assert reader.getnchannels() == 1
-            assert reader.getsampwidth() == 3
-            assert reader.getframerate() == generator.SAMPLE_RATE
-            assert reader.getnframes() == frames
+def test_historical_provisioning_checks_the_shipped_bank() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "tools.audio.generate_v10_engine_intermediates", "--check"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
-def test_generated_intermediates_are_pitch_consistent(
-    generated: tuple[dict, dict[str, bytes]],
-) -> None:
-    metadata, _ = generated
-    for record in metadata["intermediates"]:
-        sample_rate, samples = canonical.read_wave_mono(
-            BANK_DIR / record["output_filename"]
-        )
-        assert sample_rate == generator.SAMPLE_RATE
-        reference_hertz = (
-            record["reference_revolutions_per_minute"]
-            / canonical.REVOLUTIONS_PER_MINUTE_PER_HERTZ
-        )
-        measurement = canonical.measure_cepstral_cycle_frequency(
-            samples, reference_hertz
-        )
-        assert measurement is not None, record["output_filename"]
-        measured_hertz, _, prominence = measurement
-        assert (
-            prominence >= canonical.REFERENCE_MEASUREMENT_MINIMUM_PROMINENCE_RATIO
-        ), record["output_filename"]
-        error_ratio = abs(measured_hertz - reference_hertz) / reference_hertz
-        assert (
-            error_ratio <= canonical.REFERENCE_MEASUREMENT_TOLERANCE_RATIO
-        ), record["output_filename"]
+def test_canonical_maximum_copies_the_historical_source() -> None:
+    historical_source = HISTORICAL_BANK_DIR / "engine_coast_maximum.wav"
+    manifest = json.loads((BANK_DIR / "manifest.json").read_text(encoding="utf-8"))
+    maximum = next(
+        record
+        for record in manifest["engine_source_selection"]
+        if record["runtime_asset_id"] == "engine_off_maximum_loop"
+    )
+    assert maximum["source_sha256"] == hashlib.sha256(historical_source.read_bytes()).hexdigest()
 
 
-def test_imported_maximum_matches_historical_source(
-    generated: tuple[dict, dict[str, bytes]],
-) -> None:
-    metadata, outputs = generated
-    for record in metadata["historical_sources"]:
-        source_path = ROOT / record["path"]
-        assert hashlib.sha256(source_path.read_bytes()).hexdigest() == record["sha256"]
-    assert outputs["engine_off_maximum.wav"] == (
-        HISTORICAL_BANK_DIR / "engine_coast_maximum.wav"
-    ).read_bytes()
+def test_retired_fields_no_longer_exist() -> None:
+    assert hasattr(canonical, "POWERED_ENGINE_PRESENCE_CURVES")
+    assert not hasattr(generator, "SPECTRAL_MORPHS")
+    assert not (BANK_DIR / generator.METADATA_FILENAME).exists()

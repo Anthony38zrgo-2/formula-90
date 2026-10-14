@@ -19,11 +19,12 @@ itself in its own AGENTS.md.
 - The shared commons bank stays at `game/sounds/banks/commons` because it is not
   V10-specific. Do not move it into `v10-v2-bank` and do not rename its
   `bank_manifest.json`.
-- Engine runtime assets declared by `v10-v2-bank/manifest.json` must sit next to
-  that manifest inside `v10-v2-bank`. Raw recordings and derived runtime WAVs
-  coexist in the same folder; raw file names (`engine_*.wav`, `backfire_*.wav`,
-  `gearup.wav`, `geardn.wav`, `limiter.wav`) are sources, derived file names
-  (`*_loop.wav`, `*_event.wav`, `backfire_burst_*.wav`) are runtime assets.
+- Runtime assets declared by `v10-v2-bank/manifest.json` must sit next to
+  that manifest inside `v10-v2-bank`. The bank ships prepared runtime WAVs
+  only: derived file names (`*_loop.wav`, `*_event.wav`, `backfire_burst_*`,
+  `limiter_cut_loop.wav`, `transmission_whine_loop.wav`) are runtime assets.
+  Raw recordings stay outside the bank; stage new ones nowhere inside
+  `banks/` and finish promotion offline before updating the manifest.
 - The geometric F1 2030 vehicle profile selects the canonical V10 bank through
   `audio.grand_prix_sampler.manifest = "sounds/banks/v10-v2-bank/manifest.json"`
   in `game/data/vehicles/f1_2030/profiles/geometric/audio.json`.
@@ -45,12 +46,15 @@ Sampling format truth and engine-bank manifest invariants live in
 
 - Rebuild the canon only with
   `python -m tools.audio.build_canonical_v10_engine_bank` from the repository
-  root. Run `python -m tools.audio.build_canonical_v10_engine_bank --check` to
-  verify that the shipped bank still matches its sources byte for byte, and
-  `--audit` to inspect formats and measurements.
-- Never hand-edit derived runtime WAVs, `manifest.json` or
-  `source_inventory.json`. Change the raw source or the preparation tool and
-  regenerate.
-- The preparation tool is deterministic. Any intentional audio change must
-  update the raw sources, the tool revision, the derived hashes and the tests in
+  root in offline mode. Run
+  `python -m tools.audio.build_canonical_v10_engine_bank --check` to validate
+  the canonical provenance records without rewriting anything, and `--audit`
+  to list which recorded sources remain resolvable on disk. Runtime WAVs keep
+  preparation provenance inside `source_inventory.json`.
+- Never hand-edit prepared runtime WAVs, `manifest.json` or
+  `source_inventory.json`. Any intentional audio change updates recorded
+  sources offline, then the tool revision, derived hashes and the tests in
   `tools/audio/tests/test_canonical_v10_engine_bank.py` in the same change.
+- The preparation tool is deterministic. It never rewrites runtime WAVs.
+- New recordings are promoted offline outside the bank; the bank never carries
+  raw capture sessions.
