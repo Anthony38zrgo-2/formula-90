@@ -85,20 +85,39 @@ not residue.
 
 ## Resolved in the dead-code cleanup sprint
 
-- Unreferenced F1 2030 manifests, texture sidecars embedded in referenced GLB
-  assets, dormant V10 loop samples, and the retired F1 2026-2008 asset family
-  removed.
+- Unreferenced F1 2030 manifests, dormant V10 loop samples, and the retired
+  F1 2026-2008 asset family removed. Texture sidecars deleted by the initial
+  sweep were restored where Godot GLB import still references them (pit-crew
+  wheel carriers, MP4/6 livery); only fully embedded-texture duplicates stayed
+  deleted.
 - Stale editor cache, duplicate per-crate `Cargo.lock` files, the unused DSP
   build-source template, and dead `.gitignore` whitelists removed.
 - Uninvoked tools (`tools/validation/`, `tools/agent_validation/`, orphan
   Blender/audio/diagnostics scripts), orphan launchers, and tests bound to
-  removed assets purged.
+  removed assets purged. Manual visual-review/capture suites stay in
+  `game/tests/` per its AGENTS contract.
+- Superseded grand-prix sampler staging (`engine_on_candidate/`, root event
+  copies, `v10-gp3` backup/staging) removed; the five-engine sample bank stays
+  as the canonical builder input, and `v10_f2002_*`/`v10_gf509` stay for the
+  gf509 diagnostic profile and synth fixtures.
 - Orphaned offline library `game/resources/` removed; its consumers
   (`game/assets/textures/track/AGENTS.md`, track-generation skill, architecture
   inventory) updated.
+- Unused background/skybox feature removed (`game/scripts/background/`,
+  `game/scenes/visuals/`, `game/crates/skybox-engine/`, HUD shaders, related
+  tests). Fuji never activated it: the track declares no background preset and
+  `RaceSession` used the legacy environment. `test_windows.ps1` dropped the
+  mountains smoke from its list.
 - The legacy F1 2026-2008 physics data and scene remain because
   `vehicle-physics-engine` embeds them via `include_str!` and Rust tests load
   them; retiring that default profile is a separate code backlog item.
+- The bootstrap/main-menu entry path is kept: it is the project main scene and
+  native `GameBootstrap` still loads it, so retiring it is a product decision,
+  not dead-code cleanup.
+- Known pre-existing gates outside this sprint: `cargo test` for
+  vehicle-physics-engine fails one aero golden from `598f8e55`, and
+  `tools/audio/tests/test_bank_determinism.py` fails two commons-bank
+  provenance checks.
 
 Moves and unifications remain explicitly out of scope until each row above
 becomes a backlog item with its owning AGENTS.md files as reviewers.
