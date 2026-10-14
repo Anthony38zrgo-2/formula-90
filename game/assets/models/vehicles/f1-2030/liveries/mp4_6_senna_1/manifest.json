@@ -6,7 +6,6 @@
   "asset": "F1_2030_V10",
   "physics_profile": "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json",
   "physics_sha256": "DC0D0B6E31D703A7D0440F951BFAD36C87D37B86B5D7EF16FD00AC55CD9D6A03",
-  "physics_digest_contract": "vehicle_profile_provenance_v1",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -17,40 +16,40 @@
     "transformations_applied": true
   },
   "authored_alignment": {
-    "front_track": 1.5059999227523804,
-    "rear_track": 1.4319999814033508,
-    "wheelbase": 2.950000286102295,
-    "chassis_vertical_offset": 0.10500002279877663
+    "front_track": 1.5059996843338013,
+    "rear_track": 1.431999683380127,
+    "wheelbase": 2.950000584125519,
+    "chassis_vertical_offset": 0.10500012338161469
   },
   "wheel_visual_contract": {
     "SpinVisual": "tire, rim, hub and brake disc rotate about local X",
-    "BrakeStatic": "caliper, carbon cover and independent cooling intake follow suspension and steering without wheel spin"
+    "BrakeStatic": "brake caliper and inboard brake duct follow suspension, steering and camber but do not rotate"
   },
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "501A61069F3D1FEE5EE7B4A9AE407E38D87EB72B34D9A542F9303EAD3F1365E1",
-      "size_bytes": 46727776
+      "sha256": "672DD4B5FF0143BB4D1F8D03E2D5904D0D090B28C1D7F99338081FF8E2E15131",
+      "size_bytes": 52215484
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
-      "sha256": "884D217C090A3356EEE29B25FE1673C42AA0E7DE1015D6E5AF1CA74B098FF9E5",
-      "size_bytes": 8498892
+      "sha256": "ABA2256DB4946F965738E6C0A5B506575FC7AFE0C0E0D81E4FC52A464BCBA271",
+      "size_bytes": 2246964
     },
     "wheel_FR": {
       "path": "f1_2030_v10_wheel_FR.glb",
-      "sha256": "D902294B5EADFF568BB261EF4B868BDD325AC98A93A33FE49800662733C8A042",
-      "size_bytes": 8498656
+      "sha256": "819B08CB798CF5F57C56093997E2A8E95AE874F02716FB19CB7D79FA53762975",
+      "size_bytes": 2246296
     },
     "wheel_RL": {
       "path": "f1_2030_v10_wheel_RL.glb",
-      "sha256": "CA114E5DAB7792B2FB54313F7447AB747E9E9BF611A0BE6C0818AD5D71DB3EBF",
-      "size_bytes": 8499180
+      "sha256": "19E7F20198133EC9B6F163E91DF3D1BE663C4D741CA22F45D4E15F22B6F13A89",
+      "size_bytes": 2247152
     },
     "wheel_RR": {
       "path": "f1_2030_v10_wheel_RR.glb",
-      "sha256": "078258AB52CC2245E753409E2A0BB69F6B875F579698A77D69C075911F2046A3",
-      "size_bytes": 8499400
+      "sha256": "3EE0A19CADE9B77A6858774E44AFCA47106DA45D9F3851978F9AEF1F033114AA",
+      "size_bytes": 2247048
     }
   },
   "validation": {
@@ -66,7 +65,7 @@
     "mass_properties": "Uniform thin-shell surface integration calibrated to preceding estimated component masses; no ballast compensation.",
     "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171"
   },
-  "current_chassis_source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171",
+  "current_chassis_source_sha256": "07c65f9cb3a2bad780b234d6c77c7fb7f4dc6aad1485173a601fb98fd992e4fe",
   "object_name_migration": {
     "operation": "Rename runtime nodes and meshes while preserving all geometry, materials, images, transforms and hierarchy",
     "assets": {
@@ -748,118 +747,6 @@
     },
     "physics_parameters_preserved": true
   },
-  "optimized_tire_geometry": {
-    "operation": "Replace tire surfaces using optimized geometry with physical diameter and width preserved",
-    "authoring_source_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
-    "authoring_source_sha256": "595ca31166391c3236b6d1806ac6fbc431812288d96b681d442f771168407b9f",
-    "changes": {
-      "wheel_FL": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826436,
-        "current_bytes": 8029300,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.16500000655651093,
-            0.3349999785423279,
-            0.33500000834465027
-          ],
-          "min": [
-            -0.16500000655651093,
-            -0.3349999785423279,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "6e44a78d55a05b437b8564c69dd800d8e878c11a8586769f34848dfeda4b2b74"
-      },
-      "wheel_FR": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826456,
-        "current_bytes": 8029320,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.16500000655651093,
-            0.3349999785423279,
-            0.33500000834465027
-          ],
-          "min": [
-            -0.16500000655651093,
-            -0.3349999785423279,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "c477b27e5ba9ba709258aba1dd1ed4f895c9909b9ad3baf5f49f554a6316ace7"
-      },
-      "wheel_RL": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826420,
-        "current_bytes": 8029288,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.20999999344348907,
-            0.33500000834465027,
-            0.33500000834465027
-          ],
-          "min": [
-            -0.20999999344348907,
-            -0.33500000834465027,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "6f7794b32f878879d83dad164c7553af21586608045667d22f5ca88ab4746512"
-      },
-      "wheel_RR": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826420,
-        "current_bytes": 8029284,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.20999999344348907,
-            0.33500000834465027,
-            0.33500003814697266
-          ],
-          "min": [
-            -0.20999999344348907,
-            -0.33500000834465027,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "95c399394b98efcc6fcb939a1d905fc442b921148eff8995fda3ae2b72e3eeb8"
-      }
-    },
-    "physics_parameters_preserved": true
-  },
   "brake_assembly_export": {
     "source_sha256": "bd19eb650a4150bcc66f5f9b9502ce08b928f29748df8b832b69903325559784",
     "changes": {
@@ -889,5 +776,43 @@
       ]
     },
     "protected_chassis_and_tires_preserved": true
+  },
+  "wheel_surface_export": {
+    "source_sha256": "2247e0d9278d69605c002c5ada2107f75e593b1effa8aa55704c6c3226020e3e",
+    "changes": {
+      "wheel_FL": [
+        "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES",
+        "GEO_WHEEL_FRONT_LEFT_TIRE"
+      ],
+      "wheel_FR": [
+        "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES",
+        "GEO_WHEEL_FRONT_RIGHT_TIRE"
+      ],
+      "wheel_RL": [
+        "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES",
+        "GEO_WHEEL_REAR_LEFT_TIRE"
+      ],
+      "wheel_RR": [
+        "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES",
+        "GEO_WHEEL_REAR_RIGHT_TIRE"
+      ]
+    },
+    "tire_triangles_per_wheel": 6336,
+    "diameter_meters": 0.67,
+    "front_width_meters": 0.33,
+    "rear_width_meters": 0.42,
+    "brakes_chassis_and_hierarchy_preserved": true,
+    "material_origin": "Original McLaren MP4/8 tire and rim textures; original UV mapping retained"
+  },
+  "physics_digest_contract": "vehicle_profile_provenance_v1",
+  "source_sha256": "07c65f9cb3a2bad780b234d6c77c7fb7f4dc6aad1485173a601fb98fd992e4fe",
+  "source_path": "../../source/f1_2030.blend",
+  "latest_complete_export": {
+    "source_sha256": "07c65f9cb3a2bad780b234d6c77c7fb7f4dc6aad1485173a601fb98fd992e4fe",
+    "source_path": "D:/Formula90s/game/assets/models/vehicles/f1-2030/source/f1_2030.blend",
+    "export_date": "2026-10-12",
+    "shared_geometry": true,
+    "evidence": "scratch/current_vehicle_export_20261012/preservation_checks.json",
+    "brake_carbon_baked": true
   }
 }
