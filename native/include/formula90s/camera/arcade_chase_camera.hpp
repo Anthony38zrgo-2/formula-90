@@ -46,6 +46,7 @@ class ArcadeChaseCamera : public Node3D {
 	VehicleAdapter car_adapter;
 	Vector3 previous_world_velocity;
 	Vector3 last_car_position;
+	Vector3 previous_render_velocity;
 	bool acceleration_initialized = false;
 	uint64_t epoch = 0;
 
@@ -58,6 +59,7 @@ public:
 	ArcadeChaseCamera();
 	void _ready() override;
 	void _process(double delta) override;
+	void _physics_process(double delta) override;
 	void set_car_path(const NodePath &p) { car_path = p; }
 	NodePath get_car_path() const { return car_path; }
 
