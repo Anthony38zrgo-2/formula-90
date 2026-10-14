@@ -13,7 +13,6 @@ game/crates/v10-engine-synth/src/bin/*
 !game/crates/v10-engine-synth/src/bin/v10_render.rs
 !game/crates/v10-engine-synth/src/bin/v10_boundary_regression.rs
 !game/crates/v10-engine-synth/src/bin/v10_source_bench.rs
-!game/crates/v10-engine-synth/src/bin/v10_saturation_bench.rs
 !game/crates/formula90-core/src/bin/
 game/crates/formula90-core/src/bin/*
 !game/crates/formula90-core/src/bin/core_cli.rs
@@ -21,7 +20,6 @@ game/crates/formula90-core/src/bin/*
 !game/crates/formula90-core/src/bin/v10_physics_transient_capture.rs
 !game/crates/formula90-core/src/bin/grand_prix_sampler_render.rs
 game/addons/formula90s/bin/*
-!game/addons/formula90s/bin/.gitkeep
 game/telemetry/*
 !game/telemetry/.gdignore
 game/reports/
@@ -56,7 +54,6 @@ game/.godot.*/
 *.fbx
 *.mtl
 *.zip
-!game/assets/bundles/jordan_1995_runtime.zip
 blender/models/
 blender/backup/
 blender/current/
@@ -72,6 +69,7 @@ __pycache__/
 # Environment & IDE
 .vscode/
 .idea/
+.godot-user/
 tmp/
 scratch/*
 !scratch/README.md

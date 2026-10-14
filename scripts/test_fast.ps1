@@ -76,15 +76,15 @@ try {
             }
             'Track' {
                 Invoke-FastStep 'Published track package' {
-                    $track = Join-Path $root 'game/assets/generated/tracks/la_chutana/la_chutana.glb'
-                    if (-not (Test-Path $track)) { throw "Published track GLB missing: $track" }
+                    $trackPackage = Join-Path $root 'game/tracks/fuji76_77/metadata/package.json'
+                    if (-not (Test-Path $trackPackage)) { throw "Published track package missing: $trackPackage" }
                 }
             }
             'Runtime' {
                 Invoke-FastStep 'Runtime' {
                     $runtimeArgs = @{ ValidateRuntimeOnly = $true }
                     if ($GodotPath) { $runtimeArgs.GodotPath = $GodotPath }
-                    & (Join-Path $root 'run_f1_94.ps1') @runtimeArgs
+                    & (Join-Path $PSScriptRoot 'run_f1_94.ps1') @runtimeArgs
                 }
             }
         }
