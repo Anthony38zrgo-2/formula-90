@@ -35,7 +35,6 @@ EXCLUDED_FILE_NAMES = {
 }
 EXCLUDED_PREFIXES = (
     "blender/generated/",
-    "game/resources/environment/generated/",
 )
 MAX_TEXT_BYTES = 2 * 1024 * 1024
 

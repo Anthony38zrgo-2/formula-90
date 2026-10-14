@@ -79,9 +79,6 @@ suspension_report.png
 instrucciones.txt
 context.md
 
-# Generated human-gate previews receive non-deterministic Godot import UIDs.
-game/resources/environment/assets/*/review/*.import
-
 # Agent tooling caches
 .codex-target/
 .codex_tmp/

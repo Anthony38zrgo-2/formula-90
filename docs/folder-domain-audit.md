@@ -30,12 +30,12 @@ not residue.
   `game/addons/gdUnit4/` (46 folders), `game/addons/gevp/`, and the
   `third_party/godot-cpp` submodule. Never patch these in place.
 - Pure binary leaves (only media plus `.import` sidecars, zero
-  code/config/scene files) are covered by their parent: environment media
-  leaves (`examples/`, `assets/bushes/`, `assets/trees/`, review folders),
-  texture packs, `game/sounds/bank_sources/` (named in
+  code/config/scene files) are covered by their parent: texture packs,
+  `game/sounds/bank_sources/` (named in
   `game/sounds/AGENTS.md`), the `v10-gp3/backup/` leaf, `game/telemetry/`
   (placeholder), and `game/tracks/fuji76_77/` media.
-- Tracked editor cache `.godot-user/` gets no AGENTS.md; see anti-pattern 4.
+- Tracked editor cache `.godot-user/` was untracked and removed; the folder is
+  ignored by `.gitignore`.
 - Ignore-blocked folders cannot carry a committable AGENTS.md and are covered
   by their parent: the seven `game/crates/*/src/bin/` runner folders, the
   `game/addons/formula90s/bin/` build-output folder, and
@@ -50,13 +50,13 @@ not residue.
 | 1 | `game/audio/` | Deprecated historical sampler tree beside the canon `game/sounds/banks/` | Open; the canon now states the `gf509` diagnostic exception |
 | 2 | `game/sounds/banks/v10-gp3/backup/`, `tobe/` | Backups and tonal analysis staged inside a runtime bank directory | Open; documented in place, move to `scratch/` pending |
 | 3 | `game/crates/` vs `native/` vs `game/native/vehicle-audio-dsp/` | Three native homes | Open; `game/native/AGENTS.md` now records the third home |
-| 4 | `.godot-user/` tracked | Editor user cache committed to Git | Open; untrack and extend `.gitignore` |
+| 4 | `.godot-user/` tracked | Editor user cache committed to Git | Resolved: untracked, removed, and ignored by `.gitignore` |
 | 5 | `game/logs/`, `game/.godot*/` on disk | Generated logs, snapshots, and build outputs beside source | Open |
 | 6 | `game/{core,physics,sim,graphics,diagnostics}/` untracked | Shadow structure beside tracked homes | Open |
 | 7 | `.agents/skills/` vs `.agents/library/skills/` | Two skill homes | Resolved by policy: `skills/` holds active picks, `library/skills/` the catalog (`.agents/README.md`) |
-| 8 | `game/data/` vs `game/resources/` vs `game/assets/` | Undocumented boundary | Resolved: `game/data/AGENTS.md` states it; the trio cross-references |
+| 8 | `game/data/` vs `game/assets/` | Undocumented boundary | Resolved: `game/data/AGENTS.md` states it; both homes cross-reference |
 | 9 | `.gitignore` `bin/`, `diagnostics/`, `src/bin/` vs tracked sources | Ignore rules also match folders holding tracked `.rs`, `.gd`, and `.dll` sources | Open; parents document the coverage |
-| 10 | `game/resources/environment/tools/` | Tracked docs and a tracked test reference build scripts removed from HEAD (`1425f5d3`) | Open; rewrite the docs or restore the scripts |
+| 10 | `game/resources/environment/` | Tracked docs and a tracked test reference build scripts removed from HEAD (`1425f5d3`); no tracked consumer remained | Resolved: orphaned library removed with `game/resources/` |
 | 11 | `.agents/AGENTS.md` | Byte-identical copy of the root protocol inside the agent kit | Resolved: replaced with a pointer to the root `AGENTS.md`; the protocol lives in one file only |
 
 ## Duplicate-function candidates for unification
@@ -82,6 +82,23 @@ not residue.
   `ignore-blocked`, `golden`).
 - `.agents/AGENTS.md` replaced with a pointer to the root protocol, leaving a
   single protocol file.
+
+## Resolved in the dead-code cleanup sprint
+
+- Unreferenced F1 2030 manifests, texture sidecars embedded in referenced GLB
+  assets, dormant V10 loop samples, and the retired F1 2026-2008 asset family
+  removed.
+- Stale editor cache, duplicate per-crate `Cargo.lock` files, the unused DSP
+  build-source template, and dead `.gitignore` whitelists removed.
+- Uninvoked tools (`tools/validation/`, `tools/agent_validation/`, orphan
+  Blender/audio/diagnostics scripts), orphan launchers, and tests bound to
+  removed assets purged.
+- Orphaned offline library `game/resources/` removed; its consumers
+  (`game/assets/textures/track/AGENTS.md`, track-generation skill, architecture
+  inventory) updated.
+- The legacy F1 2026-2008 physics data and scene remain because
+  `vehicle-physics-engine` embeds them via `include_str!` and Rust tests load
+  them; retiring that default profile is a separate code backlog item.
 
 Moves and unifications remain explicitly out of scope until each row above
 becomes a backlog item with its owning AGENTS.md files as reviewers.
