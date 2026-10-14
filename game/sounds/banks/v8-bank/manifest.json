@@ -1,0 +1,2191 @@
+{
+  "schema_version": 1,
+  "bank_id": "ferrari_2008_recorded_engine_bank",
+  "preparation_tool": "tools/audio/build_ferrari_recorded_engine_bank.py",
+  "preparation_tool_revision": 1,
+  "source_inventory_sha256": "161e19a89aa9e03f3c95476378118adfdab4d749d7d6fc4556a03d1af4a48f6c",
+  "output_sample_rate": 44100,
+  "event_selection_seed": 1,
+  "coverage": {
+    "minimum_revolutions_per_minute": 4500.0,
+    "maximum_revolutions_per_minute": 18000.0
+  },
+  "loops": [
+    {
+      "id": "recorded_engine_voice_1",
+      "role": "engine_loop",
+      "source_filename": "056_ext_idle.wav",
+      "source_sha256": "16533a38b1215abb1b92cd2c6bbf395a21f5212b05a720a91ad5b7e940066717",
+      "derived_filename": "056_ext_idle_prepared_loop.wav",
+      "derived_sha256": "1c397b9d649cc663fd3f8fc446745ad3e857a8af26354ff2423f4ff07b448407",
+      "derived_frames": 1149379,
+      "derived_rms_dbfs": -11.379717770382658,
+      "derived_peak_dbfs": -1.0442821623745369,
+      "comb_spacing_hz": 0.0,
+      "reference_revolutions_per_minute": 7800.0,
+      "zone_revolutions_per_minute": 4500.0,
+      "calibrated_gain": 1.0,
+      "valid_playback_rate_min": 0.5769230769230769,
+      "valid_playback_rate_max": 1.0769230769230769,
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        8400.0
+      ],
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 1149379,
+      "loop_crossfade_frames": 221
+    },
+    {
+      "id": "recorded_engine_voice_2",
+      "role": "engine_loop",
+      "source_filename": "056_ext_on_back_6halfK.wav",
+      "source_sha256": "68584a416400decffbdadb25bab1a00f0c185806e4cf672fe24418c8bf966f76",
+      "derived_filename": "056_ext_on_back_6halfK_prepared_loop.wav",
+      "derived_sha256": "62c6458651d8546cdd82d615ff4072b61165d69773c821c2323aaa4fd3fa8455",
+      "derived_frames": 617045,
+      "derived_rms_dbfs": -12.305077486158327,
+      "derived_peak_dbfs": -0.15269054735401874,
+      "comb_spacing_hz": 0.0,
+      "reference_revolutions_per_minute": 6300.0,
+      "zone_revolutions_per_minute": 8400.0,
+      "calibrated_gain": 1.0,
+      "valid_playback_rate_min": 1.1111111111111112,
+      "valid_playback_rate_max": 1.6825396825396826,
+      "active_coverage_revolutions_per_minute": [
+        7000.0,
+        10600.0
+      ],
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 617045,
+      "loop_crossfade_frames": 221
+    },
+    {
+      "id": "recorded_engine_voice_3",
+      "role": "engine_loop",
+      "source_filename": "056_ext_on_back_6halfK.wav",
+      "source_sha256": "68584a416400decffbdadb25bab1a00f0c185806e4cf672fe24418c8bf966f76",
+      "derived_filename": "056_ext_on_back_6halfK_prepared_loop.wav",
+      "derived_sha256": "62c6458651d8546cdd82d615ff4072b61165d69773c821c2323aaa4fd3fa8455",
+      "derived_frames": 617045,
+      "derived_rms_dbfs": -12.305077486158327,
+      "derived_peak_dbfs": -0.15269054735401874,
+      "comb_spacing_hz": 0.0,
+      "reference_revolutions_per_minute": 6300.0,
+      "zone_revolutions_per_minute": 10600.0,
+      "calibrated_gain": 1.0,
+      "valid_playback_rate_min": 1.5873015873015872,
+      "valid_playback_rate_max": 2.1904761904761907,
+      "active_coverage_revolutions_per_minute": [
+        10000.0,
+        13800.0
+      ],
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 617045,
+      "loop_crossfade_frames": 221
+    },
+    {
+      "id": "recorded_engine_voice_4",
+      "role": "engine_loop",
+      "source_filename": "056_ext_on_back_12halfK.wav",
+      "source_sha256": "abbcdc3b4b504d724574b11815b9909b41a11169c11a9503c0189ec8477c75a6",
+      "derived_filename": "056_ext_on_back_12halfK_prepared_loop.wav",
+      "derived_sha256": "d25584edbfd7a2f652d9a5f49a57668db7e6b2098a97d6630a67581de0142ea3",
+      "derived_frames": 660153,
+      "derived_rms_dbfs": -10.699524836903656,
+      "derived_peak_dbfs": -0.5701930851004461,
+      "comb_spacing_hz": 0.0,
+      "reference_revolutions_per_minute": 12400.0,
+      "zone_revolutions_per_minute": 13800.0,
+      "calibrated_gain": 1.0,
+      "valid_playback_rate_min": 1.0161290322580645,
+      "valid_playback_rate_max": 1.2903225806451613,
+      "active_coverage_revolutions_per_minute": [
+        12600.0,
+        16000.0
+      ],
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 660153,
+      "loop_crossfade_frames": 221
+    },
+    {
+      "id": "recorded_engine_voice_5",
+      "role": "engine_loop",
+      "source_filename": "056_ext_on_back_12halfK.wav",
+      "source_sha256": "abbcdc3b4b504d724574b11815b9909b41a11169c11a9503c0189ec8477c75a6",
+      "derived_filename": "056_ext_on_back_12halfK_prepared_loop.wav",
+      "derived_sha256": "d25584edbfd7a2f652d9a5f49a57668db7e6b2098a97d6630a67581de0142ea3",
+      "derived_frames": 660153,
+      "derived_rms_dbfs": -10.699524836903656,
+      "derived_peak_dbfs": -0.5701930851004461,
+      "comb_spacing_hz": 0.0,
+      "reference_revolutions_per_minute": 12400.0,
+      "zone_revolutions_per_minute": 17000.0,
+      "calibrated_gain": 1.0,
+      "valid_playback_rate_min": 1.2228224233870968,
+      "valid_playback_rate_max": 1.4516129032258065,
+      "active_coverage_revolutions_per_minute": [
+        15162.99805,
+        18000.0
+      ],
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 660153,
+      "loop_crossfade_frames": 221
+    }
+  ],
+  "transitions": [
+    {
+      "from_loop_id": "recorded_engine_voice_1",
+      "to_loop_id": "recorded_engine_voice_2",
+      "start_revolutions_per_minute": 7000.0,
+      "end_revolutions_per_minute": 8400.0,
+      "center_revolutions_per_minute": 7700.0,
+      "half_width_revolutions_per_minute": 700.0,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.0
+    },
+    {
+      "from_loop_id": "recorded_engine_voice_2",
+      "to_loop_id": "recorded_engine_voice_3",
+      "start_revolutions_per_minute": 10000.0,
+      "end_revolutions_per_minute": 10600.0,
+      "center_revolutions_per_minute": 10300.0,
+      "half_width_revolutions_per_minute": 300.0,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.0
+    },
+    {
+      "from_loop_id": "recorded_engine_voice_3",
+      "to_loop_id": "recorded_engine_voice_4",
+      "start_revolutions_per_minute": 12600.0,
+      "end_revolutions_per_minute": 13800.0,
+      "center_revolutions_per_minute": 13200.0,
+      "half_width_revolutions_per_minute": 600.0,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.0
+    },
+    {
+      "from_loop_id": "recorded_engine_voice_4",
+      "to_loop_id": "recorded_engine_voice_5",
+      "start_revolutions_per_minute": 15162.99805,
+      "end_revolutions_per_minute": 16000.0,
+      "center_revolutions_per_minute": 15581.499025000001,
+      "half_width_revolutions_per_minute": 418.5009749999999,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.0
+    }
+  ],
+  "coast_loops": [],
+  "coast_transitions": [],
+  "transmission_whine": {
+    "source_filename": "transmission_whine_source.wav",
+    "source_sha256": "088aff70a08bec48df03576000a73a5fe86b2641e17e67e57467a4a3db4ee58a",
+    "derived_filename": "transmission_whine_loop.wav",
+    "derived_sha256": "57dc100592d3c974386a20c33f55ea9646042c79f43efb7ea9c33ed86c354c5e",
+    "derived_frames": 129654,
+    "loop_start_frame": 0,
+    "loop_end_frame_exclusive": 129654,
+    "loop_crossfade_frames": 2646,
+    "reference_mesh_frequency_hertz": 2000.0,
+    "reference_method": "authored_mesh_anchor_preserving_recorded_third_order_character",
+    "measured_dominant_frequency_hertz": 5990.2679443359375,
+    "calibrated_gain": 1.5,
+    "minimum_playback_rate": 0.1,
+    "maximum_playback_rate": 4.0,
+    "selected_start_frame": 209475,
+    "selected_frames": 132300,
+    "stability_score": 0.2866012232684787,
+    "derived_root_mean_square": 0.04,
+    "derived_peak": 0.2102666191754823,
+    "seam": {
+      "wrap_step": 1058,
+      "local_slope": 2942,
+      "seam_contract_holds": true
+    },
+    "preparation_recipe": "stable_three_second_window_mean_removed_sixty_millisecond_overlap_linear_crossfade_level_calibrated_v1"
+  },
+  "events": [
+    {
+      "derived_band_rms_300_6000": 0.08276840021982028,
+      "derived_filename": "backfire_burst_3.wav",
+      "derived_frames": 57154,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -15.775574011695088,
+      "derived_sha256": "aec332bb4db3a22e83d4ecf956f283dd7c84d237eff22697348e3f81b762bb24",
+      "duration_seconds": 1.2960090702947846,
+      "id": "backfire_burst_3",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "backfire_1.wav",
+      "source_sha256": "3a1c604cbbd6bef443e558f64cb6996a83133681514df13ac350833a26856372"
+    },
+    {
+      "derived_band_rms_300_6000": 0.031974198812630354,
+      "derived_filename": "backfire_burst_4.wav",
+      "derived_frames": 18581,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -19.839580948198815,
+      "derived_sha256": "30ddf912ee2629841ed5ee055bf617ba941e2c629bd0ebb451b83c1ccb963f33",
+      "duration_seconds": 0.42133786848072563,
+      "id": "backfire_burst_4",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "backfire_2.wav",
+      "source_sha256": "be956f23ded2234ffa9e565a0e0af2924eb319e2730c49e6ebc00b6b2cf0c9c2"
+    },
+    {
+      "derived_band_rms_300_6000": 0.06613008628787335,
+      "derived_filename": "backfire_burst_5.wav",
+      "derived_frames": 24226,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -17.32003400167502,
+      "derived_sha256": "4aee801fa2d0768221417540c192bd19c750d7f52e54339be1a967448114e6df",
+      "duration_seconds": 0.5493424036281179,
+      "id": "backfire_burst_5",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "backfire_3.wav",
+      "source_sha256": "5ec929f59a6dd9205aa1731eac08ffee42a0fef4a4e3561b1bb9bf24150d140c"
+    },
+    {
+      "derived_band_rms_300_6000": 0.05566050548091399,
+      "derived_filename": "backfire_burst_6.wav",
+      "derived_frames": 34340,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -18.232969883205616,
+      "derived_sha256": "d2e5759bff9a12037632cf61459fd59797d2b095e6247b2143a082f93e575dc6",
+      "duration_seconds": 0.7786848072562358,
+      "id": "backfire_burst_6",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "backfire_4.wav",
+      "source_sha256": "b5304a7336fbabfac09d2c3c4f1dc63c49c3eee4ccb443cdf3e99e2aa6af2ec5"
+    },
+    {
+      "derived_band_rms_300_6000": 0.050015066325921384,
+      "derived_filename": "backfire_burst_7.wav",
+      "derived_frames": 35516,
+      "derived_peak_dbfs": -1.0121998671017443,
+      "derived_rms_dbfs": -19.58954693910273,
+      "derived_sha256": "acf47affe9adcb7ada68763c79f8373749d6e544d4e74ca5fec74b07c6aa5782",
+      "duration_seconds": 0.8053514739229025,
+      "id": "backfire_burst_7",
+      "preparation_recipe": "backfire_overlay_recipe_v1",
+      "role": "lift_backfire",
+      "source_filename": "backfire_5.wav",
+      "source_sha256": "d03a84c631aa840b158160c96f8bdc1f1f26781635deebfc550413f5f1869e5d"
+    },
+    {
+      "derived_band_rms_300_6000": 0.043566867458560546,
+      "derived_filename": "downshift_event.wav",
+      "derived_frames": 13846,
+      "derived_peak_dbfs": -2.9999878172428636,
+      "derived_rms_dbfs": -15.862362325399022,
+      "derived_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279",
+      "duration_seconds": 0.31396825396825395,
+      "id": "downshift_event",
+      "preparation_recipe": "canonical_mono16_source_event_v1",
+      "role": "gearbox_downshift",
+      "source_filename": "geardn.wav",
+      "source_sha256": "52b5d14b33522167caff9508e48aae66bf8c7bcce3e8aac73a71831004cab279"
+    },
+    {
+      "derived_band_rms_300_6000": 0.08399847194028835,
+      "derived_filename": "upshift_event.wav",
+      "derived_frames": 13806,
+      "derived_peak_dbfs": -4.48828520382904,
+      "derived_rms_dbfs": -16.342596350349424,
+      "derived_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a",
+      "duration_seconds": 0.3130612244897959,
+      "id": "upshift_event",
+      "preparation_recipe": "canonical_mono16_source_event_v1",
+      "role": "gearbox_upshift",
+      "source_filename": "gearup.wav",
+      "source_sha256": "c2d6c7c8441c10439625dc7dfbcd48d8dd8fd7d1b5004fa80da19ebda64a663a"
+    },
+    {
+      "derived_band_rms_300_6000": 0.24582227903541282,
+      "derived_filename": "limiter_cut_loop.wav",
+      "derived_frames": 324106,
+      "derived_peak_dbfs": -0.7242434530888943,
+      "derived_rms_dbfs": -9.217303502469306,
+      "derived_sha256": "8d1be4d148e69a2d42bb7b38712cd1682599d57b32f597bf5bf29b21f429264b",
+      "duration_seconds": 7.349342403628118,
+      "id": "limiter_event",
+      "preparation_recipe": "canonical_limiter_mono16_peak_headroom_v2",
+      "role": "limiter_event",
+      "source_filename": "limiter.wav",
+      "source_sha256": "a4706922a925323749ff7b9dd54459dcdd9f1383b229100bdcfae887fcf54f3a"
+    }
+  ],
+  "event_groups": [
+    {
+      "id": "upshift",
+      "minimum_retrigger_seconds": 0.03,
+      "role": "gearbox_upshift",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "upshift_cut_entry",
+      "variants": [
+        {
+          "asset_id": "upshift_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 2
+    },
+    {
+      "id": "downshift",
+      "minimum_retrigger_seconds": 0.1,
+      "role": "gearbox_downshift",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "downshift_cut_entry",
+      "variants": [
+        {
+          "asset_id": "downshift_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 2
+    },
+    {
+      "id": "lift_backfire",
+      "minimum_retrigger_seconds": 1.0,
+      "role": "lift_backfire",
+      "selection": "seeded_cycle",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "lift_edge",
+      "variants": [
+        {
+          "asset_id": "backfire_burst_3",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_4",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_5",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_6",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        },
+        {
+          "asset_id": "backfire_burst_7",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 1
+    },
+    {
+      "id": "limiter",
+      "minimum_retrigger_seconds": 0.25,
+      "role": "limiter_event",
+      "selection": "single_variant",
+      "timing_offset_seconds": 0.0,
+      "trigger_event": "limiter_cut_window",
+      "variants": [
+        {
+          "asset_id": "limiter_event",
+          "event_gain": 1.0,
+          "trigger_pitch_reference_revolutions_per_minute": null
+        }
+      ],
+      "voice_limit": 1
+    }
+  ],
+  "event_trigger_policy": {
+    "lift_edge": {
+      "cooldown_seconds": 1.0,
+      "previous_throttle_min": 0.8,
+      "revolutions_per_minute_min": 13500.0,
+      "throttle_max": 0.15
+    },
+    "limiter_entry_edge": {
+      "cooldown_seconds": 0.25
+    }
+  },
+  "reference_ladder": {
+    "method": "authored_and_measured_reference_integer_cycles",
+    "revolutions_per_minute_per_hertz": 120.0,
+    "anchor_center_revolutions_per_minute": 9000.0,
+    "engine_references_revolutions_per_minute": {
+      "engine_idle_loop": 4531.638723634397,
+      "engine_powered_low_loop": 9145.700525569033,
+      "engine_mid_on_loop": 12750.48991699179,
+      "engine_powered_medium_high_loop": 13434.218289085546,
+      "engine_powered_high_loop": 16926.64912356004,
+      "engine_powered_maximum_loop": 17867.015566699003,
+      "engine_low_off_loop": 7922.604938131586,
+      "engine_mid_off_loop": 12846.525800429074,
+      "engine_off_maximum_loop": 16542.744529515698
+    },
+    "engine_zones_revolutions_per_minute": {
+      "engine_idle_loop": 4500.0,
+      "engine_powered_low_loop": 7500.0,
+      "engine_mid_on_loop": 11750.0,
+      "engine_powered_medium_high_loop": 13750.0,
+      "engine_powered_high_loop": 16250.0,
+      "engine_powered_maximum_loop": 17750.0,
+      "engine_low_off_loop": 8000.0,
+      "engine_mid_off_loop": 12800.0,
+      "engine_off_maximum_loop": 16500.0
+    }
+  },
+  "engine_source_selection": [
+    {
+      "role": "engine_idle_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_idle.wav",
+      "source_sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
+      "runtime_asset_id": "engine_idle_loop",
+      "runtime_filename": "engine_idle_loop.wav",
+      "runtime_sha256": "db4553b2a9683aa40d1bf259b2a2b9db1c7a8e27fcff31049680fe89f2796498",
+      "derived_frames": 88752,
+      "reference_revolutions_per_minute": 4531.638723634397,
+      "zone_revolutions_per_minute": 4500.0,
+      "integer_cycle_count": 76,
+      "loop_crossfade_frames": 4671,
+      "loop_start_rotation_frames": 1174,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_powered_low_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_powered_low.wav",
+      "source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
+      "runtime_asset_id": "engine_powered_low_loop",
+      "runtime_filename": "engine_powered_low_loop.wav",
+      "runtime_sha256": "ceb2699b97b3c79c26b265032657cb07ad59fc4b88ab2a44761d7601596a09c8",
+      "derived_frames": 1351107,
+      "reference_revolutions_per_minute": 9145.700525569033,
+      "zone_revolutions_per_minute": 7500.0,
+      "integer_cycle_count": 2335,
+      "loop_crossfade_frames": 2315,
+      "loop_start_rotation_frames": 569,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_mid_on_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_med.wav",
+      "source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
+      "runtime_asset_id": "engine_mid_on_loop",
+      "runtime_filename": "engine_mid_on_loop.wav",
+      "runtime_sha256": "28d13d69896029022344aca00d29c5be6b69800b6464a38baa36466af2237945",
+      "derived_frames": 1287463,
+      "reference_revolutions_per_minute": 12750.48991699179,
+      "zone_revolutions_per_minute": 11750.0,
+      "integer_cycle_count": 3102,
+      "loop_crossfade_frames": 1660,
+      "loop_start_rotation_frames": 354,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_powered_medium_high_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_powered_medium_high.wav",
+      "source_sha256": "33f49b64536b08cafba65ce8d2af351f331c728f6583924c4d594a6b13b6391c",
+      "runtime_asset_id": "engine_powered_medium_high_loop",
+      "runtime_filename": "engine_powered_medium_high_loop.wav",
+      "runtime_sha256": "c7ccccc214ea4a52689404fb319a56f24ff0deb36b82fabbf1f056aa50f9fd52",
+      "derived_frames": 1281420,
+      "reference_revolutions_per_minute": 13434.218289085546,
+      "zone_revolutions_per_minute": 13750.0,
+      "integer_cycle_count": 3253,
+      "loop_crossfade_frames": 1576,
+      "loop_start_rotation_frames": 132,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_powered_high_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_powered_high.wav",
+      "source_sha256": "ccf087f6b41b4dc4f73ded9535688926b184ffeb6842b4315645c4dfe0ca2c31",
+      "runtime_asset_id": "engine_powered_high_loop",
+      "runtime_filename": "engine_powered_high_loop.wav",
+      "runtime_sha256": "fd32d87c662d74f0011150404b0f0d4525e1a27acd6ed9a08c5ff295ed5b24fa",
+      "derived_frames": 1211492,
+      "reference_revolutions_per_minute": 16926.64912356004,
+      "zone_revolutions_per_minute": 16250.0,
+      "integer_cycle_count": 3875,
+      "loop_crossfade_frames": 1251,
+      "loop_start_rotation_frames": 150,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_powered_maximum_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_on_high.wav",
+      "source_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
+      "runtime_asset_id": "engine_powered_maximum_loop",
+      "runtime_filename": "engine_powered_maximum_loop.wav",
+      "runtime_sha256": "53686d9307b6a026ee41e5e9077d4b472eac90fb54d821cf556a0a2509a340f0",
+      "derived_frames": 1315372,
+      "reference_revolutions_per_minute": 17867.015566699003,
+      "zone_revolutions_per_minute": 17750.0,
+      "integer_cycle_count": 4441,
+      "loop_crossfade_frames": 1185,
+      "loop_start_rotation_frames": 28,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_low_off_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_low.wav",
+      "source_sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
+      "runtime_asset_id": "engine_low_off_loop",
+      "runtime_filename": "engine_low_off_loop.wav",
+      "runtime_sha256": "601a88d0ff4cae4a8c7f5b62e2642f614c80735c3b51723603da28d81e42a246",
+      "derived_frames": 88171,
+      "reference_revolutions_per_minute": 7922.604938131586,
+      "zone_revolutions_per_minute": 8000.0,
+      "integer_cycle_count": 132,
+      "loop_crossfade_frames": 2672,
+      "loop_start_rotation_frames": 141,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_mid_off_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_med.wav",
+      "source_sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
+      "runtime_asset_id": "engine_mid_off_loop",
+      "runtime_filename": "engine_mid_off_loop.wav",
+      "runtime_sha256": "ab2b4b4d82aede2b3f1d94c7b9dce7fa095fbcb42b229e995d4be7fd214d784e",
+      "derived_frames": 1321916,
+      "reference_revolutions_per_minute": 12846.525800429074,
+      "zone_revolutions_per_minute": 12800.0,
+      "integer_cycle_count": 3209,
+      "loop_crossfade_frames": 1648,
+      "loop_start_rotation_frames": 48,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1"
+    },
+    {
+      "role": "engine_off_maximum_loop",
+      "source_path": "game/sounds/banks/v10-v2-bank/engine_off_maximum.wav",
+      "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
+      "runtime_asset_id": "engine_off_maximum_loop",
+      "runtime_filename": "engine_off_maximum_loop.wav",
+      "runtime_sha256": "47538d4769a1bc6328c30e8ee9f996e877f29810b83001e0f3b56300199cc7e2",
+      "derived_frames": 88292,
+      "reference_revolutions_per_minute": 16542.744529515698,
+      "zone_revolutions_per_minute": 16500.0,
+      "integer_cycle_count": 276,
+      "loop_crossfade_frames": 1280,
+      "loop_start_rotation_frames": 137,
+      "preparation_recipe": "canonical_mono16_cycle_phase_rotated_v1",
+      "generation_recipe": "historical_gp3_coast_maximum_import"
+    }
+  ],
+  "recorded_engine_automation": {
+    "interpolation": "linear_reconstruction",
+    "voices": [
+      {
+        "instrument_guid": "16fe4100-f28f-49b4-b4b3-2396ef1ec066",
+        "filename": "056_ext_off_back_11halfK_prepared_loop.wav",
+        "sha256": "b68dcf1a87c64d30eb2e9b832976875d6996a0b61b568eae94149d755c7c9b73",
+        "reference_revolutions_per_minute": 11500.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 339052,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 13200.0,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 14200.0,
+              "amplitude": 1.0
+            }
+          ],
+          [
+            {
+              "parameter_value": 15400.0,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 16400.0,
+              "amplitude": 0.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.1,
+            "amplitude": 1.0
+          },
+          {
+            "parameter_value": 0.12375562500000001,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.14751125,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.171266875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.19502250000000002,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.21877812500000002,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.24253375000000002,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.26628937500000005,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.290045,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.31380062500000006,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.33755625,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.36131187500000006,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.3850675,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.40882312500000006,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.43257875,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.45633437500000007,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.48009,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.503209375,
+            "amplitude": 0.3846399094524727
+          },
+          {
+            "parameter_value": 0.52632875,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.5494481250000001,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.5725675,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.595686875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.61880625,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.641925625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.665045,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.6881643749999999,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.71128375,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.734403125,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.7575225,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.7806418749999999,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.80376125,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.826880625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 0.007943282347242814
+          }
+        ]
+      },
+      {
+        "instrument_guid": "cbe3f10a-4f47-412d-a265-2859d75e6c56",
+        "filename": "056_ext_off_back_11halfK_prepared_loop.wav",
+        "sha256": "b68dcf1a87c64d30eb2e9b832976875d6996a0b61b568eae94149d755c7c9b73",
+        "reference_revolutions_per_minute": 11500.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 339052,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 10990.78809,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 11990.78809,
+              "amplitude": 1.0
+            }
+          ],
+          [
+            {
+              "parameter_value": 13200.0,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 14200.0,
+              "amplitude": 0.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.1,
+            "amplitude": 1.0
+          },
+          {
+            "parameter_value": 0.12375562500000001,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.14751125,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.171266875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.19502250000000002,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.21877812500000002,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.24253375000000002,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.26628937500000005,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.290045,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.31380062500000006,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.33755625,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.36131187500000006,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.3850675,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.40882312500000006,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.43257875,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.45633437500000007,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.48009,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.503209375,
+            "amplitude": 0.3846399094524727
+          },
+          {
+            "parameter_value": 0.52632875,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.5494481250000001,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.5725675,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.595686875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.61880625,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.641925625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.665045,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.6881643749999999,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.71128375,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.734403125,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.7575225,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.7806418749999999,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.80376125,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.826880625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 0.007943282347242814
+          }
+        ]
+      },
+      {
+        "instrument_guid": "56d41d1c-cf13-4391-9089-460757e09b6b",
+        "filename": "056_ext_on_back_12halfK_prepared_loop.wav",
+        "sha256": "d25584edbfd7a2f652d9a5f49a57668db7e6b2098a97d6630a67581de0142ea3",
+        "reference_revolutions_per_minute": 12400.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 660153,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 15162.99805,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 16000.0,
+              "amplitude": 0.0
+            }
+          ],
+          [
+            {
+              "parameter_value": 12600.0,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 13800.0,
+              "amplitude": 1.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.05,
+            "amplitude": 0.007943282347242814
+          },
+          {
+            "parameter_value": 0.07625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.10250000000000001,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.12875,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.155,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.18125000000000002,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.20750000000000002,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.23375,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.26,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.28625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.3125,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.33875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.365,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.39125,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.4175,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.44375,
+            "amplitude": 0.3846399094524728
+          },
+          {
+            "parameter_value": 0.47,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.49374999999999997,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.5175,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.54125,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.565,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.58875,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.6125,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.63625,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.6599999999999999,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.68375,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.7075,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.73125,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.755,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.77875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.8025,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.8262499999999999,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 1.0
+          }
+        ]
+      },
+      {
+        "instrument_guid": "a4cdcb22-6f5a-472a-858f-b1118f08d7d8",
+        "filename": "056_ext_off_back_10Kish_prepared_loop.wav",
+        "sha256": "7d76df8575acea4f506d16b2f085de1cb7bdf8a14eec01540be493d9e7a1a306",
+        "reference_revolutions_per_minute": 9800.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 328164,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 7790.78857,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 8400.0,
+              "amplitude": 1.0
+            }
+          ],
+          [
+            {
+              "parameter_value": 10990.78809,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 11990.78809,
+              "amplitude": 0.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.1,
+            "amplitude": 1.0
+          },
+          {
+            "parameter_value": 0.12375562500000001,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.14751125,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.171266875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.19502250000000002,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.21877812500000002,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.24253375000000002,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.26628937500000005,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.290045,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.31380062500000006,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.33755625,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.36131187500000006,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.3850675,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.40882312500000006,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.43257875,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.45633437500000007,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.48009,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.503209375,
+            "amplitude": 0.3846399094524727
+          },
+          {
+            "parameter_value": 0.52632875,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.5494481250000001,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.5725675,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.595686875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.61880625,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.641925625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.665045,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.6881643749999999,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.71128375,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.734403125,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.7575225,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.7806418749999999,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.80376125,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.826880625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 0.007943282347242814
+          }
+        ]
+      },
+      {
+        "instrument_guid": "666d5236-8f7b-456e-8dfa-e803f707770b",
+        "filename": "056_ext_on_back_6halfK_prepared_loop.wav",
+        "sha256": "62c6458651d8546cdd82d615ff4072b61165d69773c821c2323aaa4fd3fa8455",
+        "reference_revolutions_per_minute": 6300.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 617045,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 7000.0,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 8400.0,
+              "amplitude": 1.0
+            }
+          ],
+          [
+            {
+              "parameter_value": 10000.0,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 10600.0,
+              "amplitude": 0.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.05,
+            "amplitude": 0.007943282347242814
+          },
+          {
+            "parameter_value": 0.07625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.10250000000000001,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.12875,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.155,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.18125000000000002,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.20750000000000002,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.23375,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.26,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.28625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.3125,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.33875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.365,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.39125,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.4175,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.44375,
+            "amplitude": 0.3846399094524728
+          },
+          {
+            "parameter_value": 0.47,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.49374999999999997,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.5175,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.54125,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.565,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.58875,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.6125,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.63625,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.6599999999999999,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.68375,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.7075,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.73125,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.755,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.77875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.8025,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.8262499999999999,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 1.0
+          }
+        ]
+      },
+      {
+        "instrument_guid": "52bbca89-5361-410d-8e10-0b21de3f0344",
+        "filename": "056_ext_on_back_6halfK_prepared_loop.wav",
+        "sha256": "62c6458651d8546cdd82d615ff4072b61165d69773c821c2323aaa4fd3fa8455",
+        "reference_revolutions_per_minute": 6300.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 617045,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 12600.0,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 13800.0,
+              "amplitude": 0.0
+            }
+          ],
+          [
+            {
+              "parameter_value": 10000.0,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 10600.0,
+              "amplitude": 1.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.05,
+            "amplitude": 0.007943282347242814
+          },
+          {
+            "parameter_value": 0.07625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.10250000000000001,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.12875,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.155,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.18125000000000002,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.20750000000000002,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.23375,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.26,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.28625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.3125,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.33875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.365,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.39125,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.4175,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.44375,
+            "amplitude": 0.3846399094524728
+          },
+          {
+            "parameter_value": 0.47,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.49374999999999997,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.5175,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.54125,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.565,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.58875,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.6125,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.63625,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.6599999999999999,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.68375,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.7075,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.73125,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.755,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.77875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.8025,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.8262499999999999,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 1.0
+          }
+        ]
+      },
+      {
+        "instrument_guid": "4a117892-a0f7-4a23-a973-07161b845328",
+        "filename": "056_ext_idle_prepared_loop.wav",
+        "sha256": "1c397b9d649cc663fd3f8fc446745ad3e857a8af26354ff2423f4ff07b448407",
+        "reference_revolutions_per_minute": 7800.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 1149379,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 7000.0,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 8400.0,
+              "amplitude": 0.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.05,
+            "amplitude": 0.007943282347242814
+          },
+          {
+            "parameter_value": 0.07625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.10250000000000001,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.12875,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.155,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.18125000000000002,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.20750000000000002,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.23375,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.26,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.28625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.3125,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.33875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.365,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.39125,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.4175,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.44375,
+            "amplitude": 0.3846399094524728
+          },
+          {
+            "parameter_value": 0.47,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.49374999999999997,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.5175,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.54125,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.565,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.58875,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.6125,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.63625,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.6599999999999999,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.68375,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.7075,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.73125,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.755,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.77875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.8025,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.8262499999999999,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 1.0
+          }
+        ]
+      },
+      {
+        "instrument_guid": "b080ea98-60af-482f-993e-8e1e5200f5ef",
+        "filename": "056_ext_on_back_12halfK_prepared_loop.wav",
+        "sha256": "d25584edbfd7a2f652d9a5f49a57668db7e6b2098a97d6630a67581de0142ea3",
+        "reference_revolutions_per_minute": 12400.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 660153,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 15162.99805,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 16000.0,
+              "amplitude": 1.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.05,
+            "amplitude": 0.007943282347242814
+          },
+          {
+            "parameter_value": 0.07625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.10250000000000001,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.12875,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.155,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.18125000000000002,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.20750000000000002,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.23375,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.26,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.28625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.3125,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.33875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.365,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.39125,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.4175,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.44375,
+            "amplitude": 0.3846399094524728
+          },
+          {
+            "parameter_value": 0.47,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.49374999999999997,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.5175,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.54125,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.565,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.58875,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.6125,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.63625,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.6599999999999999,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.68375,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.7075,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.73125,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.755,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.77875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.8025,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.8262499999999999,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 1.0
+          }
+        ]
+      },
+      {
+        "instrument_guid": "2ad51eb1-472c-42f4-8a2f-f018cebd7e33",
+        "filename": "056_ext_off_back_11halfK_prepared_loop.wav",
+        "sha256": "b68dcf1a87c64d30eb2e9b832976875d6996a0b61b568eae94149d755c7c9b73",
+        "reference_revolutions_per_minute": 11500.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 339052,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 15400.0,
+              "amplitude": 0.0
+            },
+            {
+              "parameter_value": 16400.0,
+              "amplitude": 1.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.1,
+            "amplitude": 1.0
+          },
+          {
+            "parameter_value": 0.12375562500000001,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.14751125,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.171266875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.19502250000000002,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.21877812500000002,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.24253375000000002,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.26628937500000005,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.290045,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.31380062500000006,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.33755625,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.36131187500000006,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.3850675,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.40882312500000006,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.43257875,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.45633437500000007,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.48009,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.503209375,
+            "amplitude": 0.3846399094524727
+          },
+          {
+            "parameter_value": 0.52632875,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.5494481250000001,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.5725675,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.595686875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.61880625,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.641925625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.665045,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.6881643749999999,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.71128375,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.734403125,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.7575225,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.7806418749999999,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.80376125,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.826880625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 0.007943282347242814
+          }
+        ]
+      },
+      {
+        "instrument_guid": "075a2dd3-9059-4b82-8b63-772a75166f14",
+        "filename": "056_ext_idle_prepared_loop.wav",
+        "sha256": "1c397b9d649cc663fd3f8fc446745ad3e857a8af26354ff2423f4ff07b448407",
+        "reference_revolutions_per_minute": 7800.0,
+        "loop_start_frame": 0,
+        "loop_end_frame_exclusive": 1149379,
+        "revolutions_per_minute_curves": [
+          [
+            {
+              "parameter_value": 7790.78857,
+              "amplitude": 1.0
+            },
+            {
+              "parameter_value": 8400.0,
+              "amplitude": 0.0
+            }
+          ]
+        ],
+        "throttle_curve": [
+          {
+            "parameter_value": 0.1,
+            "amplitude": 1.0
+          },
+          {
+            "parameter_value": 0.12375562500000001,
+            "amplitude": 0.9573857438666054
+          },
+          {
+            "parameter_value": 0.14751125,
+            "amplitude": 0.9165874625590132
+          },
+          {
+            "parameter_value": 0.171266875,
+            "amplitude": 0.8775277696608652
+          },
+          {
+            "parameter_value": 0.19502250000000002,
+            "amplitude": 0.8401325765203705
+          },
+          {
+            "parameter_value": 0.21877812500000002,
+            "amplitude": 0.8043309517185228
+          },
+          {
+            "parameter_value": 0.24253375000000002,
+            "amplitude": 0.7700549865259725
+          },
+          {
+            "parameter_value": 0.26628937500000005,
+            "amplitude": 0.7372396660933569
+          },
+          {
+            "parameter_value": 0.290045,
+            "amplitude": 0.7058227461307562
+          },
+          {
+            "parameter_value": 0.31380062500000006,
+            "amplitude": 0.6757446348423642
+          },
+          {
+            "parameter_value": 0.33755625,
+            "amplitude": 0.6469482798924245
+          },
+          {
+            "parameter_value": 0.36131187500000006,
+            "amplitude": 0.6193790601880297
+          },
+          {
+            "parameter_value": 0.3850675,
+            "amplitude": 0.5929846822735158
+          },
+          {
+            "parameter_value": 0.40882312500000006,
+            "amplitude": 0.5677150811399324
+          },
+          {
+            "parameter_value": 0.43257875,
+            "amplitude": 0.5435223252614444
+          },
+          {
+            "parameter_value": 0.45633437500000007,
+            "amplitude": 0.520360525678535
+          },
+          {
+            "parameter_value": 0.48009,
+            "amplitude": 0.49818574895556206
+          },
+          {
+            "parameter_value": 0.503209375,
+            "amplitude": 0.3846399094524727
+          },
+          {
+            "parameter_value": 0.52632875,
+            "amplitude": 0.29697328808336365
+          },
+          {
+            "parameter_value": 0.5494481250000001,
+            "amplitude": 0.229287527549041
+          },
+          {
+            "parameter_value": 0.5725675,
+            "amplitude": 0.17702861637439427
+          },
+          {
+            "parameter_value": 0.595686875,
+            "amplitude": 0.13668048737945196
+          },
+          {
+            "parameter_value": 0.61880625,
+            "amplitude": 0.10552845078320716
+          },
+          {
+            "parameter_value": 0.641925625,
+            "amplitude": 0.08147654532272297
+          },
+          {
+            "parameter_value": 0.665045,
+            "amplitude": 0.06290651846451731
+          },
+          {
+            "parameter_value": 0.6881643749999999,
+            "amplitude": 0.048568947660364604
+          },
+          {
+            "parameter_value": 0.71128375,
+            "amplitude": 0.0374991771030185
+          },
+          {
+            "parameter_value": 0.734403125,
+            "amplitude": 0.028952414065810332
+          },
+          {
+            "parameter_value": 0.7575225,
+            "amplitude": 0.022353617999010908
+          },
+          {
+            "parameter_value": 0.7806418749999999,
+            "amplitude": 0.01725881083732419
+          },
+          {
+            "parameter_value": 0.80376125,
+            "amplitude": 0.01332520541112041
+          },
+          {
+            "parameter_value": 0.826880625,
+            "amplitude": 0.010288142150822818
+          },
+          {
+            "parameter_value": 0.85,
+            "amplitude": 0.007943282347242814
+          }
+        ]
+      }
+    ]
+  }
+}

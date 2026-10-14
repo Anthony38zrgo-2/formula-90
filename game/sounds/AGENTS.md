@@ -24,10 +24,13 @@ itself in its own AGENTS.md.
   coexist in the same folder; raw file names (`engine_*.wav`, `backfire_*.wav`,
   `gearup.wav`, `geardn.wav`, `limiter.wav`) are sources, derived file names
   (`*_loop.wav`, `*_event.wav`, `backfire_burst_*.wav`) are runtime assets.
-- The F1 2030 V10 vehicle profile must point at the canon through
+- The geometric F1 2030 vehicle profile selects the canonical V10 bank through
   `audio.grand_prix_sampler.manifest = "sounds/banks/v10-v2-bank/manifest.json"`
-  in `game/data/vehicles/f1_2030/profiles/geometric/audio.json`. The runtime
-  resolves this path relative to the Godot project root.
+  in `game/data/vehicles/f1_2030/profiles/geometric/audio.json`.
+  The runtime resolves this path relative to the Godot project root.
+- `banks/v8-bank` is an inactive Ferrari candidate retained for later comparison.
+  Regenerate it with `tools/audio/build_ferrari_recorded_engine_bank.py`.
+  Its metadata explicitly documents reconstructed interpolation and perspective limits.
 - `bank_sources/` and `banks/v10-v2-bank/` each carry a `.gdignore`: Godot must
   not import those WAVs. The Rust runtime loads bank audio from the filesystem,
   so bank assets are never referenced through `res://` paths.

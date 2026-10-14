@@ -161,6 +161,8 @@ pub struct GrandPrixEventTriggerPolicy {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GrandPrixManifest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recorded_engine_automation: Option<crate::recorded_engine_automation::RecordedEngineAutomationManifest>,
     pub schema_version: u64,
     pub bank_id: String,
     pub preparation_tool: String,
@@ -308,6 +310,7 @@ pub struct GrandPrixDecodedGroup {
 }
 
 pub struct GrandPrixSampleBank {
+    pub recorded_engine_automation: Option<crate::recorded_engine_automation::RecordedEngineAutomation>,
     pub bank_id: String,
     pub bank_sha256: String,
     pub event_selection_seed: u64,
@@ -1065,6 +1068,9 @@ impl GrandPrixSampleBank {
             None
         };
         Ok(Self {
+            recorded_engine_automation: manifest.recorded_engine_automation.as_ref().map(|automation| {
+                crate::recorded_engine_automation::RecordedEngineAutomation::load(bank_directory, automation)
+            }).transpose()?,
             bank_id: manifest.bank_id.clone(),
             bank_sha256,
             event_selection_seed: manifest.event_selection_seed,
@@ -1095,7 +1101,7 @@ fn seconds_to_frames(seconds: f64) -> usize {
     (seconds.max(0.0) * GRAND_PRIX_SAMPLE_RATE as f64).round() as usize
 }
 
-fn load_verified_pcm(
+pub(crate) fn load_verified_pcm(
     bank_directory: &Path,
     filename: &str,
     expected_sha256: &str,

@@ -562,6 +562,9 @@ impl GrandPrixSampler {
     }
 
     pub fn reset(&mut self) {
+        if let Some(automation) = self.bank.recorded_engine_automation.as_mut() {
+            automation.reset();
+        }
         self.output_shaft_speed_hertz = None;
         self.physical_transmitted_torque_sign = None;
         self.target_gear = None;
@@ -915,81 +918,86 @@ impl GrandPrixSampler {
             self.bank.coverage_minimum_revolutions_per_minute,
             self.bank.coverage_maximum_revolutions_per_minute,
         );
-        let powered_loop_weights =
-            powered_engine_loop_weights(&self.bank, playback_revolutions_per_minute);
-        let mut loop_mix = 0.0f32;
-        let mut active_zones = 0u8;
-        let loop_count = self.bank.loops.len();
-        for index in 0..loop_count {
-            let reference = self.bank.loops[index].reference_revolutions_per_minute;
-            let minimum = self.bank.loops[index].valid_playback_rate_min;
-            let maximum = self.bank.loops[index].valid_playback_rate_max;
-            let weight = powered_loop_weights[index];
-            let rate = playback_revolutions_per_minute / reference;
-            if (rate < minimum || rate > maximum) && weight > 0.0 {
-                let within_rounding =
-                    rate >= minimum * (1.0 - 1e-9) && rate <= maximum * (1.0 + 1e-9);
-                if !within_rounding {
-                    self.diagnostics.clamped_rate_samples =
-                        self.diagnostics.clamped_rate_samples.saturating_add(1);
-                }
-            }
-            self.zone_rates[index] = rate;
-            self.diagnostics.zone_rates[index] = rate as f32;
-            self.diagnostics.zone_weights[index] = weight;
-            let sample = read_loop_sample(
-                &self.bank.loops[index],
-                &mut self.loop_cursors[index],
-                &mut self.zone_anti_alias[index],
-                &mut self.zone_filter_cutoffs[index],
-                self.output_sample_rate,
-                rate,
-            );
-            loop_mix += sample * weight * self.bank.loops[index].calibrated_gain;
-            if weight > 0.0 {
-                active_zones = active_zones.saturating_add(1);
-            }
-        }
-
-        let (engine_mix, load_gain) = if self.bank.coast_loops.is_empty() {
-            let load_gain = self.coast_gain + (1.0 - self.coast_gain) * self.smoothed_throttle;
-            (loop_mix * load_gain, load_gain)
+        let (engine_mix, load_gain, active_zones) = if let Some(automation) = self.bank.recorded_engine_automation.as_mut() {
+            automation.render(playback_revolutions_per_minute, self.smoothed_throttle as f64, self.output_sample_rate)
         } else {
-            let (coast_from, coast_to, coast_transition_index) =
-                zone_blend(&self.bank.coast_transitions, rendered_rpm);
-            let mut coast_mix = 0.0f32;
-            for index in 0..self.bank.coast_loops.len() {
-                let coast_loop = &self.bank.coast_loops[index];
-                let weight = if index == coast_transition_index {
-                    coast_from
-                } else if index == coast_transition_index + 1 {
-                    coast_to
-                } else {
-                    0.0
-                };
-                let rate =
-                    playback_revolutions_per_minute / coast_loop.reference_revolutions_per_minute;
+            let powered_loop_weights =
+                powered_engine_loop_weights(&self.bank, playback_revolutions_per_minute);
+            let mut loop_mix = 0.0f32;
+            let mut active_zones = 0u8;
+            let loop_count = self.bank.loops.len();
+            for index in 0..loop_count {
+                let reference = self.bank.loops[index].reference_revolutions_per_minute;
+                let minimum = self.bank.loops[index].valid_playback_rate_min;
+                let maximum = self.bank.loops[index].valid_playback_rate_max;
+                let weight = powered_loop_weights[index];
+                let rate = playback_revolutions_per_minute / reference;
+                if (rate < minimum || rate > maximum) && weight > 0.0 {
+                    let within_rounding =
+                        rate >= minimum * (1.0 - 1e-9) && rate <= maximum * (1.0 + 1e-9);
+                    if !within_rounding {
+                        self.diagnostics.clamped_rate_samples =
+                            self.diagnostics.clamped_rate_samples.saturating_add(1);
+                    }
+                }
+                self.zone_rates[index] = rate;
+                self.diagnostics.zone_rates[index] = rate as f32;
+                self.diagnostics.zone_weights[index] = weight;
                 let sample = read_loop_sample(
-                    coast_loop,
-                    &mut self.coast_loop_cursors[index],
-                    &mut self.coast_zone_anti_alias[index],
-                    &mut self.coast_zone_filter_cutoffs[index],
+                    &self.bank.loops[index],
+                    &mut self.loop_cursors[index],
+                    &mut self.zone_anti_alias[index],
+                    &mut self.zone_filter_cutoffs[index],
                     self.output_sample_rate,
                     rate,
                 );
-                coast_mix += sample * weight * coast_loop.calibrated_gain;
+                loop_mix += sample * weight * self.bank.loops[index].calibrated_gain;
+                if weight > 0.0 {
+                    active_zones = active_zones.saturating_add(1);
+                }
             }
-            let throttle = self.smoothed_throttle.clamp(0.0, 1.0);
-            let smoothed_load = throttle * throttle * (3.0 - 2.0 * throttle);
-            let load_angle = smoothed_load * std::f32::consts::FRAC_PI_2;
-            let idle_transition = ((rendered_rpm - 4_500.0) / 1_500.0).clamp(0.0, 1.0) as f32;
-            let idle_transition = idle_transition * idle_transition * (3.0 - 2.0 * idle_transition);
-            let engine_weight = 1.0 - idle_transition + idle_transition * load_angle.sin();
-            let coast_weight = idle_transition * load_angle.cos() * self.coast_gain;
-            (
-                loop_mix * engine_weight + coast_mix * coast_weight,
-                engine_weight + coast_weight,
-            )
+
+            let (engine_mix, load_gain) = if self.bank.coast_loops.is_empty() {
+                let load_gain = self.coast_gain + (1.0 - self.coast_gain) * self.smoothed_throttle;
+                (loop_mix * load_gain, load_gain)
+            } else {
+                let (coast_from, coast_to, coast_transition_index) =
+                    zone_blend(&self.bank.coast_transitions, rendered_rpm);
+                let mut coast_mix = 0.0f32;
+                for index in 0..self.bank.coast_loops.len() {
+                    let coast_loop = &self.bank.coast_loops[index];
+                    let weight = if index == coast_transition_index {
+                        coast_from
+                    } else if index == coast_transition_index + 1 {
+                        coast_to
+                    } else {
+                        0.0
+                    };
+                    let rate =
+                        playback_revolutions_per_minute / coast_loop.reference_revolutions_per_minute;
+                    let sample = read_loop_sample(
+                        coast_loop,
+                        &mut self.coast_loop_cursors[index],
+                        &mut self.coast_zone_anti_alias[index],
+                        &mut self.coast_zone_filter_cutoffs[index],
+                        self.output_sample_rate,
+                        rate,
+                    );
+                    coast_mix += sample * weight * coast_loop.calibrated_gain;
+                }
+                let throttle = self.smoothed_throttle.clamp(0.0, 1.0);
+                let smoothed_load = throttle * throttle * (3.0 - 2.0 * throttle);
+                let load_angle = smoothed_load * std::f32::consts::FRAC_PI_2;
+                let idle_transition = ((rendered_rpm - 4_500.0) / 1_500.0).clamp(0.0, 1.0) as f32;
+                let idle_transition = idle_transition * idle_transition * (3.0 - 2.0 * idle_transition);
+                let engine_weight = 1.0 - idle_transition + idle_transition * load_angle.sin();
+                let coast_weight = idle_transition * load_angle.cos() * self.coast_gain;
+                (
+                    loop_mix * engine_weight + coast_mix * coast_weight,
+                    engine_weight + coast_weight,
+                )
+            };
+            (engine_mix, load_gain, active_zones)
         };
         let engine_sample = engine_mix
             * self.gate
@@ -1366,7 +1374,7 @@ impl GrandPrixSampler {
     }
 }
 
-fn read_loop_sample(
+pub(crate) fn read_loop_sample(
     loop_asset: &GrandPrixDecodedLoop,
     cursor: &mut f64,
     anti_alias_filter: &mut Biquad,

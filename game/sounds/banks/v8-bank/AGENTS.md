@@ -1,0 +1,3 @@
+# Ferrari recorded engine bank
+
+Scope: inactive engine-only V8 candidate for the geometric F1 2030 profile. Regenerate runtime manifest, prepared loops and recovered automation using tools/audio/build_ferrari_recorded_engine_bank.py. Original WAVs remain mono PCM16 at 44100 Hz; source_inventory.json records provenance. Preserve every non-engine asset, event group and trigger policy from v10-v2-bank byte-for-byte. Never claim exact FMOD interpolation: the current reconstruction uses original control points and anchors with approximate linear interpolation and proportional pitch. Keep source perspective and newly authored seam processing explicit.
