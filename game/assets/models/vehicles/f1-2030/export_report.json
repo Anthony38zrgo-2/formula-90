@@ -1,14 +1,77 @@
 {
-  "operation": "Publish separated bodywork, oval intake, rear engine cover taper and front wing leading arc",
-  "passed": true,
   "source_file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
-  "source_digest": "58E2E1B81B0373A62F71D65574525155646CC2B1A207F735D8CEA0B8FD7C6E95",
-  "baseline_chassis_digest": "95B2B519370F08DEA25AC5A8AE94C9B10194A01F7206F060A8EBDF1F4750A671",
+  "source_digest": "ad4dd16928996889518ec29dc467a7d534f06c31ed3415d2d0b0b4d8ba978fa7",
+  "baseline_chassis_digest": "62133fc0cece06489fd39d7f17524e1899d00c7ddc42a25249f147c6d26e28f7",
+  "bodywork_textures": [
+    {
+      "object": "BodyworkNose",
+      "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkNose_updated_sponsors.png",
+      "texture_sha256": "f834e619028caf4cb3cba536c2a72148a20c2d8ab78058a0c6bbb03de508c736",
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "triangles": 2680
+    },
+    {
+      "object": "BodyworkMonocoqueExterior",
+      "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkMonocoqueExterior_updated_sponsors.png",
+      "texture_sha256": "64111a46f7fc62144011eb38e0d38ce30a41f14db886e211b48e1ece3e017661",
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "triangles": 2606
+    },
+    {
+      "object": "BodyworkSidepodLeft",
+      "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkSidepodLeft_updated_sponsors.png",
+      "texture_sha256": "ac4b5bc1e5b555a259a50b29990ff00960a96a659482665e101ae2725b515118",
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "triangles": 7658
+    },
+    {
+      "object": "BodyworkSidepodRight",
+      "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkSidepodRight_updated_sponsors.png",
+      "texture_sha256": "01a073aa7c089de4bfdcd9e8e1a614e16adbf6b0d2a19f055a3fd21c133fec1f",
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "triangles": 7658
+    },
+    {
+      "object": "BodyworkEngineCover",
+      "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkEngineCover_updated_sponsors.png",
+      "texture_sha256": "e84809d3e6526c9ca4cdd9d101280a471f70f447338d80ba2ec8ecffbf62310d",
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "triangles": 3806
+    },
+    {
+      "object": "BodyworkEngineCoverCentralFin",
+      "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkEngineCoverCentralFin_updated_sponsors.png",
+      "texture_sha256": "48ff6529f29d651e67edd113aad5b72003044e9095fb24981e52a6e8f096ae75",
+      "texture_resolution": [
+        2048,
+        2048
+      ],
+      "triangles": 148
+    }
+  ],
+  "original_position_normal_tangent_and_texture_coordinate_values_preserved": true,
+  "unrelated_embedded_textures_and_meshes_preserved": true,
+  "wheel_exports_byte_identical": true,
   "files": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "62133FC0CECE06489FD39D7F17524E1899D00C7DDC42A25249F147C6D26E28F7",
-      "size_bytes": 40308600
+      "sha256": "C6956692F1FDD8FC655494446BBBE8A283EC966356FBC97AA589757C6B53C655",
+      "size_bytes": 48585292
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -31,53 +94,9 @@
       "size_bytes": 5348864
     }
   },
-  "changes": {
-    "GEO_ENGINE_AIR_INTAKE_INLET_SURFACE": {
-      "triangles": 24,
-      "materials_reused": true
-    },
-    "GEO_ENGINE_COVER_REAR_CLOSURE": {
-      "triangles": 1380,
-      "materials_reused": true
-    },
-    "GEO_ENGINE_COVER_SIDE_CAMERA_HOUSINGS": {
-      "triangles": 72,
-      "materials_reused": true
-    },
-    "GEO_FRONT_WING_MAIN_ELEMENT": {
-      "triangles": 1656,
-      "materials_reused": true
-    },
-    "GEO_FRONT_WING_UPPER_ELEMENT": {
-      "triangles": 448,
-      "materials_reused": true
-    },
-    "BodyworkNose": {
-      "triangles": 2680,
-      "materials_reused": true
-    },
-    "BodyworkMonocoqueExterior": {
-      "triangles": 2606,
-      "materials_reused": true
-    },
-    "BodyworkSidepodLeft": {
-      "triangles": 7658,
-      "materials_reused": true
-    },
-    "BodyworkSidepodRight": {
-      "triangles": 7658,
-      "materials_reused": true
-    },
-    "BodyworkEngineCover": {
-      "triangles": 3806,
-      "materials_reused": true
-    },
-    "BodyworkEngineCoverCentralFin": {
-      "triangles": 148,
-      "materials_reused": true
-    }
-  },
-  "protected_geometry_and_material_bytes_preserved": true,
-  "wheel_exports_byte_identical": true,
-  "bodywork_assembly_retained_as_parent": true
+  "geometry_attribute_triangle_corner_values_verified_exactly": true,
+  "candidate_import_validation_passed": true,
+  "both_sides_exported_glb_visually_reviewed": true,
+  "operation": "Export updated F1 2030 sponsor placements from current Blender source",
+  "passed": true
 }

@@ -12,7 +12,7 @@
   "assets": {
     "chassis": {
       "mesh_count": 40,
-      "vertices": 110915,
+      "vertices": 113710,
       "polygons": 158157,
       "bounds_min": [
         -0.859598,
@@ -47,8 +47,8 @@
       "objects": {
         "BodyworkEngineCover": {
           "materials": [
-            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial",
-            "GEO_ENGINE_AIR_INTAKE_INLET_SURFACEExportPhysicalMaterial"
+            "BodyworkEngineCoverUpdatedSponsorsRuntimeMaterial",
+            "BodyworkEngineCoverUpdatedSponsorsRuntimeMaterial.001"
           ],
           "bounds_min": [
             -0.340532,
@@ -73,7 +73,7 @@
         },
         "BodyworkEngineCoverCentralFin": {
           "materials": [
-            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+            "BodyworkEngineCoverCentralFinUpdatedSponsorsRuntimeMaterial"
           ],
           "bounds_min": [
             -0.006,
@@ -98,7 +98,7 @@
         },
         "BodyworkMonocoqueExterior": {
           "materials": [
-            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+            "BodyworkMonocoqueExteriorUpdatedSponsorsRuntimeMaterial"
           ],
           "bounds_min": [
             -0.638565,
@@ -123,7 +123,7 @@
         },
         "BodyworkNose": {
           "materials": [
-            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+            "BodyworkNoseUpdatedSponsorsRuntimeMaterial"
           ],
           "bounds_min": [
             -0.21546,
@@ -148,7 +148,7 @@
         },
         "BodyworkSidepodLeft": {
           "materials": [
-            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+            "BodyworkSidepodLeftUpdatedSponsorsRuntimeMaterial"
           ],
           "bounds_min": [
             -0.654279,
@@ -173,7 +173,7 @@
         },
         "BodyworkSidepodRight": {
           "materials": [
-            "GEO_BODYWORK_NOSE_SIDEPODS_AND_ENGINE_COVERExportPhysicalMaterial"
+            "BodyworkSidepodRightUpdatedSponsorsRuntimeMaterial"
           ],
           "bounds_min": [
             0.059219,

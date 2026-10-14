@@ -6,7 +6,6 @@
   "asset": "F1_2030_V10",
   "physics_profile": "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json",
   "physics_sha256": "DC0D0B6E31D703A7D0440F951BFAD36C87D37B86B5D7EF16FD00AC55CD9D6A03",
-  "physics_digest_contract": "vehicle_profile_provenance_v1",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
@@ -24,13 +23,13 @@
   },
   "wheel_visual_contract": {
     "SpinVisual": "tire, rim, hub and brake disc rotate about local X",
-    "BrakeStatic": "caliper, carbon cover and independent cooling intake follow suspension and steering without wheel spin"
+    "BrakeStatic": "brake caliper and inboard brake duct follow suspension, steering and camber but do not rotate"
   },
   "geometry_assets": {
     "chassis": {
       "path": "f1_2030_v10_chassis.glb",
-      "sha256": "62133FC0CECE06489FD39D7F17524E1899D00C7DDC42A25249F147C6D26E28F7",
-      "size_bytes": 40308600
+      "sha256": "C6956692F1FDD8FC655494446BBBE8A283EC966356FBC97AA589757C6B53C655",
+      "size_bytes": 48585292
     },
     "wheel_FL": {
       "path": "f1_2030_v10_wheel_FL.glb",
@@ -66,7 +65,7 @@
     "mass_properties": "Uniform thin-shell surface integration calibrated to preceding estimated component masses; no ballast compensation.",
     "source_sha256": "a21fc9ce9780ecadd9d73677bdfc13ac3bd080af583c19d6aaf23a3214520171"
   },
-  "current_chassis_source_sha256": "58e2e1b81b0373a62f71d65574525155646cc2b1a207f735d8cea0b8fd7c6e95",
+  "current_chassis_source_sha256": "ad4dd16928996889518ec29dc467a7d534f06c31ed3415d2d0b0b4d8ba978fa7",
   "object_name_migration": {
     "operation": "Rename runtime nodes and meshes while preserving all geometry, materials, images, transforms and hierarchy",
     "assets": {
@@ -748,118 +747,6 @@
     },
     "physics_parameters_preserved": true
   },
-  "optimized_tire_geometry": {
-    "operation": "Replace tire surfaces using optimized geometry with physical diameter and width preserved",
-    "authoring_source_path": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
-    "authoring_source_sha256": "595ca31166391c3236b6d1806ac6fbc431812288d96b681d442f771168407b9f",
-    "changes": {
-      "wheel_FL": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826436,
-        "current_bytes": 8029300,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.16500000655651093,
-            0.3349999785423279,
-            0.33500000834465027
-          ],
-          "min": [
-            -0.16500000655651093,
-            -0.3349999785423279,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "6e44a78d55a05b437b8564c69dd800d8e878c11a8586769f34848dfeda4b2b74"
-      },
-      "wheel_FR": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826456,
-        "current_bytes": 8029320,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.16500000655651093,
-            0.3349999785423279,
-            0.33500000834465027
-          ],
-          "min": [
-            -0.16500000655651093,
-            -0.3349999785423279,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "c477b27e5ba9ba709258aba1dd1ed4f895c9909b9ad3baf5f49f554a6316ace7"
-      },
-      "wheel_RL": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826420,
-        "current_bytes": 8029288,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.20999999344348907,
-            0.33500000834465027,
-            0.33500000834465027
-          ],
-          "min": [
-            -0.20999999344348907,
-            -0.33500000834465027,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "6f7794b32f878879d83dad164c7553af21586608045667d22f5ca88ab4746512"
-      },
-      "wheel_RR": {
-        "previous_triangles": 960,
-        "current_triangles": 960,
-        "previous_vertices": 2880,
-        "current_vertices": 2880,
-        "previous_bytes": 7826420,
-        "current_bytes": 8029284,
-        "original_tire_bounds": {
-          "bufferView": 68,
-          "componentType": 5126,
-          "count": 2880,
-          "max": [
-            0.20999999344348907,
-            0.33500000834465027,
-            0.33500003814697266
-          ],
-          "min": [
-            -0.20999999344348907,
-            -0.33500000834465027,
-            -0.33500000834465027
-          ],
-          "type": "VEC3"
-        },
-        "materials_images_nodes_and_other_meshes_preserved": true,
-        "source_geometry_sha256": "95c399394b98efcc6fcb939a1d905fc442b921148eff8995fda3ae2b72e3eeb8"
-      }
-    },
-    "physics_parameters_preserved": true
-  },
   "brake_assembly_export": {
     "source_sha256": "bd19eb650a4150bcc66f5f9b9502ce08b928f29748df8b832b69903325559784",
     "changes": {
@@ -890,8 +777,44 @@
     },
     "protected_chassis_and_tires_preserved": true
   },
+  "wheel_surface_export": {
+    "source_sha256": "2247e0d9278d69605c002c5ada2107f75e593b1effa8aa55704c6c3226020e3e",
+    "changes": {
+      "wheel_FL": [
+        "GEO_WHEEL_FRONT_LEFT_RIM_AND_SPOKES",
+        "GEO_WHEEL_FRONT_LEFT_TIRE"
+      ],
+      "wheel_FR": [
+        "GEO_WHEEL_FRONT_RIGHT_RIM_AND_SPOKES",
+        "GEO_WHEEL_FRONT_RIGHT_TIRE"
+      ],
+      "wheel_RL": [
+        "GEO_WHEEL_REAR_LEFT_RIM_AND_SPOKES",
+        "GEO_WHEEL_REAR_LEFT_TIRE"
+      ],
+      "wheel_RR": [
+        "GEO_WHEEL_REAR_RIGHT_RIM_AND_SPOKES",
+        "GEO_WHEEL_REAR_RIGHT_TIRE"
+      ]
+    },
+    "tire_triangles_per_wheel": 6336,
+    "diameter_meters": 0.67,
+    "front_width_meters": 0.33,
+    "rear_width_meters": 0.42,
+    "brakes_chassis_and_hierarchy_preserved": true,
+    "material_origin": "Original McLaren MP4/8 tire and rim textures; original UV mapping retained"
+  },
+  "physics_digest_contract": "vehicle_profile_provenance_v1",
   "source_sha256": "30ceccc06db5b5c69d23abebe9d6929586ef8c82c083d545d2238f90b6156aea",
   "source_path": "source/f1_2030.blend",
+  "latest_complete_export": {
+    "source_sha256": "07c65f9cb3a2bad780b234d6c77c7fb7f4dc6aad1485173a601fb98fd992e4fe",
+    "source_path": "D:/Formula90s/game/assets/models/vehicles/f1-2030/source/f1_2030.blend",
+    "export_date": "2026-10-12",
+    "shared_geometry": true,
+    "evidence": "scratch/current_vehicle_export_20261012/preservation_checks.json",
+    "brake_carbon_baked": true
+  },
   "latest_canonical_export": {
     "date": "2026-10-13",
     "source_sha256": "30ceccc06db5b5c69d23abebe9d6929586ef8c82c083d545d2238f90b6156aea",
@@ -987,5 +910,102 @@
     "protected_geometry_and_material_bytes_preserved": true,
     "wheel_exports_byte_identical": true,
     "bodywork_assembly_retained_as_parent": true
+  },
+  "sponsor_layout_export": {
+    "source_file": "D:\\Formula90s\\game\\assets\\models\\vehicles\\f1-2030\\source\\f1_2030.blend",
+    "source_digest": "ad4dd16928996889518ec29dc467a7d534f06c31ed3415d2d0b0b4d8ba978fa7",
+    "baseline_chassis_digest": "62133fc0cece06489fd39d7f17524e1899d00c7ddc42a25249f147c6d26e28f7",
+    "bodywork_textures": [
+      {
+        "object": "BodyworkNose",
+        "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkNose_updated_sponsors.png",
+        "texture_sha256": "f834e619028caf4cb3cba536c2a72148a20c2d8ab78058a0c6bbb03de508c736",
+        "texture_resolution": [
+          2048,
+          2048
+        ],
+        "triangles": 2680
+      },
+      {
+        "object": "BodyworkMonocoqueExterior",
+        "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkMonocoqueExterior_updated_sponsors.png",
+        "texture_sha256": "64111a46f7fc62144011eb38e0d38ce30a41f14db886e211b48e1ece3e017661",
+        "texture_resolution": [
+          2048,
+          2048
+        ],
+        "triangles": 2606
+      },
+      {
+        "object": "BodyworkSidepodLeft",
+        "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkSidepodLeft_updated_sponsors.png",
+        "texture_sha256": "ac4b5bc1e5b555a259a50b29990ff00960a96a659482665e101ae2725b515118",
+        "texture_resolution": [
+          2048,
+          2048
+        ],
+        "triangles": 7658
+      },
+      {
+        "object": "BodyworkSidepodRight",
+        "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkSidepodRight_updated_sponsors.png",
+        "texture_sha256": "01a073aa7c089de4bfdcd9e8e1a614e16adbf6b0d2a19f055a3fd21c133fec1f",
+        "texture_resolution": [
+          2048,
+          2048
+        ],
+        "triangles": 7658
+      },
+      {
+        "object": "BodyworkEngineCover",
+        "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkEngineCover_updated_sponsors.png",
+        "texture_sha256": "e84809d3e6526c9ca4cdd9d101280a471f70f447338d80ba2ec8ecffbf62310d",
+        "texture_resolution": [
+          2048,
+          2048
+        ],
+        "triangles": 3806
+      },
+      {
+        "object": "BodyworkEngineCoverCentralFin",
+        "texture": "D:\\Formula90s\\scratch\\formula_one_2030_decals_export_20261013\\BodyworkEngineCoverCentralFin_updated_sponsors.png",
+        "texture_sha256": "48ff6529f29d651e67edd113aad5b72003044e9095fb24981e52a6e8f096ae75",
+        "texture_resolution": [
+          2048,
+          2048
+        ],
+        "triangles": 148
+      }
+    ],
+    "original_position_normal_tangent_and_texture_coordinate_values_preserved": true,
+    "unrelated_embedded_textures_and_meshes_preserved": true,
+    "wheel_exports_byte_identical": true,
+    "files": {
+      "chassis": {
+        "path": "f1_2030_v10_chassis.glb",
+        "sha256": "C6956692F1FDD8FC655494446BBBE8A283EC966356FBC97AA589757C6B53C655",
+        "size_bytes": 48585292
+      },
+      "wheel_FL": {
+        "path": "f1_2030_v10_wheel_FL.glb",
+        "sha256": "2EBEC61370BD94DC392EBE2D0947370329B701E9D20BE6D8BA3F224C86DC9C8D",
+        "size_bytes": 4969628
+      },
+      "wheel_FR": {
+        "path": "f1_2030_v10_wheel_FR.glb",
+        "sha256": "4BE2516AC2D04B38459371CA7A2E589EB291AA678F233247ABB5271FB3F83BAE",
+        "size_bytes": 5279616
+      },
+      "wheel_RL": {
+        "path": "f1_2030_v10_wheel_RL.glb",
+        "sha256": "325B0CCAF5305D809B4B8A8CB8F625077E1A75DA6174FBB27374C7F171289BE0",
+        "size_bytes": 5348892
+      },
+      "wheel_RR": {
+        "path": "f1_2030_v10_wheel_RR.glb",
+        "sha256": "A2603191289DA16D15F74A0FDF3BFA36D6023F549E2F899BAF94D7436B5D7174",
+        "size_bytes": 5348864
+      }
+    }
   }
 }
