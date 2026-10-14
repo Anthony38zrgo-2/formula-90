@@ -21,11 +21,6 @@ var driving_aids: DrivingAidsController
 var lap_timing: LapTimingController
 var pit_stop: PitStopController
 var pit_crew_visual: PitCrewVisualController
-var background_controller: BackgroundController
-var background_skybox: BackgroundSkybox
-# Deprecated compatibility handle. Factory-authored tracks no longer
-# instantiate BackgroundMountains3D at runtime.
-var background_mountains_3d: BackgroundMountains3D
 var camera_rig_chase: Node3D
 var camera_rig_tcam: Node3D
 var camera_rig_cockpit: Node3D
@@ -129,8 +124,6 @@ func _add_runtime_systems() -> void:
 		add_child(pit_crew_visual)
 		pit_crew_visual.configure(pit_stop, active_vehicle as Node3D)
 
-	_setup_background(camera_rig_chase)
-
 
 func _process(_delta: float) -> void:
 	# Polling global en vez de _unhandled_input: RaceSession vive dentro del
@@ -166,7 +159,6 @@ func _select_camera_view(camera_index: int) -> void:
 			camera.current = rig_index == active_camera_index
 	if camera_rig_cockpit != null:
 		camera_rig_cockpit.call("set_view_active", is_cockpit_active())
-	_rebind_background_to_active_camera()
 
 func _find_camera3d_recursive(node: Node) -> Camera3D:
 	if node is Camera3D:
@@ -178,86 +170,12 @@ func _find_camera3d_recursive(node: Node) -> Camera3D:
 	return null
 
 
-func _setup_background(camera_rig: Node3D) -> void:
-	if config == null or config.selected_track == null:
-		return
-	
-	var cam := camera_rig.get_node_or_null("Camera3D") as Camera3D
-	if cam == null:
-		cam = _find_camera3d_recursive(camera_rig)
-	if cam == null:
-		push_warning("RaceSession: No se encontró Camera3D en camera_rig '%s'; skybox sin seguimiento." % camera_rig.name)
-	
-	# La Chutana's published factory GLB is the sole authority for Near/Far.
-	# Keep its embedded materials and the track WorldEnvironment untouched.
-	if config.selected_track.id == &"la_chutana":
-		print("RaceSession: fondo de La Chutana provisto por el GLB de fábrica.")
-		return
-	
-	# Fallback: legacy 2D parallax system
-	var preset := config.selected_track.get_effective_background_preset()
-	if preset == null:
-		return
-	
-	# 1. Skybox desacoplado: sigue la camara y llena el frustum en todo momento.
-	if preset.skybox != null and cam != null:
-		var skybox := BackgroundSkybox.new()
-		skybox.name = "BackgroundSkybox"
-		if skybox.setup(preset.skybox):
-			skybox.set_camera_source(cam)
-			add_child(skybox)
-			background_skybox = skybox
-		else:
-			push_warning("RaceSession: No se pudo activar el BackgroundSkybox; se conserva el fallback legacy.")
-	
-	# 2. Capas parallax gestionadas por BackgroundController.
-	var controller := BackgroundController.new()
-	controller.name = "BackgroundController"
-	var success := controller.load_preset(preset)
-	if success:
-		if cam != null:
-			controller.set_camera_source(cam)
-		add_child(controller)
-		background_controller = controller
-		
-		_hide_legacy_background()
-	else:
-		push_warning("RaceSession: No se pudo activar el BackgroundController; se conserva el fallback legacy.")
-
-
-func _rebind_background_to_active_camera() -> void:
-	var active_rig := camera_rig_cockpit if is_cockpit_active() else (camera_rig_tcam if is_tcam_active() else camera_rig_chase)
-	if active_rig == null:
-		return
-	var cam := active_rig.get_node_or_null("Camera3D") as Camera3D
-	if cam == null:
-		cam = _find_camera3d_recursive(active_rig)
-	if cam == null:
-		return
-	if background_skybox != null:
-		background_skybox.set_camera_source(cam)
-	if background_controller != null:
-		background_controller.set_camera_source(cam)
-
-
-func _hide_legacy_background() -> void:
-	if active_track == null:
-		return
-	var legacy_skybox := active_track.get_node_or_null("SourceSkyboxRig") as Node3D
-	if legacy_skybox != null:
-		legacy_skybox.visible = false
-		legacy_skybox.set_process(false)
-	var world_env := active_track.get_node_or_null("WorldEnvironment") as WorldEnvironment
-	if world_env != null and world_env.environment != null:
-		world_env.environment.background_mode = Environment.BG_CANVAS
-		world_env.environment.background_canvas_max_layer = 0
-
 func _clear_composition() -> void:
 	for container in [$TrackContainer, $VehicleContainer]:
 		for child in container.get_children():
 			container.remove_child(child)
 			child.queue_free()
-	for child_name in [&"CameraRig", &"CameraRigTCam", &"CockpitCameraRig", &"DrivingAids", &"LapTiming", &"PitStop", &"PitCrewVisual", &"BackgroundController", &"BackgroundSkybox", &"BackgroundMountains3D"]:
+	for child_name in [&"CameraRig", &"CameraRigTCam", &"CockpitCameraRig", &"DrivingAids", &"LapTiming", &"PitStop", &"PitCrewVisual"]:
 		var child := get_node_or_null(NodePath(String(child_name)))
 		if child != null:
 			remove_child(child)
@@ -273,6 +191,3 @@ func _clear_composition() -> void:
 	lap_timing = null
 	pit_stop = null
 	pit_crew_visual = null
-	background_controller = null
-	background_skybox = null
-	background_mountains_3d = null

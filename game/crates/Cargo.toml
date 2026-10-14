@@ -5,7 +5,6 @@ members = [
     "vehicle-audio-engine",
     "game-sim",
     "formula90-core",
-    "skybox-engine",
     "psx-art-pluggin",
     "dsp-abi-check",
     "v10-engine-synth",

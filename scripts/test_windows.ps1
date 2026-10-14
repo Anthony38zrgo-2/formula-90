@@ -17,7 +17,7 @@ Write-Host "Ejecutando tests de Rust Vehicle Physics Engine..." -ForegroundColor
 & cargo test --manifest-path (Join-Path $root 'game\crates\vehicle-physics-engine\Cargo.toml')
 if ($LASTEXITCODE -ne 0) { throw 'Rust vehicle physics tests fallaron.' }
 
-foreach($script in @('res://tests/test_f1_2030_v10_rust_physics.gd', 'res://tests/smoke_test_f1_2030_v10_fuji76_77.gd', 'res://tests/smoke_test_f1_2030_v10_wheel_visual.gd', 'res://tests/smoke_test_mountains_3d.gd', 'res://tests/smoke_test_vehicle_audio.gd')){Write-Host "Smoke/Test script: $script";& $godot --headless --path (Join-Path $root 'game') --script $script;if($LASTEXITCODE -ne 0){throw "Test script failed: $script"}}
+foreach($script in @('res://tests/test_f1_2030_v10_rust_physics.gd', 'res://tests/smoke_test_f1_2030_v10_fuji76_77.gd', 'res://tests/smoke_test_f1_2030_v10_wheel_visual.gd', 'res://tests/smoke_test_vehicle_audio.gd')){Write-Host "Smoke/Test script: $script";& $godot --headless --path (Join-Path $root 'game') --script $script;if($LASTEXITCODE -ne 0){throw "Test script failed: $script"}}
 & "$PSScriptRoot\gate_hud_removed_telemetry_keys.ps1"
 & "$PSScriptRoot\test_gdunit.ps1" -GodotPath $godot
 Write-Host 'Todas las pruebas automáticas pasaron.' -ForegroundColor Green
