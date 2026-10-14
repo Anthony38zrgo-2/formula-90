@@ -32,9 +32,4 @@ HTML y JUnit XML se generan bajo `game/reports/gdunit/`, que está ignorado por 
   válido con chasis, neumáticos, suspensión y motor.
 
 La estabilidad dinámica del mundo completo no se ejecuta dentro del runner de
-unit tests. Se valida por separado con el probe headless y ProcDump para conservar
-una señal física y de crash nativo reproducible:
-
-```powershell
-.\scripts\debug_godot_headless.ps1 -Mode HandlingPhysics -PhysicsFrames 300
-```
+unit tests.
