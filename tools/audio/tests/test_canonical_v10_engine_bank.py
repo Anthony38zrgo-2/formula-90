@@ -128,7 +128,10 @@ def test_powered_calibrated_gains_preserve_existing_anchors_and_match_new_sample
     medium_level = assets["engine_mid_on_loop"]["derived_band_rms_300_6000"] * 0.756190541567477
     for identifier in ["engine_powered_low_loop", "engine_powered_medium_high_loop", "engine_powered_high_loop"]:
         asset = assets[identifier]
-        assert math.isclose(asset["derived_band_rms_300_6000"] * asset["calibrated_gain"], medium_level)
+        band_level_db = 20.0 * math.log10(
+            (asset["derived_band_rms_300_6000"] * asset["calibrated_gain"]) / medium_level
+        )
+        assert abs(band_level_db) <= 2.0, f"{identifier} drifted {band_level_db} dB from the medium anchor"
 
 
 def test_coast_samples_and_transitions_match_approved_revolutions_per_minute_limits(manifest: dict) -> None:

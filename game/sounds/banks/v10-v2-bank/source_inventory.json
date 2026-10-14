@@ -8,7 +8,7 @@
       "source_sha256": "f69ed81ddb25538075b20c8efc87a085f4d8f44428390b248e3f54a94122a312",
       "runtime_asset_id": "engine_idle_loop",
       "runtime_filename": "engine_idle_loop.wav",
-      "runtime_sha256": "db4553b2a9683aa40d1bf259b2a2b9db1c7a8e27fcff31049680fe89f2796498",
+      "runtime_sha256": "ec51bb6e04866fa7021c2185201b73fcfbeb7a96f7803831ce1219d57ebfc234",
       "derived_frames": 88752,
       "reference_revolutions_per_minute": 4531.638723634397,
       "zone_revolutions_per_minute": 4500.0,
@@ -23,7 +23,7 @@
       "source_sha256": "9dccccec035b1553824ae815761b9893891126f06afb9133a7abf3add6faaae4",
       "runtime_asset_id": "engine_powered_low_loop",
       "runtime_filename": "engine_powered_low_loop.wav",
-      "runtime_sha256": "ceb2699b97b3c79c26b265032657cb07ad59fc4b88ab2a44761d7601596a09c8",
+      "runtime_sha256": "fb54d2a0d3a5ebf9c4b76bba21949adb308464ed3628d6b298fa80a63c964354",
       "derived_frames": 1351107,
       "reference_revolutions_per_minute": 9145.700525569033,
       "zone_revolutions_per_minute": 7500.0,
@@ -38,7 +38,7 @@
       "source_sha256": "d38d928a2b9541e7eaae96427659287dce5a6c5b28249d63fb2c427134e1b76d",
       "runtime_asset_id": "engine_mid_on_loop",
       "runtime_filename": "engine_mid_on_loop.wav",
-      "runtime_sha256": "28d13d69896029022344aca00d29c5be6b69800b6464a38baa36466af2237945",
+      "runtime_sha256": "f6db3385ba6cccd4f74deaf000eda7ccb477d3a4168fc0397755d321ebad443c",
       "derived_frames": 1287463,
       "reference_revolutions_per_minute": 12750.48991699179,
       "zone_revolutions_per_minute": 11750.0,
@@ -53,7 +53,7 @@
       "source_sha256": "33f49b64536b08cafba65ce8d2af351f331c728f6583924c4d594a6b13b6391c",
       "runtime_asset_id": "engine_powered_medium_high_loop",
       "runtime_filename": "engine_powered_medium_high_loop.wav",
-      "runtime_sha256": "c7ccccc214ea4a52689404fb319a56f24ff0deb36b82fabbf1f056aa50f9fd52",
+      "runtime_sha256": "17defac1e71b2ce9d13485a2ae71279f78a347d67cbdd3689388277e40b477fd",
       "derived_frames": 1281420,
       "reference_revolutions_per_minute": 13434.218289085546,
       "zone_revolutions_per_minute": 13750.0,
@@ -68,7 +68,7 @@
       "source_sha256": "ccf087f6b41b4dc4f73ded9535688926b184ffeb6842b4315645c4dfe0ca2c31",
       "runtime_asset_id": "engine_powered_high_loop",
       "runtime_filename": "engine_powered_high_loop.wav",
-      "runtime_sha256": "fd32d87c662d74f0011150404b0f0d4525e1a27acd6ed9a08c5ff295ed5b24fa",
+      "runtime_sha256": "11f17caefab922afaf1343a2827af0d5f63ad5fec01771c6fa26b246689999d4",
       "derived_frames": 1211492,
       "reference_revolutions_per_minute": 16926.64912356004,
       "zone_revolutions_per_minute": 16250.0,
@@ -83,7 +83,7 @@
       "source_sha256": "77a311a25e4e015004171e1f148721b17db95f1206d159f5a295adcb50f21e96",
       "runtime_asset_id": "engine_powered_maximum_loop",
       "runtime_filename": "engine_powered_maximum_loop.wav",
-      "runtime_sha256": "53686d9307b6a026ee41e5e9077d4b472eac90fb54d821cf556a0a2509a340f0",
+      "runtime_sha256": "9bec0ea0aef8424b7062ab18471e849e660c906c609848a5a3adb8ff1411414c",
       "derived_frames": 1315372,
       "reference_revolutions_per_minute": 17867.015566699003,
       "zone_revolutions_per_minute": 17750.0,
@@ -98,7 +98,7 @@
       "source_sha256": "8675cc2a8fa55c0605317d6d223e4bc6109a5575e4e33e4febab7bbf7926881c",
       "runtime_asset_id": "engine_low_off_loop",
       "runtime_filename": "engine_low_off_loop.wav",
-      "runtime_sha256": "601a88d0ff4cae4a8c7f5b62e2642f614c80735c3b51723603da28d81e42a246",
+      "runtime_sha256": "c83c4bce23edb250cfcd1deeb20b8c070898e866d962d9cb47e4b8a5b24013f2",
       "derived_frames": 88171,
       "reference_revolutions_per_minute": 7922.604938131586,
       "zone_revolutions_per_minute": 8000.0,
@@ -113,7 +113,7 @@
       "source_sha256": "534c6bd073bb5e40992f9937252920c49d8e2dd382208a970b18b155981eaf81",
       "runtime_asset_id": "engine_mid_off_loop",
       "runtime_filename": "engine_mid_off_loop.wav",
-      "runtime_sha256": "ab2b4b4d82aede2b3f1d94c7b9dce7fa095fbcb42b229e995d4be7fd214d784e",
+      "runtime_sha256": "ba1c8a58bd7d9fc463e30605bbb21d94fc355d47e73784934a788fe672498bf6",
       "derived_frames": 1321916,
       "reference_revolutions_per_minute": 12846.525800429074,
       "zone_revolutions_per_minute": 12800.0,
@@ -128,7 +128,7 @@
       "source_sha256": "510ca5fbbddd3362edf534537770058377a7ebaa304d23bd4633df06abbaaf9b",
       "runtime_asset_id": "engine_off_maximum_loop",
       "runtime_filename": "engine_off_maximum_loop.wav",
-      "runtime_sha256": "47538d4769a1bc6328c30e8ee9f996e877f29810b83001e0f3b56300199cc7e2",
+      "runtime_sha256": "34523b36c1c9057239dd8e7a6735ba03db1d153c6aef25ca84abf2c8fe5f607a",
       "derived_frames": 88292,
       "reference_revolutions_per_minute": 16542.744529515698,
       "zone_revolutions_per_minute": 16500.0,
@@ -247,5 +247,343 @@
       "seam_contract_holds": true
     },
     "preparation_recipe": "stable_three_second_window_mean_removed_sixty_millisecond_overlap_linear_crossfade_level_calibrated_v1"
+  },
+  "engine_polish": {
+    "schema_version": 1,
+    "tool": "tools/audio/polish_v10_engine_bank.py",
+    "tool_revision": 1,
+    "direct_notes": "direct-current removal plus frozen zero-phase EQ chains; compression rejected by audit",
+    "assets": [
+      {
+        "asset_id": "engine_idle_loop",
+        "runtime_filename": "engine_idle_loop.wav",
+        "pre_sha256": "db4553b2a9683aa40d1bf259b2a2b9db1c7a8e27fcff31049680fe89f2796498",
+        "post_sha256": "ec51bb6e04866fa7021c2185201b73fcfbeb7a96f7803831ce1219d57ebfc234",
+        "removed_direct_current": false,
+        "post_rms_dbfs": -16.374,
+        "post_peak_dbfs": -4.514,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 630.0,
+            "gain_db": -1.96,
+            "width_octaves": 0.523
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 200.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 1000.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "ringing_notch",
+            "center_hz": 586.8,
+            "gain_db": -6.49,
+            "width_octaves": 0.08
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_low_off_loop",
+        "runtime_filename": "engine_low_off_loop.wav",
+        "pre_sha256": "601a88d0ff4cae4a8c7f5b62e2642f614c80735c3b51723603da28d81e42a246",
+        "post_sha256": "c83c4bce23edb250cfcd1deeb20b8c070898e866d962d9cb47e4b8a5b24013f2",
+        "removed_direct_current": false,
+        "post_rms_dbfs": -14.9,
+        "post_peak_dbfs": -2.998,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 500.0,
+            "gain_db": -2.8,
+            "width_octaves": 0.746
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 200.0,
+            "gain_db": -4.31,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "ringing_notch",
+            "center_hz": 541.0,
+            "gain_db": -5.85,
+            "width_octaves": 0.08
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_mid_off_loop",
+        "runtime_filename": "engine_mid_off_loop.wav",
+        "pre_sha256": "ab2b4b4d82aede2b3f1d94c7b9dce7fa095fbcb42b229e995d4be7fd214d784e",
+        "post_sha256": "ba1c8a58bd7d9fc463e30605bbb21d94fc355d47e73784934a788fe672498bf6",
+        "removed_direct_current": true,
+        "post_rms_dbfs": -14.57,
+        "post_peak_dbfs": -2.382,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 1000.0,
+            "gain_db": -2.42,
+            "width_octaves": 0.646
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 315.0,
+            "gain_db": -2.74,
+            "width_octaves": 0.73
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 200.0,
+            "gain_db": -4.19,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 500.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "ringing_notch",
+            "center_hz": 522.2,
+            "gain_db": -8.0,
+            "width_octaves": 0.08
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_mid_on_loop",
+        "runtime_filename": "engine_mid_on_loop.wav",
+        "pre_sha256": "28d13d69896029022344aca00d29c5be6b69800b6464a38baa36466af2237945",
+        "post_sha256": "f6db3385ba6cccd4f74deaf000eda7ccb477d3a4168fc0397755d321ebad443c",
+        "removed_direct_current": true,
+        "post_rms_dbfs": -13.898,
+        "post_peak_dbfs": -2.374,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 200.0,
+            "gain_db": -2.93,
+            "width_octaves": 0.781
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 1000.0,
+            "gain_db": -3.83,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 315.0,
+            "gain_db": -4.1,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 500.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_off_maximum_loop",
+        "runtime_filename": "engine_off_maximum_loop.wav",
+        "pre_sha256": "47538d4769a1bc6328c30e8ee9f996e877f29810b83001e0f3b56300199cc7e2",
+        "post_sha256": "34523b36c1c9057239dd8e7a6735ba03db1d153c6aef25ca84abf2c8fe5f607a",
+        "removed_direct_current": false,
+        "post_rms_dbfs": -14.155,
+        "post_peak_dbfs": -3.395,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 630.0,
+            "gain_db": -2.67,
+            "width_octaves": 0.712
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 250.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 400.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_powered_high_loop",
+        "runtime_filename": "engine_powered_high_loop.wav",
+        "pre_sha256": "fd32d87c662d74f0011150404b0f0d4525e1a27acd6ed9a08c5ff295ed5b24fa",
+        "post_sha256": "11f17caefab922afaf1343a2827af0d5f63ad5fec01771c6fa26b246689999d4",
+        "removed_direct_current": true,
+        "post_rms_dbfs": -11.985,
+        "post_peak_dbfs": -0.446,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 2000.0,
+            "gain_db": -2.23,
+            "width_octaves": 0.595
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 630.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 400.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_powered_low_loop",
+        "runtime_filename": "engine_powered_low_loop.wav",
+        "pre_sha256": "ceb2699b97b3c79c26b265032657cb07ad59fc4b88ab2a44761d7601596a09c8",
+        "post_sha256": "fb54d2a0d3a5ebf9c4b76bba21949adb308464ed3628d6b298fa80a63c964354",
+        "removed_direct_current": false,
+        "post_rms_dbfs": -14.793,
+        "post_peak_dbfs": -3.405,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 1250.0,
+            "gain_db": -3.09,
+            "width_octaves": 0.823
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 160.0,
+            "gain_db": -4.3,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 250.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 400.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          },
+          {
+            "kind": "bell",
+            "purpose": "ringing_notch",
+            "center_hz": 371.4,
+            "gain_db": -6.36,
+            "width_octaves": 0.08
+          },
+          {
+            "kind": "bell",
+            "purpose": "ringing_notch",
+            "center_hz": 577.4,
+            "gain_db": -7.97,
+            "width_octaves": 0.08
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_powered_maximum_loop",
+        "runtime_filename": "engine_powered_maximum_loop.wav",
+        "pre_sha256": "53686d9307b6a026ee41e5e9077d4b472eac90fb54d821cf556a0a2509a340f0",
+        "post_sha256": "9bec0ea0aef8424b7062ab18471e849e660c906c609848a5a3adb8ff1411414c",
+        "removed_direct_current": true,
+        "post_rms_dbfs": -11.942,
+        "post_peak_dbfs": -0.719,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 1600.0,
+            "gain_db": -1.86,
+            "width_octaves": 0.497
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 447.2,
+            "gain_db": -2.22,
+            "width_octaves": 0.434
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 800.0,
+            "gain_db": -2.92,
+            "width_octaves": 0.778
+          }
+        ]
+      },
+      {
+        "asset_id": "engine_powered_medium_high_loop",
+        "runtime_filename": "engine_powered_medium_high_loop.wav",
+        "pre_sha256": "c7ccccc214ea4a52689404fb319a56f24ff0deb36b82fabbf1f056aa50f9fd52",
+        "post_sha256": "17defac1e71b2ce9d13485a2ae71279f78a347d67cbdd3689388277e40b477fd",
+        "removed_direct_current": true,
+        "post_rms_dbfs": -13.448,
+        "post_peak_dbfs": -2.561,
+        "settings": [
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 1118.0,
+            "gain_db": -1.46,
+            "width_octaves": 0.434
+          },
+          {
+            "kind": "bell",
+            "purpose": "musical_band_hump",
+            "center_hz": 500.0,
+            "gain_db": -4.5,
+            "width_octaves": 0.9
+          }
+        ]
+      }
+    ]
   }
 }
