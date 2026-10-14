@@ -48,7 +48,7 @@ not residue.
 | # | Folder | Finding | Status |
 |---|--------|---------|--------|
 | 1 | `game/audio/` | Deprecated historical sampler tree beside the canon `game/sounds/banks/` | Open; the canon now states the `gf509` diagnostic exception |
-| 2 | `game/sounds/banks/v10-gp3/backup/`, `tobe/` | Backups and tonal analysis staged inside a runtime bank directory | Open; documented in place, move to `scratch/` pending |
+| 2 | `game/sounds/banks/v10-gp3/backup/`, `tobe/` | Backups and tonal analysis staged inside a runtime bank directory | Resolved: backup and staging removed; only the active `engine_coast_maximum` source remains for the intermediate generator |
 | 3 | `game/crates/` vs `native/` vs `game/native/vehicle-audio-dsp/` | Three native homes | Open; `game/native/AGENTS.md` now records the third home |
 | 4 | `.godot-user/` tracked | Editor user cache committed to Git | Resolved: untracked, removed, and ignored by `.gitignore` |
 | 5 | `game/logs/`, `game/.godot*/` on disk | Generated logs, snapshots, and build outputs beside source | Open |

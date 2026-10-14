@@ -1,6 +1,5 @@
-# formula_one_2030_grand_prix_sampler — Legacy consumed bank
+# formula_one_2030_grand_prix_sampler — Legacy builder input bank
 
-Scope: the previously consumed 2030 sampler tree and its candidate staging folders.
-Consumers: superseded loaders kept for migration reference.
+Scope: the five-engine sample bank consumed by `tools/audio/build_canonical_v10_engine_bank.py` when rebuilding the canonical V10 bank.
+Consumers: the offline canonical bank builder only; the runtime never loads this tree.
 Rules: frozen. New engine work targets `game/sounds/banks/v10-v2-bank/` exclusively.
-Subfolders: each child folder documents itself in its own AGENTS.md.

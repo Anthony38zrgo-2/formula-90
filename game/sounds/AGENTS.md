@@ -28,10 +28,9 @@ itself in its own AGENTS.md.
   `audio.grand_prix_sampler.manifest = "sounds/banks/v10-v2-bank/manifest.json"`
   in `game/data/vehicles/f1_2030/profiles/geometric/audio.json`. The runtime
   resolves this path relative to the Godot project root.
-- `bank_sources/`, `banks/v10-v2-bank/`, and `banks/v10-gp3/backup/` each
-  carry a `.gdignore`: Godot must not import those WAVs. The Rust runtime
-  loads bank audio from the filesystem, so bank assets are never referenced
-  through `res://` paths.
+- `bank_sources/` and `banks/v10-v2-bank/` each carry a `.gdignore`: Godot must
+  not import those WAVs. The Rust runtime loads bank audio from the filesystem,
+  so bank assets are never referenced through `res://` paths.
 
 ## Sampling format
 
