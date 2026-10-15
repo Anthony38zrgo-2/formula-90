@@ -7,6 +7,7 @@ var presentation_core: Node
 var measurement_file: FileAccess
 var measurement_directory: String
 var aerodynamics_backend: String
+var suspension_backend: String
 var elapsed_seconds: float = 0.0
 var measured_ticks: int = 0
 var previous_step_count: int = 0
@@ -27,6 +28,7 @@ func initialize_comparison() -> void:
 		get_tree().quit(1)
 		return
 	aerodynamics_backend = OS.get_environment("FORMULA90_AERODYNAMICS_BACKEND")
+	suspension_backend = OS.get_environment("FORMULA90_SUSPENSION_BACKEND")
 	measurement_directory = OS.get_environment("FORMULA90_AERODYNAMICS_OUTPUT")
 	if measurement_directory.is_empty() or not aerodynamics_backend in ["standard", "simplified"]:
 		push_error("Launch aerodynamics comparison through scripts/run_fuji_aerodynamics_comparison.ps1")
@@ -47,7 +49,7 @@ func initialize_comparison() -> void:
 	get_parent().add_child(overlay)
 	active = true
 	set_physics_process(true)
-	print("AERODYNAMICS_COMPARISON_READY backend=%s vehicles=1 physics_frequency=%d" % [aerodynamics_backend, Engine.physics_ticks_per_second])
+	print("PHYSICS_COMPARISON_READY aerodynamics=%s suspension=%s vehicles=1 suspension_rays=12 physics_frequency=%d" % [aerodynamics_backend, suspension_backend, Engine.physics_ticks_per_second])
 
 func _physics_process(duration_seconds: float) -> void:
 	if not active:
@@ -67,8 +69,8 @@ func _physics_process(duration_seconds: float) -> void:
 		measured_ticks += 1
 		if measured_ticks % Engine.physics_ticks_per_second == 0:
 			measurement_file.flush()
-	status_label.text = "Aero %s | jugador | %d FPS\nContactos %.3f ms | Rust %.3f ms | %.0f s%s" % [
-		aerodynamics_backend, Engine.get_frames_per_second(), contact_microseconds / 1000.0,
+	status_label.text = "Aero %s | suspension %s | jugador | %d FPS\nContactos %.3f ms | Rust %.3f ms | %.0f s%s" % [
+		aerodynamics_backend, suspension_backend, Engine.get_frames_per_second(), contact_microseconds / 1000.0,
 		simulation_microseconds / 1000.0, elapsed_seconds,
 		" | calentamiento" if elapsed_seconds < WARMUP_SECONDS else " | registrando"]
 	if maximum_duration_seconds > 0.0 and elapsed_seconds >= maximum_duration_seconds:
@@ -81,6 +83,7 @@ func _exit_tree() -> void:
 	if not active:
 		return
 	var summary := {"backend": aerodynamics_backend, "vehicle_count": 1,
+		"suspension_backend": suspension_backend, "suspension_contact_rays": 12,
 		"elapsed_seconds": elapsed_seconds, "warmup_seconds": WARMUP_SECONDS, "measured_ticks": measured_ticks,
 		"physics_frequency_hertz": Engine.physics_ticks_per_second,
 		"human_driving_approval": "pending", "audio_policy": "unchanged player audio"}

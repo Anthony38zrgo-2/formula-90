@@ -3,7 +3,6 @@ use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHe
 use crate::powertrain::PowertrainState;
 use crate::powertrain_thermals::{PowertrainThermalInput, PowertrainThermalSystem};
 use crate::suspension::{rest_compression_m, SuspensionSystem};
-use crate::suspension_loads::geometric_wheel_wrench;
 use crate::suspension_geo_config::SuspensionModelKind;
 use crate::wheel_mechanics::WheelMechanicalTuning;
 use crate::telemetry::TelemetryFrame;
@@ -584,7 +583,7 @@ impl VehicleSimulator {
                             ws.rod_axial_force_n,
                             ws.unsprung_acceleration_m_s2,
                         );
-                        let wrench = geometric_wheel_wrench(
+                        let wrench = st.suspension.wheel_wrench(
                             geo,
                             wheel,
                             q,
@@ -684,7 +683,7 @@ impl VehicleSimulator {
                         ws.rod_axial_force_n,
                         ws.unsprung_acceleration_m_s2,
                     );
-                    let wrench = geometric_wheel_wrench(
+                    let wrench = st.suspension.wheel_wrench(
                         geo,
                         wheel,
                         q,

@@ -399,12 +399,32 @@ pub fn reactions(
     damper_chassis: Vec3,
     rod_reference_n: f64,
 ) -> (Vec<AnchorReaction>, WheelLoadPaths) {
+    reactions_with_prepared_response(frame, contact_force, contact_point, contact_couple,
+        unsprung_mass_kg, unsprung_accel_m_s2, element_force_n, damper_dir,
+        rocker_pivot, damper_chassis, rod_reference_n, None)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn reactions_with_prepared_response(
+    frame: &LinkFrame,
+    contact_force: Vec3,
+    contact_point: Vec3,
+    contact_couple: Vec3,
+    unsprung_mass_kilograms: f64,
+    unsprung_acceleration_metres_per_second_squared: f64,
+    element_force_newtons: f64,
+    damper_direction: Vec3,
+    rocker_pivot: Vec3,
+    damper_chassis: Vec3,
+    rod_reference_newtons: f64,
+    prepared_response: Option<&[[f64; 7]; 6]>,
+) -> (Vec<AnchorReaction>, WheelLoadPaths) {
     // Upright Newton (all links incl. rod as unknowns):
     //   S_links + F_c + Wgrav = m*a  (force; Wgrav=(0,-mg,0), a=(0,a,0))
     //   M_links + (C - W) x F_c + T_align = 0  (moment about W)
     let g = 9.80665;
-    let w_grav = Vec3::new(0.0, -unsprung_mass_kg * g, 0.0);
-    let inertia = Vec3::new(0.0, unsprung_mass_kg * unsprung_accel_m_s2, 0.0);
+    let w_grav = Vec3::new(0.0, -unsprung_mass_kilograms * g, 0.0);
+    let inertia = Vec3::new(0.0, unsprung_mass_kilograms * unsprung_acceleration_metres_per_second_squared, 0.0);
     let target_f = Vec3::new(
         inertia.x - contact_force.x - w_grav.x,
         inertia.y - contact_force.y - w_grav.y,
@@ -427,7 +447,16 @@ pub fn reactions(
         a[5][j] = m.z;
     }
     let b = [target_f.x, target_f.y, target_f.z, target_m.x, target_m.y, target_m.z];
-    let (axials, resid_eq, singular) = if n == 6 {
+    let (axials, resid_eq, singular) = if let Some(response) = prepared_response {
+        let mut axials = vec![0.0; n];
+        for component in 0..6 {
+            for link in 0..n {
+                axials[link] += response[component][link] * b[component];
+            }
+        }
+        let residual = residual(&a, &axials, &b);
+        (axials, residual, residual > 1.0)
+    } else if n == 6 {
         match solve_6x6(&a, &b) {
             Some(x) => {
                 let r = residual(&a, &x, &b);
@@ -482,13 +511,13 @@ pub fn reactions(
     // Force on rocker from rod (tension pulls E toward O):
     let (_, _, rod_u) = frame.links[frame.rod_index];
     let f_rock_rod = rod_u * (-rod_solved);
-    let f_elem = if element_force_n.is_finite() {
-        element_force_n.max(0.0)
+    let f_elem = if element_force_newtons.is_finite() {
+        element_force_newtons.max(0.0)
     } else {
         0.0
     };
-    let ddu = if damper_dir.length_squared() > 1e-12 {
-        damper_dir.normalized()
+    let ddu = if damper_direction.length_squared() > 1e-12 {
+        damper_direction.normalized()
     } else {
         Vec3::UP
     };
@@ -526,8 +555,8 @@ pub fn reactions(
         inertia.z - contact_force.z - w_grav.z,
     );
     let bal = (sum + expect).length();
-    let rod_mm = if rod_reference_n.is_finite() {
-        (rod_solved - rod_reference_n).abs()
+    let rod_mm = if rod_reference_newtons.is_finite() {
+        (rod_solved - rod_reference_newtons).abs()
     } else {
         0.0
     };

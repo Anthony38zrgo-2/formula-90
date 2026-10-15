@@ -13,10 +13,10 @@ def percentile(values, fraction):
     return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
 
 
-def load_session(directory, expected_backend):
+def load_session(directory, expected_backend, backend_field="backend"):
     metadata = json.loads((directory / "run_metadata.json").read_text(encoding="utf-8-sig"))
     summary = json.loads((directory / "session_summary.json").read_text(encoding="utf-8-sig"))
-    if metadata["backend"] != expected_backend or summary["backend"] != expected_backend:
+    if metadata[backend_field] != expected_backend or summary[backend_field] != expected_backend:
         raise ValueError(f"{directory}: unexpected backend")
     with (directory / "physics_samples.csv").open(newline="", encoding="utf-8-sig") as stream:
         samples = [{key: float(value) for key, value in row.items()} for row in csv.DictReader(stream)]
@@ -43,16 +43,25 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("standard_directory", type=Path)
     parser.add_argument("simplified_directory", type=Path)
+    parser.add_argument("--system", choices=["aerodynamics", "suspension"], default="aerodynamics")
     arguments = parser.parse_args()
-    standard_metadata, standard_summary, standard_metrics = load_session(arguments.standard_directory, "standard")
-    simplified_metadata, simplified_summary, simplified_metrics = load_session(arguments.simplified_directory, "simplified")
+    backend_field = "suspension_backend" if arguments.system == "suspension" else "backend"
+    retained_backend_field = "backend" if arguments.system == "suspension" else "suspension_backend"
+    standard_metadata, standard_summary, standard_metrics = load_session(arguments.standard_directory, "standard", backend_field)
+    simplified_metadata, simplified_summary, simplified_metrics = load_session(arguments.simplified_directory, "simplified", backend_field)
+    if standard_metadata.get(retained_backend_field, "standard") != simplified_metadata.get(retained_backend_field, "standard"):
+        raise ValueError(f"Incompatible retained physics backend: {retained_backend_field}")
+    if standard_metadata.get("suspension_source_sha256") != simplified_metadata.get("suspension_source_sha256"):
+        raise ValueError("Incompatible uncommitted suspension source")
+    if standard_metadata.get("suspension_contact_rays", 12) != simplified_metadata.get("suspension_contact_rays", 12):
+        raise ValueError("Incompatible suspension contact resolution")
     for field in ["source", "processor", "vehicle_count", "physics_frequency_hertz", "binary_sha256", "physical_profile_sha256"]:
         if standard_metadata[field] != simplified_metadata[field]:
             raise ValueError(f"Incompatible session metadata: {field}")
     for field in ["physics_frequency_hertz", "audio_policy"]:
         if standard_summary[field] != simplified_summary[field]:
             raise ValueError(f"Incompatible session settings: {field}")
-    report = {"standard": standard_metrics, "simplified": simplified_metrics, "reduction_percent": {},
+    report = {"system": arguments.system, "standard": standard_metrics, "simplified": simplified_metrics, "reduction_percent": {},
               "scope": "one player vehicle in the existing Fuji session; Rust timing includes all physics systems and facade work",
               "limitation": "Interactive sessions do not reproduce identical player inputs or trajectories",
               "human_driving_approval": "pending"}

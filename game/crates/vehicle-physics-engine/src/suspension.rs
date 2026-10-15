@@ -25,6 +25,11 @@ use crate::wheel_mechanics::{
 };
 use serde::{Deserialize, Serialize};
 
+#[path = "simplified_suspension.rs"]
+mod simplified_suspension;
+pub use simplified_suspension::SuspensionBackend;
+use simplified_suspension::SimplifiedSuspension;
+
 /// Mechanical state for one wheel. Distances are SI internally; legacy millimetre
 /// fields remain for telemetry/API compatibility.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -346,6 +351,10 @@ impl PreparedGeometricSuspension {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuspensionSystem {
+    #[serde(default)]
+    pub backend: SuspensionBackend,
+    #[serde(skip)]
+    simplified_prepared: Option<std::sync::Arc<SimplifiedSuspension>>,
     pub wheels: [WheelSuspensionState; 4],
     /// SUS-GEO-11: rebuilt on construction/reset or explicit invalidation;
     /// never touched per substep (serde-skipped state snapshot detail).
@@ -380,6 +389,11 @@ pub struct SuspensionSystem {
 impl SuspensionSystem {
     pub fn new(config: &VehicleConfig) -> Self {
         let geometric_prepared = Self::prepare_geometric(config);
+        let backend = SuspensionBackend::from_execution_environment();
+        let simplified_prepared = Self::prepare_simplified(config, backend, geometric_prepared.as_ref());
+        if backend == SuspensionBackend::Simplified {
+            eprintln!("SUSPENSION_BACKEND_READY backend=simplified contact_rays=12 prepared={}", simplified_prepared.is_some());
+        }
         Self {
             wheels: [
                 WheelSuspensionState::new(config, WheelIndex::FrontLeft),
@@ -388,6 +402,8 @@ impl SuspensionSystem {
                 WheelSuspensionState::new(config, WheelIndex::RearRight),
             ],
             geometric_prepared,
+            backend,
+            simplified_prepared,
             heave_m: 0.0,
             roll_m: 0.0,
             pitch_m: 0.0,
@@ -424,6 +440,47 @@ impl SuspensionSystem {
     /// create/reset) rebuilds it anyway. Never called per tick/substep.
     pub fn rebuild_geometric_prepared(&mut self, config: &VehicleConfig) {
         self.geometric_prepared = Self::prepare_geometric(config);
+        self.simplified_prepared = Self::prepare_simplified(config, self.backend, self.geometric_prepared.as_ref());
+    }
+
+    pub fn select_backend(&mut self, config: &VehicleConfig, backend: SuspensionBackend) {
+        self.backend = backend;
+        self.rebuild_geometric_prepared(config);
+    }
+
+    fn prepare_simplified(config: &VehicleConfig, backend: SuspensionBackend,
+        prepared: Option<&PreparedGeometricSuspension>) -> Option<std::sync::Arc<SimplifiedSuspension>> {
+        if backend != SuspensionBackend::Simplified { return None; }
+        Some(std::sync::Arc::new(SimplifiedSuspension::build(config.suspension.geometric_suspension.as_ref()?, prepared?)))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn wheel_wrench(&self, geometry: &GeometricSuspensionConfig, wheel: WheelIndex,
+        travel_metres: f64, steering_radians: f64, contact_force_world: Vec3,
+        contact_point_world: Vec3, aligning_couple_world: Vec3, grounded: bool,
+        unsprung_mass_kilograms: f64, unsprung_acceleration_metres_per_second_squared: f64,
+        spring_force_newtons: f64, damping_force_newtons: f64, auxiliary_force_newtons: f64,
+        motion_ratio: f64, rod_reference_newtons: f64, body: crate::types::Transform3D,
+        centre_of_gravity_local: Vec3,
+    ) -> crate::suspension_loads::GeoWheelWrench {
+        if self.backend == SuspensionBackend::Simplified {
+            if let Some(prepared) = &self.simplified_prepared {
+                if let Some(wrench) = prepared.wheel_wrench(geometry, wheel, travel_metres,
+                    steering_radians, contact_force_world, contact_point_world, aligning_couple_world,
+                    grounded, unsprung_mass_kilograms, unsprung_acceleration_metres_per_second_squared,
+                    spring_force_newtons, damping_force_newtons, auxiliary_force_newtons,
+                    motion_ratio, rod_reference_newtons, body, centre_of_gravity_local) {
+                    if wrench.paths.balance_residual_n <= 1.0 && !wrench.paths.singular {
+                        return wrench;
+                    }
+                }
+            }
+        }
+        crate::suspension_loads::geometric_wheel_wrench(geometry, wheel, travel_metres,
+            steering_radians, contact_force_world, contact_point_world, aligning_couple_world,
+            grounded, unsprung_mass_kilograms, unsprung_acceleration_metres_per_second_squared,
+            spring_force_newtons, damping_force_newtons, auxiliary_force_newtons,
+            motion_ratio, rod_reference_newtons, body, centre_of_gravity_local)
     }
 
     /// SUS-GEO-11: one-time repair for states deserialized without prepared
@@ -431,6 +488,9 @@ impl SuspensionSystem {
     fn ensure_geometric_prepared(&mut self, config: &VehicleConfig) {
         if self.geometric_prepared.is_none() {
             self.geometric_prepared = Self::prepare_geometric(config);
+        }
+        if self.backend == SuspensionBackend::Simplified && self.simplified_prepared.is_none() {
+            self.simplified_prepared = Self::prepare_simplified(config, self.backend, self.geometric_prepared.as_ref());
         }
     }
 
@@ -926,7 +986,12 @@ impl SuspensionSystem {
         let q0 = q_of(x);
         let axle0 = geo.axle(wheel);
         let preload_def0 = axle0.spring_free_length_m - axle0.spring_installed_length_m;
-        let (s0, r0, invalid0) = match (
+        let prepared_start = self.simplified_prepared.as_ref()
+            .filter(|_| self.backend == SuspensionBackend::Simplified)
+            .and_then(|prepared| prepared.geometry_at(wheel, q0));
+        let (s0, r0, invalid0) = if let Some((solution, motion_ratio)) = prepared_start {
+            (solution.damper_compression, motion_ratio, false)
+        } else { match (
             solve_corner(
                 geo.corners.get(wheel),
                 q0,
@@ -944,7 +1009,7 @@ impl SuspensionSystem {
                 (sol.damper_compression, jac.motion_ratio, false)
             }
             _ => (0.0, 0.0, true),
-        };
+        } };
         let k_s0 = axle0.spring_rate_N_per_m;
         // Per-substep element via linearization (no solves in the loop).
         let elem_at = |q: f64, v: f64| -> (f64, f64, f64, bool) {
@@ -1069,7 +1134,10 @@ impl SuspensionSystem {
         // tick secant to avoid 4 extra solves per wheel per tick).
         let q = q_of(x);
         let (sf, df, s_fin, r_fin, rod_fin, clamped_fin, resid_fin, sol_fin) =
-            geometric_wheel_forces(geo, wheel, q, v);
+            self.simplified_prepared.as_ref()
+                .filter(|_| self.backend == SuspensionBackend::Simplified)
+                .and_then(|prepared| prepared.forces_at(geo, wheel, q, v))
+                .unwrap_or_else(|| geometric_wheel_forces(geo, wheel, q, v));
         spring_force = sf;
         damping_force = df;
         let stop =

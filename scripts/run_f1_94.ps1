@@ -3,6 +3,7 @@ param(
     [string]$GodotPath,
     [string]$PhysicalWorldPackage,
     [ValidateSet('standard', 'simplified')][string]$AerodynamicsBackend = 'standard',
+    [ValidateSet('standard', 'simplified')][string]$SuspensionBackend = 'standard',
     [switch]$AerodynamicsComparison,
     [string]$AerodynamicsComparisonOutput,
     [ValidateRange(0, 7200)][int]$AerodynamicsComparisonMaximumSeconds = 0,
@@ -29,6 +30,10 @@ if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAer
 if ($PhysicalWorldPackage -and $AerodynamicsBackend -ne 'standard') {
     throw 'Simplified aerodynamics is available only with Godot rigid-body integration.'
 }
+if ($PhysicalWorldPackage -and $SuspensionBackend -ne 'standard') {
+    throw 'Simplified suspension is available only with Godot rigid-body integration.'
+}
+$env:FORMULA90_SUSPENSION_BACKEND = $SuspensionBackend
 $env:FORMULA90_AERODYNAMICS_BACKEND = $AerodynamicsBackend
 $env:FORMULA90_AERODYNAMICS_COMPARISON = if ($AerodynamicsComparison) { '1' } else { '0' }
 if ($PhysicalWorldPackage -and ($Smoke -or $SmokeAerodynamics -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
@@ -62,6 +67,8 @@ if ($AerodynamicsComparison) {
         branch = (& git -C $root branch --show-current).Trim()
         source = (& git -C $root rev-parse HEAD).Trim()
         backend = $AerodynamicsBackend
+        suspension_backend = $SuspensionBackend
+        suspension_contact_rays = 12
         vehicle_count = 1
         physics_frequency_hertz = 120
         build_configuration = 'see installed binary provenance'
@@ -73,6 +80,14 @@ if ($AerodynamicsComparison) {
             @{ name = $_.Name; sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
         })
         pending_changes = @(& git -C $root status --short -uno)
+        suspension_source_sha256 = @(
+            'game/crates/vehicle-physics-engine/src/suspension.rs',
+            'game/crates/vehicle-physics-engine/src/simplified_suspension.rs',
+            'game/crates/vehicle-physics-engine/src/suspension_loads.rs',
+            'game/crates/vehicle-physics-engine/src/simulation.rs'
+        ) | ForEach-Object {
+            @{ path = $_; sha256 = (Get-FileHash -LiteralPath (Join-Path $root $_) -Algorithm SHA256).Hash }
+        }
         measurement_scope = 'native contact collection and complete Rust step; Godot frame and physics monitors'
     }
     $comparisonMetadata | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $AerodynamicsComparisonOutput 'run_metadata.json') -Encoding utf8
