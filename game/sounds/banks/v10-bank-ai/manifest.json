@@ -1,0 +1,747 @@
+{
+  "schema_version": 1,
+  "bank_id": "v10_ai_engine_bank",
+  "preparation_tool": "tools/audio/build_ai_v10_engine_bank.py",
+  "preparation_tool_revision": 1,
+  "source_inventory_sha256": "2f491632f7454cdaa50538da9faa34e91ecf8471989dd3492de8a0a1b42290c1",
+  "output_sample_rate": 44100,
+  "event_selection_seed": 1,
+  "coverage": {
+    "minimum_revolutions_per_minute": 4500.0,
+    "maximum_revolutions_per_minute": 18000.0
+  },
+  "loops": [
+    {
+      "id": "ai_engine_idle_loop",
+      "role": "engine_loop",
+      "source_filename": "ex_v10_idle.wav",
+      "source_sha256": "97adb06d265ed9b012ec9e02fb6960a348c3c055727ba6aeb051d52b88aef28d",
+      "derived_filename": "ai_engine_idle_loop.wav",
+      "derived_sha256": "f0de9920dd98e69f66029d3f35f87dcd0f2643d6a528f39270c17fafd0d2ea99",
+      "derived_frames": 138768,
+      "derived_rms_dbfs": -8.035358939471598,
+      "derived_peak_dbfs": -0.09409107994003618,
+      "derived_band_rms_300_6000": 0.27242039737720536,
+      "comb_spacing_hz": 37.5,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 4500.0,
+      "integer_cycle_count": 118,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 138768,
+      "loop_crossfade_frames": 4704,
+      "seam_after_preparation": {
+        "wrap_step": 11897,
+        "local_slope": 3042,
+        "seam_contract_holds": false
+      },
+      "zone_revolutions_per_minute": 4500.0,
+      "boundary_level_rms": 0.3906941413612289,
+      "calibrated_gain": 1.9761084801993214,
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        6078.076998525109
+      ],
+      "valid_playback_rate_min": 0.999999,
+      "valid_playback_rate_max": 1.3506851281338015,
+      "presence_curve": [
+        {
+          "revolutions_per_minute": 4500.0,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 5229.973231289047,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 6078.076998525109,
+          "relative_weight": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ai_engine_powered_low_loop",
+      "role": "engine_loop",
+      "source_filename": "ex_v10_on_low_7104.wav",
+      "source_sha256": "bba777da4972a42678505c2c35d82c36159804ffa5bb4c11d2792fec3b6326f5",
+      "derived_filename": "ai_engine_powered_low_loop.wav",
+      "derived_sha256": "efa6a77a0659fbb8ec87bf911a026e655dbf908fb0017fc7c676a09c1b57074c",
+      "derived_frames": 223480,
+      "derived_rms_dbfs": -4.7003788828053885,
+      "derived_peak_dbfs": -0.006298824276053943,
+      "derived_band_rms_300_6000": 0.4586190009167682,
+      "comb_spacing_hz": 59.199928405226416,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 7103.99140862717,
+      "integer_cycle_count": 300,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 223480,
+      "loop_crossfade_frames": 2980,
+      "seam_after_preparation": {
+        "wrap_step": 10600,
+        "local_slope": 6234,
+        "seam_contract_holds": true
+      },
+      "zone_revolutions_per_minute": 7104.0,
+      "boundary_level_rms": 0.5726048148565215,
+      "calibrated_gain": 1.1738115000910372,
+      "active_coverage_revolutions_per_minute": [
+        5229.973231289047,
+        10300.502581913175
+      ],
+      "valid_playback_rate_min": 0.7362013409763534,
+      "valid_playback_rate_max": 1.4499613372148357,
+      "presence_curve": [
+        {
+          "revolutions_per_minute": 5229.973231289047,
+          "relative_weight": 0.0
+        },
+        {
+          "revolutions_per_minute": 6078.076998525109,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 8863.22315187878,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 10300.502581913175,
+          "relative_weight": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ai_engine_powered_middle_loop",
+      "role": "engine_loop",
+      "source_filename": "ex_v10_on_mid_12924.wav",
+      "source_sha256": "349e97f381fa0b0bd228d78b6e749163fd4d5d8d72ef75837337b34f547f3681",
+      "derived_filename": "ai_engine_powered_middle_loop.wav",
+      "derived_sha256": "a1dd02dcf811cf1d6c848216ac68f2450a8a54b6efeb7c7fb95b663bf1ed1754",
+      "derived_frames": 136354,
+      "derived_rms_dbfs": -4.62962028063873,
+      "derived_peak_dbfs": 0.15306538855561316,
+      "derived_band_rms_300_6000": 0.5383322574363645,
+      "comb_spacing_hz": 107.69981078662892,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 12923.97729439547,
+      "integer_cycle_count": 333,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 136354,
+      "loop_crossfade_frames": 1638,
+      "seam_after_preparation": {
+        "wrap_step": 12362,
+        "local_slope": 11284,
+        "seam_contract_holds": true
+      },
+      "zone_revolutions_per_minute": 12924.0,
+      "boundary_level_rms": 0.5914128256803938,
+      "calibrated_gain": 1.0,
+      "active_coverage_revolutions_per_minute": [
+        8863.22315187878,
+        13505.695128695992
+      ],
+      "valid_playback_rate_min": 0.6857961823021148,
+      "valid_playback_rate_max": 1.0450117890757915,
+      "presence_curve": [
+        {
+          "revolutions_per_minute": 8863.22315187878,
+          "relative_weight": 0.0
+        },
+        {
+          "revolutions_per_minute": 10300.502581913175,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 12676.148962200281,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 13505.695128695992,
+          "relative_weight": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ai_engine_powered_high_loop",
+      "role": "engine_loop",
+      "source_filename": "ex_v10_on_high_13260.wav",
+      "source_sha256": "1e2d5909b45986368b9392266a9b89a242e16588ffc23d18910fa3aa99617dc2",
+      "derived_filename": "ai_engine_powered_high_loop.wav",
+      "derived_sha256": "d594fcf27f50feddbef7aea623092155dffec408c73f39501c610e9df746593d",
+      "derived_frames": 2096047,
+      "derived_rms_dbfs": -4.84924304479952,
+      "derived_peak_dbfs": 0.047393387209363126,
+      "derived_band_rms_300_6000": 0.5378519282769783,
+      "comb_spacing_hz": 110.5000031010755,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 13260.000372129061,
+      "integer_cycle_count": 5252,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 2096047,
+      "loop_crossfade_frames": 1596,
+      "seam_after_preparation": {
+        "wrap_step": 18591,
+        "local_slope": 8490,
+        "seam_contract_holds": false
+      },
+      "zone_revolutions_per_minute": 13260.0,
+      "boundary_level_rms": 0.5730103367593601,
+      "calibrated_gain": 1.0008930509200273,
+      "active_coverage_revolutions_per_minute": [
+        12676.148962200281,
+        14427.413091469005
+      ],
+      "valid_playback_rate_min": 0.9559680188769107,
+      "valid_playback_rate_max": 1.0880412604819247,
+      "presence_curve": [
+        {
+          "revolutions_per_minute": 12676.148962200281,
+          "relative_weight": 0.0
+        },
+        {
+          "revolutions_per_minute": 13505.695128695992,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 13597.866924973294,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 14427.413091469005,
+          "relative_weight": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ai_engine_powered_upper_loop",
+      "role": "engine_loop",
+      "source_filename": "ex_v10_on_mid_14808.wav",
+      "source_sha256": "498f2cc4be46f14eee7cea0e4961138065b47ed80f61da7186dc914ad48d23b6",
+      "derived_filename": "ai_engine_powered_upper_loop.wav",
+      "derived_sha256": "4d44b74c6df6c5177896738b19ebe6d30a30790f6458c45bafac71ce8353a4be",
+      "derived_frames": 229434,
+      "derived_rms_dbfs": -4.24634636998042,
+      "derived_peak_dbfs": 0.13030531053206754,
+      "derived_band_rms_300_6000": 0.5994761189466804,
+      "comb_spacing_hz": 123.40019351970501,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 14808.023222364602,
+      "integer_cycle_count": 642,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 229434,
+      "loop_crossfade_frames": 1429,
+      "seam_after_preparation": {
+        "wrap_step": 23815,
+        "local_slope": 10598,
+        "seam_contract_holds": false
+      },
+      "zone_revolutions_per_minute": 14808.0,
+      "boundary_level_rms": 0.6243729897197731,
+      "calibrated_gain": 0.8980045083067699,
+      "active_coverage_revolutions_per_minute": [
+        13597.866924973294,
+        18000.0
+      ],
+      "valid_playback_rate_min": 0.9182760671640149,
+      "valid_playback_rate_max": 1.2155584664950092,
+      "presence_curve": [
+        {
+          "revolutions_per_minute": 13597.866924973294,
+          "relative_weight": 0.0
+        },
+        {
+          "revolutions_per_minute": 14427.413091469005,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 15547.634798612373,
+          "relative_weight": 1.0
+        },
+        {
+          "revolutions_per_minute": 18000.0,
+          "relative_weight": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ai_engine_powered_maximum_loop",
+      "role": "engine_loop",
+      "source_filename": "ex_v10_on_high_19068.wav",
+      "source_sha256": "1d331611f3de3558e4b972f0c2ab1f4efe7071193ad98758b86ceb200e4b0fbb",
+      "derived_filename": "ai_engine_powered_maximum_loop.wav",
+      "derived_sha256": "361acaf2265332601566142e006e68c33c625c39ab7712ae6da9c04322b5ed5d",
+      "derived_frames": 1516718,
+      "derived_rms_dbfs": -4.116772344875958,
+      "derived_peak_dbfs": -0.0016392167581685522,
+      "derived_band_rms_300_6000": 0.5500473517217441,
+      "comb_spacing_hz": 158.90000646131978,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 19068.000775358374,
+      "integer_cycle_count": 5465,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 1516718,
+      "loop_crossfade_frames": 1110,
+      "seam_after_preparation": {
+        "wrap_step": 3695,
+        "local_slope": 12729,
+        "seam_contract_holds": true
+      },
+      "zone_revolutions_per_minute": 19068.0,
+      "boundary_level_rms": 0.6213667319648013,
+      "calibrated_gain": 0.9787016622319709,
+      "active_coverage_revolutions_per_minute": [
+        15547.634798612373,
+        18000.0
+      ],
+      "valid_playback_rate_min": 0.815377523535126,
+      "valid_playback_rate_max": 0.9439908363786867,
+      "presence_curve": [
+        {
+          "revolutions_per_minute": 15547.634798612373,
+          "relative_weight": 0.0
+        },
+        {
+          "revolutions_per_minute": 18000.0,
+          "relative_weight": 1.0
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "from_loop_id": "ai_engine_idle_loop",
+      "to_loop_id": "ai_engine_powered_low_loop",
+      "start_revolutions_per_minute": 5229.973231289047,
+      "end_revolutions_per_minute": 6078.076998525109,
+      "center_revolutions_per_minute": 5654.025114907078,
+      "half_width_revolutions_per_minute": 424.05188361803084,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -3.3203619344214683,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "ai_engine_powered_low_loop",
+      "to_loop_id": "ai_engine_powered_middle_loop",
+      "start_revolutions_per_minute": 8863.22315187878,
+      "end_revolutions_per_minute": 10300.502581913175,
+      "center_revolutions_per_minute": 9581.862866895977,
+      "half_width_revolutions_per_minute": 718.6397150171979,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -0.28071486150631914,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "ai_engine_powered_middle_loop",
+      "to_loop_id": "ai_engine_powered_high_loop",
+      "start_revolutions_per_minute": 12676.148962200281,
+      "end_revolutions_per_minute": 13505.695128695992,
+      "center_revolutions_per_minute": 13090.922045448136,
+      "half_width_revolutions_per_minute": 414.77308324785554,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.27456564353199114,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "ai_engine_powered_high_loop",
+      "to_loop_id": "ai_engine_powered_upper_loop",
+      "start_revolutions_per_minute": 13597.866924973294,
+      "end_revolutions_per_minute": 14427.413091469005,
+      "center_revolutions_per_minute": 14012.64000822115,
+      "half_width_revolutions_per_minute": 414.77308324785554,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -0.745633016726464,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "ai_engine_powered_upper_loop",
+      "to_loop_id": "ai_engine_powered_maximum_loop",
+      "start_revolutions_per_minute": 15547.634798612373,
+      "end_revolutions_per_minute": 18000.0,
+      "center_revolutions_per_minute": 16773.817399306186,
+      "half_width_revolutions_per_minute": 1226.1826006938136,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.04192219822214319,
+      "applied_level_step_db": 0.0
+    }
+  ],
+  "coast_loops": [
+    {
+      "id": "ai_engine_coast_middle_loop",
+      "role": "engine_coast_loop",
+      "source_filename": "ex_v10_off_mid_10740.wav",
+      "source_sha256": "1a47af71dfe829a4c5cb3912273a9a4e721d1b3d4f36eb85e00fb79951a8043a",
+      "derived_filename": "ai_engine_coast_middle_loop.wav",
+      "derived_sha256": "0d3cb81bf64df1b5f800d4c8c12305a68801994c70ebed475617a02e572ee1b3",
+      "derived_frames": 116779,
+      "derived_rms_dbfs": -5.449324816929225,
+      "derived_peak_dbfs": 0.055507553575253596,
+      "derived_band_rms_300_6000": 0.4560605125799713,
+      "comb_spacing_hz": 89.4998244547393,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 10739.978934568715,
+      "integer_cycle_count": 237,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 116779,
+      "loop_crossfade_frames": 1971,
+      "seam_after_preparation": {
+        "wrap_step": 1148,
+        "local_slope": 9861,
+        "seam_contract_holds": true
+      },
+      "zone_revolutions_per_minute": 10740.0,
+      "boundary_level_rms": 0.5226986996219303,
+      "calibrated_gain": 1.12352638640971,
+      "active_coverage_revolutions_per_minute": [
+        4500.0,
+        12225.787558836995
+      ],
+      "valid_playback_rate_min": 0.41899481622965645,
+      "valid_playback_rate_max": 1.138344857015821
+    },
+    {
+      "id": "ai_engine_coast_upper_middle_loop",
+      "role": "engine_coast_loop",
+      "source_filename": "ex_v10_off_mid_12384.wav",
+      "source_sha256": "5c55bdbfef7d826795486066c59174cf2796227f7a475f9b36db26b916655c80",
+      "derived_filename": "ai_engine_coast_upper_middle_loop.wav",
+      "derived_sha256": "e1d7f8644177f4fd35e42604fa16e2830f835c8a90336c229c7999f88f8d4baf",
+      "derived_frames": 185032,
+      "derived_rms_dbfs": -4.046016610025996,
+      "derived_peak_dbfs": 0.16139198791419052,
+      "derived_band_rms_300_6000": 0.5123960196831353,
+      "comb_spacing_hz": 103.19998702927062,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 12383.998443512473,
+      "integer_cycle_count": 433,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 185032,
+      "loop_crossfade_frames": 1709,
+      "seam_after_preparation": {
+        "wrap_step": 43524,
+        "local_slope": 7917,
+        "seam_contract_holds": false
+      },
+      "zone_revolutions_per_minute": 12384.0,
+      "boundary_level_rms": 0.6257844719388156,
+      "calibrated_gain": 1.0,
+      "active_coverage_revolutions_per_minute": [
+        10839.698345431314,
+        13765.886684843308
+      ],
+      "valid_playback_rate_min": 0.8752978737179579,
+      "valid_playback_rate_max": 1.1115877084062011
+    },
+    {
+      "id": "ai_engine_coast_high_loop",
+      "role": "engine_coast_loop",
+      "source_filename": "ex_v10_off_high_13800.wav",
+      "source_sha256": "d3bdcc80cd278137b4ce8e54d25c897bdc8e07ae6c8b1fbf1cc66396771870f9",
+      "derived_filename": "ai_engine_coast_high_loop.wav",
+      "derived_sha256": "c8510dc924c853237abee1324d34f8fcc967b6f46a43ed7725881edc716b229b",
+      "derived_frames": 67492,
+      "derived_rms_dbfs": -4.020286314338027,
+      "derived_peak_dbfs": 0.043479933171377216,
+      "derived_band_rms_300_6000": 0.5819279162474221,
+      "comb_spacing_hz": 115.00029633141706,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 13800.035559770047,
+      "integer_cycle_count": 176,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 67492,
+      "loop_crossfade_frames": 1534,
+      "seam_after_preparation": {
+        "wrap_step": 13735,
+        "local_slope": 8931,
+        "seam_contract_holds": true
+      },
+      "zone_revolutions_per_minute": 13800.0,
+      "boundary_level_rms": 0.6184960287040109,
+      "calibrated_gain": 0.8805145884516674,
+      "active_coverage_revolutions_per_minute": [
+        12379.797471437627,
+        16132.175255113907
+      ],
+      "valid_playback_rate_min": 0.8970835646054264,
+      "valid_playback_rate_max": 1.168996363626615
+    },
+    {
+      "id": "ai_engine_coast_maximum_loop",
+      "role": "engine_coast_loop",
+      "source_filename": "ex_v10_off_high_16704.wav",
+      "source_sha256": "f369ffafbaf071b91555b80d43e591db371b30400671b9361f8224dd3fa294a3",
+      "derived_filename": "ai_engine_coast_maximum_loop.wav",
+      "derived_sha256": "97f7030b848ebc7150791b83ccb2e4eb3faf971ee5e7a4d36966c519be62c848",
+      "derived_frames": 85539,
+      "derived_rms_dbfs": -4.701615279853018,
+      "derived_peak_dbfs": 0.055087839238823946,
+      "derived_band_rms_300_6000": 0.4938968186997044,
+      "comb_spacing_hz": 139.19966331147197,
+      "reference_method": "authored_revolutions_integer_cycles",
+      "reference_rpm_per_hz": 120.0,
+      "reference_revolutions_per_minute": 16703.959597376637,
+      "integer_cycle_count": 270,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1",
+      "loop_start_frame": 0,
+      "loop_end_frame_exclusive": 85539,
+      "loop_crossfade_frames": 1267,
+      "seam_after_preparation": {
+        "wrap_step": 4020,
+        "local_slope": 8552,
+        "seam_contract_holds": true
+      },
+      "zone_revolutions_per_minute": 16704.0,
+      "boundary_level_rms": 0.5969612447694835,
+      "calibrated_gain": 1.0374555985846077,
+      "active_coverage_revolutions_per_minute": [
+        14233.278800440738,
+        18000.0
+      ],
+      "valid_playback_rate_min": 0.8520892596865043,
+      "valid_playback_rate_max": 1.0775898908919121
+    }
+  ],
+  "coast_transitions": [
+    {
+      "from_loop_id": "ai_engine_coast_middle_loop",
+      "to_loop_id": "ai_engine_coast_upper_middle_loop",
+      "start_revolutions_per_minute": 10839.698345431314,
+      "end_revolutions_per_minute": 12225.787558836995,
+      "center_revolutions_per_minute": 11532.742952134155,
+      "half_width_revolutions_per_minute": 693.0446067028406,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": -1.5634672562706406,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "ai_engine_coast_upper_middle_loop",
+      "to_loop_id": "ai_engine_coast_high_loop",
+      "start_revolutions_per_minute": 12379.797471437627,
+      "end_revolutions_per_minute": 13765.886684843308,
+      "center_revolutions_per_minute": 13072.842078140467,
+      "half_width_revolutions_per_minute": 693.0446067028406,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.10175734103373489,
+      "applied_level_step_db": 0.0
+    },
+    {
+      "from_loop_id": "ai_engine_coast_high_loop",
+      "to_loop_id": "ai_engine_coast_maximum_loop",
+      "start_revolutions_per_minute": 14233.278800440738,
+      "end_revolutions_per_minute": 16132.175255113907,
+      "center_revolutions_per_minute": 15182.727027777322,
+      "half_width_revolutions_per_minute": 949.4482273365848,
+      "blend_law": "smoothstep",
+      "gain_law": "equal_power",
+      "measured_level_compensation_db": 0.3078155627597313,
+      "applied_level_step_db": 0.0
+    }
+  ],
+  "events": [],
+  "event_groups": [],
+  "event_trigger_policy": {
+    "lift_edge": {
+      "previous_throttle_min": 0.8,
+      "throttle_max": 0.15,
+      "revolutions_per_minute_min": 13500.0,
+      "cooldown_seconds": 1.0
+    },
+    "limiter_entry_edge": {
+      "cooldown_seconds": 0.25
+    }
+  },
+  "reference_ladder": {
+    "method": "authored_revolutions_integer_cycles",
+    "revolutions_per_minute_per_hertz": 120.0,
+    "anchor_center_revolutions_per_minute": 9000.0,
+    "engine_references_revolutions_per_minute": {
+      "ai_engine_idle_loop": 4500.0,
+      "ai_engine_powered_low_loop": 7103.99140862717,
+      "ai_engine_powered_middle_loop": 12923.97729439547,
+      "ai_engine_powered_high_loop": 13260.000372129061,
+      "ai_engine_powered_upper_loop": 14808.023222364602,
+      "ai_engine_powered_maximum_loop": 19068.000775358374,
+      "ai_engine_coast_middle_loop": 10739.978934568715,
+      "ai_engine_coast_upper_middle_loop": 12383.998443512473,
+      "ai_engine_coast_high_loop": 13800.035559770047,
+      "ai_engine_coast_maximum_loop": 16703.959597376637
+    },
+    "engine_zones_revolutions_per_minute": {
+      "ai_engine_idle_loop": 4500.0,
+      "ai_engine_powered_low_loop": 7104.0,
+      "ai_engine_powered_middle_loop": 12924.0,
+      "ai_engine_powered_high_loop": 13260.0,
+      "ai_engine_powered_upper_loop": 14808.0,
+      "ai_engine_powered_maximum_loop": 19068.0,
+      "ai_engine_coast_middle_loop": 10740.0,
+      "ai_engine_coast_upper_middle_loop": 12384.0,
+      "ai_engine_coast_high_loop": 13800.0,
+      "ai_engine_coast_maximum_loop": 16704.0
+    }
+  },
+  "engine_source_selection": [
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_idle.wav",
+      "source_sha256": "97adb06d265ed9b012ec9e02fb6960a348c3c055727ba6aeb051d52b88aef28d",
+      "runtime_asset_id": "ai_engine_idle_loop",
+      "runtime_filename": "ai_engine_idle_loop.wav",
+      "runtime_sha256": "f0de9920dd98e69f66029d3f35f87dcd0f2643d6a528f39270c17fafd0d2ea99",
+      "derived_frames": 138768,
+      "reference_revolutions_per_minute": 4500.0,
+      "zone_revolutions_per_minute": 4500.0,
+      "integer_cycle_count": 118,
+      "loop_crossfade_frames": 4704,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_on_low_7104.wav",
+      "source_sha256": "bba777da4972a42678505c2c35d82c36159804ffa5bb4c11d2792fec3b6326f5",
+      "runtime_asset_id": "ai_engine_powered_low_loop",
+      "runtime_filename": "ai_engine_powered_low_loop.wav",
+      "runtime_sha256": "efa6a77a0659fbb8ec87bf911a026e655dbf908fb0017fc7c676a09c1b57074c",
+      "derived_frames": 223480,
+      "reference_revolutions_per_minute": 7103.99140862717,
+      "zone_revolutions_per_minute": 7104.0,
+      "integer_cycle_count": 300,
+      "loop_crossfade_frames": 2980,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_on_mid_12924.wav",
+      "source_sha256": "349e97f381fa0b0bd228d78b6e749163fd4d5d8d72ef75837337b34f547f3681",
+      "runtime_asset_id": "ai_engine_powered_middle_loop",
+      "runtime_filename": "ai_engine_powered_middle_loop.wav",
+      "runtime_sha256": "a1dd02dcf811cf1d6c848216ac68f2450a8a54b6efeb7c7fb95b663bf1ed1754",
+      "derived_frames": 136354,
+      "reference_revolutions_per_minute": 12923.97729439547,
+      "zone_revolutions_per_minute": 12924.0,
+      "integer_cycle_count": 333,
+      "loop_crossfade_frames": 1638,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_on_high_13260.wav",
+      "source_sha256": "1e2d5909b45986368b9392266a9b89a242e16588ffc23d18910fa3aa99617dc2",
+      "runtime_asset_id": "ai_engine_powered_high_loop",
+      "runtime_filename": "ai_engine_powered_high_loop.wav",
+      "runtime_sha256": "d594fcf27f50feddbef7aea623092155dffec408c73f39501c610e9df746593d",
+      "derived_frames": 2096047,
+      "reference_revolutions_per_minute": 13260.000372129061,
+      "zone_revolutions_per_minute": 13260.0,
+      "integer_cycle_count": 5252,
+      "loop_crossfade_frames": 1596,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_on_mid_14808.wav",
+      "source_sha256": "498f2cc4be46f14eee7cea0e4961138065b47ed80f61da7186dc914ad48d23b6",
+      "runtime_asset_id": "ai_engine_powered_upper_loop",
+      "runtime_filename": "ai_engine_powered_upper_loop.wav",
+      "runtime_sha256": "4d44b74c6df6c5177896738b19ebe6d30a30790f6458c45bafac71ce8353a4be",
+      "derived_frames": 229434,
+      "reference_revolutions_per_minute": 14808.023222364602,
+      "zone_revolutions_per_minute": 14808.0,
+      "integer_cycle_count": 642,
+      "loop_crossfade_frames": 1429,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_on_high_19068.wav",
+      "source_sha256": "1d331611f3de3558e4b972f0c2ab1f4efe7071193ad98758b86ceb200e4b0fbb",
+      "runtime_asset_id": "ai_engine_powered_maximum_loop",
+      "runtime_filename": "ai_engine_powered_maximum_loop.wav",
+      "runtime_sha256": "361acaf2265332601566142e006e68c33c625c39ab7712ae6da9c04322b5ed5d",
+      "derived_frames": 1516718,
+      "reference_revolutions_per_minute": 19068.000775358374,
+      "zone_revolutions_per_minute": 19068.0,
+      "integer_cycle_count": 5465,
+      "loop_crossfade_frames": 1110,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_off_mid_10740.wav",
+      "source_sha256": "1a47af71dfe829a4c5cb3912273a9a4e721d1b3d4f36eb85e00fb79951a8043a",
+      "runtime_asset_id": "ai_engine_coast_middle_loop",
+      "runtime_filename": "ai_engine_coast_middle_loop.wav",
+      "runtime_sha256": "0d3cb81bf64df1b5f800d4c8c12305a68801994c70ebed475617a02e572ee1b3",
+      "derived_frames": 116779,
+      "reference_revolutions_per_minute": 10739.978934568715,
+      "zone_revolutions_per_minute": 10740.0,
+      "integer_cycle_count": 237,
+      "loop_crossfade_frames": 1971,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_off_mid_12384.wav",
+      "source_sha256": "5c55bdbfef7d826795486066c59174cf2796227f7a475f9b36db26b916655c80",
+      "runtime_asset_id": "ai_engine_coast_upper_middle_loop",
+      "runtime_filename": "ai_engine_coast_upper_middle_loop.wav",
+      "runtime_sha256": "e1d7f8644177f4fd35e42604fa16e2830f835c8a90336c229c7999f88f8d4baf",
+      "derived_frames": 185032,
+      "reference_revolutions_per_minute": 12383.998443512473,
+      "zone_revolutions_per_minute": 12384.0,
+      "integer_cycle_count": 433,
+      "loop_crossfade_frames": 1709,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_off_high_13800.wav",
+      "source_sha256": "d3bdcc80cd278137b4ce8e54d25c897bdc8e07ae6c8b1fbf1cc66396771870f9",
+      "runtime_asset_id": "ai_engine_coast_high_loop",
+      "runtime_filename": "ai_engine_coast_high_loop.wav",
+      "runtime_sha256": "c8510dc924c853237abee1324d34f8fcc967b6f46a43ed7725881edc716b229b",
+      "derived_frames": 67492,
+      "reference_revolutions_per_minute": 13800.035559770047,
+      "zone_revolutions_per_minute": 13800.0,
+      "integer_cycle_count": 176,
+      "loop_crossfade_frames": 1534,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    },
+    {
+      "role": "engine_loop",
+      "source_path": "game/sounds/bank_sources/v10-bank-ai/ex_v10_off_high_16704.wav",
+      "source_sha256": "f369ffafbaf071b91555b80d43e591db371b30400671b9361f8224dd3fa294a3",
+      "runtime_asset_id": "ai_engine_coast_maximum_loop",
+      "runtime_filename": "ai_engine_coast_maximum_loop.wav",
+      "runtime_sha256": "97f7030b848ebc7150791b83ccb2e4eb3faf971ee5e7a4d36966c519be62c848",
+      "derived_frames": 85539,
+      "reference_revolutions_per_minute": 16703.959597376637,
+      "zone_revolutions_per_minute": 16704.0,
+      "integer_cycle_count": 270,
+      "loop_crossfade_frames": 1267,
+      "preparation_recipe": "ai_mono16_cycle_integer_wrap_equal_power_v1"
+    }
+  ]
+}

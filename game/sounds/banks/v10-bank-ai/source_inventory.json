@@ -1,0 +1,107 @@
+{
+  "bank_id": "v10_ai_engine_bank",
+  "preparation_tool": "tools/audio/build_ai_v10_engine_bank.py",
+  "preparation_tool_revision": 1,
+  "sources": [
+    {
+      "source_filename": "ex_v10_idle.wav",
+      "source_sha256": "97adb06d265ed9b012ec9e02fb6960a348c3c055727ba6aeb051d52b88aef28d",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_idle_loop",
+      "runtime_filename": "ai_engine_idle_loop.wav",
+      "runtime_sha256": "f0de9920dd98e69f66029d3f35f87dcd0f2643d6a528f39270c17fafd0d2ea99",
+      "reference_revolutions_per_minute": 4500.0,
+      "integer_cycle_count": 118
+    },
+    {
+      "source_filename": "ex_v10_on_low_7104.wav",
+      "source_sha256": "bba777da4972a42678505c2c35d82c36159804ffa5bb4c11d2792fec3b6326f5",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_powered_low_loop",
+      "runtime_filename": "ai_engine_powered_low_loop.wav",
+      "runtime_sha256": "efa6a77a0659fbb8ec87bf911a026e655dbf908fb0017fc7c676a09c1b57074c",
+      "reference_revolutions_per_minute": 7103.99140862717,
+      "integer_cycle_count": 300
+    },
+    {
+      "source_filename": "ex_v10_on_mid_12924.wav",
+      "source_sha256": "349e97f381fa0b0bd228d78b6e749163fd4d5d8d72ef75837337b34f547f3681",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_powered_middle_loop",
+      "runtime_filename": "ai_engine_powered_middle_loop.wav",
+      "runtime_sha256": "a1dd02dcf811cf1d6c848216ac68f2450a8a54b6efeb7c7fb95b663bf1ed1754",
+      "reference_revolutions_per_minute": 12923.97729439547,
+      "integer_cycle_count": 333
+    },
+    {
+      "source_filename": "ex_v10_on_high_13260.wav",
+      "source_sha256": "1e2d5909b45986368b9392266a9b89a242e16588ffc23d18910fa3aa99617dc2",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_powered_high_loop",
+      "runtime_filename": "ai_engine_powered_high_loop.wav",
+      "runtime_sha256": "d594fcf27f50feddbef7aea623092155dffec408c73f39501c610e9df746593d",
+      "reference_revolutions_per_minute": 13260.000372129061,
+      "integer_cycle_count": 5252
+    },
+    {
+      "source_filename": "ex_v10_on_mid_14808.wav",
+      "source_sha256": "498f2cc4be46f14eee7cea0e4961138065b47ed80f61da7186dc914ad48d23b6",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_powered_upper_loop",
+      "runtime_filename": "ai_engine_powered_upper_loop.wav",
+      "runtime_sha256": "4d44b74c6df6c5177896738b19ebe6d30a30790f6458c45bafac71ce8353a4be",
+      "reference_revolutions_per_minute": 14808.023222364602,
+      "integer_cycle_count": 642
+    },
+    {
+      "source_filename": "ex_v10_on_high_19068.wav",
+      "source_sha256": "1d331611f3de3558e4b972f0c2ab1f4efe7071193ad98758b86ceb200e4b0fbb",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_powered_maximum_loop",
+      "runtime_filename": "ai_engine_powered_maximum_loop.wav",
+      "runtime_sha256": "361acaf2265332601566142e006e68c33c625c39ab7712ae6da9c04322b5ed5d",
+      "reference_revolutions_per_minute": 19068.000775358374,
+      "integer_cycle_count": 5465
+    },
+    {
+      "source_filename": "ex_v10_off_mid_10740.wav",
+      "source_sha256": "1a47af71dfe829a4c5cb3912273a9a4e721d1b3d4f36eb85e00fb79951a8043a",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_coast_middle_loop",
+      "runtime_filename": "ai_engine_coast_middle_loop.wav",
+      "runtime_sha256": "0d3cb81bf64df1b5f800d4c8c12305a68801994c70ebed475617a02e572ee1b3",
+      "reference_revolutions_per_minute": 10739.978934568715,
+      "integer_cycle_count": 237
+    },
+    {
+      "source_filename": "ex_v10_off_mid_12384.wav",
+      "source_sha256": "5c55bdbfef7d826795486066c59174cf2796227f7a475f9b36db26b916655c80",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_coast_upper_middle_loop",
+      "runtime_filename": "ai_engine_coast_upper_middle_loop.wav",
+      "runtime_sha256": "e1d7f8644177f4fd35e42604fa16e2830f835c8a90336c229c7999f88f8d4baf",
+      "reference_revolutions_per_minute": 12383.998443512473,
+      "integer_cycle_count": 433
+    },
+    {
+      "source_filename": "ex_v10_off_high_13800.wav",
+      "source_sha256": "d3bdcc80cd278137b4ce8e54d25c897bdc8e07ae6c8b1fbf1cc66396771870f9",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_coast_high_loop",
+      "runtime_filename": "ai_engine_coast_high_loop.wav",
+      "runtime_sha256": "c8510dc924c853237abee1324d34f8fcc967b6f46a43ed7725881edc716b229b",
+      "reference_revolutions_per_minute": 13800.035559770047,
+      "integer_cycle_count": 176
+    },
+    {
+      "source_filename": "ex_v10_off_high_16704.wav",
+      "source_sha256": "f369ffafbaf071b91555b80d43e591db371b30400671b9361f8224dd3fa294a3",
+      "source_sample_rate": 48000,
+      "runtime_asset_id": "ai_engine_coast_maximum_loop",
+      "runtime_filename": "ai_engine_coast_maximum_loop.wav",
+      "runtime_sha256": "97f7030b848ebc7150791b83ccb2e4eb3faf971ee5e7a4d36966c519be62c848",
+      "reference_revolutions_per_minute": 16703.959597376637,
+      "integer_cycle_count": 270
+    }
+  ]
+}

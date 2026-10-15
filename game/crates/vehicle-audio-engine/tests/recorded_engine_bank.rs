@@ -126,3 +126,13 @@ fn replacement_preserves_every_non_engine_component_sample() {
 fn recorded_engine_covers_powered_and_coast_range_and_resets() {
     assert_powered_coast_coverage_and_reset("v8-bank");
 }
+
+#[test]
+fn renault_interior_preserves_every_non_engine_component_sample() {
+    assert_non_engine_component_parity("renault-interior-bank");
+}
+
+#[test]
+fn renault_interior_covers_powered_coast_range_and_resets() {
+    assert_powered_coast_coverage_and_reset("renault-interior-bank");
+}
