@@ -5,7 +5,7 @@
   "standard": "Formula-90 GEVP decoupled visual asset",
   "asset": "F1_2030_V10",
   "physics_profile": "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json",
-  "physics_sha256": "DC0D0B6E31D703A7D0440F951BFAD36C87D37B86B5D7EF16FD00AC55CD9D6A03",
+  "physics_sha256": "AA690450184695143A643FD78E48C230B797F2329C2A26FB15B9A4BF6C4742A5",
   "coordinate_contract": {
     "right": "+X",
     "left": "-X",
