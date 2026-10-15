@@ -42,6 +42,11 @@ func _ready() -> void:
 	session.composition_ready.connect(_on_composition_ready)
 	_race_session = session
 	world_viewport.add_child(session)
+	if OS.get_environment("FORMULA90_AERODYNAMICS_COMPARISON") == "1":
+		var aerodynamics_comparison := Node.new()
+		aerodynamics_comparison.name = "AerodynamicsComparison"
+		aerodynamics_comparison.set_script(load("res://scripts/runtime/aerodynamics_comparison_session.gd"))
+		add_child(aerodynamics_comparison)
 
 func set_visual_preset(preset_path: String) -> bool:
 	if psx_art != null:

@@ -26,6 +26,7 @@
 using namespace godot;
 
 void F90Core::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("get_aerodynamics_comparison_measurements"), &F90Core::get_aerodynamics_comparison_measurements);
 	ClassDB::bind_method(D_METHOD("clear_physical_world_vehicle", "vehicle"), &F90Core::clear_physical_world_vehicle);
 	ClassDB::bind_method(D_METHOD("supports_physical_world_snapshots"), &F90Core::supports_physical_world_snapshots);
 	ClassDB::bind_method(D_METHOD("accept_physical_world_snapshot", "vehicle", "snapshot"), &F90Core::accept_physical_world_snapshot);
@@ -476,6 +477,7 @@ void F90Core::replace_tires() {
 }
 
 void F90Core::_ready() {
+	aerodynamics_comparison_measurement_enabled = OS::get_singleton()->get_environment("FORMULA90_AERODYNAMICS_COMPARISON") == "1";
 	if (Engine::get_singleton()->is_editor_hint()) {
 		return;
 	}
@@ -568,6 +570,14 @@ void F90Core::_physics_process(double delta) {
 	veh->set_core_driver(this);
 }
 
+Dictionary F90Core::get_aerodynamics_comparison_measurements() const {
+	Dictionary measurements;
+	measurements["contact_sampling_microseconds"] = contact_sampling_microseconds;
+	measurements["simulation_step_microseconds"] = simulation_step_microseconds;
+	measurements["measured_simulation_steps"] = static_cast<int64_t>(measured_simulation_steps);
+	return measurements;
+}
+
 F194RustVehicle *F90Core::find_first_vehicle(Node *from) {
 	if (from == nullptr) {
 		return nullptr;
@@ -604,10 +614,12 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 	const uint32_t aids_mask = (uint32_t)veh->get_aids_enabled_mask();
 
 	// 2. Real raycasts in the integrate context (guaranteed fresh).
+	const auto contact_sampling_started = aerodynamics_comparison_measurement_enabled ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 	CSimTriRaycastSample samples[4];
 	veh->collect_core_samples(samples);
 	F90UnderfloorSample underfloor = {};
 	veh->collect_underfloor_sample(&underfloor, state);
+	const auto simulation_step_started = aerodynamics_comparison_measurement_enabled ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
 
 	// 3. Body kinematics from the collision-resolved Godot body.
 	const Transform3D gt = state->get_transform();
@@ -627,6 +639,11 @@ void F90Core::drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *st
 		old_ang.x, old_ang.y, old_ang.z,
 		throttle, brake, steer, handbrake, clutch, (int8_t)gear_req, aids_mask, dt,
 		samples, &underfloor, &frame_);
+	if (aerodynamics_comparison_measurement_enabled) {
+		contact_sampling_microseconds = std::chrono::duration<double, std::micro>(simulation_step_started - contact_sampling_started).count();
+		simulation_step_microseconds = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - simulation_step_started).count();
+		++measured_simulation_steps;
+	}
 
 	const Vector3 force(frame_.force_x, frame_.force_y, frame_.force_z);
 	const Vector3 torque(frame_.torque_x, frame_.torque_y, frame_.torque_z);

@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 #include <cmath>
@@ -394,6 +395,7 @@ void F194RustVehicle::setup_raycasts() {
 		}
 	}
 
+	simplified_aerodynamics_enabled = OS::get_singleton()->get_environment("FORMULA90_AERODYNAMICS_BACKEND") == "simplified";
 	const char *uf_names[5] = {
 		"UnderfloorFrontLeft", "UnderfloorFrontRight", "UnderfloorCenter",
 		"DiffuserThroat", "DiffuserExit"
@@ -411,9 +413,13 @@ void F194RustVehicle::setup_raycasts() {
 			add_child(ray);
 		}
 		ray->set_position(uf_positions[i]);
+		if (simplified_aerodynamics_enabled && i == 0) {
+			ray->set_name("UnderfloorFrontCenter");
+			ray->set_position(Vector3(0.0, -0.205, -0.90));
+		}
 		ray->set_target_position(Vector3(0.0, -0.35, 0.0));
 		ray->set_collision_mask(1);
-		ray->set_enabled(true);
+		ray->set_enabled(!simplified_aerodynamics_enabled || i == 0 || i == 3);
 		ray->set_collide_with_areas(false);
 		ray->set_collide_with_bodies(true);
 		ray->add_exception(this);
@@ -1649,7 +1655,7 @@ void F194RustVehicle::collect_underfloor_sample(F90UnderfloorSample *p_sample, P
 		F90UnderfloorRayHit &hit = p_sample->rays[i];
 		hit.clearance_m = 0.35;
 		hit.normal_y = 1.0;
-		if (!ray) {
+		if (!ray || (simplified_aerodynamics_enabled && i != 0 && i != 3)) {
 			continue;
 		}
 		ray->force_raycast_update();
@@ -1890,6 +1896,11 @@ Dictionary F194RustVehicle::get_underfloor_state_snapshot() const {
 	static const char *NAMES[5] = { "front_left", "front_right", "center", "diffuser_throat", "diffuser_exit" };
 	Dictionary out;
 	out["schema_version"] = 1;
+	out["probe_layout"] = simplified_aerodynamics_enabled ? "front_center_and_diffuser_throat" : "five_probes";
+	if (simplified_aerodynamics_enabled) {
+		out["front_center_clearance_m"] = underfloor_clearance_m_[0];
+		out["legacy_front_left_slot_is_front_center"] = true;
+	}
 	Dictionary clearances;
 	for (int i = 0; i < 5; ++i) {
 		clearances[String(NAMES[i])] = underfloor_clearance_m_[i];

@@ -147,6 +147,17 @@ impl UnderfloorState {
         config: &UnderfloorContactConfig,
         dt: f64,
     ) {
+        self.step_with_probe_layout(sample, body, config, dt, false);
+    }
+
+    pub fn step_with_probe_layout(
+        &mut self,
+        sample: &UnderfloorSample,
+        body: Option<&BodyKinematics>,
+        config: &UnderfloorContactConfig,
+        dt: f64,
+        two_longitudinal_probes: bool,
+    ) {
         const MAX_CLEARANCE: f64 = 0.35;
 
         if !config.enabled {
@@ -191,6 +202,14 @@ impl UnderfloorState {
             + CENTER_TO_EXIT_Y_OFFSET_M)
             / 1.65)
             .atan();
+        if two_longitudinal_probes {
+            self.roll_rad = 0.0;
+            self.rake_rad = if self.valid_mask & 0b01001 == 0b01001 {
+                ((self.filtered_clearance_m[0] - self.filtered_clearance_m[3] + 0.040) / 1.75).atan()
+            } else {
+                0.0
+            };
+        }
 
         // The host reports raw floor contacts that flicker frame-to-frame while
         // the body rides a few millimetres off the ground. Latch them with a
@@ -226,7 +245,7 @@ impl UnderfloorState {
             self.rigid_tangential_speed_m_s = rigid_contact.tangential_speed_m_s;
         }
 
-        self.step_bottoming(sample, body, config, dt, rigid_latched);
+        self.step_bottoming(sample, body, config, dt, rigid_latched, two_longitudinal_probes);
 
         let geometry_confidence: f64 = if self.active_probe_mask != 0 { 1.0 } else { 0.0 };
         self.contact_confidence = geometry_confidence.max(if rigid_latched { 1.0 } else { 0.0 });
@@ -305,14 +324,18 @@ impl UnderfloorState {
         config: &UnderfloorContactConfig,
         dt: f64,
         rigid_latched: bool,
+        two_longitudinal_probes: bool,
     ) {
-        const LOCAL_POSITIONS: [[f64; 3]; 5] = [
+        let mut local_positions: [[f64; 3]; 5] = [
             [-0.45, -0.205, -0.90],
             [0.45, -0.205, -0.90],
             [0.0, -0.205, 0.0],
             [0.0, -0.165, 0.85],
             [0.0, -0.165, 1.65],
         ];
+        if two_longitudinal_probes {
+            local_positions[0][0] = 0.0;
+        }
         self.active_probe_mask = 0;
         self.total_normal_force_n = 0.0;
         self.max_probe_force_n = 0.0;
@@ -353,7 +376,7 @@ impl UnderfloorState {
             .normalized();
             let point = Vec3::new(ray.point_world[0], ray.point_world[1], ray.point_world[2]);
             let lever = body.map(|b| point - b.transform.origin).unwrap_or_else(|| {
-                let p = LOCAL_POSITIONS[i];
+                let p = local_positions[i];
                 Vec3::new(p[0], p[1], p[2])
             });
             let kinematic_closing = body
@@ -405,7 +428,7 @@ impl UnderfloorState {
                 self.active_probe_mask |= 1 << i;
                 self.total_normal_force_n += force;
                 self.max_probe_force_n = self.max_probe_force_n.max(force);
-                let local = LOCAL_POSITIONS[i];
+                let local = local_positions[i];
                 weighted_center += Vec3::new(local[0], local[1], local[2]) * force;
                 let f = normal * force;
                 total_force += f;
@@ -484,6 +507,46 @@ mod tests {
         assert!(state.torque_world[2] < 0.0);
         assert_eq!(state.active_probe_mask, 1);
         assert_eq!(state.scrape_phase, ScrapePhase::Impact);
+    }
+
+    #[test]
+    fn two_longitudinal_probes_preserve_rake_without_artificial_roll() {
+        let mut state = UnderfloorState::default();
+        let mut sample = UnderfloorSample::default();
+        sample.rays[0] = UnderfloorRayHit {
+            valid: true,
+            clearance_m: 0.100,
+            normal_world: [0.0, 1.0, 0.0],
+            ..Default::default()
+        };
+        sample.rays[3] = UnderfloorRayHit {
+            valid: true,
+            clearance_m: 0.140,
+            normal_world: [0.0, 1.0, 0.0],
+            ..Default::default()
+        };
+        state.step_with_probe_layout(&sample, None, &UnderfloorContactConfig::default(), 1.0 / 120.0, true);
+        assert!(state.rake_rad.abs() < 1e-12);
+        assert_eq!(state.roll_rad, 0.0);
+        assert_eq!(state.valid_mask, 0b01001);
+    }
+
+    #[test]
+    fn front_center_bottoming_does_not_create_lateral_torque() {
+        let mut state = UnderfloorState::default();
+        let mut sample = UnderfloorSample::default();
+        sample.rays[0] = UnderfloorRayHit {
+            valid: true,
+            clearance_m: 0.004,
+            point_world: [0.0, -0.205, -0.90],
+            normal_world: [0.0, 1.0, 0.0],
+            ..Default::default()
+        };
+        state.step_with_probe_layout(&sample, None, &UnderfloorContactConfig::default(), 1.0 / 120.0, true);
+        assert!(state.normal_force_n[0] > 0.0);
+        assert!(state.torque_world[0] > 0.0);
+        assert_eq!(state.torque_world[2], 0.0);
+        assert_eq!(state.force_center_local[0], 0.0);
     }
 
     #[test]

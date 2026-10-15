@@ -155,6 +155,7 @@ public:
 	/// samples rays, steps the facade (physics + modules + audio inputs), applies the
 	/// resolved force/torque to the body and mirrors telemetry onto the vehicle.
 	void drive_integrate(F194RustVehicle *veh, PhysicsDirectBodyState3D *state);
+	Dictionary get_aerodynamics_comparison_measurements() const;
 	bool supports_physical_world_snapshots() const;
 	void clear_physical_world_vehicle(F194RustVehicle *vehicle);
 	bool accept_physical_world_snapshot(F194RustVehicle *vehicle, const Dictionary &snapshot);
@@ -290,6 +291,10 @@ private:
 	static int trigger_code(const String &name);
 	static const char *trigger_name(int code);
 	F90CoreFrameOut frame_ = {};
+	bool aerodynamics_comparison_measurement_enabled = false;
+	double contact_sampling_microseconds = 0.0;
+	double simulation_step_microseconds = 0.0;
+	uint64_t measured_simulation_steps = 0;
 
 	void *dll_handle_ = nullptr;
 	void *core_ = nullptr;

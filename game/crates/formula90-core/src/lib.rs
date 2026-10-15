@@ -719,11 +719,14 @@ impl CoreFacade {
             ..CoreFrame::default()
         };
         let mut mechanical_audio = audio_telemetry::MechanicalAudioState::default();
-        self.underfloor.step(
+        let two_longitudinal_probes = self.world.entities.iter().find(|entity| entity.id == id)
+            .is_some_and(|entity| entity.sim.aerodynamics_backend == vehicle_physics_engine::aero::AerodynamicsBackend::Simplified);
+        self.underfloor.step_with_probe_layout(
             underfloor_sample,
             Some(&body),
             &self.config.underfloor_contact,
             dt,
+            two_longitudinal_probes,
         );
         let aero_environment = AeroEnvironment {
             clearance_m: self.underfloor.filtered_clearance_m,

@@ -2,10 +2,15 @@
 param(
     [string]$GodotPath,
     [string]$PhysicalWorldPackage,
+    [ValidateSet('standard', 'simplified')][string]$AerodynamicsBackend = 'standard',
+    [switch]$AerodynamicsComparison,
+    [string]$AerodynamicsComparisonOutput,
+    [ValidateRange(0, 7200)][int]$AerodynamicsComparisonMaximumSeconds = 0,
     [ValidateSet('original', 'mp4_6_senna_1')]
     [string]$Livery = 'original',
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
+    [switch]$SmokeAerodynamics,
     [switch]$SmokePitStop,
     [switch]$SmokeAudio,
     [switch]$SmokeBackground,
@@ -18,7 +23,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($PhysicalWorldPackage -and ($Smoke -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
+if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAerodynamics -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
+    throw 'Aerodynamics comparison requires the original Fuji vehicle session without physical-world or diagnostic overrides.'
+}
+if ($PhysicalWorldPackage -and $AerodynamicsBackend -ne 'standard') {
+    throw 'Simplified aerodynamics is available only with Godot rigid-body integration.'
+}
+$env:FORMULA90_AERODYNAMICS_BACKEND = $AerodynamicsBackend
+$env:FORMULA90_AERODYNAMICS_COMPARISON = if ($AerodynamicsComparison) { '1' } else { '0' }
+if ($PhysicalWorldPackage -and ($Smoke -or $SmokeAerodynamics -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
     throw '-PhysicalWorldPackage requires a vehicle session. Use the dedicated physical-world native test for candidate smoke validation.'
 }
 $root = Split-Path -Parent $PSScriptRoot
@@ -37,6 +50,33 @@ $liveries = @{
 }
 $selectedLivery = $liveries[$Livery]
 $scene = [string]$selectedLivery.Scene
+if ($AerodynamicsComparison) {
+    if ([string]::IsNullOrWhiteSpace($AerodynamicsComparisonOutput)) {
+        $AerodynamicsComparisonOutput = Join-Path $root ('scratch/aerodynamics_comparison_{0}_{1}' -f $AerodynamicsBackend, (Get-Date -Format 'yyyyMMdd_HHmmss'))
+    }
+    if (Test-Path -LiteralPath $AerodynamicsComparisonOutput) { throw 'Comparison output already exists; select a fresh output directory.' }
+    New-Item -ItemType Directory -Path $AerodynamicsComparisonOutput -Force | Out-Null
+    $env:FORMULA90_AERODYNAMICS_OUTPUT = [System.IO.Path]::GetFullPath($AerodynamicsComparisonOutput)
+    $env:FORMULA90_AERODYNAMICS_DURATION = [string]$AerodynamicsComparisonMaximumSeconds
+    $comparisonMetadata = [ordered]@{
+        branch = (& git -C $root branch --show-current).Trim()
+        source = (& git -C $root rev-parse HEAD).Trim()
+        backend = $AerodynamicsBackend
+        vehicle_count = 1
+        physics_frequency_hertz = 120
+        build_configuration = 'see installed binary provenance'
+        processor = $env:PROCESSOR_IDENTIFIER
+        binary_sha256 = @(Get-ChildItem -LiteralPath (Join-Path $game 'addons/formula90s/bin') -Filter '*.dll' -File | Sort-Object Name | ForEach-Object {
+            @{ name = $_.Name; sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+        })
+        physical_profile_sha256 = @(Get-ChildItem -LiteralPath (Join-Path $game 'data/vehicles/f1_2030/profiles/geometric') -Filter '*.json' -File | Sort-Object Name | ForEach-Object {
+            @{ name = $_.Name; sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
+        })
+        pending_changes = @(& git -C $root status --short -uno)
+        measurement_scope = 'native contact collection and complete Rust step; Godot frame and physics monitors'
+    }
+    $comparisonMetadata | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $AerodynamicsComparisonOutput 'run_metadata.json') -Encoding utf8
+}
 $manifestPath = Join-Path $game ([string]$selectedLivery.Manifest)
 $variantLabel = [string]$selectedLivery.Label
 $showcaseScene = 'res://scenes/showcases/f1_2030_fuji_main_straight_showcase.tscn'
@@ -187,6 +227,10 @@ if ($LASTEXITCODE -ne 0) {
 if ($SmokeAudio) {
     Write-Host "Ejecutando smoke de audio $variantLabel (commons + GEVP)..." -ForegroundColor Cyan
     & $godot --headless --path $game --script 'res://tests/smoke_test_vehicle_audio.gd' -- "--scene=$scene"
+    exit $LASTEXITCODE
+}
+if ($SmokeAerodynamics) {
+    & $godot --headless --path $game --script 'res://tests/smoke_test_aerodynamics_backends.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }
 if ($SmokeBackground) {

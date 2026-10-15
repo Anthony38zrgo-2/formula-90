@@ -6,6 +6,26 @@ use crate::types::WheelIndex;
 use crate::vehicle_config::VehicleConfig;
 use serde::{Deserialize, Serialize};
 
+#[path = "simplified_aerodynamics.rs"]
+mod simplified_aerodynamics;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+pub enum AerodynamicsBackend {
+    #[default]
+    Standard,
+    Simplified,
+}
+
+impl AerodynamicsBackend {
+    pub fn from_execution_environment() -> Self {
+        match std::env::var("FORMULA90_AERODYNAMICS_BACKEND").as_deref() {
+            Ok("simplified") => Self::Simplified,
+            Ok("standard") | Err(_) => Self::Standard,
+            Ok(value) => panic!("Unsupported aerodynamics backend: {value}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct WingPolarPoint {

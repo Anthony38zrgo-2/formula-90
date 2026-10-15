@@ -108,6 +108,7 @@ private:
 	// Five synchronized underfloor probes: front-left, front-right, floor center,
 	// diffuser throat and diffuser exit.
 	RayCast3D *underfloor_raycasts_[5] = {};
+	bool simplified_aerodynamics_enabled = false;
 
 	// Player Inputs / Overrides
 	bool enable_player_input_ = true;

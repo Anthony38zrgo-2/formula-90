@@ -1,4 +1,4 @@
-use crate::aero::{AeroEnvironment, AeroForces, AeroKinematics, AeroProbeMode};
+use crate::aero::{AerodynamicsBackend, AeroEnvironment, AeroForces, AeroKinematics, AeroProbeMode};
 use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
 use crate::powertrain_thermals::{PowertrainThermalInput, PowertrainThermalSystem};
@@ -179,6 +179,8 @@ pub struct VehicleSimulator {
     pub wind_velocity_world: Vec3,
     #[serde(default)]
     pub aero_probe_mode: AeroProbeMode,
+    #[serde(default)]
+    pub aerodynamics_backend: AerodynamicsBackend,
     #[serde(skip)]
     pub coupled_force_context: Option<CoupledVehicleForceContext>,
     #[serde(skip)]
@@ -215,6 +217,7 @@ impl VehicleSimulator {
             aids,
             wind_velocity_world: Vec3::ZERO,
             aero_probe_mode: AeroProbeMode::Measured,
+            aerodynamics_backend: AerodynamicsBackend::from_execution_environment(),
             coupled_force_context: None,
             pending_coupled_thermal_interval: None,
         }
@@ -332,7 +335,12 @@ impl VehicleSimulator {
             gear_request: input.gear_request,
         };
 
-        st.aero.step_with_kinematics(
+        let aerodynamics_step = match self.aerodynamics_backend {
+            AerodynamicsBackend::Standard => AeroForces::step_with_kinematics,
+            AerodynamicsBackend::Simplified => AeroForces::step_simplified_with_kinematics,
+        };
+        aerodynamics_step(
+            &mut st.aero,
             cfg,
             &AeroKinematics {
                 velocity_m_s: local_velocity,
