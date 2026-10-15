@@ -19,7 +19,7 @@
   "coupled_world": {
     "schema_version": 1,
     "integration_owner": "rust_world_candidate",
-    "physical_frequency_hertz": 960,
+    "physical_frequency_hertz": 120,
     "suspension": {
       "travel_stop_damping_newton_seconds_per_metre": [
         1000,
@@ -57,7 +57,7 @@
         100000000
       ],
       "differentiation_step_metres": 0.0001,
-      "maximum_substep_seconds": 0.0010416666666666667
+      "maximum_substep_seconds": 0.008333333333333333
     },
     "contacts": {
       "maximum_iterations": 100,

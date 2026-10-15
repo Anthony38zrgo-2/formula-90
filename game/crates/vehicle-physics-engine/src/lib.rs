@@ -15,6 +15,7 @@ pub mod suspension_mass_properties;
 pub mod suspension_multibody;
 pub mod suspension_component_kinematics;
 pub mod suspension_coupled_solver;
+pub mod suspension_damping;
 pub mod suspension_geo_config;
 pub mod suspension_kinematics;
 pub mod suspension_loads;

@@ -9,6 +9,19 @@ fn actual_configuration() -> VehicleConfig {
     VehicleConfig::from_json_str(include_str!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")).unwrap()
 }
 
+#[test]
+fn geometric_world_uses_one_hundred_twenty_physical_steps_per_second() {
+    let configuration = actual_configuration();
+    let settings = configuration.coupled_world.unwrap();
+    assert_eq!(settings.physical_frequency_hertz, 120);
+    assert!((settings.suspension.maximum_substep_seconds - 1.0 / 120.0).abs() < 1e-12);
+    let terrain = PhysicalCollisionWorld { source_digest: "analytical_empty_world".into(), shapes: Vec::new() };
+    let mut world = CoupledVehicleWorld::new(terrain, settings).unwrap();
+    world.advance_host_interval(1.0 / 60.0).unwrap();
+    assert!((world.time_seconds - 2.0 / 120.0).abs() < 1e-12);
+    assert!(world.accumulated_host_time_seconds < 1e-12);
+}
+
 fn actual_model() -> CoupledVehicleModel {
     let configuration = actual_configuration();
     let settings = configuration.coupled_world.as_ref().unwrap().suspension.clone();

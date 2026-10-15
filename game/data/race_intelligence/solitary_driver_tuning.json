@@ -1,0 +1,23 @@
+{
+  "maximum_speed_metres_per_second": 36.0,
+  "lookahead_time_seconds": 0.5,
+  "minimum_lookahead_metres": 5.0,
+  "maximum_lookahead_metres": 28.0,
+  "maximum_steering_change_per_second": 2.0,
+  "track_edge_margin_metres": 1.5,
+  "recovery_speed_fraction": 0.8,
+  "maintenance_throttle_fraction": 0.1,
+  "speed_proportional_gain": 1.2,
+  "speed_integral_gain": 0.35,
+  "maximum_integrated_speed_error": 3.0,
+  "integrator_active_speed_error_metres_per_second": 5.0,
+  "maximum_throttle_increase_per_second": 8.0,
+  "maximum_throttle_decrease_per_second": 8.0,
+  "grip_utilization_fraction": 0.8,
+  "nominal_tire_grip_fraction": 0.65,
+  "recovery_speed_change_per_second": 0.25,
+  "speed_tracking_deadband_metres_per_second": 0.5,
+  "maximum_brake_increase_per_second": 8.0,
+  "maximum_brake_decrease_per_second": 12.0
+}
+

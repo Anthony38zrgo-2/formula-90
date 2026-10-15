@@ -152,6 +152,7 @@ pub struct CoupledSuspensionEvaluation {
     pub equations: CoupledSuspensionEquations,
     pub components: Vec<MovingSuspensionComponent>,
     pub diagnostics: CoupledSuspensionDiagnostics,
+    pub damping_elements: Vec<crate::suspension_damping::SuspensionDampingElement>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -429,6 +430,7 @@ impl CoupledSuspensionModel {
             input.body_torque_about_origin_world_newton_metres.y,
             input.body_torque_about_origin_world_newton_metres.z,
         ]);
+        let mut damping_elements = Vec::new();
         let mut diagnostics = CoupledSuspensionDiagnostics {
             kinetic_energy_joules: components
                 .iter()
@@ -510,6 +512,16 @@ impl CoupledSuspensionModel {
                 / (2.0 * rack_step);
             let shaft_velocity = sensitivity.motion_ratio * travel_velocity
                 + spring_steering_derivative * input.steering_rack_velocity_metres_per_second;
+            let mut velocity_derivative = [0.0; SUSPENSION_GENERALIZED_VELOCITY_COUNT];
+            velocity_derivative[6 + wheel_coordinate] = sensitivity.motion_ratio;
+            damping_elements.push(crate::suspension_damping::SuspensionDampingElement {
+                velocity_derivative,
+                prescribed_velocity: spring_steering_derivative * input.steering_rack_velocity_metres_per_second,
+                law: crate::suspension_damping::SuspensionDampingLaw::Digressive {
+                    compression: axle.damper_bump_Ns_per_m, rebound: axle.damper_rebound_Ns_per_m,
+                    knee: axle.damper_knee_m_per_s, fast_fraction: axle.damper_fast_factor,
+                },
+            });
             let damper_coefficient = if shaft_velocity >= 0.0 {
                 axle.damper_bump_Ns_per_m
             } else {
@@ -555,6 +567,17 @@ impl CoupledSuspensionModel {
             diagnostics.elastic_potential_energy_joules +=
                 0.25 * stop_stiffness * penetration.powi(4);
             diagnostics.dissipated_power_watts += stop_damping * travel_velocity.powi(2);
+            if penetration != 0.0 {
+                let mut velocity_derivative = [0.0; SUSPENSION_GENERALIZED_VELOCITY_COUNT];
+                velocity_derivative[6 + wheel_coordinate] = 1.0;
+                damping_elements.push(crate::suspension_damping::SuspensionDampingElement {
+                    velocity_derivative, prescribed_velocity: 0.0,
+                    law: crate::suspension_damping::SuspensionDampingLaw::TravelStop {
+                        coefficient: self.settings.travel_stop_damping_newton_seconds_per_metre[wheel_coordinate],
+                        outward_sign: penetration.signum(),
+                    },
+                });
+            }
             let hub = wheel_contact_component_with_geometry_cache(
                 wheel,
                 kinematic_input,
@@ -592,6 +615,13 @@ impl CoupledSuspensionModel {
                             [wheel_coordinate]
                             * closing_velocity)
                         .max(0.0);
+                    damping_elements.push(crate::suspension_damping::SuspensionDampingElement {
+                        velocity_derivative: std::array::from_fn(|coordinate| hub.linear_velocity_jacobian[coordinate].dot(contact.surface_normal_world)),
+                        prescribed_velocity: (hub.prescribed_linear_velocity_metres_per_second - contact.surface_velocity_world_metres_per_second).dot(contact.surface_normal_world),
+                        law: crate::suspension_damping::SuspensionDampingLaw::UnilateralContact {
+                            coefficient: self.settings.tire_vertical_damping_newton_seconds_per_metre[wheel_coordinate], elastic_force,
+                        },
+                    });
                     let tangential_force = contact.tangential_force_world_newtons
                         - contact.surface_normal_world
                             * contact
@@ -684,6 +714,7 @@ impl CoupledSuspensionModel {
             equations,
             components,
             diagnostics,
+            damping_elements,
         })
     }
 
@@ -718,10 +749,12 @@ impl CoupledSuspensionModel {
                     contact.surface_velocity_world_metres_per_second * elapsed;
             }
             let evaluation = self.evaluate(&candidate, &substep_input)?;
-            for coordinate in 0..SUSPENSION_GENERALIZED_VELOCITY_COUNT {
-                candidate.generalized_velocity[coordinate] +=
-                    evaluation.diagnostics.generalized_acceleration[coordinate] * substep_seconds;
-            }
+            let generalized_force = std::array::from_fn(|row| evaluation.equations.mass_matrix[row].iter()
+                .zip(evaluation.diagnostics.generalized_acceleration).map(|(mass, acceleration)| mass * acceleration).sum());
+            let damping_result = crate::suspension_damping::integrate_suspension_damping(&evaluation.equations.mass_matrix,
+                generalized_force, &evaluation.damping_elements, candidate.generalized_velocity, substep_seconds,
+                crate::suspension_multibody::solve_positive_definite_matrix)?;
+            candidate.generalized_velocity = damping_result.0;
             candidate.body_origin_world_metres += Vec3::new(
                 candidate.generalized_velocity[0],
                 candidate.generalized_velocity[1],
@@ -762,11 +795,11 @@ impl CoupledSuspensionModel {
                     )?;
             }
             candidate.dissipated_energy_joules +=
-                evaluation.diagnostics.dissipated_power_watts * substep_seconds;
+                damping_result.1;
             candidate.external_work_joules +=
                 evaluation.diagnostics.external_power_watts * substep_seconds;
             candidate.steering_actuator_work_joules +=
-                evaluation.diagnostics.steering_actuator_power_watts * substep_seconds;
+                evaluation.diagnostics.steering_actuator_power_watts * substep_seconds + damping_result.2;
             candidate.simulated_time_seconds += substep_seconds;
         }
         let mut final_input = input.clone();

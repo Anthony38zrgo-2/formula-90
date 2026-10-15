@@ -602,6 +602,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "race_intelligence_engine"
+version = "0.1.0"
+dependencies = [
+ "parry3d-f64",
+ "serde",
+ "serde_json",
+ "vehicle_physics_engine",
+]
+
+[[package]]
 name = "rawpointer"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

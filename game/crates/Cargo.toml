@@ -8,6 +8,7 @@ members = [
     "psx-art-pluggin",
     "dsp-abi-check",
     "v10-engine-synth",
+    "race-intelligence-engine",
 ]
 
 [workspace.package]

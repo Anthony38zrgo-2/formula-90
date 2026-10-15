@@ -1,0 +1,30 @@
+{
+  "artificial_driver_transmission": {
+    "automatic_transmission": true,
+    "applies_to": "artificial_drivers_only",
+    "player_profile_unchanged": "game/data/vehicles/f1_2030/profiles/geometric/powertrain.json",
+    "fairness_note": "Automatic selection changes no grip, power, or mass parameter. It only selects gears. Lap-time parity is validated in the M1 gate.",
+    "automatic_shift": {
+      "upshift_normalized_rpm_low_throttle": 0.94,
+      "upshift_normalized_rpm_full_throttle": 0.965,
+      "downshift_normalized_rpm_low_throttle": 0.60,
+      "downshift_normalized_rpm_full_throttle": 0.65,
+      "downshift_throttle_aggression_factor": 0.35,
+      "upshift_coast_normalized_rpm": 0.94,
+      "downshift_coast_normalized_rpm": 0.55,
+      "reverse_max_speed_ms": 6.0,
+      "parked_resume_speed_ms": 1.0,
+      "kickdown_delay_factor": 0.75,
+      "wheel_road_spin_blend_threshold_rads": 10.0,
+      "wheel_spin_weight": 0.6,
+      "road_spin_weight": 0.4,
+      "upshift_target_rpm_margin_high": 0.94,
+      "downshift_target_rpm_margin_high": 0.82
+    },
+    "supervision": {
+      "launch_throttle_threshold_fraction": 0.4,
+      "launch_maximum_speed_metres_per_second": 1.0,
+      "reverse_maximum_speed_metres_per_second": 6.0
+    }
+  }
+}

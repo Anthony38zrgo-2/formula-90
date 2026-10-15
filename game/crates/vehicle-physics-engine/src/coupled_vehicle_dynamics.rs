@@ -103,6 +103,7 @@ pub struct CoupledVehicleEvaluation {
     pub suspension_diagnostics: CoupledSuspensionDiagnostics,
     pub kinetic_energy_joules: f64,
     pub prescribed_generalized_momentum: GeneralizedVehicleVelocity,
+    pub damping_elements: Vec<crate::suspension_damping::SuspensionDampingElement>,
 }
 
 #[derive(Debug, Clone)]
@@ -313,7 +314,7 @@ impl CoupledVehicleModel {
         diagnostics.total_energy_joules = kinetic_energy_joules + diagnostics.gravitational_potential_energy_joules
             + diagnostics.elastic_potential_energy_joules;
         Ok(CoupledVehicleEvaluation { mass_matrix, generalized_force: force, suspension_diagnostics: diagnostics, kinetic_energy_joules,
-            prescribed_generalized_momentum })
+            prescribed_generalized_momentum, damping_elements: reference.damping_elements })
     }
 
     pub fn prescribed_contact_velocity(&self, state: &CoupledVehicleState, input: &CoupledSuspensionInput,
@@ -351,9 +352,9 @@ impl CoupledVehicleModel {
                 contact.surface_point_world_metres += contact.surface_velocity_world_metres_per_second * elapsed;
             }
             let evaluation = self.evaluate(&candidate, &current_input, actuator_torque)?;
-            let factor = factor_generalized_vehicle_matrix(&evaluation.mass_matrix)?;
-            let acceleration = solve_factored_vehicle_matrix(&factor, evaluation.generalized_force)?;
             let previous_velocity = candidate.velocity();
+            let mut damping_result = integrate_implicit_suspension_damping(&evaluation, previous_velocity, step)?;
+            let mut acceleration = std::array::from_fn(|coordinate| (damping_result.0[coordinate] - previous_velocity[coordinate]) / step);
             let mut at_boundary = [false; 4];
             for wheel in 0..4 {
                 let travel = candidate.suspension.wheel_travel_metres[wheel];
@@ -362,25 +363,33 @@ impl CoupledVehicleModel {
                 let (lower, upper) = self.travel_limits_metres[wheel];
                 at_boundary[wheel] = (travel <= lower + 1e-10 && predicted_velocity < 0.0)
                     || (travel >= upper - 1e-10 && predicted_velocity > 0.0);
-                if at_boundary[wheel] { continue; }
-                let predicted = travel + predicted_velocity * step;
-                let target = if predicted < lower { Some(lower) } else if predicted > upper { Some(upper) } else { None };
-                if let Some(target) = target {
-                    let distance = target - travel;
-                    let coefficient = acceleration[6 + wheel];
-                    let mut crossing = step;
-                    if coefficient.abs() < 1e-12 {
-                        if velocity.abs() > 1e-12 { crossing = distance / velocity; }
-                    } else {
-                        let discriminant = velocity * velocity + 4.0 * coefficient * distance;
-                        if discriminant < 0.0 { return Err("Travel event root has a negative discriminant".into()); }
-                        for root in [(-velocity - discriminant.sqrt()) / (2.0 * coefficient), (-velocity + discriminant.sqrt()) / (2.0 * coefficient)] {
-                            if root > 1e-12 && root < crossing { crossing = root; }
-                        }
-                    }
-                    step = step.min(crossing.max(1e-12));
-                }
+
             }
+            at_boundary = coupled_travel_active_set(&evaluation.mass_matrix, previous_velocity, acceleration,
+                at_boundary, candidate.suspension.wheel_travel_metres, self.travel_limits_metres, step)?;
+            step = localize_projected_travel_step(&evaluation.mass_matrix, previous_velocity, acceleration,
+                at_boundary, candidate.suspension.wheel_travel_metres, self.travel_limits_metres, step)?;
+            damping_result = integrate_implicit_suspension_damping(&evaluation, previous_velocity, step)?;
+            let admissible = |mut velocity: GeneralizedVehicleVelocity, interval: f64| -> Result<bool, String> {
+                if at_boundary.iter().any(|active| *active) { project_vehicle_travel_constraints(&evaluation.mass_matrix, &mut velocity, at_boundary)?; }
+                Ok((0..4).all(|wheel| {
+                    let travel = candidate.suspension.wheel_travel_metres[wheel] + velocity[6 + wheel] * interval;
+                    travel >= self.travel_limits_metres[wheel].0 - 1e-12 && travel <= self.travel_limits_metres[wheel].1 + 1e-12
+                }))
+            };
+            if !admissible(damping_result.0, step)? {
+                let mut lower = 0.0;
+                let mut upper = step;
+                for _ in 0..64 {
+                    let midpoint = 0.5 * (lower + upper);
+                    let trial = integrate_implicit_suspension_damping(&evaluation, previous_velocity, midpoint)?;
+                    if admissible(trial.0, midpoint)? { lower = midpoint; } else { upper = midpoint; }
+                }
+                if lower <= 0.0 { return Err("Implicit suspension travel has no admissible interval".into()); }
+                step = lower;
+                damping_result = integrate_implicit_suspension_damping(&evaluation, previous_velocity, step)?;
+            }
+            acceleration = std::array::from_fn(|coordinate| (damping_result.0[coordinate] - previous_velocity[coordinate]) / step);
             let mut velocity = previous_velocity;
             for coordinate in 0..VEHICLE_GENERALIZED_VELOCITY_COUNT { velocity[coordinate] += acceleration[coordinate] * step; }
             if at_boundary.iter().any(|active| *active) {
@@ -423,9 +432,9 @@ impl CoupledVehicleModel {
                 candidate.suspension.steering_actuator_work_joules += generalized_projection(event_evaluation.prescribed_generalized_momentum, velocity_change);
                 candidate.set_velocity(velocity);
             }
-            candidate.suspension.dissipated_energy_joules += evaluation.suspension_diagnostics.dissipated_power_watts * step;
+            candidate.suspension.dissipated_energy_joules += damping_result.1;
             candidate.suspension.external_work_joules += evaluation.suspension_diagnostics.external_power_watts * step;
-            candidate.suspension.steering_actuator_work_joules += evaluation.suspension_diagnostics.steering_actuator_power_watts * step;
+            candidate.suspension.steering_actuator_work_joules += evaluation.suspension_diagnostics.steering_actuator_power_watts * step + damping_result.2;
             candidate.suspension.simulated_time_seconds += step;
             elapsed += step;
             remaining = (duration_seconds - elapsed).max(0.0);
@@ -440,6 +449,106 @@ impl CoupledVehicleModel {
         self.evaluate(&candidate, &final_input, actuator_torque)?;
         *state = candidate;
         Ok(())
+    }
+}
+
+pub fn integrate_implicit_suspension_damping(evaluation: &CoupledVehicleEvaluation,
+    previous_velocity: GeneralizedVehicleVelocity, duration_seconds: f64) -> Result<(GeneralizedVehicleVelocity, f64, f64), String> {
+    crate::suspension_damping::integrate_suspension_damping(&evaluation.mass_matrix, evaluation.generalized_force,
+        &evaluation.damping_elements, previous_velocity, duration_seconds,
+        |matrix, force| solve_factored_vehicle_matrix(&factor_generalized_vehicle_matrix(matrix)?, force))
+}
+
+fn coupled_travel_active_set(matrix: &GeneralizedVehicleMatrix, previous_velocity: GeneralizedVehicleVelocity,
+    acceleration: GeneralizedVehicleVelocity, mut active: [bool; 4], travel: [f64; 4],
+    limits: [(f64, f64); 4], step: f64) -> Result<[bool; 4], String> {
+    for _ in 0..4 {
+        let mut velocity = std::array::from_fn(|coordinate| previous_velocity[coordinate] + acceleration[coordinate] * step);
+        if active.iter().any(|value| *value) { project_vehicle_travel_constraints(matrix, &mut velocity, active)?; }
+        let previous_active = active;
+        for wheel in 0..4 {
+            active[wheel] |= (travel[wheel] <= limits[wheel].0 + 1e-10 && velocity[6 + wheel] < -1e-10)
+                || (travel[wheel] >= limits[wheel].1 - 1e-10 && velocity[6 + wheel] > 1e-10);
+        }
+        if active == previous_active { return Ok(active); }
+    }
+    Ok(active)
+}
+
+fn localize_projected_travel_step(matrix: &GeneralizedVehicleMatrix, previous_velocity: GeneralizedVehicleVelocity,
+    acceleration: GeneralizedVehicleVelocity, active_boundaries: [bool; 4], travel: [f64; 4],
+    limits: [(f64, f64); 4], maximum_step: f64) -> Result<f64, String> {
+    let mut velocity = previous_velocity;
+    let mut projected_acceleration = acceleration;
+    if active_boundaries.iter().any(|active| *active) {
+        project_vehicle_travel_constraints(matrix, &mut velocity, active_boundaries)?;
+        project_vehicle_travel_constraints(matrix, &mut projected_acceleration, active_boundaries)?;
+    }
+    let mut step = maximum_step;
+    for wheel in 0..4 {
+        let linear = velocity[6 + wheel];
+        let quadratic = projected_acceleration[6 + wheel];
+        for boundary in [limits[wheel].0, limits[wheel].1] {
+            let distance = boundary - travel[wheel];
+            if quadratic.abs() < 1e-12 {
+                if linear.abs() > 1e-12 {
+                    let crossing = distance / linear;
+                    if crossing > 1e-12 { step = step.min(crossing); }
+                }
+            } else {
+                let discriminant = linear * linear + 4.0 * quadratic * distance;
+                if discriminant >= 0.0 {
+                    let stable_numerator = -0.5 * (linear + discriminant.sqrt().copysign(linear));
+                    let first = stable_numerator / quadratic;
+                    let second = if stable_numerator.abs() > 1e-30 { -distance / stable_numerator } else { 0.0 };
+                    for crossing in [first, second] {
+                        if crossing > 1e-12 { step = step.min(crossing); }
+                    }
+                }
+            }
+        }
+    }
+    if !step.is_finite() || step <= 0.0 { return Err("Suspension travel localization has no admissible interval".into()); }
+    Ok(step)
+}
+
+#[cfg(test)]
+mod projected_travel_localization_tests {
+    use super::*;
+
+    #[test]
+    fn projecting_one_wheel_localizes_a_second_wheel_crossing() {
+        let mut matrix = [[0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT]; VEHICLE_GENERALIZED_VELOCITY_COUNT];
+        for coordinate in 0..VEHICLE_GENERALIZED_VELOCITY_COUNT { matrix[coordinate][coordinate] = 1.0; }
+        matrix[6][6] = 2.0;
+        matrix[7][7] = 2.0;
+        matrix[6][7] = -1.0;
+        matrix[7][6] = -1.0;
+        let mut previous_velocity = [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT];
+        previous_velocity[6] = -1.0;
+        previous_velocity[7] = 0.1;
+        let active = [true, false, false, false];
+        let step = localize_projected_travel_step(&matrix, previous_velocity,
+            [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT], active, [0.0, 0.99, 0.0, 0.0], [(0.0, 1.0); 4], 0.05).unwrap();
+        let mut velocity = previous_velocity;
+        project_vehicle_travel_constraints(&matrix, &mut velocity, active).unwrap();
+        assert!(step < 0.05);
+        assert!(0.99 + velocity[7] * step <= 1.0 + 1e-10);
+        assert!((0.99 + velocity[7] * step - 1.0).abs() < 1e-9);
+        previous_velocity[7] = -0.1;
+        let complete_active = coupled_travel_active_set(&matrix, previous_velocity,
+            [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT], active, [0.0, 1.0, 0.0, 0.0], [(0.0, 1.0); 4], 0.05).unwrap();
+        assert!(complete_active[0] && complete_active[1]);
+        project_vehicle_travel_constraints(&matrix, &mut previous_velocity, complete_active).unwrap();
+        assert!(previous_velocity[6].abs() < 1e-10 && previous_velocity[7].abs() < 1e-10);
+        let mut reversing_velocity = [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT];
+        let mut reversing_acceleration = [0.0; VEHICLE_GENERALIZED_VELOCITY_COUNT];
+        reversing_velocity[7] = 100.0;
+        reversing_acceleration[7] = -1000.0;
+        let turning_step = localize_projected_travel_step(&matrix, reversing_velocity, reversing_acceleration,
+            [false; 4], [0.5; 4], [(0.0, 1.0); 4], 0.1).unwrap();
+        assert!(turning_step < 0.01);
+        assert!((0.5 + 100.0 * turning_step - 1000.0 * turning_step * turning_step - 1.0).abs() < 1e-9);
     }
 }
 

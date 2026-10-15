@@ -11,6 +11,97 @@ const GEVP_GEAR_INERTIA: f64 = 0.02;
 // Keep at least this fraction of demanded torque so the car always retains drive.
 const MIN_TC_TORQUE_SCALE: f64 = 0.10;
 
+#[cfg(test)]
+mod automatic_selection_regression_tests {
+    use super::*;
+
+    fn configuration() -> VehicleConfig {
+        let mut configuration = VehicleConfig::from_json_str(include_str!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")).unwrap();
+        let tuning: serde_json::Value = serde_json::from_str(include_str!("../../../data/race_intelligence/automatic_transmission_tuning.json")).unwrap();
+        configuration.powertrain.automatic_transmission = true;
+        configuration.powertrain.automatic_shift = serde_json::from_value(tuning["artificial_driver_transmission"]["automatic_shift"].clone()).unwrap();
+        configuration
+    }
+
+    fn observations(configuration: &VehicleConfig, gear: i8, fraction: f64) -> (PowertrainState, [f64; 4], f64) {
+        let mut state = PowertrainState::new(configuration);
+        state.current_gear = gear;
+        state.target_gear = gear;
+        state.rpm = configuration.powertrain.max_rpm * fraction;
+        let wheel_angular_velocity = state.rpm / state.get_total_gear_ratio(configuration).abs() / RAD_S_TO_RPM;
+        (state, [wheel_angular_velocity; 4], wheel_angular_velocity * configuration.tires.rear_tire_radius)
+    }
+
+    #[test]
+    fn lifting_and_braking_never_request_an_upshift() {
+        let configuration = configuration();
+        let (state, wheel_spins, speed) = observations(&configuration, 2, 0.99);
+        for input in [VehicleInput::default(), VehicleInput { throttle: 0.8, brake: 0.1, ..VehicleInput::default() }] {
+            assert_eq!(state.automatic_desired_in_drive(&configuration, &input, &wheel_spins, speed), 2);
+        }
+    }
+
+    #[test]
+    fn high_engine_speed_does_not_bypass_the_road_speed_gate() {
+        let configuration = configuration();
+        let (state, _, _) = observations(&configuration, 2, 0.99);
+        let speed = 5.0;
+        let wheel_spins = [speed / configuration.tires.rear_tire_radius; 4];
+        let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+        assert_eq!(state.automatic_desired_in_drive(&configuration, &input, &wheel_spins, speed), 2);
+    }
+
+    #[test]
+    fn full_throttle_upshift_occurs_near_the_configured_regime() {
+        let configuration = configuration();
+        let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+        for (fraction, expected_gear) in [(0.90, 2), (0.98, 3)] {
+            let (state, wheel_spins, speed) = observations(&configuration, 2, fraction);
+            assert_eq!(state.automatic_desired_in_drive(&configuration, &input, &wheel_spins, speed), expected_gear);
+        }
+    }
+
+    #[test]
+    fn normal_tire_slip_cannot_hold_the_engine_at_the_limiter() {
+        let configuration = configuration();
+        let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+        for gear in 1..configuration.powertrain.gear_ratios.len() as i8 {
+            let (state, wheel_spins, speed) = observations(&configuration, gear, 0.999);
+            assert_eq!(state.automatic_desired_in_drive(&configuration, &input, &wheel_spins, speed * 0.90), gear + 1);
+        }
+    }
+
+    #[test]
+    fn wheelspin_cannot_select_a_next_gear_below_its_operating_regime() {
+        let configuration = configuration();
+        let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+        let (state, wheel_spins, speed) = observations(&configuration, 2, 0.999);
+        assert_eq!(state.automatic_desired_in_drive(&configuration, &input, &wheel_spins, speed * 0.60), 2);
+    }
+
+    #[test]
+    fn downshift_does_not_request_a_gear_that_immediately_upshifts() {
+        let configuration = configuration();
+        let (state, wheel_spins, speed) = observations(&configuration, 2, 0.82);
+        let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+        assert_eq!(state.automatic_desired_in_drive(&configuration, &input, &wheel_spins, speed), 2);
+    }
+
+    #[test]
+    fn automatic_shift_cooldown_blocks_consecutive_requests() {
+        let configuration = configuration();
+        let (mut state, wheel_spins, speed) = observations(&configuration, 2, 0.98);
+        let input = VehicleInput { throttle: 1.0, ..VehicleInput::default() };
+        state.automatic_shift_minimum_interval_remaining_seconds = 0.1;
+        state.process_shift(&configuration, &input, &wheel_spins, speed, 1.0 / 120.0);
+        assert_eq!(state.target_gear, 2);
+        state.automatic_shift_minimum_interval_remaining_seconds = 0.0;
+        state.process_shift(&configuration, &input, &wheel_spins, speed, 1.0 / 120.0);
+        assert_eq!(state.target_gear, 3);
+        assert!(state.automatic_shift_minimum_interval_remaining_seconds >= configuration.powertrain.downshift_minimum_interval_seconds);
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PowertrainState {
     pub rpm: f64,
@@ -18,6 +109,8 @@ pub struct PowertrainState {
     pub target_gear: i8,
     pub clutch_engagement: f64,
     pub shift_timer: f64,
+    #[serde(default)]
+    pub automatic_shift_minimum_interval_remaining_seconds: f64,
     #[serde(default)]
     pub downshift_minimum_interval_remaining_seconds: f64,
     #[serde(default)]
@@ -55,6 +148,7 @@ impl PowertrainState {
             target_gear: 1,
             clutch_engagement: 1.0,
             shift_timer: 0.0,
+            automatic_shift_minimum_interval_remaining_seconds: 0.0,
             downshift_minimum_interval_remaining_seconds: 0.0,
             downshift_clutch_reengagement_remaining_seconds: 0.0,
             engine_torque: 0.0,
@@ -188,6 +282,8 @@ impl PowertrainState {
         forward_speed_m_s: f64,
         dt: f64,
     ) {
+        self.automatic_shift_minimum_interval_remaining_seconds =
+            (self.automatic_shift_minimum_interval_remaining_seconds - dt).max(0.0);
         self.downshift_minimum_interval_remaining_seconds =
             (self.downshift_minimum_interval_remaining_seconds - dt).max(0.0);
         if self.apply_shift_timer(config, wheel_spins, forward_speed_m_s, dt) {
@@ -201,7 +297,7 @@ impl PowertrainState {
         } else if config.powertrain.automatic_transmission {
             if self.current_gear <= 0 && forward_speed_m_s >= -0.5 {
                 desired = 1;
-            } else if self.current_gear > 0 {
+            } else if self.current_gear > 0 && self.automatic_shift_minimum_interval_remaining_seconds == 0.0 {
                 desired = self.automatic_desired_in_drive(config, input, wheel_spins, forward_speed_m_s);
             }
             // Reverse only below the max reverse-engage speed; auto-resume to 1st when crawling forward out of park.
@@ -223,6 +319,12 @@ impl PowertrainState {
                 return;
             }
             self.downshift_minimum_interval_remaining_seconds = config.powertrain.downshift_minimum_interval_seconds;
+        }
+        if input.gear_request.is_none() && config.powertrain.automatic_transmission
+            && desired != self.current_gear {
+            self.automatic_shift_minimum_interval_remaining_seconds =
+                config.powertrain.downshift_minimum_interval_seconds
+                + config.powertrain.shift_time + config.powertrain.gear_inertia;
         }
         self.apply_gear_change(config, desired);
     }
@@ -270,67 +372,55 @@ impl PowertrainState {
         &self,
         config: &VehicleConfig,
         input: &VehicleInput,
-        wheel_spins: &[f64; 4],
+        _wheel_angular_velocities: &[f64; 4],
         forward_speed_m_s: f64,
     ) -> i8 {
-        let mut desired = self.current_gear;
-        let max_gear = config.powertrain.gear_ratios.len() as i8;
-        let autoshift = &config.powertrain.automatic_shift;
-        let total_ratio = self.get_total_gear_ratio(config).abs();
-        let radius = config.tires.rear_tire_radius;
-        let wheel_speed = self.drivetrain_spin(config, wheel_spins).abs() * radius;
-        let road_speed = forward_speed_m_s.abs();
-
-        // Per-throttle normalized-RPM shift thresholds (JSON authoritative).
-        let up_norm = if input.throttle > 0.6 {
-            autoshift.upshift_normalized_rpm_full_throttle
-        } else if input.throttle < 0.1 {
-            autoshift.upshift_coast_normalized_rpm
+        let maximum_gear = config.powertrain.gear_ratios.len() as i8;
+        let tuning = &config.powertrain.automatic_shift;
+        let tire_radius_metres = config.tires.rear_tire_radius;
+        let road_speed_metres_per_second = forward_speed_m_s.abs();
+        let upshift_fraction = if input.throttle > 0.6 {
+            tuning.upshift_normalized_rpm_full_throttle
         } else {
-            autoshift.upshift_normalized_rpm_low_throttle
+            tuning.upshift_normalized_rpm_low_throttle
         };
-        let down_norm = if input.throttle > 0.6 {
-            autoshift.downshift_normalized_rpm_full_throttle
+        let downshift_fraction = if input.throttle > 0.6 {
+            tuning.downshift_normalized_rpm_full_throttle
         } else if input.throttle < 0.1 {
-            autoshift.downshift_coast_normalized_rpm
+            tuning.downshift_coast_normalized_rpm
         } else {
-            autoshift.downshift_normalized_rpm_low_throttle
+            tuning.downshift_normalized_rpm_low_throttle
         };
-
-        // Traction-aware gate: don't upshift while the driven wheels are breaking loose.
-        let traction_ok = (wheel_speed - road_speed) < autoshift.wheel_road_spin_blend_threshold_rads;
-
-        let is_at_redline = self.rpm >= config.powertrain.max_rpm * autoshift.upshift_target_rpm_margin_high;
-        let mut can_upshift = self.current_gear < max_gear
-            && ((self.rpm > config.powertrain.max_rpm * up_norm && traction_ok) || is_at_redline);
-
-        // Speed gate (retained from prior logic) prevents lugging / early upshifts in low gears.
-        let shift_speed_ratio = if self.current_gear == 1 { 0.45 } else { 0.65 };
-        let min_shift_speed = (config.powertrain.max_rpm * shift_speed_ratio / (total_ratio.max(1e-6) * RAD_S_TO_RPM)) * radius;
-        can_upshift = can_upshift && (road_speed >= min_shift_speed || traction_ok);
-
-        let lower_ratio = if self.current_gear > 1 {
-            (config.powertrain.gear_ratios[(self.current_gear - 2) as usize] * config.powertrain.final_drive).abs()
-        } else { 0.0 };
-        let lower_rpm_est = (road_speed / radius.max(1e-6)) * lower_ratio * RAD_S_TO_RPM;
-
-        // Kick-down engages under heavy throttle when bogged; the throttle window scales with
-        // aggression, and the engage RPM is relaxed by the (inverse) kick-down delay factor.
-        let kickdown_throttle = (0.60 + (1.0 - autoshift.downshift_throttle_aggression_factor) * 0.4).clamp(0.0, 1.0);
-        let kickdown_engage_rpm = config.powertrain.max_rpm
-            * autoshift.downshift_target_rpm_margin_high
-            * (1.0 - (1.0 - autoshift.kickdown_delay_factor) * 0.15);
-        let can_downshift = self.current_gear > 1 && (
-            (self.rpm < config.powertrain.max_rpm * down_norm && input.throttle < 0.35)
-            || (self.rpm < kickdown_engage_rpm && input.throttle > kickdown_throttle && lower_rpm_est < config.powertrain.max_rpm * 0.88)
-        );
-
-        if can_upshift {
-            desired += 1;
-        } else if can_downshift {
-            desired -= 1;
+        let road_angular_velocity = road_speed_metres_per_second / tire_radius_metres.max(1e-6);
+        if self.current_gear < maximum_gear && input.throttle >= 0.1 && input.brake == 0.0
+            && self.rpm >= config.powertrain.max_rpm * upshift_fraction {
+            let next_gear_ratio = (config.powertrain.gear_ratios[self.current_gear as usize]
+                * config.powertrain.final_drive).abs();
+            let next_revolutions_per_minute = road_angular_velocity * next_gear_ratio * RAD_S_TO_RPM;
+            let minimum_next_fraction = tuning.downshift_normalized_rpm_full_throttle
+                .max(tuning.downshift_normalized_rpm_low_throttle)
+                .max(tuning.downshift_coast_normalized_rpm);
+            if next_revolutions_per_minute > config.powertrain.max_rpm * minimum_next_fraction {
+                return self.current_gear + 1;
+            }
         }
-        desired
+        if self.current_gear > 1 {
+            let lower_gear_ratio = (config.powertrain.gear_ratios[(self.current_gear - 2) as usize]
+                * config.powertrain.final_drive).abs();
+            let lower_revolutions_per_minute = road_angular_velocity * lower_gear_ratio * RAD_S_TO_RPM;
+            let kickdown_throttle = (0.60 + (1.0 - tuning.downshift_throttle_aggression_factor) * 0.4).clamp(0.0, 1.0);
+            let kickdown_fraction = tuning.downshift_target_rpm_margin_high
+                * (1.0 - (1.0 - tuning.kickdown_delay_factor) * 0.15);
+            let below_downshift_threshold = self.rpm < config.powertrain.max_rpm * downshift_fraction;
+            let requested_kickdown = input.throttle > kickdown_throttle
+                && self.rpm < config.powertrain.max_rpm * kickdown_fraction;
+            let lower_gear_avoids_immediate_upshift = lower_revolutions_per_minute
+                < config.powertrain.max_rpm * upshift_fraction.min(tuning.upshift_target_rpm_margin_high);
+            if (below_downshift_threshold || requested_kickdown) && lower_gear_avoids_immediate_upshift {
+                return self.current_gear - 1;
+            }
+        }
+        self.current_gear
     }
 
     /// Aplica el cambio de marcha solicitado (timer y gear objetivo) (CLEAN-10).
