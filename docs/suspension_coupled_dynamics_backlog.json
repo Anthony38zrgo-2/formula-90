@@ -7,6 +7,13 @@
   "integration_owner": "rust_reference_only",
   "authoritative_backlog": "instrucciones.md",
   "numbering_policy": "Historical 30-item numbering; not the 50-item authoritative backlog",
+  "related_independent_workstreams": [
+    {
+      "backlog": "docs/physics_simplification_backlog.json",
+      "handoff": "docs/physics_simplification_handoff.md",
+      "scope": "Aerodynamics and suspension A/B simplification under existing Godot rigid-body integration; does not complete coupled-world items"
+    }
+  ],
   "selected_architecture_contract": "docs/coupled_vehicle_architecture_contract.json",
   "target_integration_owner": "rust_world",
   "items": [
