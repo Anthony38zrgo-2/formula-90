@@ -259,6 +259,18 @@ impl VehicleSimulator {
         self.build_telemetry_frame()
     }
 
+    pub fn step_with_aerodynamics_environment(
+        &mut self,
+        input: &VehicleInput,
+        samples: &[TriRaycastSample; 4],
+        environment: &AeroEnvironment,
+        duration_seconds: f64,
+    ) -> TelemetryFrame {
+        let (forces, _) = self.solve_forces(input, samples, environment, duration_seconds);
+        self.integrate_standalone(forces, duration_seconds);
+        self.build_telemetry_frame()
+    }
+
     /// Recommended integration path for Godot. Synchronizes the solver with the
     /// RigidBody3D state and returns force/torque for Godot to integrate.
     pub fn solve_external(
