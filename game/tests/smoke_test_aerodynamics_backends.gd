@@ -17,7 +17,7 @@ func verify_aerodynamics_backend() -> void:
 			scene_path = argument.trim_prefix("--scene=")
 	var session: Node = load(scene_path).instantiate()
 	root.add_child(session)
-	for frame_index in 5:
+	for frame_index in 60:
 		await physics_frame
 	var vehicle: Node = session.get_node("WorldViewport/RaceSession/VehicleContainer/ActiveVehicle/VehicleRigidBody")
 	var backend := OS.get_environment("FORMULA90_AERODYNAMICS_BACKEND")
@@ -49,4 +49,5 @@ func verify_aerodynamics_backend() -> void:
 	if not failed:
 		print("AERODYNAMICS_BACKEND_SMOKE_PASS backend=%s suspension=%s vehicles=1 floor_sensors=%d suspension_sensors=%d" % [backend, OS.get_environment("FORMULA90_SUSPENSION_BACKEND"), enabled_floor_sensors, enabled_suspension_sensors])
 		print("TIRE_BACKEND_SMOKE_PASS backend=%s vehicles=1 suspension_sensors=%d" % [OS.get_environment("FORMULA90_TIRE_BACKEND"), enabled_suspension_sensors])
+		print("SLOW_STATE_BACKEND_SMOKE_PASS backend=%s physics_frequency=%d vehicles=1" % [OS.get_environment("FORMULA90_SLOW_STATE_BACKEND"), Engine.physics_ticks_per_second])
 	quit(1 if failed else 0)

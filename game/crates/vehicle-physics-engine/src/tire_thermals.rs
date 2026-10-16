@@ -288,6 +288,17 @@ pub struct TireThermalInput {
     pub zone_contact_weights: [f64; 3],
 }
 
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub struct AccumulatedTireThermalWork {
+    pub tread_slip_heat_joules: [f64; 3],
+    pub carcass_heat_joules: f64,
+    pub gas_heat_joules: f64,
+    pub contact_zone_seconds: [f64; 3],
+    pub airflow_seconds: f64,
+    pub carcass_airflow_seconds: f64,
+    pub last_deflection_ratio: f64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TireThermalSystem {
     pub wheels: [WheelThermalState; 4],
@@ -403,6 +414,71 @@ impl TireThermalSystem {
     }
 
     /// Update one wheel AFTER combined-slip forces have been solved.
+    pub fn refresh_pressure_from_mechanical_deflection(&mut self, wheel: WheelIndex,
+        pressure: &TirePressureConfig, thermal: &TireThermalConfig, deflection_ratio: f64) -> bool {
+        let state = &mut self.wheels[wheel as usize];
+        let previous_pressure = state.pressure_kpa_gauge;
+        state.deflection_ratio = deflection_ratio;
+        state.pressure_kpa_gauge = pressure_from_gas(pressure.cold_kpa_gauge[wheel as usize],
+            pressure.reference_temperature_c, pressure.atmospheric_pressure_kpa, state.gas_c,
+            state.deflection_ratio, thermal.volume_deflection_gain)
+            .clamp(thermal.minimum_pressure_kpa_gauge, thermal.maximum_pressure_kpa_gauge);
+        state.pressure_kpa_gauge != previous_pressure
+    }
+
+    pub fn advance_accumulated_work(
+        &mut self,
+        wheel: WheelIndex,
+        pressure: &TirePressureConfig,
+        thermal: &TireThermalConfig,
+        environment: TireEnvironment,
+        work: AccumulatedTireThermalWork,
+        duration_seconds: f64,
+    ) {
+        if duration_seconds <= 0.0 { return; }
+        let state = &mut self.wheels[wheel as usize];
+        let previous_tread = [state.tread_inner_c, state.tread_center_c, state.tread_outer_c];
+        let previous_carcass = state.carcass_c;
+        let previous_gas = state.gas_c;
+        let mut tread_to_carcass_joules = 0.0;
+        let next_tread = std::array::from_fn::<_, 3, _>(|zone| {
+            let carcass_to_tread_joules = thermal.tread_to_carcass_w_k
+                * (previous_carcass - previous_tread[zone]) * duration_seconds;
+            tread_to_carcass_joules -= carcass_to_tread_joules;
+            let lateral_difference = match zone {
+                0 => previous_tread[1] - previous_tread[0],
+                1 => previous_tread[0] + previous_tread[2] - 2.0 * previous_tread[1],
+                _ => previous_tread[1] - previous_tread[2],
+            };
+            let net_energy_joules = work.tread_slip_heat_joules[zone]
+                + thermal.road_conductance_w_k * work.contact_zone_seconds[zone]
+                    * (environment.track_temperature_c - previous_tread[zone])
+                + thermal.tread_to_air_w_k * work.airflow_seconds
+                    * (environment.ambient_temperature_c - previous_tread[zone])
+                + carcass_to_tread_joules
+                + thermal.lateral_tread_conductance_w_k * lateral_difference * duration_seconds;
+            finite_temp(previous_tread[zone] + net_energy_joules / thermal.tread_zone_heat_capacity_j_k.max(100.0))
+        });
+        let carcass_to_gas_joules = thermal.carcass_to_gas_w_k
+            * (previous_carcass - previous_gas) * duration_seconds;
+        let carcass_to_air_joules = thermal.carcass_to_air_w_k * work.carcass_airflow_seconds
+            * (previous_carcass - environment.ambient_temperature_c);
+        state.tread_inner_c = next_tread[0];
+        state.tread_center_c = next_tread[1];
+        state.tread_outer_c = next_tread[2];
+        state.carcass_c = finite_temp(previous_carcass
+            + (tread_to_carcass_joules + work.carcass_heat_joules
+                - carcass_to_gas_joules - carcass_to_air_joules) / thermal.carcass_heat_capacity_j_k.max(500.0));
+        state.gas_c = finite_temp(previous_gas
+            + (carcass_to_gas_joules + work.gas_heat_joules) / thermal.gas_heat_capacity_j_k.max(100.0));
+        state.deflection_ratio = work.last_deflection_ratio;
+        state.pressure_kpa_gauge = pressure_from_gas(
+            pressure.cold_kpa_gauge[wheel as usize], pressure.reference_temperature_c,
+            pressure.atmospheric_pressure_kpa, state.gas_c, state.deflection_ratio,
+            thermal.volume_deflection_gain,
+        ).clamp(thermal.minimum_pressure_kpa_gauge, thermal.maximum_pressure_kpa_gauge);
+    }
+
     pub fn step_after_forces(
         &mut self,
         wheel: WheelIndex,

@@ -9,6 +9,7 @@ pub mod ffi;
 pub mod powertrain;
 pub mod powertrain_thermals;
 pub mod simulation;
+pub mod slow_states;
 pub mod suspension;
 pub mod suspension_mass_audit;
 pub mod suspension_mass_properties;

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_on": "2026-10-15",
+  "updated_on": "2026-10-16",
   "workstream": "Aerodynamics, suspension and tire simplification experiments",
   "handoff": "docs/physics_simplification_handoff.md",
   "source_branch": "main-clean",
@@ -85,6 +85,23 @@
       "whole_simulation_gain_demonstrated": false,
       "native_runtime_status": "Rebuilt and verified at 3f1194c0: fifteen Rust and three DSP copies, default simplified smoke, canonical Fuji smoke and explicit standard smoke passed; refresh parity after publication",
       "publication": "Tire implementation and simplified launcher defaults committed in 3f1194c0; full physics-workstream publication requested"
+    },
+    "slow_state_simplification": {
+      "document": "docs/slow_state_simplification.md",
+      "source_base_head": "5166795a6bd116fc1ed7b3f091c624433c815c67",
+      "candidate_tests_passed": 16,
+      "reference_integration_tests_passed": 55,
+      "benchmark_directory": "scratch/slow_state_grid_22_120_hertz_20261016_100512",
+      "isolated_thermal_mean_reduction_percent": 33.83965296846253,
+      "whole_simulation_gain_demonstrated": false,
+      "runtime_validation": {
+        "report": "scratch/slow_state_simplification/rebuild_report.json",
+        "canonical_scenarios_passed": 4,
+        "installed_rust_copies_verified": 15,
+        "installed_dsp_copies_verified": 3,
+        "source_state": "validated before atomic P4 publication above 5166795a; source hashes verified; rebuild required after publication",
+        "human_driving_review": "pending"
+      }
     }
   },
   "items": [
@@ -246,6 +263,21 @@
         "Preserve canonical BUILD/HEAD checks, twelve wheel rays and equal aero/suspension selections",
         "Canonical launcher defaults to simplified; keep standard explicitly selectable and reject simplified tires with the optional coupled world",
         "Receive explicit driving feedback before promotion or physical tuning"
+      ]
+    },
+    {
+      "identifier": "P4_simplified_slow_states",
+      "status": "implemented_automated_validation_pending_player_review",
+      "evidence": [
+        "docs/slow_state_simplification.md"
+      ],
+      "acceptance_criteria": [
+        "Independent standard and simplified backend; canonical simplified default",
+        "120 Hz mechanics; 20 Hz tire thermal; 10 Hz brake and powertrain thermal",
+        "Mechanical work, dissipated energy and wear accounted every physical tick",
+        "Preserve tire temperature, pressure, wear, brake fade and water/oil overheat derating",
+        "Conservative pending energy across irregular steps, save/load, tire replacement and backend switching",
+        "Canonical native rebuild and startup validation; human driving review remains required"
       ]
     }
   ]

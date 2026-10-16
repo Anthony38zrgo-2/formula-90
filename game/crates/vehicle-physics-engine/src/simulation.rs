@@ -1,6 +1,7 @@
 use crate::aero::{AerodynamicsBackend, AeroEnvironment, AeroForces, AeroKinematics, AeroProbeMode};
 use crate::brake_thermals::{BrakeThermalInput, BrakeThermalSystem, BrakeToTireHeat};
 use crate::powertrain::PowertrainState;
+use crate::slow_states::{SlowStateBackend, SlowStateSystem};
 use crate::powertrain_thermals::{PowertrainThermalInput, PowertrainThermalSystem};
 use crate::suspension::{rest_compression_m, SuspensionSystem};
 use crate::suspension_geo_config::SuspensionModelKind;
@@ -49,6 +50,8 @@ pub struct VehicleState {
     pub tire_wear: TireWearSystem,
     pub brake_thermal: BrakeThermalSystem,
     pub powertrain_thermal: PowertrainThermalSystem,
+    #[serde(default)]
+    pub slow_states: SlowStateSystem,
     pub aero: AeroForces,
     pub sim_time: f64,
     pub physics_hz: i32,
@@ -77,6 +80,7 @@ impl VehicleState {
             tire_wear: TireWearSystem::new_with_axles(&config.tires.tire_wear),
             brake_thermal: BrakeThermalSystem::new(&config.brakes.brake_thermal),
             powertrain_thermal: PowertrainThermalSystem::new(&config.powertrain.powertrain_thermal),
+            slow_states: SlowStateSystem::from_execution_environment(),
             aero: AeroForces::zero(),
             sim_time: 0.0,
             physics_hz: 120,
@@ -228,10 +232,19 @@ impl VehicleSimulator {
         self.config.fuel.set_current_kg(target_kg);
     }
 
+    pub fn select_slow_state_backend(&mut self, backend: SlowStateBackend) {
+        self.state.slow_states.flush_pending(&self.config, &mut self.state.tire_thermal,
+            &mut self.state.brake_thermal, &mut self.state.powertrain_thermal);
+        self.state.slow_states.backend = backend;
+        self.state.slow_states.cached_tire_modifiers = None;
+    }
+
     /// Pit-service tire change: fits a fresh cold set (zero wear, initial
     /// pressure and ambient temperature). Brake and powertrain thermal state
     /// stay untouched because only the tires come off the car.
     pub fn replace_tire_set(&mut self) {
+        self.state.slow_states.flush_tires(&self.config, &mut self.state.tire_thermal);
+        self.state.slow_states.cached_tire_modifiers = None;
         self.state
             .tire_wear
             .reset_with_axles(&self.config.tires.tire_wear);
@@ -364,13 +377,16 @@ impl VehicleSimulator {
             dt,
         );
         let vehicle_speed_ms = st.linear_velocity.length();
-        let brake_duct_drag_n = st.brake_thermal.total_duct_drag_force_n(
-            &cfg.brakes.brake_thermal,
-            cfg.aerodynamics.air_density,
-            vehicle_speed_ms,
-        );
-        st.powertrain_thermal
-            .update_available_engine_torque_fraction(&cfg.powertrain.powertrain_thermal);
+        let brake_duct_drag_n = if st.slow_states.backend == SlowStateBackend::Simplified {
+            st.brake_thermal.update_cooling_ducts(&cfg.brakes.brake_thermal,
+                cfg.aerodynamics.air_density, vehicle_speed_ms)
+        } else {
+            st.brake_thermal.total_duct_drag_force_n(&cfg.brakes.brake_thermal,
+                cfg.aerodynamics.air_density, vehicle_speed_ms)
+        };
+        if st.slow_states.backend == SlowStateBackend::Standard {
+            st.powertrain_thermal.update_available_engine_torque_fraction(&cfg.powertrain.powertrain_thermal);
+        }
         let available_engine_torque_fraction =
             st.powertrain_thermal.available_engine_torque_fraction;
         // FUEL-100: an empty tank cuts positive engine torque (engine braking
@@ -391,7 +407,18 @@ impl VehicleSimulator {
         // Pressure/thermal mechanical modifiers from the CURRENT tick's tire
         // thermal state (pressure N drives mechanics/forces N; heat updates the
         // pressure for the next tick).
-        let mut thermal_modifiers = [
+        let mut thermal_modifiers = if st.slow_states.backend == SlowStateBackend::Simplified {
+            if let Some(cached) = st.slow_states.cached_tire_modifiers { cached } else {
+                let computed = std::array::from_fn(|index| {
+                    let wheel = WheelIndex::ALL[index];
+                    st.tire_thermal.mechanical_modifiers(wheel, &cfg.tires.tire_pressure,
+                        cfg.tires.tire_thermal.for_wheel(wheel), cfg.tires.pressure_mechanics)
+                });
+                st.slow_states.cached_tire_modifiers = Some(computed);
+                computed
+            }
+        } else {
+            [
             st.tire_thermal.mechanical_modifiers(
                 WheelIndex::FrontLeft,
                 &cfg.tires.tire_pressure,
@@ -416,7 +443,8 @@ impl VehicleSimulator {
                 &cfg.tires.tire_thermal.rear,
                 cfg.tires.pressure_mechanics,
             ),
-        ];
+        ]
+        };
         for wheel in WheelIndex::ALL {
             thermal_modifiers[wheel as usize].wear_grip_scale =
                 st.tire_wear.wheels[wheel as usize].wear_grip_scale;
@@ -782,8 +810,11 @@ impl VehicleSimulator {
     /// Burn fuel for one tick. Flow is the mechanical-power term (BSFC) plus the
     /// idle term; an empty tank stops combustion and the torque cutoff in
     /// `solve_forces` keeps positive engine torque at zero until a refill.
-    fn advance_thermal_systems(configuration: &VehicleConfig, state: &mut VehicleState,
+    pub fn advance_thermal_systems(configuration: &VehicleConfig, state: &mut VehicleState,
         context: &CoupledThermalAdvanceContext, brake_dissipated_energy_joules: Option<[f64; 4]>) -> Result<(), String> {
+        if state.slow_states.backend == SlowStateBackend::Simplified {
+            return crate::slow_states::advance_after_mechanics(configuration, state, context, brake_dissipated_energy_joules);
+        }
         let wheel_spin_before_radians_per_second = context.wheel_spin_before_radians_per_second;
         let wheel_lateral_slip_metres_per_second = context.wheel_lateral_slip_metres_per_second;
         let thermal_modifiers = context.thermal_modifiers;

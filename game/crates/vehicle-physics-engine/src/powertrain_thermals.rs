@@ -357,24 +357,8 @@ impl PowertrainThermalSystem {
         );
     }
 
-    pub fn advance_temperatures(
-        &mut self,
-        config: &PowertrainThermalConfig,
-        input: PowertrainThermalInput,
-        delta_time_seconds: f64,
-    ) {
-        self.engine_block_temperature_celsius = finite_or(
-            self.engine_block_temperature_celsius,
-            config.initial_engine_block_temperature_celsius,
-        );
-        self.water_temperature_celsius = finite_or(
-            self.water_temperature_celsius,
-            config.initial_water_temperature_celsius,
-        );
-        self.oil_temperature_celsius = finite_or(
-            self.oil_temperature_celsius,
-            config.initial_oil_temperature_celsius,
-        );
+    pub fn advance_temperatures(&mut self, config: &PowertrainThermalConfig,
+        input: PowertrainThermalInput, delta_time_seconds: f64) {
         let delta_time_seconds = if delta_time_seconds.is_finite() {
             delta_time_seconds.clamp(MINIMUM_THERMAL_STEP_SECONDS, MAXIMUM_THERMAL_STEP_SECONDS)
         } else {
@@ -390,6 +374,30 @@ impl PowertrainThermalSystem {
         let generated_engine_heat_watts = finite_nonnegative(
             config.idle_heat_generation_watts
                 + mechanical_power_watts * config.heat_generation_per_mechanical_power,
+        );
+        self.advance_generated_heat(config, input.ambient_temperature_celsius,
+            generated_engine_heat_watts, delta_time_seconds);
+    }
+
+    pub fn advance_accumulated_heat(&mut self, config: &PowertrainThermalConfig,
+        ambient_temperature_celsius: f64, energy_joules: f64, duration_seconds: f64) {
+        self.advance_generated_heat(config, ambient_temperature_celsius, energy_joules / duration_seconds, duration_seconds);
+        self.update_available_engine_torque_fraction(config);
+    }
+
+    fn advance_generated_heat(&mut self, config: &PowertrainThermalConfig,
+        ambient_temperature_celsius: f64, generated_engine_heat_watts: f64, delta_time_seconds: f64) {
+        self.engine_block_temperature_celsius = finite_or(
+            self.engine_block_temperature_celsius,
+            config.initial_engine_block_temperature_celsius,
+        );
+        self.water_temperature_celsius = finite_or(
+            self.water_temperature_celsius,
+            config.initial_water_temperature_celsius,
+        );
+        self.oil_temperature_celsius = finite_or(
+            self.oil_temperature_celsius,
+            config.initial_oil_temperature_celsius,
         );
         let generated_exhaust_heat_watts =
             generated_engine_heat_watts * config.exhaust_heat_fraction;
@@ -408,7 +416,7 @@ impl PowertrainThermalSystem {
             0.0,
         );
         let ambient_temperature_celsius = finite_or(
-            input.ambient_temperature_celsius,
+            ambient_temperature_celsius,
             config.initial_water_temperature_celsius,
         );
         let water_total_cooling_conductance_watts_per_kelvin = finite_nonnegative(

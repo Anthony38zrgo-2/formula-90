@@ -5,6 +5,7 @@ param(
     [ValidateSet('standard', 'simplified')][string]$AerodynamicsBackend = 'simplified',
     [ValidateSet('standard', 'simplified')][string]$SuspensionBackend = 'simplified',
     [ValidateSet('standard', 'simplified')][string]$TireBackend = 'simplified',
+    [ValidateSet('standard', 'simplified')][string]$SlowStateBackend = 'simplified',
     [switch]$AerodynamicsComparison,
     [string]$AerodynamicsComparisonOutput,
     [ValidateRange(0, 7200)][int]$AerodynamicsComparisonMaximumSeconds = 0,
@@ -14,6 +15,7 @@ param(
     [switch]$Smoke,
     [switch]$SmokeAerodynamics,
     [switch]$SmokeTires,
+    [switch]$SmokeSlowStates,
     [switch]$SmokePitStop,
     [switch]$SmokeAudio,
     [switch]$SmokeBackground,
@@ -26,7 +28,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
+if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokeSlowStates -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
     throw 'Aerodynamics comparison requires the original Fuji vehicle session without physical-world or diagnostic overrides.'
 }
 if ($PhysicalWorldPackage -and $AerodynamicsBackend -ne 'standard') {
@@ -38,15 +40,17 @@ if ($PhysicalWorldPackage -and $SuspensionBackend -ne 'standard') {
 if ($PhysicalWorldPackage -and $TireBackend -ne 'standard') {
     throw 'Simplified tires are available only with Godot rigid-body integration.'
 }
+$env:FORMULA90_SLOW_STATE_BACKEND = $SlowStateBackend
 $env:FORMULA90_TIRE_BACKEND = $TireBackend
 $env:FORMULA90_SUSPENSION_BACKEND = $SuspensionBackend
 $env:FORMULA90_AERODYNAMICS_BACKEND = $AerodynamicsBackend
 $env:FORMULA90_AERODYNAMICS_COMPARISON = if ($AerodynamicsComparison) { '1' } else { '0' }
-if ($PhysicalWorldPackage -and ($Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
+if ($PhysicalWorldPackage -and ($Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokeSlowStates -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
     throw '-PhysicalWorldPackage requires a vehicle session. Use the dedicated physical-world native test for candidate smoke validation.'
 }
 $root = Split-Path -Parent $PSScriptRoot
 $game = Join-Path $root 'game'
+$env:FORMULA90_SLOW_STATE_CONFIGURATION = Join-Path $game 'data/config/slow_state_updates.json'
 $liveries = @{
     original = @{
         Scene = 'res://scenes/runtime/vehicle_test_session.tscn'
@@ -75,6 +79,19 @@ if ($AerodynamicsComparison) {
         backend = $AerodynamicsBackend
         suspension_backend = $SuspensionBackend
         tire_backend = $TireBackend
+        slow_state_backend = $SlowStateBackend
+        slow_state_update_frequencies = (Get-Content -LiteralPath (Join-Path $root 'game/data/config/slow_state_updates.json') -Raw | ConvertFrom-Json)
+        slow_state_update_configuration_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'game/data/config/slow_state_updates.json') -Algorithm SHA256).Hash
+        slow_state_source_sha256 = @(
+            'game/crates/vehicle-physics-engine/src/slow_states.rs',
+            'game/crates/vehicle-physics-engine/src/tire_thermals.rs',
+            'game/crates/vehicle-physics-engine/src/brake_thermals.rs',
+            'game/crates/vehicle-physics-engine/src/powertrain_thermals.rs',
+            'game/crates/vehicle-physics-engine/src/tire_wear.rs',
+            'game/crates/vehicle-physics-engine/src/simulation.rs'
+        ) | ForEach-Object {
+            @{ path = $_; sha256 = (Get-FileHash -LiteralPath (Join-Path $root $_) -Algorithm SHA256).Hash }
+        }
         tire_source_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'game/crates/vehicle-physics-engine/src/tire.rs') -Algorithm SHA256).Hash
         suspension_contact_rays = 12
         vehicle_count = 1
@@ -252,7 +269,7 @@ if ($SmokeAudio) {
     & $godot --headless --path $game --script 'res://tests/smoke_test_vehicle_audio.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }
-if ($SmokeAerodynamics -or $SmokeTires) {
+if ($SmokeAerodynamics -or $SmokeTires -or $SmokeSlowStates) {
     & $godot --headless --path $game --script 'res://tests/smoke_test_aerodynamics_backends.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }

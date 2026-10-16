@@ -1,0 +1,5 @@
+{
+  "tire_frequency_hertz": 20.0,
+  "brake_frequency_hertz": 10.0,
+  "powertrain_frequency_hertz": 10.0
+}

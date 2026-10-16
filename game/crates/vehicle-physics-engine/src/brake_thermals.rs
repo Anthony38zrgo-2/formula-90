@@ -445,6 +445,31 @@ impl BrakeThermalSystem {
             .sum()
     }
 
+    pub fn update_cooling_ducts(&mut self, configuration: &BrakeThermalConfig, density: f64, speed: f64) -> f64 {
+        let front = evaluate_duct_flow(&configuration.front_duct, density, speed);
+        let rear = evaluate_duct_flow(&configuration.rear_duct, density, speed);
+        for wheel in WheelIndex::ALL {
+            self.wheels[wheel as usize].duct = if wheel.is_front() { front } else { rear };
+        }
+        2.0 * (front.drag_force_n + rear.drag_force_n)
+    }
+
+    pub fn record_mechanical_energy(&mut self, wheel: WheelIndex, input: BrakeThermalInput, energy_joules: f64, duration_seconds: f64) {
+        let state = &mut self.wheels[wheel as usize];
+        state.applied_brake_torque_nm = finite_nonnegative(input.applied_brake_torque_nm);
+        state.wheel_spin_pre_rad_s = finite_signed(input.wheel_spin_pre_rad_s);
+        state.wheel_spin_post_rad_s = finite_signed(input.wheel_spin_post_rad_s);
+        state.brake_power_w = finite_nonnegative(energy_joules / duration_seconds);
+        state.brake_energy_j += energy_joules;
+    }
+
+    pub fn advance_accumulated_work(&mut self, wheel: WheelIndex, configuration: &BrakeThermalConfig,
+        input: BrakeThermalInput, energy_joules: f64, duration_seconds: f64,
+        duct: BrakeDuctFlowState, tire_heat: BrakeToTireHeat) {
+        self.step_with_mechanical_power(wheel, configuration, input, energy_joules / duration_seconds,
+            duration_seconds, Some(duct), Some(tire_heat), false);
+    }
+
     pub fn step_after_braking(
         &mut self,
         wheel: WheelIndex,
@@ -456,7 +481,7 @@ impl BrakeThermalSystem {
         let average_wheel_spin_radians_per_second =
             ((input.wheel_spin_pre_rad_s + input.wheel_spin_post_rad_s) * 0.5).abs();
         self.step_with_mechanical_power(wheel, cfg, input,
-            input.applied_brake_torque_nm.abs() * average_wheel_spin_radians_per_second, dt)
+            input.applied_brake_torque_nm.abs() * average_wheel_spin_radians_per_second, dt, None, None, true)
     }
 
     pub fn step_after_mechanical_work(
@@ -473,7 +498,7 @@ impl BrakeThermalSystem {
             return Err("Invalid brake mechanical work or physical duration".into());
         }
         Ok(self.step_with_mechanical_power(wheel, configuration, input,
-            dissipated_energy_joules / duration_seconds, duration_seconds))
+            dissipated_energy_joules / duration_seconds, duration_seconds, None, None, true))
     }
 
     fn step_with_mechanical_power(
@@ -483,24 +508,29 @@ impl BrakeThermalSystem {
         input: BrakeThermalInput,
         brake_power_w: f64,
         duration_seconds: f64,
+        prepared_duct: Option<BrakeDuctFlowState>,
+        prepared_tire_heat: Option<BrakeToTireHeat>,
+        record_mechanical_work: bool,
     ) -> BrakeToTireHeat {
         let wheel_index = wheel as usize;
         let axle = axle_config(configuration, wheel);
         let duct_cfg = duct_config(configuration, wheel);
         let state = &mut self.wheels[wheel_index];
 
-        let duct = evaluate_duct_flow(duct_cfg, input.air_density_kg_m3, input.vehicle_speed_ms);
+        let duct = prepared_duct.unwrap_or_else(|| evaluate_duct_flow(duct_cfg, input.air_density_kg_m3, input.vehicle_speed_ms));
         state.duct = duct;
 
+        if record_mechanical_work {
         state.applied_brake_torque_nm = finite_nonnegative(input.applied_brake_torque_nm);
         state.wheel_spin_pre_rad_s = finite_signed(input.wheel_spin_pre_rad_s);
         state.wheel_spin_post_rad_s = finite_signed(input.wheel_spin_post_rad_s);
         state.brake_power_w = finite_nonnegative(brake_power_w);
         state.brake_energy_j = finite_nonnegative(state.brake_energy_j + state.brake_power_w * duration_seconds);
+        }
 
         let resolved = axle.resolve();
         state.resolved_rotor_capacity_j_k = resolved.rotor_capacity_j_k;
-        let generated_heat_w = state.brake_power_w * configuration.braking_heat_fraction.clamp(0.0, 1.0);
+        let generated_heat_w = finite_nonnegative(brake_power_w) * configuration.braking_heat_fraction.clamp(0.0, 1.0);
         let rotor_heat_w = generated_heat_w * resolved.rotor_heat_fraction;
         // The non-rotor share (historically the caliper direct-heat path) is
         // deposited directly on the rim node so total heat is conserved in
@@ -509,8 +539,8 @@ impl BrakeThermalSystem {
 
         let q_rotor_rim = axle.rotor_to_rim_w_k.max(0.0) * (state.disc_c - state.rim_c);
         let q_rim_to_carcass =
-            axle.rim_to_tire_carcass_w_k * (state.rim_c - input.tire_carcass_temperature_c);
-        let q_rim_to_gas = axle.rim_to_tire_gas_w_k * (state.rim_c - input.tire_gas_temperature_c);
+            prepared_tire_heat.map(|heat| heat.carcass_heat_w).unwrap_or_else(|| axle.rim_to_tire_carcass_w_k * (state.rim_c - input.tire_carcass_temperature_c));
+        let q_rim_to_gas = prepared_tire_heat.map(|heat| heat.gas_heat_w).unwrap_or_else(|| axle.rim_to_tire_gas_w_k * (state.rim_c - input.tire_gas_temperature_c));
 
         let speed_ratio = if resolved.cooling_reference_speed_ms > 0.0 {
             input.vehicle_speed_ms.abs() / resolved.cooling_reference_speed_ms

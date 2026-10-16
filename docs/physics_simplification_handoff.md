@@ -1,5 +1,9 @@
 # Handoff: aerodynamics and suspension simplification
 
+## P4 continuation: simplified slow states
+
+Read `docs/slow_state_simplification.md` for the audit, multirate implementation and validation limits. The canonical launcher adds independent `-SlowStateBackend standard|simplified`, defaults simplified, and retains original physics as reference. Rates are 120 Hz mechanics and 20/10/10 Hz thermal updates; work and wear remain per tick. Sixteen candidate and 55 relevant integration tests pass. Isolated thermal cost falls 33.840 percent; no whole-simulation improvement is established. Full clean rebuild and four canonical startup scenarios passed; fifteen Rust and three DSP copies plus BUILD/HEAD and dirty-source hashes were verified. Evidence: `scratch/slow_state_simplification/rebuild_report.json`. The first font-import crash resolved on canonical retry; human driving acceptance remains pending. This atomic P4 publication is based on 5166795a and preserves unrelated dirty work. Publication changes HEAD: rebuild native binaries and verify BUILD/HEAD parity before the next launch.
+
 ## Latest continuation: tire simplification experiment
 
 The user authorized a tire simplification experiment after the suspension comparison. Read `docs/tire_simplification_experiment.md` and the updated backlog before continuing. `tire.rs` now has Standard and two explicit Rust experimental backends. The selected candidate removes post-peak force memory, peak migration, asymmetric loss/recovery delays, minimum relaxation time and contact force ramp while retaining all requested force-envelope mechanics.
