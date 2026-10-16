@@ -56,6 +56,7 @@ fn artificial_driver_completes_opening_stint_on_flat_ground() {
         "../../../data/race_intelligence/solitary_driver_tuning.json"
     ))
     .unwrap();
+    tuning.live_grip_control.enabled = false;
     tuning.maximum_speed_metres_per_second = Some(60.0);
     let configuration = artificial_driver_configuration();
     let mut driver = AutonomousDriver::new(racing_line.clone(), tuning, &configuration).unwrap();
@@ -133,7 +134,7 @@ fn artificial_driver_completes_opening_stint_on_flat_ground() {
         maximum_speed_metres_per_second = maximum_speed_metres_per_second.max(current_speed);
         maximum_gear = maximum_gear.max(vehicle_snapshot.telemetry.gear);
         let command = driver
-            .command(DriverObservation {
+            .command(DriverObservation { vehicle_dynamics: None,
                 position_x_metres: body_origin.x,
                 position_z_metres: body_origin.z,
                 heading_radians: vehicle_yaw_radians,

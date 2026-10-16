@@ -28,3 +28,10 @@ including tire load sensitivity, aerodynamic axle loads, braking, and gearing.
 The predictor owns explicit nominal grip reserves. Steering uses actual rack
 geometry. Recovery uses side-specific vehicle clearance and continuous slew;
 steering preview never advances the longitudinal braking target.
+
+`src/local_driver/live_grip_control.rs` owns the optional observation-driven
+capacity correction, state age checks and multirate planning schedule. Its
+frequencies and limits are required fields of `live_grip_control` in the driver
+JSON. Keep the static reference selectable. Canonical observation must read
+the active core entity rather than the inactive legacy vehicle simulator.
+The replay example measures controller cost only, not full-grid frame time.

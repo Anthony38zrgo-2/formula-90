@@ -89,13 +89,14 @@ fn projection_and_control_produce_finite_commands_on_fuji_start() {
     assert!(projection.arc_length_metres.is_finite());
     let first_x = first_waypoint.position_x_metres;
     let first_z = first_waypoint.position_z_metres;
-    let tuning = load_driver_tuning(include_str!(
+    let mut tuning = load_driver_tuning(include_str!(
         "../../../data/race_intelligence/solitary_driver_tuning.json"
     ))
     .unwrap();
+    tuning.live_grip_control.enabled = false;
     let mut driver = AutonomousDriver::new(racing_line, tuning, &vehicle_physics_engine::VehicleConfig::from_json_str(include_str!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")).unwrap()).unwrap();
     let command = driver
-        .command(DriverObservation {
+        .command(DriverObservation { vehicle_dynamics: None,
             position_x_metres: first_x,
             position_z_metres: first_z,
             heading_radians: 0.0,

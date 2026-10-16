@@ -213,6 +213,7 @@ void F194RustVehicle::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_physical_world_snapshot"), &F194RustVehicle::get_physical_world_snapshot);
 	ADD_SIGNAL(MethodInfo("physical_world_service_requested", PropertyInfo(Variant::STRING, "operation"), PropertyInfo(Variant::DICTIONARY, "parameters")));
 	ClassDB::bind_method(D_METHOD("solve_forces_for_state", "state"), &F194RustVehicle::solve_forces_for_state);
+	ClassDB::bind_method(D_METHOD("get_driver_state_snapshot", "include_capacity", "include_slow_state"), &F194RustVehicle::get_driver_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_tire_state_snapshot"), &F194RustVehicle::get_tire_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_brake_state_snapshot"), &F194RustVehicle::get_brake_state_snapshot);
 	ClassDB::bind_method(D_METHOD("get_engine_thermal_state_snapshot"), &F194RustVehicle::get_engine_thermal_state_snapshot);
@@ -286,6 +287,7 @@ bool F194RustVehicle::load_rust_dll() {
 	fn_create_from_json_ = reinterpret_cast<FnPhysicsCreateFromJson>(GetProcAddress(hDll, "f1_94_physics_create_from_json"));
 	physics_create_from_vehicle_profile_ = reinterpret_cast<PhysicsCreateFromVehicleProfileFunction>(GetProcAddress(hDll, "formula_one_physics_create_from_vehicle_profile_v1"));
 	fn_create_with_pos_ = reinterpret_cast<FnPhysicsCreateWithPos>(GetProcAddress(hDll, "f1_94_physics_create_with_pos"));
+	read_driver_tire_state_function_ = reinterpret_cast<ReadDriverTireStateFunction>(GetProcAddress(hDll, "formula_one_physics_read_driver_tire_state"));
 	fn_reset_ = reinterpret_cast<FnPhysicsReset>(GetProcAddress(hDll, "f1_94_physics_reset"));
 	fn_solve_forces_ = reinterpret_cast<FnPhysicsSolveForces>(GetProcAddress(hDll, "f1_94_physics_solve_forces"));
 	fn_step_ = reinterpret_cast<FnPhysicsStep>(GetProcAddress(hDll, "f1_94_physics_step"));
@@ -316,7 +318,7 @@ bool F194RustVehicle::load_rust_dll() {
 		return false;
 	}
 
-	if (!fn_solve_forces_ || !fn_destroy_ || !physics_create_from_vehicle_profile_) {
+	if (!fn_solve_forces_ || !fn_destroy_ || !physics_create_from_vehicle_profile_ || !read_driver_tire_state_function_) {
 		UtilityFunctions::printerr("[F194RustVehicle] Missing required exported symbols in vehicle_physics_engine.dll!");
 		unload_rust_dll();
 		return false;
@@ -2125,3 +2127,47 @@ void F194RustVehicle::set_core_powertrain_telemetry(const F90CoreFrameOut &p_fra
 }
 
 } // namespace godot
+
+namespace godot {
+
+Dictionary F194RustVehicle::get_driver_state_snapshot(bool include_capacity, bool include_slow_state) const {
+    Dictionary result;
+    if (physical_world_controlled || !sim_ptr_ || !read_driver_tire_state_function_) { return result; }
+    DriverTireStateSnapshot snapshot{};
+    if (bridge_controlled_) {
+        if (!core_driver_ || !core_driver_->read_driver_tire_state(&snapshot)) { return result; }
+    } else if (!read_driver_tire_state_function_(sim_ptr_, &snapshot)) { return result; }
+    const auto pack = [](const double *values) {
+        PackedFloat64Array result;
+        result.resize(4);
+        for (int wheel_index = 0; wheel_index < 4; ++wheel_index) { result.set(wheel_index, values[wheel_index]); }
+        return result;
+    };
+    Dictionary fast_state;
+    fast_state["wheel_normal_load_newtons"] = pack(snapshot.wheel_normal_load_newtons);
+    fast_state["wheel_combined_utilization"] = pack(snapshot.wheel_combined_utilization);
+    fast_state["wheel_combined_demand"] = pack(snapshot.wheel_combined_demand);
+    fast_state["wheel_slip_angle_radians"] = pack(snapshot.wheel_slip_angle_radians);
+    fast_state["wheel_peak_slip_angle_radians"] = pack(snapshot.wheel_peak_slip_angle_radians);
+    fast_state["front_steering_angle_radians"] = snapshot.front_steering_angle_radians;
+    result["fast_state"] = fast_state;
+    if (include_capacity) {
+        Dictionary capacity_state;
+        capacity_state["wheel_lateral_capacity_newtons"] = pack(snapshot.wheel_lateral_capacity_newtons);
+        capacity_state["wheel_longitudinal_capacity_newtons"] = pack(snapshot.wheel_longitudinal_capacity_newtons);
+        capacity_state["wheel_lateral_force_newtons"] = pack(snapshot.wheel_lateral_force_newtons);
+        capacity_state["wheel_longitudinal_force_newtons"] = pack(snapshot.wheel_longitudinal_force_newtons);
+        result["capacity_state"] = capacity_state;
+    }
+    if (include_slow_state) {
+        Dictionary slow_state;
+        slow_state["wheel_grip_scale"] = pack(snapshot.wheel_grip_scale);
+        slow_state["wheel_brake_efficiency"] = pack(snapshot.wheel_brake_efficiency);
+        slow_state["total_mass_kilograms"] = snapshot.total_mass_kilograms;
+        slow_state["front_weight_fraction"] = snapshot.front_weight_fraction;
+        result["slow_state"] = slow_state;
+    }
+    return result;
+}
+
+}

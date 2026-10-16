@@ -1,5 +1,13 @@
 # Autonomous driver correction and Fuji validation
 
+## Continuous pedals and utilization comparison (2026-10-16)
+
+The AI now uses continuous signed longitudinal demand, separate brake entry/release thresholds, progressive pedal actuation and acceleration-only braking anticipation. At fixed utilization 0.80, short brake pulses fell from 42 to 3 and abrupt accelerator cuts from 39 to zero; the flying lap changed from 1:10.350 to 1:12.083. The 0.85 and 0.90 variants completed Fuji in 1:10.383 and 1:09.100 respectively, with the same physical binaries, vehicle profiles and nominal grip calibration. Read `docs/autonomous_driver_longitudinal_control.md` for the controlled comparison, preserved 0.80 default and separate pre-existing coupled-world regression failure.
+
+## Latest canonical simplified-physics hotlap (2026-10-16)
+
+The canonical Godot rigid-body path with all four simplified backends completed two Fuji laps with the unrestricted Rust driver: standing lap 1:15.567, flying lap 1:10.350, maximum speed 296.379 km/h. Stability and automatic clutch remained enabled. A source-derived steering conversion is required because the historical AI harness uses coupled rack commands. Read `docs/simplified_autonomous_driver_fuji_validation.md` for evidence, adapter correction and limits. This result does not close the separate coupled-world or ten-lap race-AI gates described below.
+
 The solitary driver now follows a point ahead on the racing line, interpolated
 within a segment. It limits steering rate, combines proportional and integral
 speed feedback with maintenance throttle, and clears throttle when braking.

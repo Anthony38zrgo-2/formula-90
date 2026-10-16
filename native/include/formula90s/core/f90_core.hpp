@@ -1,5 +1,7 @@
 #pragma once
 
+#include "formula90s/vehicle/driver_tire_state.h"
+
 #include "formula90s/core/f90_core.h"
 
 #include <godot_cpp/classes/audio_server.hpp>
@@ -257,6 +259,7 @@ public:
 	/// Apply a runtime config (F90RuntimeConfig) to the facade entity — the GDScript
 	/// tuning panel / vehicle setters keep working in bridge-controlled mode.
 	void apply_runtime_config(const F90RuntimeConfig &cfg);
+    bool read_driver_tire_state(DriverTireStateSnapshot *output) const;
 	/// Pit-service refuel: leaves exactly `target_kg` in the entity tank.
 	void set_fuel_kg(double target_kg);
 	/// Pit-service tire change: fits a fresh cold set on the entity.
@@ -298,6 +301,7 @@ private:
 
 	void *dll_handle_ = nullptr;
 	void *core_ = nullptr;
+    ReadCoreDriverTireStateFunction read_driver_tire_state_function_ = nullptr;
 	uint32_t entity_id_ = 0;
 
 	// Single-handshake function pointers (see f90_core.h).

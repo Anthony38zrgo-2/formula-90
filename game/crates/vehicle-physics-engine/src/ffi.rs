@@ -1192,3 +1192,52 @@ mod layout_tests {
         assert_eq!(sim.state.transform.origin.x, 1.0);
     }
 }
+
+#[repr(C)]
+#[derive(Default, Clone, Copy)]
+pub struct DriverTireStateSnapshot {
+    pub wheel_normal_load_newtons: [f64; 4],
+    pub wheel_lateral_capacity_newtons: [f64; 4],
+    pub wheel_longitudinal_capacity_newtons: [f64; 4],
+    pub wheel_lateral_force_newtons: [f64; 4],
+    pub wheel_longitudinal_force_newtons: [f64; 4],
+    pub wheel_combined_utilization: [f64; 4],
+    pub wheel_combined_demand: [f64; 4],
+    pub wheel_slip_angle_radians: [f64; 4],
+    pub wheel_peak_slip_angle_radians: [f64; 4],
+    pub wheel_grip_scale: [f64; 4],
+    pub wheel_brake_efficiency: [f64; 4],
+    pub total_mass_kilograms: f64,
+    pub front_weight_fraction: f64,
+    pub front_steering_angle_radians: f64,
+}
+
+#[no_mangle]
+pub extern "C" fn formula_one_physics_read_driver_tire_state(
+    simulator_pointer: *const c_void,
+    output_pointer: *mut DriverTireStateSnapshot,
+) -> bool {
+    if simulator_pointer.is_null() || output_pointer.is_null() { return false; }
+    let simulator = unsafe { &*(simulator_pointer as *const VehicleSimulator) };
+    let mut snapshot = DriverTireStateSnapshot::default();
+    for wheel_index in 0..4 {
+        let tire = &simulator.state.tires.wheels[wheel_index];
+        let suspension = &simulator.state.suspension.wheels[wheel_index];
+        snapshot.wheel_normal_load_newtons[wheel_index] = if suspension.is_grounded { suspension.total_normal_force.max(0.0) } else { 0.0 };
+        snapshot.wheel_lateral_capacity_newtons[wheel_index] = if suspension.is_grounded { tire.lateral_capacity_newtons } else { 0.0 };
+        snapshot.wheel_longitudinal_capacity_newtons[wheel_index] = if suspension.is_grounded { tire.longitudinal_capacity_newtons } else { 0.0 };
+        snapshot.wheel_lateral_force_newtons[wheel_index] = tire.lateral_force;
+        snapshot.wheel_longitudinal_force_newtons[wheel_index] = tire.longitudinal_force;
+        snapshot.wheel_combined_utilization[wheel_index] = tire.combined_utilization;
+        snapshot.wheel_combined_demand[wheel_index] = tire.combined_demand;
+        snapshot.wheel_slip_angle_radians[wheel_index] = tire.effective_slip_angle_rad;
+        snapshot.wheel_peak_slip_angle_radians[wheel_index] = tire.effective_lateral_peak_slip_rad;
+        snapshot.wheel_grip_scale[wheel_index] = tire.mechanical_modifiers.grip_scale * tire.mechanical_modifiers.wear_grip_scale;
+        snapshot.wheel_brake_efficiency[wheel_index] = simulator.state.brake_thermal.wheels[wheel_index].efficiency;
+    }
+    snapshot.total_mass_kilograms = simulator.config.chassis.total_vehicle_mass(&simulator.config.tires, &simulator.config.fuel);
+    snapshot.front_weight_fraction = simulator.config.chassis.effective_front_weight_distribution(&simulator.config.tires, &simulator.config.fuel);
+    snapshot.front_steering_angle_radians = -(simulator.state.tires.wheels[0].steer_angle_rad + simulator.state.tires.wheels[1].steer_angle_rad) * 0.5;
+    unsafe { *output_pointer = snapshot; }
+    true
+}

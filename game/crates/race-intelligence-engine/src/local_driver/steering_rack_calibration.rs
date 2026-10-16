@@ -39,4 +39,34 @@ impl SteeringRackCalibration {
         let fraction = (angle - first.0) / (second.0 - first.0).max(1e-9);
         first.1 + fraction * (second.1 - first.1)
     }
+
+    pub fn canonical_command_mapping(&self, configuration: &VehicleConfig) -> Vec<f64> {
+        (0..=1000).map(|index| {
+            let driver_command = -1.0 + 2.0 * index as f64 / 1000.0;
+            let (mut lower_angle, mut upper_angle) = (-1.0, 1.0);
+            for _ in 0..64 {
+                let middle = (lower_angle + upper_angle) * 0.5;
+                if self.command_for_wheel_angle(middle) < driver_command {
+                    lower_angle = middle;
+                } else {
+                    upper_angle = middle;
+                }
+            }
+            let target_angle = -(lower_angle + upper_angle) * 0.5;
+            let (mut lower_command, mut upper_command) = (-1.0, 1.0);
+            for _ in 0..64 {
+                let middle = (lower_command + upper_command) * 0.5;
+                let angle = [WheelIndex::FrontLeft, WheelIndex::FrontRight].into_iter()
+                    .map(|wheel| vehicle_physics_engine::simulation::steering_angle_for_wheel_geo(
+                        configuration, wheel, middle, 0.0))
+                    .sum::<f64>() * 0.5;
+                if angle < target_angle {
+                    lower_command = middle;
+                } else {
+                    upper_command = middle;
+                }
+            }
+            (lower_command + upper_command) * 0.5
+        }).collect()
+    }
 }

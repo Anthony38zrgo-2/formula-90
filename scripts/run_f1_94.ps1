@@ -16,6 +16,8 @@ param(
     [switch]$SmokeAerodynamics,
     [switch]$SmokeTires,
     [switch]$SmokeSlowStates,
+    [string]$AutonomousDriverOutputDirectory,
+    [switch]$ObserveAutonomousDriver,
     [switch]$SmokePitStop,
     [switch]$SmokeAudio,
     [switch]$SmokeBackground,
@@ -28,6 +30,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($ObserveAutonomousDriver -and -not $AutonomousDriverOutputDirectory) {
+    throw '-ObserveAutonomousDriver requires -AutonomousDriverOutputDirectory.'
+}
+if ($AutonomousDriverOutputDirectory -and ($PhysicalWorldPackage -or $AerodynamicsComparison -or $ValidateRuntimeOnly -or $Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokeSlowStates -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
+    throw 'Autonomous Fuji validation requires the original canonical vehicle session without other diagnostic modes.'
+}
 if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokeSlowStates -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
     throw 'Aerodynamics comparison requires the original Fuji vehicle session without physical-world or diagnostic overrides.'
 }
@@ -267,6 +275,14 @@ if ($LASTEXITCODE -ne 0) {
 if ($SmokeAudio) {
     Write-Host "Ejecutando smoke de audio $variantLabel (commons + GEVP)..." -ForegroundColor Cyan
     & $godot --headless --path $game --script 'res://tests/smoke_test_vehicle_audio.gd' -- "--scene=$scene"
+    exit $LASTEXITCODE
+}
+if ($AutonomousDriverOutputDirectory) {
+    if ($ObserveAutonomousDriver) {
+        & $godot --windowed --resolution 1600x900 --path $game --script 'res://tests/test_simplified_autonomous_driver_fuji.gd' -- "--output=$AutonomousDriverOutputDirectory" '--observe'
+    } else {
+        & $godot --headless --fixed-fps 120 --path $game --script 'res://tests/test_simplified_autonomous_driver_fuji.gd' -- "--output=$AutonomousDriverOutputDirectory"
+    }
     exit $LASTEXITCODE
 }
 if ($SmokeAerodynamics -or $SmokeTires -or $SmokeSlowStates) {

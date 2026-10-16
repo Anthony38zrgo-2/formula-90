@@ -7,6 +7,7 @@ const TireStatusPanelScript := preload("res://scripts/hud/tire_status_panel.gd")
 const EngineTemperaturePanelScript := preload("res://scripts/hud/engine_temperature_panel.gd")
 const LapTimingPanelScript := preload("res://scripts/hud/lap_timing_panel.gd")
 const PitStopPanelScript := preload("res://scripts/hud/pit_stop_panel.gd")
+const DrivingControlsPanelScript := preload("res://scripts/hud/driving_controls_panel.gd")
 const DEFAULT_GAP := 10.0
 
 @export var vehicle_path: NodePath
@@ -25,6 +26,7 @@ var tire_status_panel: TireStatusPanel
 var engine_temperature_panel: EngineTemperaturePanel
 var lap_timing_panel: LapTimingPanel
 var pit_stop_panel: PitStopPanel
+var driving_controls_panel: Control
 
 func bind_runtime(
 		vehicle: Node,
@@ -53,6 +55,9 @@ func _ready() -> void:
 	_ensure_engine_temperature_panel()
 	_ensure_lap_timing_panel()
 	_ensure_pit_stop_panel()
+	driving_controls_panel = DrivingControlsPanelScript.new()
+	driving_controls_panel.name = "DrivingControlsPanel"
+	add_child(driving_controls_panel)
 	_apply_hud_layout()
 
 
@@ -62,7 +67,25 @@ func _process(delta: float) -> void:
 	_position_lap_timing_panel()
 	_position_pit_stop_panel()
 	_update_speed_gauge()
+	_update_driving_controls()
 	_update_aid_notification(delta)
+
+func _update_driving_controls() -> void:
+	if driving_controls_panel == null:
+		return
+	var display_scale := clampf(size.x / 1280.0, 0.65, 1.0)
+	driving_controls_panel.scale = Vector2.ONE * display_scale
+	driving_controls_panel.position = Vector2((size.x - driving_controls_panel.size.x * display_scale) * 0.5, size.y - driving_controls_panel.size.y * display_scale - 18.0)
+	if not is_instance_valid(_vehicle):
+		driving_controls_panel.visible = false
+		return
+	driving_controls_panel.visible = true
+	var steering := float(_vehicle.call("get_true_steering_amount")) if _vehicle.has_method("get_true_steering_amount") else 0.0
+	var accelerator_value: Variant = _vehicle.get("throttle_input")
+	var brake_value: Variant = _vehicle.get("brake_input")
+	var accelerator := float(accelerator_value) if accelerator_value != null else 0.0
+	var brake := float(brake_value) if brake_value != null else 0.0
+	driving_controls_panel.call("set_controls", steering, accelerator, brake)
 
 
 func _resolve_runtime_nodes() -> void:

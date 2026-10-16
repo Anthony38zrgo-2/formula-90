@@ -6,12 +6,14 @@ use super::speed_profile::SpeedProfileSample;
 
 #[derive(Clone, Copy)]
 pub struct PerformanceSample {
+    pub coasting_deceleration_metres_per_second_squared: f64,
     pub speed_metres_per_second: f64,
     pub lateral_acceleration_metres_per_second_squared: f64,
     pub braking_deceleration_metres_per_second_squared: f64,
 }
 
 pub struct VehiclePerformanceEnvelope {
+    axle_lateral_accelerations: Vec<[f64; 2]>,
     samples: Vec<PerformanceSample>,
     pub mechanical_maximum_speed_metres_per_second: f64,
     grip_utilization: f64,
@@ -37,6 +39,7 @@ impl VehiclePerformanceEnvelope {
             return Err("Vehicle mechanical speed or mass is invalid".into());
         }
         let mut samples = Vec::new();
+        let mut axle_lateral_accelerations = Vec::new();
         let sample_count = 100;
         for sample_index in 0..=sample_count {
             let speed = maximum_speed * sample_index as f64 / sample_count as f64;
@@ -54,6 +57,8 @@ impl VehiclePerformanceEnvelope {
                 tires.set_mechanical_state(configuration, wheel, load, 0.0, 0.0, 1.0);
                 axle_capacities[axle_index] += load * friction * tires.wheels[wheel_index].load_sensitivity_scale * nominal_tire_grip;
             }
+            axle_lateral_accelerations.push([axle_capacities[0] / (mass * front_distribution) * grip_utilization,
+                axle_capacities[1] / (mass * (1.0 - front_distribution)) * grip_utilization]);
             let lateral_capacity = (axle_capacities[0] / (mass * front_distribution))
                 .min(axle_capacities[1] / (mass * (1.0 - front_distribution))) * grip_utilization;
             let front_brake_force = configuration.brakes.max_brake_torque * configuration.brakes.front_brake_bias / configuration.tires.front_tire_radius;
@@ -65,10 +70,11 @@ impl VehiclePerformanceEnvelope {
                 return Err("Vehicle performance model produced invalid force capacity".into());
             }
             samples.push(PerformanceSample { speed_metres_per_second: speed,
+                coasting_deceleration_metres_per_second_squared: aerodynamics.drag_force.max(0.0) / mass,
                 lateral_acceleration_metres_per_second_squared: lateral_capacity,
                 braking_deceleration_metres_per_second_squared: braking_capacity });
         }
-        Ok(Self { samples, mechanical_maximum_speed_metres_per_second: maximum_speed, grip_utilization })
+        Ok(Self { axle_lateral_accelerations, samples, mechanical_maximum_speed_metres_per_second: maximum_speed, grip_utilization })
     }
 
     pub fn at_speed(&self, speed: f64) -> PerformanceSample {
@@ -78,10 +84,31 @@ impl VehiclePerformanceEnvelope {
         let first = self.samples[index];
         let second = self.samples[index + 1];
         PerformanceSample { speed_metres_per_second: speed,
+            coasting_deceleration_metres_per_second_squared: first.coasting_deceleration_metres_per_second_squared
+                + fraction * (second.coasting_deceleration_metres_per_second_squared - first.coasting_deceleration_metres_per_second_squared),
             lateral_acceleration_metres_per_second_squared: first.lateral_acceleration_metres_per_second_squared
                 + fraction * (second.lateral_acceleration_metres_per_second_squared - first.lateral_acceleration_metres_per_second_squared),
             braking_deceleration_metres_per_second_squared: first.braking_deceleration_metres_per_second_squared
                 + fraction * (second.braking_deceleration_metres_per_second_squared - first.braking_deceleration_metres_per_second_squared) }
+    }
+
+    pub fn axle_accelerations_at_speed(&self, speed: f64) -> [f64; 2] {
+        let coordinate = (speed / self.mechanical_maximum_speed_metres_per_second).clamp(0.0, 1.0) * (self.samples.len() - 1) as f64;
+        let index = (coordinate.floor() as usize).min(self.samples.len() - 2);
+        let fraction = coordinate - index as f64;
+        std::array::from_fn(|axle| self.axle_lateral_accelerations[index][axle]
+            + fraction * (self.axle_lateral_accelerations[index + 1][axle] - self.axle_lateral_accelerations[index][axle]))
+    }
+
+    pub fn corrected_at_speed(&self, speed: f64, axle_scales: [f64; 2], braking_efficiency: f64) -> PerformanceSample {
+        let mut sample = self.at_speed(speed);
+        let axle_accelerations = self.axle_accelerations_at_speed(speed);
+        sample.lateral_acceleration_metres_per_second_squared = (axle_accelerations[0] * axle_scales[0])
+            .min(axle_accelerations[1] * axle_scales[1]);
+        sample.braking_deceleration_metres_per_second_squared = sample.coasting_deceleration_metres_per_second_squared
+            + (sample.braking_deceleration_metres_per_second_squared - sample.coasting_deceleration_metres_per_second_squared)
+            * axle_scales[0].min(axle_scales[1]) * braking_efficiency;
+        sample
     }
 
     pub fn speed_profile(&self, waypoints: &[RacingLineWaypoint], lap_length: f64, speed_cap: Option<f64>) -> Result<Vec<SpeedProfileSample>, String> {

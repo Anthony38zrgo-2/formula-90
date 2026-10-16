@@ -1,5 +1,7 @@
 #pragma once
 
+#include "formula90s/vehicle/driver_tire_state.h"
+
 #include "formula90s/vehicle/formula90_physics.h"
 #include "formula90s/core/f90_core.h"
 #include "formula90s/sim/f90_sim_bridge.h"
@@ -68,6 +70,7 @@ class F194RustVehicle : public RigidBody3D {
 
 private:
 	void *sim_ptr_ = nullptr;
+    ReadDriverTireStateFunction read_driver_tire_state_function_ = nullptr;
 	void *dll_handle_ = nullptr;
 	bool inertia_initialized_ = false;
 	String physics_config_path_ = "res://data/vehicles/f1_2030/profiles/geometric/vehicle.json";
@@ -524,6 +527,7 @@ public:
 		const double speed_cooling_w_k[4]);
 	// Tire pressure + thermal snapshot for the HUD (no raw C structs leak out).
 	godot::Dictionary get_tire_state_snapshot() const;
+    godot::Dictionary get_driver_state_snapshot(bool include_capacity, bool include_slow_state) const;
 	godot::Dictionary get_brake_state_snapshot() const;
 	godot::Dictionary get_engine_thermal_state_snapshot() const;
 	godot::Dictionary get_fuel_state_snapshot() const;

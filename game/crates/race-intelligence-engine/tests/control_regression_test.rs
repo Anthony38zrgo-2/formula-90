@@ -13,7 +13,8 @@ const TUNING_DOCUMENT: &str =
 
 #[test]
 fn unrestricted_profile_has_finite_braking_targets_above_the_previous_speed_cap() {
-    let tuning = load_driver_tuning(include_str!("../../../data/race_intelligence/unrestricted_driver_tuning.json")).unwrap();
+    let mut tuning = load_driver_tuning(include_str!("../../../data/race_intelligence/unrestricted_driver_tuning.json")).unwrap();
+    tuning.live_grip_control.enabled = false;
     assert!(tuning.maximum_speed_metres_per_second.is_none());
     let line = load_racing_line_from_document(FUJI_DOCUMENT).unwrap();
     let configuration = vehicle_physics_engine::VehicleConfig::from_json_str(include_str!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")).unwrap();
@@ -62,10 +63,11 @@ fn pursuit_anticipates_curve_and_limits_actuator_changes() {
     document["waypoint_count"] = serde_json::json!(100);
     document["waypoints"] = serde_json::json!(waypoints);
     let line = load_racing_line_from_document(&document.to_string()).unwrap();
-    let tuning = load_driver_tuning(TUNING_DOCUMENT).unwrap();
+    let mut tuning = load_driver_tuning(TUNING_DOCUMENT).unwrap();
+    tuning.live_grip_control.enabled = false;
     let mut driver = AutonomousDriver::new(line, tuning, &vehicle_physics_engine::VehicleConfig::from_json_str(include_str!("../../../data/vehicles/f1_2030/f1_2030_v10_geometric.json")).unwrap()).unwrap();
     let command = driver
-        .command(DriverObservation {
+        .command(DriverObservation { vehicle_dynamics: None,
             position_x_metres: 100.0,
             position_z_metres: 0.0,
             heading_radians: std::f64::consts::PI,

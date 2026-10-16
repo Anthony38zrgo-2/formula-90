@@ -1358,3 +1358,48 @@ mod raw_contact_layout_tests {
         assert_eq!(size_of::<F90UnderfloorSample>(), 2416);
     }
 }
+
+#[no_mangle]
+pub extern "C" fn f90_core_read_driver_tire_state(
+    handle: *mut c_void,
+    entity_identifier: u32,
+    output: *mut vehicle_physics_engine::ffi::DriverTireStateSnapshot,
+) -> bool {
+    if handle.is_null() || output.is_null() { return false; }
+    let facade = facade_mut(handle);
+    if facade.physical_world_entity_identifier.is_some() { return false; }
+    let Some(entity) = facade.world.entities.iter().find(|entity| entity.id == entity_identifier) else { return false; };
+    vehicle_physics_engine::ffi::formula_one_physics_read_driver_tire_state(
+        &entity.sim as *const _ as *const c_void, output)
+}
+
+#[cfg(test)]
+mod driver_tire_snapshot_tests {
+    use super::*;
+
+    #[test]
+    fn driver_snapshot_reads_authoritative_entity_without_advancing_physics() {
+        let options = std::ffi::CString::new(r#"{"use_canonical":true,"enable_audio":false}"#).unwrap();
+        let mut errors = [0u8; 256];
+        let handle = unsafe { f90_core_create(options.as_ptr(), errors.as_mut_ptr(), errors.len() as u32) };
+        assert!(!handle.is_null());
+        let identifier = f90_core_spawn(handle);
+        let mut output = vehicle_physics_engine::ffi::DriverTireStateSnapshot::default();
+        assert!(!f90_core_read_driver_tire_state(std::ptr::null_mut(), identifier, &mut output));
+        assert!(!f90_core_read_driver_tire_state(handle, identifier + 1, &mut output));
+        assert!(!f90_core_read_driver_tire_state(handle, identifier, std::ptr::null_mut()));
+        let entity = &mut facade_mut(handle).world.entities[0];
+        let simulation_time = entity.sim.state.sim_time;
+        entity.sim.state.suspension.wheels[0].is_grounded = true;
+        entity.sim.state.suspension.wheels[0].total_normal_force = 2345.0;
+        entity.sim.state.tires.wheels[0].lateral_capacity_newtons = 3456.0;
+        assert!(f90_core_read_driver_tire_state(handle, identifier, &mut output));
+        assert_eq!(output.wheel_normal_load_newtons[0], 2345.0);
+        assert_eq!(output.wheel_lateral_capacity_newtons[0], 3456.0);
+        assert_eq!(facade_mut(handle).world.entities[0].sim.state.sim_time, simulation_time);
+        assert_eq!(std::mem::size_of_val(&output), 376);
+        facade_mut(handle).physical_world_entity_identifier = Some(1);
+        assert!(!f90_core_read_driver_tire_state(handle, identifier, &mut output));
+        unsafe { f90_core_destroy(handle); }
+    }
+}

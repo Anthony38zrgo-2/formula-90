@@ -64,6 +64,7 @@ fn recovery_uses_the_relevant_edge_and_remains_continuous() {
 fn steering_preview_does_not_select_a_future_braking_speed() {
     let line = load_racing_line_from_document(include_str!("../../../tracks/fuji76_77/metadata/racing_line.json")).unwrap();
     let mut tuning = load_driver_tuning(include_str!("../../../data/race_intelligence/unrestricted_driver_tuning.json")).unwrap();
+    tuning.live_grip_control.enabled = false;
     let configuration = configuration();
     let waypoint = line.waypoints[30].clone();
     let next = &line.waypoints[31];
@@ -74,7 +75,7 @@ fn steering_preview_does_not_select_a_future_braking_speed() {
     tuning.minimum_lookahead_metres = 28.0;
     tuning.maximum_lookahead_metres = 28.0;
     let mut far_driver = AutonomousDriver::new(line, tuning, &configuration).unwrap();
-    let observation = || DriverObservation {position_x_metres: waypoint.position_x_metres,
+    let observation = || DriverObservation { vehicle_dynamics: None,position_x_metres: waypoint.position_x_metres,
         position_z_metres: waypoint.position_z_metres, heading_radians: heading,
         speed_metres_per_second: 40.0, duration_seconds: 1.0 / 60.0, current_gear: 2};
     let near = near_driver.command(observation()).unwrap();
@@ -86,14 +87,15 @@ fn steering_preview_does_not_select_a_future_braking_speed() {
 #[test]
 fn acceleration_request_reaches_full_throttle_without_simultaneous_braking() {
     let line = load_racing_line_from_document(include_str!("../../../tracks/fuji76_77/metadata/racing_line.json")).unwrap();
-    let tuning = load_driver_tuning(include_str!("../../../data/race_intelligence/unrestricted_driver_tuning.json")).unwrap();
+    let mut tuning = load_driver_tuning(include_str!("../../../data/race_intelligence/unrestricted_driver_tuning.json")).unwrap();
+    tuning.live_grip_control.enabled = false;
     let waypoint = line.waypoints[0].clone();
     let next_waypoint = &line.waypoints[1];
     let heading = (waypoint.position_x_metres - next_waypoint.position_x_metres)
         .atan2(waypoint.position_z_metres - next_waypoint.position_z_metres);
     let mut driver = AutonomousDriver::new(line, tuning, &configuration()).unwrap();
     for tick in 0..120 {
-        let command = driver.command(DriverObservation {
+        let command = driver.command(DriverObservation { vehicle_dynamics: None,
             position_x_metres: waypoint.position_x_metres,
             position_z_metres: waypoint.position_z_metres,
             heading_radians: heading,
@@ -102,7 +104,9 @@ fn acceleration_request_reaches_full_throttle_without_simultaneous_braking() {
             current_gear: 1,
         }).unwrap();
         assert_eq!(command.brake_fraction, 0.0);
-        if tick >= 8 { assert_eq!(command.throttle_fraction, 1.0); }
+        if tick >= (60.0 / tuning.maximum_throttle_increase_per_second).ceil() as usize {
+            assert_eq!(command.throttle_fraction, 1.0);
+        }
     }
 }
 

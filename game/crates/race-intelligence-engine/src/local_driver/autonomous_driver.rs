@@ -1,12 +1,13 @@
 use super::driver_tuning::DriverTuning;
 use crate::track::path_projection::project_onto_path;
 use crate::track::path_reader::RacingLine;
-use crate::track::speed_profile::SpeedProfileSample;
+use super::longitudinal_control::LongitudinalController;
+use super::longitudinal_profile::LongitudinalProfile;
 use serde::{Deserialize, Serialize};
 use crate::track::vehicle_performance::VehiclePerformanceEnvelope;
 use vehicle_physics_engine::VehicleConfig;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct DriverObservation {
     pub position_x_metres: f64,
     pub position_z_metres: f64,
@@ -14,6 +15,8 @@ pub struct DriverObservation {
     pub speed_metres_per_second: f64,
     pub duration_seconds: f64,
     pub current_gear: i8,
+    #[serde(default)]
+    pub vehicle_dynamics: Option<super::live_grip_control::VehicleDynamicsObservation>,
 }
 
 #[derive(Serialize)]
@@ -29,18 +32,21 @@ pub struct DriverCommand {
     pub vehicle_half_width_metres: f64,
     pub planned_acceleration_metres_per_second_squared: f64,
     pub recovery_speed_fraction: f64,
+    pub longitudinal_demand_fraction: f64,
+    pub regularized_acceleration_metres_per_second_squared: f64,
+    pub braking_engaged: bool,
+    pub live_grip: super::live_grip_control::LiveGripDiagnostics,
 }
 
 pub struct AutonomousDriver {
     pub racing_line: RacingLine,
-    profile: Vec<SpeedProfileSample>,
+    profile: LongitudinalProfile,
     previous_segment: usize,
     previous_steering: f64,
-    previous_throttle: f64,
-    previous_brake: f64,
-    integrated_speed_error: f64,
+    longitudinal_control: LongitudinalController,
     tuning: DriverTuning,
     performance: VehiclePerformanceEnvelope,
+    live_grip: super::live_grip_control::LiveGripController,
     recovery_speed_fraction: f64,
     vehicle_half_width_metres: f64,
     wheelbase_metres: f64,
@@ -58,15 +64,16 @@ impl AutonomousDriver {
         let steering_calibration = super::steering_rack_calibration::SteeringRackCalibration::from_configuration(configuration)?;
         let vehicle_half_width_metres = (configuration.chassis.front_track * 0.5 + configuration.tires.front_tire_width * 0.5)
             .max(configuration.chassis.rear_track * 0.5 + configuration.tires.rear_tire_width * 0.5);
-        Ok(Self { racing_line, profile, previous_segment: usize::MAX, previous_steering: 0.0,
-            previous_throttle: 0.0, previous_brake: 0.0, integrated_speed_error: 0.0, tuning, performance,
+        let profile = LongitudinalProfile::new(profile, racing_line.lap_length_metres);
+        Ok(Self { live_grip: super::live_grip_control::LiveGripController::default(), racing_line, profile, previous_segment: usize::MAX, previous_steering: 0.0,
+            longitudinal_control: LongitudinalController::default(), tuning, performance,
             recovery_speed_fraction: 1.0, vehicle_half_width_metres, wheelbase_metres: configuration.chassis.wheelbase, steering_calibration })
     }
 
     pub fn command(&mut self, observation: DriverObservation) -> Result<DriverCommand, String> {
         if !observation.duration_seconds.is_finite()
             || observation.duration_seconds <= 0.0
-            || observation.duration_seconds > 0.1
+            || observation.duration_seconds > self.tuning.live_grip_control.maximum_fast_state_age_seconds
             || !observation.speed_metres_per_second.is_finite()
             || observation.speed_metres_per_second < 0.0
         {
@@ -81,6 +88,15 @@ impl AutonomousDriver {
             self.previous_segment,
         )?;
         self.previous_segment = projection.segment_start_index;
+        if self.tuning.live_grip_control.enabled {
+            let planning_due = self.live_grip.observe(observation.vehicle_dynamics.ok_or("Live grip control requires vehicle dynamics")?,
+                &self.tuning, observation.speed_metres_per_second, self.wheelbase_metres, &self.performance, observation.duration_seconds)?;
+            if planning_due {
+                self.profile.update_local_capacity(&self.racing_line.waypoints, projection.segment_start_index,
+                    observation.speed_metres_per_second, &self.performance, self.live_grip.axle_scales,
+                    self.live_grip.brake_efficiency, &self.tuning);
+            }
+        }
         let lookahead_metres =
             (observation.speed_metres_per_second * self.tuning.lookahead_time_seconds).clamp(
                 self.tuning.minimum_lookahead_metres,
@@ -115,7 +131,10 @@ impl AutonomousDriver {
         let heading_error = observation.heading_radians - target_heading;
         let distance_metres = relative_x_metres.hypot(relative_z_metres).max(1.0);
         let desired_wheel_angle = (2.0 * self.wheelbase_metres * heading_error.sin() / distance_metres).atan();
-        let requested_steering = self.steering_calibration.command_for_wheel_angle(desired_wheel_angle);
+        let coordinated_wheel_angle = if self.tuning.live_grip_control.enabled {
+            self.live_grip.coordinate_steering(desired_wheel_angle, &self.tuning)
+        } else { desired_wheel_angle };
+        let requested_steering = self.steering_calibration.command_for_wheel_angle(coordinated_wheel_angle);
         let maximum_change =
             self.tuning.maximum_steering_change_per_second * observation.duration_seconds;
         self.previous_steering = requested_steering.clamp(-1.0, 1.0).clamp(
@@ -123,10 +142,9 @@ impl AutonomousDriver {
             self.previous_steering + maximum_change,
         );
         let waypoint = &self.racing_line.waypoints[projection.segment_start_index];
-        let next_profile_index = (projection.segment_start_index + 1) % self.profile.len();
-        let current_sample = self.profile[projection.segment_start_index];
-        let next_sample = self.profile[next_profile_index];
-        let segment_length = (next_sample.arc_length_metres - current_sample.arc_length_metres).rem_euclid(self.racing_line.lap_length_metres);
+        let next_profile_index = (projection.segment_start_index + 1) % self.racing_line.waypoints.len();
+        let segment_length = (self.racing_line.waypoints[next_profile_index].lap_distance_metres
+            - waypoint.lap_distance_metres).rem_euclid(self.racing_line.lap_length_metres);
         let segment_fraction = (segment_distance_metres / segment_length).clamp(0.0, 1.0);
         let next_waypoint = &self.racing_line.waypoints[next_profile_index];
         let left_width = waypoint.width_left_metres + segment_fraction * (next_waypoint.width_left_metres - waypoint.width_left_metres);
@@ -137,61 +155,42 @@ impl AutonomousDriver {
         let recovery_change = self.tuning.recovery_speed_change_per_second * observation.duration_seconds;
         self.recovery_speed_fraction = requested_recovery.clamp(self.recovery_speed_fraction - recovery_change,
             self.recovery_speed_fraction + recovery_change);
-        let interpolated_speed_squared = current_sample.target_speed_metres_per_second.powi(2)
-            + segment_fraction * (next_sample.target_speed_metres_per_second.powi(2) - current_sample.target_speed_metres_per_second.powi(2));
-        let target_speed = interpolated_speed_squared.max(0.0).sqrt() * self.recovery_speed_fraction;
-        let planned_acceleration = (next_sample.target_speed_metres_per_second.powi(2)
-            - current_sample.target_speed_metres_per_second.powi(2)) / (2.0 * segment_length);
-        let speed_error = target_speed - observation.speed_metres_per_second;
-        let integration_allowed = (speed_error < 0.0 && self.previous_throttle > 0.0)
-            || (speed_error >= 0.0 && self.previous_throttle < 1.0
-                && speed_error <= self.tuning.speed_tracking_deadband_metres_per_second);
-        if speed_error.abs() < self.tuning.integrator_active_speed_error_metres_per_second && integration_allowed {
-            self.integrated_speed_error =
-                (self.integrated_speed_error + speed_error * observation.duration_seconds).clamp(
-                    -self.tuning.maximum_integrated_speed_error,
-                    self.tuning.maximum_integrated_speed_error,
-                );
-        } else if speed_error.abs() >= self.tuning.integrator_active_speed_error_metres_per_second {
-            self.integrated_speed_error = 0.0;
+        let (profile_target_speed, profile_acceleration) = self.profile.demand_at(
+            projection.arc_length_metres,
+            observation.speed_metres_per_second,
+            &self.tuning.longitudinal_control,
+        );
+        let transient_speed_fraction = if self.tuning.live_grip_control.enabled {
+            self.live_grip.transient_speed_fraction
+        } else { 1.0 };
+        let target_speed = profile_target_speed * self.recovery_speed_fraction * transient_speed_fraction;
+        let planned_acceleration = profile_acceleration * self.recovery_speed_fraction.powi(2);
+        let current_performance = if self.tuning.live_grip_control.enabled {
+            self.performance.corrected_at_speed(observation.speed_metres_per_second, self.live_grip.axle_scales, self.live_grip.brake_efficiency)
+        } else { self.performance.at_speed(observation.speed_metres_per_second) };
+        let previous_pedal = self.longitudinal_control.signed_pedal_fraction;
+        let (mut throttle_fraction, mut brake_fraction) = self.longitudinal_control.advance(
+            &self.tuning,
+            target_speed - observation.speed_metres_per_second,
+            planned_acceleration,
+            current_performance,
+            observation.duration_seconds,
+        );
+        if self.tuning.live_grip_control.enabled {
+            if self.live_grip.diagnostics.critical_grip_state && throttle_fraction > self.tuning.live_grip_control.critical_throttle_fraction {
+                let allowed_throttle = (previous_pedal.max(0.0) - self.tuning.maximum_throttle_decrease_per_second * observation.duration_seconds)
+                    .max(self.tuning.live_grip_control.critical_throttle_fraction);
+                throttle_fraction = throttle_fraction.min(allowed_throttle);
+                self.longitudinal_control.signed_pedal_fraction = throttle_fraction;
+            }
+            let brake_capacity = (current_performance.braking_deceleration_metres_per_second_squared
+                - current_performance.coasting_deceleration_metres_per_second_squared).max(f64::EPSILON);
+            brake_fraction = brake_fraction.min((self.live_grip.available_braking_deceleration / brake_capacity).clamp(0.0, 1.0));
         }
-        let pedal_demand = self.tuning.maintenance_throttle_fraction
-            + self.tuning.speed_proportional_gain * speed_error
-            + self.tuning.speed_integral_gain * self.integrated_speed_error;
-        let braking_capacity = self.performance.at_speed(observation.speed_metres_per_second).braking_deceleration_metres_per_second_squared;
-        let planned_brake = if planned_acceleration < 0.0 && speed_error < self.tuning.speed_tracking_deadband_metres_per_second {
-            -planned_acceleration / braking_capacity
-        } else { 0.0 };
-        let requested_brake = if speed_error < -self.tuning.speed_tracking_deadband_metres_per_second || planned_brake > 0.0 {
-            (planned_brake + (-speed_error - self.tuning.speed_tracking_deadband_metres_per_second).max(0.0)
-                * self.tuning.speed_proportional_gain / braking_capacity).clamp(0.0, 1.0)
-        } else { 0.0 };
-        let brake_fraction = requested_brake.clamp(
-            (self.previous_brake - self.tuning.maximum_brake_decrease_per_second * observation.duration_seconds).max(0.0),
-            (self.previous_brake + self.tuning.maximum_brake_increase_per_second * observation.duration_seconds).min(1.0));
-        self.previous_brake = brake_fraction;
-        let throttle_target = if brake_fraction > 0.0 {
-            0.0
-        } else if speed_error > self.tuning.speed_tracking_deadband_metres_per_second {
-            1.0
-        } else {
-            pedal_demand.clamp(0.0, 1.0)
-        };
-        self.previous_throttle = if brake_fraction > 0.0 {
-            0.0
-        } else {
-            throttle_target.clamp(
-                self.previous_throttle
-                    - observation.duration_seconds
-                        * self.tuning.maximum_throttle_decrease_per_second,
-                self.previous_throttle
-                    + observation.duration_seconds
-                        * self.tuning.maximum_throttle_increase_per_second,
-            )
-        };
         Ok(DriverCommand {
+            live_grip: self.live_grip.diagnostics,
             steering_fraction: self.previous_steering,
-            throttle_fraction: self.previous_throttle,
+            throttle_fraction,
             brake_fraction,
             gear_request: if observation.current_gear == 0
                 && observation.speed_metres_per_second < 1.0
@@ -207,6 +206,9 @@ impl AutonomousDriver {
             vehicle_half_width_metres: self.vehicle_half_width_metres,
             planned_acceleration_metres_per_second_squared: planned_acceleration,
             recovery_speed_fraction: self.recovery_speed_fraction,
+            longitudinal_demand_fraction: self.longitudinal_control.signed_pedal_fraction,
+            regularized_acceleration_metres_per_second_squared: self.longitudinal_control.regularized_acceleration_metres_per_second_squared,
+            braking_engaged: self.longitudinal_control.braking_engaged,
         })
     }
 }

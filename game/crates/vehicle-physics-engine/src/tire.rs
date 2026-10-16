@@ -57,6 +57,10 @@ pub struct WheelTireState {
     /// telemetry and diagnostics can distinguish demand from delivery.
     #[serde(default)]
     pub combined_demand: f64,
+    #[serde(default)]
+    pub lateral_capacity_newtons: f64,
+    #[serde(default)]
+    pub longitudinal_capacity_newtons: f64,
     /// Effective friction-budget utilization of the traction forces actually
     /// applied (0..=1). Never exceeds 1 by construction, including the GRIP-01
     /// smoothing band.
@@ -129,6 +133,8 @@ impl WheelTireState {
             limit_spin: false,
             reaction_torque: 0.0,
             combined_demand: 0.0,
+            lateral_capacity_newtons: 0.0,
+            longitudinal_capacity_newtons: 0.0,
             combined_utilization: 0.0,
             tire_regime: 0,
             post_peak_decay_lat: 0.0,
@@ -521,6 +527,8 @@ impl TireSystem {
 
         let fx_max = (mu * longitudinal_ratio * fz).max(1e-6);
         let fy_max = (mu * fz).max(1e-6);
+        state.lateral_capacity_newtons = fy_max;
+        state.longitudinal_capacity_newtons = fx_max;
         let stiffness_scale = (effective_stiffness.max(0.0) / 5.0)
             .clamp(0.15, 2.5)
             .sqrt();

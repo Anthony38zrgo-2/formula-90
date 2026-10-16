@@ -362,6 +362,7 @@ bool F90Core::load_dll() {
 	fn_create_ = reinterpret_cast<FnCoreCreate>(GetProcAddress(hDll, "f90_core_create"));
 	fn_destroy_ = reinterpret_cast<FnCoreDestroy>(GetProcAddress(hDll, "f90_core_destroy"));
 	fn_spawn_ = reinterpret_cast<FnCoreSpawn>(GetProcAddress(hDll, "f90_core_spawn"));
+	read_driver_tire_state_function_ = reinterpret_cast<ReadCoreDriverTireStateFunction>(GetProcAddress(hDll, "f90_core_read_driver_tire_state"));
 	fn_reset_ = reinterpret_cast<FnCoreReset>(GetProcAddress(hDll, "f90_core_reset"));
 	fn_apply_runtime_config_ = reinterpret_cast<FnCoreApplyRuntimeConfig>(GetProcAddress(hDll, "f90_core_apply_runtime_config"));
 	fn_set_fuel_kg_ = reinterpret_cast<FnCoreSetFuelKg>(GetProcAddress(hDll, "f90_core_set_fuel_kg"));
@@ -1358,4 +1359,11 @@ Dictionary F90Core::get_audio_worker_stats() const {
 	d["pump_entries"] = audio_pump_entries_;
 	d["pump_no_room"] = audio_pump_no_room_;
 	return d;
+}
+
+namespace godot {
+bool F90Core::read_driver_tire_state(DriverTireStateSnapshot *output) const {
+    return core_ && entity_id_ != 0 && read_driver_tire_state_function_
+        && read_driver_tire_state_function_(core_, entity_id_, output);
+}
 }
