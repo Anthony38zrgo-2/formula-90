@@ -351,6 +351,8 @@ impl PreparedGeometricSuspension {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuspensionSystem {
+    #[serde(skip)]
+    pub benchmark_evaluation_counts: Option<std::sync::Arc<[std::sync::atomic::AtomicU64; 4]>>,
     #[serde(default)]
     pub backend: SuspensionBackend,
     #[serde(skip)]
@@ -395,6 +397,7 @@ impl SuspensionSystem {
             eprintln!("SUSPENSION_BACKEND_READY backend=simplified contact_rays=12 prepared={}", simplified_prepared.is_some());
         }
         Self {
+            benchmark_evaluation_counts: None,
             wheels: [
                 WheelSuspensionState::new(config, WheelIndex::FrontLeft),
                 WheelSuspensionState::new(config, WheelIndex::FrontRight),
@@ -463,6 +466,7 @@ impl SuspensionSystem {
         motion_ratio: f64, rod_reference_newtons: f64, body: crate::types::Transform3D,
         centre_of_gravity_local: Vec3,
     ) -> crate::suspension_loads::GeoWheelWrench {
+        if let Some(counts) = &self.benchmark_evaluation_counts { counts[2].fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
         if self.backend == SuspensionBackend::Simplified {
             if let Some(prepared) = &self.simplified_prepared {
                 if let Some(wrench) = prepared.wheel_wrench(geometry, wheel, travel_metres,
@@ -471,6 +475,7 @@ impl SuspensionSystem {
                     spring_force_newtons, damping_force_newtons, auxiliary_force_newtons,
                     motion_ratio, rod_reference_newtons, body, centre_of_gravity_local) {
                     if wrench.paths.balance_residual_n <= 1.0 && !wrench.paths.singular {
+                        if let Some(counts) = &self.benchmark_evaluation_counts { counts[3].fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
                         return wrench;
                     }
                 }
@@ -989,6 +994,10 @@ impl SuspensionSystem {
         let prepared_start = self.simplified_prepared.as_ref()
             .filter(|_| self.backend == SuspensionBackend::Simplified)
             .and_then(|prepared| prepared.geometry_at(wheel, q0));
+        if let Some(counts) = &self.benchmark_evaluation_counts {
+            counts[0].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if prepared_start.is_some() { counts[1].fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
+        }
         let (s0, r0, invalid0) = if let Some((solution, motion_ratio)) = prepared_start {
             (solution.damper_compression, motion_ratio, false)
         } else { match (

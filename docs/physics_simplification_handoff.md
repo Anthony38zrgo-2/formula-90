@@ -6,8 +6,22 @@ The user authorized a tire simplification experiment after the suspension compar
 
 One symmetric distance-based slip relaxation is justified by measurement: without it, 5/9 wheel-feedback cases fail at 120 Hz; with it, all tested cases pass at 120/240/480 Hz. The controlled 22-car comparison measures 21.337 percent lower isolated tire cost, but no demonstrated whole-simulation gain for the selected candidate. All 54 reference unit, 47 existing integration and 10 candidate tests passed.
 
-The user requested commit and native rebuild. The tire source commit now includes the canonical `-TireBackend standard|simplified` selection and `-SmokeTires` startup check; simplified maps to the single-relaxation candidate. By explicit user request, the canonical launcher now defaults aero, suspension and tires to simplified; direct Rust defaults remain standard. Rebuild/startup evidence is retained under `scratch/tire_native_rebuild/`; human handling feedback remains pending. Do not claim runtime, visual, strict handling-parity or FPS validation from this experiment. Existing suspension and unrelated dirty work were preserved.
+The user requested commit and native rebuild. The tire source commit now includes the canonical `-TireBackend standard|simplified` selection and `-SmokeTires` startup check; simplified maps to the single-relaxation candidate. By explicit user request, the canonical launcher now defaults aero, suspension and tires to simplified; direct Rust defaults remain standard. Rebuild/startup evidence at `3f1194c0` is retained under `scratch/tire_native_rebuild/`: fifteen Rust library copies and three DSP copies matched; simplified/default, canonical Fuji and standard-reference smokes passed. The first font-import crash was resolved by a canonical retry. Publication changes HEAD, so refresh native identity and verify parity before another drive. Human handling feedback for the tire candidate remains pending. Do not claim runtime, visual, strict handling-parity or FPS validation from this experiment. Existing suspension and unrelated dirty work were preserved.
 
+
+## Current continuation: controlled suspension comparison completed
+
+On 2026-10-15 the player explicitly reported no defects and authorized the 22-car A/B comparison. The player-feedback prerequisite is resolved. The comparison was executed on `main-clean` at source base `432ffd98` plus pending benchmark/counter changes, with 22 cars at 120 Hz, twelve rays and simplified aero held constant.
+
+Read `docs/suspension_rust_grid_benchmark.md` and the updated machine-readable backlog first. Complete standalone simulation mean fell from 7.059052 ms to 0.200061 ms per 22-car tick (97.166 percent); the paired 95 percent reduction interval is [96.910, 97.403] percent. Preparation rose from about 127 ms to 2805 ms for the grid. These are Rust flat-road results, not measured game frame-rate gains.
+
+All finite-state/contact/motion gates passed. Free integration nevertheless showed transient paired differences up to 488.876 N in wheel load, 2.329371 mm in travel and 0.421954 m/s in speed. Prescribed-motion force replay had only 0.022571 N maximum normal-load difference. The cause of free-trajectory divergence is not established; review it before asserting strict handling equivalence or promoting B. No physical tuning was made by the benchmark. The user subsequently requested simplified aero, suspension and tires as the canonical launcher defaults.
+
+The runner, optional coverage counters, report and continuation updates are included in the user-requested source publication. Preserve the dirty checkout and installed binaries. Do not rerun the benchmark merely because the historical instructions below still describe it as deferred. Next steps are result review and any explicitly requested diagnosis or source publication. A canonical game launch still requires native rebuild and source parity.
+
+## Historical handoff snapshot
+
+The remaining sections record the previous delivery state and its original evidence. Pending-player and deferred-benchmark statements below are superseded by the current continuation above.
 
 
 Updated 2026-10-15. Workspace: `D:/Formula90s`. Continue on `main-clean`; implementation commit: `5192b56e8f9801fa5da23849a8ba02acc9d41c31`. This handoff is committed immediately after it for the requested remote review. Resolve current HEAD again before continuing; the validation build was recorded at base `1baa06d0d4e2fa9f70bb7cd487714b83bd95f41b` with the matching implementation then uncommitted. Read the repository and affected-folder `AGENTS.md` instructions before editing.
@@ -33,7 +47,7 @@ The machine-readable continuation backlog is `docs/physics_simplification_backlo
 | File | Responsibility |
 |---|---|
 | `game/crates/vehicle-physics-engine/src/suspension.rs` | Owns `SuspensionBackend`, prepared-cache lifecycle, shared vertical dynamics and A/B wrench dispatch. Standard remains default. Backend survives serialization; skipped immutable caches rebuild before stepping. |
-| `game/crates/vehicle-physics-engine/src/simplified_suspension.rs` | Separate B module: 129 travel samples per corner, 33 steering samples over Ã‚Â±0.8 radians, interpolated poses/motion ratios and prepared linear link-force responses. Includes three candidate tests. |
+| `game/crates/vehicle-physics-engine/src/simplified_suspension.rs` | Separate B module: 129 travel samples per corner, 33 steering samples over ±0.8 radians, interpolated poses/motion ratios and prepared linear link-force responses. Includes three candidate tests. |
 | `game/crates/vehicle-physics-engine/src/suspension_loads.rs` | Shared anchor reactions and real equilibrium checks; optional prepared response replaces matrix elimination in B. Standard calls retain the original solve. |
 | `game/crates/vehicle-physics-engine/src/simulation.rs` | Both grounded and airborne geometric force paths call the selected suspension wrench backend. |
 | `scripts/run_f1_94.ps1` | Adds `-SuspensionBackend standard\|simplified`, sets the execution environment, rejects simplified suspension with `-PhysicalWorldPackage`, records source hashes and twelve-ray metadata. Keeps canonical validation. |

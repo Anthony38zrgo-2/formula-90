@@ -8,17 +8,20 @@
   "validation_base_head": "1baa06d0d4e2fa9f70bb7cd487714b83bd95f41b",
   "source_state": "Suspension implementation committed in source_head; continuation documents accompany it in a subsequent documentation commit for the requested main-clean review",
   "integration_owner": "Existing Godot rigid body with Rust force evaluation",
-  "delivery_state": "suspension_implemented_awaiting_player_feedback",
+  "delivery_state": "suspension_and_tires_benchmarked_awaiting_results_review",
   "complete": false,
-  "human_driving_approval": "pending_explicit_feedback",
+  "human_driving_approval": "player_reported_no_defects_and_authorized_22_car_comparison",
   "decisions": {
     "same_branch_required": true,
     "suspension_contact_ray_count": 12,
-    "suspension_backends": ["standard", "simplified"],
+    "suspension_backends": [
+      "standard",
+      "simplified"
+    ],
     "first_player_test_vehicle_count": 1,
     "simulation_frequency_hertz": 120,
     "retained_aerodynamics_during_suspension_comparison": "simplified in both runs unless explicitly selected otherwise for both",
-    "twenty_two_car_benchmark_gate": "Player test and feedback first; do not start during this documentation handoff",
+    "twenty_two_car_benchmark_gate": "Resolved by explicit player feedback and authorization; controlled comparison executed",
     "coupled_world": "Separate workstream; simplified backends are rejected by the canonical physical-world launch"
   },
   "evidence": {
@@ -29,7 +32,12 @@
     "suspension_validation_report": "scratch/suspension_single_player_validation/validation_report.json",
     "suspension_unit_tests_passed": 27,
     "suspension_integration_tests_passed": 39,
-    "canonical_runtime_smokes": {"standard_suspension": "passed", "simplified_suspension": "passed", "wheel_rays_per_backend": 12, "vehicles_per_backend": 1},
+    "canonical_runtime_smokes": {
+      "standard_suspension": "passed",
+      "simplified_suspension": "passed",
+      "wheel_rays_per_backend": 12,
+      "vehicles_per_backend": 1
+    },
     "verified_installed_rust_library_copies": 15,
     "player_capture": {
       "directory": "scratch/suspension_comparison_simplified_20261015_172354",
@@ -41,9 +49,22 @@
       "moving_fraction": 0.8359833347504464,
       "performance_comparison_eligible": false,
       "reason": "Analyzer requires movement in at least 90 percent of measured rows; no matching standard suspension capture has been validated",
-      "human_feedback": "Not provided explicitly"
+      "human_feedback": "Player later explicitly reported no defects on 2026-10-15"
     },
     "live_godot_bridge": "Not connected; no visual or driving acceptance inferred from logs",
+    "player_feedback": {
+      "date": "2026-10-15",
+      "statement": "no hubo defectos, procede con la comparacion A/B con 22 coches"
+    },
+    "suspension_grid_comparison": {
+      "document": "docs/suspension_rust_grid_benchmark.md",
+      "directory": "scratch/suspension_grid_22_120_hertz_20261015_204653",
+      "source_base_head": "432ffd989d0645830daad4249434f30ee2d6e511",
+      "complete_simulation_mean_reduction_percent": 97.1658919977744,
+      "free_integration_maximum_normal_load_difference_newtons": 488.8760889776222,
+      "results_review": "pending",
+      "default_backend_promotion": "not_requested"
+    },
     "tire_simplification": {
       "document": "docs/tire_simplification_experiment.md",
       "directory": "scratch/tire_grid_22_120_hertz_20261015_220219",
@@ -62,67 +83,124 @@
       "candidate_tests_passed": 10,
       "isolated_tire_mean_reduction_percent": 21.336790741216262,
       "whole_simulation_gain_demonstrated": false,
-      "native_runtime_status": "Canonical launcher selection implemented; requested rebuild/startup verification recorded under scratch/tire_native_rebuild",
-      "publication": "Source commit requested; generated binaries excluded"
+      "native_runtime_status": "Rebuilt and verified at 3f1194c0: fifteen Rust and three DSP copies, default simplified smoke, canonical Fuji smoke and explicit standard smoke passed; refresh parity after publication",
+      "publication": "Tire implementation and simplified launcher defaults committed in 3f1194c0; full physics-workstream publication requested"
     }
   },
   "items": [
     {
       "identifier": "aerodynamics_implementation",
       "status": "implemented_committed",
-      "evidence": ["ae325a61", "docs/aerodynamics_comparison_single_player.md"],
+      "evidence": [
+        "ae325a61",
+        "docs/aerodynamics_comparison_single_player.md"
+      ],
       "remaining_acceptance": "Do not infer global performance improvement from isolated aerodynamic savings"
     },
     {
       "identifier": "aerodynamics_rust_grid_comparison",
       "status": "executed_committed",
-      "evidence": ["1baa06d0", "docs/aerodynamics_rust_grid_benchmark.md"],
+      "evidence": [
+        "1baa06d0",
+        "docs/aerodynamics_rust_grid_benchmark.md"
+      ],
       "result": "Isolated aero mean reduction 60.169 percent; complete simulation differences remain within measurement variation"
     },
     {
       "identifier": "suspension_implementation",
       "status": "implemented_committed_awaiting_human_review",
-      "evidence": ["docs/suspension_comparison_single_player.md", "scratch/suspension_single_player_validation/validation_report.json"],
-      "acceptance_criteria": ["Two selectable backends", "Twelve wheel contact rays in both modes", "Prepared geometry and link-force responses with standard fallback", "Preserve independent unsprung dynamics, springs, damping, anti-roll bars, stops and tire mechanics"]
+      "evidence": [
+        "docs/suspension_comparison_single_player.md",
+        "scratch/suspension_single_player_validation/validation_report.json"
+      ],
+      "acceptance_criteria": [
+        "Two selectable backends",
+        "Twelve wheel contact rays in both modes",
+        "Prepared geometry and link-force responses with standard fallback",
+        "Preserve independent unsprung dynamics, springs, damping, anti-roll bars, stops and tire mechanics"
+      ]
     },
     {
       "identifier": "player_driving_feedback",
-      "status": "next_awaiting_user_feedback",
-      "dependencies": ["suspension_implementation"],
-      "next_action": "Read the handoff, preserve the dirty checkout and obtain the player's findings from the completed Fuji test before tuning or promoting B",
-      "acceptance_criteria": ["Explicit feedback on curbs, braking, support changes, rebound and steering", "Record acceptance or a reproducible defect", "A closed session alone does not count as approval"]
+      "status": "completed_player_reported_no_defects",
+      "dependencies": [
+        "suspension_implementation"
+      ],
+      "next_action": "No repeat drive required by the received feedback; retain the explicit player statement as evidence",
+      "acceptance_criteria": [
+        "Explicit feedback on curbs, braking, support changes, rebound and steering",
+        "Record acceptance or a reproducible defect",
+        "A closed session alone does not count as approval"
+      ]
     },
     {
       "identifier": "suspension_regression_followup",
-      "status": "conditional_on_player_findings",
-      "dependencies": ["player_driving_feedback"],
-      "next_action": "For a reported driving defect, diagnose the physical cause and present the correction plan before changing physics",
-      "acceptance_criteria": ["Hold aerodynamics, profile, assists and contact resolution constant", "Compare against A", "Re-run affected gates after any correction"]
+      "status": "no_player_defect_reported_benchmark_divergence_recorded",
+      "dependencies": [
+        "player_driving_feedback"
+      ],
+      "next_action": "Review free-integration transient differences before asserting strict behavior parity; diagnose before any physical correction",
+      "acceptance_criteria": [
+        "Hold aerodynamics, profile, assists and contact resolution constant",
+        "Compare against A",
+        "Re-run affected gates after any correction"
+      ]
     },
     {
       "identifier": "single_player_comparable_captures",
       "status": "pending_if_runtime_performance_comparison_is_requested",
-      "dependencies": ["player_driving_feedback"],
+      "dependencies": [
+        "player_driving_feedback"
+      ],
       "next_action": "Collect fresh A/B driving captures with matching build and retained aero; preserve the existing below-threshold capture as evidence",
-      "acceptance_criteria": ["At least 120 measured ticks per mode", "Every measured tick advances", "At least 90 percent moving rows", "Matching source hashes, binaries, physical profile, processor and simulation frequency", "Do not trim stationary rows silently to manufacture eligibility"]
+      "acceptance_criteria": [
+        "At least 120 measured ticks per mode",
+        "Every measured tick advances",
+        "At least 90 percent moving rows",
+        "Matching source hashes, binaries, physical profile, processor and simulation frequency",
+        "Do not trim stationary rows silently to manufacture eligibility"
+      ]
     },
     {
       "identifier": "suspension_rust_grid_comparison",
-      "status": "deferred_until_player_feedback",
-      "dependencies": ["player_driving_feedback"],
-      "next_action": "After the player gate is resolved, extend the controlled Rust comparison to switch suspension while holding aerodynamics fixed; the current example switches aero only",
-      "acceptance_criteria": ["22 cars and fixed 120 Hz for both backends", "Actual modular F1 2030 physical profile", "Matching scenario, assists, contacts and warmup", "Alternating paired repetitions in optimized release", "Separate preparation cost from steady-state stepping", "Report finite state, forces, motion, fallback coverage and numerical differences", "Record source, executable hashes, processor and timing distributions", "Distinguish isolated suspension cost from complete simulation cost", "No claims of Fuji, collision, AI, audio or rendering coverage from an analytic flat-road runner"]
+      "status": "executed_awaiting_results_review",
+      "dependencies": [
+        "player_driving_feedback"
+      ],
+      "next_action": "Review measured timings, preparation cost, numerical divergence and scenario limitations in docs/suspension_rust_grid_benchmark.md",
+      "acceptance_criteria": [
+        "22 cars and fixed 120 Hz for both backends",
+        "Actual modular F1 2030 physical profile",
+        "Matching scenario, assists, contacts and warmup",
+        "Alternating paired repetitions in optimized release",
+        "Separate preparation cost from steady-state stepping",
+        "Report finite state, forces, motion, fallback coverage and numerical differences",
+        "Record source, executable hashes, processor and timing distributions",
+        "Distinguish isolated suspension cost from complete simulation cost",
+        "No claims of Fuji, collision, AI, audio or rendering coverage from an analytic flat-road runner"
+      ],
+      "evidence": [
+        "docs/suspension_rust_grid_benchmark.md",
+        "scratch/suspension_grid_22_120_hertz_20261015_204653/summary.json"
+      ]
     },
     {
       "identifier": "source_publication",
       "status": "committed_for_requested_remote_review",
-      "dependencies": ["suspension_implementation"],
+      "dependencies": [
+        "suspension_implementation"
+      ],
       "next_action": "Verify origin/main-clean contains the implementation and handoff commits; rebuild before the next runtime launch because publication changes HEAD",
-      "acceptance_criteria": ["Same main-clean branch", "Inspect cached diff before committing", "Exclude generated libraries, BUILD_SOURCE, caches, scratch captures and foreign changes", "A new HEAD requires rebuild and canonical parity checks before another game launch"]
+      "acceptance_criteria": [
+        "Same main-clean branch",
+        "Inspect cached diff before committing",
+        "Exclude generated libraries, BUILD_SOURCE, caches, scratch captures and foreign changes",
+        "A new HEAD requires rebuild and canonical parity checks before another game launch"
+      ]
     },
     {
       "identifier": "tire_simplification_implementation",
-      "status": "source_publication_requested",
+      "status": "implemented_committed",
       "evidence": [
         "docs/tire_simplification_experiment.md",
         "game/crates/vehicle-physics-engine/src/tire.rs",
@@ -158,12 +236,12 @@
     },
     {
       "identifier": "tire_single_player_validation",
-      "status": "canonical_selection_ready_pending_rebuild_and_player_feedback",
+      "status": "canonical_runtime_verified_pending_player_feedback",
       "dependencies": [
         "tire_relaxation_necessity",
         "tire_rust_grid_comparison"
       ],
-      "next_action": "Finish requested native rebuild and startup gates, then obtain player feedback using run_f1_94.ps1 -TireBackend simplified",
+      "next_action": "After refreshing native identity for the publication commit, obtain player feedback through the canonical launcher; all three simplified backends are now the requested defaults",
       "acceptance_criteria": [
         "Preserve canonical BUILD/HEAD checks, twelve wheel rays and equal aero/suspension selections",
         "Canonical launcher defaults to simplified; keep standard explicitly selectable and reject simplified tires with the optional coupled world",
