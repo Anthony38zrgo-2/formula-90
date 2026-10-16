@@ -51,6 +51,9 @@ def main():
     simplified_metadata, simplified_summary, simplified_metrics = load_session(arguments.simplified_directory, "simplified", backend_field)
     if standard_metadata.get(retained_backend_field, "standard") != simplified_metadata.get(retained_backend_field, "standard"):
         raise ValueError(f"Incompatible retained physics backend: {retained_backend_field}")
+    for retained_tire_field in ["tire_backend", "tire_source_sha256"]:
+        if standard_metadata.get(retained_tire_field, "standard" if retained_tire_field == "tire_backend" else None) != simplified_metadata.get(retained_tire_field, "standard" if retained_tire_field == "tire_backend" else None):
+            raise ValueError(f"Incompatible tire metadata: {retained_tire_field}")
     if standard_metadata.get("suspension_source_sha256") != simplified_metadata.get("suspension_source_sha256"):
         raise ValueError("Incompatible uncommitted suspension source")
     if standard_metadata.get("suspension_contact_rays", 12) != simplified_metadata.get("suspension_contact_rays", 12):

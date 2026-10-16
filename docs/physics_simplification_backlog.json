@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "updated_on": "2026-10-15",
-  "workstream": "Aerodynamics and suspension A/B simplification",
+  "workstream": "Aerodynamics, suspension and tire simplification experiments",
   "handoff": "docs/physics_simplification_handoff.md",
   "source_branch": "main-clean",
   "source_head": "5192b56e8f9801fa5da23849a8ba02acc9d41c31",
@@ -43,7 +43,28 @@
       "reason": "Analyzer requires movement in at least 90 percent of measured rows; no matching standard suspension capture has been validated",
       "human_feedback": "Not provided explicitly"
     },
-    "live_godot_bridge": "Not connected; no visual or driving acceptance inferred from logs"
+    "live_godot_bridge": "Not connected; no visual or driving acceptance inferred from logs",
+    "tire_simplification": {
+      "document": "docs/tire_simplification_experiment.md",
+      "directory": "scratch/tire_grid_22_120_hertz_20261015_220219",
+      "source_base_head": "432ffd989d0645830daad4249434f30ee2d6e511",
+      "selected_candidate": "SimplifiedWithRelaxation",
+      "removed": [
+        "post_peak_force_memory",
+        "cross_axis_peak_migration",
+        "asymmetric_loss_and_recovery_delays",
+        "minimum_relaxation_time_floor",
+        "contact_force_time_ramp"
+      ],
+      "retained_single_relaxation_reason": "No-relaxation wheel feedback fails 5 of 9 cases at 120 Hz; single symmetric distance-based relaxation passes all 9 and all tested 240/480 Hz cases",
+      "unit_tests_passed": 54,
+      "existing_integration_tests_passed": 47,
+      "candidate_tests_passed": 10,
+      "isolated_tire_mean_reduction_percent": 21.336790741216262,
+      "whole_simulation_gain_demonstrated": false,
+      "native_runtime_status": "Canonical launcher selection implemented; requested rebuild/startup verification recorded under scratch/tire_native_rebuild",
+      "publication": "Source commit requested; generated binaries excluded"
+    }
   },
   "items": [
     {
@@ -98,6 +119,56 @@
       "dependencies": ["suspension_implementation"],
       "next_action": "Verify origin/main-clean contains the implementation and handoff commits; rebuild before the next runtime launch because publication changes HEAD",
       "acceptance_criteria": ["Same main-clean branch", "Inspect cached diff before committing", "Exclude generated libraries, BUILD_SOURCE, caches, scratch captures and foreign changes", "A new HEAD requires rebuild and canonical parity checks before another game launch"]
+    },
+    {
+      "identifier": "tire_simplification_implementation",
+      "status": "source_publication_requested",
+      "evidence": [
+        "docs/tire_simplification_experiment.md",
+        "game/crates/vehicle-physics-engine/src/tire.rs",
+        "game/crates/vehicle-physics-engine/tests/tire_simplification_test.rs"
+      ],
+      "acceptance_criteria": [
+        "Preserve combined slip, load sensitivity, pure longitudinal/lateral curves, camber, aligning torque and progressive sliding envelope",
+        "Remove post-peak force history, peak migration and redundant loss/recovery time filters",
+        "Keep standard selectable and default while evaluating the candidate"
+      ]
+    },
+    {
+      "identifier": "tire_relaxation_necessity",
+      "status": "executed_single_symmetric_relaxation_justified",
+      "dependencies": [
+        "tire_simplification_implementation"
+      ],
+      "evidence": [
+        "scratch/tire_grid_22_120_hertz_20261015_220219/report.json"
+      ],
+      "result": "Single relaxation retained because it resolves wheel-feedback settling failures of the instantaneous variant; no other grip-memory layer retained"
+    },
+    {
+      "identifier": "tire_rust_grid_comparison",
+      "status": "executed_awaiting_results_review",
+      "dependencies": [
+        "tire_simplification_implementation"
+      ],
+      "evidence": [
+        "docs/tire_simplification_experiment.md"
+      ],
+      "result": "22 vehicles at 120 Hz; isolated tire reduction 21.337 percent for selected candidate; complete-workload intervals include zero"
+    },
+    {
+      "identifier": "tire_single_player_validation",
+      "status": "canonical_selection_ready_pending_rebuild_and_player_feedback",
+      "dependencies": [
+        "tire_relaxation_necessity",
+        "tire_rust_grid_comparison"
+      ],
+      "next_action": "Finish requested native rebuild and startup gates, then obtain player feedback using run_f1_94.ps1 -TireBackend simplified",
+      "acceptance_criteria": [
+        "Preserve canonical BUILD/HEAD checks, twelve wheel rays and equal aero/suspension selections",
+        "Canonical launcher defaults to simplified; keep standard explicitly selectable and reject simplified tires with the optional coupled world",
+        "Receive explicit driving feedback before promotion or physical tuning"
+      ]
     }
   ]
 }

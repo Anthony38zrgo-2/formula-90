@@ -2,8 +2,9 @@
 param(
     [string]$GodotPath,
     [string]$PhysicalWorldPackage,
-    [ValidateSet('standard', 'simplified')][string]$AerodynamicsBackend = 'standard',
-    [ValidateSet('standard', 'simplified')][string]$SuspensionBackend = 'standard',
+    [ValidateSet('standard', 'simplified')][string]$AerodynamicsBackend = 'simplified',
+    [ValidateSet('standard', 'simplified')][string]$SuspensionBackend = 'simplified',
+    [ValidateSet('standard', 'simplified')][string]$TireBackend = 'simplified',
     [switch]$AerodynamicsComparison,
     [string]$AerodynamicsComparisonOutput,
     [ValidateRange(0, 7200)][int]$AerodynamicsComparisonMaximumSeconds = 0,
@@ -12,6 +13,7 @@ param(
     [switch]$ValidateRuntimeOnly,
     [switch]$Smoke,
     [switch]$SmokeAerodynamics,
+    [switch]$SmokeTires,
     [switch]$SmokePitStop,
     [switch]$SmokeAudio,
     [switch]$SmokeBackground,
@@ -24,7 +26,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAerodynamics -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
+if ($AerodynamicsComparison -and ($PhysicalWorldPackage -or $Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase -or $Livery -ne 'original')) {
     throw 'Aerodynamics comparison requires the original Fuji vehicle session without physical-world or diagnostic overrides.'
 }
 if ($PhysicalWorldPackage -and $AerodynamicsBackend -ne 'standard') {
@@ -33,10 +35,14 @@ if ($PhysicalWorldPackage -and $AerodynamicsBackend -ne 'standard') {
 if ($PhysicalWorldPackage -and $SuspensionBackend -ne 'standard') {
     throw 'Simplified suspension is available only with Godot rigid-body integration.'
 }
+if ($PhysicalWorldPackage -and $TireBackend -ne 'standard') {
+    throw 'Simplified tires are available only with Godot rigid-body integration.'
+}
+$env:FORMULA90_TIRE_BACKEND = $TireBackend
 $env:FORMULA90_SUSPENSION_BACKEND = $SuspensionBackend
 $env:FORMULA90_AERODYNAMICS_BACKEND = $AerodynamicsBackend
 $env:FORMULA90_AERODYNAMICS_COMPARISON = if ($AerodynamicsComparison) { '1' } else { '0' }
-if ($PhysicalWorldPackage -and ($Smoke -or $SmokeAerodynamics -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
+if ($PhysicalWorldPackage -and ($Smoke -or $SmokeAerodynamics -or $SmokeTires -or $SmokePitStop -or $SmokeAudio -or $SmokeBackground -or $TestPhysics -or $Parity -or $ValidateRuntimeOnly -or $FujiMainStraightShowcase)) {
     throw '-PhysicalWorldPackage requires a vehicle session. Use the dedicated physical-world native test for candidate smoke validation.'
 }
 $root = Split-Path -Parent $PSScriptRoot
@@ -68,6 +74,8 @@ if ($AerodynamicsComparison) {
         source = (& git -C $root rev-parse HEAD).Trim()
         backend = $AerodynamicsBackend
         suspension_backend = $SuspensionBackend
+        tire_backend = $TireBackend
+        tire_source_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'game/crates/vehicle-physics-engine/src/tire.rs') -Algorithm SHA256).Hash
         suspension_contact_rays = 12
         vehicle_count = 1
         physics_frequency_hertz = 120
@@ -244,7 +252,7 @@ if ($SmokeAudio) {
     & $godot --headless --path $game --script 'res://tests/smoke_test_vehicle_audio.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }
-if ($SmokeAerodynamics) {
+if ($SmokeAerodynamics -or $SmokeTires) {
     & $godot --headless --path $game --script 'res://tests/smoke_test_aerodynamics_backends.gd' -- "--scene=$scene"
     exit $LASTEXITCODE
 }

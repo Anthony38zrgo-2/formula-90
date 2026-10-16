@@ -1,5 +1,15 @@
 # Handoff: aerodynamics and suspension simplification
 
+## Latest continuation: tire simplification experiment
+
+The user authorized a tire simplification experiment after the suspension comparison. Read `docs/tire_simplification_experiment.md` and the updated backlog before continuing. `tire.rs` now has Standard and two explicit Rust experimental backends. The selected candidate removes post-peak force memory, peak migration, asymmetric loss/recovery delays, minimum relaxation time and contact force ramp while retaining all requested force-envelope mechanics.
+
+One symmetric distance-based slip relaxation is justified by measurement: without it, 5/9 wheel-feedback cases fail at 120 Hz; with it, all tested cases pass at 120/240/480 Hz. The controlled 22-car comparison measures 21.337 percent lower isolated tire cost, but no demonstrated whole-simulation gain for the selected candidate. All 54 reference unit, 47 existing integration and 10 candidate tests passed.
+
+The user requested commit and native rebuild. The tire source commit now includes the canonical `-TireBackend standard|simplified` selection and `-SmokeTires` startup check; simplified maps to the single-relaxation candidate. By explicit user request, the canonical launcher now defaults aero, suspension and tires to simplified; direct Rust defaults remain standard. Rebuild/startup evidence is retained under `scratch/tire_native_rebuild/`; human handling feedback remains pending. Do not claim runtime, visual, strict handling-parity or FPS validation from this experiment. Existing suspension and unrelated dirty work were preserved.
+
+
+
 Updated 2026-10-15. Workspace: `D:/Formula90s`. Continue on `main-clean`; implementation commit: `5192b56e8f9801fa5da23849a8ba02acc9d41c31`. This handoff is committed immediately after it for the requested remote review. Resolve current HEAD again before continuing; the validation build was recorded at base `1baa06d0d4e2fa9f70bb7cd487714b83bd95f41b` with the matching implementation then uncommitted. Read the repository and affected-folder `AGENTS.md` instructions before editing.
 
 ## Start here
@@ -23,7 +33,7 @@ The machine-readable continuation backlog is `docs/physics_simplification_backlo
 | File | Responsibility |
 |---|---|
 | `game/crates/vehicle-physics-engine/src/suspension.rs` | Owns `SuspensionBackend`, prepared-cache lifecycle, shared vertical dynamics and A/B wrench dispatch. Standard remains default. Backend survives serialization; skipped immutable caches rebuild before stepping. |
-| `game/crates/vehicle-physics-engine/src/simplified_suspension.rs` | Separate B module: 129 travel samples per corner, 33 steering samples over ±0.8 radians, interpolated poses/motion ratios and prepared linear link-force responses. Includes three candidate tests. |
+| `game/crates/vehicle-physics-engine/src/simplified_suspension.rs` | Separate B module: 129 travel samples per corner, 33 steering samples over Ã‚Â±0.8 radians, interpolated poses/motion ratios and prepared linear link-force responses. Includes three candidate tests. |
 | `game/crates/vehicle-physics-engine/src/suspension_loads.rs` | Shared anchor reactions and real equilibrium checks; optional prepared response replaces matrix elimination in B. Standard calls retain the original solve. |
 | `game/crates/vehicle-physics-engine/src/simulation.rs` | Both grounded and airborne geometric force paths call the selected suspension wrench backend. |
 | `scripts/run_f1_94.ps1` | Adds `-SuspensionBackend standard\|simplified`, sets the execution environment, rejects simplified suspension with `-PhysicalWorldPackage`, records source hashes and twelve-ray metadata. Keeps canonical validation. |

@@ -36,10 +36,17 @@ func verify_aerodynamics_backend() -> void:
 		var front_sensor := vehicle.get_node("UnderfloorFrontCenter") as RayCast3D
 		require(is_zero_approx(front_sensor.position.x), "Front floor sensor must be centered")
 		require(vehicle.get_node("DiffuserThroat").enabled, "Diffuser throat sensor must remain enabled")
+	var tire_snapshot: Dictionary = vehicle.get_tire_state_snapshot()
+	for wheel_identifier in ["FL", "FR", "RL", "RR"]:
+		require(tire_snapshot.has(wheel_identifier), "Missing tire state for " + wheel_identifier)
+		if tire_snapshot.has(wheel_identifier):
+			var wheel_state: Dictionary = tire_snapshot[wheel_identifier]
+			require(is_finite(float(wheel_state.pressure_kpa)) and float(wheel_state.pressure_kpa) > 0.0, "Invalid tire pressure for " + wheel_identifier)
 	var snapshot: Dictionary = vehicle.get_underfloor_state_snapshot()
 	require(snapshot.probe_layout == ("front_center_and_diffuser_throat" if simplified else "five_probes"), "Native floor layout disagrees with selected backend")
 	var vehicle_container := session.get_node("WorldViewport/RaceSession/VehicleContainer")
 	require(vehicle_container.get_child_count() == 1, "Comparison must retain only the player vehicle")
 	if not failed:
 		print("AERODYNAMICS_BACKEND_SMOKE_PASS backend=%s suspension=%s vehicles=1 floor_sensors=%d suspension_sensors=%d" % [backend, OS.get_environment("FORMULA90_SUSPENSION_BACKEND"), enabled_floor_sensors, enabled_suspension_sensors])
+		print("TIRE_BACKEND_SMOKE_PASS backend=%s vehicles=1 suspension_sensors=%d" % [OS.get_environment("FORMULA90_TIRE_BACKEND"), enabled_suspension_sensors])
 	quit(1 if failed else 0)
